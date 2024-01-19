@@ -4,9 +4,10 @@ import webbrowser
 import hid
 import subprocess
 import platform
+import HidHelper
 
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QDialog, QSystemTrayIcon, QMenu, QAction, QMessageBox
+from PyQt5.QtWidgets import QApplication, QDialog, QSystemTrayIcon, QMenu, QAction, QMessageBox, QVBoxLayout, QLabel
 
 class WindowsInputHelper():
     def getLanguages(self):
@@ -56,13 +57,32 @@ class PolyKybdHost(QApplication):
         tray = QSystemTrayIcon(parent=self)
         tray.setIcon(icon)
         tray.setVisible(True)
-
+        
         # Create the menu
         menu = QMenu()
         
-        action0 = QAction("HID Terminal", parent=self)
-        action0.triggered.connect(self.open_hid_terminal)
-        menu.addAction(action0)
+        #Conect t Keeb
+        vid = 0x2021
+        pid = 0x2007
+        self.keeb = HidHelper.HidHelper(vid, pid)
+        result = self.keeb.send_raw_report("P0".encode())
+        
+        if result == True:
+            success, reply = self.keeb.read_raw_report(1000)
+            if result:
+                status = QAction(f"Connected to: {reply.decode()[3:]}", parent=self)
+                menu.addAction(status)
+                self.add_supported_lang(menu)
+            else:
+                status = QAction(f"Error: {reply}", parent=self)
+                menu.addAction(status)
+        else:
+            status = QAction(f"Could not sent id: {result}", parent=self)
+            menu.addAction(status)
+        
+        # action0 = QAction("HID Terminal", parent=self)
+        # action0.triggered.connect(self.open_hid_terminal)
+        # menu.addAction(action0)
 
         action1 = QAction("Configure Keymap (VIA)", parent=self)
         action1.triggered.connect(self.open_via)
@@ -99,12 +119,43 @@ class PolyKybdHost(QApplication):
         # Add the menu to the tray
         tray.setContextMenu(menu)
         tray.show()
+    
+    def add_supported_lang(self, menu):
+        current_lang = "Unknown"
+        result = self.keeb.send_raw_report("P1".encode())
+        if result == True:
+            success, reply = self.keeb.read_raw_report(100)
+            if success:
+                current_lang = reply.decode()[3:]
+       
+        result = self.keeb.send_raw_report("P2".encode())
         
-    def open_hid_terminal(self):
-        dialog = QDialog(None)
-        dialog.setWindowTitle("HID Terminal")
-        dialog.exec_()
-        dialog.show()
+        if result == True:
+            success, reply = self.keeb.read_raw_report(100)
+            reply = reply.decode()
+            lang = ""
+            while success and len(reply)>3:
+                lang = f"{lang},{reply[3:]}"
+                success, reply = self.keeb.read_raw_report(100)
+                reply = reply.decode()
+                
+            lang_menu = menu.addMenu(f"Selected Language: {current_lang}")
+            for l in lang.split(","):
+                if l != "":
+                    lang_menu.addAction(l, self.change_language)
+            
+    # def open_hid_terminal(self):   
+    #     dialog = QDialog(None)
+    #     dialog.setWindowTitle("HID Terminal")  
+    #     layout = QVBoxLayout()
+        
+    #     data = "P2".encode() #[80, 50] #
+    #     sent = keeb.send_raw_report(data)
+    #     message = QLabel(f'Sent: {data}/{sent} Device manufacturer: {keeb.interface.manufacturer} product: {keeb.interface.product} Lang: {keeb.read_raw_report(1000)}')
+    #     layout.addWidget(message)
+    #     dialog.setLayout(layout)
+    #     dialog.exec_()
+    #     dialog.show()
         
     def open_via(self):
         webbrowser.open("https://usevia.app", new=0, autoraise=True)
