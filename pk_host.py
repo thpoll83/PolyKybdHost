@@ -133,16 +133,19 @@ class PolyKybdHost(QApplication):
         if result == True:
             success, reply = self.keeb.read_raw_report(100)
             reply = reply.decode()
-            lang = ""
+            all = ""
             while success and len(reply)>3:
-                lang = f"{lang},{reply[3:]}"
+                all = f"{all},{reply[3:]}"
                 success, reply = self.keeb.read_raw_report(100)
                 reply = reply.decode()
                 
-            lang_menu = menu.addMenu(f"Selected Language: {current_lang}")
-            for l in lang.split(","):
-                if l != "":
-                    lang_menu.addAction(l, self.change_language)
+            self.keeb_lang_menu = menu.addMenu(f"Selected Language: {current_lang}")
+            index = 0
+            self.all_languages = list(filter(None, all.split(",")))
+            for lang in self.all_languages:
+                item = self.keeb_lang_menu.addAction(lang, self.change_keeb_language)
+                item.setData(index)
+                index = index + 1
             
     # def open_hid_terminal(self):   
     #     dialog = QDialog(None)
@@ -182,6 +185,20 @@ class PolyKybdHost(QApplication):
             msg.setIcon(QMessageBox.Information)
             msg.exec_()
 
+    def change_keeb_language(self):
+        index = self.sender().data()
+        request_string = f"50333a{index:02}"
+        request = bytearray.fromhex(request_string)
+        result = self.keeb.send_raw_report(request)
+        if result == True:
+            success, reply = self.keeb.read_raw_report(100)
+            if success:
+                self.keeb_lang_menu.setTitle(f"Selected Language: {self.all_languages[index]}")
+            else:
+                self.keeb_lang_menu.setTitle(f"Could not set {self.all_languages[index]}: {reply}")
+        else:
+            self.keeb_lang_menu.setTitle(f"Could not send request ({request_string}): {reply}")
+                
 if __name__ == '__main__':
     app = PolyKybdHost()
     print("Executing PolyKybd Host...")
