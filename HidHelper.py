@@ -19,6 +19,8 @@ class HidHelper:
 
         if len(raw_hid_interfaces) != 0:
             self.interface = hid.Device(path=raw_hid_interfaces[0]['path'])
+        else:
+            self.interface = None
 
     def send_raw_report(self, data):
 

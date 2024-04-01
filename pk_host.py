@@ -5,9 +5,10 @@ import hid
 import subprocess
 import platform
 import HidHelper
+import ImageConverter
 
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QDialog, QSystemTrayIcon, QMenu, QAction, QMessageBox, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QApplication, QDialog, QSystemTrayIcon, QMenu, QAction, QMessageBox, QVBoxLayout, QLabel, QFileDialog
 
 class WindowsInputHelper():
     def getLanguages(self):
@@ -77,19 +78,19 @@ class PolyKybdHost(QApplication):
                 status = QAction(f"Error: {reply}", parent=self)
                 menu.addAction(status)
         else:
-            status = QAction(f"Could not sent id: {result}", parent=self)
+            status = QAction(f"Could not send id: {result}", parent=self)
             menu.addAction(status)
-        
-        # action0 = QAction("HID Terminal", parent=self)
-        # action0.triggered.connect(self.open_hid_terminal)
-        # menu.addAction(action0)
 
-        action1 = QAction("Configure Keymap (VIA)", parent=self)
-        action1.triggered.connect(self.open_via)
-        menu.addAction(action1)
+        action0 = QAction("Configure Keymap (VIA)", parent=self)
+        action0.triggered.connect(self.open_via)
+        menu.addAction(action0)
         
         langMenu = menu.addMenu("Change Input Language")
 
+        action1 = QAction("Send Shortcut Overlay...", parent=self)
+        action1.triggered.connect(self.send_shortcuts)
+        menu.addAction(action1)
+        
         action2 = QAction("Get Support", parent=self)
         action2.triggered.connect(self.open_support)
         menu.addAction(action2)
@@ -169,6 +170,52 @@ class PolyKybdHost(QApplication):
     def open_about(self):
         webbrowser.open("https://ko-fi.com/polykb", new=0, autoraise=True)
 
+    def send_shortcuts(self):
+        fname = QFileDialog.getOpenFileName(None, 'Open file', '',"Image files (*.jpg *.gif *.png *.bmp *jpeg)")
+        if len(fname)>0:
+            conv = ImageConverter.ImageConverter(fname[0])
+            overlaymap = conv.extract_overlays()
+            
+            if overlaymap == None:
+                msg = QMessageBox()
+                msg.setWindowTitle("Error")
+                msg.setText("No overlays generated.")
+                msg.setIcon(QMessageBox.Warning)
+                msg.exec_()
+            else:
+                for keycode in overlaymap:
+                    request_string = f"50343a{keycode:02}" #P4:KEYCODE
+                    result = self.keeb.send_raw_report(bytearray.fromhex(request_string))
+                    if result == True:
+                        for i in (0, 12): #  (overlay size in px 72*40) / (px per byte 8) / (bytes per msg 32) = 11.25 -> 12 msgs
+                            bmp = overlaymap[keycode]
+                            end = (i+1)*32
+                            if end>len(bmp):
+                                end = len(bmp)
+                            success = self.keeb.send_raw_report(bmp[i*32:end])
+                            if not success:
+                                msg = QMessageBox()
+                                msg.setWindowTitle("Error")
+                                msg.setText(f"Error overlay sending message {i}")
+                                msg.setIcon(QMessageBox.Warning)
+                                msg.exec_()
+                                break
+                    else:
+                        msg = QMessageBox()
+                        msg.setWindowTitle("Error")
+                        msg.setText("No reply. Cannot send overlay sending messages.")
+                        msg.setIcon(QMessageBox.Warning)
+                        msg.exec_()
+                        break
+                                        
+        else:
+            msg = QMessageBox()
+            msg.setWindowTitle("Info")
+            msg.setText("No file selected. Operation canceled.")
+            msg.setIcon(QMessageBox.Warning)
+            msg.exec_()       
+        
+        
     def change_language(self):
         lang = self.sender().text()
         output = self.helper.setLanguage(self, lang)
@@ -202,4 +249,5 @@ class PolyKybdHost(QApplication):
 if __name__ == '__main__':
     app = PolyKybdHost()
     print("Executing PolyKybd Host...")
+    #print(f"  Pillow version:{__PIL.__version__}")
     sys.exit(app.exec_())
