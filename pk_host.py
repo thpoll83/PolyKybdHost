@@ -1,6 +1,7 @@
 import os
 import sys
 import webbrowser
+from enum import Enum
 import hid
 import subprocess
 import platform
@@ -45,7 +46,23 @@ class LinuxXInputHelper():
             return output
         return ""
         
-            
+class Cmd(Enum):
+    GET_ID = 0
+    GET_LANG = 1
+    GET_LANG_LIST = 2
+    CHANGE_LANG = 3
+    SEND_OVERLAY = 4
+
+def compose_cmd(cmd, extra1 = None, extra2 = None):
+    c = cmd.value + 30
+    if extra1 == None:
+        return bytearray.fromhex(f"09{c:02}")
+    else:
+        if extra2 == None:
+            return bytearray.fromhex(f"09{c:02}3a{extra1:02x}")
+        else:
+            return bytearray.fromhex(f"09{c:02}3a{extra1:02x}{extra2:02x}")
+    
 class PolyKybdHost(QApplication):
     def __init__(self):
         super().__init__(sys.argv)
@@ -66,7 +83,7 @@ class PolyKybdHost(QApplication):
         vid = 0x2021
         pid = 0x2007
         self.keeb = HidHelper.HidHelper(vid, pid)
-        result = self.keeb.send_raw_report("P0".encode())
+        result = self.keeb.send_raw_report(compose_cmd(Cmd.GET_ID))
         
         if result == True:
             success, reply = self.keeb.read_raw_report(1000)
@@ -123,13 +140,13 @@ class PolyKybdHost(QApplication):
     
     def add_supported_lang(self, menu):
         current_lang = "Unknown"
-        result = self.keeb.send_raw_report("P1".encode())
+        result = self.keeb.send_raw_report(compose_cmd(Cmd.GET_LANG))
         if result == True:
             success, reply = self.keeb.read_raw_report(100)
             if success:
                 current_lang = reply.decode()[3:]
        
-        result = self.keeb.send_raw_report("P2".encode())
+        result = self.keeb.send_raw_report(compose_cmd(Cmd.GET_LANG_LIST))
         
         if result == True:
             success, reply = self.keeb.read_raw_report(100)
@@ -183,30 +200,22 @@ class PolyKybdHost(QApplication):
                 msg.setIcon(QMessageBox.Warning)
                 msg.exec_()
             else:
+                BYTES_PER_MSG = 24
+                BYTES_PER_OVERLAY = int(72*40) / 8 # 360
+                NUM_MSGS = int(BYTES_PER_OVERLAY/BYTES_PER_MSG) # 360/24 = 15
+                #print(f"BYTES_PER_MSG: {BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_MSGS: {NUM_MSGS}")
                 for keycode in overlaymap:
-                    request_string = f"50343a{keycode:02}" #P4:KEYCODE
-                    result = self.keeb.send_raw_report(bytearray.fromhex(request_string))
-                    if result == True:
-                        for i in (0, 12): #  (overlay size in px 72*40) / (px per byte 8) / (bytes per msg 32) = 11.25 -> 12 msgs
-                            bmp = overlaymap[keycode]
-                            end = (i+1)*32
-                            if end>len(bmp):
-                                end = len(bmp)
-                            success = self.keeb.send_raw_report(bmp[i*32:end])
-                            if not success:
-                                msg = QMessageBox()
-                                msg.setWindowTitle("Error")
-                                msg.setText(f"Error overlay sending message {i}")
-                                msg.setIcon(QMessageBox.Warning)
-                                msg.exec_()
-                                break
-                    else:
-                        msg = QMessageBox()
-                        msg.setWindowTitle("Error")
-                        msg.setText("No reply. Cannot send overlay sending messages.")
-                        msg.setIcon(QMessageBox.Warning)
-                        msg.exec_()
-                        break
+                    bmp = overlaymap[keycode]
+                    for i in range(0, NUM_MSGS):
+                        success = self.keeb.send_raw_report(compose_cmd(Cmd.SEND_OVERLAY, keycode, i) + bmp[i*BYTES_PER_MSG:(i+1)*BYTES_PER_MSG])
+                        if not success:
+                            msg = QMessageBox()
+                            msg.setWindowTitle("Error")
+                            msg.setText(f"Error sending overlay message {i+1}/{NUM_MSGS}")
+                            msg.setIcon(QMessageBox.Warning)
+                            msg.exec_()
+                            break
+                    print(f"Keycode {keycode:#02x} overlay sent.")
                                         
         else:
             msg = QMessageBox()
@@ -233,21 +242,18 @@ class PolyKybdHost(QApplication):
             msg.exec_()
 
     def change_keeb_language(self):
-        index = self.sender().data()
-        request_string = f"50333a{index:02}"
-        request = bytearray.fromhex(request_string)
-        result = self.keeb.send_raw_report(request)
+        lang_index = self.sender().data()
+        result = self.keeb.send_raw_report(compose_cmd(Cmd.CHANGE_LANG, lang_index))
         if result == True:
             success, reply = self.keeb.read_raw_report(100)
             if success:
-                self.keeb_lang_menu.setTitle(f"Selected Language: {self.all_languages[index]}")
+                self.keeb_lang_menu.setTitle(f"Selected Language: {self.all_languages[lang_index]}")
             else:
-                self.keeb_lang_menu.setTitle(f"Could not set {self.all_languages[index]}: {reply}")
+                self.keeb_lang_menu.setTitle(f"Could not set {self.all_languages[lang_index]}: {reply}")
         else:
             self.keeb_lang_menu.setTitle(f"Could not send request ({request_string}): {reply}")
                 
 if __name__ == '__main__':
     app = PolyKybdHost()
     print("Executing PolyKybd Host...")
-    #print(f"  Pillow version:{__PIL.__version__}")
     sys.exit(app.exec_())
