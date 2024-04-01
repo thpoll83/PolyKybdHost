@@ -1,6 +1,7 @@
 import os
 import sys
 import webbrowser
+import time
 from enum import Enum
 import hid
 import subprocess
@@ -215,6 +216,8 @@ class PolyKybdHost(QApplication):
                             msg.setIcon(QMessageBox.Warning)
                             msg.exec_()
                             break
+                        #else:
+                        #    time.sleep(10/100)
                     print(f"Keycode {keycode:#02x} overlay sent.")
                                         
         else:
