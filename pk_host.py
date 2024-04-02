@@ -8,6 +8,7 @@ import subprocess
 import platform
 import HidHelper
 import ImageConverter
+from bitstring import BitArray
 
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QDialog, QSystemTrayIcon, QMenu, QAction, QMessageBox, QVBoxLayout, QLabel, QFileDialog
@@ -53,16 +54,18 @@ class Cmd(Enum):
     GET_LANG_LIST = 2
     CHANGE_LANG = 3
     SEND_OVERLAY = 4
+    CLEAR_OVERLAYS = 5
 
-def compose_cmd(cmd, extra1 = None, extra2 = None):
+def compose_cmd(cmd, extra1 = None, extra2 = None , extra3 = None):
     c = cmd.value + 30
-    if extra1 == None:
-        return bytearray.fromhex(f"09{c:02}")
+    if extra3 != None:
+        return bytearray.fromhex(f"09{c:02}3a{extra1:02x}{extra2:02x}{extra3:02x}")
+    elif extra2 != None:
+        return bytearray.fromhex(f"09{c:02}3a{extra1:02x}{extra2:02x}")
+    elif extra2 != None:
+        return bytearray.fromhex(f"09{c:02}3a{extra1:02x}")
     else:
-        if extra2 == None:
-            return bytearray.fromhex(f"09{c:02}3a{extra1:02x}")
-        else:
-            return bytearray.fromhex(f"09{c:02}3a{extra1:02x}{extra2:02x}")
+        return bytearray.fromhex(f"09{c:02}")
     
 class PolyKybdHost(QApplication):
     def __init__(self):
@@ -109,13 +112,17 @@ class PolyKybdHost(QApplication):
         action1.triggered.connect(self.send_shortcuts)
         menu.addAction(action1)
         
-        action2 = QAction("Get Support", parent=self)
-        action2.triggered.connect(self.open_support)
+        action2 = QAction("Clear Shortcut Overlays", parent=self)
+        action2.triggered.connect(self.clear_overlays)
         menu.addAction(action2)
         
-        action3 = QAction("About", parent=self)
-        action3.triggered.connect(self.open_about)
+        action3 = QAction("Get Support", parent=self)
+        action3.triggered.connect(self.open_support)
         menu.addAction(action3)
+        
+        action4 = QAction("About", parent=self)
+        action4.triggered.connect(self.open_about)
+        menu.addAction(action4)
 
         quit = QAction("Quit", parent=self)
         quit.triggered.connect(self.quit)
@@ -207,18 +214,25 @@ class PolyKybdHost(QApplication):
                 #print(f"BYTES_PER_MSG: {BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_MSGS: {NUM_MSGS}")
                 for keycode in overlaymap:
                     bmp = overlaymap[keycode]
+                    #sum = 0
+                    #for i in range(0, 40):
+                    #    bits = BitArray(bmp[i*9:(i+1)*9])
+                    #    print(bits.bin + f". {len(bits.bin)}/{len(bits.bin)/8} {i}")
+                    #    sum = sum + len(bits.bin)
+                    #print(f"Bytes: {sum/8}")
+                    
                     for i in range(0, NUM_MSGS):
-                        success = self.keeb.send_raw_report(compose_cmd(Cmd.SEND_OVERLAY, keycode, i) + bmp[i*BYTES_PER_MSG:(i+1)*BYTES_PER_MSG])
+                        mods = 0;
+                        success = self.keeb.send_raw_report(compose_cmd(Cmd.SEND_OVERLAY, keycode, mods, i) + bmp[i*BYTES_PER_MSG:(i+1)*BYTES_PER_MSG])
                         if not success:
                             msg = QMessageBox()
                             msg.setWindowTitle("Error")
                             msg.setText(f"Error sending overlay message {i+1}/{NUM_MSGS}")
-                            msg.setIcon(QMessageBox.Warning)
+                            msg.setIcon(QMessageBox.Critical)
                             msg.exec_()
                             break
-                        #else:
-                        #    time.sleep(10/100)
-                    print(f"Keycode {keycode:#02x} overlay sent.")
+                all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
+                print(f"Overlays for keycodes {all_keys} have been sent.")
                                         
         else:
             msg = QMessageBox()
@@ -235,7 +249,7 @@ class PolyKybdHost(QApplication):
             msg = QMessageBox()
             msg.setWindowTitle("Error")
             msg.setText(f"Changing input language to '{lang}' failed with:\n\"{output}\"")
-            msg.setIcon(QMessageBox.Warning)
+            msg.setIcon(QMessageBox.Critical)
             msg.exec_()
         else:
             msg = QMessageBox()
@@ -244,6 +258,15 @@ class PolyKybdHost(QApplication):
             msg.setIcon(QMessageBox.Information)
             msg.exec_()
 
+    def clear_overlays(self):
+        result = self.keeb.send_raw_report(compose_cmd(Cmd.CLEAR_OVERLAYS))
+        if result == False:
+            msg = QMessageBox()
+            msg.setWindowTitle("Error")
+            msg.setText(f"Failed clearing overlays.")
+            msg.setIcon(QMessageBox.Warning)
+            msg.exec_()
+            
     def change_keeb_language(self):
         lang_index = self.sender().data()
         result = self.keeb.send_raw_report(compose_cmd(Cmd.CHANGE_LANG, lang_index))

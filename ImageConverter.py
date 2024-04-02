@@ -22,8 +22,8 @@ class ImageConverter:
                 for x in range (0, 10):
                     topx = x*72
                     topy = y*40
-                    bottomx = (x+1)*72-1
-                    bottomy =  (y+1)*40-1
+                    bottomx = (x+1)*72
+                    bottomy =  (y+1)*40
                     slice = self.image[topy:bottomy, topx:bottomx]
                     if slice.any():
                         self.overlays[keycode] = np.packbits(slice, axis=None).tobytes()
