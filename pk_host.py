@@ -55,6 +55,7 @@ class Cmd(Enum):
     CHANGE_LANG = 3
     SEND_OVERLAY = 4
     CLEAR_OVERLAYS = 5
+    ENABLE_OVERLAYS = 6
 
 def compose_cmd(cmd, extra1 = None, extra2 = None , extra3 = None):
     c = cmd.value + 30
@@ -62,7 +63,7 @@ def compose_cmd(cmd, extra1 = None, extra2 = None , extra3 = None):
         return bytearray.fromhex(f"09{c:02}3a{extra1:02x}{extra2:02x}{extra3:02x}")
     elif extra2 != None:
         return bytearray.fromhex(f"09{c:02}3a{extra1:02x}{extra2:02x}")
-    elif extra2 != None:
+    elif extra1 != None:
         return bytearray.fromhex(f"09{c:02}3a{extra1:02x}")
     else:
         return bytearray.fromhex(f"09{c:02}")
@@ -102,27 +103,35 @@ class PolyKybdHost(QApplication):
             status = QAction(f"Could not send id: {result}", parent=self)
             menu.addAction(status)
 
-        action0 = QAction("Configure Keymap (VIA)", parent=self)
-        action0.triggered.connect(self.open_via)
-        menu.addAction(action0)
+        action = QAction("Configure Keymap (VIA)", parent=self)
+        action.triggered.connect(self.open_via)
+        menu.addAction(action)
         
         langMenu = menu.addMenu("Change Input Language")
 
-        action1 = QAction("Send Shortcut Overlay...", parent=self)
-        action1.triggered.connect(self.send_shortcuts)
-        menu.addAction(action1)
+        action = QAction("Send Shortcut Overlay...", parent=self)
+        action.triggered.connect(self.send_shortcuts)
+        menu.addAction(action)
         
-        action2 = QAction("Clear Shortcut Overlays", parent=self)
-        action2.triggered.connect(self.clear_overlays)
-        menu.addAction(action2)
+        action = QAction("Clear Shortcut Overlays", parent=self)
+        action.triggered.connect(self.clear_overlays)
+        menu.addAction(action)
         
-        action3 = QAction("Get Support", parent=self)
-        action3.triggered.connect(self.open_support)
-        menu.addAction(action3)
+        action = QAction("Enable Shortcut Overlays", parent=self)
+        action.triggered.connect(self.enable_overlays)
+        menu.addAction(action)
         
-        action4 = QAction("About", parent=self)
-        action4.triggered.connect(self.open_about)
-        menu.addAction(action4)
+        action = QAction("Disable Shortcut Overlays", parent=self)
+        action.triggered.connect(self.disable_overlays)
+        menu.addAction(action)
+        
+        action = QAction("Get Support", parent=self)
+        action.triggered.connect(self.open_support)
+        menu.addAction(action)
+        
+        action = QAction("About", parent=self)
+        action.triggered.connect(self.open_about)
+        menu.addAction(action)
 
         quit = QAction("Quit", parent=self)
         quit.triggered.connect(self.quit)
@@ -212,6 +221,7 @@ class PolyKybdHost(QApplication):
                 BYTES_PER_OVERLAY = int(72*40) / 8 # 360
                 NUM_MSGS = int(BYTES_PER_OVERLAY/BYTES_PER_MSG) # 360/24 = 15
                 #print(f"BYTES_PER_MSG: {BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_MSGS: {NUM_MSGS}")
+                self.disable_overlays()
                 for keycode in overlaymap:
                     bmp = overlaymap[keycode]
                     #sum = 0
@@ -233,7 +243,7 @@ class PolyKybdHost(QApplication):
                             break
                 all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
                 print(f"Overlays for keycodes {all_keys} have been sent.")
-                                        
+                self.enable_overlays()                             
         else:
             msg = QMessageBox()
             msg.setWindowTitle("Info")
@@ -264,6 +274,24 @@ class PolyKybdHost(QApplication):
             msg = QMessageBox()
             msg.setWindowTitle("Error")
             msg.setText(f"Failed clearing overlays.")
+            msg.setIcon(QMessageBox.Warning)
+            msg.exec_()
+    
+    def enable_overlays(self):
+        result = self.keeb.send_raw_report(compose_cmd(Cmd.ENABLE_OVERLAYS, 1))
+        if result == False:
+            msg = QMessageBox()
+            msg.setWindowTitle("Error")
+            msg.setText(f"Failed enabling overlays.")
+            msg.setIcon(QMessageBox.Warning)
+            msg.exec_()
+            
+    def disable_overlays(self):
+        result = self.keeb.send_raw_report(compose_cmd(Cmd.ENABLE_OVERLAYS, 0))
+        if result == False:
+            msg = QMessageBox()
+            msg.setWindowTitle("Error")
+            msg.setText(f"Failed disabling overlays.")
             msg.setIcon(QMessageBox.Warning)
             msg.exec_()
             
