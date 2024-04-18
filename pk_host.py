@@ -54,7 +54,7 @@ class Cmd(Enum):
     GET_LANG_LIST = 2
     CHANGE_LANG = 3
     SEND_OVERLAY = 4
-    CLEAR_OVERLAYS = 5
+    RESET_OVERLAYS = 5
     ENABLE_OVERLAYS = 6
 
 def compose_cmd(cmd, extra1 = None, extra2 = None , extra3 = None):
@@ -113,8 +113,8 @@ class PolyKybdHost(QApplication):
         action.triggered.connect(self.send_shortcuts)
         menu.addAction(action)
         
-        action = QAction("Clear Shortcut Overlays", parent=self)
-        action.triggered.connect(self.clear_overlays)
+        action = QAction("Reset Overlays Buffers", parent=self)
+        action.triggered.connect(self.reset_overlays)
         menu.addAction(action)
         
         action = QAction("Enable Shortcut Overlays", parent=self)
@@ -268,8 +268,8 @@ class PolyKybdHost(QApplication):
             msg.setIcon(QMessageBox.Information)
             msg.exec_()
 
-    def clear_overlays(self):
-        result = self.keeb.send_raw_report(compose_cmd(Cmd.CLEAR_OVERLAYS))
+    def reset_overlays(self):
+        result = self.keeb.send_raw_report(compose_cmd(Cmd.RESET_OVERLAYS))
         if result == False:
             msg = QMessageBox()
             msg.setWindowTitle("Error")
