@@ -3,3 +3,5 @@ hid==1.0.6
 NumPy
 imageio
 bitstring
+PyWinCtl==0.4
+pynput
