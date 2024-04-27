@@ -1,87 +1,35 @@
 import os
 import platform
-import subprocess
+import logging
 import sys
 import webbrowser
-from enum import Enum
 
 import pywinctl as pwc
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
 
-import HidHelper
-import ImageConverter
-from ImageConverter import Modifier
-
-
-class WindowsInputHelper():
-    def getLanguages(self):
-        result = subprocess.run(['powershell', 'Get-WinUserLanguageList'], stdout=subprocess.PIPE)
-        langCodes = []
-        entries = iter(result.stdout.splitlines())
-        for e in entries:
-            e = str(e, encoding='utf-8')
-            if e.startswith('LanguageTag'):
-                langCodes.append(e.split(":")[-1].strip())
-        return langCodes
-
-    def setLanguage(self, lang):
-        return os.system(f"powershell Set-WinUserLanguageList -LanguageList {lang} -Force")
-
-
-class LinuxXInputHelper():
-    def getLanguages(self):
-        result = subprocess.run(['setxkbmap', '-query'], stdout=subprocess.PIPE)
-        entries = iter(result.stdout.splitlines())
-        for e in entries:
-            e = str(e, encoding='utf-8')
-            if e.startswith('layout:'):
-                return e.split(":")[-1].strip().split(",")
-        return []
-
-    def getAllLanguages(self):
-        result = subprocess.run(['localectl', 'list-x11-keymap-layouts'], stdout=subprocess.PIPE)
-        return iter(str(result.stdout, encoding='utf-8').splitlines())
-
-    def setLanguage(self, lang):
-        result = subprocess.run(['setxkbmap', lang], stdout=subprocess.PIPE)
-        output = str(result.stdout, encoding='utf-8')
-        if output != "b''":
-            return output
-        return ""
-
-
-class Cmd(Enum):
-    GET_ID = 0
-    GET_LANG = 1
-    GET_LANG_LIST = 2
-    CHANGE_LANG = 3
-    SEND_OVERLAY = 4
-    RESET_OVERLAYS = 5
-    ENABLE_OVERLAYS = 6
-
-
-def compose_cmd(cmd, extra1=None, extra2=None, extra3=None):
-    c = cmd.value + 30
-    if extra3 != None:
-        return bytearray.fromhex(f"09{c:02}3a{extra1:02x}{extra2:02x}{extra3:02x}")
-    elif extra2 != None:
-        return bytearray.fromhex(f"09{c:02}3a{extra1:02x}{extra2:02x}")
-    elif extra1 != None:
-        return bytearray.fromhex(f"09{c:02}3a{extra1:02x}")
-    else:
-        return bytearray.fromhex(f"09{c:02}")
+from LinuxXInputHelper import LinuxXInputHelper
+from PolyKybd import PolyKybd
+from WindowsInputHelper import WindowsInputHelper
 
 
 class PolyKybdHost(QApplication):
     def __init__(self):
         super().__init__(sys.argv)
+
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
+            handlers=[logging.FileHandler(filename='log.txt'), logging.StreamHandler(stream=sys.stdout)]
+        )
+        self.log = logging.getLogger('PolyKybd')
+
         self.setQuitOnLastWindowClosed(False)
         self.win = None
 
         # Create the icon
-        icon = QIcon(os.path.join(os.path.dirname(__file__), "pcolor.png"))
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "icons/pcolor.png"))
 
         # Create the tray
         tray = QSystemTrayIcon(parent=self)
@@ -90,24 +38,15 @@ class PolyKybdHost(QApplication):
 
         # Create the menu
         menu = QMenu()
-
-        # Conect t Keeb
-        vid = 0x2021
-        pid = 0x2007
-        self.keeb = HidHelper.HidHelper(vid, pid)
-        result = self.keeb.send_raw_report(compose_cmd(Cmd.GET_ID))
+        self.keeb = PolyKybd()
+        result, msg = self.keeb.connect()
 
         if result == True:
-            success, reply = self.keeb.read_raw_report(1000)
-            if result:
-                status = QAction(QIcon("icons/info.png"), f"Connected to: {reply.decode()[3:]}", parent=self)
+                status = QAction(QIcon("icons/sync.png"), f"Connected to: {msg}", parent=self)
                 menu.addAction(status)
                 self.add_supported_lang(menu)
-            else:
-                status = QAction(f"Error: {reply}", parent=self)
-                menu.addAction(status)
         else:
-            status = QAction(f"Could not send id: {result}", parent=self)
+            status = QAction(QIcon("icons/sync_disabled.png"), msg, parent=self)
             menu.addAction(status)
 
         action = QAction(QIcon("icons/via.png"), "Configure Keymap (VIA)", parent=self)
@@ -156,38 +95,20 @@ class PolyKybdHost(QApplication):
 
         for e in entries:
             print(f"Enumerating input language {e}")
-            langMenu.addAction(e, self.change_language)
+            langMenu.addAction(e, self.change_system_language)
 
         # Add the menu to the tray
         tray.setContextMenu(menu)
         tray.show()
 
     def add_supported_lang(self, menu):
-        current_lang = "Unknown"
-        result = self.keeb.send_raw_report(compose_cmd(Cmd.GET_LANG))
+        result, msg = self.keeb.enumerate_lang()
         if result == True:
-            success, reply = self.keeb.read_raw_report(100)
-            if success:
-                current_lang = reply.decode()[3:]
-
-        result = self.keeb.send_raw_report(compose_cmd(Cmd.GET_LANG_LIST))
-
-        if result == True:
-            success, reply = self.keeb.read_raw_report(100)
-            reply = reply.decode()
-            all = ""
-            while success and len(reply) > 3:
-                all = f"{all},{reply[3:]}"
-                success, reply = self.keeb.read_raw_report(100)
-                reply = reply.decode()
-
-            self.keeb_lang_menu = menu.addMenu(f"Selected Language: {current_lang}")
-            index = 0
-            self.all_languages = list(filter(None, all.split(",")))
-            for lang in self.all_languages:
+            self.keeb_lang_menu = menu.addMenu(f"Selected Language: {self.keeb.get_current_lang()}")
+            all_languages = list(filter(None, msg.split(",")))
+            for lang in all_languages:
                 item = self.keeb_lang_menu.addAction(lang, self.change_keeb_language)
-                item.setData(index)
-                index = index + 1
+                item.setData(lang)
 
     def open_via(self):
         webbrowser.open("https://usevia.app", new=0, autoraise=True)
@@ -201,43 +122,13 @@ class PolyKybdHost(QApplication):
     def send_shortcuts(self):
         fname = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *jpeg)")
         if len(fname) > 0:
-            conv = ImageConverter.ImageConverter(fname[0])
-            if conv:
-                for modifier in Modifier:
-                    overlaymap = conv.extract_overlays(modifier)
-
-                    if overlaymap:
-                        print(f"Sending overlays for modifier {modifier}.")
-                        BYTES_PER_MSG = 24
-                        BYTES_PER_OVERLAY = int(72 * 40) / 8  # 360
-                        NUM_MSGS = int(BYTES_PER_OVERLAY / BYTES_PER_MSG)  # 360/24 = 15
-                        # print(f"BYTES_PER_MSG: {BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_MSGS: {NUM_MSGS}")
-                        self.disable_overlays()
-                        for keycode in overlaymap:
-                            bmp = overlaymap[keycode]
-                            # sum = 0
-                            # for i in range(0, 40):
-                            #    bits = BitArray(bmp[i*9:(i+1)*9])
-                            #    print(bits.bin + f". {len(bits.bin)}/{len(bits.bin)/8} {i}")
-                            #    sum = sum + len(bits.bin)
-                            # print(f"Bytes: {sum/8}")
-
-                            for i in range(0, NUM_MSGS):
-                                success = self.keeb.send_raw_report(
-                                    compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, i) + bmp[i * BYTES_PER_MSG:(
-                                                                                                                                  i + 1) * BYTES_PER_MSG])
-                                if not success:
-                                    msg = QMessageBox()
-                                    msg.setWindowTitle("Error")
-                                    msg.setText(f"Error sending overlay message {i + 1}/{NUM_MSGS}")
-                                    msg.setIcon(QMessageBox.Critical)
-                                    msg.exec_()
-                                    break
-                        all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
-                        print(f"Overlays for keycodes {all_keys} have been sent.")
-                        self.enable_overlays()
-            else:
-                print("Did you specify a valid file?")
+            result, msg = self.keeb.send_overlay(fname[0])
+            if result == False:
+                msg = QMessageBox()
+                msg.setWindowTitle("Error")
+                msg.setText(str(msg))
+                msg.setIcon(QMessageBox.Critical)
+                msg.exec_()
         else:
             msg = QMessageBox()
             msg.setWindowTitle("Info")
@@ -245,7 +136,7 @@ class PolyKybdHost(QApplication):
             msg.setIcon(QMessageBox.Warning)
             msg.exec_()
 
-    def change_language(self):
+    def change_system_language(self):
         lang = self.sender().text()
         output = self.helper.setLanguage(self, lang)
         if output:
@@ -262,54 +153,50 @@ class PolyKybdHost(QApplication):
             msg.exec_()
 
     def reset_overlays(self):
-        result = self.keeb.send_raw_report(compose_cmd(Cmd.RESET_OVERLAYS))
+        result, msg = self.keeb.reset_overlays()
         if result == False:
             msg = QMessageBox()
             msg.setWindowTitle("Error")
-            msg.setText(f"Failed clearing overlays.")
+            msg.setText(f"Failed clearing overlays: {msg}")
             msg.setIcon(QMessageBox.Warning)
             msg.exec_()
 
     def enable_overlays(self):
-        result = self.keeb.send_raw_report(compose_cmd(Cmd.ENABLE_OVERLAYS, 1))
+        result, msg = self.keeb.enable_overlays()
         if result == False:
             msg = QMessageBox()
             msg.setWindowTitle("Error")
-            msg.setText(f"Failed enabling overlays.")
+            msg.setText(f"Failed enabling overlays: {msg}")
             msg.setIcon(QMessageBox.Warning)
             msg.exec_()
 
     def disable_overlays(self):
-        result = self.keeb.send_raw_report(compose_cmd(Cmd.ENABLE_OVERLAYS, 0))
+        result, msg = self.keeb.disable_overlays()
         if result == False:
             msg = QMessageBox()
             msg.setWindowTitle("Error")
-            msg.setText(f"Failed disabling overlays.")
+            msg.setText(f"Failed disabling overlays: {msg}")
             msg.setIcon(QMessageBox.Warning)
             msg.exec_()
 
     def change_keeb_language(self):
-        lang_index = self.sender().data()
-        result = self.keeb.send_raw_report(compose_cmd(Cmd.CHANGE_LANG, lang_index))
+        lang = self.sender().data()
+        result, msg = self.keeb.change_language(lang)
         if result == True:
-            success, reply = self.keeb.read_raw_report(100)
-            if success:
-                self.keeb_lang_menu.setTitle(f"Selected Language: {self.all_languages[lang_index]}")
-            else:
-                self.keeb_lang_menu.setTitle(f"Could not set {self.all_languages[lang_index]}: {reply}")
+            self.keeb_lang_menu.setTitle(f"Selected Language: {msg}")
         else:
-            self.keeb_lang_menu.setTitle(f"Could not send request ({Cmd.CHANGE_LANG}): {lang_index}")
+            self.keeb_lang_menu.setTitle(f"Could not set {lang}: {msg}")
 
     def ActiveWindowReporter(self):
         win = pwc.getActiveWindow()
         if win:
             if self.win is None or win.getHandle() != self.win.getHandle():
                 self.win = win
-                print(
+                self.log.info(
                     f"Active App Changed: \"{self.win.getAppName()}\", Title: \"{self.win.title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
         else:
             if self.win:
-                print("No active window")
+                self.log.info("No active window")
                 self.win = None
 
 

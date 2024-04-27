@@ -1,3 +1,5 @@
+import logging
+
 import imageio.v3 as iio
 import numpy as np
 from enum import Enum
@@ -19,6 +21,7 @@ class Modifier(Enum):
 
 class ImageConverter:
     def __init__(self, filename):
+        self.log = logging.getLogger('PolyKybd')
         self.h = 0
         self.w = 0
         self.image = {}
@@ -44,7 +47,7 @@ class ImageConverter:
                 self.h, self.w, _ = self.image[Modifier.NO_MOD].shape
                 # plt.imshow(self.image[Modifier.SHIFT])
                 # plt.show()
-                print(f"Loaded 3 channels from {filename}: {self.w}x{self.h}")
+                self.log.info(f"Loaded 3 channels from {filename}: {self.w}x{self.h}")
             elif channels == 4:
                 [b, g, r, a] = np.dsplit(im, im.shape[-1])
                 self.image[key_a] = np.array(a, dtype=bool)
@@ -54,9 +57,9 @@ class ImageConverter:
                 self.h, self.w, _ = self.image[Modifier.NO_MOD].shape
                 # plt.imshow(self.image[Modifier.SHIFT])
                 # plt.show()
-                print(f"Loaded 4 channels from {filename}: {self.w}x{self.h}")
+                self.log.info(f"Loaded 4 channels from {filename}: {self.w}x{self.h}")
             else:
-                print(f"Cannot handle {channels} image channels.")
+                self.log.error(f"Cannot handle {channels} image channels.")
         else:
             # convert the image to b/w
             self.image[Modifier.NO_MOD] = np.array(np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
@@ -64,7 +67,7 @@ class ImageConverter:
             self.h, self.w = self.image[Modifier.NO_MOD].shape
             # plt.imshow(self.image[Modifier.NO_MOD])
             # plt.show()
-            print(f"Loaded {filename}: {self.w}x{self.h}")
+            self.log.info(f"Loaded {filename}: {self.w}x{self.h}")
 
     # except:
     #    print("Couldn't read overlay")
@@ -72,7 +75,7 @@ class ImageConverter:
     def extract_overlays(self, modifier=Modifier.NO_MOD):
         # we expect 10x9 images each having 72x40px
         if self.w < 72 * 10 or self.h < 40 * 9:
-            print("Image too small")
+            self.log.error("Image too small")
             return None
         if modifier in self.image:
             overlays = {}
@@ -94,8 +97,8 @@ class ImageConverter:
                         keycode = 100  # KC_NONUS_BACKSLASH
                     if keycode == 102:  # skip media keys etc.
                         keycode = 224  # KC_LEFT_CTRL
-            print("Image data for overlays prepared.")
+            self.log.info("Image data for overlays prepared.")
             return overlays
         else:
-            print(f"No image data for modifier {modifier} present.")
+            self.log.info(f"No image data for modifier {modifier} present.")
             return None
