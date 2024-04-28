@@ -1,4 +1,3 @@
-import sys
 import hid
 
 usage_page    = 0xFF60
@@ -21,6 +20,9 @@ class HidHelper:
             self.interface = hid.Device(path=raw_hid_interfaces[0]['path'])
         else:
             self.interface = None
+
+    def interface_aquired(self):
+        return self.interface != None
 
     def send_raw_report(self, data):
 

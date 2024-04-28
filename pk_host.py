@@ -19,7 +19,7 @@ class PolyKybdHost(QApplication):
         super().__init__(sys.argv)
 
         logging.basicConfig(
-            level=logging.DEBUG,
+            level=logging.INFO,
             format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
             handlers=[logging.FileHandler(filename='log.txt'), logging.StreamHandler(stream=sys.stdout)]
         )
@@ -39,15 +39,20 @@ class PolyKybdHost(QApplication):
         # Create the menu
         menu = QMenu()
         self.keeb = PolyKybd()
-        result, msg = self.keeb.connect()
+        self.keeb.connect()
+        result, msg = self.keeb.queryId()
 
         if result == True:
-                status = QAction(QIcon("icons/sync.png"), f"Connected to: {msg}", parent=self)
-                menu.addAction(status)
-                self.add_supported_lang(menu)
+            self.status = QAction(QIcon("icons/sync.png"), f"Connected to: {msg}", parent=self)
+            self.status.setData(True)
+            self.status.triggered.connect(self.reconnect)
+            menu.addAction(self.status)
+            self.add_supported_lang(menu)
         else:
-            status = QAction(QIcon("icons/sync_disabled.png"), msg, parent=self)
-            menu.addAction(status)
+            self.status = QAction(QIcon("icons/sync_disabled.png"), msg, parent=self)
+            self.status.setData(False)
+            self.status.triggered.connect(self.reconnect)
+            menu.addAction(self.status)
 
         action = QAction(QIcon("icons/via.png"), "Configure Keymap (VIA)", parent=self)
         action.triggered.connect(self.open_via)
@@ -101,6 +106,20 @@ class PolyKybdHost(QApplication):
         tray.setContextMenu(menu)
         tray.show()
 
+    def reconnect(self):
+        result = self.keeb.connect()
+
+        if result != self.status.data():
+            result, msg = self.keeb.queryId()
+            if result == True:
+                self.status.setIcon(QIcon("icons/sync.png"))
+                self.status.setText(f"Connected to: {msg}")
+                self.status.setData(True)
+            else:
+                self.status.setIcon(QIcon("icons/sync_disabled.png"))
+                self.status.setText(msg)
+                self.status.setData(False)
+
     def add_supported_lang(self, menu):
         result, msg = self.keeb.enumerate_lang()
         if result == True:
@@ -122,13 +141,7 @@ class PolyKybdHost(QApplication):
     def send_shortcuts(self):
         fname = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *jpeg)")
         if len(fname) > 0:
-            result, msg = self.keeb.send_overlay(fname[0])
-            if result == False:
-                msg = QMessageBox()
-                msg.setWindowTitle("Error")
-                msg.setText(str(msg))
-                msg.setIcon(QMessageBox.Critical)
-                msg.exec_()
+            self.keeb.send_overlay(fname[0])
         else:
             msg = QMessageBox()
             msg.setWindowTitle("Info")
@@ -187,7 +200,7 @@ class PolyKybdHost(QApplication):
         else:
             self.keeb_lang_menu.setTitle(f"Could not set {lang}: {msg}")
 
-    def ActiveWindowReporter(self):
+    def activeWindowReporter(self):
         win = pwc.getActiveWindow()
         if win:
             if self.win is None or win.getHandle() != self.win.getHandle():
@@ -204,7 +217,8 @@ if __name__ == '__main__':
     app = PolyKybdHost()
     print("Executing PolyKybd Host...")
     timer = QTimer(app)
-    timer.timeout.connect(app.ActiveWindowReporter)
-    timer.start(500)
+    timer.timeout.connect(app.activeWindowReporter)
+    timer.timeout.connect(app.reconnect)
+    timer.start(1000)
 
     sys.exit(app.exec_())
