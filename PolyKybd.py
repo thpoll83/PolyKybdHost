@@ -1,5 +1,8 @@
 import logging
+import time
 from enum import Enum
+
+import numpy as np
 
 import HidHelper
 import ImageConverter
@@ -13,6 +16,10 @@ class Cmd(Enum):
     SEND_OVERLAY = 4
     RESET_OVERLAYS = 5
     ENABLE_OVERLAYS = 6
+    SET_BRIGHTNESS = 7
+    KEYPRESS = 8
+    KEYRELEASE = 9
+
 
 def compose_cmd(cmd, extra1=None, extra2=None, extra3=None):
     c = cmd.value + 30
@@ -24,10 +31,13 @@ def compose_cmd(cmd, extra1=None, extra2=None, extra3=None):
         return bytearray.fromhex(f"09{c:02}3a{extra1:02x}")
     else:
         return bytearray.fromhex(f"09{c:02}")
+
+
 class PolyKybd():
     """
     Communication to PolyKybd
     """
+
     def __init__(self):
         self.log = logging.getLogger('PolyKybd')
         self.all_languages = list()
@@ -54,7 +64,7 @@ class PolyKybd():
             success, reply = self.hid.read_raw_report(1000)
             return success, reply.decode()[3:]
 
-        return False, f"Not connected (msg)"
+        return False, f"Not connected ({msg})"
 
     def reset_overlays(self):
         self.log.info("Reset Overlays...")
@@ -67,6 +77,20 @@ class PolyKybd():
     def disable_overlays(self):
         self.log.info("Disable Overlays...")
         return self.hid.send_raw_report(compose_cmd(Cmd.ENABLE_OVERLAYS, 0))
+
+    def set_brightness(self, brightness):
+        self.log.info(f"Setting Display Brightness to {brightness}..")
+        return self.hid.send_raw_report(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
+
+    def press_key(self, keycode, duration):
+        self.log.info(f"Pressing {keycode} for {duration} sec...")
+        result, msg = self.hid.send_raw_report(compose_cmd(Cmd.KEYPRESS, keycode))
+        if result:
+            # for now, it is fine to block this thread
+            time.sleep(duration)
+            return self.hid.send_raw_report(compose_cmd(Cmd.KEYRELEASE, keycode))
+        else:
+            return result, msg
 
     def query_current_lang(self):
         self.log.info("Query Languages...")
@@ -154,19 +178,20 @@ class PolyKybd():
             #it is okay if there is no overlay for a modifier
             if overlaymap:
                 self.log.debug(f"Sending overlays for modifier {modifier}.")
-                if counter==0:
+                if counter == 0:
                     self.disable_overlays()
                 for keycode in overlaymap:
                     bmp = overlaymap[keycode]
                     for i in range(0, NUM_MSGS):
-                        self.log.debug(f"Sending msg {i+1} of {NUM_MSGS}.")
+                        self.log.debug(f"Sending msg {i + 1} of {NUM_MSGS}.")
                         result, msg = self.hid.send_raw_report(
-                            compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, i) + bmp[i * BYTES_PER_MSG:(i + 1) * BYTES_PER_MSG])
+                            compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, i) + bmp[i * BYTES_PER_MSG:(
+                                                                                                                      i + 1) * BYTES_PER_MSG])
                         if result == False:
                             return False, f"Error sending overlay message {i + 1}/{NUM_MSGS} ({msg})"
                 all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
                 self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
                 counter = counter + 1
-        if counter>0:
+        if counter > 0:
             self.enable_overlays()
         return True, f"{counter} overlays sent."
