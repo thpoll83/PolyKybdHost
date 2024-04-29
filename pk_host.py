@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMess
 from LinuxXInputHelper import LinuxXInputHelper
 from PolyKybd import PolyKybd
 from WindowsInputHelper import WindowsInputHelper
-
+from MacOSInputHelper import MacOSInputHelper
 
 class PolyKybdHost(QApplication):
     def __init__(self):
@@ -93,6 +93,8 @@ class PolyKybdHost(QApplication):
             self.helper = WindowsInputHelper
         elif platform.system() == "Linux":
             self.helper = LinuxXInputHelper
+        elif platform.system() == "Darwin":
+            self.helper = MacOSInputHelper
 
         # result = subprocess.run(['localectl', 'list-x11-keymap-layouts'], stdout=subprocess.PIPE)
         # entries = iter(result.stdout.splitlines())
