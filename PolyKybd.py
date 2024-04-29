@@ -31,14 +31,14 @@ class PolyKybd():
     def __init__(self):
         self.log = logging.getLogger('PolyKybd')
         self.all_languages = list()
-        self.keeb = None
+        self.hid = None
 
     def getLogHandler(self):
         return self.log
 
     def connect(self):
         # Conect to Keeb
-        if not self.keeb:
+        if not self.hid:
             self.hid = HidHelper.HidHelper(0x2021, 0x2007)
         else:
             self.log.info("Reconnecting to PolyKybd...")
@@ -96,12 +96,12 @@ class PolyKybd():
         if result == False:
             return False, "Could not receive language list."
 
-        reply = reply.decode()
+        reply = reply.decode().strip('\x00')
         lang_str = ""
         while result and len(reply) > 3:
             lang_str = f"{lang_str},{reply[3:]}"
             result, reply = self.hid.read_raw_report(100)
-            reply = reply.decode()
+            reply = reply.decode().strip('\x00')
 
         self.all_languages = list(filter(None, lang_str.split(",")))
         return True, lang_str

@@ -8,7 +8,7 @@ class HidHelper:
     def __del__(self):
         if self.interface:
             self.interface.close()
-            
+
     def __init__(self, vid, pid):
         self.pid = pid
         self.vid = vid
@@ -37,9 +37,9 @@ class HidHelper:
             result = self.interface.write(request_report)
         except Exception as e:
             return False, f"Exception: {e}"
-            
+
         return True, result
-    
+
     def read_raw_report(self, timeout):
 
         if self.interface is None:
@@ -49,6 +49,5 @@ class HidHelper:
             response_report = self.interface.read(report_length, timeout=timeout)
         except Exception as e:
             return False, f"Exception: {e}"
-            
-        return True, response_report
 
+        return True, response_report
