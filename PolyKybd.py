@@ -41,9 +41,9 @@ class PolyKybd():
         if not self.hid:
             self.hid = HidHelper.HidHelper(0x2021, 0x2007)
         else:
-            self.log.info("Reconnecting to PolyKybd...")
             result, msg = self.queryId()
             if result == False:
+                self.log.info("Reconnecting to PolyKybd...")
                 self.hid = HidHelper.HidHelper(0x2021, 0x2007)
         return self.hid.interface_aquired()
 
