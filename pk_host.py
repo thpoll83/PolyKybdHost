@@ -81,7 +81,7 @@ class PolyKybdHost(QApplication):
         briMenu.addAction(action)
 
         action = QAction(QIcon("icons/backlight_low.svg"), "1%", parent=self)
-        action.setData(1)
+        action.setData(2)
         action.triggered.connect(self.set_brightness)
         briMenu.addAction(action)
 

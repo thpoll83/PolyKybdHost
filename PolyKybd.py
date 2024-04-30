@@ -79,18 +79,27 @@ class PolyKybd():
         return self.hid.send_raw_report(compose_cmd(Cmd.ENABLE_OVERLAYS, 0))
 
     def set_brightness(self, brightness):
-        self.log.info(f"Setting Display Brightness to {brightness}..")
+        self.log.info(f"Setting Display Brightness to {brightness}...")
         return self.hid.send_raw_report(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
 
-    def press_key(self, keycode, duration):
+    def press_and_release_key(self, keycode, duration):
         self.log.info(f"Pressing {keycode} for {duration} sec...")
-        result, msg = self.hid.send_raw_report(compose_cmd(Cmd.KEYPRESS, keycode))
+        result, msg = self.hid.send_raw_report(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255))
         if result:
             # for now, it is fine to block this thread
             time.sleep(duration)
-            return self.hid.send_raw_report(compose_cmd(Cmd.KEYRELEASE, keycode))
+            return self.hid.send_raw_report(compose_cmd(Cmd.KEYRELEASE, keycode >> 8, keycode & 255))
         else:
             return result, msg
+
+    def press_key(self, keycode):
+        self.log.info(f"Pressing {keycode}...")
+        return self.hid.send_raw_report(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255))
+
+    def release_key(self, keycode):
+        self.log.info(f"Releasing {keycode}...")
+        return self.hid.send_raw_report(compose_cmd(Cmd.KEYRELEASE, keycode >> 8, keycode & 255))
+
 
     def query_current_lang(self):
         self.log.info("Query Languages...")
