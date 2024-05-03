@@ -1,3 +1,5 @@
+import threading
+
 import hid
 
 usage_page    = 0xFF60
@@ -12,6 +14,7 @@ class HidHelper:
     def __init__(self, vid, pid):
         self.pid = pid
         self.vid = vid
+        self.lock = threading.RLock()
 
         device_interfaces = hid.enumerate(vid, pid)
         raw_hid_interfaces = [i for i in device_interfaces if i['usage_page'] == usage_page and i['usage'] == usage]
@@ -24,7 +27,7 @@ class HidHelper:
     def interface_aquired(self):
         return self.interface != None
 
-    def send_raw_report(self, data):
+    def send(self, data):
 
         if self.interface is None:
             return False, "No Interface"
@@ -34,20 +37,38 @@ class HidHelper:
         request_report = bytes(request_data)
 
         try:
-            result = self.interface.write(request_report)
+            with self.lock:
+                result = self.interface.write(request_report)
         except Exception as e:
             return False, f"Exception: {e}"
 
         return True, result
 
-    def read_raw_report(self, timeout):
-
+    def read(self, timeout):
         if self.interface is None:
             return False, "No Interface"
 
         try:
-            response_report = self.interface.read(report_length, timeout=timeout)
+            with self.lock:
+                response_report = self.interface.read(report_length, timeout=timeout)
         except Exception as e:
             return False, f"Exception: {e}"
 
-        return True, response_report
+        return True, response_report.decode().strip('\x00')
+
+    def send_and_read(self, data, timeout):
+        if self.interface is None:
+            return False, "No Interface"
+
+        request_data = [0x00] * (report_length + 1) # First byte is Report ID
+        request_data[1:len(data) + 1] = data
+        request_report = bytes(request_data)
+
+        try:
+            with self.lock:
+                self.interface.write(request_report)
+                response_report = self.interface.read(report_length, timeout=timeout)
+        except Exception as e:
+            return False, f"Exception: {e}"
+
+        return True, response_report.decode().strip('\x00')

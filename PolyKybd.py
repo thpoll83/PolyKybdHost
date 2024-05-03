@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 from enum import Enum
 
@@ -9,28 +10,27 @@ import ImageConverter
 
 
 class Cmd(Enum):
-    GET_ID = 0
-    GET_LANG = 1
-    GET_LANG_LIST = 2
-    CHANGE_LANG = 3
-    SEND_OVERLAY = 4
-    RESET_OVERLAYS = 5
-    ENABLE_OVERLAYS = 6
-    SET_BRIGHTNESS = 7
-    KEYPRESS = 8
-    KEYRELEASE = 9
+    GET_ID = 6
+    GET_LANG = 7
+    GET_LANG_LIST = 8
+    CHANGE_LANG = 9
+    SEND_OVERLAY = 10
+    OVERLAY_FLAGS_ON = 11
+    OVERLAY_FLAGS_OFF = 12
+    SET_BRIGHTNESS = 13
+    KEYPRESS = 14
+    IDLE_STATE = 15
 
 
 def compose_cmd(cmd, extra1=None, extra2=None, extra3=None):
-    c = cmd.value + 30
-    if extra3 != None:
-        return bytearray.fromhex(f"09{c:02}3a{extra1:02x}{extra2:02x}{extra3:02x}")
-    elif extra2 != None:
-        return bytearray.fromhex(f"09{c:02}3a{extra1:02x}{extra2:02x}")
-    elif extra1 != None:
-        return bytearray.fromhex(f"09{c:02}3a{extra1:02x}")
+    if extra3 is not None:
+        return bytearray.fromhex(f"09{cmd.value:02x}3a{extra1:02x}{extra2:02x}{extra3:02x}")
+    elif extra2 is not None:
+        return bytearray.fromhex(f"09{cmd.value:02x}3a{extra1:02x}{extra2:02x}")
+    elif extra1 is not None:
+        return bytearray.fromhex(f"09{cmd.value:02x}3a{extra1:02x}")
     else:
-        return bytearray.fromhex(f"09{c:02}")
+        return bytearray.fromhex(f"09{cmd.value:02x}")
 
 
 class PolyKybd():
@@ -43,7 +43,7 @@ class PolyKybd():
         self.all_languages = list()
         self.hid = None
 
-    def getLogHandler(self):
+    def get_log_handler(self):
         return self.log
 
     def connect(self):
@@ -51,90 +51,107 @@ class PolyKybd():
         if not self.hid:
             self.hid = HidHelper.HidHelper(0x2021, 0x2007)
         else:
-            result, msg = self.queryId()
-            if result == False:
+            result, msg = self.query_id()
+            if not result:
                 self.log.info("Reconnecting to PolyKybd...")
                 self.hid = HidHelper.HidHelper(0x2021, 0x2007)
         return self.hid.interface_aquired()
 
-    def queryId(self):
-        result, msg = self.hid.send_raw_report(compose_cmd(Cmd.GET_ID))
+    def query_id(self):
+        try:
+            result, msg = self.hid.send_and_read(compose_cmd(Cmd.GET_ID), 1000)
+            return result, msg if not result else msg[3:]
+        except Exception as e:
+            return False, f"Exception: {e}"
 
-        if result == True:
-            success, reply = self.hid.read_raw_report(1000)
-            return success, reply.decode()[3:]
+    def query_version_info(self):
+        result, msg = self.query_id()
+        if not result:
+            return False, msg
+        try:
+            match = re.search(r"(?P<name>.+)\W(?P<sw>\d\.\d\.\d)\WHW(?P<hw>\w*)", msg)
+            if match:
+                self.name = match.group("name")
+                self.sw_version = match.group("sw")
+                self.hw_version = match.group("hw")
+                return True, msg
+            else:
+                self.log.warning(f"Could not match version string: {msg}")
+                return False, "Could not match version string. Please update firmware."
+        except Exception as e:
+            self.log.warning(f"Exception matching version string '{msg}':\n{e}")
+            return False, "Could not match version string. Please update firmware."
 
-        return False, f"Not connected ({msg})"
+    def get_name(self):
+        return self.name
+
+    def get_sw_version(self):
+        return self.sw_version
+
+    def get_hw_version(self):
+        return self.hw_version
 
     def reset_overlays(self):
         self.log.info("Reset Overlays...")
-        return self.hid.send_raw_report(compose_cmd(Cmd.RESET_OVERLAYS))
+        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON), 0x20)
 
     def enable_overlays(self):
         self.log.info("Enable Overlays...")
-        return self.hid.send_raw_report(compose_cmd(Cmd.ENABLE_OVERLAYS, 1))
+        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x01))
 
     def disable_overlays(self):
         self.log.info("Disable Overlays...")
-        return self.hid.send_raw_report(compose_cmd(Cmd.ENABLE_OVERLAYS, 0))
+        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
 
     def set_brightness(self, brightness):
         self.log.info(f"Setting Display Brightness to {brightness}...")
-        return self.hid.send_raw_report(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
+        return self.hid.send(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
 
     def press_and_release_key(self, keycode, duration):
         self.log.info(f"Pressing {keycode} for {duration} sec...")
-        result, msg = self.hid.send_raw_report(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255))
+        result, msg = self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255))
         if result:
             # for now, it is fine to block this thread
             time.sleep(duration)
-            return self.hid.send_raw_report(compose_cmd(Cmd.KEYRELEASE, keycode >> 8, keycode & 255))
+            return self.hid.send(compose_cmd(Cmd.KEYRELEASE, keycode >> 8, keycode & 255))
         else:
             return result, msg
 
     def press_key(self, keycode):
         self.log.info(f"Pressing {keycode}...")
-        return self.hid.send_raw_report(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255))
+        return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
 
     def release_key(self, keycode):
         self.log.info(f"Releasing {keycode}...")
-        return self.hid.send_raw_report(compose_cmd(Cmd.KEYRELEASE, keycode >> 8, keycode & 255))
+        return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
 
-
+    def set_idle(self, idle):
+        self.log.info(f"Settings idle state to {idle}...")
+        return self.hid.send(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
     def query_current_lang(self):
         self.log.info("Query Languages...")
-        result, msg = self.hid.send_raw_report(compose_cmd(Cmd.GET_LANG))
-        if result == True:
-            success, reply = self.hid.read_raw_report(100)
-            if success:
-                return True, reply.decode()[3:]
-            else:
-                return False, "Could not read reply from PolyKybd"
-        return False, f"Could not send request ({msg})"
+
+        result, msg = self.hid.send_and_read(compose_cmd(Cmd.GET_LANG), 100)
+        if result:
+            return True, msg[3:]
+        else:
+            return False, "Could not read reply from PolyKybd"
 
     def enumerate_lang(self):
         self.log.info("Enumerate Languages...")
         result, msg = self.query_current_lang()
-        if result == False:
+        if not result:
             return False, msg
 
         self.current_lang = msg
-        result, msg = self.hid.send_raw_report(compose_cmd(Cmd.GET_LANG_LIST))
+        result, reply = self.hid.send_and_read(compose_cmd(Cmd.GET_LANG_LIST), 100)
 
-        if result == False:
-            return False, f"Could not send langauge query ({msg})"
-
-        result, reply = self.hid.read_raw_report(100)
-
-        if result == False:
+        if not result:
             return False, "Could not receive language list."
-
-        reply = reply.decode().strip('\x00')
         lang_str = ""
         while result and len(reply) > 3:
             lang_str = f"{lang_str},{reply[3:]}"
-            result, reply = self.hid.read_raw_report(100)
-            reply = reply.decode().strip('\x00')
+            result, reply = self.hid.read(100)
 
         self.all_languages = list(filter(None, lang_str.split(",")))
         return True, lang_str
@@ -153,19 +170,18 @@ class PolyKybd():
             - result (:py:class:`bool`) True on successful language change.
             - lang_code (:py:class:`str`) The two letter language code as str in use.
         """
-        self.log.info(f"Change Language to {lang}...")
         if type(lang) is str:
             if lang in self.all_languages:
                 lang = self.all_languages.index(lang)
             else:
                 return False, f"Language '{lang}' not present on PolyKybd"
 
-        result, msg = self.hid.send_raw_report(compose_cmd(Cmd.CHANGE_LANG, lang))
-        if result == False:
+        result, msg = self.hid.send_and_read(compose_cmd(Cmd.CHANGE_LANG, lang), 100)
+        if not result:
             return False, f"Could not change to {self.all_languages[lang]} ({msg})"
 
-        success, reply = self.hid.read_raw_report(100)
-        return success, self.all_languages[lang]
+        self.log.info(f"Language changed to {self.all_languages[lang]} ({msg}).")
+        return True, self.all_languages[lang]
 
     def send_overlay(self, filename):
         self.log.info(f"Send Overlay '{filename}'...")
@@ -193,10 +209,10 @@ class PolyKybd():
                     bmp = overlaymap[keycode]
                     for i in range(0, NUM_MSGS):
                         self.log.debug(f"Sending msg {i + 1} of {NUM_MSGS}.")
-                        result, msg = self.hid.send_raw_report(
+                        result, msg = self.hid.send(
                             compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, i) + bmp[i * BYTES_PER_MSG:(
                                                                                                                       i + 1) * BYTES_PER_MSG])
-                        if result == False:
+                        if not result:
                             return False, f"Error sending overlay message {i + 1}/{NUM_MSGS} ({msg})"
                 all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
                 self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")

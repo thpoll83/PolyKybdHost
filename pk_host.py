@@ -39,28 +39,39 @@ class PolyKybdHost(QApplication):
         tray.setVisible(True)
 
         # Create the menu
-        menu = QMenu()
-        menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}");
+        self.menu = QMenu()
+        self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}");
 
         self.keeb = PolyKybd()
-        self.keeb.connect()
-        result, msg = self.keeb.queryId()
+        self.connected = False
+        self.paused = False
+        self.status = QAction(QIcon("icons/sync.svg"), "Waiting for PolyKybd...", parent=self)
+        self.status.setToolTip("Press to pause connection")
+        self.status.triggered.connect(self.pause)
+        self.exit = QAction(QIcon("icons/power.svg"), "Quit", parent=self)
+        self.exit.triggered.connect(self.quit)
+        self.support = QAction(QIcon("icons/support.svg"), "Get Support", parent=self)
+        self.support.triggered.connect(self.open_support)
+        self.about = QAction(QIcon("icons/home.svg"), "About", parent=self)
+        self.about.triggered.connect(self.open_about)
+        self.reconnect()
 
-        if result == True:
-            self.status = QAction(QIcon("icons/sync.svg"), f"Connected to: {msg}", parent=self)
-            self.status.setData(True)
-            self.status.triggered.connect(self.reconnect)
-            menu.addAction(self.status)
-            self.add_supported_lang(menu)
-        else:
-            self.status = QAction(QIcon("icons/sync_disabled.svg"), msg, parent=self)
-            self.status.setData(False)
-            self.status.triggered.connect(self.reconnect)
-            menu.addAction(self.status)
+        self.menu.addAction(self.status)
+        self.add_supported_lang(self.menu)
 
-        langMenu = menu.addMenu(QIcon("icons/language.svg"), "Change System Input Language")
+        langMenu = self.menu.addMenu(QIcon("icons/language.svg"), "Change System Input Language")
 
-        cmdMenu = menu.addMenu(QIcon("icons/settings.svg"), "All PolyKybd Commands")
+        cmdMenu = self.menu.addMenu(QIcon("icons/settings.svg"), "All PolyKybd Commands")
+
+        action = QAction(QIcon("icons/toggle_off.svg"), "Stop Idle", parent=self)
+        action.setData(False)
+        action.triggered.connect(self.change_idle)
+        cmdMenu.addAction(action)
+
+        action = QAction(QIcon("icons/toggle_on.svg"), "Start Idle", parent=self)
+        action.setData(True)
+        action.triggered.connect(self.change_idle)
+        cmdMenu.addAction(action)
 
         action = QAction(QIcon("icons/delete.svg"), "Reset Overlays Buffers", parent=self)
         action.triggered.connect(self.reset_overlays)
@@ -95,26 +106,17 @@ class PolyKybdHost(QApplication):
         action.triggered.connect(self.set_brightness)
         briMenu.addAction(action)
 
-
         action = QAction(QIcon("icons/overlays.svg"), "Send Shortcut Overlay...", parent=self)
         action.triggered.connect(self.send_shortcuts)
-        menu.addAction(action)
+        self.menu.addAction(action)
 
         action = QAction(QIcon("icons/via.png"), "Configure Keymap (VIA)", parent=self)
         action.triggered.connect(self.open_via)
-        menu.addAction(action)
+        self.menu.addAction(action)
 
-        action = QAction(QIcon("icons/support.svg"), "Get Support", parent=self)
-        action.triggered.connect(self.open_support)
-        menu.addAction(action)
-
-        action = QAction(QIcon("icons/home.svg"), "About", parent=self)
-        action.triggered.connect(self.open_about)
-        menu.addAction(action)
-
-        quit = QAction(QIcon("icons/power.svg"), "Quit", parent=self)
-        quit.triggered.connect(self.quit)
-        menu.addAction(quit)
+        self.menu.addAction(self.support)
+        self.menu.addAction(self.about)
+        self.menu.addAction(self.exit)
 
         self.helper = None
         if platform.system() == "Windows":
@@ -132,9 +134,18 @@ class PolyKybdHost(QApplication):
             print(f"Enumerating input language {e}")
             langMenu.addAction(e, self.change_system_language)
 
+        self.managed_connection_status()
         # Add the menu to the tray
-        tray.setContextMenu(menu)
+        tray.setContextMenu(self.menu)
         tray.show()
+
+    def managed_connection_status(self):
+        for action in self.menu.actions():
+            action.setEnabled(self.connected and not self.paused)
+        self.status.setEnabled(True)
+        self.support.setEnabled(True)
+        self.about.setEnabled(True)
+        self.exit.setEnabled(True)
 
     def show_mb(self, title, msg, result=False):
         if not result:
@@ -144,19 +155,35 @@ class PolyKybdHost(QApplication):
             msg.setIcon(QMessageBox.Warning if title == "Error" else QMessageBox.Information)
             msg.exec_()
 
-    def reconnect(self):
-        result = self.keeb.connect()
+    def pause(self):
+        self.paused = not self.paused
+        if self.paused:
+            self.status.setText(f"Reconnect")
+            self.connected = False
+            self.status.setToolTip("")
+        else:
+            self.status.setToolTip("Press to pause connection")
+        self.managed_connection_status()
 
-        if result != self.status.data():
-            result, msg = self.keeb.queryId()
-            if result == True:
-                self.status.setIcon(QIcon("icons/sync.svg"))
-                self.status.setText(f"Connected to: {msg}")
-                self.status.setData(True)
-            else:
-                self.status.setIcon(QIcon("icons/sync_disabled.svg"))
-                self.status.setText(msg)
-                self.status.setData(False)
+    def reconnect(self):
+        if not self.paused:
+            result = self.keeb.connect()
+
+            if result != self.connected:
+                self.connected, msg = self.keeb.query_version_info()
+                if self.connected:
+                    if self.keeb.get_sw_version() == "0.5.2":
+                        self.status.setIcon(QIcon("icons/sync.svg"))
+                        self.status.setText(f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({self.keeb.get_sw_version()})")
+
+                    else:
+                        self.status.setIcon(QIcon("icons/sync_disabled.svg"))
+                        self.status.setText(f"Incompatible version: {msg}")
+                        self.connected = False
+                else:
+                    self.status.setIcon(QIcon("icons/sync_disabled.svg"))
+                    self.status.setText(msg)
+            self.managed_connection_status()
 
     def add_supported_lang(self, menu):
         result, msg = self.keeb.enumerate_lang()
@@ -206,6 +233,10 @@ class PolyKybdHost(QApplication):
     def set_brightness(self):
         result, msg = self.keeb.set_brightness(self.sender().data())
         self.show_mb("Error", f"Failed disabling overlays: {msg}", result)
+
+    def change_idle(self):
+        result, msg = self.keeb.set_idle(self.sender().data())
+        self.show_mb("Error", f"Failed to change idle mode: {msg}", result)
 
     def change_keeb_language(self):
         lang = self.sender().data()
