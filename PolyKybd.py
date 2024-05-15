@@ -21,6 +21,12 @@ class Cmd(Enum):
     KEYPRESS = 14
     IDLE_STATE = 15
 
+class MaskFlag(Enum):
+    LEFT_TOP = 2
+    LEFT_BOTTOM = 4
+    RIGHT_TOP = 8
+    RIGHT_BOTTOM = 16
+
 
 def compose_cmd(cmd, extra1=None, extra2=None, extra3=None):
     if extra3 is not None:
@@ -54,7 +60,11 @@ class PolyKybd():
             result, msg = self.query_id()
             if not result:
                 self.log.info("Reconnecting to PolyKybd...")
-                self.hid = HidHelper.HidHelper(0x2021, 0x2007)
+                try:
+                    self.hid = HidHelper.HidHelper(0x2021, 0x2007)
+                except Exception as e:
+                    self.log.warning(f"Could not reconnect: {e}")
+                    return False
         return self.hid.interface_aquired()
 
     def query_id(self):
@@ -183,6 +193,10 @@ class PolyKybd():
         self.log.info(f"Language changed to {self.all_languages[lang]} ({msg}).")
         return True, self.all_languages[lang]
 
+    def set_overlay_masking(self, flags, set):
+        cmd = Cmd.OVERLAY_FLAGS_ON if set else Cmd.OVERLAY_FLAGS_OFF
+        return self.hid.send(compose_cmd(cmd, 0x1e))
+
     def send_overlay(self, filename):
         self.log.info(f"Send Overlay '{filename}'...")
         converter = ImageConverter.ImageConverter()
@@ -218,5 +232,6 @@ class PolyKybd():
                 self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
                 counter = counter + 1
         if counter > 0:
+            #self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x1e))
             self.enable_overlays()
         return True, f"{counter} overlays sent."

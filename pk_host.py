@@ -1,17 +1,20 @@
 import os
 import platform
 import logging
+import re
 import sys
 import webbrowser
 
 import pywinctl as pwc
+import yaml
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog, QProxyStyle, \
     QStyle, QWidgetAction, QSlider
 
+from CommandsSubMenu import CommandsSubMenu
 from LinuxXInputHelper import LinuxXInputHelper
-from PolyKybd import PolyKybd
+from PolyKybd import PolyKybd, MaskFlag
 from WindowsInputHelper import WindowsInputHelper
 from MacOSInputHelper import MacOSInputHelper
 
@@ -61,50 +64,8 @@ class PolyKybdHost(QApplication):
 
         langMenu = self.menu.addMenu(QIcon("icons/language.svg"), "Change System Input Language")
 
-        cmdMenu = self.menu.addMenu(QIcon("icons/settings.svg"), "All PolyKybd Commands")
-
-        action = QAction(QIcon("icons/toggle_off.svg"), "Stop Idle", parent=self)
-        action.setData(False)
-        action.triggered.connect(self.change_idle)
-        cmdMenu.addAction(action)
-
-        action = QAction(QIcon("icons/toggle_on.svg"), "Start Idle", parent=self)
-        action.setData(True)
-        action.triggered.connect(self.change_idle)
-        cmdMenu.addAction(action)
-
-        action = QAction(QIcon("icons/delete.svg"), "Reset Overlays Buffers", parent=self)
-        action.triggered.connect(self.reset_overlays)
-        cmdMenu.addAction(action)
-
-        action = QAction(QIcon("icons/toggle_on.svg"), "Enable Shortcut Overlays", parent=self)
-        action.triggered.connect(self.enable_overlays)
-        cmdMenu.addAction(action)
-
-        action = QAction(QIcon("icons/toggle_off.svg"), "Disable Shortcut Overlays", parent=self)
-        action.triggered.connect(self.disable_overlays)
-        cmdMenu.addAction(action)
-
-        briMenu = cmdMenu.addMenu("Change Brightness")
-        action = QAction(QIcon("icons/backlight_high_off.svg"), "Off", parent=self)
-        action.setData(0)
-        action.triggered.connect(self.set_brightness)
-        briMenu.addAction(action)
-
-        action = QAction(QIcon("icons/backlight_low.svg"), "1%", parent=self)
-        action.setData(2)
-        action.triggered.connect(self.set_brightness)
-        briMenu.addAction(action)
-
-        action = QAction(QIcon("icons/backlight_high.svg"), "50%", parent=self)
-        action.setData(25)
-        action.triggered.connect(self.set_brightness)
-        briMenu.addAction(action)
-
-        action = QAction(QIcon("icons/backlight_high.svg"), "100%", parent=self)
-        action.setData(50)
-        action.triggered.connect(self.set_brightness)
-        briMenu.addAction(action)
+        self.cmdMenu = CommandsSubMenu(self, self.keeb)
+        self.cmdMenu.buildMenu(self.menu)
 
         action = QAction(QIcon("icons/overlays.svg"), "Send Shortcut Overlay...", parent=self)
         action.triggered.connect(self.send_shortcuts)
@@ -138,6 +99,23 @@ class PolyKybdHost(QApplication):
         # Add the menu to the tray
         tray.setContextMenu(self.menu)
         tray.show()
+
+        self.mapping = {}
+        self.currentMappingEntry = None
+        self.enable_mapping = True
+        self.read_overlay_mapping_file("overlay-mapping.poly.yaml")
+        # self.mapping["Inkscape"] = dict(app="inkscape", title=".*Inkscape",
+        #                                 overlay="overlays/inkscape_template.mods.png")
+        # self.mapping["Gimp"] = dict(app="gimp-2.*",
+        #                             overlay="overlays/gimp_template.png")
+        # self.mapping["KiCad PcbNew"] = dict(app="kicad", title="PCB Editor",
+        #                                     overlay="overlays/kicad_pcb_template.png")
+        # self.save_overlay_mapping_file()
+
+        timer = QTimer(self)
+        timer.timeout.connect(self.activeWindowReporter)
+        timer.timeout.connect(self.reconnect)
+        timer.start(2000)
 
     def managed_connection_status(self):
         for action in self.menu.actions():
@@ -174,7 +152,8 @@ class PolyKybdHost(QApplication):
                 if self.connected:
                     if self.keeb.get_sw_version() == "0.5.2":
                         self.status.setIcon(QIcon("icons/sync.svg"))
-                        self.status.setText(f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({self.keeb.get_sw_version()})")
+                        self.status.setText(
+                            f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({self.keeb.get_sw_version()})")
 
                     else:
                         self.status.setIcon(QIcon("icons/sync_disabled.svg"))
@@ -204,7 +183,7 @@ class PolyKybdHost(QApplication):
         webbrowser.open("https://ko-fi.com/polykb", new=0, autoraise=True)
 
     def send_shortcuts(self):
-        fname = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *jpeg)")
+        fname = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
         if len(fname) > 0:
             self.keeb.send_overlay(fname[0])
         else:
@@ -218,26 +197,6 @@ class PolyKybdHost(QApplication):
         else:
             self.log.info(f"Change input language to '{lang}'.")
 
-    def reset_overlays(self):
-        result, msg = self.keeb.reset_overlays()
-        self.show_mb("Error", f"Failed clearing overlays: {msg}", result)
-
-    def enable_overlays(self):
-        result, msg = self.keeb.enable_overlays()
-        self.show_mb("Error", f"Failed enabling overlays: {msg}", result)
-
-    def disable_overlays(self):
-        result, msg = self.keeb.disable_overlays()
-        self.show_mb("Error", f"Failed disabling overlays: {msg}", result)
-
-    def set_brightness(self):
-        result, msg = self.keeb.set_brightness(self.sender().data())
-        self.show_mb("Error", f"Failed disabling overlays: {msg}", result)
-
-    def change_idle(self):
-        result, msg = self.keeb.set_idle(self.sender().data())
-        self.show_mb("Error", f"Failed to change idle mode: {msg}", result)
-
     def change_keeb_language(self):
         lang = self.sender().data()
         result, msg = self.keeb.change_language(lang)
@@ -246,25 +205,65 @@ class PolyKybdHost(QApplication):
         else:
             self.keeb_lang_menu.setTitle(f"Could not set {lang}: {msg}")
 
+    def read_overlay_mapping_file(self, file):
+        if not file:
+            file = QFileDialog.getOpenFileName(None, 'Open file', '', "PolyKybd overlay mapping (*.poly.yaml)")
+        if len(file) > 0:
+            with open(file, 'r') as f:
+                self.mapping = yaml.load(f, Loader=yaml.FullLoader)
+        else:
+            self.log.info("No file selected. Operation canceled.")
+
+    def save_overlay_mapping_file(self, filename="overlay-mapping.poly.yaml"):
+        with open(filename, 'w') as f:
+            f.write(yaml.dump(self.mapping))
+
     def activeWindowReporter(self):
+        #try:
         win = pwc.getActiveWindow()
         if win:
             if self.win is None or win.getHandle() != self.win.getHandle():
                 self.win = win
-                self.log.info(
-                    f"Active App Changed: \"{self.win.getAppName()}\", Title: \"{self.win.title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
+                if self.enable_mapping:
+                    app = self.win.getAppName()
+                    title = self.win.title
+                    self.log.info(
+                        f"Active App Changed: \"{app}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
+                    if self.enable_mapping and self.mapping:
+                        for name, entry in self.mapping.items():
+                            try:
+                                match = ("overlay" in entry.keys()) and (
+                                            "app" in entry.keys() or "title" in entry.keys())
+                                if match and "app" in entry:
+                                    match = match and re.search(entry["app"], app)
+                                if match and "title" in entry:
+                                    match = match and re.search(entry["title"], title)
+                                if match:
+                                    self.cmdMenu.disable_overlays()
+                                    self.keeb.send_overlay(entry["overlay"])
+                                    self.log.info(f"Found overlay {entry['overlay']} for {name}")
+                                    self.currentMappingEntry = entry
+                                    return
+                            except:
+                                self.log.warning(f"Cannot match entry '{name}': {entry}")
+                        if self.currentMappingEntry:
+                            self.cmdMenu.disable_overlays()
+                            self.currentMappingEntry = None
+
         else:
             if self.win:
                 self.log.info("No active window")
                 self.win = None
+                if self.enable_mapping and self.currentMappingEntry:
+                    self.cmdMenu.disable_overlays()
+                    self.currentMappingEntry = None
+
+
+    #except Exception as e:
+    #    self.log.warning(f"Failed to report active window: {e}")
 
 
 if __name__ == '__main__':
     app = PolyKybdHost()
     print("Executing PolyKybd Host...")
-    timer = QTimer(app)
-    timer.timeout.connect(app.activeWindowReporter)
-    timer.timeout.connect(app.reconnect)
-    timer.start(1000)
-
     sys.exit(app.exec_())

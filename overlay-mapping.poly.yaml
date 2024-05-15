@@ -1,0 +1,11 @@
+Gimp:
+  overlay: overlays/gimp_template.png
+  app: gimp-2.*
+Inkscape:
+  overlay: overlays/inkscape_template.mods.png
+  app: inkscape.*
+  title: .*Inkscape
+KiCad PcbNew:
+  overlay: overlays/kicad_pcb_template.png
+  app: kicad.*
+  title: PCB Editor
