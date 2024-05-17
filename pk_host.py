@@ -1,6 +1,6 @@
+import logging
 import os
 import platform
-import logging
 import re
 import sys
 import webbrowser
@@ -9,14 +9,13 @@ import pywinctl as pwc
 import yaml
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog, QProxyStyle, \
-    QStyle, QWidgetAction, QSlider
+from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
 
 from CommandsSubMenu import CommandsSubMenu
 from LinuxXInputHelper import LinuxXInputHelper
-from PolyKybd import PolyKybd, MaskFlag
-from WindowsInputHelper import WindowsInputHelper
 from MacOSInputHelper import MacOSInputHelper
+from PolyKybd import PolyKybd
+from WindowsInputHelper import WindowsInputHelper
 
 
 class PolyKybdHost(QApplication):
@@ -102,6 +101,7 @@ class PolyKybdHost(QApplication):
 
         self.mapping = {}
         self.currentMappingEntry = None
+        self.lastMappingEntry = None
         self.enable_mapping = True
         self.read_overlay_mapping_file("overlay-mapping.poly.yaml")
         # self.mapping["Inkscape"] = dict(app="inkscape", title=".*Inkscape",
@@ -219,7 +219,7 @@ class PolyKybdHost(QApplication):
             f.write(yaml.dump(self.mapping))
 
     def activeWindowReporter(self):
-        #try:
+        # try:
         win = pwc.getActiveWindow()
         if win:
             if self.win is None or win.getHandle() != self.win.getHandle():
@@ -231,21 +231,28 @@ class PolyKybdHost(QApplication):
                         f"Active App Changed: \"{app}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
                     if self.enable_mapping and self.mapping:
                         for name, entry in self.mapping.items():
+                            match = ("overlay" in entry.keys()) and (
+                                    "app" in entry.keys() or "title" in entry.keys())
                             try:
-                                match = ("overlay" in entry.keys()) and (
-                                            "app" in entry.keys() or "title" in entry.keys())
                                 if match and "app" in entry:
                                     match = match and re.search(entry["app"], app)
                                 if match and "title" in entry:
                                     match = match and re.search(entry["title"], title)
-                                if match:
+                            except:
+                                self.log.warning(f"Cannot match entry '{name}': {entry}")
+                            if match:
+                                if self.lastMappingEntry == entry:
+                                    self.cmdMenu.enable_overlays()
+                                    self.currentMappingEntry = entry
+                                else:
                                     self.cmdMenu.disable_overlays()
+                                    self.cmdMenu.reset_overlays()
                                     self.keeb.send_overlay(entry["overlay"])
                                     self.log.info(f"Found overlay {entry['overlay']} for {name}")
                                     self.currentMappingEntry = entry
-                                    return
-                            except:
-                                self.log.warning(f"Cannot match entry '{name}': {entry}")
+                                    self.lastMappingEntry = entry
+                                self.keeb.set_idle(False)
+                                return
                         if self.currentMappingEntry:
                             self.cmdMenu.disable_overlays()
                             self.currentMappingEntry = None
@@ -258,8 +265,7 @@ class PolyKybdHost(QApplication):
                     self.cmdMenu.disable_overlays()
                     self.currentMappingEntry = None
 
-
-    #except Exception as e:
+    # except Exception as e:
     #    self.log.warning(f"Failed to report active window: {e}")
 
 

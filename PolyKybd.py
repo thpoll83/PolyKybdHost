@@ -103,7 +103,7 @@ class PolyKybd():
 
     def reset_overlays(self):
         self.log.info("Reset Overlays...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON), 0x20)
+        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x20))
 
     def enable_overlays(self):
         self.log.info("Enable Overlays...")

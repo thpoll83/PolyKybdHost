@@ -9,3 +9,7 @@ KiCad PcbNew:
   overlay: overlays/kicad_pcb_template.png
   app: kicad.*
   title: PCB Editor
+VS Code:
+  overlay: overlays/vscode_template.mods.png
+  app: code.*
+  title: .* Visual Studio Code

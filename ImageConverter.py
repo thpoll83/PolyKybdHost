@@ -1,8 +1,10 @@
 import logging
 
-import imageio.v3 as iio
 import numpy as np
 from enum import Enum
+
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QImage
 
 
 # from matplotlib import pyplot as plt
@@ -27,53 +29,63 @@ class ImageConverter:
         self.image = {}
 
     def open(self, filename):
+        pixmap = QPixmap()
         try:
-            im = iio.imread(filename)
-            if ".mods." in filename:
-                channels = im.shape[-1]
-                if ".combo.mods." in filename:
-                    key_a = Modifier.GUI_KEY
-                    key_r = Modifier.CTRL_SHIFT
-                    key_g = Modifier.CTRL_ALT
-                    key_b = Modifier.ALT_SHIFT
-                else:
-                    key_a = Modifier.NO_MOD
-                    key_r = Modifier.CTRL
-                    key_g = Modifier.ALT
-                    key_b = Modifier.SHIFT
-                if channels == 3:
-                    [b, g, r] = np.dsplit(im, im.shape[-1])
-                    self.image[key_r] = np.array(r, dtype=bool)
-                    self.image[key_g] = np.array(g, dtype=bool)
-                    self.image[key_b] = np.array(b, dtype=bool)
-                    self.h, self.w, _ = self.image[Modifier.NO_MOD].shape
-                    # plt.imshow(self.image[Modifier.SHIFT])
-                    # plt.show()
-                    self.log.info(f"Loaded 3 channels from {filename}: {self.w}x{self.h}")
-                elif channels == 4:
-                    [b, g, r, a] = np.dsplit(im, im.shape[-1])
-                    self.image[key_a] = np.array(a, dtype=bool)
-                    self.image[key_r] = np.array(r, dtype=bool)
-                    self.image[key_g] = np.array(g, dtype=bool)
-                    self.image[key_b] = np.array(b, dtype=bool)
-                    self.h, self.w, _ = self.image[Modifier.NO_MOD].shape
-                    # plt.imshow(self.image[Modifier.SHIFT])
-                    # plt.show()
-                    self.log.info(f"Loaded 4 channels from {filename}: {self.w}x{self.h}")
-                else:
-                    self.log.error(f"Cannot handle {channels} image channels.")
-                    return False
-            else:
-                # convert the image to b/w
-                self.image[Modifier.NO_MOD] = np.array(np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
-                                                       dtype=bool)
-                self.h, self.w = self.image[Modifier.NO_MOD].shape
-                # plt.imshow(self.image[Modifier.NO_MOD])
-                # plt.show()
-                self.log.info(f"Loaded {filename}: {self.w}x{self.h}")
+            pixmap.load(filename, "", Qt.NoFormatConversion)
         except:
             self.log.info("Couldn't read overlay")
             return False
+
+        if ".mods." in filename:
+            #channels = im.shape[-1]
+            if ".combo.mods." in filename:
+                key_a = Modifier.GUI_KEY
+                key_r = Modifier.CTRL_SHIFT
+                key_g = Modifier.CTRL_ALT
+                key_b = Modifier.ALT_SHIFT
+            else:
+                key_a = Modifier.NO_MOD
+                key_r = Modifier.CTRL
+                key_g = Modifier.ALT
+                key_b = Modifier.SHIFT
+            if not pixmap.hasAlphaChannel():
+                qimage = pixmap.toImage()
+                im = np.ndarray((qimage.height(), qimage.width(), 3), buffer=qimage.constBits(),
+                                   strides=[qimage.bytesPerLine(), 3, 1], dtype=np.uint8)
+                [b, g, r] = np.dsplit(im, im.shape[-1])
+                self.image[key_r] = np.array(r, dtype=bool)
+                self.image[key_g] = np.array(g, dtype=bool)
+                self.image[key_b] = np.array(b, dtype=bool)
+                self.h, self.w, _ = self.image[Modifier.NO_MOD].shape
+                # plt.imshow(self.image[Modifier.SHIFT])
+                # plt.show()
+                self.log.info(f"Loaded 3 channels from {filename}: {self.w}x{self.h}")
+            else:
+                qimage = pixmap.toImage()
+                # qimage = qimage.convertToFormat(QImage.Format_RGBA8888)
+                #
+                b = qimage.bits()
+                b.setsize(qimage.width() * qimage.height() * 4)
+
+                im = np.ndarray((qimage.height(), qimage.width(), 4), buffer=b,
+                                strides=[qimage.bytesPerLine(), 4, 1], dtype=np.uint8)
+                [b, g, r, a] = np.dsplit(im, im.shape[-1])
+                self.image[key_a] = np.array(a, dtype=bool)
+                self.image[key_r] = np.array(r, dtype=bool)
+                self.image[key_g] = np.array(g, dtype=bool)
+                self.image[key_b] = np.array(b, dtype=bool)
+                self.h, self.w, _ = self.image[Modifier.NO_MOD].shape
+                # plt.imshow(self.image[Modifier.SHIFT])
+                # plt.show()
+                self.log.info(f"Loaded 4 channels from {filename}: {self.w}x{self.h}")
+        else:
+            # convert the image to b/w
+            self.image[Modifier.NO_MOD] = np.array(np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
+                                                   dtype=bool)
+            self.h, self.w = self.image[Modifier.NO_MOD].shape
+            # plt.imshow(self.image[Modifier.NO_MOD])
+            # plt.show()
+            self.log.info(f"Loaded {filename}: {self.w}x{self.h}")
         return True
 
     def extract_overlays(self, modifier=Modifier.NO_MOD):
