@@ -7,7 +7,7 @@ import webbrowser
 
 import pywinctl as pwc
 import yaml
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
 
@@ -31,6 +31,7 @@ class PolyKybdHost(QApplication):
 
         self.setQuitOnLastWindowClosed(False)
         self.win = None
+        self.isClosing = False
 
         # Create the icon
         icon = QIcon(os.path.join(os.path.dirname(__file__), "icons/pcolor.png"))
@@ -51,7 +52,7 @@ class PolyKybdHost(QApplication):
         self.status.setToolTip("Press to pause connection")
         self.status.triggered.connect(self.pause)
         self.exit = QAction(QIcon("icons/power.svg"), "Quit", parent=self)
-        self.exit.triggered.connect(self.quit)
+        self.exit.triggered.connect(self.quit_app)
         self.support = QAction(QIcon("icons/support.svg"), "Get Support", parent=self)
         self.support.triggered.connect(self.open_support)
         self.about = QAction(QIcon("icons/home.svg"), "About", parent=self)
@@ -112,10 +113,7 @@ class PolyKybdHost(QApplication):
         #                                     overlay="overlays/kicad_pcb_template.png")
         # self.save_overlay_mapping_file()
 
-        timer = QTimer(self)
-        timer.timeout.connect(self.activeWindowReporter)
-        timer.timeout.connect(self.reconnect)
-        timer.start(2000)
+        QTimer.singleShot(1000, self.activeWindowReporter)
 
     def managed_connection_status(self):
         for action in self.menu.actions():
@@ -127,11 +125,11 @@ class PolyKybdHost(QApplication):
 
     def show_mb(self, title, msg, result=False):
         if not result:
-            msg = QMessageBox()
-            msg.setWindowTitle(title)
-            msg.setText(msg)
-            msg.setIcon(QMessageBox.Warning if title == "Error" else QMessageBox.Information)
-            msg.exec_()
+            mbox = QMessageBox()
+            mbox.setWindowTitle(title)
+            mbox.setText(msg)
+            mbox.setIcon(QMessageBox.Warning if title == "Error" else QMessageBox.Information)
+            mbox.exec_()
 
     def pause(self):
         self.paused = not self.paused
@@ -218,6 +216,36 @@ class PolyKybdHost(QApplication):
         with open(filename, 'w') as f:
             f.write(yaml.dump(self.mapping))
 
+    def quit_app(self):
+        self.isClosing = True
+        self.quit()
+
+    def tryToMatchWindow(self, name, entry, app, title):
+        match = ("overlay" in entry.keys()) and (
+                "app" in entry.keys() or "title" in entry.keys())
+        try:
+            if match and "app" in entry:
+                match = match and re.search(entry["app"], app)
+            if match and "title" in entry:
+                match = match and re.search(entry["title"], title)
+        except:
+            self.log.warning(f"Cannot match entry '{name}': {entry}")
+            return False
+        if match:
+            if self.lastMappingEntry == entry:
+                self.cmdMenu.enable_overlays()
+                self.currentMappingEntry = entry
+            else:
+                self.cmdMenu.disable_overlays()
+                self.cmdMenu.reset_overlays()
+                self.keeb.send_overlay(entry["overlay"])
+                #self.log.info(f"Found overlay {entry['overlay']} for {name}")
+                self.currentMappingEntry = entry
+                self.lastMappingEntry = entry
+            self.keeb.set_idle(False)
+            return True
+        return False
+
     def activeWindowReporter(self):
         # try:
         win = pwc.getActiveWindow()
@@ -230,33 +258,14 @@ class PolyKybdHost(QApplication):
                     self.log.info(
                         f"Active App Changed: \"{app}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
                     if self.enable_mapping and self.mapping:
+                        found = False
                         for name, entry in self.mapping.items():
-                            match = ("overlay" in entry.keys()) and (
-                                    "app" in entry.keys() or "title" in entry.keys())
-                            try:
-                                if match and "app" in entry:
-                                    match = match and re.search(entry["app"], app)
-                                if match and "title" in entry:
-                                    match = match and re.search(entry["title"], title)
-                            except:
-                                self.log.warning(f"Cannot match entry '{name}': {entry}")
-                            if match:
-                                if self.lastMappingEntry == entry:
-                                    self.cmdMenu.enable_overlays()
-                                    self.currentMappingEntry = entry
-                                else:
-                                    self.cmdMenu.disable_overlays()
-                                    self.cmdMenu.reset_overlays()
-                                    self.keeb.send_overlay(entry["overlay"])
-                                    self.log.info(f"Found overlay {entry['overlay']} for {name}")
-                                    self.currentMappingEntry = entry
-                                    self.lastMappingEntry = entry
-                                self.keeb.set_idle(False)
-                                return
-                        if self.currentMappingEntry:
+                            found = self.tryToMatchWindow(name, entry, app, title)
+                            if found:
+                                break
+                        if self.currentMappingEntry and not found:
                             self.cmdMenu.disable_overlays()
                             self.currentMappingEntry = None
-
         else:
             if self.win:
                 self.log.info("No active window")
@@ -264,6 +273,8 @@ class PolyKybdHost(QApplication):
                 if self.enable_mapping and self.currentMappingEntry:
                     self.cmdMenu.disable_overlays()
                     self.currentMappingEntry = None
+        if not self.isClosing:
+            QTimer.singleShot(500, self.activeWindowReporter)
 
     # except Exception as e:
     #    self.log.warning(f"Failed to report active window: {e}")

@@ -6,9 +6,6 @@ from enum import Enum
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QImage
 
-
-# from matplotlib import pyplot as plt
-
 class Modifier(Enum):
     NO_MOD = 0
     CTRL = 1
@@ -19,7 +16,6 @@ class Modifier(Enum):
     ALT_SHIFT = 6
     # CTRL_ALT_SHIFT = 7 #not supported for now
     GUI_KEY = 8
-
 
 class ImageConverter:
     def __init__(self):
@@ -37,7 +33,6 @@ class ImageConverter:
             return False
 
         if ".mods." in filename:
-            #channels = im.shape[-1]
             if ".combo.mods." in filename:
                 key_a = Modifier.GUI_KEY
                 key_r = Modifier.CTRL_SHIFT
@@ -62,8 +57,6 @@ class ImageConverter:
                 self.log.info(f"Loaded 3 channels from {filename}: {self.w}x{self.h}")
             else:
                 qimage = pixmap.toImage()
-                # qimage = qimage.convertToFormat(QImage.Format_RGBA8888)
-                #
                 b = qimage.bits()
                 b.setsize(qimage.width() * qimage.height() * 4)
 
@@ -75,10 +68,19 @@ class ImageConverter:
                 self.image[key_g] = np.array(g, dtype=bool)
                 self.image[key_b] = np.array(b, dtype=bool)
                 self.h, self.w, _ = self.image[Modifier.NO_MOD].shape
-                # plt.imshow(self.image[Modifier.SHIFT])
-                # plt.show()
                 self.log.info(f"Loaded 4 channels from {filename}: {self.w}x{self.h}")
         else:
+            if not pixmap.hasAlphaChannel():
+                qimage = pixmap.toImage()
+                im = np.ndarray((qimage.height(), qimage.width(), 3), buffer=qimage.constBits(),
+                                   strides=[qimage.bytesPerLine(), 3, 1], dtype=np.uint8)
+            else:
+                qimage = pixmap.toImage()
+                b = qimage.bits()
+                b.setsize(qimage.width() * qimage.height() * 4)
+
+                im = np.ndarray((qimage.height(), qimage.width(), 4), buffer=b,
+                                strides=[qimage.bytesPerLine(), 4, 1], dtype=np.uint8)
             # convert the image to b/w
             self.image[Modifier.NO_MOD] = np.array(np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
                                                    dtype=bool)
@@ -102,11 +104,9 @@ class ImageConverter:
                     topy = y * 40
                     bottomx = (x + 1) * 72
                     bottomy = (y + 1) * 40
-                    slice = self.image[modifier][topy:bottomy, topx:bottomx]
-                    if slice.any():
-                        overlays[keycode] = np.packbits(slice, axis=None).tobytes()
-                        # plt.imshow(slice)
-                        # plt.show()
+                    key_slice = self.image[modifier][topy:bottomy, topx:bottomx]
+                    if key_slice.any():
+                        overlays[keycode] = np.packbits(key_slice, axis=None).tobytes()
 
                     keycode = keycode + 1
                     if keycode == 84:  # skip keypad keycodes
@@ -116,5 +116,5 @@ class ImageConverter:
             self.log.info(f"Image data for modifier {modifier} overlay prepared.")
             return overlays
         else:
-            self.log.info(f"No image data for modifier {modifier} present.")
+            #self.log.info(f"No image data for modifier {modifier} present.")
             return None
