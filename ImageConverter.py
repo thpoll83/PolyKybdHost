@@ -28,6 +28,8 @@ class ImageConverter:
         pixmap = QPixmap()
         try:
             pixmap.load(filename, "", Qt.NoFormatConversion)
+            self.w = pixmap.width()
+            self.h = pixmap.height()
         except:
             self.log.info("Couldn't read overlay")
             return False
@@ -51,7 +53,6 @@ class ImageConverter:
                 self.image[key_r] = np.array(r, dtype=bool)
                 self.image[key_g] = np.array(g, dtype=bool)
                 self.image[key_b] = np.array(b, dtype=bool)
-                self.h, self.w, _ = self.image[Modifier.NO_MOD].shape
                 # plt.imshow(self.image[Modifier.SHIFT])
                 # plt.show()
                 self.log.info(f"Loaded 3 channels from {filename}: {self.w}x{self.h}")
@@ -67,7 +68,6 @@ class ImageConverter:
                 self.image[key_r] = np.array(r, dtype=bool)
                 self.image[key_g] = np.array(g, dtype=bool)
                 self.image[key_b] = np.array(b, dtype=bool)
-                self.h, self.w, _ = self.image[Modifier.NO_MOD].shape
                 self.log.info(f"Loaded 4 channels from {filename}: {self.w}x{self.h}")
         else:
             if not pixmap.hasAlphaChannel():
@@ -84,10 +84,14 @@ class ImageConverter:
             # convert the image to b/w
             self.image[Modifier.NO_MOD] = np.array(np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
                                                    dtype=bool)
-            self.h, self.w = self.image[Modifier.NO_MOD].shape
             # plt.imshow(self.image[Modifier.NO_MOD])
             # plt.show()
             self.log.info(f"Loaded {filename}: {self.w}x{self.h}")
+
+        #not supported for now
+        if Modifier.GUI_KEY in self.image:
+            self.image.pop(Modifier.GUI_KEY)
+
         return True
 
     def extract_overlays(self, modifier=Modifier.NO_MOD):

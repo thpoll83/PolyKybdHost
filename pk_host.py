@@ -238,7 +238,20 @@ class PolyKybdHost(QApplication):
             else:
                 self.cmdMenu.disable_overlays()
                 self.cmdMenu.reset_overlays()
-                self.keeb.send_overlay(entry["overlay"])
+                overlays = entry["overlay"]
+                if isinstance(overlays, str):
+                    try:
+                        self.keeb.send_overlay(overlays)
+                    except:
+                        self.log.warning(f"Failed to send overlay '{overlays}'")
+                else:
+                    self.keeb.disable_overlays()
+                    for o in overlays:
+                        try:
+                            self.keeb.send_overlay(o, False)
+                        except:
+                            self.log.warning(f"Failed to send overlay '{o}'")
+                    self.keeb.enable_overlays()
                 #self.log.info(f"Found overlay {entry['overlay']} for {name}")
                 self.currentMappingEntry = entry
                 self.lastMappingEntry = entry

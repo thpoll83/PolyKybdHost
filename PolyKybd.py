@@ -197,7 +197,7 @@ class PolyKybd():
         cmd = Cmd.OVERLAY_FLAGS_ON if set else Cmd.OVERLAY_FLAGS_OFF
         return self.hid.send(compose_cmd(cmd, 0x1e))
 
-    def send_overlay(self, filename):
+    def send_overlay(self, filename, on_off = True):
         self.log.info(f"Send Overlay '{filename}'...")
         converter = ImageConverter.ImageConverter()
         if not converter:
@@ -217,7 +217,7 @@ class PolyKybd():
             #it is okay if there is no overlay for a modifier
             if overlaymap:
                 self.log.debug(f"Sending overlays for modifier {modifier}.")
-                if counter == 0:
+                if on_off and counter == 0:
                     self.disable_overlays()
                 for keycode in overlaymap:
                     bmp = overlaymap[keycode]
@@ -231,7 +231,7 @@ class PolyKybd():
                 all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
                 self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
                 counter = counter + 1
-        if counter > 0:
+        if on_off and counter > 0:
             #self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x1e))
             self.enable_overlays()
         return True, f"{counter} overlays sent."

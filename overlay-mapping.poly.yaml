@@ -1,3 +1,6 @@
+Google Chrome:
+  overlay: overlays/chrome_template.mods.png
+  app: chrome.*
 Gimp:
   overlay: overlays/gimp_template.png
   app: gimp-2.*
@@ -10,6 +13,10 @@ KiCad PcbNew:
   app: kicad.*
   title: PCB Editor
 VS Code:
-  overlay: overlays/vscode_template.mods.png
+  overlay: [overlays/vscode_template.mods.png, overlays/vscode_template.combo.mods.png]
   app: code.*
   title: .* Visual Studio Code
+Jetbrains IDEs:
+  overlay: [overlays/jetbrains_template.mods.png, overlays/jetbrains_template.combo.mods.png]
+  app: java.*
+  title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
