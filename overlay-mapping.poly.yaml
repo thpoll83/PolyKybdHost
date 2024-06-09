@@ -2,8 +2,12 @@ Google Chrome:
   overlay: overlays/chrome_template.mods.png
   app: chrome.*
 Gimp:
-  overlay: overlays/gimp_template.png
+  overlay: overlays/gimp_template.mods.png
   app: gimp-2.*
+Zoom:
+  overlay: overlays/zoom_template.mods.png
+  app: zoom.*
+  title: Zoom Meeting
 Inkscape:
   overlay: overlays/inkscape_template.mods.png
   app: inkscape.*

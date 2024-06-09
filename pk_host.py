@@ -220,6 +220,9 @@ class PolyKybdHost(QApplication):
         self.isClosing = True
         self.quit()
 
+    def closeEvent(self, event):
+        self.cmdMenu.disable_overlays()
+
     def tryToMatchWindow(self, name, entry, app, title):
         match = ("overlay" in entry.keys()) and (
                 "app" in entry.keys() or "title" in entry.keys())
