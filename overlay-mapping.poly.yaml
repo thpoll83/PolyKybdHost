@@ -8,6 +8,9 @@ Zoom:
   overlay: overlays/zoom_template.mods.png
   app: zoom.*
   title: Zoom Meeting
+Discord:
+  overlay: overlays/discord_template.mods.png
+  app: Discord.*
 Inkscape:
   overlay: overlays/inkscape_template.mods.png
   app: inkscape.*

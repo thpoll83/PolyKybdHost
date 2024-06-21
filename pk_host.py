@@ -59,10 +59,11 @@ class PolyKybdHost(QApplication):
         self.about.triggered.connect(self.open_about)
         self.reconnect()
 
+        self.keeb_lang_menu = None
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
 
-        langMenu = self.menu.addMenu(QIcon("icons/language.svg"), "Change System Input Language")
+        lang_menu = self.menu.addMenu(QIcon("icons/language.svg"), "Change System Input Language")
 
         self.cmdMenu = CommandsSubMenu(self, self.keeb)
         self.cmdMenu.buildMenu(self.menu)
@@ -92,8 +93,8 @@ class PolyKybdHost(QApplication):
         entries = self.helper.getLanguages(self)
 
         for e in entries:
-            print(f"Enumerating input language {e}")
-            langMenu.addAction(e, self.change_system_language)
+            self.log.info(f"Enumerating input language {e}")
+            lang_menu.addAction(e, self.change_system_language)
 
         self.managed_connection_status()
         # Add the menu to the tray
@@ -125,11 +126,14 @@ class PolyKybdHost(QApplication):
 
     def show_mb(self, title, msg, result=False):
         if not result:
-            mbox = QMessageBox()
-            mbox.setWindowTitle(title)
-            mbox.setText(msg)
-            mbox.setIcon(QMessageBox.Warning if title == "Error" else QMessageBox.Information)
-            mbox.exec_()
+            if self.connected:
+                mbox = QMessageBox()
+                mbox.setWindowTitle(title)
+                mbox.setText(msg)
+                mbox.setIcon(QMessageBox.Warning if title == "Error" else QMessageBox.Information)
+                mbox.exec_()
+            else:
+                self.log.warning(f"{title}: {msg}")
 
     def pause(self):
         self.paused = not self.paused
@@ -164,20 +168,23 @@ class PolyKybdHost(QApplication):
 
     def add_supported_lang(self, menu):
         result, msg = self.keeb.enumerate_lang()
-        if result == True:
+        if result:
             self.keeb_lang_menu = menu.addMenu(f"Selected Language: {self.keeb.get_current_lang()}")
             all_languages = list(filter(None, msg.split(",")))
             for lang in all_languages:
                 item = self.keeb_lang_menu.addAction(lang, self.change_keeb_language)
                 item.setData(lang)
 
-    def open_via(self):
+    @staticmethod
+    def open_via():
         webbrowser.open("https://usevia.app", new=0, autoraise=True)
 
-    def open_support(self):
+    @staticmethod
+    def open_support():
         webbrowser.open("https://discord.gg/5eU48M79", new=0, autoraise=True)
 
-    def open_about(self):
+    @staticmethod
+    def open_about():
         webbrowser.open("https://ko-fi.com/polykb", new=0, autoraise=True)
 
     def send_shortcuts(self):
@@ -198,7 +205,7 @@ class PolyKybdHost(QApplication):
     def change_keeb_language(self):
         lang = self.sender().data()
         result, msg = self.keeb.change_language(lang)
-        if result == True:
+        if result:
             self.keeb_lang_menu.setTitle(f"Selected Language: {msg}")
         else:
             self.keeb_lang_menu.setTitle(f"Could not set {lang}: {msg}")
@@ -223,17 +230,18 @@ class PolyKybdHost(QApplication):
     def closeEvent(self, event):
         self.cmdMenu.disable_overlays()
 
-    def tryToMatchWindow(self, name, entry, app, title):
+    def tryToMatchWindow(self, name, entry, app_name, title):
         match = ("overlay" in entry.keys()) and (
                 "app" in entry.keys() or "title" in entry.keys())
         try:
-            if match and "app" in entry:
-                match = match and re.search(entry["app"], app)
-            if match and "title" in entry:
+            if app_name and match and "app" in entry:
+                match = match and re.search(entry["app"], app_name)
+            if title and match and "title" in entry:
                 match = match and re.search(entry["title"], title)
-        except:
-            self.log.warning(f"Cannot match entry '{name}': {entry}")
+        except re.error as e:
+            self.log.warning(f"Cannot match entry '{name}': {entry}, because '{e.msg}'@{e.pos} with '{e.pattern}'")
             return False
+
         if match:
             if self.lastMappingEntry == entry:
                 self.cmdMenu.enable_overlays()
@@ -255,7 +263,7 @@ class PolyKybdHost(QApplication):
                         except:
                             self.log.warning(f"Failed to send overlay '{o}'")
                     self.keeb.enable_overlays()
-                #self.log.info(f"Found overlay {entry['overlay']} for {name}")
+                # self.log.info(f"Found overlay {entry['overlay']} for {name}")
                 self.currentMappingEntry = entry
                 self.lastMappingEntry = entry
             self.keeb.set_idle(False)
@@ -263,32 +271,35 @@ class PolyKybdHost(QApplication):
         return False
 
     def activeWindowReporter(self):
-        # try:
-        win = pwc.getActiveWindow()
-        if win:
-            if self.win is None or win.getHandle() != self.win.getHandle():
-                self.win = win
-                if self.enable_mapping:
-                    app = self.win.getAppName()
-                    title = self.win.title
-                    self.log.info(
-                        f"Active App Changed: \"{app}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
-                    if self.enable_mapping and self.mapping:
-                        found = False
-                        for name, entry in self.mapping.items():
-                            found = self.tryToMatchWindow(name, entry, app, title)
-                            if found:
-                                break
-                        if self.currentMappingEntry and not found:
-                            self.cmdMenu.disable_overlays()
-                            self.currentMappingEntry = None
+        self.reconnect()
+        if self.connected:
+            win = pwc.getActiveWindow()
+            if win:
+                if self.win is None or win.getHandle() != self.win.getHandle():
+                    self.win = win
+                    if self.enable_mapping:
+                        name = self.win.getAppName()
+                        title = self.win.title
+                        self.log.info(
+                            f"Active App Changed: \"{name}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
+                        if self.enable_mapping and self.mapping:
+                            found = False
+                            for n, entry in self.mapping.items():
+                                found = self.tryToMatchWindow(n, entry, name, title)
+                                if found:
+                                    break
+                            if self.currentMappingEntry and not found:
+                                self.cmdMenu.disable_overlays()
+                                self.currentMappingEntry = None
+            else:
+                if self.win:
+                    self.log.info("No active window")
+                    self.win = None
+                    if self.enable_mapping and self.currentMappingEntry:
+                        self.cmdMenu.disable_overlays()
+                        self.currentMappingEntry = None
         else:
-            if self.win:
-                self.log.info("No active window")
-                self.win = None
-                if self.enable_mapping and self.currentMappingEntry:
-                    self.cmdMenu.disable_overlays()
-                    self.currentMappingEntry = None
+            self.win = None
         if not self.isClosing:
             QTimer.singleShot(500, self.activeWindowReporter)
 

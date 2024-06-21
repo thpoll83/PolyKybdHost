@@ -53,7 +53,7 @@ class PolyKybd():
         return self.log
 
     def connect(self):
-        # Conect to Keeb
+        # Connect to Keeb
         if not self.hid:
             self.hid = HidHelper.HidHelper(0x2021, 0x2007)
         else:
@@ -212,6 +212,7 @@ class PolyKybd():
         self.log.debug(f"BYTES_PER_MSG: {BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_MSGS: {NUM_MSGS}")
 
         counter = 0
+        lock = None
         for modifier in ImageConverter.Modifier:
             overlaymap = converter.extract_overlays(modifier)
             #it is okay if there is no overlay for a modifier
@@ -223,15 +224,18 @@ class PolyKybd():
                     bmp = overlaymap[keycode]
                     for i in range(0, NUM_MSGS):
                         self.log.debug(f"Sending msg {i + 1} of {NUM_MSGS}.")
-                        result, msg = self.hid.send(
-                            compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, i) + bmp[i * BYTES_PER_MSG:(
-                                                                                                                      i + 1) * BYTES_PER_MSG])
+                        cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, i)
+                        data = cmd + bmp[i * BYTES_PER_MSG:(i + 1) * BYTES_PER_MSG]
+                        result, msg, lock = self.hid.send_multiple(data, lock)
                         if not result:
                             return False, f"Error sending overlay message {i + 1}/{NUM_MSGS} ({msg})"
                 all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
                 self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
                 counter = counter + 1
+        if lock:
+            lock.release()
+
         if on_off and counter > 0:
-            #self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x1e))
+            # self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x1e))
             self.enable_overlays()
         return True, f"{counter} overlays sent."
