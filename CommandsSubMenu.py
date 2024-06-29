@@ -1,5 +1,6 @@
+import yaml
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QAction, QFileDialog
 
 from PolyKybd import MaskFlag
 
@@ -32,6 +33,10 @@ class CommandsSubMenu():
 
         action = QAction(QIcon("icons/toggle_off.svg"), "Disable Shortcut Overlays", parent=self.parent)
         action.triggered.connect(self.disable_overlays)
+        cmdMenu.addAction(action)
+
+        action = QAction("Load command file...", parent=self.parent)
+        action.triggered.connect(self.load_commands)
         cmdMenu.addAction(action)
 
         setOverlayMaskMenu = cmdMenu.addMenu("Set Overlay Masking")
@@ -124,3 +129,11 @@ class CommandsSubMenu():
     def clear_mask(self):
         result, msg = self.keeb.set_overlay_masking(self.parent.sender().data(), False)
         self.parent.show_mb("Error", f"Failed to change idle mode: {msg}", result)
+
+    def load_commands(self):
+        fname = QFileDialog.getOpenFileName(None, 'Open file', '', "PolyKybd commands (*.poly.cmd)")
+        if len(fname) > 0:
+            with open(fname[0], 'r') as f:
+                self.keeb.execute_commands(f.readlines())
+        else:
+            self.log.info("No file selected. Operation canceled.")

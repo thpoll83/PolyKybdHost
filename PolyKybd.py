@@ -21,6 +21,7 @@ class Cmd(Enum):
     KEYPRESS = 14
     IDLE_STATE = 15
 
+
 class MaskFlag(Enum):
     LEFT_TOP = 2
     LEFT_BOTTOM = 4
@@ -138,6 +139,7 @@ class PolyKybd():
     def set_idle(self, idle):
         self.log.info(f"Settings idle state to {idle}...")
         return self.hid.send(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
+
     def query_current_lang(self):
         self.log.info("Query Languages...")
 
@@ -197,7 +199,7 @@ class PolyKybd():
         cmd = Cmd.OVERLAY_FLAGS_ON if set else Cmd.OVERLAY_FLAGS_OFF
         return self.hid.send(compose_cmd(cmd, 0x1e))
 
-    def send_overlay(self, filename, on_off = True):
+    def send_overlay(self, filename, on_off=True):
         self.log.info(f"Send Overlay '{filename}'...")
         converter = ImageConverter.ImageConverter()
         if not converter:
@@ -239,3 +241,32 @@ class PolyKybd():
             # self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x1e))
             self.enable_overlays()
         return True, f"{counter} overlays sent."
+
+    def execute_commands(self, command_list):
+        for cmd_str in command_list:
+            cmd_str = cmd_str.strip()
+            end = cmd_str.find(" ")
+            cmd = cmd_str[:end] if end != -1 else cmd_str
+            try:
+                match cmd:
+                    case "wait":
+                        time.sleep(float(cmd_str[end + 1:]))
+                    case "press":
+                        self.press_key(int(cmd_str[end + 1:], 0))
+                    case "release":
+                        self.release_key(int(cmd_str[end + 1:], 0))
+                    case "overlay":
+                        params = cmd_str[end + 1:]
+                        end = params.find(" ")
+                        cmd = params[:end] if end != -1 else params
+                        match cmd:
+                            case "send":
+                                self.send_overlay(params[end + 1:])
+                            case "reset":
+                                self.reset_overlays()
+                            case _:
+                                self.log.warning(f"Unknown overlay command '{cmd}' from '{cmd_str}'")
+                    case _:
+                        self.log.warning(f"Unknown command '{cmd_str}'")
+            except Exception as e:
+                self.log.error(f"Couldn't not execute '{cmd_str}': {e}")
