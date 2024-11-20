@@ -4,7 +4,72 @@ if platform.system() == 'Windows':
     import ctypes
     import os 
     ctypes.CDLL(os.path.dirname(os.path.realpath(__file__)) + '\\win-hidapi-0-14\\hidapi.dll')
-import hid
+try:
+    import hid
+except ImportError:
+    print("""Library hidapi missing. Please Install:
+
+    Arch Linux
+    ==========
+    Binary distributions are available in the community repository.
+
+    Enable the community repository in /etc/pacman.conf
+    [community]
+    Include = /etc/pacman.d/mirrorlist
+    Install hidapi
+    pacman -Sy hidapi
+  
+    CentOS/RHEL
+    ===========
+    Binary distributions are available through EPEL.
+
+    yum install hidapi
+
+    Fedora
+    ======
+    Binary distributions are available.
+
+    dnf install hidapi
+
+    Ubuntu/Debian
+    =============
+    Binary distributions are available.
+
+    apt install libhidapi-hidraw0
+    or
+
+    apt install libhidapi-libusb0
+
+    Others
+    ======
+    Binary distributions may be available in your package repositories.
+    If not, you can build from source as described in the libusb/hidapi README.
+
+    Windows
+    =======
+    Installation procedure for Windows is described in the libusb/hidapi README.
+
+    Binary distributions are provided by libusb/hidapi
+
+    OSX
+    ===
+    There are currently no official binary distributions for Mac,
+    so you must build hidapi yourself.
+
+    Installation instructions are described in the libusb/hidapi README.
+
+    You can also use brew:
+
+    brew install hidapi
+
+    FreeBSD
+    =======
+    Binary distributions are available.
+
+    pkg install -g 'py3*-hid'
+    """)
+    raise
+    
 
 usage_page    = 0xFF60
 usage         = 0x61
