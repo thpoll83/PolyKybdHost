@@ -280,8 +280,13 @@ class PolyKybdHost(QApplication):
                     if self.enable_mapping:
                         name = self.win.getAppName()
                         title = self.win.title
-                        self.log.info(
-                            f"Active App Changed: \"{name}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
+                        
+                        if platform.system() == 'Windows':
+                            self.log.info(
+                                f"Active App Changed: \"{name}\", Title: \"{title}\"  Handle: {self.win.getHandle()}")
+                        else:
+                            self.log.info(
+                                f"Active App Changed: \"{name}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
                         if self.enable_mapping and self.mapping:
                             found = False
                             for n, entry in self.mapping.items():
