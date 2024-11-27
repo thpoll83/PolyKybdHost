@@ -1,0 +1,3 @@
+press 0x7e00
+wait 1
+release 0x7e00

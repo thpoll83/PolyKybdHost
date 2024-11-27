@@ -1,0 +1,15 @@
+press 0x00e2
+wait 1
+press 0x522b
+wait 2
+press 0x0018
+wait 2
+release 0x0018
+wait 2
+press 0x7e15
+wait 2
+release 0x7e15
+wait 1
+release 0x522b
+wait 1
+release 0x00e2

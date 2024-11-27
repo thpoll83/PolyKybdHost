@@ -278,24 +278,27 @@ class PolyKybdHost(QApplication):
                 if self.win is None or win.getHandle() != self.win.getHandle():
                     self.win = win
                     if self.enable_mapping:
-                        name = self.win.getAppName()
-                        title = self.win.title
-                        
-                        if platform.system() == 'Windows':
-                            self.log.info(
-                                f"Active App Changed: \"{name}\", Title: \"{title}\"  Handle: {self.win.getHandle()}")
-                        else:
-                            self.log.info(
-                                f"Active App Changed: \"{name}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
-                        if self.enable_mapping and self.mapping:
-                            found = False
-                            for n, entry in self.mapping.items():
-                                found = self.tryToMatchWindow(n, entry, name, title)
-                                if found:
-                                    break
-                            if self.currentMappingEntry and not found:
-                                self.cmdMenu.disable_overlays()
-                                self.currentMappingEntry = None
+                        try:
+                            name = self.win.getAppName()
+                            title = self.win.title
+                            
+                            if platform.system() == 'Windows':
+                                self.log.info(
+                                    f"Active App Changed: \"{name}\", Title: \"{title}\"  Handle: {self.win.getHandle()}")
+                            else:
+                                self.log.info(
+                                    f"Active App Changed: \"{name}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
+                            if self.enable_mapping and self.mapping:
+                                found = False
+                                for n, entry in self.mapping.items():
+                                    found = self.tryToMatchWindow(n, entry, name, title)
+                                    if found:
+                                        break
+                                if self.currentMappingEntry and not found:
+                                    self.cmdMenu.disable_overlays()
+                                    self.currentMappingEntry = None
+                        except Exception as e:
+                            self.log.warning(f"Failed retrieving active window: {e}")
             else:
                 if self.win:
                     self.log.info("No active window")
