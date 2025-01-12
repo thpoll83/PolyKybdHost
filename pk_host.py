@@ -5,14 +5,20 @@ import re
 import sys
 import webbrowser
 
-import pywinctl as pwc
+IS_PLASMA = os.getenv('XDG_CURRENT_DESKTOP')=="KDE"
+
+if not IS_PLASMA:
+    import pywinctl as pwc
+
 import yaml
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
 
+
 from CommandsSubMenu import CommandsSubMenu
 from LinuxXInputHelper import LinuxXInputHelper
+from LinuxPlasmaHelper import LinuxPlasmaHelper
 from MacOSInputHelper import MacOSInputHelper
 from PolyKybd import PolyKybd
 from WindowsInputHelper import WindowsInputHelper
@@ -84,13 +90,16 @@ class PolyKybdHost(QApplication):
         if platform.system() == "Windows":
             self.helper = WindowsInputHelper
         elif platform.system() == "Linux":
-            self.helper = LinuxXInputHelper
+            if IS_PLASMA:
+                self.helper = LinuxPlasmaHelper
+            else:
+                self.helper = LinuxXInputHelper
         elif platform.system() == "Darwin":
             self.helper = MacOSInputHelper
 
         # result = subprocess.run(['localectl', 'list-x11-keymap-layouts'], stdout=subprocess.PIPE)
         # entries = iter(result.stdout.splitlines())
-        entries = self.helper.getLanguages(self)
+        entries = self.helper.getLanguages(self.helper)
 
         for e in entries:
             self.log.info(f"Enumerating input language {e}")

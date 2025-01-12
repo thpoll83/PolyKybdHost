@@ -1,7 +1,6 @@
 PyQt5
 hid==1.0.6
 NumPy
-bitstring
 PyWinCtl==0.4
 pynput
 PyYAML
