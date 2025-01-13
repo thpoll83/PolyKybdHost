@@ -4,7 +4,6 @@ import platform
 import re
 import sys
 import webbrowser
-
 IS_PLASMA = os.getenv('XDG_CURRENT_DESKTOP')=="KDE"
 
 if not IS_PLASMA:
@@ -12,7 +11,7 @@ if not IS_PLASMA:
 
 import yaml
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QCursor, QPalette, QColor
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
 
 
@@ -43,9 +42,9 @@ class PolyKybdHost(QApplication):
         icon = QIcon(os.path.join(os.path.dirname(__file__), "icons/pcolor.png"))
 
         # Create the tray
-        tray = QSystemTrayIcon(parent=self)
-        tray.setIcon(icon)
-        tray.setVisible(True)
+        self.tray = QSystemTrayIcon(parent=self)
+        self.tray.setIcon(icon)
+        self.tray.setVisible(True)
 
         # Create the menu
         self.menu = QMenu()
@@ -107,8 +106,9 @@ class PolyKybdHost(QApplication):
 
         self.managed_connection_status()
         # Add the menu to the tray
-        tray.setContextMenu(self.menu)
-        tray.show()
+        self.tray.activated.connect(self.on_activated)
+        self.tray.setContextMenu(self.menu)
+        self.tray.show()
 
         self.mapping = {}
         self.currentMappingEntry = None
@@ -123,8 +123,37 @@ class PolyKybdHost(QApplication):
         #                                     overlay="overlays/kicad_pcb_template.png")
         # self.save_overlay_mapping_file()
 
+        self.setStyle("Fusion")
+        # Now use a palette to switch to dark colors:
+        palette = QPalette()
+        baseColor = QColor(35, 35, 35)
+        windowBaseColor = QColor(99, 99, 99)
+        textColor = QColor(150, 150, 150)
+        highlightTextColor = QColor(255, 255, 255)
+        palette.setColor(QPalette.Window, windowBaseColor)
+        palette.setColor(QPalette.WindowText, textColor)
+        palette.setColor(QPalette.Base, baseColor)
+        palette.setColor(QPalette.AlternateBase, windowBaseColor)
+        palette.setColor(QPalette.ToolTipBase, baseColor)
+        palette.setColor(QPalette.ToolTipText, textColor)
+        palette.setColor(QPalette.Text,textColor)
+        palette.setColor(QPalette.Button, windowBaseColor)
+        palette.setColor(QPalette.ButtonText, textColor)
+        palette.setColor(QPalette.BrightText, Qt.red)
+        palette.setColor(QPalette.Link, QColor(42, 130, 218))
+        palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+        palette.setColor(QPalette.HighlightedText, highlightTextColor)
+        self.setPalette(palette)
+            
         QTimer.singleShot(1000, self.activeWindowReporter)
 
+    def on_activated(self, i_reason):
+        if i_reason == QSystemTrayIcon.Trigger:
+            if not self.menu.isVisible():
+                self.menu.popup(QCursor.pos())
+            else:
+                self.menu.hide()
+                    
     def managed_connection_status(self):
         for action in self.menu.actions():
             action.setEnabled(self.connected and not self.paused)
