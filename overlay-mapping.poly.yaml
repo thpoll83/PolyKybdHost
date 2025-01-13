@@ -3,7 +3,7 @@ Google Chrome:
   app: chrome.*
 Gimp:
   overlay: overlays/gimp_template.mods.png
-  app: gimp-(2|3).*
+  app: gimp.*
 Zoom:
   overlay: overlays/zoom_template.mods.png
   app: (Z|z)oom.*
@@ -29,4 +29,6 @@ Jetbrains IDEs:
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
 Jetbrains CLion:
   overlay: [overlays/jetbrains_template.mods.png, overlays/jetbrains_template.combo.mods.png]
-  app: clion64.*
+  app: (clion)|(jetbrains_client).*
+Visual Studio:
+  app: devenv\.exe
