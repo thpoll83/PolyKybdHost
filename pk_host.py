@@ -22,6 +22,8 @@ from MacOSInputHelper import MacOSInputHelper
 from PolyKybd import PolyKybd
 from WindowsInputHelper import WindowsInputHelper
 
+def sort_by_country_abc(item):
+    return item[2:]
 
 class PolyKybdHost(QApplication):
     def __init__(self):
@@ -186,7 +188,7 @@ class PolyKybdHost(QApplication):
     def reconnect(self):
         if not self.paused:
             result = self.keeb.connect()
-
+             
             if result != self.connected:
                 self.connected, msg = self.keeb.query_version_info()
                 if self.connected:
@@ -194,6 +196,9 @@ class PolyKybdHost(QApplication):
                         self.status.setIcon(QIcon("icons/sync.svg"))
                         self.status.setText(
                             f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({self.keeb.get_sw_version()})")
+                        success, current_lang = self.keeb.query_current_lang()
+                        if success:
+                            self.update_ui_on_lang_change(current_lang)
 
                     else:
                         self.status.setIcon(QIcon("icons/sync_disabled.svg"))
@@ -218,7 +223,7 @@ class PolyKybdHost(QApplication):
             current = self.keeb.get_current_lang()
             self.keeb_lang_menu = menu.addMenu(f"Selected Language: {current[:2]} {self.langcode_to_flag(current[2:])}")
 
-            all_languages = self.keeb.get_lang_list()
+            all_languages = sorted(self.keeb.get_lang_list(), key=sort_by_country_abc)
             for lang in all_languages:
                 text = f"{lang[:2]} {self.langcode_to_flag(lang[2:])}"
                 if lang == current:
@@ -227,12 +232,14 @@ class PolyKybdHost(QApplication):
                 item.setData(lang)
                 
     def update_ui_on_lang_change(self, new_lang):
-        for action in self.keeb_lang_menu.actions():
-            lang = action.data()
-            text = f"{lang[:2]} {self.langcode_to_flag(lang[2:])}"
-            if lang == new_lang:
-                text = f"{text} {chr(0x2714)}"
-            action.setText(text)
+        if hasattr(self, 'keeb_lang_menu'):
+            self.keeb_lang_menu.setTitle(f"Selected Language: {new_lang[:2]} {self.langcode_to_flag(new_lang[2:])}")
+            for action in self.keeb_lang_menu.actions():
+                lang = action.data()
+                text = f"{lang[:2]} {self.langcode_to_flag(lang[2:])}"
+                if lang == new_lang:
+                    text = f"{text} {chr(0x2714)}"
+                action.setText(text)
         
     @staticmethod
     def open_via():
@@ -264,8 +271,7 @@ class PolyKybdHost(QApplication):
     def change_keeb_language(self):
         lang = self.sender().data()
         result, msg = self.keeb.change_language(lang)
-        if result:
-            self.keeb_lang_menu.setTitle(f"Selected Language: {msg[:2]} {self.langcode_to_flag(msg[2:])}")
+        if result and msg==lang:            
             self.update_ui_on_lang_change(lang)
         else:
             self.keeb_lang_menu.setTitle(f"Could not set {lang}: {msg}")

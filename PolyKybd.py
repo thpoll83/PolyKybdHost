@@ -154,7 +154,8 @@ class PolyKybd():
 
         result, msg = self.hid.send_and_read(compose_cmd(Cmd.GET_LANG), 100)
         if result:
-            return True, msg[3:]
+            self.current_lang = msg[3:]
+            return True, self.current_lang
         else:
             return False, "Could not read reply from PolyKybd"
 
@@ -163,8 +164,7 @@ class PolyKybd():
         result, msg = self.query_current_lang()
         if not result:
             return False, msg
-
-        self.current_lang = msg
+        
         result, reply = self.hid.send_and_read(compose_cmd(Cmd.GET_LANG_LIST), 100)
 
         if not result:
