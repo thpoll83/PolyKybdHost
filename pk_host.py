@@ -190,7 +190,7 @@ class PolyKybdHost(QApplication):
             if result != self.connected:
                 self.connected, msg = self.keeb.query_version_info()
                 if self.connected:
-                    if self.keeb.get_sw_version() == "0.5.2":
+                    if self.keeb.get_sw_version() == "0.5.3":
                         self.status.setIcon(QIcon("icons/sync.svg"))
                         self.status.setText(
                             f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({self.keeb.get_sw_version()})")
@@ -204,15 +204,36 @@ class PolyKybdHost(QApplication):
                     self.status.setText(msg)
             self.managed_connection_status()
 
+
+    def langcode_to_flag(self, lang_code):
+        result = ""
+        for ch in lang_code:
+            num = 0x1F1E6 + ord(ch.upper()) - ord('A')
+            result = f"{result}{chr(num)}"
+        return result
+        
     def add_supported_lang(self, menu):
         result, msg = self.keeb.enumerate_lang()
         if result:
-            self.keeb_lang_menu = menu.addMenu(f"Selected Language: {self.keeb.get_current_lang()}")
-            all_languages = list(filter(None, msg.split(",")))
-            for lang in all_languages:
-                item = self.keeb_lang_menu.addAction(lang, self.change_keeb_language)
-                item.setData(lang)
+            current = self.keeb.get_current_lang()
+            self.keeb_lang_menu = menu.addMenu(f"Selected Language: {current[:2]} {self.langcode_to_flag(current[2:])}")
 
+            all_languages = self.keeb.get_lang_list()
+            for lang in all_languages:
+                text = f"{lang[:2]} {self.langcode_to_flag(lang[2:])}"
+                if lang == current:
+                    text = f"{text} {chr(0x2714)}"
+                item = self.keeb_lang_menu.addAction(text, self.change_keeb_language)
+                item.setData(lang)
+                
+    def update_ui_on_lang_change(self, new_lang):
+        for action in self.keeb_lang_menu.actions():
+            lang = action.data()
+            text = f"{lang[:2]} {self.langcode_to_flag(lang[2:])}"
+            if lang == new_lang:
+                text = f"{text} {chr(0x2714)}"
+            action.setText(text)
+        
     @staticmethod
     def open_via():
         webbrowser.open("https://usevia.app", new=0, autoraise=True)
@@ -244,7 +265,8 @@ class PolyKybdHost(QApplication):
         lang = self.sender().data()
         result, msg = self.keeb.change_language(lang)
         if result:
-            self.keeb_lang_menu.setTitle(f"Selected Language: {msg}")
+            self.keeb_lang_menu.setTitle(f"Selected Language: {msg[:2]} {self.langcode_to_flag(msg[2:])}")
+            self.update_ui_on_lang_change(lang)
         else:
             self.keeb_lang_menu.setTitle(f"Could not set {lang}: {msg}")
 

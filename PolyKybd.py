@@ -28,7 +28,11 @@ class MaskFlag(Enum):
     RIGHT_TOP = 8
     RIGHT_BOTTOM = 16
 
-
+def compose_cmd_str(cmd, text):
+    b = bytearray.fromhex(f"09{cmd.value:02x}")
+    b.extend(text.encode())
+    return b
+    
 def compose_cmd(cmd, extra1=None, extra2=None, extra3=None):
     if extra3 is not None:
         return bytearray.fromhex(f"09{cmd.value:02x}3a{extra1:02x}{extra2:02x}{extra3:02x}")
@@ -38,6 +42,11 @@ def compose_cmd(cmd, extra1=None, extra2=None, extra3=None):
         return bytearray.fromhex(f"09{cmd.value:02x}3a{extra1:02x}")
     else:
         return bytearray.fromhex(f"09{cmd.value:02x}")
+
+
+def split_by_n_chars(text, n):
+    return [text[i:i+n] for i in range(0, len(text), n)]
+
 
 
 class PolyKybd():
@@ -162,10 +171,10 @@ class PolyKybd():
             return False, "Could not receive language list."
         lang_str = ""
         while result and len(reply) > 3:
-            lang_str = f"{lang_str},{reply[3:]}"
+            lang_str = f"{lang_str}{reply[3:]}"
             result, reply = self.hid.read(100)
 
-        self.all_languages = list(filter(None, lang_str.split(",")))
+        self.all_languages = split_by_n_chars(lang_str, 4)
         return True, lang_str
 
     def get_lang_list(self):
@@ -177,23 +186,20 @@ class PolyKybd():
     def change_language(self, lang):
         """
         Send command to change the language to the specified index
-        :param lang: The index or a two letter str which must be in the list of languages.
+        :param lang: 4 letter str which must be in the list of languages.
         :return:
             - result (:py:class:`bool`) True on successful language change.
-            - lang_code (:py:class:`str`) The two letter language code as str in use.
+            - lang_code (:py:class:`str`) The 4 letter language code as str in use.
         """
-        if type(lang) is str:
-            if lang in self.all_languages:
-                lang = self.all_languages.index(lang)
-            else:
-                return False, f"Language '{lang}' not present on PolyKybd"
+        if lang not in self.all_languages:
+            return False, f"Language '{lang}' not present on PolyKybd"
 
-        result, msg = self.hid.send_and_read(compose_cmd(Cmd.CHANGE_LANG, lang), 100)
+        result, msg = self.hid.send_and_read(compose_cmd_str(Cmd.CHANGE_LANG, lang), 100)
         if not result:
-            return False, f"Could not change to {self.all_languages[lang]} ({msg})"
+            return False, f"Could not change to {lang} ({msg})"
 
-        self.log.info(f"Language changed to {self.all_languages[lang]} ({msg}).")
-        return True, self.all_languages[lang]
+        self.log.info(f"Language changed to {lang} ({msg}).")
+        return True, lang
 
     def set_overlay_masking(self, flags, set):
         cmd = Cmd.OVERLAY_FLAGS_ON if set else Cmd.OVERLAY_FLAGS_OFF
