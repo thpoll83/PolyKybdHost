@@ -29,7 +29,7 @@ class MaskFlag(Enum):
     RIGHT_BOTTOM = 16
 
 def compose_cmd_str(cmd, text):
-    b = bytearray.fromhex(f"09{cmd.value:02x}")
+    b = bytearray.fromhex(f"09{cmd.value:02x}3a")
     b.extend(text.encode())
     return b
     
