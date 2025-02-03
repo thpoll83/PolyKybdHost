@@ -1,6 +1,10 @@
 Google Chrome:
   overlay: overlays/chrome_template.mods.png
   app: chrome.*
+  titles:
+    Miro:
+      title: .*- Miro -.*
+      overlay: overlays/miro_template.mods.png
 Gimp:
   overlay: overlays/gimp_template.mods.png
   app: gimp.*

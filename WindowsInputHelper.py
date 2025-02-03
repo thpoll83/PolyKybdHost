@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 
 
 class WindowsInputHelper():
@@ -8,7 +9,10 @@ class WindowsInputHelper():
         langCodes = []
         entries = iter(result.stdout.splitlines())
         for e in entries:
-            e = str(e, encoding='utf-8')
+            try:
+                e = str(e, encoding='utf-8')
+            except UnicodeDecodeError:
+                e = str(e)
             if e.startswith('LanguageTag'):
                 langCodes.append(e.split(":")[-1].strip())
         return langCodes

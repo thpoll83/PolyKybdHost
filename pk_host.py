@@ -192,17 +192,24 @@ class PolyKybdHost(QApplication):
             if result != self.connected:
                 self.connected, msg = self.keeb.query_version_info()
                 if self.connected:
-                    if self.keeb.get_sw_version() == "0.5.3":
-                        self.status.setIcon(QIcon("icons/sync.svg"))
-                        self.status.setText(
-                            f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({self.keeb.get_sw_version()})")
+                    kbVersion = self.keeb.get_sw_version()
+                    expected = "0.5.3"
+                    if kbVersion.startswith(expected[:3]):
+                        if kbVersion != expected:
+                            self.log.warning(f"Warning! Minor version mismatch, expected {expected}, got {kbVersion}'.")
+                            self.status.setIcon(QIcon("icons/sync_problem.svg"))
+                            self.status.setText(
+                                f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kbVersion}, please update to {expected}!)")
+                        else:
+                            self.status.setIcon(QIcon("icons/sync.svg"))
+                            self.status.setText(
+                                f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kbVersion})")
                         success, current_lang = self.keeb.query_current_lang()
                         if success:
                             self.update_ui_on_lang_change(current_lang)
-
                     else:
                         self.status.setIcon(QIcon("icons/sync_disabled.svg"))
-                        self.status.setText(f"Incompatible version: {msg}")
+                        self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kbVersion}'.")
                         self.connected = False
                 else:
                     self.status.setIcon(QIcon("icons/sync_disabled.svg"))
@@ -296,12 +303,17 @@ class PolyKybdHost(QApplication):
     def closeEvent(self, event):
         self.cmdMenu.disable_overlays()
 
-    def tryToMatchWindow(self, name, entry, app_name, title):
+    def tryToMatchWindow(self, name, entry, appName, title):
         match = ("overlay" in entry.keys()) and (
                 "app" in entry.keys() or "title" in entry.keys())
         try:
-            if app_name and match and "app" in entry:
-                match = match and re.search(entry["app"], app_name)
+            if appName and match and "app" in entry:
+                match = match and re.search(entry["app"], appName)
+                if match:
+                    if "titles" in entry.keys():
+                        for subentryName, subentry in entry["titles"].items():
+                            if self.tryToMatchWindow(subentryName, subentry, appName, title):
+                                return True
             if title and match and "title" in entry:
                 match = match and re.search(entry["title"], title)
         except re.error as e:
@@ -340,24 +352,26 @@ class PolyKybdHost(QApplication):
         self.reconnect()
         if self.connected:
             win = pwc.getActiveWindow()
+            #self.log.info(f"App : \"{win.getAppName()}\", Title: \"{win.title}\"  Handle: {win.getHandle()}")
             if win:
-                if self.win is None or win.getHandle() != self.win.getHandle():
+                if self.win is None or win.getHandle() != self.win.getHandle() or win.title != self.title:
                     self.win = win
+                    self.title = win.title
                     if self.enable_mapping:
                         try:
-                            name = self.win.getAppName()
+                            appName = self.win.getAppName()
                             title = self.win.title
                             
                             if platform.system() == 'Windows':
                                 self.log.info(
-                                    f"Active App Changed: \"{name}\", Title: \"{title}\"  Handle: {self.win.getHandle()}")
+                                    f"Active App Changed: \"{appName}\", Title: \"{title}\"  Handle: {self.win.getHandle()}")
                             else:
                                 self.log.info(
-                                    f"Active App Changed: \"{name}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
+                                    f"Active App Changed: \"{appName}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
                             if self.enable_mapping and self.mapping:
                                 found = False
-                                for n, entry in self.mapping.items():
-                                    found = self.tryToMatchWindow(n, entry, name, title)
+                                for entryName, entry in self.mapping.items():
+                                    found = self.tryToMatchWindow(entryName, entry, appName, title)
                                     if found:
                                         break
                                 if self.currentMappingEntry and not found:
