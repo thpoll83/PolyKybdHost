@@ -5,6 +5,9 @@ Google Chrome:
     Miro:
       title: .*- Miro -.*
       overlay: overlays/miro_template.mods.png
+    Bitbucket PR:
+      title: .*Pull Request.*Bitbucket.*
+      overlay: overlays/bitbucket_pr_template.mods.png
 Gimp:
   overlay: overlays/gimp_template.mods.png
   app: gimp.*

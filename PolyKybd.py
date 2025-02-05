@@ -69,7 +69,7 @@ class PolyKybd():
         else:
             result, msg = self.query_id()
             if not result:
-                self.log.info("Reconnecting to PolyKybd...")
+                self.log.debug("Reconnecting to PolyKybd...")
                 try:
                     self.hid = HidHelper.HidHelper(0x2021, 0x2007)
                 except Exception as e:
@@ -146,11 +146,11 @@ class PolyKybd():
         return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
 
     def set_idle(self, idle):
-        self.log.info(f"Settings idle state to {idle}...")
+        self.log.debug(f"Setting idle state to {idle}...")
         return self.hid.send(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
 
     def query_current_lang(self):
-        self.log.info("Query Languages...")
+        self.log.debug("Query Languages...")
 
         result, msg = self.hid.send_and_read(compose_cmd(Cmd.GET_LANG), 100)
         if result:
@@ -160,7 +160,7 @@ class PolyKybd():
             return False, "Could not read reply from PolyKybd"
 
     def enumerate_lang(self):
-        self.log.info("Enumerate Languages...")
+        self.log.debug("Enumerate Languages...")
         result, msg = self.query_current_lang()
         if not result:
             return False, msg

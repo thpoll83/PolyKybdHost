@@ -227,13 +227,13 @@ class PolyKybdHost(QApplication):
     def add_supported_lang(self, menu):
         result, msg = self.keeb.enumerate_lang()
         if result:
-            current = self.keeb.get_current_lang()
-            self.keeb_lang_menu = menu.addMenu(f"Selected Language: {current[:2]} {self.langcode_to_flag(current[2:])}")
+            self.current_lang = self.keeb.get_current_lang()
+            self.keeb_lang_menu = menu.addMenu(f"Selected Language: {self.current_lang[:2]} {self.langcode_to_flag(self.current_lang[2:])}")
 
             all_languages = sorted(self.keeb.get_lang_list(), key=sort_by_country_abc)
             for lang in all_languages:
                 text = f"{lang[:2]} {self.langcode_to_flag(lang[2:])}"
-                if lang == current:
+                if lang == self.current_lang:
                     text = f"{text} {chr(0x2714)}"
                 item = self.keeb_lang_menu.addAction(text, self.change_keeb_language)
                 item.setData(lang)
@@ -303,6 +303,23 @@ class PolyKybdHost(QApplication):
     def closeEvent(self, event):
         self.cmdMenu.disable_overlays()
 
+    def sendOverlayData(self, data, onOff = True):
+        if isinstance(data, str):
+            try:
+                self.keeb.send_overlay(data, onOff)
+            except:
+                self.log.warning(f"Failed to send overlay '{data}'")
+        else:
+            if onOff:
+                self.keeb.disable_overlays()
+            for overlay in data:
+                try:
+                    self.keeb.send_overlay(overlay, False)
+                except:
+                    self.log.warning(f"Failed to send overlay '{o}'")
+            if onOff:
+                self.keeb.enable_overlays()
+            
     def tryToMatchWindow(self, name, entry, appName, title):
         match = ("overlay" in entry.keys()) and (
                 "app" in entry.keys() or "title" in entry.keys())
@@ -327,20 +344,7 @@ class PolyKybdHost(QApplication):
             else:
                 self.cmdMenu.disable_overlays()
                 self.cmdMenu.reset_overlays()
-                overlays = entry["overlay"]
-                if isinstance(overlays, str):
-                    try:
-                        self.keeb.send_overlay(overlays)
-                    except:
-                        self.log.warning(f"Failed to send overlay '{overlays}'")
-                else:
-                    self.keeb.disable_overlays()
-                    for o in overlays:
-                        try:
-                            self.keeb.send_overlay(o, False)
-                        except:
-                            self.log.warning(f"Failed to send overlay '{o}'")
-                    self.keeb.enable_overlays()
+                self.sendOverlayData(entry["overlay"])
                 # self.log.info(f"Found overlay {entry['overlay']} for {name}")
                 self.currentMappingEntry = entry
                 self.lastMappingEntry = entry
@@ -351,6 +355,7 @@ class PolyKybdHost(QApplication):
     def activeWindowReporter(self):
         self.reconnect()
         if self.connected:
+            received, lang = self.keeb.query_current_lang()
             win = pwc.getActiveWindow()
             #self.log.info(f"App : \"{win.getAppName()}\", Title: \"{win.title}\"  Handle: {win.getHandle()}")
             if win:
@@ -364,10 +369,10 @@ class PolyKybdHost(QApplication):
                             
                             if platform.system() == 'Windows':
                                 self.log.info(
-                                    f"Active App Changed: \"{appName}\", Title: \"{title}\"  Handle: {self.win.getHandle()}")
+                                    f"Active App Changed: \"{appName}\", Title: \"{title.encode('utf-8')}\"  Handle: {self.win.getHandle()}")
                             else:
                                 self.log.info(
-                                    f"Active App Changed: \"{appName}\", Title: \"{title}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
+                                    f"Active App Changed: \"{appName}\", Title: \"{title.encode('utf-8')}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
                             if self.enable_mapping and self.mapping:
                                 found = False
                                 for entryName, entry in self.mapping.items():
@@ -379,6 +384,9 @@ class PolyKybdHost(QApplication):
                                     self.currentMappingEntry = None
                         except Exception as e:
                             self.log.warning(f"Failed retrieving active window: {e}")
+                elif self.enable_mapping and self.currentMappingEntry and received and lang!=self.current_lang:
+                    # the language changed so maybe the overlay icons shifted from right to left (== need to resend)
+                    self.sendOverlayData(self.currentMappingEntry["overlay"], False)
             else:
                 if self.win:
                     self.log.info("No active window")
@@ -386,6 +394,8 @@ class PolyKybdHost(QApplication):
                     if self.enable_mapping and self.currentMappingEntry:
                         self.cmdMenu.disable_overlays()
                         self.currentMappingEntry = None
+            if received:
+                self.current_lang = lang
         else:
             self.win = None
         if not self.isClosing:

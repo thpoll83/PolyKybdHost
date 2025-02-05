@@ -31,7 +31,7 @@ class ImageConverter:
             self.w = pixmap.width()
             self.h = pixmap.height()
         except:
-            self.log.info("Couldn't read overlay")
+            self.log.warning("Couldn't read overlay")
             return False
 
         if ".mods." in filename:
@@ -68,7 +68,7 @@ class ImageConverter:
                 self.image[key_r] = np.array(r, dtype=bool)
                 self.image[key_g] = np.array(g, dtype=bool)
                 self.image[key_b] = np.array(b, dtype=bool)
-                self.log.info(f"Loaded 4 channels from {filename}: {self.w}x{self.h}")
+                self.log.debug(f"Loaded 4 channels from {filename}: {self.w}x{self.h}")
         else:
             if not pixmap.hasAlphaChannel():
                 qimage = pixmap.toImage()
@@ -86,7 +86,7 @@ class ImageConverter:
                                                    dtype=bool)
             # plt.imshow(self.image[Modifier.NO_MOD])
             # plt.show()
-            self.log.info(f"Loaded {filename}: {self.w}x{self.h}")
+            self.log.debug(f"Loaded {filename}: {self.w}x{self.h}")
 
         #not supported for now
         if Modifier.GUI_KEY in self.image:
@@ -117,7 +117,7 @@ class ImageConverter:
                         keycode = 100  # KC_NONUS_BACKSLASH
                     if keycode == 102:  # skip media keys etc.
                         keycode = 224  # KC_LEFT_CTRL
-            self.log.info(f"Image data for modifier {modifier} overlay prepared.")
+            self.log.debug(f"Image data for modifier {modifier} overlay prepared.")
             return overlays
         else:
             #self.log.info(f"No image data for modifier {modifier} present.")
