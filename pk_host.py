@@ -14,7 +14,6 @@ from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QCursor, QPalette, QColor
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
 
-
 from CommandsSubMenu import CommandsSubMenu
 from LinuxXInputHelper import LinuxXInputHelper
 from LinuxPlasmaHelper import LinuxPlasmaHelper
@@ -102,6 +101,12 @@ class PolyKybdHost(QApplication):
         # entries = iter(result.stdout.splitlines())
         entries = self.helper.getLanguages(self.helper)
 
+        success, sys_lang = self.helper.getCurrentLanguage(self.helper)
+        if success:
+            self.log.info(f"Current System Language: {sys_lang}")
+        else:
+            self.log.warning("Could not query current System Language.")
+
         for e in entries:
             self.log.info(f"Enumerating input language {e}")
             lang_menu.addAction(e, self.change_system_language)
@@ -146,7 +151,7 @@ class PolyKybdHost(QApplication):
         palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
         palette.setColor(QPalette.HighlightedText, highlightTextColor)
         self.setPalette(palette)
-            
+        
         QTimer.singleShot(1000, self.activeWindowReporter)
 
     def on_activated(self, i_reason):
@@ -356,6 +361,8 @@ class PolyKybdHost(QApplication):
         self.reconnect()
         if self.connected:
             received, lang = self.keeb.query_current_lang()
+            if received and self.current_lang != lang:
+                self.helper.setLanguage(self.helper, f"{lang[:2]}-{lang[2:]}")
             win = pwc.getActiveWindow()
             #self.log.info(f"App : \"{win.getAppName()}\", Title: \"{win.title}\"  Handle: {win.getHandle()}")
             if win:

@@ -21,3 +21,6 @@ class LinuxXInputHelper():
         if output != "b''":
             return output
         return ""
+    
+    def getCurrentLanguage(self):
+        False, "Not Implemented" 

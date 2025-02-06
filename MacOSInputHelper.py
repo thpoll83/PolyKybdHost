@@ -21,3 +21,6 @@ class MacOSInputHelper():
         if not output.startswith(u"System Language set to:"):
             return output
         return ""
+    
+    def getCurrentLanguage(self):
+        False, "Not Implemented" 

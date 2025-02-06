@@ -30,3 +30,6 @@ class LinuxPlasmaHelper():
         if output != "true":
             return output
         return ""
+    
+    def getCurrentLanguage(self):
+        False, "Not Implemented" 
