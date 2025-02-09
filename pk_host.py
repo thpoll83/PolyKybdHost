@@ -1,8 +1,13 @@
+import argparse
 import logging
 import os
+import ipaddress
 import platform
 import re
+import socket
 import sys
+import time
+import threading
 import webbrowser
 IS_PLASMA = os.getenv('XDG_CURRENT_DESKTOP')=="KDE"
 
@@ -21,15 +26,50 @@ from MacOSInputHelper import MacOSInputHelper
 from PolyKybd import PolyKybd
 from WindowsInputHelper import WindowsInputHelper
 
+POLY_KYBD_HOST_VERSION = "0.5.3"
+TCP_PORT = 50162
+BUFFER_SIZE = 1024
+
 def sort_by_country_abc(item):
     return item[2:]
 
+# Needs to be started as thread
+def receiveFromForwarder(log, connections):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
+    try:
+        sock.bind(("", TCP_PORT))
+    except socket.error as message:
+        log.warning(f"Failed to bind socket: {message}")
+        sock.close()
+        return
+    
+    sock.listen(5)
+    sock.settimeout(10.0)
+    
+    while len(connections)>0:
+        try:
+            conn, (addr, _) = sock.accept()
+            data = conn.recv(BUFFER_SIZE)
+            data = data.decode("utf-8")
+            entries = [0,"",""] if not data else data.split(";")
+            if len(entries)>2:
+                lookup = {}
+                lookup["handle"] = entries[0]
+                lookup["name"] = entries[1]
+                lookup["title"] = entries[2]
+                connections[addr] = lookup
+        except socket.timeout:
+            time.sleep(3)
+    conn.close()
+    sock.close()
+    
 class PolyKybdHost(QApplication):
-    def __init__(self):
+    def __init__(self, log_level):
         super().__init__(sys.argv)
 
         logging.basicConfig(
-            level=logging.INFO,
+            level=log_level,
             format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
             handlers=[logging.FileHandler(filename='log.txt'), logging.StreamHandler(stream=sys.stdout)]
         )
@@ -46,6 +86,7 @@ class PolyKybdHost(QApplication):
         self.tray = QSystemTrayIcon(parent=self)
         self.tray.setIcon(icon)
         self.tray.setVisible(True)
+        self.tray.setToolTip(f"PolyKybdHost {POLY_KYBD_HOST_VERSION}")
 
         # Create the menu
         self.menu = QMenu()
@@ -118,7 +159,9 @@ class PolyKybdHost(QApplication):
         self.tray.show()
 
         self.mapping = {}
+        self.forwarder_entry = None
         self.currentMappingEntry = None
+        self.currentRemoteMappingEntry = None
         self.lastMappingEntry = None
         self.enable_mapping = True
         self.read_overlay_mapping_file("overlay-mapping.poly.yaml")
@@ -129,7 +172,29 @@ class PolyKybdHost(QApplication):
         # self.mapping["KiCad PcbNew"] = dict(app="kicad", title="PCB Editor",
         #                                     overlay="overlays/kicad_pcb_template.png")
         # self.save_overlay_mapping_file()
-
+        has_remote = False
+        self.connections = {}
+        for _, entry in self.mapping.items():
+            if "remote" in entry.keys():
+                remote = entry["remote"]
+                try:
+                    entry["ip"] = str(ipaddress.ip_address(remote))
+                    self.connections[entry["ip"]] = ""
+                    self.log.info(f"IP address {remote} used with {entry["ip"]}")
+                except ValueError:
+                    entry["ip"] = str(socket.gethostbyname(remote))
+                    self.connections[entry["ip"]] = ""
+                    self.log.info(f"Resolved {remote} to {entry["ip"]}")
+                except:
+                    self.log.warning(f"Could not resolve {remote}")
+                has_remote = True
+        
+        if has_remote:
+            self.forwarder = threading.Thread(target = receiveFromForwarder, name = f"PolyKybd Forwarder", args = (self.log, self.connections))
+            self.forwarder.start()
+        else:
+            self.forwarder = None
+            
         self.setStyle("Fusion")
         # Now use a palette to switch to dark colors:
         palette = QPalette()
@@ -198,7 +263,7 @@ class PolyKybdHost(QApplication):
                 self.connected, msg = self.keeb.query_version_info()
                 if self.connected:
                     kbVersion = self.keeb.get_sw_version()
-                    expected = "0.5.3"
+                    expected = POLY_KYBD_HOST_VERSION
                     if kbVersion.startswith(expected[:3]):
                         if kbVersion != expected:
                             self.log.warning(f"Warning! Minor version mismatch, expected {expected}, got {kbVersion}'.")
@@ -303,6 +368,11 @@ class PolyKybdHost(QApplication):
 
     def quit_app(self):
         self.isClosing = True
+        
+        self.connections = {}
+        if self.forwarder:
+            self.forwarder.join()
+                
         self.quit()
 
     def closeEvent(self, event):
@@ -321,12 +391,13 @@ class PolyKybdHost(QApplication):
                 try:
                     self.keeb.send_overlay(overlay, False)
                 except:
-                    self.log.warning(f"Failed to send overlay '{o}'")
+                    self.log.warning(f"Failed to send overlay '{overlay}'")
             if onOff:
                 self.keeb.enable_overlays()
             
-    def tryToMatchWindow(self, name, entry, appName, title):
-        match = ("overlay" in entry.keys()) and (
+    def tryToMatchWindow(self, name, entry, appName, title, from_forwarder):
+        overlay = "overlay" in entry.keys()
+        match = (overlay or "ip" in entry.keys()) and (
                 "app" in entry.keys() or "title" in entry.keys())
         try:
             if appName and match and "app" in entry:
@@ -334,7 +405,7 @@ class PolyKybdHost(QApplication):
                 if match:
                     if "titles" in entry.keys():
                         for subentryName, subentry in entry["titles"].items():
-                            if self.tryToMatchWindow(subentryName, subentry, appName, title):
+                            if self.tryToMatchWindow(subentryName, subentry, appName, title, from_forwarder):
                                 return True
             if title and match and "title" in entry:
                 match = match and re.search(entry["title"], title)
@@ -343,20 +414,50 @@ class PolyKybdHost(QApplication):
             return False
 
         if match:
-            if self.lastMappingEntry == entry:
-                self.cmdMenu.enable_overlays()
-                self.currentMappingEntry = entry
-            else:
-                self.cmdMenu.disable_overlays()
-                self.cmdMenu.reset_overlays()
-                self.sendOverlayData(entry["overlay"])
-                # self.log.info(f"Found overlay {entry['overlay']} for {name}")
+            if overlay:
+                if self.lastMappingEntry == entry:
+                    self.cmdMenu.enable_overlays()
+                    self.currentMappingEntry = entry
+                else:
+                    self.cmdMenu.disable_overlays()
+                    self.cmdMenu.reset_overlays()
+                    self.sendOverlayData(entry["overlay"])
+                    # self.log.info(f"Found overlay {entry['overlay']} for {name}")
+                    self.currentMappingEntry = entry
+                    self.lastMappingEntry = entry
+                self.keeb.set_idle(False)
+                return True
+            else: #ip
                 self.currentMappingEntry = entry
                 self.lastMappingEntry = entry
-            self.keeb.set_idle(False)
+                #now check the remote data
+                if from_forwarder:
+                    return self.remoteWindowReporter(from_forwarder)
+                return True
+        return False         
+        
+        
+    def remoteWindowReporter(self, forwarder_data):
+        self.log.info(f"Test Remote App: Title: {self.remote_title} with {forwarder_data}")
+        if forwarder_data and len(forwarder_data)>2 and self.remote_handle != forwarder_data["handle"] and self.remote_title != forwarder_data["title"]:
+            self.remote_handle = forwarder_data["handle"]
+            self.remote_title = forwarder_data["title"]
+            appName = forwarder_data["name"]
+            self.log.info(
+                        f"Remote App Changed: \"{appName}\", Title: \"{self.remote_title}\"  Handle: {self.remote_handle}")
+            if self.enable_mapping:
+                found = False
+                for entryName, entry in self.mapping.items():
+                    found = self.tryToMatchWindow(entryName, entry, appName, self.remote_title, None)
+                    if found:
+                        self.currentRemoteMappingEntry = entry
+                        break
+                if self.currentRemoteMappingEntry and not found:
+                    self.cmdMenu.disable_overlays()
+                    self.currentRemoteMappingEntry = None
             return True
         return False
-
+        
     def activeWindowReporter(self):
         self.reconnect()
         if self.connected:
@@ -366,7 +467,20 @@ class PolyKybdHost(QApplication):
             win = pwc.getActiveWindow()
             #self.log.info(f"App : \"{win.getAppName()}\", Title: \"{win.title}\"  Handle: {win.getHandle()}")
             if win:
-                if self.win is None or win.getHandle() != self.win.getHandle() or win.title != self.title:
+                from_forwarder = None
+                remote_changed = False
+                current = self.currentMappingEntry
+                
+                if current and "ip" in current.keys() and self.connections[current["ip"]]:
+                    self.forwarder_entry = current
+                    from_forwarder = self.connections[current["ip"]]
+                local_win_changed = (self.win is None or win.getHandle() != self.win.getHandle() or win.title != self.title)
+                
+                #self.log.info(f"Current: \"{current}\" FromForwarder:\"{from_forwarder}\"")
+                
+                if local_win_changed:
+                    self.remote_handle = None
+                    self.remote_title = None
                     self.win = win
                     self.title = win.title
                     if self.enable_mapping:
@@ -383,7 +497,7 @@ class PolyKybdHost(QApplication):
                             if self.enable_mapping and self.mapping:
                                 found = False
                                 for entryName, entry in self.mapping.items():
-                                    found = self.tryToMatchWindow(entryName, entry, appName, title)
+                                    found = self.tryToMatchWindow(entryName, entry, appName, title, from_forwarder)
                                     if found:
                                         break
                                 if self.currentMappingEntry and not found:
@@ -391,13 +505,23 @@ class PolyKybdHost(QApplication):
                                     self.currentMappingEntry = None
                         except Exception as e:
                             self.log.warning(f"Failed retrieving active window: {e}")
-                elif self.enable_mapping and self.currentMappingEntry and received and lang!=self.current_lang:
+                elif self.forwarder_entry:
+                    remote_changed = self.remoteWindowReporter(self.connections[self.forwarder_entry["ip"]])
+                    if remote_changed:
+                        self.win = None
+                        self.title = None
+                
+                if not remote_changed and not local_win_changed and self.enable_mapping and self.currentMappingEntry and received and lang!=self.current_lang:
                     # the language changed so maybe the overlay icons shifted from right to left (== need to resend)
-                    self.sendOverlayData(self.currentMappingEntry["overlay"], False)
+                    if self.currentMappingEntry and "overlay" in self.currentMappingEntry:
+                        self.sendOverlayData(self.currentMappingEntry["overlay"], False)
+                    elif self.currentRemoteMappingEntry and "overlay" in self.currentRemoteMappingEntry:
+                        self.sendOverlayData(self.currentRemoteMappingEntry["overlay"], False)
             else:
                 if self.win:
                     self.log.info("No active window")
                     self.win = None
+                    self.title = None
                     if self.enable_mapping and self.currentMappingEntry:
                         self.cmdMenu.disable_overlays()
                         self.currentMappingEntry = None
@@ -405,6 +529,7 @@ class PolyKybdHost(QApplication):
                 self.current_lang = lang
         else:
             self.win = None
+            self.title = None
         if not self.isClosing:
             QTimer.singleShot(500, self.activeWindowReporter)
 
@@ -412,7 +537,103 @@ class PolyKybdHost(QApplication):
     #    self.log.warning(f"Failed to report active window: {e}")
 
 
+class SendToPolyKybdHost(QApplication):
+    def __init__(self, log_level, host):
+        super().__init__(sys.argv)
+        self.host = host
+
+        logging.basicConfig(
+            level=log_level,
+            format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
+            handlers=[logging.FileHandler(filename='sender_log.txt'), logging.StreamHandler(stream=sys.stdout)]
+        )
+        self.log = logging.getLogger('PolyKybdSender')
+
+        self.setQuitOnLastWindowClosed(False)
+        self.win = None
+        self.isClosing = False
+
+        # Create the icon
+        icon = QIcon(os.path.join(os.path.dirname(__file__), "icons/pcolor.png"))
+           
+        # Create the tray
+        self.tray = QSystemTrayIcon(parent=self)
+        self.tray.setIcon(icon)
+        self.tray.setVisible(True)
+        self.tray.setToolTip(f"({POLY_KYBD_HOST_VERSION}) Forwarding to {host}")
+
+        self.tray.show()
+
+
+        self.setStyle("Fusion")
+        # Now use a palette to switch to dark colors:
+        palette = QPalette()
+        baseColor = QColor(35, 35, 35)
+        windowBaseColor = QColor(99, 99, 99)
+        textColor = QColor(150, 150, 150)
+        highlightTextColor = QColor(255, 255, 255)
+        palette.setColor(QPalette.Window, windowBaseColor)
+        palette.setColor(QPalette.WindowText, textColor)
+        palette.setColor(QPalette.Base, baseColor)
+        palette.setColor(QPalette.AlternateBase, windowBaseColor)
+        palette.setColor(QPalette.ToolTipBase, baseColor)
+        palette.setColor(QPalette.ToolTipText, textColor)
+        palette.setColor(QPalette.Text,textColor)
+        palette.setColor(QPalette.Button, windowBaseColor)
+        palette.setColor(QPalette.ButtonText, textColor)
+        palette.setColor(QPalette.BrightText, Qt.red)
+        palette.setColor(QPalette.Link, QColor(42, 130, 218))
+        palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+        palette.setColor(QPalette.HighlightedText, highlightTextColor)
+        self.setPalette(palette)
+        
+        QTimer.singleShot(1000, self.activeWindowReporter)
+    
+    def sendToHost(self, handle, title, name):
+        try:
+            ip = ipaddress.ip_address(self.host)
+        except ValueError:
+            ip = socket.gethostbyname(self.host)
+        except:
+           self.log.error(f"Could not resolve {self.host}")
+           return
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((str(ip), TCP_PORT))
+        s.send(f"{handle};{name};{title}".encode("utf-8"))
+        s.close()
+        
+    def activeWindowReporter(self):
+        win = pwc.getActiveWindow()
+        if win:
+            if self.win is None or win.getHandle() != self.win.getHandle() or win.title != self.title:
+                self.win = win
+                self.title = win.title
+                appName = self.win.getAppName()
+                self.sendToHost(win.getHandle(), self.title, appName)
+        elif self.win:
+            self.log.info("No active window")
+            self.win = None
+            self.title = None
+            self.sendToHost(0, "", "")
+
+        if not self.isClosing:
+            QTimer.singleShot(500, self.activeWindowReporter)
+        
 if __name__ == '__main__':
-    app = PolyKybdHost()
-    print("Executing PolyKybd Host...")
+    
+    parser = argparse.ArgumentParser(
+                    prog='PolyKybdHost',
+                    usage='%(prog)s [options]',
+                    description='Communication with your PolyKybd')
+    parser.add_argument('--debug', default=False, help='Include debug level messages to the log file')
+    parser.add_argument('--host', help='Specify a host where the PolyKybd is physically connected to')
+    args=parser.parse_args()
+
+    if args.host:
+        print("Executing PolyKybd Forwarder...")
+        app = SendToPolyKybdHost(logging.DEBUG if args.debug else logging.INFO, args.host)
+    else:
+        print("Executing PolyKybd Host...")
+        app = PolyKybdHost(logging.DEBUG if args.debug else logging.INFO)
+        
     sys.exit(app.exec_())
