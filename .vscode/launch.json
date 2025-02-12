@@ -2,17 +2,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Py Debug pk_host",
+            "name": "Py Debug PolyHost",
             "type": "debugpy",
             "request": "launch",
-            "program": "pk_host.py",
+            "program": "polyhost",
             "console": "integratedTerminal"
         },
         {
-            "name": "Py Debug Forwarder to localhost",
+            "name": "Py Debug PolyForwarder to localhost",
             "type": "debugpy",
             "request": "launch",
-            "program": "pk_host.py",
+            "program": "polyhost",
             "console": "integratedTerminal",
             "args": ["--host", "127.0.0.1"],
         },

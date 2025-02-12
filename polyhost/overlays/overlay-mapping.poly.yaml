@@ -1,0 +1,41 @@
+Google Chrome:
+  overlay: chrome_template.mods.png
+  app: chrome.*
+  titles:
+    Miro:
+      title: .*- Miro -.*
+      overlay: miro_template.mods.png
+    Bitbucket PR:
+      title: .*Pull Request.*Bitbucket.*
+      overlay: bitbucket_pr_template.mods.png
+Gimp:
+  overlay: gimp_template.mods.png
+  app: gimp.*
+Zoom:
+  overlay: zoom_template.mods.png
+  app: (Z|z)oom.*
+  title: Zoom Meeting
+Discord:
+  overlay: discord_template.mods.png
+  app: Discord.*
+Inkscape:
+  overlay: inkscape_template.mods.png
+  app: inkscape.*
+  title: .*Inkscape
+KiCad PcbNew:
+  overlay: kicad_pcb_template.png
+  app: kicad.*
+  title: PCB Editor
+VS Code:
+  overlay: [vscode_template.mods.png, vscode_template.combo.mods.png]
+  app: (C|c)ode.*
+  title: .* Visual Studio Code
+Jetbrains IDEs:
+  overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
+  app: java.*
+  title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
+Jetbrains CLion:
+  overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
+  app: (clion)|(jetbrains_client).*
+Visual Studio:
+  app: devenv\.exe

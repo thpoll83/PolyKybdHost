@@ -55,7 +55,7 @@ class PolyKybd():
     """
 
     def __init__(self):
-        self.log = logging.getLogger('PolyKybd')
+        self.log = logging.getLogger('PolyHost')
         self.all_languages = list()
         self.hid = None
 

@@ -1,1 +1,0 @@
-cmd /c start /min "" powershell -WindowStyle Hidden -ExecutionPolicy Bypass -Command "cd YOUR_DIR; python pk_host.py"

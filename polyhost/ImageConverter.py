@@ -19,7 +19,7 @@ class Modifier(Enum):
 
 class ImageConverter:
     def __init__(self):
-        self.log = logging.getLogger('PolyKybd')
+        self.log = logging.getLogger('PolyHost')
         self.h = 0
         self.w = 0
         self.image = {}
