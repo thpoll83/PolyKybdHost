@@ -10,17 +10,15 @@ import threading
 import webbrowser
 import yaml
 
-from _version import __version__
-from PolyKybd import PolyKybd
-from CommandsSubMenu import CommandsSubMenu
-from LinuxXInputHelper import LinuxXInputHelper
-from LinuxPlasmaHelper import LinuxPlasmaHelper
-from MacOSInputHelper import MacOSInputHelper
-from WindowsInputHelper import WindowsInputHelper
-
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QCursor, QPalette, QColor
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
+
+from device import PolyKybd
+from input import LinuxXInputHelper, LinuxPlasmaHelper, MacOSInputHelper, WindowsInputHelper
+from _version import __version__
+
+import CommandsSubMenu
 
 IS_PLASMA = os.getenv('XDG_CURRENT_DESKTOP')=="KDE"
 
@@ -96,7 +94,7 @@ class PolyHost(QApplication):
         self.menu = QMenu()
         self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}");
 
-        self.keeb = PolyKybd()
+        self.keeb = PolyKybd.PolyKybd()
         self.connected = False
         self.paused = False
         self.status = QAction(QIcon("polyhost/icons/sync.svg"), "Waiting for PolyKybd...", parent=self)
@@ -116,7 +114,7 @@ class PolyHost(QApplication):
 
         lang_menu = self.menu.addMenu(QIcon("polyhost/icons/language.svg"), "Change System Input Language")
 
-        self.cmdMenu = CommandsSubMenu(self, self.keeb)
+        self.cmdMenu = CommandsSubMenu.CommandsSubMenu(self, self.keeb)
         self.cmdMenu.buildMenu(self.menu)
 
         action = QAction(QIcon("polyhost/icons/overlays.svg"), "Send Shortcut Overlay...", parent=self)
@@ -133,14 +131,14 @@ class PolyHost(QApplication):
 
         self.helper = None
         if platform.system() == "Windows":
-            self.helper = WindowsInputHelper
+            self.helper = WindowsInputHelper.WindowsInputHelper
         elif platform.system() == "Linux":
             if IS_PLASMA:
-                self.helper = LinuxPlasmaHelper
+                self.helper = LinuxPlasmaHelper.LinuxPlasmaHelper
             else:
-                self.helper = LinuxXInputHelper
+                self.helper = LinuxXInputHelper.LinuxXInputHelper
         elif platform.system() == "Darwin":
-            self.helper = MacOSInputHelper
+            self.helper = MacOSInputHelper.MacOSInputHelper
 
         # result = subprocess.run(['localectl', 'list-x11-keymap-layouts'], stdout=subprocess.PIPE)
         # entries = iter(result.stdout.splitlines())

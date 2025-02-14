@@ -5,8 +5,7 @@ from enum import Enum
 
 import numpy as np
 
-import HidHelper
-import ImageConverter
+from device import HidHelper, ImageConverter
 
 
 class Cmd(Enum):

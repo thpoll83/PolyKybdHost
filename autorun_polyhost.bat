@@ -1,1 +1,1 @@
-cmd /c start /min "" powershell -WindowStyle Hidden -ExecutionPolicy Bypass -Command "cd YOUR_DIR\polyhost; python PolyHost.py"
+cmd /c start /min "" powershell -WindowStyle Hidden -ExecutionPolicy Bypass -Command "cd YOUR_DIR; python polyhost"

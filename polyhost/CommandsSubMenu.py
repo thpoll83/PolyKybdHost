@@ -2,7 +2,7 @@ import yaml
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QFileDialog
 
-from PolyKybd import MaskFlag
+from device.PolyKybd import MaskFlag
 
 
 class CommandsSubMenu():
