@@ -1,12 +1,7 @@
 import logging
 import os
-import ipaddress
 import platform
-import re
-import socket
 import sys
-import time
-import threading
 import webbrowser
 import yaml
 
@@ -14,54 +9,17 @@ from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QCursor, QPalette, QColor
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
 
-from device import PolyKybd
+from device import PolyKybd, PolyKybdMock
 from input import LinuxXInputHelper, LinuxPlasmaHelper, MacOSInputHelper, WindowsInputHelper
 from _version import __version__
 
 import CommandsSubMenu
+import OverlayHandler
 
 IS_PLASMA = os.getenv('XDG_CURRENT_DESKTOP')=="KDE"
 
-if not IS_PLASMA:
-    import pywinctl as pwc
-
-
-TCP_PORT = 50162
-BUFFER_SIZE = 1024
-
 def sort_by_country_abc(item):
     return item[2:]
-
-# Needs to be started as thread
-def receiveFromForwarder(log, connections):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    
-    try:
-        sock.bind(("", TCP_PORT))
-    except socket.error as message:
-        log.warning(f"Failed to bind socket: {message}")
-        sock.close()
-        return
-    
-    sock.listen(5)
-    sock.settimeout(10.0)
-    
-    while len(connections)>0:
-        try:
-            conn, (addr, _) = sock.accept()
-            data = conn.recv(BUFFER_SIZE)
-            data = data.decode("utf-8")
-            entries = [0,"",""] if not data else data.split(";")
-            if len(entries)>2:
-                lookup = {}
-                lookup["handle"] = entries[0]
-                lookup["name"] = entries[1]
-                lookup["title"] = entries[2]
-                connections[addr] = lookup
-        except socket.timeout:
-            time.sleep(3)
-    conn.close()
-    sock.close()
     
 def get_overlay_path(filepath):
     return os.path.join(os.path.dirname(__file__), "overlays", filepath)
@@ -94,6 +52,7 @@ class PolyHost(QApplication):
         self.menu = QMenu()
         self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}");
 
+        #self.keeb = PolyKybdMock.PolyKybdMock(f"{__version__}")
         self.keeb = PolyKybd.PolyKybd()
         self.connected = False
         self.paused = False
@@ -140,8 +99,6 @@ class PolyHost(QApplication):
         elif platform.system() == "Darwin":
             self.helper = MacOSInputHelper.MacOSInputHelper
 
-        # result = subprocess.run(['localectl', 'list-x11-keymap-layouts'], stdout=subprocess.PIPE)
-        # entries = iter(result.stdout.splitlines())
         entries = self.helper.getLanguages(self.helper)
 
         success, sys_lang = self.helper.getCurrentLanguage(self.helper)
@@ -159,18 +116,11 @@ class PolyHost(QApplication):
         self.tray.activated.connect(self.on_activated)
         self.tray.setContextMenu(self.menu)
         self.tray.show()
-
+        
         self.mapping = {}
-        self.forwarder_entry = None
-        self.currentMappingEntry = None
-        self.currentRemoteMappingEntry = None
-        self.lastMappingEntry = None
-        self.enable_mapping = True
         self.read_overlay_mapping_file("polyhost/overlays/overlay-mapping.poly.yaml")
         
-        self.connections = {}
-        self.forwarder = None
-        self.listen_to_forwarder()
+        self.overlay_handler = OverlayHandler.OverlayHandler(self.mapping)
             
         self.setStyle("Fusion")
         # Now use a palette to switch to dark colors:
@@ -195,39 +145,7 @@ class PolyHost(QApplication):
         self.setPalette(palette)
         
         QTimer.singleShot(1000, self.activeWindowReporter)
-
-    def listen_to_forwarder(self):
-        resolved_remote = False
-        for _, entry in self.mapping.items():
-            if "remote" in entry.keys():
-                remote = entry["remote"]
-                try:
-                    addr = str(ipaddress.ip_address(remote))
-                    if not addr in self.connections.keys():
-                        self.connections[addr] = ""
-                        self.log.info(f"IP address {remote} used with {addr}")
-                        resolved_remote = True
-                        entry["ip"] = addr
-                        
-                except ValueError:
-                    try:
-                        addr = str(socket.gethostbyname(remote))
-                        if not addr in self.connections.keys():
-                            self.connections[addr] = ""
-                            self.log.info(f"Resolved {remote} to {addr}")
-                            resolved_remote = True
-                            entry["ip"] = addr
-                    except:
-                        self.log.warning(f"Could not resolve {remote}")
-                except:
-                    self.log.warning(f"Could not resolve {remote}")    
-        if resolved_remote:
-            if not self.forwarder:
-                self.forwarder = threading.Thread(target = receiveFromForwarder, name = f"PolyKybd Forwarder", args = (self.log, self.connections))
-                self.forwarder.start()
-        else:
-            self.forwarder = None
-                    
+            
     def on_activated(self, i_reason):
         if i_reason == QSystemTrayIcon.Trigger:
             if not self.menu.isVisible():
@@ -377,170 +295,57 @@ class PolyHost(QApplication):
 
     def quit_app(self):
         self.isClosing = True
-        
-        self.connections = {}
-        if self.forwarder:
-            self.forwarder.join()
-                
+        self.overlay_handler.close()   
         self.quit()
 
     def closeEvent(self, event):
         self.cmdMenu.disable_overlays()
 
-    def sendOverlayData(self, data, onOff = True):
+    def sendOverlayData(self, data, cmd):
+        isOffOn = cmd == OverlayHandler.OverlayCommand.OFF_ON
         if isinstance(data, str):
             try:
-                self.keeb.send_overlay(get_overlay_path(data), onOff)
+                self.cmdMenu.reset_overlays()
+                self.keeb.send_overlay(get_overlay_path(data), isOffOn)
             except:
                 self.log.warning(f"Failed to send overlay '{data}'")
         else:
-            if onOff:
+            if isOffOn:
                 self.keeb.disable_overlays()
+            self.cmdMenu.reset_overlays()
             for overlay in data:
                 try:
                     self.keeb.send_overlay(get_overlay_path(overlay), False)
                 except:
                     self.log.warning(f"Failed to send overlay '{overlay}'")
-            if onOff:
+            if isOffOn:
                 self.keeb.enable_overlays()
-            
-    def tryToMatchWindow(self, name, entry, appName, title, from_forwarder):
-        overlay = "overlay" in entry.keys()
-        remote = "remote" in entry.keys()
-        ip = "ip" in entry.keys()
-        
-        match = (overlay or remote) and ("app" in entry.keys() or "title" in entry.keys())
-        try:
-            if appName and match and "app" in entry:
-                match = match and re.search(entry["app"], appName)
-                if match:
-                    if "titles" in entry.keys():
-                        for subentryName, subentry in entry["titles"].items():
-                            if self.tryToMatchWindow(subentryName, subentry, appName, title, from_forwarder):
-                                return True
-            if title and match and "title" in entry:
-                match = match and re.search(entry["title"], title)
-        except re.error as e:
-            self.log.warning(f"Cannot match entry '{name}': {entry}, because '{e.msg}'@{e.pos} with '{e.pattern}'")
-            return False
-
-        if match:
-            if overlay:
-                if self.lastMappingEntry == entry:
-                    self.cmdMenu.enable_overlays()
-                    self.currentMappingEntry = entry
-                else:
-                    self.cmdMenu.disable_overlays()
-                    self.cmdMenu.reset_overlays()
-                    self.sendOverlayData(entry["overlay"])
-                    # self.log.info(f"Found overlay {entry['overlay']} for {name}")
-                    self.currentMappingEntry = entry
-                    self.lastMappingEntry = entry
-                self.keeb.set_idle(False)
-                return True
-            else: #ip/remote
-                if not ip:
-                    self.listen_to_forwarder()
-                else:
-                    self.currentMappingEntry = entry
-                    self.lastMappingEntry = entry
-                    #now check the remote data
-                    if from_forwarder:
-                        return self.remoteWindowReporter(from_forwarder)
-                    return True
-        return False         
-        
-        
-    def remoteWindowReporter(self, forwarder_data):
-        self.log.info(f"Test Remote App: Title: {self.remote_title} with {forwarder_data}")
-        if forwarder_data and len(forwarder_data)>2 and self.remote_handle != forwarder_data["handle"] and self.remote_title != forwarder_data["title"]:
-            self.remote_handle = forwarder_data["handle"]
-            self.remote_title = forwarder_data["title"]
-            appName = forwarder_data["name"]
-            self.log.info(
-                        f"Remote App Changed: \"{appName}\", Title: \"{self.remote_title}\"  Handle: {self.remote_handle}")
-            if self.enable_mapping:
-                found = False
-                for entryName, entry in self.mapping.items():
-                    found = self.tryToMatchWindow(entryName, entry, appName, self.remote_title, None)
-                    if found:
-                        self.currentRemoteMappingEntry = entry
-                        break
-                if self.currentRemoteMappingEntry and not found:
-                    self.cmdMenu.disable_overlays()
-                    self.currentRemoteMappingEntry = None
-            return True
-        return False
-        
+        self.keeb.set_idle(False)
+               
     def activeWindowReporter(self):
         self.reconnect()
         if self.connected:
             received, lang = self.keeb.query_current_lang()
             if received and self.current_lang != lang:
-                self.helper.setLanguage(self.helper, f"{lang[:2]}-{lang[2:]}")
-            win = pwc.getActiveWindow()
-            #self.log.info(f"App : \"{win.getAppName()}\", Title: \"{win.title}\"  Handle: {win.getHandle()}")
-            if win:
-                from_forwarder = None
-                remote_changed = False
-                current = self.currentMappingEntry
+                if self.helper.setLanguage(self.helper, f"{lang[:2]}-{lang[2:]}"):
+                    data = self.overlay_handler.getOverlayData(self.overlay_handler)
+                    if data:
+                        self.sendOverlayData(data, False)
+                else:
+                    self.log.warning(f"Could not change OS language to '{lang}'")
+                    
+            data, cmd = self.overlay_handler.handleActiveWindow()
+            if cmd == OverlayHandler.OverlayCommand.DISABLE:
+                self.keeb.disable_overlays()
+            elif cmd == OverlayHandler.OverlayCommand.ENABLE:
+                self.keeb.enable_overlays()
+
+            if data and cmd==OverlayHandler.OverlayCommand.OFF_ON:
+                self.sendOverlayData(data, cmd)
                 
-                if current and "ip" in current.keys() and self.connections[current["ip"]]:
-                    self.forwarder_entry = current
-                    from_forwarder = self.connections[current["ip"]]
-                local_win_changed = (self.win is None or win.getHandle() != self.win.getHandle() or win.title != self.title)
-                
-                #self.log.info(f"Current: \"{current}\" FromForwarder:\"{from_forwarder}\"")
-                
-                if local_win_changed:
-                    self.remote_handle = None
-                    self.remote_title = None
-                    self.win = win
-                    self.title = win.title
-                    if self.enable_mapping:
-                        try:
-                            appName = self.win.getAppName()
-                            title = self.win.title
-                            
-                            if platform.system() == 'Windows':
-                                self.log.info(
-                                    f"Active App Changed: \"{appName}\", Title: \"{title.encode('utf-8')}\"  Handle: {self.win.getHandle()}")
-                            else:
-                                self.log.info(
-                                    f"Active App Changed: \"{appName}\", Title: \"{title.encode('utf-8')}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}")
-                            if self.enable_mapping and self.mapping:
-                                found = False
-                                for entryName, entry in self.mapping.items():
-                                    found = self.tryToMatchWindow(entryName, entry, appName, title, from_forwarder)
-                                    if found:
-                                        break
-                                if self.currentMappingEntry and not found:
-                                    self.cmdMenu.disable_overlays()
-                                    self.currentMappingEntry = None
-                        except Exception as e:
-                            self.log.warning(f"Failed retrieving active window: {e}")
-                elif self.forwarder_entry and self.forwarder_entry == current:
-                    remote_changed = self.remoteWindowReporter(self.connections[self.forwarder_entry["ip"]])
-                    if remote_changed:
-                        self.win = None
-                        self.title = None
-                
-                if not remote_changed and not local_win_changed and self.enable_mapping and self.currentMappingEntry and received and lang!=self.current_lang:
-                    # the language changed so maybe the overlay icons shifted from right to left (== need to resend)
-                    if self.currentMappingEntry and "overlay" in self.currentMappingEntry:
-                        self.sendOverlayData(self.currentMappingEntry["overlay"], False)
-                    elif self.currentRemoteMappingEntry and "overlay" in self.currentRemoteMappingEntry:
-                        self.sendOverlayData(self.currentRemoteMappingEntry["overlay"], False)
-            else:
-                if self.win:
-                    self.log.info("No active window")
-                    self.win = None
-                    self.title = None
-                    if self.enable_mapping and self.currentMappingEntry:
-                        self.cmdMenu.disable_overlays()
-                        self.currentMappingEntry = None
             if received:
                 self.current_lang = lang
+            
         else:
             self.win = None
             self.title = None
