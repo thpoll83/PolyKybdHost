@@ -145,6 +145,13 @@ class HidHelper:
 
         return True, response_report.decode().strip('\x00')
 
+    def send_and_read_validate(self, data, timeout, expected_prefix):
+        result, msg = self.send_and_read(data, timeout)
+        if result and not msg.startswith(expected_prefix):
+            result, msg = self.read(timeout)
+            return result, msg if msg.startswith(expected_prefix) else False, msg
+        return result, msg
+    
     def send_and_read(self, data, timeout):
         if self.interface is None:
             return False, "No Interface"

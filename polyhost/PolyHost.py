@@ -14,7 +14,7 @@ from input import LinuxXInputHelper, LinuxPlasmaHelper, MacOSInputHelper, Window
 from _version import __version__
 
 import CommandsSubMenu
-import OverlayHandler
+import handler.OverlayHandler as OverlayHandler
 
 IS_PLASMA = os.getenv('XDG_CURRENT_DESKTOP')=="KDE"
 
@@ -34,6 +34,7 @@ class PolyHost(QApplication):
             handlers=[logging.FileHandler(filename='host_log.txt'), logging.StreamHandler(stream=sys.stdout)]
         )
         self.log = logging.getLogger('PolyHost')
+        self.setApplicationName('PolyHost')
 
         self.setQuitOnLastWindowClosed(False)
         self.win = None
@@ -184,7 +185,13 @@ class PolyHost(QApplication):
 
     def reconnect(self):
         if not self.paused:
-            result = self.keeb.connect()
+            result = False
+            lang = ""
+            if not hasattr(self, 'hid'):
+                if self.keeb.connect():
+                    result, lang = self.keeb.query_current_lang()
+            else:
+                result, lang = self.keeb.query_current_lang()
              
             if result != self.connected:
                 self.connected, msg = self.keeb.query_version_info()
@@ -201,9 +208,8 @@ class PolyHost(QApplication):
                             self.status.setIcon(QIcon("polyhost/icons/sync.svg"))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kbVersion})")
-                        success, current_lang = self.keeb.query_current_lang()
-                        if success:
-                            self.update_ui_on_lang_change(current_lang)
+                        if result:
+                            self.update_ui_on_lang_change(lang)
                     else:
                         self.status.setIcon(QIcon("polyhost/icons/sync_disabled.svg"))
                         self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kbVersion}'.")
@@ -212,7 +218,8 @@ class PolyHost(QApplication):
                     self.status.setIcon(QIcon("polyhost/icons/sync_disabled.svg"))
                     self.status.setText(msg)
             self.managed_connection_status()
-
+            return lang
+        return self.current_lang
 
     def langcode_to_flag(self, lang_code):
         result = ""
@@ -301,38 +308,34 @@ class PolyHost(QApplication):
     def closeEvent(self, event):
         self.cmdMenu.disable_overlays()
 
-    def sendOverlayData(self, data, cmd):
-        isOffOn = cmd == OverlayHandler.OverlayCommand.OFF_ON
+    def sendOverlayData(self, data):
+        files = []
         if isinstance(data, str):
+            files.append(get_overlay_path(data))
+        else:
+            for overlay in data:
+                files.append(get_overlay_path(overlay))
+        
+        if len(files)>0:
             try:
                 self.cmdMenu.reset_overlays()
-                self.keeb.send_overlay(get_overlay_path(data), isOffOn)
-            except:
-                self.log.warning(f"Failed to send overlay '{data}'")
-        else:
-            if isOffOn:
-                self.keeb.disable_overlays()
-            self.cmdMenu.reset_overlays()
-            for overlay in data:
-                try:
-                    self.keeb.send_overlay(get_overlay_path(overlay), False)
-                except:
-                    self.log.warning(f"Failed to send overlay '{overlay}'")
-            if isOffOn:
-                self.keeb.enable_overlays()
-        self.keeb.set_idle(False)
+                self.keeb.send_overlays(files)
+            except Exception as e:
+                self.log.warning(f"Failed to send overlays '{files}':{e}")
+                
+            self.keeb.set_idle(False)
                
     def activeWindowReporter(self):
-        self.reconnect()
+        lang = self.reconnect()
         if self.connected:
-            received, lang = self.keeb.query_current_lang()
-            if received and self.current_lang != lang:
+            if self.current_lang != lang:
                 if self.helper.setLanguage(self.helper, f"{lang[:2]}-{lang[2:]}"):
-                    data = self.overlay_handler.getOverlayData(self.overlay_handler)
+                    data = self.overlay_handler.getOverlayData()
                     if data:
                         self.sendOverlayData(data, False)
                 else:
                     self.log.warning(f"Could not change OS language to '{lang}'")
+                self.current_lang = lang
                     
             data, cmd = self.overlay_handler.handleActiveWindow()
             if cmd == OverlayHandler.OverlayCommand.DISABLE:
@@ -341,10 +344,7 @@ class PolyHost(QApplication):
                 self.keeb.enable_overlays()
 
             if data and cmd==OverlayHandler.OverlayCommand.OFF_ON:
-                self.sendOverlayData(data, cmd)
-                
-            if received:
-                self.current_lang = lang
+                self.sendOverlayData(data)
             
         else:
             self.win = None

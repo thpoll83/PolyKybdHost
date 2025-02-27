@@ -1,10 +1,12 @@
 import logging
+from pathlib import Path
 import re
 import socket
 import threading
 import time
 import ipaddress
 
+from handler.HandlerCommon import Flags
 
 TCP_PORT = 50162
 BUFFER_SIZE = 1024
@@ -48,7 +50,7 @@ class RemoteHandler():
         
         self.handle = None
         self.title = None
-        self.currentRemoteMappingEntry = None
+        self.currentMappingEntry = None
         
         self.connections = {}
         self.mapping = mapping
@@ -62,7 +64,7 @@ class RemoteHandler():
                 try:
                     addr = str(ipaddress.ip_address(remote))
                     if not addr in self.connections.keys():
-                        self.connections[remote] = ""
+                        self.connections[addr] = ""
                         self.log.info(f"IP address {remote} used with {addr}")
                         resolved_remote = True
                         entry["ip"] = addr
@@ -71,13 +73,15 @@ class RemoteHandler():
                     try:
                         addr = str(socket.gethostbyname(remote))
                         if not addr in self.connections.keys():
-                            self.connections[remote] = ""
+                            self.connections[addr] = ""
                             self.log.info(f"Resolved {remote} to {addr}")
                             resolved_remote = True
                             entry["ip"] = addr
                     except:
+                        self.connections[addr] = ""
                         self.log.warning(f"Could not resolve {remote}")
                 except:
+                    self.connections[addr] = ""
                     self.log.warning(f"Could not resolve {remote}")    
         if resolved_remote:
             if not self.forwarder:
@@ -86,21 +90,30 @@ class RemoteHandler():
         else:
             self.forwarder = None
     
-    def tryToMatchWindow(self, name, entry):   
-        overlayKey = "overlay" in entry.keys()
-        appKey = "app" in entry.keys()
-        titleKey = "title" in entry.keys()
-        
-        match = overlayKey and appKey or titleKey
+    def tryToMatchWindow(self, name, entry):
+        has_overlay, has_remote, has_title, has_starts_with, has_ends_with, has_contains = entry["flags"]
+        match = (has_overlay or has_remote)
         try:
-            if self.name and match and appKey:
-                match = match and re.search(entry["app"], self.name)
-                if match:
-                    if "titles" in entry.keys():
-                        for subentryName, subentry in entry["titles"].items():
-                            return self.tryToMatchWindow(subentryName, subentry)
-            if self.title and match and titleKey:
-                match = match and re.search(entry["title"], self.title)
+            if match:
+                titleElements = self.title.split() if has_starts_with or has_ends_with else []
+                if len(titleElements)>0:
+                    if has_starts_with and titleElements[0] in entry["titles-startswith"].keys():
+                        found, cmd = self.tryToMatchWindow(name, entry["titles-startswith"][titleElements[0]])
+                        if found:
+                            return True
+                    if has_ends_with and titleElements[-1] in entry["titles-endswith"].keys():
+                        found, cmd = self.tryToMatchWindow(name, entry["titles-endswith"][titleElements[-1]])
+                        if found:
+                            return True
+                    if has_contains:
+                        contains = entry["titles-contains"]
+                        for elem in titleElements:
+                            if elem in contains.keys():
+                                found, cmd = self.tryToMatchWindow(name, contains[elem])
+                                if found:
+                                    return True
+                if self.title and has_title:
+                    match = match and re.search(entry["title"], self.title)
         except re.error as e:
             self.log.warning(f"Cannot match entry '{name}': {entry}, because '{e.msg}'@{e.pos} with '{e.pattern}'")
             return False
@@ -113,30 +126,31 @@ class RemoteHandler():
       
             
     def remoteChanged(self, remoteEntry):
-        data = self.connections[remoteEntry["remote"]]
+        if "ip" not in remoteEntry.keys():
+            self.listen_to_forwarder()
+            return False
+        
+        data = self.connections[remoteEntry["ip"]]
         
         if data and len(data)>2 and self.handle != data["handle"] and self.title != data["title"]:
             self.handle = data["handle"]
             self.title = data["title"]
-            self.name = data["name"]
-            self.log.info(f"Remote App Changed: \"{self.name}\", Title: \"{self.title}\"  Handle: {self.handle}")
+            self.name = data["name"].split(".")[0].lower()
+            self.log.info(f"Remote App Changed: \"{data["name"]}\", Title: \"{self.title}\"  Handle: {self.handle}")
                 
             found = False
-            for entryName, entry in self.mapping.items():
-                found = self.tryToMatchWindow(entryName, entry)
-                if found:
-                    self.currentRemoteMappingEntry = entry
-                    break
-            if self.currentRemoteMappingEntry and not found:
-                self.currentRemoteMappingEntry = None
+            if self.name in self.mapping.keys():
+                found = self.tryToMatchWindow(self.name, self.mapping[self.name])
+            if self.currentMappingEntry and not found:
+                self.currentMappingEntry = None
             return True
         return False
     
     def hasOverlay(self):
-        return self.currentRemoteMappingEntry and "overlay" in self.currentRemoteMappingEntry
+        return self.currentMappingEntry and self.currentMappingEntry["flags"][Flags.HAS_OVERLAY.value]
     
     def getOverlayData(self):
-        return self.currentRemoteMappingEntry["overlay"]
+        return self.currentMappingEntry["overlay"]
           
     def close(self):
         self.connections = {}

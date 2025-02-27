@@ -6,8 +6,13 @@ from enum import Enum
 import numpy as np
 
 from device import HidHelper, ImageConverter
+from device.Keycodes import KeyCode
 
-
+#overlay constants
+BYTES_PER_MSG = 24
+BYTES_PER_OVERLAY = int(72 * 40) / 8  # 360
+NUM_MSGS = int(BYTES_PER_OVERLAY / BYTES_PER_MSG)  # 360/24 = 15
+        
 class Cmd(Enum):
     GET_ID = 6
     GET_LANG = 7
@@ -42,6 +47,8 @@ def compose_cmd(cmd, extra1=None, extra2=None, extra3=None):
     else:
         return bytearray.fromhex(f"09{cmd.value:02x}")
 
+def expect(cmd):
+    return f"P{chr(cmd.value)}"
 
 def split_by_n_chars(text, n):
     return [text[i:i+n] for i in range(0, len(text), n)]
@@ -78,7 +85,7 @@ class PolyKybd():
 
     def query_id(self):
         try:
-            result, msg = self.hid.send_and_read(compose_cmd(Cmd.GET_ID), 1000)
+            result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_ID), 1000, expect(Cmd.GET_ID))
             return result, msg if not result else msg[3:]
         except Exception as e:
             return False, f"Exception: {e}"
@@ -151,7 +158,7 @@ class PolyKybd():
     def query_current_lang(self):
         self.log.debug("Query Languages...")
 
-        result, msg = self.hid.send_and_read(compose_cmd(Cmd.GET_LANG), 100)
+        result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_LANG), 100, expect(Cmd.GET_LANG))
         if result:
             self.current_lang = msg[3:]
             return True, self.current_lang
@@ -164,12 +171,13 @@ class PolyKybd():
         if not result:
             return False, msg
         
-        result, reply = self.hid.send_and_read(compose_cmd(Cmd.GET_LANG_LIST), 100)
+        result, reply = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_LANG_LIST), 100, expect(Cmd.GET_LANG_LIST))
 
         if not result:
             return False, "Could not receive language list."
         lang_str = ""
         while result and len(reply) > 3:
+            assert reply.startswith(expect(Cmd.GET_LANG_LIST))
             lang_str = f"{lang_str}{reply[3:]}"
             result, reply = self.hid.read(100)
 
@@ -193,7 +201,7 @@ class PolyKybd():
         if lang not in self.all_languages:
             return False, f"Language '{lang}' not present on PolyKybd"
 
-        result, msg = self.hid.send_and_read(compose_cmd_str(Cmd.CHANGE_LANG, lang), 100)
+        result, msg = self.hid.send_and_read_validate(compose_cmd_str(Cmd.CHANGE_LANG, lang), 100, expect(Cmd.CHANGE_LANG))
         if not result:
             return False, f"Could not change to {lang} ({msg})"
 
@@ -204,49 +212,63 @@ class PolyKybd():
         cmd = Cmd.OVERLAY_FLAGS_ON if set else Cmd.OVERLAY_FLAGS_OFF
         return self.hid.send(compose_cmd(cmd, 0x1e))
 
-    def send_overlay(self, filename, on_off=True):
-        self.log.info(f"Send Overlay '{filename}'...")
-        converter = ImageConverter.ImageConverter()
-        if not converter:
-            return False, f"Invalid file '{filename}'."
-
-        if not converter.open(filename):
-            return False, f"Unable to read '{filename}'."
-
-        BYTES_PER_MSG = 24
-        BYTES_PER_OVERLAY = int(72 * 40) / 8  # 360
-        NUM_MSGS = int(BYTES_PER_OVERLAY / BYTES_PER_MSG)  # 360/24 = 15
-        self.log.debug(f"BYTES_PER_MSG: {BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_MSGS: {NUM_MSGS}")
-
+    def send_overlays(self, filenames):
         counter = 0
-        lock = None
-        for modifier in ImageConverter.Modifier:
-            overlaymap = converter.extract_overlays(modifier)
-            #it is okay if there is no overlay for a modifier
-            if overlaymap:
-                self.log.debug(f"Sending overlays for modifier {modifier}.")
-                if on_off and counter == 0:
-                    self.disable_overlays()
-                for keycode in overlaymap:
-                    bmp = overlaymap[keycode]
-                    for i in range(0, NUM_MSGS):
-                        self.log.debug(f"Sending msg {i + 1} of {NUM_MSGS}.")
-                        cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, i)
-                        data = cmd + bmp[i * BYTES_PER_MSG:(i + 1) * BYTES_PER_MSG]
-                        result, msg, lock = self.hid.send_multiple(data, lock)
-                        if not result:
-                            return False, f"Error sending overlay message {i + 1}/{NUM_MSGS} ({msg})"
-                all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
-                self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
-                counter = counter + 1
-        if lock:
-            lock.release()
+        enabled = False
+            
+        for filename in filenames:
+            self.log.info(f"Send Overlay '{filename}'...")
+            converter = ImageConverter.ImageConverter()
+            if not converter:
+                return False, f"Invalid file '{filename}'."
 
-        if on_off and counter > 0:
-            # self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x1e))
+            if not converter.open(filename):
+                return False, f"Unable to read '{filename}'."
+
+            self.log.debug(f"BYTES_PER_MSG: {BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_MSGS: {NUM_MSGS}")
+
+            for modifier in ImageConverter.Modifier:
+                overlaymap = converter.extract_overlays(modifier)
+                #it is okay if there is no overlay for a modifier
+                if overlaymap:
+                    self.log.debug(f"Sending overlays for modifier {modifier}.")
+                    
+                    #Send ESC first
+                    if modifier == ImageConverter.Modifier.NO_MOD:
+                        if KeyCode.KC_ESCAPE.value in overlaymap.keys():
+                            self.send_overlay_for_keycode(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
+                            overlaymap.pop(KeyCode.KC_ESCAPE.value)
+                        self.enable_overlays()
+                        enabled = True
+                        
+                    for keycode in overlaymap:
+                        self.send_overlay_for_keycode(keycode, modifier, overlaymap)
+                        if modifier != ImageConverter.Modifier.NO_MOD:
+                            time.sleep(0.1)
+                    
+                    all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
+                    self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
+                    counter = counter + 1
+                    time.sleep(0.2)
+                    
+        self.log.info(f"{counter} overlays sent.")
+        if not enabled:
             self.enable_overlays()
         return True, f"{counter} overlays sent."
 
+    def send_overlay_for_keycode(self, keycode, modifier, map):
+        lock = None
+        bmp = map[keycode]
+        for msg_num in range(0, NUM_MSGS):
+            self.log.debug(f"Sending msg {msg_num + 1} of {NUM_MSGS}.")
+            cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, msg_num)
+            data = cmd + bmp[msg_num * BYTES_PER_MSG:(msg_num + 1) * BYTES_PER_MSG]
+            result, msg, lock = self.hid.send_multiple(data, lock)
+            if not result:
+                return False, f"Error sending overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
+        if lock:
+            lock.release()
+                        
     def execute_commands(self, command_list):
         for cmd_str in command_list:
             cmd_str = cmd_str.strip()
