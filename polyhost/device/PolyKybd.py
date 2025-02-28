@@ -1,14 +1,16 @@
 import logging
+import math
 import re
 import time
 from enum import Enum
 
 import numpy as np
 
-from device import HidHelper, ImageConverter
+from device import HidHelper, ImageConverter, RleCompression
 from device.Keycodes import KeyCode
 
 #overlay constants
+MAX_BYTES_PER_MSG = 29
 BYTES_PER_MSG = 24
 BYTES_PER_OVERLAY = int(72 * 40) / 8  # 360
 NUM_MSGS = int(BYTES_PER_OVERLAY / BYTES_PER_MSG)  # 360/24 = 15
@@ -24,6 +26,8 @@ class Cmd(Enum):
     SET_BRIGHTNESS = 13
     KEYPRESS = 14
     IDLE_STATE = 15
+    START_COMPRESSED_OVERLAY = 16
+    SEND_COMPRESSED_OVERLAY = 17
 
 
 class MaskFlag(Enum):
@@ -242,6 +246,7 @@ class PolyKybd():
                         enabled = True
                         
                     for keycode in overlaymap:
+                        #self.send_overlay_for_keycode_compressed(keycode, modifier, overlaymap)
                         self.send_overlay_for_keycode(keycode, modifier, overlaymap)
                         if modifier != ImageConverter.Modifier.NO_MOD:
                             time.sleep(0.1)
@@ -259,6 +264,9 @@ class PolyKybd():
     def send_overlay_for_keycode(self, keycode, modifier, map):
         lock = None
         bmp = map[keycode]
+        #compressed = RleCompression.compress(bmp)
+        #max = math.ceil(len(compressed)/(MAX_BYTES_PER_MSG-2))
+        #self.log.info(f"msg 360/{NUM_MSGS} vs {len(compressed)}/{max}.")
         for msg_num in range(0, NUM_MSGS):
             self.log.debug(f"Sending msg {msg_num + 1} of {NUM_MSGS}.")
             cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, msg_num)
@@ -268,7 +276,26 @@ class PolyKybd():
                 return False, f"Error sending overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
         if lock:
             lock.release()
-                        
+    
+    def send_overlay_for_keycode_compressed(self, keycode, modifier, map):
+        lock = None
+        encoded_bmp = RleCompression.compress(map[keycode])
+        len_encoded = len(encoded_bmp)
+        start = 0 
+        end = MAX_BYTES_PER_MSG - 2
+        max = math.ceil((len_encoded+2)/MAX_BYTES_PER_MSG)
+        for msg_num in range(0, max):
+            self.log.info(f"Sending compressed msg {msg_num + 1} of {max} with {end-start} bytes.")
+            cmd = compose_cmd(Cmd.START_COMPRESSED_OVERLAY, keycode, modifier.value) if msg_num == 0 else compose_cmd(Cmd.SEND_COMPRESSED_OVERLAY)
+            data = cmd + encoded_bmp[start:end]
+            start = end
+            end = min(end + MAX_BYTES_PER_MSG, len_encoded)
+            result, msg, lock = self.hid.send_multiple(data, lock)
+            if not result:
+                return False, f"Error sending overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
+        if lock:
+            lock.release()
+    
     def execute_commands(self, command_list):
         for cmd_str in command_list:
             cmd_str = cmd_str.strip()

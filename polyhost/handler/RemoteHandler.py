@@ -78,10 +78,8 @@ class RemoteHandler():
                             resolved_remote = True
                             entry["ip"] = addr
                     except:
-                        self.connections[addr] = ""
                         self.log.warning(f"Could not resolve {remote}")
                 except:
-                    self.connections[addr] = ""
                     self.log.warning(f"Could not resolve {remote}")    
         if resolved_remote:
             if not self.forwarder:
@@ -128,6 +126,8 @@ class RemoteHandler():
     def remoteChanged(self, remoteEntry):
         if "ip" not in remoteEntry.keys():
             self.listen_to_forwarder()
+            return False
+        if not remoteEntry["ip"] in self.connections:
             return False
         
         data = self.connections[remoteEntry["ip"]]
