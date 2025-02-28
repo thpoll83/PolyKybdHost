@@ -10,7 +10,7 @@ from PyQt5.QtGui import QIcon, QCursor, QPalette, QColor
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
 
 from device import PolyKybd, PolyKybdMock
-from input import LinuxXInputHelper, LinuxPlasmaHelper, MacOSInputHelper, WindowsInputHelper
+from input import LinuxGnomeInputHelper, LinuxPlasmaHelper, MacOSInputHelper, WindowsInputHelper
 from _version import __version__
 
 import CommandsSubMenu
@@ -96,7 +96,7 @@ class PolyHost(QApplication):
             if IS_PLASMA:
                 self.helper = LinuxPlasmaHelper.LinuxPlasmaHelper
             else:
-                self.helper = LinuxXInputHelper.LinuxXInputHelper
+                self.helper = LinuxGnomeInputHelper.LinuxGnomeInputHelper
         elif platform.system() == "Darwin":
             self.helper = MacOSInputHelper.MacOSInputHelper
 

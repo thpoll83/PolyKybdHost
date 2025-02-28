@@ -136,7 +136,7 @@ class RemoteHandler():
             self.handle = data["handle"]
             self.title = data["title"]
             self.name = data["name"].split(".")[0].lower()
-            self.log.info(f"Remote App Changed: \"{data["name"]}\", Title: \"{self.title}\"  Handle: {self.handle}")
+            self.log.info(f"Remote App Changed: \"{data['name']}\", Title: \"{self.title}\"  Handle: {self.handle}")
                 
             found = False
             if self.name in self.mapping.keys():
