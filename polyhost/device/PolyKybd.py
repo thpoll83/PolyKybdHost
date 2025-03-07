@@ -162,12 +162,15 @@ class PolyKybd():
     def query_current_lang(self):
         self.log.debug("Query Languages...")
 
-        result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_LANG), 100, expect(Cmd.GET_LANG))
-        if result:
-            self.current_lang = msg[3:]
-            return True, self.current_lang
-        else:
-            return False, "Could not read reply from PolyKybd"
+        try:
+            result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_LANG), 100, expect(Cmd.GET_LANG))
+            if result:
+                self.current_lang = msg[3:]
+                return True, self.current_lang
+            else:
+                return False, "Could not read reply from PolyKybd"
+        except Exception as e:
+            return False, f"Exception: {e}"
 
     def enumerate_lang(self):
         self.log.debug("Enumerate Languages...")
