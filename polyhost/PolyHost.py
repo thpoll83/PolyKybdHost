@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 import sys
+import traceback
 import webbrowser
 import yaml
 
@@ -322,6 +323,7 @@ class PolyHost(QApplication):
                 self.keeb.send_overlays(files)
             except Exception as e:
                 self.log.warning(f"Failed to send overlays '{files}':{e}")
+                self.log.warning(''.join(traceback.format_exception(e)))
                 
             self.keeb.set_idle(False)
                
@@ -332,7 +334,7 @@ class PolyHost(QApplication):
                 if self.helper.setLanguage(self.helper, f"{lang[:2]}-{lang[2:]}"):
                     data = self.overlay_handler.getOverlayData()
                     if data:
-                        self.sendOverlayData(data, False)
+                        self.sendOverlayData(data)
                 else:
                     self.log.warning(f"Could not change OS language to '{lang}'")
                 self.current_lang = lang

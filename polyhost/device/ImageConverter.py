@@ -4,7 +4,10 @@ import numpy as np
 from enum import Enum
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap
+
+from device import OverlayData
+
 
 class Modifier(Enum):
     NO_MOD = 0
@@ -84,10 +87,20 @@ class ImageConverter:
             # convert the image to b/w
             self.image[Modifier.NO_MOD] = np.array(np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
                                                    dtype=bool)
-            # plt.imshow(self.image[Modifier.NO_MOD])
-            # plt.show()
+            
             self.log.debug(f"Loaded {filename}: {self.w}x{self.h}")
 
+        # rect = find_bounding_rectangle(self.image[Modifier.NO_MOD])
+        # if rect:
+        #     x,y, xx, yy = rect
+        #     plt.imshow(self.image[Modifier.NO_MOD])
+        #     plt.gca().add_patch(Rectangle((x,y),xx-x,yy-y,
+        #         edgecolor='red',
+        #         facecolor='none',
+        #         lw=1))
+            
+        #     plt.show()
+            
         #not supported for now
         if Modifier.GUI_KEY in self.image:
             self.image.pop(Modifier.GUI_KEY)
@@ -110,7 +123,7 @@ class ImageConverter:
                     bottomy = (y + 1) * 40
                     key_slice = self.image[modifier][topy:bottomy, topx:bottomx]
                     if key_slice.any():
-                        overlays[keycode] = np.packbits(key_slice, axis=None).tobytes()
+                        overlays[keycode] = OverlayData.OverlayData(key_slice)
 
                     keycode = keycode + 1
                     if keycode == 84:  # skip keypad keycodes

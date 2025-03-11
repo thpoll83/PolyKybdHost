@@ -6,7 +6,7 @@ from enum import Enum
 
 import numpy as np
 
-from device import HidHelper, ImageConverter, RleCompression
+from device import HidHelper, ImageConverter
 from device.Keycodes import KeyCode
 
 #overlay constants
@@ -28,6 +28,8 @@ class Cmd(Enum):
     IDLE_STATE = 15
     START_COMPRESSED_OVERLAY = 16
     SEND_COMPRESSED_OVERLAY = 17
+    START_ROI_OVERLAY = 18
+    SEND_ROI_OVERLAY = 19
 
 
 class MaskFlag(Enum):
@@ -37,19 +39,19 @@ class MaskFlag(Enum):
     RIGHT_BOTTOM = 16
 
 def compose_cmd_str(cmd, text):
-    b = bytearray.fromhex(f"09{cmd.value:02x}3a")
+    b = bytearray.fromhex(f"09{cmd.value:02x}3a") # 3a is the colon (":")
     b.extend(text.encode())
     return b
     
-def compose_cmd(cmd, extra1=None, extra2=None, extra3=None):
-    if extra3 is not None:
-        return bytearray.fromhex(f"09{cmd.value:02x}3a{extra1:02x}{extra2:02x}{extra3:02x}")
-    elif extra2 is not None:
-        return bytearray.fromhex(f"09{cmd.value:02x}3a{extra1:02x}{extra2:02x}")
-    elif extra1 is not None:
-        return bytearray.fromhex(f"09{cmd.value:02x}3a{extra1:02x}")
-    else:
-        return bytearray.fromhex(f"09{cmd.value:02x}")
+def compose_cmd(cmd, *extra):
+    if not extra:
+        return bytearray.fromhex(f"09{cmd.value:02x}3a")
+    
+    bytes = bytearray.fromhex(f"09{cmd.value:02x}3a") # 3a is the colon (":")
+    for val in extra:
+        bytes.extend(bytearray.fromhex(f"{val:02x}"))
+
+    return bytes
 
 def expect(cmd):
     return f"P{chr(cmd.value)}"
@@ -264,12 +266,34 @@ class PolyKybd():
             self.enable_overlays()
         return True, f"{counter} overlays sent."
 
+    def send_overlay_roi_for_keycode(self, keycode, modifier, map):
+        overlay = map[keycode]
+        if not overlay.roi:
+            self.send_overlay_for_keycode(keycode, modifier, map)
+        
+        compressed = 0
+        lock = None
+        sliced_bmp = overlay.roi_bytes
+        sliced_len = len(sliced_bmp)
+        start = 0 
+        end = MAX_BYTES_PER_MSG - 7
+        max = math.ceil((sliced_len+7)/MAX_BYTES_PER_MSG)
+        for msg_num in range(0, max):
+            self.log.info(f"Sending roi overlay msg {msg_num + 1} of {max} with {end-start} bytes.")
+            cmd = compose_cmd(Cmd.START_ROI_OVERLAY, keycode, modifier.value, overlay.left, overlay.top, overlay.right, overlay.bottom, compressed) if msg_num == 0 else compose_cmd(Cmd.SEND_ROI_OVERLAY)
+            data = cmd + sliced_bmp[start:end]
+            start = end
+            end = min(end + MAX_BYTES_PER_MSG, sliced_len)
+            result, msg, lock = self.hid.send_multiple(data, lock)
+            if not result:
+                return False, f"Error sending roi overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
+        if lock:
+            lock.release()
+            
     def send_overlay_for_keycode(self, keycode, modifier, map):
         lock = None
-        bmp = map[keycode]
-        #compressed = RleCompression.compress(bmp)
-        #max = math.ceil(len(compressed)/(MAX_BYTES_PER_MSG-2))
-        #self.log.info(f"msg 360/{NUM_MSGS} vs {len(compressed)}/{max}.")
+        bmp = map[keycode].all_bytes
+
         for msg_num in range(0, NUM_MSGS):
             self.log.debug(f"Sending msg {msg_num + 1} of {NUM_MSGS}.")
             cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, msg_num)
@@ -282,7 +306,7 @@ class PolyKybd():
     
     def send_overlay_for_keycode_compressed(self, keycode, modifier, map):
         lock = None
-        encoded_bmp = RleCompression.compress(map[keycode])
+        encoded_bmp = map[keycode].compressed_bytes
         len_encoded = len(encoded_bmp)
         start = 0 
         end = MAX_BYTES_PER_MSG - 2
