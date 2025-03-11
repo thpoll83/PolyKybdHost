@@ -94,7 +94,7 @@ class HidHelper:
             self.interface = None
 
     def interface_acquired(self):
-        return self.interface != None
+        return self.interface is not None
 
     def send(self, data):
 

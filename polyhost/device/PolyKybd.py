@@ -9,12 +9,13 @@ import numpy as np
 from device import HidHelper, ImageConverter
 from device.Keycodes import KeyCode
 
-#overlay constants
+# overlay constants
 MAX_BYTES_PER_MSG = 29
 BYTES_PER_MSG = 24
 BYTES_PER_OVERLAY = int(72 * 40) / 8  # 360
 NUM_MSGS = int(BYTES_PER_OVERLAY / BYTES_PER_MSG)  # 360/24 = 15
-        
+
+
 class Cmd(Enum):
     GET_ID = 6
     GET_LANG = 7
@@ -38,30 +39,33 @@ class MaskFlag(Enum):
     RIGHT_TOP = 8
     RIGHT_BOTTOM = 16
 
+
 def compose_cmd_str(cmd, text):
-    b = bytearray.fromhex(f"09{cmd.value:02x}3a") # 3a is the colon (":")
+    b = bytearray.fromhex(f"09{cmd.value:02x}3a")  # 3a is the colon (":")
     b.extend(text.encode())
     return b
-    
+
+
 def compose_cmd(cmd, *extra):
     if not extra:
         return bytearray.fromhex(f"09{cmd.value:02x}3a")
-    
-    bytes = bytearray.fromhex(f"09{cmd.value:02x}3a") # 3a is the colon (":")
+
+    bytes = bytearray.fromhex(f"09{cmd.value:02x}3a")  # 3a is the colon (":")
     for val in extra:
         bytes.extend(bytearray.fromhex(f"{val:02x}"))
 
     return bytes
 
+
 def expect(cmd):
     return f"P{chr(cmd.value)}"
 
+
 def split_by_n_chars(text, n):
-    return [text[i:i+n] for i in range(0, len(text), n)]
+    return [text[i : i + n] for i in range(0, len(text), n)]
 
 
-
-class PolyKybd():
+class PolyKybd:
     """
     Communication to PolyKybd
     """
@@ -182,7 +186,7 @@ class PolyKybd():
         result, msg = self.query_current_lang()
         if not result:
             return False, msg
-        
+
         result, reply = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_LANG_LIST), 100, expect(Cmd.GET_LANG_LIST))
 
         if not result:
@@ -227,7 +231,7 @@ class PolyKybd():
     def send_overlays(self, filenames):
         counter = 0
         enabled = False
-            
+
         for filename in filenames:
             self.log.info(f"Send Overlay '{filename}'...")
             converter = ImageConverter.ImageConverter()
@@ -241,29 +245,29 @@ class PolyKybd():
 
             for modifier in ImageConverter.Modifier:
                 overlaymap = converter.extract_overlays(modifier)
-                #it is okay if there is no overlay for a modifier
+                # it is okay if there is no overlay for a modifier
                 if overlaymap:
                     self.log.debug(f"Sending overlays for modifier {modifier}.")
-                    
-                    #Send ESC first
+
+                    # Send ESC first
                     if modifier == ImageConverter.Modifier.NO_MOD:
                         if KeyCode.KC_ESCAPE.value in overlaymap.keys():
                             self.send_overlay_for_keycode(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
                             overlaymap.pop(KeyCode.KC_ESCAPE.value)
                         self.enable_overlays()
                         enabled = True
-                        
+
                     for keycode in overlaymap:
-                        #self.send_overlay_for_keycode_compressed(keycode, modifier, overlaymap)
+                        # self.send_overlay_for_keycode_compressed(keycode, modifier, overlaymap)
                         self.send_overlay_for_keycode(keycode, modifier, overlaymap)
                         if modifier != ImageConverter.Modifier.NO_MOD:
                             time.sleep(0.1)
-                    
+
                     all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
                     self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
                     counter = counter + 1
                     time.sleep(0.2)
-                    
+
         self.log.info(f"{counter} overlays sent.")
         if not enabled:
             self.enable_overlays()
@@ -273,7 +277,7 @@ class PolyKybd():
         overlay = mapping[keycode]
         if not overlay.roi:
             self.send_overlay_for_keycode(keycode, modifier, mapping)
-        
+
         compressed = 0
         lock = None
         sliced_bmp = overlay.roi_bytes
@@ -292,7 +296,7 @@ class PolyKybd():
                 return False, f"Error sending roi overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
         if lock:
             lock.release()
-            
+
     def send_overlay_for_keycode(self, keycode, modifier, mapping : dict):
         lock = None
         bmp = mapping[keycode].all_bytes
@@ -306,7 +310,7 @@ class PolyKybd():
                 return False, f"Error sending overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
         if lock:
             lock.release()
-    
+
     def send_overlay_for_keycode_compressed(self, keycode, modifier, mapping : dict):
         lock = None
         encoded_bmp = mapping[keycode].compressed_bytes
@@ -325,7 +329,7 @@ class PolyKybd():
                 return False, f"Error sending overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
         if lock:
             lock.release()
-    
+
     def execute_commands(self, command_list):
         for cmd_str in command_list:
             cmd_str = cmd_str.strip()
@@ -334,7 +338,7 @@ class PolyKybd():
             try:
                 match cmd:
                     case "wait":
-                        time.sleep(float(cmd_str[end + 1:]))
+                        time.sleep(float(cmd_str[end + 1 :]))
                     case "press":
                         self.press_key(int(cmd_str[end + 1:], 0))
                     case "release":
@@ -345,7 +349,7 @@ class PolyKybd():
                         cmd = params[:end] if end != -1 else params
                         match cmd:
                             case "send":
-                                self.send_overlays(params[end + 1:])
+                                self.send_overlays(params[end + 1 :])
                             case "reset":
                                 self.reset_overlays()
                             case _:

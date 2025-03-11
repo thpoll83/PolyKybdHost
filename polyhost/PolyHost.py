@@ -8,22 +8,37 @@ import yaml
 
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QCursor, QPalette, QColor
-from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
+from PyQt5.QtWidgets import (
+    QApplication,
+    QSystemTrayIcon,
+    QMenu,
+    QAction,
+    QMessageBox,
+    QFileDialog,
+)
 
 from device import PolyKybd, PolyKybdMock
-from input import LinuxGnomeInputHelper, LinuxPlasmaHelper, MacOSInputHelper, WindowsInputHelper
+from input import (
+    LinuxGnomeInputHelper,
+    LinuxPlasmaHelper,
+    MacOSInputHelper,
+    WindowsInputHelper,
+)
 from _version import __version__
 
 import CommandsSubMenu
 import handler.OverlayHandler as OverlayHandler
 
-IS_PLASMA = os.getenv('XDG_CURRENT_DESKTOP')=="KDE"
+IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
+
 
 def sort_by_country_abc(item):
     return item[2:]
-    
+
+
 def get_overlay_path(filepath):
     return os.path.join(os.path.dirname(__file__), "overlays", filepath)
+
 
 class PolyHost(QApplication):
     def __init__(self, log_level):
@@ -53,7 +68,7 @@ class PolyHost(QApplication):
         self.menu = QMenu()
         self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}");
 
-        #self.keeb = PolyKybdMock.PolyKybdMock(f"{__version__}")
+        # self.keeb = PolyKybdMock.PolyKybdMock(f"{__version__}")
         self.keeb = PolyKybd.PolyKybd()
         self.connected = False
         self.paused = False
@@ -102,11 +117,15 @@ class PolyHost(QApplication):
 
         entries = self.helper.getLanguages(self.helper)
 
-        success, sys_lang = self.helper.getCurrentLanguage(self.helper)
-        if success:
-            self.log.info(f"Current System Language: {sys_lang}")
+        result = self.helper.getCurrentLanguage(self.helper)
+        if result:
+            success, sys_lang = result
+            if success:
+                self.log.info(f"Current System Language: {sys_lang}")
+            else:
+                self.log.warning("Could not query current System Language.")
         else:
-            self.log.warning("Could not query current System Language.")
+            self.log.warning("Could not connect to PolyKybd.")
 
         for e in entries:
             self.log.info(f"Enumerating input language {e}")
@@ -114,15 +133,15 @@ class PolyHost(QApplication):
 
         self.managed_connection_status()
         # Add the menu to the tray
-        self.tray.activated.connect(self.on_activated)
+        #self.tray.activated.connect(self.on_activated)
         self.tray.setContextMenu(self.menu)
         self.tray.show()
-        
+
         self.mapping = {}
         self.read_overlay_mapping_file("polyhost/overlays/overlay-mapping.poly.yaml")
-        
+
         self.overlay_handler = OverlayHandler.OverlayHandler(self.mapping)
-            
+
         self.setStyle("Fusion")
         # Now use a palette to switch to dark colors:
         palette = QPalette()
@@ -144,16 +163,16 @@ class PolyHost(QApplication):
         palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
         palette.setColor(QPalette.HighlightedText, highlightTextColor)
         self.setPalette(palette)
-        
+
         QTimer.singleShot(1000, self.activeWindowReporter)
-            
-    def on_activated(self, i_reason):
-        if i_reason == QSystemTrayIcon.Trigger:
-            if not self.menu.isVisible():
-                self.menu.popup(QCursor.pos())
-            else:
-                self.menu.hide()
-                    
+
+    # def on_activated(self, i_reason):
+    #     if i_reason == QSystemTrayIcon.Trigger:
+    #         if not self.menu.isVisible():
+    #             self.menu.popup(QCursor.pos())
+    #         else:
+    #             self.menu.hide()
+
     def managed_connection_status(self):
         for action in self.menu.actions():
             action.setEnabled(self.connected and not self.paused)
@@ -176,7 +195,7 @@ class PolyHost(QApplication):
     def pause(self):
         self.paused = not self.paused
         if self.paused:
-            self.status.setText(f"Reconnect")
+            self.status.setText("Reconnect")
             self.connected = False
             self.status.setToolTip("")
         else:
@@ -192,7 +211,7 @@ class PolyHost(QApplication):
                     result, lang = self.keeb.query_current_lang()
             else:
                 result, lang = self.keeb.query_current_lang()
-             
+
             if result != self.connected:
                 self.connected, msg = self.keeb.query_version_info()
                 if self.connected:
@@ -227,7 +246,7 @@ class PolyHost(QApplication):
             num = 0x1F1E6 + ord(ch.upper()) - ord('A')
             result = f"{result}{chr(num)}"
         return result
-        
+
     def add_supported_lang(self, menu):
         result, _ = self.keeb.enumerate_lang()
         if result:
@@ -241,7 +260,7 @@ class PolyHost(QApplication):
                     text = f"{text} {chr(0x2714)}"
                 item = self.keeb_lang_menu.addAction(text, self.change_keeb_language)
                 item.setData(lang)
-                
+
     def update_ui_on_lang_change(self, new_lang):
         if hasattr(self, 'keeb_lang_menu'):
             self.keeb_lang_menu.setTitle(f"Selected Language: {new_lang[:2]} {self.langcode_to_flag(new_lang[2:])}")
@@ -251,7 +270,7 @@ class PolyHost(QApplication):
                 if lang == new_lang:
                     text = f"{text} {chr(0x2714)}"
                 action.setText(text)
-        
+
     @staticmethod
     def open_via():
         webbrowser.open("https://usevia.app", new=0, autoraise=True)
@@ -297,12 +316,12 @@ class PolyHost(QApplication):
             self.log.info("No file selected. Operation canceled.")
 
     def save_overlay_mapping_file(self, filename="overlay-mapping.poly.yaml"):
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             f.write(yaml.dump(self.mapping))
 
     def quit_app(self):
         self.is_closing = True
-        self.overlay_handler.close()   
+        self.overlay_handler.close()
         self.quit()
 
     def closeEvent(self, event):
@@ -315,17 +334,17 @@ class PolyHost(QApplication):
         else:
             for overlay in data:
                 files.append(get_overlay_path(overlay))
-        
-        if len(files)>0:
+
+        if len(files) > 0:
             try:
                 self.cmdMenu.reset_overlays()
                 self.keeb.send_overlays(files)
             except Exception as e:
                 self.log.warning(f"Failed to send overlays '{files}':{e}")
-                self.log.warning(''.join(traceback.format_exception(e)))
-                
+                self.log.warning("".join(traceback.format_exception(e)))
+
             self.keeb.set_idle(False)
-               
+
     def activeWindowReporter(self):
         lang = self.reconnect()
         if self.connected:
@@ -337,14 +356,14 @@ class PolyHost(QApplication):
                 else:
                     self.log.warning(f"Could not change OS language to '{lang}'")
                 self.current_lang = lang
-                    
+
             data, cmd = self.overlay_handler.handleActiveWindow()
             if cmd == OverlayHandler.OverlayCommand.DISABLE:
                 self.keeb.disable_overlays()
             elif cmd == OverlayHandler.OverlayCommand.ENABLE:
                 self.keeb.enable_overlays()
 
-            if data and cmd==OverlayHandler.OverlayCommand.OFF_ON:
+            if data and cmd == OverlayHandler.OverlayCommand.OFF_ON:
                 self.sendOverlayData(data)
 
         if not self.is_closing:
