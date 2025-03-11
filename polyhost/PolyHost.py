@@ -38,8 +38,7 @@ class PolyHost(QApplication):
         self.setApplicationName('PolyHost')
 
         self.setQuitOnLastWindowClosed(False)
-        self.win = None
-        self.isClosing = False
+        self.is_closing = False
 
         # Create the icon
         icon = QIcon("polyhost/icons/pcolor.png")
@@ -197,23 +196,23 @@ class PolyHost(QApplication):
             if result != self.connected:
                 self.connected, msg = self.keeb.query_version_info()
                 if self.connected:
-                    kbVersion = self.keeb.get_sw_version()
+                    kb_version = self.keeb.get_sw_version()
                     expected = __version__
-                    if kbVersion.startswith(expected[:3]):
-                        if kbVersion != expected:
-                            self.log.warning(f"Warning! Minor version mismatch, expected {expected}, got {kbVersion}'.")
+                    if kb_version.startswith(expected[:3]):
+                        if kb_version != expected:
+                            self.log.warning(f"Warning! Minor version mismatch, expected {expected}, got {kb_version}'.")
                             self.status.setIcon(QIcon("polyhost/icons/sync_problem.svg"))
                             self.status.setText(
-                                f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kbVersion}, please update to {expected}!)")
+                                f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version}, please update to {expected}!)")
                         else:
                             self.status.setIcon(QIcon("polyhost/icons/sync.svg"))
                             self.status.setText(
-                                f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kbVersion})")
+                                f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
                         if result:
                             self.update_ui_on_lang_change(lang)
                     else:
                         self.status.setIcon(QIcon("polyhost/icons/sync_disabled.svg"))
-                        self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kbVersion}'.")
+                        self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
                         self.connected = False
                 else:
                     self.status.setIcon(QIcon("polyhost/icons/sync_disabled.svg"))
@@ -230,7 +229,7 @@ class PolyHost(QApplication):
         return result
         
     def add_supported_lang(self, menu):
-        result, msg = self.keeb.enumerate_lang()
+        result, _ = self.keeb.enumerate_lang()
         if result:
             self.current_lang = self.keeb.get_current_lang()
             self.keeb_lang_menu = menu.addMenu(f"Selected Language: {self.current_lang[:2]} {self.langcode_to_flag(self.current_lang[2:])}")
@@ -302,7 +301,7 @@ class PolyHost(QApplication):
             f.write(yaml.dump(self.mapping))
 
     def quit_app(self):
-        self.isClosing = True
+        self.is_closing = True
         self.overlay_handler.close()   
         self.quit()
 
@@ -347,11 +346,8 @@ class PolyHost(QApplication):
 
             if data and cmd==OverlayHandler.OverlayCommand.OFF_ON:
                 self.sendOverlayData(data)
-            
-        else:
-            self.win = None
-            self.title = None
-        if not self.isClosing:
+
+        if not self.is_closing:
             QTimer.singleShot(500, self.activeWindowReporter)
 
     # except Exception as e:

@@ -1,4 +1,5 @@
-import yaml
+import logging
+
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QFileDialog
 
@@ -9,6 +10,7 @@ class CommandsSubMenu():
     def __init__(self, parent, keeb):
         self.parent = parent
         self.keeb = keeb
+        self.log = logging.getLogger('PolyForwarder')
 
     def buildMenu(self, parentMenu):
         cmdMenu = parentMenu.addMenu(QIcon("polyhost/icons/settings.svg"), "All PolyKybd Commands")

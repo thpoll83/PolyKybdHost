@@ -50,6 +50,7 @@ class RemoteHandler():
         
         self.handle = None
         self.title = None
+        self.name = None
         self.currentMappingEntry = None
         
         self.connections = {}
@@ -123,14 +124,14 @@ class RemoteHandler():
         return False
       
             
-    def remoteChanged(self, remoteEntry):
-        if "ip" not in remoteEntry.keys():
+    def remoteChanged(self, remote_entry: dict):
+        if "ip" not in remote_entry.keys():
             self.listen_to_forwarder()
             return False
-        if not remoteEntry["ip"] in self.connections:
+        if not remote_entry["ip"] in self.connections:
             return False
         
-        data = self.connections[remoteEntry["ip"]]
+        data = self.connections[remote_entry["ip"]]
         
         if data and len(data)>2 and self.handle != data["handle"] and self.title != data["title"]:
             self.handle = data["handle"]

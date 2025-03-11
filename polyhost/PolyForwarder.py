@@ -9,6 +9,7 @@ from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QPalette, QColor
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon
 from _version import __version__
+from handler.RemoteHandler import TCP_PORT
 
 IS_PLASMA = os.getenv('XDG_CURRENT_DESKTOP')=="KDE"
 
@@ -29,7 +30,8 @@ class PolyForwarder(QApplication):
 
         self.setQuitOnLastWindowClosed(False)
         self.win = None
-        self.isClosing = False
+        self.is_closing = False
+        self.title = None
 
         # Create the icon
         icon = QIcon("polyhost/icons/pcolor.png")
@@ -82,7 +84,11 @@ class PolyForwarder(QApplication):
             s.close()
         except socket.timeout as err:
             self.log.error(f"Connection timed out {err}")
-        
+
+    def quit_app(self):
+        self.is_closing = True
+        self.quit()
+
     def activeWindowReporter(self):
         win = pwc.getActiveWindow()
         if win:
@@ -97,5 +103,5 @@ class PolyForwarder(QApplication):
             self.title = None
             self.sendToHost(0, "", "")
 
-        if not self.isClosing:
+        if not self.is_closing:
             QTimer.singleShot(500, self.activeWindowReporter)

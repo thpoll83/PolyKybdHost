@@ -3,6 +3,9 @@ from pathlib import Path
 
 
 class LinuxPlasmaHelper():
+    def __init__(self):
+        self.list = None
+
     # [Layout]
     # DisplayNames=,,
     # LayoutList=kr,us,at

@@ -93,7 +93,7 @@ class HidHelper:
         else:
             self.interface = None
 
-    def interface_aquired(self):
+    def interface_acquired(self):
         return self.interface != None
 
     def send(self, data):
