@@ -252,14 +252,14 @@ class PolyKybd:
                     # Send ESC first
                     if modifier == ImageConverter.Modifier.NO_MOD:
                         if KeyCode.KC_ESCAPE.value in overlaymap.keys():
-                            self.send_overlay_for_keycode(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
+                            self.send_overlay_for_keycode_compressed(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
                             overlaymap.pop(KeyCode.KC_ESCAPE.value)
                         self.enable_overlays()
                         enabled = True
 
                     for keycode in overlaymap:
-                        # self.send_overlay_for_keycode_compressed(keycode, modifier, overlaymap)
-                        self.send_overlay_for_keycode(keycode, modifier, overlaymap)
+                        self.send_overlay_for_keycode_compressed(keycode, modifier, overlaymap)
+                        #self.send_overlay_for_keycode(keycode, modifier, overlaymap)
                         if modifier != ImageConverter.Modifier.NO_MOD:
                             time.sleep(0.1)
 
@@ -319,7 +319,7 @@ class PolyKybd:
         end = MAX_BYTES_PER_MSG - 2
         max_msg = math.ceil((len_encoded+2)/MAX_BYTES_PER_MSG)
         for msg_num in range(0, max_msg):
-            self.log.info(f"Sending compressed msg {msg_num + 1} of {max_msg} with {end-start} bytes.")
+            # self.log.info(f"Sending compressed msg {msg_num + 1} of {max_msg} with {end-start} bytes.")
             cmd = compose_cmd(Cmd.START_COMPRESSED_OVERLAY, keycode, modifier.value) if msg_num == 0 else compose_cmd(Cmd.SEND_COMPRESSED_OVERLAY)
             data = cmd + encoded_bmp[start:end]
             start = end
