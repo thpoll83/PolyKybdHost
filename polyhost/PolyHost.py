@@ -31,6 +31,9 @@ import handler.OverlayHandler as OverlayHandler
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
+UPDATE_CYCLE_MSEC = 250
+RECONNECT_CYCLE_MSEC = 1000
+NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 
 def sort_by_country_abc(item):
     return item[2:]
@@ -83,6 +86,8 @@ class PolyHost(QApplication):
         self.about.triggered.connect(self.open_about)
         self.reconnect()
 
+        self.last_update_msec = 0
+        self.current_lang = None
         self.keeb_lang_menu = None
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
@@ -286,7 +291,7 @@ class PolyHost(QApplication):
     def send_shortcuts(self):
         fname = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
         if len(fname) > 0:
-            self.keeb.send_overlay(fname[0])
+            self.keeb.send_overlays(fname[0])
         else:
             self.log.info("No file selected. Operation canceled.")
 
@@ -324,7 +329,7 @@ class PolyHost(QApplication):
         self.overlay_handler.close()
         self.quit()
 
-    def closeEvent(self, event):
+    def closeEvent(self, _):
         self.cmdMenu.disable_overlays()
 
     def sendOverlayData(self, data):
@@ -346,18 +351,23 @@ class PolyHost(QApplication):
             self.keeb.set_idle(False)
 
     def activeWindowReporter(self):
-        lang = self.reconnect()
+        self.last_update_msec = self.last_update_msec + UPDATE_CYCLE_MSEC
+        lang = None
+        if self.last_update_msec > RECONNECT_CYCLE_MSEC:
+            lang = self.reconnect()
+            self.last_update_msec = 0
         if self.connected:
-            if self.current_lang != lang:
+            self.last_update_msec = RECONNECT_CYCLE_MSEC * 2 #just to limit that
+            if lang and self.current_lang != lang:
                 if self.helper.setLanguage(self.helper, f"{lang[:2]}-{lang[2:]}"):
                     data = self.overlay_handler.getOverlayData()
                     if data:
                         self.sendOverlayData(data)
                 else:
-                    self.log.warning(f"Could not change OS language to '{lang}'")
+                    self.log.warning("Could not change OS language to '%s'", lang)
                 self.current_lang = lang
 
-            data, cmd = self.overlay_handler.handleActiveWindow()
+            data, cmd = self.overlay_handler.handleActiveWindow(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
             if cmd == OverlayHandler.OverlayCommand.DISABLE:
                 self.keeb.disable_overlays()
             elif cmd == OverlayHandler.OverlayCommand.ENABLE:
@@ -367,7 +377,7 @@ class PolyHost(QApplication):
                 self.sendOverlayData(data)
 
         if not self.is_closing:
-            QTimer.singleShot(500, self.activeWindowReporter)
+            QTimer.singleShot(UPDATE_CYCLE_MSEC, self.activeWindowReporter)
 
     # except Exception as e:
     #    self.log.warning(f"Failed to report active window: {e}")

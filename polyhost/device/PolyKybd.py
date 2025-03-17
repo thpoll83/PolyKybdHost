@@ -50,11 +50,11 @@ def compose_cmd(cmd, *extra):
     if not extra:
         return bytearray.fromhex(f"09{cmd.value:02x}3a")
 
-    bytes = bytearray.fromhex(f"09{cmd.value:02x}3a")  # 3a is the colon (":")
+    byte_stream = bytearray.fromhex(f"09{cmd.value:02x}3a")  # 3a is the colon (":")
     for val in extra:
-        bytes.extend(bytearray.fromhex(f"{val:02x}"))
+        byte_stream.extend(bytearray.fromhex(f"{val:02x}"))
 
-    return bytes
+    return byte_stream
 
 
 def expect(cmd):
@@ -73,15 +73,19 @@ class PolyKybd:
     def __init__(self):
         self.log = logging.getLogger('PolyHost')
         self.all_languages = list()
+        self.current_lang = None
         self.hid = None
         self.name = None
         self.sw_version = None
         self.hw_version = None
-
-    def get_log_handler(self):
-        return self.log
+        # self.stat_plain = 0
+        # self.stat_comp = 0
+        # self.stat_roi = 0
+        # self.stat_croi = 0
+        # self.stat_best = 0
 
     def connect(self):
+        """Connect to PolyKybd"""
         # Connect to Keeb
         if not self.hid:
             self.hid = HidHelper.HidHelper(0x2021, 0x2007)
@@ -91,8 +95,11 @@ class PolyKybd:
                 self.log.debug("Reconnecting to PolyKybd...")
                 try:
                     self.hid = HidHelper.HidHelper(0x2021, 0x2007)
-                except Exception as e:
-                    self.log.warning(f"Could not reconnect: {e}")
+                except HidHelper.hid.HIDException as e:
+                    self.log.warning("Could not reconnect: %s", e)
+                    return False
+                except ValueError as e:
+                    self.log.warning("Problem with provided values: %s", e)
                     return False
         return self.hid.interface_acquired()
 
@@ -143,11 +150,11 @@ class PolyKybd:
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
 
     def set_brightness(self, brightness):
-        self.log.info(f"Setting Display Brightness to {brightness}...")
+        self.log.info("Setting Display Brightness to %d...", brightness)
         return self.hid.send(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
 
     def press_and_release_key(self, keycode, duration):
-        self.log.info(f"Pressing {keycode} for {duration} sec...")
+        self.log.info("Pressing 0x%2x for %f sec...", keycode, duration)
         result, msg = self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
         if result:
             # for now, it is fine to block this thread
@@ -157,18 +164,19 @@ class PolyKybd:
             return result, msg
 
     def press_key(self, keycode):
-        self.log.info(f"Pressing {keycode}...")
+        self.log.info("Pressing 0x%2x...", keycode)
         return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
 
     def release_key(self, keycode):
-        self.log.info(f"Releasing {keycode}...")
+        self.log.info("Releasing 0x%2x...", keycode)
         return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
 
     def set_idle(self, idle):
-        self.log.debug(f"Setting idle state to {idle}...")
+        self.log.debug("Setting idle state to %s...", "True" if idle else "False")
         return self.hid.send(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
 
     def query_current_lang(self):
+        """Query current keyboard language an remember language internally"""
         self.log.debug("Query Languages...")
 
         try:
@@ -221,7 +229,7 @@ class PolyKybd:
         if not result:
             return False, f"Could not change to {lang} ({msg})"
 
-        self.log.info(f"Language changed to {lang} ({msg}).")
+        self.log.info("Language changed to %s (%s).", lang, msg)
         return True, lang
 
     def set_overlay_masking(self, flags, set):
@@ -229,11 +237,12 @@ class PolyKybd:
         return self.hid.send(compose_cmd(cmd, 0x1e))
 
     def send_overlays(self, filenames):
-        counter = 0
+        overlay_counter = 0
+        hid_msg_counter = 0
         enabled = False
 
         for filename in filenames:
-            self.log.info(f"Send Overlay '{filename}'...")
+            self.log.info("Send Overlay '%s'...", filename)
             converter = ImageConverter.ImageConverter()
             if not converter:
                 return False, f"Invalid file '{filename}'."
@@ -242,7 +251,6 @@ class PolyKybd:
                 return False, f"Unable to read '{filename}'."
 
             self.log.debug(f"BYTES_PER_MSG: {BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_MSGS: {NUM_MSGS}")
-
             for modifier in ImageConverter.Modifier:
                 overlaymap = converter.extract_overlays(modifier)
                 # it is okay if there is no overlay for a modifier
@@ -252,26 +260,28 @@ class PolyKybd:
                     # Send ESC first
                     if modifier == ImageConverter.Modifier.NO_MOD:
                         if KeyCode.KC_ESCAPE.value in overlaymap.keys():
-                            self.send_overlay_for_keycode_compressed(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
+                            hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
                             overlaymap.pop(KeyCode.KC_ESCAPE.value)
                         self.enable_overlays()
                         enabled = True
 
                     for keycode in overlaymap:
-                        self.send_overlay_for_keycode_compressed(keycode, modifier, overlaymap)
+                        hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(keycode, modifier, overlaymap)
                         #self.send_overlay_for_keycode(keycode, modifier, overlaymap)
-                        if modifier != ImageConverter.Modifier.NO_MOD:
-                            time.sleep(0.1)
+                        #if modifier != ImageConverter.Modifier.NO_MOD:
+                        #    time.sleep(0.1)
 
                     all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
                     self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
-                    counter = counter + 1
-                    time.sleep(0.2)
+                    overlay_counter = overlay_counter + 1
+                    
+                    #time.sleep(0.2)
 
-        self.log.info(f"{counter} overlays sent.")
+        # self.log.info(f"Sum Plain: {self.stat_plain} Comp: {self.stat_comp} Roi: {self.stat_roi} CRoi: {self.stat_croi} Best: {self.stat_best}")
+        self.log.info(f"{overlay_counter} overlays sent ({hid_msg_counter} hid messages).")
         if not enabled:
             self.enable_overlays()
-        return True, f"{counter} overlays sent."
+        return True, "Overlays sent."
 
     def send_overlay_roi_for_keycode(self, keycode, modifier, mapping : dict):
         overlay = mapping[keycode]
@@ -282,7 +292,7 @@ class PolyKybd:
         lock = None
         sliced_bmp = overlay.roi_bytes
         sliced_len = len(sliced_bmp)
-        start = 0 
+        start = 0
         end = MAX_BYTES_PER_MSG - 7
         max_msg = math.ceil((sliced_len+7)/MAX_BYTES_PER_MSG)
         for msg_num in range(0, max_msg):
@@ -296,6 +306,7 @@ class PolyKybd:
                 return False, f"Error sending roi overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
         if lock:
             lock.release()
+        return max_msg
 
     def send_overlay_for_keycode(self, keycode, modifier, mapping : dict):
         lock = None
@@ -310,14 +321,24 @@ class PolyKybd:
                 return False, f"Error sending overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
         if lock:
             lock.release()
+        return NUM_MSGS
 
     def send_overlay_for_keycode_compressed(self, keycode, modifier, mapping : dict):
         lock = None
         encoded_bmp = mapping[keycode].compressed_bytes
         len_encoded = len(encoded_bmp)
-        start = 0 
+        start = 0
         end = MAX_BYTES_PER_MSG - 2
         max_msg = math.ceil((len_encoded+2)/MAX_BYTES_PER_MSG)
+        # roi_msg = math.ceil((len(mapping[keycode].roi_bytes)+6)/MAX_BYTES_PER_MSG)
+        # croi_msg = math.ceil((len(mapping[keycode].compressed_roi_bytes)+6)/MAX_BYTES_PER_MSG)
+        # best = min(max_msg, roi_msg, croi_msg)
+        # self.log.info(f"Keycode {keycode}: Plain: {NUM_MSGS} C: {max_msg} R: {roi_msg} CR: {croi_msg} --> {best}")
+        # self.stat_plain = self.stat_plain+NUM_MSGS
+        # self.stat_comp = self.stat_comp+max_msg
+        # self.stat_roi = self.stat_roi+roi_msg
+        # self.stat_croi = self.stat_croi+croi_msg
+        # self.stat_best = self.stat_best + best
         for msg_num in range(0, max_msg):
             # self.log.info(f"Sending compressed msg {msg_num + 1} of {max_msg} with {end-start} bytes.")
             cmd = compose_cmd(Cmd.START_COMPRESSED_OVERLAY, keycode, modifier.value) if msg_num == 0 else compose_cmd(Cmd.SEND_COMPRESSED_OVERLAY)
@@ -329,8 +350,10 @@ class PolyKybd:
                 return False, f"Error sending overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
         if lock:
             lock.release()
+        return max_msg
 
     def execute_commands(self, command_list):
+        """Execute a list of commands"""
         for cmd_str in command_list:
             cmd_str = cmd_str.strip()
             end = cmd_str.find(" ")

@@ -15,8 +15,10 @@ if not IS_PLASMA:
 class OverlayHandler:
     def __init__(self, mapping):
         self.log = logging.getLogger("PolyHost")
-
-        self.setWin()
+        self.last_update_msec = 0
+        self.prev_win = None
+        self.win = None
+        self.set_win()
         self.currentMappingEntry = None
         self.lastMappingEntry = None
         self.mapping = mapping
@@ -47,7 +49,7 @@ class OverlayHandler:
             if has_contains:
                 self.annotate(entry["titles-contains"].items())
 
-    def setWin(self, win=None, title=None, handle=None):
+    def set_win(self, win=None, title=None, handle=None):
         self.win = win
         self.title = title
         self.handle = handle
@@ -121,53 +123,58 @@ class OverlayHandler:
                 f"Active App Changed: \"{name}\", Title: \"{self.win.title.encode('utf-8')}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}"
             )
 
-    def handleActiveWindow(self):
+    def handleActiveWindow(self, update_cycle_time_msec, accept_time_msec):
+        self.last_update_msec = self.last_update_msec + update_cycle_time_msec
         win = pwc.getActiveWindow()
         if win:
-            local_win_changed = (
-                self.win is None
-                or win.getHandle() != self.handle
-                or win.title != self.title
-            )
+            if self.prev_win != win:
+                self.prev_win = win
+                self.last_update_msec = 0
+            if self.last_update_msec > accept_time_msec:
+                self.last_update_msec = accept_time_msec  * 2 #just to limit that
+                local_win_changed = (
+                    self.win is None
+                    or win.getHandle() != self.handle
+                    or win.title != self.title
+                )
 
-            if local_win_changed:
-                # remember active window
-                self.setWin(win, win.title, win.getHandle())
-                if win.title == "PolyHost":
-                    return None, OverlayCommand.NONE
-                try:
-                    self.log_win()
-                    if self.mapping:
-                        found = False
-                        appName = self.win.getAppName().split(".")[0].lower()
-                        if appName in self.mapping.keys():
-                            found, cmd = self.tryToMatchWindow(
-                                appName, self.mapping[appName]
-                            )
-                            if found:
-                                self.log.info(f"Changing to {appName}")
-                                return self.getOverlayData(), cmd
-                        if self.currentMappingEntry and not found:
-                            self.currentMappingEntry = None
-                            self.log.info("Nothing active")
-                            return None, OverlayCommand.DISABLE
-                except Exception as e:
-                    self.log.warning(f"Failed retrieving active window: {e}")
-                self.log.info("No match")
-                return None, OverlayCommand.DISABLE
-            elif self.isRemoteMappingEntry() and self.remote_handler.remoteChanged(
-                self.currentMappingEntry
-            ):
-                self.log.info("Remote")
-                if self.remote_handler.hasOverlay():
-                    return self.getOverlayData(), OverlayCommand.OFF_ON
-                else:
+                if local_win_changed:
+                    # remember active window
+                    self.set_win(win, win.title, win.getHandle())
+                    if win.title == "PolyHost":
+                        return None, OverlayCommand.NONE
+                    try:
+                        self.log_win()
+                        if self.mapping:
+                            found = False
+                            appName = self.win.getAppName().split(".")[0].lower()
+                            if appName in self.mapping.keys():
+                                found, cmd = self.tryToMatchWindow(
+                                    appName, self.mapping[appName]
+                                )
+                                if found:
+                                    self.log.info(f"Changing to {appName}")
+                                    return self.getOverlayData(), cmd
+                            if self.currentMappingEntry and not found:
+                                self.currentMappingEntry = None
+                                self.log.info("Nothing active")
+                                return None, OverlayCommand.DISABLE
+                    except Exception as e:
+                        self.log.warning(f"Failed retrieving active window: {e}")
+                    self.log.info("No match")
                     return None, OverlayCommand.DISABLE
-
+                elif self.isRemoteMappingEntry() and self.remote_handler.remoteChanged(
+                    self.currentMappingEntry
+                ):
+                    self.log.info("Remote")
+                    if self.remote_handler.hasOverlay():
+                        return self.getOverlayData(), OverlayCommand.OFF_ON
+                    else:
+                        return None, OverlayCommand.DISABLE
         else:
             if self.win:
                 self.log.info("No active window")
-                self.setWin()
+                self.set_win()
                 if self.currentMappingEntry:
                     self.currentMappingEntry = None
                     return None, OverlayCommand.DISABLE
