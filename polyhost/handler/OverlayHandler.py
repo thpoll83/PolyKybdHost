@@ -11,6 +11,14 @@ IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 if not IS_PLASMA:
     import pywinctl as pwc
 
+TITLE_SW = "titles-startswith"
+TITLE_EW = "titles-endswith"
+TITLE_CNTS = "titles-contains"
+TITLE = "title"
+INDEX = "index"
+FLAGS = "flags"
+OVERLAY = "overlay"
+REMOTE = "remote"
 
 class OverlayHandler:
     def __init__(self, mapping):
@@ -27,14 +35,14 @@ class OverlayHandler:
 
     def annotate(self, entries):
         for _, entry in entries:
-            has_overlay = "overlay" in entry.keys()
-            has_remote = "remote" in entry.keys()
-            has_title = "title" in entry.keys()
-            has_starts_with = "titles-startswith" in entry.keys()
-            has_ends_with = "titles-endswith" in entry.keys()
-            has_contains = "titles-contains" in entry.keys()
+            has_overlay = OVERLAY in entry.keys()
+            has_remote = REMOTE in entry.keys()
+            has_title = TITLE in entry.keys()
+            has_starts_with = TITLE_SW in entry.keys() and entry[TITLE_SW]
+            has_ends_with = TITLE_EW in entry.keys() and entry[TITLE_EW]
+            has_contains = TITLE_CNTS in entry.keys() and entry[TITLE_CNTS]
 
-            entry["flags"] = [
+            entry[FLAGS] = [
                 has_overlay,
                 has_remote,
                 has_title,
@@ -43,13 +51,14 @@ class OverlayHandler:
                 has_contains,
             ]
             if has_starts_with:
-                self.annotate(entry["titles-startswith"].items())
+                self.annotate(entry[TITLE_SW].items())
             if has_ends_with:
-                self.annotate(entry["titles-endswith"].items())
+                self.annotate(entry[TITLE_EW].items())
             if has_contains:
-                self.annotate(entry["titles-contains"].items())
+                self.annotate(entry[TITLE_CNTS].items())
 
     def set_win(self, win=None, title=None, handle=None):
+        """Set the active window"""
         self.win = win
         self.title = title
         self.handle = handle
@@ -62,41 +71,40 @@ class OverlayHandler:
             has_starts_with,
             has_ends_with,
             has_contains,
-        ) = entry["flags"]
+        ) = entry[FLAGS]
         match = has_overlay or has_remote
         try:
             if match:
-                titleElements = (
-                    self.title.split() if has_starts_with or has_ends_with else []
-                )
-                if len(titleElements) > 0:
+                elem = self.title.split() if has_starts_with or has_ends_with else []
+                elem_count = len(elem)
+                if elem_count > 0:
                     if (
                         has_starts_with
-                        and titleElements[0] in entry["titles-startswith"].keys()
+                        and elem[0] in entry[TITLE_SW].keys()
                     ):
                         found, cmd = self.tryToMatchWindow(
-                            name, entry["titles-startswith"][titleElements[0]]
+                            name, entry[TITLE_SW][elem[0]]
                         )
                         if found:
                             return True, cmd
                     if (
                         has_ends_with
-                        and titleElements[-1] in entry["titles-endswith"].keys()
+                        and elem[-1] in entry[TITLE_EW].keys()
                     ):
                         found, cmd = self.tryToMatchWindow(
-                            name, entry["titles-endswith"][titleElements[-1]]
+                            name, entry[TITLE_EW][elem[-1]]
                         )
                         if found:
                             return True, cmd
                     if has_contains:
-                        contains = entry["titles-contains"]
-                        for elem in titleElements:
+                        contains = entry[TITLE_CNTS]
+                        for elem in elem:
                             if elem in contains.keys():
                                 found, cmd = self.tryToMatchWindow(name, contains[elem])
                                 if found:
                                     return True, cmd
                 if self.title and has_title:
-                    match = match and re.search(entry["title"], self.title)
+                    match = match and re.search(entry[TITLE], self.title)
         except re.error as e:
             self.log.warning(
                 f"Cannot match entry '{name}': {entry}, because '{e.msg}'@{e.pos} with '{e.pattern}'"
@@ -161,6 +169,7 @@ class OverlayHandler:
                                 return None, OverlayCommand.DISABLE
                     except Exception as e:
                         self.log.warning(f"Failed retrieving active window: {e}")
+                        self.log.warning("".join(traceback.format_exception(e)))
                     self.log.info("No match")
                     return None, OverlayCommand.DISABLE
                 elif self.isRemoteMappingEntry() and self.remote_handler.remoteChanged(
@@ -185,15 +194,15 @@ class OverlayHandler:
     def isRemoteMappingEntry(self):
         return (
             self.currentMappingEntry
-            and self.currentMappingEntry["flags"][Flags.HAS_REMOTE.value]
+            and self.currentMappingEntry[FLAGS][Flags.HAS_REMOTE.value]
         )  # 0 for remote
 
     def getOverlayData(self):
         if (
             self.currentMappingEntry
-            and self.currentMappingEntry["flags"][Flags.HAS_OVERLAY.value]
+            and self.currentMappingEntry[FLAGS][Flags.HAS_OVERLAY.value]
         ):  # 0 for overlay
-            return self.currentMappingEntry["overlay"]
+            return self.currentMappingEntry[OVERLAY]
         elif self.remote_handler.hasOverlay():
             return self.remote_handler.getOverlayData()
         return None
