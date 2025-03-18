@@ -1,6 +1,7 @@
 
 import argparse
 import logging
+import os
 import sys
 
 from PolyForwarder import PolyForwarder
@@ -17,7 +18,7 @@ if __name__ == '__main__':
     args=parser.parse_args()
 
     if args.host:
-        print("Executing Forwarder...")
+        print(f"Executing Forwarder. Sending to {args.host}")
         app = PolyForwarder(logging.DEBUG if args.debug else logging.INFO, args.host)
     else:
         print("Executing PolyHost...")

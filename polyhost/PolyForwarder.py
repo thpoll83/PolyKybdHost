@@ -16,6 +16,8 @@ IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 if not IS_PLASMA:
     import pywinctl as pwc
 
+UPDATE_CYCLE_MSEC = 250
+NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 
 class PolyForwarder(QApplication):
     def __init__(self, log_level, host):
@@ -34,8 +36,10 @@ class PolyForwarder(QApplication):
 
         self.setQuitOnLastWindowClosed(False)
         self.win = None
+        self.prev_win = None
         self.is_closing = False
         self.title = None
+        self.last_update_msec = 0
 
         # Create the icon
         icon = QIcon("polyhost/icons/pcolor.png")
@@ -93,17 +97,24 @@ class PolyForwarder(QApplication):
         self.quit()
 
     def activeWindowReporter(self):
+        self.last_update_msec = self.last_update_msec + UPDATE_CYCLE_MSEC
         win = pwc.getActiveWindow()
         if win:
-            if (
-                self.win is None
-                or win.getHandle() != self.win.getHandle()
-                or win.title != self.title
-            ):
-                self.win = win
-                self.title = win.title
-                appName = self.win.getAppName()
-                self.sendToHost(win.getHandle(), self.title, appName)
+            if self.prev_win != win:
+                self.prev_win = win
+                self.last_update_msec = 0
+            if self.last_update_msec > NEW_WINDOW_ACCEPT_TIME_MSEC:
+                self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2 #just to limit that
+                if (
+                    self.win is None
+                    or win.getHandle() != self.win.getHandle()
+                    or win.title != self.title
+                ):
+                    self.win = win
+                    self.title = win.title
+                    appName = self.win.getAppName()
+                    self.sendToHost(win.getHandle(), self.title, appName)
+                    self.log.info("Active App: %s", appName)
         elif self.win:
             self.log.info("No active window")
             self.win = None
@@ -111,4 +122,6 @@ class PolyForwarder(QApplication):
             self.sendToHost(0, "", "")
 
         if not self.is_closing:
-            QTimer.singleShot(500, self.activeWindowReporter)
+            QTimer.singleShot(UPDATE_CYCLE_MSEC, self.activeWindowReporter)
+        else:
+            self.log.info("No more active window reporting.")
