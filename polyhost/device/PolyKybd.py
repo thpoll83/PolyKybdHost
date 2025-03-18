@@ -77,6 +77,7 @@ class PolyKybd:
         self.hid = None
         self.name = None
         self.sw_version = None
+        self.sw_version_num = None
         self.hw_version = None
         # self.stat_plain = 0
         # self.stat_comp = 0
@@ -119,10 +120,11 @@ class PolyKybd:
             if match:
                 self.name = match.group("name")
                 self.sw_version = match.group("sw")
+                self.sw_version_num = [int(x) for x in self.sw_version.split(".")]
                 self.hw_version = match.group("hw")
                 return True, msg
             else:
-                self.log.warning(f"Could not match version string: {msg}")
+                self.log.warning("Could not match version string: %s", msg)
                 return False, "Could not match version string. Please update firmware."
         except Exception as e:
             self.log.warning(f"Exception matching version string '{msg}':\n{e}")
@@ -133,6 +135,10 @@ class PolyKybd:
 
     def get_sw_version(self):
         return self.sw_version
+
+    def get_sw_version_number(self):
+        """Get the software version number in as 3 ints: major, minor, patch"""
+        return self.sw_version_num
 
     def get_hw_version(self):
         return self.hw_version
@@ -236,7 +242,7 @@ class PolyKybd:
         cmd = Cmd.OVERLAY_FLAGS_ON if set else Cmd.OVERLAY_FLAGS_OFF
         return self.hid.send(compose_cmd(cmd, 0x1e))
 
-    def send_overlays(self, filenames):
+    def send_overlays(self, filenames, allow_compressed):
         overlay_counter = 0
         hid_msg_counter = 0
         enabled = False
@@ -260,13 +266,19 @@ class PolyKybd:
                     # Send ESC first
                     if modifier == ImageConverter.Modifier.NO_MOD:
                         if KeyCode.KC_ESCAPE.value in overlaymap.keys():
-                            hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
+                            if allow_compressed:
+                                hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
+                            else:
+                                hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
                             overlaymap.pop(KeyCode.KC_ESCAPE.value)
                         self.enable_overlays()
                         enabled = True
 
                     for keycode in overlaymap:
-                        hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(keycode, modifier, overlaymap)
+                        if allow_compressed:
+                            hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(keycode, modifier, overlaymap)
+                        else:
+                            hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode(keycode, modifier, overlaymap)
                         #self.send_overlay_for_keycode(keycode, modifier, overlaymap)
                         #if modifier != ImageConverter.Modifier.NO_MOD:
                         #    time.sleep(0.1)

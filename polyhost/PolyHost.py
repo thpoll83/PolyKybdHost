@@ -221,6 +221,7 @@ class PolyHost(QApplication):
                 self.connected, msg = self.keeb.query_version_info()
                 if self.connected:
                     kb_version = self.keeb.get_sw_version()
+                    self.kb_sw_version = self.keeb.get_sw_version_number()
                     expected = __version__
                     if kb_version.startswith(expected[:3]):
                         if kb_version != expected:
@@ -332,7 +333,7 @@ class PolyHost(QApplication):
     def closeEvent(self, _):
         self.cmdMenu.disable_overlays()
 
-    def sendOverlayData(self, data):
+    def sendOverlayData(self, data, allow_compressed):
         files = []
         if isinstance(data, str):
             files.append(get_overlay_path(data))
@@ -343,7 +344,7 @@ class PolyHost(QApplication):
         if len(files) > 0:
             try:
                 self.cmdMenu.reset_overlays()
-                self.keeb.send_overlays(files)
+                self.keeb.send_overlays(files, allow_compressed)
             except Exception as e:
                 self.log.warning(f"Failed to send overlays '{files}':{e}")
                 self.log.warning("".join(traceback.format_exception(e)))
@@ -362,7 +363,7 @@ class PolyHost(QApplication):
                 if self.helper.setLanguage(self.helper, f"{lang[:2]}-{lang[2:]}"):
                     data = self.overlay_handler.getOverlayData()
                     if data:
-                        self.sendOverlayData(data)
+                        self.sendOverlayData(data, self.kb_sw_version[1]>=5 and self.kb_sw_version[2] >=4)
                 else:
                     self.log.warning("Could not change OS language to '%s'", lang)
                 self.current_lang = lang
@@ -374,7 +375,7 @@ class PolyHost(QApplication):
                 self.keeb.enable_overlays()
 
             if data and cmd == OverlayHandler.OverlayCommand.OFF_ON:
-                self.sendOverlayData(data)
+                self.sendOverlayData(data, self.kb_sw_version[1]>=5 and self.kb_sw_version[2] >=4)
 
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.activeWindowReporter)
