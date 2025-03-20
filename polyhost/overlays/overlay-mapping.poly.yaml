@@ -1,5 +1,5 @@
 chrome:
-  overlay: chrome_template.mods.png
+  overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
   titles-startswith:
     Pull:
       overlay: bitbucket_pr_template.mods.png
@@ -42,7 +42,6 @@ clion:
 jetbrains_client:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
 devenv:
-  overlay: vsstudio_template.png
+  overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png]
 lockapp:
   overlay: windows_lockscreen_template.png
-  title: Windows Default Lock Screen
