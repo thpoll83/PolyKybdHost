@@ -133,7 +133,12 @@ class OverlayHandler:
 
     def handleActiveWindow(self, update_cycle_time_msec, accept_time_msec):
         self.last_update_msec = self.last_update_msec + update_cycle_time_msec
-        win = pwc.getActiveWindow()
+        win = None
+        try:
+            win = pwc.getActiveWindow()
+        except Exception as e:
+            self.log.warning(f"Failed retrieving active window: {e}")
+            self.log.warning("".join(traceback.format_exception(e)))
         if win:
             if self.prev_win != win:
                 self.prev_win = win

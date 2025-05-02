@@ -127,6 +127,7 @@ class PolyHost(QApplication):
             success, sys_lang = result
             if success:
                 self.log.info(f"Current System Language: {sys_lang}")
+                self.current_lang = sys_lang
             else:
                 self.log.warning("Could not query current System Language.")
         else:
