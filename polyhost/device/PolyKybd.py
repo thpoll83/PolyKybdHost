@@ -1,20 +1,12 @@
 import logging
-import math
 import re
 import time
 from enum import Enum
 
 import numpy as np
 
-from device import HidHelper, ImageConverter
+from device import HidHelper, ImageConverter, OverlayData
 from device.Keycodes import KeyCode
-
-# overlay constants
-MAX_BYTES_PER_MSG = 30
-BYTES_PER_MSG = 24
-BYTES_PER_OVERLAY = int(72 * 40) / 8  # 360
-NUM_MSGS = int(BYTES_PER_OVERLAY / BYTES_PER_MSG)  # 360/24 = 15
-
 
 class Cmd(Enum):
     GET_ID = 6
@@ -55,6 +47,13 @@ def compose_cmd(cmd, *extra):
         byte_stream.extend(bytearray.fromhex(f"{val:02x}"))
 
     return byte_stream
+
+def compose_roi_header(keycode, modifier, overlay, compressed):
+    b1 = (modifier & 0xf0) | ((overlay.top<<2)&0x0f)                # 4 bits modifier, 4 bits top
+    b2 = (overlay.top&0xfc) | (overlay.bottom<<2)                   # 2 bits top, 6 bits bottom
+    b3 = overlay.left                                               # 7 bits left (1 unused)
+    b4 = overlay.right | 0x80  if compressed else overlay.right     # 1 bit compression, 7 bits right
+    return bytearray.fromhex(f"09{Cmd.START_ROI_OVERLAY.value:02x}{keycode:02x}{b1:02x}{b2:02x}{b3:02x}{b4:02x}")
 
 
 def expect(cmd):
@@ -183,8 +182,7 @@ class PolyKybd:
 
     def query_current_lang(self):
         """Query current keyboard language an remember language internally"""
-        self.log.debug("Query Languages...")
-
+  
         try:
             result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_LANG), 100, expect(Cmd.GET_LANG))
             if result:
@@ -256,7 +254,7 @@ class PolyKybd:
             if not converter.open(filename):
                 return False, f"Unable to read '{filename}'."
 
-            self.log.debug(f"BYTES_PER_MSG: {BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_MSGS: {NUM_MSGS}")
+            self.log.debug(f"PLAIN_OVERLAY_BYTES_PER_MSG: {OverlayData.PLAIN_OVERLAY_BYTES_PER_MSG}, BYTES_PER_OVERLAY: {OverlayData.BYTES_PER_OVERLAY}, NUM_PLAIN_OVERLAY_MSGS: {OverlayData.NUM_PLAIN_OVERLAY_MSGS}")
             for modifier in ImageConverter.Modifier:
                 overlaymap = converter.extract_overlays(modifier)
                 # it is okay if there is no overlay for a modifier
@@ -264,15 +262,15 @@ class PolyKybd:
                     self.log.debug(f"Sending overlays for modifier {modifier}.")
 
                     # Send ESC first
-                    if modifier == ImageConverter.Modifier.NO_MOD:
+                    if not enabled and modifier == ImageConverter.Modifier.NO_MOD:
                         if KeyCode.KC_ESCAPE.value in overlaymap.keys():
                             if allow_compressed:
                                 hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
                             else:
                                 hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
                             overlaymap.pop(KeyCode.KC_ESCAPE.value)
-                        self.enable_overlays()
-                        enabled = True
+                            self.enable_overlays()
+                            enabled = True
 
                     for keycode in overlaymap:
                         if allow_compressed:
@@ -291,98 +289,79 @@ class PolyKybd:
 
         # self.log.info(f"Sum Plain: {self.stat_plain} Comp: {self.stat_comp} Roi: {self.stat_roi} CRoi: {self.stat_croi} Best: {self.stat_best}")
         self.log.info(f"{overlay_counter} overlays sent ({hid_msg_counter} hid messages).")
+        #self.log.info(f"Stats: Plain:{self.stat_plain} C:{self.stat_comp} R:{self.stat_roi} CR:{self.stat_croi} --> {self.stat_best}")
         if not enabled:
             self.enable_overlays()
         return True, "Overlays sent."
 
-    def send_overlay_roi_for_keycode(self, keycode, modifier, mapping : dict):
+    def send_overlay_roi_for_keycode(self, keycode, modifier, mapping : dict, compressed):
         overlay = mapping[keycode]
         if not overlay.roi:
-            self.send_overlay_for_keycode(keycode, modifier, mapping)
-
-        compressed = 0
+            self.send_overlay_for_keycode_compressed(keycode, modifier, mapping)
+            
+        hdr = compose_roi_header(keycode, modifier.value, overlay, compressed)
         lock = None
-        sliced_bmp = overlay.roi_bytes
-        sliced_len = len(sliced_bmp)
+        buffer = overlay.compressed_roi_bytes if compressed else overlay.roi_bytes
+        num_msgs = overlay.compressed_roi_msgs if compressed else overlay.roi_msgs
+        num_bytes = len(buffer)
         start = 0
-        end = MAX_BYTES_PER_MSG - 7
-        max_msg = math.ceil((sliced_len+7)/MAX_BYTES_PER_MSG)
-        for msg_num in range(0, max_msg):
-            self.log.info(f"Sending roi overlay msg {msg_num + 1} of {max_msg} with {end-start} bytes.")
-            cmd = compose_cmd(Cmd.START_ROI_OVERLAY, keycode, modifier.value, overlay.left, overlay.top, overlay.right, overlay.bottom, compressed) if msg_num == 0 else compose_cmd(Cmd.SEND_ROI_OVERLAY)
-            data = cmd + sliced_bmp[start:end]
+        end = OverlayData.MAX_DATA_PER_MSG - 5 # minus one for keycode, minus 4 for modifier|top|bottom|left|right|compressed
+        for msg_num in range(0,num_msgs):
+            #self.log.info(f"Sending roi overlay msg {msg_num + 1} of {overlay.roi_msg_msgs} with {end-start} bytes.")
+            cmd = hdr if msg_num == 0 else compose_cmd(Cmd.SEND_ROI_OVERLAY)
+            data = cmd + buffer[start:end]
             start = end
-            end = min(end + MAX_BYTES_PER_MSG, sliced_len)
+            end = min(end + OverlayData.MAX_DATA_PER_MSG, num_bytes)
             result, msg, lock = self.hid.send_multiple(data, lock)
             if not result:
-                return False, f"Error sending roi overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
+                return False, f"Error sending roi overlay message {msg_num + 1}/{num_msgs} ({msg})"
         if lock:
             lock.release()
-        return max_msg
+        return num_msgs
 
     def send_overlay_for_keycode(self, keycode, modifier, mapping : dict, skip_empty=True):
         lock = None
-        bmp = mapping[keycode].all_bytes
-
-        for msg_num in range(0, NUM_MSGS):
-            self.log.debug("Sending msg %d of %d", msg_num + 1, NUM_MSGS)
+        overlay = mapping[keycode]
+        msg_cnt = 0
+        max_msgs = OverlayData.NUM_PLAIN_OVERLAY_MSGS
+        for msg_num in range(0, max_msgs):
+            #self.log.debug("Sending msg %d of %d", msg_num + 1, max_msgs)
             cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, msg_num)
-            data = bmp[msg_num * BYTES_PER_MSG:(msg_num + 1) * BYTES_PER_MSG]
-            if skip_empty and all(b == 0 for b in data):
-                self.log.debug("Skipping msg %d as all bytes are 0", msg_num + 1)
+            from_idx = msg_num * OverlayData.PLAIN_OVERLAY_BYTES_PER_MSG
+            to_idx = (msg_num + 1) * OverlayData.PLAIN_OVERLAY_BYTES_PER_MSG
+            data = overlay.all_bytes[from_idx:to_idx]
+            if skip_empty and msg_num+1!=max_msgs and all(b == 0 for b in data):
+                #self.log.debug("Skipping msg %d as all bytes are 0", msg_num + 1)
                 continue
             result, msg, lock = self.hid.send_multiple(cmd + data, lock)
             if not result:
-                return False, f"Error sending overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
+                return False, f"Error sending overlay message {msg_num + 1}/{max_msgs} ({msg})"
+            msg_cnt = msg_cnt + 1
         if lock:
             lock.release()
-        return NUM_MSGS
-    
-    def helper_calc_overlay_bytes(self, keycode, modifier, mapping : dict, skip_empty=True):
-        bmp = mapping[keycode].all_bytes
-        #bytes = 0
-        msg_cnt = 0
-        for msg_num in range(0, NUM_MSGS):
-            self.log.debug("Sending msg %d of %d", msg_num + 1, NUM_MSGS)
-            #cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, msg_num)
-            data = bmp[msg_num * BYTES_PER_MSG:(msg_num + 1) * BYTES_PER_MSG]
-            if skip_empty and all(b == 0 for b in data):
-                self.log.debug("Skipping msg %d as all bytes are 0", msg_num + 1)
-                continue
-            #bytes = bytes + len(cmd) + len(data)
-            msg_cnt = msg_cnt + 1
-
+        #self.log.info(f"Keycode {keycode}: Sent {msg_cnt} plain msgs")
         return msg_cnt
-
+    
     def send_overlay_for_keycode_compressed(self, keycode, modifier, mapping : dict):
         lock = None
-        encoded_bmp = mapping[keycode].compressed_bytes
-        len_encoded = len(encoded_bmp)
+        overlay = mapping[keycode]
+        hdr = compose_cmd(Cmd.START_COMPRESSED_OVERLAY, keycode, modifier.value)
+        num_bytes = len(overlay.compressed_bytes)
         start = 0
-        end = MAX_BYTES_PER_MSG - 2 # minus one byte for the keycode and one for the modifier -> -2
-        max_msg = math.ceil((len_encoded+2)/MAX_BYTES_PER_MSG)
-        plain_msg = self.helper_calc_overlay_bytes(keycode, modifier, mapping)
-        roi_msg = math.ceil((len(mapping[keycode].roi_bytes)+4)/MAX_BYTES_PER_MSG)
-        croi_msg = math.ceil((len(mapping[keycode].compressed_roi_bytes)+4)/MAX_BYTES_PER_MSG)
-        best = min(max_msg, roi_msg, croi_msg)
-        self.log.info(f"Keycode {keycode}: Plain:{plain_msg} C:{max_msg} R:{roi_msg} CR:{croi_msg} --> {best}")
-        self.stat_plain = self.stat_plain+plain_msg
-        self.stat_comp = self.stat_comp+max_msg
-        self.stat_roi = self.stat_roi+roi_msg
-        self.stat_croi = self.stat_croi+croi_msg
-        self.stat_best = self.stat_best + best
-        for msg_num in range(0, max_msg):
+        end = OverlayData.MAX_DATA_PER_MSG - 2 # minus one byte for the keycode and one for the modifier -> -2
+        for msg_num in range(0, overlay.compressed_msgs):
             # self.log.info(f"Sending compressed msg {msg_num + 1} of {max_msg} with {end-start} bytes.")
-            cmd = compose_cmd(Cmd.START_COMPRESSED_OVERLAY, keycode, modifier.value) if msg_num == 0 else compose_cmd(Cmd.SEND_COMPRESSED_OVERLAY)
-            data = cmd + encoded_bmp[start:end]
+            cmd = hdr if msg_num == 0 else compose_cmd(Cmd.SEND_COMPRESSED_OVERLAY)
+            data = cmd + overlay.compressed_bytes[start:end]
             start = end
-            end = min(end + MAX_BYTES_PER_MSG, len_encoded)
+            end = min(end + OverlayData.MAX_DATA_PER_MSG, num_bytes)
             result, msg, lock = self.hid.send_multiple(data, lock)
             if not result:
-                return False, f"Error sending overlay message {msg_num + 1}/{NUM_MSGS} ({msg})"
+                return False, f"Error sending overlay message {msg_num + 1}/{overlay.compressed_msgs} ({msg})"
         if lock:
             lock.release()
-        return max_msg
+        #self.log.info(f"Keycode {keycode}: Sent {max_msg} compressed msgs")
+        return overlay.compressed_msgs
 
     def execute_commands(self, command_list):
         """Execute a list of commands"""

@@ -87,11 +87,6 @@ class PolyKybdMock():
         if not converter.open(filename):
             return False, f"Unable to read '{filename}'."
 
-        BYTES_PER_MSG = 24
-        BYTES_PER_OVERLAY = int(72 * 40) / 8  # 360
-        NUM_MSGS = int(BYTES_PER_OVERLAY / BYTES_PER_MSG)  # 360/24 = 15
-        self.log.debug(f"BYTES_PER_MSG: {BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_MSGS: {NUM_MSGS}")
-
         counter = 0
         for modifier in ImageConverter.Modifier:
             overlaymap = converter.extract_overlays(modifier)

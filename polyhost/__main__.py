@@ -13,7 +13,7 @@ if __name__ == '__main__':
                     prog='PolyHost',
                     usage='%(prog)s [options]',
                     description='Communication with your PolyKybd')
-    parser.add_argument('--debug', default=False, help='Include debug level messages to the log file')
+    parser.add_argument('--debug', default=False, action='store_true', help='Include debug level messages to the log file')
     parser.add_argument('--host', help='Specify a host where the PolyKybd is physically connected to')
     args=parser.parse_args()
 
