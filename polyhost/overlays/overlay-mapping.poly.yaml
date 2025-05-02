@@ -34,11 +34,11 @@ code:
   title: .* Visual Studio Code
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
-  app: java.*
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
 clion:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
-  app: (clion)|(jetbrains_client).*
+clion64:
+  overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
 jetbrains_client:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
 devenv:
