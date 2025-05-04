@@ -3,6 +3,7 @@ import time
 
 from device import ImageConverter
 from device.PolyKybd import split_by_n_chars
+from device.Keycodes import KeyCode
 
 
 class PolyKybdMock():
@@ -108,6 +109,48 @@ class PolyKybdMock():
             self.enable_overlays()
         return True, f"{counter} overlays sent."
 
+    def send_overlays(self, filenames, allow_compressed):
+        overlay_counter = 0
+        hid_msg_counter = 0
+        enabled = False
+        if type(filenames) is not list:
+            filenames = [filenames]
+        
+        for filename in filenames:
+            self.log.info("Send Overlay '%s'...", filename)
+            converter = ImageConverter.ImageConverter()
+            if not converter:
+                return False, f"Invalid file '{filename}'."
+
+            if not converter.open(filename):
+                return False, f"Unable to read '{filename}'."
+
+            for modifier in ImageConverter.Modifier:
+                overlaymap = converter.extract_overlays(modifier)
+                # it is okay if there is no overlay for a modifier
+                if overlaymap:
+                    self.log.debug(f"Sending overlays for modifier {modifier}.")
+
+                    # Send ESC first
+                    if not enabled and modifier == ImageConverter.Modifier.NO_MOD:
+                        if KeyCode.KC_ESCAPE.value in overlaymap.keys():
+                            # if allow_compressed:
+                            #     hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
+                            # else:
+                            #     hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
+                            overlaymap.pop(KeyCode.KC_ESCAPE.value)
+                            self.enable_overlays()
+                            enabled = True
+
+                    all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
+                    self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
+                    overlay_counter = overlay_counter + 1
+
+        self.log.info(f"{overlay_counter} overlays sent ({hid_msg_counter} hid messages).")
+        if not enabled:
+            self.enable_overlays()
+        return True, "Overlays sent."
+    
     def execute_commands(self, command_list):
         for cmd_str in command_list:
             cmd_str = cmd_str.strip()

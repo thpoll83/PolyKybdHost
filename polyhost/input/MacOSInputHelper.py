@@ -3,15 +3,15 @@ import re
 
 lang_re = re.compile(r"^\s*\d+\) (.*)$")
 
-class MacOSInputHelper():
+class MacOSInputHelper:
     def getLanguages(self):
         result = subprocess.run(['languagesetup', '-Localized'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
         entries = iter(result.stdout.splitlines())
         languages = []
         for e in entries:
             e = str(e, encoding='utf-8')
-            m = lang_re.match(e);
-            if (m):
+            m = lang_re.match(e)
+            if m:
                 languages.append(m.group(1))
         return languages
 

@@ -7,7 +7,7 @@ import webbrowser
 import yaml
 
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QIcon, QCursor, QPalette, QColor
+from PyQt5.QtGui import QIcon, QPalette, QColor
 from PyQt5.QtWidgets import (
     QApplication,
     QSystemTrayIcon,
@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (
     QFileDialog,
 )
 
-from device import PolyKybd, PolyKybdMock
+from device import PolyKybd
 from input import (
     LinuxGnomeInputHelper,
     LinuxPlasmaHelper,
@@ -69,9 +69,10 @@ class PolyHost(QApplication):
 
         # Create the menu
         self.menu = QMenu()
-        self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}");
+        self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
-        # self.keeb = PolyKybdMock.PolyKybdMock(f"{__version__}")
+        #self.keeb = PolyKybdMock.PolyKybdMock(f"{__version__}")
+        self.kb_sw_version = None
         self.keeb = PolyKybd.PolyKybd()
         self.connected = False
         self.paused = False
@@ -293,7 +294,7 @@ class PolyHost(QApplication):
     def send_shortcuts(self):
         fname = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
         if len(fname) > 0:
-            self.keeb.send_overlays(fname[0])
+            self.keeb.send_overlays(fname[0], self.kb_sw_version[1]>=5 and self.kb_sw_version[2] >=4)
         else:
             self.log.info("No file selected. Operation canceled.")
 

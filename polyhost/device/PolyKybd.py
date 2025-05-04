@@ -383,7 +383,7 @@ class PolyKybd:
                         cmd = params[:end] if end != -1 else params
                         match cmd:
                             case "send":
-                                self.send_overlays(params[end + 1 :])
+                                self.send_overlays(params[end + 1:], True)
                             case "reset":
                                 self.reset_overlays()
                             case _:

@@ -1,5 +1,4 @@
 import logging
-from pathlib import Path
 import re
 import socket
 import threading
@@ -26,6 +25,7 @@ def receiveFromForwarder(log, connections):
     sock.listen(5)
     sock.settimeout(10.0)
 
+    conn = None
     while len(connections) > 0:
         try:
             conn, (addr, _) = sock.accept()
@@ -33,14 +33,11 @@ def receiveFromForwarder(log, connections):
             data = data.decode("utf-8")
             entries = [0, "", ""] if not data else data.split(";")
             if len(entries) > 2:
-                lookup = {}
-                lookup["handle"] = entries[0]
-                lookup["name"] = entries[1]
-                lookup["title"] = entries[2]
-                connections[addr] = lookup
+                connections[addr] = {"handle": entries[0], "name": entries[1], "title": entries[2]}
         except socket.timeout:
             time.sleep(3)
-    conn.close()
+    if conn:
+        conn.close()
     sock.close()
 
 

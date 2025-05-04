@@ -2,7 +2,7 @@ import subprocess
 
 from pynput.keyboard import Key, Controller
 
-class LinuxGnomeInputHelper():
+class LinuxGnomeInputHelper:
     def getLanguages(self):
         result = subprocess.run(['gsettings', 'get', 'org.gnome.desktop.input-sources', 'mru-sources'], stdout=subprocess.PIPE)
         entries = iter(result.stdout.splitlines())
@@ -19,7 +19,7 @@ class LinuxGnomeInputHelper():
         return iter(str(result.stdout, encoding='utf-8').splitlines())
 
     def setLanguage(self, lang):
-        available = self.getLanguages(self)
+        available = self.getLanguages()
         short_comparison = False
         if lang not in available:
             for lang_codes in available:
@@ -29,7 +29,7 @@ class LinuxGnomeInputHelper():
             if not short_comparison:
                 return False
         num_langs = len(available)
-        success, sys_lang = self.getCurrentLanguage(self)
+        success, sys_lang = self.getCurrentLanguage()
 
         controller = Controller()
         while success and num_langs>0:
@@ -39,11 +39,11 @@ class LinuxGnomeInputHelper():
             controller.press(Key.space)
             controller.release(Key.space)
             controller.release(Key.cmd)
-            success, sys_lang = self.getCurrentLanguage(self)
+            success, sys_lang = self.getCurrentLanguage()
             num_langs = num_langs - 1
             
         return False
     
     def getCurrentLanguage(self):
-        langs = self.getLanguages(self)
+        langs = self.getLanguages()
         return len(langs)>0, langs[0]

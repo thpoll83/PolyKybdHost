@@ -1,4 +1,3 @@
-import os
 import subprocess
 from pynput.keyboard import Key, Controller
 
@@ -12,7 +11,7 @@ query = """$ScriptBlock = {
     Remove-Job -Job $Job
     $CurrentLanguage"""
         
-class WindowsInputHelper():
+class WindowsInputHelper:
     def getLanguages(self):
         result = subprocess.run(['powershell', 'Get-WinUserLanguageList'], stdout=subprocess.PIPE)
         langCodes = []
@@ -27,7 +26,7 @@ class WindowsInputHelper():
         return langCodes
 
     def setLanguage(self, lang):
-        available = self.getLanguages(self)
+        available = self.getLanguages()
         short_comparison = False
         if lang not in available:
             for lang_codes in available:
@@ -37,7 +36,7 @@ class WindowsInputHelper():
             if not short_comparison:
                 return False
         num_langs = len(available)
-        success, sys_lang = self.getCurrentLanguage(self)
+        success, sys_lang = self.getCurrentLanguage()
 
         controller = Controller()
         while success and num_langs>0:

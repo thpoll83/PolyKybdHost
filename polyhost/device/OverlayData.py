@@ -19,7 +19,7 @@ def find_roi_rectangle(image):
     top, bottom = np.where(rows == 1)[0][[0, -1]]
     left, right = np.where(cols == 1)[0][[0, -1]]
 
-    return (int(top), int(left), int(bottom), int(right))
+    return int(top), int(left), int(bottom), int(right)
 
 def helper_calc_overlay_bytes(all_bytes, skip_empty=True):
     msg_cnt = 0
@@ -46,5 +46,12 @@ class OverlayData:
         self.compressed_msgs = math.ceil((len(self.compressed_bytes)+2)/MAX_DATA_PER_MSG)
         self.roi_msg_msgs = math.ceil((len(self.roi_bytes)+5)/MAX_DATA_PER_MSG)
         self.compressed_roi_msgs = math.ceil((len(self.compressed_roi_bytes)+5)/MAX_DATA_PER_MSG)
+        
+        # print(f"All: {len(self.all_bytes)}")
+        # print(", ".join(hex(b) for b in self.all_bytes))
+        # print(f"Roi: {len(self.roi_bytes)} - {self.top}, {self.left}, {self.bottom}, {self.right}")
+        # print(", ".join(hex(b) for b in self.roi_bytes))
+        # print(f"Compressed Roi: {len(self.compressed_roi_bytes)}")
+        # print(", ".join(hex(b) for b in self.compressed_roi_bytes))
     
 
