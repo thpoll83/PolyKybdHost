@@ -1,0 +1,1 @@
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2021", ATTRS{idProduct}=="2007", MODE="0666"

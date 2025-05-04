@@ -1,3 +1,4 @@
+import pathlib
 import threading
 import platform
 if platform.system() == 'Windows':
@@ -89,7 +90,18 @@ class HidHelper:
         raw_hid_interfaces = [i for i in device_interfaces if i['usage_page'] == usage_page and i['usage'] == usage]
 
         if len(raw_hid_interfaces) != 0:
-            self.interface = hid.Device(path=raw_hid_interfaces[0]['path'])
+            try:
+                self.interface = hid.Device(path=raw_hid_interfaces[0]['path'])
+            except hid.HIDException as e:
+                print(f"""It looks like you do not have permission to access the device.
+Please run the following commands, then reconnect the device and restart the application:
+
+sudo cp {os.path.join(pathlib.Path(__file__).parent.resolve(), "99-hid.rules")} /etc/udev/rules.d
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+""")
+                raise e
+                
         else:
             self.interface = None
 
