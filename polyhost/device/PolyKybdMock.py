@@ -14,6 +14,7 @@ class PolyKybdMock():
         self.log = logging.getLogger('PolyHost')
         self.all_languages = list()
         self.version = version
+        self.sw_version_num = [int(x) for x in version.split(".")]
         self.lang = lang
         self.langs = langs
 
@@ -31,6 +32,10 @@ class PolyKybdMock():
 
     def get_sw_version(self):
         return self.version
+    
+    def get_sw_version_number(self):
+        """Get the software version number in as 3 ints: major, minor, patch"""
+        return self.sw_version_num
 
     def get_hw_version(self):
         return self.version

@@ -15,6 +15,8 @@ IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
 if not IS_PLASMA:
     import pywinctl as pwc
+else:
+    import handler.KdeWindowReporter as pwc
 
 UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000

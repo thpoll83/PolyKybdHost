@@ -10,6 +10,9 @@ IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
 if not IS_PLASMA:
     import pywinctl as pwc
+else:
+    import handler.KdeWindowReporter as pwc
+
 
 TITLE_SW = "titles-startswith"
 TITLE_EW = "titles-endswith"
