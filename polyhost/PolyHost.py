@@ -112,18 +112,18 @@ class PolyHost(QApplication):
 
         self.helper = None
         if platform.system() == "Windows":
-            self.helper = WindowsInputHelper.WindowsInputHelper
+            self.helper = WindowsInputHelper.WindowsInputHelper()
         elif platform.system() == "Linux":
             if IS_PLASMA:
-                self.helper = LinuxPlasmaHelper.LinuxPlasmaHelper
+                self.helper = LinuxPlasmaHelper.LinuxPlasmaHelper()
             else:
-                self.helper = LinuxGnomeInputHelper.LinuxGnomeInputHelper
+                self.helper = LinuxGnomeInputHelper.LinuxGnomeInputHelper()
         elif platform.system() == "Darwin":
-            self.helper = MacOSInputHelper.MacOSInputHelper
+            self.helper = MacOSInputHelper.MacOSInputHelper()
 
-        entries = self.helper.getLanguages(self.helper)
+        entries = self.helper.getLanguages()
 
-        result = self.helper.getCurrentLanguage(self.helper)
+        result = self.helper.getCurrentLanguage()
         if result:
             success, sys_lang = result
             if success:
@@ -300,7 +300,7 @@ class PolyHost(QApplication):
 
     def change_system_language(self):
         lang = self.sender().text()
-        output = self.helper.setLanguage(self, lang)
+        output = self.helper.setLanguage(lang)
         if output:
             self.show_mb("Error", f"Changing input language to '{lang}' failed with:\n\"{output}\"")
         else:
@@ -362,7 +362,7 @@ class PolyHost(QApplication):
         if self.connected:
             self.last_update_msec = RECONNECT_CYCLE_MSEC * 2 #just to limit that
             if lang and self.current_lang != lang:
-                if self.helper.setLanguage(self.helper, f"{lang[:2]}-{lang[2:]}"):
+                if self.helper.setLanguage(f"{lang[:2]}-{lang[2:]}"):
                     data = self.overlay_handler.getOverlayData()
                     if data:
                         self.sendOverlayData(data, self.kb_sw_version[1]>=5 and self.kb_sw_version[2] >=4)
