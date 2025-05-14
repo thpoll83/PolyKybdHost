@@ -1,3 +1,4 @@
+import re
 import subprocess
 from pathlib import Path
 
@@ -12,27 +13,39 @@ class LinuxPlasmaHelper():
     # Use=true
     # VariantList=kr104,,
     def getLanguages(self):
-        with open(Path.home() / ".config" / "kxkbrc", "r") as file:
-            for line in file:
-                stripped = line.strip()
-                if stripped.startswith("LayoutList"):
-                    return stripped.split("=, ")[1:]
+        if not self.list:
+            with open(Path.home() / ".config" / "kxkbrc", "r") as file:
+                for line in file:
+                    stripped = line.strip()
+                    if stripped.startswith("LayoutList"):
+                        self.list = re.split('[=, ]', stripped)[1:]
+                        return self.list
+        return self.list
 
     def getAllLanguages(self):
         return self.getLanguages()
 
     def setLanguage(self, lang):
-        if not self.list:
-            self.list = self.getLanguages()
-        idx = self.list.index(lang)
+        self.getLanguages()
+        if lang in self.list:
+            idx = self.list.index(lang)
+        else:
+            lang_code, country_code = lang.split('-')
+            country_code = country_code.lower()
+            if country_code in self.list:
+                idx = self.list.index(country_code)
+            elif lang_code in self.list:
+                idx = self.list.index(lang_code)
+            else:
+                return False, f"Language {lang} not present on system: {self.list}"
         result = subprocess.run(
-            ["qdbus", "org.kde.keyboard", "/Layouts", "setLayout", idx],
+            ["qdbus", "org.kde.keyboard", "/Layouts", "setLayout", str(idx)],
             stdout=subprocess.PIPE,
         )
         output = str(result.stdout, encoding="utf-8")
-        if output != "true":
-            return output
-        return ""
+        if output != "true\n":
+            return False, output
+        return True, lang
     
     def getCurrentLanguage(self):
         False, "Not Implemented" 

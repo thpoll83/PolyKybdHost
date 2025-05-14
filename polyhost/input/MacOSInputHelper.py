@@ -19,8 +19,8 @@ class MacOSInputHelper:
         result = subprocess.run(['osascript', '-e', f"do shell script \"sudo languagesetup -langspec {lang}\" with administrator privileges"], stdout=subprocess.PIPE)
         output = str(result.stdout, encoding='utf-8')
         if not output.startswith(u"System Language set to:"):
-            return output
-        return ""
+            return False, output
+        return True, lang
     
     def getCurrentLanguage(self):
         False, "Not Implemented" 

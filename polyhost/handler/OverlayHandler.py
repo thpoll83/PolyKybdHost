@@ -126,14 +126,8 @@ class OverlayHandler:
 
     def log_win(self):
         name = self.win.getAppName()
-        if platform.system() == "Windows":
-            self.log.info(
-                f"Active App Changed: \"{name}\", Title: \"{self.win.title.encode('utf-8')}\"  Handle: {self.win.getHandle()}"
-            )
-        else:
-            self.log.info(
-                f"Active App Changed: \"{name}\", Title: \"{self.win.title.encode('utf-8')}\"  Handle: {self.win.getHandle()} Parent: {self.win.getParent()}"
-            )
+        self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %d", name, self.win.title.encode('utf-8'), self.win.getHandle())
+
 
     def handleActiveWindow(self, update_cycle_time_msec, accept_time_msec):
         self.last_update_msec = self.last_update_msec + update_cycle_time_msec

@@ -1,3 +1,4 @@
+# import logging
 import os
 import pathlib
 import subprocess
@@ -68,12 +69,19 @@ class KWin:
         self.title = elems[1]
         self.name = elems[0] 
         self.handle = hash(msg)
+        # log = logging.getLogger("PolyHost")
+        # log.info("KWin %s", msg)
     
     def getHandle(self):
         return self.handle
     
     def getAppName(self):
         return self.name
+
+    def __eq__(self, other):
+        if not other:
+            return False
+        return self.handle == other.getHandle()
 
 
 # reporter = KdeWindowReporter()

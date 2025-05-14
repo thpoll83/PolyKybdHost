@@ -300,8 +300,8 @@ class PolyHost(QApplication):
 
     def change_system_language(self):
         lang = self.sender().text()
-        output = self.helper.setLanguage(lang)
-        if output:
+        result, output = self.helper.setLanguage(lang)
+        if not result:
             self.show_mb("Error", f"Changing input language to '{lang}' failed with:\n\"{output}\"")
         else:
             self.log.info(f"Change input language to '{lang}'.")
@@ -362,12 +362,13 @@ class PolyHost(QApplication):
         if self.connected:
             self.last_update_msec = RECONNECT_CYCLE_MSEC * 2 #just to limit that
             if lang and self.current_lang != lang:
-                if self.helper.setLanguage(f"{lang[:2]}-{lang[2:]}"):
+                success, msg = self.helper.setLanguage(f"{lang[:2]}-{lang[2:]}")
+                if success:
                     data = self.overlay_handler.getOverlayData()
                     if data:
                         self.sendOverlayData(data, self.kb_sw_version[1]>=5 and self.kb_sw_version[2] >=4)
                 else:
-                    self.log.warning("Could not change OS language to '%s'", lang)
+                    self.log.warning("Could not change OS language to '%s': %s", lang, msg)
                 self.current_lang = lang
 
             data, cmd = self.overlay_handler.handleActiveWindow(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
