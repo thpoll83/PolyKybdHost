@@ -1,7 +1,12 @@
 import math
+
+#import matplotlib
+#import matplotlib.pyplot as plt
+
 import numpy as np
 
-from device import RleCompression
+from polyhost.device import RleCompression
+
 
 # overlay constants
 MAX_DATA_PER_MSG = 30
@@ -36,22 +41,34 @@ class OverlayData:
         
         self.roi = find_roi_rectangle(image)
         self.top, self.left, self.bottom, self.right = self.roi
-        roi_image = image[self.top : self.bottom, self.left : self.right]
+        roi = image[self.top: self.bottom, self.left: self.right]
         self.compressed_bytes = RleCompression.compress(self.all_bytes)
         
-        self.roi_bytes = np.packbits(roi_image, axis=None).tobytes()
+        self.roi_bytes = np.packbits(roi, axis=None).tobytes()
         self.compressed_roi_bytes = RleCompression.compress(self.roi_bytes)
         
         self.all_msgs = helper_calc_overlay_bytes(self.all_bytes)
         self.compressed_msgs = math.ceil((len(self.compressed_bytes)+2)/MAX_DATA_PER_MSG)
         self.roi_msg_msgs = math.ceil((len(self.roi_bytes)+5)/MAX_DATA_PER_MSG)
         self.compressed_roi_msgs = math.ceil((len(self.compressed_roi_bytes)+5)/MAX_DATA_PER_MSG)
-        
-        # print(f"All: {len(self.all_bytes)}")
+
+        # w = self.right - self.left
+        # h = self.bottom - self.top
+        # plt.imshow(image)
+        # plt.gca().add_patch(plt.Rectangle((self.top, self.left), w, h,
+        #                               edgecolor='red',
+        #                               facecolor='none',
+        #                               lw=2))
+        # plt.show()
+
+        # print("uint8_t all[] = {")
         # print(", ".join(hex(b) for b in self.all_bytes))
-        # print(f"Roi: {len(self.roi_bytes)} - {self.top}, {self.left}, {self.bottom}, {self.right}")
+        # print("};")
+        # print(f"uint8_t roi_y = {self.top}, roi_x = {self.left}, roi_yy = {self.bottom}, roi_xx = {self.right};")
+        # print("uint8_t roi[] = {")
         # print(", ".join(hex(b) for b in self.roi_bytes))
-        # print(f"Compressed Roi: {len(self.compressed_roi_bytes)}")
+        # print("};")
+        # print("uint8_t croi[] = {")
         # print(", ".join(hex(b) for b in self.compressed_roi_bytes))
-    
+        # print("};")
 

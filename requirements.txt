@@ -1,6 +1,6 @@
 PyQt5
-hid==1.0.6
+hid
 NumPy
-PyWinCtl==0.4
+PyWinCtl
 pynput
 PyYAML

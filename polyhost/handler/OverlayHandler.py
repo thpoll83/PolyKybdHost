@@ -2,9 +2,10 @@ import logging
 import os
 import platform
 import re
+import traceback
 
-import handler.RemoteHandler as RemoteHandler
-from handler.HandlerCommon import OverlayCommand, Flags
+import polyhost.handler.RemoteHandler as RemoteHandler
+from polyhost.handler.HandlerCommon import OverlayCommand, Flags
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 

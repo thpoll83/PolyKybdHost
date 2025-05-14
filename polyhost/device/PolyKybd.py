@@ -5,8 +5,8 @@ from enum import Enum
 
 import numpy as np
 
-from device import HidHelper, ImageConverter, OverlayData
-from device.Keycodes import KeyCode
+from polyhost.device import HidHelper, ImageConverter, OverlayData, CmdHelper
+from polyhost.device.Keycodes import KeyCode
 
 class Cmd(Enum):
     GET_ID = 6
@@ -30,38 +30,6 @@ class MaskFlag(Enum):
     LEFT_BOTTOM = 4
     RIGHT_TOP = 8
     RIGHT_BOTTOM = 16
-
-
-def compose_cmd_str(cmd, text):
-    b = bytearray.fromhex(f"09{cmd.value:02x}")
-    b.extend(text.encode())
-    return b
-
-
-def compose_cmd(cmd, *extra):
-    if not extra:
-        return bytearray.fromhex(f"09{cmd.value:02x}")
-
-    byte_stream = bytearray.fromhex(f"09{cmd.value:02x}")
-    for val in extra:
-        byte_stream.extend(bytearray.fromhex(f"{val:02x}"))
-
-    return byte_stream
-
-def compose_roi_header(keycode, modifier, overlay, compressed):
-    b1 = (modifier & 0xf0) | ((overlay.top<<2)&0x0f)                # 4 bits modifier, 4 bits top
-    b2 = (overlay.top&0xfc) | (overlay.bottom<<2)                   # 2 bits top, 6 bits bottom
-    b3 = overlay.left                                               # 7 bits left (1 unused)
-    b4 = overlay.right | 0x80  if compressed else overlay.right     # 1 bit compression, 7 bits right
-    return bytearray.fromhex(f"09{Cmd.START_ROI_OVERLAY.value:02x}{keycode:02x}{b1:02x}{b2:02x}{b3:02x}{b4:02x}")
-
-
-def expect(cmd):
-    return f"P{chr(cmd.value)}"
-
-
-def split_by_n_chars(text, n):
-    return [text[i : i + n] for i in range(0, len(text), n)]
 
 
 class PolyKybd:
@@ -105,7 +73,7 @@ class PolyKybd:
 
     def query_id(self):
         try:
-            result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_ID), 1000, expect(Cmd.GET_ID))
+            result, msg = self.hid.send_and_read_validate(CmdHelper.compose_cmd(Cmd.GET_ID), 1000, CmdHelper.expect(Cmd.GET_ID))
             return result, msg if not result else msg[3:]
         except Exception as e:
             return False, f"Exception: {e}"
@@ -144,47 +112,47 @@ class PolyKybd:
 
     def reset_overlays(self):
         self.log.info("Reset Overlays...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x20))
+        return self.hid.send(CmdHelper.compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x20))
 
     def enable_overlays(self):
         self.log.info("Enable Overlays...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x01))
+        return self.hid.send(CmdHelper.compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x01))
 
     def disable_overlays(self):
         self.log.info("Disable Overlays...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
+        return self.hid.send(CmdHelper.compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
 
     def set_brightness(self, brightness):
         self.log.info("Setting Display Brightness to %d...", brightness)
-        return self.hid.send(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
+        return self.hid.send(CmdHelper.compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
 
     def press_and_release_key(self, keycode, duration):
         self.log.info("Pressing 0x%2x for %f sec...", keycode, duration)
-        result, msg = self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
+        result, msg = self.hid.send(CmdHelper.compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
         if result:
             # for now, it is fine to block this thread
             time.sleep(duration)
-            return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
+            return self.hid.send(CmdHelper.compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
         else:
             return result, msg
 
     def press_key(self, keycode):
         self.log.info("Pressing 0x%2x...", keycode)
-        return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
+        return self.hid.send(CmdHelper.compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
 
     def release_key(self, keycode):
         self.log.info("Releasing 0x%2x...", keycode)
-        return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
+        return self.hid.send(CmdHelper.compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
 
     def set_idle(self, idle):
         self.log.debug("Setting idle state to %s...", "True" if idle else "False")
-        return self.hid.send(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
+        return self.hid.send(CmdHelper.compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
 
     def query_current_lang(self):
         """Query current keyboard language an remember language internally"""
   
         try:
-            result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_LANG), 100, expect(Cmd.GET_LANG))
+            result, msg = self.hid.send_and_read_validate(CmdHelper.compose_cmd(Cmd.GET_LANG), 100, CmdHelper.expect(Cmd.GET_LANG))
             if result:
                 self.current_lang = msg[3:]
                 return True, self.current_lang
@@ -199,17 +167,17 @@ class PolyKybd:
         if not result:
             return False, msg
 
-        result, reply = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_LANG_LIST), 100, expect(Cmd.GET_LANG_LIST))
+        result, reply = self.hid.send_and_read_validate(CmdHelper.compose_cmd(Cmd.GET_LANG_LIST), 100, CmdHelper.expect(Cmd.GET_LANG_LIST))
 
         if not result:
             return False, "Could not receive language list."
         lang_str = ""
         while result and len(reply) > 3:
-            assert reply.startswith(expect(Cmd.GET_LANG_LIST))
+            assert reply.startswith(CmdHelper.expect(Cmd.GET_LANG_LIST))
             lang_str = f"{lang_str}{reply[3:]}"
             result, reply = self.hid.read(100)
 
-        self.all_languages = split_by_n_chars(lang_str, 4)
+        self.all_languages = CmdHelper.split_by_n_chars(lang_str, 4)
         return True, lang_str
 
     def get_lang_list(self):
@@ -229,7 +197,7 @@ class PolyKybd:
         if lang not in self.all_languages:
             return False, f"Language '{lang}' not present on PolyKybd"
 
-        result, msg = self.hid.send_and_read_validate(compose_cmd_str(Cmd.CHANGE_LANG, lang), 100, expect(Cmd.CHANGE_LANG))
+        result, msg = self.hid.send_and_read_validate(CmdHelper.compose_cmd_str(Cmd.CHANGE_LANG, lang), 100, CmdHelper.expect(Cmd.CHANGE_LANG))
         if not result:
             return False, f"Could not change to {lang} ({msg})"
 
@@ -238,7 +206,7 @@ class PolyKybd:
 
     def set_overlay_masking(self, flags, set):
         cmd = Cmd.OVERLAY_FLAGS_ON if set else Cmd.OVERLAY_FLAGS_OFF
-        return self.hid.send(compose_cmd(cmd, 0x1e))
+        return self.hid.send(CmdHelper.compose_cmd(cmd, 0x1e))
 
     def send_overlays(self, filenames, allow_compressed):
         overlay_counter = 0
@@ -299,7 +267,7 @@ class PolyKybd:
         if not overlay.roi:
             self.send_overlay_for_keycode_compressed(keycode, modifier, mapping)
             
-        hdr = compose_roi_header(keycode, modifier.value, overlay, compressed)
+        hdr = CmdHelper.compose_roi_header(Cmd.START_ROI_OVERLAY, keycode, modifier.value, overlay, compressed)
         lock = None
         buffer = overlay.compressed_roi_bytes if compressed else overlay.roi_bytes
         num_msgs = overlay.compressed_roi_msgs if compressed else overlay.roi_msgs
@@ -308,7 +276,7 @@ class PolyKybd:
         end = OverlayData.MAX_DATA_PER_MSG - 5 # minus one for keycode, minus 4 for modifier|top|bottom|left|right|compressed
         for msg_num in range(0,num_msgs):
             #self.log.info(f"Sending roi overlay msg {msg_num + 1} of {overlay.roi_msg_msgs} with {end-start} bytes.")
-            cmd = hdr if msg_num == 0 else compose_cmd(Cmd.SEND_ROI_OVERLAY)
+            cmd = hdr if msg_num == 0 else CmdHelper.compose_cmd(Cmd.SEND_ROI_OVERLAY)
             data = cmd + buffer[start:end]
             start = end
             end = min(end + OverlayData.MAX_DATA_PER_MSG, num_bytes)
@@ -326,7 +294,7 @@ class PolyKybd:
         max_msgs = OverlayData.NUM_PLAIN_OVERLAY_MSGS
         for msg_num in range(0, max_msgs):
             #self.log.debug("Sending msg %d of %d", msg_num + 1, max_msgs)
-            cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, msg_num)
+            cmd = CmdHelper.compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, msg_num)
             from_idx = msg_num * OverlayData.PLAIN_OVERLAY_BYTES_PER_MSG
             to_idx = (msg_num + 1) * OverlayData.PLAIN_OVERLAY_BYTES_PER_MSG
             data = overlay.all_bytes[from_idx:to_idx]
@@ -345,13 +313,13 @@ class PolyKybd:
     def send_overlay_for_keycode_compressed(self, keycode, modifier, mapping : dict):
         lock = None
         overlay = mapping[keycode]
-        hdr = compose_cmd(Cmd.START_COMPRESSED_OVERLAY, keycode, modifier.value)
+        hdr = CmdHelper.compose_cmd(Cmd.START_COMPRESSED_OVERLAY, keycode, modifier.value)
         num_bytes = len(overlay.compressed_bytes)
         start = 0
         end = OverlayData.MAX_DATA_PER_MSG - 2 # minus one byte for the keycode and one for the modifier -> -2
         for msg_num in range(0, overlay.compressed_msgs):
             # self.log.info(f"Sending compressed msg {msg_num + 1} of {max_msg} with {end-start} bytes.")
-            cmd = hdr if msg_num == 0 else compose_cmd(Cmd.SEND_COMPRESSED_OVERLAY)
+            cmd = hdr if msg_num == 0 else CmdHelper.compose_cmd(Cmd.SEND_COMPRESSED_OVERLAY)
             data = cmd + overlay.compressed_bytes[start:end]
             start = end
             end = min(end + OverlayData.MAX_DATA_PER_MSG, num_bytes)

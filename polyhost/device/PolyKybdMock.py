@@ -1,9 +1,9 @@
 import logging
 import time
 
-from device import ImageConverter
-from device.PolyKybd import split_by_n_chars
-from device.Keycodes import KeyCode
+from polyhost.device import ImageConverter
+from polyhost.device.CmdHelper import split_by_n_chars
+from polyhost.device.Keycodes import KeyCode
 
 
 class PolyKybdMock():

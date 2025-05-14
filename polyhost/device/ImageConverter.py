@@ -6,7 +6,10 @@ from enum import Enum
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 
-from device import OverlayData
+from polyhost.device import OverlayData
+
+
+#from device import OverlayData
 
 
 class Modifier(Enum):
@@ -89,17 +92,6 @@ class ImageConverter:
                                                    dtype=bool)
             
             self.log.debug(f"Loaded {filename}: {self.w}x{self.h}")
-
-        # rect = find_bounding_rectangle(self.image[Modifier.NO_MOD])
-        # if rect:
-        #     x,y, xx, yy = rect
-        #     plt.imshow(self.image[Modifier.NO_MOD])
-        #     plt.gca().add_patch(Rectangle((x,y),xx-x,yy-y,
-        #         edgecolor='red',
-        #         facecolor='none',
-        #         lw=1))
-            
-        #     plt.show()
             
         #not supported for now
         if Modifier.GUI_KEY in self.image:

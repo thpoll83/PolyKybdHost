@@ -5,7 +5,7 @@ import threading
 import time
 import ipaddress
 
-from handler.HandlerCommon import Flags
+from polyhost.handler.HandlerCommon import Flags
 
 TCP_PORT = 50162
 BUFFER_SIZE = 1024
