@@ -3,7 +3,7 @@ import logging
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QFileDialog
 
-from device.PolyKybd import MaskFlag
+from polyhost.device.PolyKybd import MaskFlag
 
 
 class CommandsSubMenu():

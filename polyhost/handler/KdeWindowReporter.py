@@ -56,7 +56,7 @@ def getActiveWindow():
         .rstrip()
         .split("\n")
     )
-    msg = [elem.lstrip("js: ") for elem in msg]
+    msg = [elem.removeprefix("js: ") for elem in msg]
 
     return KWin(msg[0])
 

@@ -5,14 +5,14 @@
             "name": "Py Debug PolyHost",
             "type": "debugpy",
             "request": "launch",
-            "program": "polyhost",
+            "module": "polyhost",
             "console": "integratedTerminal"
         },
         {
             "name": "Py Debug PolyForwarder to localhost",
             "type": "debugpy",
             "request": "launch",
-            "program": "polyhost",
+            "module": "polyhost",
             "console": "integratedTerminal",
             "args": ["--host", "127.0.0.1"],
         },

@@ -41,6 +41,8 @@ clion64:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
 jetbrains_client:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
+jetbrains-pycharm-ce:
+  overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
 devenv:
   overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png]
 lockapp:

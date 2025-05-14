@@ -8,15 +8,15 @@ import sys
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QPalette, QColor
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon
-from _version import __version__
-from handler.RemoteHandler import TCP_PORT
+from polyhost._version import __version__
+from polyhost.handler.RemoteHandler import TCP_PORT
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
 if not IS_PLASMA:
     import pywinctl as pwc
 else:
-    import handler.KdeWindowReporter as pwc
+    import polyhost.handler.KdeWindowReporter as pwc
 
 UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000

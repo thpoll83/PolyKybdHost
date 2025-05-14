@@ -17,17 +17,17 @@ from PyQt5.QtWidgets import (
     QFileDialog,
 )
 
-from device import PolyKybd
-from input import (
+from polyhost import CommandsSubMenu
+from polyhost.device import PolyKybd
+from polyhost.input import (
     LinuxGnomeInputHelper,
     LinuxPlasmaHelper,
     MacOSInputHelper,
     WindowsInputHelper,
 )
-from _version import __version__
+from polyhost._version import __version__
 
-import CommandsSubMenu
-import handler.OverlayHandler as OverlayHandler
+import polyhost.handler.OverlayHandler as OverlayHandler
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
@@ -132,7 +132,7 @@ class PolyHost(QApplication):
             else:
                 self.log.warning("Could not query current System Language.")
         else:
-            self.log.warning("Could not connect to PolyKybd.")
+            self.log.warning("System language query not supported for this platform.")
 
         for e in entries:
             self.log.info(f"Enumerating input language {e}")

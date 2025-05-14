@@ -4,8 +4,8 @@ import logging
 import os
 import sys
 
-from PolyForwarder import PolyForwarder
-from PolyHost import PolyHost
+from polyhost.PolyForwarder import PolyForwarder
+from polyhost.PolyHost import PolyHost
 
 if __name__ == '__main__':
     
