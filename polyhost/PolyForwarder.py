@@ -21,6 +21,7 @@ else:
 UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 
+
 class PolyForwarder(QApplication):
     def __init__(self, log_level, host):
         super().__init__(sys.argv)
@@ -83,16 +84,26 @@ class PolyForwarder(QApplication):
             ip = ipaddress.ip_address(self.host)
         except ValueError:
             ip = socket.gethostbyname(self.host)
-        except:
-            self.log.error(f"Could not resolve {self.host}")
-            return
+        except OSError as err:
+            self.log.error("Could not resolve %s: %s", str(self.host), str(err))
+            return False
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((str(ip), TCP_PORT))
             s.send(f"{handle};{name};{title}".encode("utf-8"))
             s.close()
+            return True
         except socket.timeout as err:
-            self.log.error(f"Connection timed out {err}")
+            self.log.error("Connection timed out: %s", str(err))
+        except ConnectionRefusedError as err:
+            self.log.error("Connection refused: %s", str(err))
+        except ConnectionAbortedError as err:
+            self.log.error("Connection aborted: %s", str(err))
+        except ConnectionResetError as err:
+            self.log.error("Connection reset: %s", str(err))
+        except ConnectionError as err:
+            self.log.error("Connection error: %s", str(err))
+        return False
 
     def quit_app(self):
         self.is_closing = True
@@ -106,7 +117,8 @@ class PolyForwarder(QApplication):
                 self.prev_win = win
                 self.last_update_msec = 0
             if self.last_update_msec > NEW_WINDOW_ACCEPT_TIME_MSEC:
-                self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2 #just to limit that
+                #just to limit the time value:
+                self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2
                 if (
                     self.win is None
                     or win.getHandle() != self.win.getHandle()
