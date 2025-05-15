@@ -2,7 +2,13 @@ import subprocess
 
 from pynput.keyboard import Key, Controller
 
+from polyhost.lang.LangComp import LangComp
+
+
 class LinuxGnomeInputHelper:
+    def __init__(self):
+        self.comp = LangComp()
+
     def getLanguages(self):
         result = subprocess.run(['gsettings', 'get', 'org.gnome.desktop.input-sources', 'mru-sources'], stdout=subprocess.PIPE)
         entries = iter(result.stdout.splitlines())

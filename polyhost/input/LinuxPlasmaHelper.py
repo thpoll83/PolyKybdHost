@@ -2,9 +2,12 @@ import re
 import subprocess
 from pathlib import Path
 
+from polyhost.lang.LangComp import LangComp
+
 
 class LinuxPlasmaHelper():
     def __init__(self):
+        self.comp = LangComp()
         self.list = None
 
     # [Layout]
@@ -27,6 +30,7 @@ class LinuxPlasmaHelper():
 
     def setLanguage(self, lang):
         self.getLanguages()
+        idx = None
         if lang in self.list:
             idx = self.list.index(lang)
         else:
@@ -37,7 +41,14 @@ class LinuxPlasmaHelper():
             elif lang_code in self.list:
                 idx = self.list.index(lang_code)
             else:
-                return False, f"Language {lang} not present on system: {self.list}"
+                alternatives = self.comp.get_compatible_lang_list(country_code)
+                if alternatives:
+                    for alt_lang in alternatives:
+                        if alt_lang in self.list:
+                            idx = self.list.index(alt_lang)
+                            break
+                if not idx:
+                    return False, f"Language {lang} not present on system: {self.list}"
         result = subprocess.run(
             ["qdbus", "org.kde.keyboard", "/Layouts", "setLayout", str(idx)],
             stdout=subprocess.PIPE,

@@ -1,3 +1,16 @@
+google-chrome:
+  overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
+  titles-startswith:
+    Pull:
+      overlay: bitbucket_pr_template.mods.png
+  titles-endswith:
+  titles-contains:
+    Miro:
+      overlay: miro_template.mods.png
+    Outlook:
+      overlay: web_outlook_template.mods.png
+    Jira:
+      overlay: jira_template.mods.png
 chrome:
   overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
   titles-startswith:
