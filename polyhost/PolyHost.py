@@ -28,6 +28,7 @@ from polyhost.input import (
 from polyhost._version import __version__
 
 import polyhost.handler.OverlayHandler as OverlayHandler
+from polyhost.input.InputDetection import get_input_method
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
@@ -85,11 +86,12 @@ class PolyHost(QApplication):
         self.support.triggered.connect(self.open_support)
         self.about = QAction(QIcon("polyhost/icons/home.svg"), "About", parent=self)
         self.about.triggered.connect(self.open_about)
-        self.reconnect()
 
         self.last_update_msec = 0
         self.current_lang = None
         self.keeb_lang_menu = None
+
+        self.reconnect()
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
 
@@ -171,7 +173,7 @@ class PolyHost(QApplication):
         palette.setColor(QPalette.HighlightedText, highlightTextColor)
         self.setPalette(palette)
 
-        QTimer.singleShot(1000, self.activeWindowReporter)
+        QTimer.singleShot(UPDATE_CYCLE_MSEC*2, self.activeWindowReporter)
 
     # def on_activated(self, i_reason):
     #     if i_reason == QSystemTrayIcon.Trigger:
@@ -213,10 +215,7 @@ class PolyHost(QApplication):
         if not self.paused:
             result = False
             lang = ""
-            if not hasattr(self, 'hid'):
-                if self.keeb.connect():
-                    result, lang = self.keeb.query_current_lang()
-            else:
+            if self.keeb.connect():
                 result, lang = self.keeb.query_current_lang()
 
             if result != self.connected:
@@ -236,6 +235,9 @@ class PolyHost(QApplication):
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
                         if result:
+                            mode = get_input_method()
+                            self.log.info("Setting unicode mode to %s", str(mode))
+                            self.keeb.set_unicode_mode(mode.value)
                             self.update_ui_on_lang_change(lang)
                     else:
                         self.status.setIcon(QIcon("polyhost/icons/sync_disabled.svg"))
@@ -270,7 +272,7 @@ class PolyHost(QApplication):
                 item.setData(lang)
 
     def update_ui_on_lang_change(self, new_lang):
-        if hasattr(self, 'keeb_lang_menu'):
+        if self.keeb_lang_menu:
             self.keeb_lang_menu.setTitle(f"Selected Language: {new_lang[:2]} {self.langcode_to_flag(new_lang[2:])}")
             for action in self.keeb_lang_menu.actions():
                 lang = action.data()

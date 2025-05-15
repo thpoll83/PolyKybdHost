@@ -23,6 +23,7 @@ class Cmd(Enum):
     SEND_COMPRESSED_OVERLAY = 17
     START_ROI_OVERLAY = 18
     SEND_ROI_OVERLAY = 19
+    SET_UNICODE_MODE = 20
 
 
 class MaskFlag(Enum):
@@ -121,6 +122,10 @@ class PolyKybd:
     def disable_overlays(self):
         self.log.info("Disable Overlays...")
         return self.hid.send(CmdHelper.compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
+
+    def set_unicode_mode(self, mode):
+        self.log.info("Setting unicode mode to %d", mode)
+        return self.hid.send(CmdHelper.compose_cmd(Cmd.SET_UNICODE_MODE, mode))
 
     def set_brightness(self, brightness):
         self.log.info("Setting Display Brightness to %d...", brightness)
