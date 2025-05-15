@@ -77,7 +77,7 @@ class OverlayHandler:
             if return_copy:
                 keys = keys.split(",")
                 for key in keys:
-                    result[key] = entry
+                    result[key.strip()] = entry
 
         return result
 

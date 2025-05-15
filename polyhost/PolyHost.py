@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost import CommandsSubMenu
+from polyhost.PolySettings import PolySettings
 from polyhost.device import PolyKybd
 from polyhost.input import (
     LinuxGnomeInputHelper,
@@ -55,6 +56,7 @@ class PolyHost(QApplication):
         )
         self.log = logging.getLogger('PolyHost')
         self.setApplicationName('PolyHost')
+        self.settings = PolySettings()
 
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False

@@ -4,3 +4,4 @@ NumPy
 PyWinCtl
 pynput
 PyYAML
+platformdirs
