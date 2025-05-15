@@ -1,10 +1,9 @@
 import logging
 import os
-import platform
 import re
 import traceback
 
-import polyhost.handler.RemoteHandler as RemoteHandler
+from polyhost.handler import RemoteHandler
 from polyhost.handler.HandlerCommon import OverlayCommand, Flags
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -24,21 +23,35 @@ FLAGS = "flags"
 OVERLAY = "overlay"
 REMOTE = "remote"
 
+
 class OverlayHandler:
+    """Reads the overlay mapping file and provides information which overlay
+    should be displayed depending on the program context."""
+
     def __init__(self, mapping):
         self.log = logging.getLogger("PolyHost")
         self.last_update_msec = 0
         self.prev_win = None
         self.win = None
         self.set_win()
-        self.currentMappingEntry = None
-        self.lastMappingEntry = None
-        self.mapping = mapping
-        self.annotate(self.mapping.items())
+        self.current_entry = None
+        self.last_entry = None
+        self.mapping = self.annotate(mapping.items())
         self.remote_handler = RemoteHandler.RemoteHandler(self.mapping)
 
-    def annotate(self, entries):
-        for _, entry in entries:
+    def annotate(self, entries, return_copy=True):
+        """Annotate the provided mapping (from yaml) so that it can
+        be used faster when looking for the program overlay.
+
+        Args:
+            entries (dict_items): The deserialized yaml
+            return_copy (bool, optional): Used internally, do not set
+
+        Returns:
+            dict: An annotated dict to be used for program to overlay mapping
+        """
+        result = {}
+        for keys, entry in entries:
             has_overlay = OVERLAY in entry.keys()
             has_remote = REMOTE in entry.keys()
             has_title = TITLE in entry.keys()
@@ -55,11 +68,18 @@ class OverlayHandler:
                 has_contains,
             ]
             if has_starts_with:
-                self.annotate(entry[TITLE_SW].items())
+                self.annotate(entry[TITLE_SW].items(), False)
             if has_ends_with:
-                self.annotate(entry[TITLE_EW].items())
+                self.annotate(entry[TITLE_EW].items(), False)
             if has_contains:
-                self.annotate(entry[TITLE_CNTS].items())
+                self.annotate(entry[TITLE_CNTS].items(), False)
+
+            if return_copy:
+                keys = keys.split(",")
+                for key in keys:
+                    result[key] = entry
+
+        return result
 
     def set_win(self, win=None, title=None, handle=None):
         """Set the active window"""
@@ -116,18 +136,17 @@ class OverlayHandler:
             return False, OverlayCommand.NONE
 
         if match:
-            if self.lastMappingEntry == entry:
-                self.currentMappingEntry = entry
+            if self.last_entry == entry:
+                self.current_entry = entry
                 return True, OverlayCommand.ENABLE
-            self.currentMappingEntry = entry
-            self.lastMappingEntry = entry
+            self.current_entry = entry
+            self.last_entry = entry
             return True, OverlayCommand.OFF_ON
         return False, OverlayCommand.NONE
 
     def log_win(self):
         name = self.win.getAppName()
         self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %d", name, self.win.title.encode('utf-8'), self.win.getHandle())
-
 
     def handleActiveWindow(self, update_cycle_time_msec, accept_time_msec):
         self.last_update_msec = self.last_update_msec + update_cycle_time_msec
@@ -166,8 +185,8 @@ class OverlayHandler:
                                 if found:
                                     self.log.info(f"Changing to {appName}")
                                     return self.getOverlayData(), cmd
-                            if self.currentMappingEntry and not found:
-                                self.currentMappingEntry = None
+                            if self.current_entry and not found:
+                                self.current_entry = None
                                 self.log.info("Nothing active")
                                 return None, OverlayCommand.DISABLE
                     except Exception as e:
@@ -176,7 +195,7 @@ class OverlayHandler:
                     self.log.info("No match")
                     return None, OverlayCommand.DISABLE
                 elif self.isRemoteMappingEntry() and self.remote_handler.remoteChanged(
-                    self.currentMappingEntry
+                    self.current_entry
                 ):
                     self.log.info("Remote")
                     if self.remote_handler.hasOverlay():
@@ -187,8 +206,8 @@ class OverlayHandler:
             if self.win:
                 self.log.info("No active window")
                 self.set_win()
-                if self.currentMappingEntry:
-                    self.currentMappingEntry = None
+                if self.current_entry:
+                    self.current_entry = None
                     return None, OverlayCommand.DISABLE
 
         # self.log.info(f"Nothing at all")
@@ -196,16 +215,16 @@ class OverlayHandler:
 
     def isRemoteMappingEntry(self):
         return (
-            self.currentMappingEntry
-            and self.currentMappingEntry[FLAGS][Flags.HAS_REMOTE.value]
+            self.current_entry
+            and self.current_entry[FLAGS][Flags.HAS_REMOTE.value]
         )  # 0 for remote
 
     def getOverlayData(self):
         if (
-            self.currentMappingEntry
-            and self.currentMappingEntry[FLAGS][Flags.HAS_OVERLAY.value]
+            self.current_entry
+            and self.current_entry[FLAGS][Flags.HAS_OVERLAY.value]
         ):  # 0 for overlay
-            return self.currentMappingEntry[OVERLAY]
+            return self.current_entry[OVERLAY]
         elif self.remote_handler.hasOverlay():
             return self.remote_handler.getOverlayData()
         return None

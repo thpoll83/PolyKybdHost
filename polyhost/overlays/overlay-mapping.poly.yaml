@@ -1,17 +1,4 @@
-google-chrome:
-  overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
-  titles-startswith:
-    Pull:
-      overlay: bitbucket_pr_template.mods.png
-  titles-endswith:
-  titles-contains:
-    Miro:
-      overlay: miro_template.mods.png
-    Outlook:
-      overlay: web_outlook_template.mods.png
-    Jira:
-      overlay: jira_template.mods.png
-chrome:
+chrome, google-chrome:
   overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
   titles-startswith:
     Pull:
@@ -27,9 +14,7 @@ chrome:
 nxplayer:
   remote: host
   title: NoMachine - .*
-gimp-2:
-  overlay: gimp_template.mods.png
-gimp-3:
+gimp-2,gimp-3,gimp:
   overlay: gimp_template.mods.png
 zoom:
   overlay: zoom_template.mods.png
@@ -48,13 +33,7 @@ code:
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
-clion:
-  overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
-clion64:
-  overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
-jetbrains_client:
-  overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
-jetbrains-pycharm-ce:
+clion,clion64,jetbrains_client,jetbrains-pycharm-ce:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
 devenv:
   overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png]

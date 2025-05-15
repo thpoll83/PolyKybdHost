@@ -233,6 +233,7 @@ class PolyKybd:
                     if not enabled and modifier == ImageConverter.Modifier.NO_MOD:
                         if KeyCode.KC_ESCAPE.value in overlaymap.keys():
                             if allow_compressed:
+                                #hid_msg_counter = hid_msg_counter + self.send_overlay_roi_for_keycode(KeyCode.KC_ESCAPE.value, modifier, overlaymap, False)
                                 hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
                             else:
                                 hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
@@ -242,6 +243,7 @@ class PolyKybd:
 
                     for keycode in overlaymap:
                         if allow_compressed:
+                            #hid_msg_counter = hid_msg_counter + self.send_overlay_roi_for_keycode(keycode, modifier, overlaymap, False)
                             hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(keycode, modifier, overlaymap)
                         else:
                             hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode(keycode, modifier, overlaymap)

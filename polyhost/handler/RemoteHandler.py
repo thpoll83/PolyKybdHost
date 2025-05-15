@@ -49,8 +49,8 @@ class RemoteHandler:
         self.handle = None
         self.title = None
         self.name = None
-        self.currentMappingEntry = None
-
+        self.current_entry = None
+        self.last_entry = None
         self.connections = {}
         self.mapping = mapping
         self.listen_to_forwarder()
@@ -141,8 +141,8 @@ class RemoteHandler:
             return False
 
         if match:
-            self.currentMappingEntry = entry
-            self.lastMappingEntry = entry
+            self.current_entry = entry
+            self.last_entry = entry
             return True
         return False
 
@@ -171,19 +171,19 @@ class RemoteHandler:
             found = False
             if self.name in self.mapping.keys():
                 found = self.tryToMatchWindow(self.name, self.mapping[self.name])
-            if self.currentMappingEntry and not found:
-                self.currentMappingEntry = None
+            if self.current_entry and not found:
+                self.current_entry = None
             return True
         return False
 
     def hasOverlay(self):
         return (
-            self.currentMappingEntry
-            and self.currentMappingEntry["flags"][Flags.HAS_OVERLAY.value]
+            self.current_entry
+            and self.current_entry["flags"][Flags.HAS_OVERLAY.value]
         )
 
     def getOverlayData(self):
-        return self.currentMappingEntry["overlay"]
+        return self.current_entry["overlay"]
 
     def close(self):
         self.connections = {}
