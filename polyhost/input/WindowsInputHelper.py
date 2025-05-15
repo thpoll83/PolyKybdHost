@@ -38,14 +38,14 @@ class WindowsInputHelper:
                     short_comparison = True
                     break
             if not short_comparison:
-                return False
+                return False, "No matching language found."
         num_langs = len(available)
         success, sys_lang = self.getCurrentLanguage()
 
         controller = Controller()
         while success and num_langs>0:
             if lang == sys_lang or (short_comparison and lang[:2] == sys_lang[:2]):
-                return True
+                return True, lang
             controller.press(Key.cmd)
             controller.press(Key.space)
             controller.release(Key.space)
@@ -53,7 +53,7 @@ class WindowsInputHelper:
             success, sys_lang = self.getCurrentLanguage()
             num_langs = num_langs - 1
             
-        return False
+        return False, f"Could not switch language to {lang}"
     
     def getCurrentLanguage(self):
         result = subprocess.run(['powershell', self.query], stdout=subprocess.PIPE)

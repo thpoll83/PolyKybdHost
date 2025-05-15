@@ -49,7 +49,7 @@ class OverlayData:
         
         self.all_msgs = helper_calc_overlay_bytes(self.all_bytes)
         self.compressed_msgs = math.ceil((len(self.compressed_bytes)+2)/MAX_DATA_PER_MSG)
-        self.roi_msg_msgs = math.ceil((len(self.roi_bytes)+5)/MAX_DATA_PER_MSG)
+        self.roi_msgs = math.ceil((len(self.roi_bytes)+5)/MAX_DATA_PER_MSG)
         self.compressed_roi_msgs = math.ceil((len(self.compressed_roi_bytes)+5)/MAX_DATA_PER_MSG)
 
         # w = self.right - self.left
