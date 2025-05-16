@@ -15,6 +15,7 @@ class Sunlight:
         # Create location object
         self.site = Location(self.latitude, self.longitude)
         self.online_lookup = allow_online_lookup
+        self.log.info("Location lat %f long %f", self.latitude, self.longitude)
 
     def get_irradiance_now(self):
         if self.online_lookup:
