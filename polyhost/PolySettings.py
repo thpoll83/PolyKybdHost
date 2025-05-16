@@ -20,16 +20,22 @@ class PolySettings:
         # Default settings
         default_settings = {
             "send_unicode_mode_to_kb": True,
-            "send_daylight_dependent_brightness": True
+            "send_daylight_dependent_brightness": True,
+            "allow_online_request_for_brightness": True
         }
 
         # Load settings
         if os.path.exists(config_path):
             with open(config_path, "r") as f:
-                settings = yaml.safe_load(f) or {}
+                self.settings = yaml.safe_load(f) or {}
+            for key, value in default_settings.items():
+                self.settings.setdefault(key, value)
         else:
-            settings = default_settings
+            self.settings = default_settings
             with open(config_path, "w") as f:
-                yaml.safe_dump(settings, f)
+                yaml.safe_dump(self.settings, f)
 
-        self.log.info("Current settings:\n%s", str(settings))
+        self.log.info("Current settings:\n%s", str(self.settings))
+
+    def get(self):
+        return self.settings

@@ -30,11 +30,13 @@ from polyhost._version import __version__
 
 import polyhost.handler.OverlayHandler as OverlayHandler
 from polyhost.input.InputDetection import get_input_method
+from polyhost.services.Sunlight import Sunlight
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
 UPDATE_CYCLE_MSEC = 250
 RECONNECT_CYCLE_MSEC = 1000
+PERIODIC_10MIN_CYCLE_MSEC = 1000*60*10
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 
 def sort_by_country_abc(item):
@@ -90,6 +92,7 @@ class PolyHost(QApplication):
         self.about.triggered.connect(self.open_about)
 
         self.last_update_msec = 0
+        self.last_update_10min_task = PERIODIC_10MIN_CYCLE_MSEC * 2
         self.current_lang = None
         self.keeb_lang_menu = None
 
@@ -175,6 +178,7 @@ class PolyHost(QApplication):
         palette.setColor(QPalette.HighlightedText, highlightTextColor)
         self.setPalette(palette)
 
+        self.sunlight = Sunlight(self.settings.get()["allow_online_request_for_brightness"])
         QTimer.singleShot(UPDATE_CYCLE_MSEC*2, self.activeWindowReporter)
 
     # def on_activated(self, i_reason):
@@ -236,7 +240,7 @@ class PolyHost(QApplication):
                             self.status.setIcon(QIcon("polyhost/icons/sync.svg"))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
-                        if result:
+                        if result and self.settings.get()["send_unicode_mode_to_kb"]:
                             mode = get_input_method()
                             self.log.info("Setting unicode mode to %s", str(mode))
                             self.keeb.set_unicode_mode(mode.value)
@@ -359,6 +363,7 @@ class PolyHost(QApplication):
 
     def activeWindowReporter(self):
         self.last_update_msec = self.last_update_msec + UPDATE_CYCLE_MSEC
+        self.last_update_10min_task = self.last_update_10min_task + UPDATE_CYCLE_MSEC
         lang = None
         if self.last_update_msec > RECONNECT_CYCLE_MSEC:
             lang = self.reconnect()
@@ -384,8 +389,18 @@ class PolyHost(QApplication):
             if data and cmd == OverlayHandler.OverlayCommand.OFF_ON:
                 self.sendOverlayData(data, self.kb_sw_version[1]>=5 and self.kb_sw_version[2] >=4)
 
+            if self.last_update_10min_task > PERIODIC_10MIN_CYCLE_MSEC:
+                self.last_update_10min_task = 0
+                self.execute_10min_task()
+
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.activeWindowReporter)
+        # except Exception as e:
+        #    self.log.warning(f"Failed to report active window: {e}")
 
-    # except Exception as e:
-    #    self.log.warning(f"Failed to report active window: {e}")
+    def execute_10min_task(self):
+        if self.settings.get()["send_daylight_dependent_brightness"]:
+            brightness = self.sunlight.get_brightness_now()
+            self.keeb.set_brightness(2+brightness*48)
+
+

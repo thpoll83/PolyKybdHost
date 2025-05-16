@@ -33,7 +33,8 @@ class OverlayHandler:
         self.last_update_msec = 0
         self.prev_win = None
         self.win = None
-        self.set_win()
+        self.title = None
+        self.handle = None
         self.current_entry = None
         self.last_entry = None
         self.mapping = self.annotate(mapping.items())

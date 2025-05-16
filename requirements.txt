@@ -5,3 +5,7 @@ PyWinCtl
 pynput
 PyYAML
 platformdirs
+geocoder
+pandas
+pvlib
+requests
