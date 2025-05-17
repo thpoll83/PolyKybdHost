@@ -1,6 +1,7 @@
 import logging
 import os
 import ipaddress
+import pathlib
 import socket
 import sys
 
@@ -45,7 +46,7 @@ class PolyForwarder(QApplication):
         self.last_update_msec = 0
 
         # Create the icon
-        icon = QIcon("polyhost/icons/pcolor.png")
+        icon = QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/pcolor.png"))
 
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)

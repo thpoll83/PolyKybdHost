@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 import platform
 import sys
 import traceback
@@ -17,8 +18,8 @@ from PyQt5.QtWidgets import (
     QFileDialog,
 )
 
-from polyhost import CommandsSubMenu
-from polyhost.PolySettings import PolySettings
+from polyhost.cmd_menu import CommandsSubMenu
+from polyhost.settings import PolySettings
 from polyhost.device import PolyKybd
 from polyhost.input import (
     LinuxGnomeInputHelper,
@@ -30,7 +31,7 @@ from polyhost._version import __version__
 
 import polyhost.handler.OverlayHandler as OverlayHandler
 from polyhost.input.InputDetection import get_input_method
-from polyhost.services.Sunlight import Sunlight
+from polyhost.services.sunlight_helper import Sunlight
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
@@ -64,7 +65,7 @@ class PolyHost(QApplication):
         self.is_closing = False
 
         # Create the icon
-        icon = QIcon("polyhost/icons/pcolor.png")
+        icon = QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/pcolor.png"))
 
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
@@ -81,14 +82,14 @@ class PolyHost(QApplication):
         self.keeb = PolyKybd.PolyKybd()
         self.connected = False
         self.paused = False
-        self.status = QAction(QIcon("polyhost/icons/sync.svg"), "Waiting for PolyKybd...", parent=self)
+        self.status = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/sync.svg")), "Waiting for PolyKybd...", parent=self)
         self.status.setToolTip("Press to pause connection")
         self.status.triggered.connect(self.pause)
-        self.exit = QAction(QIcon("polyhost/icons/power.svg"), "Quit", parent=self)
+        self.exit = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/power.svg")), "Quit", parent=self)
         self.exit.triggered.connect(self.quit_app)
-        self.support = QAction(QIcon("polyhost/icons/support.svg"), "Get Support", parent=self)
+        self.support = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/support.svg")), "Get Support", parent=self)
         self.support.triggered.connect(self.open_support)
-        self.about = QAction(QIcon("polyhost/icons/home.svg"), "About", parent=self)
+        self.about = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/home.svg")), "About", parent=self)
         self.about.triggered.connect(self.open_about)
 
         self.last_update_msec = 0
@@ -100,16 +101,16 @@ class PolyHost(QApplication):
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
 
-        lang_menu = self.menu.addMenu(QIcon("polyhost/icons/language.svg"), "Change System Input Language")
+        lang_menu = self.menu.addMenu(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/language.svg")), "Change System Input Language")
 
-        self.cmdMenu = CommandsSubMenu.CommandsSubMenu(self, self.keeb)
+        self.cmdMenu = CommandsSubMenu(self, self.keeb)
         self.cmdMenu.buildMenu(self.menu)
 
-        action = QAction(QIcon("polyhost/icons/overlays.svg"), "Send Shortcut Overlay...", parent=self)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/overlays.svg")), "Send Shortcut Overlay...", parent=self)
         action.triggered.connect(self.send_shortcuts)
         self.menu.addAction(action)
 
-        action = QAction(QIcon("polyhost/icons/via.png"), "Configure Keymap (VIA)", parent=self)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/via.png")), "Configure Keymap (VIA)", parent=self)
         action.triggered.connect(self.open_via)
         self.menu.addAction(action)
 
@@ -152,7 +153,7 @@ class PolyHost(QApplication):
         self.tray.show()
 
         self.mapping = {}
-        self.read_overlay_mapping_file("polyhost/overlays/overlay-mapping.poly.yaml")
+        self.read_overlay_mapping_file(os.path.join(pathlib.Path(__file__).parent.resolve(), "overlays/overlay-mapping.poly.yaml"))
 
         self.overlay_handler = OverlayHandler.OverlayHandler(self.mapping)
 
@@ -233,11 +234,11 @@ class PolyHost(QApplication):
                     if kb_version.startswith(expected[:3]):
                         if kb_version != expected:
                             self.log.warning(f"Warning! Minor version mismatch, expected {expected}, got {kb_version}'.")
-                            self.status.setIcon(QIcon("polyhost/icons/sync_problem.svg"))
+                            self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/sync_problem.svg")))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version}, please update to {expected}!)")
                         else:
-                            self.status.setIcon(QIcon("polyhost/icons/sync.svg"))
+                            self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/sync.svg")))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
                         if result and self.settings.get("send_unicode_mode_to_kb"):
@@ -246,11 +247,11 @@ class PolyHost(QApplication):
                             self.keeb.set_unicode_mode(mode.value)
                             self.update_ui_on_lang_change(lang)
                     else:
-                        self.status.setIcon(QIcon("polyhost/icons/sync_disabled.svg"))
+                        self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/sync_disabled.svg")))
                         self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
                         self.connected = False
                 else:
-                    self.status.setIcon(QIcon("polyhost/icons/sync_disabled.svg"))
+                    self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/sync_disabled.svg")))
                     self.status.setText(msg)
             self.managed_connection_status()
             return lang

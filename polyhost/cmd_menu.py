@@ -1,4 +1,6 @@
 import logging
+import os
+import pathlib
 
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QFileDialog
@@ -13,27 +15,27 @@ class CommandsSubMenu():
         self.log = logging.getLogger('PolyForwarder')
 
     def buildMenu(self, parentMenu):
-        cmdMenu = parentMenu.addMenu(QIcon("polyhost/icons/settings.svg"), "All PolyKybd Commands")
+        cmdMenu = parentMenu.addMenu(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/settings.svg")), "All PolyKybd Commands")
 
-        action = QAction(QIcon("polyhost/icons/toggle_off.svg"), "Stop Idle", parent=self.parent)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/toggle_off.svg")), "Stop Idle", parent=self.parent)
         action.setData(False)
         action.triggered.connect(self.change_idle)
         cmdMenu.addAction(action)
 
-        action = QAction(QIcon("polyhost/icons/toggle_on.svg"), "Start Idle", parent=self.parent)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/toggle_on.svg")), "Start Idle", parent=self.parent)
         action.setData(True)
         action.triggered.connect(self.change_idle)
         cmdMenu.addAction(action)
 
-        action = QAction(QIcon("polyhost/icons/delete.svg"), "Reset Overlays Buffers", parent=self.parent)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/delete.svg")), "Reset Overlays Buffers", parent=self.parent)
         action.triggered.connect(self.reset_overlays)
         cmdMenu.addAction(action)
 
-        action = QAction(QIcon("polyhost/icons/toggle_on.svg"), "Enable Shortcut Overlays", parent=self.parent)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/toggle_on.svg")), "Enable Shortcut Overlays", parent=self.parent)
         action.triggered.connect(self.enable_overlays)
         cmdMenu.addAction(action)
 
-        action = QAction(QIcon("polyhost/icons/toggle_off.svg"), "Disable Shortcut Overlays", parent=self.parent)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/toggle_off.svg")), "Disable Shortcut Overlays", parent=self.parent)
         action.triggered.connect(self.disable_overlays)
         cmdMenu.addAction(action)
 
@@ -84,22 +86,22 @@ class CommandsSubMenu():
         setOverlayMaskMenu.addAction(action)
 
         briMenu = cmdMenu.addMenu("Change Brightness")
-        action = QAction(QIcon("polyhost/icons/backlight_high_off.svg"), "Off", parent=self.parent)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/backlight_high_off.svg")), "Off", parent=self.parent)
         action.setData(0)
         action.triggered.connect(self.set_brightness)
         briMenu.addAction(action)
 
-        action = QAction(QIcon("polyhost/icons/backlight_low.svg"), "1%", parent=self.parent)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/backlight_low.svg")), "1%", parent=self.parent)
         action.setData(2)
         action.triggered.connect(self.set_brightness)
         briMenu.addAction(action)
 
-        action = QAction(QIcon("polyhost/icons/backlight_high.svg"), "50%", parent=self.parent)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/backlight_high.svg")), "50%", parent=self.parent)
         action.setData(25)
         action.triggered.connect(self.set_brightness)
         briMenu.addAction(action)
 
-        action = QAction(QIcon("polyhost/icons/backlight_high.svg"), "100%", parent=self.parent)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/backlight_high.svg")), "100%", parent=self.parent)
         action.setData(50)
         action.triggered.connect(self.set_brightness)
         briMenu.addAction(action)

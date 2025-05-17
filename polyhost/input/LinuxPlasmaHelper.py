@@ -2,7 +2,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from polyhost.lang.LangComp import LangComp
+from polyhost.lang.lang_compat import LangComp
 
 
 class LinuxPlasmaHelper():

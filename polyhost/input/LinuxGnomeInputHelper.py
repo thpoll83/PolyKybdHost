@@ -2,7 +2,7 @@ import subprocess
 
 from pynput.keyboard import Key, Controller
 
-from polyhost.lang.LangComp import LangComp
+from polyhost.lang.lang_compat import LangComp
 
 
 class LinuxGnomeInputHelper:
