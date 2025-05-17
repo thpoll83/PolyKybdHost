@@ -9,7 +9,7 @@ class LinuxGnomeInputHelper:
     def __init__(self):
         self.comp = LangComp()
 
-    def getLanguages(self):
+    def get_languages(self):
         result = subprocess.run(['gsettings', 'get', 'org.gnome.desktop.input-sources', 'mru-sources'], stdout=subprocess.PIPE)
         entries = iter(result.stdout.splitlines())
         for e in entries:
@@ -20,12 +20,12 @@ class LinuxGnomeInputHelper:
                 
         return []
 
-    def getAllLanguages(self):
+    def get_all_languages(self):
         result = subprocess.run(['localectl', 'list-x11-keymap-layouts'], stdout=subprocess.PIPE)
         return iter(str(result.stdout, encoding='utf-8').splitlines())
 
-    def setLanguage(self, lang):
-        available = self.getLanguages()
+    def set_language(self, lang):
+        available = self.get_languages()
         short_comparison = False
         if lang not in available:
             for lang_codes in available:
@@ -35,7 +35,7 @@ class LinuxGnomeInputHelper:
             if not short_comparison:
                 return False
         num_langs = len(available)
-        success, sys_lang = self.getCurrentLanguage()
+        success, sys_lang = self.get_current_language()
 
         controller = Controller()
         while success and num_langs>0:
@@ -45,11 +45,11 @@ class LinuxGnomeInputHelper:
             controller.press(Key.space)
             controller.release(Key.space)
             controller.release(Key.cmd)
-            success, sys_lang = self.getCurrentLanguage()
+            success, sys_lang = self.get_current_language()
             num_langs = num_langs - 1
             
         return False
     
-    def getCurrentLanguage(self):
-        langs = self.getLanguages()
+    def get_current_language(self):
+        langs = self.get_languages()
         return len(langs)>0, langs[0]

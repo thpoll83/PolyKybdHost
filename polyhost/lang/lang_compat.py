@@ -5,7 +5,7 @@ import pathlib
 class LangComp:
     def __init__(self):
         self.mapping = dict()
-        path = os.path.join(pathlib.Path(__file__).parent.resolve(), "forced_country_match.txt")
+        path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "res", "forced_country_match.txt")
         with open(path, 'r') as file:
             for line in file.readlines():
                 if "=" in line:

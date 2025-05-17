@@ -3,20 +3,20 @@ import os
 import re
 import traceback
 
-from polyhost.handler import RemoteHandler
-from polyhost.handler.HandlerCommon import OverlayCommand, Flags
+from polyhost.handler.common import OverlayCommand, Flags
+from polyhost.handler.remote_window import RemoteHandler
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
 if not IS_PLASMA:
     import pywinctl as pwc
 else:
-    import polyhost.handler.KdeWindowReporter as pwc
+    import polyhost.handler.kde_win_reporter as pwc
 
 
 TITLE_SW = "titles-startswith"
 TITLE_EW = "titles-endswith"
-TITLE_CNTS = "titles-contains"
+TITLE_HAS = "titles-contains"
 TITLE = "title"
 INDEX = "index"
 FLAGS = "flags"
@@ -38,7 +38,7 @@ class OverlayHandler:
         self.current_entry = None
         self.last_entry = None
         self.mapping = self.annotate(mapping.items())
-        self.remote_handler = RemoteHandler.RemoteHandler(self.mapping)
+        self.remote_handler = RemoteHandler(self.mapping)
 
     def annotate(self, entries, return_copy=True):
         """Annotate the provided mapping (from yaml) so that it can
@@ -58,7 +58,7 @@ class OverlayHandler:
             has_title = TITLE in entry.keys()
             has_starts_with = TITLE_SW in entry.keys() and entry[TITLE_SW]
             has_ends_with = TITLE_EW in entry.keys() and entry[TITLE_EW]
-            has_contains = TITLE_CNTS in entry.keys() and entry[TITLE_CNTS]
+            has_contains = TITLE_HAS in entry.keys() and entry[TITLE_HAS]
 
             entry[FLAGS] = [
                 has_overlay,
@@ -73,7 +73,7 @@ class OverlayHandler:
             if has_ends_with:
                 self.annotate(entry[TITLE_EW].items(), False)
             if has_contains:
-                self.annotate(entry[TITLE_CNTS].items(), False)
+                self.annotate(entry[TITLE_HAS].items(), False)
 
             if return_copy:
                 keys = keys.split(",")
@@ -88,7 +88,7 @@ class OverlayHandler:
         self.title = title
         self.handle = handle
 
-    def tryToMatchWindow(self, name, entry):
+    def try_to_match_window(self, name, entry):
         (
             has_overlay,
             has_remote,
@@ -107,7 +107,7 @@ class OverlayHandler:
                         has_starts_with
                         and elem[0] in entry[TITLE_SW].keys()
                     ):
-                        found, cmd = self.tryToMatchWindow(
+                        found, cmd = self.try_to_match_window(
                             name, entry[TITLE_SW][elem[0]]
                         )
                         if found:
@@ -116,16 +116,16 @@ class OverlayHandler:
                         has_ends_with
                         and elem[-1] in entry[TITLE_EW].keys()
                     ):
-                        found, cmd = self.tryToMatchWindow(
+                        found, cmd = self.try_to_match_window(
                             name, entry[TITLE_EW][elem[-1]]
                         )
                         if found:
                             return True, cmd
                     if has_contains:
-                        contains = entry[TITLE_CNTS]
+                        contains = entry[TITLE_HAS]
                         for elem in elem:
                             if elem in contains.keys():
-                                found, cmd = self.tryToMatchWindow(name, contains[elem])
+                                found, cmd = self.try_to_match_window(name, contains[elem])
                                 if found:
                                     return True, cmd
                 if self.title and has_title:
@@ -149,11 +149,11 @@ class OverlayHandler:
         name = self.win.getAppName()
         self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %d", name, self.win.title.encode('utf-8'), self.win.getHandle())
 
-    def handleActiveWindow(self, update_cycle_time_msec, accept_time_msec):
+    def handle_active_window(self, update_cycle_time_msec, accept_time_msec):
         self.last_update_msec = self.last_update_msec + update_cycle_time_msec
         win = None
         try:
-            win = pwc.getActiveWindow()
+            win = pwc.get_active_window()
         except Exception as e:
             self.log.warning(f"Failed retrieving active window: {e}")
             self.log.warning("".join(traceback.format_exception(e)))
@@ -178,14 +178,14 @@ class OverlayHandler:
                         self.log_win()
                         if self.mapping:
                             found = False
-                            appName = self.win.getAppName().split(".")[0].lower()
-                            if appName in self.mapping.keys():
-                                found, cmd = self.tryToMatchWindow(
-                                    appName, self.mapping[appName]
+                            app_name = self.win.getAppName().split(".")[0].lower()
+                            if app_name in self.mapping.keys():
+                                found, cmd = self.try_to_match_window(
+                                    app_name, self.mapping[app_name]
                                 )
                                 if found:
-                                    self.log.info(f"Changing to {appName}")
-                                    return self.getOverlayData(), cmd
+                                    self.log.info(f"Changing to {app_name}")
+                                    return self.get_overlay_data(), cmd
                             if self.current_entry and not found:
                                 self.current_entry = None
                                 self.log.info("Nothing active")
@@ -195,12 +195,12 @@ class OverlayHandler:
                         self.log.warning("".join(traceback.format_exception(e)))
                     self.log.info("No match")
                     return None, OverlayCommand.DISABLE
-                elif self.isRemoteMappingEntry() and self.remote_handler.remoteChanged(
+                elif self.is_remote_mapping_entry() and self.remote_handler.remote_changed(
                     self.current_entry
                 ):
                     self.log.info("Remote")
-                    if self.remote_handler.hasOverlay():
-                        return self.getOverlayData(), OverlayCommand.OFF_ON
+                    if self.remote_handler.has_overlay():
+                        return self.get_overlay_data(), OverlayCommand.OFF_ON
                     else:
                         return None, OverlayCommand.DISABLE
         else:
@@ -214,20 +214,20 @@ class OverlayHandler:
         # self.log.info(f"Nothing at all")
         return None, OverlayCommand.NONE
 
-    def isRemoteMappingEntry(self):
+    def is_remote_mapping_entry(self):
         return (
             self.current_entry
             and self.current_entry[FLAGS][Flags.HAS_REMOTE.value]
         )  # 0 for remote
 
-    def getOverlayData(self):
+    def get_overlay_data(self):
         if (
             self.current_entry
             and self.current_entry[FLAGS][Flags.HAS_OVERLAY.value]
         ):  # 0 for overlay
             return self.current_entry[OVERLAY]
-        elif self.remote_handler.hasOverlay():
-            return self.remote_handler.getOverlayData()
+        elif self.remote_handler.has_overlay():
+            return self.remote_handler.get_overlay_data()
         return None
 
     def close(self):

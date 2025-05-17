@@ -5,14 +5,14 @@ import threading
 import time
 import ipaddress
 
-from polyhost.handler.HandlerCommon import Flags
+from polyhost.handler.common import Flags
 
 TCP_PORT = 50162
 BUFFER_SIZE = 1024
 
 
 # Needs to be started as thread
-def receiveFromForwarder(log, connections):
+def receive_from_forwarder(log, connections):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     try:
@@ -83,7 +83,7 @@ class RemoteHandler:
         if resolved_remote:
             if not self.forwarder:
                 self.forwarder = threading.Thread(
-                    target=receiveFromForwarder,
+                    target=receive_from_forwarder,
                     name="PolyKybd Remote Handler",
                     args=(self.log, self.connections),
                 )
@@ -91,7 +91,7 @@ class RemoteHandler:
         else:
             self.forwarder = None
 
-    def tryToMatchWindow(self, name, entry):
+    def try_to_match_window(self, name, entry):
         (
             has_overlay,
             has_remote,
@@ -103,33 +103,33 @@ class RemoteHandler:
         match = has_overlay or has_remote
         try:
             if match:
-                titleElements = (
+                title_elements = (
                     self.title.split() if has_starts_with or has_ends_with else []
                 )
-                if len(titleElements) > 0:
+                if len(title_elements) > 0:
                     if (
                         has_starts_with
-                        and titleElements[0] in entry["titles-startswith"].keys()
+                        and title_elements[0] in entry["titles-startswith"].keys()
                     ):
-                        found, cmd = self.tryToMatchWindow(
-                            name, entry["titles-startswith"][titleElements[0]]
+                        found, cmd = self.try_to_match_window(
+                            name, entry["titles-startswith"][title_elements[0]]
                         )
                         if found:
                             return True
                     if (
                         has_ends_with
-                        and titleElements[-1] in entry["titles-endswith"].keys()
+                        and title_elements[-1] in entry["titles-endswith"].keys()
                     ):
-                        found, cmd = self.tryToMatchWindow(
-                            name, entry["titles-endswith"][titleElements[-1]]
+                        found, cmd = self.try_to_match_window(
+                            name, entry["titles-endswith"][title_elements[-1]]
                         )
                         if found:
                             return True
                     if has_contains:
                         contains = entry["titles-contains"]
-                        for elem in titleElements:
+                        for elem in title_elements:
                             if elem in contains.keys():
-                                found, cmd = self.tryToMatchWindow(name, contains[elem])
+                                found, cmd = self.try_to_match_window(name, contains[elem])
                                 if found:
                                     return True
                 if self.title and has_title:
@@ -146,7 +146,7 @@ class RemoteHandler:
             return True
         return False
 
-    def remoteChanged(self, remote_entry: dict):
+    def remote_changed(self, remote_entry: dict):
         if "ip" not in remote_entry.keys():
             self.listen_to_forwarder()
             return False
@@ -170,19 +170,19 @@ class RemoteHandler:
 
             found = False
             if self.name in self.mapping.keys():
-                found = self.tryToMatchWindow(self.name, self.mapping[self.name])
+                found = self.try_to_match_window(self.name, self.mapping[self.name])
             if self.current_entry and not found:
                 self.current_entry = None
             return True
         return False
 
-    def hasOverlay(self):
+    def has_overlay(self):
         return (
             self.current_entry
             and self.current_entry["flags"][Flags.HAS_OVERLAY.value]
         )
 
-    def getOverlayData(self):
+    def get_overlay_data(self):
         return self.current_entry["overlay"]
 
     def close(self):

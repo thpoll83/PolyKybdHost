@@ -15,7 +15,7 @@ class WindowsInputHelper:
     Remove-Job -Job $Job
     $CurrentLanguage"""
     
-    def getLanguages(self):
+    def get_languages(self):
         if not self.list:
             result = subprocess.run(['powershell', 'Get-WinUserLanguageList'], stdout=subprocess.PIPE)
             self.list = []
@@ -29,8 +29,8 @@ class WindowsInputHelper:
                     self.list.append(e.split(":")[-1].strip())
         return self.list
 
-    def setLanguage(self, lang):
-        available = self.getLanguages()
+    def set_language(self, lang):
+        available = self.get_languages()
         short_comparison = False
         if lang not in available:
             for lang_codes in available:
@@ -40,7 +40,7 @@ class WindowsInputHelper:
             if not short_comparison:
                 return False, "No matching language found."
         num_langs = len(available)
-        success, sys_lang = self.getCurrentLanguage()
+        success, sys_lang = self.get_current_language()
 
         controller = Controller()
         while success and num_langs>0:
@@ -50,12 +50,12 @@ class WindowsInputHelper:
             controller.press(Key.space)
             controller.release(Key.space)
             controller.release(Key.cmd)
-            success, sys_lang = self.getCurrentLanguage()
+            success, sys_lang = self.get_current_language()
             num_langs = num_langs - 1
             
         return False, f"Could not switch language to {lang}"
     
-    def getCurrentLanguage(self):
+    def get_current_language(self):
         result = subprocess.run(['powershell', self.query], stdout=subprocess.PIPE)
         entries = iter(result.stdout.splitlines())
         for e in entries:

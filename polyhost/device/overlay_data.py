@@ -1,12 +1,7 @@
 import math
-
-#import matplotlib
-#import matplotlib.pyplot as plt
-
 import numpy as np
 
-from polyhost.device import RleCompression
-
+from polyhost.device.rle_compress import compress
 
 # overlay constants
 MAX_DATA_PER_MSG = 30
@@ -42,10 +37,10 @@ class OverlayData:
         self.roi = find_roi_rectangle(image)
         self.top, self.left, self.bottom, self.right = self.roi
         roi = image[self.top: self.bottom, self.left: self.right]
-        self.compressed_bytes = RleCompression.compress(self.all_bytes)
+        self.compressed_bytes = compress(self.all_bytes)
         
         self.roi_bytes = np.packbits(roi, axis=None).tobytes()
-        self.compressed_roi_bytes = RleCompression.compress(self.roi_bytes)
+        self.compressed_roi_bytes = compress(self.roi_bytes)
         
         self.all_msgs = helper_calc_overlay_bytes(self.all_bytes)
         self.compressed_msgs = math.ceil((len(self.compressed_bytes)+2)/MAX_DATA_PER_MSG)

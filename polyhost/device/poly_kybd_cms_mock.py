@@ -1,12 +1,12 @@
 import logging
 import time
 
-from polyhost.device import ImageConverter
-from polyhost.device.CmdHelper import split_by_n_chars
-from polyhost.device.Keycodes import KeyCode
+from polyhost.device.cmd_composer import split_by_n_chars
+from polyhost.device.im_converter import Modifier, ImageConverter
+from polyhost.device.keys import KeyCode
 
 
-class PolyKybdMock():
+class PolyKybdMock:
     """
     PolyKybd for Testing
     """
@@ -23,7 +23,7 @@ class PolyKybdMock():
         return True
 
     def query_id(self):
-        return True, "PolyKybdMock.py"
+        return True, "PolyKybdMockID"
 
     def query_version_info(self):
         return True, self.version
@@ -81,12 +81,12 @@ class PolyKybdMock():
         self.lang = lang
         return True, lang
 
-    def set_overlay_masking(self, flags, set):
-        return True, ""
+    def set_overlay_masking(self, set_all):
+        return True, f"{set_all}"
 
     def send_overlay(self, filename, on_off=True):
         self.log.info(f"Send Overlay '{filename}'...")
-        converter = ImageConverter.ImageConverter()
+        converter = ImageConverter()
         if not converter:
             return False, f"Invalid file '{filename}'."
 
@@ -94,7 +94,7 @@ class PolyKybdMock():
             return False, f"Unable to read '{filename}'."
 
         counter = 0
-        for modifier in ImageConverter.Modifier:
+        for modifier in Modifier:
             overlaymap = converter.extract_overlays(modifier)
             #it is okay if there is no overlay for a modifier
             if overlaymap:
@@ -118,21 +118,21 @@ class PolyKybdMock():
         
         for filename in filenames:
             self.log.info("Send Overlay '%s'...", filename)
-            converter = ImageConverter.ImageConverter()
+            converter = ImageConverter()
             if not converter:
                 return False, f"Invalid file '{filename}'."
 
             if not converter.open(filename):
                 return False, f"Unable to read '{filename}'."
 
-            for modifier in ImageConverter.Modifier:
+            for modifier in Modifier:
                 overlaymap = converter.extract_overlays(modifier)
                 # it is okay if there is no overlay for a modifier
                 if overlaymap:
                     self.log.debug(f"Sending overlays for modifier {modifier}.")
 
                     # Send ESC first
-                    if not enabled and modifier == ImageConverter.Modifier.NO_MOD:
+                    if not enabled and modifier == Modifier.NO_MOD:
                         if KeyCode.KC_ESCAPE.value in overlaymap.keys():
                             # if allow_compressed:
                             #     hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(KeyCode.KC_ESCAPE.value, modifier, overlaymap)

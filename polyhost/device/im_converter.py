@@ -6,10 +6,7 @@ from enum import Enum
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 
-from polyhost.device import OverlayData
-
-
-#from device import OverlayData
+from polyhost.device.overlay_data import OverlayData
 
 
 class Modifier(Enum):
@@ -52,9 +49,9 @@ class ImageConverter:
                 key_g = Modifier.ALT
                 key_b = Modifier.SHIFT
             if not pixmap.hasAlphaChannel():
-                qimage = pixmap.toImage()
-                im = np.ndarray((qimage.height(), qimage.width(), 3), buffer=qimage.constBits(),
-                                   strides=[qimage.bytesPerLine(), 3, 1], dtype=np.uint8)
+                q_image = pixmap.toImage()
+                im = np.ndarray((q_image.height(), q_image.width(), 3), buffer=q_image.constBits(),
+                                   strides=[q_image.bytesPerLine(), 3, 1], dtype=np.uint8)
                 [b, g, r] = np.dsplit(im, im.shape[-1])
                 self.image[key_r] = np.array(r, dtype=bool)
                 self.image[key_g] = np.array(g, dtype=bool)
@@ -63,12 +60,12 @@ class ImageConverter:
                 # plt.show()
                 self.log.info(f"Loaded 3 channels from {filename}: {self.w}x{self.h}")
             else:
-                qimage = pixmap.toImage()
-                b = qimage.bits()
-                b.setsize(qimage.width() * qimage.height() * 4)
+                q_image = pixmap.toImage()
+                b = q_image.bits()
+                b.setsize(q_image.width() * q_image.height() * 4)
 
-                im = np.ndarray((qimage.height(), qimage.width(), 4), buffer=b,
-                                strides=[qimage.bytesPerLine(), 4, 1], dtype=np.uint8)
+                im = np.ndarray((q_image.height(), q_image.width(), 4), buffer=b,
+                                strides=[q_image.bytesPerLine(), 4, 1], dtype=np.uint8)
                 [b, g, r, a] = np.dsplit(im, im.shape[-1])
                 self.image[key_a] = np.array(a, dtype=bool)
                 self.image[key_r] = np.array(r, dtype=bool)
@@ -77,16 +74,16 @@ class ImageConverter:
                 self.log.debug(f"Loaded 4 channels from {filename}: {self.w}x{self.h}")
         else:
             if not pixmap.hasAlphaChannel():
-                qimage = pixmap.toImage()
-                im = np.ndarray((qimage.height(), qimage.width(), 3), buffer=qimage.constBits(),
-                                   strides=[qimage.bytesPerLine(), 3, 1], dtype=np.uint8)
+                q_image = pixmap.toImage()
+                im = np.ndarray((q_image.height(), q_image.width(), 3), buffer=q_image.constBits(),
+                                   strides=[q_image.bytesPerLine(), 3, 1], dtype=np.uint8)
             else:
-                qimage = pixmap.toImage()
-                b = qimage.bits()
-                b.setsize(qimage.width() * qimage.height() * 4)
+                q_image = pixmap.toImage()
+                b = q_image.bits()
+                b.setsize(q_image.width() * q_image.height() * 4)
 
-                im = np.ndarray((qimage.height(), qimage.width(), 4), buffer=b,
-                                strides=[qimage.bytesPerLine(), 4, 1], dtype=np.uint8)
+                im = np.ndarray((q_image.height(), q_image.width(), 4), buffer=b,
+                                strides=[q_image.bytesPerLine(), 4, 1], dtype=np.uint8)
             # convert the image to b/w
             self.image[Modifier.NO_MOD] = np.array(np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
                                                    dtype=bool)
@@ -109,13 +106,13 @@ class ImageConverter:
             keycode = 4  # KC_A
             for y in range(0, 9):
                 for x in range(0, 10):
-                    topx = x * 72
-                    topy = y * 40
-                    bottomx = (x + 1) * 72
-                    bottomy = (y + 1) * 40
-                    key_slice = self.image[modifier][topy:bottomy, topx:bottomx]
+                    top_x = x * 72
+                    top_y = y * 40
+                    bottom_x = (x + 1) * 72
+                    bottom_y = (y + 1) * 40
+                    key_slice = self.image[modifier][top_y:bottom_y, top_x:bottom_x]
                     if key_slice.any():
-                        overlays[keycode] = OverlayData.OverlayData(key_slice)
+                        overlays[keycode] = OverlayData(key_slice)
 
                     keycode = keycode + 1
                     if keycode == 84:  # skip keypad keycodes

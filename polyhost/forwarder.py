@@ -10,14 +10,14 @@ from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QPalette, QColor
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon
 from polyhost._version import __version__
-from polyhost.handler.RemoteHandler import TCP_PORT
+from polyhost.handler.remote_window import TCP_PORT
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
 if not IS_PLASMA:
     import pywinctl as pwc
 else:
-    import polyhost.handler.KdeWindowReporter as pwc
+    import polyhost.handler.kde_win_reporter as pwc
 
 UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
@@ -46,7 +46,7 @@ class PolyForwarder(QApplication):
         self.last_update_msec = 0
 
         # Create the icon
-        icon = QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/pcolor.png"))
+        icon = QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/pcolor.png"))
 
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
@@ -59,28 +59,28 @@ class PolyForwarder(QApplication):
         self.setStyle("Fusion")
         # Now use a palette to switch to dark colors:
         palette = QPalette()
-        baseColor = QColor(35, 35, 35)
-        windowBaseColor = QColor(99, 99, 99)
-        textColor = QColor(150, 150, 150)
-        highlightTextColor = QColor(255, 255, 255)
-        palette.setColor(QPalette.Window, windowBaseColor)
-        palette.setColor(QPalette.WindowText, textColor)
-        palette.setColor(QPalette.Base, baseColor)
-        palette.setColor(QPalette.AlternateBase, windowBaseColor)
-        palette.setColor(QPalette.ToolTipBase, baseColor)
-        palette.setColor(QPalette.ToolTipText, textColor)
-        palette.setColor(QPalette.Text, textColor)
-        palette.setColor(QPalette.Button, windowBaseColor)
-        palette.setColor(QPalette.ButtonText, textColor)
+        base_color = QColor(35, 35, 35)
+        window_base_color = QColor(99, 99, 99)
+        text_color = QColor(150, 150, 150)
+        highlight_text_color = QColor(255, 255, 255)
+        palette.setColor(QPalette.Window, window_base_color)
+        palette.setColor(QPalette.WindowText, text_color)
+        palette.setColor(QPalette.Base, base_color)
+        palette.setColor(QPalette.AlternateBase, window_base_color)
+        palette.setColor(QPalette.ToolTipBase, base_color)
+        palette.setColor(QPalette.ToolTipText, text_color)
+        palette.setColor(QPalette.Text, text_color)
+        palette.setColor(QPalette.Button, window_base_color)
+        palette.setColor(QPalette.ButtonText, text_color)
         palette.setColor(QPalette.BrightText, Qt.red)
         palette.setColor(QPalette.Link, QColor(42, 130, 218))
         palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-        palette.setColor(QPalette.HighlightedText, highlightTextColor)
+        palette.setColor(QPalette.HighlightedText, highlight_text_color)
         self.setPalette(palette)
 
-        QTimer.singleShot(1000, self.activeWindowReporter)
+        QTimer.singleShot(1000, self.active_window_reporter)
 
-    def sendToHost(self, handle, title, name):
+    def send_to_host(self, handle, title, name):
         try:
             ip = ipaddress.ip_address(self.host)
         except ValueError:
@@ -110,9 +110,9 @@ class PolyForwarder(QApplication):
         self.is_closing = True
         self.quit()
 
-    def activeWindowReporter(self):
+    def active_window_reporter(self):
         self.last_update_msec = self.last_update_msec + UPDATE_CYCLE_MSEC
-        win = pwc.getActiveWindow()
+        win = pwc.get_active_window()
         if win:
             if self.prev_win != win:
                 self.prev_win = win
@@ -127,16 +127,16 @@ class PolyForwarder(QApplication):
                 ):
                     self.win = win
                     self.title = win.title
-                    appName = self.win.getAppName()
-                    self.sendToHost(win.getHandle(), self.title, appName)
-                    self.log.info("Active App: %s", appName)
+                    app_name = self.win.getAppName()
+                    self.send_to_host(win.getHandle(), self.title, app_name)
+                    self.log.info("Active App: %s", app_name)
         elif self.win:
             self.log.info("No active window")
             self.win = None
             self.title = None
-            self.sendToHost(0, "", "")
+            self.send_to_host(0, "", "")
 
         if not self.is_closing:
-            QTimer.singleShot(UPDATE_CYCLE_MSEC, self.activeWindowReporter)
+            QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
         else:
             self.log.info("No more active window reporting.")

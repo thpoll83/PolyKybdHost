@@ -5,7 +5,7 @@ import subprocess
 from datetime import datetime
 
 
-def getActiveWindow():
+def get_active_window():
     script = os.path.join(pathlib.Path(__file__).parent.resolve(), "active_win.js")
 
     output = (

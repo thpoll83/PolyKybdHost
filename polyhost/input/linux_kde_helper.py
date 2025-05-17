@@ -5,7 +5,7 @@ from pathlib import Path
 from polyhost.lang.lang_compat import LangComp
 
 
-class LinuxPlasmaHelper():
+class LinuxPlasmaHelper:
     def __init__(self):
         self.comp = LangComp()
         self.list = None
@@ -15,7 +15,7 @@ class LinuxPlasmaHelper():
     # LayoutList=kr,us,at
     # Use=true
     # VariantList=kr104,,
-    def getLanguages(self):
+    def get_languages(self):
         if not self.list:
             with open(Path.home() / ".config" / "kxkbrc", "r") as file:
                 for line in file:
@@ -25,11 +25,11 @@ class LinuxPlasmaHelper():
                         return self.list
         return self.list
 
-    def getAllLanguages(self):
-        return self.getLanguages()
+    def get_all_languages(self):
+        return self.get_languages()
 
-    def setLanguage(self, lang):
-        self.getLanguages()
+    def set_language(self, lang):
+        self.get_languages()
         idx = None
         if lang in self.list:
             idx = self.list.index(lang)
@@ -58,5 +58,5 @@ class LinuxPlasmaHelper():
             return False, output
         return True, lang
     
-    def getCurrentLanguage(self):
+    def get_current_language(self):
         False, "Not Implemented" 

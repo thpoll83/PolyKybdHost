@@ -19,18 +19,17 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.cmd_menu import CommandsSubMenu
+from polyhost.handler.active_window import OverlayHandler
+from polyhost.handler.common import OverlayCommand
+from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
+from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
+from polyhost.input.macos_helper import MacOSInputHelper
+from polyhost.input.win_helper import WindowsInputHelper
 from polyhost.settings import PolySettings
-from polyhost.device import PolyKybd
-from polyhost.input import (
-    LinuxGnomeInputHelper,
-    LinuxPlasmaHelper,
-    MacOSInputHelper,
-    WindowsInputHelper,
-)
+from polyhost.device.poly_kybd_cmds import PolyKybd
 from polyhost._version import __version__
 
-import polyhost.handler.OverlayHandler as OverlayHandler
-from polyhost.input.InputDetection import get_input_method
+from polyhost.input.unicode_input import get_input_method
 from polyhost.services.sunlight_helper import Sunlight
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -48,6 +47,7 @@ def get_overlay_path(filepath):
     return os.path.join(os.path.dirname(__file__), "overlays", filepath)
 
 
+# noinspection PyUnresolvedReferences
 class PolyHost(QApplication):
     def __init__(self, log_level):
         super().__init__(sys.argv)
@@ -65,7 +65,7 @@ class PolyHost(QApplication):
         self.is_closing = False
 
         # Create the icon
-        icon = QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/pcolor.png"))
+        icon = QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/pcolor.png"))
 
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
@@ -77,19 +77,19 @@ class PolyHost(QApplication):
         self.menu = QMenu()
         self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
-        #self.keeb = PolyKybdMock.PolyKybdMock(f"{__version__}")
+        #self.keeb = PolyKybdMock(f"{__version__}")
         self.kb_sw_version = None
-        self.keeb = PolyKybd.PolyKybd()
+        self.keeb = PolyKybd()
         self.connected = False
         self.paused = False
-        self.status = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/sync.svg")), "Waiting for PolyKybd...", parent=self)
+        self.status = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/sync.svg")), "Waiting for PolyKybd...", parent=self)
         self.status.setToolTip("Press to pause connection")
         self.status.triggered.connect(self.pause)
-        self.exit = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/power.svg")), "Quit", parent=self)
+        self.exit = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/power.svg")), "Quit", parent=self)
         self.exit.triggered.connect(self.quit_app)
-        self.support = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/support.svg")), "Get Support", parent=self)
+        self.support = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/support.svg")), "Get Support", parent=self)
         self.support.triggered.connect(self.open_support)
-        self.about = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/home.svg")), "About", parent=self)
+        self.about = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/home.svg")), "About", parent=self)
         self.about.triggered.connect(self.open_about)
 
         self.last_update_msec = 0
@@ -101,16 +101,16 @@ class PolyHost(QApplication):
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
 
-        lang_menu = self.menu.addMenu(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/language.svg")), "Change System Input Language")
+        lang_menu = self.menu.addMenu(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/language.svg")), "Change System Input Language")
 
         self.cmdMenu = CommandsSubMenu(self, self.keeb)
-        self.cmdMenu.buildMenu(self.menu)
+        self.cmdMenu.build_menu(self.menu)
 
-        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/overlays.svg")), "Send Shortcut Overlay...", parent=self)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/overlays.svg")), "Send Shortcut Overlay...", parent=self)
         action.triggered.connect(self.send_shortcuts)
         self.menu.addAction(action)
 
-        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/via.png")), "Configure Keymap (VIA)", parent=self)
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/via.png")), "Configure Keymap (VIA)", parent=self)
         action.triggered.connect(self.open_via)
         self.menu.addAction(action)
 
@@ -120,18 +120,18 @@ class PolyHost(QApplication):
 
         self.helper = None
         if platform.system() == "Windows":
-            self.helper = WindowsInputHelper.WindowsInputHelper()
+            self.helper = WindowsInputHelper()
         elif platform.system() == "Linux":
             if IS_PLASMA:
-                self.helper = LinuxPlasmaHelper.LinuxPlasmaHelper()
+                self.helper = LinuxPlasmaHelper()
             else:
-                self.helper = LinuxGnomeInputHelper.LinuxGnomeInputHelper()
+                self.helper = LinuxGnomeInputHelper()
         elif platform.system() == "Darwin":
-            self.helper = MacOSInputHelper.MacOSInputHelper()
+            self.helper = MacOSInputHelper()
 
-        entries = self.helper.getLanguages()
+        entries = self.helper.get_languages()
 
-        result = self.helper.getCurrentLanguage()
+        result = self.helper.get_current_language()
         if result:
             success, sys_lang = result
             if success:
@@ -153,34 +153,34 @@ class PolyHost(QApplication):
         self.tray.show()
 
         self.mapping = {}
-        self.read_overlay_mapping_file(os.path.join(pathlib.Path(__file__).parent.resolve(), "overlays/overlay-mapping.poly.yaml"))
+        self.read_overlay_mapping_file(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/overlays/overlay-mapping.poly.yaml"))
 
-        self.overlay_handler = OverlayHandler.OverlayHandler(self.mapping)
+        self.overlay_handler = OverlayHandler(self.mapping)
 
         self.setStyle("Fusion")
         # Now use a palette to switch to dark colors:
         palette = QPalette()
-        baseColor = QColor(35, 35, 35)
-        windowBaseColor = QColor(99, 99, 99)
-        textColor = QColor(150, 150, 150)
-        highlightTextColor = QColor(255, 255, 255)
-        palette.setColor(QPalette.Window, windowBaseColor)
-        palette.setColor(QPalette.WindowText, textColor)
-        palette.setColor(QPalette.Base, baseColor)
-        palette.setColor(QPalette.AlternateBase, windowBaseColor)
-        palette.setColor(QPalette.ToolTipBase, baseColor)
-        palette.setColor(QPalette.ToolTipText, textColor)
-        palette.setColor(QPalette.Text,textColor)
-        palette.setColor(QPalette.Button, windowBaseColor)
-        palette.setColor(QPalette.ButtonText, textColor)
+        base_color = QColor(35, 35, 35)
+        window_base_color = QColor(99, 99, 99)
+        text_color = QColor(150, 150, 150)
+        highlight_text_color = QColor(255, 255, 255)
+        palette.setColor(QPalette.Window, window_base_color)
+        palette.setColor(QPalette.WindowText, text_color)
+        palette.setColor(QPalette.Base, base_color)
+        palette.setColor(QPalette.AlternateBase, window_base_color)
+        palette.setColor(QPalette.ToolTipBase, base_color)
+        palette.setColor(QPalette.ToolTipText, text_color)
+        palette.setColor(QPalette.Text,text_color)
+        palette.setColor(QPalette.Button, window_base_color)
+        palette.setColor(QPalette.ButtonText, text_color)
         palette.setColor(QPalette.BrightText, Qt.red)
         palette.setColor(QPalette.Link, QColor(42, 130, 218))
         palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-        palette.setColor(QPalette.HighlightedText, highlightTextColor)
+        palette.setColor(QPalette.HighlightedText, highlight_text_color)
         self.setPalette(palette)
 
         self.sunlight = Sunlight(self.settings.get("allow_online_request_for_brightness"))
-        QTimer.singleShot(UPDATE_CYCLE_MSEC*2, self.activeWindowReporter)
+        QTimer.singleShot(UPDATE_CYCLE_MSEC * 2, self.active_window_reporter)
 
     # def on_activated(self, i_reason):
     #     if i_reason == QSystemTrayIcon.Trigger:
@@ -234,11 +234,11 @@ class PolyHost(QApplication):
                     if kb_version.startswith(expected[:3]):
                         if kb_version != expected:
                             self.log.warning(f"Warning! Minor version mismatch, expected {expected}, got {kb_version}'.")
-                            self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/sync_problem.svg")))
+                            self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/sync_problem.svg")))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version}, please update to {expected}!)")
                         else:
-                            self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/sync.svg")))
+                            self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/sync.svg")))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
                         if result and self.settings.get("send_unicode_mode_to_kb"):
@@ -247,17 +247,18 @@ class PolyHost(QApplication):
                             self.keeb.set_unicode_mode(mode.value)
                             self.update_ui_on_lang_change(lang)
                     else:
-                        self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/sync_disabled.svg")))
+                        self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/sync_disabled.svg")))
                         self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
                         self.connected = False
                 else:
-                    self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "icons/sync_disabled.svg")))
+                    self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/sync_disabled.svg")))
                     self.status.setText(msg)
             self.managed_connection_status()
             return lang
         return self.current_lang
 
-    def langcode_to_flag(self, lang_code):
+    @staticmethod
+    def langcode_to_flag(lang_code):
         result = ""
         for ch in lang_code:
             num = 0x1F1E6 + ord(ch.upper()) - ord('A')
@@ -301,15 +302,15 @@ class PolyHost(QApplication):
         webbrowser.open("https://ko-fi.com/polykb", new=0, autoraise=True)
 
     def send_shortcuts(self):
-        fname = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
-        if len(fname) > 0:
-            self.keeb.send_overlays(fname[0], self.kb_sw_version[1]>=5 and self.kb_sw_version[2] >=4)
+        file_name = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
+        if len(file_name) > 0:
+            self.keeb.send_overlays(file_name[0], self.kb_sw_version[1]>=5 and self.kb_sw_version[2] >=4)
         else:
             self.log.info("No file selected. Operation canceled.")
 
     def change_system_language(self):
         lang = self.sender().text()
-        result, output = self.helper.setLanguage(lang)
+        result, output = self.helper.set_language(lang)
         if not result:
             self.show_mb("Error", f"Changing input language to '{lang}' failed with:\n\"{output}\"")
         else:
@@ -341,10 +342,11 @@ class PolyHost(QApplication):
         self.overlay_handler.close()
         self.quit()
 
+    # noinspection PyPep8Naming
     def closeEvent(self, _):
         self.cmdMenu.disable_overlays()
 
-    def sendOverlayData(self, data, allow_compressed):
+    def send_overlay_data(self, data, allow_compressed):
         files = []
         if isinstance(data, str):
             files.append(get_overlay_path(data))
@@ -362,7 +364,7 @@ class PolyHost(QApplication):
 
             self.keeb.set_idle(False)
 
-    def activeWindowReporter(self):
+    def active_window_reporter(self):
         self.last_update_msec = self.last_update_msec + UPDATE_CYCLE_MSEC
         self.last_update_10min_task = self.last_update_10min_task + UPDATE_CYCLE_MSEC
         lang = None
@@ -372,30 +374,30 @@ class PolyHost(QApplication):
         if self.connected:
             self.last_update_msec = RECONNECT_CYCLE_MSEC * 2 #just to limit that
             if lang and self.current_lang != lang:
-                success, msg = self.helper.setLanguage(f"{lang[:2]}-{lang[2:]}")
+                success, msg = self.helper.set_language(f"{lang[:2]}-{lang[2:]}")
                 if success:
-                    data = self.overlay_handler.getOverlayData()
+                    data = self.overlay_handler.get_overlay_data()
                     if data:
-                        self.sendOverlayData(data, self.kb_sw_version[1]>=5 and self.kb_sw_version[2] >=4)
+                        self.send_overlay_data(data, self.kb_sw_version[1] >= 5 and self.kb_sw_version[2] >= 4)
                 else:
                     self.log.warning("Could not change OS language to '%s': %s", lang, msg)
                 self.current_lang = lang
 
-            data, cmd = self.overlay_handler.handleActiveWindow(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
-            if cmd == OverlayHandler.OverlayCommand.DISABLE:
+            data, cmd = self.overlay_handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
+            if cmd == OverlayCommand.DISABLE:
                 self.keeb.disable_overlays()
-            elif cmd == OverlayHandler.OverlayCommand.ENABLE:
+            elif cmd == OverlayCommand.ENABLE:
                 self.keeb.enable_overlays()
 
-            if data and cmd == OverlayHandler.OverlayCommand.OFF_ON:
-                self.sendOverlayData(data, self.kb_sw_version[1]>=5 and self.kb_sw_version[2] >=4)
+            if data and cmd == OverlayCommand.OFF_ON:
+                self.send_overlay_data(data, self.kb_sw_version[1] >= 5 and self.kb_sw_version[2] >= 4)
 
             if self.last_update_10min_task > PERIODIC_10MIN_CYCLE_MSEC:
                 self.last_update_10min_task = 0
                 self.execute_10min_task()
 
         if not self.is_closing:
-            QTimer.singleShot(UPDATE_CYCLE_MSEC, self.activeWindowReporter)
+            QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
         # except Exception as e:
         #    self.log.warning(f"Failed to report active window: {e}")
 
