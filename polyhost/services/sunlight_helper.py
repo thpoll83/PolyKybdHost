@@ -8,6 +8,10 @@ import geocoder
 
 class Sunlight:
     def __init__(self, allow_online_lookup):
+        self.site = None
+        self.longitude = None
+        self.latitude = None
+        self.location = None
         self.log = logging.getLogger('PolyHost')
         self.online_lookup = allow_online_lookup
         self.location_known = False
