@@ -378,8 +378,8 @@ class PolyHost(QApplication):
             self.keeb.set_idle(False)
 
     def active_window_reporter(self):
-        self.last_update_msec = self.last_update_msec + UPDATE_CYCLE_MSEC
-        self.last_update_10min_task = self.last_update_10min_task + UPDATE_CYCLE_MSEC
+        self.last_update_msec += UPDATE_CYCLE_MSEC
+        self.last_update_10min_task += UPDATE_CYCLE_MSEC
         lang = None
         if self.last_update_msec > RECONNECT_CYCLE_MSEC:
             lang = self.reconnect()

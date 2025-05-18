@@ -264,7 +264,7 @@ class PolyKybd:
 
                     all_keys = ", ".join(f"{key:#02x}" for key in overlay_map.keys())
                     self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
-                    overlay_counter = overlay_counter + 1
+                    overlay_counter += 1
                     
                     #time.sleep(0.2)
 
@@ -317,7 +317,7 @@ class PolyKybd:
             result, msg, lock = self.hid.send_multiple(cmd + data, lock)
             if not result:
                 return False, f"Error sending overlay message {msg_num + 1}/{max_msgs} ({msg})"
-            msg_cnt = msg_cnt + 1
+            msg_cnt += 1
         if lock:
             lock.release()
         #self.log.info(f"Keycode {keycode}: Sent {msg_cnt} plain msgs")

@@ -27,7 +27,7 @@ def helper_calc_overlay_bytes(all_bytes, skip_empty=True):
         data = all_bytes[msg_num * PLAIN_OVERLAY_BYTES_PER_MSG:(msg_num + 1) * PLAIN_OVERLAY_BYTES_PER_MSG]
         if skip_empty and all(b == 0 for b in data):
             continue
-        msg_cnt = msg_cnt + 1
+        msg_cnt += 1
 
     return msg_cnt
 class OverlayData:

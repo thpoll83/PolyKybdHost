@@ -114,7 +114,7 @@ class ImageConverter:
                     if key_slice.any():
                         overlays[keycode] = OverlayData(key_slice)
 
-                    keycode = keycode + 1
+                    keycode += 1
                     if keycode == 84:  # skip keypad keycodes
                         keycode = 100  # KC_NONUS_BACKSLASH
                     if keycode == 102:  # skip media keys etc.

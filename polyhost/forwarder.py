@@ -111,7 +111,7 @@ class PolyForwarder(QApplication):
         self.quit()
 
     def active_window_reporter(self):
-        self.last_update_msec = self.last_update_msec + UPDATE_CYCLE_MSEC
+        self.last_update_msec += UPDATE_CYCLE_MSEC
         win = pwc.get_active_window()
         if win:
             if self.prev_win != win:
