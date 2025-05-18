@@ -12,15 +12,14 @@ def main():
                     prog='PolyHost',
                     usage='%(prog)s [options]',
                     description='Communication with your PolyKybd')
-    parser.add_argument('--autorun', default=False, action='store_true',
-                        help='Add an autorun entry to your system')
+    parser.add_argument('--portable', default=False, action='store_true',
+                        help='Do not add an autorun entry to your system')
     parser.add_argument('--debug', default=False, action='store_true', help='Include debug level messages to the log file')
     parser.add_argument('--host', help='Specify a host where the PolyKybd is physically connected to')
     args=parser.parse_args()
 
-    if args.autorun:
-        argv = [arg for arg in sys.argv[1:] if arg != '--autorun']
-        setup_autostart_for_app(__file__, argv)
+    if not args.portable:
+        setup_autostart_for_app(__file__, sys.argv[1:])
 
     if args.host:
         print(f"Executing Forwarder. Sending to {args.host}")

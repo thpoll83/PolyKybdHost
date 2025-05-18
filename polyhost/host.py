@@ -14,10 +14,12 @@ from PyQt5.QtWidgets import (
     QSystemTrayIcon,
     QMenu,
     QAction,
+    QDialog,
     QMessageBox,
     QFileDialog,
 )
 
+from polyhost.gui.settings_dialog import SettingsDialog
 from polyhost.cmd_menu import CommandsSubMenu
 from polyhost.handler.active_window import OverlayHandler
 from polyhost.handler.common import OverlayCommand
@@ -44,7 +46,7 @@ def sort_by_country_abc(item):
 
 
 def get_overlay_path(filepath):
-    return os.path.join(os.path.dirname(__file__), "overlays", filepath)
+    return os.path.join(os.path.dirname(__file__), "res", "overlays", filepath)
 
 
 # noinspection PyUnresolvedReferences
@@ -112,6 +114,10 @@ class PolyHost(QApplication):
 
         action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/via.png")), "Configure Keymap (VIA)", parent=self)
         action.triggered.connect(self.open_via)
+        self.menu.addAction(action)
+
+        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/settings.svg")), "Settings", parent=self)
+        action.triggered.connect(self.open_settings)
         self.menu.addAction(action)
 
         self.menu.addAction(self.support)
@@ -292,6 +298,13 @@ class PolyHost(QApplication):
     @staticmethod
     def open_via():
         webbrowser.open("https://usevia.app", new=0, autoraise=True)
+
+    def open_settings(self):
+        dlg = SettingsDialog()
+        dlg.setup(self.settings.get_all())
+        if dlg.exec_() == QDialog.Accepted:
+            self.settings.set_all(dlg.get_updated_settings())
+        dlg.close()
 
     @staticmethod
     def open_support():

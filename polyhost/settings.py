@@ -35,6 +35,13 @@ class PolySettings:
     def get(self, name):
         return self.settings[name]
 
+    def get_all(self):
+        return self.settings
+
+    def set_all(self, new_settings):
+        self.settings = new_settings
+        self.save()
+
     def load(self):
         with open(self.path, "r") as f:
             self.settings = yaml.safe_load(f) or {}
