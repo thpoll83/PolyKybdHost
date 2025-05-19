@@ -12,7 +12,7 @@ chrome, google-chrome:
     Jira:
       overlay: jira_template.mods.png
 nxplayer:
-  remote: host
+  remote: at1i-ws05
   title: NoMachine - .*
 gimp-2,gimp-3,gimp:
   overlay: gimp_template.mods.png

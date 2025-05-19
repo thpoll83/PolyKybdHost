@@ -64,7 +64,7 @@ class RemoteHandler:
                     addr = str(ipaddress.ip_address(remote))
                     if addr not in self.connections.keys():
                         self.connections[addr] = ""
-                        self.log.info(f"IP address {remote} used with {addr}")
+                        self.log.info(f"IP address '{remote}' used with {addr}")
                         resolved_remote = True
                         entry["ip"] = addr
 
@@ -73,13 +73,13 @@ class RemoteHandler:
                         addr = str(socket.gethostbyname(remote))
                         if addr not in self.connections.keys():
                             self.connections[addr] = ""
-                            self.log.info(f"Resolved {remote} to {addr}")
+                            self.log.info(f"Resolved '{remote}' to {addr}")
                             resolved_remote = True
                             entry["ip"] = addr
                     except:
-                        self.log.warning(f"Could not resolve {remote}")
+                        self.log.warning(f"Could not resolve '{remote}'")
                 except:
-                    self.log.warning(f"Could not resolve {remote}")
+                    self.log.warning(f"Could not resolve '{remote}'")
         if resolved_remote:
             if not self.forwarder:
                 self.forwarder = threading.Thread(

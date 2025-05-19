@@ -159,7 +159,7 @@ class PolyHost(QApplication):
         self.tray.show()
 
         self.mapping = {}
-        self.read_overlay_mapping_file(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/overlays/overlay-mapping.poly.yaml"))
+        self.read_overlay_mapping_file(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/overlay-mapping.poly.yaml"))
 
         self.overlay_handler = OverlayHandler(self.mapping)
 
