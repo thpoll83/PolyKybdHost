@@ -1,3 +1,4 @@
+import pathlib
 import platform
 import os
 import sys
@@ -53,7 +54,7 @@ python -m polyhost {args}
     print(f"Unix shell wrapper script created at: {wrapper_path}")
     return wrapper_path
 
-def create_windows_shortcut_powershell(target_path, shortcut_path, working_dir=None):
+def create_windows_shortcut_powershell(target_path, shortcut_path, working_dir, icon_path):
     # Use PowerShell to create a shortcut without pywin32 dependency
     if working_dir is None:
         working_dir = Path(target_path).parent
@@ -68,6 +69,7 @@ $WshShell = New-Object -ComObject WScript.Shell
 $Shortcut = $WshShell.CreateShortcut("{shortcut_path}")
 $Shortcut.TargetPath = "{target_path}"
 $Shortcut.WorkingDirectory = "{working_dir}"
+{"$Shortcut.IconLocation = \"" + icon_path + "\"" if icon_path else ""}
 $Shortcut.WindowStyle = 7
 $Shortcut.Save()
 '''
@@ -83,7 +85,23 @@ $Shortcut.Save()
     else:
         print(f"Failed to create shortcut. PowerShell output:\n{completed.stderr}")
 
-def add_to_startup(wrapper_path, app_name):
+def create_linux_shortcut_desktop(app_name, autostart_dir, wrapper_path, icon_path):
+    print(os.geteuid())
+    desktop_file = autostart_dir / f"{app_name}.desktop"
+    content = f"""[Desktop Entry]
+Type=Application
+Exec={shlex.quote(str(wrapper_path.resolve()))}
+Hidden=false
+NoDisplay=false
+Icon={icon_path or ''}
+X-GNOME-Autostart-enabled=true
+Name={app_name}
+"""
+    desktop_file.write_text(content)
+    desktop_file.chmod(0o755)
+    print(f"Startup desktop entry created at: {desktop_file}")
+
+def add_to_startup(wrapper_path, app_name, icon_path):
     system = platform.system()
     wrapper_path = Path(wrapper_path)
 
@@ -91,23 +109,20 @@ def add_to_startup(wrapper_path, app_name):
         startup_dir = Path(os.getenv("APPDATA")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
         startup_dir.mkdir(parents=True, exist_ok=True)
         shortcut_path = startup_dir / f"{app_name}.lnk"
-        create_windows_shortcut_powershell(wrapper_path, shortcut_path, wrapper_path.parent)
+        create_windows_shortcut_powershell(wrapper_path, shortcut_path, wrapper_path.parent, icon_path)
+        startup_dir = Path(os.getenv("APPDATA")) / "Microsoft" / "Windows" / "Start Menu" / "Programs"
+        startup_dir.mkdir(parents=True, exist_ok=True)
+        shortcut_path = startup_dir / f"{app_name}.lnk"
+        create_windows_shortcut_powershell(wrapper_path, shortcut_path, wrapper_path.parent, icon_path)
 
     elif system == "Linux":
         autostart_dir = Path.home() / ".config" / "autostart"
         autostart_dir.mkdir(parents=True, exist_ok=True)
-        desktop_file = autostart_dir / f"{app_name}.desktop"
-        content = f"""[Desktop Entry]
-Type=Application
-Exec={shlex.quote(str(wrapper_path.resolve()))}
-Hidden=false
-NoDisplay=false
-X-GNOME-Autostart-enabled=true
-Name={app_name}
-"""
-        desktop_file.write_text(content)
-        desktop_file.chmod(0o755)
-        print(f"Startup desktop entry created at: {desktop_file}")
+        create_linux_shortcut_desktop(app_name, autostart_dir, wrapper_path, icon_path)
+        autostart_dir = Path.home() / ".local" / "share" / "applications"
+        autostart_dir.mkdir(parents=True, exist_ok=True)
+        create_linux_shortcut_desktop(app_name, autostart_dir, wrapper_path, icon_path)
+
 
     elif system == "Darwin":
         plist_path = Path.home() / "Library" / "LaunchAgents" / f"com.{app_name}.plist"
@@ -124,6 +139,8 @@ Name={app_name}
     </array>
     <key>RunAtLoad</key>
     <true/>
+    <key>CFBundleIconFile</key>
+    <string>{icon_path}</string>
 </dict>
 </plist>
 """
@@ -133,6 +150,7 @@ Name={app_name}
 
     else:
         print(f"Unsupported OS: {system}")
+
 
 def setup_autostart_for_app(script_path, args):
     """
@@ -180,5 +198,7 @@ def setup_autostart_for_app(script_path, args):
             execute_this.chmod(0o755)
             print(f"Unix simple wrapper created at: {execute_this}")
 
-    add_to_startup(execute_this, "PolyHost")
+    root = pathlib.Path(__file__).parent.parent.resolve()
+    icon_path = os.path.join(root, "res", "icons", "pcolor.icns" if platform.system() == "Darwin" else "pcolor.png")
+    add_to_startup(execute_this, "PolyHost", icon_path)
 
