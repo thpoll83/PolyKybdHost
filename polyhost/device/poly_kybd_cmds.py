@@ -2,9 +2,8 @@ import logging
 import re
 import time
 from enum import Enum
-
-import hid
 import numpy as np
+
 
 from polyhost.device.cmd_composer import compose_cmd, expect, split_by_n_chars, compose_cmd_str, compose_roi_header
 from polyhost.device.hid_helper import HidHelper
@@ -13,6 +12,7 @@ from polyhost.device.keys import KeyCode
 from polyhost.device.overlay_data import PLAIN_OVERLAY_BYTES_PER_MSG, BYTES_PER_OVERLAY, NUM_PLAIN_OVERLAY_MSGS, \
     MAX_DATA_PER_MSG
 
+import hid
 
 class Cmd(Enum):
     GET_ID = 6

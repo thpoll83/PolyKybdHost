@@ -4,7 +4,7 @@ import platform
 if platform.system() == 'Windows':
     import ctypes
     import os 
-    ctypes.CDLL(os.path.dirname(os.path.realpath(__file__)) + '\\win-hidapi-0-14\\hidapi.dll')
+    ctypes.CDLL(os.path.dirname(os.path.realpath(__file__)) + '\\win-hidapi-0-15\\hidapi.dll')
 try:
     import hid
 except ImportError:

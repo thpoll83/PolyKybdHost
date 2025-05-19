@@ -153,7 +153,7 @@ class OverlayHandler:
         self.last_update_msec = self.last_update_msec + update_cycle_time_msec
         win = None
         try:
-            win = pwc.get_active_window()
+            win = pwc.getActiveWindow()
         except Exception as e:
             self.log.warning(f"Failed retrieving active window: {e}")
             self.log.warning("".join(traceback.format_exception(e)))
