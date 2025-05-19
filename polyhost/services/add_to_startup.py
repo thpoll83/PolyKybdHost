@@ -27,7 +27,7 @@ def create_windows_bat_wrapper(venv_path, script_path, args="", wrapper_path=Non
     bat_content = f"""@echo off
 call "{activate_bat}"
 cd "{script_path.parent.parent}"
-python -m polyhost {args}
+cmd /c start /min "" powershell -WindowStyle Hidden -ExecutionPolicy Bypass -Command "python -m polyhost {args}"
 """
 
     wrapper_path.write_text(bat_content, encoding="utf-8")
