@@ -86,7 +86,6 @@ $Shortcut.Save()
         print(f"Failed to create shortcut. PowerShell output:\n{completed.stderr}")
 
 def create_linux_shortcut_desktop(app_name, autostart_dir, wrapper_path, icon_path):
-    print(os.geteuid())
     desktop_file = autostart_dir / f"{app_name}.desktop"
     content = f"""[Desktop Entry]
 Type=Application
