@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timezone
+import math
 
 import requests
 from pvlib.location import Location
@@ -57,7 +58,8 @@ class Sunlight:
                 # Find index for current hour
                 for idx, timestamp in enumerate(times):
                     if timestamp.startswith(today) and int(timestamp[11:13]) == hour_now:
-                        return radiation[idx]
+                        self.log.debug("Timestamp for irradiance data[%d]: %s", idx, timestamp)
+                        return (radiation[idx] + (radiation[idx+1] if len(radiation)>(idx+1) else radiation[idx]))/2
 
                 self.log.warning("Found no matching entry in time table from api.open-meteo.com: %s", times)
                 self.log.info("Using location and time based approach instead.")
@@ -68,17 +70,24 @@ class Sunlight:
 
             clear_sky = self.site.get_clearsky(times)  # GHI, DNI, DHI values (in W/m^2)
             if len(clear_sky['ghi'].values) > 0:
+                self.log.debug("Irradiance value: %f", clear_sky['ghi'].values[0])
                 return clear_sky['ghi'].values[0]
 
             self.log.warning("Location based calculation failed")
 
         return min(19-7, max(0, datetime.now().hour - 7))/12
 
-    def get_brightness_now(self, min_val=50, max_val=900):
+    def get_brightness_now(self, min_val=0, max_val=6.5, pre_scale = 0.75):
         irradiance = self.get_irradiance_now()
-        normalized = (irradiance - min_val) / (max_val - min_val)
-        return max(0.0, min(1.0, normalized))
+        perceived_brightness = math.log(1+irradiance)*pre_scale
+        normalized = (max(min_val, min(max_val, perceived_brightness)) - min_val) / (max_val - min_val)
+        self.log.info(
+            "Normalized brightness value: %f, perceived: %f (irradiance %f)",
+            normalized,
+            perceived_brightness,
+            irradiance,
+        )
+        return normalized
 
     def allow_online_lookup(self, allow_online_lookup):
         self.online_lookup = allow_online_lookup
-
