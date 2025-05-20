@@ -197,7 +197,11 @@ def setup_autostart_for_app(script_path, args):
             execute_this.chmod(0o755)
             print(f"Unix simple wrapper created at: {execute_this}")
 
-    root = pathlib.Path(__file__).parent.parent.resolve()
-    icon_path = os.path.join(root, "res", "icons", "pcolor.icns" if platform.system() == "Darwin" else "pcolor.png")
+    icon_path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "res", "icons")
+    if platform.system() == "Darwin":
+        icon_path = os.path.join(icon_path, "pcolor.icns")
+    elif platform.system() == "Windows":
+        icon_path = os.path.join(icon_path, "pcolor.ico")
+    else:
+        icon_path = os.path.join(icon_path, "pcolor.png")
     add_to_startup(execute_this, "PolyHost", icon_path)
-
