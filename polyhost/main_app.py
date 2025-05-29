@@ -1,7 +1,8 @@
-
 import argparse
 import logging
 import sys
+
+from PyQt5.QtWidgets import QApplication
 
 from polyhost.forwarder import PolyForwarder
 from polyhost.host import PolyHost
@@ -21,12 +22,16 @@ def main():
     if not args.portable:
         setup_autostart_for_app(__file__, sys.argv[1:])
 
+    # Important for XWayland icon matching
+    if sys.platform.startswith('linux'):
+        QApplication.setDesktopFileName('PolyHost')
+
     if args.host:
         print(f"Executing Forwarder. Sending to {args.host}")
         app = PolyForwarder(logging.DEBUG if args.debug else logging.INFO, args.host)
     else:
         print("Executing PolyHost...")
         app = PolyHost(logging.DEBUG if args.debug else logging.INFO)
-        
+
     sys.exit(app.exec_())
     

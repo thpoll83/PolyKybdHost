@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QWidget, QVBoxLayout, QHBoxLayout
 )
 
+from polyhost.gui.get_icon import get_icon
+
 
 def create_editor(value):
     if isinstance(value, bool):
@@ -27,7 +29,6 @@ def create_editor(value):
         return line_edit
 
 
-# noinspection PyUnresolvedReferences
 class SettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -38,10 +39,10 @@ class SettingsDialog(QDialog):
         return QSize(400, 200)
 
     def setup(self, settings_dict):
+        self.setWindowIcon(get_icon("pcolor.png"))
+
         # Outer layout
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(10, 10, 10, 5)
-        main_layout.setSpacing(10)
 
         title_label = QLabel("Some settings might need a restart to take effect.")
         title_label.setAlignment(Qt.AlignCenter)

@@ -8,7 +8,7 @@ import webbrowser
 import yaml
 
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QIcon, QPalette, QColor
+from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import (
     QApplication,
     QSystemTrayIcon,
@@ -16,11 +16,12 @@ from PyQt5.QtWidgets import (
     QAction,
     QDialog,
     QMessageBox,
-    QFileDialog,
-)
+    QFileDialog, )
 
+from polyhost.gui.get_icon import get_icon
+from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.settings_dialog import SettingsDialog
-from polyhost.cmd_menu import CommandsSubMenu
+from polyhost.gui.cmd_menu import CommandsSubMenu
 from polyhost.handler.active_window import OverlayHandler
 from polyhost.handler.common import OverlayCommand
 from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
@@ -48,12 +49,9 @@ def sort_by_country_abc(item):
 def get_overlay_path(filepath):
     return os.path.join(os.path.dirname(__file__), "res", "overlays", filepath)
 
-
-# noinspection PyUnresolvedReferences
 class PolyHost(QApplication):
     def __init__(self, log_level):
         super().__init__(sys.argv)
-
         logging.basicConfig(
             level=log_level,
             format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
@@ -67,7 +65,8 @@ class PolyHost(QApplication):
         self.is_closing = False
 
         # Create the icon
-        icon = QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/pcolor.png"))
+        icon = get_icon("pcolor.png")
+        self.setWindowIcon(icon)
 
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
@@ -84,15 +83,28 @@ class PolyHost(QApplication):
         self.keeb = PolyKybd()
         self.connected = False
         self.paused = False
-        self.status = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/sync.svg")), "Waiting for PolyKybd...", parent=self)
+        self.status = QAction(get_icon("sync.svg"), "Waiting for PolyKybd...", parent=self)
         self.status.setToolTip("Press to pause connection")
+        # noinspection PyUnresolvedReferences
         self.status.triggered.connect(self.pause)
-        self.exit = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/power.svg")), "Quit", parent=self)
+        self.exit = QAction(get_icon("power.svg"), "Quit", parent=self)
+        # noinspection PyUnresolvedReferences
         self.exit.triggered.connect(self.quit_app)
-        self.support = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/support.svg")), "Get Support", parent=self)
+        self.support = QAction(get_icon("support.svg"), "Get Support", parent=self)
+        # noinspection PyUnresolvedReferences
         self.support.triggered.connect(self.open_support)
-        self.about = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/home.svg")), "About", parent=self)
+        self.about = QAction(get_icon("home.svg"), "About", parent=self)
+        # noinspection PyUnresolvedReferences
         self.about.triggered.connect(self.open_about)
+
+        self.settings_dialog = QAction(get_icon("settings.svg"), "Settings...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.settings_dialog.triggered.connect(self.open_settings)
+
+        self.log_dialog = QAction(get_icon("log.svg"), "Log file...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.log_dialog.triggered.connect(self.open_log)
+        self.log_viewer = None
 
         self.last_update_msec = 0
         self.last_update_10min_task = PERIODIC_10MIN_CYCLE_MSEC * 2
@@ -103,23 +115,23 @@ class PolyHost(QApplication):
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
 
-        lang_menu = self.menu.addMenu(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/language.svg")), "Change System Input Language")
+        lang_menu = self.menu.addMenu(get_icon("language.svg"), "Change System Input Language")
 
         self.cmdMenu = CommandsSubMenu(self, self.keeb)
         self.cmdMenu.build_menu(self.menu)
 
-        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/overlays.svg")), "Send Shortcut Overlay...", parent=self)
+        action = QAction(get_icon("overlays.svg"), "Send Shortcut Overlay...", parent=self)
+        # noinspection PyUnresolvedReferences
         action.triggered.connect(self.send_shortcuts)
         self.menu.addAction(action)
 
-        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/via.png")), "Configure Keymap (VIA)", parent=self)
+        action = QAction(get_icon("via.png"), "Configure Keymap (VIA)", parent=self)
+        # noinspection PyUnresolvedReferences
         action.triggered.connect(self.open_via)
         self.menu.addAction(action)
 
-        action = QAction(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/settings.svg")), "Settings", parent=self)
-        action.triggered.connect(self.open_settings)
-        self.menu.addAction(action)
-
+        self.menu.addAction(self.settings_dialog)
+        self.menu.addAction(self.log_dialog)
         self.menu.addAction(self.support)
         self.menu.addAction(self.about)
         self.menu.addAction(self.exit)
@@ -167,8 +179,8 @@ class PolyHost(QApplication):
         # Now use a palette to switch to dark colors:
         palette = QPalette()
         base_color = QColor(35, 35, 35)
-        window_base_color = QColor(99, 99, 99)
-        text_color = QColor(150, 150, 150)
+        window_base_color = QColor(80, 80, 80)
+        text_color = QColor(200, 200, 200)
         highlight_text_color = QColor(255, 255, 255)
         palette.setColor(QPalette.Window, window_base_color)
         palette.setColor(QPalette.WindowText, text_color)
@@ -198,6 +210,8 @@ class PolyHost(QApplication):
     def managed_connection_status(self):
         for action in self.menu.actions():
             action.setEnabled(self.connected and not self.paused)
+        self.log_dialog.setEnabled(True)
+        self.settings_dialog.setEnabled(True)
         self.status.setEnabled(True)
         self.support.setEnabled(True)
         self.about.setEnabled(True)
@@ -240,11 +254,11 @@ class PolyHost(QApplication):
                     if kb_version.startswith(expected[:3]):
                         if kb_version != expected:
                             self.log.warning(f"Warning! Minor version mismatch, expected {expected}, got {kb_version}'.")
-                            self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/sync_problem.svg")))
+                            self.status.setIcon(get_icon("sync_problem.svg"))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version}, please update to {expected}!)")
                         else:
-                            self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/sync.svg")))
+                            self.status.setIcon(get_icon("sync.svg"))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
                         if result and self.settings.get("send_unicode_mode_to_kb"):
@@ -253,11 +267,11 @@ class PolyHost(QApplication):
                             self.keeb.set_unicode_mode(mode.value)
                             self.update_ui_on_lang_change(lang)
                     else:
-                        self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/sync_disabled.svg")))
+                        self.status.setIcon(get_icon("sync_disabled.svg"))
                         self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
                         self.connected = False
                 else:
-                    self.status.setIcon(QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/sync_disabled.svg")))
+                    self.status.setIcon(get_icon("sync_disabled.svg"))
                     self.status.setText(msg)
             self.managed_connection_status()
             return lang
@@ -306,6 +320,11 @@ class PolyHost(QApplication):
             self.settings.set_all(dlg.get_updated_settings())
         dlg.close()
 
+    def open_log(self):
+        # assignment is needed otherwise the dialog would go away immediatly
+        self.log_viewer = LogViewerDialog()
+        self.log_viewer.show()
+
     @staticmethod
     def open_support():
         webbrowser.open("https://discord.gg/5eU48M79", new=0, autoraise=True)
@@ -322,6 +341,7 @@ class PolyHost(QApplication):
             self.log.info("No file selected. Operation canceled.")
 
     def change_system_language(self):
+        # noinspection PyUnresolvedReferences
         lang = self.sender().text()
         result, output = self.helper.set_language(lang)
         if not result:
@@ -330,6 +350,7 @@ class PolyHost(QApplication):
             self.log.info(f"Change input language to '{lang}'.")
 
     def change_keeb_language(self):
+        # noinspection PyUnresolvedReferences
         lang = self.sender().data()
         result, msg = self.keeb.change_language(lang)
         if result and msg==lang:            
@@ -418,5 +439,3 @@ class PolyHost(QApplication):
         if self.settings.get("send_daylight_dependent_brightness"):
             brightness = self.sunlight.get_brightness_now()
             self.keeb.set_brightness(2+brightness*48)
-
-

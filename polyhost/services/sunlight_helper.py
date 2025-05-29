@@ -77,7 +77,7 @@ class Sunlight:
 
         return min(19-7, max(0, datetime.now().hour - 7))/12
 
-    def get_brightness_now(self, min_val=0, max_val=6.5, pre_scale = 0.75):
+    def get_brightness_now(self, min_val=1.8, max_val=6.5, pre_scale = 0.75):
         irradiance = self.get_irradiance_now()
         perceived_brightness = math.log(1+irradiance)*pre_scale
         normalized = (max(min_val, min(max_val, perceived_brightness)) - min_val) / (max_val - min_val)
