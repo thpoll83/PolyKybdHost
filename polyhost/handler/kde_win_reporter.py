@@ -64,11 +64,12 @@ def getActiveWindow():
 class KWin:
     def __init__(self, msg):
         elems = msg.split(";")
-        if len(elems) != 2:
+        if len(elems) != 3:
             raise Exception(f"Unexpected format reported by KWin Script: '{msg}'")
+
+        self.name = elems[0]
         self.title = elems[1]
-        self.name = elems[0] 
-        self.handle = hash(msg)
+        self.handle = int(elems[2])
         # log = logging.getLogger("PolyHost")
         # log.info("KWin %s", msg)
     
