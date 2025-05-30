@@ -197,7 +197,7 @@ class PolyHost(QApplication):
         palette.setColor(QPalette.HighlightedText, highlight_text_color)
         self.setPalette(palette)
 
-        self.sunlight = Sunlight(self.settings.get("allow_online_request_for_brightness"))
+        self.sunlight = Sunlight(self.settings.get("brightness_allow_online_location_lookup"), self.settings.get("brightness_allow_online_irradiance_request"))
         QTimer.singleShot(UPDATE_CYCLE_MSEC * 2, self.active_window_reporter)
 
     # def on_activated(self, i_reason):
@@ -261,7 +261,7 @@ class PolyHost(QApplication):
                             self.status.setIcon(get_icon("sync.svg"))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
-                        if result and self.settings.get("send_unicode_mode_to_kb"):
+                        if result and self.settings.get("unicode_send_composition_mode"):
                             mode = get_input_method()
                             self.log.info("Setting unicode mode to %s", str(mode))
                             self.keeb.set_unicode_mode(mode.value)
@@ -436,6 +436,9 @@ class PolyHost(QApplication):
         #    self.log.warning(f"Failed to report active window: {e}")
 
     def execute_10min_task(self):
-        if self.settings.get("send_daylight_dependent_brightness"):
-            brightness = self.sunlight.get_brightness_now()
+        if self.settings.get("brightness_set_daylight_dependent"):
+            min_val = self.settings.get("irradiance_min")
+            max_val = self.settings.get("irradiance_max")
+            prescaler = self.settings.get("irradiance_prescaler")
+            brightness = self.sunlight.get_brightness_now(min_val, max_val, prescaler)
             self.keeb.set_brightness(2+brightness*48)

@@ -8,17 +8,18 @@ import pandas as pd
 import geocoder
 
 class Sunlight:
-    def __init__(self, allow_online_lookup):
+    def __init__(self, allow_location_lookup, allow_online_lookup):
         self.site = None
         self.longitude = None
         self.latitude = None
         self.location = None
         self.log = logging.getLogger('PolyHost')
         self.online_lookup = allow_online_lookup
+        self.location_lookup = allow_location_lookup
         self.location_known = False
 
     def init_location(self):
-        if not self.location_known:
+        if self.location_lookup and not self.location_known:
             try:
                 self.location = geocoder.ip('me')
                 self.latitude, self.longitude = self.location.latlng
@@ -91,3 +92,6 @@ class Sunlight:
 
     def allow_online_lookup(self, allow_online_lookup):
         self.online_lookup = allow_online_lookup
+
+    def allow_location_lookup(self, allow_location_lookup):
+        self.location_lookup = allow_location_lookup

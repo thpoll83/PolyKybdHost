@@ -1,7 +1,11 @@
+import string
+from collections import defaultdict
+
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import (
     QDialog, QFormLayout, QDialogButtonBox,
-    QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QWidget, QVBoxLayout, QHBoxLayout
+    QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QSizePolicy,
+    QScrollArea
 )
 
 from polyhost.gui.get_icon import get_icon
@@ -36,7 +40,7 @@ class SettingsDialog(QDialog):
         self.edit_widgets = {}
 
     def sizeHint(self):
-        return QSize(400, 200)
+        return QSize(400, 450)
 
     def setup(self, settings_dict):
         self.setWindowIcon(get_icon("pcolor.png"))
@@ -46,27 +50,52 @@ class SettingsDialog(QDialog):
 
         title_label = QLabel("Some settings might need a restart to take effect.")
         title_label.setAlignment(Qt.AlignCenter)
-        # title_label.setStyleSheet("font-weight: bold; font-size: 16px;")
         main_layout.addWidget(title_label)
 
-        # Wrapper widget to center form layout
-        form_wrapper = QWidget()
-        form_wrapper_layout = QFormLayout()
-        form_wrapper.setLayout(form_wrapper_layout)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll_contents = QWidget()
+        scroll_layout = QVBoxLayout(scroll_contents)
 
-        for key, value in settings_dict.items():
-            label = QLabel(key)
-            label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            widget = create_editor(value)
-            form_wrapper_layout.addRow(label, widget)
-            self.edit_widgets[key] = widget
+        grouped_settings = defaultdict(dict)
+        for full_key, value in settings_dict.items():
+            if "_" in full_key:
+                group, _ = full_key.split("_", 1)
+                grouped_settings[group][full_key] = value
+            else:
+                grouped_settings["General"][full_key] = value
 
-        # Center the form layout in the dialog
-        centered_layout = QHBoxLayout()
-        centered_layout.addStretch()
-        centered_layout.addWidget(form_wrapper)
-        centered_layout.addStretch()
-        main_layout.addLayout(centered_layout)
+        # For each group, create a QGroupBox with a form layout
+        for group_name, group_items in grouped_settings.items():
+            group_box = QGroupBox(string.capwords(group_name))
+            group_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            group_layout = QFormLayout()
+            group_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+            group_box.setLayout(group_layout)
+
+            for full_key, value in group_items.items():
+                cap = string.capwords(full_key, sep="_").replace("_", " ")
+                parts = cap.split(" ",1)
+                label = QLabel(parts[1])
+                label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+                widget = create_editor(value)
+
+                field_container = QWidget()
+                field_layout = QHBoxLayout()
+                field_layout.setContentsMargins(0, 0, 0, 0)
+                field_layout.setAlignment(Qt.AlignRight)  # Right-align the widget inside the field cell
+                field_layout.addWidget(widget)
+                field_container.setLayout(field_layout)
+
+                group_layout.addRow(label, field_container)
+                self.edit_widgets[full_key] = widget
+
+            # form_wrapper_layout.addWidget(group_box)
+            scroll_layout.addWidget(group_box)
+
+        scroll_layout.addStretch()  # force groups to fill width
+        scroll.setWidget(scroll_contents)
+        main_layout.addWidget(scroll)
 
         # Add buttons
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)

@@ -20,9 +20,13 @@ class PolySettings:
 
         # Default settings
         self.default_settings = {
-            "send_unicode_mode_to_kb": True,
-            "send_daylight_dependent_brightness": True,
-            "allow_online_request_for_brightness": True
+            "unicode_send_composition_mode": True,
+            "brightness_set_daylight_dependent": True,
+            "brightness_allow_online_irradiance_request": True,
+            "brightness_allow_online_location_lookup": True,
+            "irradiance_min": 1.8,
+            "irradiance_max": 6.5,
+            "irradiance_prescaler": 0.75
         }
 
         # Load settings
@@ -47,6 +51,8 @@ class PolySettings:
             self.settings = yaml.safe_load(f) or {}
         for key, value in self.default_settings.items():
             self.settings.setdefault(key, value)
+
+        self.settings = {k: v for k, v in self.settings.items() if k in self.default_settings}
 
     def restore_defaults(self):
         self.settings = self.default_settings

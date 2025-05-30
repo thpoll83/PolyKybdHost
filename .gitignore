@@ -162,3 +162,4 @@ cython_debug/
 /.idea/
 host_log.txt
 polyhost/device/rle_test
+/polyhost/start_polyhost.sh
