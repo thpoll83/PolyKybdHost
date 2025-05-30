@@ -429,7 +429,7 @@ class PolyHost(QApplication):
             if self.last_update_10min_task > PERIODIC_10MIN_CYCLE_MSEC:
                 self.last_update_10min_task = 0
                 self.execute_10min_task()
-        elif self.settings.get("window_detection_if_not_connected_to_poly_kybd"):
+        elif self.settings.get("debug_window_detection_if_not_connected_to_poly_kybd"):
             self.overlay_handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
 
         if not self.is_closing:

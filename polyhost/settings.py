@@ -27,7 +27,7 @@ class PolySettings:
             "irradiance_min": 1.8,
             "irradiance_max": 6.5,
             "irradiance_prescaler": 0.75,
-            "window_detection_if_not_connected_to_poly_kybd": False
+            "debug_window_detection_if_not_connected_to_poly_kybd": False
         }
 
         # Load settings
