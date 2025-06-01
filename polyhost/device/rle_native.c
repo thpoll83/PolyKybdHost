@@ -134,7 +134,7 @@ uint16_t copy_rectangle_to_overlay(uint8_t *dest, uint8_t *data, uint8_t x,
       dest_y++;
       if (dest_y >= stop_y) {
         return bit_cnt;
-      }>
+      }
     }
     for (uint8_t dest_x = start_x; dest_x < stop_x; dest_x++) {
       *bit_idx = dest_y * SCREEN_WIDTH + dest_x;
