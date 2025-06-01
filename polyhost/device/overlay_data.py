@@ -36,6 +36,8 @@ class OverlayData:
         
         self.roi = find_roi_rectangle(image)
         self.top, self.left, self.bottom, self.right = self.roi
+        self.bottom+=1
+        self.right+=1
         roi = image[self.top: self.bottom, self.left: self.right]
         self.compressed_bytes = compress(self.all_bytes)
         

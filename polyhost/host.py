@@ -327,7 +327,7 @@ class PolyHost(QApplication):
 
     @staticmethod
     def open_support():
-        webbrowser.open("https://discord.gg/5eU48M79", new=0, autoraise=True)
+        webbrowser.open("https://discord.gg/gW8JescH7M", new=0, autoraise=True)
 
     @staticmethod
     def open_about():
