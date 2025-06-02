@@ -243,30 +243,18 @@ class PolyKybd:
                     # Send ESC first
                     if not enabled and modifier == Modifier.NO_MOD:
                         if KeyCode.KC_ESCAPE.value in overlay_map.keys():
-                            if allow_compressed:
-                                #hid_msg_counter = hid_msg_counter + self.send_overlay_roi_for_keycode(KeyCode.KC_ESCAPE.value, modifier, overlay_map, False)
-                                hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(KeyCode.KC_ESCAPE.value, modifier, overlay_map)
-                            else:
-                                hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode(KeyCode.KC_ESCAPE.value, modifier, overlay_map)
+                            hid_msg_counter += self.send_smallest_overlay(KeyCode.KC_ESCAPE.value, modifier, overlay_map)
                             overlay_map.pop(KeyCode.KC_ESCAPE.value)
                             self.enable_overlays()
                             enabled = True
 
                     for keycode in overlay_map:
-                        if allow_compressed:
-                            #hid_msg_counter = hid_msg_counter + self.send_overlay_roi_for_keycode(keycode, modifier, overlay_map, False)
-                            hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(keycode, modifier, overlay_map)
-                        else:
-                            hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode(keycode, modifier, overlay_map)
-                        #self.send_overlay_for_keycode(keycode, modifier, overlay_map)
-                        #if modifier != Modifier.NO_MOD:
-                        #    time.sleep(0.1)
+                        hid_msg_counter += self.send_smallest_overlay(keycode, modifier, overlay_map)
+
 
                     all_keys = ", ".join(f"{key:#02x}" for key in overlay_map.keys())
                     self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
                     overlay_counter += 1
-                    
-                    #time.sleep(0.2)
 
         # self.log.info(f"Sum Plain: {self.stat_plain} Comp: {self.stat_comp} Roi: {self.stat_roi} CRoi: {self.stat_croi} Best: {self.stat_best}")
         self.log.info(f"{overlay_counter} overlays sent ({hid_msg_counter} hid messages).")
@@ -274,6 +262,19 @@ class PolyKybd:
         if not enabled:
             self.enable_overlays()
         return True, "Overlays sent."
+
+    def send_smallest_overlay(self, keycode, modifier, mapping : dict):
+        ov = mapping[keycode]
+        smallest = min(ov.all_msgs, ov.compressed_msgs, ov.roi_msgs, ov.compressed_roi_msgs)
+
+        if smallest == ov.roi_msgs:
+            return self.send_overlay_roi_for_keycode(keycode, modifier, mapping, False)
+        elif smallest == ov.compressed_msgs:
+            return self.send_overlay_for_keycode_compressed(keycode, modifier, mapping)
+        elif smallest == ov.compressed_roi_msgs:
+            return self.send_overlay_roi_for_keycode(keycode, modifier, mapping, True)
+        else:
+            return self.send_overlay_for_keycode(keycode, modifier, mapping)
 
     def send_overlay_roi_for_keycode(self, keycode, modifier, mapping : dict, compressed):
         overlay = mapping[keycode]

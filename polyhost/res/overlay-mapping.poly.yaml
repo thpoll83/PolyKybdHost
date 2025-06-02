@@ -21,7 +21,7 @@ zoom:
   title: Zoom Meeting
 discord:
   overlay: discord_template.mods.png
-inkscape:
+inkscape, org.inkscape.Inkscape:
   overlay: inkscape_template.mods.png
   title: .*Inkscape
 kicad:
