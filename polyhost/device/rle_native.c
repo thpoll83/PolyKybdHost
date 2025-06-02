@@ -5,22 +5,27 @@
 #include <stdio.h>
 #include <string.h>
 
-uint16_t rle_decompress(uint8_t *dest, uint16_t max, uint8_t *compressed,
-                        uint8_t len, uint16_t bit_index) {
+#define RED "\e[0;31m"
+#define GREEN "\e[0;32m"
+#define WHITE "\e[0;37m"
+
+uint16_t rle_decompress(uint8_t *dest, uint16_t max_bytes, uint8_t *compressed,
+                        uint8_t byte_len, uint16_t bit_index) {
   uint16_t count = 0;
   uint8_t bit_offset = bit_index % 8;
-  for (uint8_t d = 0; d < len; d++) {
+  for (uint8_t d = 0; d < byte_len; d++) {
 
     uint8_t bits = compressed[d];
     bool zeros = bits < 128;
     if (!zeros) {
       bits -= 128;
-      printf("1:%d, ", bits);
-    } else {
-      printf("0:%d, ", bits);
-    }
+      //printf("1:%d, ", bits);
+    } 
+    // else {
+    //   printf("0:%d, ", bits);
+    // }
     for (uint8_t b = 0; b < bits; b++) {
-      if (count / 8 >= max) {
+      if (count / 8 >= max_bytes) {
         return count;
       }
       if (zeros) {
@@ -31,7 +36,7 @@ uint16_t rle_decompress(uint8_t *dest, uint16_t max, uint8_t *compressed,
       count++;
       bit_offset++;
       if (bit_offset == 8) {
-        printf("-> 0x%02x (%d->)", *dest, bits - b - 1);
+        //printf("-> 0x%02x (%d->)", *dest, bits - b - 1);
         dest++;
         bit_offset = 0;
       }
@@ -89,9 +94,9 @@ void rle_test() {
     }
   }
   if (success) {
-    printf("\nSUCCESS!\n");
+    printf(GREEN "\nSUCCESS!" WHITE);
   } else {
-    printf("\nFAILED!\n");
+    printf(RED "\nFAILED!" WHITE);
   }
 }
 
@@ -128,6 +133,7 @@ uint16_t copy_rectangle_to_overlay(uint8_t *dest, uint8_t *data, uint8_t x,
   uint8_t stop_y = y + h;
   for (uint8_t dest_y = start_y; dest_y < stop_y; dest_y++) {
     uint8_t start_x = bit_cnt == 0 ? *bit_idx % SCREEN_WIDTH : x;
+    
     uint8_t stop_x = x + w;
     if (start_x == stop_x) {
       start_x = x;
@@ -135,6 +141,8 @@ uint16_t copy_rectangle_to_overlay(uint8_t *dest, uint8_t *data, uint8_t x,
       if (dest_y >= stop_y) {
         return bit_cnt;
       }
+    } else if(start_x<x) {
+      start_x = x;
     }
     for (uint8_t dest_x = start_x; dest_x < stop_x; dest_x++) {
       *bit_idx = dest_y * SCREEN_WIDTH + dest_x;
@@ -157,6 +165,27 @@ uint16_t copy_rectangle_to_overlay(uint8_t *dest, uint8_t *data, uint8_t x,
   }
   *bit_idx = *bit_idx + 1;
   return bit_cnt;
+}
+
+uint16_t copy_compressed_rectangle_to_overlay(uint8_t *dest,
+                                              uint8_t *compressed, uint8_t x,
+                                              uint8_t y, uint8_t w, uint8_t h,
+                                              uint16_t *bit_index,
+                                              uint16_t bitlen) {
+
+  uint16_t copied_bits = 0;
+  //uint16_t hid_bit_index = y * SCREEN_WIDTH + x;
+
+  for (uint8_t i = 0; i < bitlen / 8; i++) {
+    uint8_t buffer[16];
+    uint16_t num_bits = rle_decompress(buffer, 16, &compressed[i], 1, 0);
+
+    uint16_t copied = copy_rectangle_to_overlay(dest, buffer, x, y, w, h,
+                                                bit_index, num_bits);
+    copied_bits += copied;
+  }
+
+  return copied_bits;
 }
 
 uint16_t min(uint16_t a, uint16_t b) {
@@ -199,41 +228,88 @@ void run_roi_test(uint8_t text_idx, uint16_t chunk_size, uint8_t *all,
   uint16_t copied_bits = 0;
   uint16_t hid_bit_index = roi_y * SCREEN_WIDTH + roi_x;
   printf("\n***** Starting ROI Test %d, %d byte chunks (first byte %d, x: %d "
-         "y: %d xx: %d yy: %d):\n",
+         "y: %d xx: %d yy: %d): ",
          text_idx, chunk_size, hid_bit_index / 8, roi_x, roi_y, roi_xx, roi_yy);
 
   for (int i = 0; i < roi_size / chunk_size + 1; i++) {
     uint16_t bit_len = min(chunk_size * 8, roi_size * 8 - copied_bits);
-    printf("Processing data chunk %d / %d bytes\n", i, bit_len / 8);
     uint16_t copied = copy_rectangle_to_overlay(
         dest, &roi[i * chunk_size], roi_x, roi_y, roi_xx - roi_x,
         roi_yy - roi_y, &hid_bit_index, bit_len);
     copied_bits += copied;
   }
-  printf("Processed %u bits, comparing...\n", copied_bits);
 
   bool success = true;
   for (int i = 0; i < sizeof(dest); i++) {
     if (dest[i] != all[i]) {
       success = false;
-      printf("(%d,%d)%d:%02x-%02x, ", (i * 8) % SCREEN_WIDTH,
-             (i * 8) / SCREEN_WIDTH, i, dest[i], all[i]);
     }
   }
   if (success) {
-    printf("SUCCESS!\n");
+    printf(GREEN "SUCCESS!" WHITE);
   } else {
-    printf("FAILED!\n");
+    printf(RED "FAILED!" WHITE);
+
+
+    printf("\nOriginal:\n");
+    print_bin(all, 72, 40);
+  
+    printf("\nComposed:\n");
+    print_bin(dest, 72, 40);
+  
+    printf("\nRoi: (x: %d y: %d xx: %d yy: %d):\n", roi_x, roi_y, roi_xx, roi_yy);
+    print_bin(roi, roi_xx - roi_x, roi_yy - roi_y);
   }
-  printf("\nOriginal:\n");
-  print_bin(all, 72, 40);
 
-  printf("\nComposed:\n");
-  print_bin(dest, 72, 40);
+  if(croi) {
+    printf("\n***** Starting Compressed ROI Test %d, %d byte chunks (first byte %d, x: %d "
+         "y: %d xx: %d yy: %d): ",
+         text_idx, chunk_size, hid_bit_index / 8, roi_x, roi_y, roi_xx, roi_yy);
 
-  printf("\nRoi: (x: %d y: %d xx: %d yy: %d):\n", roi_x, roi_y, roi_xx, roi_yy);
-  print_bin(roi, roi_xx - roi_x, roi_yy - roi_y);
+    memset(&dest, 0, sizeof(dest));
+
+    uint16_t decompressed_bits = 0;
+    hid_bit_index = roi_y * SCREEN_WIDTH + roi_x;
+
+    for (int i = 0; i < croi_size / chunk_size + 1; i++) {
+      uint16_t bit_len = min(chunk_size * 8, croi_size * 8 - i*8);
+      uint16_t bits = copy_compressed_rectangle_to_overlay(
+          dest, &croi[i * chunk_size], roi_x, roi_y, roi_xx - roi_x,
+          roi_yy - roi_y, &hid_bit_index, bit_len);
+      decompressed_bits += bits;
+    }
+
+    success = true;
+    for (int i = 0; i < sizeof(dest); i++) {
+      if (dest[i] != all[i]) {
+        success = false;
+      }
+    }
+    if (success) {
+      printf(GREEN "SUCCESS!" WHITE);
+    } else {
+      printf(RED "FAILED!" WHITE);
+
+
+      printf("\nOriginal:\n");
+      print_bin(all, 72, 40);
+    
+      printf("\nComposed:\n");
+      print_bin(dest, 72, 40);
+    }
+  }
 }
+
+void run_roi_tests(uint8_t text_idx, uint8_t *all,
+  uint8_t *roi, uint16_t roi_size, uint8_t *croi,
+  uint16_t croi_size, uint8_t roi_x, uint8_t roi_y,
+  uint8_t roi_xx, uint8_t roi_yy) {
+
+    for(uint8_t chunk_size=7;chunk_size<66;chunk_size++) {
+      run_roi_test(text_idx, chunk_size, all, roi, roi_size, croi, croi_size, roi_x, roi_y, roi_xx, roi_yy);
+    }
+}
+
 
 void roi_test_0() {
   uint8_t all[] = {
@@ -292,7 +368,7 @@ void roi_test_0() {
       0x4, 0x90, 0x2,  0x8b, 0x5,  0x90, 0x3, 0x89, 0x6, 0x8e, 0x6, 0x86,
       0x8, 0x8c, 0x7f, 0x7f, 0x3b, 0x93, 0xf, 0x93, 0xf, 0x93, 0xd};
 
-  run_roi_test(0, 22, all, roi, sizeof(roi), croi, sizeof(croi), roi_x, roi_y,
+  run_roi_tests(0, all, roi, sizeof(roi), croi, sizeof(croi), roi_x, roi_y,
                roi_xx, roi_yy);
 }
 
@@ -341,7 +417,7 @@ void roi_test_1() {
                     0x13, 0x85, 0x12, 0x86, 0x12, 0x87, 0x10, 0x88, 0xf,
                     0x8a, 0x9,  0x92, 0x4,  0xff, 0xdb};
 
-  run_roi_test(1, 29, all, roi, sizeof(roi), croi, sizeof(croi), roi_x, roi_y,
+  run_roi_tests(1, all, roi, sizeof(roi), croi, sizeof(croi), roi_x, roi_y,
                roi_xx, roi_yy);
 }
 
@@ -402,7 +478,7 @@ void roi_test_2() {
       0x6,  0x83, 0x12, 0x84, 0x3,  0x84, 0x12, 0x8b, 0x12, 0x83, 0x2,  0x85,
       0x14, 0x82, 0x20};
 
-  run_roi_test(2, 33, all, roi, sizeof(roi), croi, sizeof(croi), roi_x, roi_y,
+  run_roi_tests(2, all, roi, sizeof(roi), croi, sizeof(croi), roi_x, roi_y,
                roi_xx, roi_yy);
 }
 
@@ -456,7 +532,7 @@ void roi_test_3() {
                     0x1, 0x83, 0x5, 0x83, 0x8, 0x83, 0x2, 0x84, 0x5, 0x81,
                     0x8, 0x84, 0x3, 0x84, 0xc, 0x84, 0x5, 0x85, 0x8, 0x85,
                     0x7, 0x87, 0x2, 0x87, 0x9, 0x8e, 0xc, 0x8a, 0x7};
-  run_roi_test(3, 66, all, roi, sizeof(roi), croi, sizeof(croi), roi_x, roi_y,
+  run_roi_tests(3, all, roi, sizeof(roi), croi, sizeof(croi), roi_x, roi_y,
                roi_xx, roi_yy);
 }
 
@@ -531,12 +607,12 @@ void roi_test_4() {
                     0xa,  0x82, 0x7,  0x83, 0x9,  0x83, 0x8,  0x84, 0x6,  0x84,
                     0x9,  0x8d, 0xa,  0x8d, 0xb,  0x86, 0x3,  0x83, 0x14, 0x83,
                     0x14, 0x83, 0x14, 0x83, 0x14, 0x83, 0x14, 0x81, 0x5};
-  run_roi_test(4, 61, all, roi, sizeof(roi), croi, sizeof(croi), roi_x, roi_y,
+  run_roi_tests(4, all, roi, sizeof(roi), 0, 0, roi_x, roi_y,
                roi_xx, roi_yy);
 }
 
 void header_test_1() {
-  printf("\n***** Starting ROI-Header Test 1\n");
+  printf("\n***** Starting ROI-Header Test 1: ");
 
   uint8_t top = 9, left = 3, bottom = 37, right = 71, mods = 2;
   bool rle = true;
@@ -550,14 +626,14 @@ void header_test_1() {
   bool r_rle = ((header[3] & 0x80) != 0);
   if (top == r_y && left == r_x && bottom == r_yy && right == r_xx &&
       mods == r_mods && rle == r_rle) {
-    printf("SUCCESS!\n");
+    printf(GREEN "SUCCESS!" WHITE);
   } else {
-    printf("FAILED! Problem in header fields detected!\n");
+    printf(RED "FAILED! Problem in header fields detected!" WHITE);
   }
 }
 
 void header_test_2() {
-  printf("\n***** Starting ROI-Header Test 2\n");
+  printf("\n***** Starting ROI-Header Test 2: ");
 
   uint8_t top = 15, left = 56, bottom = 31, right = 69, mods = 5;
   bool rle = false;
@@ -571,9 +647,9 @@ void header_test_2() {
   bool r_rle = ((header[3] & 0x80) != 0);
   if (top == r_y && left == r_x && bottom == r_yy && right == r_xx &&
       mods == r_mods && rle == r_rle) {
-    printf("SUCCESS!\n");
+    printf(GREEN "SUCCESS!" WHITE);
   } else {
-    printf("FAILED! Problem in header fields detected!\n");
+    printf(RED "FAILED! Problem in header fields detected!" WHITE);
   }
 }
 
@@ -588,5 +664,7 @@ int main() {
 
   header_test_1();
   header_test_2();
+
+  printf("\nDone.\n");
   return 0;
 }

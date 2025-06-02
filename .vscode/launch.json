@@ -21,6 +21,27 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${file}"
+        },
+        {
+            "name": "gcc build and debug active file",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${fileDirname}/${fileBasenameNoExtension}", // The path to your compiled executable
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false, // Set to true if you want a separate terminal for program output
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb", // **Verify this path!** Common path for GDB on Linux.
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: gcc build active file" // This links to the build task below
         }
     ]
 }
