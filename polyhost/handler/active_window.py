@@ -78,7 +78,7 @@ class OverlayHandler:
             if return_copy:
                 keys = keys.split(",")
                 for key in keys:
-                    result[key.strip()] = entry
+                    result[key.strip().lower()] = entry
 
         return result
 
@@ -178,7 +178,7 @@ class OverlayHandler:
                         self.log_win()
                         if self.mapping:
                             found = False
-                            app_name = self.win.getAppName().split(".")[0].lower()
+                            app_name = self.win.getAppName().lower()
                             if app_name in self.mapping.keys():
                                 found, cmd = self.try_to_match_window(
                                     app_name, self.mapping[app_name]

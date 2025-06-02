@@ -1,4 +1,4 @@
-chrome, google-chrome:
+chrome,google-chrome:
   overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
   titles-startswith:
     Pull:
@@ -12,18 +12,17 @@ chrome, google-chrome:
     Jira:
       overlay: jira_template.mods.png
 nxplayer:
-  remote: at1i-ws05
+  remote: hostname
   title: NoMachine - .*
-gimp-2,gimp-3,gimp:
+gimp-2.0,gimp-2.8,gimp-3.0,gimp:
   overlay: gimp_template.mods.png
 zoom:
   overlay: zoom_template.mods.png
   title: Zoom Meeting
 discord:
   overlay: discord_template.mods.png
-inkscape, org.inkscape.Inkscape:
+inkscape,org.inkscape.Inkscape:
   overlay: inkscape_template.mods.png
-  title: .*Inkscape
 kicad:
   overlay: kicad_pcb_template.png
   title: PCB Editor
