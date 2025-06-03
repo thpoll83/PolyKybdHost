@@ -161,5 +161,8 @@ cython_debug/
 /log.txt
 /.idea/
 host_log.txt
+forwarder_log.txt
 polyhost/device/rle_test
-/polyhost/start_polyhost.sh
+polyhost/device/rle_native
+/polyhost/start_polyhost.*
+

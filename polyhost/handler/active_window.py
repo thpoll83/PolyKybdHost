@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 import re
 import traceback
 
@@ -178,7 +179,10 @@ class OverlayHandler:
                         self.log_win()
                         if self.mapping:
                             found = False
-                            app_name = self.win.getAppName().lower()
+                            if platform.system() == 'Windows':
+                                app_name = self.win.getAppName().split(".",-1)[0].lower()
+                            else:
+                                app_name = self.win.getAppName().lower()
                             if app_name in self.mapping.keys():
                                 found, cmd = self.try_to_match_window(
                                     app_name, self.mapping[app_name]
