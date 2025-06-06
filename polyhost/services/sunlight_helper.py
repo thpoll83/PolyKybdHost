@@ -37,9 +37,9 @@ class Sunlight:
 
         if self.location_known:
             if self.online_lookup:
-                now_utc = datetime.now(timezone.utc)
-                today = now_utc.date().isoformat()
-                hour_now = now_utc.hour
+                now = datetime.now()
+                today = now.date().isoformat()
+                hour_now = now.hour
 
                 # Step 3: Query Open-Meteo hourly solar radiation
                 url = (
@@ -66,7 +66,7 @@ class Sunlight:
                 self.log.info("Using location and time based approach instead.")
 
             # Define current time in UTC
-            pd_now = pd.Timestamp.utcnow()
+            pd_now = pd.Timestamp.now()
             times = pd.DatetimeIndex([pd_now])
 
             clear_sky = self.site.get_clearsky(times)  # GHI, DNI, DHI values (in W/m^2)

@@ -49,13 +49,19 @@ def sort_by_country_abc(item):
 def get_overlay_path(filepath):
     return os.path.join(os.path.dirname(__file__), "res", "overlays", filepath)
 
+def get_lang_and_country(combined : str):
+    return combined[:2], combined[2:]
+
 class PolyHost(QApplication):
     def __init__(self, log_level):
         super().__init__(sys.argv)
         logging.basicConfig(
             level=log_level,
-            format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
-            handlers=[logging.FileHandler(filename='host_log.txt'), logging.StreamHandler(stream=sys.stdout)]
+            format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
+            handlers=[
+                logging.FileHandler(filename="host_log.txt", encoding="utf-8"),
+                logging.StreamHandler(stream=sys.stdout),
+            ],
         )
         self.log = logging.getLogger('PolyHost')
         self.setApplicationName('PolyHost')
@@ -78,7 +84,7 @@ class PolyHost(QApplication):
         self.menu = QMenu()
         self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
-        #self.keeb = PolyKybdMock(f"{__version__}")
+        # self.keeb = PolyKybdMock(f"{__version__}")
         self.kb_sw_version = None
         self.keeb = PolyKybd()
         self.connected = False
@@ -166,7 +172,7 @@ class PolyHost(QApplication):
 
         self.managed_connection_status()
         # Add the menu to the tray
-        #self.tray.activated.connect(self.on_activated)
+        # self.tray.activated.connect(self.on_activated)
         self.tray.setContextMenu(self.menu)
         self.tray.show()
 
@@ -263,7 +269,7 @@ class PolyHost(QApplication):
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
                         if result and self.settings.get("unicode_send_composition_mode"):
                             mode = get_input_method()
-                            self.log.info("Setting unicode mode to %s", str(mode))
+                            self.log.info("Setting unicode mode to str %s", str(mode))
                             self.keeb.set_unicode_mode(mode.value)
                             self.update_ui_on_lang_change(lang)
                     else:
@@ -341,19 +347,18 @@ class PolyHost(QApplication):
             self.log.info("No file selected. Operation canceled.")
 
     def change_system_language(self):
-        # noinspection PyUnresolvedReferences
-        lang = self.sender().text()
-        result, output = self.helper.set_language(lang)
+        requested_lang = self.sender().text()
+        lang, country = get_lang_and_country(requested_lang)
+        result, output = self.helper.set_language(lang, country)
         if not result:
-            self.show_mb("Error", f"Changing input language to '{lang}' failed with:\n\"{output}\"")
+            self.show_mb("Error", f"Changing input language to '{requested_lang}' failed with:\n\"{output}\"")
         else:
-            self.log.info(f"Change input language to '{lang}'.")
+            self.log.info("Change input language to '%s'.", requested_lang)
 
     def change_keeb_language(self):
-        # noinspection PyUnresolvedReferences
         lang = self.sender().data()
         result, msg = self.keeb.change_language(lang)
-        if result and msg==lang:            
+        if result and msg==lang:
             self.update_ui_on_lang_change(lang)
         else:
             self.keeb_lang_menu.setTitle(f"Could not set {lang}: {msg}")
@@ -401,21 +406,22 @@ class PolyHost(QApplication):
     def active_window_reporter(self):
         self.last_update_msec += UPDATE_CYCLE_MSEC
         self.last_update_10min_task += UPDATE_CYCLE_MSEC
-        lang = None
+        kb_lang = None
         if self.last_update_msec > RECONNECT_CYCLE_MSEC:
-            lang = self.reconnect()
+            kb_lang = self.reconnect()
             self.last_update_msec = 0
         if self.connected:
             self.last_update_msec = RECONNECT_CYCLE_MSEC * 2 #just to limit that
-            if lang and self.current_lang != lang:
-                success, msg = self.helper.set_language(f"{lang[:2]}-{lang[2:]}")
+            if kb_lang and self.current_lang != kb_lang:
+                lang, country = get_lang_and_country(kb_lang)
+                success, msg = self.helper.set_language(lang, country)
                 if success:
                     data = self.overlay_handler.get_overlay_data()
                     if data:
                         self.send_overlay_data(data, self.kb_sw_version[1] >= 5 and self.kb_sw_version[2] >= 4)
                 else:
-                    self.log.warning("Could not change OS language to '%s': %s", lang, msg)
-                self.current_lang = lang
+                    self.log.warning("Could not change OS language to '%s': %s", kb_lang, msg)
+                self.current_lang = kb_lang
 
             data, cmd = self.overlay_handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
             if cmd == OverlayCommand.DISABLE:

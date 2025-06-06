@@ -1,3 +1,4 @@
+import logging
 import re
 import subprocess
 from pathlib import Path
@@ -7,6 +8,7 @@ from polyhost.lang.lang_compat import LangComp
 
 class LinuxPlasmaHelper:
     def __init__(self):
+        self.log = logging.getLogger('PolyHost')
         self.comp = LangComp()
         self.list = None
 
@@ -15,7 +17,7 @@ class LinuxPlasmaHelper:
     # LayoutList=kr,us,at
     # Use=true
     # VariantList=kr104,,
-    def get_languages(self):
+    def get_countries(self):
         if not self.list:
             with open(Path.home() / ".config" / "kxkbrc", "r") as file:
                 for line in file:
@@ -26,22 +28,22 @@ class LinuxPlasmaHelper:
         return self.list
 
     def get_all_languages(self):
-        return self.get_languages()
+        return self.get_countries()
 
-    def set_language(self, lang):
-        self.get_languages()
+    def set_language(self, lang, country):
+        self.get_countries()
         idx = None
-        if lang in self.list:
-            idx = self.list.index(lang)
+        iso639 = f"{lang}-{country}"
+        if iso639 in self.list:
+            idx = self.list.index(iso639)
         else:
-            lang_code, country_code = lang.split('-')
-            country_code = country_code.lower()
-            if country_code in self.list:
-                idx = self.list.index(country_code)
-            elif lang_code in self.list:
-                idx = self.list.index(lang_code)
+            country = country.lower()
+            if country in self.list:
+                idx = self.list.index(country)
+            elif lang in self.list:
+                idx = self.list.index(lang)
             else:
-                alternatives = self.comp.get_compatible_lang_list(country_code)
+                alternatives = self.comp.get_compatible_lang_list(country)
                 if alternatives:
                     for alt_lang in alternatives:
                         if alt_lang in self.list:
@@ -49,14 +51,20 @@ class LinuxPlasmaHelper:
                             break
                 if not idx:
                     return False, f"Language {lang} not present on system: {self.list}"
-        result = subprocess.run(
-            ["qdbus", "org.kde.keyboard", "/Layouts", "setLayout", str(idx)],
-            stdout=subprocess.PIPE,
-        )
-        output = str(result.stdout, encoding="utf-8")
-        if output != "true\n":
-            return False, output
-        return True, lang
-    
+        try:
+            result = subprocess.run(
+                ["qdbus", "org.kde.keyboard", "/Layouts", "setLayout", str(idx)],
+                stdout=subprocess.PIPE,
+                check=True,
+            )
+            output = str(result.stdout, encoding="utf-8")
+            if output != "true\n":
+                return False, output
+            return True, lang
+        except subprocess.CalledProcessError as ex:
+            msg = str(ex)
+            self.log.warning("Exception when running qdbus: %s", msg)
+            return False, msg
+
     def get_current_language(self):
         False, "Not Implemented" 
