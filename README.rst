@@ -2,13 +2,16 @@ PolyHost
 --------
 
 Simply do::
-PolyHost
+python -m polyhost
+
+
+It is recommended to use a virtual environment and install the packages of requirements.txt
 
 For debug logs run with --debug::
-PolyHost --debug
+python -m polyhost --debug
 
 To forward window info from a remote host run  with --host on the remote system::
-PolyHost --host IP_ADDR_OF_HOST|HOST_NAME
+python -m polyhost --host IP_ADDR_OF_HOST|HOST_NAME
 
 And run without parameter on the computer with the PolyKybd connected & specify the
 remote host in overlay-mapping.poly.yaml like this::

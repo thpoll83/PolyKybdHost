@@ -35,8 +35,9 @@ class InputHelper:
                 return True, sys_lang_iso639
             controller.press(Key.cmd)
             controller.press(Key.space)
-            controller.release(Key.space)
             controller.release(Key.cmd)
+            controller.release(Key.space)
+
             success, sys_lang_iso639 = self.get_current_language()
             num_langs = num_langs - 1
         

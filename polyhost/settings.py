@@ -33,6 +33,8 @@ class PolySettings:
         # Load settings
         if os.path.exists(self.path):
             self.load()
+        else:
+            self.settings = self.default_settings
         self.save()
 
         self.log.info("Current settings:\n%s", str(self.settings))
