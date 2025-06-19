@@ -1,5 +1,8 @@
+import logging
 import os
 import pathlib
+import subprocess
+import sys
 
 from PyQt5.QtCore import QSize, QFileSystemWatcher
 from PyQt5.QtGui import QFont
@@ -11,6 +14,7 @@ from polyhost.gui.get_icon import get_icon
 class LogViewerDialog(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.log = logging.getLogger('PolyHost')
         self.setWindowTitle("Log Viewer")
         self.setWindowIcon(get_icon("pcolor.png"))
 
@@ -33,10 +37,15 @@ class LogViewerDialog(QMainWindow):
         # Spacer to center buttons
         button_layout.addStretch(1)
 
+        # Open button
+        button = QPushButton("Open Folder")
+        button.clicked.connect(self.open_file_directory)
+        button_layout.addWidget(button)
+
         # OK/Close button
-        self.button = QPushButton("Close")
-        self.button.clicked.connect(self.close)
-        button_layout.addWidget(self.button)
+        button = QPushButton("Close")
+        button.clicked.connect(self.close)
+        button_layout.addWidget(button)
 
         # Spacer to center buttons
         button_layout.addStretch(1)
@@ -63,3 +72,64 @@ class LogViewerDialog(QMainWindow):
             self.text_edit.moveCursor(self.text_edit.textCursor().End)
         except Exception as e:
             self.text_edit.setPlainText(f"Failed to load log file: {e}")
+
+    def open_file_directory(self):
+        if sys.platform.startswith('darwin'):  # macOS
+            subprocess.run(['open', '-R', self.path])
+        elif sys.platform.startswith('win'):  # Windows
+            subprocess.run(['explorer', '/select,', os.path.normpath(self.path)])
+        elif sys.platform.startswith('linux'):  # Linux
+            self.reveal_in_linux_file_manager(self.path)
+        else:
+            logging.warning("Platform %s not supported", sys.platform)
+
+    def reveal_in_linux_file_manager(self, file_path):
+        file_path = os.path.abspath(file_path)
+        desktop = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+
+        # Priority mapping
+        preferred = []
+        if "kde" in desktop:
+            preferred = [
+                ['dolphin', '--select', file_path],
+                ['nautilus', '--select', file_path],
+            ]
+        elif "gnome" in desktop or "unity" in desktop:
+            preferred = [
+                ['nautilus', '--select', file_path],
+                ['dolphin', '--select', file_path],
+            ]
+        elif "xfce" in desktop:
+            preferred = [
+                ['thunar', file_path],
+                ['nautilus', '--select', file_path],
+            ]
+        elif "cinnamon" in desktop:
+            preferred = [
+                ['nemo', '--no-desktop', '--browser', '--select', file_path],
+            ]
+        elif "mate" in desktop:
+            preferred = [
+                ['caja', '--no-desktop', '--browser', '--select', file_path],
+            ]
+
+        # Add universal fallback options
+        fallback = [
+            ['nautilus', '--select', file_path],
+            ['dolphin', '--select', file_path],
+            ['nemo', '--no-desktop', '--browser', '--select', file_path],
+            ['caja', '--no-desktop', '--browser', '--select', file_path],
+            ['thunar', file_path],
+        ]
+
+        for cmd in preferred + fallback:
+            try:
+                subprocess.Popen(cmd)
+                return
+            except FileNotFoundError:
+                continue
+
+        # Last fallback: open directory only
+        dir_path = os.path.dirname(file_path)
+        subprocess.run(['xdg-open', dir_path])
+
