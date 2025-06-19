@@ -31,7 +31,7 @@ def main():
         app = PolyForwarder(logging.DEBUG if args.debug else logging.INFO, args.host)
     else:
         print("Executing PolyHost...")
-        app = PolyHost(logging.DEBUG if args.debug else logging.INFO)
+        app = PolyHost(logging.DEBUG if args.debug else logging.INFO, args.debug)
 
     sys.exit(app.exec_())
     

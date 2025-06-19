@@ -11,7 +11,7 @@ class PolyKybdMock:
     PolyKybd for Testing
     """
 
-    def __init__(self, version, lang = "enUS", langs = "enUsdeAtkoKO"):
+    def __init__(self, version, lang = "enUS", langs = "enUsdeAtkoKrfrFritItesEs"):
         self.log = logging.getLogger('PolyHost')
         self.all_languages = list()
         self.version = version
@@ -179,3 +179,6 @@ class PolyKybdMock:
                         self.log.warning(f"Unknown command '{cmd_str}'")
             except Exception as e:
                 self.log.error(f"Couldn't not execute '{cmd_str}': {e}")
+
+    def set_unicode_mode(self, value):
+        self.log.info(f"Setting unicode mode to %d", value)
