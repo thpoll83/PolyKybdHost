@@ -28,6 +28,7 @@ from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
 from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
 from polyhost.input.macos_helper import MacOSInputHelper
 from polyhost.input.win_helper import WindowsInputHelper
+from polyhost.services.unicode_cache import UnicodeCache
 from polyhost.settings import PolySettings
 from polyhost.device.poly_kybd_cmds import PolyKybd
 from polyhost._version import __version__
@@ -117,6 +118,8 @@ class PolyHost(QApplication):
         self.current_lang = None
         self.keeb_lang_menu = None
 
+
+        self.unicode_cache = UnicodeCache()
         self.reconnect()
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
@@ -304,6 +307,8 @@ class PolyHost(QApplication):
                     text = f"{text} {chr(0x2714)}"
                 item = self.keeb_lang_menu.addAction(text, self.change_keeb_language)
                 item.setData(lang)
+                icon = self.unicode_cache.get_icon_for(lang[2:])
+                item.setIcon(icon)
 
     def update_ui_on_lang_change(self, new_lang):
         if self.keeb_lang_menu:

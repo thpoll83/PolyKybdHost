@@ -12,6 +12,9 @@ class LinuxPlasmaHelper:
         self.comp = LangComp()
         self.list = None
 
+    def get_languages(self):
+        return self.get_countries()
+
     # [Layout]
     # DisplayNames=,,
     # LayoutList=kr,us,at
