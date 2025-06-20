@@ -2,7 +2,7 @@ import logging
 
 from PyQt5.QtWidgets import QAction, QFileDialog
 
-from polyhost.device.poly_kybd_cmds import MaskFlag
+from polyhost.device.poly_kybd import MaskFlag
 from polyhost.gui.get_icon import get_icon
 
 

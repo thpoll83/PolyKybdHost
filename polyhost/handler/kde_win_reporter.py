@@ -69,7 +69,7 @@ class KWin:
 
         self.name = elems[0]
         self.title = elems[1]
-        self.handle = int(elems[2])
+        self.handle = int(elems[2]) if len(elems[2])>0 else hash(self.name)
         # log = logging.getLogger("PolyHost")
         # log.info("KWin %s", msg)
     

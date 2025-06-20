@@ -111,11 +111,10 @@ class PolyKybdMock:
 
     def send_overlays(self, filenames, allow_compressed):
         overlay_counter = 0
+        key_counter = 0
         hid_msg_counter = 0
         enabled = False
-        if type(filenames) is not list:
-            filenames = [filenames]
-        
+
         for filename in filenames:
             self.log.info("Send Overlay '%s'...", filename)
             converter = ImageConverter()
@@ -126,30 +125,39 @@ class PolyKybdMock:
                 return False, f"Unable to read '{filename}'."
 
             for modifier in Modifier:
-                overlaymap = converter.extract_overlays(modifier)
+                overlay_map = converter.extract_overlays(modifier)
                 # it is okay if there is no overlay for a modifier
-                if overlaymap:
-                    self.log.debug(f"Sending overlays for modifier {modifier}.")
+                if overlay_map:
+                    self.log.info(f"Sending overlays for modifier {modifier}.")
 
                     # Send ESC first
                     if not enabled and modifier == Modifier.NO_MOD:
-                        if KeyCode.KC_ESCAPE.value in overlaymap.keys():
-                            # if allow_compressed:
-                            #     hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode_compressed(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
-                            # else:
-                            #     hid_msg_counter = hid_msg_counter + self.send_overlay_for_keycode(KeyCode.KC_ESCAPE.value, modifier, overlaymap)
-                            overlaymap.pop(KeyCode.KC_ESCAPE.value)
+                        if KeyCode.KC_ESCAPE.value in overlay_map.keys():
+                            hid_msg_counter += self.send_smallest_overlay(KeyCode.KC_ESCAPE.value, overlay_map)
+                            overlay_map.pop(KeyCode.KC_ESCAPE.value)
                             self.enable_overlays()
                             enabled = True
+                            key_counter += 1
 
-                    all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
-                    self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
-                    overlay_counter = overlay_counter + 1
+                    for keycode in overlay_map:
+                        hid_msg_counter += self.send_smallest_overlay(keycode, overlay_map)
+                        key_counter += 1
 
-        self.log.info(f"{overlay_counter} overlays sent ({hid_msg_counter} hid messages).")
+                    all_keys = ", ".join(f"{key:#02x}" for key in overlay_map.keys())
+                    self.log.info(f"Overlays for keycodes {all_keys} have been sent.")
+                    overlay_counter += 1
+
+        # self.log.info(f"Sum Plain: {self.stat_plain} Comp: {self.stat_comp} Roi: {self.stat_roi} CRoi: {self.stat_croi} Best: {self.stat_best}")
+        self.log.info(f"{overlay_counter} overlays with {key_counter} keys sent ({hid_msg_counter} hid messages).")
+        # self.log.info(f"Stats: Plain:{self.stat_plain} C:{self.stat_comp} R:{self.stat_roi} CR:{self.stat_croi} --> {self.stat_best}")
         if not enabled:
             self.enable_overlays()
         return True, "Overlays sent."
+
+    def send_smallest_overlay(self, keycode, mapping: dict):
+        ov = mapping[keycode]
+        return min(ov.all_msgs, ov.compressed_msgs, ov.roi_msgs, ov.compressed_roi_msgs)
+
     
     def execute_commands(self, command_list):
         for cmd_str in command_list:

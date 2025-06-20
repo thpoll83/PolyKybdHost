@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QFileDialog, )
 
+from polyhost.device.poly_kybd_mock import PolyKybdMock
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.settings_dialog import SettingsDialog
@@ -30,7 +31,7 @@ from polyhost.input.macos_helper import MacOSInputHelper
 from polyhost.input.win_helper import WindowsInputHelper
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost.settings import PolySettings
-from polyhost.device.poly_kybd_cmds import PolyKybd
+from polyhost.device.poly_kybd import PolyKybd
 from polyhost._version import __version__
 
 from polyhost.input.unicode_input import get_input_method
@@ -54,7 +55,7 @@ def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
 
 class PolyHost(QApplication):
-    def __init__(self, log_level):
+    def __init__(self, log_level, runsInDebug):
         super().__init__(sys.argv)
         logging.basicConfig(
             level=log_level,
@@ -85,7 +86,7 @@ class PolyHost(QApplication):
         self.menu = QMenu()
         self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
-        # self.keeb = PolyKybdMock(f"{__version__}")
+        #self.keeb = PolyKybdMock(f"{__version__}")
         self.kb_sw_version = None
         self.keeb = PolyKybd()
         self.connected = False
@@ -124,7 +125,8 @@ class PolyHost(QApplication):
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
 
-        lang_menu = self.menu.addMenu(get_icon("language.svg"), "Change System Input Language")
+        if runsInDebug:
+            lang_menu = self.menu.addMenu(get_icon("language.svg"), "Change System Input Language")
 
         self.cmdMenu = CommandsSubMenu(self, self.keeb)
         self.cmdMenu.build_menu(self.menu)
@@ -169,9 +171,10 @@ class PolyHost(QApplication):
         else:
             self.log.warning("System language query not supported for this platform.")
 
-        for e in entries:
-            self.log.info(f"Enumerating input language {e}")
-            lang_menu.addAction(e, self.change_system_language)
+        if runsInDebug:
+            for e in entries:
+                self.log.info(f"Enumerating input language {e}")
+                lang_menu.addAction(e, self.change_system_language)
 
         self.managed_connection_status()
         # Add the menu to the tray
@@ -298,11 +301,11 @@ class PolyHost(QApplication):
         result, _ = self.keeb.enumerate_lang()
         if result:
             self.current_lang = self.keeb.get_current_lang()
-            self.keeb_lang_menu = menu.addMenu(f"Selected Language: {self.current_lang[:2]} {self.langcode_to_flag(self.current_lang[2:])}")
+            self.keeb_lang_menu = menu.addMenu(get_icon("language.svg"), f"Selected Language: {self.current_lang[:2]} {self.langcode_to_flag(self.current_lang[2:])}")
 
             all_languages = sorted(self.keeb.get_lang_list(), key=sort_by_country_abc)
             for lang in all_languages:
-                text = f"{lang[:2]} {self.langcode_to_flag(lang[2:])}"
+                text = f"{lang[:2]} {lang[2:].upper()}"
                 if lang == self.current_lang:
                     text = f"{text} {chr(0x2714)}"
                 item = self.keeb_lang_menu.addAction(text, self.change_keeb_language)
