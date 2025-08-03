@@ -117,6 +117,18 @@ class PolyKybd:
     def get_hw_version(self):
         return self.hw_version
 
+    def reset_overlay_mapping(self):
+        self.log.info("Reset Overlay Mapping...")
+        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80))
+
+    def reset_overlays_and_usage(self):
+        self.log.info("Reset Overlays AND Usage...")
+        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x60))
+
+    def reset_overlay_usage(self):
+        self.log.info("Reset Overlay Usage...")
+        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x40))
+
     def reset_overlays(self):
         self.log.info("Reset Overlays...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x20))
@@ -219,7 +231,26 @@ class PolyKybd:
         cmd = Cmd.OVERLAY_FLAGS_ON if set_all else Cmd.OVERLAY_FLAGS_OFF
         return self.hid.send(compose_cmd(cmd, 0x1e))
 
-    def send_overlays(self, filenames, allow_compressed):
+    def send_overlay_mapping(self, from_to):
+        #compose messages
+        msgs = []
+        INDICES_PER_MSG = MAX_DATA_PER_MSG*8/10 #we will send 10-bit indices
+        for from_idx, to_idx in from_to.items():
+
+
+            MAX_DATA_PER_MSG
+
+        lock = None
+        for msg in msgs:
+            result, msg, lock = self.hid.send_multiple(msg, lock)
+            if not result:
+                return False, f"Error sending overlay mapping: {msg}"
+
+        if lock:
+            lock.release()
+        return True, "Mapping sent"
+
+    def send_overlays(self, filenames):
         overlay_counter = 0
         hid_msg_counter = 0
         enabled = False
@@ -228,10 +259,12 @@ class PolyKybd:
             self.log.info("Send Overlay '%s'...", filename)
             converter = ImageConverter()
             if not converter:
-                return False, f"Invalid file '{filename}'."
+                self.log.warning("Invalid file %s", filename)
+                return False
 
             if not converter.open(filename):
-                return False, f"Unable to read '{filename}'."
+                self.log.warning("Unable to read %s", filename)
+                return False
 
             self.log.debug(f"PLAIN_OVERLAY_BYTES_PER_MSG: {PLAIN_OVERLAY_BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_PLAIN_OVERLAY_MSGS: {NUM_PLAIN_OVERLAY_MSGS}")
             for modifier in Modifier:
@@ -261,7 +294,7 @@ class PolyKybd:
         #self.log.info(f"Stats: Plain:{self.stat_plain} C:{self.stat_comp} R:{self.stat_roi} CR:{self.stat_croi} --> {self.stat_best}")
         if not enabled:
             self.enable_overlays()
-        return True, "Overlays sent."
+        return True
 
     def send_smallest_overlay(self, keycode, modifier, mapping : dict):
         ov = mapping[keycode]
@@ -365,9 +398,13 @@ class PolyKybd:
                         cmd = params[:end] if end != -1 else params
                         match cmd:
                             case "send":
-                                self.send_overlays(params[end + 1:], True)
+                                self.send_overlays(params[end + 1:])
                             case "reset":
                                 self.reset_overlays()
+                            case "reset-usage":
+                                self.reset_overlay_usage()
+                            case "reset-mapping":
+                                self.reset_overlay_mapping()
                             case _:
                                 self.log.warning(f"Unknown overlay command '{cmd}' from '{cmd_str}'")
                     case _:

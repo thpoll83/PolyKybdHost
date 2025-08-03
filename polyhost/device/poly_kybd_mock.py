@@ -41,7 +41,20 @@ class PolyKybdMock:
     def get_hw_version(self):
         return self.version
 
+    def reset_overlay_mapping(self):
+        self.log.info("Reset Overlay Mapping...")
+        return True, ""
+
+    def reset_overlays_and_usage(self):
+        self.log.info("Reset Overlays AND Usage...")
+        return True, ""
+
+    def reset_overlay_usage(self):
+        self.log.info("Reset Overlay Usage...")
+        return True, ""
+
     def reset_overlays(self):
+        self.log.info("Reset Overlays...")
         return True, ""
 
     def enable_overlays(self):
@@ -109,7 +122,7 @@ class PolyKybdMock:
             self.enable_overlays()
         return True, f"{counter} overlays sent."
 
-    def send_overlays(self, filenames, allow_compressed):
+    def send_overlays(self, filenames):
         overlay_counter = 0
         key_counter = 0
         hid_msg_counter = 0
@@ -119,10 +132,12 @@ class PolyKybdMock:
             self.log.info("Send Overlay '%s'...", filename)
             converter = ImageConverter()
             if not converter:
-                return False, f"Invalid file '{filename}'."
+                self.log.warning("Invalid file %s", filename)
+                return False
 
             if not converter.open(filename):
-                return False, f"Unable to read '{filename}'."
+                self.log.warning("Unable to read %s", filename)
+                return False
 
             for modifier in Modifier:
                 overlay_map = converter.extract_overlays(modifier)
@@ -152,7 +167,7 @@ class PolyKybdMock:
         # self.log.info(f"Stats: Plain:{self.stat_plain} C:{self.stat_comp} R:{self.stat_roi} CR:{self.stat_croi} --> {self.stat_best}")
         if not enabled:
             self.enable_overlays()
-        return True, "Overlays sent."
+        return True
 
     def send_smallest_overlay(self, keycode, mapping: dict):
         ov = mapping[keycode]
@@ -181,6 +196,10 @@ class PolyKybdMock:
                                 self.send_overlay(params[end + 1:])
                             case "reset":
                                 self.reset_overlays()
+                            case "reset-usage":
+                                self.reset_overlay_usage()
+                            case "reset-mapping":
+                                self.reset_overlay_mapping()
                             case _:
                                 self.log.warning(f"Unknown overlay command '{cmd}' from '{cmd_str}'")
                     case _:

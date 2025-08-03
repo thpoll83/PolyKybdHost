@@ -350,7 +350,7 @@ class PolyHost(QApplication):
     def send_shortcuts(self):
         file_name = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
         if len(file_name) > 0:
-            self.keeb.send_overlays(file_name[0], self.kb_sw_version[1]>=5 and self.kb_sw_version[2] >=4)
+            self.keeb.send_overlays(file_name[0])
         else:
             self.log.info("No file selected. Operation canceled.")
 
@@ -393,7 +393,7 @@ class PolyHost(QApplication):
     def closeEvent(self, _):
         self.cmdMenu.disable_overlays()
 
-    def send_overlay_data(self, data, allow_compressed):
+    def send_overlay_data(self, data):
         files = []
         if isinstance(data, str):
             files.append(get_overlay_path(data))
@@ -403,8 +403,8 @@ class PolyHost(QApplication):
 
         if len(files) > 0:
             try:
-                self.cmdMenu.reset_overlays()
-                self.keeb.send_overlays(files, allow_compressed)
+                self.cmdMenu.reset_overlays_and_usage()
+                self.keeb.send_overlays(files)
             except Exception as e:
                 self.log.warning(f"Failed to send overlays '{files}':{e}")
                 self.log.warning("".join(traceback.format_exception(e)))
@@ -438,7 +438,7 @@ class PolyHost(QApplication):
                 self.keeb.enable_overlays()
 
             if data and cmd == OverlayCommand.OFF_ON:
-                self.send_overlay_data(data, self.kb_sw_version[1] >= 5 and self.kb_sw_version[2] >= 4)
+                self.send_overlay_data(data)
 
             if self.last_update_10min_task > PERIODIC_10MIN_CYCLE_MSEC:
                 self.last_update_10min_task = 0
