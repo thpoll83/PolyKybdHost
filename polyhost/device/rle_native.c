@@ -716,6 +716,129 @@ void header_test_2() {
   }
 }
 
+void set_10bit_overlay_mapping(uint8_t* mapping, uint16_t map_size, uint16_t* overlay_map, uint8_t entries) {
+    const uint16_t UNSET_OVERLAY_MAPPING = 0xffff;
+    uint16_t from = UNSET_OVERLAY_MAPPING;
+    for(uint8_t idx=0;idx<entries;++idx) {
+        uint8_t start_bit = idx*10;
+        uint8_t start_byte = start_bit/8;
+        uint8_t start_bit_in_byte = start_bit%8;
+        uint8_t num_bits_in_byte2 = 10-(8-start_bit_in_byte);
+        uint16_t to = ((uint16_t)(mapping[start_byte]>>start_bit_in_byte)) |
+                      ((uint16_t)(0xff>>(8-num_bits_in_byte2))&mapping[start_byte+1])<<(8-start_bit_in_byte);
+        if(from==UNSET_OVERLAY_MAPPING) {
+            from = to;
+        } else {
+            if(from<map_size && to<map_size) {
+              overlay_map[from] = to;
+            }
+            from = UNSET_OVERLAY_MAPPING;
+        }
+    }
+}
+
+void overlay_mapping_test_0() {
+  printf("\n***** Starting Overlay Mapping Test 0: ");
+
+  uint16_t overlay_map [90*9];
+  memset(overlay_map, 0, sizeof(overlay_map));
+
+  uint8_t new_map[30];
+  memset(new_map, 0, sizeof(new_map));
+
+  new_map[0] = 0xff & (799);
+  new_map[1] |= 0x03 &(799>>8);
+  new_map[1] |= (~0x03) & (498<<2);
+  new_map[2] |= 0x0f & (498>>6);
+
+  new_map[2] |= (~0x0f) & (809<<4);
+  new_map[3] |= 0x3f & (809>>4);
+  new_map[3] |= (~0x3f) & (675<<6);
+  new_map[4] |= 0xff & (675>>2);
+
+  new_map[5] = 0xff & (549);
+  new_map[6] |= 0x03 &(549>>8);
+  new_map[6] |= (~0x03) & (399<<2);
+  new_map[7] |= 0x0f & (399>>6);
+
+  new_map[7] |= (~0x0f) & (657<<4);
+  new_map[8] |= 0x3f & (657>>4);
+  new_map[8] |= (~0x3f) & (806<<6);
+  new_map[9] |= 0xff & (806>>2);
+
+  set_10bit_overlay_mapping(new_map, 90*9, overlay_map, 30*8/10);
+
+  if(overlay_map[799]==498) {
+    printf(GREEN "SUCCESS!\n" WHITE);
+  } else {
+    printf(RED "FAILED! from %d to %d\n" WHITE, 799, overlay_map[799]);
+  }
+  if(overlay_map[809]==675) {
+    printf(GREEN "SUCCESS!\n" WHITE);
+  } else {
+    printf(RED "FAILED! from %d to %d\n" WHITE, 809, overlay_map[809]);
+  }
+  if(overlay_map[549]==399) {
+    printf(GREEN "SUCCESS!\n" WHITE);
+  } else {
+    printf(RED "FAILED! from %d to %d\n" WHITE, 549, overlay_map[549]);
+  }
+  if(overlay_map[657]==806) {
+    printf(GREEN "SUCCESS!\n" WHITE);
+  } else {
+    printf(RED "FAILED! from %d to %d\n" WHITE, 657, overlay_map[657]);
+  }
+}
+
+void overlay_mapping_test_1() {
+  printf("\n***** Starting Overlay Mapping Test 1: ");
+
+  uint16_t overlay_map [1024];
+  memset(overlay_map, 0, sizeof(overlay_map));
+  for(int idx=0;idx<1024;idx++) {
+    overlay_map[idx]=idx;
+  }
+
+  uint8_t new_map[] = {0x00, 0x07, 0xff, 0xff, 0x80, 0x28, 0x01, 0xff, 0x00, 0x00, 0x05, 0x67, 0x6c};
+
+  set_10bit_overlay_mapping(new_map, sizeof(overlay_map), overlay_map, 10);
+  uint16_t from [] = {1,1022,512,0,345};
+  uint16_t to[] = {1023,2,511,0,876};
+
+  for(int idx=0;idx<5;idx++) {
+    uint16_t f = from[idx];
+    uint16_t t = to[idx];
+    if(overlay_map[f]==t) {
+      printf(GREEN "SUCCESS!\n" WHITE);
+    } else {
+      printf(RED "FAILED! from %u to %u, found %u!\n" WHITE, f, t, overlay_map[f]);
+    } 
+  }
+}
+
+void overlay_mapping_test_2() {
+  printf("\n***** Starting Overlay Mapping Test 1: ");
+
+  uint16_t overlay_map [1024];
+  memset(overlay_map, 0, sizeof(overlay_map));
+
+  uint8_t new_map[] = {0x00, 0x3f, 0xf0, 0x07, 0xfe, 0x00, 0xbf, 0xd0, 0x0f, 0xfc, 0x01, 0x3f, 0xb0, 0x17, 0xfa, 0x01, 0xbf, 0x90, 0x1f, 0xf8, 0x02, 0x3f, 0x70, 0x27, 0xf6, 0x02, 0xbf, 0x50, 0x2f, 0xf4};
+
+  set_10bit_overlay_mapping(new_map, sizeof(overlay_map), overlay_map, 24);
+  uint16_t from [] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+  uint16_t to[] = {1023, 1022, 1021, 1020, 1019, 1018, 1017, 1016, 1015, 1014, 1013, 1012};
+
+  for(int idx=0;idx<5;idx++) {
+    if(overlay_map[from[idx]]==to[idx]) {
+      printf(GREEN "SUCCESS!\n" WHITE);
+    } else {
+      printf(RED "FAILED! from %u to %u, found %u!\n" WHITE, from[idx], to[idx], overlay_map[from[idx]]);
+    } 
+  }
+}
+
+
+
 int main() {
   rle_test();
 
@@ -728,6 +851,10 @@ int main() {
 
   header_test_1();
   header_test_2();
+
+  overlay_mapping_test_0();
+  overlay_mapping_test_1();
+  overlay_mapping_test_2();
 
   printf("\nDone.\n");
   return 0;
