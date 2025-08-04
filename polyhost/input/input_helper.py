@@ -1,3 +1,4 @@
+import logging
 from pynput.keyboard import Key, Controller
 
 def get_country_from_iso639(iso639string : str):
@@ -7,6 +8,9 @@ def country_equal_iso639(iso639string1 : str, iso639string2 : str):
     return iso639string1[:2] == iso639string2[:2]
 
 class InputHelper:
+    def __init__(self):
+        self.log = logging.getLogger('PolyHost')
+        
     def get_languages(self):
         return []
     
@@ -29,6 +33,7 @@ class InputHelper:
 
         controller = Controller()
         while success and num_langs>0:
+            self.log.debug("Comparing: %s with %s", sys_lang_iso639, iso639)
             if iso639 == sys_lang_iso639:
                 return True, iso639
             if quick_cmp and country_equal_iso639(iso639, sys_lang_iso639):

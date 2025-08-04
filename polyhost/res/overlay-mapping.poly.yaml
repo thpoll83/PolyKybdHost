@@ -14,7 +14,7 @@ chrome,google-chrome:
 nxplayer:
   remote: hostname
   title: NoMachine - .*
-gimp-2.0,gimp-2.8,gimp-3.0,gimp:
+gimp-2.0,gimp-2.8,gimp-3.0,gimp,gimp-3:
   overlay: gimp_template.mods.png
 zoom:
   overlay: zoom_template.mods.png

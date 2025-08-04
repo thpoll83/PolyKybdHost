@@ -2,6 +2,10 @@ import logging
 import subprocess
 from polyhost.input.input_helper import InputHelper
 
+#Get-WinUserLanguageList | ForEach-Object {
+#    "$($_.LanguageTag): $($_.InputMethodTips -join ', ')"
+#}
+
 class WindowsInputHelper(InputHelper):
     def __init__(self):
         self.log = logging.getLogger('PolyHost')

@@ -6,7 +6,8 @@
             "type": "debugpy",
             "request": "launch",
             "module": "polyhost",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "args": ["--debug"],
         },
         {
             "name": "Py Debug PolyForwarder to localhost",
