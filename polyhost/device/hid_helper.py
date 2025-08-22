@@ -145,6 +145,24 @@ sudo udevadm trigger
 
         return True, result, self.lock
 
+    def drain_read_buffer(self, num_msgs, received_lock):
+        if self.interface is None:
+            return False, "No Interface", received_lock
+        num_drained = 0
+        try:
+            if received_lock is None:
+                self.lock.acquire()
+            elif received_lock != self.lock:
+                return False, "Lock missmatch", received_lock
+            for _ in range(num_msgs):
+               if len(self.interface.read(report_length, timeout=10)) > 0:
+                   num_drained += 1
+        except Exception as e:
+            self.lock.release()
+            return False, f"Exception: {e}"
+
+        return num_drained, self.lock
+    
     def read(self, timeout):
         if self.interface is None:
             return False, "No Interface"

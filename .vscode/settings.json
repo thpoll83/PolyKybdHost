@@ -7,5 +7,14 @@
     },
     "cSpell.words": [
         "polyhost"
-    ]
+    ],
+    "python.testing.unittestEnabled": true,
+      "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./tests",
+        "-p",
+        "*_test.py"
+    ],
+    "python.testing.pytestEnabled": false,
 }

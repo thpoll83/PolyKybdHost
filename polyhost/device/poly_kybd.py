@@ -5,6 +5,7 @@ from enum import Enum
 import numpy as np
 
 
+from polyhost.device.bit_packing import pack_dict_10_bit
 from polyhost.device.cmd_composer import compose_cmd, expect, split_by_n_chars, compose_cmd_str, compose_roi_header
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.im_converter import ImageConverter, Modifier
@@ -30,6 +31,7 @@ class Cmd(Enum):
     START_ROI_OVERLAY = 18
     SEND_ROI_OVERLAY = 19
     SET_UNICODE_MODE = 20
+    SEND_OVERLAY_MAPPING = 21
 
 
 class MaskFlag(Enum):
@@ -232,20 +234,22 @@ class PolyKybd:
         return self.hid.send(compose_cmd(cmd, 0x1e))
 
     def send_overlay_mapping(self, from_to):
-        #compose messages
-        msgs = []
-        INDICES_PER_MSG = MAX_DATA_PER_MSG*8/10 #we will send 10-bit indices
-        for from_idx, to_idx in from_to.items():
-
-
-            MAX_DATA_PER_MSG
-
+        KVPS_PER_MSG = MAX_DATA_PER_MSG*8/10 # we will send 10-bit indices
+        split_per_msg = split_dict(from_to, KVPS_PER_MSG/2)
+        
+        cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING)
         lock = None
-        for msg in msgs:
+        num_msgs = 0
+        for dict_part in split_per_msg:
+            msg = cmd + pack_dict_10_bit(dict_part)
             result, msg, lock = self.hid.send_multiple(msg, lock)
+            num_msgs += 1
             if not result:
                 return False, f"Error sending overlay mapping: {msg}"
-
+        
+        drained, lock = self.hid.drain_read_buffer(num_msgs, lock)
+        self.log.debug(f"Drained: %d HID reports", drained)
+        
         if lock:
             lock.release()
         return True, "Mapping sent"
@@ -266,7 +270,6 @@ class PolyKybd:
                 self.log.warning("Unable to read %s", filename)
                 return False
 
-            self.log.debug(f"PLAIN_OVERLAY_BYTES_PER_MSG: {PLAIN_OVERLAY_BYTES_PER_MSG}, BYTES_PER_OVERLAY: {BYTES_PER_OVERLAY}, NUM_PLAIN_OVERLAY_MSGS: {NUM_PLAIN_OVERLAY_MSGS}")
             for modifier in Modifier:
                 overlay_map = converter.extract_overlays(modifier)
                 # it is okay if there is no overlay for a modifier
@@ -330,6 +333,10 @@ class PolyKybd:
             result, msg, lock = self.hid.send_multiple(data, lock)
             if not result:
                 return False, f"Error sending roi overlay message {msg_num + 1}/{num_msgs} ({msg})"
+        
+        drained, lock = self.hid.drain_read_buffer(num_msgs, lock)
+        self.log.debug(f"Drained: %d HID reports", drained)
+        
         if lock:
             lock.release()
         return num_msgs
@@ -352,6 +359,10 @@ class PolyKybd:
             if not result:
                 return False, f"Error sending overlay message {msg_num + 1}/{max_msgs} ({msg})"
             msg_cnt += 1
+        
+        drained, lock = self.hid.drain_read_buffer(max_msgs, lock)
+        self.log.debug(f"Drained: %d HID reports", drained)
+        
         if lock:
             lock.release()
         #self.log.info(f"Keycode {keycode}: Sent {msg_cnt} plain msgs")
@@ -373,6 +384,10 @@ class PolyKybd:
             result, msg, lock = self.hid.send_multiple(data, lock)
             if not result:
                 return False, f"Error sending overlay message {msg_num + 1}/{overlay.compressed_msgs} ({msg})"
+        
+        drained, lock = self.hid.drain_read_buffer(overlay.compressed_msgs, lock)
+        self.log.debug(f"Drained: %d HID reports", drained)
+        
         if lock:
             lock.release()
         #self.log.info(f"Keycode {keycode}: Sent {max_msg} compressed msgs")
