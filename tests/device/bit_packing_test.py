@@ -2,6 +2,40 @@ import unittest
 
 from polyhost.device.bit_packing import pack_dict_10_bit, unpack_bytes_to_dict
 
+
+def print_as_c_array(data: bytearray, name: str = "my_array", line_width: int = 16):
+    """
+    Prints a bytearray formatted as a C-style array of unsigned chars.
+
+    Args:
+        data: The input bytearray.
+        name: The desired name for the C array variable.
+        line_width: The number of bytes to print per line for readability.
+    """
+    # Start the C array declaration, including the size
+    print(f"unsigned char {name}[{len(data)}] = {{")
+
+    # Iterate over the bytearray in chunks of 'line_width'
+    for i in range(0, len(data), line_width):
+        # Get the current chunk of bytes
+        chunk = data[i:i + line_width]
+
+        # Format each byte in the chunk as a 0x-prefixed, two-digit hex string
+        # Example: 10 becomes '0x0a', 255 becomes '0xff'
+        hex_values = [f"0x{byte:02x}" for byte in chunk]
+
+        # Join the hex values with commas and add indentation for readability
+        line = "  " + ", ".join(hex_values)
+
+        # Add a trailing comma if it's not the last line of the array
+        if i + line_width < len(data):
+            line += ","
+
+        print(line)
+
+    # Close the C array declaration
+    print("};")
+
 class TestBitPacking(unittest.TestCase):
 
     def test_packing_and_unpacking(self):
@@ -59,6 +93,8 @@ class TestBitPacking(unittest.TestCase):
         """Tests a dictionary with 12 pairs to check handling of multiple bytes."""
         original_dict = {i: 1023 - i for i in range(12)}
         packed = pack_dict_10_bit(original_dict)
+
+        print_as_c_array(packed, "test")
 
         # Verification of byte length: 12 pairs * 20 bits/pair = 240 bits. 240 / 8 = 30 bytes.
         self.assertEqual(len(packed), 30)

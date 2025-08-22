@@ -31,7 +31,7 @@ def pack_dict_10_bit(data_dict: dict[int, int]) -> bytearray:
         # Shift the existing bits to make room for the new 20-bit pair
         packed_int <<= 20
         # Combine the 10-bit key and 10-bit value
-        pair_as_20_bits = ((key & mask) << 10) | (value & mask)
+        pair_as_20_bits = ((value & mask) << 10) | (key & mask)
         # Add the new pair to the large integer
         packed_int |= pair_as_20_bits
 
@@ -40,7 +40,7 @@ def pack_dict_10_bit(data_dict: dict[int, int]) -> bytearray:
     num_bytes = math.ceil(total_bits / 8)
 
     # Convert the large integer to a bytearray
-    return bytearray(packed_int.to_bytes(num_bytes, 'big'))
+    return bytearray(packed_int.to_bytes(num_bytes, 'little'))
 
 
 def unpack_bytes_to_dict(packed_data: bytes, num_pairs: int) -> dict[int, int]:
@@ -58,20 +58,20 @@ def unpack_bytes_to_dict(packed_data: bytes, num_pairs: int) -> dict[int, int]:
         return {}
 
     # Convert the entire bytearray back to a single integer
-    packed_int = int.from_bytes(packed_data, 'big')
+    packed_int = int.from_bytes(packed_data, 'little')
 
     unpacked_dict = {}
 
     # Masks to extract the 10-bit key and value from a 20-bit chunk
-    value_mask = 0x3FF  # Extracts the last 10 bits
-    key_mask = 0xFFC00  # Extracts the first 10 bits
+    key_mask = 0x3FF  # Extracts the last 10 bits
+    value_mask = 0xFFC00  # Extracts the first 10 bits
 
     # Extract each 20-bit pair from the right (LSB side)
     for _ in range(num_pairs):
         pair_as_20_bits = packed_int & 0xFFFFF  # Get the last 20 bits
 
-        key = (pair_as_20_bits & key_mask) >> 10
-        value = pair_as_20_bits & value_mask
+        value = (pair_as_20_bits & value_mask) >> 10
+        key = pair_as_20_bits & key_mask
 
         unpacked_dict[key] = value
 
