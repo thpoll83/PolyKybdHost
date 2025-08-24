@@ -108,7 +108,8 @@ sudo udevadm trigger
     def interface_acquired(self):
         return self.interface is not None
 
-    def send(self, data):
+    def __send(self, data):
+        """ Write a data report without reading the response"""
 
         if self.interface is None:
             return False, "No Interface"
@@ -120,6 +121,25 @@ sudo udevadm trigger
         try:
             with self.lock:
                 result = self.interface.write(request_report)
+        except Exception as e:
+            return False, f"Exception: {e}"
+
+        return True, result
+
+    def send(self, data, timeout = 15):
+        """ Write a data report and read the response, the result of the response will be ignored"""
+
+        if self.interface is None:
+            return False, "No Interface"
+
+        request_data = [0x00] * (report_length + 1) # First byte is Report ID
+        request_data[1:len(data) + 1] = data
+        request_report = bytes(request_data)
+
+        try:
+            with self.lock:
+                result = self.interface.write(request_report)
+                self.interface.read(report_length, timeout=timeout)
         except Exception as e:
             return False, f"Exception: {e}"
 
@@ -138,6 +158,9 @@ sudo udevadm trigger
                 self.lock.acquire()
             elif received_lock != self.lock:
                 return False, "Lock missmatch", received_lock
+            if not self.lock.locked():
+                return False, "Not locked", self.lock
+
             result = self.interface.write(request_report)
         except Exception as e:
             self.lock.release()
@@ -154,8 +177,11 @@ sudo udevadm trigger
                 self.lock.acquire()
             elif received_lock != self.lock:
                 return False, "Lock missmatch", received_lock
+            if not self.lock.locked():
+                return False, "Not locked", self.lock
+
             for _ in range(num_msgs):
-               if len(self.interface.read(report_length, timeout=10)) > 0:
+               if len(self.interface.read(report_length, timeout=100)) > 0:
                    num_drained += 1
         except Exception as e:
             self.lock.release()
@@ -175,14 +201,59 @@ sudo udevadm trigger
 
         return True, response_report.decode().strip('\x00')
 
+    def read_with_lock(self, timeout, received_lock):
+        if self.interface is None:
+            return False, "No Interface", received_lock
+
+        try:
+            if received_lock is None:
+                self.lock.acquire()
+            elif received_lock != self.lock:
+                return False, "Lock missmatch", received_lock
+            if not self.lock.locked():
+                return False, "Not locked", self.lock
+
+            response_report = self.interface.read(report_length, timeout=timeout)
+        except Exception as e:
+            return False, f"Exception: {e}"
+
+        return True, response_report.decode().strip('\x00'), self.lock
+
     def send_and_read_validate(self, data, timeout, expected_prefix):
-        result, msg = self.send_and_read(data, timeout)
-        if result and not msg.startswith(expected_prefix):
-            result, msg = self.read(timeout)
-            if msg.startswith(expected_prefix):
-                return result, msg
-            return False, msg
+        lock = None
+        result, msg, lock = self.send_and_read_validate_with_lock(data, timeout, expected_prefix, lock)
+        if lock:
+            lock.release()
         return result, msg
+
+    def send_and_read_validate_with_lock(self, data, timeout, expected_prefix, received_lock):
+        result = False
+        msg = ""
+        try:
+            if received_lock is None:
+                self.lock.acquire()
+            elif received_lock != self.lock:
+                return False, "Lock missmatch", received_lock
+            if not self.lock.locked():
+                return False, "Not locked", self.lock
+
+            request_data = [0x00] * (report_length + 1)  # First byte is Report ID
+            request_data[1:len(data) + 1] = data
+            request_report = bytes(request_data)
+
+            self.interface.write(request_report)
+            response_report = self.interface.read(report_length, timeout=timeout)
+            msg = response_report.decode().strip('\x00')
+            if not msg.startswith(expected_prefix):
+                response_report = self.interface.read(report_length, timeout=timeout)
+                msg = response_report.decode().strip('\x00')
+            else:
+                return True, msg, self.lock
+        except Exception as e:
+            self.lock.release()
+            return False, f"Exception: {e}"
+
+        return msg.startswith(expected_prefix), msg, self.lock
     
     def send_and_read(self, data, timeout):
         if self.interface is None:

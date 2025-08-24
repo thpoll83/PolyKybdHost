@@ -15,6 +15,9 @@ from polyhost.device.overlay_data import PLAIN_OVERLAY_BYTES_PER_MSG, BYTES_PER_
 
 import hid
 
+from polyhost.util.dict_util import split_dict
+
+
 class Cmd(Enum):
     GET_ID = 6
     GET_LANG = 7
@@ -67,9 +70,9 @@ class PolyKybd:
         if not self.hid:
             self.hid = HidHelper(0x2021, 0x2007)
         else:
-            result, _ = self.query_id()
+            result, msg = self.query_id()
             if not result:
-                self.log.debug("Reconnecting to PolyKybd...")
+                self.log.debug("Reconnecting to PolyKybd... (%s)", msg)
                 try:
                     self.hid = HidHelper(0x2021, 0x2007)
                 except hid.HIDException as e:
@@ -82,7 +85,7 @@ class PolyKybd:
 
     def query_id(self):
         try:
-            result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_ID), 1000, expect(Cmd.GET_ID))
+            result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_ID), 15, expect(Cmd.GET_ID))
             return result, msg if not result else msg[3:]
         except Exception as e:
             return False, f"Exception: {e}"
@@ -177,7 +180,7 @@ class PolyKybd:
         """Query current keyboard language a remember language internally"""
   
         try:
-            result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_LANG), 100, expect(Cmd.GET_LANG))
+            result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_LANG), 15, expect(Cmd.GET_LANG))
             if result:
                 self.current_lang = msg[3:]
                 return True, self.current_lang
@@ -192,15 +195,20 @@ class PolyKybd:
         if not result:
             return False, msg
 
-        result, reply = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_LANG_LIST), 100, expect(Cmd.GET_LANG_LIST))
+        lock = None
+        result, reply, lock = self.hid.send_and_read_validate_with_lock(compose_cmd(Cmd.GET_LANG_LIST), 15, expect(Cmd.GET_LANG_LIST), lock)
 
         if not result:
             return False, "Could not receive language list."
         lang_str = ""
+
         while result and len(reply) > 3:
             assert reply.startswith(expect(Cmd.GET_LANG_LIST))
             lang_str = f"{lang_str}{reply[3:]}"
-            result, reply = self.hid.read(100)
+            result, reply, lock = self.hid.read_with_lock(15, lock)
+
+        if lock:
+            lock.release()
 
         self.all_languages = split_by_n_chars(lang_str, 4)
         return True, lang_str
@@ -222,7 +230,7 @@ class PolyKybd:
         if lang not in self.all_languages:
             return False, f"Language '{lang}' not present on PolyKybd"
 
-        result, msg = self.hid.send_and_read_validate(compose_cmd_str(Cmd.CHANGE_LANG, lang), 100, expect(Cmd.CHANGE_LANG))
+        result, msg = self.hid.send_and_read_validate(compose_cmd_str(Cmd.CHANGE_LANG, lang), 15, expect(Cmd.CHANGE_LANG))
         if not result:
             return False, f"Could not change to {lang} ({msg})"
 
@@ -248,7 +256,7 @@ class PolyKybd:
                 return False, f"Error sending overlay mapping: {msg}"
         
         drained, lock = self.hid.drain_read_buffer(num_msgs, lock)
-        self.log.debug(f"Drained: %d HID reports", drained)
+        self.log.debug(f"send_overlay_mapping: Drained %d HID reports", drained)
         
         if lock:
             lock.release()
@@ -316,6 +324,7 @@ class PolyKybd:
         overlay = mapping[keycode]
         if not overlay.roi:
             self.send_overlay_for_keycode_compressed(keycode, modifier, mapping)
+            return
             
         hdr = compose_roi_header(Cmd.START_ROI_OVERLAY, keycode, modifier.value, overlay, compressed)
         lock = None
@@ -335,7 +344,7 @@ class PolyKybd:
                 return False, f"Error sending roi overlay message {msg_num + 1}/{num_msgs} ({msg})"
         
         drained, lock = self.hid.drain_read_buffer(num_msgs, lock)
-        self.log.debug(f"Drained: %d HID reports", drained)
+        self.log.debug(f"send_overlay_roi_for_keycode: Drained %d of %d HID reports (compressed %s)", drained, num_msgs, str(compressed))
         
         if lock:
             lock.release()
@@ -361,7 +370,7 @@ class PolyKybd:
             msg_cnt += 1
         
         drained, lock = self.hid.drain_read_buffer(max_msgs, lock)
-        self.log.debug(f"Drained: %d HID reports", drained)
+        self.log.debug(f"send_overlay_for_keycode: Drained %d of %d HID reports", drained, max_msgs)
         
         if lock:
             lock.release()
@@ -386,7 +395,7 @@ class PolyKybd:
                 return False, f"Error sending overlay message {msg_num + 1}/{overlay.compressed_msgs} ({msg})"
         
         drained, lock = self.hid.drain_read_buffer(overlay.compressed_msgs, lock)
-        self.log.debug(f"Drained: %d HID reports", drained)
+        self.log.debug(f"send_overlay_for_keycode_compressed: Drained %d of %d HID reports", drained, overlay.compressed_msgs)
         
         if lock:
             lock.release()

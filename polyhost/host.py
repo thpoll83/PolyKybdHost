@@ -426,7 +426,7 @@ class PolyHost(QApplication):
                 if success:
                     data = self.overlay_handler.get_overlay_data()
                     if data:
-                        self.send_overlay_data(data, self.kb_sw_version[1] >= 5 and self.kb_sw_version[2] >= 4)
+                        self.send_overlay_data(data)
                 else:
                     self.log.warning("Could not change OS language to '%s': %s", kb_lang, msg)
                 self.current_lang = kb_lang
