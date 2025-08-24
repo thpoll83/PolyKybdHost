@@ -2,7 +2,7 @@ import logging
 
 from PyQt5.QtWidgets import QAction, QFileDialog
 
-from polyhost.device.poly_kybd import MaskFlag
+from polyhost.device.keys import KeyCode, keycode_to_mapping_idx
 from polyhost.gui.get_icon import get_icon
 
 
@@ -132,6 +132,11 @@ class CommandsSubMenu:
         action.triggered.connect(self.set_brightness)
         bri_menu.addAction(action)
 
+        action = QAction("Test mapping...", parent=self.parent)
+        # noinspection PyUnresolvedReferences
+        action.triggered.connect(self.mapping_test)
+        cmd_menu.addAction(action)
+
     def reset_overlay_mapping(self):
         result, msg = self.keeb.reset_overlays_mapping()
         self.parent.show_mb("Error", f"Failed clearing overlays: {msg}", result)
@@ -162,6 +167,15 @@ class CommandsSubMenu:
 
     def change_idle(self):
         result, msg = self.keeb.set_idle(self.parent.sender().data())
+        self.parent.show_mb("Error", f"Failed to change idle mode: {msg}", result)
+
+    def mapping_test(self):
+        from_to = {}
+        esc_key = keycode_to_mapping_idx(KeyCode.KC_ESCAPE)
+        a_key = keycode_to_mapping_idx(KeyCode.KC_A)
+        from_to[esc_key] = a_key
+        from_to[a_key] = esc_key
+        result, msg = self.keeb.send_overlay_mapping(from_to)
         self.parent.show_mb("Error", f"Failed to change idle mode: {msg}", result)
 
     def set_mask(self):

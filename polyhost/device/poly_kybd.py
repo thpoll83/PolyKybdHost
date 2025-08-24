@@ -254,6 +254,7 @@ class PolyKybd:
             num_msgs += 1
             if not result:
                 return False, f"Error sending overlay mapping: {msg}"
+            self.log.debug(f"send_overlay_mapping: Sent {dict_part}")
         
         drained, lock = self.hid.drain_read_buffer(num_msgs, lock)
         self.log.debug(f"send_overlay_mapping: Drained %d HID reports", drained)

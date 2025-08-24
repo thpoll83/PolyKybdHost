@@ -1,5 +1,9 @@
 from enum import Enum
 
+def keycode_to_mapping_idx(key_enum):
+    return (key_enum.value - KeyCode.KC_LEFT_CTRL.value + 82) if (key_enum.value > KeyCode.KC_APPLICATION.value) else (
+        (key_enum.value - KeyCode.KC_NONUS_BACKSLASH.value + 80) if key_enum.value > KeyCode.KC_NUM_LOCK.value else (
+                    key_enum.value - KeyCode.KC_A.value))
 
 class KeyCode(Enum):
     KC_NO = 0x0000
