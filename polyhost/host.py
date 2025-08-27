@@ -446,6 +446,10 @@ class PolyHost(QApplication):
         elif self.settings.get("debug_window_detection_if_not_connected_to_poly_kybd"):
             self.overlay_handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
 
+        kb_log = self.keeb.read_serial()
+        if kb_log:
+            self.log.info("Received serial communication: %s", kb_log)
+        
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
         # except Exception as e:

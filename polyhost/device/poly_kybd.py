@@ -4,9 +4,10 @@ import time
 from enum import Enum
 import numpy as np
 
-
+from polyhost.device.serial_helper import SerialHelper
+from polyhost.util.dict_util import split_by_n_chars
 from polyhost.device.bit_packing import pack_dict_10_bit
-from polyhost.device.cmd_composer import compose_cmd, expect, split_by_n_chars, compose_cmd_str, compose_roi_header
+from polyhost.device.cmd_composer import compose_cmd, expect, compose_cmd_str, compose_roi_header
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.im_converter import ImageConverter, Modifier
 from polyhost.device.keys import KeyCode
@@ -54,6 +55,7 @@ class PolyKybd:
         self.all_languages = list()
         self.current_lang = None
         self.hid = None
+        self.serial = None
         self.name = None
         self.sw_version = None
         self.sw_version_num = None
@@ -69,6 +71,7 @@ class PolyKybd:
         # Connect to Keeb
         if not self.hid:
             self.hid = HidHelper(0x2021, 0x2007)
+            self.serial = SerialHelper(0x2021, 0x2007)
         else:
             result, msg = self.query_id()
             if not result:
@@ -83,6 +86,11 @@ class PolyKybd:
                     return False
         return self.hid.interface_acquired()
 
+    def read_serial(self):
+        if self.serial:
+            return self.serial.read_all()
+        return None
+    
     def query_id(self):
         try:
             result, msg = self.hid.send_and_read_validate(compose_cmd(Cmd.GET_ID), 15, expect(Cmd.GET_ID))

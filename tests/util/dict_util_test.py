@@ -1,6 +1,6 @@
 import unittest
 
-from polyhost.util.dict_util import split_dict
+from polyhost.util.dict_util import split_dict, split_by_n_chars
 
 
 # Unit Test Class
@@ -59,6 +59,21 @@ class TestDictUtil(unittest.TestCase):
             reconstructed_dict.update(d)
         
         self.assertEqual(reconstructed_dict, input_dict)  # Ensure all keys and values match
+        
+    def test_split_by_n_chars(self):
+        result = split_by_n_chars("abcdefghij", 3)
+        expected = ["abc", "def", "ghi", "j"]
+        self.assertEqual(result, expected)
+
+        # Test with exact division
+        result = split_by_n_chars("abcdef", 2)
+        expected = ["ab", "cd", "ef"]
+        self.assertEqual(result, expected)
+
+        # Test with n larger than text length
+        result = split_by_n_chars("abc", 5)
+        expected = ["abc"]
+        self.assertEqual(result, expected)
 
 if __name__ == "__main__":
     unittest.main()

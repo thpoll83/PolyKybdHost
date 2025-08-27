@@ -9,3 +9,4 @@ geocoder
 pandas
 pvlib
 requests
+pyserial

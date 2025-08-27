@@ -27,10 +27,6 @@ def expect(cmd):
     return f"P{chr(cmd.value)}"
 
 
-def split_by_n_chars(text, n):
-    return [text[i : i + n] for i in range(0, len(text), n)]
-
-
 # class Dummy:
 #     def __init__(self):
 #         self.top =9
