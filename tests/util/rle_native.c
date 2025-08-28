@@ -19,11 +19,7 @@ uint16_t rle_decompress(uint8_t *dest, uint16_t max_bytes, uint8_t *compressed,
     bool zeros = bits < 128;
     if (!zeros) {
       bits -= 128;
-      //printf("1:%d, ", bits);
     } 
-    // else {
-    //   printf("0:%d, ", bits);
-    // }
     for (uint8_t b = 0; b < bits; b++) {
       if (count / 8 >= max_bytes) {
         return count;
@@ -36,7 +32,6 @@ uint16_t rle_decompress(uint8_t *dest, uint16_t max_bytes, uint8_t *compressed,
       count++;
       bit_offset++;
       if (bit_offset == 8) {
-        //printf("-> 0x%02x (%d->)", *dest, bits - b - 1);
         dest++;
         bit_offset = 0;
       }
