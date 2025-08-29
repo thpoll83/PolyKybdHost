@@ -32,6 +32,7 @@ from polyhost.input.win_helper import WindowsInputHelper
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost.settings import PolySettings
 from polyhost.device.poly_kybd import PolyKybd
+from polyhost.device.device_settings import DeviceSettings
 from polyhost._version import __version__
 
 from polyhost.input.unicode_input import get_input_method
@@ -86,9 +87,9 @@ class PolyHost(QApplication):
         self.menu = QMenu()
         self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
-        #self.keeb = PolyKybdMock(f"{__version__}")
+        #self.keeb = PolyKybdMock(DeviceSettings(), f"{__version__}")
         self.kb_sw_version = None
-        self.keeb = PolyKybd()
+        self.keeb = PolyKybd(DeviceSettings())
         self.connected = False
         self.paused = False
         self.status = QAction(get_icon("sync.svg"), "Waiting for PolyKybd...", parent=self)

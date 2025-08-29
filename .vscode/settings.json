@@ -6,7 +6,8 @@
         "scminput": false
     },
     "cSpell.words": [
-        "polyhost"
+        "polyhost",
+        "polykybd"
     ],
     "python.testing.unittestEnabled": true,
       "python.testing.unittestArgs": [

@@ -11,7 +11,8 @@ class PolyKybdMock:
     PolyKybd for Testing
     """
 
-    def __init__(self, version, lang = "enUS", langs = "enUsdeAtkoKrfrFritItesEs"):
+    def __init__(self, settings, version, lang = "enUS", langs = "enUsdeAtkoKrfrFritItesEs"):
+        self.settings = settings
         self.log = logging.getLogger('PolyHost')
         self.all_languages = list()
         self.version = version
@@ -99,7 +100,7 @@ class PolyKybdMock:
 
     def send_overlay(self, filename, on_off=True):
         self.log.info(f"Send Overlay '{filename}'...")
-        converter = ImageConverter()
+        converter = ImageConverter(self.settings)
         if not converter:
             return False, f"Invalid file '{filename}'."
 
@@ -130,7 +131,7 @@ class PolyKybdMock:
 
         for filename in filenames:
             self.log.info("Send Overlay '%s'...", filename)
-            converter = ImageConverter()
+            converter = ImageConverter(self.settings)
             if not converter:
                 self.log.warning("Invalid file %s", filename)
                 return False

@@ -2,22 +2,7 @@ import math
 import numpy as np
 
 from polyhost.util.rle_util import rel_compress
-from polyhost.util.math_util import find_nearest, natural_divisors
 
-
-
-# overlay constants
-REPORT_LENGTH = 32
-COMMAND_BYTES = 2
-
-OVERLAY_COMMAND_BYTES = 3
-COMPRESSED_OVERLAY_COMMAND_BYTES = 2
-ROI_OVERLAY_COMMAND_BYTES = 5
-
-MAX_DATA_PER_MSG = REPORT_LENGTH - COMMAND_BYTES
-BYTES_PER_OVERLAY = int(72 * 40) / 8  # 360
-PLAIN_OVERLAY_BYTES_PER_MSG = find_nearest(MAX_DATA_PER_MSG, natural_divisors(BYTES_PER_OVERLAY))
-NUM_PLAIN_OVERLAY_MSGS = int(BYTES_PER_OVERLAY / PLAIN_OVERLAY_BYTES_PER_MSG)  # 360/24 = 15
 
 def find_roi_rectangle(image):
     """ Find the region of interest - the rectangle in the image containing all set pixels"""
@@ -32,24 +17,12 @@ def find_roi_rectangle(image):
 
     return int(top), int(left), int(bottom), int(right)
 
-def helper_calc_overlay_bytes(all_bytes, skip_empty=True):
-    """ Checks each overlay data packet for empty ones and deducts from the overall number """
-    if not skip_empty:
-        return NUM_PLAIN_OVERLAY_MSGS
-
-    msg_cnt = 0
-    for msg_num in range(0, NUM_PLAIN_OVERLAY_MSGS):
-        data = all_bytes[msg_num * PLAIN_OVERLAY_BYTES_PER_MSG:(msg_num + 1) * PLAIN_OVERLAY_BYTES_PER_MSG]
-        if all(b == 0 for b in data):
-            continue
-        msg_cnt += 1
-
-    return msg_cnt
-
 class OverlayData:
     """ Container for all overlay data package variations: plain, compressed, region-of-interest, compressed region-of-interest """
 
-    def __init__(self, image):
+    def __init__(self, settings, image):
+        self.settings = settings
+        
         self.all_bytes = np.packbits(image, axis=None).tobytes()
 
         self.roi = find_roi_rectangle(image)
@@ -62,10 +35,10 @@ class OverlayData:
         self.roi_bytes = np.packbits(roi, axis=None).tobytes()
         self.compressed_roi_bytes = rel_compress(self.roi_bytes)
 
-        self.all_msgs = helper_calc_overlay_bytes(self.all_bytes) # we can skip empty data packets as for plain transfer every packet has a number and the buffer are erased before
-        self.compressed_msgs = math.ceil((len(self.compressed_bytes)+COMPRESSED_OVERLAY_COMMAND_BYTES)/MAX_DATA_PER_MSG)
-        self.roi_msgs = math.ceil((len(self.roi_bytes)+ROI_OVERLAY_COMMAND_BYTES)/MAX_DATA_PER_MSG)
-        self.compressed_roi_msgs = math.ceil((len(self.compressed_roi_bytes)+ROI_OVERLAY_COMMAND_BYTES)/MAX_DATA_PER_MSG)
+        self.all_msgs = self.helper_calc_overlay_bytes(self.all_bytes) # we can skip empty data packets as for plain transfer every packet has a number and the buffer are erased before
+        self.compressed_msgs = math.ceil((len(self.compressed_bytes)+self.settings.OVERLAY_CMD_BYTES_COMPRESSED_ONCE)/self.settings.MAX_PAYLOAD_BYTES_PER_REPORT)
+        self.roi_msgs = math.ceil((len(self.roi_bytes)+self.settings.OVERLAY_CMD_BYTES_ROI_ONCE)/self.settings.MAX_PAYLOAD_BYTES_PER_REPORT)
+        self.compressed_roi_msgs = math.ceil((len(self.compressed_roi_bytes)+self.settings.OVERLAY_CMD_BYTES_ROI_ONCE)/self.settings.MAX_PAYLOAD_BYTES_PER_REPORT)
 
         # w = self.right - self.left
         # h = self.bottom - self.top
@@ -87,3 +60,18 @@ class OverlayData:
         # print(", ".join(hex(b) for b in self.compressed_roi_bytes))
         # print("};")
 
+    def helper_calc_overlay_bytes(self, all_bytes, skip_empty=True):
+        """ Checks each overlay data packet for empty ones and deducts from the overall number """
+        if not skip_empty:
+            return self.settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
+
+        msg_cnt = 0
+        for msg_num in range(0, self.settings.OVERLAY_PLAIN_DATA_REPORT_COUNT):
+            start = msg_num * self.settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
+            stop = start + self.settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
+            data = all_bytes[start:stop]
+            if all(b == 0 for b in data):
+                continue
+            msg_cnt += 1
+
+        return msg_cnt

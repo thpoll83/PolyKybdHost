@@ -11,8 +11,6 @@ from polyhost.device.cmd_composer import compose_cmd, expect, compose_cmd_str, c
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.im_converter import ImageConverter, Modifier
 from polyhost.device.keys import KeyCode
-from polyhost.device.overlay_data import PLAIN_OVERLAY_BYTES_PER_MSG, BYTES_PER_OVERLAY, NUM_PLAIN_OVERLAY_MSGS, \
-    MAX_DATA_PER_MSG
 
 import hid
 
@@ -50,7 +48,7 @@ class PolyKybd:
     Communication to PolyKybd
     """
 
-    def __init__(self):
+    def __init__(self, settings):
         self.log = logging.getLogger('PolyHost')
         self.all_languages = list()
         self.current_lang = None
@@ -65,19 +63,20 @@ class PolyKybd:
         self.stat_roi = 0
         self.stat_croi = 0
         self.stat_best = 0
+        self.settings = settings
 
     def connect(self):
         """Connect to PolyKybd"""
         # Connect to Keeb
         if not self.hid:
-            self.hid = HidHelper(0x2021, 0x2007)
-            self.serial = SerialHelper(0x2021, 0x2007)
+            self.hid = HidHelper(self.settings.VID, self.settings.PID)
+            self.serial = SerialHelper(self.settings.VID, self.settings.PID)
         else:
             result, msg = self.query_id()
             if not result:
                 self.log.debug("Reconnecting to PolyKybd... (%s)", msg)
                 try:
-                    self.hid = HidHelper(0x2021, 0x2007)
+                    self.hid = HidHelper(self.settings.VID, self.settings.PID)
                 except hid.HIDException as e:
                     self.log.warning("Could not reconnect: %s", e)
                     return False
@@ -250,8 +249,7 @@ class PolyKybd:
         return self.hid.send(compose_cmd(cmd, 0x1e))
 
     def send_overlay_mapping(self, from_to):
-        KVPS_PER_MSG = MAX_DATA_PER_MSG*8/10 # we will send 10-bit indices
-        split_per_msg = split_dict(from_to, KVPS_PER_MSG/2)
+        split_per_msg = split_dict(from_to, self.settings.OVERLAY_MAPPING_INDICES_PER_REPORT/2)
         
         cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING)
         lock = None
@@ -265,7 +263,7 @@ class PolyKybd:
             self.log.debug(f"send_overlay_mapping: Sent {dict_part}")
         
         drained, lock = self.hid.drain_read_buffer(num_msgs, lock)
-        self.log.debug(f"send_overlay_mapping: Drained %d HID reports", drained)
+        self.log.debug("send_overlay_mapping: Drained %d HID reports", drained)
         
         if lock:
             lock.release()
@@ -278,7 +276,7 @@ class PolyKybd:
 
         for filename in filenames:
             self.log.info("Send Overlay '%s'...", filename)
-            converter = ImageConverter()
+            converter = ImageConverter(self.settings)
             if not converter:
                 self.log.warning("Invalid file %s", filename)
                 return False
@@ -341,19 +339,19 @@ class PolyKybd:
         num_msgs = overlay.compressed_roi_msgs if compressed else overlay.roi_msgs
         num_bytes = len(buffer)
         start = 0
-        end = MAX_DATA_PER_MSG - 5 # minus one for keycode, minus 4 for modifier|top|bottom|left|right|compressed
+        end = self.settings.MAX_PAYLOAD_BYTES_PER_REPORT - self.settings.OVERLAY_CMD_BYTES_ROI_ONCE
         for msg_num in range(0,num_msgs):
             #self.log.info(f"Sending roi overlay msg {msg_num + 1} of {overlay.roi_msg_msgs} with {end-start} bytes.")
             cmd = hdr if msg_num == 0 else compose_cmd(Cmd.SEND_ROI_OVERLAY)
             data = cmd + buffer[start:end]
             start = end
-            end = min(end + MAX_DATA_PER_MSG, num_bytes)
+            end = min(end + self.settings.MAX_PAYLOAD_BYTES_PER_REPORT, num_bytes)
             result, msg, lock = self.hid.send_multiple(data, lock)
             if not result:
                 return False, f"Error sending roi overlay message {msg_num + 1}/{num_msgs} ({msg})"
         
         drained, lock = self.hid.drain_read_buffer(num_msgs, lock)
-        self.log.debug(f"send_overlay_roi_for_keycode: Drained %d of %d HID reports (compressed %s)", drained, num_msgs, str(compressed))
+        self.log.debug("send_overlay_roi_for_keycode: Drained %d of %d HID reports (compressed %s)", drained, num_msgs, str(compressed))
         
         if lock:
             lock.release()
@@ -363,12 +361,12 @@ class PolyKybd:
         lock = None
         overlay = mapping[keycode]
         msg_cnt = 0
-        max_msgs = NUM_PLAIN_OVERLAY_MSGS
+        max_msgs = self.settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
         for msg_num in range(0, max_msgs):
             #self.log.debug("Sending msg %d of %d", msg_num + 1, max_msgs)
             cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode, modifier.value, msg_num)
-            from_idx = msg_num * PLAIN_OVERLAY_BYTES_PER_MSG
-            to_idx = (msg_num + 1) * PLAIN_OVERLAY_BYTES_PER_MSG
+            from_idx = msg_num * self.settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
+            to_idx = from_idx + self.settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
             data = overlay.all_bytes[from_idx:to_idx]
             if skip_empty and msg_num+1!=max_msgs and all(b == 0 for b in data):
                 #self.log.debug("Skipping msg %d as all bytes are 0", msg_num + 1)
@@ -392,19 +390,19 @@ class PolyKybd:
         hdr = compose_cmd(Cmd.START_COMPRESSED_OVERLAY, keycode, modifier.value)
         num_bytes = len(overlay.compressed_bytes)
         start = 0
-        end = MAX_DATA_PER_MSG - 2 # minus one byte for the keycode and one for the modifier -> -2
+        end = self.settings.MAX_PAYLOAD_BYTES_PER_REPORT - self.settings.OVERLAY_CMD_BYTES_COMPRESSED_ONCE
         for msg_num in range(0, overlay.compressed_msgs):
             # self.log.info(f"Sending compressed msg {msg_num + 1} of {max_msg} with {end-start} bytes.")
             cmd = hdr if msg_num == 0 else compose_cmd(Cmd.SEND_COMPRESSED_OVERLAY)
             data = cmd + overlay.compressed_bytes[start:end]
             start = end
-            end = min(end + MAX_DATA_PER_MSG, num_bytes)
+            end = min(end + self.settings.MAX_PAYLOAD_BYTES_PER_REPORT, num_bytes)
             result, msg, lock = self.hid.send_multiple(data, lock)
             if not result:
                 return False, f"Error sending overlay message {msg_num + 1}/{overlay.compressed_msgs} ({msg})"
         
         drained, lock = self.hid.drain_read_buffer(overlay.compressed_msgs, lock)
-        self.log.debug(f"send_overlay_for_keycode_compressed: Drained %d of %d HID reports", drained, overlay.compressed_msgs)
+        self.log.debug("send_overlay_for_keycode_compressed: Drained %d of %d HID reports", drained, overlay.compressed_msgs)
         
         if lock:
             lock.release()
@@ -439,8 +437,8 @@ class PolyKybd:
                             case "reset-mapping":
                                 self.reset_overlay_mapping()
                             case _:
-                                self.log.warning(f"Unknown overlay command '{cmd}' from '{cmd_str}'")
+                                self.log.warning("Unknown overlay command '%s' from '%s'", cmd, cmd_str)
                     case _:
-                        self.log.warning(f"Unknown command '{cmd_str}'")
+                        self.log.warning("Unknown command '%s'", cmd_str)
             except Exception as e:
                 self.log.error(f"Couldn't not execute '{cmd_str}': {e}")

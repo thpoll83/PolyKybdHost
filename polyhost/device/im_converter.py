@@ -6,6 +6,7 @@ from enum import Enum
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 
+from polyhost.device.keys import KeyCode
 from polyhost.device.overlay_data import OverlayData
 
 
@@ -21,7 +22,8 @@ class Modifier(Enum):
     GUI_KEY = 8
 
 class ImageConverter:
-    def __init__(self):
+    def __init__(self, settings):
+        self.settings = settings
         self.log = logging.getLogger('PolyHost')
         self.h = 0
         self.w = 0
@@ -96,29 +98,39 @@ class ImageConverter:
 
         return True
 
+    @property
+    @staticmethod
+    def NUM_OVERLAYS_X():
+        return 10
+    
+    @property
+    @staticmethod
+    def NUM_OVERLAYS_Y():
+        return 9
+
     def extract_overlays(self, modifier=Modifier.NO_MOD):
         # we expect 10x9 images each having 72x40px
-        if self.w < 72 * 10 or self.h < 40 * 9:
+        if self.w < self.settings.OVERLAY_RES_X * self.NUM_OVERLAYS_X or self.h < self.settings.OVERLAY_RES_Y * self.NUM_OVERLAYS_Y:
             self.log.error("Image too small")
             return None
         if modifier in self.image:
             overlays = {}
-            keycode = 4  # KC_A
-            for y in range(0, 9):
-                for x in range(0, 10):
-                    top_x = x * 72
-                    top_y = y * 40
-                    bottom_x = (x + 1) * 72
-                    bottom_y = (y + 1) * 40
+            keycode = KeyCode.KC_A.value
+            for y in range(0, self.NUM_OVERLAYS_Y):
+                for x in range(0, self.NUM_OVERLAYS_X):
+                    top_x = x * self.settings.OVERLAY_RES_X
+                    top_y = y * self.settings.OVERLAY_RES_Y
+                    bottom_x = top_x + self.settings.OVERLAY_RES_X
+                    bottom_y = top_y + self.settings.OVERLAY_RES_Y
                     key_slice = self.image[modifier][top_y:bottom_y, top_x:bottom_x]
                     if key_slice.any():
-                        overlays[keycode] = OverlayData(key_slice)
+                        overlays[keycode] = OverlayData(self.settings, key_slice)
 
                     keycode += 1
-                    if keycode == 84:  # skip keypad keycodes
-                        keycode = 100  # KC_NONUS_BACKSLASH
-                    if keycode == 102:  # skip media keys etc.
-                        keycode = 224  # KC_LEFT_CTRL
+                    if keycode == KeyCode.KC_KP_SLASH.value:        # skip keypad keycodes
+                        keycode = KeyCode.KC_NONUS_BACKSLASH.value  # KC_NONUS_BACKSLASH
+                    if keycode == KeyCode.KC_KB_POWER.value:        # skip media keys etc.
+                        keycode = KeyCode.KC_LEFT_CTRL.value        # KC_LEFT_CTRL
             self.log.debug(f"Image data for modifier {modifier} overlay prepared.")
             return overlays
         else:
