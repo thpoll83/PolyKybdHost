@@ -34,7 +34,7 @@ class WindowsInputHelper(InputHelper):
                     if e.startswith('LanguageTag'):
                         self.list.append(e.split(":")[-1].strip())
             except subprocess.CalledProcessError as ex:
-                self.log.warning("Exception when running Get-WinUserLanguageList: %s", str(ex))
+                self.log.warning("Exception when running Get-WinUserLanguageList: %s", ex)
         return self.list
 
     def get_current_language(self):
@@ -50,5 +50,6 @@ class WindowsInputHelper(InputHelper):
                     return True, e.split(":")[-1].strip()
             return False, str(result.stdout)
         except subprocess.CalledProcessError as ex:
-            self.log.warning("Exception when running script block: %s", str(ex))
-            return False, str(ex)
+            msg = str(ex)
+            self.log.warning("Exception when running script block: %s", msg)
+            return False, msg

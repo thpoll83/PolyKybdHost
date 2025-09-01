@@ -99,7 +99,7 @@ class PolyKybdMock:
         return True, f"{set_all}"
 
     def send_overlay(self, filename, on_off=True):
-        self.log.info(f"Send Overlay '{filename}'...")
+        self.log.info("Send Overlay '%s'...", filename)
         converter = ImageConverter(self.settings)
         if not converter:
             return False, f"Invalid file '{filename}'."

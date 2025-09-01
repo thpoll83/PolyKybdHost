@@ -37,7 +37,7 @@ class PolySettings:
             self.settings = self.default_settings
         self.save()
 
-        self.log.info("Current settings:\n%s", str(self.settings))
+        self.log.info("Current settings:\n%s", self.settings)
 
     def get(self, name):
         return self.settings[name]

@@ -27,7 +27,7 @@ class MacOSInputHelper:
                     if m:
                         self.list.append(m.group(1))
             except subprocess.CalledProcessError as ex:
-                self.log.warning("Exception when running languagesetup: %s", str(ex))
+                self.log.warning("Exception when running languagesetup: %s", ex)
         return self.list
 
     def set_language(self, lang, country):

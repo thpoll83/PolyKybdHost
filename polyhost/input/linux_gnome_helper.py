@@ -24,7 +24,7 @@ class LinuxGnomeInputHelper(InputHelper):
                         self.list = simplify.split(",")[1::2]
                         return self.list
             except subprocess.CalledProcessError as ex:
-                self.log.warning("Exception when running gsettings get: %s", str(ex))
+                self.log.warning("Exception when running gsettings get: %s", ex)
         return self.list
 
     def get_all_languages(self):
@@ -32,7 +32,7 @@ class LinuxGnomeInputHelper(InputHelper):
             result = subprocess.run(['localectl', 'list-x11-keymap-layouts'], stdout=subprocess.PIPE, check=True)
             return iter(str(result.stdout, encoding='utf-8').splitlines())
         except subprocess.CalledProcessError as ex:
-            self.log.warning("Exception when running localectl: %s", str(ex))
+            self.log.warning("Exception when running localectl: %s", ex)
         return None
     
     def get_current_language(self):

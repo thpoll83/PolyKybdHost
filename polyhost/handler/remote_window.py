@@ -33,7 +33,11 @@ def receive_from_forwarder(log, connections):
             data = data.decode("utf-8")
             entries = [0, "", ""] if not data else data.split(";")
             if len(entries) > 2:
-                connections[addr] = {"handle": entries[0], "name": entries[1], "title": entries[2]}
+                connections[addr] = {
+                    "handle": entries[0],
+                    "name": entries[1],
+                    "title": entries[2],
+                }
         except socket.timeout:
             time.sleep(3)
     if conn:
@@ -64,7 +68,7 @@ class RemoteHandler:
                     addr = str(ipaddress.ip_address(remote))
                     if addr not in self.connections.keys():
                         self.connections[addr] = ""
-                        self.log.info(f"IP address '{remote}' used with {addr}")
+                        self.log.info("IP address '%s' used with %s", remote, addr)
                         resolved_remote = True
                         entry["ip"] = addr
 
@@ -73,13 +77,15 @@ class RemoteHandler:
                         addr = str(socket.gethostbyname(remote))
                         if addr not in self.connections.keys():
                             self.connections[addr] = ""
-                            self.log.info(f"Resolved '{remote}' to {addr}")
+                            self.log.info("Resolved '%s' to %s", remote, addr)
                             resolved_remote = True
                             entry["ip"] = addr
-                    except:
-                        self.log.warning(f"Could not resolve '{remote}'")
-                except:
-                    self.log.warning(f"Could not resolve '{remote}'")
+                    except Exception as e:
+                        self.log.warning(
+                            "Could not resolve hostname '%s': %s", remote, e
+                        )
+                except Exception as e:
+                    self.log.warning("Could not resolve '%s': %s", remote, e)
         if resolved_remote:
             if not self.forwarder:
                 self.forwarder = threading.Thread(
@@ -129,14 +135,21 @@ class RemoteHandler:
                         contains = entry["titles-contains"]
                         for elem in title_elements:
                             if elem in contains.keys():
-                                found, cmd = self.try_to_match_window(name, contains[elem])
+                                found, cmd = self.try_to_match_window(
+                                    name, contains[elem]
+                                )
                                 if found:
                                     return True
                 if self.title and has_title:
                     match = match and re.search(entry["title"], self.title)
         except re.error as e:
             self.log.warning(
-                f"Cannot match entry '{name}': {entry}, because '{e.msg}'@{e.pos} with '{e.pattern}'"
+                "Cannot match entry '%s': %s, because '%s'@%d with '%s'",
+                name,
+                entry,
+                e.msg,
+                e.pos,
+                e.pattern,
             )
             return False
 
@@ -165,7 +178,10 @@ class RemoteHandler:
             self.title = data["title"]
             self.name = data["name"].split(".")[0].lower()
             self.log.info(
-                f"Remote App Changed: \"{data['name']}\", Title: \"{self.title}\"  Handle: {self.handle}"
+                'Remote App Changed: "%s", Title: "%s"  Handle: %s',
+                data["name"],
+                self.title,
+                self.handle,
             )
 
             found = False
@@ -178,8 +194,7 @@ class RemoteHandler:
 
     def has_overlay(self):
         return (
-            self.current_entry
-            and self.current_entry["flags"][Flags.HAS_OVERLAY.value]
+            self.current_entry and self.current_entry["flags"][Flags.HAS_OVERLAY.value]
         )
 
     def get_overlay_data(self):

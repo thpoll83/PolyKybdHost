@@ -113,7 +113,7 @@ class PolyKybd:
                 self.log.warning("Could not match version string: %s", msg)
                 return False, "Could not match version string. Please update firmware."
         except Exception as e:
-            self.log.warning(f"Exception matching version string '{msg}':\n{e}")
+            self.log.warning("Exception matching version string '%s':\n%s", msg, e)
             return False, "Could not match version string. Please update firmware."
 
     def get_name(self):
@@ -260,10 +260,10 @@ class PolyKybd:
             num_msgs += 1
             if not result:
                 return False, f"Error sending overlay mapping: {msg}"
-            self.log.debug(f"send_overlay_mapping: Sent {dict_part}")
+            self.log.debug("send_overlay_mapping: Sent %s", dict_part)
         
         drained, lock = self.hid.drain_read_buffer(num_msgs, lock)
-        self.log.debug("send_overlay_mapping: Drained %d HID reports", drained)
+        self.log.debug_detailed("send_overlay_mapping: Drained %d HID reports", drained)
         
         if lock:
             lock.release()
@@ -289,7 +289,7 @@ class PolyKybd:
                 overlay_map = converter.extract_overlays(modifier)
                 # it is okay if there is no overlay for a modifier
                 if overlay_map:
-                    self.log.debug(f"Sending overlays for modifier {modifier}.")
+                    self.log.debug_detailed("Sending overlays for modifier %s.", modifier)
 
                     # Send ESC first
                     if not enabled and modifier == Modifier.NO_MOD:
@@ -302,13 +302,11 @@ class PolyKybd:
                     for keycode in overlay_map:
                         hid_msg_counter += self.send_smallest_overlay(keycode, modifier, overlay_map)
 
-
-                    all_keys = ", ".join(f"{key:#02x}" for key in overlay_map.keys())
-                    self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
+                    self.log.debug_detailed("Overlays for keycodes %s have been sent.", overlay_map.keys())
                     overlay_counter += 1
 
         # self.log.info(f"Sum Plain: {self.stat_plain} Comp: {self.stat_comp} Roi: {self.stat_roi} CRoi: {self.stat_croi} Best: {self.stat_best}")
-        self.log.info(f"{overlay_counter} overlays sent ({hid_msg_counter} hid messages).")
+        self.log.info("%d overlays sent (%d hid messages).", overlay_counter, hid_msg_counter)
         #self.log.info(f"Stats: Plain:{self.stat_plain} C:{self.stat_comp} R:{self.stat_roi} CR:{self.stat_croi} --> {self.stat_best}")
         if not enabled:
             self.enable_overlays()
@@ -318,13 +316,17 @@ class PolyKybd:
         ov = mapping[keycode]
         smallest = min(ov.all_msgs, ov.compressed_msgs, ov.roi_msgs, ov.compressed_roi_msgs)
 
-        if smallest == ov.roi_msgs:
+        if smallest == ov.roi_msgs or smallest == ov.compressed_roi_msgs:
+            #self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as uncompressed ROI", keycode, modifier.value)
             return self.send_overlay_roi_for_keycode(keycode, modifier, mapping, False)
         elif smallest == ov.compressed_msgs:
+            #self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as compressed overlay", keycode, modifier.value)
             return self.send_overlay_for_keycode_compressed(keycode, modifier, mapping)
         elif smallest == ov.compressed_roi_msgs:
+            #self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as compressed ROI", keycode, modifier.value)
             return self.send_overlay_roi_for_keycode(keycode, modifier, mapping, True)
         else:
+            #self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as plain overlay", keycode, modifier.value)
             return self.send_overlay_for_keycode(keycode, modifier, mapping)
 
     def send_overlay_roi_for_keycode(self, keycode, modifier, mapping : dict, compressed):
@@ -351,7 +353,7 @@ class PolyKybd:
                 return False, f"Error sending roi overlay message {msg_num + 1}/{num_msgs} ({msg})"
         
         drained, lock = self.hid.drain_read_buffer(num_msgs, lock)
-        self.log.debug("send_overlay_roi_for_keycode: Drained %d of %d HID reports (compressed %s)", drained, num_msgs, str(compressed))
+        self.log.debug_detailed("send_overlay_roi_for_keycode: Drained %d of %d HID reports (compressed %s)", drained, num_msgs, str(compressed))
         
         if lock:
             lock.release()
@@ -377,7 +379,7 @@ class PolyKybd:
             msg_cnt += 1
         
         drained, lock = self.hid.drain_read_buffer(max_msgs, lock)
-        self.log.debug(f"send_overlay_for_keycode: Drained %d of %d HID reports", drained, max_msgs)
+        self.log.debug_detailed("send_overlay_for_keycode: Drained %d of %d HID reports", drained, max_msgs)
         
         if lock:
             lock.release()
@@ -402,7 +404,7 @@ class PolyKybd:
                 return False, f"Error sending overlay message {msg_num + 1}/{overlay.compressed_msgs} ({msg})"
         
         drained, lock = self.hid.drain_read_buffer(overlay.compressed_msgs, lock)
-        self.log.debug("send_overlay_for_keycode_compressed: Drained %d of %d HID reports", drained, overlay.compressed_msgs)
+        self.log.debug_detailed("send_overlay_for_keycode_compressed: Drained %d of %d HID reports", drained, overlay.compressed_msgs)
         
         if lock:
             lock.release()
@@ -441,4 +443,4 @@ class PolyKybd:
                     case _:
                         self.log.warning("Unknown command '%s'", cmd_str)
             except Exception as e:
-                self.log.error(f"Couldn't not execute '{cmd_str}': {e}")
+                self.log.error("Couldn't not execute '%s': %s", cmd_str, e)

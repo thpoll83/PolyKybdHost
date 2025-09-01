@@ -156,8 +156,8 @@ class OverlayHandler:
         try:
             win = pwc.getActiveWindow()
         except Exception as e:
-            self.log.warning(f"Failed retrieving active window: {e}")
-            self.log.warning("".join(traceback.format_exception(e)))
+            self.log.warning("Failed retrieving active window: %s", e)
+            
         if win:
             if self.prev_win != win:
                 self.prev_win = win
@@ -188,15 +188,14 @@ class OverlayHandler:
                                     app_name, self.mapping[app_name]
                                 )
                                 if found:
-                                    self.log.info(f"Changing to {app_name}")
+                                    self.log.info("Changing to %s", app_name)
                                     return self.get_overlay_data(), cmd
                             if self.current_entry and not found:
                                 self.current_entry = None
                                 self.log.info("Nothing active")
                                 return None, OverlayCommand.DISABLE
                     except Exception as e:
-                        self.log.warning(f"Failed retrieving active window: {e}")
-                        self.log.warning("".join(traceback.format_exception(e)))
+                        self.log.warning("Failed retrieving active window: %s", e)
                     self.log.info("No match")
                     return None, OverlayCommand.DISABLE
                 elif self.is_remote_mapping_entry() and self.remote_handler.remote_changed(
@@ -215,7 +214,7 @@ class OverlayHandler:
                     self.current_entry = None
                     return None, OverlayCommand.DISABLE
 
-        # self.log.info(f"Nothing at all")
+        # self.log.info("Nothing at all")
         return None, OverlayCommand.NONE
 
     def is_remote_mapping_entry(self):

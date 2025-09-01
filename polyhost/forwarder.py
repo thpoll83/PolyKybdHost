@@ -22,6 +22,16 @@ else:
 UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 
+# Define custom debug levels
+DEBUG_DETAILED = 8   # Custom level below DEBUG (10)
+
+logging.addLevelName(DEBUG_DETAILED, "DEBUG_DETAILED")
+
+def debug_detailed(self, message, *args, **kwargs):
+    if self.isEnabledFor(DEBUG_DETAILED):
+        self._log(DEBUG_DETAILED, message, args, **kwargs)
+
+logging.Logger.debug_detailed = debug_detailed
 
 class PolyForwarder(QApplication):
     def __init__(self, log_level, host):

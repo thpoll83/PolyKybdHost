@@ -55,6 +55,18 @@ def get_overlay_path(filepath):
 def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
 
+
+# Define custom debug levels
+DEBUG_DETAILED = 8   # Custom level below DEBUG (10)
+
+logging.addLevelName(DEBUG_DETAILED, "DEBUG_DETAILED")
+
+def debug_detailed(self, message, *args, **kwargs):
+    if self.isEnabledFor(DEBUG_DETAILED):
+        self._log(DEBUG_DETAILED, message, args, **kwargs)
+
+logging.Logger.debug_detailed = debug_detailed
+
 class PolyHost(QApplication):
     def __init__(self, log_level, runsInDebug):
         super().__init__(sys.argv)
@@ -165,7 +177,7 @@ class PolyHost(QApplication):
         if result:
             success, sys_lang = result
             if success:
-                self.log.info(f"Current System Language: {sys_lang}")
+                self.log.info("Current System Language: %s", sys_lang)
                 self.current_lang = sys_lang
             else:
                 self.log.warning("Could not query current System Language.")
@@ -174,7 +186,7 @@ class PolyHost(QApplication):
 
         if runsInDebug:
             for e in entries:
-                self.log.info(f"Enumerating input language {e}")
+                self.log.info("Enumerating input language %s", e)
                 lang_menu.addAction(e, self.change_system_language)
 
         self.managed_connection_status()
@@ -239,7 +251,7 @@ class PolyHost(QApplication):
                 mbox.setIcon(QMessageBox.Warning if title == "Error" else QMessageBox.Information)
                 mbox.exec_()
             else:
-                self.log.warning(f"{title}: {msg}")
+                self.log.warning("%s: %s", title, msg)
 
     def pause(self):
         self.paused = not self.paused
@@ -266,7 +278,7 @@ class PolyHost(QApplication):
                     expected = __version__
                     if kb_version.startswith(expected[:3]):
                         if kb_version != expected:
-                            self.log.warning(f"Warning! Minor version mismatch, expected {expected}, got {kb_version}'.")
+                            self.log.warning("Warning! Minor version mismatch, expected '%s', got '%s'.", expected, kb_version)
                             self.status.setIcon(get_icon("sync_problem.svg"))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version}, please update to {expected}!)")
@@ -276,7 +288,7 @@ class PolyHost(QApplication):
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
                         if result and self.settings.get("unicode_send_composition_mode"):
                             mode = get_input_method()
-                            self.log.info("Setting unicode mode to str %s", str(mode))
+                            self.log.info("Setting unicode mode to str %s", mode)
                             self.keeb.set_unicode_mode(mode.value)
                             self.update_ui_on_lang_change(lang)
                     else:
@@ -407,8 +419,7 @@ class PolyHost(QApplication):
                 self.cmdMenu.reset_overlays_and_usage()
                 self.keeb.send_overlays(files)
             except Exception as e:
-                self.log.warning(f"Failed to send overlays '{files}':{e}")
-                self.log.warning("".join(traceback.format_exception(e)))
+                self.log.warning("Failed to send overlays '%s':%s", files, e)
 
             self.keeb.set_idle(False)
 
@@ -454,7 +465,7 @@ class PolyHost(QApplication):
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
         # except Exception as e:
-        #    self.log.warning(f"Failed to report active window: {e}")
+        #    self.log.warning("Failed to report active window: %s", e)
 
     def execute_10min_task(self):
         if self.settings.get("brightness_set_daylight_dependent"):

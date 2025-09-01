@@ -60,7 +60,7 @@ class ImageConverter:
                 self.image[key_b] = np.array(b, dtype=bool)
                 # plt.imshow(self.image[Modifier.SHIFT])
                 # plt.show()
-                self.log.info(f"Loaded 3 channels from {filename}: {self.w}x{self.h}")
+                self.log.debug_detailed("Loaded 3 channels from %s: %dx%d", filename, self.w, self.h)
             else:
                 q_image = pixmap.toImage()
                 b = q_image.bits()
@@ -73,7 +73,7 @@ class ImageConverter:
                 self.image[key_r] = np.array(r, dtype=bool)
                 self.image[key_g] = np.array(g, dtype=bool)
                 self.image[key_b] = np.array(b, dtype=bool)
-                self.log.debug(f"Loaded 4 channels from {filename}: {self.w}x{self.h}")
+                self.log.debug_detailed("Loaded 4 channels from %s: %dx%d", filename, self.w, self.h)
         else:
             if not pixmap.hasAlphaChannel():
                 q_image = pixmap.toImage()
@@ -90,7 +90,7 @@ class ImageConverter:
             self.image[Modifier.NO_MOD] = np.array(np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
                                                    dtype=bool)
             
-            self.log.debug(f"Loaded {filename}: {self.w}x{self.h}")
+            self.log.debug("Loaded %s: %dx%d", filename, self.w, self.h)
             
         #not supported for now
         if Modifier.GUI_KEY in self.image:
@@ -131,8 +131,8 @@ class ImageConverter:
                         keycode = KeyCode.KC_NONUS_BACKSLASH.value  # KC_NONUS_BACKSLASH
                     if keycode == KeyCode.KC_KB_POWER.value:        # skip media keys etc.
                         keycode = KeyCode.KC_LEFT_CTRL.value        # KC_LEFT_CTRL
-            self.log.debug(f"Image data for modifier {modifier} overlay prepared.")
+            self.log.debug_detailed("Image data for modifier %s overlay prepared.", modifier)
             return overlays
         else:
-            #self.log.info(f"No image data for modifier {modifier} present.")
+            #self.log.info("No image data for modifier %s present.", modifier)
             return None
