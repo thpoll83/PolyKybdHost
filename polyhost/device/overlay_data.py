@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-from polyhost.util.rle_util import rel_compress
+from polyhost.util.rle_util import rle_compress
 
 
 def find_roi_rectangle(image):
@@ -30,10 +30,10 @@ class OverlayData:
         self.bottom+=1
         self.right+=1
         roi = image[self.top: self.bottom, self.left: self.right]
-        self.compressed_bytes = rel_compress(self.all_bytes)
+        self.compressed_bytes = rle_compress(self.all_bytes)
 
         self.roi_bytes = np.packbits(roi, axis=None).tobytes()
-        self.compressed_roi_bytes = rel_compress(self.roi_bytes)
+        self.compressed_roi_bytes = rle_compress(self.roi_bytes)
 
         self.all_msgs = self.helper_calc_overlay_bytes(self.all_bytes) # we can skip empty data packets as for plain transfer every packet has a number and the buffer are erased before
         self.compressed_msgs = math.ceil((len(self.compressed_bytes)+self.settings.OVERLAY_CMD_BYTES_COMPRESSED_ONCE)/self.settings.MAX_PAYLOAD_BYTES_PER_REPORT)

@@ -100,12 +100,12 @@ class ImageConverter:
 
     @property
     @staticmethod
-    def NUM_OVERLAYS_X():
+    def NUM_OVERLAYS_X(self):
         return 10
     
     @property
     @staticmethod
-    def NUM_OVERLAYS_Y():
+    def NUM_OVERLAYS_Y(self):
         return 9
 
     def extract_overlays(self, modifier=Modifier.NO_MOD):
