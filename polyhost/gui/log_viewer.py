@@ -112,6 +112,7 @@ class LogViewerDialog(QMainWindow):
         else:
             logging.warning("Platform %s not supported", sys.platform)
 
+    @staticmethod
     def reveal_in_linux_file_manager(self, file_path):
         file_path = os.path.abspath(file_path)
         desktop = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()

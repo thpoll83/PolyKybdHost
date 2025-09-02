@@ -238,8 +238,6 @@ class HidHelper:
         return result, msg
 
     def send_and_read_validate_with_lock(self, data, timeout, expected_prefix, received_lock):
-        result = False
-        msg = ""
         try:
             if received_lock is None:
                 self.lock.acquire()

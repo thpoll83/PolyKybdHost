@@ -98,11 +98,13 @@ class ImageConverter:
 
         return True
 
+    # noinspection PyPep8Naming
     @property
     @staticmethod
     def NUM_OVERLAYS_X(self):
         return 10
-    
+
+    # noinspection PyPep8Naming
     @property
     @staticmethod
     def NUM_OVERLAYS_Y(self):

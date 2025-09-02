@@ -348,9 +348,8 @@ class PolyKybd:
     def send_overlay_roi_for_keycode(self, keycode, modifier, mapping : dict, compressed):
         overlay = mapping[keycode]
         if not overlay.roi:
-            self.send_overlay_for_keycode_compressed(keycode, modifier, mapping)
-            return
-            
+            return self.send_overlay_for_keycode_compressed(keycode, modifier, mapping)
+
         hdr = compose_roi_header(Cmd.START_ROI_OVERLAY, keycode, modifier.value, overlay, compressed)
         lock = None
         buffer = overlay.compressed_roi_bytes if compressed else overlay.roi_bytes

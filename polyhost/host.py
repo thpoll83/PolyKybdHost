@@ -5,7 +5,6 @@ import pathlib
 import platform
 import sys
 import time
-import traceback
 import webbrowser
 import yaml
 
@@ -70,11 +69,12 @@ def debug_detailed(self, message, *args, **kwargs):
 logging.Logger.debug_detailed = debug_detailed
 
 class PolyHost(QApplication):
-    def __init__(self, log_level, runsInDebug):
+    def __init__(self, log_level, debug_mode):
         super().__init__(sys.argv)
+        fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode else "[%(asctime)s] %(levelname)-7s %(message)s"
         logging.basicConfig(
             level=log_level,
-            format="[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} - %(message)s",
+            format=fmt,
             handlers=[
                 RotatingFileHandler(
                     filename="host_log.txt",
@@ -153,15 +153,15 @@ class PolyHost(QApplication):
         self.last_update_10min_task = PERIODIC_10MIN_CYCLE_MSEC * 2
         self.current_lang = None
         self.keeb_lang_menu = None
-
+        self.debug_lang_menu = None
 
         self.unicode_cache = UnicodeCache()
         self.reconnect()
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
 
-        if runsInDebug:
-            lang_menu = self.menu.addMenu(get_icon("language.svg"), "Change System Input Language")
+        if debug_mode:
+            self.debug_lang_menu = self.menu.addMenu(get_icon("language.svg"), "Change System Input Language")
 
         self.cmdMenu = CommandsSubMenu(self, self.keeb)
         self.cmdMenu.build_menu(self.menu)
@@ -206,10 +206,10 @@ class PolyHost(QApplication):
         else:
             self.log.warning("System language query not supported for this platform.")
 
-        if runsInDebug:
+        if debug_mode:
             for e in entries:
                 self.log.info("Enumerating input language %s", e)
-                lang_menu.addAction(e, self.change_system_language)
+                self.debug_lang_menu.addAction(e, self.change_system_language)
 
         self.managed_connection_status()
         # Add the menu to the tray

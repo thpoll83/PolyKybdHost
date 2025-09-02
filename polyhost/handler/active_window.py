@@ -2,7 +2,6 @@ import logging
 import os
 import platform
 import re
-import traceback
 
 from polyhost.handler.common import OverlayCommand, Flags
 from polyhost.handler.remote_window import RemoteHandler

@@ -44,6 +44,6 @@ class InputHelper:
             controller.release(Key.space)
 
             success, sys_lang_iso639 = self.get_current_language()
-            num_langs = num_langs - 1
+            num_langs -= 1
         
         return False, f"Could not switch language to {iso639}"

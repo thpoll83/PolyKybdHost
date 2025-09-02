@@ -1,6 +1,7 @@
 from polyhost.util.math_util import find_nearest, natural_divisors
 
 
+# noinspection PyPep8Naming
 class DeviceSettings:
     """All settings that are defined by the keyboard, not by software"""
     _vid = 0x2021

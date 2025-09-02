@@ -117,7 +117,7 @@ class PolyKybdMock:
                     self.disable_overlays()
                 all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
                 self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
-                counter = counter + 1
+                counter += 1
 
         if on_off and counter > 0:
             self.enable_overlays()

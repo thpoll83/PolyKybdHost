@@ -15,11 +15,11 @@ class SerialHelper:
         return None
 
     def read_all(self):
-        return self.serial.read_all() if self.serial != None else None
+        return self.serial.read_all() if self.serial is not None else None
     
     def read_all_and_add_to_buffer(self):
         data = self.read_all()
-        if data != None:
+        if data is not None:
             self.buffer += data.encode("utf-8")
     
     def get_buffer(self):

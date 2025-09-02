@@ -1,12 +1,12 @@
 from setuptools import setup
 
 about = {}
-with open("polyhost/_version.py") as f:
-    exec(f.read(), about)
+with open("polyhost/_version.py") as version_file:
+    exec(version_file.read(), about)
     
 def readme():
-    with open('README.rst') as f:
-        return f.read()
+    with open('README.rst') as readme_file:
+        return readme_file.read()
 
 setup(name='PolyHost',
       version=about["__version__"],
