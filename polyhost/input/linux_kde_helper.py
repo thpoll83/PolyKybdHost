@@ -22,7 +22,7 @@ class LinuxPlasmaHelper:
     # VariantList=kr104,,
     def get_countries(self):
         if not self.list:
-            with open(Path.home() / ".config" / "kxkbrc", "r") as file:
+            with open(Path.home() / ".config" / "kxkbrc") as file:
                 for line in file:
                     stripped = line.strip()
                     if stripped.startswith("LayoutList"):

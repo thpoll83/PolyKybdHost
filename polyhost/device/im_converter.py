@@ -28,6 +28,8 @@ class ImageConverter:
         self.h = 0
         self.w = 0
         self.image = {}
+        self._num_x = 10
+        self._num_y = 9
 
     def open(self, filename):
         pixmap = QPixmap()
@@ -100,15 +102,13 @@ class ImageConverter:
 
     # noinspection PyPep8Naming
     @property
-    @staticmethod
     def NUM_OVERLAYS_X(self):
-        return 10
+        return self._num_x
 
     # noinspection PyPep8Naming
     @property
-    @staticmethod
     def NUM_OVERLAYS_Y(self):
-        return 9
+        return self._num_y
 
     def extract_overlays(self, modifier=Modifier.NO_MOD):
         # we expect 10x9 images each having 72x40px

@@ -50,7 +50,7 @@ class PolySettings:
         self.save()
 
     def load(self):
-        with open(self.path, "r") as f:
+        with open(self.path) as f:
             self.settings = yaml.safe_load(f) or {}
         for key, value in self.default_settings.items():
             self.settings.setdefault(key, value)

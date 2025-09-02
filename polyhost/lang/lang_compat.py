@@ -6,7 +6,7 @@ class LangComp:
     def __init__(self):
         self.mapping = dict()
         path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "res", "forced_country_match.txt")
-        with open(path, 'r') as file:
+        with open(path) as file:
             for line in file.readlines():
                 if "=" in line:
                     key, value = line.split('=')

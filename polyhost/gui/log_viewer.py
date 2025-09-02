@@ -87,7 +87,7 @@ class LogViewerDialog(QMainWindow):
 
     def load_log(self):
         try:
-            with open(self.path, 'r', encoding='utf-8') as f:
+            with open(self.path, encoding='utf-8') as f:
                 log_content = f.read()
             self.text_host_log.setPlainText(log_content)
             self.text_host_log.moveCursor(self.text_host_log.textCursor().End)
@@ -95,7 +95,7 @@ class LogViewerDialog(QMainWindow):
             self.text_host_log.setPlainText(f"Failed to host load log file: {e}")
 
         try:
-            with open(self.console_path, 'r', encoding='utf-8') as f:
+            with open(self.console_path, encoding='utf-8') as f:
                 log_content = f.read()
             self.text_polykybd_console.setPlainText(log_content)
             self.text_polykybd_console.moveCursor(self.text_polykybd_console.textCursor().End)
