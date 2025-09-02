@@ -133,7 +133,12 @@ class OverlayHandler:
                     match = match and re.search(entry[TITLE], self.title)
         except re.error as e:
             self.log.warning(
-                f"Cannot match entry '{name}': {entry}, because '{e.msg}'@{e.pos} with '{e.pattern}'"
+                "Cannot match entry '%s': %s, because '%s'@%d with '%s'",
+                name,
+                entry,
+                e.msg,
+                e.pos,
+                e.pattern,
             )
             return False, OverlayCommand.NONE
 
@@ -146,9 +151,9 @@ class OverlayHandler:
             return True, OverlayCommand.OFF_ON
         return False, OverlayCommand.NONE
 
-    def log_win(self):
-        name = self.win.getAppName()
-        self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %d", name, self.win.title.encode('utf-8'), self.win.getHandle())
+    def log_win(self, raw_app_name):
+        """Log active window"""
+        self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %d", raw_app_name, self.win.title.encode('utf-8'), self.win.getHandle())
 
     def handle_active_window(self, update_cycle_time_msec, accept_time_msec):
         self.last_update_msec = self.last_update_msec + update_cycle_time_msec
@@ -176,13 +181,14 @@ class OverlayHandler:
                     if win.title == "PolyHost":
                         return None, OverlayCommand.NONE
                     try:
-                        self.log_win()
+                        raw_app_name = self.win.getAppName()
+                        self.log_win(raw_app_name)
                         if self.mapping:
                             found = False
                             if platform.system() == 'Windows':
-                                app_name = self.win.getAppName().split(".",-1)[0].lower()
+                                app_name = raw_app_name.split(".",-1)[0].lower()
                             else:
-                                app_name = self.win.getAppName().lower()
+                                app_name = raw_app_name.lower()
                             if app_name in self.mapping.keys():
                                 found, cmd = self.try_to_match_window(
                                     app_name, self.mapping[app_name]

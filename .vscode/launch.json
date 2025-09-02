@@ -2,7 +2,23 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Py Debug PolyHost",
+            "name": "[WIN] Profile PolyHost",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/.venv/Scripts/scalene.exe",
+            "args": [ "-m", "polyhost" ],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Start PolyHost",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "polyhost",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug PolyHost",
             "type": "debugpy",
             "request": "launch",
             "module": "polyhost",
@@ -10,7 +26,7 @@
             "args": ["--debug"],
         },
         {
-            "name": "Py Debug PolyForwarder to localhost",
+            "name": "Debug PolyForwarder to localhost",
             "type": "debugpy",
             "request": "launch",
             "module": "polyhost",
@@ -18,13 +34,13 @@
             "args": ["--host", "127.0.0.1"],
         },
         {
-            "name": "Py Debug Current File",
+            "name": "Debug Current File",
             "type": "debugpy",
             "request": "launch",
             "program": "${file}"
         },
         {
-            "name": "gcc build and debug active file",
+            "name": "GCC build and debug active file",
             "type": "cppdbg",
             "request": "launch",
             "program": "${fileDirname}/${fileBasenameNoExtension}", // The path to your compiled executable

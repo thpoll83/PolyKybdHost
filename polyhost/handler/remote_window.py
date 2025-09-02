@@ -10,6 +10,8 @@ from polyhost.handler.common import Flags
 TCP_PORT = 50162
 BUFFER_SIZE = 1024
 
+stop_event = threading.Event()
+
 
 # Needs to be started as thread
 def receive_from_forwarder(log, connections):
@@ -26,18 +28,19 @@ def receive_from_forwarder(log, connections):
     sock.settimeout(10.0)
 
     conn = None
-    while len(connections) > 0:
+    while not stop_event.is_set():
         try:
-            conn, (addr, _) = sock.accept()
-            data = conn.recv(BUFFER_SIZE)
-            data = data.decode("utf-8")
-            entries = [0, "", ""] if not data else data.split(";")
-            if len(entries) > 2:
-                connections[addr] = {
-                    "handle": entries[0],
-                    "name": entries[1],
-                    "title": entries[2],
-                }
+            if len(connections) > 0:
+                conn, (addr, _) = sock.accept()
+                data = conn.recv(BUFFER_SIZE)
+                data = data.decode("utf-8")
+                entries = [0, "", ""] if not data else data.split(";")
+                if len(entries) > 2:
+                    connections[addr] = {
+                        "handle": entries[0],
+                        "name": entries[1],
+                        "title": entries[2],
+                    }
         except socket.timeout:
             time.sleep(3)
     if conn:
@@ -97,7 +100,7 @@ class RemoteHandler:
         else:
             self.forwarder = None
 
-    def try_to_match_window(self, name, entry):
+    def try_to_match_window_remote(self, name, entry):
         (
             has_overlay,
             has_remote,
@@ -117,7 +120,7 @@ class RemoteHandler:
                         has_starts_with
                         and title_elements[0] in entry["titles-startswith"].keys()
                     ):
-                        found, cmd = self.try_to_match_window(
+                        found = self.try_to_match_window_remote(
                             name, entry["titles-startswith"][title_elements[0]]
                         )
                         if found:
@@ -126,7 +129,7 @@ class RemoteHandler:
                         has_ends_with
                         and title_elements[-1] in entry["titles-endswith"].keys()
                     ):
-                        found, cmd = self.try_to_match_window(
+                        found = self.try_to_match_window_remote(
                             name, entry["titles-endswith"][title_elements[-1]]
                         )
                         if found:
@@ -135,7 +138,7 @@ class RemoteHandler:
                         contains = entry["titles-contains"]
                         for elem in title_elements:
                             if elem in contains.keys():
-                                found, cmd = self.try_to_match_window(
+                                found = self.try_to_match_window_remote(
                                     name, contains[elem]
                                 )
                                 if found:
@@ -186,7 +189,7 @@ class RemoteHandler:
 
             found = False
             if self.name in self.mapping.keys():
-                found = self.try_to_match_window(self.name, self.mapping[self.name])
+                found = self.try_to_match_window_remote(self.name, self.mapping[self.name])
             if self.current_entry and not found:
                 self.current_entry = None
             return True
@@ -201,6 +204,6 @@ class RemoteHandler:
         return self.current_entry["overlay"]
 
     def close(self):
-        self.connections = {}
+        stop_event.set()
         if self.forwarder:
             self.forwarder.join()

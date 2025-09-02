@@ -167,3 +167,5 @@ polyhost/device/rle_native
 /polyhost/start_polyhost.*
 
 polykybd_console.txt
+profile.json
+profile.html

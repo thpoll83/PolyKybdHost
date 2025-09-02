@@ -74,7 +74,7 @@ class PolyHost(QApplication):
         super().__init__(sys.argv)
         logging.basicConfig(
             level=log_level,
-            format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
+            format="[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} - %(message)s",
             handlers=[
                 RotatingFileHandler(
                     filename="host_log.txt",
