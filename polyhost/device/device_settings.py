@@ -7,6 +7,7 @@ class DeviceSettings:
     _pid = 0x2007
 
     _hid_report_size_in_bytes = 32
+    _hid_console_report_size_in_bytes = 64
     _via_command_bytes = 1
     _polykybd_command_bytes = 1
     _max_payload_bytes_per_report = _hid_report_size_in_bytes - _via_command_bytes - _polykybd_command_bytes
@@ -29,7 +30,13 @@ class DeviceSettings:
 
     # the mapping indices are 10 bits wide
     _overlay_mapping_indices_per_report = int( _max_payload_bytes_per_report * 8 ) / 10
-    
+
+    _hid_raw_usage_page         = 0xFF60
+    _hid_raw_usage              = 0x61
+
+    _hid_console_usage_page    = 0xFF31
+    _hid_console_usage         = 0x74
+
     @property
     def VID(self):
         """Vendor ID"""
@@ -51,6 +58,10 @@ class DeviceSettings:
     @property
     def HID_REPORT_SIZE(self):
         return self._hid_report_size_in_bytes
+
+    @property
+    def HID_CONSOLE_REPORT_SIZE(self):
+        return self._hid_console_report_size_in_bytes
 
     @property
     def MAX_PAYLOAD_BYTES_PER_REPORT(self):
@@ -83,3 +94,19 @@ class DeviceSettings:
     @property
     def OVERLAY_MAPPING_INDICES_PER_REPORT(self):
         return self._overlay_mapping_indices_per_report
+
+    @property
+    def HID_RAW_USAGE_PAGE(self):
+        return self._hid_raw_usage_page
+
+    @property
+    def HID_RAW_USAGE(self):
+        return self._hid_raw_usage
+
+    @property
+    def HID_CONSOLE_USAGE_PAGE(self):
+        return self._hid_console_usage_page
+
+    @property
+    def HID_CONSOLE_USAGE(self):
+        return self._hid_console_usage

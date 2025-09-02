@@ -69,14 +69,14 @@ class PolyKybd:
         """Connect to PolyKybd"""
         # Connect to Keeb
         if not self.hid:
-            self.hid = HidHelper(self.settings.VID, self.settings.PID)
-            self.serial = SerialHelper(self.settings.VID, self.settings.PID)
+            self.hid = HidHelper(self.settings)
+            self.serial = SerialHelper(self.settings)
         else:
             result, msg = self.query_id()
             if not result:
                 self.log.debug("Reconnecting to PolyKybd... (%s)", msg)
                 try:
-                    self.hid = HidHelper(self.settings.VID, self.settings.PID)
+                    self.hid = HidHelper(self.settings)
                 except hid.HIDException as e:
                     self.log.warning("Could not reconnect: %s", e)
                     return False
@@ -89,6 +89,18 @@ class PolyKybd:
         if self.serial:
             return self.serial.read_all()
         return None
+    
+    def get_console_output(self):
+        console_out =""
+        try:
+            last_line = self.hid.get_console_output()
+            while len(last_line)>0:
+                console_out += last_line.decode().strip('\x00')
+                last_line = self.hid.get_console_output()
+        except Exception as e:
+            return str(e)
+        
+        return console_out
     
     def query_id(self):
         try:
@@ -276,7 +288,11 @@ class PolyKybd:
 
         for filename in filenames:
             self.log.info("Send Overlay '%s'...", filename)
+            delta = time.perf_counter()
             converter = ImageConverter(self.settings)
+            if self.log.isEnabledFor(logging.DEBUG):
+                delta = time.perf_counter() - delta
+                self.log.debug("Converted in '%f' msec", delta*1000)
             if not converter:
                 self.log.warning("Invalid file %s", filename)
                 return False

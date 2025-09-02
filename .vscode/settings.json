@@ -6,8 +6,11 @@
         "scminput": false
     },
     "cSpell.words": [
+        "keeb",
+        "pixmap",
         "polyhost",
-        "polykybd"
+        "polykybd",
+        "udevadm"
     ],
     "python.testing.unittestEnabled": true,
       "python.testing.unittestArgs": [

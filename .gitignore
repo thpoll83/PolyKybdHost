@@ -166,3 +166,4 @@ polyhost/device/rle_test
 polyhost/device/rle_native
 /polyhost/start_polyhost.*
 
+polykybd_console.txt

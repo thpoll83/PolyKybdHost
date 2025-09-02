@@ -1,9 +1,8 @@
 import serial.tools.list_ports
 
 class SerialHelper:
-    def __init__(self, vid, pid):
-        self.pid = pid
-        self.vid = vid
+    def __init__(self, settings):
+        self.settings = settings
         self.serial = self.find_serial()
         self.buffer = ""
         
@@ -11,7 +10,7 @@ class SerialHelper:
         ports = serial.tools.list_ports.comports()
         for port in ports:
             if port.vid is not None and port.pid is not None:
-                if port.vid == self.vid and port.pid == self.pid:
+                if port.vid == self.settings.VID and port.pid == self.settings.PID:
                     return port.device
         return None
 

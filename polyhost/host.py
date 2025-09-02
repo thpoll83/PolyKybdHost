@@ -1,8 +1,10 @@
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import pathlib
 import platform
 import sys
+import time
 import traceback
 import webbrowser
 import yaml
@@ -74,11 +76,31 @@ class PolyHost(QApplication):
             level=log_level,
             format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
             handlers=[
-                logging.FileHandler(filename="host_log.txt", encoding="utf-8"),
+                RotatingFileHandler(
+                    filename="host_log.txt",
+                    maxBytes=5 * 1024 * 1024,  # 5 MB
+                    backupCount=3,
+                    encoding="utf-8"
+                ),
                 logging.StreamHandler(stream=sys.stdout),
             ],
         )
         self.log = logging.getLogger('PolyHost')
+
+        self.keeb_log = logging.getLogger("PolyKybdConsole")
+        self.keeb_log.setLevel(logging.INFO)  # Set log level for logger 'b'
+
+        # Add a file handler for 'b' (with a different filename)
+        file_handler = RotatingFileHandler(
+            filename="polykybd_console.txt",  # Separate log file for 'b'
+            maxBytes=5 * 1024 * 1024,  # 5 MB
+            backupCount=3,
+            encoding="utf-8"
+        )
+        file_handler.setFormatter(logging.Formatter("%(message)s"))
+        self.keeb_log.addHandler(file_handler)
+        self.keeb_log.propagate = False
+
         self.setApplicationName('PolyHost')
         self.settings = PolySettings()
 
@@ -349,8 +371,11 @@ class PolyHost(QApplication):
 
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediatly
+        delta = time.perf_counter()
         self.log_viewer = LogViewerDialog()
         self.log_viewer.show()
+        delta = time.perf_counter() - delta
+        self.log.info("Opened log dialog in '%f' sec", delta)
 
     @staticmethod
     def open_support():
@@ -458,9 +483,13 @@ class PolyHost(QApplication):
         elif self.settings.get("debug_window_detection_if_not_connected_to_poly_kybd"):
             self.overlay_handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
 
-        kb_log = self.keeb.read_serial()
+        kb_serial = self.keeb.read_serial()
+        if kb_serial:
+            self.log.info("Received serial communication: %s", kb_serial)
+        
+        kb_log = self.keeb.get_console_output()
         if kb_log:
-            self.log.info("Received serial communication: %s", kb_log)
+            self.keeb_log.info(kb_log)
         
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)

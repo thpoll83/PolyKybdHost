@@ -70,40 +70,51 @@ except ImportError:
     pkg install -g 'py3*-hid'
     """)
     raise
-    
 
-usage_page    = 0xFF60
-usage         = 0x61
-report_length = 32
+PERMISSION_MSG = f"""It looks like you do not have permission to access the device.
+Please run the following commands, then reconnect the device and restart the application:
+
+sudo cp {os.path.join(pathlib.Path(__file__).parent.resolve(), "99-hid.rules")} /etc/udev/rules.d
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+"""
 
 class HidHelper:
     def __del__(self):
         if self.interface:
             self.interface.close()
 
-    def __init__(self, vid, pid):
-        self.pid = pid
-        self.vid = vid
+    def __init__(self, settings):
+        self.settings = settings
         self.lock = threading.Lock()
 
-        device_interfaces = hid.enumerate(vid, pid)
-        raw_hid_interfaces = [i for i in device_interfaces if i['usage_page'] == usage_page and i['usage'] == usage]
+        device_interfaces = hid.enumerate(self.settings.VID, self.settings.PID)
+        raw_hid_interfaces = [i for i in device_interfaces if i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE and i['usage'] == self.settings.HID_RAW_USAGE]
 
         if len(raw_hid_interfaces) != 0:
             try:
                 self.interface = hid.Device(path=raw_hid_interfaces[0]['path'])
             except hid.HIDException as e:
-                print(f"""It looks like you do not have permission to access the device.
-Please run the following commands, then reconnect the device and restart the application:
-
-sudo cp {os.path.join(pathlib.Path(__file__).parent.resolve(), "99-hid.rules")} /etc/udev/rules.d
-sudo udevadm control --reload-rules
-sudo udevadm trigger
-""")
+                print(PERMISSION_MSG)
                 raise e
                 
         else:
             self.interface = None
+
+        console_hid_interfaces = [j for j in device_interfaces if j['usage_page'] == self.settings.HID_CONSOLE_USAGE_PAGE and j['usage'] == self.settings.HID_CONSOLE_USAGE]
+                                                                    
+        if len(console_hid_interfaces) != 0:
+            try:
+                self.remote_console = hid.Device(path=console_hid_interfaces[0]['path'])
+            except hid.HIDException as e:
+                print(PERMISSION_MSG)
+                raise e
+                
+        else:
+            self.remote_console = None
+
+    def get_console_output(self):
+        return self.remote_console.read(self.settings.HID_CONSOLE_REPORT_SIZE, timeout=0)
 
     def interface_acquired(self):
         return self.interface is not None
@@ -114,7 +125,7 @@ sudo udevadm trigger
         if self.interface is None:
             return False, "No Interface"
 
-        request_data = [0x00] * (report_length + 1) # First byte is Report ID
+        request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1) # First byte is Report ID
         request_data[1:len(data) + 1] = data
         request_report = bytes(request_data)
 
@@ -132,14 +143,14 @@ sudo udevadm trigger
         if self.interface is None:
             return False, "No Interface"
 
-        request_data = [0x00] * (report_length + 1) # First byte is Report ID
+        request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1) # First byte is Report ID
         request_data[1:len(data) + 1] = data
         request_report = bytes(request_data)
 
         try:
             with self.lock:
                 result = self.interface.write(request_report)
-                self.interface.read(report_length, timeout=timeout)
+                self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
             return False, f"Exception: {e}"
 
@@ -149,7 +160,7 @@ sudo udevadm trigger
         if self.interface is None:
             return False, "No Interface", received_lock
 
-        request_data = [0x00] * (report_length + 1) # First byte is Report ID
+        request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1) # First byte is Report ID
         request_data[1:len(data) + 1] = data
         request_report = bytes(request_data)
 
@@ -157,7 +168,7 @@ sudo udevadm trigger
             if received_lock is None:
                 self.lock.acquire()
             elif received_lock != self.lock:
-                return False, "Lock missmatch", received_lock
+                return False, "Lock mismatch", received_lock
             if not self.lock.locked():
                 return False, "Not locked", self.lock
 
@@ -176,12 +187,12 @@ sudo udevadm trigger
             if received_lock is None:
                 self.lock.acquire()
             elif received_lock != self.lock:
-                return False, "Lock missmatch", received_lock
+                return False, "Lock mismatch", received_lock
             if not self.lock.locked():
                 return False, "Not locked", self.lock
 
             for _ in range(num_msgs):
-               if len(self.interface.read(report_length, timeout=100)) > 0:
+               if len(self.interface.read(self.settings.HID_REPORT_SIZE, timeout=100)) > 0:
                    num_drained += 1
         except Exception as e:
             self.lock.release()
@@ -195,7 +206,7 @@ sudo udevadm trigger
 
         try:
             with self.lock:
-                response_report = self.interface.read(report_length, timeout=timeout)
+                response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
             return False, f"Exception: {e}"
 
@@ -209,11 +220,11 @@ sudo udevadm trigger
             if received_lock is None:
                 self.lock.acquire()
             elif received_lock != self.lock:
-                return False, "Lock missmatch", received_lock
+                return False, "Lock mismatch", received_lock
             if not self.lock.locked():
                 return False, "Not locked", self.lock
 
-            response_report = self.interface.read(report_length, timeout=timeout)
+            response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
             return False, f"Exception: {e}"
 
@@ -233,19 +244,19 @@ sudo udevadm trigger
             if received_lock is None:
                 self.lock.acquire()
             elif received_lock != self.lock:
-                return False, "Lock missmatch", received_lock
+                return False, "Lock mismatch", received_lock
             if not self.lock.locked():
                 return False, "Not locked", self.lock
 
-            request_data = [0x00] * (report_length + 1)  # First byte is Report ID
+            request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1)  # First byte is Report ID
             request_data[1:len(data) + 1] = data
             request_report = bytes(request_data)
 
             self.interface.write(request_report)
-            response_report = self.interface.read(report_length, timeout=timeout)
+            response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
             msg = response_report.decode().strip('\x00')
             if not msg.startswith(expected_prefix):
-                response_report = self.interface.read(report_length, timeout=timeout)
+                response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
                 msg = response_report.decode().strip('\x00')
             else:
                 return True, msg, self.lock
@@ -259,14 +270,14 @@ sudo udevadm trigger
         if self.interface is None:
             return False, "No Interface"
 
-        request_data = [0x00] * (report_length + 1) # First byte is Report ID
+        request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1) # First byte is Report ID
         request_data[1:len(data) + 1] = data
         request_report = bytes(request_data)
 
         try:
             with self.lock:
                 self.interface.write(request_report)
-                response_report = self.interface.read(report_length, timeout=timeout)
+                response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
             return False, f"Exception: {e}"
 

@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import ipaddress
 import pathlib
@@ -42,7 +43,12 @@ class PolyForwarder(QApplication):
             level=log_level,
             format="[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s",
             handlers=[
-                logging.FileHandler(filename="forwarder_log.txt"),
+                RotatingFileHandler(
+                    filename="forwarder_log.txt",
+                    maxBytes=10 * 1024 * 1024,  # 10 MB
+                    backupCount=3,
+                    encoding="utf-8"
+                ),
                 logging.StreamHandler(stream=sys.stdout),
             ],
         )
@@ -96,7 +102,7 @@ class PolyForwarder(QApplication):
         except ValueError:
             ip = socket.gethostbyname(self.host)
         except OSError as err:
-            self.log.error("Could not resolve %s: %s", str(self.host), str(err))
+            self.log.error("Could not resolve %s: %s", self.host, err)
             return False
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -105,15 +111,15 @@ class PolyForwarder(QApplication):
             s.close()
             return True
         except socket.timeout as err:
-            self.log.error("Connection timed out: %s", str(err))
+            self.log.error("Connection timed out: %s",err)
         except ConnectionRefusedError as err:
-            self.log.error("Connection refused: %s", str(err))
+            self.log.error("Connection refused: %s", err)
         except ConnectionAbortedError as err:
-            self.log.error("Connection aborted: %s", str(err))
+            self.log.error("Connection aborted: %s", err)
         except ConnectionResetError as err:
-            self.log.error("Connection reset: %s", str(err))
+            self.log.error("Connection reset: %s", err)
         except ConnectionError as err:
-            self.log.error("Connection error: %s", str(err))
+            self.log.error("Connection error: %s", err)
         return False
 
     def quit_app(self):

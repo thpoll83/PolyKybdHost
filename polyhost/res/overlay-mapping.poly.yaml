@@ -13,7 +13,7 @@ chrome,google-chrome:
       overlay: jira_template.mods.png
 nxplayer:
   remote: hostname
-  title: NoMachine - .*
+  title: .*NoMachine.*
 gimp-2.0,gimp-2.8,gimp-3.0,gimp,gimp-3:
   overlay: gimp_template.mods.png
 zoom:

@@ -6,7 +6,7 @@ import sys
 
 from PyQt5.QtCore import QSize, QFileSystemWatcher
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QVBoxLayout, QTextEdit, QHBoxLayout, QPushButton, QMainWindow, QWidget
+from PyQt5.QtWidgets import QVBoxLayout, QPlainTextEdit, QHBoxLayout, QPushButton, QMainWindow, QWidget, QTabWidget
 
 from polyhost.gui.get_icon import get_icon
 
@@ -25,11 +25,29 @@ class LogViewerDialog(QMainWindow):
         self.layout = QVBoxLayout(central_widget)
         self.layout.setContentsMargins(0, 0, 0, 10)
 
-        # Text area for log display
-        self.text_edit = QTextEdit(self)
-        self.text_edit.setReadOnly(True)
-        self.text_edit.setFont(QFont("Courier", 10))
-        self.layout.addWidget(self.text_edit)
+         # Tab widget to hold multiple tabs
+        self.tab_widget = QTabWidget(self)
+        self.layout.addWidget(self.tab_widget)
+
+        # First tab with a read-only QPlainTextEdit
+        self.text_host_log = QPlainTextEdit(self)
+        self.text_host_log.setReadOnly(True)
+        self.text_host_log.setFont(QFont("Courier", 10))
+
+        tab1 = QWidget()
+        tab1_layout = QVBoxLayout(tab1)
+        tab1_layout.addWidget(self.text_host_log)
+        self.tab_widget.addTab(tab1, "PolyHost Log")
+
+        # Second tab with another read-only QPlainTextEdit
+        self.text_polykybd_console = QPlainTextEdit(self)
+        self.text_polykybd_console.setReadOnly(True)
+        self.text_polykybd_console.setFont(QFont("Courier", 10))
+
+        tab2 = QWidget()
+        tab2_layout = QVBoxLayout(tab2)
+        tab2_layout.addWidget(self.text_polykybd_console)
+        self.tab_widget.addTab(tab2, "PolyKybd Console Log")
 
         # Horizontal layout for buttons
         button_layout = QHBoxLayout()
@@ -43,6 +61,12 @@ class LogViewerDialog(QMainWindow):
         button_layout.addWidget(button)
 
         # OK/Close button
+        button = QPushButton("Reload")
+        button.clicked.connect(self.load_log)
+        button_layout.addWidget(button)
+
+
+        # OK/Close button
         button = QPushButton("Close")
         button.clicked.connect(self.close)
         button_layout.addWidget(button)
@@ -54,24 +78,29 @@ class LogViewerDialog(QMainWindow):
         self.layout.addLayout(button_layout)
 
         # File watcher
-        self.file_watcher = QFileSystemWatcher(self)
         self.path = os.path.join(pathlib.Path(__file__).parent.parent.parent.resolve(), "host_log.txt")
+        self.console_path = os.path.join(pathlib.Path(__file__).parent.parent.parent.resolve(), "polykybd_console.txt")
         self.load_log()
-        self.file_watcher.addPath(self.path)
-        self.file_watcher.fileChanged.connect(self.load_log)
 
     def sizeHint(self):
-        return QSize(1024, 600)
+        return QSize(1600, 1000)
 
     def load_log(self):
-
         try:
             with open(self.path, 'r', encoding='utf-8') as f:
                 log_content = f.read()
-            self.text_edit.setPlainText(log_content)
-            self.text_edit.moveCursor(self.text_edit.textCursor().End)
+            self.text_host_log.setPlainText(log_content)
+            self.text_host_log.moveCursor(self.text_host_log.textCursor().End)
         except Exception as e:
-            self.text_edit.setPlainText(f"Failed to load log file: {e}")
+            self.text_host_log.setPlainText(f"Failed to host load log file: {e}")
+
+        try:
+            with open(self.console_path, 'r', encoding='utf-8') as f:
+                log_content = f.read()
+            self.text_polykybd_console.setPlainText(log_content)
+            self.text_polykybd_console.moveCursor(self.text_polykybd_console.textCursor().End)
+        except Exception as e:
+            self.text_polykybd_console.setPlainText(f"Failed to polykybd load log file: {e}")
 
     def open_file_directory(self):
         if sys.platform.startswith('darwin'):  # macOS
