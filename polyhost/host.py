@@ -101,8 +101,21 @@ class PolyHost(QApplication):
         self.keeb_log.addHandler(file_handler)
         self.keeb_log.propagate = False
 
+        #self.keeb = PolyKybdMock(DeviceSettings(), f"{__version__}")
+        self.kb_sw_version = None
+        self.connected = False
+        self.paused = False
+        self.keeb = PolyKybd(DeviceSettings())
+        # Initial connection test
+        connected = self.keeb.connect()
+        if connected:
+            self.log.info("Connected to PolyKybd.")
+        else:
+            self.log.info("Not yet connected to PolyKybd...")
+        
+        
         self.setApplicationName('PolyHost')
-        self.settings = PolySettings()
+        self.poly_settings = PolySettings()
 
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False
@@ -118,14 +131,11 @@ class PolyHost(QApplication):
         self.tray.setToolTip(f"PolyKybdHost {__version__}")
 
         # Create the menu
+        self.log.debug("Building menu...")
+        self.set_style()
         self.menu = QMenu()
         self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
-        #self.keeb = PolyKybdMock(DeviceSettings(), f"{__version__}")
-        self.kb_sw_version = None
-        self.keeb = PolyKybd(DeviceSettings())
-        self.connected = False
-        self.paused = False
         self.status = QAction(get_icon("sync.svg"), "Waiting for PolyKybd...", parent=self)
         self.status.setToolTip("Press to pause connection")
         # noinspection PyUnresolvedReferences
@@ -156,7 +166,7 @@ class PolyHost(QApplication):
         self.debug_lang_menu = None
 
         self.unicode_cache = UnicodeCache()
-        self.reconnect()
+        #self.reconnect()
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
 
@@ -182,6 +192,7 @@ class PolyHost(QApplication):
         self.menu.addAction(self.about)
         self.menu.addAction(self.exit)
 
+        self.log.debug("Create OS dependent input helper...")
         self.helper = None
         if platform.system() == "Windows":
             self.helper = WindowsInputHelper()
@@ -208,20 +219,30 @@ class PolyHost(QApplication):
 
         if debug_mode:
             for e in entries:
-                self.log.info("Enumerating input language %s", e)
+                self.log.info(" - Enumerating input language %s", e)
                 self.debug_lang_menu.addAction(e, self.change_system_language)
 
         self.managed_connection_status()
+        
+        self.log.debug("Display tray...")
         # Add the menu to the tray
         # self.tray.activated.connect(self.on_activated)
         self.tray.setContextMenu(self.menu)
         self.tray.show()
 
+        self.log.debug("Read overlay mapping file...")
         self.mapping = {}
         self.read_overlay_mapping_file(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/overlay-mapping.poly.yaml"))
-
         self.overlay_handler = OverlayHandler(self.mapping)
 
+        self.log.debug("Get sunlight data...")
+        self.sunlight = Sunlight(self.poly_settings.get("brightness_allow_online_location_lookup"), self.poly_settings.get("brightness_allow_online_irradiance_request"))
+        
+        self.log.debug("Starting cyclic checks...")
+        self.reconnect()
+        QTimer.singleShot(UPDATE_CYCLE_MSEC * 2, self.active_window_reporter)
+
+    def set_style(self):
         self.setStyle("Fusion")
         # Now use a palette to switch to dark colors:
         palette = QPalette()
@@ -243,10 +264,7 @@ class PolyHost(QApplication):
         palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
         palette.setColor(QPalette.HighlightedText, highlight_text_color)
         self.setPalette(palette)
-
-        self.sunlight = Sunlight(self.settings.get("brightness_allow_online_location_lookup"), self.settings.get("brightness_allow_online_irradiance_request"))
-        QTimer.singleShot(UPDATE_CYCLE_MSEC * 2, self.active_window_reporter)
-
+        
     # def on_activated(self, i_reason):
     #     if i_reason == QSystemTrayIcon.Trigger:
     #         if not self.menu.isVisible():
@@ -308,7 +326,7 @@ class PolyHost(QApplication):
                             self.status.setIcon(get_icon("sync.svg"))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
-                        if result and self.settings.get("unicode_send_composition_mode"):
+                        if result and self.poly_settings.get("unicode_send_composition_mode"):
                             mode = get_input_method()
                             self.log.info("Setting unicode mode to str %s", mode)
                             self.keeb.set_unicode_mode(mode.value)
@@ -333,12 +351,13 @@ class PolyHost(QApplication):
         return result
 
     def add_supported_lang(self, menu):
-        result, _ = self.keeb.enumerate_lang()
+        result, msg = self.keeb.enumerate_lang()
         if result:
             self.current_lang = self.keeb.get_current_lang()
             self.keeb_lang_menu = menu.addMenu(get_icon("language.svg"), f"Selected Language: {self.current_lang[:2]} {self.langcode_to_flag(self.current_lang[2:])}")
 
             all_languages = sorted(self.keeb.get_lang_list(), key=sort_by_country_abc)
+            self.log.debug("Adding %s to language menu", all_languages)
             for lang in all_languages:
                 text = f"{lang[:2]} {lang[2:].upper()}"
                 if lang == self.current_lang:
@@ -347,6 +366,8 @@ class PolyHost(QApplication):
                 item.setData(lang)
                 icon = self.unicode_cache.get_icon_for(lang[2:])
                 item.setIcon(icon)
+        else:
+            self.log.warning("Enumerating PolyKybd languages failed with '%s'", msg)
 
     def update_ui_on_lang_change(self, new_lang):
         if self.keeb_lang_menu:
@@ -364,9 +385,9 @@ class PolyHost(QApplication):
 
     def open_settings(self):
         dlg = SettingsDialog()
-        dlg.setup(self.settings.get_all())
+        dlg.setup(self.poly_settings.get_all())
         if dlg.exec_() == QDialog.Accepted:
-            self.settings.set_all(dlg.get_updated_settings())
+            self.poly_settings.set_all(dlg.get_updated_settings())
         dlg.close()
 
     def open_log(self):
@@ -480,7 +501,7 @@ class PolyHost(QApplication):
             if self.last_update_10min_task > PERIODIC_10MIN_CYCLE_MSEC:
                 self.last_update_10min_task = 0
                 self.execute_10min_task()
-        elif self.settings.get("debug_window_detection_if_not_connected_to_poly_kybd"):
+        elif self.poly_settings.get("debug_window_detection_if_not_connected_to_poly_kybd"):
             self.overlay_handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
 
         kb_serial = self.keeb.read_serial()
@@ -497,9 +518,9 @@ class PolyHost(QApplication):
         #    self.log.warning("Failed to report active window: %s", e)
 
     def execute_10min_task(self):
-        if self.settings.get("brightness_set_daylight_dependent"):
-            min_val = self.settings.get("irradiance_min")
-            max_val = self.settings.get("irradiance_max")
-            prescaler = self.settings.get("irradiance_prescaler")
+        if self.poly_settings.get("brightness_set_daylight_dependent"):
+            min_val = self.poly_settings.get("irradiance_min")
+            max_val = self.poly_settings.get("irradiance_max")
+            prescaler = self.poly_settings.get("irradiance_prescaler")
             brightness = self.sunlight.get_brightness_now(min_val, max_val, prescaler)
             self.keeb.set_brightness(2+brightness*48)

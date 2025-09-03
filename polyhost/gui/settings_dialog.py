@@ -40,7 +40,7 @@ class SettingsDialog(QDialog):
         self.edit_widgets = {}
 
     def sizeHint(self):
-        return QSize(400, 480)
+        return QSize(640, 480)
 
     def setup(self, settings_dict):
         self.setWindowIcon(get_icon("pcolor.png"))
