@@ -305,12 +305,11 @@ class PolyHost(QApplication):
 
     def reconnect(self):
         if not self.paused:
-            result = False
-            lang = ""
+            connected_now = False
+            response = ""
             if self.keeb.connect():
-                result, lang = self.keeb.query_current_lang()
-
-            if result != self.connected:
+                connected_now, response = self.keeb.query_current_lang()
+            if connected_now != self.connected:
                 self.connected, msg = self.keeb.query_version_info()
                 if self.connected:
                     kb_version = self.keeb.get_sw_version()
@@ -326,11 +325,11 @@ class PolyHost(QApplication):
                             self.status.setIcon(get_icon("sync.svg"))
                             self.status.setText(
                                 f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
-                        if result and self.poly_settings.get("unicode_send_composition_mode"):
+                        if connected_now and self.poly_settings.get("unicode_send_composition_mode"):
                             mode = get_input_method()
                             self.log.info("Setting unicode mode to str %s", mode)
                             self.keeb.set_unicode_mode(mode.value)
-                            self.update_ui_on_lang_change(lang)
+                            self.update_ui_on_lang_change(response)
                     else:
                         self.status.setIcon(get_icon("sync_disabled.svg"))
                         self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
@@ -339,7 +338,9 @@ class PolyHost(QApplication):
                     self.status.setIcon(get_icon("sync_disabled.svg"))
                     self.status.setText(msg)
             self.managed_connection_status()
-            return lang
+            if connected_now:
+                return response
+            self.log.debug("Reconnect failed once (%s) - recovered now.", response)
         return self.current_lang
 
     @staticmethod
@@ -473,11 +474,11 @@ class PolyHost(QApplication):
         self.last_update_msec += UPDATE_CYCLE_MSEC
         self.last_update_10min_task += UPDATE_CYCLE_MSEC
         kb_lang = None
-        if self.last_update_msec > RECONNECT_CYCLE_MSEC:
+        if self.last_update_msec >= RECONNECT_CYCLE_MSEC:
             kb_lang = self.reconnect()
             self.last_update_msec = 0
         if self.connected:
-            self.last_update_msec = RECONNECT_CYCLE_MSEC * 2 #just to limit that
+            self.last_update_msec = min(self.last_update_msec, RECONNECT_CYCLE_MSEC * 2) #just to limit that
             if kb_lang and self.current_lang != kb_lang:
                 lang, country = get_lang_and_country(kb_lang)
                 success, msg = self.helper.set_language(lang, country)
