@@ -332,7 +332,7 @@ class PolyKybd:
         ov = mapping[keycode]
         smallest = min(ov.all_msgs, ov.compressed_msgs, ov.roi_msgs, ov.compressed_roi_msgs)
 
-        if smallest == ov.roi_msgs or smallest == ov.compressed_roi_msgs:
+        if smallest == ov.roi_msgs:
             #self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as uncompressed ROI", keycode, modifier.value)
             return self.send_overlay_roi_for_keycode(keycode, modifier, mapping, False)
         elif smallest == ov.compressed_msgs:

@@ -174,6 +174,11 @@ class PolyKybdMock:
         ov = mapping[keycode]
         return min(ov.all_msgs, ov.compressed_msgs, ov.roi_msgs, ov.compressed_roi_msgs)
 
+    def read_serial(self):
+        return None
+
+    def get_console_output(selfself):
+        return None
     
     def execute_commands(self, command_list):
         for cmd_str in command_list:

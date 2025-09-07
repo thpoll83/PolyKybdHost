@@ -20,7 +20,7 @@ def find_roi_rectangle(image):
 class OverlayData:
     """ Container for all overlay data package variations: plain, compressed, region-of-interest, compressed region-of-interest """
 
-    def __init__(self, settings, image):
+    def __init__(self, settings, image, debug_dump_byte_buffers = False):
         self.settings = settings
         
         self.all_bytes = np.packbits(image, axis=None).tobytes()
@@ -49,16 +49,17 @@ class OverlayData:
         #                               lw=2))
         # plt.show()
 
-        # print("uint8_t all[] = {")
-        # print(", ".join(hex(b) for b in self.all_bytes))
-        # print("};")
-        # print(f"uint8_t roi_y = {self.top}, roi_x = {self.left}, roi_yy = {self.bottom}, roi_xx = {self.right};")
-        # print("uint8_t roi[] = {")
-        # print(", ".join(hex(b) for b in self.roi_bytes))
-        # print("};")
-        # print("uint8_t croi[] = {")
-        # print(", ".join(hex(b) for b in self.compressed_roi_bytes))
-        # print("};")
+        if debug_dump_byte_buffers:
+            print("uint8_t all[] = {")
+            print(", ".join(hex(b) for b in self.all_bytes))
+            print("};")
+            print(f"uint8_t roi_y = {self.top}, roi_x = {self.left}, roi_yy = {self.bottom}, roi_xx = {self.right};")
+            print("uint8_t roi[] = {")
+            print(", ".join(hex(b) for b in self.roi_bytes))
+            print("};")
+            print("uint8_t croi[] = {")
+            print(", ".join(hex(b) for b in self.compressed_roi_bytes))
+            print("};")
 
     def helper_calc_overlay_bytes(self, all_bytes, skip_empty=True):
         """ Checks each overlay data packet for empty ones and deducts from the overall number """
