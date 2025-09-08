@@ -86,6 +86,14 @@ class PolyHost(QApplication):
             ],
         )
         self.log = logging.getLogger('PolyHost')
+        # Create the icon
+        icon = get_icon("pgray.png")
+        self.setWindowIcon(icon)
+        # Create the tray
+        self.tray = QSystemTrayIcon(parent=self)
+        self.tray.setIcon(icon)
+        self.tray.setVisible(True)
+        self.tray.setToolTip(f"PolyKybdHost {__version__}")
 
         self.keeb_log = logging.getLogger("PolyKybdConsole")
         self.keeb_log.setLevel(logging.INFO)  # Set log level for logger 'b'
@@ -119,16 +127,6 @@ class PolyHost(QApplication):
 
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False
-
-        # Create the icon
-        icon = get_icon("pcolor.png")
-        self.setWindowIcon(icon)
-
-        # Create the tray
-        self.tray = QSystemTrayIcon(parent=self)
-        self.tray.setIcon(icon)
-        self.tray.setVisible(True)
-        self.tray.setToolTip(f"PolyKybdHost {__version__}")
 
         # Create the menu
         self.log.debug("Building menu...")
@@ -241,6 +239,11 @@ class PolyHost(QApplication):
         self.log.debug("Starting cyclic checks...")
         self.reconnect()
         QTimer.singleShot(UPDATE_CYCLE_MSEC * 2, self.active_window_reporter)
+        
+        # Create the icon
+        icon = get_icon("pcolor.png")
+        self.setWindowIcon(icon)
+        self.tray.setIcon(icon)
 
     def set_style(self):
         self.setStyle("Fusion")
@@ -445,6 +448,9 @@ class PolyHost(QApplication):
             f.write(yaml.dump(self.mapping))
 
     def quit_app(self):
+        icon = get_icon("pgray.png")
+        self.setWindowIcon(icon)
+        self.tray.setIcon(icon)
         self.is_closing = True
         self.overlay_handler.close()
         self.quit()

@@ -138,7 +138,7 @@ class CommandsSubMenu:
         cmd_menu.addAction(action)
 
     def reset_overlay_mapping(self):
-        result, msg = self.keeb.reset_overlays_mapping()
+        result, msg = self.keeb.reset_overlay_mapping()
         self.parent.show_mb("Error", f"Failed clearing overlays: {msg}", result)
 
     def reset_overlays_and_usage(self):
@@ -171,10 +171,55 @@ class CommandsSubMenu:
 
     def mapping_test(self):
         from_to = {}
-        esc_key = keycode_to_mapping_idx(KeyCode.KC_ESCAPE)
-        a_key = keycode_to_mapping_idx(KeyCode.KC_A)
-        from_to[esc_key] = a_key
-        from_to[a_key] = esc_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_Q)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_A)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_A)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_Q)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_S)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_W)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_W)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_S)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_E)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_D)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_D)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_E)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_U)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_J)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_J)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_U)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_I)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_K)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_K)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_I)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_O)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_L)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        from_key = keycode_to_mapping_idx(KeyCode.KC_L)
+        to_key = keycode_to_mapping_idx(KeyCode.KC_O)
+        from_to[from_key] = to_key
+        from_to[to_key] = from_key
+        
         result, msg = self.keeb.send_overlay_mapping(from_to)
         self.parent.show_mb("Error", f"Failed to change idle mode: {msg}", result)
 
