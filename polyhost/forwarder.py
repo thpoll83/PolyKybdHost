@@ -11,6 +11,7 @@ from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QIcon, QPalette, QColor
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon
 from polyhost._version import __version__
+from polyhost.gui.get_icon import get_icon
 from polyhost.handler.remote_window import TCP_PORT
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -53,22 +54,21 @@ class PolyForwarder(QApplication):
             ],
         )
         self.log = logging.getLogger("PolyForwarder")
-
+        # Create the icon
+        icon = get_icon("pgray.png")
+        self.setWindowIcon(icon)
+        # Create the tray
+        self.tray = QSystemTrayIcon(parent=self)
+        self.tray.setIcon(icon)
+        self.tray.setVisible(True)
+        self.tray.setToolTip(f"({__version__}) Forwarding to {host}")
+        
         self.setQuitOnLastWindowClosed(False)
         self.win = None
         self.prev_win = None
         self.is_closing = False
         self.title = None
         self.last_update_msec = 0
-
-        # Create the icon
-        icon = QIcon(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/icons/pcolor.png"))
-
-        # Create the tray
-        self.tray = QSystemTrayIcon(parent=self)
-        self.tray.setIcon(icon)
-        self.tray.setVisible(True)
-        self.tray.setToolTip(f"({__version__}) Forwarding to {host}")
 
         self.tray.show()
 
@@ -94,6 +94,11 @@ class PolyForwarder(QApplication):
         palette.setColor(QPalette.HighlightedText, highlight_text_color)
         self.setPalette(palette)
 
+        # Create the icon
+        icon = get_icon("pcolor.png")
+        self.setWindowIcon(icon)
+        self.tray.setIcon(icon)
+        
         QTimer.singleShot(1000, self.active_window_reporter)
 
     def send_to_host(self, handle, title, name):
@@ -144,8 +149,9 @@ class PolyForwarder(QApplication):
                     self.win = win
                     self.title = win.title
                     app_name = self.win.getAppName()
-                    self.send_to_host(win.getHandle(), self.title, app_name)
-                    self.log.info("Active App: %s", app_name)
+                    handle = win.getHandle()
+                    self.send_to_host(handle, self.title, app_name)
+                    self.log.info("Active App: '%s' %s %d", self.title, app_name, handle)
         elif self.win:
             self.log.info("No active window")
             self.win = None
