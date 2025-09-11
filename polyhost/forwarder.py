@@ -83,8 +83,6 @@ class PolyForwarder(QApplication):
         self.menu = QMenu()
         self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
-        # noinspection PyUnresolvedReferences
-        self.status.triggered.connect(self.pause)
         self.exit = QAction(get_icon("power.svg"), "Quit", parent=self)
         # noinspection PyUnresolvedReferences
         self.exit.triggered.connect(self.quit_app)
@@ -166,7 +164,7 @@ class PolyForwarder(QApplication):
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately
         delta = time.perf_counter()
-        self.log_viewer = LogViewerDialog()
+        self.log_viewer = LogViewerDialog({"Forwarder Log": "forwarder_log.txt"})
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)

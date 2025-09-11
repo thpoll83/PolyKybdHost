@@ -1,10 +1,9 @@
 import logging
 import os
-import pathlib
 import subprocess
 import sys
 
-from PyQt5.QtCore import QSize, QFileSystemWatcher
+from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QVBoxLayout, QPlainTextEdit, QHBoxLayout, QPushButton, QMainWindow, QWidget, QTabWidget
 
@@ -12,7 +11,7 @@ from polyhost.gui.get_icon import get_icon
 
 
 class LogViewerDialog(QMainWindow):
-    def __init__(self):
+    def __init__(self, log_files):
         super().__init__()
         self.log = logging.getLogger('PolyHost')
         self.setWindowTitle("Log Viewer")
@@ -29,25 +28,20 @@ class LogViewerDialog(QMainWindow):
         self.tab_widget = QTabWidget(self)
         self.layout.addWidget(self.tab_widget)
 
-        # First tab with a read-only QPlainTextEdit
-        self.text_host_log = QPlainTextEdit(self)
-        self.text_host_log.setReadOnly(True)
-        self.text_host_log.setFont(QFont("Courier", 10))
+        self.log_text = {}
+        self.log_files = log_files
 
-        tab1 = QWidget()
-        tab1_layout = QVBoxLayout(tab1)
-        tab1_layout.addWidget(self.text_host_log)
-        self.tab_widget.addTab(tab1, "PolyHost Log")
-
-        # Second tab with another read-only QPlainTextEdit
-        self.text_polykybd_console = QPlainTextEdit(self)
-        self.text_polykybd_console.setReadOnly(True)
-        self.text_polykybd_console.setFont(QFont("Courier", 10))
-
-        tab2 = QWidget()
-        tab2_layout = QVBoxLayout(tab2)
-        tab2_layout.addWidget(self.text_polykybd_console)
-        self.tab_widget.addTab(tab2, "PolyKybd Console Log")
+        for tab_name in log_files:
+            # a read-only QPlainTextEdit
+            log_text = QPlainTextEdit(self)
+            log_text.setReadOnly(True)
+            log_text.setFont(QFont("Courier", 10))
+        
+            tab = QWidget()
+            tab_layout = QVBoxLayout(tab)
+            tab_layout.addWidget(log_text)
+            self.tab_widget.addTab(tab, tab_name)
+            self.log_text[tab_name] = log_text
 
         # Horizontal layout for buttons
         button_layout = QHBoxLayout()
@@ -77,43 +71,37 @@ class LogViewerDialog(QMainWindow):
         # Add button layout to main layout
         self.layout.addLayout(button_layout)
 
-        # File watcher
-        self.path = os.path.join(pathlib.Path(__file__).parent.parent.parent.resolve(), "host_log.txt")
-        self.console_path = os.path.join(pathlib.Path(__file__).parent.parent.parent.resolve(), "polykybd_console.txt")
         self.load_log()
 
     def sizeHint(self):
         return QSize(1600, 1000)
 
     def load_log(self):
-        try:
-            with open(self.path, encoding='utf-8') as f:
-                log_content = f.read()
-            self.text_host_log.setPlainText(log_content)
-            self.text_host_log.moveCursor(self.text_host_log.textCursor().End)
-        except Exception as e:
-            self.text_host_log.setPlainText(f"Failed to host load log file: {e}")
+        for tab_name, tab_log_file_name in self.log_files.items():
+            try:
+                with open(tab_log_file_name, encoding='utf-8') as f:
+                    log_content = f.read()
+                text_edit = self.log_text[tab_name]
+                text_edit.setPlainText(log_content)
+                text_edit.moveCursor(text_edit.textCursor().End)
+            except Exception as e:
+                self.log_text[tab_name].setPlainText(f"Failed to load log file '{tab_log_file_name}': {e}")
 
-        try:
-            with open(self.console_path, encoding='utf-8') as f:
-                log_content = f.read()
-            self.text_polykybd_console.setPlainText(log_content)
-            self.text_polykybd_console.moveCursor(self.text_polykybd_console.textCursor().End)
-        except Exception as e:
-            self.text_polykybd_console.setPlainText(f"Failed to polykybd load log file: {e}")
 
     def open_file_directory(self):
+        file = list(self.log_files.values())[0] # maybe also the focus tab is possible
+        
         if sys.platform.startswith('darwin'):  # macOS
-            subprocess.run(['open', '-R', self.path])
+            subprocess.run(['open', '-R', file])
         elif sys.platform.startswith('win'):  # Windows
-            subprocess.run(['explorer', '/select,', os.path.normpath(self.path)])
+            subprocess.run(['explorer', '/select,', os.path.normpath(file)])
         elif sys.platform.startswith('linux'):  # Linux
-            self.reveal_in_linux_file_manager(self.path)
+            self.reveal_in_linux_file_manager(file)
         else:
             logging.warning("Platform %s not supported", sys.platform)
 
     @staticmethod
-    def reveal_in_linux_file_manager(self, file_path):
+    def reveal_in_linux_file_manager(file_path):
         file_path = os.path.abspath(file_path)
         desktop = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
 

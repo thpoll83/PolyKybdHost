@@ -395,9 +395,9 @@ class PolyHost(QApplication):
         dlg.close()
 
     def open_log(self):
-        # assignment is needed otherwise the dialog would go away immediatly
+        # assignment is needed otherwise the dialog would go away immediately
         delta = time.perf_counter()
-        self.log_viewer = LogViewerDialog()
+        self.log_viewer = LogViewerDialog({"PolyHost Log": "polykybd_console.txt", "PolyKybd Console Log": "polykybd_console.txt"})
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
