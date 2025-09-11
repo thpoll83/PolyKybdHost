@@ -2,17 +2,24 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 import ipaddress
-import pathlib
+import webbrowser
 import socket
 import sys
+import time
 
 
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QIcon, QPalette, QColor
-from PyQt5.QtWidgets import QApplication, QSystemTrayIcon
+from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtWidgets import (
+    QApplication,
+    QSystemTrayIcon,
+    QMenu,
+    QAction)
 from polyhost._version import __version__
 from polyhost.gui.get_icon import get_icon
+from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.handler.remote_window import TCP_PORT
+
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
@@ -71,28 +78,34 @@ class PolyForwarder(QApplication):
         self.last_update_msec = 0
 
         self.tray.show()
+        self.set_style()
+        
+        self.menu = QMenu()
+        self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
-        self.setStyle("Fusion")
-        # Now use a palette to switch to dark colors:
-        palette = QPalette()
-        base_color = QColor(35, 35, 35)
-        window_base_color = QColor(99, 99, 99)
-        text_color = QColor(150, 150, 150)
-        highlight_text_color = QColor(255, 255, 255)
-        palette.setColor(QPalette.Window, window_base_color)
-        palette.setColor(QPalette.WindowText, text_color)
-        palette.setColor(QPalette.Base, base_color)
-        palette.setColor(QPalette.AlternateBase, window_base_color)
-        palette.setColor(QPalette.ToolTipBase, base_color)
-        palette.setColor(QPalette.ToolTipText, text_color)
-        palette.setColor(QPalette.Text, text_color)
-        palette.setColor(QPalette.Button, window_base_color)
-        palette.setColor(QPalette.ButtonText, text_color)
-        palette.setColor(QPalette.BrightText, Qt.red)
-        palette.setColor(QPalette.Link, QColor(42, 130, 218))
-        palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-        palette.setColor(QPalette.HighlightedText, highlight_text_color)
-        self.setPalette(palette)
+        # noinspection PyUnresolvedReferences
+        self.status.triggered.connect(self.pause)
+        self.exit = QAction(get_icon("power.svg"), "Quit", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.exit.triggered.connect(self.quit_app)
+        self.support = QAction(get_icon("support.svg"), "Get Support", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.support.triggered.connect(self.open_support)
+        self.about = QAction(get_icon("home.svg"), "About", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.about.triggered.connect(self.open_about)
+
+        self.log_dialog = QAction(get_icon("log.svg"), "Log file...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.log_dialog.triggered.connect(self.open_log)
+        self.log_viewer = None
+        
+        self.menu.addAction(self.log_dialog)
+        self.menu.addAction(self.support)
+        self.menu.addAction(self.about)
+        self.menu.addAction(self.exit)
+        
+        self.tray.setContextMenu(self.menu)
 
         # Create the icon
         icon = get_icon("pcolor.png")
@@ -101,6 +114,29 @@ class PolyForwarder(QApplication):
         
         QTimer.singleShot(1000, self.active_window_reporter)
 
+    def set_style(self):
+        self.setStyle("Fusion")
+        # Now use a palette to switch to dark colors:
+        palette = QPalette()
+        base_color = QColor(35, 35, 35)
+        window_base_color = QColor(80, 80, 80)
+        text_color = QColor(200, 200, 200)
+        highlight_text_color = QColor(255, 255, 255)
+        palette.setColor(QPalette.Window, window_base_color)
+        palette.setColor(QPalette.WindowText, text_color)
+        palette.setColor(QPalette.Base, base_color)
+        palette.setColor(QPalette.AlternateBase, window_base_color)
+        palette.setColor(QPalette.ToolTipBase, base_color)
+        palette.setColor(QPalette.ToolTipText, text_color)
+        palette.setColor(QPalette.Text,text_color)
+        palette.setColor(QPalette.Button, window_base_color)
+        palette.setColor(QPalette.ButtonText, text_color)
+        palette.setColor(QPalette.BrightText, Qt.red)
+        palette.setColor(QPalette.Link, QColor(42, 130, 218))
+        palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
+        palette.setColor(QPalette.HighlightedText, highlight_text_color)
+        self.setPalette(palette)
+        
     def send_to_host(self, handle, title, name):
         try:
             ip = ipaddress.ip_address(self.host)
@@ -127,7 +163,26 @@ class PolyForwarder(QApplication):
             self.log.error("Connection error: %s", err)
         return False
 
+    def open_log(self):
+        # assignment is needed otherwise the dialog would go away immediately
+        delta = time.perf_counter()
+        self.log_viewer = LogViewerDialog()
+        self.log_viewer.show()
+        delta = time.perf_counter() - delta
+        self.log.info("Opened log dialog in '%f' sec", delta)
+        
+    @staticmethod
+    def open_support():
+        webbrowser.open("https://discord.gg/gW8JescH7M", new=0, autoraise=True)
+
+    @staticmethod
+    def open_about():
+        webbrowser.open("https://ko-fi.com/polykb", new=0, autoraise=True)
+        
     def quit_app(self):
+        icon = get_icon("pgray.png")
+        self.setWindowIcon(icon)
+        self.tray.setIcon(icon)
         self.is_closing = True
         self.quit()
 
