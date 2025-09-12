@@ -188,23 +188,26 @@ class PolyForwarder(QApplication):
         self.last_update_msec += UPDATE_CYCLE_MSEC
         win = pwc.getActiveWindow()
         if win:
-            if self.prev_win != win:
-                self.prev_win = win
-                self.last_update_msec = 0
-            if self.last_update_msec > NEW_WINDOW_ACCEPT_TIME_MSEC:
-                #just to limit the time value:
-                self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2
-                if (
-                    self.win is None
-                    or win.getHandle() != self.win.getHandle()
-                    or win.title != self.title
-                ):
-                    self.win = win
-                    self.title = win.title
-                    app_name = self.win.getAppName()
-                    handle = win.getHandle()
-                    self.send_to_host(handle, self.title, app_name)
-                    self.log.info("Active App: '%s' %s %d", self.title, app_name, handle)
+            try:
+                if self.prev_win != win:
+                    self.prev_win = win
+                    self.last_update_msec = 0
+                if self.last_update_msec > NEW_WINDOW_ACCEPT_TIME_MSEC:
+                    #just to limit the time value:
+                    self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2
+                    if (
+                        self.win is None
+                        or win.getHandle() != self.win.getHandle()
+                        or win.title != self.title
+                    ):
+                        self.win = win
+                        self.title = win.title
+                        app_name = self.win.getAppName()
+                        handle = win.getHandle()
+                        self.send_to_host(handle, self.title, app_name)
+                        self.log.info("Active App: '%s' %s %d", self.title, app_name, handle)
+            except Exception as e:
+                self.log.warning("Exception in window reporter: %s", e)
         elif self.win:
             self.log.info("No active window")
             self.win = None
