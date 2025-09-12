@@ -68,12 +68,22 @@ def debug_detailed(self, message, *args, **kwargs):
 
 logging.Logger.debug_detailed = debug_detailed
 
+class MultiLineFormatter(logging.Formatter):
+    def format(self, record):
+        message = super().format(record)
+        lines = message.splitlines()
+        if len(lines)==1:
+            return message.strip("\n")
+        timestamp = self.formatTime(record)
+        formatted_lines = [f"[{timestamp}] {line}" for line in lines[:-1]]
+        return lines[0] + "\n".join(formatted_lines)
+    
 class PolyHost(QApplication):
     def __init__(self, log_level, debug_mode):
         super().__init__(sys.argv)
-        fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode else "[%(asctime)s] %(levelname)-7s %(message)s"
+        fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
         logging.basicConfig(
-            level=log_level,
+            level=DEBUG_DETAILED if debug_mode>1 else log_level,
             format=fmt,
             handlers=[
                 RotatingFileHandler(
@@ -86,6 +96,7 @@ class PolyHost(QApplication):
             ],
         )
         self.log = logging.getLogger('PolyHost')
+
         # Create the icon
         icon = get_icon("pgray.png")
         self.setWindowIcon(icon)
@@ -105,7 +116,7 @@ class PolyHost(QApplication):
             backupCount=3,
             encoding="utf-8"
         )
-        file_handler.setFormatter(logging.Formatter("%(message)s"))
+        file_handler.setFormatter(MultiLineFormatter(fmt="[%(asctime)s] %(message)s"))
         self.keeb_log.addHandler(file_handler)
         self.keeb_log.propagate = False
 
@@ -168,7 +179,7 @@ class PolyHost(QApplication):
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
 
-        if debug_mode:
+        if debug_mode>0:
             self.debug_lang_menu = self.menu.addMenu(get_icon("language.svg"), "Change System Input Language")
 
         self.cmdMenu = CommandsSubMenu(self, self.keeb)
@@ -215,7 +226,7 @@ class PolyHost(QApplication):
         else:
             self.log.warning("System language query not supported for this platform.")
 
-        if debug_mode:
+        if debug_mode>0:
             for e in entries:
                 self.log.info(" - Enumerating input language %s", e)
                 self.debug_lang_menu.addAction(e, self.change_system_language)
@@ -397,7 +408,7 @@ class PolyHost(QApplication):
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately
         delta = time.perf_counter()
-        self.log_viewer = LogViewerDialog({"PolyHost Log": "polykybd_console.txt", "PolyKybd Console Log": "polykybd_console.txt"})
+        self.log_viewer = LogViewerDialog({"PolyHost Log": "host_log.txt", "PolyKybd Console Log": "polykybd_console.txt"})
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)

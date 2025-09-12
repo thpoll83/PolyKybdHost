@@ -333,16 +333,16 @@ class PolyKybd:
         smallest = min(ov.all_msgs, ov.compressed_msgs, ov.roi_msgs, ov.compressed_roi_msgs)
 
         if smallest == ov.roi_msgs:
-            #self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as uncompressed ROI", keycode, modifier.value)
+            self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as uncompressed ROI", keycode, modifier.value)
             return self.send_overlay_roi_for_keycode(keycode, modifier, mapping, False)
         elif smallest == ov.compressed_msgs:
-            #self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as compressed overlay", keycode, modifier.value)
+            self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as compressed overlay", keycode, modifier.value)
             return self.send_overlay_for_keycode_compressed(keycode, modifier, mapping)
         elif smallest == ov.compressed_roi_msgs:
-            #self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as compressed ROI", keycode, modifier.value)
+            self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as compressed ROI", keycode, modifier.value)
             return self.send_overlay_roi_for_keycode(keycode, modifier, mapping, True)
         else:
-            #self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as plain overlay", keycode, modifier.value)
+            self.log.debug_detailed("send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as plain overlay", keycode, modifier.value)
             return self.send_overlay_for_keycode(keycode, modifier, mapping)
 
     def send_overlay_roi_for_keycode(self, keycode, modifier, mapping : dict, compressed):
