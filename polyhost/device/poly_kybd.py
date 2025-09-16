@@ -50,6 +50,7 @@ class PolyKybd:
 
     def __init__(self, settings):
         self.log = logging.getLogger('PolyHost')
+        self.console_buffer = ""
         self.all_languages = list()
         self.current_lang = None
         self.hid = None
@@ -90,17 +91,20 @@ class PolyKybd:
             return self.serial.read_all()
         return None
     
-    def get_console_output(self):
-        console_out =""
+    def get_console_output(self, flush_and_return = True):
         try:
             last_line = self.hid.get_console_output()
             while len(last_line)>0:
-                console_out += last_line.decode().strip('\x00')
+                self.console_buffer += last_line.decode().strip('\x00')
                 last_line = self.hid.get_console_output()
         except Exception as e:
             return str(e)
         
-        return console_out
+        if flush_and_return:
+            console_out = self.console_buffer
+            self.console_buffer = ""
+            return console_out
+        return None
     
     def query_id(self):
         try:
@@ -286,6 +290,8 @@ class PolyKybd:
         hid_msg_counter = 0
         enabled = False
 
+        all_keys = ""
+        num_keys = 0
         for filename in filenames:
             self.log.info("Send Overlay '%s'...", filename)
             delta = time.perf_counter()
@@ -301,12 +307,15 @@ class PolyKybd:
                 self.log.warning("Unable to read %s", filename)
                 return False
 
+        
             for modifier in Modifier:
                 overlay_map = converter.extract_overlays(modifier)
                 # it is okay if there is no overlay for a modifier
                 if overlay_map:
                     self.log.debug_detailed("Sending overlays for modifier %s.", modifier)
-
+                    all_keys += f"\n(Mod: {modifier}/{modifier.value} {overlay_map.keys()})"
+                    num_keys += len(overlay_map)
+                    
                     # Send ESC first
                     if not enabled and modifier == Modifier.NO_MOD:
                         if KeyCode.KC_ESCAPE.value in overlay_map.keys():
@@ -314,16 +323,16 @@ class PolyKybd:
                             overlay_map.pop(KeyCode.KC_ESCAPE.value)
                             self.enable_overlays()
                             enabled = True
+                            self.log.debug_detailed("Sending ESC first")
 
                     for keycode in overlay_map:
                         hid_msg_counter += self.send_smallest_overlay(keycode, modifier, overlay_map)
 
-                    self.log.debug_detailed("Overlays for keycodes %s have been sent.", overlay_map.keys())
+                    self.log.debug_detailed("Overlays for keycodes %s have been sent", overlay_map.keys())
                     overlay_counter += 1
-
-        # self.log.info(f"Sum Plain: {self.stat_plain} Comp: {self.stat_comp} Roi: {self.stat_roi} CRoi: {self.stat_croi} Best: {self.stat_best}")
-        self.log.info("%d overlays sent (%d hid messages).", overlay_counter, hid_msg_counter)
-        #self.log.info(f"Stats: Plain:{self.stat_plain} C:{self.stat_comp} R:{self.stat_roi} CR:{self.stat_croi} --> {self.stat_best}")
+                    self.get_console_output(False)
+                
+        self.log.info("%d overlays sent, %d hid messages for %d keys:%s", overlay_counter, hid_msg_counter, num_keys, all_keys)
         if not enabled:
             self.enable_overlays()
         return True

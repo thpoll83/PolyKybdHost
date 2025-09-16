@@ -108,20 +108,25 @@ class PolyKybdMock:
             return False, f"Unable to read '{filename}'."
 
         counter = 0
+        all_keys = ""
         for modifier in Modifier:
             overlaymap = converter.extract_overlays(modifier)
             #it is okay if there is no overlay for a modifier
             if overlaymap:
-                self.log.debug(f"Sending overlays for modifier {modifier}.")
+                self.log.debug_detailed("Sending overlays for modifier %s.", modifier)
                 if on_off and counter == 0:
+                    self.log.debug("Disable overlays...")
                     self.disable_overlays()
-                all_keys = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
-                self.log.debug(f"Overlays for keycodes {all_keys} have been sent.")
+                all_keys_for_mod = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
+                self.log.debug_detailed("Overlays for keycodes %s have been sent.", all_keys_for_mod)
+                all_keys += f"(Mod: {modifier}/{modifier.value} {all_keys_for_mod})"
                 counter += 1
 
         if on_off and counter > 0:
+            self.log.debug("Enable overlays...")
             self.enable_overlays()
-        return True, f"{counter} overlays sent."
+            
+        return True, f"{counter} overlays sent {all_keys}."
 
     def send_overlays(self, filenames):
         overlay_counter = 0
