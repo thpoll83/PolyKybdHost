@@ -160,12 +160,13 @@ cython_debug/
 #.idea/
 /log.txt
 /.idea/
-host_log.txt
-forwarder_log.txt
+host_log.*
+forwarder_log.*
+polykybd_console.*
+
 polyhost/device/rle_test
 polyhost/device/rle_native
-/polyhost/start_polyhost.*
+polyhost/start_polyhost.*
 
-polykybd_console.txt
-profile.json
-profile.html
+profile.*
+

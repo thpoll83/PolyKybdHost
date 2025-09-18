@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
     QAction)
 from polyhost._version import __version__
 from polyhost.gui.get_icon import get_icon
+from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.handler.remote_window import TCP_PORT
 
@@ -61,12 +62,11 @@ class PolyForwarder(QApplication):
             ],
         )
         self.log = logging.getLogger("PolyForwarder")
-        # Create the icon
-        icon = get_icon("pgray.png")
-        self.setWindowIcon(icon)
+
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
-        self.tray.setIcon(icon)
+        self.icon_manager = IconStateManager(self, False)
+        self.icon_manager.update()
         self.tray.setVisible(True)
         self.tray.setToolTip(f"({__version__}) Forwarding to {host}")
         
@@ -105,10 +105,7 @@ class PolyForwarder(QApplication):
         
         self.tray.setContextMenu(self.menu)
 
-        # Create the icon
-        icon = get_icon("pcolor.png")
-        self.setWindowIcon(icon)
-        self.tray.setIcon(icon)
+        self.icon_manager.set_connected()
         
         QTimer.singleShot(1000, self.active_window_reporter)
 
@@ -178,9 +175,7 @@ class PolyForwarder(QApplication):
         webbrowser.open("https://ko-fi.com/polykb", new=0, autoraise=True)
         
     def quit_app(self):
-        icon = get_icon("pgray.png")
-        self.setWindowIcon(icon)
-        self.tray.setIcon(icon)
+        self.icon_manager.set_disconnected()
         self.is_closing = True
         self.quit()
 

@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import (
 
 from polyhost.device.poly_kybd_mock import PolyKybdMock
 from polyhost.gui.get_icon import get_icon
+from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.settings_dialog import SettingsDialog
 from polyhost.gui.cmd_menu import CommandsSubMenu
@@ -97,12 +98,10 @@ class PolyHost(QApplication):
         )
         self.log = logging.getLogger('PolyHost')
 
-        # Create the icon
-        icon = get_icon("pgray.png")
-        self.setWindowIcon(icon)
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
-        self.tray.setIcon(icon)
+        self.icon_manager = IconStateManager(self, False)
+        self.icon_manager.update()
         self.tray.setVisible(True)
         self.tray.setToolTip(f"PolyKybdHost {__version__}")
 
@@ -250,11 +249,7 @@ class PolyHost(QApplication):
         self.log.debug("Starting cyclic checks...")
         self.reconnect()
         QTimer.singleShot(UPDATE_CYCLE_MSEC * 2, self.active_window_reporter)
-        
-        # Create the icon
-        icon = get_icon("pcolor.png")
-        self.setWindowIcon(icon)
-        self.tray.setIcon(icon)
+ 
 
     def set_style(self):
         self.setStyle("Fusion")
@@ -295,6 +290,10 @@ class PolyHost(QApplication):
         self.support.setEnabled(True)
         self.about.setEnabled(True)
         self.exit.setEnabled(True)
+        if self.connected:
+            self.icon_manager.set_connected()
+        else:
+            self.icon_manager.set_disconnected()
 
     def show_mb(self, title, msg, result=False):
         if not result:
@@ -429,6 +428,8 @@ class PolyHost(QApplication):
             self.log.info("No file selected. Operation canceled.")
 
     def change_system_language(self):
+        self.icon_manager.set_thinking()
+        
         requested_lang = self.sender().text()
         lang, country = get_lang_and_country(requested_lang)
         result, output = self.helper.set_language(lang, country)
@@ -436,6 +437,8 @@ class PolyHost(QApplication):
             self.show_mb("Error", f"Changing input language to '{requested_lang}' failed with:\n\"{output}\"")
         else:
             self.log.info("Change input language to '%s'.", requested_lang)
+        
+        self.icon_manager.set_idle()
 
     def change_keeb_language(self):
         lang = self.sender().data()
@@ -459,9 +462,7 @@ class PolyHost(QApplication):
             f.write(yaml.dump(self.mapping))
 
     def quit_app(self):
-        icon = get_icon("pgray.png")
-        self.setWindowIcon(icon)
-        self.tray.setIcon(icon)
+        self.icon_manager.set_disconnected()
         self.is_closing = True
         self.overlay_handler.close()
         self.quit()
@@ -497,6 +498,8 @@ class PolyHost(QApplication):
         if self.connected:
             self.last_update_msec = min(self.last_update_msec, RECONNECT_CYCLE_MSEC * 2) #just to limit that
             if kb_lang and self.current_lang != kb_lang:
+                self.icon_manager.set_thinking()
+                
                 lang, country = get_lang_and_country(kb_lang)
                 success, msg = self.helper.set_language(lang, country)
                 if success:
@@ -506,6 +509,8 @@ class PolyHost(QApplication):
                 else:
                     self.log.warning("Could not change OS language to '%s': %s", kb_lang, msg)
                 self.current_lang = kb_lang
+                
+                self.icon_manager.set_idle()
 
             data, cmd = self.overlay_handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
             if cmd == OverlayCommand.DISABLE:
@@ -514,7 +519,9 @@ class PolyHost(QApplication):
                 self.keeb.enable_overlays()
 
             if data and cmd == OverlayCommand.OFF_ON:
+                self.icon_manager.set_thinking()
                 self.send_overlay_data(data)
+                self.icon_manager.set_idle()
 
             if self.last_update_10min_task > PERIODIC_10MIN_CYCLE_MSEC:
                 self.last_update_10min_task = 0
