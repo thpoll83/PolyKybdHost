@@ -100,10 +100,8 @@ class PolyHost(QApplication):
 
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
-        self.icon_manager = IconStateManager(self, False)
-        self.icon_manager.update()
+        self.icon_manager = IconStateManager(self, False, f"PolyKybdHost {__version__}")
         self.tray.setVisible(True)
-        self.tray.setToolTip(f"PolyKybdHost {__version__}")
 
         self.keeb_log = logging.getLogger("PolyKybdConsole")
         self.keeb_log.setLevel(logging.INFO)  # Set log level for logger 'b'
@@ -221,8 +219,10 @@ class PolyHost(QApplication):
                 self.log.info("Current System Language: %s", sys_lang)
                 self.current_lang = sys_lang
             else:
+                self.icon_manager.set_warning("Could not query current System Language.", 5000)
                 self.log.warning("Could not query current System Language.")
         else:
+            self.icon_manager.set_warning("System language query not supported for this platform.", 5000)
             self.log.warning("System language query not supported for this platform.")
 
         if debug_mode>0:
@@ -434,7 +434,9 @@ class PolyHost(QApplication):
         lang, country = get_lang_and_country(requested_lang)
         result, output = self.helper.set_language(lang, country)
         if not result:
-            self.show_mb("Error", f"Changing input language to '{requested_lang}' failed with:\n\"{output}\"")
+            msg = f"Changing input language to '{requested_lang}' failed with:\n\"{output}\""
+            self.icon_manager.set_warning(msg)
+            self.show_mb("Error", msg)
         else:
             self.log.info("Change input language to '%s'.", requested_lang)
         
@@ -484,7 +486,9 @@ class PolyHost(QApplication):
                 self.cmdMenu.reset_overlays_and_usage()
                 self.keeb.send_overlays(files)
             except Exception as e:
-                self.log.warning("Failed to send overlays '%s':%s", files, e)
+                msg = f"Failed to send overlays '{files}': {e}"
+                self.icon_manager.set_warning(msg, 5000)
+                self.log.warning(msg)
 
             self.keeb.set_idle(False)
 
@@ -495,11 +499,14 @@ class PolyHost(QApplication):
         if self.last_update_msec >= RECONNECT_CYCLE_MSEC:
             kb_lang = self.reconnect()
             self.last_update_msec = 0
+            self.icon_manager.update()
         if self.connected:
-            self.last_update_msec = min(self.last_update_msec, RECONNECT_CYCLE_MSEC * 2) #just to limit that
+            # limit the time frame
+            self.last_update_msec = min(
+                self.last_update_msec, RECONNECT_CYCLE_MSEC * 2)
             if kb_lang and self.current_lang != kb_lang:
                 self.icon_manager.set_thinking()
-                
+
                 lang, country = get_lang_and_country(kb_lang)
                 success, msg = self.helper.set_language(lang, country)
                 if success:
@@ -507,12 +514,15 @@ class PolyHost(QApplication):
                     if data:
                         self.send_overlay_data(data)
                 else:
-                    self.log.warning("Could not change OS language to '%s': %s", kb_lang, msg)
+                    warning = f"Could not change OS language {kb_lang}."
+                    self.icon_manager.set_warning(warning , 5000)
+                    self.log.warning("%s (%s)", warning, msg)
                 self.current_lang = kb_lang
-                
+
                 self.icon_manager.set_idle()
 
-            data, cmd = self.overlay_handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
+            data, cmd = self.overlay_handler.handle_active_window(
+                UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
             if cmd == OverlayCommand.DISABLE:
                 self.keeb.disable_overlays()
             elif cmd == OverlayCommand.ENABLE:
@@ -532,11 +542,11 @@ class PolyHost(QApplication):
         kb_serial = self.keeb.read_serial()
         if kb_serial:
             self.log.info("Received serial communication: %s", kb_serial)
-        
+
         kb_log = self.keeb.get_console_output()
         if kb_log:
             self.keeb_log.info(kb_log)
-        
+
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
         # except Exception as e:

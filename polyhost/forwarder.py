@@ -65,10 +65,8 @@ class PolyForwarder(QApplication):
 
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
-        self.icon_manager = IconStateManager(self, False)
-        self.icon_manager.update()
+        self.icon_manager = IconStateManager(self, False, f"({__version__}) Forwarding to {host}")
         self.tray.setVisible(True)
-        self.tray.setToolTip(f"({__version__}) Forwarding to {host}")
         
         self.setQuitOnLastWindowClosed(False)
         self.win = None
@@ -197,7 +195,7 @@ class PolyForwarder(QApplication):
                     ):
                         self.win = win
                         self.title = win.title
-                        app_name = self.win.getAppName()
+                        app_name = win.getAppName()
                         handle = win.getHandle()
                         self.send_to_host(handle, self.title, app_name)
                         self.log.info("Active App: '%s' %s %d", self.title, app_name, handle)

@@ -37,8 +37,8 @@ class ImageConverter:
             pixmap.load(filename, "", Qt.NoFormatConversion)
             self.w = pixmap.width()
             self.h = pixmap.height()
-        except:
-            self.log.warning("Couldn't read overlay")
+        except Exception as e:
+            self.log.warning("Couldn't read overlay: %s", e)
             return False
 
         if ".mods." in filename:
