@@ -8,7 +8,7 @@ from polyhost.input.input_helper import InputHelper
 
 class WindowsInputHelper(InputHelper):
     def __init__(self):
-        self.log = logging.getLogger('PolyHost')
+        super().__init__()
         self.list = None
         self.query = """$ScriptBlock = {
         Add-Type -AssemblyName System.Windows.Forms

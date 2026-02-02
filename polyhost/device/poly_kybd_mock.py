@@ -182,7 +182,7 @@ class PolyKybdMock:
     def read_serial(self):
         return None
 
-    def get_console_output(selfself):
+    def get_console_output(self):
         return None
     
     def execute_commands(self, command_list):

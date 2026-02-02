@@ -1,6 +1,4 @@
-import logging
 import subprocess
-from pynput.keyboard import Key, Controller
 
 from polyhost.input.input_helper import InputHelper
 from polyhost.lang.lang_compat import LangComp
@@ -8,7 +6,7 @@ from polyhost.lang.lang_compat import LangComp
 
 class LinuxGnomeInputHelper(InputHelper):
     def __init__(self):
-        self.log = logging.getLogger('PolyHost')
+        super().__init__()
         self.comp = LangComp()
         self.list = None
 
