@@ -23,6 +23,7 @@ from polyhost.device.poly_kybd_mock import PolyKybdMock
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.log_viewer import LogViewerDialog
+from polyhost.gui.kb_layout_dialog import KbLayoutDialog
 from polyhost.gui.settings_dialog import SettingsDialog
 from polyhost.gui.cmd_menu import CommandsSubMenu
 from polyhost.handler.active_window import OverlayHandler
@@ -187,9 +188,9 @@ class PolyHost(QApplication):
         action.triggered.connect(self.send_shortcuts)
         self.menu.addAction(action)
 
-        action = QAction(get_icon("via.png"), "Configure Keymap (VIA)", parent=self)
+        action = QAction(get_icon("keyboard.svg"), "Configure Keymap", parent=self)
         # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.open_via)
+        action.triggered.connect(self.open_layout_editor)
         self.menu.addAction(action)
 
         self.menu.addAction(self.settings_dialog)
@@ -393,9 +394,10 @@ class PolyHost(QApplication):
                     text = f"{text} {chr(0x2714)}"
                 action.setText(text)
 
-    @staticmethod
-    def open_via():
-        webbrowser.open("https://usevia.app", new=0, autoraise=True)
+    def open_layout_editor(self):
+        #webbrowser.open("https://usevia.app", new=0, autoraise=True)
+        self.layout_dialog = KbLayoutDialog()
+        self.layout_dialog.show()
 
     def open_settings(self):
         dlg = SettingsDialog()
