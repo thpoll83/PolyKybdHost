@@ -38,3 +38,5 @@ devenv:
   overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png]
 lockapp:
   overlay: windows_lockscreen_template.png
+slack:
+  overlay: [slack_template.mods.png, slack_template.combo.mods.png]
