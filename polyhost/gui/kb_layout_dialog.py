@@ -4,16 +4,16 @@ import traceback
 import pathlib
 
 from polyhost.gui.key_item import KeyItem
+from polyhost.gui.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
 from polyhost.gui.get_icon import get_icon
 
 from PyQt5.QtWidgets import (
     QMainWindow, QFileDialog, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox, QGraphicsView,
+    QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox,
     QGraphicsScene, QDialog, QFormLayout
 )
 from PyQt5.QtGui import QTransform, QGuiApplication, QCursor
-from PyQt5.QtCore import Qt
 
 KEY_SCALE = 80.0
 
@@ -156,32 +156,10 @@ class KbLayoutDialog(QMainWindow):
         self.scene = QGraphicsScene()
         self.view = ZoomableGraphicsView(zoom_callback=self.zoom)
         self.view.setScene(self.scene)
-        
-        # Right: controls
-        right_col = QVBoxLayout()
-        #btn_load = QPushButton("Load KLE JSON")
-        #btn_load.clicked.connect(self.load_kle)
-        btn_send = QPushButton("Send to PolyKybd")
-        btn_send.clicked.connect(self.send_to_device)
-        
-        right_col.addWidget(QLabel("VIA Settings"))
-        self.vid_edit = QLineEdit("0xfeed")
-        right_col.addWidget(QLabel("Vendor ID:"))
-        right_col.addWidget(self.vid_edit)
-        self.pid_edit = QLineEdit("0x6060")
-        right_col.addWidget(QLabel("Product ID:"))
-        right_col.addWidget(self.pid_edit)
-        #right_col.addWidget(btn_load)
-        right_col.addWidget(btn_send)
-        
-        self.status_label = QLabel("")
-        self.status_label.setWordWrap(True)
-        right_col.addWidget(QLabel("Status:"))
-        right_col.addWidget(self.status_label)
-        right_col.addStretch()
-        
+
+        self.keycodes = KeycodeBrowser()
         main_layout.addWidget(self.view, 3)
-        main_layout.addLayout(right_col)
+        main_layout.addWidget(self.keycodes)
         central.setLayout(main_layout)
         self.setCentralWidget(central)
         
@@ -227,20 +205,19 @@ class KbLayoutDialog(QMainWindow):
         self.scale_factor = new_scale
 
         
-    def load_from_file(self, fname):
+    def load_from_file(self, filename):
         try:
-            with open(fname, 'r', encoding='utf-8') as f:
+            with open(filename, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             self.keys = parse_kle(data)
             self.row_count, self.col_count, self.mapping = build_matrix(self.keys)
             self.render_keys()
-            self.status_label.setText(f"Loaded {len(self.keys)} keys, {self.row_count}x{self.col_count} matrix")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load:\n{e}\n{traceback.format_exc()}")
             
     def load_kle(self):
-        fname, _ = QFileDialog.getOpenFileName(self, "Open KLE JSON", "", "JSON (*.json)")
-        self.load_from_file(fname)
+        filename, _ = QFileDialog.getOpenFileName(self, "Open KLE JSON", "", "JSON (*.json)")
+        self.load_from_file(filename)
 
     def mouseDoubleClickEvent(self, item):
         dlg = KeyEditDialog(item.key)

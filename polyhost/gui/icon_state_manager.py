@@ -5,7 +5,7 @@ import time
 from polyhost.gui.get_icon import get_icon
 
 
-class IconStateManager():
+class IconStateManager:
     """ Set the tray icon as needed """
 
     def __init__(self, parent, is_connected, tooltip):

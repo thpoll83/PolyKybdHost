@@ -69,7 +69,8 @@ class KeyItem(QGraphicsObject):
         
     def boundingRect(self) -> QRectF:
         return QRectF(0, 0, self.w, self.h)
-    
+
+    # noinspection PyTypeChecker
     def paint(self, painter, option, widget):
         # enable antialiasing for smooth rounded corners
         painter.setRenderHint(QPainter.Antialiasing, True)
@@ -138,6 +139,7 @@ class KeyItem(QGraphicsObject):
     # Make clicking focus the item (so keyboard focus can be shown if desired)
     def mousePressEvent(self, ev):
         # ensure the item gets focus when clicked
+        # noinspection PyTypeChecker
         self.setFocus(Qt.MouseFocusReason)
         # allow default behavior (selection)
         super().mousePressEvent(ev)

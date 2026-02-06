@@ -188,11 +188,10 @@ class PolyHost(QApplication):
         action.triggered.connect(self.send_shortcuts)
         self.menu.addAction(action)
 
-        action = QAction(get_icon("keyboard.svg"), "Configure Keymap", parent=self)
+        self.layout_editor = QAction(get_icon("keyboard.svg"), "Configure Keymap", parent=self)
         # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.open_layout_editor)
-        self.menu.addAction(action)
-
+        self.layout_editor.triggered.connect(self.open_layout_editor)
+        self.menu.addAction(self.layout_editor)
         self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
         self.menu.addAction(self.support)
@@ -286,6 +285,7 @@ class PolyHost(QApplication):
         for action in self.menu.actions():
             action.setEnabled(self.connected and not self.paused)
         self.log_dialog.setEnabled(True)
+        self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
         self.status.setEnabled(True)
         self.support.setEnabled(True)

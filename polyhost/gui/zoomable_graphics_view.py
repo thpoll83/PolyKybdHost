@@ -1,5 +1,4 @@
 from PyQt5.QtWidgets import QGraphicsView
-from PyQt5.QtCore import Qt
 
 class ZoomableGraphicsView(QGraphicsView):
     """
@@ -10,6 +9,7 @@ class ZoomableGraphicsView(QGraphicsView):
         super().__init__(*args, **kwargs)
         self.zoom_callback = zoom_callback
         # anchor so zoom focuses under the mouse pointer
+        # noinspection PyTypeChecker
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
 
     def wheelEvent(self, event):
