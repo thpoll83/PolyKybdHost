@@ -32,8 +32,8 @@ class DeviceSettings:
     # the mapping indices are 10 bits wide
     _overlay_mapping_indices_per_report = int( _max_payload_bytes_per_report * 8 ) / 10
 
-    _hid_raw_usage_page         = 0xFF60
-    _hid_raw_usage              = 0x61
+    _hid_raw_usage_page         = 0xFF61
+    _hid_raw_usage              = 0x62
 
     _hid_console_usage_page    = 0xFF31
     _hid_console_usage         = 0x74
