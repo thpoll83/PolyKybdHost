@@ -1,100 +1,23 @@
 import json
-import os
-import traceback
 import pathlib
+import traceback
 
-from polyhost.gui.key_item import KeyItem
-from polyhost.gui.keycode_browser import KeycodeBrowser
-from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
-from polyhost.gui.get_icon import get_icon
-
+from PyQt5.QtGui import QTransform, QGuiApplication, QCursor
 from PyQt5.QtWidgets import (
-    QMainWindow, QFileDialog, QWidget, QVBoxLayout, QHBoxLayout,
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox,
     QGraphicsScene, QDialog, QFormLayout
 )
-from PyQt5.QtGui import QTransform, QGuiApplication, QCursor
+
+from polyhost.gui.button_array import ButtonArray
+from polyhost.gui.get_icon import get_icon
+from polyhost.gui.layout_dialog.renderable_key import RenderableKey
+from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
+from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
+from polyhost.kle.kle_praser import parse_kle
 
 KEY_SCALE = 80.0
-
-def parse_kle(json_data):
-    """Parse KLE JSON"""
-    keys = []
-    y_cursor = 0.0
-    current_rotation = 0.0
-    current_rx = 0.0
-    current_ry = 0.0
-    
-    for row in json_data:
-        x_cursor = 0.0
-        row_defaults = {}
-        
-        if 'name' in row:
-            continue  # skip the metadata
-            
-        for item in row:
-            if isinstance(item, dict):
-                row_defaults.update(item)
-                if 'r' in item.keys():
-                    current_rotation = float(item['r'])
-                if 'rx' in item.keys():
-                    current_rx = float(item['rx'])
-                    x_cursor = current_rx
-                if 'ry' in item.keys():
-                    current_ry = float(item['ry'])
-                    y_cursor = current_ry
-                if 'x' in item.keys():
-                    x_cursor += float(item['x'])
-                if 'y' in item.keys():
-                    y_cursor += float(item['y'])
-                continue
-
-            label = str(item)
-            w = float(row_defaults.get('w', 1))
-            h = float(row_defaults.get('h', 1))
-            
-            keys.append({
-                'x': x_cursor, 'y': y_cursor, 'w': w, 'h': h,
-                'r': current_rotation, 'rx': current_rx, 'ry': current_ry,
-                'label': label,
-                'qmk': label.strip().split('\n')[0] if label else '',
-            })
-            
-            x_cursor += w
-            row_defaults.clear()
-        
-        if current_rotation == 0:
-            y_cursor += 1.0
-    
-    return keys
-
-def build_matrix(keys, tolerance=0.4):
-    """Map keys to matrix positions"""
-    ys = sorted(set([round(k['y'], 3) for k in keys]))
-    xs = sorted(set([round(k['x'], 3) for k in keys]))
-    
-    rows = []
-    for y in ys:
-        if not any(abs(r - y) <= tolerance for r in rows):
-            rows.append(y)
-    rows.sort()
-    
-    cols = []
-    for x in xs:
-        if not any(abs(c - x) <= tolerance for c in cols):
-            cols.append(x)
-    cols.sort()
-    
-    mapping = {}
-    for k in keys:
-        row_idx = min(range(len(rows)), key=lambda i: abs(rows[i] - k['y']))
-        col_idx = min(range(len(cols)), key=lambda i: abs(cols[i] - k['x']))
-        mapping[(row_idx, col_idx)] = k
-        k['row'] = row_idx
-        k['col'] = col_idx
-    
-    return len(rows), len(cols), mapping
-
+KLE_DEFINITION = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "polykybd-split72.json"
 
 class KeyEditDialog(QDialog):
     """Key editing dialog"""
@@ -136,17 +59,21 @@ class KbLayoutDialog(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("PolyKybd Split72 Layout")
-        self.keys = []
+        self.key_matrix = {}
         self.mapping = {}
         self.row_count = 0
         self.col_count = 0
         self.init_ui()
-        self.load_from_file(os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "res", "polykybd-split72.json"))
+        self.load_from_file(str(KLE_DEFINITION))
         
         self.scale_factor = 1.0
         self._zoom_step = 1.2   # multiplicative step for each + / - press
         self._zoom_min = 0.2
         self._zoom_max = 3.0
+        self.selected_key = None
+
+    def get_selected_key(self):
+        return self.selected_key
 
     def init_ui(self):
         central = QWidget()
@@ -158,7 +85,20 @@ class KbLayoutDialog(QMainWindow):
         self.view.setScene(self.scene)
 
         self.keycodes = KeycodeBrowser()
-        main_layout.addWidget(self.view, 3)
+        self.keycodes.keycodeSelected.connect(self.keycodeSelected)
+
+        my_options = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"]
+
+        header_layout = QHBoxLayout()
+        self.layers = ButtonArray(my_options)
+        self.layers.setMaximumHeight(40)
+        self.layers.setMaximumHeight(40)
+        label = QLabel("Layers:")
+        label.setMaximumWidth(50)
+        header_layout.addWidget(label)
+        header_layout.addWidget(self.layers)
+        main_layout.addLayout(header_layout)
+        main_layout.addWidget(self.view)
         main_layout.addWidget(self.keycodes)
         central.setLayout(main_layout)
         self.setCentralWidget(central)
@@ -209,43 +149,45 @@ class KbLayoutDialog(QMainWindow):
         try:
             with open(filename, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            self.keys = parse_kle(data)
-            self.row_count, self.col_count, self.mapping = build_matrix(self.keys)
+            self.row_count, self.col_count, self.key_matrix = parse_kle(data)
+            # self.row_count, self.col_count, self.mapping = build_matrix(self.matrix_pos)
             self.render_keys()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to load:\n{e}\n{traceback.format_exc()}")
             
-    def load_kle(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Open KLE JSON", "", "JSON (*.json)")
-        self.load_from_file(filename)
+    # def load_kle(self):
+    #     filename, _ = QFileDialog.getOpenFileName(self, "Open KLE JSON", "", "JSON (*.json)")
+    #     self.load_from_file(filename)
 
-    def mouseDoubleClickEvent(self, item):
-        dlg = KeyEditDialog(item.key)
-        if dlg.exec_():
-            item.text.setText(item.key.get('qmk') or item.key.get('label', ''))
-            item.update_text_position()
+    def mouseClickEvent(self, item):
+        self.selected_key = item
+
+    def keycodeSelected(self, nice_name, name, keycode, font_size_hint):
+        if self.selected_key:
+            self.selected_key.setKeycode(nice_name, name, keycode, font_size_hint)
+
             
     def render_keys(self):
         """Render keys with rotation applied"""
         self.scene.clear()
         
-        if not self.keys:
+        if not self.key_matrix:
             return
         
-        minx = min(k['x'] for k in self.keys)
-        miny = min(k['y'] for k in self.keys)
+        minx = min(p['x'] for p in self.key_matrix.values())
+        miny = min(p['y'] for p in self.key_matrix.values())
         
-        for k in self.keys:
+        for name, info in self.key_matrix.items():
             # Get key properties
-            x = k['x'] - minx
-            y = k['y'] - miny
-            r = k.get('r', 0)
-            rx = k.get('rx', 0) - minx
-            ry = k.get('ry', 0) - miny
+            x = info['x'] - minx
+            y = info['y'] - miny
+            r = info.get('r', 0)
+            rx = info.get('rx', 0) - minx
+            ry = info.get('ry', 0) - miny
             
             # Create key item
-            item = KeyItem(k, KEY_SCALE)
-            item.doubleClicked.connect(self.mouseDoubleClickEvent)
+            item = RenderableKey(name, info, KEY_SCALE)
+            item.pressed.connect(self.mouseClickEvent)
             
             # Apply transformations for rotation
             # 1. Translate to position
@@ -265,7 +207,7 @@ class KbLayoutDialog(QMainWindow):
                 transform.rotate(r)
                 transform.translate(rel_x, rel_y)
             else:
-                # No rotation, just position
+                # Without rotation
                 transform.translate(x * KEY_SCALE, y * KEY_SCALE)
             
             item.setTransform(transform)

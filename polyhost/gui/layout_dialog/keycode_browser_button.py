@@ -3,12 +3,13 @@ from PyQt5.QtGui import QFontMetrics
 from PyQt5.QtWidgets import QPushButton, QSizePolicy
 
 
-class KeyButton(QPushButton):
+class KeycodeBrowserButton(QPushButton):
 
     def __init__(self, text, keycode, parent=None):
         super().__init__(text, parent)
         self.max_font_size = 12  # The "ideal" size
         self.min_font_size = 7 # Legibility limit
+        self.current_size = self.min_font_size
 
         self.setToolTip(f"<b>{keycode}</b>")
 
@@ -39,12 +40,15 @@ class KeyButton(QPushButton):
             return metrics.horizontalAdvance(text)
         return metrics.width(text)
 
+    def get_font_size(self):
+        return self.current_size
+
     def adjust_font_size(self):
         text = self.text()
         if not text:
             return
 
-        current_size = self.max_font_size
+        self.current_size = self.max_font_size
         font = self.font()
 
         # Buffer: Subtract padding so text doesn't touch the button border
@@ -52,11 +56,11 @@ class KeyButton(QPushButton):
         available_width = self.width() - padding
 
         # Loop to shrink font until it fits
-        while current_size > self.min_font_size:
-            font.setPointSize(current_size)
+        while self.current_size > self.min_font_size:
+            font.setPointSize(self.current_size)
             if self.get_text_width(font, text) <= available_width:
                 break
-            current_size -= 1
+            self.current_size -= 1
 
         self.setFont(font)
 

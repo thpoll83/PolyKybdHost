@@ -19,11 +19,10 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QFileDialog, )
 
-from polyhost.device.poly_kybd_mock import PolyKybdMock
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.log_viewer import LogViewerDialog
-from polyhost.gui.kb_layout_dialog import KbLayoutDialog
+from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
 from polyhost.gui.settings_dialog import SettingsDialog
 from polyhost.gui.cmd_menu import CommandsSubMenu
 from polyhost.handler.active_window import OverlayHandler

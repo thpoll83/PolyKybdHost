@@ -1,8 +1,8 @@
-from PyQt5.QtGui import QPixmap, QPainter, QColor, QBrush, QTransform, QPen, QFont
+from PyQt5.QtGui import QPixmap, QPainter, QColor, QBrush, QTransform, QPen, QFont, QTextOption
 from PyQt5.QtCore import Qt, pyqtSignal, QRectF
 
 from PyQt5.QtWidgets import (
-    QGraphicsObject, QGraphicsSimpleTextItem
+    QGraphicsObject, QGraphicsSimpleTextItem, QGraphicsTextItem
 )
 
 KEY_MARGIN_X = 2
@@ -10,20 +10,20 @@ KEY_MARGIN_Y = 2
 KEY_RADIUS = 0.1
 
 
-class KeyItem(QGraphicsObject):
-    doubleClicked = pyqtSignal(object)
+class RenderableKey(QGraphicsObject):
+    pressed = pyqtSignal(object)
     
-    def __init__(self, key_dict, scale):
+    def __init__(self, nice_name, props, scale):
         
         # compute reduced size if you use KEY_MARGIN
-        full_w = key_dict['w'] * scale
-        full_h = key_dict['h'] * scale
+        full_w = props['w'] * scale
+        full_h = props['h'] * scale
         self.w = max(2.0, full_w - 2 * KEY_MARGIN_X)
         self.h = max(2.0, full_h - 2 * KEY_MARGIN_Y)
 
         # create base rect; children (text) are positioned relative to this
         super().__init__()
-        self.key = key_dict
+        self.nice_name = nice_name
 
         # store brushes / pens
         self.bg_brush = QBrush(QColor("#353535"))
@@ -38,9 +38,12 @@ class KeyItem(QGraphicsObject):
         self.setAcceptHoverEvents(True)
 
         # text label
-        self.text = QGraphicsSimpleTextItem(self.key.get('qmk') or self.key.get('label', ''), self)
+        self.text = QGraphicsTextItem(nice_name, self)
         self.text.setFont(QFont("Arial", 10))
-        self.text.setBrush(Qt.white)
+        self.text.setDefaultTextColor(Qt.white)
+        opt = QTextOption()
+        opt.setAlignment(Qt.AlignCenter)
+        self.text.document().setDefaultTextOption(opt)
         self.update_text_position()
 
         # hover state
@@ -141,26 +144,22 @@ class KeyItem(QGraphicsObject):
         # ensure the item gets focus when clicked
         # noinspection PyTypeChecker
         self.setFocus(Qt.MouseFocusReason)
+        self.pressed.emit(self)
+
         # allow default behavior (selection)
         super().mousePressEvent(ev)
-    
-    def mouseDoubleClickEvent(self, ev):
-        self.doubleClicked.emit(self)
-        super().mouseDoubleClickEvent(ev)
 
-    # Optionally handle key events while focused (e.g., delete to clear QMK)
-    def keyPressEvent(self, ev):
-        if ev.key() == Qt.Key_Delete:
-            # clear QMK binding as an example
-            self.key['qmk'] = ''
-            self.text.setText('')
-            self.update_text_position()
-            self.update()
-        else:
-            super().keyPressEvent(ev)
+    def setKeycode(self, nice_name, name, keycode, font_size_hint):
+        self.nice_name = nice_name
+        self.text.document().setPlainText(nice_name)
+        if font_size_hint is not None and font_size_hint.is_integer():
+            self.text.setFont(QFont("Arial", font_size_hint))
+        self.update_text_position()
+        self.update()
 
     def update_text_position(self):
         rect = self.boundingRect()
         bounding = self.text.boundingRect()
         self.text.setPos(rect.x() + (rect.width() - bounding.width())/2,
-                         rect.y() + (rect.height() - bounding.height())/2)
+                         rect.y() + (rect.height() - bounding.height())/2 - 14)
+        self.text.setTextWidth(bounding.width())
