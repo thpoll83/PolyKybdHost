@@ -7,7 +7,7 @@ class DeviceSettings:
     _vid = 0x2021
     _pid = 0x2007
 
-    _hid_report_size_in_bytes = 32
+    _hid_report_size_in_bytes = 64
     _hid_console_report_size_in_bytes = 64
     _via_command_bytes = 1
     _polykybd_command_bytes = 1
@@ -26,7 +26,7 @@ class DeviceSettings:
     # 24 bytes in case of 32 byte reports
     _overlay_plain_data_bytes_per_report = find_nearest(_max_payload_bytes_per_report, natural_divisors(_overlay_plain_data_bytes_total))
 
-    # 360 bytes / 24 bytes = 15 reports
+    # 360 bytes / 24 bytes = 15 reports for max 32 bytes or 360 bytes / 60 bytes = 6 reports for max 64 bytes
     _overlay_plain_data_report_count = int(_overlay_plain_data_bytes_total / _overlay_plain_data_bytes_per_report)
 
     # the mapping indices are 10 bits wide
