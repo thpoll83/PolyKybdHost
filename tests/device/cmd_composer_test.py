@@ -1,7 +1,11 @@
 import unittest
 from unittest.mock import MagicMock
 
-from polyhost.device.cmd_composer import compose_cmd, compose_cmd_str, compose_roi_header, expect
+from polyhost.device.cmd_composer import (
+    compose_cmd_str, compose_cmd, compose_roi_header, expect
+)
+from polyhost.device.keys import Modifier
+
 
 class TestUtilityFunctions(unittest.TestCase):
     def setUp(self):
@@ -31,7 +35,7 @@ class TestUtilityFunctions(unittest.TestCase):
         overlay.left = 0x1F
         overlay.right = 0x2A
 
-        result = compose_roi_header(self.mock_cmd, 0x10, 0x05, overlay, compressed=False)
+        result = compose_roi_header(self.mock_cmd, 0x10, Modifier.CTRL_ALT, overlay, compressed=False)
         expected = bytearray(b'\x09\x01\x10\x05\x2b\x1f\x2a')
         self.assertEqual(result, expected)
 
@@ -43,15 +47,15 @@ class TestUtilityFunctions(unittest.TestCase):
         overlay.left = 0x2F
         overlay.right = 0x3B
 
-        result = compose_roi_header(self.mock_cmd, 0x20, 0x07, overlay, compressed=True)
-        expected = bytearray(b'\x09\x01\x20\x17\x31\x2f\xbb')
+        result = compose_roi_header(self.mock_cmd, 0x20, Modifier.GUI_KEY, overlay, compressed=True)
+        expected = bytearray(b'\x09\x01\x20\x18\x31\x2f\xbb')
         self.assertEqual(result, expected)
-
 
     def test_expect(self):
         result = expect(self.mock_cmd)
         expected = "P" + chr(self.mock_cmd.value)
         self.assertEqual(result, expected)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     unittest.main()

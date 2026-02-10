@@ -6,20 +6,8 @@ from enum import Enum
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 
-from polyhost.device.keys import KeyCode
+from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_data import OverlayData
-
-
-class Modifier(Enum):
-    NO_MOD = 0
-    CTRL = 1
-    SHIFT = 2
-    CTRL_SHIFT = 3
-    ALT = 4
-    CTRL_ALT = 5
-    ALT_SHIFT = 6
-    # CTRL_ALT_SHIFT = 7 #not supported for now
-    GUI_KEY = 8
 
 class ImageConverter:
     def __init__(self, settings):

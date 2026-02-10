@@ -1,5 +1,18 @@
 from enum import Enum
 
+
+class Modifier(Enum):
+    NO_MOD = 0
+    CTRL = 1
+    SHIFT = 2
+    CTRL_SHIFT = 3
+    ALT = 4
+    CTRL_ALT = 5
+    ALT_SHIFT = 6
+    # CTRL_ALT_SHIFT = 7 #not supported for now
+    GUI_KEY = 8
+
+
 def keycode_to_mapping_idx(key_enum):
     return (key_enum.value - KeyCode.KC_LEFT_CTRL.value + 82) if (key_enum.value > KeyCode.KC_APPLICATION.value) else (
         (key_enum.value - KeyCode.KC_NONUS_BACKSLASH.value + 80) if key_enum.value > KeyCode.KC_NUM_LOCK.value else (

@@ -2,8 +2,8 @@ import logging
 import time
 
 from polyhost.util.dict_util import split_by_n_chars
-from polyhost.device.im_converter import Modifier, ImageConverter
-from polyhost.device.keys import KeyCode
+from polyhost.device.im_converter import ImageConverter
+from polyhost.device.keys import KeyCode, Modifier
 
 
 class PolyKybdMock:
