@@ -218,5 +218,5 @@ class PolyKybdMock:
             except Exception as e:
                 self.log.error(f"Couldn't not execute '{cmd_str}': {e}")
 
-    def set_unicode_mode(self, value):
-        self.log.info(f"Setting unicode mode to %d", value)
+    def set_unicode_mode(self, mode):
+        self.log.info(f"Setting unicode mode to %d", mode.value)

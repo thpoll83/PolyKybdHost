@@ -32,7 +32,7 @@ code:
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
-clion,clion64,jetbrains_client,jetbrains-pycharm-ce,idea:
+clion,clion64,jetbrains_client,jetbrains-pycharm,jetbrains-pycharm-ce,idea:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
 devenv:
   overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png]

@@ -138,7 +138,7 @@ class HidHelper:
 
         return True, result
 
-    def send(self, data: bytearray, timeout: int = 15) -> tuple[bool, Any]:
+    def send(self, data: bytearray, timeout: int = 30) -> tuple[bool, Any]:
         """ Write a data report and read the response, the result of the response will be ignored"""
 
         if self.interface is None:

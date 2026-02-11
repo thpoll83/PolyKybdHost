@@ -341,7 +341,7 @@ class PolyHost(QApplication):
                         if connected_now and self.poly_settings.get("unicode_send_composition_mode"):
                             mode = get_input_method()
                             self.log.info("Setting unicode mode to str %s", mode)
-                            self.keeb.set_unicode_mode(mode.value)
+                            self.keeb.set_unicode_mode(mode)
                             self.update_ui_on_lang_change(response)
                     else:
                         self.status.setIcon(get_icon("sync_disabled.svg"))

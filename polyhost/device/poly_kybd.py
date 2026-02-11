@@ -1,10 +1,14 @@
 import logging
+import math
 import re
 import time
 from enum import Enum
+from typing import Any
+
 import numpy as np
 
 from polyhost.device.serial_helper import SerialHelper
+from polyhost.input.unicode_input import InputMethod
 from polyhost.util.dict_util import split_by_n_chars
 from polyhost.device.bit_packing import pack_dict_10_bit
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
@@ -47,6 +51,9 @@ class PolyKybd:
         self.stat_croi = 0
         self.stat_best = 0
         self.settings = settings
+        self.rows = 10
+        self.cols = 8
+        self.num_layers = None
 
     def connect(self):
         """Connect to PolyKybd"""
@@ -73,7 +80,7 @@ class PolyKybd:
             return self.serial.read_all()
         return None
 
-    def get_console_output(self, flush_and_return=True):
+    def get_console_output(self, flush_and_return=True) -> str | None:
         try:
             last_line = self.hid.get_console_output()
             while len(last_line) > 0:
@@ -88,7 +95,7 @@ class PolyKybd:
             return console_out
         return None
 
-    def query_id(self):
+    def query_id(self) -> tuple[bool, str]:
         try:
             result, msg = self.hid.send_and_read_validate(
                 compose_cmd(Cmd.GET_ID), 15, expect(Cmd.GET_ID))
@@ -97,7 +104,7 @@ class PolyKybd:
         except Exception as e:
             return False, f"Exception: {e}"
 
-    def query_version_info(self):
+    def query_version_info(self) -> tuple[bool, str]:
         result, msg = self.query_id()
         if not result:
             return False, msg
@@ -119,77 +126,77 @@ class PolyKybd:
                 "Exception matching version string '%s':\n%s", msg, e)
             return False, "Could not match version string. Please update firmware."
 
-    def get_name(self):
+    def get_name(self) -> str:
         return self.name
 
-    def get_sw_version(self):
+    def get_sw_version(self) -> str:
         return self.sw_version
 
-    def get_sw_version_number(self):
+    def get_sw_version_number(self) -> str:
         """Get the software version number in as 3 ints: major, minor, patch"""
         return self.sw_version_num
 
-    def get_hw_version(self):
+    def get_hw_version(self) -> str:
         return self.hw_version
 
-    def reset_overlay_mapping(self):
+    def reset_overlay_mapping(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlay Mapping...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80))
 
-    def reset_overlays_and_usage(self):
+    def reset_overlays_and_usage(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlays AND Usage...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x60))
 
-    def reset_overlay_usage(self):
+    def reset_overlay_usage(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlay Usage...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x40))
 
-    def reset_overlays(self):
+    def reset_overlays(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlays...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x20))
 
-    def enable_overlays(self):
+    def enable_overlays(self) -> tuple[bool, Any]:
         self.log.info("Enable Overlays...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x01))
 
-    def disable_overlays(self):
+    def disable_overlays(self) -> tuple[bool, Any]:
         self.log.info("Disable Overlays...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
 
-    def set_unicode_mode(self, mode):
-        self.log.info("Setting unicode mode to %d", mode)
-        return self.hid.send(compose_cmd(Cmd.SET_UNICODE_MODE, mode))
+    def set_unicode_mode(self, mode: InputMethod) -> tuple[bool, Any]:
+        self.log.info("Setting unicode mode to %d", mode.value)
+        return self.hid.send(compose_cmd(Cmd.SET_UNICODE_MODE, mode.value))
 
-    def set_brightness(self, brightness):
+    def set_brightness(self, brightness: int) -> tuple[bool, Any]:
         self.log.info("Setting Display Brightness to %d...", brightness)
         return self.hid.send(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
 
-    def press_and_release_key(self, keycode, duration):
+    def press_and_release_key(self, keycode: int, duration: int) -> tuple[bool, Any]:
         self.log.info("Pressing 0x%2x for %f sec...", keycode, duration)
-        result, msg = self.hid.send(compose_cmd(
+        result, reply = self.hid.send(compose_cmd(
             Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
         if result:
             # for now, it is fine to block this thread
             time.sleep(duration)
             return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
         else:
-            return result, msg
+            return result, reply
 
-    def press_key(self, keycode):
+    def press_key(self, keycode: int) -> tuple[bool, Any]:
         self.log.info("Pressing 0x%2x...", keycode)
         return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
 
-    def release_key(self, keycode):
+    def release_key(self, keycode: int) -> tuple[bool, Any]:
         self.log.info("Releasing 0x%2x...", keycode)
         return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
 
-    def set_idle(self, idle):
+    def set_idle(self, idle: bool) -> tuple[bool, Any]:
         self.log.debug("Setting idle state to %s...",
                         "True" if idle else "False")
         return self.hid.send(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
 
-    def query_current_lang(self):
-        """Query current keyboard language a remember language internally"""
+    def query_current_lang(self) -> tuple[bool, str]:
+        """Query current keyboard language"""
 
         try:
             result, msg = self.hid.send_and_read_validate(
@@ -203,7 +210,7 @@ class PolyKybd:
         except Exception as e:
             return False, f"Exception: {e}"
 
-    def enumerate_lang(self):
+    def enumerate_lang(self) -> tuple[bool, str]:
         self.log.debug("Enumerate Languages...")
         result, msg = self.query_current_lang()
         if not result:
@@ -230,13 +237,13 @@ class PolyKybd:
         self.all_languages = split_by_n_chars(lang_str, 4)
         return True, lang_str
 
-    def get_lang_list(self):
+    def get_lang_list(self) -> list:
         return self.all_languages
 
-    def get_current_lang(self):
+    def get_current_lang(self) -> str:
         return self.current_lang
 
-    def change_language(self, lang):
+    def change_language(self, lang: str) -> tuple[bool, str]:
         """
         Send command to change the language to the specified index
         :param lang: 4 letter str which must be in the list of languages.
@@ -256,11 +263,11 @@ class PolyKybd:
         self.log.info("Language changed to %s (%s).", lang, msg)
         return True, lang
 
-    def set_overlay_masking(self, set_all):
+    def set_overlay_masking(self, set_all: bool) -> tuple[bool, Any]:
         cmd = Cmd.OVERLAY_FLAGS_ON if set_all else Cmd.OVERLAY_FLAGS_OFF
         return self.hid.send(compose_cmd(cmd, 0x1e))
 
-    def send_overlay_mapping(self, from_to):
+    def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
         split_per_msg = split_dict(
             from_to, self.settings.OVERLAY_MAPPING_INDICES_PER_REPORT/2)
 
@@ -275,15 +282,15 @@ class PolyKybd:
                 return False, f"Error sending overlay mapping: {msg}"
             self.log.debug("send_overlay_mapping: Sent %s", dict_part)
 
-        _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock)
-        self.log.debug_detailed(
-            "send_overlay_mapping: Drained %d HID reports", drained)
+        # _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock)
+        # self.log.debug_detailed(
+        #     "send_overlay_mapping: Drained %d HID reports", drained)
 
         if lock:
             lock.release()
         return True, "Mapping sent"
 
-    def send_overlays(self, filenames):
+    def send_overlays(self, filenames: list) -> bool:
         overlay_counter = 0
         hid_msg_counter = 0
         enabled = False
@@ -339,7 +346,7 @@ class PolyKybd:
             self.enable_overlays()
         return True
 
-    def send_smallest_overlay(self, keycode, modifier, mapping: dict):
+    def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict) -> int:
         ov = mapping[keycode]
         smallest = min(ov.all_msgs, ov.compressed_msgs,
                         ov.roi_msgs, ov.compressed_roi_msgs)
@@ -361,7 +368,7 @@ class PolyKybd:
                 "send_smallest_overlay: Sending keycode 0x%x (mod 0x%x) as plain overlay", keycode, modifier.value)
             return self.send_overlay_for_keycode(keycode, modifier, mapping)
 
-    def send_overlay_roi_for_keycode(self, keycode, modifier, mapping: dict, compressed: bool):
+    def send_overlay_roi_for_keycode(self, keycode: int, modifier: Modifier, mapping: dict, compressed: bool) -> int:
         overlay = mapping[keycode]
         if not overlay.roi:
             return self.send_overlay_for_keycode_compressed(keycode, modifier, mapping)
@@ -383,17 +390,18 @@ class PolyKybd:
             end = min(end + self.settings.MAX_PAYLOAD_BYTES_PER_REPORT, num_bytes)
             result, msg, lock = self.hid.send_multiple(data, lock)
             if not result:
-                return False, f"Error sending roi overlay message {msg_num + 1}/{num_msgs} ({msg})"
+                self.log.error("Error sending roi overlay message %d/%d (%s)", msg_num+1, msg_num, msg)
+                return num_msgs
 
-        _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock)
-        self.log.debug_detailed(
-            "send_overlay_roi_for_keycode: Drained %d of %d HID reports (compressed %s)", drained, num_msgs, str(compressed))
+        # _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock)
+        # self.log.debug_detailed(
+        #     "send_overlay_roi_for_keycode: Drained %d of %d HID reports (compressed %s)", drained, num_msgs, str(compressed))
 
         if lock:
             lock.release()
         return num_msgs
 
-    def send_overlay_for_keycode(self, keycode, modifier, mapping: dict, skip_empty=True):
+    def send_overlay_for_keycode(self, keycode: int, modifier: Modifier, mapping: dict, skip_empty: bool = True) -> int:
         lock = None
         overlay = mapping[keycode]
         msg_cnt = 0
@@ -410,19 +418,20 @@ class PolyKybd:
                 continue
             result, msg, lock = self.hid.send_multiple(cmd + data, lock)
             if not result:
-                return False, f"Error sending overlay message {msg_num + 1}/{max_msgs} ({msg})"
+                self.log.error("Error sending plain overlay message %d/%d (%s)", msg_num + 1, msg_num, msg)
+                return msg_cnt
             msg_cnt += 1
 
-        _, drained, _, lock = self.hid.drain_read_buffer(max_msgs, lock)
-        self.log.debug_detailed(
-            "send_overlay_for_keycode: Drained %d of %d HID reports", drained, max_msgs)
+        # _, drained, _, lock = self.hid.drain_read_buffer(max_msgs, lock)
+        # self.log.debug_detailed(
+        #     "send_overlay_for_keycode: Drained %d of %d HID reports", drained, max_msgs)
 
         if lock:
             lock.release()
         # self.log.info(f"Keycode {keycode}: Sent {msg_cnt} plain msgs")
         return msg_cnt
 
-    def send_overlay_for_keycode_compressed(self, keycode, modifier, mapping: dict):
+    def send_overlay_for_keycode_compressed(self, keycode: int, modifier: Modifier, mapping: dict) -> int:
         lock = None
         overlay = mapping[keycode]
         hdr = compose_cmd(Cmd.START_COMPRESSED_OVERLAY,
@@ -440,19 +449,20 @@ class PolyKybd:
             end = min(end + self.settings.MAX_PAYLOAD_BYTES_PER_REPORT, num_bytes)
             result, msg, lock = self.hid.send_multiple(data, lock)
             if not result:
-                return False, f"Error sending overlay message {msg_num + 1}/{overlay.compressed_msgs} ({msg})"
+                self.log.error("Error sending compressed overlay message %d/%d (%s)", msg_num + 1, msg_num, msg)
+                return msg_num
 
-        _, drained, _, lock = self.hid.drain_read_buffer(
-            overlay.compressed_msgs, lock)
-        self.log.debug_detailed(
-            "send_overlay_for_keycode_compressed: Drained %d of %d HID reports", drained, overlay.compressed_msgs)
+        # _, drained, _, lock = self.hid.drain_read_buffer(
+        #     overlay.compressed_msgs, lock)
+        # self.log.debug_detailed(
+        #     "send_overlay_for_keycode_compressed: Drained %d of %d HID reports", drained, overlay.compressed_msgs)
 
         if lock:
             lock.release()
         # self.log.info(f"Keycode {keycode}: Sent {max_msg} compressed msgs")
         return overlay.compressed_msgs
 
-    def execute_commands(self, command_list):
+    def execute_commands(self, command_list: list) -> None:
         """Execute a list of commands"""
         for cmd_str in command_list:
             cmd_str = cmd_str.strip()
@@ -492,28 +502,48 @@ class PolyKybd:
         result, reply = self.hid.send_and_read_validate(
             compose_request(req, layer, row, col), 50, expectReq(req))
         if result:
-            return True, int.from_bytes(reply[3:4])
+            return True, int.from_bytes(reply[4:6])
         else:
             return False, reply
 
     def get_dynamic_layer_count(self) -> tuple[bool, int | bytearray]:
+        if self.num_layers is not None:
+            return True, self.num_layers
+
         req = HidId.ID_DYNAMIC_KEYMAP_GET_LAYER_COUNT
         result, reply = self.hid.send_and_read_validate(
             compose_request(req), 50, expectReq(req))
         if result:
-            return True, int.from_bytes(reply[0:1])
+            self.num_layers = int.from_bytes(reply[2:3])
+            return True, self.num_layers
         else:
             return False, reply
-    
-    def get_dynamic_buffer(self) -> tuple[bool, int | bytearray]:
+
+    def reset_dynamic_keymap(self) -> tuple[bool, Any]:
+        return self.hid.send(compose_request(HidId.ID_DYNAMIC_KEYMAP_RESET))
+
+    def get_dynamic_buffer(self) -> tuple[bool, bytearray|None]:
+        if self.num_layers is None:
+            success, _ = self.get_dynamic_layer_count()
+            if not success:
+                return False, None
+
+        size = self.settings.HID_REPORT_SIZE - 4 # compose request adds 4 bytes
         req = HidId.ID_DYNAMIC_KEYMAP_GET_BUFFER
-        result, reply = self.hid.send_and_read_validate(
-            compose_request(req), 50, expectReq(req))
-        if result:
-            return True, int.from_bytes(reply[0:1])
-        else:
-            return False, reply
-    
+        max_bytes = self.cols * self.rows * self.num_layers * 2 # 2 bytes per keycode
+        if max_bytes % size != 0:
+            max_bytes = math.ceil(max_bytes/size)*size
+
+        buffer = bytearray(max_bytes)
+        for offset in range(0, max_bytes, size):
+            success, reply = self.hid.send_and_read_validate(
+                compose_request(req, offset>>8, offset&0xff, size), 50, expectReq(req))
+            if not success:
+                return False, buffer
+            buffer.extend(reply[4:4+size])
+
+        return True, buffer
+
     # class HidId(Enum):
     # ID_GET_PROTOCOL_VERSION = 1
     # ID_GET_KEYBOARD_VALUE = 2
