@@ -3,10 +3,14 @@ from polyhost.device.overlay_data import OverlayData
 from polyhost.device.command_ids import Cmd, HidId
 
 
-def compose_id(hid_id: HidId, text: str) -> bytearray:
-    b = bytearray.fromhex(f"{hid_id.value:02x}")
-    b.extend(text.encode())
-    return b
+def compose_request(hid_id: HidId, *extra: int) -> bytearray:
+    if not extra:
+        return bytearray.fromhex(f"{hid_id.value:02x}")
+    byte_stream = bytearray.fromhex(f"{hid_id.value:02x}")
+    for val in extra:
+        byte_stream.extend(bytearray.fromhex(f"{val:02x}"))
+
+    return byte_stream
 
 
 def compose_cmd_str(cmd: Cmd, text: str) -> bytearray:
@@ -20,7 +24,6 @@ def compose_cmd(cmd: Cmd, *extra: int) -> bytearray:
         return bytearray.fromhex(
             f"{HidId.ID_CUSTOM_SAVE.value:02x}{cmd.value:02x}"
         )
-
     byte_stream = bytearray.fromhex(
         f"{HidId.ID_CUSTOM_SAVE.value:02x}{cmd.value:02x}")
     for val in extra:
@@ -46,9 +49,12 @@ def compose_roi_header(
     )
 
 
-def expect(cmd: HidId) -> str:
-    return f"P{chr(cmd.value)}"
+def expect(cmd: Cmd) -> bytearray:
+    return bytearray(f"P{chr(cmd.value)}", encoding="utf8")
 
+
+def expectReq(hid_id: HidId) -> bytearray:
+    return bytearray(f"{chr(hid_id.value)}", encoding="utf8")
 
 # class Dummy:
 #     def __init__(self):

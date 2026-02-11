@@ -54,7 +54,7 @@ class TestUtilityFunctions(unittest.TestCase):
     def test_expect(self):
         result = expect(self.mock_cmd)
         expected = "P" + chr(self.mock_cmd.value)
-        self.assertEqual(result, expected)
+        self.assertEqual(result, bytearray(expected, encoding="utf-8"))
 
 
 if __name__ == '__main__':

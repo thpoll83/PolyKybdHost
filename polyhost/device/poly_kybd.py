@@ -7,8 +7,8 @@ import numpy as np
 from polyhost.device.serial_helper import SerialHelper
 from polyhost.util.dict_util import split_by_n_chars
 from polyhost.device.bit_packing import pack_dict_10_bit
-from polyhost.device.cmd_composer import compose_cmd, expect, compose_cmd_str, compose_roi_header
-from polyhost.device.command_ids import Cmd
+from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
+from polyhost.device.command_ids import Cmd, HidId
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
@@ -92,6 +92,7 @@ class PolyKybd:
         try:
             result, msg = self.hid.send_and_read_validate(
                 compose_cmd(Cmd.GET_ID), 15, expect(Cmd.GET_ID))
+            msg = msg.decode().strip('\x00')
             return result, msg if not result else msg[3:]
         except Exception as e:
             return False, f"Exception: {e}"
@@ -107,7 +108,7 @@ class PolyKybd:
                 self.name = match.group("name")
                 self.sw_version = match.group("sw")
                 self.sw_version_num = [int(x)
-                                       for x in self.sw_version.split(".")]
+                                        for x in self.sw_version.split(".")]
                 self.hw_version = match.group("hw")
                 return True, msg
             else:
@@ -184,7 +185,7 @@ class PolyKybd:
 
     def set_idle(self, idle):
         self.log.debug("Setting idle state to %s...",
-                       "True" if idle else "False")
+                        "True" if idle else "False")
         return self.hid.send(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
 
     def query_current_lang(self):
@@ -194,6 +195,7 @@ class PolyKybd:
             result, msg = self.hid.send_and_read_validate(
                 compose_cmd(Cmd.GET_LANG), 15, expect(Cmd.GET_LANG))
             if result:
+                msg = msg.decode().strip('\x00')
                 self.current_lang = msg[3:]
                 return True, self.current_lang
             else:
@@ -215,10 +217,12 @@ class PolyKybd:
             return False, "Could not receive language list."
         lang_str = ""
 
+        reply = reply.decode().strip('\x00')
         while result and len(reply) > 3:
-            assert reply.startswith(expect(Cmd.GET_LANG_LIST))
+            assert reply.startswith(expect(Cmd.GET_LANG_LIST).decode())
             lang_str = f"{lang_str}{reply[3:]}"
             result, reply, lock = self.hid.read_with_lock(15, lock)
+            reply = reply.decode().strip('\x00')
 
         if lock:
             lock.release()
@@ -245,6 +249,7 @@ class PolyKybd:
 
         result, msg = self.hid.send_and_read_validate(
             compose_cmd_str(Cmd.CHANGE_LANG, lang), 15, expect(Cmd.CHANGE_LANG))
+        msg = msg.decode().strip('\x00')
         if not result:
             return False, f"Could not change to {lang} ({msg})"
 
@@ -270,7 +275,7 @@ class PolyKybd:
                 return False, f"Error sending overlay mapping: {msg}"
             self.log.debug("send_overlay_mapping: Sent %s", dict_part)
 
-        drained, lock = self.hid.drain_read_buffer(num_msgs, lock)
+        _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock)
         self.log.debug_detailed(
             "send_overlay_mapping: Drained %d HID reports", drained)
 
@@ -329,7 +334,7 @@ class PolyKybd:
                     self.get_console_output(False)
 
         self.log.info("%d overlays sent, %d hid messages for %d keys:%s",
-                      overlay_counter, hid_msg_counter, num_keys, all_keys)
+                        overlay_counter, hid_msg_counter, num_keys, all_keys)
         if not enabled:
             self.enable_overlays()
         return True
@@ -337,7 +342,7 @@ class PolyKybd:
     def send_smallest_overlay(self, keycode, modifier, mapping: dict):
         ov = mapping[keycode]
         smallest = min(ov.all_msgs, ov.compressed_msgs,
-                       ov.roi_msgs, ov.compressed_roi_msgs)
+                        ov.roi_msgs, ov.compressed_roi_msgs)
 
         if smallest == ov.roi_msgs:
             self.log.debug_detailed(
@@ -380,7 +385,7 @@ class PolyKybd:
             if not result:
                 return False, f"Error sending roi overlay message {msg_num + 1}/{num_msgs} ({msg})"
 
-        drained, lock = self.hid.drain_read_buffer(num_msgs, lock)
+        _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock)
         self.log.debug_detailed(
             "send_overlay_roi_for_keycode: Drained %d of %d HID reports (compressed %s)", drained, num_msgs, str(compressed))
 
@@ -396,7 +401,7 @@ class PolyKybd:
         for msg_num in range(0, max_msgs):
             # self.log.debug("Sending msg %d of %d", msg_num + 1, max_msgs)
             cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode,
-                              modifier.value, msg_num)
+                                modifier.value, msg_num)
             from_idx = msg_num * self.settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
             to_idx = from_idx + self.settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
             data = overlay.all_bytes[from_idx:to_idx]
@@ -408,7 +413,7 @@ class PolyKybd:
                 return False, f"Error sending overlay message {msg_num + 1}/{max_msgs} ({msg})"
             msg_cnt += 1
 
-        drained, lock = self.hid.drain_read_buffer(max_msgs, lock)
+        _, drained, _, lock = self.hid.drain_read_buffer(max_msgs, lock)
         self.log.debug_detailed(
             "send_overlay_for_keycode: Drained %d of %d HID reports", drained, max_msgs)
 
@@ -421,7 +426,7 @@ class PolyKybd:
         lock = None
         overlay = mapping[keycode]
         hdr = compose_cmd(Cmd.START_COMPRESSED_OVERLAY,
-                          keycode, modifier.value)
+                            keycode, modifier.value)
         num_bytes = len(overlay.compressed_bytes)
         start = 0
         end = self.settings.MAX_PAYLOAD_BYTES_PER_REPORT - \
@@ -437,7 +442,7 @@ class PolyKybd:
             if not result:
                 return False, f"Error sending overlay message {msg_num + 1}/{overlay.compressed_msgs} ({msg})"
 
-        drained, lock = self.hid.drain_read_buffer(
+        _, drained, _, lock = self.hid.drain_read_buffer(
             overlay.compressed_msgs, lock)
         self.log.debug_detailed(
             "send_overlay_for_keycode_compressed: Drained %d of %d HID reports", drained, overlay.compressed_msgs)
@@ -481,3 +486,53 @@ class PolyKybd:
                         self.log.warning("Unknown command '%s'", cmd_str)
             except Exception as e:
                 self.log.error("Couldn't not execute '%s': %s", cmd_str, e)
+
+    def get_dynamic_keycode(self, layer: int, row: int, col: int) -> tuple[bool, int | bytearray]:
+        req = HidId.ID_DYNAMIC_KEYMAP_GET_KEYCODE
+        result, reply = self.hid.send_and_read_validate(
+            compose_request(req, layer, row, col), 50, expectReq(req))
+        if result:
+            return True, int.from_bytes(reply[3:4])
+        else:
+            return False, reply
+
+    def get_dynamic_layer_count(self) -> tuple[bool, int | bytearray]:
+        req = HidId.ID_DYNAMIC_KEYMAP_GET_LAYER_COUNT
+        result, reply = self.hid.send_and_read_validate(
+            compose_request(req), 50, expectReq(req))
+        if result:
+            return True, int.from_bytes(reply[0:1])
+        else:
+            return False, reply
+    
+    def get_dynamic_buffer(self) -> tuple[bool, int | bytearray]:
+        req = HidId.ID_DYNAMIC_KEYMAP_GET_BUFFER
+        result, reply = self.hid.send_and_read_validate(
+            compose_request(req), 50, expectReq(req))
+        if result:
+            return True, int.from_bytes(reply[0:1])
+        else:
+            return False, reply
+    
+    # class HidId(Enum):
+    # ID_GET_PROTOCOL_VERSION = 1
+    # ID_GET_KEYBOARD_VALUE = 2
+    # ID_SET_KEYBOARD_VALUE = 3
+    # ID_DYNAMIC_KEYMAP_GET_KEYCODE = 4
+    # ID_DYNAMIC_KEYMAP_SET_KEYCODE = 5
+    # ID_DYNAMIC_KEYMAP_RESET = 6
+    # ID_CUSTOM_SET_VALUE = 7
+    # ID_CUSTOM_GET_VALUE = 8
+    # ID_CUSTOM_SAVE = 9
+    # ID_EEPROM_RESET = 10
+    # ID_BOOTLOADER_JUMP = 11
+    # ID_DYNAMIC_KEYMAP_MACRO_GET_COUNT = 12
+    # ID_DYNAMIC_KEYMAP_MACRO_GET_BUFFER_SIZE = 13
+    # ID_DYNAMIC_KEYMAP_MACRO_GET_BUFFER = 14
+    # ID_DYNAMIC_KEYMAP_MACRO_SET_BUFFER = 15
+    # ID_DYNAMIC_KEYMAP_MACRO_RESET = 16
+    # ID_DYNAMIC_KEYMAP_GET_LAYER_COUNT = 17
+    # ID_DYNAMIC_KEYMAP_GET_BUFFER = 18
+    # ID_DYNAMIC_KEYMAP_SET_BUFFER = 19
+    # ID_DYNAMIC_KEYMAP_GET_ENCODER = 20
+    # ID_DYNAMIC_KEYMAP_SET_ENCODER = 21
