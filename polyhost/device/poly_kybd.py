@@ -514,7 +514,7 @@ class PolyKybd:
         result, reply = self.hid.send_and_read_validate(
             compose_request(req), 50, expectReq(req))
         if result:
-            self.num_layers = int.from_bytes(reply[2:3])
+            self.num_layers = int.from_bytes(reply[1:2])
             return True, self.num_layers
         else:
             return False, reply

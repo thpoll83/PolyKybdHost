@@ -27,6 +27,11 @@ class CommandsSubMenu:
         action.triggered.connect(self.change_idle)
         cmd_menu.addAction(action)
 
+        action = QAction(get_icon("keyboard.svg"), "Reset Dynamic Keymap", parent=self.parent)
+        # noinspection PyUnresolvedReferences
+        action.triggered.connect(self.reset_dynamic_keymap)
+        cmd_menu.addAction(action)
+
         action = QAction(get_icon("delete.svg"), "Reset Overlays Buffers", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.reset_overlays)
@@ -136,6 +141,10 @@ class CommandsSubMenu:
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.mapping_test)
         cmd_menu.addAction(action)
+
+    def reset_dynamic_keymap(self):
+        result, msg = self.keeb.reset_dynamic_keymap()
+        self.parent.show_mb("Error", f"Failed resetting dynamic keymap: {msg}", result)
 
     def reset_overlay_mapping(self):
         result, msg = self.keeb.reset_overlay_mapping()

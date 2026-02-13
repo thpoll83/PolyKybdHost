@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
     QGraphicsScene, QDialog, QFormLayout
 )
 
+from polyhost.device.poly_kybd import PolyKybd
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
@@ -56,21 +57,24 @@ class KeyEditDialog(QDialog):
 
 
 class KbLayoutDialog(QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, keeb: PolyKybd, parent=None):
         super().__init__(parent)
         self.setWindowTitle("PolyKybd Split72 Layout")
         self.key_matrix = {}
         self.mapping = {}
         self.row_count = 0
         self.col_count = 0
-        self.init_ui()
-        self.load_from_file(str(KLE_DEFINITION))
+
+        self.keeb = keeb
         
         self.scale_factor = 1.0
         self._zoom_step = 1.2   # multiplicative step for each + / - press
         self._zoom_min = 0.2
         self._zoom_max = 3.0
         self.selected_key = None
+
+        self.init_ui()
+        self.load_from_file(str(KLE_DEFINITION))
 
     def get_selected_key(self):
         return self.selected_key
@@ -87,7 +91,14 @@ class KbLayoutDialog(QMainWindow):
         self.keycodes = KeycodeBrowser()
         self.keycodes.keycodeSelected.connect(self.keycodeSelected)
 
-        my_options = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"]
+        success, self.num_layers = self.keeb.get_dynamic_layer_count()
+
+        if not success:
+            my_options = ["Could not read layers from device"]
+        else:
+            my_options = []
+            for idx in range(self.keeb.num_layers):
+                my_options.append(f"{idx}")
 
         header_layout = QHBoxLayout()
         self.layers = ButtonArray(my_options)
