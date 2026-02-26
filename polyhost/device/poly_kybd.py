@@ -294,6 +294,7 @@ class PolyKybd:
     def send_overlays(self, filenames: list) -> bool:
         overlay_counter = 0
         hid_msg_counter = 0
+        hid_msg_counter_old = 0
         enabled = False
 
         all_keys = ""
@@ -341,7 +342,10 @@ class PolyKybd:
                     overlay_counter += 1
                     self.get_console_output(False)
                     
-                    time.sleep(0.2)
+                    if hid_msg_counter_old < hid_msg_counter-20:
+                        hid_msg_counter_old = hid_msg_counter
+                        time.sleep(0.1)
+                        self.log.debug_detailed("Waiting before sending more overlays")
 
         self.log.info("%d overlays sent, %d hid messages for %d keys:%s",
                       overlay_counter, hid_msg_counter, num_keys, all_keys)
