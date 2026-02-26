@@ -12,6 +12,9 @@ class DeviceSettings:
     _via_command_bytes = 1
     _polykybd_command_bytes = 1
     _max_payload_bytes_per_report = _hid_report_size_in_bytes - _via_command_bytes - _polykybd_command_bytes
+    
+    _matrix_rows = 10
+    _matrix_columns = 8
 
     _overlay_command_bytes_plain_per_report = 3
     _overlay_command_bytes_compressed_once = 2 # 1 byte for the keycode and 1 for the modifier
@@ -48,6 +51,16 @@ class DeviceSettings:
         """Product ID"""
         return self._pid
 
+    @property
+    def MATRIX_ROWS(self):
+        """Number of keyboard matrix rows"""
+        return self._matrix_rows
+    
+    @property
+    def MATRIX_COLUMNS(self):
+        """Number of keyboard matrix columns"""
+        return self._matrix_columns
+    
     @property
     def OVERLAY_RES_X(self):
         return self._overlay_resolution_x

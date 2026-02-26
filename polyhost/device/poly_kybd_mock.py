@@ -167,7 +167,9 @@ class PolyKybdMock:
                     all_keys = ", ".join(f"{key:#02x}" for key in overlay_map.keys())
                     self.log.info(f"Overlays for keycodes {all_keys} have been sent.")
                     overlay_counter += 1
-
+                    
+                    time.sleep(0.2)
+        
         # self.log.info(f"Sum Plain: {self.stat_plain} Comp: {self.stat_comp} Roi: {self.stat_roi} CRoi: {self.stat_croi} Best: {self.stat_best}")
         self.log.info(f"{overlay_counter} overlays with {key_counter} keys sent ({hid_msg_counter} hid messages).")
         # self.log.info(f"Stats: Plain:{self.stat_plain} C:{self.stat_comp} R:{self.stat_roi} CR:{self.stat_croi} --> {self.stat_best}")
