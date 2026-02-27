@@ -16,7 +16,8 @@ class KeycodeBrowser(QWidget):
     def __init__(self):
         super().__init__()
 
-        keycodes = parse_qmk_keycodes(HEADER_FILE)
+        self.keycodes = parse_qmk_keycodes(HEADER_FILE)
+        self.codes_to_name = {self.keycodes[k]: k for k in self.keycodes}
 
         tabs = QTabWidget()
         tabs.setTabPosition(QTabWidget.North)
@@ -29,7 +30,7 @@ class KeycodeBrowser(QWidget):
         cat = STANDARD
         LAST_KEY_IN_STD = last_key_in_standard_category()
 
-        for name, keycode in keycodes.items():
+        for name, keycode in self.keycodes.items():
             if cat != STANDARD:
                 cat = categorize(name)
             categories.setdefault(cat, {})[name] = keycode
@@ -48,13 +49,19 @@ class KeycodeBrowser(QWidget):
 
         layout = QVBoxLayout(self)
         layout.addWidget(tabs)
+        
+    def get_name_to_keycode_mapping(self):
+        return self.keycodes
+    
+    def get_keycode_to_name_mapping(self):
+        return self.codes_to_name
 
-    def _build_tab(self, keycodes):
+    def _build_tab(self, cat_keycodes):
         flow_layout = FlowLayout(margin=12, spacing=12)
         container = QWidget()
         container.setLayout(flow_layout)
 
-        for name, keycode in keycodes.items():
+        for name, keycode in cat_keycodes.items():
             caption = create_nice_name(name)
             btn = KeycodeBrowserButton(caption, name)
             btn.clicked.connect(lambda _, c=caption, k=name, v=keycode, s=btn.get_font_size(): self.on_keycode_clicked(c, k, v, s))

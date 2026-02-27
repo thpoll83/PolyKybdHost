@@ -12,9 +12,9 @@ KEY_RADIUS = 0.1
 
 class RenderableKey(QGraphicsObject):
     pressed = pyqtSignal(object)
-    
+
     def __init__(self, nice_name, props, scale):
-        
+
         # compute reduced size if you use KEY_MARGIN
         full_w = props['w'] * scale
         full_h = props['h'] * scale
@@ -48,7 +48,7 @@ class RenderableKey(QGraphicsObject):
 
         # hover state
         self._hovered = False
-        
+
         tile_size = 16               # tile resolution (adjust for crispness)
         stripe_width = 4             # width of the dark stripe in pixels
         light = QColor("#404040")   # light grey
@@ -69,7 +69,7 @@ class RenderableKey(QGraphicsObject):
         transform = QTransform()
         transform.rotate(135)
         self.display_attachment.setTransform(transform)
-        
+
     def boundingRect(self) -> QRectF:
         return QRectF(0, 0, self.w, self.h)
 
@@ -86,7 +86,7 @@ class RenderableKey(QGraphicsObject):
         # default rounded rect
         radius = min(rect.width(), rect.height()) * KEY_RADIUS
         painter.drawRoundedRect(rect, radius, radius)
-        
+
         painter.setBrush(self.display_brush)
         display = self.boundingRect()
         margin = 4
@@ -100,7 +100,8 @@ class RenderableKey(QGraphicsObject):
         h = int(min(desired_h, max_inner_h))
 
         x = int(display.x() + margin + (display.width()-display.height())/2)
-        y = int(display.y() + margin)  # anchor at top; leftover space remains at bottom
+        # anchor at top; leftover space remains at bottom
+        y = int(display.y() + margin)
 
         # draw the rectangle (use drawRoundedRect(...) if you prefer rounded corners)
         painter.drawRoundedRect(x, y, inner_w, h, 0.05, 0.05)
@@ -149,7 +150,7 @@ class RenderableKey(QGraphicsObject):
         # allow default behavior (selection)
         super().mousePressEvent(ev)
 
-    def setKeycode(self, nice_name, name, keycode, font_size_hint):
+    def setKeycode(self, nice_name, name, keycode, font_size_hint=None):
         self.nice_name = nice_name
         self.text.document().setPlainText(nice_name)
         if font_size_hint is not None and font_size_hint.is_integer():

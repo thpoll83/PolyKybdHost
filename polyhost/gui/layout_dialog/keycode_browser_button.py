@@ -1,3 +1,5 @@
+import platform
+
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QFontMetrics
 from PyQt5.QtWidgets import QPushButton, QSizePolicy
@@ -62,6 +64,10 @@ class KeycodeBrowserButton(QPushButton):
                 break
             self.current_size -= 1
 
+        if platform.system() == "Windows":
+            self.current_size -= 1
+            font.setPointSize(self.current_size)
+            
         self.setFont(font)
 
     # Re-run adjustment if text is changed via code

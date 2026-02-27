@@ -395,7 +395,7 @@ class PolyHost(QApplication):
 
     def open_layout_editor(self):
         #webbrowser.open("https://usevia.app", new=0, autoraise=True)
-        self.layout_dialog = KbLayoutDialog(self.keeb)
+        self.layout_dialog = KbLayoutDialog(self.keeb, DeviceSettings())
         self.layout_dialog.show()
 
     def open_settings(self):

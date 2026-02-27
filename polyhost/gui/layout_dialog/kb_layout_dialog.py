@@ -1,4 +1,5 @@
 import json
+import logging
 import pathlib
 import traceback
 
@@ -9,9 +10,11 @@ from PyQt5.QtWidgets import (
     QGraphicsScene, QDialog, QFormLayout
 )
 
+from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.poly_kybd import PolyKybd
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
+from polyhost.gui.layout_dialog.qmk_keycode_helper import create_nice_name
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
 from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
@@ -57,8 +60,10 @@ class KeyEditDialog(QDialog):
 
 
 class KbLayoutDialog(QMainWindow):
-    def __init__(self, keeb: PolyKybd, parent=None):
+    def __init__(self, keeb: PolyKybd, settings: DeviceSettings, parent=None):
         super().__init__(parent)
+        self.log = logging.getLogger('PolyHost')
+        self.settings = settings
         self.setWindowTitle("PolyKybd Split72 Layout")
         self.key_matrix = {}
         self.mapping = {}
@@ -72,9 +77,9 @@ class KbLayoutDialog(QMainWindow):
         self._zoom_min = 0.2
         self._zoom_max = 3.0
         self.selected_key = None
+        self.keys = {}
 
         self.init_ui()
-        self.load_from_file(str(KLE_DEFINITION))
 
     def get_selected_key(self):
         return self.selected_key
@@ -88,8 +93,8 @@ class KbLayoutDialog(QMainWindow):
         self.view = ZoomableGraphicsView(zoom_callback=self.zoom)
         self.view.setScene(self.scene)
 
-        self.keycodes = KeycodeBrowser()
-        self.keycodes.keycodeSelected.connect(self.keycodeSelected)
+        self.keycode_browser = KeycodeBrowser()
+        self.keycode_browser.keycodeSelected.connect(self.keycodeSelected)
 
         success, self.num_layers = self.keeb.get_dynamic_layer_count()
 
@@ -110,11 +115,30 @@ class KbLayoutDialog(QMainWindow):
         header_layout.addWidget(self.layers)
         main_layout.addLayout(header_layout)
         main_layout.addWidget(self.view)
-        main_layout.addWidget(self.keycodes)
+        main_layout.addWidget(self.keycode_browser)
         central.setLayout(main_layout)
         self.setCentralWidget(central)
         
-        self.set_preferred_size(1800, 900)
+        self.set_preferred_size(1800, 1000)
+        
+        self.load_from_file(str(KLE_DEFINITION))
+        
+        success, self.key_buffer = self.keeb.get_dynamic_buffer()
+        if success:
+            self.log.info("Received dynamic key buffer: %d", len(self.key_buffer))
+            mapping = self.keycode_browser.get_keycode_to_name_mapping()
+            num_keys = len(self.keys)
+            max_idx = self.settings.MATRIX_COLUMNS*self.settings.MATRIX_ROWS
+            for idx in range(num_keys):
+                keycode = self.key_buffer[idx]
+                name = mapping[keycode] if keycode in mapping else str(keycode)
+                while idx not in self.keys and idx < max_idx:
+                    idx += 1
+                self.keys[idx].setKeycode(create_nice_name(name), name, keycode)
+
+        else:
+            self.log.warning("Failed to receive dynamic key buffer")
+        
 
     # call this from your MainWindow (e.g., at end of init_ui)
     def set_preferred_size(self, pref_w, pref_h):
@@ -199,6 +223,8 @@ class KbLayoutDialog(QMainWindow):
             # Create key item
             item = RenderableKey(name, info, KEY_SCALE)
             item.pressed.connect(self.mouseClickEvent)
+            index = info["row"]*self.settings.MATRIX_COLUMNS+info["col"]
+            self.keys[index] = item
             
             # Apply transformations for rotation
             # 1. Translate to position

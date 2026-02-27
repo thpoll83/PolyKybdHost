@@ -1,3 +1,4 @@
+import array
 import logging
 import math
 import re
@@ -532,7 +533,7 @@ class PolyKybd:
     def reset_dynamic_keymap(self) -> tuple[bool, Any]:
         return self.hid.send(compose_request(HidId.ID_DYNAMIC_KEYMAP_RESET))
 
-    def get_dynamic_buffer(self) -> tuple[bool, bytearray | None]:
+    def get_dynamic_buffer(self) -> tuple[bool, list[int] | None]:
         if self.num_layers is None:
             success, _ = self.get_dynamic_layer_count()
             if not success:
@@ -545,15 +546,21 @@ class PolyKybd:
         if max_bytes % size != 0:
             max_bytes = math.ceil(max_bytes/size)*size
 
-        buffer = bytearray(max_bytes)
+        buffer = bytearray()
         for offset in range(0, max_bytes, size):
             success, reply = self.hid.send_and_read_validate(
                 compose_request(req, offset >> 8, offset & 0xff, size), 50, expectReq(req))
             if not success:
-                return False, buffer
+                arr = array.array('H')
+                arr.frombytes(buffer)
+                arr.byteswap()
+                return False, arr
             buffer.extend(reply[4:4+size])
 
-        return True, buffer
+        arr = array.array('H')
+        arr.frombytes(buffer)
+        arr.byteswap()
+        return True, arr.tolist()
 
     # class HidId(Enum):
     # ID_GET_PROTOCOL_VERSION = 1

@@ -10,7 +10,7 @@ class CommandsSubMenu:
     def __init__(self, parent, keeb):
         self.parent = parent
         self.keeb = keeb
-        self.log = logging.getLogger('PolyForwarder')
+        self.log = logging.getLogger('PolyHost')
 
     def build_menu(self, parent_menu):
         cmd_menu = parent_menu.addMenu(get_icon("settings.svg"), "All PolyKybd Commands")
