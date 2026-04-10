@@ -203,13 +203,13 @@ class HidHelper:
     
     def read(self, timeout: int) -> tuple[bool, bytearray]:
         if self.interface is None:
-            return False, bytearray("No Interface")
+            return False, bytearray("No Interface", 'utf-8')
 
         try:
             with self.lock:
                 response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
-            return False, bytearray(f"Exception: {e}")
+            return False, bytearray(f"Exception: {e}", 'utf-8')
 
         return True, response_report
 
@@ -221,17 +221,19 @@ class HidHelper:
             if received_lock is None:
                 self.lock.acquire()
             elif received_lock != self.lock:
-                return False, bytearray("Lock mismatch"), received_lock
+                return False, bytearray("Lock mismatch", 'utf-8'), received_lock
             if not self.lock.locked():
-                return False, bytearray("Not locked"), self.lock
+                return False, bytearray("Not locked", 'utf-8'), self.lock
 
             response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
-            return False, bytearray(f"Exception: {e}"), self.lock
+            return False, bytearray(f"Exception: {e}", 'utf-8'), self.lock
 
         return True, response_report, self.lock
 
     def send_and_read_validate(self, data: bytearray, timeout: int, expected_prefix: bytearray) -> tuple[bool, bytearray]:
+        if self.interface is None:
+            return False, bytearray("No Interface", 'utf-8')
         lock = None
         result, reply, lock = self.send_and_read_validate_with_lock(data, timeout, expected_prefix, lock)
         if lock:
@@ -243,9 +245,9 @@ class HidHelper:
             if received_lock is None:
                 self.lock.acquire()
             elif received_lock != self.lock:
-                return False, bytearray("Lock mismatch"), received_lock
+                return False, bytearray("Lock mismatch", 'utf-8'), received_lock
             if not self.lock.locked():
-                return False, bytearray("Not locked"), self.lock
+                return False, bytearray("Not locked", 'utf-8'), self.lock
 
             request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1)  # First byte is Report ID
             request_data[1:len(data) + 1] = data
@@ -258,14 +260,14 @@ class HidHelper:
             else:
                 return True, response_report, self.lock
         except Exception as e:
-            self.lock.release()
-            return False, bytearray(f"Exception: {e}"), self.lock
+            # self.lock.release()
+            return False, bytearray(f"Exception: {e}", 'utf-8'), self.lock
 
         return response_report.startswith(expected_prefix), response_report, self.lock
     
     def send_and_read(self, data: bytearray, timeout: int) -> tuple[bool, bytearray]:
         if self.interface is None:
-            return False, bytearray("No Interface")
+            return False, bytearray("No Interface", 'utf-8')
 
         request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1) # First byte is Report ID
         request_data[1:len(data) + 1] = data
@@ -276,6 +278,6 @@ class HidHelper:
                 self.interface.write(request_report)
                 response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
         except Exception as e:
-            return False, bytearray(f"Exception: {e}")
+            return False, bytearray(f"Exception: {e}", 'utf-8')
 
         return True, response_report
