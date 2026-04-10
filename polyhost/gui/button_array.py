@@ -35,8 +35,5 @@ class ButtonArray(QWidget):
             self.group.addButton(btn, index)
             self.layout.addWidget(btn)
 
-        # 4. Connect signal
-        self.group.buttonClicked.connect(self.handle_click)
-
-    def handle_click(self, button):
-        button.text = "clicked"
+    def connect(self, slot):
+        self.group.buttonClicked.connect(slot)

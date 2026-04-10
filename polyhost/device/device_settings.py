@@ -15,6 +15,8 @@ class DeviceSettings:
     
     _matrix_rows = 10
     _matrix_columns = 8
+    
+    _number_of_keys = 74  # 72 + rotary encoder click)
 
     _overlay_command_bytes_plain_per_report = 3
     _overlay_command_bytes_compressed_once = 2 # 1 byte for the keycode and 1 for the modifier
@@ -55,6 +57,11 @@ class DeviceSettings:
     def MATRIX_ROWS(self):
         """Number of keyboard matrix rows"""
         return self._matrix_rows
+    
+    @property
+    def NUMBER_OF_KEYS(self):
+        """Number of physical keyboard matrix keys (matrix junctions)"""
+        return self._number_of_keys
     
     @property
     def MATRIX_COLUMNS(self):

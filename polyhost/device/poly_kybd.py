@@ -11,6 +11,7 @@ import numpy as np
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.serial_helper import SerialHelper
 from polyhost.input.unicode_input import InputMethod
+from polyhost.settings import PolySettings
 from polyhost.util.dict_util import split_by_n_chars
 from polyhost.device.bit_packing import pack_dict_10_bit
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
@@ -36,7 +37,7 @@ class PolyKybd:
     Communication to PolyKybd
     """
 
-    def __init__(self, settings: DeviceSettings):
+    def __init__(self, settings: DeviceSettings, poly_settings: PolySettings):
         self.log = logging.getLogger('PolyHost')
         self.console_buffer = ""
         self.all_languages = list()
@@ -47,7 +48,8 @@ class PolyKybd:
         self.sw_version = None
         self.sw_version_num = None
         self.hw_version = None
-        self.settings = settings
+        self.device_settings = settings
+        self.poly_settings = poly_settings
         self.num_layers = None
 
         # Statistics
@@ -61,14 +63,14 @@ class PolyKybd:
         """Connect to PolyKybd"""
         # Connect to Keeb
         if not self.hid:
-            self.hid = HidHelper(self.settings)
-            self.serial = SerialHelper(self.settings)
+            self.hid = HidHelper(self.device_settings)
+            self.serial = SerialHelper(self.device_settings)
         else:
             result, msg = self.query_id()
             if not result:
                 self.log.debug("Reconnecting to PolyKybd... (%s)", msg)
                 try:
-                    self.hid = HidHelper(self.settings)
+                    self.hid = HidHelper(self.device_settings)
                 except hid.HIDException as e:
                     self.log.warning("Could not reconnect: %s", e)
                     return False
@@ -271,7 +273,7 @@ class PolyKybd:
 
     def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
         split_per_msg = split_dict(
-            from_to, self.settings.OVERLAY_MAPPING_INDICES_PER_REPORT/2)
+            from_to, self.device_settings.OVERLAY_MAPPING_INDICES_PER_REPORT/2)
 
         cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING)
         lock = None
@@ -297,13 +299,16 @@ class PolyKybd:
         hid_msg_counter = 0
         hid_msg_counter_old = 0
         enabled = False
+        
+        MAX_MSG_BEFORE_DELAY = self.poly_settings.get("max_hid_message_before_delay")
+        DELAY_TIME_AFTER_MAX_MSG = self.poly_settings.get("delay_time_after_max_hid_messages")
 
         all_keys = ""
         num_keys = 0
         for filename in filenames:
             self.log.info("Send Overlay '%s'...", filename)
             delta = time.perf_counter()
-            converter = ImageConverter(self.settings)
+            converter = ImageConverter(self.device_settings)
             if self.log.isEnabledFor(logging.DEBUG):
                 delta = time.perf_counter() - delta
                 self.log.debug("Converted in '%f' msec", delta*1000)
@@ -343,9 +348,9 @@ class PolyKybd:
                     overlay_counter += 1
                     self.get_console_output(False)
                     
-                    if hid_msg_counter_old < hid_msg_counter-20:
+                    if hid_msg_counter_old < hid_msg_counter-MAX_MSG_BEFORE_DELAY:
                         hid_msg_counter_old = hid_msg_counter
-                        time.sleep(0.1)
+                        time.sleep(DELAY_TIME_AFTER_MAX_MSG)
                         self.log.debug_detailed("Waiting before sending more overlays")
 
         self.log.info("%d overlays sent, %d hid messages for %d keys:%s",
@@ -388,14 +393,14 @@ class PolyKybd:
         num_msgs = overlay.compressed_roi_msgs if compressed else overlay.roi_msgs
         num_bytes = len(buffer)
         start = 0
-        end = self.settings.MAX_PAYLOAD_BYTES_PER_REPORT - \
-            self.settings.OVERLAY_CMD_BYTES_ROI_ONCE
+        end = self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT - \
+            self.device_settings.OVERLAY_CMD_BYTES_ROI_ONCE
         for msg_num in range(0, num_msgs):
             # self.log.info(f"Sending roi overlay msg {msg_num + 1} of {overlay.roi_msg_msgs} with {end-start} bytes.")
             cmd = hdr if msg_num == 0 else compose_cmd(Cmd.SEND_ROI_OVERLAY)
             data = cmd + buffer[start:end]
             start = end
-            end = min(end + self.settings.MAX_PAYLOAD_BYTES_PER_REPORT, num_bytes)
+            end = min(end + self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT, num_bytes)
             result, msg, lock = self.hid.send_multiple(data, lock)
             if not result:
                 self.log.error(
@@ -414,13 +419,13 @@ class PolyKybd:
         lock = None
         overlay = mapping[keycode]
         msg_cnt = 0
-        max_msgs = self.settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
+        max_msgs = self.device_settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
         for msg_num in range(0, max_msgs):
             # self.log.debug("Sending msg %d of %d", msg_num + 1, max_msgs)
             cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode,
                               modifier.value, msg_num)
-            from_idx = msg_num * self.settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
-            to_idx = from_idx + self.settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
+            from_idx = msg_num * self.device_settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
+            to_idx = from_idx + self.device_settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
             data = overlay.all_bytes[from_idx:to_idx]
             if skip_empty and msg_num+1 != max_msgs and all(b == 0 for b in data):
                 # self.log.debug("Skipping msg %d as all bytes are 0", msg_num + 1)
@@ -448,15 +453,15 @@ class PolyKybd:
                           keycode, modifier.value)
         num_bytes = len(overlay.compressed_bytes)
         start = 0
-        end = self.settings.MAX_PAYLOAD_BYTES_PER_REPORT - \
-            self.settings.OVERLAY_CMD_BYTES_COMPRESSED_ONCE
+        end = self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT - \
+            self.device_settings.OVERLAY_CMD_BYTES_COMPRESSED_ONCE
         for msg_num in range(0, overlay.compressed_msgs):
             # self.log.info(f"Sending compressed msg {msg_num + 1} of {max_msg} with {end-start} bytes.")
             cmd = hdr if msg_num == 0 else compose_cmd(
                 Cmd.SEND_COMPRESSED_OVERLAY)
             data = cmd + overlay.compressed_bytes[start:end]
             start = end
-            end = min(end + self.settings.MAX_PAYLOAD_BYTES_PER_REPORT, num_bytes)
+            end = min(end + self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT, num_bytes)
             result, msg, lock = self.hid.send_multiple(data, lock)
             if not result:
                 self.log.error(
@@ -539,9 +544,9 @@ class PolyKybd:
             if not success:
                 return False, None
 
-        size = self.settings.HID_REPORT_SIZE - 4  # compose request adds 4 bytes
+        size = self.device_settings.HID_REPORT_SIZE - 4  # compose request adds 4 bytes
         req = HidId.ID_DYNAMIC_KEYMAP_GET_BUFFER
-        max_bytes = self.settings.MATRIX_COLUMNS * self.settings.MATRIX_ROWS * \
+        max_bytes = self.device_settings.MATRIX_COLUMNS * self.device_settings.MATRIX_ROWS * \
             self.num_layers * 2  # 2 bytes per keycode
         if max_bytes % size != 0:
             max_bytes = math.ceil(max_bytes/size)*size

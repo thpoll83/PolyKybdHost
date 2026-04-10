@@ -121,7 +121,8 @@ class PolyHost(QApplication):
         self.kb_sw_version = None
         self.connected = False
         self.paused = False
-        self.keeb = PolyKybd(DeviceSettings())
+        self.poly_settings = PolySettings()
+        self.keeb = PolyKybd(DeviceSettings(), self.poly_settings)
         # Initial connection test
         connected = self.keeb.connect()
         if connected:
@@ -131,7 +132,7 @@ class PolyHost(QApplication):
         
         
         self.setApplicationName('PolyHost')
-        self.poly_settings = PolySettings()
+        
 
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False

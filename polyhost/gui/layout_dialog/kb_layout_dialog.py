@@ -14,7 +14,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.poly_kybd import PolyKybd
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
-from polyhost.gui.layout_dialog.qmk_keycode_helper import create_nice_name
+from polyhost.gui.layout_dialog.qmk_keycode_helper import create_nice_name, decompose_keycode
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
 from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
@@ -109,6 +109,7 @@ class KbLayoutDialog(QMainWindow):
         self.layers = ButtonArray(my_options)
         self.layers.setMaximumHeight(40)
         self.layers.setMaximumHeight(40)
+        self.layers.connect(self.layerChanged)
         label = QLabel("Layers:")
         label.setMaximumWidth(50)
         header_layout.addWidget(label)
@@ -126,20 +127,33 @@ class KbLayoutDialog(QMainWindow):
         success, self.key_buffer = self.keeb.get_dynamic_buffer()
         if success:
             self.log.info("Received dynamic key buffer: %d", len(self.key_buffer))
-            mapping = self.keycode_browser.get_keycode_to_name_mapping()
-            num_keys = len(self.keys)
-            max_idx = self.settings.MATRIX_COLUMNS*self.settings.MATRIX_ROWS
-            for idx in range(num_keys):
-                keycode = self.key_buffer[idx]
-                name = mapping[keycode] if keycode in mapping else str(keycode)
-                while idx not in self.keys and idx < max_idx:
-                    idx += 1
-                self.keys[idx].setKeycode(create_nice_name(name), name, keycode)
-
+            self.set_keycodes_for_layer(0)
         else:
             self.log.warning("Failed to receive dynamic key buffer")
-        
+    
+    def set_keycodes_for_layer(self, layer):
+        mapping = self.keycode_browser.get_keycode_to_name_mapping()
+        num_keys = len(self.keys)
+        max_idx = self.settings.MATRIX_COLUMNS*self.settings.MATRIX_ROWS
+        offset = layer*max_idx
+        idx = 0
+        for _ in range(num_keys):
+            # skip matrix positions without junctions (no physical key)
+            while idx not in self.keys and idx < max_idx:
+                idx += 1
+            keycode = self.key_buffer[idx + offset]
+            if keycode in mapping:
+                name = mapping[keycode]
+            else:
+                name = decompose_keycode(keycode, mapping)
+            nice_name = create_nice_name(name)
+            self.keys[idx].setKeycode(nice_name, name, keycode, 9 if len(nice_name) < 5 else 7)
+            idx += 1
 
+    def layerChanged(self, button):
+        layer = int(button.text())
+        self.set_keycodes_for_layer(layer)
+        
     # call this from your MainWindow (e.g., at end of init_ui)
     def set_preferred_size(self, pref_w, pref_h):
         screen = QGuiApplication.screenAt(QCursor.pos()) or QGuiApplication.primaryScreen()
