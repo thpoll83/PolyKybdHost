@@ -114,13 +114,15 @@ class ImageConverter:
                     bottom_y = top_y + self.settings.OVERLAY_RES_Y
                     key_slice = self.image[modifier][top_y:bottom_y, top_x:bottom_x]
                     if key_slice.any():
-                        overlays[keycode] = OverlayData(self.settings, key_slice)
-
-                    keycode += 1
-                    if keycode == KeyCode.KC_KP_SLASH.value:        # skip keypad keycodes
-                        keycode = KeyCode.KC_NONUS_BACKSLASH.value  # KC_NONUS_BACKSLASH
-                    if keycode == KeyCode.KC_KB_POWER.value:        # skip media keys etc.
-                        keycode = KeyCode.KC_LEFT_CTRL.value        # KC_LEFT_CTRL
+                        try:
+                            overlays[keycode] = OverlayData(self.settings, key_slice)
+                            keycode += 1
+                            if keycode == KeyCode.KC_KP_SLASH.value:        # skip keypad keycodes
+                                keycode = KeyCode.KC_NONUS_BACKSLASH.value  # KC_NONUS_BACKSLASH
+                            if keycode == KeyCode.KC_KB_POWER.value:        # skip media keys etc.
+                                keycode = KeyCode.KC_LEFT_CTRL.value        # KC_LEFT_CTRL
+                        except ValueError:
+                            self.log.warning("Skipping empty overlay for keycode 0x%x", keycode)
             self.log.debug_detailed("Image data for modifier %s overlay prepared.", modifier)
             return overlays
         else:

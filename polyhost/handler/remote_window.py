@@ -10,11 +10,8 @@ from polyhost.handler.common import Flags
 TCP_PORT = 50162
 BUFFER_SIZE = 1024
 
-stop_event = threading.Event()
-
-
 # Needs to be started as thread
-def receive_from_forwarder(log, connections):
+def receive_from_forwarder(log, connections, stop_event):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     try:
@@ -27,24 +24,24 @@ def receive_from_forwarder(log, connections):
     sock.listen(5)
     sock.settimeout(10.0)
 
-    conn = None
     while not stop_event.is_set():
         try:
             if len(connections) > 0:
                 conn, (addr, _) = sock.accept()
-                data = conn.recv(BUFFER_SIZE)
-                data = data.decode("utf-8")
-                entries = [0, "", ""] if not data else data.split(";")
-                if len(entries) > 2:
-                    connections[addr] = {
-                        "handle": entries[0],
-                        "name": entries[1],
-                        "title": entries[2],
-                    }
+                try:
+                    data = conn.recv(BUFFER_SIZE)
+                    data = data.decode("utf-8")
+                    entries = [0, "", ""] if not data else data.split(";")
+                    if len(entries) > 2:
+                        connections[addr] = {
+                            "handle": entries[0],
+                            "name": entries[1],
+                            "title": entries[2],
+                        }
+                finally:
+                    conn.close()
         except socket.timeout:
             time.sleep(3)
-    if conn:
-        conn.close()
     sock.close()
 
 
@@ -52,6 +49,7 @@ class RemoteHandler:
     def __init__(self, mapping):
         self.log = logging.getLogger("PolyHost")
         self.forwarder = None
+        self.stop_event = threading.Event()
 
         self.handle = None
         self.title = None
@@ -94,7 +92,7 @@ class RemoteHandler:
                 self.forwarder = threading.Thread(
                     target=receive_from_forwarder,
                     name="PolyKybd Remote Handler",
-                    args=(self.log, self.connections),
+                    args=(self.log, self.connections, self.stop_event),
                 )
                 self.forwarder.start()
         else:
@@ -204,6 +202,6 @@ class RemoteHandler:
         return self.current_entry["overlay"]
 
     def close(self):
-        stop_event.set()
+        self.stop_event.set()
         if self.forwarder:
             self.forwarder.join()

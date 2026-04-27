@@ -100,32 +100,31 @@ class OverlayHandler:
         match = has_overlay or has_remote
         try:
             if match:
-                elem = self.title.split() if has_starts_with or has_ends_with else []
-                elem_count = len(elem)
-                if elem_count > 0:
+                words = self.title.split() if (self.title and (has_starts_with or has_ends_with)) else []
+                if len(words) > 0:
                     if (
                         has_starts_with
-                        and elem[0] in entry[TITLE_SW].keys()
+                        and words[0] in entry[TITLE_SW].keys()
                     ):
                         found, cmd = self.try_to_match_window(
-                            name, entry[TITLE_SW][elem[0]]
+                            name, entry[TITLE_SW][words[0]]
                         )
                         if found:
                             return True, cmd
                     if (
                         has_ends_with
-                        and elem[-1] in entry[TITLE_EW].keys()
+                        and words[-1] in entry[TITLE_EW].keys()
                     ):
                         found, cmd = self.try_to_match_window(
-                            name, entry[TITLE_EW][elem[-1]]
+                            name, entry[TITLE_EW][words[-1]]
                         )
                         if found:
                             return True, cmd
                     if has_contains:
                         contains = entry[TITLE_HAS]
-                        for elem in elem:
-                            if elem in contains.keys():
-                                found, cmd = self.try_to_match_window(name, contains[elem])
+                        for word in words:
+                            if word in contains.keys():
+                                found, cmd = self.try_to_match_window(name, contains[word])
                                 if found:
                                     return True, cmd
                 if self.title and has_title:

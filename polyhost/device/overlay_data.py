@@ -27,6 +27,8 @@ class OverlayData:
         self.all_bytes = np.packbits(image, axis=None).tobytes()
 
         self.roi = find_roi_rectangle(image)
+        if self.roi is None:
+            raise ValueError("OverlayData received an empty (all-black) image")
         self.top, self.left, self.bottom, self.right = self.roi
         self.bottom += 1
         self.right += 1

@@ -26,7 +26,7 @@ class DeviceSettings:
     _overlay_resolution_y = 40
 
     # pack 8 pixel bits into a single byte
-    _overlay_plain_data_bytes_total = int(_overlay_resolution_x * _overlay_resolution_y) / 8
+    _overlay_plain_data_bytes_total = _overlay_resolution_x * _overlay_resolution_y // 8
 
     # 24 bytes in case of 32 byte reports
     _overlay_plain_data_bytes_per_report = find_nearest(_max_payload_bytes_per_report, natural_divisors(_overlay_plain_data_bytes_total))
@@ -35,7 +35,7 @@ class DeviceSettings:
     _overlay_plain_data_report_count = int(_overlay_plain_data_bytes_total / _overlay_plain_data_bytes_per_report)
 
     # the mapping indices are 10 bits wide
-    _overlay_mapping_indices_per_report = int( _max_payload_bytes_per_report * 8 ) / 10
+    _overlay_mapping_indices_per_report = _max_payload_bytes_per_report * 8 // 10
 
     _hid_raw_usage_page         = 0xFF61
     _hid_raw_usage              = 0x62

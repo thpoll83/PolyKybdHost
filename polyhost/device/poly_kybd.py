@@ -225,6 +225,8 @@ class PolyKybd:
             compose_cmd(Cmd.GET_LANG_LIST), 15, expect(Cmd.GET_LANG_LIST), lock)
 
         if not result:
+            if lock:
+                lock.release()
             return False, "Could not receive language list."
         lang_str = ""
 
@@ -312,10 +314,6 @@ class PolyKybd:
             if self.log.isEnabledFor(logging.DEBUG):
                 delta = time.perf_counter() - delta
                 self.log.debug("Converted in '%f' msec", delta*1000)
-            if not converter:
-                self.log.warning("Invalid file %s", filename)
-                return False
-
             if not converter.open(filename):
                 self.log.warning("Unable to read %s", filename)
                 return False
@@ -498,7 +496,7 @@ class PolyKybd:
                         cmd = params[:end] if end != -1 else params
                         match cmd:
                             case "send":
-                                self.send_overlays(params[end + 1:])
+                                self.send_overlays([params[end + 1:]])
                             case "reset":
                                 self.reset_overlays()
                             case "reset-usage":

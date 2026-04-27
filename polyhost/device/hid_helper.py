@@ -82,7 +82,7 @@ sudo udevadm trigger
 
 class HidHelper:
     def __del__(self):
-        if self.interface:
+        if hasattr(self, 'interface') and self.interface:
             self.interface.close()
 
     def __init__(self, settings):
@@ -115,6 +115,8 @@ class HidHelper:
             self.remote_console = None
 
     def get_console_output(self):
+        if self.remote_console is None:
+            return bytearray()
         return self.remote_console.read(self.settings.HID_CONSOLE_REPORT_SIZE, timeout=0)
 
     def interface_acquired(self):

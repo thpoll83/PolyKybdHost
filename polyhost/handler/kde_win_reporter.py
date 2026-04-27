@@ -27,6 +27,10 @@ def getActiveWindow():
     
     if reg_script_number is None:
         raise Exception(f"Could not find KWin Script: '{output}'")
+    try:
+        reg_script_number = str(int(reg_script_number))
+    except ValueError as e:
+        raise Exception(f"Unexpected KWin script number format: '{reg_script_number}'") from e
     
     datetime_now = datetime.now()
     subprocess.run(

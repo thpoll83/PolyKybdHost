@@ -210,6 +210,10 @@ class PolyHost(QApplication):
         elif platform.system() == "Darwin":
             self.helper = MacOSInputHelper()
 
+        if not self.helper:
+            self.log.error("Unsupported OS! Exiting...")
+            sys.exit(-1)
+
         entries = self.helper.get_languages()
 
         result = self.helper.get_current_language()
@@ -424,8 +428,8 @@ class PolyHost(QApplication):
 
     def send_shortcuts(self):
         file_name = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
-        if len(file_name) > 0:
-            self.keeb.send_overlays(file_name[0])
+        if file_name[0]:
+            self.keeb.send_overlays([file_name[0]])
         else:
             self.log.info("No file selected. Operation canceled.")
 
