@@ -44,9 +44,10 @@ def debug_detailed(self, message, *args, **kwargs):
 logging.Logger.debug_detailed = debug_detailed
 
 class PolyForwarder(QApplication):
-    def __init__(self, log_level, host):
+    def __init__(self, log_level, host=None, host_file=None):
         super().__init__(sys.argv)
         self.host = host
+        self.host_file = os.path.expanduser(host_file) if host_file else None
 
         logging.basicConfig(
             level=log_level,
@@ -131,12 +132,21 @@ class PolyForwarder(QApplication):
         self.setPalette(palette)
         
     def send_to_host(self, handle, title, name):
+        host = self.host
+        if self.host_file:
+            try:
+                with open(self.host_file) as f:
+                    host = f.read().strip()
+            except OSError:
+                return False  # file absent means no active session
+        if not host:
+            return False
         try:
-            ip = ipaddress.ip_address(self.host)
+            ip = ipaddress.ip_address(host)
         except ValueError:
-            ip = socket.gethostbyname(self.host)
+            ip = socket.gethostbyname(host)
         except OSError as err:
-            self.log.error("Could not resolve %s: %s", self.host, err)
+            self.log.error("Could not resolve %s: %s", host, err)
             return False
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

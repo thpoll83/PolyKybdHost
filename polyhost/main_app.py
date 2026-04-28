@@ -17,6 +17,7 @@ def main():
                         help='Do not add an autorun entry to your system')
     parser.add_argument('--debug', type=int, default=0, choices=[0, 1, 2], help='Set debug level: 0 (no debug), 1 (basic debug), 2 (detailed debug)')
     parser.add_argument('--host', help='Specify a host where the PolyKybd is physically connected to')
+    parser.add_argument('--host-file', help='Path to a file containing the host IP, written by a session hook (see folder autorun_forwarder for examples). This option has higher priority than `--host`.')
     args=parser.parse_args()
 
     if not args.portable:
@@ -26,9 +27,10 @@ def main():
     if sys.platform.startswith('linux'):
         QApplication.setDesktopFileName('PolyHost')
 
-    if args.host:
-        print(f"Executing Forwarder. Sending to {args.host}")
-        app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host)
+    if args.host or args.host_file:
+        addr = args.host or f"IP set in {args.host_file}"
+        print(f"Executing Forwarder. Sending to {addr}.")
+        app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file)
     else:
         print("Executing PolyHost...")
         app = PolyHost(logging.DEBUG if args.debug>0 else logging.INFO, args.debug)

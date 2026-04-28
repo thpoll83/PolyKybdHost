@@ -2,13 +2,12 @@ import logging
 import re
 import socket
 import threading
-import time
-import ipaddress
 
 from polyhost.handler.common import Flags
 
 TCP_PORT = 50162
 BUFFER_SIZE = 1024
+
 
 # Needs to be started as thread
 def receive_from_forwarder(log, connections, stop_event):
@@ -26,22 +25,22 @@ def receive_from_forwarder(log, connections, stop_event):
 
     while not stop_event.is_set():
         try:
-            if len(connections) > 0:
-                conn, (addr, _) = sock.accept()
-                try:
-                    data = conn.recv(BUFFER_SIZE)
-                    data = data.decode("utf-8")
-                    entries = [0, "", ""] if not data else data.split(";")
-                    if len(entries) > 2:
-                        connections[addr] = {
-                            "handle": entries[0],
-                            "name": entries[1],
-                            "title": entries[2],
-                        }
-                finally:
-                    conn.close()
+            conn, (addr, _) = sock.accept()
+            try:
+                data = conn.recv(BUFFER_SIZE)
+                data = data.decode("utf-8")
+                entries = [0, "", ""] if not data else data.split(";")
+                if len(entries) > 2:
+                    connections[addr] = {
+                        "handle": entries[0],
+                        "name": entries[1],
+                        "title": entries[2],
+                    }
+                    connections["_latest"] = addr
+            finally:
+                conn.close()
         except socket.timeout:
-            time.sleep(3)
+            pass
     sock.close()
 
 
@@ -60,43 +59,17 @@ class RemoteHandler:
         self.mapping = mapping
         self.listen_to_forwarder()
 
-    def listen_to_forwarder(self):
-        resolved_remote = False
-        for _, entry in self.mapping.items():
-            if "remote" in entry.keys():
-                remote = entry["remote"]
-                try:
-                    addr = str(ipaddress.ip_address(remote))
-                    if addr not in self.connections.keys():
-                        self.connections[addr] = ""
-                        self.log.info("IP address '%s' used with %s", remote, addr)
-                        resolved_remote = True
-                        entry["ip"] = addr
+    def _has_remote_entries(self):
+        return any("remote" in entry for entry in self.mapping.values())
 
-                except ValueError:
-                    try:
-                        addr = str(socket.gethostbyname(remote))
-                        if addr not in self.connections.keys():
-                            self.connections[addr] = ""
-                            self.log.info("Resolved '%s' to %s", remote, addr)
-                            resolved_remote = True
-                            entry["ip"] = addr
-                    except Exception as e:
-                        self.log.warning(
-                            "Could not resolve hostname '%s': %s", remote, e
-                        )
-                except Exception as e:
-                    self.log.warning("Could not resolve '%s': %s", remote, e)
-        if resolved_remote:
-            if not self.forwarder:
-                self.forwarder = threading.Thread(
-                    target=receive_from_forwarder,
-                    name="PolyKybd Remote Handler",
-                    args=(self.log, self.connections, self.stop_event),
-                )
-                self.forwarder.start()
-        else:
-            self.forwarder = None
+    def listen_to_forwarder(self):
+        if self._has_remote_entries() and not self.forwarder:
+            self.forwarder = threading.Thread(
+                target=receive_from_forwarder,
+                name="PolyKybd Remote Handler",
+                args=(self.log, self.connections, self.stop_event),
+            )
+            self.forwarder.start()
 
     def try_to_match_window_remote(self, name, entry):
         (
@@ -161,13 +134,13 @@ class RemoteHandler:
         return False
 
     def remote_changed(self, remote_entry: dict):
-        if "ip" not in remote_entry.keys():
-            self.listen_to_forwarder()
+        ip = self.connections.get("_latest")
+        if not ip:
             return False
-        if not remote_entry["ip"] in self.connections:
+        if not isinstance(self.connections.get(ip), dict):
             return False
 
-        data = self.connections[remote_entry["ip"]]
+        data = self.connections[ip]
 
         if (
             data
