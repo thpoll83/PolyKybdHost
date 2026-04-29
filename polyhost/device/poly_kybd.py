@@ -511,6 +511,16 @@ class PolyKybd:
             except Exception as e:
                 self.log.error("Couldn't not execute '%s': %s", cmd_str, e)
 
+    def get_default_layer(self) -> tuple[bool, int]:
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.GET_DEFAULT_LAYER), 15, expect(Cmd.GET_DEFAULT_LAYER))
+            if result and len(reply) > 3 and reply[2:3] == b'.':
+                return True, reply[3]
+        except Exception:
+            pass
+        return False, 0
+
     def get_dynamic_keycode(self, layer: int, row: int, col: int) -> tuple[bool, int | bytearray]:
         req = HidId.ID_DYNAMIC_KEYMAP_GET_KEYCODE
         result, reply = self.hid.send_and_read_validate(

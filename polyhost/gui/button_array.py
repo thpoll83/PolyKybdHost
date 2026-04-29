@@ -37,3 +37,8 @@ class ButtonArray(QWidget):
 
     def connect(self, slot):
         self.group.buttonClicked.connect(slot)
+
+    def set_active(self, idx: int):
+        btn = self.group.button(idx)
+        if btn is not None:
+            btn.setChecked(True)

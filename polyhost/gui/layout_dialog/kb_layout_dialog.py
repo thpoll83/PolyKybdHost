@@ -14,7 +14,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.poly_kybd import PolyKybd
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
-from polyhost.gui.layout_dialog.qmk_keycode_helper import create_nice_name, decompose_keycode
+from polyhost.gui.layout_dialog.qmk_keycode_helper import create_nice_name, decompose_keycode, parse_layer_names
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
 from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
@@ -98,17 +98,18 @@ class KbLayoutDialog(QMainWindow):
         self.keycode_browser.keycodeSelected.connect(self.keycodeSelected)
 
         success, self.num_layers = self.keeb.get_dynamic_layer_count()
+        layer_names = parse_layer_names()
 
         if not success:
             my_options = ["Could not read layers from device"]
         else:
             my_options = []
             for idx in range(self.keeb.num_layers):
-                my_options.append(f"{idx}")
+                hint = layer_names.get(idx)
+                my_options.append(f"{idx} {hint}" if hint else str(idx))
 
         header_layout = QHBoxLayout()
         self.layers = ButtonArray(my_options)
-        self.layers.setMaximumHeight(40)
         self.layers.setMaximumHeight(40)
         self.layers.connect(self.layerChanged)
         label = QLabel("Layers:")
@@ -120,15 +121,19 @@ class KbLayoutDialog(QMainWindow):
         main_layout.addWidget(self.keycode_browser)
         central.setLayout(main_layout)
         self.setCentralWidget(central)
-        
+
         self.set_preferred_size(1800, 1000)
-        
+
         self.load_from_file(str(KLE_DEFINITION))
-        
+
         success, self.key_buffer = self.keeb.get_dynamic_buffer()
         if success:
             self.log.info("Received dynamic key buffer: %d", len(self.key_buffer))
-            self.set_keycodes_for_layer(0)
+            ok, default_layer = self.keeb.get_default_layer()
+            if ok and self.keeb.num_layers and 0 <= default_layer < self.keeb.num_layers:
+                self.current_layer = default_layer
+                self.layers.set_active(default_layer)
+            self.set_keycodes_for_layer(self.current_layer)
         else:
             self.log.warning("Failed to receive dynamic key buffer")
     
@@ -152,7 +157,7 @@ class KbLayoutDialog(QMainWindow):
             idx += 1
 
     def layerChanged(self, button):
-        self.current_layer = int(button.text())
+        self.current_layer = self.layers.group.id(button)
         self.set_keycodes_for_layer(self.current_layer)
         
     # call this from your MainWindow (e.g., at end of init_ui)

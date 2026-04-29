@@ -220,6 +220,9 @@ class PolyKybdMock:
             except Exception as e:
                 self.log.error(f"Couldn't not execute '{cmd_str}': {e}")
 
+    def get_default_layer(self) -> tuple[bool, int]:
+        return True, 0
+
     def set_dynamic_keycode(self, layer: int, row: int, col: int, keycode: int):
         self.log.info("set_dynamic_keycode layer=%d row=%d col=%d keycode=0x%04x", layer, row, col, keycode)
         return True, ""
