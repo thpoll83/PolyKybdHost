@@ -536,6 +536,13 @@ class PolyKybd:
     def reset_dynamic_keymap(self) -> tuple[bool, Any]:
         return self.hid.send(compose_request(HidId.ID_DYNAMIC_KEYMAP_RESET))
 
+    def set_dynamic_keycode(self, layer: int, row: int, col: int, keycode: int) -> tuple[bool, Any]:
+        req = HidId.ID_DYNAMIC_KEYMAP_SET_KEYCODE
+        result, reply = self.hid.send_and_read_validate(
+            compose_request(req, layer, row, col, keycode >> 8, keycode & 0xFF),
+            50, expectReq(req))
+        return result, reply
+
     def get_dynamic_buffer(self) -> tuple[bool, list[int] | None]:
         if self.num_layers is None:
             success, _ = self.get_dynamic_layer_count()

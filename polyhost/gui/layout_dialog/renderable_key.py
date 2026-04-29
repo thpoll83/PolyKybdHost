@@ -13,7 +13,8 @@ KEY_RADIUS = 0.1
 class RenderableKey(QGraphicsObject):
     pressed = pyqtSignal(object)
 
-    def __init__(self, nice_name, props, scale):
+    def __init__(self, nice_name, props, scale, matrix_index=None):
+        self.matrix_index = matrix_index
 
         # compute reduced size if you use KEY_MARGIN
         full_w = props['w'] * scale
@@ -153,8 +154,8 @@ class RenderableKey(QGraphicsObject):
     def setKeycode(self, nice_name, name, keycode, font_size_hint=None):
         self.nice_name = nice_name
         self.text.document().setPlainText(nice_name)
-        if font_size_hint is not None and font_size_hint.is_integer():
-            self.text.setFont(QFont("Arial", font_size_hint))
+        if font_size_hint is not None and isinstance(font_size_hint, (int, float)):
+            self.text.setFont(QFont("Arial", int(font_size_hint)))
         self.update_text_position()
         self.update()
 

@@ -220,5 +220,9 @@ class PolyKybdMock:
             except Exception as e:
                 self.log.error(f"Couldn't not execute '{cmd_str}': {e}")
 
+    def set_dynamic_keycode(self, layer: int, row: int, col: int, keycode: int):
+        self.log.info("set_dynamic_keycode layer=%d row=%d col=%d keycode=0x%04x", layer, row, col, keycode)
+        return True, ""
+
     def set_unicode_mode(self, mode):
         self.log.info(f"Setting unicode mode to %d", mode.value)

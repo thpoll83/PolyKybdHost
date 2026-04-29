@@ -78,6 +78,7 @@ class KbLayoutDialog(QMainWindow):
         self._zoom_max = 3.0
         self.selected_key = None
         self.keys = {}
+        self.current_layer = 0
 
         self.init_ui()
 
@@ -151,8 +152,8 @@ class KbLayoutDialog(QMainWindow):
             idx += 1
 
     def layerChanged(self, button):
-        layer = int(button.text())
-        self.set_keycodes_for_layer(layer)
+        self.current_layer = int(button.text())
+        self.set_keycodes_for_layer(self.current_layer)
         
     # call this from your MainWindow (e.g., at end of init_ui)
     def set_preferred_size(self, pref_w, pref_h):
@@ -212,8 +213,20 @@ class KbLayoutDialog(QMainWindow):
         self.selected_key = item
 
     def keycodeSelected(self, nice_name, name, keycode, font_size_hint):
-        if self.selected_key:
-            self.selected_key.setKeycode(nice_name, name, keycode, font_size_hint)
+        if self.selected_key is None:
+            return
+        self.selected_key.setKeycode(nice_name, name, keycode, font_size_hint)
+        idx = self.selected_key.matrix_index
+        if idx is None:
+            return
+        max_idx = self.settings.MATRIX_COLUMNS * self.settings.MATRIX_ROWS
+        self.key_buffer[idx + self.current_layer * max_idx] = keycode
+        row = idx // self.settings.MATRIX_COLUMNS
+        col = idx % self.settings.MATRIX_COLUMNS
+        ok, _ = self.keeb.set_dynamic_keycode(self.current_layer, row, col, keycode)
+        if not ok:
+            self.log.warning("Failed to write keycode 0x%04x to device (layer=%d row=%d col=%d)",
+                             keycode, self.current_layer, row, col)
 
             
     def render_keys(self):
@@ -235,9 +248,9 @@ class KbLayoutDialog(QMainWindow):
             ry = info.get('ry', 0) - miny
             
             # Create key item
-            item = RenderableKey(name, info, KEY_SCALE)
+            index = info["row"] * self.settings.MATRIX_COLUMNS + info["col"]
+            item = RenderableKey(name, info, KEY_SCALE, matrix_index=index)
             item.pressed.connect(self.mouseClickEvent)
-            index = info["row"]*self.settings.MATRIX_COLUMNS+info["col"]
             self.keys[index] = item
             
             # Apply transformations for rotation
@@ -266,8 +279,4 @@ class KbLayoutDialog(QMainWindow):
         
         self.view.setSceneRect(self.scene.itemsBoundingRect())
 
-    def send_to_device(self):
-        if not self.mapping:
-            QMessageBox.warning(self, "No Layout", "Load a layout first.")
-            return
 
