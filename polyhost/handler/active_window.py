@@ -187,6 +187,7 @@ class OverlayHandler:
                                 app_name = raw_app_name.split(".",-1)[0].lower()
                             else:
                                 app_name = raw_app_name.lower()
+                            # self.log.debug("App lookup: raw='%s' normalized='%s' in_mapping=%s", raw_app_name, app_name, app_name in self.mapping)
                             if app_name in self.mapping.keys():
                                 found, cmd = self.try_to_match_window(
                                     app_name, self.mapping[app_name]
@@ -194,6 +195,7 @@ class OverlayHandler:
                                 if found:
                                     self.log.info("Changing to %s", app_name)
                                     return self.get_overlay_data(), cmd
+                                self.log.debug("App '%s' in mapping but title did not match (title='%s')", app_name, self.title)
                             if self.current_entry and not found:
                                 self.current_entry = None
                                 self.log.info("Nothing active")
@@ -202,14 +204,14 @@ class OverlayHandler:
                         self.log.warning("Failed retrieving active window: %s", e)
                     self.log.info("No match")
                     return None, OverlayCommand.DISABLE
-                elif self.is_remote_mapping_entry() and self.remote_handler.remote_changed(
-                    self.current_entry
-                ):
-                    self.log.info("Remote")
-                    if self.remote_handler.has_overlay():
-                        return self.get_overlay_data(), OverlayCommand.OFF_ON
-                    else:
-                        return None, OverlayCommand.DISABLE
+                elif self.is_remote_mapping_entry():
+                    self.log.debug("Remote forwarder active (current_entry='%s'), checking for changes", self.current_entry.get("remote") if self.current_entry else None)
+                    if self.remote_handler.remote_changed(self.current_entry):
+                        self.log.info("Remote window changed")
+                        if self.remote_handler.has_overlay():
+                            return self.get_overlay_data(), OverlayCommand.OFF_ON
+                        else:
+                            return None, OverlayCommand.DISABLE
         else:
             if self.win:
                 self.log.info("No active window")

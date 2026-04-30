@@ -12,16 +12,18 @@ BUFFER_SIZE = 1024
 # Needs to be started as thread
 def receive_from_forwarder(log, connections, stop_event):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     try:
         sock.bind(("", TCP_PORT))
     except socket.error as message:
-        log.warning(f"Failed to bind socket: {message}")
+        log.warning(f"Failed to bind remote listener socket: {message}")
         sock.close()
         return
 
     sock.listen(5)
     sock.settimeout(10.0)
+    log.info("Remote listener started on port %d", TCP_PORT)
 
     while not stop_event.is_set():
         try:
@@ -37,11 +39,16 @@ def receive_from_forwarder(log, connections, stop_event):
                         "title": entries[2],
                     }
                     connections["_latest"] = addr
+                    log.debug("Remote data from %s: handle=%s name=%s", addr, entries[0], entries[1])
             finally:
                 conn.close()
         except socket.timeout:
             pass
+        except OSError as e:
+            if not stop_event.is_set():
+                log.warning("Remote listener socket error: %s", e)
     sock.close()
+    log.info("Remote listener stopped")
 
 
 class RemoteHandler:
@@ -63,13 +70,17 @@ class RemoteHandler:
         return any("remote" in entry for entry in self.mapping.values())
 
     def listen_to_forwarder(self):
-        if self._has_remote_entries() and not self.forwarder:
-            self.forwarder = threading.Thread(
-                target=receive_from_forwarder,
-                name="PolyKybd Remote Handler",
-                args=(self.log, self.connections, self.stop_event),
-            )
-            self.forwarder.start()
+        if not self._has_remote_entries():
+            return
+        if self.forwarder and self.forwarder.is_alive():
+            return
+        self.forwarder = threading.Thread(
+            target=receive_from_forwarder,
+            name="PolyKybd Remote Handler",
+            args=(self.log, self.connections, self.stop_event),
+        )
+        self.forwarder.daemon = True
+        self.forwarder.start()
 
     def try_to_match_window_remote(self, name, entry):
         (
@@ -134,10 +145,13 @@ class RemoteHandler:
         return False
 
     def remote_changed(self, remote_entry: dict):
+        self.listen_to_forwarder()  # restart listener if it died (e.g. bind failed on first try)
         ip = self.connections.get("_latest")
         if not ip:
+            self.log.debug("remote_changed: no TCP data received yet (no connection)")
             return False
         if not isinstance(self.connections.get(ip), dict):
+            self.log.debug("remote_changed: connection data for %s is not a dict: %s", ip, self.connections.get(ip))
             return False
 
         data = self.connections[ip]
@@ -145,8 +159,7 @@ class RemoteHandler:
         if (
             data
             and len(data) > 2
-            and self.handle != data["handle"]
-            and self.title != data["title"]
+            and (self.handle != data["handle"] or self.title != data["title"])
         ):
             self.handle = data["handle"]
             self.title = data["title"]
@@ -164,6 +177,10 @@ class RemoteHandler:
             if self.current_entry and not found:
                 self.current_entry = None
             return True
+        self.log.debug(
+            "remote_changed: no change (ip=%s stored_handle=%s->%s stored_title=%s->%s)",
+            ip, self.handle, data.get("handle"), self.title, data.get("title"),
+        )
         return False
 
     def has_overlay(self):
@@ -176,5 +193,5 @@ class RemoteHandler:
 
     def close(self):
         self.stop_event.set()
-        if self.forwarder:
-            self.forwarder.join()
+        if self.forwarder and self.forwarder.is_alive():
+            self.forwarder.join(timeout=15)

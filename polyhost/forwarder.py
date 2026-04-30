@@ -31,6 +31,7 @@ else:
 
 UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
+HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
 
 # Define custom debug levels
 DEBUG_DETAILED = 8   # Custom level below DEBUG (10)
@@ -76,9 +77,11 @@ class PolyForwarder(QApplication):
         self.title = None
         self.last_update_msec = 0
 
+        self.heartbeat_msec = 0
+
         self.tray.show()
         self.set_style()
-        
+
         self.menu = QMenu()
         self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
@@ -150,6 +153,7 @@ class PolyForwarder(QApplication):
             return False
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(3.0)
             s.connect((str(ip), TCP_PORT))
             s.send(f"{handle};{name};{title}".encode("utf-8"))
             s.close()
@@ -189,6 +193,7 @@ class PolyForwarder(QApplication):
 
     def active_window_reporter(self):
         self.last_update_msec += UPDATE_CYCLE_MSEC
+        self.heartbeat_msec += UPDATE_CYCLE_MSEC
         win = pwc.getActiveWindow()
         if win:
             try:
@@ -198,23 +203,29 @@ class PolyForwarder(QApplication):
                 if self.last_update_msec > NEW_WINDOW_ACCEPT_TIME_MSEC:
                     #just to limit the time value:
                     self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2
-                    if (
+                    changed = (
                         self.win is None
                         or win.getHandle() != self.win.getHandle()
                         or win.title != self.title
-                    ):
+                    )
+                    if changed or self.heartbeat_msec >= HEARTBEAT_MSEC:
                         self.win = win
                         self.title = win.title
                         app_name = win.getAppName()
                         handle = win.getHandle()
                         self.send_to_host(handle, self.title, app_name)
-                        self.log.info("Active App: '%s' %s %d", self.title, app_name, handle)
+                        if changed:
+                            self.log.info("Active App: '%s' %s %d", self.title, app_name, handle)
+                        else:
+                            self.log.debug("Heartbeat: '%s' %s %d", self.title, app_name, handle)
+                        self.heartbeat_msec = 0
             except Exception as e:
                 self.log.warning("Exception in window reporter: %s", e)
         elif self.win:
             self.log.info("No active window")
             self.win = None
             self.title = None
+            self.heartbeat_msec = 0
             self.send_to_host(0, "", "")
 
         if not self.is_closing:
