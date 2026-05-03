@@ -117,7 +117,7 @@ class PolyHost(QApplication):
         self.keeb_log.addHandler(file_handler)
         self.keeb_log.propagate = False
 
-        #self.keeb = PolyKybdMock(DeviceSettings(), f"{__version__}")
+        #self.keeb = PolyKybdMock(DeviceSettings(), version=f"{__version__}")
         self.kb_sw_version = None
         self.connected = False
         self.paused = False
