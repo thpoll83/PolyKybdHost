@@ -13,9 +13,10 @@ class PolyKybdMock:
     """
     Software stub for PolyKybd — complete interface without physical hardware.
 
-    Mirrors every public method of PolyKybd, maintains simulated device state,
-    and records all calls in ``self.calls`` as (method_name, args, kwargs) tuples
-    so tests can assert on what was invoked and in what order.
+    Mirrors every public method of PolyKybd and maintains simulated device state.
+    Every public method appends an entry to ``self.calls`` as a
+    (method_name, args, kwargs) tuple so tests can assert on what was invoked
+    and in what order.
     """
 
     def __init__(self, device_settings: DeviceSettings, poly_settings=None, *,
@@ -82,16 +83,19 @@ class PolyKybdMock:
         return True, self._sw_version
 
     def get_name(self) -> str:
+        self._log_call("get_name")
         return self._name
 
     def get_sw_version(self) -> str:
+        self._log_call("get_sw_version")
         return self._sw_version
 
     def get_sw_version_number(self) -> list[int]:
-        """Return [major, minor, patch] version integers."""
+        self._log_call("get_sw_version_number")
         return self._sw_version_num
 
     def get_hw_version(self) -> str:
+        self._log_call("get_hw_version")
         return self._hw_version
 
     # -------------------------------------------------------------------------
@@ -142,7 +146,8 @@ class PolyKybdMock:
 
     def set_brightness(self, brightness: int) -> tuple[bool, str]:
         self._log_call("set_brightness", brightness)
-        self._brightness = max(0, min(brightness, 50))
+        max_brightness = getattr(self.device_settings, "MAX_BRIGHTNESS", 50)
+        self._brightness = max(0, min(brightness, max_brightness))
         return True, ""
 
     def set_idle(self, idle: bool) -> tuple[bool, str]:
@@ -185,9 +190,11 @@ class PolyKybdMock:
         return True, self._lang_str
 
     def get_lang_list(self) -> list[str]:
+        self._log_call("get_lang_list")
         return self._all_languages
 
     def get_current_lang(self) -> str:
+        self._log_call("get_current_lang")
         return self._current_lang
 
     def change_language(self, lang: str) -> tuple[bool, str]:
@@ -252,9 +259,11 @@ class PolyKybdMock:
     # -------------------------------------------------------------------------
 
     def read_serial(self):
+        self._log_call("read_serial")
         return None
 
     def get_console_output(self, flush_and_return: bool = True) -> str | None:
+        self._log_call("get_console_output", flush_and_return)
         return "" if flush_and_return else None
 
     # -------------------------------------------------------------------------
@@ -262,6 +271,7 @@ class PolyKybdMock:
     # -------------------------------------------------------------------------
 
     def execute_commands(self, command_list: list) -> None:
+        self._log_call("execute_commands", command_list)
         for cmd_str in command_list:
             cmd_str = cmd_str.strip()
             end = cmd_str.find(" ")
@@ -307,18 +317,22 @@ class PolyKybdMock:
         self._log_call("get_dynamic_layer_count")
         return True, self._num_layers
 
-    def get_dynamic_keycode(self, layer: int, row: int, col: int) -> tuple[bool, int | bytearray]:
+    def get_dynamic_keycode(self, layer: int, row: int, col: int) -> tuple[bool, int | None]:
         self._log_call("get_dynamic_keycode", layer, row, col)
-        if layer >= self._num_layers:
-            return False, bytearray()
+        if (layer >= self._num_layers
+                or row >= self.device_settings.MATRIX_ROWS
+                or col >= self.device_settings.MATRIX_COLUMNS):
+            return False, None
         return True, self._keymap[layer][row][col]
 
     def set_dynamic_keycode(self, layer: int, row: int, col: int, keycode: int) -> tuple[bool, Any]:
         self._log_call("set_dynamic_keycode", layer, row, col, keycode)
         self.log.info("set_dynamic_keycode layer=%d row=%d col=%d keycode=0x%04x",
                       layer, row, col, keycode)
-        if layer >= self._num_layers:
-            return False, f"Layer {layer} out of range"
+        if (layer >= self._num_layers
+                or row >= self.device_settings.MATRIX_ROWS
+                or col >= self.device_settings.MATRIX_COLUMNS):
+            return False, f"Coordinates ({layer},{row},{col}) out of range"
         self._keymap[layer][row][col] = keycode
         return True, ""
 

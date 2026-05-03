@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.poly_kybd_mock import PolyKybdMock
@@ -91,7 +92,8 @@ class TestPolyKybdMockDeviceSettings(unittest.TestCase):
     def test_set_brightness_clamps_high(self):
         ok, _ = self.mock.set_brightness(100)
         self.assertTrue(ok)
-        self.assertEqual(self.mock._brightness, 50)
+        expected_max = getattr(self.mock.device_settings, "MAX_BRIGHTNESS", 50)
+        self.assertEqual(self.mock._brightness, expected_max)
 
     def test_set_brightness_clamps_low(self):
         ok, _ = self.mock.set_brightness(-5)
@@ -184,6 +186,46 @@ class TestPolyKybdMockOverlayMapping(unittest.TestCase):
         self.assertEqual(self.mock._overlay_mapping[3], 30)
 
 
+class TestPolyKybdMockSendOverlays(unittest.TestCase):
+    def setUp(self):
+        self.mock = make_mock()
+
+    @mock.patch("polyhost.device.poly_kybd_mock.ImageConverter")
+    def test_send_overlays_success_updates_state(self, MockImageConverter):
+        converter = MockImageConverter.return_value
+        converter.open.return_value = True
+        converter.extract_overlays.return_value = {}
+
+        filenames = ["overlay1.png", "overlay2.png"]
+        result = self.mock.send_overlays(filenames)
+
+        self.assertTrue(result)
+        self.assertEqual(self.mock._sent_overlays, filenames)
+        self.assertTrue(self.mock._overlays_enabled)
+
+    @mock.patch("polyhost.device.poly_kybd_mock.ImageConverter")
+    def test_send_overlays_open_failure_returns_false(self, MockImageConverter):
+        converter = MockImageConverter.return_value
+        converter.open.return_value = False
+
+        result = self.mock.send_overlays(["bad.png"])
+
+        self.assertFalse(result)
+        self.assertEqual(self.mock._sent_overlays, [])
+        self.assertFalse(self.mock._overlays_enabled)
+
+    @mock.patch("polyhost.device.poly_kybd_mock.ImageConverter")
+    def test_send_overlays_call_logged(self, MockImageConverter):
+        converter = MockImageConverter.return_value
+        converter.open.return_value = True
+        converter.extract_overlays.return_value = {}
+
+        self.mock.send_overlays(["test.png"])
+
+        names = [c[0] for c in self.mock.calls]
+        self.assertIn("send_overlays", names)
+
+
 class TestPolyKybdMockConsole(unittest.TestCase):
     def setUp(self):
         self.mock = make_mock()
@@ -263,13 +305,32 @@ class TestPolyKybdMockDynamicKeymap(unittest.TestCase):
         self.assertEqual(kc, 0x0041)
 
     def test_get_dynamic_keycode_out_of_range_layer(self):
-        ok, _ = self.mock.get_dynamic_keycode(99, 0, 0)
+        ok, val = self.mock.get_dynamic_keycode(99, 0, 0)
         self.assertFalse(ok)
+        self.assertIsNone(val)
+
+    def test_get_dynamic_keycode_out_of_range_row(self):
+        ok, val = self.mock.get_dynamic_keycode(0, 99, 0)
+        self.assertFalse(ok)
+        self.assertIsNone(val)
+
+    def test_get_dynamic_keycode_out_of_range_col(self):
+        ok, val = self.mock.get_dynamic_keycode(0, 0, 99)
+        self.assertFalse(ok)
+        self.assertIsNone(val)
 
     def test_set_dynamic_keycode_out_of_range_layer(self):
         ok, msg = self.mock.set_dynamic_keycode(99, 0, 0, 0x0041)
         self.assertFalse(ok)
         self.assertIn("99", msg)
+
+    def test_set_dynamic_keycode_out_of_range_row(self):
+        ok, _ = self.mock.set_dynamic_keycode(0, 99, 0, 0x0041)
+        self.assertFalse(ok)
+
+    def test_set_dynamic_keycode_out_of_range_col(self):
+        ok, _ = self.mock.set_dynamic_keycode(0, 0, 99, 0x0041)
+        self.assertFalse(ok)
 
     def test_reset_dynamic_keymap_clears_keycodes(self):
         self.mock.set_dynamic_keycode(0, 0, 0, 0xFFFF)
