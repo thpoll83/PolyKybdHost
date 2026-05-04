@@ -275,14 +275,22 @@ class PolyKybd:
         return self.hid.send(compose_cmd(cmd, 0x1e))
 
     def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
-        split_per_msg = split_dict(
-            from_to, self.device_settings.OVERLAY_MAPPING_INDICES_PER_REPORT/2)
+        chunk_size = int(self.device_settings.OVERLAY_MAPPING_INDICES_PER_REPORT / 2)
+        split_per_msg = split_dict(from_to, chunk_size)
 
         cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING)
         lock = None
         num_msgs = 0
         for dict_part in split_per_msg:
-            msg = cmd + pack_dict_10_bit(dict_part)
+            # Pad to chunk_size so every HID message carries exactly chunk_size pairs.
+            # The firmware ignores pairs where from >= OVERLAY_MAP_IDX_CNT (810),
+            # preventing zero-padded bytes in the buffer from overwriting mapping[0].
+            padded = dict(dict_part)
+            noop_key = 810
+            while len(padded) < chunk_size:
+                padded[noop_key] = 810
+                noop_key += 1
+            msg = cmd + pack_dict_10_bit(padded)
             result, msg, lock = self.hid.send_multiple(msg, lock)
             num_msgs += 1
             if not result:
@@ -532,14 +540,20 @@ class PolyKybd:
         self.log.info("LRU: %d HID image messages, %d display positions mapped",
                       hid_msg_counter, len(display_to_pool))
 
-        # Build a full mapping covering all pool positions.  Positions not used by the
-        # current app are routed to the sentinel slot (= first slot beyond the pool,
-        # never written to, so is_overlay_used=false → blank display).  Without this,
-        # identity-mapped pool slots bleed through to their natural display keys.
+        # Build the minimal mapping needed after reset_overlay_mapping() (identity):
+        # 1. Active positions: display_pos → pool_slot for the current app.
+        # 2. Occupied-but-inactive pool slots: their identity position (slot i is
+        #    naturally shown on key i) would leak cached images from previous apps.
+        #    Route them to the sentinel slot (first beyond pool, never written to,
+        #    so is_overlay_used=false → blank).  Only slots already in the LRU
+        #    matter; never-used slots have is_overlay_used=false anyway.
         sentinel = self.device_settings.OVERLAY_LRU_POOL_CAPACITY
-        full_mapping = {i: sentinel for i in range(sentinel)}
-        full_mapping.update(display_to_pool)
-        ok, msg = self.send_overlay_mapping(full_mapping)
+        occupied = cache.get_occupied_slots()
+        blank = {s: sentinel for s in occupied if s not in display_to_pool}
+        mapping = {**display_to_pool, **blank}
+        self.log.info("LRU mapping: %d active + %d blank = %d entries",
+                      len(display_to_pool), len(blank), len(mapping))
+        ok, msg = self.send_overlay_mapping(mapping)
         if not ok:
             self.log.warning("send_overlays_lru: mapping failed: %s", msg)
             return False

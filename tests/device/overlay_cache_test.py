@@ -66,6 +66,34 @@ class TestOverlayLRUCacheBasics(unittest.TestCase):
         self.assertFalse(hit)
         self.assertEqual(slot, 0)
 
+    def test_get_occupied_slots_empty(self):
+        cache = OverlayLRUCache(10)
+        self.assertEqual(cache.get_occupied_slots(), set())
+
+    def test_get_occupied_slots_after_allocations(self):
+        cache = OverlayLRUCache(10)
+        slot0, _ = cache.get_or_allocate(("a.png", 0))
+        slot1, _ = cache.get_or_allocate(("b.png", 0))
+        slot2, _ = cache.get_or_allocate(("c.png", 0))
+        self.assertEqual(cache.get_occupied_slots(), {slot0, slot1, slot2})
+
+    def test_get_occupied_slots_after_eviction(self):
+        cache = OverlayLRUCache(2)
+        slot0, _ = cache.get_or_allocate(("a.png", 0))
+        slot1, _ = cache.get_or_allocate(("b.png", 0))
+        # evict k0 by adding k2
+        slot2, _ = cache.get_or_allocate(("c.png", 0))
+        # slot2 reuses slot0's index; only two entries remain
+        self.assertEqual(len(cache.get_occupied_slots()), 2)
+        self.assertIn(slot1, cache.get_occupied_slots())
+        self.assertIn(slot2, cache.get_occupied_slots())
+
+    def test_get_occupied_slots_clears_after_reset(self):
+        cache = OverlayLRUCache(10)
+        cache.get_or_allocate(("a.png", 0))
+        cache.reset()
+        self.assertEqual(cache.get_occupied_slots(), set())
+
 
 class TestPoolSlotToFirmwareAddress(unittest.TestCase):
 

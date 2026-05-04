@@ -61,6 +61,10 @@ class OverlayLRUCache:
         """Number of pool slots currently occupied."""
         return len(self._cache)
 
+    def get_occupied_slots(self) -> set:
+        """Set of pool slot indices currently holding a cached image."""
+        return set(self._cache.values())
+
     def get_lru_info(self) -> dict[int, tuple]:
         """
         Returns {pool_slot: (full_path, modifier_value, keycode, lru_rank)} for all
