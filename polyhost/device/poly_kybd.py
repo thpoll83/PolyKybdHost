@@ -499,10 +499,6 @@ class PolyKybd:
 
         display_to_pool: dict[int, int] = {}
 
-        # Reset mapping: firmware sets all positions to UNSET (blank).
-        # Image writes bypass the mapping and land at the direct pool address.
-        self.reset_overlay_mapping()
-
         for filename in filenames:
             self.log.info("Send Overlay LRU '%s'...", filename)
             converter = ImageConverter(self.device_settings)
@@ -540,8 +536,9 @@ class PolyKybd:
         self.log.info("LRU: %d HID image messages, %d display positions mapped",
                       hid_msg_counter, len(display_to_pool))
 
-        # After reset_overlay_mapping() all positions are UNSET (blank).
-        # Only active display positions need explicit entries — all from's and to's are unique.
+        # Clear all usage bits so stale pool slots don't bleed through.
+        # The mapping command re-marks each active display position as used.
+        self.reset_overlay_usage()
         ok, msg = self.send_overlay_mapping(display_to_pool)
         if not ok:
             self.log.warning("send_overlays_lru: mapping failed: %s", msg)

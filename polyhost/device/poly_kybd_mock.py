@@ -213,6 +213,7 @@ class PolyKybdMock:
                     display_idx = cache.display_flat_idx(keycode, modifier)
                     display_to_pool[display_idx] = pool_slot
 
+        self.reset_overlay_usage()
         self.send_overlay_mapping(display_to_pool)
         self.enable_overlays()
         return True
