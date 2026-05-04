@@ -49,10 +49,10 @@ def _load_overlay_pixmap(full_path: str, modifier_value: int, keycode: int,
 
 
 def _rank_color(rank: int, total: int) -> str:
-    """Background colour for the cell: red→yellow→green from oldest to newest."""
+    """Background colour for the cell: red (rank 1 = LRU / next to evict) → green (rank N = MRU / freshest)."""
     if total <= 1:
         return "#1e3a1e"
-    frac = (rank - 1) / (total - 1)  # 0.0 = LRU (oldest), 1.0 = MRU (newest)
+    frac = (rank - 1) / (total - 1)  # 0.0 = rank 1 (LRU), 1.0 = rank N (MRU)
     r = int(180 * (1 - frac))
     g = int(180 * frac)
     return f"rgb({r},{g},30)"
@@ -61,7 +61,7 @@ def _rank_color(rank: int, total: int) -> str:
 class LRUInspectorDialog(QDialog):
     def __init__(self, cache: OverlayLRUCache, device_settings: DeviceSettings, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"LRU Overlay Cache Inspector  —  {len(cache._cache)}/{cache.capacity} slots used")
+        self.setWindowTitle(f"LRU Overlay Cache Inspector  —  {cache.used_slots()}/{cache.capacity} slots used")
         self.resize(1150, 720)
 
         self._cache = cache
@@ -169,5 +169,5 @@ class LRUInspectorDialog(QDialog):
         return frame
 
     def _refresh(self):
-        self.setWindowTitle(f"LRU Overlay Cache Inspector  —  {len(self._cache._cache)}/{self._cache.capacity} slots used")
+        self.setWindowTitle(f"LRU Overlay Cache Inspector  —  {self._cache.used_slots()}/{self._cache.capacity} slots used")
         self._build_grid()

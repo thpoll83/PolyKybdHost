@@ -135,9 +135,9 @@ class TestDisplayFlatIdx(unittest.TestCase):
         self.assertEqual(idx, 82)
 
     def test_round_trip_pool_slot_to_display_flat_idx(self):
-        """Pool slot i and display_flat_idx for the same (kc, mod) must match."""
-        cache = OverlayLRUCache(200)
-        for pool_slot in range(90):  # check first modifier layer
+        """Pool slot i and display_flat_idx for the same (kc, mod) must match across all modifier layers."""
+        cache = OverlayLRUCache(630)
+        for pool_slot in range(cache.capacity):
             kc, mod = cache.pool_slot_to_firmware_address(pool_slot)
             flat = OverlayLRUCache.display_flat_idx(kc, mod)
             self.assertEqual(flat, pool_slot,

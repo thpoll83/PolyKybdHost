@@ -206,8 +206,9 @@ class PolyKybdMock:
                     pool_slot, is_hit = cache.get_or_allocate(content_key, filename)
 
                     if not is_hit:
+                        pool_kc, _pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
                         self.hid_image_sends += self.send_smallest_overlay(
-                            pool_slot, {pool_slot: overlay_data})
+                            pool_kc, {pool_kc: overlay_data})
 
                     display_idx = cache.display_flat_idx(keycode, modifier)
                     display_to_pool[display_idx] = pool_slot

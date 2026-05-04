@@ -1,6 +1,5 @@
 import os
 from collections import OrderedDict
-from typing import Optional
 
 from polyhost.device.keys import KeyCode, Modifier
 
@@ -58,19 +57,21 @@ class OverlayLRUCache:
             self._slot_to_info[slot] = (full_path, modifier_value, keycode)
         return slot, False
 
+    def used_slots(self) -> int:
+        """Number of pool slots currently occupied."""
+        return len(self._cache)
+
     def get_lru_info(self) -> dict[int, tuple]:
         """
         Returns {pool_slot: (full_path, modifier_value, keycode, lru_rank)} for all
-        occupied slots. lru_rank 1 = most-recently-used, N = least-recently-used (next to evict).
+        occupied slots. lru_rank 1 = least-recently-used (next to evict), N = most-recently-used.
         """
-        total = len(self._cache)
         result = {}
-        for rank_from_lru, (_key, slot) in enumerate(self._cache.items(), 1):
-            rank_from_mru = total - rank_from_lru + 1
+        for rank, (_key, slot) in enumerate(self._cache.items(), 1):
             info = self._slot_to_info.get(slot)
             if info:
                 full_path, mod_val, kc = info
-                result[slot] = (full_path, mod_val, kc, rank_from_mru)
+                result[slot] = (full_path, mod_val, kc, rank)
         return result
 
     def pool_slot_to_firmware_address(self, slot: int) -> tuple[int, Modifier]:
