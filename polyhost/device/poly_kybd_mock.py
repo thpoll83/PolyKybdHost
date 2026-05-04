@@ -213,10 +213,7 @@ class PolyKybdMock:
                     display_idx = cache.display_flat_idx(keycode, modifier)
                     display_to_pool[display_idx] = pool_slot
 
-        sentinel = self.settings.OVERLAY_LRU_POOL_CAPACITY
-        occupied = cache.get_occupied_slots()
-        blank = {s: sentinel for s in occupied if s not in display_to_pool}
-        self.send_overlay_mapping({**display_to_pool, **blank})
+        self.send_overlay_mapping(display_to_pool)
         self.enable_overlays()
         return True
 
