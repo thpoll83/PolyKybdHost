@@ -35,6 +35,7 @@ from polyhost.services.unicode_cache import UnicodeCache
 from polyhost.settings import PolySettings
 from polyhost.device.poly_kybd import PolyKybd
 from polyhost.device.device_settings import DeviceSettings
+from polyhost.device.overlay_cache import OverlayLRUCache
 from polyhost._version import __version__
 
 from polyhost.input.unicode_input import get_input_method
@@ -136,6 +137,8 @@ class PolyHost(QApplication):
 
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False
+        self.overlay_cache: OverlayLRUCache | None = None
+        self.debug_mode = debug_mode
 
         # Create the menu
         self.log.debug("Building menu...")
@@ -194,6 +197,11 @@ class PolyHost(QApplication):
         self.menu.addAction(self.layout_editor)
         self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
+        if debug_mode > 0:
+            lru_action = QAction(get_icon("overlays.svg"), "Inspect LRU Cache...", parent=self)
+            # noinspection PyUnresolvedReferences
+            lru_action.triggered.connect(self.open_lru_inspector)
+            self.menu.addAction(lru_action)
         self.menu.addAction(self.support)
         self.menu.addAction(self.about)
         self.menu.addAction(self.exit)
@@ -348,6 +356,9 @@ class PolyHost(QApplication):
                             self.log.info("Setting unicode mode to str %s", mode)
                             self.keeb.set_unicode_mode(mode)
                             self.update_ui_on_lang_change(response)
+                        cache_capacity = DeviceSettings().OVERLAY_LRU_POOL_CAPACITY
+                        self.overlay_cache = OverlayLRUCache(cache_capacity)
+                        self.log.info("Overlay LRU cache initialised (capacity %d).", cache_capacity)
                     else:
                         self.status.setIcon(get_icon("sync_disabled.svg"))
                         self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
@@ -417,6 +428,15 @@ class PolyHost(QApplication):
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
+
+    def open_lru_inspector(self):
+        from polyhost.gui.lru_inspector_dialog import LRUInspectorDialog
+        if self.overlay_cache is None:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.information(None, "LRU Cache", "LRU cache is not active (device not connected or LRU mode disabled).")
+            return
+        dlg = LRUInspectorDialog(self.overlay_cache, DeviceSettings())
+        dlg.exec_()
 
     @staticmethod
     def open_support():
@@ -489,8 +509,11 @@ class PolyHost(QApplication):
 
         if len(files) > 0:
             try:
-                self.cmdMenu.reset_overlays_and_usage()
-                self.keeb.send_overlays(files)
+                if self.poly_settings.get("overlay_lru_cache_enabled") and self.overlay_cache:
+                    self.keeb.send_overlays_lru(files, self.overlay_cache)
+                else:
+                    self.cmdMenu.reset_overlays_and_usage()
+                    self.keeb.send_overlays(files)
             except Exception as e:
                 msg = f"Failed to send overlays '{files}': {e}"
                 self.icon_manager.set_warning(msg, 5000)

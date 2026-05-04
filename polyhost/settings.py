@@ -30,7 +30,8 @@ class PolySettings:
             "irradiance_prescaler": 0.75,
             "debug_window_detection_if_not_connected_to_poly_kybd": False,
             "max_hid_message_before_delay": 15,
-            "delay_time_after_max_hid_messages": 0.3
+            "delay_time_after_max_hid_messages": 0.3,
+            "overlay_lru_cache_enabled": False
         }
 
         # Load settings

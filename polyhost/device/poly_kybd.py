@@ -19,6 +19,7 @@ from polyhost.device.command_ids import Cmd, HidId
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
+from polyhost.device.overlay_cache import OverlayLRUCache
 
 import hid
 
@@ -475,6 +476,66 @@ class PolyKybd:
             lock.release()
         # self.log.info(f"Keycode {keycode}: Sent {max_msg} compressed msgs")
         return overlay.compressed_msgs
+
+    def send_overlays_lru(self, filenames: list, cache: OverlayLRUCache) -> bool:
+        """
+        Send only overlay images not already in the keyboard's LRU pool, then
+        update the display-position → pool-slot mapping in one command.
+        Does NOT call reset_overlays_and_usage (cached images must be preserved).
+        """
+        import os
+        hid_msg_counter = 0
+        hid_msg_counter_old = 0
+        MAX_MSG_BEFORE_DELAY = self.poly_settings.get("max_hid_message_before_delay")
+        DELAY_TIME_AFTER_MAX_MSG = self.poly_settings.get("delay_time_after_max_hid_messages")
+
+        display_to_pool: dict[int, int] = {}
+
+        for filename in filenames:
+            self.log.info("Send Overlay LRU '%s'...", filename)
+            converter = ImageConverter(self.device_settings)
+            if not converter.open(filename):
+                self.log.warning("Unable to read %s", filename)
+                return False
+
+            for modifier in Modifier:
+                overlay_map = converter.extract_overlays(modifier)
+                if not overlay_map:
+                    continue
+
+                for keycode, overlay_data in overlay_map.items():
+                    content_key = (os.path.basename(filename), modifier.value, keycode)
+                    pool_slot, is_hit = cache.get_or_allocate(content_key, filename)
+
+                    if not is_hit:
+                        pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
+                        self.log.debug_detailed(
+                            "LRU miss: sending 0x%x/%s to pool slot %d (addr 0x%x/%s)",
+                            keycode, modifier, pool_slot, pool_kc, pool_mod)
+                        hid_msg_counter += self.send_smallest_overlay(
+                            pool_kc, pool_mod, {pool_kc: overlay_data})
+                    else:
+                        self.log.debug_detailed(
+                            "LRU hit: 0x%x/%s already in pool slot %d", keycode, modifier, pool_slot)
+
+                    display_idx = cache.display_flat_idx(keycode, modifier)
+                    display_to_pool[display_idx] = pool_slot
+
+                    if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
+                        hid_msg_counter_old = hid_msg_counter
+                        time.sleep(DELAY_TIME_AFTER_MAX_MSG)
+
+        self.log.info("LRU: %d HID image messages, %d display positions mapped",
+                      hid_msg_counter, len(display_to_pool))
+
+        self.reset_overlay_mapping()
+        if display_to_pool:
+            ok, msg = self.send_overlay_mapping(display_to_pool)
+            if not ok:
+                self.log.warning("send_overlays_lru: mapping failed: %s", msg)
+                return False
+        self.enable_overlays()
+        return True
 
     def execute_commands(self, command_list: list) -> None:
         """Execute a list of commands"""

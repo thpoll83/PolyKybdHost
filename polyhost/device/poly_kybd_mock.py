@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 
 from polyhost.util.dict_util import split_by_n_chars
@@ -19,6 +20,9 @@ class PolyKybdMock:
         self.sw_version_num = [int(x) for x in version.split(".")]
         self.lang = lang
         self.langs = langs
+        self.hid_image_sends: int = 0
+        self.hid_mapping_sends: int = 0
+        self.last_mapping: dict = {}
 
     def connect(self):
         return True
@@ -98,6 +102,11 @@ class PolyKybdMock:
     def set_overlay_masking(self, set_all):
         return True, f"{set_all}"
 
+    def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
+        self.hid_mapping_sends += 1
+        self.last_mapping = from_to
+        return True, "Mapping sent"
+
     def send_overlay(self, filename, on_off=True):
         self.log.info("Send Overlay '%s'...", filename)
         converter = ImageConverter(self.settings)
@@ -175,6 +184,37 @@ class PolyKybdMock:
         # self.log.info(f"Stats: Plain:{self.stat_plain} C:{self.stat_comp} R:{self.stat_roi} CR:{self.stat_croi} --> {self.stat_best}")
         if not enabled:
             self.enable_overlays()
+        return True
+
+    def send_overlays_lru(self, filenames: list, cache) -> bool:
+        display_to_pool: dict[int, int] = {}
+
+        for filename in filenames:
+            self.log.info("Send Overlay LRU (mock) '%s'...", filename)
+            converter = ImageConverter(self.settings)
+            if not converter.open(filename):
+                self.log.warning("Unable to read %s", filename)
+                return False
+
+            for modifier in Modifier:
+                overlay_map = converter.extract_overlays(modifier)
+                if not overlay_map:
+                    continue
+
+                for keycode, overlay_data in overlay_map.items():
+                    content_key = (os.path.basename(filename), modifier.value, keycode)
+                    pool_slot, is_hit = cache.get_or_allocate(content_key, filename)
+
+                    if not is_hit:
+                        self.hid_image_sends += self.send_smallest_overlay(
+                            pool_slot, {pool_slot: overlay_data})
+
+                    display_idx = cache.display_flat_idx(keycode, modifier)
+                    display_to_pool[display_idx] = pool_slot
+
+        if display_to_pool:
+            self.send_overlay_mapping(display_to_pool)
+        self.enable_overlays()
         return True
 
     def send_smallest_overlay(self, keycode, mapping: dict):
