@@ -491,6 +491,10 @@ class PolyKybd:
 
         display_to_pool: dict[int, int] = {}
 
+        # Reset to identity mapping first so images land in their intended pool slots
+        # (the firmware applies the current mapping when writing images, not just reading).
+        self.reset_overlay_mapping()
+
         for filename in filenames:
             self.log.info("Send Overlay LRU '%s'...", filename)
             converter = ImageConverter(self.device_settings)
@@ -528,12 +532,17 @@ class PolyKybd:
         self.log.info("LRU: %d HID image messages, %d display positions mapped",
                       hid_msg_counter, len(display_to_pool))
 
-        self.reset_overlay_mapping()
-        if display_to_pool:
-            ok, msg = self.send_overlay_mapping(display_to_pool)
-            if not ok:
-                self.log.warning("send_overlays_lru: mapping failed: %s", msg)
-                return False
+        # Build a full mapping covering all pool positions.  Positions not used by the
+        # current app are routed to the sentinel slot (= first slot beyond the pool,
+        # never written to, so is_overlay_used=false → blank display).  Without this,
+        # identity-mapped pool slots bleed through to their natural display keys.
+        sentinel = self.device_settings.OVERLAY_LRU_POOL_CAPACITY
+        full_mapping = {i: sentinel for i in range(sentinel)}
+        full_mapping.update(display_to_pool)
+        ok, msg = self.send_overlay_mapping(full_mapping)
+        if not ok:
+            self.log.warning("send_overlays_lru: mapping failed: %s", msg)
+            return False
         self.enable_overlays()
         return True
 
