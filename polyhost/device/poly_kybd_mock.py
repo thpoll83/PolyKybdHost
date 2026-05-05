@@ -242,9 +242,9 @@ class PolyKybdMock:
         """Return the 72×40 bool numpy array shown at (keycode, modifier), or None."""
         return self._sim.get_display_image(keycode, modifier)
 
-    def save_overlay_as_pgm(self, keycode: int, modifier: Modifier, path: str) -> bool:
-        """Save the overlay at (keycode, modifier) as a PGM file for visual inspection."""
-        return self._sim.save_as_pgm(keycode, modifier, path)
+    def save_overlay_as_png(self, keycode: int, modifier: Modifier, path: str) -> bool:
+        """Save the overlay at (keycode, modifier) as a PNG file for visual inspection."""
+        return self._sim.save_as_png(keycode, modifier, path)
 
     def read_serial(self):
         return None

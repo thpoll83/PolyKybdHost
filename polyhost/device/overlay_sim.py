@@ -1,6 +1,29 @@
+import struct
+import zlib
+
 import numpy as np
 
 from polyhost.device.keys import KeyCode, Modifier
+
+
+def _write_png_gray8(path: str, pixels: np.ndarray) -> None:
+    """Write an 8-bit grayscale PNG using only stdlib (zlib/struct) + numpy."""
+    h, w = pixels.shape
+    raw = b"".join(b"\x00" + row.tobytes() for row in pixels)
+    compressed = zlib.compress(raw, 9)
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        body = tag + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xFFFFFFFF)
+
+    png = (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 0, 0, 0, 0))
+        + chunk(b"IDAT", compressed)
+        + chunk(b"IEND", b"")
+    )
+    with open(path, "wb") as f:
+        f.write(png)
 
 _OVERLAY_W = 72
 _OVERLAY_H = 40
@@ -114,16 +137,10 @@ class OverlayFirmwareSim:
         bits = np.unpackbits(np.frombuffer(bitmap, dtype=np.uint8))
         return bits[:_OVERLAY_H * _OVERLAY_W].reshape(_OVERLAY_H, _OVERLAY_W).astype(bool)
 
-    def save_as_pgm(self, keycode: int, modifier: Modifier, path: str) -> bool:
-        """
-        Write the overlay for (keycode, modifier) as a PGM file for visual inspection.
-        Returns False if there is no image for that position.
-        """
+    def save_as_png(self, keycode: int, modifier: Modifier, path: str) -> bool:
+        """Write the overlay for (keycode, modifier) as a PNG. Returns False if no image."""
         img = self.get_display_image(keycode, modifier)
         if img is None:
             return False
-        pixels = (img * 255).astype(np.uint8)
-        with open(path, "wb") as f:
-            f.write(f"P5\n{_OVERLAY_W} {_OVERLAY_H}\n255\n".encode())
-            f.write(pixels.tobytes())
+        _write_png_gray8(path, (img * 255).astype(np.uint8))
         return True

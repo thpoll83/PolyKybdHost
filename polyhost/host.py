@@ -468,6 +468,7 @@ class PolyHost(QApplication):
             return
 
         out_dir = tempfile.mkdtemp(prefix="polykybd_mock_")
+        from polyhost.device.overlay_sim import _write_png_gray8
         for pool_slot, bitmap in sorted(store.items()):
             keycode_slot = pool_slot % 90
             modifier_var = pool_slot // 90
@@ -477,12 +478,10 @@ class PolyHost(QApplication):
                 kc = keycode_slot - 80 + 0x64   # KC_NONUS_BACKSLASH base
             else:
                 kc = keycode_slot - 82 + 0xE0   # KC_LEFT_CTRL base
-            fname = f"slot{pool_slot:03d}_kc0x{kc:02x}_mod{modifier_var}.pgm"
+            fname = f"slot{pool_slot:03d}_kc0x{kc:02x}_mod{modifier_var}.png"
             bits = np.unpackbits(np.frombuffer(bitmap, dtype=np.uint8))
             pixels = (bits[:40 * 72].reshape(40, 72) * 255).astype(np.uint8)
-            with open(os.path.join(out_dir, fname), "wb") as f:
-                f.write(b"P5\n72 40\n255\n")
-                f.write(pixels.tobytes())
+            _write_png_gray8(os.path.join(out_dir, fname), pixels)
 
         self.log.info("Mock bitmaps dumped to %s", out_dir)
         if platform.system() == "Windows":

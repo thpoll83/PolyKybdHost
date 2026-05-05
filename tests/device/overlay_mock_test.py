@@ -430,17 +430,17 @@ class TestPolyKybdMockLRUFlow(unittest.TestCase):
         self.assertIsNone(mock.get_display_bitmap(kc_b, mod))
 
 
-class TestSaveAsPgm(unittest.TestCase):
+class TestSaveAsPng(unittest.TestCase):
 
-    def test_save_pgm_returns_false_when_no_image(self):
+    def test_save_png_returns_false_when_no_image(self):
         import tempfile, os
         mock = _make_mock()
         with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, "out.pgm")
-            result = mock.save_overlay_as_pgm(KeyCode.KC_A.value, Modifier.NO_MOD, path)
+            path = os.path.join(d, "out.png")
+            result = mock.save_overlay_as_png(KeyCode.KC_A.value, Modifier.NO_MOD, path)
         self.assertFalse(result)
 
-    def test_save_pgm_produces_valid_file(self):
+    def test_save_png_produces_valid_file(self):
         import tempfile, os
         mock = _make_mock()
         kc = KeyCode.KC_A.value
@@ -448,13 +448,14 @@ class TestSaveAsPgm(unittest.TestCase):
         od = _make_overlay("rect")
         mock.send_smallest_overlay(kc, mod, {kc: od})
         with tempfile.TemporaryDirectory() as d:
-            path = os.path.join(d, "out.pgm")
-            result = mock.save_overlay_as_pgm(kc, mod, path)
+            path = os.path.join(d, "out.png")
+            result = mock.save_overlay_as_png(kc, mod, path)
             self.assertTrue(result)
             self.assertTrue(os.path.exists(path))
-            size = os.path.getsize(path)
-            # PGM header + 72*40 bytes
-            self.assertGreater(size, 72 * 40)
+            with open(path, "rb") as f:
+                sig = f.read(8)
+            # PNG magic bytes
+            self.assertEqual(sig, b"\x89PNG\r\n\x1a\n")
 
 
 if __name__ == "__main__":
