@@ -38,11 +38,13 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("PolyKybd Settings")
         self.edit_widgets = {}
+        self._all_settings = {}
 
     def sizeHint(self):
         return QSize(640, 480)
 
-    def setup(self, settings_dict):
+    def setup(self, settings_dict, debug_mode=0):
+        self._all_settings = dict(settings_dict)
         self.setWindowIcon(get_icon("pcolor.png"))
 
         # Outer layout
@@ -59,6 +61,8 @@ class SettingsDialog(QDialog):
 
         grouped_settings = defaultdict(dict)
         for full_key, value in settings_dict.items():
+            if full_key.startswith("dev_") and debug_mode == 0:
+                continue
             if "_" in full_key:
                 group, _ = full_key.split("_", 1)
                 grouped_settings[group][full_key] = value
@@ -104,7 +108,7 @@ class SettingsDialog(QDialog):
         main_layout.addWidget(buttons, alignment=Qt.AlignCenter)
 
     def get_updated_settings(self):
-        updated = {}
+        updated = dict(self._all_settings)
         for key, widget in self.edit_widgets.items():
             if isinstance(widget, QCheckBox):
                 updated[key] = widget.isChecked()
