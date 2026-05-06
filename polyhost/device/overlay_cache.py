@@ -42,7 +42,7 @@ class OverlayMRUCache:
         self._current_batch: int = 0
         self._in_batch: bool = False
         self._version: int = 0                       # bumps on every state change
-        self._last_mapping: dict[int, int] = {}      # last sent display_idx → pool_slot
+        self._transferred_mapping: dict[int, int] = {}  # accumulated display_idx → pool_slot
 
     @property
     def version(self) -> int:
@@ -50,13 +50,13 @@ class OverlayMRUCache:
         return self._version
 
     @property
-    def last_mapping(self) -> dict[int, int]:
-        """Last display_idx → pool_slot dict transferred to the firmware."""
-        return self._last_mapping
+    def transferred_mapping(self) -> dict[int, int]:
+        """Accumulated display_idx → pool_slot of every mapping ever sent (later sends override earlier ones)."""
+        return self._transferred_mapping
 
-    def record_last_mapping(self, mapping: dict[int, int]) -> None:
-        """Snapshot the most recent mapping sent to the firmware (for inspector UI)."""
-        self._last_mapping = dict(mapping)
+    def record_transferred_mapping(self, mapping: dict[int, int]) -> None:
+        """Merge a freshly sent mapping into the accumulated history (for inspector UI)."""
+        self._transferred_mapping.update(mapping)
         self._version += 1
 
     @contextmanager
@@ -194,7 +194,7 @@ class OverlayMRUCache:
         self._bytes_to_slot.clear()
         self._slot_to_bytes.clear()
         self._slot_batch.clear()
-        self._last_mapping.clear()
+        self._transferred_mapping.clear()
         self._next_free = 0
         self._current_batch = 0
         self._in_batch = False

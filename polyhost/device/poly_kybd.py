@@ -544,7 +544,7 @@ class PolyKybd:
         if not ok:
             self.log.warning("send_overlays_mru: mapping failed: %s", msg)
             return False
-        cache.record_last_mapping(display_to_pool)
+        cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()
         return True
 

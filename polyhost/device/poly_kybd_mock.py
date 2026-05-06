@@ -224,7 +224,7 @@ class PolyKybdMock:
 
         self.reset_overlay_usage()
         self.send_overlay_mapping(display_to_pool)
-        cache.record_last_mapping(display_to_pool)
+        cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()
         return True
 

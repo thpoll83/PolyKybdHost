@@ -115,14 +115,14 @@ class MRUInspectorDialog(QDialog):
             self._tabs.addTab(page, label)
 
     def _build_mapping_table(self, cache: OverlayMRUCache) -> QWidget:
-        mapping = cache.last_mapping
+        mapping = cache.transferred_mapping
         wrap = QFrame()
         wrap.setFrameShape(QFrame.StyledPanel)
         wrap_layout = QVBoxLayout(wrap)
         wrap_layout.setContentsMargins(4, 2, 4, 2)
         wrap_layout.setSpacing(2)
 
-        title = QLabel(f"Last transferred mapping ({len(mapping)} entries) — display position → pool slot")
+        title = QLabel(f"All transferred mappings so far ({len(mapping)} entries) — display position → pool slot")
         title.setStyleSheet("color: #aaa; font-size: 8pt;")
         wrap_layout.addWidget(title)
 
