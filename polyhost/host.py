@@ -444,12 +444,11 @@ class PolyHost(QApplication):
 
     def open_lru_inspector(self):
         from polyhost.gui.lru_inspector_dialog import LRUInspectorDialog
-        primary = self.device_mgr.primary
-        if primary is None or primary.cache is None:
-            from PyQt5.QtWidgets import QMessageBox
+        caches = [(e.name, e.cache) for e in self.device_mgr.all_entries if e.cache is not None]
+        if not caches:
             QMessageBox.information(None, "LRU Cache", "LRU cache is not active (device not connected or LRU mode disabled).")
             return
-        dlg = LRUInspectorDialog(primary.cache, DeviceSettings())
+        dlg = LRUInspectorDialog(caches, DeviceSettings())
         dlg.exec_()
 
     def dump_mock_bitmaps(self):

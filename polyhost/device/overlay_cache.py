@@ -30,27 +30,49 @@ class OverlayLRUCache:
         self.capacity = capacity
         self._cache: OrderedDict[tuple, int] = OrderedDict()
         self._next_free: int = 0
-        # pool_slot → (full_path, modifier_value, keycode) for the inspector
         self._slot_to_info: dict[int, tuple[str, int, int]] = {}
+        self._bytes_to_slot: dict[bytes, int] = {}   # bytes_data → pool_slot
+        self._slot_to_bytes: dict[int, bytes] = {}   # pool_slot → bytes_data
 
-    def get_or_allocate(self, content_key: tuple, full_path: str = "") -> tuple[int, bool]:
+    def get_or_allocate(self, content_key: tuple, full_path: str = "",
+                        bytes_data: bytes | None = None) -> tuple[int, bool]:
         """
         Return (pool_slot, is_hit).
-        Hit: slot already holds this content; marked as most-recently-used.
-        Miss: a slot is allocated (evicting LRU if pool is full) and returned.
+        Hit: content_key already known, OR bytes_data identical to an existing slot.
+        Miss: a new slot is allocated (evicting LRU if pool is full).
+        bytes_data enables cross-key dedup: identical images share one pool slot.
         full_path is stored for the visual inspector (optional for tests).
         """
+        # Exact key hit
         if content_key in self._cache:
             self._cache.move_to_end(content_key)
             return self._cache[content_key], True
 
+        # Byte-level dedup: identical image already lives at another slot
+        if bytes_data is not None and bytes_data in self._bytes_to_slot:
+            slot = self._bytes_to_slot[bytes_data]
+            self._cache[content_key] = slot
+            self._cache.move_to_end(content_key)
+            return slot, True
+
+        # True miss: allocate or evict
         if self._next_free < self.capacity:
             slot = self._next_free
             self._next_free += 1
         else:
-            _, slot = self._cache.popitem(last=False)
+            _, evicted_slot = self._cache.popitem(last=False)
+            slot = evicted_slot
+            # Remove all alias entries pointing to the same slot — they are now stale
+            for k in [k for k, v in self._cache.items() if v == slot]:
+                del self._cache[k]
+            # Clean bytes index for this slot
+            if slot in self._slot_to_bytes:
+                self._bytes_to_slot.pop(self._slot_to_bytes.pop(slot), None)
 
         self._cache[content_key] = slot
+        if bytes_data is not None:
+            self._bytes_to_slot[bytes_data] = slot
+            self._slot_to_bytes[slot] = bytes_data
         if full_path:
             modifier_value = content_key[1] if len(content_key) > 1 else 0
             keycode = content_key[2] if len(content_key) > 2 else 0
@@ -102,4 +124,6 @@ class OverlayLRUCache:
         """Clear all entries (call after device reconnect)."""
         self._cache.clear()
         self._slot_to_info.clear()
+        self._bytes_to_slot.clear()
+        self._slot_to_bytes.clear()
         self._next_free = 0

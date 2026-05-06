@@ -172,5 +172,64 @@ class TestDisplayFlatIdx(unittest.TestCase):
                              f"pool_slot={pool_slot} kc=0x{kc:02x} mod={mod} → flat={flat}")
 
 
+class TestBytesDedup(unittest.TestCase):
+
+    _BYTES_A = bytes(i % 256 for i in range(360))
+    _BYTES_B = bytes((255 - i % 256) for i in range(360))
+
+    def test_same_bytes_different_key_is_hit_same_slot(self):
+        cache = OverlayLRUCache(10)
+        k1 = ("img.png", 0, 0x04)  # KC_A
+        k2 = ("img.png", 0, 0x05)  # KC_B — different key, same bytes
+        slot1, hit1 = cache.get_or_allocate(k1, bytes_data=self._BYTES_A)
+        slot2, hit2 = cache.get_or_allocate(k2, bytes_data=self._BYTES_A)
+        self.assertFalse(hit1)
+        self.assertTrue(hit2)
+        self.assertEqual(slot1, slot2)
+
+    def test_different_bytes_get_separate_slots(self):
+        cache = OverlayLRUCache(10)
+        k1 = ("img.png", 0, 0x04)
+        k2 = ("img.png", 0, 0x05)
+        slot1, _ = cache.get_or_allocate(k1, bytes_data=self._BYTES_A)
+        slot2, _ = cache.get_or_allocate(k2, bytes_data=self._BYTES_B)
+        self.assertNotEqual(slot1, slot2)
+
+    def test_dedup_without_bytes_data_is_still_a_miss(self):
+        cache = OverlayLRUCache(10)
+        k1 = ("img.png", 0, 0x04)
+        k2 = ("img.png", 0, 0x05)
+        cache.get_or_allocate(k1, bytes_data=self._BYTES_A)
+        # Same bytes exist but we don't pass bytes_data → treated as unrelated key
+        _, hit = cache.get_or_allocate(k2)
+        self.assertFalse(hit)
+
+    def test_eviction_removes_byte_dedup_alias(self):
+        cache = OverlayLRUCache(2)
+        k1 = ("a.png", 0, 1)
+        k2 = ("a.png", 0, 2)  # alias of k1 (same bytes)
+        k3 = ("b.png", 0, 3)
+        k4 = ("c.png", 0, 4)
+        slot1, _ = cache.get_or_allocate(k1, bytes_data=self._BYTES_A)
+        slot2, _ = cache.get_or_allocate(k2, bytes_data=self._BYTES_A)  # alias → slot1
+        self.assertEqual(slot1, slot2)
+        # Pool is at capacity (2 unique slots: slot1 shared by k1+k2, slot2 by k3)
+        cache.get_or_allocate(k3, bytes_data=self._BYTES_B)
+        # Evicting LRU (k1) should also purge alias k2 since they share a slot
+        _, hit_k4 = cache.get_or_allocate(k4, bytes_data=bytes(360))
+        # k2 should now be a miss (its slot was freed along with k1)
+        _, hit_k2 = cache.get_or_allocate(k2, bytes_data=self._BYTES_A)
+        self.assertFalse(hit_k2)
+
+    def test_reset_clears_bytes_index(self):
+        cache = OverlayLRUCache(10)
+        k1 = ("img.png", 0, 0x04)
+        k2 = ("img.png", 0, 0x05)
+        cache.get_or_allocate(k1, bytes_data=self._BYTES_A)
+        cache.reset()
+        _, hit = cache.get_or_allocate(k2, bytes_data=self._BYTES_A)
+        self.assertFalse(hit)  # bytes index was cleared
+
+
 if __name__ == '__main__':
     unittest.main()

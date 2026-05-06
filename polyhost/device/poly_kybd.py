@@ -513,7 +513,7 @@ class PolyKybd:
 
                 for keycode, overlay_data in overlay_map.items():
                     content_key = (os.path.basename(filename), modifier.value, keycode)
-                    pool_slot, is_hit = cache.get_or_allocate(content_key, filename)
+                    pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
 
                     if not is_hit:
                         pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)

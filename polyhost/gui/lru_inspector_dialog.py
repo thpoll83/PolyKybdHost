@@ -2,10 +2,10 @@ import os
 
 import numpy as np
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QImage, QPixmap, QColor
+from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QScrollArea,
-    QWidget, QGridLayout, QLabel, QPushButton, QFrame,
+    QWidget, QGridLayout, QLabel, QPushButton, QFrame, QTabWidget,
 )
 
 from polyhost.device.device_settings import DeviceSettings
@@ -49,28 +49,28 @@ def _load_overlay_pixmap(full_path: str, modifier_value: int, keycode: int,
 
 
 def _rank_color(rank: int, total: int) -> str:
-    """Background colour for the cell: red (rank 1 = LRU / next to evict) → green (rank N = MRU / freshest)."""
+    """Background colour: red (rank 1 = LRU / next to evict) → green (rank N = MRU / freshest)."""
     if total <= 1:
         return "#1e3a1e"
-    frac = (rank - 1) / (total - 1)  # 0.0 = rank 1 (LRU), 1.0 = rank N (MRU)
+    frac = (rank - 1) / (total - 1)
     r = int(180 * (1 - frac))
     g = int(180 * frac)
     return f"rgb({r},{g},30)"
 
 
 class LRUInspectorDialog(QDialog):
-    def __init__(self, cache: OverlayLRUCache, device_settings: DeviceSettings, parent=None):
+    def __init__(self, caches: list[tuple[str, OverlayLRUCache]],
+                 device_settings: DeviceSettings, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"LRU Overlay Cache Inspector  —  {cache.used_slots()}/{cache.capacity} slots used")
-        self.resize(1150, 720)
-
-        self._cache = cache
+        self._caches = caches
         self._device_settings = device_settings
+
+        self._update_title()
+        self.resize(1150, 720)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(6, 6, 6, 6)
 
-        # Refresh + close buttons
         btn_row = QHBoxLayout()
         refresh_btn = QPushButton("Refresh")
         refresh_btn.clicked.connect(self._refresh)
@@ -81,14 +81,25 @@ class LRUInspectorDialog(QDialog):
         btn_row.addWidget(close_btn)
         outer.addLayout(btn_row)
 
-        self._scroll = QScrollArea()
-        self._scroll.setWidgetResizable(True)
-        outer.addWidget(self._scroll)
+        self._tabs = QTabWidget()
+        outer.addWidget(self._tabs)
 
-        self._build_grid()
+        self._build_tabs()
 
-    def _build_grid(self):
-        lru_info = self._cache.get_lru_info()
+    def _update_title(self):
+        parts = [f"{label}: {cache.used_slots()}/{cache.capacity}" for label, cache in self._caches]
+        self.setWindowTitle("LRU Overlay Cache Inspector  —  " + "  |  ".join(parts))
+
+    def _build_tabs(self):
+        self._tabs.clear()
+        for label, cache in self._caches:
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setWidget(self._build_grid(cache))
+            self._tabs.addTab(scroll, label)
+
+    def _build_grid(self, cache: OverlayLRUCache) -> QWidget:
+        lru_info = cache.get_lru_info()
         total_entries = len(lru_info)
 
         container = QWidget()
@@ -96,7 +107,6 @@ class LRUInspectorDialog(QDialog):
         grid.setSpacing(2)
         grid.setContentsMargins(4, 4, 4, 4)
 
-        # Column headers (modifier names)
         corner = QLabel("")
         corner.setFixedWidth(60)
         grid.addWidget(corner, 0, 0)
@@ -108,7 +118,6 @@ class LRUInspectorDialog(QDialog):
             grid.addWidget(hdr, 0, col + 1)
 
         for row in range(_NUM_KEYCODE_SLOTS):
-            # Row label
             row_lbl = QLabel(_keycode_slot_name(row))
             row_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
             row_lbl.setStyleSheet("color: #888; font-size: 8pt;")
@@ -121,7 +130,7 @@ class LRUInspectorDialog(QDialog):
                 cell = self._build_cell(pool_slot, info, total_entries)
                 grid.addWidget(cell, row + 1, col + 1)
 
-        self._scroll.setWidget(container)
+        return container
 
     def _build_cell(self, pool_slot: int, info: tuple | None, total: int) -> QFrame:
         frame = QFrame()
@@ -169,5 +178,5 @@ class LRUInspectorDialog(QDialog):
         return frame
 
     def _refresh(self):
-        self.setWindowTitle(f"LRU Overlay Cache Inspector  —  {self._cache.used_slots()}/{self._cache.capacity} slots used")
-        self._build_grid()
+        self._update_title()
+        self._build_tabs()
