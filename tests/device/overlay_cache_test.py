@@ -231,5 +231,39 @@ class TestBytesDedup(unittest.TestCase):
         self.assertFalse(hit)  # bytes index was cleared
 
 
+class TestGetMruInfoRanks(unittest.TestCase):
+    """Inspector colours assume rank ∈ [1, total]; byte-dedup aliases must not
+    push ranks past `total = unique-slot count`."""
+
+    def test_ranks_contiguous_after_byte_dedup_aliases(self):
+        cache = OverlayMRUCache(10)
+        bytes_a = bytes(i % 256 for i in range(360))
+        bytes_b = bytes((255 - i % 256) for i in range(360))
+
+        cache.get_or_allocate(("img.png", 0, 0x04), full_path="img.png", bytes_data=bytes_a)
+        cache.get_or_allocate(("img.png", 0, 0x05), full_path="img.png", bytes_data=bytes_b)
+        # Alias of slot 0 — adds a second OrderedDict key to the same slot.
+        cache.get_or_allocate(("img.png", 0, 0x06), full_path="img.png", bytes_data=bytes_a)
+
+        info = cache.get_mru_info()
+        self.assertEqual(len(info), 2)  # two unique slots
+
+        ranks = sorted(entry[3] for entry in info.values())
+        self.assertEqual(ranks, [1, 2])  # contiguous, no gap, no overshoot
+
+    def test_most_recent_alias_is_highest_rank(self):
+        cache = OverlayMRUCache(10)
+        bytes_a = bytes(i % 256 for i in range(360))
+        bytes_b = bytes((255 - i % 256) for i in range(360))
+
+        slot_a, _ = cache.get_or_allocate(("a.png", 0, 0x04), full_path="a.png", bytes_data=bytes_a)
+        slot_b, _ = cache.get_or_allocate(("b.png", 0, 0x05), full_path="b.png", bytes_data=bytes_b)
+        # Touch slot_a via a fresh alias — it should now outrank slot_b.
+        cache.get_or_allocate(("a.png", 0, 0x06), full_path="a.png", bytes_data=bytes_a)
+
+        info = cache.get_mru_info()
+        self.assertGreater(info[slot_a][3], info[slot_b][3])
+
+
 if __name__ == '__main__':
     unittest.main()

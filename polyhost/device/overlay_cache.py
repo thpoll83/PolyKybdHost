@@ -97,8 +97,18 @@ class OverlayMRUCache:
         Returns {pool_slot: (full_path, modifier_value, keycode, mru_rank)} for all
         occupied slots. mru_rank 1 = least-recently-used (next to evict), N = most-recently-used.
         """
+        # A single slot can be referenced by multiple OrderedDict keys (byte-dedup
+        # aliases), so the raw enumerate index can exceed the number of unique slots.
+        # Take each slot's latest position, then re-rank 1..N over unique slots so
+        # the inspector's red→green gradient stays normalised.
+        last_position: dict[int, int] = {}
+        for position, (_key, slot) in enumerate(self._cache.items()):
+            last_position[slot] = position
+
         result = {}
-        for rank, (_key, slot) in enumerate(self._cache.items(), 1):
+        for rank, (slot, _pos) in enumerate(
+            sorted(last_position.items(), key=lambda kv: kv[1]), 1
+        ):
             info = self._slot_to_info.get(slot)
             if info:
                 full_path, mod_val, kc = info

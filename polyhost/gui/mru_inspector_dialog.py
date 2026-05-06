@@ -49,12 +49,12 @@ def _load_overlay_pixmap(full_path: str, modifier_value: int, keycode: int,
 
 
 def _rank_color(rank: int, total: int) -> str:
-    """Background colour: red (rank 1 = least-recently-used / next to evict) → green (rank N = most-recently-used / freshest)."""
+    """Background colour: dark yellow (rank 1 = least-recently-used / next to evict) → green (rank N = most-recently-used / freshest)."""
     if total <= 1:
-        return "#1e3a1e"
+        return "rgb(0,180,30)"
     frac = (rank - 1) / (total - 1)
-    r = int(180 * (1 - frac))
-    g = int(180 * frac)
+    r = int(150 * (1 - frac))
+    g = int(150 + 30 * frac)
     return f"rgb({r},{g},30)"
 
 
