@@ -1,5 +1,4 @@
-import os
-from collections import OrderedDict
+from contextlib import contextmanager
 
 from polyhost.device.keys import KeyCode, Modifier
 
@@ -25,56 +24,82 @@ class OverlayMRUCache:
     Content key: (os.path.basename(filename), modifier.value, keycode)
     — uniquely identifies one overlay image (one key+modifier combo from one file).
 
-    Eviction policy is least-recently-used: when the pool is full, the slot whose
-    content was touched longest ago is reused. The class is named MRU because it
-    *contains* the most-recently-used overlays — that is the property surfaced to
-    callers and to the inspector dialog.
+    Aging is batch-based: every overlay sent in one program switch shares a
+    single age. Eviction targets the oldest batch first, so a complete batch is
+    drained before any newer batch is touched. Outside an explicit ``batch()``
+    context each ``get_or_allocate`` call is its own batch (the original
+    per-call MRU semantic), which keeps unit tests and ad-hoc callers correct.
     """
 
     def __init__(self, capacity: int):
         self.capacity = capacity
-        self._cache: OrderedDict[tuple, int] = OrderedDict()
+        self._cache: dict[tuple, int] = {}
         self._next_free: int = 0
         self._slot_to_info: dict[int, tuple[str, int, int]] = {}
         self._bytes_to_slot: dict[bytes, int] = {}   # bytes_data → pool_slot
         self._slot_to_bytes: dict[int, bytes] = {}   # pool_slot → bytes_data
+        self._slot_batch: dict[int, int] = {}        # pool_slot → batch_id
+        self._current_batch: int = 0
+        self._in_batch: bool = False
+        self._version: int = 0                       # bumps on every state change
+
+    @property
+    def version(self) -> int:
+        """Monotonically-increasing counter for change detection (e.g. live UI)."""
+        return self._version
+
+    @contextmanager
+    def batch(self):
+        """Group every ``get_or_allocate`` inside the with-block under one age.
+        Eviction during the batch will not touch slots from this batch unless
+        every older batch has already been fully drained."""
+        self._current_batch += 1
+        was_in_batch = self._in_batch
+        self._in_batch = True
+        try:
+            yield
+        finally:
+            self._in_batch = was_in_batch
 
     def get_or_allocate(self, content_key: tuple, full_path: str = "",
                         bytes_data: bytes | None = None) -> tuple[int, bool]:
         """
         Return (pool_slot, is_hit).
         Hit: content_key already known, OR bytes_data identical to an existing slot.
-        Miss: a new slot is allocated (evicting the least-recently-used entry if full).
+        Miss: a new slot is allocated. When the pool is full, the slot evicted
+        is taken from the oldest batch (preferring a batch other than the
+        currently-active one, so a single program switch never displaces its own
+        in-progress entries unless its batch has filled the entire pool).
         bytes_data enables cross-key dedup: identical images share one pool slot.
         full_path is stored for the visual inspector (optional for tests).
         """
+        if not self._in_batch:
+            self._current_batch += 1
+
         # Exact key hit
         if content_key in self._cache:
-            self._cache.move_to_end(content_key)
-            return self._cache[content_key], True
+            slot = self._cache[content_key]
+            self._slot_batch[slot] = self._current_batch
+            self._version += 1
+            return slot, True
 
         # Byte-level dedup: identical image already lives at another slot
         if bytes_data is not None and bytes_data in self._bytes_to_slot:
             slot = self._bytes_to_slot[bytes_data]
             self._cache[content_key] = slot
-            self._cache.move_to_end(content_key)
+            self._slot_batch[slot] = self._current_batch
+            self._version += 1
             return slot, True
 
-        # True miss: allocate or evict
+        # True miss: allocate a fresh slot or evict the oldest batch
         if self._next_free < self.capacity:
             slot = self._next_free
             self._next_free += 1
         else:
-            _, evicted_slot = self._cache.popitem(last=False)
-            slot = evicted_slot
-            # Remove all alias entries pointing to the same slot — they are now stale
-            for k in [k for k, v in self._cache.items() if v == slot]:
-                del self._cache[k]
-            # Clean bytes index for this slot
-            if slot in self._slot_to_bytes:
-                self._bytes_to_slot.pop(self._slot_to_bytes.pop(slot), None)
+            slot = self._evict_oldest_slot()
 
         self._cache[content_key] = slot
+        self._slot_batch[slot] = self._current_batch
         if bytes_data is not None:
             self._bytes_to_slot[bytes_data] = slot
             self._slot_to_bytes[slot] = bytes_data
@@ -82,37 +107,53 @@ class OverlayMRUCache:
             modifier_value = content_key[1] if len(content_key) > 1 else 0
             keycode = content_key[2] if len(content_key) > 2 else 0
             self._slot_to_info[slot] = (full_path, modifier_value, keycode)
+        self._version += 1
         return slot, False
+
+    def _evict_oldest_slot(self) -> int:
+        """Pick a victim slot. Prefer the smallest batch that is not the current
+        batch; only fall back to the current batch when nothing older remains."""
+        candidates = {s: b for s, b in self._slot_batch.items()
+                      if b != self._current_batch}
+        if not candidates:
+            candidates = self._slot_batch
+        victim = min(candidates, key=candidates.get)
+
+        # Drop every alias key pointing at the victim slot
+        for k in [k for k, v in self._cache.items() if v == victim]:
+            del self._cache[k]
+        del self._slot_batch[victim]
+        if victim in self._slot_to_bytes:
+            self._bytes_to_slot.pop(self._slot_to_bytes.pop(victim), None)
+        self._slot_to_info.pop(victim, None)
+        return victim
 
     def used_slots(self) -> int:
         """Number of pool slots currently occupied."""
-        return len(self._cache)
+        return len(self._slot_batch)
 
     def get_occupied_slots(self) -> set:
         """Set of pool slot indices currently holding a cached image."""
-        return set(self._cache.values())
+        return set(self._slot_batch.keys())
 
     def get_mru_info(self) -> dict[int, tuple]:
         """
-        Returns {pool_slot: (full_path, modifier_value, keycode, mru_rank)} for all
-        occupied slots. mru_rank 1 = least-recently-used (next to evict), N = most-recently-used.
+        Returns {pool_slot: (full_path, modifier_value, keycode, mru_rank)} for
+        every occupied slot that has display info. Slots from the same batch
+        share a rank; rank 1 = oldest batch (next to evict), N = most-recent
+        batch. The number of distinct ranks equals the number of live batches.
         """
-        # A single slot can be referenced by multiple OrderedDict keys (byte-dedup
-        # aliases), so the raw enumerate index can exceed the number of unique slots.
-        # Take each slot's latest position, then re-rank 1..N over unique slots so
-        # the inspector's red→green gradient stays normalised.
-        last_position: dict[int, int] = {}
-        for position, (_key, slot) in enumerate(self._cache.items()):
-            last_position[slot] = position
+        if not self._slot_batch:
+            return {}
+        sorted_batches = sorted(set(self._slot_batch.values()))
+        batch_to_rank = {b: rank for rank, b in enumerate(sorted_batches, 1)}
 
         result = {}
-        for rank, (slot, _pos) in enumerate(
-            sorted(last_position.items(), key=lambda kv: kv[1]), 1
-        ):
+        for slot, batch_id in self._slot_batch.items():
             info = self._slot_to_info.get(slot)
             if info:
                 full_path, mod_val, kc = info
-                result[slot] = (full_path, mod_val, kc, rank)
+                result[slot] = (full_path, mod_val, kc, batch_to_rank[batch_id])
         return result
 
     def pool_slot_to_firmware_address(self, slot: int) -> tuple[int, Modifier]:
@@ -141,4 +182,8 @@ class OverlayMRUCache:
         self._slot_to_info.clear()
         self._bytes_to_slot.clear()
         self._slot_to_bytes.clear()
+        self._slot_batch.clear()
         self._next_free = 0
+        self._current_batch = 0
+        self._in_batch = False
+        self._version += 1

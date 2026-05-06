@@ -197,29 +197,30 @@ class PolyKybdMock:
     def send_overlays_mru(self, filenames: list, cache) -> bool:
         display_to_pool: dict[int, int] = {}
 
-        for filename in filenames:
-            self.log.info("Send Overlay MRU (mock) '%s'...", filename)
-            converter = ImageConverter(self.settings)
-            if not converter.open(filename):
-                self.log.warning("Unable to read %s", filename)
-                return False
+        with cache.batch():
+            for filename in filenames:
+                self.log.info("Send Overlay MRU (mock) '%s'...", filename)
+                converter = ImageConverter(self.settings)
+                if not converter.open(filename):
+                    self.log.warning("Unable to read %s", filename)
+                    return False
 
-            for modifier in Modifier:
-                overlay_map = converter.extract_overlays(modifier)
-                if not overlay_map:
-                    continue
+                for modifier in Modifier:
+                    overlay_map = converter.extract_overlays(modifier)
+                    if not overlay_map:
+                        continue
 
-                for keycode, overlay_data in overlay_map.items():
-                    content_key = (os.path.basename(filename), modifier.value, keycode)
-                    pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
+                    for keycode, overlay_data in overlay_map.items():
+                        content_key = (os.path.basename(filename), modifier.value, keycode)
+                        pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
 
-                    if not is_hit:
-                        pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
-                        self.hid_image_sends += self.send_smallest_overlay(
-                            pool_kc, pool_mod, {pool_kc: overlay_data})
+                        if not is_hit:
+                            pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
+                            self.hid_image_sends += self.send_smallest_overlay(
+                                pool_kc, pool_mod, {pool_kc: overlay_data})
 
-                    disp_idx = cache.display_flat_idx(keycode, modifier)
-                    display_to_pool[disp_idx] = pool_slot
+                        disp_idx = cache.display_flat_idx(keycode, modifier)
+                        display_to_pool[disp_idx] = pool_slot
 
         self.reset_overlay_usage()
         self.send_overlay_mapping(display_to_pool)

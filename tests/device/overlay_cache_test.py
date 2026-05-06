@@ -231,6 +231,147 @@ class TestBytesDedup(unittest.TestCase):
         self.assertFalse(hit)  # bytes index was cleared
 
 
+class TestBatchAging(unittest.TestCase):
+    """A program switch sends many overlays in one batch; every entry from that
+    batch must share an age, and eviction must drain the oldest batch first."""
+
+    def test_entries_in_one_batch_share_a_rank(self):
+        cache = OverlayMRUCache(20)
+        with cache.batch():
+            for i in range(5):
+                cache.get_or_allocate((f"a_{i}.png", 0, i), full_path=f"a_{i}.png")
+        with cache.batch():
+            for i in range(3):
+                cache.get_or_allocate((f"b_{i}.png", 0, i + 5), full_path=f"b_{i}.png")
+
+        info = cache.get_mru_info()
+        ranks_by_file = {}
+        for slot, (path, _mod, _kc, rank) in info.items():
+            ranks_by_file.setdefault(path.split("_")[0], set()).add(rank)
+        # Each batch yields exactly one rank, and the second batch outranks the first.
+        self.assertEqual(len(ranks_by_file["a"]), 1)
+        self.assertEqual(len(ranks_by_file["b"]), 1)
+        self.assertLess(min(ranks_by_file["a"]), min(ranks_by_file["b"]))
+
+    def test_outside_batch_each_call_is_its_own_age(self):
+        cache = OverlayMRUCache(10)
+        cache.get_or_allocate(("a.png", 0, 0), full_path="a.png")
+        cache.get_or_allocate(("b.png", 0, 1), full_path="b.png")
+        cache.get_or_allocate(("c.png", 0, 2), full_path="c.png")
+        info = cache.get_mru_info()
+        self.assertEqual(len({entry[3] for entry in info.values()}), 3)
+
+    def test_full_pool_evicts_only_from_oldest_batch(self):
+        """User-asked scenario: full MRU, oldest entries get overwritten when a
+        new batch arrives. With pool=5 and batches of 3+3, exactly one entry of
+        the oldest batch must remain after the second batch lands."""
+        cache = OverlayMRUCache(5)
+        b1_keys = [(f"b1_{i}.png", 0, i) for i in range(3)]
+        b2_keys = [(f"b2_{i}.png", 0, i + 3) for i in range(3)]
+
+        with cache.batch():
+            for k in b1_keys:
+                cache.get_or_allocate(k, full_path=k[0])
+        with cache.batch():
+            for k in b2_keys:
+                cache.get_or_allocate(k, full_path=k[0])
+
+        # 3 + 3 = 6 entries into a 5-slot pool → one b1 entry must be evicted.
+        self.assertEqual(cache.used_slots(), 5)
+        remaining_b1 = [k for k in b1_keys if k in cache._cache]
+        remaining_b2 = [k for k in b2_keys if k in cache._cache]
+        self.assertEqual(len(remaining_b1), 2)  # exactly 1 evicted from oldest batch
+        self.assertEqual(len(remaining_b2), 3)  # current batch fully preserved
+
+    def test_full_firmware_pool_evicts_only_from_oldest_batch(self):
+        """End-to-end check at the real firmware pool size (90 × 7 = 630).
+        Two batches of 400 fill the pool; the second batch must displace 170
+        entries strictly from the first batch, never from itself."""
+        cache = OverlayMRUCache(630)
+        b1_keys = [(f"app1.png", 0, i) for i in range(400)]
+        b2_keys = [(f"app2.png", 0, i) for i in range(400)]
+
+        with cache.batch():
+            for k in b1_keys:
+                cache.get_or_allocate(k)
+        with cache.batch():
+            for k in b2_keys:
+                cache.get_or_allocate(k)
+
+        self.assertEqual(cache.used_slots(), 630)
+        remaining_b1 = sum(1 for k in b1_keys if k in cache._cache)
+        remaining_b2 = sum(1 for k in b2_keys if k in cache._cache)
+        self.assertEqual(remaining_b1, 230)  # 400 added, 170 displaced by batch 2
+        self.assertEqual(remaining_b2, 400)  # batch 2 fully preserved
+
+    def test_third_batch_evicts_oldest_first(self):
+        """Three batches: when batch 3 arrives, batch 1 must be drained before
+        batch 2 is touched."""
+        cache = OverlayMRUCache(6)
+        b1 = [(f"b1_{i}.png", 0, i) for i in range(2)]
+        b2 = [(f"b2_{i}.png", 0, i + 10) for i in range(2)]
+        b3 = [(f"b3_{i}.png", 0, i + 20) for i in range(4)]
+
+        with cache.batch():
+            for k in b1:
+                cache.get_or_allocate(k)
+        with cache.batch():
+            for k in b2:
+                cache.get_or_allocate(k)
+        with cache.batch():
+            for k in b3:
+                cache.get_or_allocate(k)
+
+        self.assertEqual(cache.used_slots(), 6)
+        # b3 (4) + b2 (2) = 6 ⇒ all of b1 evicted; nothing of b2 yet.
+        self.assertEqual([k for k in b1 if k in cache._cache], [])
+        self.assertEqual(len([k for k in b2 if k in cache._cache]), 2)
+        self.assertEqual(len([k for k in b3 if k in cache._cache]), 4)
+
+    def test_oversized_batch_falls_back_to_evicting_self(self):
+        """Edge case: a single batch larger than the pool. Older batches drain
+        first, then the cache is forced to evict from the in-progress batch."""
+        cache = OverlayMRUCache(3)
+        with cache.batch():
+            cache.get_or_allocate(("seed.png", 0, 0))
+
+        with cache.batch():
+            for i in range(5):
+                cache.get_or_allocate((f"big_{i}.png", 0, i + 1))
+
+        # Pool full; seed gone; only 3 of the 5 big entries can survive.
+        self.assertEqual(cache.used_slots(), 3)
+        self.assertNotIn(("seed.png", 0, 0), cache._cache)
+        big_remaining = sum(1 for i in range(5) if (f"big_{i}.png", 0, i + 1) in cache._cache)
+        self.assertEqual(big_remaining, 3)
+
+    def test_revisited_batch_becomes_freshest(self):
+        """If app A is opened, then app B, then app A again, app A's overlays
+        should now be the youngest — not the oldest — because get_or_allocate
+        bumps each hit to the active batch."""
+        cache = OverlayMRUCache(20)
+        a_keys = [(f"a_{i}.png", 0, i) for i in range(3)]
+        b_keys = [(f"b_{i}.png", 0, i + 10) for i in range(3)]
+
+        with cache.batch():
+            for k in a_keys:
+                cache.get_or_allocate(k, full_path=k[0])
+        with cache.batch():
+            for k in b_keys:
+                cache.get_or_allocate(k, full_path=k[0])
+        with cache.batch():
+            for k in a_keys:
+                _, hit = cache.get_or_allocate(k, full_path=k[0])
+                self.assertTrue(hit)
+
+        info = cache.get_mru_info()
+        a_rank = next(rank for slot, (path, _m, _kc, rank) in info.items()
+                      if path.startswith("a_"))
+        b_rank = next(rank for slot, (path, _m, _kc, rank) in info.items()
+                      if path.startswith("b_"))
+        self.assertGreater(a_rank, b_rank)  # A is now fresher than B
+
+
 class TestGetMruInfoRanks(unittest.TestCase):
     """Inspector colours assume rank ∈ [1, total]; byte-dedup aliases must not
     push ranks past `total = unique-slot count`."""

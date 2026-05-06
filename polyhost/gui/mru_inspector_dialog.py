@@ -1,7 +1,7 @@
 import os
 
 import numpy as np
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QScrollArea,
@@ -59,11 +59,14 @@ def _rank_color(rank: int, total: int) -> str:
 
 
 class MRUInspectorDialog(QDialog):
+    _AUTO_REFRESH_MSEC = 2000
+
     def __init__(self, caches: list[tuple[str, OverlayMRUCache]],
                  device_settings: DeviceSettings, parent=None):
         super().__init__(parent)
         self._caches = caches
         self._device_settings = device_settings
+        self._last_versions: dict[str, int] = {}
 
         self._update_title()
         self.resize(1150, 720)
@@ -71,20 +74,23 @@ class MRUInspectorDialog(QDialog):
         outer = QVBoxLayout(self)
         outer.setContentsMargins(6, 6, 6, 6)
 
-        btn_row = QHBoxLayout()
-        refresh_btn = QPushButton("Refresh")
-        refresh_btn.clicked.connect(self._refresh)
-        close_btn = QPushButton("Close")
-        close_btn.clicked.connect(self.accept)
-        btn_row.addWidget(refresh_btn)
-        btn_row.addStretch()
-        btn_row.addWidget(close_btn)
-        outer.addLayout(btn_row)
-
         self._tabs = QTabWidget()
         outer.addWidget(self._tabs)
 
+        btn_row = QHBoxLayout()
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        btn_row.addStretch()
+        btn_row.addWidget(close_btn)
+        btn_row.addStretch()
+        outer.addLayout(btn_row)
+
         self._build_tabs()
+        self._snapshot_versions()
+
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._auto_refresh)
+        self._timer.start(self._AUTO_REFRESH_MSEC)
 
     def _update_title(self):
         parts = [f"{label}: {cache.used_slots()}/{cache.capacity}" for label, cache in self._caches]
@@ -100,7 +106,7 @@ class MRUInspectorDialog(QDialog):
 
     def _build_grid(self, cache: OverlayMRUCache) -> QWidget:
         mru_info = cache.get_mru_info()
-        total_entries = len(mru_info)
+        max_rank = max((entry[3] for entry in mru_info.values()), default=1)
 
         container = QWidget()
         grid = QGridLayout(container)
@@ -127,12 +133,12 @@ class MRUInspectorDialog(QDialog):
             for col in range(_NUM_MODIFIER_VARIANTS):
                 pool_slot = row + _NUM_KEYCODE_SLOTS * col
                 info = mru_info.get(pool_slot)
-                cell = self._build_cell(pool_slot, info, total_entries)
+                cell = self._build_cell(pool_slot, info, max_rank)
                 grid.addWidget(cell, row + 1, col + 1)
 
         return container
 
-    def _build_cell(self, pool_slot: int, info: tuple | None, total: int) -> QFrame:
+    def _build_cell(self, pool_slot: int, info: tuple | None, max_rank: int) -> QFrame:
         frame = QFrame()
         frame.setFixedWidth(_IMG_W + 4)
         vbox = QVBoxLayout(frame)
@@ -150,9 +156,9 @@ class MRUInspectorDialog(QDialog):
                 img_lbl.setPixmap(pixmap)
             else:
                 img_lbl.setText("?")
-                img_lbl.setStyleSheet(f"background: {_rank_color(rank, total)}; color: #fff;")
+                img_lbl.setStyleSheet(f"background: {_rank_color(rank, max_rank)}; color: #fff;")
 
-            frame.setStyleSheet(f"QFrame {{ background: {_rank_color(rank, total)}; }}")
+            frame.setStyleSheet(f"QFrame {{ background: {_rank_color(rank, max_rank)}; }}")
 
             basename = os.path.basename(full_path)
             if len(basename) > 18:
@@ -163,7 +169,7 @@ class MRUInspectorDialog(QDialog):
             except ValueError:
                 kc_name = f"0x{kc:02x}"
 
-            info_lbl = QLabel(f"{basename}\n{kc_name} · {mod_name}\n#{rank}/{total}")
+            info_lbl = QLabel(f"{basename}\n{kc_name} · {mod_name}\nbatch {rank}/{max_rank}")
             info_lbl.setStyleSheet("font-size: 7pt; color: #ddd;")
         else:
             img_lbl.setStyleSheet("background: #1a1a1a;")
@@ -177,6 +183,16 @@ class MRUInspectorDialog(QDialog):
         vbox.addWidget(info_lbl)
         return frame
 
-    def _refresh(self):
+    def _snapshot_versions(self):
+        self._last_versions = {label: cache.version for label, cache in self._caches}
+
+    def _auto_refresh(self):
+        if all(self._last_versions.get(label) == cache.version
+               for label, cache in self._caches):
+            return
+        active_index = self._tabs.currentIndex()
         self._update_title()
         self._build_tabs()
+        if 0 <= active_index < self._tabs.count():
+            self._tabs.setCurrentIndex(active_index)
+        self._snapshot_versions()

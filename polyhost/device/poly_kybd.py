@@ -499,39 +499,40 @@ class PolyKybd:
 
         display_to_pool: dict[int, int] = {}
 
-        for filename in filenames:
-            self.log.info("Send Overlay MRU '%s'...", filename)
-            converter = ImageConverter(self.device_settings)
-            if not converter.open(filename):
-                self.log.warning("Unable to read %s", filename)
-                return False
+        with cache.batch():
+            for filename in filenames:
+                self.log.info("Send Overlay MRU '%s'...", filename)
+                converter = ImageConverter(self.device_settings)
+                if not converter.open(filename):
+                    self.log.warning("Unable to read %s", filename)
+                    return False
 
-            for modifier in Modifier:
-                overlay_map = converter.extract_overlays(modifier)
-                if not overlay_map:
-                    continue
+                for modifier in Modifier:
+                    overlay_map = converter.extract_overlays(modifier)
+                    if not overlay_map:
+                        continue
 
-                for keycode, overlay_data in overlay_map.items():
-                    content_key = (os.path.basename(filename), modifier.value, keycode)
-                    pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
+                    for keycode, overlay_data in overlay_map.items():
+                        content_key = (os.path.basename(filename), modifier.value, keycode)
+                        pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
 
-                    if not is_hit:
-                        pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
-                        self.log.debug_detailed(
-                            "MRU miss: sending 0x%x/%s to pool slot %d (addr 0x%x/%s)",
-                            keycode, modifier, pool_slot, pool_kc, pool_mod)
-                        hid_msg_counter += self.send_smallest_overlay(
-                            pool_kc, pool_mod, {pool_kc: overlay_data})
-                    else:
-                        self.log.debug_detailed(
-                            "MRU hit: 0x%x/%s already in pool slot %d", keycode, modifier, pool_slot)
+                        if not is_hit:
+                            pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
+                            self.log.debug_detailed(
+                                "MRU miss: sending 0x%x/%s to pool slot %d (addr 0x%x/%s)",
+                                keycode, modifier, pool_slot, pool_kc, pool_mod)
+                            hid_msg_counter += self.send_smallest_overlay(
+                                pool_kc, pool_mod, {pool_kc: overlay_data})
+                        else:
+                            self.log.debug_detailed(
+                                "MRU hit: 0x%x/%s already in pool slot %d", keycode, modifier, pool_slot)
 
-                    display_idx = cache.display_flat_idx(keycode, modifier)
-                    display_to_pool[display_idx] = pool_slot
+                        display_idx = cache.display_flat_idx(keycode, modifier)
+                        display_to_pool[display_idx] = pool_slot
 
-                    if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
-                        hid_msg_counter_old = hid_msg_counter
-                        time.sleep(DELAY_TIME_AFTER_MAX_MSG)
+                        if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
+                            hid_msg_counter_old = hid_msg_counter
+                            time.sleep(DELAY_TIME_AFTER_MAX_MSG)
 
         self.log.info("MRU: %d HID image messages, %d display positions mapped",
                       hid_msg_counter, len(display_to_pool))
