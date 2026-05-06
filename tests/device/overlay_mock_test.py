@@ -202,9 +202,9 @@ class TestOverlayFirmwareSimMapping(unittest.TestCase):
         # KC_B IS in usage set → bitmap returned
         self.assertIsNotNone(sim.get_display_bitmap(kc_b, mod))
 
-    def test_lru_flow_store_reset_remap(self):
+    def test_mru_flow_store_reset_remap(self):
         """
-        Full LRU app-switch flow:
+        Full MRU app-switch flow:
           1. send_smallest_overlay writes to pool slot (store_image marks pool_slot used)
           2. reset_usage() clears all bits
           3. send_overlay_mapping marks only display positions as used
@@ -346,17 +346,17 @@ class TestPolyKybdMockSendOverlayMapping(unittest.TestCase):
         self.assertEqual(mock.last_mapping, mapping)
 
 
-class TestPolyKybdMockLRUFlow(unittest.TestCase):
+class TestPolyKybdMockMRUFlow(unittest.TestCase):
 
-    def _make_lru_cache(self, capacity: int = 20):
-        from polyhost.device.overlay_cache import OverlayLRUCache
-        return OverlayLRUCache(capacity)
+    def _make_mru_cache(self, capacity: int = 20):
+        from polyhost.device.overlay_cache import OverlayMRUCache
+        return OverlayMRUCache(capacity)
 
     def test_send_smallest_overlay_returns_positive_message_count(self):
-        # hid_image_sends is only incremented inside send_overlays_lru, not by
+        # hid_image_sends is only incremented inside send_overlays_mru, not by
         # send_smallest_overlay directly (which is also used in normal mode).
         mock = _make_mock()
-        cache = self._make_lru_cache()
+        cache = self._make_mru_cache()
         kc = KeyCode.KC_A.value
         mod = Modifier.NO_MOD
         od = _make_overlay()
@@ -365,7 +365,7 @@ class TestPolyKybdMockLRUFlow(unittest.TestCase):
         count = mock.send_smallest_overlay(pool_kc, pool_mod, {pool_kc: od})
         self.assertGreater(count, 0)
 
-    def test_lru_normal_mode_stores_at_display_address(self):
+    def test_mru_normal_mode_stores_at_display_address(self):
         mock = _make_mock()
         kc = KeyCode.KC_B.value
         mod = Modifier.SHIFT
@@ -374,9 +374,9 @@ class TestPolyKybdMockLRUFlow(unittest.TestCase):
         # In normal mode: pool_slot == display_pos (identity)
         self.assertEqual(mock.get_display_bitmap(kc, mod), od.all_bytes)
 
-    def test_full_lru_flow_display_shows_correct_image(self):
+    def test_full_mru_flow_display_shows_correct_image(self):
         """
-        Simulate one full LRU app-switch cycle:
+        Simulate one full MRU app-switch cycle:
           - two keycodes, one modifier each
           - images stored at pool slots (pool_slot_to_firmware_address addresses)
           - after reset_usage + mapping, display shows correct images
@@ -391,9 +391,9 @@ class TestPolyKybdMockLRUFlow(unittest.TestCase):
         od_b = _make_overlay("stripe")
 
         # Pool slots 0 and 1 (first two pool addresses)
-        from polyhost.device.overlay_cache import OverlayLRUCache
-        pool_kc_0, pool_mod_0 = OverlayLRUCache(20).pool_slot_to_firmware_address(0)
-        pool_kc_1, pool_mod_1 = OverlayLRUCache(20).pool_slot_to_firmware_address(1)
+        from polyhost.device.overlay_cache import OverlayMRUCache
+        pool_kc_0, pool_mod_0 = OverlayMRUCache(20).pool_slot_to_firmware_address(0)
+        pool_kc_1, pool_mod_1 = OverlayMRUCache(20).pool_slot_to_firmware_address(1)
 
         mock.send_smallest_overlay(pool_kc_0, pool_mod_0, {pool_kc_0: od_a})
         mock.send_smallest_overlay(pool_kc_1, pool_mod_1, {pool_kc_1: od_b})
@@ -413,7 +413,7 @@ class TestPolyKybdMockLRUFlow(unittest.TestCase):
             mock.get_display_image(display_kc_b, mod),
             _make_image("stripe"))
 
-    def test_unmapped_position_returns_none_in_lru_mode(self):
+    def test_unmapped_position_returns_none_in_mru_mode(self):
         mock = _make_mock()
         kc_a = KeyCode.KC_A.value
         kc_b = KeyCode.KC_B.value

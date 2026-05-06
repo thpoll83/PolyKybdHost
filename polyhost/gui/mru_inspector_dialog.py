@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
-from polyhost.device.overlay_cache import OverlayLRUCache, _slot_to_keycode
+from polyhost.device.overlay_cache import OverlayMRUCache, _slot_to_keycode
 
 
 _MODIFIER_NAMES = ["NO_MOD", "CTRL", "SHIFT", "CTRL+SH", "ALT", "CTRL+ALT", "ALT+SH"]
@@ -49,7 +49,7 @@ def _load_overlay_pixmap(full_path: str, modifier_value: int, keycode: int,
 
 
 def _rank_color(rank: int, total: int) -> str:
-    """Background colour: red (rank 1 = LRU / next to evict) → green (rank N = MRU / freshest)."""
+    """Background colour: red (rank 1 = least-recently-used / next to evict) → green (rank N = most-recently-used / freshest)."""
     if total <= 1:
         return "#1e3a1e"
     frac = (rank - 1) / (total - 1)
@@ -58,8 +58,8 @@ def _rank_color(rank: int, total: int) -> str:
     return f"rgb({r},{g},30)"
 
 
-class LRUInspectorDialog(QDialog):
-    def __init__(self, caches: list[tuple[str, OverlayLRUCache]],
+class MRUInspectorDialog(QDialog):
+    def __init__(self, caches: list[tuple[str, OverlayMRUCache]],
                  device_settings: DeviceSettings, parent=None):
         super().__init__(parent)
         self._caches = caches
@@ -88,7 +88,7 @@ class LRUInspectorDialog(QDialog):
 
     def _update_title(self):
         parts = [f"{label}: {cache.used_slots()}/{cache.capacity}" for label, cache in self._caches]
-        self.setWindowTitle("LRU Overlay Cache Inspector  —  " + "  |  ".join(parts))
+        self.setWindowTitle("MRU Overlay Cache Inspector  —  " + "  |  ".join(parts))
 
     def _build_tabs(self):
         self._tabs.clear()
@@ -98,9 +98,9 @@ class LRUInspectorDialog(QDialog):
             scroll.setWidget(self._build_grid(cache))
             self._tabs.addTab(scroll, label)
 
-    def _build_grid(self, cache: OverlayLRUCache) -> QWidget:
-        lru_info = cache.get_lru_info()
-        total_entries = len(lru_info)
+    def _build_grid(self, cache: OverlayMRUCache) -> QWidget:
+        mru_info = cache.get_mru_info()
+        total_entries = len(mru_info)
 
         container = QWidget()
         grid = QGridLayout(container)
@@ -126,7 +126,7 @@ class LRUInspectorDialog(QDialog):
 
             for col in range(_NUM_MODIFIER_VARIANTS):
                 pool_slot = row + _NUM_KEYCODE_SLOTS * col
-                info = lru_info.get(pool_slot)
+                info = mru_info.get(pool_slot)
                 cell = self._build_cell(pool_slot, info, total_entries)
                 grid.addWidget(cell, row + 1, col + 1)
 

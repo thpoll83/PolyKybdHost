@@ -194,11 +194,11 @@ class PolyKybdMock:
             self.enable_overlays()
         return True
 
-    def send_overlays_lru(self, filenames: list, cache) -> bool:
+    def send_overlays_mru(self, filenames: list, cache) -> bool:
         display_to_pool: dict[int, int] = {}
 
         for filename in filenames:
-            self.log.info("Send Overlay LRU (mock) '%s'...", filename)
+            self.log.info("Send Overlay MRU (mock) '%s'...", filename)
             converter = ImageConverter(self.settings)
             if not converter.open(filename):
                 self.log.warning("Unable to read %s", filename)

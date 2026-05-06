@@ -31,9 +31,13 @@ class PolySettings:
             "debug_window_detection_if_not_connected_to_poly_kybd": False,
             "max_hid_message_before_delay": 15,
             "delay_time_after_max_hid_messages": 0.3,
-            "overlay_lru_cache_enabled": False,
+            "overlay_mru_cache_enabled": False,
             "dev_mock_enabled": False,
-            "dev_mock_overlay_lru_cache_enabled": True
+            "dev_mock_overlay_mru_cache_enabled": True
+        }
+        self._legacy_key_renames = {
+            "overlay_lru_cache_enabled": "overlay_mru_cache_enabled",
+            "dev_mock_overlay_lru_cache_enabled": "dev_mock_overlay_mru_cache_enabled",
         }
 
         # Load settings
@@ -59,6 +63,9 @@ class PolySettings:
     def load(self):
         with open(self.path, encoding='utf-8') as f:
             self.collection = yaml.safe_load(f) or {}
+        for old_key, new_key in self._legacy_key_renames.items():
+            if old_key in self.collection and new_key not in self.collection:
+                self.collection[new_key] = self.collection.pop(old_key)
         for key, value in self.defaults.items():
             self.collection.setdefault(key, value)
 

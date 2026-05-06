@@ -37,9 +37,9 @@ class DeviceSettings:
     # the mapping indices are 10 bits wide
     _overlay_mapping_indices_per_report = _max_payload_bytes_per_report * 8 // 10
 
-    _overlay_lru_keycode_slots = 90        # firmware NUM_OVERLAYS constant
-    _overlay_lru_modifier_variants = 7     # variants 0-6; variant 7 is reserved, 8 (GUI) handled via mapping
-    _overlay_lru_pool_capacity = _overlay_lru_keycode_slots * _overlay_lru_modifier_variants
+    _overlay_mru_keycode_slots = 90        # firmware NUM_OVERLAYS constant
+    _overlay_mru_modifier_variants = 7     # variants 0-6; variant 7 is reserved, 8 (GUI) handled via mapping
+    _overlay_mru_pool_capacity = _overlay_mru_keycode_slots * _overlay_mru_modifier_variants
 
     _hid_raw_usage_page         = 0xFF61
     _hid_raw_usage              = 0x62
@@ -121,9 +121,9 @@ class DeviceSettings:
         return self._overlay_mapping_indices_per_report
 
     @property
-    def OVERLAY_LRU_POOL_CAPACITY(self):
-        """Maximum number of overlay images the LRU pool can hold (90 keycode slots x 7 modifier variants)."""
-        return self._overlay_lru_pool_capacity
+    def OVERLAY_MRU_POOL_CAPACITY(self):
+        """Maximum number of overlay images the MRU pool can hold (90 keycode slots x 7 modifier variants)."""
+        return self._overlay_mru_pool_capacity
 
     @property
     def HID_RAW_USAGE_PAGE(self):

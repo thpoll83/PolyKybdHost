@@ -134,7 +134,7 @@ class PolyHost(QApplication):
 
         connected = self.keeb.connect()
         self.device_mgr.connect_secondaries()
-        self.device_mgr.reset_all_caches(DeviceSettings().OVERLAY_LRU_POOL_CAPACITY)
+        self.device_mgr.reset_all_caches(DeviceSettings().OVERLAY_MRU_POOL_CAPACITY)
         if connected:
             self.log.info("Connected to PolyKybd.")
         else:
@@ -188,9 +188,6 @@ class PolyHost(QApplication):
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
 
-        if debug_mode>0:
-            self.debug_lang_menu = self.menu.addMenu(get_icon("language.svg"), "Change System Input Language")
-
         self.cmdMenu = CommandsSubMenu(self, self.keeb)
         self.cmdMenu.build_menu(self.menu)
 
@@ -205,15 +202,19 @@ class PolyHost(QApplication):
         self.menu.addAction(self.layout_editor)
         self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
+
         if debug_mode > 0:
-            lru_action = QAction(get_icon("overlays.svg"), "Inspect LRU Cache...", parent=self)
+            debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
+            self.debug_lang_menu = debug_menu.addMenu(get_icon("language.svg"), "Change System Input Language")
+            mru_action = QAction(get_icon("overlays.svg"), "Inspect MRU Cache...", parent=self)
             # noinspection PyUnresolvedReferences
-            lru_action.triggered.connect(self.open_lru_inspector)
-            self.menu.addAction(lru_action)
+            mru_action.triggered.connect(self.open_mru_inspector)
+            debug_menu.addAction(mru_action)
             dump_action = QAction(get_icon("overlays.svg"), "Dump Mock Bitmaps...", parent=self)
             # noinspection PyUnresolvedReferences
             dump_action.triggered.connect(self.dump_mock_bitmaps)
-            self.menu.addAction(dump_action)
+            debug_menu.addAction(dump_action)
+
         self.menu.addAction(self.support)
         self.menu.addAction(self.about)
         self.menu.addAction(self.exit)
@@ -368,10 +369,10 @@ class PolyHost(QApplication):
                             self.log.info("Setting unicode mode to str %s", mode)
                             self.keeb.set_unicode_mode(mode)
                             self.update_ui_on_lang_change(response)
-                        cache_capacity = DeviceSettings().OVERLAY_LRU_POOL_CAPACITY
+                        cache_capacity = DeviceSettings().OVERLAY_MRU_POOL_CAPACITY
                         self.device_mgr.connect_secondaries()
                         self.device_mgr.reset_all_caches(cache_capacity)
-                        self.log.info("Overlay LRU cache initialised (capacity %d).", cache_capacity)
+                        self.log.info("Overlay MRU cache initialised (capacity %d).", cache_capacity)
                     else:
                         self.status.setIcon(get_icon("sync_disabled.svg"))
                         self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
@@ -442,13 +443,13 @@ class PolyHost(QApplication):
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
 
-    def open_lru_inspector(self):
-        from polyhost.gui.lru_inspector_dialog import LRUInspectorDialog
+    def open_mru_inspector(self):
+        from polyhost.gui.mru_inspector_dialog import MRUInspectorDialog
         caches = [(e.name, e.cache) for e in self.device_mgr.all_entries if e.cache is not None]
         if not caches:
-            QMessageBox.information(None, "LRU Cache", "LRU cache is not active (device not connected or LRU mode disabled).")
+            QMessageBox.information(None, "MRU Cache", "MRU cache is not active (device not connected or MRU mode disabled).")
             return
-        dlg = LRUInspectorDialog(caches, DeviceSettings())
+        dlg = MRUInspectorDialog(caches, DeviceSettings())
         dlg.exec_()
 
     def dump_mock_bitmaps(self):
@@ -563,15 +564,15 @@ class PolyHost(QApplication):
 
         if len(files) > 0:
             try:
-                lru_enabled = self.poly_settings.get("overlay_lru_cache_enabled")
-                mock_lru_enabled = self.poly_settings.get("dev_mock_overlay_lru_cache_enabled")
+                mru_enabled = self.poly_settings.get("overlay_mru_cache_enabled")
+                mock_mru_enabled = self.poly_settings.get("dev_mock_overlay_mru_cache_enabled")
                 for entry in self.device_mgr.all_entries:
-                    use_lru = entry.cache is not None and (
-                        (entry.is_primary and lru_enabled) or
-                        (not entry.is_primary and mock_lru_enabled)
+                    use_mru = entry.cache is not None and (
+                        (entry.is_primary and mru_enabled) or
+                        (not entry.is_primary and mock_mru_enabled)
                     )
-                    if use_lru:
-                        entry.device.send_overlays_lru(files, entry.cache)
+                    if use_mru:
+                        entry.device.send_overlays_mru(files, entry.cache)
                     elif entry.is_primary:
                         self.cmdMenu.reset_overlays_and_usage()
                         entry.device.send_overlays(files)

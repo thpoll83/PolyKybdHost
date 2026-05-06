@@ -14,16 +14,21 @@ def _slot_to_keycode(keycode_slot: int) -> int:
         return keycode_slot - 82 + KeyCode.KC_LEFT_CTRL.value
 
 
-class OverlayLRUCache:
+class OverlayMRUCache:
     """
     Tracks which overlay images occupy which pool slots in the keyboard firmware.
 
     The pool is a contiguous range of firmware overlay slots (0..capacity-1).
     Each slot is addressed by a (keycode, modifier) pair derived from its flat index.
-    Capacity is sourced from DeviceSettings.OVERLAY_LRU_POOL_CAPACITY (90 × 7 = 630).
+    Capacity is sourced from DeviceSettings.OVERLAY_MRU_POOL_CAPACITY (90 × 7 = 630).
 
     Content key: (os.path.basename(filename), modifier.value, keycode)
     — uniquely identifies one overlay image (one key+modifier combo from one file).
+
+    Eviction policy is least-recently-used: when the pool is full, the slot whose
+    content was touched longest ago is reused. The class is named MRU because it
+    *contains* the most-recently-used overlays — that is the property surfaced to
+    callers and to the inspector dialog.
     """
 
     def __init__(self, capacity: int):
@@ -39,7 +44,7 @@ class OverlayLRUCache:
         """
         Return (pool_slot, is_hit).
         Hit: content_key already known, OR bytes_data identical to an existing slot.
-        Miss: a new slot is allocated (evicting LRU if pool is full).
+        Miss: a new slot is allocated (evicting the least-recently-used entry if full).
         bytes_data enables cross-key dedup: identical images share one pool slot.
         full_path is stored for the visual inspector (optional for tests).
         """
@@ -87,10 +92,10 @@ class OverlayLRUCache:
         """Set of pool slot indices currently holding a cached image."""
         return set(self._cache.values())
 
-    def get_lru_info(self) -> dict[int, tuple]:
+    def get_mru_info(self) -> dict[int, tuple]:
         """
-        Returns {pool_slot: (full_path, modifier_value, keycode, lru_rank)} for all
-        occupied slots. lru_rank 1 = least-recently-used (next to evict), N = most-recently-used.
+        Returns {pool_slot: (full_path, modifier_value, keycode, mru_rank)} for all
+        occupied slots. mru_rank 1 = least-recently-used (next to evict), N = most-recently-used.
         """
         result = {}
         for rank, (_key, slot) in enumerate(self._cache.items(), 1):

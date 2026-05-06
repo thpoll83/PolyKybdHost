@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-from polyhost.device.overlay_cache import OverlayLRUCache
+from polyhost.device.overlay_cache import OverlayMRUCache
 
 
 @dataclass
@@ -9,7 +9,7 @@ class DeviceEntry:
     device: Any               # PolyKybd | PolyKybdMock
     name: str
     is_primary: bool
-    cache: OverlayLRUCache | None = field(default=None)
+    cache: OverlayMRUCache | None = field(default=None)
 
 
 class DeviceManager:
@@ -43,7 +43,7 @@ class DeviceManager:
                 e.device.connect()
 
     def reset_all_caches(self, capacity: int) -> None:
-        """Reset LRU caches for all devices — called on primary reconnect since
+        """Reset MRU caches for all devices — called on primary reconnect since
         a power-cycle means the firmware's overlay pool is gone on every device."""
         for e in self._entries:
-            e.cache = OverlayLRUCache(capacity)
+            e.cache = OverlayMRUCache(capacity)
