@@ -6,6 +6,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QScrollArea,
     QWidget, QGridLayout, QLabel, QPushButton, QFrame, QTabWidget,
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView,
 )
 
 from polyhost.device.device_settings import DeviceSettings
@@ -99,10 +100,90 @@ class MRUInspectorDialog(QDialog):
     def _build_tabs(self):
         self._tabs.clear()
         for label, cache in self._caches:
+            page = QWidget()
+            page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(0, 0, 0, 0)
+            page_layout.setSpacing(4)
+
+            page_layout.addWidget(self._build_mapping_table(cache))
+
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
             scroll.setWidget(self._build_grid(cache))
-            self._tabs.addTab(scroll, label)
+            page_layout.addWidget(scroll, 1)
+
+            self._tabs.addTab(page, label)
+
+    def _build_mapping_table(self, cache: OverlayMRUCache) -> QWidget:
+        mapping = cache.last_mapping
+        wrap = QFrame()
+        wrap.setFrameShape(QFrame.StyledPanel)
+        wrap_layout = QVBoxLayout(wrap)
+        wrap_layout.setContentsMargins(4, 2, 4, 2)
+        wrap_layout.setSpacing(2)
+
+        title = QLabel(f"Last transferred mapping ({len(mapping)} entries) — display position → pool slot")
+        title.setStyleSheet("color: #aaa; font-size: 8pt;")
+        wrap_layout.addWidget(title)
+
+        table = QTableWidget(2, max(len(mapping), 1))
+        table.setVerticalHeaderLabels(["From", "To"])
+        table.horizontalHeader().setVisible(False)
+        table.setSelectionMode(QAbstractItemView.NoSelection)
+        table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        table.setFocusPolicy(Qt.NoFocus)
+        table.setShowGrid(True)
+        table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        table.verticalHeader().setDefaultSectionSize(22)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        table.horizontalHeader().setDefaultSectionSize(110)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        # Two rows + header + scrollbar, no vertical scroll inside the table.
+        table.setFixedHeight(22 * 2 + table.horizontalScrollBar().sizeHint().height() + 6)
+
+        if not mapping:
+            placeholder = QTableWidgetItem("(no mapping sent yet)")
+            placeholder.setForeground(Qt.gray)
+            table.setSpan(0, 0, 2, 1)
+            table.setItem(0, 0, placeholder)
+            table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        else:
+            for col, display_idx in enumerate(sorted(mapping)):
+                pool_slot = mapping[display_idx]
+                from_text = self._format_display_idx(display_idx)
+                to_text = self._format_pool_slot(pool_slot)
+
+                from_item = QTableWidgetItem(from_text)
+                from_item.setTextAlignment(Qt.AlignCenter)
+                from_item.setToolTip(f"display_idx = {display_idx}")
+                to_item = QTableWidgetItem(to_text)
+                to_item.setTextAlignment(Qt.AlignCenter)
+                to_item.setToolTip(f"pool_slot = {pool_slot}")
+
+                table.setItem(0, col, from_item)
+                table.setItem(1, col, to_item)
+
+        wrap_layout.addWidget(table)
+        return wrap
+
+    @staticmethod
+    def _format_display_idx(display_idx: int) -> str:
+        keycode_slot = display_idx % _NUM_KEYCODE_SLOTS
+        modifier_value = display_idx // _NUM_KEYCODE_SLOTS
+        kc_name = _keycode_slot_name(keycode_slot)
+        mod_name = (_MODIFIER_NAMES[modifier_value]
+                    if modifier_value < len(_MODIFIER_NAMES) else str(modifier_value))
+        return f"{kc_name}·{mod_name}"
+
+    @staticmethod
+    def _format_pool_slot(pool_slot: int) -> str:
+        keycode_slot = pool_slot % _NUM_KEYCODE_SLOTS
+        modifier_value = pool_slot // _NUM_KEYCODE_SLOTS
+        kc_name = _keycode_slot_name(keycode_slot)
+        mod_name = (_MODIFIER_NAMES[modifier_value]
+                    if modifier_value < len(_MODIFIER_NAMES) else str(modifier_value))
+        return f"#{pool_slot}\n{kc_name}·{mod_name}"
 
     def _build_grid(self, cache: OverlayMRUCache) -> QWidget:
         mru_info = cache.get_mru_info()

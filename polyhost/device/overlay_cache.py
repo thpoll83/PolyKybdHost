@@ -42,11 +42,22 @@ class OverlayMRUCache:
         self._current_batch: int = 0
         self._in_batch: bool = False
         self._version: int = 0                       # bumps on every state change
+        self._last_mapping: dict[int, int] = {}      # last sent display_idx → pool_slot
 
     @property
     def version(self) -> int:
         """Monotonically-increasing counter for change detection (e.g. live UI)."""
         return self._version
+
+    @property
+    def last_mapping(self) -> dict[int, int]:
+        """Last display_idx → pool_slot dict transferred to the firmware."""
+        return self._last_mapping
+
+    def record_last_mapping(self, mapping: dict[int, int]) -> None:
+        """Snapshot the most recent mapping sent to the firmware (for inspector UI)."""
+        self._last_mapping = dict(mapping)
+        self._version += 1
 
     @contextmanager
     def batch(self):
@@ -183,6 +194,7 @@ class OverlayMRUCache:
         self._bytes_to_slot.clear()
         self._slot_to_bytes.clear()
         self._slot_batch.clear()
+        self._last_mapping.clear()
         self._next_free = 0
         self._current_batch = 0
         self._in_batch = False
