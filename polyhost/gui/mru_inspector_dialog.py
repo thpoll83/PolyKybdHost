@@ -15,7 +15,7 @@ from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache, _slot_to_keycode
 
 
-_MODIFIER_NAMES = ["NO_MOD", "CTRL", "SHIFT", "CTRL+SH", "ALT", "CTRL+ALT", "ALT+SH"]
+_MODIFIER_NAMES = ["NO", "CTRL", "SHIFT", "CTRL+SHIFT", "ALT", "CTRL+ALT", "ALT+SHIFT"]
 _NUM_MODIFIER_VARIANTS = 7
 _NUM_KEYCODE_SLOTS = 90
 _IMG_SCALE = 2
@@ -134,13 +134,13 @@ class MRUInspectorDialog(QDialog):
         table.setFocusPolicy(Qt.NoFocus)
         table.setShowGrid(True)
         table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        table.verticalHeader().setDefaultSectionSize(22)
+        table.verticalHeader().setDefaultSectionSize(22*2+8)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)
         table.horizontalHeader().setDefaultSectionSize(110)
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         # Two rows + header + scrollbar, no vertical scroll inside the table.
-        table.setFixedHeight(22 * 2 + table.horizontalScrollBar().sizeHint().height() + 6)
+        table.setFixedHeight(22 * 4 + table.horizontalScrollBar().sizeHint().height() + 20)
 
         if not mapping:
             placeholder = QTableWidgetItem("(no mapping sent yet)")
@@ -156,10 +156,10 @@ class MRUInspectorDialog(QDialog):
 
                 from_item = QTableWidgetItem(from_text)
                 from_item.setTextAlignment(Qt.AlignCenter)
-                from_item.setToolTip(f"display_idx = {display_idx}")
+                from_item.setToolTip(from_text)
                 to_item = QTableWidgetItem(to_text)
                 to_item.setTextAlignment(Qt.AlignCenter)
-                to_item.setToolTip(f"pool_slot = {pool_slot}")
+                to_item.setToolTip(to_text)
 
                 table.setItem(0, col, from_item)
                 table.setItem(1, col, to_item)
@@ -174,7 +174,7 @@ class MRUInspectorDialog(QDialog):
         kc_name = _keycode_slot_name(keycode_slot)
         mod_name = (_MODIFIER_NAMES[modifier_value]
                     if modifier_value < len(_MODIFIER_NAMES) else str(modifier_value))
-        return f"{kc_name}·{mod_name}"
+        return f"{display_idx}\n{kc_name}·{mod_name}"
 
     @staticmethod
     def _format_pool_slot(pool_slot: int) -> str:
@@ -183,7 +183,7 @@ class MRUInspectorDialog(QDialog):
         kc_name = _keycode_slot_name(keycode_slot)
         mod_name = (_MODIFIER_NAMES[modifier_value]
                     if modifier_value < len(_MODIFIER_NAMES) else str(modifier_value))
-        return f"#{pool_slot}\n{kc_name}·{mod_name}"
+        return f"{pool_slot}\n{kc_name}·{mod_name}"
 
     def _build_grid(self, cache: OverlayMRUCache) -> QWidget:
         mru_info = cache.get_mru_info()
