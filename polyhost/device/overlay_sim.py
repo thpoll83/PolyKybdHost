@@ -3,6 +3,7 @@ import zlib
 
 import numpy as np
 
+from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.keys import KeyCode, Modifier
 
 
@@ -65,6 +66,7 @@ class OverlayFirmwareSim:
         self._store: dict[int, bytes] = {}     # pool_slot → 360-byte bitmap
         self._usage: set[int] = set()          # used positions (display or pool)
         self._mapping: dict[int, int] = {}     # non-identity display_pos → pool_slot
+        self._device_settings = DeviceSettings()
 
     # ── write path ─────────────────────────────────────────────────────────
 
@@ -80,6 +82,10 @@ class OverlayFirmwareSim:
     def reset_usage(self) -> None:
         """Mirrors reset_overlay_usage(): clears all usage bits; image data preserved."""
         self._usage.clear()
+
+    def set_all_usage(self) -> None:
+        """Mirrors reset_overlay_usage(): clears all usage bits; image data preserved."""
+        self._usage = set(list(range(self._device_settings.OVERLAY_MAPPING_USAGE_COUNT)))
 
     def reset_mapping(self) -> None:
         """Mirrors reset_overlay_mapping(): restores identity by clearing non-identity entries."""

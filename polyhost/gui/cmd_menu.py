@@ -37,14 +37,19 @@ class CommandsSubMenu:
         action.triggered.connect(self.reset_overlays)
         cmd_menu.addAction(action)
 
-        action = QAction(get_icon("delete.svg"), "Reset Overlays Usage", parent=self.parent)
+        action = QAction(get_icon("delete.svg"), "Reset Overlays Mapping", parent=self.parent)
+        # noinspection PyUnresolvedReferences
+        action.triggered.connect(self.reset_overlay_mapping)
+        cmd_menu.addAction(action)
+        
+        action = QAction(get_icon("toggle_off.svg"), "Clear Overlays Usage", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.reset_overlay_usage)
         cmd_menu.addAction(action)
 
-        action = QAction(get_icon("delete.svg"), "Reset Overlays Mapping", parent=self.parent)
+        action = QAction(get_icon("toggle_on.svg"), "Set All Overlays Mapping", parent=self.parent)
         # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.reset_overlay_mapping)
+        action.triggered.connect(self.set_all_overlay_usage)
         cmd_menu.addAction(action)
 
         action = QAction(get_icon("toggle_on.svg"), "Enable Shortcut Overlays", parent=self.parent)
@@ -150,13 +155,17 @@ class CommandsSubMenu:
         result, msg = self.keeb.reset_overlay_mapping()
         self.parent.show_mb("Error", f"Failed clearing overlays: {msg}", result)
 
+    def set_all_overlay_usage(self):
+        result, msg = self.keeb.set_all_overlay_usage()
+        self.parent.show_mb("Error", f"Failed setting all overlay usage: {msg}", result)
+
     def reset_overlays_and_usage(self):
         result, msg = self.keeb.reset_overlays_and_usage()
         self.parent.show_mb("Error", f"Failed clearing overlays: {msg}", result)
 
     def reset_overlay_usage(self):
         result, msg = self.keeb.reset_overlay_usage()
-        self.parent.show_mb("Error", f"Failed clearing overlays: {msg}", result)
+        self.parent.show_mb("Error", f"Failed clearing overlay usage: {msg}", result)
 
     def reset_overlays(self):
         result, msg = self.keeb.reset_overlays()

@@ -148,6 +148,10 @@ class PolyKybd:
         self.log.info("Reset Overlay Mapping...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80))
 
+    def set_all_overlay_usage(self) -> tuple[bool, Any]:
+        self.log.info("Set All Overlay Usage...")
+        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x02))
+
     def reset_overlays_and_usage(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlays AND Usage...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x60))

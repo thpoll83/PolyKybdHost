@@ -413,6 +413,61 @@ class TestPolyKybdMockMRUFlow(unittest.TestCase):
             mock.get_display_image(display_kc_b, mod),
             _make_image("stripe"))
 
+    def test_mru_mapping_redirects_high_modifier_from_positions_below_pool(self):
+        """
+        Regression: display_flat_idx for modifiers 7 (CTRL_ALT_SHIFT) and 8
+        (GUI_KEY) yields "from" indices in [90*7, 90*9) = [630, 810) — beyond
+        the physical pool capacity (90*7 = 630). The MRU mapping table is what
+        makes these key+modifier combinations addressable at all: every such
+        high "from" position must be redirected to a pool slot strictly below
+        630 by send_overlays_mru's per-key get_or_allocate / display_flat_idx
+        bookkeeping.
+        """
+        mock = _make_mock()
+        cache = self._make_mru_cache(capacity=90 * 7)
+
+        # GUI_KEY (value 8) is the only enum entry currently produced in this
+        # range; CTRL_ALT_SHIFT (value 7) is commented out in keys.py.
+        mod = Modifier.GUI_KEY
+        keycodes = (KeyCode.KC_A, KeyCode.KC_B, KeyCode.KC_C)
+        patterns = ("rect", "stripe", "dot")
+        overlays = {kc.value: _make_overlay(p) for kc, p in zip(keycodes, patterns)}
+
+        display_to_pool: dict[int, int] = {}
+        with cache.batch():
+            for kc_enum in keycodes:
+                kc = kc_enum.value
+                od = overlays[kc]
+                content_key = ("gui_modifier_set.png", mod.value, kc)
+                pool_slot, _ = cache.get_or_allocate(content_key, "gui_modifier_set.png", od.all_bytes)
+                pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
+                mock.send_smallest_overlay(pool_kc, pool_mod, {pool_kc: od})
+                display_to_pool[cache.display_flat_idx(kc, mod)] = pool_slot
+
+        # All "from" positions land in the high range that only becomes
+        # addressable via the mapping table.
+        for from_pos in display_to_pool:
+            self.assertGreaterEqual(from_pos, 90 * 7)
+            self.assertLess(from_pos, 90 * 9)
+
+        # Every redirect must point inside the physical pool.
+        for to_pos in display_to_pool.values():
+            self.assertLess(to_pos, 90 * 7)
+
+        # Distinct images must allocate distinct pool slots (no dedup
+        # collisions for this fixture).
+        self.assertEqual(len(set(display_to_pool.values())), len(keycodes))
+
+        mock.reset_overlay_usage()
+        mock.send_overlay_mapping(display_to_pool)
+
+        # End-to-end: the device renders each high-modifier display position
+        # with the correct image after the mapping is applied.
+        for kc_enum, pattern in zip(keycodes, patterns):
+            np.testing.assert_array_equal(
+                mock.get_display_image(kc_enum.value, mod),
+                _make_image(pattern))
+
     def test_unmapped_position_returns_none_in_mru_mode(self):
         mock = _make_mock()
         kc_a = KeyCode.KC_A.value

@@ -53,13 +53,18 @@ class PolyKybdMock:
         self._sim.reset_mapping()
         return True, ""
 
+    def set_all_overlay_usage(self):
+        self.log.info("Set All Overlay Mapping Usage...")
+        self._sim.set_all_usage()
+        return True, ""
+
     def reset_overlays_and_usage(self):
         self.log.info("Reset Overlays AND Usage...")
         self._sim.reset_all()
         return True, ""
 
     def reset_overlay_usage(self):
-        self.log.info("Reset Overlay Usage...")
+        self.log.info("Reset Overlay Mapping Usage...")
         self._sim.reset_usage()
         return True, ""
 

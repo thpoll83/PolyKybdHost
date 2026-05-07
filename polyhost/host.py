@@ -134,7 +134,7 @@ class PolyHost(QApplication):
 
         connected = self.keeb.connect()
         self.device_mgr.connect_secondaries()
-        self.device_mgr.reset_all_caches(DeviceSettings().OVERLAY_MRU_POOL_CAPACITY)
+        self.device_mgr.reset_all_caches(DeviceSettings().OVERLAY_MAPPING_CAPACITY)
         if connected:
             self.log.info("Connected to PolyKybd.")
         else:
@@ -369,7 +369,7 @@ class PolyHost(QApplication):
                             self.log.info("Setting unicode mode to str %s", mode)
                             self.keeb.set_unicode_mode(mode)
                             self.update_ui_on_lang_change(response)
-                        cache_capacity = DeviceSettings().OVERLAY_MRU_POOL_CAPACITY
+                        cache_capacity = DeviceSettings().OVERLAY_MAPPING_CAPACITY
                         self.device_mgr.connect_secondaries()
                         self.device_mgr.reset_all_caches(cache_capacity)
                         self.log.info("Overlay MRU cache initialised (capacity %d).", cache_capacity)
