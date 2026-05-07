@@ -67,56 +67,6 @@ class CommandsSubMenu:
         action.triggered.connect(self.load_commands)
         cmd_menu.addAction(action)
 
-        # set_overlay_mask_menu = cmd_menu.addMenu("Set Overlay Masking")
-        # action = QAction("Left Top", parent=self.parent)
-        # action.setData(MaskFlag.LEFT_TOP)
-        # # noinspection PyUnresolvedReferences
-        # action.triggered.connect(self.set_mask)
-        # set_overlay_mask_menu.addAction(action)
-
-        # action = QAction("Right Top", parent=self.parent)
-        # action.setData(MaskFlag.RIGHT_TOP)
-        # # noinspection PyUnresolvedReferences
-        # action.triggered.connect(self.set_mask)
-        # set_overlay_mask_menu.addAction(action)
-
-        # action = QAction("Left Bottom", parent=self.parent)
-        # action.setData(MaskFlag.LEFT_BOTTOM)
-        # # noinspection PyUnresolvedReferences
-        # action.triggered.connect(self.set_mask)
-        # set_overlay_mask_menu.addAction(action)
-
-        # action = QAction("Right Bottom", parent=self.parent)
-        # action.setData(MaskFlag.RIGHT_BOTTOM)
-        # # noinspection PyUnresolvedReferences
-        # action.triggered.connect(self.set_mask)
-        # set_overlay_mask_menu.addAction(action)
-
-        # set_overlay_mask_menu = cmd_menu.addMenu("Clear Overlay Masking")
-        # action = QAction("Left Top", parent=self.parent)
-        # action.setData(MaskFlag.LEFT_TOP)
-        # # noinspection PyUnresolvedReferences
-        # action.triggered.connect(self.clear_mask)
-        # set_overlay_mask_menu.addAction(action)
-
-        # action = QAction("Right Top", parent=self.parent)
-        # action.setData(MaskFlag.RIGHT_TOP)
-        # # noinspection PyUnresolvedReferences
-        # action.triggered.connect(self.clear_mask)
-        # set_overlay_mask_menu.addAction(action)
-
-        # action = QAction("Left Bottom", parent=self.parent)
-        # action.setData(MaskFlag.LEFT_BOTTOM)
-        # # noinspection PyUnresolvedReferences
-        # action.triggered.connect(self.clear_mask)
-        # set_overlay_mask_menu.addAction(action)
-
-        # action = QAction("Right Bottom", parent=self.parent)
-        # action.setData(MaskFlag.RIGHT_BOTTOM)
-        # # noinspection PyUnresolvedReferences
-        # action.triggered.connect(self.clear_mask)
-        # set_overlay_mask_menu.addAction(action)
-
         bri_menu = cmd_menu.addMenu("Change Brightness")
         action = QAction(get_icon("backlight_high_off.svg"), "Off", parent=self.parent)
         action.setData(0)
@@ -239,14 +189,6 @@ class CommandsSubMenu:
         from_to[to_key] = from_key
         
         result, msg = self.keeb.send_overlay_mapping(from_to)
-        self.parent.show_mb("Error", f"Failed to change idle mode: {msg}", result)
-
-    def set_mask(self):
-        result, msg = self.keeb.set_overlay_masking(self.parent.sender().data(), True)
-        self.parent.show_mb("Error", f"Failed to change idle mode: {msg}", result)
-
-    def clear_mask(self):
-        result, msg = self.keeb.set_overlay_masking(self.parent.sender().data(), False)
         self.parent.show_mb("Error", f"Failed to change idle mode: {msg}", result)
 
     def load_commands(self):

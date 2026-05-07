@@ -3,7 +3,6 @@ import logging
 import math
 import re
 import time
-from enum import Enum
 from typing import Any
 
 import numpy as np
@@ -24,13 +23,6 @@ from polyhost.device.overlay_cache import OverlayMRUCache
 import hid
 
 from polyhost.util.dict_util import split_dict
-
-
-class MaskFlag(Enum):
-    LEFT_TOP = 2
-    LEFT_BOTTOM = 4
-    RIGHT_TOP = 8
-    RIGHT_BOTTOM = 16
 
 
 class PolyKybd:
@@ -273,10 +265,6 @@ class PolyKybd:
 
         self.log.info("Language changed to %s (%s).", lang, msg)
         return True, lang
-
-    def set_overlay_masking(self, set_all: bool) -> tuple[bool, Any]:
-        cmd = Cmd.OVERLAY_FLAGS_ON if set_all else Cmd.OVERLAY_FLAGS_OFF
-        return self.hid.send(compose_cmd(cmd, 0x1e))
 
     def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
         chunk_size = int(self.device_settings.OVERLAY_MAPPING_INDICES_PER_REPORT / 2)

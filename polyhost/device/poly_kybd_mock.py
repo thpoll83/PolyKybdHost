@@ -110,9 +110,6 @@ class PolyKybdMock:
         self.lang = lang
         return True, lang
 
-    def set_overlay_masking(self, set_all):
-        return True, f"{set_all}"
-
     def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
         self.hid_mapping_sends += 1
         self.last_mapping = from_to
