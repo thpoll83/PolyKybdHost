@@ -570,10 +570,19 @@ class PolyKybd:
         self.log.info("MRU: %d HID image messages, %d display positions mapped",
                       hid_msg_counter, len(display_to_pool))
 
+        # Belt-and-braces: if the prepare_for_mru_send state sync above failed
+        # to reach the slave, slave's MIRROR_OVERLAYS would have been off during
+        # uploads and its set_overlay_usage_post_upload would have set bits at
+        # every pool index. That contamination would show through at any unmapped
+        # display position whose firmware address coincides with a pool slot we
+        # just wrote. Forcing one more USAGE_RESET here clears any such pollution
+        # right before send_overlay_mapping puts the legitimate from-index bits
+        # in. On the master and on a slave that processed prepare_for_mru_send
+        # correctly this is a harmless no-op.
+        # self.reset_overlay_usage()
+
         # send_overlay_mapping re-establishes both the mapping and the
-        # use_overlay bit for every from-index in this program. The pre-upload
-        # reset above ensured each upload landed in its intended pool slot;
-        # mappings sent here decide what the user actually sees on each key.
+        # use_overlay bit for every from-index in this program.
         ok, msg = self.send_overlay_mapping(display_to_pool)
         if not ok:
             self.log.warning("send_overlays_mru: mapping failed: %s", msg)

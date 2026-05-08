@@ -250,7 +250,7 @@ class MRUInspectorDialog(QDialog):
             except ValueError:
                 kc_name = f"0x{kc:02x}"
 
-            info_lbl = QLabel(f"{basename}\n{kc_name} · {mod_name}\nbatch {rank}/{max_rank}")
+            info_lbl = QLabel(f"{basename}\n{kc_name}·{mod_name}→{pool_slot}\nbatch {rank}/{max_rank}")
             info_lbl.setStyleSheet("font-size: 7pt; color: #ddd;")
         else:
             img_lbl.setStyleSheet("background: #1a1a1a;")

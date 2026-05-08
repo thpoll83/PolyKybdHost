@@ -247,6 +247,10 @@ class PolyKybdMock:
                         disp_idx = cache.display_flat_idx(keycode, modifier)
                         display_to_pool[disp_idx] = pool_slot
 
+        # Parity with PolyKybd.send_overlays_mru — clears any upload-time
+        # use_overlay contamination before the mapping send establishes the
+        # legitimate from-index bits.
+        # self.reset_overlay_usage()
         self.send_overlay_mapping(display_to_pool)
         cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()
@@ -265,7 +269,7 @@ class PolyKybdMock:
         return self._sim.get_display_bitmap(keycode, modifier)
 
     def get_display_image(self, keycode: int, modifier: Modifier) -> "np.ndarray | None":
-        """Return the 72×40 bool numpy array shown at (keycode, modifier), or None."""
+        """Return the 72x40 bool numpy array shown at (keycode, modifier), or None."""
         return self._sim.get_display_image(keycode, modifier)
 
     def save_overlay_as_png(self, keycode: int, modifier: Modifier, path: str) -> bool:

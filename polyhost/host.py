@@ -191,6 +191,7 @@ class PolyHost(QApplication):
         self.cmdMenu = CommandsSubMenu(self, self.keeb)
         self.cmdMenu.build_menu(self.menu)
 
+        # TODO: enable/disable depending on MRU usage
         action = QAction(get_icon("overlays.svg"), "Send Shortcut Overlay...", parent=self)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.send_shortcuts)
