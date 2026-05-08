@@ -58,6 +58,12 @@ class PolyKybdMock:
         self._sim.set_all_usage()
         return True, ""
 
+    def set_mirror_overlays(self, enable):
+        # The mock simulator doesn't model split-side storage, so the flag is
+        # a no-op functionally — we just log it for parity with the real device.
+        self.log.info("Mirror Overlays: %s", enable)
+        return True, ""
+
     def reset_overlays_and_usage(self):
         self.log.info("Reset Overlays AND Usage...")
         self._sim.reset_all()
@@ -198,6 +204,9 @@ class PolyKybdMock:
 
     def send_overlays_mru(self, filenames: list, cache) -> bool:
         display_to_pool: dict[int, int] = {}
+
+        # Parity with the real device path; see PolyKybd.send_overlays_mru.
+        self.set_mirror_overlays(True)
 
         with cache.batch():
             for filename in filenames:

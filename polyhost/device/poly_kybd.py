@@ -144,6 +144,19 @@ class PolyKybd:
         self.log.info("Set All Overlay Usage...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x02))
 
+    def set_mirror_overlays(self, enable: bool) -> tuple[bool, Any]:
+        """Toggle the firmware's MIRROR_OVERLAYS state flag (bit 2 = 0x04).
+
+        With it on, every overlay upload is stored on both halves regardless
+        of the upload's keycode side — required for MRU mappings that can
+        redirect a display position on either half to any pool slot. With it
+        off, uploads use the legacy side-conditional storage path (image goes
+        only to the half whose matrix the upload's keycode resides on).
+        """
+        cmd = Cmd.OVERLAY_FLAGS_ON if enable else Cmd.OVERLAY_FLAGS_OFF
+        self.log.info("Mirror Overlays: %s", enable)
+        return self.hid.send(compose_cmd(cmd, 0x04))
+
     def reset_overlays_and_usage(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlays AND Usage...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x60))
@@ -490,6 +503,11 @@ class PolyKybd:
         DELAY_TIME_AFTER_MAX_MSG = self.poly_settings.get("delay_time_after_max_hid_messages")
 
         display_to_pool: dict[int, int] = {}
+
+        # MRU mappings can redirect a display position to ANY pool slot, so the
+        # bitmap must reach both halves. Turn on the firmware's MIRROR_OVERLAYS
+        # state flag before any uploads.
+        self.set_mirror_overlays(True)
 
         with cache.batch():
             for filename in filenames:
