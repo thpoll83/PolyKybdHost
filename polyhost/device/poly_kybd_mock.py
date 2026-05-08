@@ -69,6 +69,12 @@ class PolyKybdMock:
         self._sim.reset_all()
         return True, ""
 
+    def reset_overlay_mapping_and_usage(self):
+        self.log.info("Reset Overlay Mapping AND Usage...")
+        self._sim.reset_mapping()
+        self._sim.reset_usage()
+        return True, ""
+
     def reset_overlay_usage(self):
         self.log.info("Reset Overlay Mapping Usage...")
         self._sim.reset_usage()
@@ -233,7 +239,7 @@ class PolyKybdMock:
                         disp_idx = cache.display_flat_idx(keycode, modifier)
                         display_to_pool[disp_idx] = pool_slot
 
-        self.reset_overlay_usage()
+        self.reset_overlay_mapping_and_usage()
         self.send_overlay_mapping(display_to_pool)
         cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()

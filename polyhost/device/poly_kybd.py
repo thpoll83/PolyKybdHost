@@ -161,6 +161,14 @@ class PolyKybd:
         self.log.info("Reset Overlays AND Usage...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x60))
 
+    def reset_overlay_mapping_and_usage(self) -> tuple[bool, Any]:
+        """Reset overlay_map[] to identity AND clear all use_overlay[] bits in
+        one HID command (MAPPING_RESET | USAGE_RESET). Bitmaps in overlays[]
+        are preserved — required when an MRU send needs to invalidate stale
+        from→to redirects from a previous program without losing cached data."""
+        self.log.info("Reset Overlay Mapping AND Usage...")
+        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80 | 0x40))
+
     def reset_overlay_usage(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlay Usage...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x40))
@@ -301,7 +309,8 @@ class PolyKybd:
             if not result:
                 return False, f"Error sending overlay mapping: {msg}"
             self.log.debug("send_overlay_mapping: Sent %s", dict_part)
-
+            
+        self.log.info("send_overlay_mapping: Sent %d mapping messages", num_msgs)
         # _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock)
         # self.log.debug_detailed(
         #     "send_overlay_mapping: Drained %d HID reports", drained)
@@ -547,9 +556,14 @@ class PolyKybd:
         self.log.info("MRU: %d HID image messages, %d display positions mapped",
                       hid_msg_counter, len(display_to_pool))
 
-        # Clear all usage bits so stale pool slots don't bleed through.
-        # The mapping command re-marks each active display position as used.
-        self.reset_overlay_usage()
+        # Wipe the firmware's mapping table back to identity AND clear all use
+        # bits before sending the new mappings — single HID command so master
+        # and slave both apply the pair atomically. The reset is what stops
+        # stale display→pool entries from a previous program's MRU send pointing
+        # at pool slots whose contents have since been overwritten by eviction.
+        # The send_overlay_mapping call below re-establishes both the mapping
+        # and the use_overlay bit for every from-index in this program.
+        self.reset_overlay_mapping_and_usage()
         ok, msg = self.send_overlay_mapping(display_to_pool)
         if not ok:
             self.log.warning("send_overlays_mru: mapping failed: %s", msg)
