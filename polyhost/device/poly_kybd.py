@@ -169,6 +169,15 @@ class PolyKybd:
         self.log.info("Reset Overlay Mapping AND Usage...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80 | 0x40))
 
+    def prepare_for_mru_send(self) -> tuple[bool, Any]:
+        """One HID command that sets MIRROR_OVERLAYS and resets the mapping
+        table to identity AND clears all use_overlay[] bits — i.e. the union
+        of set_mirror_overlays(True) + reset_overlay_mapping_and_usage().
+        Combines two HID round-trips (and two slave force-syncs) into one,
+        which is what every send_overlays_mru wants at its start."""
+        self.log.info("Prepare for MRU send (mirror + reset mapping/usage)...")
+        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x04 | 0x80 | 0x40))
+
     def reset_overlay_usage(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlay Usage...")
         return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x40))
@@ -513,10 +522,15 @@ class PolyKybd:
 
         display_to_pool: dict[int, int] = {}
 
-        # MRU mappings can redirect a display position to ANY pool slot, so the
-        # bitmap must reach both halves. Turn on the firmware's MIRROR_OVERLAYS
-        # state flag before any uploads.
-        self.set_mirror_overlays(True)
+        # Single HID command that (a) turns on MIRROR_OVERLAYS so every upload
+        # reaches both halves regardless of the upload's keycode side, and
+        # (b) resets the firmware's overlay_map[] to identity plus clears all
+        # use_overlay[] bits before uploads start. The reset is required
+        # because fill_overlay_buffer applies get_overlay_mapping(idx) at
+        # upload time — without resetting first, stale from→to entries from a
+        # previous program's MRU would redirect this send's bytes into the
+        # wrong pool slot.
+        self.prepare_for_mru_send()
 
         with cache.batch():
             for filename in filenames:
@@ -556,14 +570,10 @@ class PolyKybd:
         self.log.info("MRU: %d HID image messages, %d display positions mapped",
                       hid_msg_counter, len(display_to_pool))
 
-        # Wipe the firmware's mapping table back to identity AND clear all use
-        # bits before sending the new mappings — single HID command so master
-        # and slave both apply the pair atomically. The reset is what stops
-        # stale display→pool entries from a previous program's MRU send pointing
-        # at pool slots whose contents have since been overwritten by eviction.
-        # The send_overlay_mapping call below re-establishes both the mapping
-        # and the use_overlay bit for every from-index in this program.
-        self.reset_overlay_mapping_and_usage()
+        # send_overlay_mapping re-establishes both the mapping and the
+        # use_overlay bit for every from-index in this program. The pre-upload
+        # reset above ensured each upload landed in its intended pool slot;
+        # mappings sent here decide what the user actually sees on each key.
         ok, msg = self.send_overlay_mapping(display_to_pool)
         if not ok:
             self.log.warning("send_overlays_mru: mapping failed: %s", msg)

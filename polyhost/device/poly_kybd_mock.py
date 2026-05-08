@@ -75,6 +75,14 @@ class PolyKybdMock:
         self._sim.reset_usage()
         return True, ""
 
+    def prepare_for_mru_send(self):
+        # The simulator doesn't model MIRROR_OVERLAYS at all — its uploads are
+        # already side-agnostic — so the mirror part is a logged no-op.
+        self.log.info("Prepare for MRU send (mock)...")
+        self._sim.reset_mapping()
+        self._sim.reset_usage()
+        return True, ""
+
     def reset_overlay_usage(self):
         self.log.info("Reset Overlay Mapping Usage...")
         self._sim.reset_usage()
@@ -212,7 +220,7 @@ class PolyKybdMock:
         display_to_pool: dict[int, int] = {}
 
         # Parity with the real device path; see PolyKybd.send_overlays_mru.
-        self.set_mirror_overlays(True)
+        self.prepare_for_mru_send()
 
         with cache.batch():
             for filename in filenames:
@@ -239,7 +247,6 @@ class PolyKybdMock:
                         disp_idx = cache.display_flat_idx(keycode, modifier)
                         display_to_pool[disp_idx] = pool_slot
 
-        self.reset_overlay_mapping_and_usage()
         self.send_overlay_mapping(display_to_pool)
         cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()
