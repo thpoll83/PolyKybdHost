@@ -21,10 +21,10 @@
         "*_test.py"
     ],
     "python.testing.pytestEnabled": false,
-        "workbench.colorCustomizations": {
+    "workbench.colorCustomizations": {
         "activityBar.background": "#90ddc0",
         "titleBar.activeBackground": "#36b188",
-        "titleBar.inactiveBackground": "#002519",
+        "titleBar.inactiveBackground": "#056848",
         "titleBar.activeForeground": "#FEFBFB"
     }
 }
