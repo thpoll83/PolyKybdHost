@@ -39,7 +39,7 @@ def receive_from_forwarder(log, connections, stop_event):
                         "title": entries[2],
                     }
                     connections["_latest"] = addr
-                    log.debug("Remote data from %s: handle=%s name=%s", addr, entries[0], entries[1])
+                    log.debug_detailed("Remote data from %s: handle=%s name=%s", addr, entries[0], entries[1])
             finally:
                 conn.close()
         except socket.timeout:

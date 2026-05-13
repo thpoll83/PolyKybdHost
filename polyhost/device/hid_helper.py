@@ -239,7 +239,9 @@ class HidHelper:
 
         return True, response_report, self.lock
 
-    def send_and_read_validate(self, data: bytearray, timeout: int, expected_prefix: bytearray) -> tuple[bool, bytearray]:
+    def send_and_read_validate(self, data: bytearray, timeout: int = 30, expected_prefix: bytearray = None) -> tuple[bool, bytearray]:
+        if expected_prefix is None:
+            expected_prefix = data[:2]
         if self.interface is None:
             return False, bytearray("No Interface", 'utf-8')
         lock = None

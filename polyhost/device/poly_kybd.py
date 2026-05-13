@@ -138,11 +138,11 @@ class PolyKybd:
 
     def reset_overlay_mapping(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlay Mapping...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80))
 
     def set_all_overlay_usage(self) -> tuple[bool, Any]:
         self.log.info("Set All Overlay Usage...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x02))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x02))
 
     def set_mirror_overlays(self, enable: bool) -> tuple[bool, Any]:
         """Toggle the firmware's MIRROR_OVERLAYS state flag (bit 2 = 0x04).
@@ -155,11 +155,11 @@ class PolyKybd:
         """
         cmd = Cmd.OVERLAY_FLAGS_ON if enable else Cmd.OVERLAY_FLAGS_OFF
         self.log.info("Mirror Overlays: %s", enable)
-        return self.hid.send(compose_cmd(cmd, 0x04))
+        return self.hid.send_and_read_validate(compose_cmd(cmd, 0x04))
 
     def reset_overlays_and_usage(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlays AND Usage...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x60))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x60))
 
     def reset_overlay_mapping_and_usage(self) -> tuple[bool, Any]:
         """Reset overlay_map[] to identity AND clear all use_overlay[] bits in
@@ -167,7 +167,7 @@ class PolyKybd:
         are preserved — required when an MRU send needs to invalidate stale
         from→to redirects from a previous program without losing cached data."""
         self.log.info("Reset Overlay Mapping AND Usage...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80 | 0x40))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80 | 0x40))
 
     def prepare_for_mru_send(self) -> tuple[bool, Any]:
         """One HID command that sets MIRROR_OVERLAYS and resets the mapping
@@ -176,31 +176,31 @@ class PolyKybd:
         Combines two HID round-trips (and two slave force-syncs) into one,
         which is what every send_overlays_mru wants at its start."""
         self.log.info("Prepare for MRU send (mirror + reset mapping/usage)...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x04 | 0x80 | 0x40))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x04 | 0x80 | 0x40))
 
     def reset_overlay_usage(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlay Usage...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x40))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x40))
 
     def reset_overlays(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlays...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x20))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x20))
 
     def enable_overlays(self) -> tuple[bool, Any]:
         self.log.info("Enable Overlays...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x01))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x01))
 
     def disable_overlays(self) -> tuple[bool, Any]:
         self.log.info("Disable Overlays...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
 
     def set_unicode_mode(self, mode: InputMethod) -> tuple[bool, Any]:
         self.log.info("Setting unicode mode to %d", mode.value)
-        return self.hid.send(compose_cmd(Cmd.SET_UNICODE_MODE, mode.value))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.SET_UNICODE_MODE, mode.value))
 
     def set_brightness(self, brightness: int) -> tuple[bool, Any]:
         self.log.info("Setting Display Brightness to %d...", brightness)
-        return self.hid.send(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
 
     def press_and_release_key(self, keycode: int, duration: int) -> tuple[bool, Any]:
         self.log.info("Pressing 0x%2x for %f sec...", keycode, duration)
@@ -209,22 +209,22 @@ class PolyKybd:
         if result:
             # for now, it is fine to block this thread
             time.sleep(duration)
-            return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
+            return self.hid.send_and_read_validate(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
         else:
             return result, reply
 
     def press_key(self, keycode: int) -> tuple[bool, Any]:
         self.log.info("Pressing 0x%2x...", keycode)
-        return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
 
     def release_key(self, keycode: int) -> tuple[bool, Any]:
         self.log.info("Releasing 0x%2x...", keycode)
-        return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
 
     def set_idle(self, idle: bool) -> tuple[bool, Any]:
         self.log.debug("Setting idle state to %s...",
                        "True" if idle else "False")
-        return self.hid.send(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
 
     def query_current_lang(self) -> tuple[bool, str]:
         """Query current keyboard language"""
@@ -577,9 +577,9 @@ class PolyKybd:
         # the HID buffer causes later send_and_read_validate calls (e.g. the
         # periodic query_id in connect()) to read stale replies, misinterpret
         # them as a failed GET_ID, and needlessly tear down the HID interface.
-        if hid_msg_counter > 0:
-            _, drained, _, _ = self.hid.drain_read_buffer(hid_msg_counter, None, timeout=20)
-            self.log.debug("send_overlays_mru: Drained %d of %d overlay ACKs", drained, hid_msg_counter)
+        # if hid_msg_counter > 0:
+        #     _, drained, _, _ = self.hid.drain_read_buffer(hid_msg_counter, None, timeout=20)
+        #     self.log.debug("send_overlays_mru: Drained %d of %d overlay ACKs", drained, hid_msg_counter)
         
         # Belt-and-braces: if the prepare_for_mru_send state sync above failed
         # to reach the slave, slave's MIRROR_OVERLAYS would have been off during
@@ -591,6 +591,7 @@ class PolyKybd:
         # in. On the master and on a slave that processed prepare_for_mru_send
         # correctly this is a harmless no-op.
         # self.reset_overlay_usage()
+        
         # send_overlay_mapping re-establishes both the mapping and the
         # use_overlay bit for every from-index in this program.
         ok, msg = self.send_overlay_mapping(display_to_pool)
