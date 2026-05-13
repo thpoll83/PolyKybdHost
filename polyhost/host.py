@@ -370,10 +370,11 @@ class PolyHost(QApplication):
                             self.log.info("Setting unicode mode to str %s", mode)
                             self.keeb.set_unicode_mode(mode)
                             self.update_ui_on_lang_change(response)
-                        cache_capacity = DeviceSettings().OVERLAY_MAPPING_CAPACITY
-                        self.device_mgr.connect_secondaries()
-                        self.device_mgr.reset_all_caches(cache_capacity)
-                        self.log.info("Overlay MRU cache initialised (capacity %d).", cache_capacity)
+                        # consider timeout - or can I find out if there was a real disconnecT?
+                        # cache_capacity = DeviceSettings().OVERLAY_MAPPING_CAPACITY
+                        # self.device_mgr.connect_secondaries()
+                        # self.device_mgr.reset_all_caches(cache_capacity)
+                        # self.log.info("Overlay MRU cache initialised (capacity %d).", cache_capacity)
                     else:
                         self.status.setIcon(get_icon("sync_disabled.svg"))
                         self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
@@ -384,7 +385,7 @@ class PolyHost(QApplication):
             self.managed_connection_status()
             if connected_now:
                 return response
-            self.log.debug("Reconnect failed once (%s) - recovered now.", response)
+            self.log.warning("Reconnect failed once (%s) - recovered now.", response)
         return self.current_lang
 
     @staticmethod
