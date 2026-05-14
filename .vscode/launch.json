@@ -31,7 +31,7 @@
             "request": "launch",
             "module": "polyhost",
             "console": "integratedTerminal",
-            "args": ["--host", "127.0.0.1"],
+            "args": ["--host-file", "~/.config/PolyHost/host_ip"],
         },
         {
             "name": "Debug Current File",

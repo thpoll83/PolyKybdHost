@@ -1,12 +1,12 @@
 import logging
+import os
 import time
 from typing import Any
 
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
-from polyhost.input.unicode_input import InputMethod
-from polyhost.util.dict_util import split_by_n_chars
+from polyhost.device.overlay_sim import OverlayFirmwareSim, display_flat_idx
 
 
 class PolyKybdMock:
@@ -27,6 +27,15 @@ class PolyKybdMock:
         self.device_settings = device_settings
         self.poly_settings = poly_settings
         self.log = logging.getLogger('PolyHost')
+        self.all_languages = list()
+        self.version = version
+        self.sw_version_num = [int(x) for x in version.split(".")]
+        self.lang = lang
+        self.langs = langs
+        self.hid_image_sends: int = 0
+        self.hid_mapping_sends: int = 0
+        self.last_mapping: dict = {}
+        self._sim = OverlayFirmwareSim()
 
         # Version / identity
         self._name = "PolyKybdMock"
@@ -86,9 +95,12 @@ class PolyKybdMock:
         self._log_call("get_name")
         return self._name
 
-    def get_sw_version(self) -> str:
-        self._log_call("get_sw_version")
-        return self._sw_version
+    def get_sw_version(self):
+        return self.version
+
+    def get_sw_version_number(self):
+        """Get the software version number in as 3 ints: major, minor, patch"""
+        return self.sw_version_num
 
     def get_sw_version_number(self) -> list[int]:
         self._log_call("get_sw_version_number")
@@ -106,23 +118,51 @@ class PolyKybdMock:
         self._log_call("reset_overlay_mapping")
         self._overlay_mapping = {}
         self.log.info("Reset Overlay Mapping...")
+        self._sim.reset_mapping()
+        return True, ""
+
+    def set_all_overlay_usage(self):
+        self.log.info("Set All Overlay Mapping Usage...")
+        self._sim.set_all_usage()
+        return True, ""
+
+    def set_mirror_overlays(self, enable):
+        # The mock simulator doesn't model split-side storage, so the flag is
+        # a no-op functionally — we just log it for parity with the real device.
+        self.log.info("Mirror Overlays: %s", enable)
         return True, ""
 
     def reset_overlays_and_usage(self) -> tuple[bool, str]:
         self._log_call("reset_overlays_and_usage")
         self._sent_overlays = []
         self.log.info("Reset Overlays AND Usage...")
+        self._sim.reset_all()
         return True, ""
 
-    def reset_overlay_usage(self) -> tuple[bool, str]:
-        self._log_call("reset_overlay_usage")
-        self.log.info("Reset Overlay Usage...")
+    def reset_overlay_mapping_and_usage(self):
+        self.log.info("Reset Overlay Mapping AND Usage...")
+        self._sim.reset_mapping()
+        self._sim.reset_usage()
+        return True, ""
+
+    def prepare_for_mru_send(self):
+        # The simulator doesn't model MIRROR_OVERLAYS at all — its uploads are
+        # already side-agnostic — so the mirror part is a logged no-op.
+        self.log.info("Prepare for MRU send (mock)...")
+        self._sim.reset_mapping()
+        self._sim.reset_usage()
+        return True, ""
+
+    def reset_overlay_usage(self):
+        self.log.info("Reset Overlay Mapping Usage...")
+        self._sim.reset_usage()
         return True, ""
 
     def reset_overlays(self) -> tuple[bool, str]:
         self._log_call("reset_overlays")
         self._sent_overlays = []
         self.log.info("Reset Overlays...")
+        self._sim._store.clear()
         return True, ""
 
     def enable_overlays(self) -> tuple[bool, str]:
@@ -204,14 +244,43 @@ class PolyKybdMock:
         self._current_lang = lang
         return True, lang
 
-    # -------------------------------------------------------------------------
-    # Overlay transmission
-    # -------------------------------------------------------------------------
-
     def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
-        self._log_call("send_overlay_mapping", from_to)
-        self._overlay_mapping.update(from_to)
+        self.hid_mapping_sends += 1
+        self.last_mapping = from_to
+        self._sim.apply_mapping(from_to)
         return True, "Mapping sent"
+
+    def send_overlay(self, filename, on_off=True):
+        self.log.info("Send Overlay '%s'...", filename)
+        converter = ImageConverter(self.settings)
+        if not converter:
+            return False, f"Invalid file '{filename}'."
+
+        if not converter.open(filename):
+            return False, f"Unable to read '{filename}'."
+
+        counter = 0
+        all_keys = ""
+        for modifier in Modifier:
+            overlaymap = converter.extract_overlays(modifier)
+            #it is okay if there is no overlay for a modifier
+            if overlaymap:
+                self.log.debug_detailed("Sending overlays for modifier %s.", modifier)
+                if on_off and counter == 0:
+                    self.log.debug("Disable overlays...")
+                    self.disable_overlays()
+                for keycode, overlay_data in overlaymap.items():
+                    self.send_smallest_overlay(keycode, modifier, overlaymap)
+                all_keys_for_mod = ", ".join(f"{key:#02x}" for key in overlaymap.keys())
+                self.log.debug_detailed("Overlays for keycodes %s have been sent.", all_keys_for_mod)
+                all_keys += f"(Mod: {modifier}/{modifier.value} {all_keys_for_mod})"
+                counter += 1
+
+        if on_off and counter > 0:
+            self.log.debug("Enable overlays...")
+            self.enable_overlays()
+
+        return True, f"{counter} overlays sent {all_keys}."
 
     def send_overlays(self, filenames: list) -> bool:
         self._log_call("send_overlays", filenames)
@@ -231,7 +300,7 @@ class PolyKybdMock:
                 if overlay_map:
                     self.log.info("Sending overlays for modifier %s.", modifier)
                     if not enabled and modifier == Modifier.NO_MOD:
-                        if KeyCode.KC_ESCAPE.value in overlay_map:
+                        if KeyCode.KC_ESCAPE.value in overlay_map.keys():
                             hid_msg_counter += self.send_smallest_overlay(
                                 KeyCode.KC_ESCAPE.value, modifier, overlay_map)
                             overlay_map.pop(KeyCode.KC_ESCAPE.value)
@@ -239,39 +308,89 @@ class PolyKybdMock:
                             enabled = True
 
                     for keycode in overlay_map:
-                        hid_msg_counter += self.send_smallest_overlay(
-                            keycode, modifier, overlay_map)
+                        hid_msg_counter += self.send_smallest_overlay(keycode, modifier, overlay_map)
+                        key_counter += 1
+
+                    all_keys = ", ".join(f"{key:#02x}" for key in overlay_map.keys())
+                    self.log.info(f"Overlays for keycodes {all_keys} have been sent.")
                     overlay_counter += 1
 
-        self.log.info("%d overlays sent (%d simulated HID messages).",
-                      overlay_counter, hid_msg_counter)
+                    time.sleep(0.2)
+
+        self.log.info(f"{overlay_counter} overlays with {key_counter} keys sent ({hid_msg_counter} hid messages).")
         if not enabled:
             self.enable_overlays()
         self._sent_overlays.extend(filenames)
         return True
 
+    def send_overlays_mru(self, filenames: list, cache) -> bool:
+        display_to_pool: dict[int, int] = {}
+
+        # Parity with the real device path; see PolyKybd.send_overlays_mru.
+        self.prepare_for_mru_send()
+
+        with cache.batch():
+            for filename in filenames:
+                self.log.info("Send Overlay MRU (mock) '%s'...", filename)
+                converter = ImageConverter(self.settings)
+                if not converter.open(filename):
+                    self.log.warning("Unable to read %s", filename)
+                    return False
+
+                for modifier in Modifier:
+                    overlay_map = converter.extract_overlays(modifier)
+                    if not overlay_map:
+                        continue
+
+                    for keycode, overlay_data in overlay_map.items():
+                        content_key = (os.path.basename(filename), modifier.value, keycode)
+                        pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
+
+                        if not is_hit:
+                            pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
+                            self.hid_image_sends += self.send_smallest_overlay(
+                                pool_kc, pool_mod, {pool_kc: overlay_data})
+
+                        disp_idx = cache.display_flat_idx(keycode, modifier)
+                        display_to_pool[disp_idx] = pool_slot
+
+        # Parity with PolyKybd.send_overlays_mru — clears any upload-time
+        # use_overlay contamination before the mapping send establishes the
+        # legitimate from-index bits.
+        # self.reset_overlay_usage()
+        self.send_overlay_mapping(display_to_pool)
+        cache.record_transferred_mapping(display_to_pool)
+        self.enable_overlays()
+        return True
+
     def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict) -> int:
         ov = mapping[keycode]
+        pool_slot = display_flat_idx(keycode, modifier)
+        self._sim.store_image(pool_slot, ov.all_bytes)
         return min(ov.all_msgs, ov.compressed_msgs, ov.roi_msgs, ov.compressed_roi_msgs)
 
-    # -------------------------------------------------------------------------
-    # Serial / console
-    # -------------------------------------------------------------------------
+    # ── inspection helpers ──────────────────────────────────────────────────
+
+    def get_display_bitmap(self, keycode: int, modifier: Modifier) -> bytes | None:
+        """Return the 360-byte bitmap shown at (keycode, modifier), or None if blank."""
+        return self._sim.get_display_bitmap(keycode, modifier)
+
+    def get_display_image(self, keycode: int, modifier: Modifier) -> "np.ndarray | None":
+        """Return the 72x40 bool numpy array shown at (keycode, modifier), or None."""
+        return self._sim.get_display_image(keycode, modifier)
+
+    def save_overlay_as_png(self, keycode: int, modifier: Modifier, path: str) -> bool:
+        """Save the overlay at (keycode, modifier) as a PNG file for visual inspection."""
+        return self._sim.save_as_png(keycode, modifier, path)
 
     def read_serial(self):
         self._log_call("read_serial")
         return None
 
-    def get_console_output(self, flush_and_return: bool = True) -> str | None:
-        self._log_call("get_console_output", flush_and_return)
-        return "" if flush_and_return else None
+    def get_console_output(self):
+        return None
 
-    # -------------------------------------------------------------------------
-    # Command execution
-    # -------------------------------------------------------------------------
-
-    def execute_commands(self, command_list: list) -> None:
-        self._log_call("execute_commands", command_list)
+    def execute_commands(self, command_list):
         for cmd_str in command_list:
             cmd_str = cmd_str.strip()
             end = cmd_str.find(" ")

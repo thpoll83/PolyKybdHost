@@ -205,7 +205,7 @@ class OverlayHandler:
                     self.log.info("No match")
                     return None, OverlayCommand.DISABLE
                 elif self.is_remote_mapping_entry():
-                    self.log.debug("Remote forwarder active (current_entry='%s'), checking for changes", self.current_entry.get("remote") if self.current_entry else None)
+                    self.log.debug_detailed("Remote forwarder active (current_entry='%s'), checking for changes", self.current_entry.get("remote") if self.current_entry else None)
                     if self.remote_handler.remote_changed(self.current_entry):
                         self.log.info("Remote window changed")
                         if self.remote_handler.has_overlay():

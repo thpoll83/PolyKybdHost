@@ -39,7 +39,7 @@ def receive_from_forwarder(log, connections, stop_event):
                         "title": entries[2],
                     }
                     connections["_latest"] = addr
-                    log.debug("Remote data from %s: handle=%s name=%s", addr, entries[0], entries[1])
+                    log.debug_detailed("Remote data from %s: handle=%s name=%s", addr, entries[0], entries[1])
             finally:
                 conn.close()
         except socket.timeout:
@@ -148,10 +148,10 @@ class RemoteHandler:
         self.listen_to_forwarder()  # restart listener if it died (e.g. bind failed on first try)
         ip = self.connections.get("_latest")
         if not ip:
-            self.log.debug("remote_changed: no TCP data received yet (no connection)")
+            self.log.debug_detailed("remote_changed: no TCP data received yet (no connection)")
             return False
         if not isinstance(self.connections.get(ip), dict):
-            self.log.debug("remote_changed: connection data for %s is not a dict: %s", ip, self.connections.get(ip))
+            self.log.debug_detailed("remote_changed: connection data for %s is not a dict: %s", ip, self.connections.get(ip))
             return False
 
         data = self.connections[ip]
@@ -177,7 +177,7 @@ class RemoteHandler:
             if self.current_entry and not found:
                 self.current_entry = None
             return True
-        self.log.debug(
+        self.log.debug_detailed(
             "remote_changed: no change (ip=%s stored_handle=%s->%s stored_title=%s->%s)",
             ip, self.handle, data.get("handle"), self.title, data.get("title"),
         )

@@ -182,7 +182,13 @@ class HidHelper:
 
         return True, result, self.lock
 
-    def drain_read_buffer(self, num_msgs: int, received_lock: threading.Lock) -> tuple[bool, int, str, threading.Lock]:
+    def drain_read_buffer(self, num_msgs: int, received_lock: threading.Lock, timeout: int = 100) -> tuple[bool, int, str, threading.Lock]:
+        """Drain up to num_msgs buffered HID replies while holding the lock.
+
+        timeout controls how long to wait for each individual reply (ms).
+        Use a small value (e.g. 10) when replies are expected to already be
+        queued; the default of 100 is kept for backward compatibility.
+        """
         if self.interface is None:
             return False, 0, "No Interface", received_lock
         num_drained = 0
@@ -195,7 +201,7 @@ class HidHelper:
                 return False, num_drained, "Not locked", self.lock
 
             for _ in range(num_msgs):
-                if len(self.interface.read(self.settings.HID_REPORT_SIZE, timeout=100)) > 0:
+                if len(self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)) > 0:
                     num_drained += 1
         except Exception as e:
             self.lock.release()
@@ -233,7 +239,9 @@ class HidHelper:
 
         return True, response_report, self.lock
 
-    def send_and_read_validate(self, data: bytearray, timeout: int, expected_prefix: bytearray) -> tuple[bool, bytearray]:
+    def send_and_read_validate(self, data: bytearray, timeout: int = 30, expected_prefix: bytearray = None) -> tuple[bool, bytearray]:
+        if expected_prefix is None:
+            expected_prefix = data[:2]
         if self.interface is None:
             return False, bytearray("No Interface", 'utf-8')
         lock = None
@@ -256,11 +264,26 @@ class HidHelper:
             request_report = bytes(request_data)
 
             self.interface.write(request_report)
-            response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
-            if not response_report.startswith(expected_prefix):
-                response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
-            else:
-                return True, response_report, self.lock
+
+            # Drain stale buffered replies (e.g. unread SEND_OVERLAY_MAPPING ACKs)
+            # until we find the expected prefix or the buffer runs dry.
+            # First read uses the full caller timeout; subsequent reads use
+            # timeout=0 (non-blocking) to consume already-queued stale replies
+            # without introducing extra latency.
+            _MAX_DRAIN = 16
+            response_report = bytearray()
+            for _i in range(_MAX_DRAIN):
+                t = timeout if _i == 0 else 0
+                response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=t)
+                if not response_report:
+                    if _i > 0:
+                        # Buffer exhausted after draining stale replies;
+                        # wait once more for the actual response.
+                        response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
+                    break
+                if response_report.startswith(expected_prefix):
+                    return True, response_report, self.lock
+                # Stale reply — keep draining
         except Exception as e:
             # self.lock.release()
             return False, bytearray(f"Exception: {e}", 'utf-8'), self.lock

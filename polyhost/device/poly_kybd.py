@@ -3,7 +3,6 @@ import logging
 import math
 import re
 import time
-from enum import Enum
 from typing import Any
 
 import numpy as np
@@ -19,17 +18,11 @@ from polyhost.device.command_ids import Cmd, HidId
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
+from polyhost.device.overlay_cache import OverlayMRUCache
 
 import hid
 
 from polyhost.util.dict_util import split_dict
-
-
-class MaskFlag(Enum):
-    LEFT_TOP = 2
-    LEFT_BOTTOM = 4
-    RIGHT_TOP = 8
-    RIGHT_BOTTOM = 16
 
 
 class PolyKybd:
@@ -63,21 +56,18 @@ class PolyKybd:
         """Connect to PolyKybd"""
         # Connect to Keeb
         if not self.hid:
+            self.log.debug("Connecting to PolyKybd for the first time...")
             self.hid = HidHelper(self.device_settings)
             self.serial = SerialHelper(self.device_settings)
         else:
             result, msg = self.query_id()
             if not result:
-                self.log.debug("Reconnecting to PolyKybd... (%s)", msg)
-                try:
-                    self.hid = HidHelper(self.device_settings)
-                except hid.HIDException as e:
-                    self.log.warning("Could not reconnect: %s", e)
+                self.log.warning("ID query failed once (%s)", msg)
+                result, msg = self.query_id()
+                if not result:
+                    self.log.error("ID query failed twice (%s)", msg)
                     return False
-                except ValueError as e:
-                    self.log.warning("Problem with provided values: %s", e)
-                    return False
-        return self.hid.interface_acquired()
+        return True
 
     def read_serial(self):
         if self.serial:
@@ -102,7 +92,7 @@ class PolyKybd:
     def query_id(self) -> tuple[bool, str]:
         try:
             result, msg = self.hid.send_and_read_validate(
-                compose_cmd(Cmd.GET_ID), 15, expect(Cmd.GET_ID))
+                compose_cmd(Cmd.GET_ID), 50, expect(Cmd.GET_ID))
             msg = msg.decode().strip('\x00')
             return result, msg if not result else msg[3:]
         except Exception as e:
@@ -145,35 +135,69 @@ class PolyKybd:
 
     def reset_overlay_mapping(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlay Mapping...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80))
+
+    def set_all_overlay_usage(self) -> tuple[bool, Any]:
+        self.log.info("Set All Overlay Usage...")
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x02))
+
+    def set_mirror_overlays(self, enable: bool) -> tuple[bool, Any]:
+        """Toggle the firmware's MIRROR_OVERLAYS state flag (bit 2 = 0x04).
+
+        With it on, every overlay upload is stored on both halves regardless
+        of the upload's keycode side — required for MRU mappings that can
+        redirect a display position on either half to any pool slot. With it
+        off, uploads use the legacy side-conditional storage path (image goes
+        only to the half whose matrix the upload's keycode resides on).
+        """
+        cmd = Cmd.OVERLAY_FLAGS_ON if enable else Cmd.OVERLAY_FLAGS_OFF
+        self.log.info("Mirror Overlays: %s", enable)
+        return self.hid.send_and_read_validate(compose_cmd(cmd, 0x04))
 
     def reset_overlays_and_usage(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlays AND Usage...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x60))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x60))
+
+    def reset_overlay_mapping_and_usage(self) -> tuple[bool, Any]:
+        """Reset overlay_map[] to identity AND clear all use_overlay[] bits in
+        one HID command (MAPPING_RESET | USAGE_RESET). Bitmaps in overlays[]
+        are preserved — required when an MRU send needs to invalidate stale
+        from→to redirects from a previous program without losing cached data."""
+        self.log.info("Reset Overlay Mapping AND Usage...")
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80 | 0x40))
+
+    def prepare_for_mru_send(self) -> tuple[bool, Any]:
+        """One HID command that sets MIRROR_OVERLAYS and resets the mapping
+        table to identity AND clears all use_overlay[] bits — i.e. the union
+        of set_mirror_overlays(True) + reset_overlay_mapping_and_usage().
+        Combines two HID round-trips (and two slave force-syncs) into one,
+        which is what every send_overlays_mru wants at its start."""
+        self.log.info("Prepare for MRU send (mirror + reset mapping/usage)...")
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x04 | 0x80 | 0x40))
 
     def reset_overlay_usage(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlay Usage...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x40))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x40))
 
     def reset_overlays(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlays...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x20))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x20))
 
     def enable_overlays(self) -> tuple[bool, Any]:
         self.log.info("Enable Overlays...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x01))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x01))
 
     def disable_overlays(self) -> tuple[bool, Any]:
         self.log.info("Disable Overlays...")
-        return self.hid.send(compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
 
     def set_unicode_mode(self, mode: InputMethod) -> tuple[bool, Any]:
         self.log.info("Setting unicode mode to %d", mode.value)
-        return self.hid.send(compose_cmd(Cmd.SET_UNICODE_MODE, mode.value))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.SET_UNICODE_MODE, mode.value))
 
     def set_brightness(self, brightness: int) -> tuple[bool, Any]:
         self.log.info("Setting Display Brightness to %d...", brightness)
-        return self.hid.send(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
 
     def press_and_release_key(self, keycode: int, duration: int) -> tuple[bool, Any]:
         self.log.info("Pressing 0x%2x for %f sec...", keycode, duration)
@@ -182,29 +206,29 @@ class PolyKybd:
         if result:
             # for now, it is fine to block this thread
             time.sleep(duration)
-            return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
+            return self.hid.send_and_read_validate(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
         else:
             return result, reply
 
     def press_key(self, keycode: int) -> tuple[bool, Any]:
         self.log.info("Pressing 0x%2x...", keycode)
-        return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
 
     def release_key(self, keycode: int) -> tuple[bool, Any]:
         self.log.info("Releasing 0x%2x...", keycode)
-        return self.hid.send(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
 
     def set_idle(self, idle: bool) -> tuple[bool, Any]:
         self.log.debug("Setting idle state to %s...",
                        "True" if idle else "False")
-        return self.hid.send(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
 
     def query_current_lang(self) -> tuple[bool, str]:
         """Query current keyboard language"""
 
         try:
             result, msg = self.hid.send_and_read_validate(
-                compose_cmd(Cmd.GET_LANG), 15, expect(Cmd.GET_LANG))
+                compose_cmd(Cmd.GET_LANG), 50, expect(Cmd.GET_LANG))
             if result:
                 msg = msg.decode().strip('\x00')
                 self.current_lang = msg[3:]
@@ -269,28 +293,35 @@ class PolyKybd:
         self.log.info("Language changed to %s (%s).", lang, msg)
         return True, lang
 
-    def set_overlay_masking(self, set_all: bool) -> tuple[bool, Any]:
-        cmd = Cmd.OVERLAY_FLAGS_ON if set_all else Cmd.OVERLAY_FLAGS_OFF
-        return self.hid.send(compose_cmd(cmd, 0x1e))
-
     def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
-        split_per_msg = split_dict(
-            from_to, self.device_settings.OVERLAY_MAPPING_INDICES_PER_REPORT/2)
+        chunk_size = int(self.device_settings.OVERLAY_MAPPING_INDICES_PER_REPORT / 2)
+        split_per_msg = split_dict(from_to, chunk_size)
 
         cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING)
         lock = None
         num_msgs = 0
         for dict_part in split_per_msg:
-            msg = cmd + pack_dict_10_bit(dict_part)
+            # Pad to chunk_size so every HID message carries exactly chunk_size pairs.
+            # The firmware ignores pairs where from >= OVERLAY_MAP_IDX_CNT (810),
+            # preventing zero-padded bytes in the buffer from overwriting mapping[0].
+            padded = dict(dict_part)
+            noop_key = 810
+            while len(padded) < chunk_size:
+                padded[noop_key] = 810
+                noop_key += 1
+            msg = cmd + pack_dict_10_bit(padded)
             result, msg, lock = self.hid.send_multiple(msg, lock)
             num_msgs += 1
             if not result:
                 return False, f"Error sending overlay mapping: {msg}"
             self.log.debug("send_overlay_mapping: Sent %s", dict_part)
-
-        # _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock)
-        # self.log.debug_detailed(
-        #     "send_overlay_mapping: Drained %d HID reports", drained)
+            
+        self.log.info("send_overlay_mapping: Sent %d mapping messages", num_msgs)
+        # SEND_OVERLAY_MAPPING (cmd 21) is the only overlay-related command that
+        # produces a firmware ACK per chunk; drain them now so they don't
+        # accumulate and confuse later send_and_read_validate calls.
+        _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock, timeout=20)
+        self.log.debug("send_overlay_mapping: Drained %d of %d HID ACKs", drained, num_msgs)
 
         if lock:
             lock.release()
@@ -475,6 +506,98 @@ class PolyKybd:
             lock.release()
         # self.log.info(f"Keycode {keycode}: Sent {max_msg} compressed msgs")
         return overlay.compressed_msgs
+
+    def send_overlays_mru(self, filenames: list, cache: OverlayMRUCache) -> bool:
+        """
+        Send only overlay images not already in the keyboard's MRU pool, then
+        update the display-position → pool-slot mapping in one command.
+        Does NOT call reset_overlays_and_usage (cached images must be preserved).
+        """
+        import os
+        hid_msg_counter = 0
+        hid_msg_counter_old = 0
+        MAX_MSG_BEFORE_DELAY = self.poly_settings.get("max_hid_message_before_delay")
+        DELAY_TIME_AFTER_MAX_MSG = self.poly_settings.get("delay_time_after_max_hid_messages")
+
+        display_to_pool: dict[int, int] = {}
+
+        # Single HID command that (a) turns on MIRROR_OVERLAYS so every upload
+        # reaches both halves regardless of the upload's keycode side, and
+        # (b) resets the firmware's overlay_map[] to identity plus clears all
+        # use_overlay[] bits before uploads start. The reset is required
+        # because fill_overlay_buffer applies get_overlay_mapping(idx) at
+        # upload time — without resetting first, stale from→to entries from a
+        # previous program's MRU would redirect this send's bytes into the
+        # wrong pool slot.
+        self.prepare_for_mru_send()
+
+        with cache.batch():
+            for filename in filenames:
+                self.log.info("Send Overlay MRU '%s'...", filename)
+                converter = ImageConverter(self.device_settings)
+                if not converter.open(filename):
+                    self.log.warning("Unable to read %s", filename)
+                    return False
+
+                for modifier in Modifier:
+                    overlay_map = converter.extract_overlays(modifier)
+                    if not overlay_map:
+                        continue
+
+                    for keycode, overlay_data in overlay_map.items():
+                        content_key = (os.path.basename(filename), modifier.value, keycode)
+                        pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
+
+                        if not is_hit:
+                            pool_kc, pool_mod = cache.pool_slot_to_firmware_address(pool_slot)
+                            self.log.debug_detailed(
+                                "MRU miss: sending 0x%x/%s to pool slot %d (addr 0x%x/%s)",
+                                keycode, modifier, pool_slot, pool_kc, pool_mod)
+                            hid_msg_counter += self.send_smallest_overlay(
+                                pool_kc, pool_mod, {pool_kc: overlay_data})
+                        else:
+                            self.log.debug_detailed(
+                                "MRU hit: 0x%x/%s already in pool slot %d", keycode, modifier, pool_slot)
+
+                        display_idx = cache.display_flat_idx(keycode, modifier)
+                        display_to_pool[display_idx] = pool_slot
+
+                        if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
+                            hid_msg_counter_old = hid_msg_counter
+                            time.sleep(DELAY_TIME_AFTER_MAX_MSG)
+
+        self.log.info("MRU: %d HID image messages, %d display positions mapped",
+                      hid_msg_counter, len(display_to_pool))
+
+        # Drain the ACKs generated by the send_multiple overlay uploads above.
+        # send_multiple() never reads the keyboard's ACK reply; leaving them in
+        # the HID buffer causes later send_and_read_validate calls (e.g. the
+        # periodic query_id in connect()) to read stale replies, misinterpret
+        # them as a failed GET_ID, and needlessly tear down the HID interface.
+        # if hid_msg_counter > 0:
+        #     _, drained, _, _ = self.hid.drain_read_buffer(hid_msg_counter, None, timeout=20)
+        #     self.log.debug("send_overlays_mru: Drained %d of %d overlay ACKs", drained, hid_msg_counter)
+        
+        # Belt-and-braces: if the prepare_for_mru_send state sync above failed
+        # to reach the slave, slave's MIRROR_OVERLAYS would have been off during
+        # uploads and its set_overlay_usage_post_upload would have set bits at
+        # every pool index. That contamination would show through at any unmapped
+        # display position whose firmware address coincides with a pool slot we
+        # just wrote. Forcing one more USAGE_RESET here clears any such pollution
+        # right before send_overlay_mapping puts the legitimate from-index bits
+        # in. On the master and on a slave that processed prepare_for_mru_send
+        # correctly this is a harmless no-op.
+        # self.reset_overlay_usage()
+        
+        # send_overlay_mapping re-establishes both the mapping and the
+        # use_overlay bit for every from-index in this program.
+        ok, msg = self.send_overlay_mapping(display_to_pool)
+        if not ok:
+            self.log.warning("send_overlays_mru: mapping failed: %s", msg)
+            return False
+        cache.record_transferred_mapping(display_to_pool)
+        self.enable_overlays()
+        return True
 
     def execute_commands(self, command_list: list) -> None:
         """Execute a list of commands"""

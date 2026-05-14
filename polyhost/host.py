@@ -34,7 +34,9 @@ from polyhost.input.win_helper import WindowsInputHelper
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost.settings import PolySettings
 from polyhost.device.poly_kybd import PolyKybd
+from polyhost.device.poly_kybd_mock import PolyKybdMock
 from polyhost.device.device_settings import DeviceSettings
+from polyhost.device.device_manager import DeviceManager
 from polyhost._version import __version__
 
 from polyhost.input.unicode_input import get_input_method
@@ -117,14 +119,22 @@ class PolyHost(QApplication):
         self.keeb_log.addHandler(file_handler)
         self.keeb_log.propagate = False
 
-        #self.keeb = PolyKybdMock(DeviceSettings(), version=f"{__version__}")
         self.kb_sw_version = None
         self.connected = False
         self.paused = False
         self.poly_settings = PolySettings()
         self.keeb = PolyKybd(DeviceSettings(), self.poly_settings)
-        # Initial connection test
+
+        self.device_mgr = DeviceManager()
+        self.device_mgr.add(self.keeb, "PolyKybd", is_primary=True)
+        if self.poly_settings.get("dev_mock_enabled"):
+            mock = PolyKybdMock(DeviceSettings(), f"{__version__}")
+            self.device_mgr.add(mock, "PolyKybdMock", is_primary=False)
+            self.log.info("Mock device added as secondary.")
+
         connected = self.keeb.connect()
+        self.device_mgr.connect_secondaries()
+        self.device_mgr.reset_all_caches(DeviceSettings().OVERLAY_MAPPING_CAPACITY)
         if connected:
             self.log.info("Connected to PolyKybd.")
         else:
@@ -136,6 +146,7 @@ class PolyHost(QApplication):
 
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False
+        self.debug_mode = debug_mode
 
         # Create the menu
         self.log.debug("Building menu...")
@@ -177,12 +188,10 @@ class PolyHost(QApplication):
         self.menu.addAction(self.status)
         self.add_supported_lang(self.menu)
 
-        if debug_mode>0:
-            self.debug_lang_menu = self.menu.addMenu(get_icon("language.svg"), "Change System Input Language")
-
         self.cmdMenu = CommandsSubMenu(self, self.keeb)
         self.cmdMenu.build_menu(self.menu)
 
+        # TODO: enable/disable depending on MRU usage
         action = QAction(get_icon("overlays.svg"), "Send Shortcut Overlay...", parent=self)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.send_shortcuts)
@@ -194,6 +203,19 @@ class PolyHost(QApplication):
         self.menu.addAction(self.layout_editor)
         self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
+
+        if debug_mode > 0:
+            debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
+            self.debug_lang_menu = debug_menu.addMenu(get_icon("language.svg"), "Change System Input Language")
+            mru_action = QAction(get_icon("overlays.svg"), "Inspect MRU Cache...", parent=self)
+            # noinspection PyUnresolvedReferences
+            mru_action.triggered.connect(self.open_mru_inspector)
+            debug_menu.addAction(mru_action)
+            dump_action = QAction(get_icon("overlays.svg"), "Dump Mock Bitmaps...", parent=self)
+            # noinspection PyUnresolvedReferences
+            dump_action.triggered.connect(self.dump_mock_bitmaps)
+            debug_menu.addAction(dump_action)
+
         self.menu.addAction(self.support)
         self.menu.addAction(self.about)
         self.menu.addAction(self.exit)
@@ -348,6 +370,11 @@ class PolyHost(QApplication):
                             self.log.info("Setting unicode mode to str %s", mode)
                             self.keeb.set_unicode_mode(mode)
                             self.update_ui_on_lang_change(response)
+                        # consider timeout - or can I find out if there was a real disconnecT?
+                        # cache_capacity = DeviceSettings().OVERLAY_MAPPING_CAPACITY
+                        # self.device_mgr.connect_secondaries()
+                        # self.device_mgr.reset_all_caches(cache_capacity)
+                        # self.log.info("Overlay MRU cache initialised (capacity %d).", cache_capacity)
                     else:
                         self.status.setIcon(get_icon("sync_disabled.svg"))
                         self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
@@ -358,7 +385,7 @@ class PolyHost(QApplication):
             self.managed_connection_status()
             if connected_now:
                 return response
-            self.log.debug("Reconnect failed once (%s) - recovered now.", response)
+            self.log.warning("Reconnect failed once (%s) - recovered now.", response)
         return self.current_lang
 
     @staticmethod
@@ -405,7 +432,7 @@ class PolyHost(QApplication):
 
     def open_settings(self):
         dlg = SettingsDialog()
-        dlg.setup(self.poly_settings.get_all())
+        dlg.setup(self.poly_settings.get_all(), self.debug_mode)
         if dlg.exec_() == QDialog.Accepted:
             self.poly_settings.set_all(dlg.get_updated_settings())
         dlg.close()
@@ -418,6 +445,55 @@ class PolyHost(QApplication):
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
 
+    def open_mru_inspector(self):
+        from polyhost.gui.mru_inspector_dialog import MRUInspectorDialog
+        caches = [(e.name, e.cache) for e in self.device_mgr.all_entries if e.cache is not None]
+        if not caches:
+            QMessageBox.information(None, "MRU Cache", "MRU cache is not active (device not connected or MRU mode disabled).")
+            return
+        dlg = MRUInspectorDialog(caches, DeviceSettings())
+        dlg.exec_()
+
+    def dump_mock_bitmaps(self):
+        import subprocess
+        import tempfile
+        import numpy as np
+
+        mock_entry = next((e for e in self.device_mgr.all_entries if not e.is_primary), None)
+        if mock_entry is None:
+            QMessageBox.information(None, "Mock Dump", "No mock device active.\nEnable dev_mock_enabled in settings.")
+            return
+
+        store = mock_entry.device._sim._store
+        if not store:
+            QMessageBox.information(None, "Mock Dump", "Mock has no stored bitmaps yet.\nSwitch to an app to trigger an overlay send.")
+            return
+
+        out_dir = tempfile.mkdtemp(prefix="polykybd_mock_")
+        from polyhost.device.overlay_sim import _write_png_gray8
+        for pool_slot, bitmap in sorted(store.items()):
+            keycode_slot = pool_slot % 90
+            modifier_var = pool_slot // 90
+            if keycode_slot < 80:
+                kc = keycode_slot + 0x04        # KC_A base
+            elif keycode_slot < 82:
+                kc = keycode_slot - 80 + 0x64   # KC_NONUS_BACKSLASH base
+            else:
+                kc = keycode_slot - 82 + 0xE0   # KC_LEFT_CTRL base
+            fname = f"slot{pool_slot:03d}_kc0x{kc:02x}_mod{modifier_var}.png"
+            bits = np.unpackbits(np.frombuffer(bitmap, dtype=np.uint8))
+            pixels = (bits[:40 * 72].reshape(40, 72) * 255).astype(np.uint8)
+            _write_png_gray8(os.path.join(out_dir, fname), pixels)
+
+        self.log.info("Mock bitmaps dumped to %s", out_dir)
+        if platform.system() == "Windows":
+            os.startfile(out_dir)
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", out_dir])
+        else:
+            subprocess.Popen(["xdg-open", out_dir])
+        QMessageBox.information(None, "Mock Dump", f"Saved {len(store)} bitmaps to:\n{out_dir}")
+
     @staticmethod
     def open_support():
         webbrowser.open("https://discord.gg/gW8JescH7M", new=0, autoraise=True)
@@ -429,7 +505,8 @@ class PolyHost(QApplication):
     def send_shortcuts(self):
         file_name = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
         if file_name[0]:
-            self.keeb.send_overlays([file_name[0]])
+            for entry in self.device_mgr.all_entries:
+                entry.device.send_overlays([file_name[0]])
         else:
             self.log.info("No file selected. Operation canceled.")
 
@@ -489,8 +566,21 @@ class PolyHost(QApplication):
 
         if len(files) > 0:
             try:
-                self.cmdMenu.reset_overlays_and_usage()
-                self.keeb.send_overlays(files)
+                mru_enabled = self.poly_settings.get("overlay_mru_cache_enabled")
+                mock_mru_enabled = self.poly_settings.get("dev_mock_overlay_mru_cache_enabled")
+                for entry in self.device_mgr.all_entries:
+                    use_mru = entry.cache is not None and (
+                        (entry.is_primary and mru_enabled) or
+                        (not entry.is_primary and mock_mru_enabled)
+                    )
+                    if use_mru:
+                        entry.device.send_overlays_mru(files, entry.cache)
+                    elif entry.is_primary:
+                        self.cmdMenu.reset_overlays_and_usage()
+                        entry.device.send_overlays(files)
+                    else:
+                        entry.device.reset_overlays_and_usage()
+                        entry.device.send_overlays(files)
             except Exception as e:
                 msg = f"Failed to send overlays '{files}': {e}"
                 self.icon_manager.set_warning(msg, 5000)
@@ -530,9 +620,11 @@ class PolyHost(QApplication):
             data, cmd = self.overlay_handler.handle_active_window(
                 UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
             if cmd == OverlayCommand.DISABLE:
-                self.keeb.disable_overlays()
+                for entry in self.device_mgr.all_entries:
+                    entry.device.disable_overlays()
             elif cmd == OverlayCommand.ENABLE:
-                self.keeb.enable_overlays()
+                for entry in self.device_mgr.all_entries:
+                    entry.device.enable_overlays()
 
             if data and cmd == OverlayCommand.OFF_ON:
                 self.icon_manager.set_thinking()

@@ -37,6 +37,12 @@ class DeviceSettings:
     # the mapping indices are 10 bits wide
     _overlay_mapping_indices_per_report = _max_payload_bytes_per_report * 8 // 10
 
+    _overlay_mapping_slots = 90                # firmware NUM_OVERLAYS constant
+    _overlay_mapping_modifier_variants = 7     # variants 0-6; variant 7 is reserved, 8 (GUI) handled via mapping
+    _overlay_mapping_source_variants = 9       # including CTRL+ALT+SHIFT and GUI
+    _overlay_mapping_pool_capacity = _overlay_mapping_slots * _overlay_mapping_modifier_variants
+    _overlay_mapping_usage_count = _overlay_mapping_slots * _overlay_mapping_source_variants
+
     _hid_raw_usage_page         = 0xFF61
     _hid_raw_usage              = 0x62
 
@@ -115,6 +121,15 @@ class DeviceSettings:
     @property
     def OVERLAY_MAPPING_INDICES_PER_REPORT(self):
         return self._overlay_mapping_indices_per_report
+
+    @property
+    def OVERLAY_MAPPING_CAPACITY(self):
+        """Maximum number of overlay images the pool can hold (90 keycode slots x 7 modifier variants)."""
+        return self._overlay_mapping_pool_capacity
+    
+    @property
+    def OVERLAY_MAPPING_USAGE_COUNT(self):
+        return self._overlay_mapping_usage_count
 
     @property
     def HID_RAW_USAGE_PAGE(self):
