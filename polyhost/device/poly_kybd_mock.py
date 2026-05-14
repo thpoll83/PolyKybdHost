@@ -7,6 +7,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_sim import OverlayFirmwareSim, display_flat_idx
+from polyhost.input.unicode_input import InputMethod
 
 
 class PolyKybdMock:
