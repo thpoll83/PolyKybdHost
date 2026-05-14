@@ -74,6 +74,14 @@ class PolyKybd:
             return self.serial.read_all()
         return None
 
+    def poll_notifications(self) -> None:
+        """Non-blocking peek for unsolicited firmware notifications (e.g. FIRMWARE_READY)."""
+        self.hid.peek_notification()
+
+    def pop_firmware_ready(self) -> bool:
+        """Returns True if firmware sent a FIRMWARE_READY notification since last check."""
+        return self.hid.pop_firmware_ready()
+
     def get_console_output(self, flush_and_return=True) -> str | None:
         try:
             last_line = self.hid.get_console_output()

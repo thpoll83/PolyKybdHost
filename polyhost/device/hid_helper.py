@@ -88,6 +88,7 @@ class HidHelper:
     def __init__(self, settings):
         self.settings = settings
         self.lock = threading.Lock()
+        self._firmware_ready_pending = False
 
         device_interfaces = hid.enumerate(self.settings.VID, self.settings.PID)
         raw_hid_interfaces = [i for i in device_interfaces if i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE and i['usage'] == self.settings.HID_RAW_USAGE]
@@ -118,6 +119,25 @@ class HidHelper:
         if self.remote_console is None:
             return bytearray()
         return self.remote_console.read(self.settings.HID_CONSOLE_REPORT_SIZE, timeout=0)
+
+    def peek_notification(self) -> None:
+        """Non-blocking read; sets _firmware_ready_pending if FIRMWARE_READY is seen."""
+        if self.interface is None:
+            return
+        try:
+            with self.lock:
+                report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=0)
+            if report and report.startswith(b"P\x17"):
+                self._firmware_ready_pending = True
+        except Exception:
+            pass
+
+    def pop_firmware_ready(self) -> bool:
+        """Returns True (and clears the flag) if a FIRMWARE_READY notification arrived."""
+        if self._firmware_ready_pending:
+            self._firmware_ready_pending = False
+            return True
+        return False
 
     def interface_acquired(self):
         return self.interface is not None
@@ -283,6 +303,8 @@ class HidHelper:
                     break
                 if response_report.startswith(expected_prefix):
                     return True, response_report, self.lock
+                if response_report.startswith(b"P\x17"):
+                    self._firmware_ready_pending = True
                 # Stale reply — keep draining
         except Exception as e:
             # self.lock.release()

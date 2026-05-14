@@ -43,3 +43,4 @@ class Cmd(Enum):
     SET_UNICODE_MODE = 20
     SEND_OVERLAY_MAPPING = 21
     GET_DEFAULT_LAYER = 22
+    FIRMWARE_READY = 23  # unsolicited notification sent by firmware on boot

@@ -645,6 +645,12 @@ class PolyHost(QApplication):
         if kb_log:
             self.keeb_log.info(kb_log)
 
+        self.keeb.poll_notifications()
+        if self.connected and self.keeb.pop_firmware_ready():
+            cache_capacity = DeviceSettings().OVERLAY_MAPPING_CAPACITY
+            self.device_mgr.reset_all_caches(cache_capacity)
+            self.log.info("Firmware restart detected — overlay MRU cache reset (capacity %d).", cache_capacity)
+
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
         # except Exception as e:
