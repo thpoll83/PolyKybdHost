@@ -4,6 +4,7 @@ import time
 from typing import Any
 
 from polyhost.device.device_settings import DeviceSettings
+from polyhost.util.dict_util import split_by_n_chars
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_sim import OverlayFirmwareSim, display_flat_idx
@@ -79,6 +80,10 @@ class PolyKybdMock:
     def connect(self) -> bool:
         self._log_call("connect")
         return True
+
+    def pop_fresh_boot(self) -> bool:
+        self._log_call("pop_fresh_boot")
+        return False
 
     # -------------------------------------------------------------------------
     # Identity

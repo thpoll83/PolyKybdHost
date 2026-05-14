@@ -45,6 +45,8 @@ class PolyKybd:
         self.poly_settings = poly_settings
         self.num_layers = None
 
+        self._fresh_boot = False
+
         # Statistics
         self.stat_plain = 0
         self.stat_comp = 0
@@ -94,9 +96,19 @@ class PolyKybd:
             result, msg = self.hid.send_and_read_validate(
                 compose_cmd(Cmd.GET_ID), 50, expect(Cmd.GET_ID))
             msg = msg.decode().strip('\x00')
-            return result, msg if not result else msg[3:]
+            if not result:
+                return False, msg
+            if len(msg) > 2 and msg[2] == '*':
+                self._fresh_boot = True
+            return True, msg[3:]
         except Exception as e:
             return False, f"Exception: {e}"
+
+    def pop_fresh_boot(self) -> bool:
+        """Returns True (and clears the flag) if firmware signalled a fresh boot via GET_ID."""
+        result = self._fresh_boot
+        self._fresh_boot = False
+        return result
 
     def query_version_info(self) -> tuple[bool, str]:
         result, msg = self.query_id()
