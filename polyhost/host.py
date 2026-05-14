@@ -134,7 +134,7 @@ class PolyHost(QApplication):
 
         connected = self.keeb.connect()
         self.device_mgr.connect_secondaries()
-        self.device_mgr.reset_all_caches(DeviceSettings().OVERLAY_MAPPING_CAPACITY)
+        self.device_mgr.reset_all_caches(self.keeb.device_settings.OVERLAY_MAPPING_CAPACITY)
         if connected:
             self.log.info("Connected to PolyKybd.")
         else:
@@ -646,7 +646,7 @@ class PolyHost(QApplication):
             self.keeb_log.info(kb_log)
 
         if self.connected and self.keeb.pop_fresh_boot():
-            cache_capacity = DeviceSettings().OVERLAY_MAPPING_CAPACITY
+            cache_capacity = self.keeb.device_settings.OVERLAY_MAPPING_CAPACITY
             self.device_mgr.reset_all_caches(cache_capacity)
             self.log.info("Firmware restart detected — overlay MRU cache reset (capacity %d).", cache_capacity)
 

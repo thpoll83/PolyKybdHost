@@ -25,6 +25,10 @@ import hid
 from polyhost.util.dict_util import split_dict
 
 
+# Firmware sets byte 2 of the GET_ID response to '*' to signal a fresh boot.
+_GET_ID_FRESH_BOOT_FLAG = '*'
+
+
 class PolyKybd:
     """
     Communication to PolyKybd
@@ -98,7 +102,7 @@ class PolyKybd:
             msg = msg.decode().strip('\x00')
             if not result:
                 return False, msg
-            if len(msg) > 2 and msg[2] == '*':
+            if len(msg) > 2 and msg[2] == _GET_ID_FRESH_BOOT_FLAG:
                 self._fresh_boot = True
             return True, msg[3:]
         except Exception as e:
