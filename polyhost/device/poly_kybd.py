@@ -45,6 +45,8 @@ class PolyKybd:
         self.poly_settings = poly_settings
         self.num_layers = None
 
+        self._fresh_boot = False
+
         # Statistics
         self.stat_plain = 0
         self.stat_comp = 0
@@ -94,9 +96,19 @@ class PolyKybd:
             result, msg = self.hid.send_and_read_validate(
                 compose_cmd(Cmd.GET_ID), 50, expect(Cmd.GET_ID))
             msg = msg.decode().strip('\x00')
-            return result, msg if not result else msg[3:]
+            if not result:
+                return False, msg
+            if len(msg) > 2 and msg[2] == '*':
+                self._fresh_boot = True
+            return True, msg[3:]
         except Exception as e:
             return False, f"Exception: {e}"
+
+    def pop_fresh_boot(self) -> bool:
+        """Returns True (and clears the flag) if firmware signalled a fresh boot via GET_ID."""
+        result = self._fresh_boot
+        self._fresh_boot = False
+        return result
 
     def query_version_info(self) -> tuple[bool, str]:
         result, msg = self.query_id()
@@ -176,7 +188,7 @@ class PolyKybd:
         return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x04 | 0x80 | 0x40))
 
     def reset_overlay_usage(self) -> tuple[bool, Any]:
-        self.log.info("Reset Overlay Usage...")
+        self.log.info("Clear Overlay Usage...")
         return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x40))
 
     def reset_overlays(self) -> tuple[bool, Any]:
@@ -704,26 +716,3 @@ class PolyKybd:
         arr.frombytes(buffer)
         arr.byteswap()
         return True, arr.tolist()
-
-    # class HidId(Enum):
-    # ID_GET_PROTOCOL_VERSION = 1
-    # ID_GET_KEYBOARD_VALUE = 2
-    # ID_SET_KEYBOARD_VALUE = 3
-    # ID_DYNAMIC_KEYMAP_GET_KEYCODE = 4
-    # ID_DYNAMIC_KEYMAP_SET_KEYCODE = 5
-    # ID_DYNAMIC_KEYMAP_RESET = 6
-    # ID_CUSTOM_SET_VALUE = 7
-    # ID_CUSTOM_GET_VALUE = 8
-    # ID_CUSTOM_SAVE = 9
-    # ID_EEPROM_RESET = 10
-    # ID_BOOTLOADER_JUMP = 11
-    # ID_DYNAMIC_KEYMAP_MACRO_GET_COUNT = 12
-    # ID_DYNAMIC_KEYMAP_MACRO_GET_BUFFER_SIZE = 13
-    # ID_DYNAMIC_KEYMAP_MACRO_GET_BUFFER = 14
-    # ID_DYNAMIC_KEYMAP_MACRO_SET_BUFFER = 15
-    # ID_DYNAMIC_KEYMAP_MACRO_RESET = 16
-    # ID_DYNAMIC_KEYMAP_GET_LAYER_COUNT = 17
-    # ID_DYNAMIC_KEYMAP_GET_BUFFER = 18
-    # ID_DYNAMIC_KEYMAP_SET_BUFFER = 19
-    # ID_DYNAMIC_KEYMAP_GET_ENCODER = 20
-    # ID_DYNAMIC_KEYMAP_SET_ENCODER = 21

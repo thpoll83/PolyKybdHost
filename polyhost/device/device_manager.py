@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any
 
+from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.overlay_cache import OverlayMRUCache
 
 
@@ -19,8 +20,9 @@ class DeviceManager:
     Secondaries (e.g. mock) receive overlay broadcasts but no GUI commands.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, settings: DeviceSettings) -> None:
         self._entries: list[DeviceEntry] = []
+        self.device_settings = settings
 
     def add(self, device: Any, name: str, *, is_primary: bool = False) -> None:
         self._entries.append(DeviceEntry(device=device, name=name, is_primary=is_primary))
@@ -42,8 +44,8 @@ class DeviceManager:
             if not e.is_primary:
                 e.device.connect()
 
-    def reset_all_caches(self, capacity: int) -> None:
+    def reset_all_caches(self) -> None:
         """Reset MRU caches for all devices — called on primary reconnect since
         a power-cycle means the firmware's overlay pool is gone on every device."""
         for e in self._entries:
-            e.cache = OverlayMRUCache(capacity)
+            e.cache = OverlayMRUCache(self.device_settings.OVERLAY_MAPPING_CAPACITY)

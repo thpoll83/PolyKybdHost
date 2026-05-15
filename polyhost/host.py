@@ -123,18 +123,19 @@ class PolyHost(QApplication):
         self.connected = False
         self.paused = False
         self.poly_settings = PolySettings()
-        self.keeb = PolyKybd(DeviceSettings(), self.poly_settings)
+        self.device_settings = DeviceSettings()
+        self.keeb = PolyKybd(self.device_settings, self.poly_settings)
 
-        self.device_mgr = DeviceManager()
+        self.device_mgr = DeviceManager(self.device_settings)
         self.device_mgr.add(self.keeb, "PolyKybd", is_primary=True)
         if self.poly_settings.get("dev_mock_enabled"):
-            mock = PolyKybdMock(DeviceSettings(), f"{__version__}")
+            mock = PolyKybdMock(self.device_settings, f"{__version__}")
             self.device_mgr.add(mock, "PolyKybdMock", is_primary=False)
             self.log.info("Mock device added as secondary.")
 
         connected = self.keeb.connect()
         self.device_mgr.connect_secondaries()
-        self.device_mgr.reset_all_caches(DeviceSettings().OVERLAY_MAPPING_CAPACITY)
+        self.device_mgr.reset_all_caches()
         if connected:
             self.log.info("Connected to PolyKybd.")
         else:
@@ -371,10 +372,9 @@ class PolyHost(QApplication):
                             self.keeb.set_unicode_mode(mode)
                             self.update_ui_on_lang_change(response)
                         # consider timeout - or can I find out if there was a real disconnecT?
-                        # cache_capacity = DeviceSettings().OVERLAY_MAPPING_CAPACITY
                         # self.device_mgr.connect_secondaries()
-                        # self.device_mgr.reset_all_caches(cache_capacity)
-                        # self.log.info("Overlay MRU cache initialised (capacity %d).", cache_capacity)
+                        # self.device_mgr.reset_all_caches()
+                        # self.log.info("Overlay MRU cache initialised.")
                     else:
                         self.status.setIcon(get_icon("sync_disabled.svg"))
                         self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
@@ -427,7 +427,7 @@ class PolyHost(QApplication):
 
     def open_layout_editor(self):
         #webbrowser.open("https://usevia.app", new=0, autoraise=True)
-        self.layout_dialog = KbLayoutDialog(self.keeb, DeviceSettings())
+        self.layout_dialog = KbLayoutDialog(self.keeb, self.device_settings)
         self.layout_dialog.show()
 
     def open_settings(self):
@@ -451,7 +451,7 @@ class PolyHost(QApplication):
         if not caches:
             QMessageBox.information(None, "MRU Cache", "MRU cache is not active (device not connected or MRU mode disabled).")
             return
-        dlg = MRUInspectorDialog(caches, DeviceSettings())
+        dlg = MRUInspectorDialog(caches, self.device_settings)
         dlg.exec_()
 
     def dump_mock_bitmaps(self):
@@ -597,6 +597,9 @@ class PolyHost(QApplication):
             self.last_update_msec = 0
             self.icon_manager.update()
         if self.connected:
+            if self.keeb.pop_fresh_boot():
+                self.device_mgr.reset_all_caches()
+                self.log.info("Firmware restart detected — overlay MRU cache reset.")
             # limit the time frame
             self.last_update_msec = min(
                 self.last_update_msec, RECONNECT_CYCLE_MSEC * 2)
