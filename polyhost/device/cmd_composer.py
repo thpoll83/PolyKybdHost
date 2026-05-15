@@ -14,7 +14,7 @@ def compose_request(hid_id: HidId, *extra: int) -> bytearray:
 
 
 def compose_cmd_str(cmd: Cmd, text: str) -> bytearray:
-    b = bytearray.fromhex(f"{HidId.ID_CUSTOM_SAVE.value:02x}{cmd.value:02x}")
+    b = bytearray.fromhex(f"{HidId.ID_POLYKYBD.value:02x}{cmd.value:02x}")
     b.extend(text.encode())
     return b
 
@@ -22,10 +22,10 @@ def compose_cmd_str(cmd: Cmd, text: str) -> bytearray:
 def compose_cmd(cmd: Cmd, *extra: int) -> bytearray:
     if not extra:
         return bytearray.fromhex(
-            f"{HidId.ID_CUSTOM_SAVE.value:02x}{cmd.value:02x}"
+            f"{HidId.ID_POLYKYBD.value:02x}{cmd.value:02x}"
         )
     byte_stream = bytearray.fromhex(
-        f"{HidId.ID_CUSTOM_SAVE.value:02x}{cmd.value:02x}")
+        f"{HidId.ID_POLYKYBD.value:02x}{cmd.value:02x}")
     for val in extra:
         byte_stream.extend(bytearray.fromhex(f"{val:02x}"))
 
@@ -44,7 +44,7 @@ def compose_roi_header(
     b3 = o.left                                      # (1 unused)  7 bits left
     b4 = o.right | 0x80 if compressed else o.right   # 1 bit rle   7 bits right
     return bytearray.fromhex(
-        f"{HidId.ID_CUSTOM_SAVE.value:02x}{cmd.value:02x}"
+        f"{HidId.ID_POLYKYBD.value:02x}{cmd.value:02x}"
         f"{keycode:02x}{b1:02x}{b2:02x}{b3:02x}{b4:02x}"
     )
 

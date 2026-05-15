@@ -188,7 +188,7 @@ class PolyKybd:
         return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x04 | 0x80 | 0x40))
 
     def reset_overlay_usage(self) -> tuple[bool, Any]:
-        self.log.info("Reset Overlay Usage...")
+        self.log.info("Clear Overlay Usage...")
         return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x40))
 
     def reset_overlays(self) -> tuple[bool, Any]:
@@ -716,26 +716,3 @@ class PolyKybd:
         arr.frombytes(buffer)
         arr.byteswap()
         return True, arr.tolist()
-
-    # class HidId(Enum):
-    # ID_GET_PROTOCOL_VERSION = 1
-    # ID_GET_KEYBOARD_VALUE = 2
-    # ID_SET_KEYBOARD_VALUE = 3
-    # ID_DYNAMIC_KEYMAP_GET_KEYCODE = 4
-    # ID_DYNAMIC_KEYMAP_SET_KEYCODE = 5
-    # ID_DYNAMIC_KEYMAP_RESET = 6
-    # ID_CUSTOM_SET_VALUE = 7
-    # ID_CUSTOM_GET_VALUE = 8
-    # ID_CUSTOM_SAVE = 9
-    # ID_EEPROM_RESET = 10
-    # ID_BOOTLOADER_JUMP = 11
-    # ID_DYNAMIC_KEYMAP_MACRO_GET_COUNT = 12
-    # ID_DYNAMIC_KEYMAP_MACRO_GET_BUFFER_SIZE = 13
-    # ID_DYNAMIC_KEYMAP_MACRO_GET_BUFFER = 14
-    # ID_DYNAMIC_KEYMAP_MACRO_SET_BUFFER = 15
-    # ID_DYNAMIC_KEYMAP_MACRO_RESET = 16
-    # ID_DYNAMIC_KEYMAP_GET_LAYER_COUNT = 17
-    # ID_DYNAMIC_KEYMAP_GET_BUFFER = 18
-    # ID_DYNAMIC_KEYMAP_SET_BUFFER = 19
-    # ID_DYNAMIC_KEYMAP_GET_ENCODER = 20
-    # ID_DYNAMIC_KEYMAP_SET_ENCODER = 21
