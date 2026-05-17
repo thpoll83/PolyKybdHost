@@ -1,13 +1,13 @@
-import logging
 import plistlib
 import re
 import subprocess
 
+from polyhost.input.input_helper import InputHelper
+
 lang_re = re.compile(r"^\s*\d+\) (.*)$")
 
-class MacOSInputHelper:
+class MacOSInputHelper(InputHelper):
     def __init__(self):
-        self.log = logging.getLogger('PolyHost')
         self.list = None
 
     def get_languages(self):

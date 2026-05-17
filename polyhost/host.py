@@ -60,7 +60,7 @@ def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
 
 
-from polyhost.util.log_util import DEBUG_DETAILED, ColorFormatter, make_stream_handler
+from polyhost.util.log_util import DEBUG_DETAILED, ColorFormatter, make_stream_handler, make_collapse_handler
 
 
 class MultiLineFormatter(logging.Formatter):
@@ -88,7 +88,8 @@ class PolyHost(QApplication):
         )
         file_handler.setFormatter(logging.Formatter(fmt))
 
-        stream_handler = make_stream_handler(fmt)
+        stream_handler = make_collapse_handler(make_stream_handler(fmt))
+        file_handler = make_collapse_handler(file_handler)
 
         logging.basicConfig(level=level, handlers=[file_handler, stream_handler])
         self.log = logging.getLogger('PolyHost')
