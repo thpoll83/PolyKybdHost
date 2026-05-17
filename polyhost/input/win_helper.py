@@ -87,6 +87,9 @@ class WindowsInputHelper(InputHelper):
             return False, f"LoadKeyboardLayout failed for KLID {klid} ({iso639})"
 
         hwnd = user32.GetForegroundWindow()
+        if not hwnd:
+            self.log.warning("Native set_language: no foreground window, falling back to pynput cycling")
+            return super().set_language(lang, country)
         user32.PostMessageW(hwnd, _WM_INPUTLANGCHANGEREQUEST, 0, hkl)
         self.log.debug("Native set_language: KLID=%s HKL=%s hwnd=%s", klid, hkl, hwnd)
         return True, iso639

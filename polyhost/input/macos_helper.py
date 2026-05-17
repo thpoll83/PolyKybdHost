@@ -1,6 +1,7 @@
 import logging
-import subprocess
+import plistlib
 import re
+import subprocess
 
 lang_re = re.compile(r"^\s*\d+\) (.*)$")
 
@@ -51,15 +52,18 @@ class MacOSInputHelper:
     def get_current_language(self):
         try:
             result = subprocess.run(
-                ["defaults", "read", "-g", "AppleInputSources"],
+                ["defaults", "export", "com.apple.HIToolbox", "-"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
                 check=True,
             )
-            output = result.stdout.decode("utf-8")
-            m = re.search(r'"KeyboardLayout Name"\s*=\s*"([^"]+)"', output)
-            if m:
-                return True, m.group(1)
-            return False, "Could not parse KeyboardLayout Name from AppleInputSources"
+            plist = plistlib.loads(result.stdout)
+            for source in plist.get("AppleSelectedInputSources", []):
+                name = source.get("KeyboardLayout Name")
+                if name:
+                    return True, name
+            return False, "No KeyboardLayout Name found in AppleSelectedInputSources"
         except subprocess.CalledProcessError as ex:
             return False, str(ex)
+        except plistlib.InvalidFileException as ex:
+            return False, f"Could not parse HIToolbox plist: {ex}"
