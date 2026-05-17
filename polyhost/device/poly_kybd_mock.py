@@ -258,7 +258,7 @@ class PolyKybdMock:
 
     def send_overlay(self, filename, on_off=True):
         self.log.info("Send Overlay '%s'...", filename)
-        converter = ImageConverter(self.settings)
+        converter = ImageConverter(self.device_settings)
         if not converter:
             return False, f"Invalid file '{filename}'."
 
@@ -292,6 +292,7 @@ class PolyKybdMock:
         self._log_call("send_overlays", filenames)
         overlay_counter = 0
         hid_msg_counter = 0
+        key_counter = 0
         enabled = False
 
         for filename in filenames:
@@ -338,7 +339,7 @@ class PolyKybdMock:
         with cache.batch():
             for filename in filenames:
                 self.log.info("Send Overlay MRU (mock) '%s'...", filename)
-                converter = ImageConverter(self.settings)
+                converter = ImageConverter(self.device_settings)
                 if not converter.open(filename):
                     self.log.warning("Unable to read %s", filename)
                     return False

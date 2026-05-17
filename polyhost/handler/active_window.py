@@ -239,5 +239,13 @@ class OverlayHandler:
             return self.remote_handler.get_overlay_data()
         return None
 
+    def force_resend(self):
+        """Reset window tracking so the next cycle triggers a fresh OFF_ON resend."""
+        self.win = None
+        self.title = None
+        self.handle = None
+        self.last_entry = None
+        self.last_update_msec = 0
+
     def close(self):
         self.remote_handler.close()

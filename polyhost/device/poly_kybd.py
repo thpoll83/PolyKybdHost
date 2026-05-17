@@ -56,19 +56,23 @@ class PolyKybd:
 
     def connect(self):
         """Connect to PolyKybd"""
-        # Connect to Keeb
         if not self.hid:
             self.log.debug("Connecting to PolyKybd for the first time...")
             self.hid = HidHelper(self.device_settings)
             self.serial = SerialHelper(self.device_settings)
         else:
-            result, msg = self.query_id()
-            if not result:
-                self.log.warning("ID query failed once (%s)", msg)
+            retries = self.poly_settings.get("hid_reconnect_retries")
+            for attempt in range(retries):
                 result, msg = self.query_id()
-                if not result:
-                    self.log.error("ID query failed twice (%s)", msg)
-                    return False
+                if result:
+                    return True
+                self.log.warning("ID query failed (attempt %d/%d): %s", attempt + 1, retries, msg)
+            # All retries exhausted — HID handle is stale after a reset/reflash;
+            # re-enumerate so the new USB path is picked up.
+            self.log.warning("Re-enumerating HID after %d failed attempts...", retries)
+            self.hid = HidHelper(self.device_settings)
+            self.serial = SerialHelper(self.device_settings)
+            return self.hid.interface_acquired()
         return True
 
     def read_serial(self):

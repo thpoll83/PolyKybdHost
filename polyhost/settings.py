@@ -28,14 +28,16 @@ class PolySettings:
             "irradiance_min": 1.8,
             "irradiance_max": 6.5,
             "irradiance_prescaler": 0.75,
-            "debug_window_detection_if_not_connected_to_poly_kybd": False,
             "max_hid_message_before_delay": 15,
             "delay_time_after_max_hid_messages": 0.3,
+            "hid_reconnect_retries": 5,
             "overlay_mru_cache_enabled": False,
             "dev_mock_enabled": False,
-            "dev_mock_overlay_mru_cache_enabled": True
+            "dev_mock_overlay_mru_cache_enabled": True,
+            "dev_run_window_detection_if_not_connected_to_poly_kybd": False,
         }
         self._legacy_key_renames = {
+            "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",
             "overlay_lru_cache_enabled": "overlay_mru_cache_enabled",
             "dev_mock_overlay_lru_cache_enabled": "dev_mock_overlay_mru_cache_enabled",
         }

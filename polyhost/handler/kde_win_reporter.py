@@ -60,16 +60,17 @@ def getActiveWindow():
         .rstrip()
         .split("\n")
     )
-    msg = [elem.removeprefix("js: ") for elem in msg]
-
-    return KWin(msg[0])
+    result = [elem.removeprefix("js: ") for elem in msg]
+    if not result:
+        raise ValueError(f"Cannot parse KWin response: '{msg}'")
+    return KWin(result)
 
 
 class KWin:
     def __init__(self, msg):
-        elems = msg.split(";")
+        elems = msg[0].split(";")
         if len(elems) != 3:
-            raise Exception(f"Unexpected format reported by KWin Script: '{msg}'")
+            raise ValueError(f"Unexpected format reported by KWin Script: '{msg}'")
 
         self.name = elems[0]
         self.title = elems[1]
