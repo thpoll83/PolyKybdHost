@@ -66,7 +66,7 @@ class PolyKybd:
                 result, msg = self.query_id()
                 if result:
                     return True
-                self.log.warning("ID query failed (attempt %d/%d): %s", attempt + 1, retries, msg)
+                self.log.warning("ID query failed (attempt %d/%d): %s", attempt + 1, retries, msg if msg else "EMPTY REPLY")
             # All retries exhausted — HID handle is stale after a reset/reflash;
             # re-enumerate so the new USB path is picked up.
             self.log.warning("Re-enumerating HID after %d failed attempts...", retries)

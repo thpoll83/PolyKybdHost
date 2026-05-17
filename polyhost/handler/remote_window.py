@@ -191,6 +191,12 @@ class RemoteHandler:
     def get_overlay_data(self):
         return self.current_entry["overlay"]
 
+    def reset_for_resend(self):
+        """Clear cached remote window identity so the next remote_changed() call sees a delta."""
+        self.handle = None
+        self.title = None
+        self.last_entry = None
+
     def close(self):
         self.stop_event.set()
         if self.forwarder and self.forwarder.is_alive():

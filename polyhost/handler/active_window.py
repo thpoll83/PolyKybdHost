@@ -246,6 +246,7 @@ class OverlayHandler:
         self.handle = None
         self.last_entry = None
         self.last_update_msec = 0
+        self.remote_handler.reset_for_resend()
 
     def close(self):
         self.remote_handler.close()

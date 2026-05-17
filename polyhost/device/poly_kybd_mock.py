@@ -160,6 +160,7 @@ class PolyKybdMock:
         return True, ""
 
     def reset_overlay_usage(self):
+        self._log_call("reset_overlay_usage")
         self.log.info("Clear Overlay Mapping Usage...")
         self._sim.reset_usage()
         return True, ""
@@ -253,6 +254,7 @@ class PolyKybdMock:
     def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
         self.hid_mapping_sends += 1
         self.last_mapping = from_to
+        self._overlay_mapping.update(from_to)
         self._sim.apply_mapping(from_to)
         return True, "Mapping sent"
 
@@ -394,8 +396,8 @@ class PolyKybdMock:
         self._log_call("read_serial")
         return None
 
-    def get_console_output(self):
-        return None
+    def get_console_output(self, flush_and_return=True):
+        return "" if flush_and_return else None
 
     def execute_commands(self, command_list):
         for cmd_str in command_list:

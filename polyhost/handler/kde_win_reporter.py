@@ -1,8 +1,10 @@
-# import logging
+import logging
 import os
 import pathlib
 import subprocess
 from datetime import datetime
+
+_log = logging.getLogger("PolyHost")
 
 
 def getActiveWindow():
@@ -24,13 +26,15 @@ def getActiveWindow():
         if "int32" in line:
             reg_script_number = line.split()[-1]
             break
-    
+
     if reg_script_number is None:
-        raise Exception(f"Could not find KWin Script: '{output}'")
+        _log.warning("KWin: could not find script number in dbus output (transient)")
+        return None
     try:
         reg_script_number = str(int(reg_script_number))
-    except ValueError as e:
-        raise Exception(f"Unexpected KWin script number format: '{reg_script_number}'") from e
+    except ValueError:
+        _log.warning("KWin: unexpected script number format '%s' (transient)", reg_script_number)
+        return None
     
     datetime_now = datetime.now()
     subprocess.run(
@@ -61,9 +65,13 @@ def getActiveWindow():
         .split("\n")
     )
     result = [elem.removeprefix("js: ") for elem in msg]
-    if not result:
-        raise ValueError(f"Cannot parse KWin response: '{msg}'")
-    return KWin(result)
+    if not result or not result[0]:
+        return None  # transient: KWin script produced no output this cycle
+    try:
+        return KWin(result)
+    except ValueError as e:
+        _log.warning("KWin: malformed window response (transient): %s", e)
+        return None
 
 
 class KWin:
