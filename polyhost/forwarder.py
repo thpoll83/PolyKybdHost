@@ -33,7 +33,7 @@ UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
 
-from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler  # noqa: F401  (registers debug_detailed on import)
+from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 
 class PolyForwarder(QApplication):
     def __init__(self, log_level, host=None, host_file=None):
@@ -49,7 +49,10 @@ class PolyForwarder(QApplication):
             encoding="utf-8"
         )
         file_handler.setFormatter(logging.Formatter(fmt))
-        logging.basicConfig(level=log_level, handlers=[file_handler, make_stream_handler(fmt)])
+        logging.basicConfig(level=log_level, handlers=[
+            make_collapse_handler(file_handler),
+            make_collapse_handler(make_stream_handler(fmt)),
+        ])
         self.log = logging.getLogger("PolyForwarder")
 
         # Create the tray

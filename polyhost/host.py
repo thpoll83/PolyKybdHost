@@ -60,7 +60,7 @@ def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
 
 
-from polyhost.util.log_util import DEBUG_DETAILED, ColorFormatter, make_stream_handler
+from polyhost.util.log_util import DEBUG_DETAILED, ColorFormatter, make_stream_handler, make_collapse_handler
 
 
 class MultiLineFormatter(logging.Formatter):
@@ -88,7 +88,8 @@ class PolyHost(QApplication):
         )
         file_handler.setFormatter(logging.Formatter(fmt))
 
-        stream_handler = make_stream_handler(fmt)
+        stream_handler = make_collapse_handler(make_stream_handler(fmt))
+        file_handler = make_collapse_handler(file_handler)
 
         logging.basicConfig(level=level, handlers=[file_handler, stream_handler])
         self.log = logging.getLogger('PolyHost')
@@ -218,7 +219,7 @@ class PolyHost(QApplication):
         self.log.debug("Create OS dependent input helper...")
         self.helper = None
         if platform.system() == "Windows":
-            self.helper = WindowsInputHelper()
+            self.helper = WindowsInputHelper(self.poly_settings)
         elif platform.system() == "Linux":
             if IS_PLASMA:
                 self.helper = LinuxPlasmaHelper()
@@ -374,7 +375,7 @@ class PolyHost(QApplication):
             self.managed_connection_status()
             if connected_now:
                 return response
-            self.log.warning("Reconnect failed once (%s) - recovered now.", response)
+            self.log.warning("Reconnect failed: '%s'", response if response else "NO RESPONSE")
         return self.current_lang
 
     @staticmethod

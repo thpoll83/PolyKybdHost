@@ -1,9 +1,9 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 about = {}
 with open("polyhost/_version.py") as version_file:
     exec(version_file.read(), about)
-    
+
 def readme():
     with open('README.rst') as readme_file:
         return readme_file.read()
@@ -14,4 +14,5 @@ setup(name='PolyHost',
       long_description=readme(),
       keywords='polykybd host forwarder poly',
       url='https://github.com/thpoll83/PolyKybdHost',
-      author='thpoll')
+      author='thpoll',
+      packages=find_packages(exclude=['tests', 'tests.*']))

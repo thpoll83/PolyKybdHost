@@ -1,14 +1,13 @@
-import logging
 import re
 import subprocess
 from pathlib import Path
 
+from polyhost.input.input_helper import InputHelper
 from polyhost.lang.lang_compat import LangComp
 
 
-class LinuxPlasmaHelper:
+class LinuxPlasmaHelper(InputHelper):
     def __init__(self):
-        self.log = logging.getLogger('PolyHost')
         self.comp = LangComp()
         self.list = None
 

@@ -35,6 +35,7 @@ class PolySettings:
             "dev_mock_enabled": False,
             "dev_mock_overlay_mru_cache_enabled": True,
             "dev_run_window_detection_if_not_connected_to_poly_kybd": False,
+            "dev_win_native_set_language": False,
         }
         self._legacy_key_renames = {
             "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",
