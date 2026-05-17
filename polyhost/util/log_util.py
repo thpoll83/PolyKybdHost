@@ -91,45 +91,53 @@ class RepeatCollapseHandler(logging.Handler):
     # ------------------------------------------------------------------ Handler API
 
     def emit(self, record: logging.LogRecord) -> None:
-        key = record.getMessage()
+        self.acquire()
+        try:
+            key = record.getMessage()
 
-        if self._pattern:
-            if key == self._pattern[self._pos]:
-                self._partial.append(record)
-                self._pos += 1
-                if self._pos == len(self._pattern):
-                    # Completed one more full cycle — discard partial, bump count
-                    self._count += 1
-                    self._pos = 0
-                    self._partial = []
-                return  # suppressed
+            if self._pattern:
+                if key == self._pattern[self._pos]:
+                    self._partial.append(record)
+                    self._pos += 1
+                    if self._pos == len(self._pattern):
+                        # Completed one more full cycle — discard partial, bump count
+                        self._count += 1
+                        self._pos = 0
+                        self._partial = []
+                    return  # suppressed
 
-            # Pattern broken — flush and fall through to normal emit below
-            self._exit_pattern(record)
+                # Pattern broken — flush and fall through to normal emit below
+                self._exit_pattern(record)
 
-        # Normal emit
-        self.inner.emit(record)
-        self._buf.append(key)
+            # Normal emit
+            self.inner.emit(record)
+            self._buf.append(key)
 
-        # Keep buffer bounded
-        max_buf = self.max_pattern_len * 2
-        if len(self._buf) > max_buf:
-            del self._buf[:-max_buf]
+            # Keep buffer bounded
+            max_buf = self.max_pattern_len * 2
+            if len(self._buf) > max_buf:
+                del self._buf[:-max_buf]
 
-        # Check for a new repeating pattern
-        p = self._detect_period()
-        if p:
-            self._pattern = list(self._buf[-p:])
-            self._pos = 0
-            self._count = 0
-            self._partial = []
+            # Check for a new repeating pattern
+            p = self._detect_period()
+            if p:
+                self._pattern = list(self._buf[-p:])
+                self._pos = 0
+                self._count = 0
+                self._partial = []
+        finally:
+            self.release()
 
     def close(self) -> None:
-        if self._pattern and (self._count > 0 or self._partial):
-            ref = (self._partial[0] if self._partial else
-                   logging.LogRecord("PolyHost", logging.INFO, "", 0, "", (), None))
-            self._exit_pattern(ref)
-        self.inner.close()
+        self.acquire()
+        try:
+            if self._pattern and (self._count > 0 or self._partial):
+                ref = (self._partial[0] if self._partial else
+                       logging.LogRecord("PolyHost", logging.INFO, "", 0, "", (), None))
+                self._exit_pattern(ref)
+            self.inner.close()
+        finally:
+            self.release()
         super().close()
 
 
