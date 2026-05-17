@@ -49,4 +49,17 @@ class MacOSInputHelper:
             return False, msg
 
     def get_current_language(self):
-        return False, "Not Implemented" 
+        try:
+            result = subprocess.run(
+                ["defaults", "read", "-g", "AppleInputSources"],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                check=True,
+            )
+            output = result.stdout.decode("utf-8")
+            m = re.search(r'"KeyboardLayout Name"\s*=\s*"([^"]+)"', output)
+            if m:
+                return True, m.group(1)
+            return False, "Could not parse KeyboardLayout Name from AppleInputSources"
+        except subprocess.CalledProcessError as ex:
+            return False, str(ex)

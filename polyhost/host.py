@@ -218,7 +218,7 @@ class PolyHost(QApplication):
         self.log.debug("Create OS dependent input helper...")
         self.helper = None
         if platform.system() == "Windows":
-            self.helper = WindowsInputHelper()
+            self.helper = WindowsInputHelper(self.poly_settings)
         elif platform.system() == "Linux":
             if IS_PLASMA:
                 self.helper = LinuxPlasmaHelper()
@@ -374,7 +374,7 @@ class PolyHost(QApplication):
             self.managed_connection_status()
             if connected_now:
                 return response
-            self.log.warning("Reconnect failed once (%s) - recovered now.", response)
+            self.log.warning("Reconnect failed: '%s'", response if response else "NO RESPONSE")
         return self.current_lang
 
     @staticmethod
