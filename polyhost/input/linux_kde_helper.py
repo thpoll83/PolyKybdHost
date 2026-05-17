@@ -70,4 +70,20 @@ class LinuxPlasmaHelper:
             return False, msg
 
     def get_current_language(self):
-        False, "Not Implemented" 
+        self.get_countries()
+        if not self.list:
+            return False, "No layout list loaded"
+        try:
+            result = subprocess.run(
+                ["qdbus", "org.kde.keyboard", "/Layouts", "getLayout"],
+                stdout=subprocess.PIPE,
+                check=True,
+            )
+            idx = int(result.stdout.strip())
+            if 0 <= idx < len(self.list):
+                return True, self.list[idx]
+            return False, f"Layout index {idx} out of range ({len(self.list)} layouts)"
+        except subprocess.CalledProcessError as ex:
+            return False, str(ex)
+        except ValueError as ex:
+            return False, f"Unexpected qdbus output: {ex}"

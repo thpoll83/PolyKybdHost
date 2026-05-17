@@ -21,8 +21,8 @@ def find_roi_rectangle(image):
 class OverlayData:
     """ Container for all overlay data package variations: plain, compressed, region-of-interest, compressed region-of-interest """
 
-    def __init__(self, settings, image, debug_dump_byte_buffers=False):
-        self.settings = settings
+    def __init__(self, device_settings, image, debug_dump_byte_buffers=False):
+        self.device_settings = device_settings
 
         self.all_bytes = np.packbits(image, axis=None).tobytes()
 
@@ -41,11 +41,11 @@ class OverlayData:
         # we can skip empty data packets as for plain transfer every packet has a number and the buffer are erased before
         self.all_msgs = self.helper_calc_overlay_bytes(self.all_bytes)
         self.compressed_msgs = math.ceil(
-            (len(self.compressed_bytes)+self.settings.OVERLAY_CMD_BYTES_COMPRESSED_ONCE)/self.settings.MAX_PAYLOAD_BYTES_PER_REPORT)
+            (len(self.compressed_bytes)+self.device_settings.OVERLAY_CMD_BYTES_COMPRESSED_ONCE)/self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT)
         self.roi_msgs = math.ceil(
-            (len(self.roi_bytes)+self.settings.OVERLAY_CMD_BYTES_ROI_ONCE)/self.settings.MAX_PAYLOAD_BYTES_PER_REPORT)
+            (len(self.roi_bytes)+self.device_settings.OVERLAY_CMD_BYTES_ROI_ONCE)/self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT)
         self.compressed_roi_msgs = math.ceil(
-            (len(self.compressed_roi_bytes)+self.settings.OVERLAY_CMD_BYTES_ROI_ONCE)/self.settings.MAX_PAYLOAD_BYTES_PER_REPORT)
+            (len(self.compressed_roi_bytes)+self.device_settings.OVERLAY_CMD_BYTES_ROI_ONCE)/self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT)
 
         # w = self.right - self.left
         # h = self.bottom - self.top
@@ -72,12 +72,12 @@ class OverlayData:
     def helper_calc_overlay_bytes(self, all_bytes, skip_empty=True):
         """ Checks each overlay data packet for empty ones and deducts from the overall number """
         if not skip_empty:
-            return self.settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
+            return self.device_settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
 
         msg_cnt = 0
-        for msg_num in range(0, self.settings.OVERLAY_PLAIN_DATA_REPORT_COUNT):
-            start = msg_num * self.settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
-            stop = start + self.settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
+        for msg_num in range(0, self.device_settings.OVERLAY_PLAIN_DATA_REPORT_COUNT):
+            start = msg_num * self.device_settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
+            stop = start + self.device_settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
             data = all_bytes[start:stop]
             if all(b == 0 for b in data):
                 continue

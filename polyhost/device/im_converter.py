@@ -10,8 +10,8 @@ from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_data import OverlayData
 
 class ImageConverter:
-    def __init__(self, settings):
-        self.settings = settings
+    def __init__(self, device_settings):
+        self.device_settings = device_settings
         self.log = logging.getLogger('PolyHost')
         self.h = 0
         self.w = 0
@@ -100,7 +100,7 @@ class ImageConverter:
 
     def extract_overlays(self, modifier=Modifier.NO_MOD):
         # we expect 10x9 images each having 72x40px
-        if self.w < self.settings.OVERLAY_RES_X * self.NUM_OVERLAYS_X or self.h < self.settings.OVERLAY_RES_Y * self.NUM_OVERLAYS_Y:
+        if self.w < self.device_settings.OVERLAY_RES_X * self.NUM_OVERLAYS_X or self.h < self.device_settings.OVERLAY_RES_Y * self.NUM_OVERLAYS_Y:
             self.log.error("Image too small")
             return None
         if modifier in self.image:
@@ -108,14 +108,14 @@ class ImageConverter:
             keycode = KeyCode.KC_A.value
             for y in range(0, self.NUM_OVERLAYS_Y):
                 for x in range(0, self.NUM_OVERLAYS_X):
-                    top_x = x * self.settings.OVERLAY_RES_X
-                    top_y = y * self.settings.OVERLAY_RES_Y
-                    bottom_x = top_x + self.settings.OVERLAY_RES_X
-                    bottom_y = top_y + self.settings.OVERLAY_RES_Y
+                    top_x = x * self.device_settings.OVERLAY_RES_X
+                    top_y = y * self.device_settings.OVERLAY_RES_Y
+                    bottom_x = top_x + self.device_settings.OVERLAY_RES_X
+                    bottom_y = top_y + self.device_settings.OVERLAY_RES_Y
                     key_slice = self.image[modifier][top_y:bottom_y, top_x:bottom_x]
                     if key_slice.any():
                         try:
-                            overlays[keycode] = OverlayData(self.settings, key_slice)
+                            overlays[keycode] = OverlayData(self.device_settings, key_slice)
                         except ValueError:
                             self.log.warning("Skipping empty overlay for keycode 0x%x", keycode)
                     keycode += 1

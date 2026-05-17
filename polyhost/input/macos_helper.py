@@ -49,4 +49,4 @@ class MacOSInputHelper:
             return False, msg
 
     def get_current_language(self):
-        False, "Not Implemented" 
+        return False, "Not Implemented" 

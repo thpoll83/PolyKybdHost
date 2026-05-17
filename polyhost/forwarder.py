@@ -33,16 +33,7 @@ UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
 
-# Define custom debug levels
-DEBUG_DETAILED = 8   # Custom level below DEBUG (10)
-
-logging.addLevelName(DEBUG_DETAILED, "DEBUG_DETAILED")
-
-def debug_detailed(self, message, *args, **kwargs):
-    if self.isEnabledFor(DEBUG_DETAILED):
-        self._log(DEBUG_DETAILED, message, args, **kwargs)
-
-logging.Logger.debug_detailed = debug_detailed
+from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler  # noqa: F401  (registers debug_detailed on import)
 
 class PolyForwarder(QApplication):
     def __init__(self, log_level, host=None, host_file=None):
@@ -50,19 +41,15 @@ class PolyForwarder(QApplication):
         self.host = host
         self.host_file = os.path.expanduser(host_file) if host_file else None
 
-        logging.basicConfig(
-            level=log_level,
-            format="[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} - %(message)s",
-            handlers=[
-                RotatingFileHandler(
-                    filename="forwarder_log.txt",
-                    maxBytes=10 * 1024 * 1024,  # 10 MB
-                    backupCount=3,
-                    encoding="utf-8"
-                ),
-                logging.StreamHandler(stream=sys.stdout),
-            ],
+        fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} - %(message)s"
+        file_handler = RotatingFileHandler(
+            filename="forwarder_log.txt",
+            maxBytes=10 * 1024 * 1024,
+            backupCount=3,
+            encoding="utf-8"
         )
+        file_handler.setFormatter(logging.Formatter(fmt))
+        logging.basicConfig(level=log_level, handlers=[file_handler, make_stream_handler(fmt)])
         self.log = logging.getLogger("PolyForwarder")
 
         # Create the tray

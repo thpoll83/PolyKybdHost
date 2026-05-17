@@ -60,16 +60,8 @@ def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
 
 
-# Define custom debug levels
-DEBUG_DETAILED = 8   # Custom level below DEBUG (10)
+from polyhost.util.log_util import DEBUG_DETAILED, ColorFormatter, make_stream_handler
 
-logging.addLevelName(DEBUG_DETAILED, "DEBUG_DETAILED")
-
-def debug_detailed(self, message, *args, **kwargs):
-    if self.isEnabledFor(DEBUG_DETAILED):
-        self._log(DEBUG_DETAILED, message, args, **kwargs)
-
-logging.Logger.debug_detailed = debug_detailed
 
 class MultiLineFormatter(logging.Formatter):
     def format(self, record):
@@ -80,24 +72,25 @@ class MultiLineFormatter(logging.Formatter):
         timestamp = self.formatTime(record)
         formatted_lines = [f"[{timestamp}] {line}" for line in lines[:-1]]
         return lines[0] + "\n".join(formatted_lines)
-    
+
+
 class PolyHost(QApplication):
     def __init__(self, log_level, debug_mode):
         super().__init__(sys.argv)
         fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
-        logging.basicConfig(
-            level=DEBUG_DETAILED if debug_mode>1 else log_level,
-            format=fmt,
-            handlers=[
-                RotatingFileHandler(
-                    filename="host_log.txt",
-                    maxBytes=5 * 1024 * 1024,  # 5 MB
-                    backupCount=3,
-                    encoding="utf-8"
-                ),
-                logging.StreamHandler(stream=sys.stdout),
-            ],
+        level = DEBUG_DETAILED if debug_mode>1 else log_level
+
+        file_handler = RotatingFileHandler(
+            filename="host_log.txt",
+            maxBytes=5 * 1024 * 1024,
+            backupCount=3,
+            encoding="utf-8"
         )
+        file_handler.setFormatter(logging.Formatter(fmt))
+
+        stream_handler = make_stream_handler(fmt)
+
+        logging.basicConfig(level=level, handlers=[file_handler, stream_handler])
         self.log = logging.getLogger('PolyHost')
 
         # Create the tray
@@ -148,6 +141,7 @@ class PolyHost(QApplication):
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False
         self.debug_mode = debug_mode
+        self._needs_overlay_reset = False
 
         # Create the menu
         self.log.debug("Building menu...")
@@ -239,18 +233,13 @@ class PolyHost(QApplication):
 
         entries = self.helper.get_languages()
 
-        result = self.helper.get_current_language()
+        result, info = self.helper.get_current_language()
         if result:
-            success, sys_lang = result
-            if success:
-                self.log.info("Current System Language: %s", sys_lang)
-                self.current_lang = sys_lang
-            else:
-                self.icon_manager.set_warning("Could not query current System Language.", 5000)
-                self.log.warning("Could not query current System Language.")
+            self.log.info("Current System Language: %s", info)
+            self.current_lang = info
         else:
             self.icon_manager.set_warning("System language query not supported for this platform.", 5000)
-            self.log.warning("System language query not supported for this platform.")
+            self.log.warning("System language query not supported for this platform: '%s'", info)
 
         if debug_mode>0:
             for e in entries:
@@ -371,10 +360,10 @@ class PolyHost(QApplication):
                             self.log.info("Setting unicode mode to str %s", mode)
                             self.keeb.set_unicode_mode(mode)
                             self.update_ui_on_lang_change(response)
-                        # consider timeout - or can I find out if there was a real disconnecT?
-                        # self.device_mgr.connect_secondaries()
-                        # self.device_mgr.reset_all_caches()
-                        # self.log.info("Overlay MRU cache initialised.")
+                        self.device_mgr.reset_all_caches()
+                        self.overlay_handler.force_resend()
+                        self._needs_overlay_reset = True
+                        self.log.info("Connected: active window resend queued.")
                     else:
                         self.status.setIcon(get_icon("sync_disabled.svg"))
                         self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
@@ -597,6 +586,10 @@ class PolyHost(QApplication):
             self.last_update_msec = 0
             self.icon_manager.update()
         if self.connected:
+            if self._needs_overlay_reset:
+                self._needs_overlay_reset = False
+                self.cmdMenu.reset_overlays_and_usage()
+                self.log.info("Connected: overlay state cleared.")
             if self.keeb.pop_fresh_boot():
                 self.device_mgr.reset_all_caches()
                 self.log.info("Firmware restart detected — overlay MRU cache reset.")
@@ -637,7 +630,7 @@ class PolyHost(QApplication):
             if self.last_update_10min_task > PERIODIC_10MIN_CYCLE_MSEC:
                 self.last_update_10min_task = 0
                 self.execute_10min_task()
-        elif self.poly_settings.get("debug_window_detection_if_not_connected_to_poly_kybd"):
+        elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             self.overlay_handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
 
         kb_serial = self.keeb.read_serial()
