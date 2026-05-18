@@ -6,10 +6,10 @@ from PyQt5.QtWidgets import (
     QMessageBox,
 )
 
-from polyhost.device.ota_updater import flash_firmware
+from polyhost.device.hid_fw_up import flash_firmware
 
 
-class _OtaWorker(QThread):
+class _HidFwUpWorker(QThread):
     progress = pyqtSignal(int, str)   # (percent, status_message)
     finished = pyqtSignal(bool, str)  # (success, message)
 
@@ -31,8 +31,8 @@ class _OtaWorker(QThread):
         self.finished.emit(ok, msg)
 
 
-class OtaDialog(QDialog):
-    """Modal progress dialog for OTA firmware updates.
+class HidFwUpDialog(QDialog):
+    """Modal progress dialog for HID firmware updates.
 
     Starts the update immediately on open; the Cancel button aborts between
     chunks and becomes Close once the update finishes.
@@ -73,7 +73,7 @@ class OtaDialog(QDialog):
         btn_row.addWidget(self._cancel_btn)
         layout.addLayout(btn_row)
 
-        self._worker = _OtaWorker(hid, bin_path)
+        self._worker = _HidFwUpWorker(hid, bin_path)
         self._worker.progress.connect(self._on_progress)
         self._worker.finished.connect(self._on_finished)
         self._worker.start()
@@ -82,16 +82,16 @@ class OtaDialog(QDialog):
     def _on_progress(self, pct: int, msg: str):
         self._progress_bar.setValue(pct)
         self._status_label.setText(msg)
-        self.log.info("OTA %d%% — %s", pct, msg)
+        self.log.info("FW_UP %d%% — %s", pct, msg)
 
     def _on_finished(self, ok: bool, msg: str):
         self._success = ok
         self._progress_bar.setValue(100 if ok else self._progress_bar.value())
         self._status_label.setText(msg)
         if ok:
-            self.log.info("OTA finished: ok=%s — %s", ok, msg)
+            self.log.info("FW_UP finished: ok=%s — %s", ok, msg)
         else:
-            self.log.warning("OTA finished: ok=%s — %s", ok, msg)
+            self.log.warning("FW_UP finished: ok=%s — %s", ok, msg)
 
         self._cancel_btn.setText("Close")
         self._cancel_btn.clicked.disconnect()

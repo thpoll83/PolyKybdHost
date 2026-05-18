@@ -1,15 +1,15 @@
 import binascii
 import struct
 
-HID_POLYKYBD        = 0x50   # ord('P')
-CMD_OTA_GET_VERSION = 0x43
-CMD_OTA_BEGIN       = 0x40
-CMD_OTA_CHUNK       = 0x41
-CMD_OTA_COMMIT      = 0x42
+HID_POLYKYBD          = 0x50   # ord('P')
+CMD_FW_UP_GET_VERSION = 0x43
+CMD_FW_UP_BEGIN       = 0x40
+CMD_FW_UP_CHUNK       = 0x41
+CMD_FW_UP_COMMIT      = 0x42
 
-OTA_CHUNK_SIZE  = 56
-OTA_VERSION_LEN = 16
-OTA_MAX_FW_SIZE = 1024 * 1024   # 1 MB hard limit
+FW_UP_CHUNK_SIZE  = 56
+FW_UP_VERSION_LEN = 16
+FW_UP_MAX_SIZE    = 1024 * 1024   # 1 MB hard limit
 
 # RP2040 memory map constants used for firmware validation
 _RP2040_BOOT2_SIZE  = 256
@@ -125,20 +125,20 @@ def get_fw_version(hid) -> tuple[bool, dict]:
     Returns (True, {'version': str, 'fw_size': int, 'fw_crc': int}) on success.
     Computing the CRC over ~500 KB takes ~200 ms; use a generous timeout.
     """
-    pkt = bytearray([HID_POLYKYBD, CMD_OTA_GET_VERSION])
+    pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_GET_VERSION])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
     if not ok or len(reply) < 27:
         return False, {}
-    if reply[0] != HID_POLYKYBD or reply[1] != CMD_OTA_GET_VERSION or reply[2] != ord('.'):
+    if reply[0] != HID_POLYKYBD or reply[1] != CMD_FW_UP_GET_VERSION or reply[2] != ord('.'):
         return False, {}
-    version = bytes(reply[3:3 + OTA_VERSION_LEN]).rstrip(b'\x00').decode('utf-8', errors='replace')
-    fw_size = struct.unpack_from('<I', bytes(reply), 3 + OTA_VERSION_LEN)[0]
-    fw_crc  = struct.unpack_from('<I', bytes(reply), 3 + OTA_VERSION_LEN + 4)[0]
+    version = bytes(reply[3:3 + FW_UP_VERSION_LEN]).rstrip(b'\x00').decode('utf-8', errors='replace')
+    fw_size = struct.unpack_from('<I', bytes(reply), 3 + FW_UP_VERSION_LEN)[0]
+    fw_crc  = struct.unpack_from('<I', bytes(reply), 3 + FW_UP_VERSION_LEN + 4)[0]
     return True, {'version': version, 'fw_size': fw_size, 'fw_crc': fw_crc}
 
 
 def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
-    """Full OTA update flow: BEGIN -> N*CHUNK -> COMMIT.
+    """Full HID firmware update flow: BEGIN -> N*CHUNK -> COMMIT.
 
     Args:
         hid:          HidHelper instance.
@@ -164,8 +164,8 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
 
     if fw_size == 0:
         return False, "Firmware file is empty."
-    if fw_size > OTA_MAX_FW_SIZE:
-        return False, f"Firmware too large: {fw_size} bytes (max {OTA_MAX_FW_SIZE // 1024} KB)."
+    if fw_size > FW_UP_MAX_SIZE:
+        return False, f"Firmware too large: {fw_size} bytes (max {FW_UP_MAX_SIZE // 1024} KB)."
 
     valid, reason = validate_rp2040_firmware(fw_bytes)
     if not valid:
@@ -175,26 +175,26 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     if not valid:
         return False, reason
 
-    total_chunks = (fw_size + OTA_CHUNK_SIZE - 1) // OTA_CHUNK_SIZE
-    report(0, f"Sending OTA_BEGIN — {fw_size // 1024} KB, CRC32 0x{fw_crc:08X}…")
+    total_chunks = (fw_size + FW_UP_CHUNK_SIZE - 1) // FW_UP_CHUNK_SIZE
+    report(0, f"Sending FW_UP_BEGIN — {fw_size // 1024} KB, CRC32 0x{fw_crc:08X}…")
 
-    # -- OTA_BEGIN --
+    # -- FW_UP_BEGIN --
     # Drain stale replies first.  The host polling loop uses a 30 ms read
     # timeout; late-arriving responses can sit in the HID RX buffer and be
-    # mistaken for the OTA_BEGIN reply.
+    # mistaken for the FW_UP_BEGIN reply.
     hid.drain_replies()
 
-    # Firmware OTA_BEGIN flow:
+    # Firmware FW_UP_BEGIN flow:
     #   1. Master kicks off slave's deferred erase (returns immediately).
     #   2. Master erases its own staging synchronously, re-enabling interrupts
     #      between sectors (~50 ms each) so USB stays alive.
-    #   3. Master polls the slave (re-sending OTA_BEGIN every 70 ms) until the
+    #   3. Master polls the slave (re-sending FW_UP_BEGIN every 70 ms) until the
     #      slave's rate-limited sector-by-sector erase completes.
     # Typical total: 4–6 s (best case, kick succeeds immediately).
     # Worst case: kick fails entirely (slave mid-erase from a previous session);
     # first verification poll starts the slave's erase at ~t=3.9 s; slave finishes
     # at ~t=8.3 s.  Use 15 s to cover this plus slow flash sectors.
-    pkt = bytearray([HID_POLYKYBD, CMD_OTA_BEGIN]) + struct.pack('<II', fw_size, fw_crc)
+    pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_BEGIN]) + struct.pack('<II', fw_size, fw_crc)
     ok, reply = hid.send_and_read(pkt, timeout=15000)
     got_ack  = ok and len(reply) >= 3 and reply[2] == ord('.')
     got_nack = ok and len(reply) >= 3 and reply[2] != ord('.')  # explicit firmware reject
@@ -202,30 +202,30 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         if got_nack:
             # Device replied but rejected the command — not a USB dropout.
             # With updated firmware this means the slave half failed to sync
-            # OTA_BEGIN (e.g. slave is disconnected or has old firmware without
-            # OTA support).  Both halves must be available and running OTA-capable
-            # firmware before an OTA update can start.
+            # FW_UP_BEGIN (e.g. slave is disconnected or has old firmware without
+            # HID firmware update support).  Both halves must be available and running
+            # capable firmware before an update can start.
             hid.close_interface()
             return False, (
-                "OTA_BEGIN failed — the slave half could not be prepared.\n"
+                "FW_UP_BEGIN failed — the slave half could not be prepared.\n"
                 "Ensure both keyboard halves are connected and powered on.\n"
-                "If the slave half has old firmware (without OTA support), it must be\n"
-                "flashed manually via UF2 before OTA will work."
+                "If the slave half has old firmware (without HID firmware update support), it must be\n"
+                "flashed manually via UF2 before HID firmware update will work."
             )
         # ok=False (exception) OR ok=True with empty reply (Windows USB dropout returns
         # empty bytes instead of raising).  Both mean the device went silent during erase.
         report(1, "Erasing staging area — keyboard will reconnect when done (up to 30 s)…")
         if not hid.wait_for_reconnect(timeout_s=60):
-            return False, ("OTA_BEGIN failed — keyboard did not reconnect within 60 s. "
+            return False, ("FW_UP_BEGIN failed — keyboard did not reconnect within 60 s. "
                            "Check the USB cable and try again.")
-        # After reconnect the firmware may have already sent the OTA_BEGIN ACK
-        # while USB was coming back up.  Drain it so the first OTA_CHUNK
+        # After reconnect the firmware may have already sent the FW_UP_BEGIN ACK
+        # while USB was coming back up.  Drain it so the first FW_UP_CHUNK
         # send_and_read reads the chunk ACK, not the stale begin ACK.
         hid.drain_replies()
 
     report(2, f"Staging erased. Sending {total_chunks} chunks…")
 
-    # -- OTA_CHUNK x N --
+    # -- FW_UP_CHUNK x N --
     # The firmware relays each chunk to the slave via the split bridge, which
     # does up to 10 retries.  With a slow/disconnected slave each retry can
     # take ~500 ms → up to ~5 s total before the firmware sends a NACK.
@@ -237,10 +237,10 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
             hid.close_interface()
             return False, "Update cancelled by user."
 
-        offset    = i * OTA_CHUNK_SIZE
-        raw_chunk = fw_bytes[offset:offset + OTA_CHUNK_SIZE]
-        padded    = raw_chunk + b'\xff' * (OTA_CHUNK_SIZE - len(raw_chunk))
-        pkt       = bytearray([HID_POLYKYBD, CMD_OTA_CHUNK]) + struct.pack('<I', offset) + padded
+        offset    = i * FW_UP_CHUNK_SIZE
+        raw_chunk = fw_bytes[offset:offset + FW_UP_CHUNK_SIZE]
+        padded    = raw_chunk + b'\xff' * (FW_UP_CHUNK_SIZE - len(raw_chunk))
+        pkt       = bytearray([HID_POLYKYBD, CMD_FW_UP_CHUNK]) + struct.pack('<I', offset) + padded
 
         for attempt in range(3):
             ok, reply = hid.send_and_read(pkt, timeout=_CHUNK_TIMEOUT)
@@ -250,24 +250,24 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
                 # Firmware sent explicit NACK — slave half likely not ready.
                 hid.close_interface()
                 return False, (
-                    f"OTA_CHUNK failed at offset {offset} — keyboard rejected the chunk.\n"
+                    f"FW_UP_CHUNK failed at offset {offset} — keyboard rejected the chunk.\n"
                     "Ensure both keyboard halves are connected and running the same firmware."
                 )
             if attempt == 2:
                 hid.close_interface()
-                return False, f"OTA_CHUNK timed out at offset {offset} after 3 retries."
+                return False, f"FW_UP_CHUNK timed out at offset {offset} after 3 retries."
 
         if i % 100 == 0 or i == total_chunks - 1:
             pct = 2 + int(96 * (i + 1) / total_chunks)
-            report(pct, f"Chunk {i + 1}/{total_chunks} ({(offset + OTA_CHUNK_SIZE) // 1024} KB sent)…")
+            report(pct, f"Chunk {i + 1}/{total_chunks} ({(offset + FW_UP_CHUNK_SIZE) // 1024} KB sent)…")
 
-    # -- OTA_COMMIT --
+    # -- FW_UP_COMMIT --
     report(98, "Verifying CRC32 and committing to both halves…")
-    pkt = bytearray([HID_POLYKYBD, CMD_OTA_COMMIT])
+    pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_COMMIT])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
     if not ok or len(reply) < 3 or reply[2] != ord('.'):
         hid.close_interface()
-        return False, "OTA_COMMIT failed — CRC mismatch on keyboard. Try again."
+        return False, "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
 
     report(100, "Done. Both keyboard halves are rebooting with the new firmware.")
     return True, "Firmware update successful. Keyboard is rebooting — reconnection in ~5 s."
