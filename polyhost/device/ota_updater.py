@@ -197,6 +197,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
             # Device replied but rejected the command — not a USB dropout.
             # If the slave half is running old firmware without OTA support it
             # must be flashed manually via UF2 first.
+            hid.close_interface()
             return False, (
                 "OTA_BEGIN failed — keyboard rejected the request.\n"
                 "If the slave half has old firmware (without OTA support), it must be\n"
@@ -216,8 +217,15 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     report(2, f"Staging erased. Sending {total_chunks} chunks…")
 
     # -- OTA_CHUNK x N --
+    # The firmware relays each chunk to the slave via the split bridge, which
+    # does up to 10 retries.  With a slow/disconnected slave each retry can
+    # take ~500 ms → up to ~5 s total before the firmware sends a NACK.
+    # Use 8 s so the NACK arrives within the window; retry only on genuine
+    # timeouts (empty reply), not on explicit NACKs.
+    _CHUNK_TIMEOUT = 8000
     for i in range(total_chunks):
         if cancelled():
+            hid.close_interface()
             return False, "Update cancelled by user."
 
         offset    = i * OTA_CHUNK_SIZE
@@ -226,11 +234,19 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         pkt       = bytearray([HID_POLYKYBD, CMD_OTA_CHUNK]) + struct.pack('<I', offset) + padded
 
         for attempt in range(3):
-            ok, reply = hid.send_and_read(pkt, timeout=5000)
+            ok, reply = hid.send_and_read(pkt, timeout=_CHUNK_TIMEOUT)
             if ok and len(reply) >= 3 and reply[2] == ord('.'):
                 break
+            if ok and len(reply) >= 3 and reply[2] != ord('.'):
+                # Firmware sent explicit NACK — slave half likely not ready.
+                hid.close_interface()
+                return False, (
+                    f"OTA_CHUNK failed at offset {offset} — keyboard rejected the chunk.\n"
+                    "Ensure both keyboard halves are connected and running the same firmware."
+                )
             if attempt == 2:
-                return False, f"OTA_CHUNK failed at offset {offset} after 3 retries."
+                hid.close_interface()
+                return False, f"OTA_CHUNK timed out at offset {offset} after 3 retries."
 
         if i % 100 == 0 or i == total_chunks - 1:
             pct = 2 + int(96 * (i + 1) / total_chunks)
@@ -241,6 +257,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     pkt = bytearray([HID_POLYKYBD, CMD_OTA_COMMIT])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
     if not ok or len(reply) < 3 or reply[2] != ord('.'):
+        hid.close_interface()
         return False, "OTA_COMMIT failed — CRC mismatch on keyboard. Try again."
 
     report(100, "Done. Both keyboard halves are rebooting with the new firmware.")

@@ -291,6 +291,21 @@ class HidHelper:
 
         return response_report.startswith(expected_prefix), response_report, self.lock
     
+    def close_interface(self):
+        """Close the raw-HID interface without attempting to reopen it.
+
+        Call this before returning from a failed OTA sequence so that pending
+        overlapped I/O operations (Windows) are cancelled and the polling loop
+        can re-enumerate cleanly on the next cycle.
+        """
+        with self.lock:
+            if self.interface:
+                try:
+                    self.interface.close()
+                except Exception:
+                    pass
+                self.interface = None
+
     def drain_replies(self, max_msgs: int = 16, timeout_ms: int = 20) -> int:
         """Discard any buffered HID replies; return the number discarded.
 
