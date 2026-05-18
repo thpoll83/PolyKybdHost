@@ -11,9 +11,10 @@ The helper _make_fw() builds the smallest binary that passes
 validate_rp2040_firmware() -- 264 bytes.
 
 For flash_firmware() tests, _make_polykybd_fw() is used instead:
-it appends the UTF-16LE signature "PolyKybd" so the binary also passes
-validate_polykybd_firmware().  _make_polykybd_fw() without extra args is
-280 bytes (264 + 16), which is exactly 5 OTA chunks of 56 B.
+it appends the UTF-16LE encoding of "PolyKybd" so the binary also passes
+validate_polykybd_firmware() ("Poly" UTF-16LE prefix is present).
+_make_polykybd_fw() without extra args is 280 bytes (264 + 16),
+which is exactly 5 OTA chunks of 56 B.
 """
 import binascii
 import struct
@@ -56,7 +57,7 @@ _VECTOR_TABLE  = struct.pack('<II', 0x20010000, 0x10000101)
 # 264-byte header that passes validate_rp2040_firmware()
 _RP2040_HEADER = _BOOT2_PAYLOAD + _BOOT2_CRC + _VECTOR_TABLE
 
-# UTF-16LE encoding of "PolyKybd" — one of the _POLYKYBD_SIGNATURES
+# UTF-16LE encoding of "PolyKybd" -- contains the active "Poly" UTF-16LE prefix
 _POLYKYBD_SIG = "PolyKybd".encode('utf-16-le')   # 16 bytes
 
 
@@ -227,44 +228,39 @@ class TestValidateRp2040Firmware(unittest.TestCase):
 
 class TestValidatePolykybdFirmware(unittest.TestCase):
 
-    def test_utf16le_product_name_detected(self):
-        # "PolyKybd" as UTF-16LE is one of the registered signatures
-        sig = "PolyKybd".encode('utf-16-le')
-        ok, msg = validate_polykybd_firmware(_make_fw(sig))
+    def test_poly_utf16le_in_product_string_detected(self):
+        # "PolyKybd" UTF-16LE contains the active "Poly" UTF-16LE prefix
+        ok, msg = validate_polykybd_firmware(_make_fw("PolyKybd".encode('utf-16-le')))
         self.assertTrue(ok)
         self.assertEqual(msg, '')
 
-    def test_utf16le_manufacturer_detected(self):
-        sig = "PolyFabriq".encode('utf-16-le')
-        ok, _ = validate_polykybd_firmware(_make_fw(sig))
+    def test_poly_utf16le_in_manufacturer_string_detected(self):
+        # "PolyFabriq" UTF-16LE also contains the "Poly" UTF-16LE prefix
+        ok, _ = validate_polykybd_firmware(_make_fw("PolyFabriq".encode('utf-16-le')))
         self.assertTrue(ok)
 
-    def test_ascii_keyboard_path_detected(self):
-        ok, _ = validate_polykybd_firmware(_make_fw(b'handwired/polykybd'))
-        self.assertTrue(ok)
-
-    def test_all_signatures_present_passes(self):
-        payload = (
-            "PolyKybd".encode('utf-16-le') +
-            "PolyFabriq".encode('utf-16-le') +
-            b'handwired/polykybd'
-        )
-        ok, _ = validate_polykybd_firmware(_make_fw(payload))
+    def test_poly_utf16le_prefix_alone_is_sufficient(self):
+        ok, _ = validate_polykybd_firmware(_make_fw("Poly".encode('utf-16-le')))
         self.assertTrue(ok)
 
     def test_no_signature_fails(self):
-        # A valid RP2040 binary with no PolyKybd strings
+        # A valid RP2040 binary with no "Poly" UTF-16LE anywhere
         ok, msg = validate_polykybd_firmware(_make_fw())
         self.assertFalse(ok)
         self.assertIn('PolyKybd', msg)
+
+    def test_ascii_poly_string_does_not_pass(self):
+        # ASCII "PolyKybd" lacks the UTF-16LE interleaved zero bytes, so it
+        # does not match the UTF-16LE signature
+        ok, _ = validate_polykybd_firmware(_make_fw(b'PolyKybd'))
+        self.assertFalse(ok)
 
     def test_error_mentions_keyboard_path(self):
         _, msg = validate_polykybd_firmware(_make_fw())
         self.assertIn('handwired/polykybd', msg)
 
     def test_accepts_bytearray(self):
-        sig = "PolyKybd".encode('utf-16-le')
-        ok, _ = validate_polykybd_firmware(bytearray(_make_fw(sig)))
+        ok, _ = validate_polykybd_firmware(bytearray(_make_fw("PolyKybd".encode('utf-16-le'))))
         self.assertTrue(ok)
 
 
@@ -380,7 +376,7 @@ class TestFlashFirmwareValidation(unittest.TestCase):
             os.unlink(path)
 
     def test_non_polykybd_rp2040_binary_rejected(self):
-        # Passes validate_rp2040_firmware() but has no PolyKybd signatures
+        # Passes validate_rp2040_firmware() but has no "Poly" UTF-16LE
         path = _write_bin(_make_fw())
         hid = MagicMock()
         try:
@@ -475,7 +471,7 @@ class TestFlashFirmwareBegin(unittest.TestCase):
 
 class TestFlashFirmwareChunks(unittest.TestCase):
     """_make_polykybd_fw() without extra args is 280 bytes = exactly 5 chunks.
-    Chunk layout: all 5 chunks are full (56 B each) — no padding on last chunk.
+    Chunk layout: all 5 chunks are full (56 B each) -- no padding on last chunk.
     """
 
     def test_minimal_firmware_sends_correct_chunk_count(self):
