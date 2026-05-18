@@ -16,6 +16,15 @@ _RP2040_BOOT2_SIZE  = 256
 _RP2040_SRAM_BASE   = 0x20000000
 _RP2040_SRAM_END    = 0x20042000   # 264 KB SRAM
 
+# Strings embedded in every PolyKybd Split72 QMK binary.
+# USB descriptor strings are stored as UTF-16LE; the keyboard path appears
+# as an ASCII literal via the QMK_KEYBOARD preprocessor define.
+_POLYKYBD_SIGNATURES = (
+    "PolyKybd".encode('utf-16-le'),      # substring of USB product "PolyKybd Split72"
+    "PolyFabriq".encode('utf-16-le'),    # USB manufacturer string
+    b'handwired/polykybd',               # QMK_KEYBOARD path (ASCII)
+)
+
 
 def validate_rp2040_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]:
     """Check that fw_bytes looks like a valid RP2040 QMK .bin image.
@@ -70,6 +79,31 @@ def validate_rp2040_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]:
     return True, ""
 
 
+def validate_polykybd_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]:
+    """Check that fw_bytes contains at least one PolyKybd-specific signature.
+
+    QMK embeds the USB product name ("PolyKybd Split72") and manufacturer
+    ("PolyFabriq") as UTF-16LE USB string descriptors, and the keyboard path
+    ("handwired/polykybd") as an ASCII literal via QMK_KEYBOARD.  Any one of
+    these signatures being present is sufficient to confirm the binary targets
+    the correct keyboard.
+
+    The full firmware image must be passed; a 264-byte header is not enough.
+
+    Returns (True, '') on success or (False, human-readable error) on failure.
+    """
+    fw = bytes(fw_bytes)
+    for sig in _POLYKYBD_SIGNATURES:
+        if sig in fw:
+            return True, ""
+    return False, (
+        "This firmware binary does not appear to be built for PolyKybd. "
+        "No PolyKybd identifier string was found in the binary. "
+        "Make sure you selected a firmware compiled for "
+        "'handwired/polykybd/split72' using 'qmk compile'."
+    )
+
+
 def get_fw_version(hid) -> tuple[bool, dict]:
     """Query firmware version, binary size and CRC32 from the keyboard (cmd 0x43).
 
@@ -119,6 +153,10 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         return False, f"Firmware too large: {fw_size} bytes (max {OTA_MAX_FW_SIZE // 1024} KB)."
 
     valid, reason = validate_rp2040_firmware(fw_bytes)
+    if not valid:
+        return False, reason
+
+    valid, reason = validate_polykybd_firmware(fw_bytes)
     if not valid:
         return False, reason
 
