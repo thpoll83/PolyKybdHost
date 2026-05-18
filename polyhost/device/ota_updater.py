@@ -179,10 +179,26 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     report(0, f"Sending OTA_BEGIN — {fw_size // 1024} KB, CRC32 0x{fw_crc:08X}…")
 
     # -- OTA_BEGIN --
+    # The RP2040 erases ~1 MB of staging flash inside ota_begin(), using
+    # flash_range_erase() which disables ALL interrupts (including USB) for
+    # up to ~30 s.  The OS detects the USB silence as a disconnect before the
+    # ACK can arrive, so send_and_read will almost always return an error here.
+    # That is expected: we wait for the keyboard to finish erasing and reconnect,
+    # then proceed with chunks.  If the ACK does arrive within the timeout (very
+    # fast erase on a warm chip), that path works too.
     pkt = bytearray([HID_POLYKYBD, CMD_OTA_BEGIN]) + struct.pack('<II', fw_size, fw_crc)
     ok, reply = hid.send_and_read(pkt, timeout=5000)
-    if not ok or len(reply) < 3 or reply[2] != ord('.'):
-        return False, "OTA_BEGIN failed — no ACK (device not connected or wrong firmware)."
+    got_ack = ok and len(reply) >= 3 and reply[2] == ord('.')
+    if not got_ack:
+        if ok:
+            # Device is connected but firmware rejected the command — not a USB dropout.
+            return False, "OTA_BEGIN failed — keyboard rejected the request (unexpected response)."
+        # USB failure is expected: flash_range_erase() disables all interrupts on the
+        # RP2040 (including USB) for up to ~30 s.  Wait for the device to come back.
+        report(1, "Erasing staging area — keyboard will reconnect when done (up to 30 s)…")
+        if not hid.wait_for_reconnect(timeout_s=60):
+            return False, ("OTA_BEGIN failed — keyboard did not reconnect within 60 s. "
+                           "Check the USB cable and try again.")
 
     report(2, f"Staging erased. Sending {total_chunks} chunks…")
 
