@@ -11,6 +11,64 @@ OTA_CHUNK_SIZE  = 56
 OTA_VERSION_LEN = 16
 OTA_MAX_FW_SIZE = 1024 * 1024   # 1 MB hard limit
 
+# RP2040 memory map constants used for firmware validation
+_RP2040_BOOT2_SIZE  = 256
+_RP2040_SRAM_BASE   = 0x20000000
+_RP2040_SRAM_END    = 0x20042000   # 264 KB SRAM
+
+
+def validate_rp2040_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]:
+    """Check that fw_bytes looks like a valid RP2040 QMK .bin image.
+
+    Two checks are performed:
+      1. Boot2 CRC32 — the RP2040 ROM verifies bytes [0..251] against the
+         CRC32 stored at bytes [252..255] on every cold boot.  Any valid
+         .bin produced by 'qmk compile' will pass; .uf2, .hex, and random
+         files will not.
+      2. Initial stack pointer in the ARM Cortex-M0+ vector table at
+         offset 256 must point into RP2040 SRAM.
+
+    The function only needs the first 264 bytes, so callers may pass a
+    partial read for an early-exit check before prompting the user.
+
+    Returns (True, '') on success or (False, human-readable error) on
+    failure.
+    """
+    fw = bytes(fw_bytes)
+
+    if len(fw) < _RP2040_BOOT2_SIZE + 8:
+        return False, (
+            f"File is too small ({len(fw)} bytes) to be a valid RP2040 "
+            "firmware image (expected at least 264 bytes for boot2 + "
+            "ARM vector table)."
+        )
+
+    # Boot2 CRC32: bytes [0..251] vs stored little-endian uint32 at [252..255].
+    # Python's binascii.crc32 computes CRC-32/ISO-HDLC, which is identical to
+    # the algorithm used by the RP2040 ROM bootloader.
+    computed_crc = binascii.crc32(fw[:252]) & 0xFFFFFFFF
+    stored_crc   = struct.unpack_from('<I', fw, 252)[0]
+    if computed_crc != stored_crc:
+        return False, (
+            f"Invalid RP2040 boot2 CRC32 "
+            f"(file has 0x{stored_crc:08X}, computed 0x{computed_crc:08X}). "
+            "This does not appear to be a valid RP2040 QMK firmware .bin. "
+            "Make sure you select the .bin produced by 'qmk compile', "
+            "not a .uf2, .hex, or other format."
+        )
+
+    # ARM Cortex-M0+ initial SP must point into RP2040 SRAM.
+    initial_sp = struct.unpack_from('<I', fw, _RP2040_BOOT2_SIZE)[0]
+    if not (_RP2040_SRAM_BASE <= initial_sp <= _RP2040_SRAM_END):
+        return False, (
+            f"Invalid ARM vector table: initial SP 0x{initial_sp:08X} is "
+            f"outside RP2040 SRAM "
+            f"(0x{_RP2040_SRAM_BASE:08X}–0x{_RP2040_SRAM_END:08X}). "
+            "This does not appear to be a valid RP2040 firmware binary."
+        )
+
+    return True, ""
+
 
 def get_fw_version(hid) -> tuple[bool, dict]:
     """Query firmware version, binary size and CRC32 from the keyboard (cmd 0x43).
@@ -59,6 +117,10 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         return False, "Firmware file is empty."
     if fw_size > OTA_MAX_FW_SIZE:
         return False, f"Firmware too large: {fw_size} bytes (max {OTA_MAX_FW_SIZE // 1024} KB)."
+
+    valid, reason = validate_rp2040_firmware(fw_bytes)
+    if not valid:
+        return False, reason
 
     total_chunks = (fw_size + OTA_CHUNK_SIZE - 1) // OTA_CHUNK_SIZE
     report(0, f"Sending OTA_BEGIN — {fw_size // 1024} KB, CRC32 0x{fw_crc:08X}…")
