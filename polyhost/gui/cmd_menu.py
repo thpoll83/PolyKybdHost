@@ -3,7 +3,7 @@ import logging
 from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox
 
 from polyhost.device.keys import KeyCode, keycode_to_mapping_idx
-from polyhost.device.ota_updater import get_fw_version, validate_rp2040_firmware, validate_polykybd_firmware
+from polyhost.device.hid_fw_up import get_fw_version, validate_rp2040_firmware, validate_polykybd_firmware
 from polyhost.gui.get_icon import get_icon
 
 
@@ -97,7 +97,7 @@ class CommandsSubMenu:
 
         action = QAction(get_icon("keyboard_input.svg"), "Flash Firmware (.bin)…", parent=self.parent)
         # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.open_ota_dialog)
+        action.triggered.connect(self.open_hid_fw_up_dialog)
         cmd_menu.addAction(action)
 
         action = QAction("Test mapping...", parent=self.parent)
@@ -207,8 +207,8 @@ class CommandsSubMenu:
         else:
             self.log.info("No file selected. Operation canceled.")
 
-    def open_ota_dialog(self):
-        from polyhost.gui.ota_dialog import OtaDialog
+    def open_hid_fw_up_dialog(self):
+        from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 
         if not self.keeb.hid or not self.keeb.hid.interface_acquired():
             QMessageBox.warning(None, "Not Connected",
@@ -218,7 +218,7 @@ class CommandsSubMenu:
         bin_path, _ = QFileDialog.getOpenFileName(
             None, "Select Firmware Binary", "", "Firmware binary (*.bin)")
         if not bin_path:
-            self.log.info("OTA: no file selected, cancelled.")
+            self.log.info("FW_UP: no file selected, cancelled.")
             return
 
         # Read the full binary up front so both validation passes can run
@@ -266,7 +266,7 @@ class CommandsSubMenu:
             None, "Flash Firmware", confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
-            self.log.info("OTA: user cancelled at confirmation.")
+            self.log.info("FW_UP: user cancelled at confirmation.")
             return
 
         # Pause the host polling loop for the duration of the flash so the
@@ -277,7 +277,7 @@ class CommandsSubMenu:
             host.pause()
 
         try:
-            dlg = OtaDialog(self.keeb.hid, bin_path)
+            dlg = HidFwUpDialog(self.keeb.hid, bin_path)
             dlg.exec_()
         finally:
             if hasattr(host, 'pause') and not was_paused:
