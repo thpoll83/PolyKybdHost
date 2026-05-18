@@ -195,7 +195,13 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     if not got_ack:
         if got_nack:
             # Device replied but rejected the command — not a USB dropout.
-            return False, "OTA_BEGIN failed — keyboard rejected the request (unexpected response)."
+            # If the slave half is running old firmware without OTA support it
+            # must be flashed manually via UF2 first.
+            return False, (
+                "OTA_BEGIN failed — keyboard rejected the request.\n"
+                "If the slave half has old firmware (without OTA support), it must be\n"
+                "flashed manually via UF2 before OTA will work."
+            )
         # ok=False (exception) OR ok=True with empty reply (Windows USB dropout returns
         # empty bytes instead of raising).  Both mean the device went silent during erase.
         report(1, "Erasing staging area — keyboard will reconnect when done (up to 30 s)…")
