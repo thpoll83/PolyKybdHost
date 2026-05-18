@@ -1,5 +1,6 @@
 import binascii
 import struct
+import time
 
 HID_POLYKYBD          = 0x50   # ord('P')
 CMD_FW_UP_GET_VERSION = 0x43
@@ -179,32 +180,53 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     report(0, f"Sending FW_UP_BEGIN — {fw_size // 1024} KB, CRC32 0x{fw_crc:08X}…")
 
     # -- FW_UP_BEGIN --
-    # Drain stale replies first.  The host polling loop uses a 30 ms read
-    # timeout; late-arriving responses can sit in the HID RX buffer and be
-    # mistaken for the FW_UP_BEGIN reply.
+    # Drain stale replies before the first send.
     hid.drain_replies()
 
-    # Firmware FW_UP_BEGIN flow:
-    #   1. Master kicks off slave's deferred erase (returns immediately).
-    #   2. Master erases its own staging synchronously, re-enabling interrupts
-    #      between sectors (~50 ms each) so USB stays alive.
-    #   3. Master polls the slave (re-sending FW_UP_BEGIN every 70 ms) until the
-    #      slave's rate-limited sector-by-sector erase completes.
-    # Typical total: 4–6 s (best case, kick succeeds immediately).
-    # Worst case: kick fails entirely (slave mid-erase from a previous session);
-    # first verification poll starts the slave's erase at ~t=3.9 s; slave finishes
-    # at ~t=8.3 s.  Use 15 s to cover this plus slow flash sectors.
+    # FW_UP_BEGIN protocol (updated firmware):
+    #   reply[2] == '.' → both halves erased and ready, proceed to chunks
+    #   reply[2] == '~' → still erasing (slave half deferred erase in progress);
+    #                     host should re-poll after a short delay so the QMK main
+    #                     loop can keep the split transport alive between polls
+    #   reply[2] == '!' → hard error (slave disconnected, old firmware, etc.)
+    #   no reply        → USB dropout during master's synchronous flash erase;
+    #                     wait for reconnect then re-poll
+    #
+    # Total timeout: 90 s covers worst-case master erase (~6 s) + slave deferred
+    # erase (~8 s) with generous margin.  The 15 s first-send timeout covers the
+    # master's synchronous erase phase.
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_BEGIN]) + struct.pack('<II', fw_size, fw_crc)
-    ok, reply = hid.send_and_read(pkt, timeout=15000)
-    got_ack  = ok and len(reply) >= 3 and reply[2] == ord('.')
-    got_nack = ok and len(reply) >= 3 and reply[2] != ord('.')  # explicit firmware reject
-    if not got_ack:
-        if got_nack:
-            # Device replied but rejected the command — not a USB dropout.
-            # With updated firmware this means the slave half failed to sync
-            # FW_UP_BEGIN (e.g. slave is disconnected or has old firmware without
-            # HID firmware update support).  Both halves must be available and running
-            # capable firmware before an update can start.
+    deadline    = time.monotonic() + 90
+    timeout_ms  = 15000   # generous for first send (master erases ~6 s)
+    begin_ready = False
+
+    while not begin_ready:
+        if time.monotonic() > deadline:
+            return False, ("FW_UP_BEGIN timed out — keyboard did not finish erasing "
+                           "within 90 s.  Check the USB cable and try again.")
+
+        ok, reply = hid.send_and_read(pkt, timeout=timeout_ms)
+        timeout_ms = 5000   # shorter for subsequent re-polls
+
+        if not ok or len(reply) < 3:
+            # USB dropout (or Windows empty-bytes disconnect) — master may be
+            # rebooting after its synchronous flash erase.
+            report(1, "Erasing staging area — keyboard will reconnect when done…")
+            if not hid.wait_for_reconnect(timeout_s=30):
+                return False, ("FW_UP_BEGIN failed — keyboard did not reconnect "
+                               "within 30 s.  Check the USB cable and try again.")
+            hid.drain_replies()
+            # Loop continues — re-poll with the same packet.
+        elif reply[2] == ord('.'):
+            begin_ready = True
+        elif reply[2] == ord('~'):
+            # Slave half still erasing (deferred sector-by-sector).  Sleep briefly
+            # so the QMK main loop runs and keeps the split transport alive.
+            report(1, "Erasing both halves — please wait…")
+            time.sleep(0.3)
+            # Loop continues — re-poll.
+        else:
+            # Explicit '!' NACK — slave can't be prepared (disconnected, old fw, etc.)
             hid.close_interface()
             return False, (
                 "FW_UP_BEGIN failed — the slave half could not be prepared.\n"
@@ -212,16 +234,6 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
                 "If the slave half has old firmware (without HID firmware update support), it must be\n"
                 "flashed manually via UF2 before HID firmware update will work."
             )
-        # ok=False (exception) OR ok=True with empty reply (Windows USB dropout returns
-        # empty bytes instead of raising).  Both mean the device went silent during erase.
-        report(1, "Erasing staging area — keyboard will reconnect when done (up to 30 s)…")
-        if not hid.wait_for_reconnect(timeout_s=60):
-            return False, ("FW_UP_BEGIN failed — keyboard did not reconnect within 60 s. "
-                           "Check the USB cable and try again.")
-        # After reconnect the firmware may have already sent the FW_UP_BEGIN ACK
-        # while USB was coming back up.  Drain it so the first FW_UP_CHUNK
-        # send_and_read reads the chunk ACK, not the stale begin ACK.
-        hid.drain_replies()
 
     report(2, f"Staging erased. Sending {total_chunks} chunks…")
 
