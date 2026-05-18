@@ -291,8 +291,28 @@ class HidHelper:
 
         return response_report.startswith(expected_prefix), response_report, self.lock
     
-    def wait_for_reconnect(self, timeout_s: int = 60) -> bool:
-        """Close the current interface and poll until the device reappears.
+    def drain_replies(self, max_msgs: int = 16, timeout_ms: int = 20) -> int:
+        """Discard any buffered HID replies; return the number discarded.
+
+        Call this before starting a new command sequence to prevent stale
+        responses from previous commands (e.g. polling loop timeouts that
+        arrived late) from being mistaken for the new command's reply.
+        """
+        if self.interface is None:
+            return 0
+        drained = 0
+        with self.lock:
+            for _ in range(max_msgs):
+                try:
+                    r = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout_ms)
+                    if not r:
+                        break
+                    drained += 1
+                except Exception:
+                    break
+        return drained
+
+    def wait_for_reconnect(self, timeout_s: int = 60) -> bool:        """Close the current interface and poll until the device reappears.
 
         Called after OTA_BEGIN when flash_range_erase() on the RP2040 disables
         all interrupts (including USB) for up to ~30 s.  Returns True once the
