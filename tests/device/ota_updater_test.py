@@ -39,6 +39,7 @@ from polyhost.device.ota_updater import (
     _RP2040_SRAM_BASE,
     _RP2040_SRAM_END,
     _POLYKYBD_SIGNATURES,
+    _crc32_rp2040,
 )
 
 ACK  = ord('.')
@@ -48,9 +49,11 @@ NACK = ord('!')
 # Firmware fixture helpers
 # ---------------------------------------------------------------------------
 
-# Minimal valid boot2: 252 zero bytes + correct CRC32
+# Minimal valid boot2: 252 zero bytes + correct RP2040 boot ROM CRC32.
+# Note: _crc32_rp2040 is NOT the same as binascii.crc32 — the RP2040 ROM
+# uses a non-reflected MSB-first variant.
 _BOOT2_PAYLOAD = bytes(252)
-_BOOT2_CRC     = struct.pack('<I', binascii.crc32(_BOOT2_PAYLOAD) & 0xFFFFFFFF)
+_BOOT2_CRC     = struct.pack('<I', _crc32_rp2040(_BOOT2_PAYLOAD))
 # ARM Cortex-M0+ vector table: SP in SRAM, thumb reset vector in flash
 _VECTOR_TABLE  = struct.pack('<II', 0x20010000, 0x10000101)
 # 264-byte header that passes validate_rp2040_firmware()
@@ -755,6 +758,72 @@ class TestCrc32(unittest.TestCase):
             self.assertEqual(sent_crc, expected_crc)
         finally:
             os.unlink(path)
+
+
+# ---------------------------------------------------------------------------
+# Real firmware binary integration tests
+# ---------------------------------------------------------------------------
+
+_FIXTURE_BIN = os.path.join(os.path.dirname(__file__),
+                             'fixtures', 'polykybd_split72_default.bin')
+
+# Known-good values computed from the shipped binary at the time it was added
+# as a test fixture.  Update these constants when a new firmware build is
+# committed as the fixture.
+_FIXTURE_SIZE    = 248160
+_FIXTURE_OTA_CRC = 0x3D4BB6A1   # binascii.crc32(fw) & 0xFFFFFFFF  (OTA protocol)
+
+
+@unittest.skipUnless(os.path.exists(_FIXTURE_BIN), 'fixture binary not present')
+class TestRealFirmwareBinary(unittest.TestCase):
+    """Integration tests against the real handwired/polykybd/split72 firmware.
+
+    These tests load the actual .bin produced by 'make handwired/polykybd/split72:default'
+    and confirm that all validation passes and expected metadata is stable.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        with open(_FIXTURE_BIN, 'rb') as fh:
+            cls.fw = fh.read()
+
+    def test_file_size_matches_expected(self):
+        self.assertEqual(len(self.fw), _FIXTURE_SIZE)
+
+    def test_validate_rp2040_passes(self):
+        ok, msg = validate_rp2040_firmware(self.fw)
+        self.assertTrue(ok, msg)
+
+    def test_validate_polykybd_passes(self):
+        ok, msg = validate_polykybd_firmware(self.fw)
+        self.assertTrue(ok, msg)
+
+    def test_boot2_crc_is_correct(self):
+        stored   = struct.unpack_from('<I', self.fw, 252)[0]
+        computed = _crc32_rp2040(self.fw[:252])
+        self.assertEqual(computed, stored,
+                         f"boot2 CRC mismatch: computed 0x{computed:08X}, stored 0x{stored:08X}")
+
+    def test_initial_sp_in_sram(self):
+        sp = struct.unpack_from('<I', self.fw, _RP2040_BOOT2_SIZE)[0]
+        self.assertGreaterEqual(sp, _RP2040_SRAM_BASE)
+        self.assertLessEqual(sp, _RP2040_SRAM_END)
+
+    def test_ota_crc32_matches_expected(self):
+        # OTA protocol CRC uses standard binascii.crc32 (CRC-32/ISO-HDLC),
+        # not the RP2040 boot ROM variant.
+        crc = binascii.crc32(self.fw) & 0xFFFFFFFF
+        self.assertEqual(crc, _FIXTURE_OTA_CRC,
+                         f"OTA CRC changed: expected 0x{_FIXTURE_OTA_CRC:08X}, got 0x{crc:08X}. "
+                         "Update _FIXTURE_OTA_CRC if this is a new firmware version.")
+
+    def test_product_string_present(self):
+        sig = "PolyKybd".encode('utf-16-le')
+        self.assertIn(sig, self.fw, "USB product string 'PolyKybd' not found in binary")
+
+    def test_manufacturer_string_present(self):
+        sig = "Poly".encode('utf-16-le')
+        self.assertIn(sig, self.fw, "Manufacturer prefix 'Poly' UTF-16LE not found in binary")
 
 
 if __name__ == '__main__':
