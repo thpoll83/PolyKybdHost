@@ -277,7 +277,7 @@ class CommandsSubMenu:
             host.pause()
 
         try:
-            dlg = OtaDialog(self.keeb.hid, bin_path, parent=host)
+            dlg = OtaDialog(self.keeb.hid, bin_path)
             dlg.exec_()
         finally:
             if hasattr(host, 'pause') and not was_paused:
