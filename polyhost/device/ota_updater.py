@@ -195,11 +195,14 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     if not got_ack:
         if got_nack:
             # Device replied but rejected the command — not a USB dropout.
-            # If the slave half is running old firmware without OTA support it
-            # must be flashed manually via UF2 first.
+            # With updated firmware this means the slave half failed to sync
+            # OTA_BEGIN (e.g. slave is disconnected or has old firmware without
+            # OTA support).  Both halves must be available and running OTA-capable
+            # firmware before an OTA update can start.
             hid.close_interface()
             return False, (
-                "OTA_BEGIN failed — keyboard rejected the request.\n"
+                "OTA_BEGIN failed — the slave half could not be prepared.\n"
+                "Ensure both keyboard halves are connected and powered on.\n"
                 "If the slave half has old firmware (without OTA support), it must be\n"
                 "flashed manually via UF2 before OTA will work."
             )
