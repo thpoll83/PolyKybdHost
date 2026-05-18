@@ -190,10 +190,12 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     #      between sectors (~50 ms each) so USB stays alive.
     #   3. Master polls the slave (re-sending OTA_BEGIN every 70 ms) until the
     #      slave's rate-limited sector-by-sector erase completes.
-    # Typical total: ceil(fw_size/4096)+1 sectors × ~70 ms ≈ 4–6 s.
-    # Use 10 s to cover worst-case slow flash sectors (spec max 400 ms/sector).
+    # Typical total: 4–6 s (best case, kick succeeds immediately).
+    # Worst case: kick fails entirely (slave mid-erase from a previous session);
+    # first verification poll starts the slave's erase at ~t=3.9 s; slave finishes
+    # at ~t=8.3 s.  Use 15 s to cover this plus slow flash sectors.
     pkt = bytearray([HID_POLYKYBD, CMD_OTA_BEGIN]) + struct.pack('<II', fw_size, fw_crc)
-    ok, reply = hid.send_and_read(pkt, timeout=10000)
+    ok, reply = hid.send_and_read(pkt, timeout=15000)
     got_ack  = ok and len(reply) >= 3 and reply[2] == ord('.')
     got_nack = ok and len(reply) >= 3 and reply[2] != ord('.')  # explicit firmware reject
     if not got_ack:
