@@ -184,12 +184,16 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     # mistaken for the OTA_BEGIN reply.
     hid.drain_replies()
 
-    # The RP2040 erases ~1 MB of staging flash inside ota_begin(), using
-    # flash_range_erase() which disables ALL interrupts (including USB) for
-    # up to ~30 s.  The OS detects the USB silence as a disconnect, so
-    # send_and_read may return before the ACK arrives.  That is expected.
+    # Firmware OTA_BEGIN flow:
+    #   1. Master kicks off slave's deferred erase (returns immediately).
+    #   2. Master erases its own staging synchronously, re-enabling interrupts
+    #      between sectors (~50 ms each) so USB stays alive.
+    #   3. Master polls the slave (re-sending OTA_BEGIN every 70 ms) until the
+    #      slave's rate-limited sector-by-sector erase completes.
+    # Typical total: ceil(fw_size/4096)+1 sectors × ~70 ms ≈ 4–6 s.
+    # Use 10 s to cover worst-case slow flash sectors (spec max 400 ms/sector).
     pkt = bytearray([HID_POLYKYBD, CMD_OTA_BEGIN]) + struct.pack('<II', fw_size, fw_crc)
-    ok, reply = hid.send_and_read(pkt, timeout=5000)
+    ok, reply = hid.send_and_read(pkt, timeout=10000)
     got_ack  = ok and len(reply) >= 3 and reply[2] == ord('.')
     got_nack = ok and len(reply) >= 3 and reply[2] != ord('.')  # explicit firmware reject
     if not got_ack:
