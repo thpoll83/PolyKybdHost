@@ -593,7 +593,7 @@ class TestFlashFirmwareChunks(unittest.TestCase):
         finally:
             os.unlink(path)
 
-    def test_chunk_timeout_is_5000ms(self):
+    def test_chunk_timeout_is_8000ms(self):
         fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
@@ -601,17 +601,34 @@ class TestFlashFirmwareChunks(unittest.TestCase):
             flash_firmware(hid, path)
             c = hid.send_and_read.call_args_list[1]  # first chunk
             timeout = c[1].get('timeout') or c[0][1]
-            self.assertEqual(timeout, 5000)
+            self.assertEqual(timeout, 8000)
         finally:
             os.unlink(path)
 
-    def test_chunk_retried_3_times_on_nack_then_fails(self):
+    def test_chunk_nack_fails_immediately_no_retry(self):
+        # Explicit NACK (slave not ready) must not be retried — fail on first attempt.
         fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             hid = _make_hid(
                 [(True, _ack_reply(CMD_OTA_BEGIN))] +
-                [(True, _nack_reply(CMD_OTA_CHUNK))] * 3
+                [(True, _nack_reply(CMD_OTA_CHUNK))]   # single NACK → immediate fail
+            )
+            ok, msg = flash_firmware(hid, path)
+            self.assertFalse(ok)
+            self.assertIn('CHUNK', msg)
+            self.assertEqual(hid.send_and_read.call_count, 2)  # 1 BEGIN + 1 attempt only
+        finally:
+            os.unlink(path)
+
+    def test_chunk_timeout_retried_3_times_then_fails(self):
+        # Timeout (ok=False / empty reply) should be retried up to 3 times.
+        fw   = _make_polykybd_fw()
+        path = _write_bin(fw)
+        try:
+            hid = _make_hid(
+                [(True, _ack_reply(CMD_OTA_BEGIN))] +
+                [(False, bytearray(64))] * 3            # 3 timeouts → fail
             )
             ok, msg = flash_firmware(hid, path)
             self.assertFalse(ok)
@@ -621,14 +638,15 @@ class TestFlashFirmwareChunks(unittest.TestCase):
             os.unlink(path)
 
     def test_chunk_succeeds_on_second_attempt(self):
+        # Transient timeout on first attempt; retry succeeds.
         fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         n    = _chunks(fw)
         try:
             hid = _make_hid(
                 [(True, _ack_reply(CMD_OTA_BEGIN)),
-                 (True, _nack_reply(CMD_OTA_CHUNK)),   # first attempt on chunk 0 fails
-                 (True, _ack_reply(CMD_OTA_CHUNK))] +  # retry succeeds
+                 (False, bytearray(64)),                # first attempt times out
+                 (True, _ack_reply(CMD_OTA_CHUNK))] +   # retry succeeds
                 [(True, _ack_reply(CMD_OTA_CHUNK))] * (n - 1) +
                 [(True, _ack_reply(CMD_OTA_COMMIT))]
             )
