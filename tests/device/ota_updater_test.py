@@ -493,6 +493,25 @@ class TestFlashFirmwareBegin(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    def test_begin_windows_empty_reply_treated_as_dropout(self):
+        # On Windows hidapi returns (True, empty_bytes) on USB disconnect instead
+        # of raising an exception.  An empty reply must trigger the reconnect path.
+        fw   = _make_polykybd_fw()
+        path = _write_bin(fw)
+        try:
+            n = _chunks(fw)
+            hid = _make_hid(
+                [(True, bytearray(0))] +                      # empty reply = Windows dropout
+                [(True, _ack_reply(CMD_OTA_CHUNK))] * n +
+                [(True, _ack_reply(CMD_OTA_COMMIT))],
+                reconnect=True,
+            )
+            ok, msg = flash_firmware(hid, path)
+            self.assertTrue(ok, msg)
+            hid.wait_for_reconnect.assert_called_once_with(timeout_s=60)
+        finally:
+            os.unlink(path)
+
     def test_begin_usb_dropout_reconnect_timeout_fails(self):
         fw   = _make_polykybd_fw()
         path = _write_bin(fw)
