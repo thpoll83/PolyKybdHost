@@ -8,7 +8,12 @@ Every valid RP2040 .bin starts with a 256-byte boot2 block whose last 4
 bytes are the CRC32 of the preceding 252 bytes, followed by an ARM
 Cortex-M0+ vector table (initial SP at offset 256, reset vector at 260).
 The helper _make_fw() builds the smallest binary that passes
-validate_rp2040_firmware() — 264 bytes, which spans 5 OTA chunks of 56 B.
+validate_rp2040_firmware() -- 264 bytes.
+
+For flash_firmware() tests, _make_polykybd_fw() is used instead:
+it appends the UTF-16LE signature "PolyKybd" so the binary also passes
+validate_polykybd_firmware().  _make_polykybd_fw() without extra args is
+280 bytes (264 + 16), which is exactly 5 OTA chunks of 56 B.
 """
 import binascii
 import struct
@@ -21,6 +26,7 @@ from polyhost.device.ota_updater import (
     get_fw_version,
     flash_firmware,
     validate_rp2040_firmware,
+    validate_polykybd_firmware,
     HID_POLYKYBD,
     CMD_OTA_GET_VERSION,
     CMD_OTA_BEGIN,
@@ -32,6 +38,7 @@ from polyhost.device.ota_updater import (
     _RP2040_BOOT2_SIZE,
     _RP2040_SRAM_BASE,
     _RP2040_SRAM_END,
+    _POLYKYBD_SIGNATURES,
 )
 
 ACK  = ord('.')
@@ -49,10 +56,20 @@ _VECTOR_TABLE  = struct.pack('<II', 0x20010000, 0x10000101)
 # 264-byte header that passes validate_rp2040_firmware()
 _RP2040_HEADER = _BOOT2_PAYLOAD + _BOOT2_CRC + _VECTOR_TABLE
 
+# UTF-16LE encoding of "PolyKybd" — one of the _POLYKYBD_SIGNATURES
+_POLYKYBD_SIG = "PolyKybd".encode('utf-16-le')   # 16 bytes
+
 
 def _make_fw(extra: bytes = b'') -> bytes:
-    """Return a valid RP2040 binary with optional extra payload appended."""
+    """Return a valid RP2040 binary with optional extra payload appended.
+    Passes validate_rp2040_firmware(); does NOT contain a PolyKybd signature."""
     return _RP2040_HEADER + extra
+
+
+def _make_polykybd_fw(extra: bytes = b'') -> bytes:
+    """Return a valid RP2040 binary that also passes validate_polykybd_firmware().
+    Without extra args: 280 bytes = exactly 5 OTA chunks of 56 B."""
+    return _RP2040_HEADER + _POLYKYBD_SIG + extra
 
 
 def _chunks(fw: bytes) -> int:
@@ -157,7 +174,6 @@ class TestValidateRp2040Firmware(unittest.TestCase):
         self.assertIn('.uf2', msg)
 
     def test_sp_below_sram_fails(self):
-        # SP just below SRAM base
         fw = bytearray(_make_fw())
         struct.pack_into('<I', fw, _RP2040_BOOT2_SIZE, _RP2040_SRAM_BASE - 4)
         ok, msg = validate_rp2040_firmware(bytes(fw))
@@ -184,14 +200,12 @@ class TestValidateRp2040Firmware(unittest.TestCase):
         self.assertTrue(ok)
 
     def test_uf2_magic_fails_boot2_check(self):
-        # UF2 files start with 0x0A324655 and 0x9E5D5157 — no valid boot2 CRC
         uf2_magic = struct.pack('<II', 0x0A324655, 0x9E5D5157) + bytes(260)
         ok, msg = validate_rp2040_firmware(uf2_magic)
         self.assertFalse(ok)
 
     def test_random_data_fails(self):
         import hashlib
-        # Use deterministic pseudo-random data (sha256 expansion)
         rnd = hashlib.sha256(b'seed').digest() * 16  # 512 bytes
         ok, _ = validate_rp2040_firmware(rnd[:264])
         self.assertFalse(ok)
@@ -202,9 +216,55 @@ class TestValidateRp2040Firmware(unittest.TestCase):
         self.assertTrue(ok)
 
     def test_validate_only_inspects_first_264_bytes(self):
-        # Garbage appended after the header must not affect the result
         fw = _make_fw(b'\xFF' * 1000)
         ok, _ = validate_rp2040_firmware(fw)
+        self.assertTrue(ok)
+
+
+# ---------------------------------------------------------------------------
+# validate_polykybd_firmware
+# ---------------------------------------------------------------------------
+
+class TestValidatePolykybdFirmware(unittest.TestCase):
+
+    def test_utf16le_product_name_detected(self):
+        # "PolyKybd" as UTF-16LE is one of the registered signatures
+        sig = "PolyKybd".encode('utf-16-le')
+        ok, msg = validate_polykybd_firmware(_make_fw(sig))
+        self.assertTrue(ok)
+        self.assertEqual(msg, '')
+
+    def test_utf16le_manufacturer_detected(self):
+        sig = "PolyFabriq".encode('utf-16-le')
+        ok, _ = validate_polykybd_firmware(_make_fw(sig))
+        self.assertTrue(ok)
+
+    def test_ascii_keyboard_path_detected(self):
+        ok, _ = validate_polykybd_firmware(_make_fw(b'handwired/polykybd'))
+        self.assertTrue(ok)
+
+    def test_all_signatures_present_passes(self):
+        payload = (
+            "PolyKybd".encode('utf-16-le') +
+            "PolyFabriq".encode('utf-16-le') +
+            b'handwired/polykybd'
+        )
+        ok, _ = validate_polykybd_firmware(_make_fw(payload))
+        self.assertTrue(ok)
+
+    def test_no_signature_fails(self):
+        # A valid RP2040 binary with no PolyKybd strings
+        ok, msg = validate_polykybd_firmware(_make_fw())
+        self.assertFalse(ok)
+        self.assertIn('PolyKybd', msg)
+
+    def test_error_mentions_keyboard_path(self):
+        _, msg = validate_polykybd_firmware(_make_fw())
+        self.assertIn('handwired/polykybd', msg)
+
+    def test_accepts_bytearray(self):
+        sig = "PolyKybd".encode('utf-16-le')
+        ok, _ = validate_polykybd_firmware(bytearray(_make_fw(sig)))
         self.assertTrue(ok)
 
 
@@ -276,7 +336,7 @@ class TestGetFwVersion(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# flash_firmware — input validation
+# flash_firmware -- input validation
 # ---------------------------------------------------------------------------
 
 class TestFlashFirmwareValidation(unittest.TestCase):
@@ -300,7 +360,6 @@ class TestFlashFirmwareValidation(unittest.TestCase):
             os.unlink(path)
 
     def test_invalid_rp2040_binary_returns_false(self):
-        # Random bytes that won't have a valid boot2 CRC
         path = _write_bin(b'\xAB' * 300)
         try:
             ok, msg = flash_firmware(MagicMock(), path)
@@ -320,11 +379,23 @@ class TestFlashFirmwareValidation(unittest.TestCase):
         finally:
             os.unlink(path)
 
-    def test_valid_rp2040_binary_proceeds_to_hid(self):
-        fw = _make_fw()
+    def test_non_polykybd_rp2040_binary_rejected(self):
+        # Passes validate_rp2040_firmware() but has no PolyKybd signatures
+        path = _write_bin(_make_fw())
+        hid = MagicMock()
+        try:
+            ok, msg = flash_firmware(hid, path)
+            self.assertFalse(ok)
+            self.assertIn('PolyKybd', msg)
+            hid.send_and_read.assert_not_called()
+        finally:
+            os.unlink(path)
+
+    def test_valid_polykybd_binary_proceeds_to_hid(self):
+        fw = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
-            # BEGIN fails — proves we reached the HID stage
+            # BEGIN fails -- proves we reached the HID stage
             hid = _make_hid([(False, bytearray(64))])
             ok, msg = flash_firmware(hid, path)
             self.assertFalse(ok)
@@ -335,19 +406,18 @@ class TestFlashFirmwareValidation(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# flash_firmware — OTA_BEGIN
+# flash_firmware -- OTA_BEGIN
 # ---------------------------------------------------------------------------
 
 class TestFlashFirmwareBegin(unittest.TestCase):
 
     def test_begin_packet_byte_layout(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             expected_crc = binascii.crc32(fw) & 0xFFFFFFFF
             ok, msg = flash_firmware(_flash_hid(fw), path)
             self.assertTrue(ok)
-            begin_pkt = MagicMock()   # re-flash to capture packet
         finally:
             os.unlink(path)
 
@@ -366,7 +436,7 @@ class TestFlashFirmwareBegin(unittest.TestCase):
             os.unlink(path)
 
     def test_begin_timeout_is_5000ms(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
@@ -378,7 +448,7 @@ class TestFlashFirmwareBegin(unittest.TestCase):
             os.unlink(path)
 
     def test_begin_nack_returns_false(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             hid = _make_hid([(True, _nack_reply(CMD_OTA_BEGIN))])
@@ -389,7 +459,7 @@ class TestFlashFirmwareBegin(unittest.TestCase):
             os.unlink(path)
 
     def test_begin_hid_failure_returns_false(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             hid = _make_hid([(False, bytearray(64))])
@@ -400,17 +470,16 @@ class TestFlashFirmwareBegin(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# flash_firmware — OTA_CHUNK
+# flash_firmware -- OTA_CHUNK
 # ---------------------------------------------------------------------------
 
 class TestFlashFirmwareChunks(unittest.TestCase):
-    """The minimal valid RP2040 binary is 264 bytes = 5 chunks of 56 B.
-    Chunk layout: chunks 0-3 are full (56 B each), chunk 4 has 40 real bytes
-    plus 16 bytes of 0xFF padding.
+    """_make_polykybd_fw() without extra args is 280 bytes = exactly 5 chunks.
+    Chunk layout: all 5 chunks are full (56 B each) — no padding on last chunk.
     """
 
     def test_minimal_firmware_sends_correct_chunk_count(self):
-        fw   = _make_fw()          # 264 bytes = 5 chunks
+        fw   = _make_polykybd_fw()     # 280 bytes = 5 chunks
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
@@ -422,8 +491,8 @@ class TestFlashFirmwareChunks(unittest.TestCase):
             os.unlink(path)
 
     def test_firmware_with_extra_chunk(self):
-        # 336 bytes = 6 chunks
-        fw   = _make_fw(b'\xCD' * (6 * OTA_CHUNK_SIZE - 264))
+        # 280 + 56 = 336 bytes = 6 full chunks
+        fw   = _make_polykybd_fw(b'\xCD' * OTA_CHUNK_SIZE)
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
@@ -434,24 +503,25 @@ class TestFlashFirmwareChunks(unittest.TestCase):
             os.unlink(path)
 
     def test_partial_last_chunk_padded_with_ff(self):
-        # _make_fw() is 264 bytes; chunk 4 (offset 224) has 40 real bytes
-        fw   = _make_fw()
+        # 280 + 1 = 281 bytes = 6 chunks; chunk 5 (offset 280) has 1 real byte
+        # + 55 bytes of 0xFF padding
+        fw   = _make_polykybd_fw(b'\xAB')
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
             flash_firmware(hid, path)
-            # call index 0=BEGIN, 1=chunk0 ... 5=chunk4
-            last_chunk_call = hid.send_and_read.call_args_list[5]
+            # call index 0=BEGIN, 1=chunk0 ... 6=chunk5 (last)
+            last_chunk_call = hid.send_and_read.call_args_list[6]
             pkt = last_chunk_call[0][0]
-            real_bytes = bytes(pkt[6:6 + 40])
-            pad_bytes  = bytes(pkt[6 + 40:6 + OTA_CHUNK_SIZE])
-            self.assertEqual(real_bytes, bytes(fw[224:264]))
-            self.assertEqual(pad_bytes, b'\xff' * 16)
+            real_bytes = bytes(pkt[6:7])                     # 1 real byte
+            pad_bytes  = bytes(pkt[7:6 + OTA_CHUNK_SIZE])   # 55 xFF bytes
+            self.assertEqual(real_bytes, bytes(fw[280:281]))
+            self.assertEqual(pad_bytes, b'\xff' * 55)
         finally:
             os.unlink(path)
 
     def test_chunk_packet_offset_fields(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()   # 5 chunks
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
@@ -467,7 +537,7 @@ class TestFlashFirmwareChunks(unittest.TestCase):
             os.unlink(path)
 
     def test_chunk_timeout_is_5000ms(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
@@ -479,7 +549,7 @@ class TestFlashFirmwareChunks(unittest.TestCase):
             os.unlink(path)
 
     def test_chunk_retried_3_times_on_nack_then_fails(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             hid = _make_hid(
@@ -494,7 +564,7 @@ class TestFlashFirmwareChunks(unittest.TestCase):
             os.unlink(path)
 
     def test_chunk_succeeds_on_second_attempt(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         n    = _chunks(fw)
         try:
@@ -512,13 +582,13 @@ class TestFlashFirmwareChunks(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# flash_firmware — OTA_COMMIT
+# flash_firmware -- OTA_COMMIT
 # ---------------------------------------------------------------------------
 
 class TestFlashFirmwareCommit(unittest.TestCase):
 
     def test_commit_packet_format(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
@@ -530,7 +600,7 @@ class TestFlashFirmwareCommit(unittest.TestCase):
             os.unlink(path)
 
     def test_commit_nack_returns_false(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         n    = _chunks(fw)
         try:
@@ -546,7 +616,7 @@ class TestFlashFirmwareCommit(unittest.TestCase):
             os.unlink(path)
 
     def test_commit_timeout_is_5000ms(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
@@ -558,7 +628,7 @@ class TestFlashFirmwareCommit(unittest.TestCase):
             os.unlink(path)
 
     def test_success_returns_true_with_message(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
@@ -570,13 +640,13 @@ class TestFlashFirmwareCommit(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# flash_firmware — cancellation
+# flash_firmware -- cancellation
 # ---------------------------------------------------------------------------
 
 class TestFlashFirmwareCancellation(unittest.TestCase):
 
     def test_cancel_before_first_chunk(self):
-        fw   = _make_fw(b'\x42' * (OTA_CHUNK_SIZE * 5))
+        fw   = _make_polykybd_fw(b'\x42' * (OTA_CHUNK_SIZE * 5))
         path = _write_bin(fw)
         try:
             cancel_flag = [False]
@@ -599,7 +669,7 @@ class TestFlashFirmwareCancellation(unittest.TestCase):
             os.unlink(path)
 
     def test_cancel_mid_stream(self):
-        fw   = _make_fw(b'\x42' * (OTA_CHUNK_SIZE * 10))
+        fw   = _make_polykybd_fw(b'\x42' * (OTA_CHUNK_SIZE * 10))
         path = _write_bin(fw)
         try:
             cancel_flag = [False]
@@ -624,13 +694,13 @@ class TestFlashFirmwareCancellation(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# flash_firmware — progress callback
+# flash_firmware -- progress callback
 # ---------------------------------------------------------------------------
 
 class TestFlashFirmwareProgress(unittest.TestCase):
 
     def test_progress_callback_called(self):
-        fw   = _make_fw(b'\xAA' * (OTA_CHUNK_SIZE * 3))
+        fw   = _make_polykybd_fw(b'\xAA' * (OTA_CHUNK_SIZE * 3))
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
@@ -641,7 +711,7 @@ class TestFlashFirmwareProgress(unittest.TestCase):
             os.unlink(path)
 
     def test_progress_starts_at_0_and_ends_at_100(self):
-        fw   = _make_fw()
+        fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
@@ -653,7 +723,7 @@ class TestFlashFirmwareProgress(unittest.TestCase):
             os.unlink(path)
 
     def test_progress_never_decreases(self):
-        fw   = _make_fw(b'\xCC' * (OTA_CHUNK_SIZE * 200))
+        fw   = _make_polykybd_fw(b'\xCC' * (OTA_CHUNK_SIZE * 200))
         path = _write_bin(fw)
         try:
             hid = _flash_hid(fw)
@@ -672,7 +742,7 @@ class TestFlashFirmwareProgress(unittest.TestCase):
 class TestCrc32(unittest.TestCase):
 
     def test_crc32_sent_in_begin_matches_python_binascii(self):
-        fw   = _make_fw(bytes(range(256)) * 4)
+        fw   = _make_polykybd_fw(bytes(range(256)) * 4)
         path = _write_bin(fw)
         try:
             expected_crc = binascii.crc32(fw) & 0xFFFFFFFF
