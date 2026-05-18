@@ -2,6 +2,7 @@ import pathlib
 import threading
 import platform
 import os
+import time
 from typing import Any
 if platform.system() == 'Windows':
     import ctypes
@@ -290,6 +291,37 @@ class HidHelper:
 
         return response_report.startswith(expected_prefix), response_report, self.lock
     
+    def wait_for_reconnect(self, timeout_s: int = 60) -> bool:
+        """Close the current interface and poll until the device reappears.
+
+        Called after OTA_BEGIN when flash_range_erase() on the RP2040 disables
+        all interrupts (including USB) for up to ~30 s.  Returns True once the
+        raw-HID interface is open again, False if timeout_s elapses first.
+        """
+        with self.lock:
+            if self.interface:
+                try:
+                    self.interface.close()
+                except Exception:
+                    pass
+                self.interface = None
+
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            interfaces = hid.enumerate(self.settings.VID, self.settings.PID)
+            raw = [i for i in interfaces
+                   if i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE
+                   and i['usage'] == self.settings.HID_RAW_USAGE]
+            if raw:
+                try:
+                    with self.lock:
+                        self.interface = hid.Device(path=raw[0]['path'])
+                    return True
+                except Exception:
+                    pass
+            time.sleep(0.5)
+        return False
+
     def send_and_read(self, data: bytearray, timeout: int) -> tuple[bool, bytearray]:
         if self.interface is None:
             return False, bytearray("No Interface", 'utf-8')

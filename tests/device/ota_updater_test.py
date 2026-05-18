@@ -116,9 +116,10 @@ def _version_reply(version: str, fw_size: int, fw_crc: int) -> bytearray:
     return _ack_reply(CMD_OTA_GET_VERSION, bytes(extra))
 
 
-def _make_hid(side_effects):
+def _make_hid(side_effects, reconnect=False):
     hid = MagicMock()
     hid.send_and_read.side_effect = side_effects
+    hid.wait_for_reconnect.return_value = reconnect
     return hid
 
 
@@ -470,6 +471,38 @@ class TestFlashFirmwareBegin(unittest.TestCase):
             hid = _make_hid([(False, bytearray(64))])
             ok, _ = flash_firmware(hid, path)
             self.assertFalse(ok)
+        finally:
+            os.unlink(path)
+
+    def test_begin_usb_dropout_triggers_reconnect(self):
+        # Simulate the RP2040 flash-erase USB dropout: send_and_read fails
+        # (ok=False), but wait_for_reconnect succeeds and chunks follow.
+        fw   = _make_polykybd_fw()
+        path = _write_bin(fw)
+        try:
+            n = _chunks(fw)
+            hid = _make_hid(
+                [(False, bytearray(64))] +                    # OTA_BEGIN dropout
+                [(True, _ack_reply(CMD_OTA_CHUNK))] * n +
+                [(True, _ack_reply(CMD_OTA_COMMIT))],
+                reconnect=True,                               # reconnect succeeds
+            )
+            ok, msg = flash_firmware(hid, path)
+            self.assertTrue(ok, msg)
+            hid.wait_for_reconnect.assert_called_once_with(timeout_s=60)
+        finally:
+            os.unlink(path)
+
+    def test_begin_usb_dropout_reconnect_timeout_fails(self):
+        fw   = _make_polykybd_fw()
+        path = _write_bin(fw)
+        try:
+            hid = _make_hid([(False, bytearray(64))], reconnect=False)
+            ok, msg = flash_firmware(hid, path)
+            self.assertFalse(ok)
+            self.assertIn('BEGIN', msg)
+            self.assertIn('reconnect', msg)
+            hid.wait_for_reconnect.assert_called_once()
         finally:
             os.unlink(path)
 
