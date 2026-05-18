@@ -2,6 +2,7 @@ import pathlib
 import threading
 import platform
 import os
+import time
 from typing import Any
 if platform.system() == 'Windows':
     import ctypes
@@ -290,6 +291,72 @@ class HidHelper:
 
         return response_report.startswith(expected_prefix), response_report, self.lock
     
+    def close_interface(self):
+        """Close the raw-HID interface without attempting to reopen it.
+
+        Call this before returning from a failed OTA sequence so that pending
+        overlapped I/O operations (Windows) are cancelled and the polling loop
+        can re-enumerate cleanly on the next cycle.
+        """
+        with self.lock:
+            if self.interface:
+                try:
+                    self.interface.close()
+                except Exception:
+                    pass
+                self.interface = None
+
+    def drain_replies(self, max_msgs: int = 16, timeout_ms: int = 20) -> int:
+        """Discard any buffered HID replies; return the number discarded.
+
+        Call this before starting a new command sequence to prevent stale
+        responses from previous commands (e.g. polling loop timeouts that
+        arrived late) from being mistaken for the new command's reply.
+        """
+        if self.interface is None:
+            return 0
+        drained = 0
+        with self.lock:
+            for _ in range(max_msgs):
+                try:
+                    r = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout_ms)
+                    if not r:
+                        break
+                    drained += 1
+                except Exception:
+                    break
+        return drained
+
+    def wait_for_reconnect(self, timeout_s: int = 60) -> bool:        """Close the current interface and poll until the device reappears.
+
+        Called after OTA_BEGIN when flash_range_erase() on the RP2040 disables
+        all interrupts (including USB) for up to ~30 s.  Returns True once the
+        raw-HID interface is open again, False if timeout_s elapses first.
+        """
+        with self.lock:
+            if self.interface:
+                try:
+                    self.interface.close()
+                except Exception:
+                    pass
+                self.interface = None
+
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            interfaces = hid.enumerate(self.settings.VID, self.settings.PID)
+            raw = [i for i in interfaces
+                   if i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE
+                   and i['usage'] == self.settings.HID_RAW_USAGE]
+            if raw:
+                try:
+                    with self.lock:
+                        self.interface = hid.Device(path=raw[0]['path'])
+                    return True
+                except Exception:
+                    pass
+            time.sleep(0.5)
+        return False
+
     def send_and_read(self, data: bytearray, timeout: int) -> tuple[bool, bytearray]:
         if self.interface is None:
             return False, bytearray("No Interface", 'utf-8')
