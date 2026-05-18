@@ -327,7 +327,8 @@ class HidHelper:
                     break
         return drained
 
-    def wait_for_reconnect(self, timeout_s: int = 60) -> bool:        """Close the current interface and poll until the device reappears.
+    def wait_for_reconnect(self, timeout_s: int = 60) -> bool:
+        """Close the current interface and poll until the device reappears.
 
         Called after OTA_BEGIN when flash_range_erase() on the RP2040 disables
         all interrupts (including USB) for up to ~30 s.  Returns True once the
