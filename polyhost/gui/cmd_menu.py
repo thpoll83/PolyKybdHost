@@ -1,8 +1,9 @@
 import logging
 
-from PyQt5.QtWidgets import QAction, QFileDialog
+from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox
 
 from polyhost.device.keys import KeyCode, keycode_to_mapping_idx
+from polyhost.device.ota_updater import get_fw_version
 from polyhost.gui.get_icon import get_icon
 
 
@@ -41,7 +42,7 @@ class CommandsSubMenu:
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.reset_overlay_mapping)
         cmd_menu.addAction(action)
-        
+
         action = QAction(get_icon("toggle_off.svg"), "Clear Overlays Usage", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.reset_overlay_usage)
@@ -91,6 +92,13 @@ class CommandsSubMenu:
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.set_brightness)
         bri_menu.addAction(action)
+
+        cmd_menu.addSeparator()
+
+        action = QAction(get_icon("keyboard_input.svg"), "Flash Firmware (.bin)…", parent=self.parent)
+        # noinspection PyUnresolvedReferences
+        action.triggered.connect(self.open_ota_dialog)
+        cmd_menu.addAction(action)
 
         action = QAction("Test mapping...", parent=self.parent)
         # noinspection PyUnresolvedReferences
@@ -187,7 +195,7 @@ class CommandsSubMenu:
         to_key = keycode_to_mapping_idx(KeyCode.KC_O)
         from_to[from_key] = to_key
         from_to[to_key] = from_key
-        
+
         result, msg = self.keeb.send_overlay_mapping(from_to)
         self.parent.report_device_result("Error", f"Failed to change idle mode: '{msg}'", result)
 
@@ -198,3 +206,59 @@ class CommandsSubMenu:
                 self.keeb.execute_commands(f.readlines())
         else:
             self.log.info("No file selected. Operation canceled.")
+
+    def open_ota_dialog(self):
+        from polyhost.gui.ota_dialog import OtaDialog
+
+        if not self.keeb.hid or not self.keeb.hid.interface_acquired():
+            QMessageBox.warning(None, "Not Connected",
+                                "PolyKybd is not connected. Please connect the keyboard and try again.")
+            return
+
+        bin_path, _ = QFileDialog.getOpenFileName(
+            None, "Select Firmware Binary", "", "Firmware binary (*.bin)")
+        if not bin_path:
+            self.log.info("OTA: no file selected, cancelled.")
+            return
+
+        # Query current keyboard version for the confirmation dialog.
+        ok, info = get_fw_version(self.keeb.hid)
+        if ok:
+            current = info.get('version', '?')
+            size_kb = info.get('fw_size', 0) // 1024
+            confirm_msg = (
+                f"Current keyboard firmware: <b>{current}</b> ({size_kb} KB)<br><br>"
+                f"Selected file:<br>{bin_path}<br><br>"
+                "This will update <b>both keyboard halves</b>. "
+                "The keyboard will reboot when done.<br><br>"
+                "Continue?"
+            )
+        else:
+            confirm_msg = (
+                f"Could not query current firmware version.<br><br>"
+                f"Selected file:<br>{bin_path}<br><br>"
+                "This will update <b>both keyboard halves</b>. "
+                "The keyboard will reboot when done.<br><br>"
+                "Continue?"
+            )
+
+        reply = QMessageBox.question(
+            None, "Flash Firmware", confirm_msg,
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            self.log.info("OTA: user cancelled at confirmation.")
+            return
+
+        # Pause the host polling loop for the duration of the flash so the
+        # HID lock is not contested by the 1 s reconnect timer.
+        host = self.parent
+        was_paused = getattr(host, 'paused', False)
+        if hasattr(host, 'pause') and not was_paused:
+            host.pause()
+
+        try:
+            dlg = OtaDialog(self.keeb.hid, bin_path, parent=host)
+            dlg.exec_()
+        finally:
+            if hasattr(host, 'pause') and not was_paused:
+                host.pause()   # toggle back to resume
