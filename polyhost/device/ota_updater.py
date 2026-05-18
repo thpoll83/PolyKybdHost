@@ -27,6 +27,22 @@ _POLYKYBD_SIGNATURES = (
 )
 
 
+def _crc32_rp2040(data: (bytes, bytearray), seed: int = 0xFFFFFFFF) -> int:
+    """CRC32 as implemented in the RP2040 boot ROM.
+
+    Non-reflected MSB-first variant with polynomial 0x04C11DB7 and no final
+    XOR.  This is NOT the same as Python's binascii.crc32 (CRC-32/ISO-HDLC),
+    which uses a reflected algorithm.  The RP2040 ROM uses this function to
+    verify the 256-byte boot2 stage on every cold boot.
+    """
+    for b in data:
+        seed ^= b << 24
+        for _ in range(8):
+            seed = ((seed << 1) ^ 0x04C11DB7) if (seed & 0x80000000) else (seed << 1)
+            seed &= 0xFFFFFFFF
+    return seed
+
+
 def validate_rp2040_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]:
     """Check that fw_bytes looks like a valid RP2040 QMK .bin image.
 
@@ -54,9 +70,9 @@ def validate_rp2040_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]:
         )
 
     # Boot2 CRC32: bytes [0..251] vs stored little-endian uint32 at [252..255].
-    # Python's binascii.crc32 computes CRC-32/ISO-HDLC, which is identical to
-    # the algorithm used by the RP2040 ROM bootloader.
-    computed_crc = binascii.crc32(fw[:252]) & 0xFFFFFFFF
+    # The RP2040 ROM uses a non-reflected MSB-first CRC32 (_crc32_rp2040),
+    # which differs from Python's binascii.crc32 (reflected CRC-32/ISO-HDLC).
+    computed_crc = _crc32_rp2040(fw[:252])
     stored_crc   = struct.unpack_from('<I', fw, 252)[0]
     if computed_crc != stored_crc:
         return False, (
