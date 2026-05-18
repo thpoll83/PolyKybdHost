@@ -12,9 +12,8 @@ validate_rp2040_firmware() -- 264 bytes.
 
 For flash_firmware() tests, _make_polykybd_fw() is used instead:
 it appends the UTF-16LE encoding of "PolyKybd" so the binary also passes
-validate_polykybd_firmware() ("Poly" UTF-16LE prefix is present).
-_make_polykybd_fw() without extra args is 280 bytes (264 + 16),
-which is exactly 5 OTA chunks of 56 B.
+validate_polykybd_firmware().  _make_polykybd_fw() without extra args is
+280 bytes (264 + 16), which is exactly 5 OTA chunks of 56 B.
 """
 import binascii
 import struct
@@ -57,7 +56,7 @@ _VECTOR_TABLE  = struct.pack('<II', 0x20010000, 0x10000101)
 # 264-byte header that passes validate_rp2040_firmware()
 _RP2040_HEADER = _BOOT2_PAYLOAD + _BOOT2_CRC + _VECTOR_TABLE
 
-# UTF-16LE encoding of "PolyKybd" -- contains the active "Poly" UTF-16LE prefix
+# UTF-16LE encoding of "PolyKybd" -- matches the product-string signature
 _POLYKYBD_SIG = "PolyKybd".encode('utf-16-le')   # 16 bytes
 
 
@@ -227,20 +226,28 @@ class TestValidateRp2040Firmware(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestValidatePolykybdFirmware(unittest.TestCase):
+    """Two separate signature entries, each tested independently:
+      - "PolyKybd" UTF-16LE  covers the USB product string "PolyKybd Split72"
+      - "Poly" UTF-16LE      covers the USB manufacturer prefix "PolyFabriq"
+    Either match is sufficient; tests verify each path independently.
+    """
 
-    def test_poly_utf16le_in_product_string_detected(self):
-        # "PolyKybd" UTF-16LE contains the active "Poly" UTF-16LE prefix
+    def test_product_string_detected(self):
+        # Simulates the USB product descriptor "PolyKybd Split72" in the binary
         ok, msg = validate_polykybd_firmware(_make_fw("PolyKybd".encode('utf-16-le')))
         self.assertTrue(ok)
         self.assertEqual(msg, '')
 
-    def test_poly_utf16le_in_manufacturer_string_detected(self):
-        # "PolyFabriq" UTF-16LE also contains the "Poly" UTF-16LE prefix
+    def test_manufacturer_string_detected(self):
+        # "PolyFabriq" UTF-16LE contains the "Poly" prefix, so it matches the
+        # manufacturer signature entry
         ok, _ = validate_polykybd_firmware(_make_fw("PolyFabriq".encode('utf-16-le')))
         self.assertTrue(ok)
 
-    def test_poly_utf16le_prefix_alone_is_sufficient(self):
-        ok, _ = validate_polykybd_firmware(_make_fw("Poly".encode('utf-16-le')))
+    def test_manufacturer_prefix_alone_is_sufficient(self):
+        # A hypothetical manufacturer name change still passes as long as it
+        # starts with "Poly"
+        ok, _ = validate_polykybd_firmware(_make_fw("PolyNewName".encode('utf-16-le')))
         self.assertTrue(ok)
 
     def test_no_signature_fails(self):
@@ -250,8 +257,7 @@ class TestValidatePolykybdFirmware(unittest.TestCase):
         self.assertIn('PolyKybd', msg)
 
     def test_ascii_poly_string_does_not_pass(self):
-        # ASCII "PolyKybd" lacks the UTF-16LE interleaved zero bytes, so it
-        # does not match the UTF-16LE signature
+        # Plain ASCII "PolyKybd" lacks the UTF-16LE interleaved zero bytes
         ok, _ = validate_polykybd_firmware(_make_fw(b'PolyKybd'))
         self.assertFalse(ok)
 

@@ -17,12 +17,13 @@ _RP2040_SRAM_BASE   = 0x20000000
 _RP2040_SRAM_END    = 0x20042000   # 264 KB SRAM
 
 # Strings embedded in every PolyKybd Split72 QMK binary.
-# USB descriptor strings are stored as UTF-16LE.  "Poly" as UTF-16LE is a
-# common prefix of both the product name ("PolyKybd Split72") and the
-# manufacturer string ("PolyFabriq"), so one entry covers both.
+# USB descriptor strings are stored as UTF-16LE.  Two separate entries keep
+# the product-name check and the manufacturer check explicit and independently
+# evolvable.
 _POLYKYBD_SIGNATURES = (
-    "Poly".encode('utf-16-le'),    # prefix of USB product "PolyKybd Split72" and manufacturer "PolyFabriq"
-    # b'handwired/polykybd',       # QMK_KEYBOARD path (ASCII) -- commented out: path may change
+    "PolyKybd".encode('utf-16-le'),   # USB product string  (keyboard_name = "PolyKybd Split72")
+    "Poly".encode('utf-16-le'),       # USB manufacturer prefix (manufacturer = "PolyFabriq")
+    # b'handwired/polykybd',           # QMK_KEYBOARD path (ASCII) -- commented out: path may change
 )
 
 
@@ -83,8 +84,8 @@ def validate_polykybd_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]
     """Check that fw_bytes contains at least one PolyKybd-specific signature.
 
     QMK embeds the USB product name ("PolyKybd Split72") and manufacturer
-    ("PolyFabriq") as UTF-16LE USB string descriptors.  Both start with
-    "Poly", so a single UTF-16LE "Poly" search covers both.
+    ("PolyFabriq") as UTF-16LE USB string descriptors.  The signatures table
+    carries one entry per logical check so each can be updated independently.
 
     The full firmware image must be passed; a 264-byte header is not enough.
 
