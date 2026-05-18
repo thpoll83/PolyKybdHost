@@ -88,7 +88,10 @@ class OtaDialog(QDialog):
         self._success = ok
         self._progress_bar.setValue(100 if ok else self._progress_bar.value())
         self._status_label.setText(msg)
-        self.log.info("OTA finished: ok=%s — %s", ok, msg)
+        if ok:
+            self.log.info("OTA finished: ok=%s — %s", ok, msg)
+        else:
+            self.log.warning("OTA finished: ok=%s — %s", ok, msg)
 
         self._cancel_btn.setText("Close")
         self._cancel_btn.clicked.disconnect()

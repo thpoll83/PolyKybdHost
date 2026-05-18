@@ -188,13 +188,14 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     # fast erase on a warm chip), that path works too.
     pkt = bytearray([HID_POLYKYBD, CMD_OTA_BEGIN]) + struct.pack('<II', fw_size, fw_crc)
     ok, reply = hid.send_and_read(pkt, timeout=5000)
-    got_ack = ok and len(reply) >= 3 and reply[2] == ord('.')
+    got_ack  = ok and len(reply) >= 3 and reply[2] == ord('.')
+    got_nack = ok and len(reply) >= 3 and reply[2] != ord('.')  # explicit firmware reject
     if not got_ack:
-        if ok:
-            # Device is connected but firmware rejected the command — not a USB dropout.
+        if got_nack:
+            # Device replied but rejected the command — not a USB dropout.
             return False, "OTA_BEGIN failed — keyboard rejected the request (unexpected response)."
-        # USB failure is expected: flash_range_erase() disables all interrupts on the
-        # RP2040 (including USB) for up to ~30 s.  Wait for the device to come back.
+        # ok=False (exception) OR ok=True with empty reply (Windows USB dropout returns
+        # empty bytes instead of raising).  Both mean the device went silent during erase.
         report(1, "Erasing staging area — keyboard will reconnect when done (up to 30 s)…")
         if not hid.wait_for_reconnect(timeout_s=60):
             return False, ("OTA_BEGIN failed — keyboard did not reconnect within 60 s. "
