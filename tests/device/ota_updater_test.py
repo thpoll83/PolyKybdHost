@@ -1,17 +1,26 @@
 """Tests for polyhost.device.ota_updater.
 
 All tests use a lightweight mock HID object; no real hardware is required.
+
+Firmware fixture
+----------------
+Every valid RP2040 .bin starts with a 256-byte boot2 block whose last 4
+bytes are the CRC32 of the preceding 252 bytes, followed by an ARM
+Cortex-M0+ vector table (initial SP at offset 256, reset vector at 260).
+The helper _make_fw() builds the smallest binary that passes
+validate_rp2040_firmware() — 264 bytes, which spans 5 OTA chunks of 56 B.
 """
 import binascii
 import struct
 import tempfile
 import os
 import unittest
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 from polyhost.device.ota_updater import (
     get_fw_version,
     flash_firmware,
+    validate_rp2040_firmware,
     HID_POLYKYBD,
     CMD_OTA_GET_VERSION,
     CMD_OTA_BEGIN,
@@ -20,14 +29,48 @@ from polyhost.device.ota_updater import (
     OTA_CHUNK_SIZE,
     OTA_VERSION_LEN,
     OTA_MAX_FW_SIZE,
+    _RP2040_BOOT2_SIZE,
+    _RP2040_SRAM_BASE,
+    _RP2040_SRAM_END,
 )
 
-ACK = ord('.')
+ACK  = ord('.')
 NACK = ord('!')
 
+# ---------------------------------------------------------------------------
+# Firmware fixture helpers
+# ---------------------------------------------------------------------------
+
+# Minimal valid boot2: 252 zero bytes + correct CRC32
+_BOOT2_PAYLOAD = bytes(252)
+_BOOT2_CRC     = struct.pack('<I', binascii.crc32(_BOOT2_PAYLOAD) & 0xFFFFFFFF)
+# ARM Cortex-M0+ vector table: SP in SRAM, thumb reset vector in flash
+_VECTOR_TABLE  = struct.pack('<II', 0x20010000, 0x10000101)
+# 264-byte header that passes validate_rp2040_firmware()
+_RP2040_HEADER = _BOOT2_PAYLOAD + _BOOT2_CRC + _VECTOR_TABLE
+
+
+def _make_fw(extra: bytes = b'') -> bytes:
+    """Return a valid RP2040 binary with optional extra payload appended."""
+    return _RP2040_HEADER + extra
+
+
+def _chunks(fw: bytes) -> int:
+    return (len(fw) + OTA_CHUNK_SIZE - 1) // OTA_CHUNK_SIZE
+
+
+def _write_bin(data: bytes) -> str:
+    fd, path = tempfile.mkstemp(suffix='.bin')
+    os.write(fd, data)
+    os.close(fd)
+    return path
+
+
+# ---------------------------------------------------------------------------
+# HID mock helpers
+# ---------------------------------------------------------------------------
 
 def _ack_reply(cmd: int, extra: bytes = b'') -> bytearray:
-    """Build a 64-byte ACK reply for a given command."""
     buf = bytearray(64)
     buf[0] = HID_POLYKYBD
     buf[1] = cmd
@@ -45,7 +88,6 @@ def _nack_reply(cmd: int) -> bytearray:
 
 
 def _version_reply(version: str, fw_size: int, fw_crc: int) -> bytearray:
-    """Build a proper GET_FW_VERSION response."""
     extra = bytearray(OTA_VERSION_LEN + 8)
     encoded = version.encode('utf-8')[:OTA_VERSION_LEN]
     extra[:len(encoded)] = encoded
@@ -55,18 +97,115 @@ def _version_reply(version: str, fw_size: int, fw_crc: int) -> bytearray:
 
 
 def _make_hid(side_effects):
-    """Return a mock HID whose send_and_read returns successive side_effects."""
     hid = MagicMock()
     hid.send_and_read.side_effect = side_effects
     return hid
 
 
-def _write_bin(data: bytes) -> str:
-    """Write data to a temp .bin file, return the path."""
-    fd, path = tempfile.mkstemp(suffix='.bin')
-    os.write(fd, data)
-    os.close(fd)
-    return path
+def _flash_hid(fw: bytes):
+    """Build a mock HID that ACKs the exact sequence for the given firmware."""
+    n = _chunks(fw)
+    return _make_hid(
+        [(True, _ack_reply(CMD_OTA_BEGIN))] +
+        [(True, _ack_reply(CMD_OTA_CHUNK))] * n +
+        [(True, _ack_reply(CMD_OTA_COMMIT))]
+    )
+
+
+# ---------------------------------------------------------------------------
+# validate_rp2040_firmware
+# ---------------------------------------------------------------------------
+
+class TestValidateRp2040Firmware(unittest.TestCase):
+
+    def test_valid_header_passes(self):
+        ok, msg = validate_rp2040_firmware(_make_fw())
+        self.assertTrue(ok)
+        self.assertEqual(msg, '')
+
+    def test_accepts_bytearray(self):
+        ok, _ = validate_rp2040_firmware(bytearray(_make_fw()))
+        self.assertTrue(ok)
+
+    def test_accepts_exactly_264_bytes(self):
+        ok, _ = validate_rp2040_firmware(_make_fw())
+        self.assertEqual(len(_make_fw()), 264)
+        self.assertTrue(ok)
+
+    def test_too_small_fails(self):
+        ok, msg = validate_rp2040_firmware(b'\x00' * 263)
+        self.assertFalse(ok)
+        self.assertIn('too small', msg.lower())
+
+    def test_empty_fails(self):
+        ok, msg = validate_rp2040_firmware(b'')
+        self.assertFalse(ok)
+
+    def test_bad_boot2_crc_fails(self):
+        fw = bytearray(_make_fw())
+        fw[252] ^= 0xFF   # corrupt the stored CRC
+        ok, msg = validate_rp2040_firmware(bytes(fw))
+        self.assertFalse(ok)
+        self.assertIn('CRC32', msg)
+        self.assertIn('boot2', msg.lower())
+
+    def test_error_message_mentions_bin_not_uf2(self):
+        fw = bytearray(_make_fw())
+        fw[252] ^= 0xFF
+        _, msg = validate_rp2040_firmware(bytes(fw))
+        self.assertIn('.bin', msg)
+        self.assertIn('.uf2', msg)
+
+    def test_sp_below_sram_fails(self):
+        # SP just below SRAM base
+        fw = bytearray(_make_fw())
+        struct.pack_into('<I', fw, _RP2040_BOOT2_SIZE, _RP2040_SRAM_BASE - 4)
+        ok, msg = validate_rp2040_firmware(bytes(fw))
+        self.assertFalse(ok)
+        self.assertIn('SP', msg)
+
+    def test_sp_above_sram_fails(self):
+        fw = bytearray(_make_fw())
+        struct.pack_into('<I', fw, _RP2040_BOOT2_SIZE, _RP2040_SRAM_END + 4)
+        ok, msg = validate_rp2040_firmware(bytes(fw))
+        self.assertFalse(ok)
+        self.assertIn('SP', msg)
+
+    def test_sp_at_sram_base_passes(self):
+        fw = bytearray(_make_fw())
+        struct.pack_into('<I', fw, _RP2040_BOOT2_SIZE, _RP2040_SRAM_BASE)
+        ok, _ = validate_rp2040_firmware(bytes(fw))
+        self.assertTrue(ok)
+
+    def test_sp_at_sram_end_passes(self):
+        fw = bytearray(_make_fw())
+        struct.pack_into('<I', fw, _RP2040_BOOT2_SIZE, _RP2040_SRAM_END)
+        ok, _ = validate_rp2040_firmware(bytes(fw))
+        self.assertTrue(ok)
+
+    def test_uf2_magic_fails_boot2_check(self):
+        # UF2 files start with 0x0A324655 and 0x9E5D5157 — no valid boot2 CRC
+        uf2_magic = struct.pack('<II', 0x0A324655, 0x9E5D5157) + bytes(260)
+        ok, msg = validate_rp2040_firmware(uf2_magic)
+        self.assertFalse(ok)
+
+    def test_random_data_fails(self):
+        import hashlib
+        # Use deterministic pseudo-random data (sha256 expansion)
+        rnd = hashlib.sha256(b'seed').digest() * 16  # 512 bytes
+        ok, _ = validate_rp2040_firmware(rnd[:264])
+        self.assertFalse(ok)
+
+    def test_valid_large_firmware_passes(self):
+        fw = _make_fw(b'\xAB' * (512 * 1024 - 264))
+        ok, _ = validate_rp2040_firmware(fw)
+        self.assertTrue(ok)
+
+    def test_validate_only_inspects_first_264_bytes(self):
+        # Garbage appended after the header must not affect the result
+        fw = _make_fw(b'\xFF' * 1000)
+        ok, _ = validate_rp2040_firmware(fw)
+        self.assertTrue(ok)
 
 
 # ---------------------------------------------------------------------------
@@ -76,29 +215,28 @@ def _write_bin(data: bytes) -> str:
 class TestGetFwVersion(unittest.TestCase):
 
     def test_happy_path_parses_all_fields(self):
-        version = "0.7.2"
+        version = '0.7.2'
         fw_size = 512 * 1024
         fw_crc  = 0xDEADBEEF
         hid = _make_hid([(True, _version_reply(version, fw_size, fw_crc))])
-
         ok, info = get_fw_version(hid)
-
         self.assertTrue(ok)
         self.assertEqual(info['version'], version)
         self.assertEqual(info['fw_size'], fw_size)
         self.assertEqual(info['fw_crc'], fw_crc)
 
     def test_request_packet_format(self):
-        hid = _make_hid([(True, _version_reply("1.0", 0, 0))])
+        hid = _make_hid([(True, _version_reply('1.0', 0, 0))])
         get_fw_version(hid)
-        sent_pkt = hid.send_and_read.call_args[0][0]
-        self.assertEqual(sent_pkt[0], HID_POLYKYBD)
-        self.assertEqual(sent_pkt[1], CMD_OTA_GET_VERSION)
+        pkt = hid.send_and_read.call_args[0][0]
+        self.assertEqual(pkt[0], HID_POLYKYBD)
+        self.assertEqual(pkt[1], CMD_OTA_GET_VERSION)
 
     def test_request_uses_5000ms_timeout(self):
-        hid = _make_hid([(True, _version_reply("1.0", 0, 0))])
+        hid = _make_hid([(True, _version_reply('1.0', 0, 0))])
         get_fw_version(hid)
-        timeout = hid.send_and_read.call_args[1].get('timeout') or hid.send_and_read.call_args[0][1]
+        c = hid.send_and_read.call_args
+        timeout = c[1].get('timeout') or c[0][1]
         self.assertEqual(timeout, 5000)
 
     def test_hid_failure_returns_false(self):
@@ -109,30 +247,30 @@ class TestGetFwVersion(unittest.TestCase):
 
     def test_short_reply_returns_false(self):
         hid = _make_hid([(True, bytearray(10))])
-        ok, info = get_fw_version(hid)
+        ok, _ = get_fw_version(hid)
         self.assertFalse(ok)
 
     def test_nack_returns_false(self):
         hid = _make_hid([(True, _nack_reply(CMD_OTA_GET_VERSION))])
-        ok, info = get_fw_version(hid)
+        ok, _ = get_fw_version(hid)
         self.assertFalse(ok)
 
     def test_wrong_marker_byte_returns_false(self):
-        reply = _version_reply("1.0", 0, 0)
-        reply[0] = 0x00   # corrupt marker
+        reply = bytearray(_version_reply('1.0', 0, 0))
+        reply[0] = 0x00
         hid = _make_hid([(True, reply)])
-        ok, info = get_fw_version(hid)
+        ok, _ = get_fw_version(hid)
         self.assertFalse(ok)
 
     def test_wrong_command_echo_returns_false(self):
-        reply = _version_reply("1.0", 0, 0)
-        reply[1] = 0xFF   # wrong command echo
+        reply = bytearray(_version_reply('1.0', 0, 0))
+        reply[1] = 0xFF
         hid = _make_hid([(True, reply)])
-        ok, info = get_fw_version(hid)
+        ok, _ = get_fw_version(hid)
         self.assertFalse(ok)
 
     def test_version_string_null_trimmed(self):
-        hid = _make_hid([(True, _version_reply("0.7.1", 0, 0))])
+        hid = _make_hid([(True, _version_reply('0.7.1', 0, 0))])
         _, info = get_fw_version(hid)
         self.assertNotIn('\x00', info['version'])
 
@@ -148,7 +286,7 @@ class TestFlashFirmwareValidation(unittest.TestCase):
         try:
             ok, msg = flash_firmware(MagicMock(), path)
             self.assertFalse(ok)
-            self.assertIn("empty", msg.lower())
+            self.assertIn('empty', msg.lower())
         finally:
             os.unlink(path)
 
@@ -157,20 +295,41 @@ class TestFlashFirmwareValidation(unittest.TestCase):
         try:
             ok, msg = flash_firmware(MagicMock(), path)
             self.assertFalse(ok)
-            self.assertIn("large", msg.lower())
+            self.assertIn('large', msg.lower())
         finally:
             os.unlink(path)
 
-    def test_exactly_max_size_is_accepted_by_validation(self):
-        # Passes size check — BEGIN would fail without a real HID, but that
-        # means we get past the validation gate.
-        fw = b'\xAB' * OTA_MAX_FW_SIZE
+    def test_invalid_rp2040_binary_returns_false(self):
+        # Random bytes that won't have a valid boot2 CRC
+        path = _write_bin(b'\xAB' * 300)
+        try:
+            ok, msg = flash_firmware(MagicMock(), path)
+            self.assertFalse(ok)
+            self.assertIn('CRC32', msg)
+        finally:
+            os.unlink(path)
+
+    def test_uf2_file_rejected_before_hid_traffic(self):
+        uf2_magic = struct.pack('<II', 0x0A324655, 0x9E5D5157) + bytes(300)
+        path = _write_bin(uf2_magic)
+        hid = MagicMock()
+        try:
+            ok, msg = flash_firmware(hid, path)
+            self.assertFalse(ok)
+            hid.send_and_read.assert_not_called()
+        finally:
+            os.unlink(path)
+
+    def test_valid_rp2040_binary_proceeds_to_hid(self):
+        fw = _make_fw()
         path = _write_bin(fw)
         try:
+            # BEGIN fails — proves we reached the HID stage
             hid = _make_hid([(False, bytearray(64))])
             ok, msg = flash_firmware(hid, path)
             self.assertFalse(ok)
-            self.assertIn("BEGIN", msg)
+            self.assertIn('BEGIN', msg)
+            hid.send_and_read.assert_called_once()
         finally:
             os.unlink(path)
 
@@ -181,21 +340,20 @@ class TestFlashFirmwareValidation(unittest.TestCase):
 
 class TestFlashFirmwareBegin(unittest.TestCase):
 
-    def _fw_and_path(self, size=112):
-        fw = bytes(range(size % 256)) * (size // 256 + 1)
-        fw = fw[:size]
-        return fw, _write_bin(fw)
-
     def test_begin_packet_byte_layout(self):
-        fw, path = self._fw_and_path(112)
+        fw   = _make_fw()
+        path = _write_bin(fw)
         try:
-            fw_crc = binascii.crc32(fw) & 0xFFFFFFFF
-            chunks = (len(fw) + OTA_CHUNK_SIZE - 1) // OTA_CHUNK_SIZE
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN))] +
-                [(True, _ack_reply(CMD_OTA_CHUNK))] * chunks +
-                [(True, _ack_reply(CMD_OTA_COMMIT))]
-            )
+            expected_crc = binascii.crc32(fw) & 0xFFFFFFFF
+            ok, msg = flash_firmware(_flash_hid(fw), path)
+            self.assertTrue(ok)
+            begin_pkt = MagicMock()   # re-flash to capture packet
+        finally:
+            os.unlink(path)
+
+        path = _write_bin(fw)
+        try:
+            hid = _flash_hid(fw)
             flash_firmware(hid, path)
             begin_pkt = hid.send_and_read.call_args_list[0][0][0]
             self.assertEqual(begin_pkt[0], HID_POLYKYBD)
@@ -203,40 +361,39 @@ class TestFlashFirmwareBegin(unittest.TestCase):
             size_field = struct.unpack_from('<I', bytes(begin_pkt), 2)[0]
             crc_field  = struct.unpack_from('<I', bytes(begin_pkt), 6)[0]
             self.assertEqual(size_field, len(fw))
-            self.assertEqual(crc_field, fw_crc)
+            self.assertEqual(crc_field, expected_crc)
         finally:
             os.unlink(path)
 
     def test_begin_timeout_is_5000ms(self):
-        fw, path = self._fw_and_path(56)
+        fw   = _make_fw()
+        path = _write_bin(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN))] +
-                [(True, _ack_reply(CMD_OTA_CHUNK))] +
-                [(True, _ack_reply(CMD_OTA_COMMIT))]
-            )
+            hid = _flash_hid(fw)
             flash_firmware(hid, path)
-            begin_call = hid.send_and_read.call_args_list[0]
-            timeout = begin_call[1].get('timeout') or begin_call[0][1]
+            c = hid.send_and_read.call_args_list[0]
+            timeout = c[1].get('timeout') or c[0][1]
             self.assertEqual(timeout, 5000)
         finally:
             os.unlink(path)
 
     def test_begin_nack_returns_false(self):
-        fw, path = self._fw_and_path(56)
+        fw   = _make_fw()
+        path = _write_bin(fw)
         try:
             hid = _make_hid([(True, _nack_reply(CMD_OTA_BEGIN))])
             ok, msg = flash_firmware(hid, path)
             self.assertFalse(ok)
-            self.assertIn("BEGIN", msg)
+            self.assertIn('BEGIN', msg)
         finally:
             os.unlink(path)
 
     def test_begin_hid_failure_returns_false(self):
-        fw, path = self._fw_and_path(56)
+        fw   = _make_fw()
+        path = _write_bin(fw)
         try:
             hid = _make_hid([(False, bytearray(64))])
-            ok, msg = flash_firmware(hid, path)
+            ok, _ = flash_firmware(hid, path)
             self.assertFalse(ok)
         finally:
             os.unlink(path)
@@ -247,64 +404,61 @@ class TestFlashFirmwareBegin(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestFlashFirmwareChunks(unittest.TestCase):
+    """The minimal valid RP2040 binary is 264 bytes = 5 chunks of 56 B.
+    Chunk layout: chunks 0-3 are full (56 B each), chunk 4 has 40 real bytes
+    plus 16 bytes of 0xFF padding.
+    """
 
-    def _simple_flash(self, fw: bytes):
-        path = _write_bin(fw)
-        chunks = (len(fw) + OTA_CHUNK_SIZE - 1) // OTA_CHUNK_SIZE
-        hid = _make_hid(
-            [(True, _ack_reply(CMD_OTA_BEGIN))] +
-            [(True, _ack_reply(CMD_OTA_CHUNK))] * chunks +
-            [(True, _ack_reply(CMD_OTA_COMMIT))]
-        )
-        ok, msg = flash_firmware(hid, path)
-        os.unlink(path)
-        return ok, msg, hid, chunks
-
-    def test_single_chunk_firmware(self):
-        ok, msg, hid, chunks = self._simple_flash(b'\xAB' * OTA_CHUNK_SIZE)
-        self.assertTrue(ok)
-        self.assertEqual(chunks, 1)
-        self.assertEqual(hid.send_and_read.call_count, 3)  # BEGIN + 1 CHUNK + COMMIT
-
-    def test_exact_two_chunks(self):
-        ok, _, hid, chunks = self._simple_flash(b'\xCD' * (OTA_CHUNK_SIZE * 2))
-        self.assertTrue(ok)
-        self.assertEqual(chunks, 2)
-        self.assertEqual(hid.send_and_read.call_count, 4)  # BEGIN + 2 CHUNKS + COMMIT
-
-    def test_partial_last_chunk_padded_with_ff(self):
-        fw = b'\x11' * (OTA_CHUNK_SIZE + 3)   # 3 bytes in second chunk
+    def test_minimal_firmware_sends_correct_chunk_count(self):
+        fw   = _make_fw()          # 264 bytes = 5 chunks
         path = _write_bin(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN))] +
-                [(True, _ack_reply(CMD_OTA_CHUNK))] * 2 +
-                [(True, _ack_reply(CMD_OTA_COMMIT))]
-            )
-            flash_firmware(hid, path)
-            last_chunk_call = hid.send_and_read.call_args_list[2]  # 0=BEGIN,1=chunk0,2=chunk1
-            pkt = last_chunk_call[0][0]
-            # bytes [6..8] are the 3 real bytes; [9..61] should be 0xFF padding
-            real_data = bytes(pkt[6:9])
-            pad_data  = bytes(pkt[9:6 + OTA_CHUNK_SIZE])
-            self.assertEqual(real_data, b'\x11' * 3)
-            self.assertEqual(pad_data, b'\xff' * (OTA_CHUNK_SIZE - 3))
+            hid = _flash_hid(fw)
+            ok, _ = flash_firmware(hid, path)
+            self.assertTrue(ok)
+            # 1 BEGIN + 5 CHUNKS + 1 COMMIT
+            self.assertEqual(hid.send_and_read.call_count, 7)
         finally:
             os.unlink(path)
 
-    def test_chunk_packet_offset_field(self):
-        fw = b'\x55' * (OTA_CHUNK_SIZE * 3)
+    def test_firmware_with_extra_chunk(self):
+        # 336 bytes = 6 chunks
+        fw   = _make_fw(b'\xCD' * (6 * OTA_CHUNK_SIZE - 264))
         path = _write_bin(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN))] +
-                [(True, _ack_reply(CMD_OTA_CHUNK))] * 3 +
-                [(True, _ack_reply(CMD_OTA_COMMIT))]
-            )
+            hid = _flash_hid(fw)
+            ok, _ = flash_firmware(hid, path)
+            self.assertTrue(ok)
+            self.assertEqual(hid.send_and_read.call_count, 8)  # 1+6+1
+        finally:
+            os.unlink(path)
+
+    def test_partial_last_chunk_padded_with_ff(self):
+        # _make_fw() is 264 bytes; chunk 4 (offset 224) has 40 real bytes
+        fw   = _make_fw()
+        path = _write_bin(fw)
+        try:
+            hid = _flash_hid(fw)
             flash_firmware(hid, path)
-            for i in range(3):
-                chunk_call = hid.send_and_read.call_args_list[1 + i]
-                pkt = chunk_call[0][0]
+            # call index 0=BEGIN, 1=chunk0 ... 5=chunk4
+            last_chunk_call = hid.send_and_read.call_args_list[5]
+            pkt = last_chunk_call[0][0]
+            real_bytes = bytes(pkt[6:6 + 40])
+            pad_bytes  = bytes(pkt[6 + 40:6 + OTA_CHUNK_SIZE])
+            self.assertEqual(real_bytes, bytes(fw[224:264]))
+            self.assertEqual(pad_bytes, b'\xff' * 16)
+        finally:
+            os.unlink(path)
+
+    def test_chunk_packet_offset_fields(self):
+        fw   = _make_fw()
+        path = _write_bin(fw)
+        try:
+            hid = _flash_hid(fw)
+            flash_firmware(hid, path)
+            for i in range(5):
+                call = hid.send_and_read.call_args_list[1 + i]
+                pkt  = call[0][0]
                 self.assertEqual(pkt[0], HID_POLYKYBD)
                 self.assertEqual(pkt[1], CMD_OTA_CHUNK)
                 offset = struct.unpack_from('<I', bytes(pkt), 2)[0]
@@ -313,49 +467,45 @@ class TestFlashFirmwareChunks(unittest.TestCase):
             os.unlink(path)
 
     def test_chunk_timeout_is_5000ms(self):
-        fw = b'\xAA' * OTA_CHUNK_SIZE
+        fw   = _make_fw()
         path = _write_bin(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN))] +
-                [(True, _ack_reply(CMD_OTA_CHUNK))] +
-                [(True, _ack_reply(CMD_OTA_COMMIT))]
-            )
+            hid = _flash_hid(fw)
             flash_firmware(hid, path)
-            chunk_call = hid.send_and_read.call_args_list[1]
-            timeout = chunk_call[1].get('timeout') or chunk_call[0][1]
+            c = hid.send_and_read.call_args_list[1]  # first chunk
+            timeout = c[1].get('timeout') or c[0][1]
             self.assertEqual(timeout, 5000)
         finally:
             os.unlink(path)
 
-    def test_chunk_retried_up_to_3_times_on_nack(self):
-        fw = b'\xBB' * OTA_CHUNK_SIZE
+    def test_chunk_retried_3_times_on_nack_then_fails(self):
+        fw   = _make_fw()
         path = _write_bin(fw)
         try:
-            # 3 NACKs for the single chunk → should fail
             hid = _make_hid(
                 [(True, _ack_reply(CMD_OTA_BEGIN))] +
                 [(True, _nack_reply(CMD_OTA_CHUNK))] * 3
             )
             ok, msg = flash_firmware(hid, path)
             self.assertFalse(ok)
-            self.assertIn("CHUNK", msg)
-            # 1 BEGIN + 3 CHUNK attempts
-            self.assertEqual(hid.send_and_read.call_count, 4)
+            self.assertIn('CHUNK', msg)
+            self.assertEqual(hid.send_and_read.call_count, 4)  # 1 BEGIN + 3 attempts
         finally:
             os.unlink(path)
 
     def test_chunk_succeeds_on_second_attempt(self):
-        fw = b'\xCC' * OTA_CHUNK_SIZE
+        fw   = _make_fw()
         path = _write_bin(fw)
+        n    = _chunks(fw)
         try:
             hid = _make_hid(
                 [(True, _ack_reply(CMD_OTA_BEGIN)),
-                 (True, _nack_reply(CMD_OTA_CHUNK)),   # first attempt fails
-                 (True, _ack_reply(CMD_OTA_CHUNK)),    # second attempt succeeds
-                 (True, _ack_reply(CMD_OTA_COMMIT))]
+                 (True, _nack_reply(CMD_OTA_CHUNK)),   # first attempt on chunk 0 fails
+                 (True, _ack_reply(CMD_OTA_CHUNK))] +  # retry succeeds
+                [(True, _ack_reply(CMD_OTA_CHUNK))] * (n - 1) +
+                [(True, _ack_reply(CMD_OTA_COMMIT))]
             )
-            ok, msg = flash_firmware(hid, path)
+            ok, _ = flash_firmware(hid, path)
             self.assertTrue(ok)
         finally:
             os.unlink(path)
@@ -368,14 +518,10 @@ class TestFlashFirmwareChunks(unittest.TestCase):
 class TestFlashFirmwareCommit(unittest.TestCase):
 
     def test_commit_packet_format(self):
-        fw = b'\x01' * OTA_CHUNK_SIZE
+        fw   = _make_fw()
         path = _write_bin(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN)),
-                 (True, _ack_reply(CMD_OTA_CHUNK)),
-                 (True, _ack_reply(CMD_OTA_COMMIT))]
-            )
+            hid = _flash_hid(fw)
             flash_firmware(hid, path)
             commit_pkt = hid.send_and_read.call_args_list[-1][0][0]
             self.assertEqual(commit_pkt[0], HID_POLYKYBD)
@@ -384,45 +530,38 @@ class TestFlashFirmwareCommit(unittest.TestCase):
             os.unlink(path)
 
     def test_commit_nack_returns_false(self):
-        fw = b'\x01' * OTA_CHUNK_SIZE
+        fw   = _make_fw()
         path = _write_bin(fw)
+        n    = _chunks(fw)
         try:
             hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN)),
-                 (True, _ack_reply(CMD_OTA_CHUNK)),
-                 (True, _nack_reply(CMD_OTA_COMMIT))]
+                [(True, _ack_reply(CMD_OTA_BEGIN))] +
+                [(True, _ack_reply(CMD_OTA_CHUNK))] * n +
+                [(True, _nack_reply(CMD_OTA_COMMIT))]
             )
             ok, msg = flash_firmware(hid, path)
             self.assertFalse(ok)
-            self.assertIn("COMMIT", msg)
+            self.assertIn('COMMIT', msg)
         finally:
             os.unlink(path)
 
     def test_commit_timeout_is_5000ms(self):
-        fw = b'\x01' * OTA_CHUNK_SIZE
+        fw   = _make_fw()
         path = _write_bin(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN)),
-                 (True, _ack_reply(CMD_OTA_CHUNK)),
-                 (True, _ack_reply(CMD_OTA_COMMIT))]
-            )
+            hid = _flash_hid(fw)
             flash_firmware(hid, path)
-            commit_call = hid.send_and_read.call_args_list[-1]
-            timeout = commit_call[1].get('timeout') or commit_call[0][1]
+            c = hid.send_and_read.call_args_list[-1]
+            timeout = c[1].get('timeout') or c[0][1]
             self.assertEqual(timeout, 5000)
         finally:
             os.unlink(path)
 
     def test_success_returns_true_with_message(self):
-        fw = b'\x01' * OTA_CHUNK_SIZE
+        fw   = _make_fw()
         path = _write_bin(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN)),
-                 (True, _ack_reply(CMD_OTA_CHUNK)),
-                 (True, _ack_reply(CMD_OTA_COMMIT))]
-            )
+            hid = _flash_hid(fw)
             ok, msg = flash_firmware(hid, path)
             self.assertTrue(ok)
             self.assertGreater(len(msg), 0)
@@ -437,7 +576,7 @@ class TestFlashFirmwareCommit(unittest.TestCase):
 class TestFlashFirmwareCancellation(unittest.TestCase):
 
     def test_cancel_before_first_chunk(self):
-        fw = b'\x42' * (OTA_CHUNK_SIZE * 5)
+        fw   = _make_fw(b'\x42' * (OTA_CHUNK_SIZE * 5))
         path = _write_bin(fw)
         try:
             cancel_flag = [False]
@@ -452,17 +591,15 @@ class TestFlashFirmwareCancellation(unittest.TestCase):
 
             hid = MagicMock()
             hid.send_and_read.side_effect = side_effect
-
             ok, msg = flash_firmware(hid, path, cancel_flag=cancel_flag)
             self.assertFalse(ok)
-            self.assertIn("cancel", msg.lower())
-            # Only BEGIN was sent, no chunks
-            self.assertEqual(calls[0], 1)
+            self.assertIn('cancel', msg.lower())
+            self.assertEqual(calls[0], 1)  # only BEGIN was sent
         finally:
             os.unlink(path)
 
     def test_cancel_mid_stream(self):
-        fw = b'\x42' * (OTA_CHUNK_SIZE * 10)
+        fw   = _make_fw(b'\x42' * (OTA_CHUNK_SIZE * 10))
         path = _write_bin(fw)
         try:
             cancel_flag = [False]
@@ -478,12 +615,10 @@ class TestFlashFirmwareCancellation(unittest.TestCase):
 
             hid = MagicMock()
             hid.send_and_read.side_effect = side_effect
-
             ok, msg = flash_firmware(hid, path, cancel_flag=cancel_flag)
             self.assertFalse(ok)
-            self.assertIn("cancel", msg.lower())
-            # BEGIN + 3 chunks, then cancel check stops the loop
-            self.assertEqual(calls[0], 4)
+            self.assertIn('cancel', msg.lower())
+            self.assertEqual(calls[0], 4)  # BEGIN + 3 chunks
         finally:
             os.unlink(path)
 
@@ -495,29 +630,21 @@ class TestFlashFirmwareCancellation(unittest.TestCase):
 class TestFlashFirmwareProgress(unittest.TestCase):
 
     def test_progress_callback_called(self):
-        fw = b'\xAA' * (OTA_CHUNK_SIZE * 3)
+        fw   = _make_fw(b'\xAA' * (OTA_CHUNK_SIZE * 3))
         path = _write_bin(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN))] +
-                [(True, _ack_reply(CMD_OTA_CHUNK))] * 3 +
-                [(True, _ack_reply(CMD_OTA_COMMIT))]
-            )
-            progress_calls = []
-            flash_firmware(hid, path, progress_cb=lambda pct, m: progress_calls.append(pct))
-            self.assertGreater(len(progress_calls), 0)
+            hid = _flash_hid(fw)
+            calls = []
+            flash_firmware(hid, path, progress_cb=lambda pct, m: calls.append(pct))
+            self.assertGreater(len(calls), 0)
         finally:
             os.unlink(path)
 
     def test_progress_starts_at_0_and_ends_at_100(self):
-        fw = b'\xBB' * OTA_CHUNK_SIZE
+        fw   = _make_fw()
         path = _write_bin(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN)),
-                 (True, _ack_reply(CMD_OTA_CHUNK)),
-                 (True, _ack_reply(CMD_OTA_COMMIT))]
-            )
+            hid = _flash_hid(fw)
             pcts = []
             flash_firmware(hid, path, progress_cb=lambda pct, m: pcts.append(pct))
             self.assertEqual(pcts[0], 0)
@@ -526,14 +653,10 @@ class TestFlashFirmwareProgress(unittest.TestCase):
             os.unlink(path)
 
     def test_progress_never_decreases(self):
-        fw = b'\xCC' * (OTA_CHUNK_SIZE * 200)
+        fw   = _make_fw(b'\xCC' * (OTA_CHUNK_SIZE * 200))
         path = _write_bin(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN))] +
-                [(True, _ack_reply(CMD_OTA_CHUNK))] * 200 +
-                [(True, _ack_reply(CMD_OTA_COMMIT))]
-            )
+            hid = _flash_hid(fw)
             pcts = []
             flash_firmware(hid, path, progress_cb=lambda pct, m: pcts.append(pct))
             for a, b in zip(pcts, pcts[1:]):
@@ -549,15 +672,11 @@ class TestFlashFirmwareProgress(unittest.TestCase):
 class TestCrc32(unittest.TestCase):
 
     def test_crc32_sent_in_begin_matches_python_binascii(self):
-        fw = bytes(range(256)) * 4
+        fw   = _make_fw(bytes(range(256)) * 4)
         path = _write_bin(fw)
         try:
             expected_crc = binascii.crc32(fw) & 0xFFFFFFFF
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_OTA_BEGIN))] +
-                [(True, _ack_reply(CMD_OTA_CHUNK))] * ((len(fw) + OTA_CHUNK_SIZE - 1) // OTA_CHUNK_SIZE) +
-                [(True, _ack_reply(CMD_OTA_COMMIT))]
-            )
+            hid = _flash_hid(fw)
             flash_firmware(hid, path)
             begin_pkt = hid.send_and_read.call_args_list[0][0][0]
             sent_crc = struct.unpack_from('<I', bytes(begin_pkt), 6)[0]

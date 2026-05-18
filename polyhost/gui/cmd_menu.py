@@ -3,7 +3,7 @@ import logging
 from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox
 
 from polyhost.device.keys import KeyCode, keycode_to_mapping_idx
-from polyhost.device.ota_updater import get_fw_version
+from polyhost.device.ota_updater import get_fw_version, validate_rp2040_firmware
 from polyhost.gui.get_icon import get_icon
 
 
@@ -219,6 +219,21 @@ class CommandsSubMenu:
             None, "Select Firmware Binary", "", "Firmware binary (*.bin)")
         if not bin_path:
             self.log.info("OTA: no file selected, cancelled.")
+            return
+
+        # Validate that the selected file is a valid RP2040 QMK binary before
+        # querying the keyboard or showing the confirmation dialog.
+        try:
+            with open(bin_path, 'rb') as fh:
+                header = fh.read(264)
+        except OSError as exc:
+            QMessageBox.critical(None, "File Error",
+                                 f"Could not read firmware file:\n{exc}")
+            return
+
+        valid, reason = validate_rp2040_firmware(header)
+        if not valid:
+            QMessageBox.critical(None, "Invalid Firmware File", reason)
             return
 
         # Query current keyboard version for the confirmation dialog.
