@@ -90,6 +90,9 @@ def _write_bin(data: bytes) -> str:
 # HID mock helpers
 # ---------------------------------------------------------------------------
 
+POLL = ord('~')   # "still erasing, re-poll" reply byte
+
+
 def _ack_reply(cmd: int, extra: bytes = b'') -> bytearray:
     buf = bytearray(64)
     buf[0] = HID_POLYKYBD
@@ -104,6 +107,15 @@ def _nack_reply(cmd: int) -> bytearray:
     buf[0] = HID_POLYKYBD
     buf[1] = cmd
     buf[2] = NACK
+    return buf
+
+
+def _poll_reply(cmd: int) -> bytearray:
+    """'~' reply: firmware signals 'still erasing, re-poll'."""
+    buf = bytearray(64)
+    buf[0] = HID_POLYKYBD
+    buf[1] = cmd
+    buf[2] = POLL
     return buf
 
 
@@ -476,20 +488,21 @@ class TestFlashFirmwareBegin(unittest.TestCase):
 
     def test_begin_usb_dropout_triggers_reconnect(self):
         # Simulate the RP2040 flash-erase USB dropout: send_and_read fails
-        # (ok=False), but wait_for_reconnect succeeds and chunks follow.
+        # (ok=False), wait_for_reconnect succeeds, host re-polls BEGIN and gets '.'.
         fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
             n = _chunks(fw)
             hid = _make_hid(
                 [(False, bytearray(64))] +                    # FW_UP_BEGIN dropout
+                [(True, _ack_reply(CMD_FW_UP_BEGIN))] +       # re-poll after reconnect
                 [(True, _ack_reply(CMD_FW_UP_CHUNK))] * n +
                 [(True, _ack_reply(CMD_FW_UP_COMMIT))],
                 reconnect=True,                               # reconnect succeeds
             )
             ok, msg = flash_firmware(hid, path)
             self.assertTrue(ok, msg)
-            hid.wait_for_reconnect.assert_called_once_with(timeout_s=60)
+            hid.wait_for_reconnect.assert_called_once_with(timeout_s=30)
         finally:
             os.unlink(path)
 
@@ -502,13 +515,14 @@ class TestFlashFirmwareBegin(unittest.TestCase):
             n = _chunks(fw)
             hid = _make_hid(
                 [(True, bytearray(0))] +                      # empty reply = Windows dropout
+                [(True, _ack_reply(CMD_FW_UP_BEGIN))] +       # re-poll after reconnect
                 [(True, _ack_reply(CMD_FW_UP_CHUNK))] * n +
                 [(True, _ack_reply(CMD_FW_UP_COMMIT))],
                 reconnect=True,
             )
             ok, msg = flash_firmware(hid, path)
             self.assertTrue(ok, msg)
-            hid.wait_for_reconnect.assert_called_once_with(timeout_s=60)
+            hid.wait_for_reconnect.assert_called_once_with(timeout_s=30)
         finally:
             os.unlink(path)
 
@@ -521,7 +535,29 @@ class TestFlashFirmwareBegin(unittest.TestCase):
             self.assertFalse(ok)
             self.assertIn('BEGIN', msg)
             self.assertIn('reconnect', msg)
-            hid.wait_for_reconnect.assert_called_once()
+            hid.wait_for_reconnect.assert_called_once_with(timeout_s=30)
+        finally:
+            os.unlink(path)
+
+    def test_begin_poll_reply_causes_repoll_until_ready(self):
+        # Firmware returns '~' twice (slave still erasing) then '.' (ready).
+        # Host must re-send CMD_FW_UP_BEGIN each time and eventually succeed.
+        fw   = _make_polykybd_fw()
+        path = _write_bin(fw)
+        n    = _chunks(fw)
+        try:
+            hid = _make_hid(
+                [(True, _poll_reply(CMD_FW_UP_BEGIN))] * 2 +  # 2 × '~' (still erasing)
+                [(True, _ack_reply(CMD_FW_UP_BEGIN))] +        # '.' ready
+                [(True, _ack_reply(CMD_FW_UP_CHUNK))] * n +
+                [(True, _ack_reply(CMD_FW_UP_COMMIT))],
+            )
+            ok, msg = flash_firmware(hid, path)
+            self.assertTrue(ok, msg)
+            # All three BEGIN sends used CMD_FW_UP_BEGIN
+            for i in range(3):
+                pkt = hid.send_and_read.call_args_list[i][0][0]
+                self.assertEqual(pkt[1], CMD_FW_UP_BEGIN)
         finally:
             os.unlink(path)
 
