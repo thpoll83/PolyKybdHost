@@ -1,5 +1,7 @@
+import html
 import logging
 import os
+import re
 import subprocess
 import sys
 
@@ -8,6 +10,14 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QVBoxLayout, QPlainTextEdit, QHBoxLayout, QPushButton, QMainWindow, QWidget, QTabWidget
 
 from polyhost.gui.get_icon import get_icon
+from polyhost.util.log_util import LEVEL_HEX_COLORS
+
+# Matches "[timestamp] LEVELNAME" at the start of a formatted log line.
+# Continuation lines (e.g. tracebacks) won't match and inherit the previous color.
+_LEVEL_NAME_TO_NO = {logging.getLevelName(lvl): lvl for lvl in LEVEL_HEX_COLORS}
+_LEVEL_RE = re.compile(
+    r"^\[[^\]]+\]\s+(" + "|".join(re.escape(n) for n in _LEVEL_NAME_TO_NO) + r")\b"
+)
 
 
 class LogViewerDialog(QMainWindow):
@@ -78,14 +88,38 @@ class LogViewerDialog(QMainWindow):
 
     def load_log(self):
         for tab_name, tab_log_file_name in self.log_files.items():
+            text_edit = self.log_text[tab_name]
             try:
                 with open(tab_log_file_name, encoding='utf-8') as f:
                     log_content = f.read()
-                text_edit = self.log_text[tab_name]
-                text_edit.setPlainText(log_content)
-                text_edit.moveCursor(text_edit.textCursor().End)
             except Exception as e:
-                self.log_text[tab_name].setPlainText(f"Failed to load log file '{tab_log_file_name}': {e}")
+                text_edit.setPlainText(f"Failed to load log file '{tab_log_file_name}': {e}")
+                continue
+            text_edit.clear()
+            text_edit.appendHtml(self._colorize(log_content))
+            text_edit.moveCursor(text_edit.textCursor().End)
+
+    @staticmethod
+    def _colorize(log_content: str) -> str:
+        """Wrap each log line in a coloured <span> based on its level.
+
+        Continuation lines (no "[time] LEVEL" prefix) inherit the previous
+        line's colour so multi-line records stay visually grouped.
+        """
+        out = ['<pre style="margin:0; font-family:Courier; white-space:pre-wrap;">']
+        current_color = None
+        for line in log_content.splitlines():
+            m = _LEVEL_RE.match(line)
+            if m:
+                current_color = LEVEL_HEX_COLORS.get(_LEVEL_NAME_TO_NO[m.group(1)])
+            escaped = html.escape(line)
+            if current_color:
+                out.append(f'<span style="color:{current_color};">{escaped}</span>')
+            else:
+                out.append(escaped)
+            out.append("<br>")
+        out.append("</pre>")
+        return "".join(out)
 
 
     def open_file_directory(self):

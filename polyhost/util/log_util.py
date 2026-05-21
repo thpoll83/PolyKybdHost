@@ -14,6 +14,15 @@ def _debug_detailed(self, message, *args, **kwargs):
 logging.Logger.debug_detailed = _debug_detailed
 
 
+LEVEL_HEX_COLORS = {
+    logging.ERROR:   "#ff5555",  # bright red
+    logging.WARNING: "#ff8700",  # orange (xterm 208)
+    logging.INFO:    "#22cc22",  # green, readable on light & dark
+    logging.DEBUG:   "#00afaf",  # teal
+    DEBUG_DETAILED:  "#5fd7af",  # aquamarine
+}
+
+
 class ColorFormatter(logging.Formatter):
     _COLORS = {
         logging.ERROR:   "\033[91m",        # bright red
