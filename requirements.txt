@@ -10,3 +10,4 @@ pandas
 pvlib
 requests
 pyserial
+packaging

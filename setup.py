@@ -15,4 +15,5 @@ setup(name='PolyHost',
       keywords='polykybd host forwarder poly',
       url='https://github.com/thpoll83/PolyKybdHost',
       author='thpoll',
-      packages=find_packages(exclude=['tests', 'tests.*']))
+      packages=find_packages(exclude=['tests', 'tests.*']),
+      install_requires=['requests', 'packaging'])
