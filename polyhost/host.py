@@ -315,14 +315,7 @@ class PolyHost(QApplication):
 
     def show_mb(self, title, msg, result=False):
         if not result:
-            if self.connected:
-                mbox = QMessageBox()
-                mbox.setWindowTitle(title)
-                mbox.setText(msg)
-                mbox.setIcon(QMessageBox.Warning if title == "Error" else QMessageBox.Information)
-                mbox.exec_()
-            else:
-                self.log.warning("%s: %s", title, msg)
+            self.log.warning("%s: %s", title, msg)
 
     def pause(self):
         self.paused = not self.paused
