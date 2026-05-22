@@ -99,43 +99,43 @@ class CommandsSubMenu:
 
     def reset_dynamic_keymap(self):
         result, msg = self.keeb.reset_dynamic_keymap()
-        self.parent.show_mb("Error", f"Failed resetting dynamic keymap: {msg}", result)
+        self.parent.report_device_result("Error", f"Failed resetting dynamic keymap: {msg}", result)
 
     def reset_overlay_mapping(self):
         result, msg = self.keeb.reset_overlay_mapping()
-        self.parent.show_mb("Error", f"Failed clearing overlays: '{msg}'", result)
+        self.parent.report_device_result("Error", f"Failed clearing overlays: '{msg}'", result)
 
     def set_all_overlay_usage(self):
         result, msg = self.keeb.set_all_overlay_usage()
-        self.parent.show_mb("Error", f"Failed setting all overlay usage: '{msg}'", result)
+        self.parent.report_device_result("Error", f"Failed setting all overlay usage: '{msg}'", result)
 
     def reset_overlays_and_usage(self):
         result, msg = self.keeb.reset_overlays_and_usage()
-        self.parent.show_mb("Error", f"Failed clearing overlays and usage: '{msg}'", result)
+        self.parent.report_device_result("Error", f"Failed clearing overlays and usage: '{msg}'", result)
 
     def reset_overlay_usage(self):
         result, msg = self.keeb.reset_overlay_usage()
-        self.parent.show_mb("Error", f"Failed clearing overlay usage: '{msg}'", result)
+        self.parent.report_device_result("Error", f"Failed clearing overlay usage: '{msg}'", result)
 
     def reset_overlays(self):
         result, msg = self.keeb.reset_overlays()
-        self.parent.show_mb("Error", f"Failed clearing overlays: '{msg}'", result)
+        self.parent.report_device_result("Error", f"Failed clearing overlays: '{msg}'", result)
 
     def enable_overlays(self):
         result, msg = self.keeb.enable_overlays()
-        self.parent.show_mb("Error", f"Failed enabling overlays: '{msg}'", result)
+        self.parent.report_device_result("Error", f"Failed enabling overlays: '{msg}'", result)
 
     def disable_overlays(self):
         result, msg = self.keeb.disable_overlays()
-        self.parent.show_mb("Error", f"Failed disabling overlays: '{msg}'", result)
+        self.parent.report_device_result("Error", f"Failed disabling overlays: '{msg}'", result)
 
     def set_brightness(self):
         result, msg = self.keeb.set_brightness(self.parent.sender().data())
-        self.parent.show_mb("Error", f"Failed disabling overlays: '{msg}'", result)
+        self.parent.report_device_result("Error", f"Failed disabling overlays: '{msg}'", result)
 
     def change_idle(self):
         result, msg = self.keeb.set_idle(self.parent.sender().data())
-        self.parent.show_mb("Error", f"Failed to change idle mode: '{msg}'", result)
+        self.parent.report_device_result("Error", f"Failed to change idle mode: '{msg}'", result)
 
     def mapping_test(self):
         from_to = {}
@@ -189,7 +189,7 @@ class CommandsSubMenu:
         from_to[to_key] = from_key
         
         result, msg = self.keeb.send_overlay_mapping(from_to)
-        self.parent.show_mb("Error", f"Failed to change idle mode: '{msg}'", result)
+        self.parent.report_device_result("Error", f"Failed to change idle mode: '{msg}'", result)
 
     def load_commands(self):
         file_name = QFileDialog.getOpenFileName(None, 'Open file', '', "PolyKybd commands (*.poly.cmd)")
