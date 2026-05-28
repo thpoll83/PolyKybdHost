@@ -7,7 +7,7 @@ import sys
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QVBoxLayout, QPlainTextEdit, QHBoxLayout, QPushButton, QMainWindow, QWidget, QTabWidget
+from PyQt5.QtWidgets import QVBoxLayout, QTextEdit, QHBoxLayout, QPushButton, QMainWindow, QWidget, QTabWidget
 
 from polyhost.gui.get_icon import get_icon
 from polyhost.util.log_util import LEVEL_HEX_COLORS
@@ -42,9 +42,10 @@ class LogViewerDialog(QMainWindow):
         self.log_files = log_files
 
         for tab_name in log_files:
-            # a read-only QPlainTextEdit
-            log_text = QPlainTextEdit(self)
+            # a read-only QTextEdit (HTML for per-line colouring)
+            log_text = QTextEdit(self)
             log_text.setReadOnly(True)
+            log_text.setLineWrapMode(QTextEdit.NoWrap)
             log_text.setFont(QFont("Courier", 10))
         
             tab = QWidget()
@@ -95,8 +96,7 @@ class LogViewerDialog(QMainWindow):
             except Exception as e:
                 text_edit.setPlainText(f"Failed to load log file '{tab_log_file_name}': {e}")
                 continue
-            text_edit.clear()
-            text_edit.appendHtml(self._colorize(log_content))
+            text_edit.setHtml(self._colorize(log_content))
             text_edit.moveCursor(text_edit.textCursor().End)
 
     @staticmethod
