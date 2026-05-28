@@ -313,16 +313,11 @@ class PolyHost(QApplication):
         else:
             self.icon_manager.set_disconnected()
 
-    def show_mb(self, title, msg, result=False):
+    def report_device_result(self, title, msg, result=False):
+        # Logs only; no UI popup. Errors go to warning, anything else to info.
         if not result:
-            if self.connected:
-                mbox = QMessageBox()
-                mbox.setWindowTitle(title)
-                mbox.setText(msg)
-                mbox.setIcon(QMessageBox.Warning if title == "Error" else QMessageBox.Information)
-                mbox.exec_()
-            else:
-                self.log.warning("%s: %s", title, msg)
+            level = logging.WARNING if title == "Error" else logging.INFO
+            self.log.log(level, "%s: %s", title, msg)
 
     def pause(self):
         self.paused = not self.paused
@@ -509,7 +504,7 @@ class PolyHost(QApplication):
         if not result:
             msg = f"Changing input language to '{requested_lang}' failed with:\n\"{output}\""
             self.icon_manager.set_warning(msg)
-            self.show_mb("Error", msg)
+            self.report_device_result("Error", msg)
         else:
             self.log.info("Change input language to '%s'.", requested_lang)
         
