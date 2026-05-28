@@ -22,10 +22,13 @@ _LEVEL_RE = re.compile(
 # Encode each level as a block-state integer so continuation lines inherit color.
 # State 0 means "no color"; states 1..N correspond to levels in LEVEL_HEX_COLORS.
 _LEVEL_TO_STATE = {lvl: i + 1 for i, lvl in enumerate(LEVEL_HEX_COLORS)}
-_STATE_TO_COLOR = {
-    state: QColor(LEVEL_HEX_COLORS[lvl])
-    for lvl, state in _LEVEL_TO_STATE.items()
-}
+
+# Pre-built QTextCharFormat per state — reused across every highlightBlock() call.
+_STATE_TO_FORMAT: dict[int, QTextCharFormat] = {}
+for _state, _lvl in ((s, l) for l, s in _LEVEL_TO_STATE.items()):
+    _fmt = QTextCharFormat()
+    _fmt.setForeground(QColor(LEVEL_HEX_COLORS[_lvl]))
+    _STATE_TO_FORMAT[_state] = _fmt
 
 
 class _LogHighlighter(QSyntaxHighlighter):
@@ -43,10 +46,8 @@ class _LogHighlighter(QSyntaxHighlighter):
             # Inherit previous block's state (-1 on the very first block → 0 = no color)
             state = max(self.previousBlockState(), 0)
 
-        color = _STATE_TO_COLOR.get(state)
-        if color:
-            fmt = QTextCharFormat()
-            fmt.setForeground(color)
+        fmt = _STATE_TO_FORMAT.get(state)
+        if fmt:
             self.setFormat(0, len(text), fmt)
         self.setCurrentBlockState(state)
 
@@ -70,7 +71,7 @@ class LogViewerDialog(QMainWindow):
         self.log_text = {}
         self.log_files = log_files
         # Keep highlighters alive — QSyntaxHighlighter is GC'd if not referenced.
-        self._highlighters = {}
+        self._highlighters = []
 
         for tab_name in log_files:
             log_text = QPlainTextEdit(self)
@@ -78,7 +79,7 @@ class LogViewerDialog(QMainWindow):
             log_text.setLineWrapMode(QPlainTextEdit.NoWrap)
             log_text.setFont(QFont("Courier", 10))
 
-            self._highlighters[tab_name] = _LogHighlighter(log_text.document())
+            self._highlighters.append(_LogHighlighter(log_text.document()))
 
             tab = QWidget()
             tab_layout = QVBoxLayout(tab)
