@@ -97,6 +97,17 @@ class CommandsSubMenu:
         action.triggered.connect(self.mapping_test)
         cmd_menu.addAction(action)
 
+        cmd_menu.addSeparator()
+
+        action = QAction(get_icon("power.svg"), "Activate Bootloader", parent=self.parent)
+        # noinspection PyUnresolvedReferences
+        action.triggered.connect(self.activate_bootloader)
+        cmd_menu.addAction(action)
+
+    def activate_bootloader(self):
+        result, msg = self.keeb.activate_bootloader()
+        self.parent.report_device_result("Error", f"Failed to activate bootloader: '{msg}'", result)
+
     def reset_dynamic_keymap(self):
         result, msg = self.keeb.reset_dynamic_keymap()
         self.parent.report_device_result("Error", f"Failed resetting dynamic keymap: {msg}", result)
