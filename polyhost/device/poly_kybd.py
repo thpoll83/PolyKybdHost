@@ -58,8 +58,13 @@ class PolyKybd:
         """Connect to PolyKybd"""
         if not self.hid:
             self.log.debug("Connecting to PolyKybd for the first time...")
-            self.hid = HidHelper(self.device_settings)
-            self.serial = SerialHelper(self.device_settings)
+            try:
+                self.hid = HidHelper(self.device_settings)
+                self.serial = SerialHelper(self.device_settings)
+            except Exception as e:
+                self.log.warning("Failed to open HID device: %s", e)
+                self.hid = None
+                return False
         else:
             retries = self.poly_settings.get("hid_reconnect_retries")
             for attempt in range(retries):
@@ -70,8 +75,13 @@ class PolyKybd:
             # All retries exhausted — HID handle is stale after a reset/reflash;
             # re-enumerate so the new USB path is picked up.
             self.log.warning("Re-enumerating HID after %d failed attempts...", retries)
-            self.hid = HidHelper(self.device_settings)
-            self.serial = SerialHelper(self.device_settings)
+            try:
+                self.hid = HidHelper(self.device_settings)
+                self.serial = SerialHelper(self.device_settings)
+            except Exception as e:
+                self.log.warning("Failed to re-open HID device: %s", e)
+                self.hid = None
+                return False
             return self.hid.interface_acquired()
         return True
 
