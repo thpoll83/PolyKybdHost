@@ -54,17 +54,30 @@ class PolyKybd:
         self.stat_croi = 0  # compressed region of interest
         self.stat_best = 0
 
+    def _open_interfaces(self) -> bool:
+        """(Re-)open the HID and serial interfaces.
+
+        Returns True on success. On failure both handles are reset to None so
+        the device is left in a clean, fully-disconnected state and the next
+        reconnect attempt starts from scratch. HidHelper re-raises
+        hid.HIDException when the device shows up in enumeration but can't be
+        opened yet — a race that happens while the firmware comes back up after
+        a flash — so this must never propagate out of connect()."""
+        try:
+            self.hid = HidHelper(self.device_settings)
+            self.serial = SerialHelper(self.device_settings)
+            return True
+        except Exception as e:
+            self.log.warning("Failed to open HID device: %s", e)
+            self.hid = None
+            self.serial = None
+            return False
+
     def connect(self):
         """Connect to PolyKybd"""
         if not self.hid:
             self.log.debug("Connecting to PolyKybd for the first time...")
-            try:
-                self.hid = HidHelper(self.device_settings)
-                self.serial = SerialHelper(self.device_settings)
-            except Exception as e:
-                self.log.warning("Failed to open HID device: %s", e)
-                self.hid = None
-                return False
+            return self._open_interfaces()
         else:
             retries = self.poly_settings.get("hid_reconnect_retries")
             for attempt in range(retries):
@@ -75,15 +88,9 @@ class PolyKybd:
             # All retries exhausted — HID handle is stale after a reset/reflash;
             # re-enumerate so the new USB path is picked up.
             self.log.warning("Re-enumerating HID after %d failed attempts...", retries)
-            try:
-                self.hid = HidHelper(self.device_settings)
-                self.serial = SerialHelper(self.device_settings)
-            except Exception as e:
-                self.log.warning("Failed to re-open HID device: %s", e)
-                self.hid = None
+            if not self._open_interfaces():
                 return False
             return self.hid.interface_acquired()
-        return True
 
     def read_serial(self):
         if self.serial:
