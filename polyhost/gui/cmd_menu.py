@@ -1,10 +1,56 @@
 import logging
 
-from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import (
+    QAction, QFileDialog, QMessageBox, QAbstractItemView, QProxyStyle, QStyle,
+)
 
 from polyhost.device.keys import KeyCode, keycode_to_mapping_idx
 from polyhost.device.hid_fw_up import get_fw_version, validate_rp2040_firmware, validate_polykybd_firmware
 from polyhost.gui.get_icon import get_icon
+
+
+class _RequireExplicitOpen(QProxyStyle):
+    """Style proxy that stops the file list from accepting on a single click.
+
+    Qt's file dialog honours the desktop's "single-click to open files and
+    folders" setting (KDE Plasma's default), which makes a single click on a
+    file activate -> accept the dialog immediately.  Forcing this one style
+    hint to 0 makes a single click only *select* the file; the user must
+    double-click it or press Open, regardless of the desktop setting.
+    """
+    def styleHint(self, hint, option=None, widget=None, returnData=None):
+        if hint == QStyle.SH_ItemView_ActivateItemOnSingleClick:
+            return 0
+        return super().styleHint(hint, option, widget, returnData)
+
+
+def _get_open_file_explicit(caption: str, name_filter: str) -> str:
+    """Drop-in for QFileDialog.getOpenFileName that always requires an explicit
+    Open (never accepts on a single click).  Returns the chosen path, or '' if
+    cancelled.
+
+    The platform's native dialog can't be overridden from the app, so this uses
+    Qt's own dialog and disables single-click activation on its item views.
+    """
+    dlg = QFileDialog(None, caption, "", name_filter)
+    dlg.setFileMode(QFileDialog.ExistingFile)
+    dlg.setOption(QFileDialog.DontUseNativeDialog, True)
+    proxy = _RequireExplicitOpen("Fusion")
+    # Scope the override to the main file list / detail views only — those are
+    # what accept on activation.  Leaving the sidebar (Places) untouched keeps
+    # its single-click folder navigation working as the user expects.
+    views = [dlg.findChild(QAbstractItemView, "listView"),
+             dlg.findChild(QAbstractItemView, "treeView")]
+    views = [v for v in views if v is not None]
+    if not views:   # unexpected Qt layout — fall back to every item view
+        views = dlg.findChildren(QAbstractItemView)
+    for view in views:
+        view.setStyle(proxy)
+    dlg._require_explicit_open_style = proxy   # keep the proxy alive with the dialog
+    if dlg.exec_() != QFileDialog.Accepted:
+        return ""
+    files = dlg.selectedFiles()
+    return files[0] if files else ""
 
 
 class CommandsSubMenu:
@@ -200,9 +246,9 @@ class CommandsSubMenu:
         self.parent.report_device_result("Error", f"Failed to change idle mode: '{msg}'", result)
 
     def load_commands(self):
-        file_name = QFileDialog.getOpenFileName(None, 'Open file', '', "PolyKybd commands (*.poly.cmd)")
-        if len(file_name) > 0:
-            with open(file_name[0]) as f:
+        file_name = _get_open_file_explicit('Open file', "PolyKybd commands (*.poly.cmd)")
+        if file_name:
+            with open(file_name) as f:
                 self.keeb.execute_commands(f.readlines())
         else:
             self.log.info("No file selected. Operation canceled.")
@@ -215,8 +261,7 @@ class CommandsSubMenu:
                                 "PolyKybd is not connected. Please connect the keyboard and try again.")
             return
 
-        bin_path, _ = QFileDialog.getOpenFileName(
-            None, "Select Firmware Binary", "", "Firmware binary (*.bin)")
+        bin_path = _get_open_file_explicit("Select Firmware Binary", "Firmware binary (*.bin)")
         if not bin_path:
             self.log.info("FW_UP: no file selected, cancelled.")
             return
