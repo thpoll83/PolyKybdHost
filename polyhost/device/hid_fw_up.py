@@ -274,12 +274,21 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
             report(pct, f"Chunk {i + 1}/{total_chunks} ({(offset + FW_UP_CHUNK_SIZE) // 1024} KB sent)…")
 
     # -- FW_UP_COMMIT --
-    report(98, "Verifying CRC32 and committing to both halves…")
+    # COMMIT verifies the running CRC32 the keyboard accumulated while it staged
+    # the image; it does NOT apply/activate the image or reboot.  The new firmware
+    # is stored and CRC-checked in the staging region but the keyboard keeps
+    # running its current firmware — activation is a separate, future step.
+    report(98, "Verifying the staged image (CRC32)…")
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_COMMIT])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
     if not ok or len(reply) < 3 or reply[2] != ord('.'):
         hid.close_interface()
         return False, "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
 
-    report(100, "Done. Both keyboard halves are rebooting with the new firmware.")
-    return True, "Firmware update successful. Keyboard is rebooting — reconnection in ~5 s."
+    report(100, "Done. New firmware staged and verified on the keyboard.")
+    return True, (
+        "Firmware staged and verified successfully.\n\n"
+        "The new image is stored and CRC-checked on the keyboard, but it is "
+        "not active yet — the keyboard is still running its current firmware. "
+        "Activating the staged image will be a separate step."
+    )

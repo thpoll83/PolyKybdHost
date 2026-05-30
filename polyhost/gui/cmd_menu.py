@@ -249,16 +249,20 @@ class CommandsSubMenu:
             confirm_msg = (
                 f"Current keyboard firmware: <b>{current}</b> ({size_kb} KB)<br><br>"
                 f"Selected file:<br>{bin_path}<br><br>"
-                "This will update <b>both keyboard halves</b>. "
-                "The keyboard will reboot when done.<br><br>"
+                "This will transfer and stage the new firmware on the keyboard, "
+                "then verify it (CRC32). The image is stored but <b>not "
+                "activated yet</b> — the keyboard keeps running its current "
+                "firmware (activation will be a separate step).<br><br>"
                 "Continue?"
             )
         else:
             confirm_msg = (
                 f"Could not query current firmware version.<br><br>"
                 f"Selected file:<br>{bin_path}<br><br>"
-                "This will update <b>both keyboard halves</b>. "
-                "The keyboard will reboot when done.<br><br>"
+                "This will transfer and stage the new firmware on the keyboard, "
+                "then verify it (CRC32). The image is stored but <b>not "
+                "activated yet</b> — the keyboard keeps running its current "
+                "firmware (activation will be a separate step).<br><br>"
                 "Continue?"
             )
 
