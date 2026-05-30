@@ -316,10 +316,16 @@ def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_APPLY])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
 
-    # Explicit NACK = the keyboard has no valid staged image to apply.
+    # Explicit NACK ('!').  In the shipped firmware the in-app self-apply is
+    # DISABLED (it bricked the master), so the keyboard always replies '!' and
+    # leaves the staged image untouched — a safe no-op, NOT a reboot.  Report it
+    # plainly instead of waiting for a reconnect that will never come.
     if ok and len(reply) >= 3 and reply[2] == ord('!'):
-        return False, ("Apply rejected — no valid staged image on the keyboard.\n"
-                       "Stage a firmware first via \"Flash Firmware\", then apply.")
+        return False, ("Apply is not available in this firmware.\n\n"
+                       "In-application self-apply is disabled because it bricked the "
+                       "master half (it erases the live vector table while rewriting "
+                       "flash from offset 0). The staged image is unchanged. A safe "
+                       "apply mechanism (reboot-to-bootloader) is the planned path.")
 
     # Either an ACK ('.') or no reply (the device already accepted and is rebooting
     # with USB torn down): in both cases wait for it to come back.

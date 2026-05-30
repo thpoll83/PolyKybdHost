@@ -349,13 +349,14 @@ class CommandsSubMenu:
             return
 
         confirm_msg = (
-            "<b>Install the staged firmware now?</b><br><br>"
-            "This activates the firmware you previously staged: the keyboard erases its "
-            "active firmware and reboots into the new image.<br><br>"
-            "<b>Experimental — phase 2:</b> only the <b>USB / master half</b> is updated; "
-            "the other half keeps its current firmware. If the master does not come back, "
-            "hold <b>BOOTSEL</b> on it and re-flash the .uf2.<br><br>"
-            "Make sure you have already staged a firmware (via “Flash Firmware”). "
+            "<b>Apply the staged firmware?</b><br><br>"
+            "In-application self-apply is <b>currently disabled in the firmware</b> "
+            "because it bricked the master half (it erases the live interrupt-vector "
+            "table while rewriting flash from offset 0, then faults mid-copy).<br><br>"
+            "Pressing OK will query the keyboard; it will safely report that apply is "
+            "unavailable and <b>leave the staged image untouched</b> — it will NOT "
+            "reboot or modify the active firmware.<br><br>"
+            "A safe apply path (reboot into a minimal bootloader stage) is planned. "
             "Continue?"
         )
         reply = QMessageBox.warning(
