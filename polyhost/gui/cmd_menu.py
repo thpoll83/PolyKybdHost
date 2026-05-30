@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.device.keys import KeyCode, keycode_to_mapping_idx
-from polyhost.device.hid_fw_up import get_fw_version, validate_rp2040_firmware, validate_polykybd_firmware
+from polyhost.device.hid_fw_up import get_fw_version, validate_rp2040_firmware, validate_polykybd_firmware, apply_staged_firmware
 from polyhost.gui.get_icon import get_icon
 
 
@@ -144,6 +144,11 @@ class CommandsSubMenu:
         action = QAction(get_icon("keyboard_input.svg"), "Flash Firmware (.bin)…", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.open_hid_fw_up_dialog)
+        cmd_menu.addAction(action)
+
+        action = QAction(get_icon("keyboard_input.svg"), "Apply Staged Firmware (master)…", parent=self.parent)
+        # noinspection PyUnresolvedReferences
+        action.triggered.connect(self.apply_staged_firmware_action)
         cmd_menu.addAction(action)
 
         action = QAction("Test mapping...", parent=self.parent)
@@ -331,3 +336,50 @@ class CommandsSubMenu:
         finally:
             if hasattr(host, 'pause') and not was_paused:
                 host.pause()   # toggle back to resume
+
+    def apply_staged_firmware_action(self):
+        """Trigger the keyboard to install a previously-staged firmware (FW_UP_APPLY).
+
+        PHASE 2 (experimental): master-only self-apply. The master erases its own
+        flash from offset 0, copies the staged image in, and reboots.
+        """
+        if not self.keeb.hid or not self.keeb.hid.interface_acquired():
+            QMessageBox.warning(None, "Not Connected",
+                                "PolyKybd is not connected. Please connect the keyboard and try again.")
+            return
+
+        confirm_msg = (
+            "<b>Install the staged firmware now?</b><br><br>"
+            "This activates the firmware you previously staged: the keyboard erases its "
+            "active firmware and reboots into the new image.<br><br>"
+            "<b>Experimental — phase 2:</b> only the <b>USB / master half</b> is updated; "
+            "the other half keeps its current firmware. If the master does not come back, "
+            "hold <b>BOOTSEL</b> on it and re-flash the .uf2.<br><br>"
+            "Make sure you have already staged a firmware (via “Flash Firmware”). "
+            "Continue?"
+        )
+        reply = QMessageBox.warning(
+            None, "Apply Staged Firmware", confirm_msg,
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            self.log.info("FW_UP_APPLY: user cancelled at confirmation.")
+            return
+
+        # Pause the host polling loop so the 1 s reconnect timer doesn't contend for
+        # the HID lock while the device reboots (same pattern as the flash dialog).
+        host = self.parent
+        was_paused = getattr(host, 'paused', False)
+        if hasattr(host, 'pause') and not was_paused:
+            host.pause()
+        try:
+            ok, msg = apply_staged_firmware(
+                self.keeb.hid,
+                progress_cb=lambda pct, m: self.log.info("FW_UP_APPLY %d%% — %s", pct, m))
+        finally:
+            if hasattr(host, 'pause') and not was_paused:
+                host.pause()   # toggle back to resume
+
+        if ok:
+            QMessageBox.information(None, "Firmware Applied", msg)
+        else:
+            QMessageBox.warning(None, "Apply Failed", msg)

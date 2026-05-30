@@ -7,6 +7,7 @@ CMD_FW_UP_GET_VERSION = 0x43
 CMD_FW_UP_BEGIN       = 0x40
 CMD_FW_UP_CHUNK       = 0x41
 CMD_FW_UP_COMMIT      = 0x42
+CMD_FW_UP_APPLY       = 0x44
 
 FW_UP_CHUNK_SIZE  = 56
 FW_UP_VERSION_LEN = 16
@@ -291,4 +292,48 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         "The new image is stored and CRC-checked on the keyboard, but it is "
         "not active yet — the keyboard is still running its current firmware. "
         "Activating the staged image will be a separate step."
+    )
+
+
+def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
+    """Install a previously-staged firmware image (FW_UP_APPLY, cmd 0x44).
+
+    PHASE 2 (experimental): master-only self-apply. The master verifies it holds a
+    valid staged image, ACKs, then erases its own flash from offset 0, copies the
+    staged image in, and resets — re-enumerating on the new firmware after a few
+    seconds. The command is NOT relayed to the slave half (that is phase 3).
+
+    Returns (True, success_msg) once the device reconnects, or (False, error_msg).
+    Only an explicit NACK ('!', meaning "no valid staged image") is a hard failure;
+    a missing reply is expected (the device reboots) and is treated as "applying".
+    """
+    def report(pct, msg):
+        if progress_cb:
+            progress_cb(pct, msg)
+
+    report(0, "Sending FW_UP_APPLY…")
+    hid.drain_replies()
+    pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_APPLY])
+    ok, reply = hid.send_and_read(pkt, timeout=5000)
+
+    # Explicit NACK = the keyboard has no valid staged image to apply.
+    if ok and len(reply) >= 3 and reply[2] == ord('!'):
+        return False, ("Apply rejected — no valid staged image on the keyboard.\n"
+                       "Stage a firmware first via \"Flash Firmware\", then apply.")
+
+    # Either an ACK ('.') or no reply (the device already accepted and is rebooting
+    # with USB torn down): in both cases wait for it to come back.
+    report(50, "Applying — keyboard is erasing its flash and rebooting…")
+    if not hid.wait_for_reconnect(timeout_s=30):
+        return False, ("Keyboard did not reconnect within 30 s after apply.\n"
+                       "If it does not come back on its own, hold BOOTSEL on the "
+                       "master half and re-flash the .uf2.")
+    hid.drain_replies()
+
+    report(100, "Done. Keyboard reconnected on the applied firmware.")
+    return True, (
+        "Firmware applied — the keyboard rebooted and reconnected.\n\n"
+        "Phase 2 (master only): the USB / master half now runs the new image. "
+        "The other half still runs its previous firmware until the slave-apply "
+        "step (phase 3)."
     )
