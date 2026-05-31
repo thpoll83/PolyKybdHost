@@ -141,12 +141,17 @@ class CommandsSubMenu:
 
         cmd_menu.addSeparator()
 
-        action = QAction(get_icon("keyboard_input.svg"), "Flash Firmware (.bin)…", parent=self.parent)
+        action = QAction(get_icon("keyboard_input.svg"), "Flash + Apply Firmware (.bin)…", parent=self.parent)
         # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.open_hid_fw_up_dialog)
+        action.triggered.connect(lambda: self.open_hid_fw_up_dialog(apply_after=True))
         cmd_menu.addAction(action)
 
-        action = QAction(get_icon("keyboard_input.svg"), "Apply Staged Firmware (master)…", parent=self.parent)
+        action = QAction(get_icon("keyboard_input.svg"), "Flash Firmware only (.bin, stage)…", parent=self.parent)
+        # noinspection PyUnresolvedReferences
+        action.triggered.connect(lambda: self.open_hid_fw_up_dialog(apply_after=False))
+        cmd_menu.addAction(action)
+
+        action = QAction(get_icon("keyboard_input.svg"), "Apply Staged Firmware (both halves)…", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.apply_staged_firmware_action)
         cmd_menu.addAction(action)
@@ -258,7 +263,7 @@ class CommandsSubMenu:
         else:
             self.log.info("No file selected. Operation canceled.")
 
-    def open_hid_fw_up_dialog(self):
+    def open_hid_fw_up_dialog(self, apply_after=False):
         from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 
         if not self.keeb.hid or not self.keeb.hid.interface_acquired():
@@ -291,57 +296,79 @@ class CommandsSubMenu:
             QMessageBox.critical(None, "Wrong Keyboard", reason)
             return
 
+        # The confirmation text + title depend on whether we also activate the
+        # image right after staging (single-step "flash + apply").
+        if apply_after:
+            dlg_title = "Flash + Apply Firmware"
+            activation_note = (
+                "then <b>activate it</b>: both halves reboot onto the new firmware "
+                "(about 10 s, no replug needed)."
+            )
+        else:
+            dlg_title = "Flash Firmware"
+            activation_note = (
+                "The image is stored but <b>not activated yet</b> — the keyboard "
+                "keeps running its current firmware (activation is a separate step)."
+            )
+
         # Query current keyboard version for the confirmation dialog.
         ok, info = get_fw_version(self.keeb.hid)
         if ok:
             current = info.get('version', '?')
             size_kb = info.get('fw_size', 0) // 1024
-            confirm_msg = (
-                f"Current keyboard firmware: <b>{current}</b> ({size_kb} KB)<br><br>"
-                f"Selected file:<br>{bin_path}<br><br>"
-                "This will transfer and stage the new firmware on the keyboard, "
-                "then verify it (CRC32). The image is stored but <b>not "
-                "activated yet</b> — the keyboard keeps running its current "
-                "firmware (activation will be a separate step).<br><br>"
-                "Continue?"
-            )
+            head = (f"Current keyboard firmware: <b>{current}</b> ({size_kb} KB)<br><br>"
+                    f"Selected file:<br>{bin_path}<br><br>")
         else:
-            confirm_msg = (
-                f"Could not query current firmware version.<br><br>"
-                f"Selected file:<br>{bin_path}<br><br>"
-                "This will transfer and stage the new firmware on the keyboard, "
-                "then verify it (CRC32). The image is stored but <b>not "
-                "activated yet</b> — the keyboard keeps running its current "
-                "firmware (activation will be a separate step).<br><br>"
-                "Continue?"
-            )
+            head = (f"Could not query current firmware version.<br><br>"
+                    f"Selected file:<br>{bin_path}<br><br>")
+        confirm_msg = (head +
+            "This will transfer and stage the new firmware on the keyboard, then "
+            "verify it (CRC32). " + activation_note + "<br><br>Continue?")
 
         reply = QMessageBox.question(
-            None, "Flash Firmware", confirm_msg,
+            None, dlg_title, confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
             self.log.info("FW_UP: user cancelled at confirmation.")
             return
 
-        # Pause the host polling loop for the duration of the flash so the
-        # HID lock is not contested by the 1 s reconnect timer.
+        # Pause the host polling loop for the duration of the flash (and the apply,
+        # if requested) so the HID lock is not contested by the 1 s reconnect timer.
         host = self.parent
         was_paused = getattr(host, 'paused', False)
         if hasattr(host, 'pause') and not was_paused:
             host.pause()
 
+        apply_ok, apply_msg = None, None
         try:
             dlg = HidFwUpDialog(self.keeb.hid, bin_path)
             dlg.exec_()
+            staged_ok = getattr(dlg, '_success', False)
+            if apply_after and staged_ok:
+                # Chain activation in the same paused window so the device can
+                # reboot without the reconnect timer fighting for the HID lock.
+                apply_ok, apply_msg = apply_staged_firmware(
+                    self.keeb.hid,
+                    progress_cb=lambda pct, m: self.log.info("FW_UP_APPLY %d%% — %s", pct, m))
         finally:
             if hasattr(host, 'pause') and not was_paused:
                 host.pause()   # toggle back to resume
 
+        # Report the apply outcome (staging already reported itself in the dialog).
+        if apply_after and apply_ok is not None:
+            if apply_ok:
+                QMessageBox.information(None, "Firmware Applied", apply_msg)
+            else:
+                QMessageBox.warning(None, "Apply Failed", apply_msg)
+
     def apply_staged_firmware_action(self):
         """Trigger the keyboard to install a previously-staged firmware (FW_UP_APPLY).
 
-        PHASE 2 (experimental): master-only self-apply. The master erases its own
-        flash from offset 0, copies the staged image in, and reboots.
+        Both halves install the staged image and reboot onto it: the master tells
+        the slave to apply + reboot, then applies itself, so both come up on the
+        new firmware (no replug). Requires a firmware build with in-app apply
+        enabled; otherwise the keyboard safely reports apply unavailable and leaves
+        the staged image untouched.
         """
         if not self.keeb.hid or not self.keeb.hid.interface_acquired():
             QMessageBox.warning(None, "Not Connected",
@@ -350,16 +377,14 @@ class CommandsSubMenu:
 
         confirm_msg = (
             "<b>Apply the staged firmware?</b><br><br>"
-            "In-application self-apply is <b>currently disabled in the firmware</b> "
-            "because it bricked the master half (it erases the live interrupt-vector "
-            "table while rewriting flash from offset 0, then faults mid-copy).<br><br>"
-            "Pressing OK will query the keyboard; it will safely report that apply is "
-            "unavailable and <b>leave the staged image untouched</b> — it will NOT "
-            "reboot or modify the active firmware.<br><br>"
-            "A safe apply path (reboot into a minimal bootloader stage) is planned. "
+            "Both halves install the previously-staged image and reboot onto it "
+            "(about 10 s, no replug needed).<br><br>"
+            "If this firmware build has in-app apply disabled, the keyboard safely "
+            "reports that apply is unavailable and leaves the staged image "
+            "untouched.<br><br>"
             "Continue?"
         )
-        reply = QMessageBox.warning(
+        reply = QMessageBox.question(
             None, "Apply Staged Firmware", confirm_msg,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply != QMessageBox.Yes:
