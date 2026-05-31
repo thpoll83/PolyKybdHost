@@ -298,10 +298,10 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
 def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
     """Install a previously-staged firmware image (FW_UP_APPLY, cmd 0x44).
 
-    PHASE 2 (experimental): master-only self-apply. The master verifies it holds a
-    valid staged image, ACKs, then erases its own flash from offset 0, copies the
-    staged image in, and resets — re-enumerating on the new firmware after a few
-    seconds. The command is NOT relayed to the slave half (that is phase 3).
+    Dual-half apply: the master verifies it holds a valid staged image, ACKs, then
+    relays FW_UP_APPLY to the slave over the split link. Both halves install the
+    staged image (copy staging -> offset 0) and reset, re-enumerating on the new
+    firmware after a few seconds.
 
     Returns (True, success_msg) once the device reconnects, or (False, error_msg).
     Only an explicit NACK ('!', meaning "no valid staged image") is a hard failure;
@@ -316,16 +316,15 @@ def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_APPLY])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
 
-    # Explicit NACK ('!').  In the shipped firmware the in-app self-apply is
-    # DISABLED (it bricked the master), so the keyboard always replies '!' and
-    # leaves the staged image untouched — a safe no-op, NOT a reboot.  Report it
-    # plainly instead of waiting for a reconnect that will never come.
+    # Explicit NACK ('!') is a safe no-op: the keyboard left the staged image
+    # untouched and did NOT reboot. It means either there is no valid staged
+    # image, or this firmware was built without in-app apply (FW_UP_INAPP_APPLY=no).
+    # Report it plainly instead of waiting for a reconnect that will never come.
     if ok and len(reply) >= 3 and reply[2] == ord('!'):
-        return False, ("Apply is not available in this firmware.\n\n"
-                       "In-application self-apply is disabled because it bricked the "
-                       "master half (it erases the live vector table while rewriting "
-                       "flash from offset 0). The staged image is unchanged. A safe "
-                       "apply mechanism (reboot-to-bootloader) is the planned path.")
+        return False, ("Apply is not available.\n\n"
+                       "The keyboard reported no valid staged image, or this firmware "
+                       "was built without in-app apply (FW_UP_INAPP_APPLY=no). The "
+                       "staged image is unchanged.")
 
     # Either an ACK ('.') or no reply (the device already accepted and is rebooting
     # with USB torn down): in both cases wait for it to come back.
@@ -339,7 +338,5 @@ def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
     report(100, "Done. Keyboard reconnected on the applied firmware.")
     return True, (
         "Firmware applied — the keyboard rebooted and reconnected.\n\n"
-        "Phase 2 (master only): the USB / master half now runs the new image. "
-        "The other half still runs its previous firmware until the slave-apply "
-        "step (phase 3)."
+        "Both halves now run the new firmware."
     )
