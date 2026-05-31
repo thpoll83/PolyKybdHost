@@ -251,6 +251,13 @@ class PolyKybd:
         self.log.info("Releasing 0x%2x...", keycode)
         return self.hid.send_and_read_validate(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
 
+    def activate_bootloader(self) -> tuple[bool, Any]:
+        self.log.info("Requesting bootloader mode...")
+        # The keyboard jumps to its bootloader as soon as it receives this command
+        # and resets without sending a reply, so we only send — there is no ACK to
+        # wait for (doing so would just time out against the disconnected device).
+        return self.hid.send(compose_cmd(Cmd.ENTER_BOOTLOADER))
+
     def set_idle(self, idle: bool) -> tuple[bool, Any]:
         self.log.debug("Setting idle state to %s...",
                        "True" if idle else "False")
