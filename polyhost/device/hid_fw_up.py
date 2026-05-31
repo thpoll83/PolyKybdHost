@@ -7,6 +7,7 @@ CMD_FW_UP_GET_VERSION = 0x43
 CMD_FW_UP_BEGIN       = 0x40
 CMD_FW_UP_CHUNK       = 0x41
 CMD_FW_UP_COMMIT      = 0x42
+CMD_FW_UP_APPLY       = 0x44
 
 FW_UP_CHUNK_SIZE  = 56
 FW_UP_VERSION_LEN = 16
@@ -274,12 +275,68 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
             report(pct, f"Chunk {i + 1}/{total_chunks} ({(offset + FW_UP_CHUNK_SIZE) // 1024} KB sent)…")
 
     # -- FW_UP_COMMIT --
-    report(98, "Verifying CRC32 and committing to both halves…")
+    # COMMIT verifies the running CRC32 the keyboard accumulated while it staged
+    # the image; it does NOT apply/activate the image or reboot.  The new firmware
+    # is stored and CRC-checked in the staging region but the keyboard keeps
+    # running its current firmware — activation is a separate, future step.
+    report(98, "Verifying the staged image (CRC32)…")
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_COMMIT])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
     if not ok or len(reply) < 3 or reply[2] != ord('.'):
         hid.close_interface()
         return False, "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
 
-    report(100, "Done. Both keyboard halves are rebooting with the new firmware.")
-    return True, "Firmware update successful. Keyboard is rebooting — reconnection in ~5 s."
+    report(100, "Done. New firmware staged and verified on the keyboard.")
+    return True, (
+        "Firmware staged and verified successfully.\n\n"
+        "The new image is stored and CRC-checked on the keyboard, but it is "
+        "not active yet — the keyboard is still running its current firmware. "
+        "Activating the staged image will be a separate step."
+    )
+
+
+def apply_staged_firmware(hid, progress_cb=None) -> tuple[bool, str]:
+    """Install a previously-staged firmware image (FW_UP_APPLY, cmd 0x44).
+
+    Dual-half apply: the master verifies it holds a valid staged image, ACKs, then
+    relays FW_UP_APPLY to the slave over the split link. Both halves install the
+    staged image (copy staging -> offset 0) and reset, re-enumerating on the new
+    firmware after a few seconds.
+
+    Returns (True, success_msg) once the device reconnects, or (False, error_msg).
+    Only an explicit NACK ('!', meaning "no valid staged image") is a hard failure;
+    a missing reply is expected (the device reboots) and is treated as "applying".
+    """
+    def report(pct, msg):
+        if progress_cb:
+            progress_cb(pct, msg)
+
+    report(0, "Sending FW_UP_APPLY…")
+    hid.drain_replies()
+    pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_APPLY])
+    ok, reply = hid.send_and_read(pkt, timeout=5000)
+
+    # Explicit NACK ('!') is a safe no-op: the keyboard left the staged image
+    # untouched and did NOT reboot. It means either there is no valid staged
+    # image, or this firmware was built without in-app apply (FW_UP_INAPP_APPLY=no).
+    # Report it plainly instead of waiting for a reconnect that will never come.
+    if ok and len(reply) >= 3 and reply[2] == ord('!'):
+        return False, ("Apply is not available.\n\n"
+                       "The keyboard reported no valid staged image, or this firmware "
+                       "was built without in-app apply (FW_UP_INAPP_APPLY=no). The "
+                       "staged image is unchanged.")
+
+    # Either an ACK ('.') or no reply (the device already accepted and is rebooting
+    # with USB torn down): in both cases wait for it to come back.
+    report(50, "Applying — keyboard is erasing its flash and rebooting…")
+    if not hid.wait_for_reconnect(timeout_s=30):
+        return False, ("Keyboard did not reconnect within 30 s after apply.\n"
+                       "If it does not come back on its own, hold BOOTSEL on the "
+                       "master half and re-flash the .uf2.")
+    hid.drain_replies()
+
+    report(100, "Done. Keyboard reconnected on the applied firmware.")
+    return True, (
+        "Firmware applied — the keyboard rebooted and reconnected.\n\n"
+        "Both halves now run the new firmware."
+    )
