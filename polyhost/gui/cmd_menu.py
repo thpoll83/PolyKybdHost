@@ -1,4 +1,5 @@
 import logging
+from contextlib import contextmanager
 
 from PyQt5.QtWidgets import (
     QAction, QFileDialog, QMessageBox, QAbstractItemView, QProxyStyle, QStyle,
@@ -263,6 +264,22 @@ class CommandsSubMenu:
         else:
             self.log.info("No file selected. Operation canceled.")
 
+    @contextmanager
+    def _paused_polling(self):
+        """Pause the host's device-polling loop for a critical HID operation
+        (firmware flash / apply) so it doesn't contend for the HID lock while
+        the keyboard reboots and re-enumerates.  Resumes on exit, even if the
+        body raises."""
+        host = self.parent
+        was_paused = getattr(host, 'paused', False)
+        if hasattr(host, 'pause') and not was_paused:
+            host.pause()
+        try:
+            yield
+        finally:
+            if hasattr(host, 'pause') and not was_paused:
+                host.pause()   # toggle back to resume
+
     def open_hid_fw_up_dialog(self, apply_after=False):
         from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 
@@ -334,13 +351,8 @@ class CommandsSubMenu:
 
         # Pause the host polling loop for the duration of the flash (and the apply,
         # if requested) so the HID lock is not contested by the 1 s reconnect timer.
-        host = self.parent
-        was_paused = getattr(host, 'paused', False)
-        if hasattr(host, 'pause') and not was_paused:
-            host.pause()
-
         apply_ok, apply_msg = None, None
-        try:
+        with self._paused_polling():
             dlg = HidFwUpDialog(self.keeb.hid, bin_path)
             dlg.exec_()
             staged_ok = getattr(dlg, '_success', False)
@@ -350,9 +362,6 @@ class CommandsSubMenu:
                 apply_ok, apply_msg = apply_staged_firmware(
                     self.keeb.hid,
                     progress_cb=lambda pct, m: self.log.info("FW_UP_APPLY %d%% — %s", pct, m))
-        finally:
-            if hasattr(host, 'pause') and not was_paused:
-                host.pause()   # toggle back to resume
 
         # Report the apply outcome (staging already reported itself in the dialog).
         if apply_after and apply_ok is not None:
@@ -393,17 +402,10 @@ class CommandsSubMenu:
 
         # Pause the host polling loop so the 1 s reconnect timer doesn't contend for
         # the HID lock while the device reboots (same pattern as the flash dialog).
-        host = self.parent
-        was_paused = getattr(host, 'paused', False)
-        if hasattr(host, 'pause') and not was_paused:
-            host.pause()
-        try:
+        with self._paused_polling():
             ok, msg = apply_staged_firmware(
                 self.keeb.hid,
                 progress_cb=lambda pct, m: self.log.info("FW_UP_APPLY %d%% — %s", pct, m))
-        finally:
-            if hasattr(host, 'pause') and not was_paused:
-                host.pause()   # toggle back to resume
 
         if ok:
             QMessageBox.information(None, "Firmware Applied", msg)
