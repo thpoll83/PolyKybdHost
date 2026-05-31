@@ -41,6 +41,11 @@ class HidFwUpDialog(QDialog):
     chunks, commit), so instead of snapping the bar to each reported value it
     glides there smoothly at a constant speed — a larger jump simply takes
     proportionally longer to catch up.
+
+    The very first phase (FW_UP_BEGIN: erasing the staging area on both halves)
+    has no measurable progress and can take ~10 s, so the bar shows an
+    indeterminate spinner there instead of sitting stuck near zero.  It switches
+    to the determinate glide once the keyboard starts accepting chunks.
     """
 
     # Bar animation: a timer interpolates the displayed value toward the latest
@@ -48,6 +53,11 @@ class HidFwUpDialog(QDialog):
     # is proportional to the size of the jump, so the speed feels consistent.
     _ANIM_TICK_MS = 16      # ~60 FPS
     _GLIDE_SPEED  = 90.0    # %/s — a full-width jump glides in roughly one second
+
+    # The backend reports pct < this while still in the begin/erase phase (0 =
+    # sending BEGIN, 1 = erasing) and >= this once chunks start flowing.  Below
+    # the threshold the real progress is unknown, so we show a busy spinner.
+    _DETERMINATE_FROM = 2
 
     def __init__(self, hid, bin_path: str, parent=None):
         super().__init__(parent)
@@ -58,6 +68,7 @@ class HidFwUpDialog(QDialog):
         self._target_pct    = 0      # latest reported percent (monotonic)
         self._display_pct   = 0.0    # currently shown value, animated toward target
         self._pending_finish = None  # (ok, msg) held until a successful glide reaches 100
+        self._busy           = False # True while the bar is an indeterminate spinner
 
         self.setWindowTitle("Firmware Update")
         self.setMinimumWidth(500)
@@ -102,13 +113,35 @@ class HidFwUpDialog(QDialog):
 
     # ------------------------------------------------------------------
     def _on_progress(self, pct: int, msg: str):
-        # Record the latest target and let the timer glide the bar there; never
-        # move backwards if a stray lower value arrives.
-        self._target_pct = max(self._target_pct, pct)
         self._status_label.setText(msg)
         self.log.info("FW_UP %d%% — %s", pct, msg)
+
+        if pct < self._DETERMINATE_FROM:
+            # Begin/erase phase — no measurable progress yet; spin instead of
+            # sitting stuck near zero.
+            self._set_busy(True)
+            return
+
+        # Chunks are flowing: switch to the determinate bar and glide toward the
+        # latest target.  Never move backwards if a stray lower value arrives.
+        self._set_busy(False)
+        self._target_pct = max(self._target_pct, pct)
         if not self._anim_timer.isActive():
             self._anim_timer.start()
+
+    def _set_busy(self, busy: bool):
+        """Toggle the bar between an indeterminate spinner and the normal 0–100
+        scale.  Qt renders a QProgressBar with a zero-width range (0, 0) as a
+        busy spinner."""
+        if busy == self._busy:
+            return
+        self._busy = busy
+        if busy:
+            self._anim_timer.stop()
+            self._progress_bar.setRange(0, 0)
+        else:
+            self._progress_bar.setRange(0, 100)
+            self._progress_bar.setValue(int(round(self._display_pct)))
 
     def _animate_step(self):
         """Advance the displayed value toward the target at a constant speed."""
@@ -131,6 +164,7 @@ class HidFwUpDialog(QDialog):
             self.log.info("FW_UP finished: ok=%s — %s", ok, msg)
             # Let the bar glide all the way to 100 before showing the result, so
             # the user sees it complete rather than snapping shut.
+            self._set_busy(False)
             self._target_pct = 100
             self._pending_finish = (ok, msg)
             if not self._anim_timer.isActive():
@@ -143,6 +177,9 @@ class HidFwUpDialog(QDialog):
 
     def _finalize(self, ok: bool, msg: str):
         """Swap the dialog into its finished state (button, close flag, result)."""
+        # Leave any spinner behind so the bar shows a concrete value (a full bar
+        # on success, or wherever it stalled on failure).
+        self._set_busy(False)
         self._progress_bar.setValue(100 if ok else self._progress_bar.value())
         self._status_label.setText(msg)
 
