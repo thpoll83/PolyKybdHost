@@ -100,6 +100,8 @@ class HidFwUpDialog(QDialog):
         self._pending_apply  = False # start the apply step once the glide reaches 100
         self._busy           = False # True while the bar is an indeterminate spinner
         self._apply_worker   = None  # _ApplyWorker, created after staging succeeds
+        self._determinate    = False # True once chunks start; spinner never returns after
+        self._done           = False # True once finalized; late signals are ignored
 
         self.setWindowTitle("Firmware Update")
         self.setMinimumWidth(500)
@@ -144,17 +146,24 @@ class HidFwUpDialog(QDialog):
 
     # ------------------------------------------------------------------
     def _on_progress(self, pct: int, msg: str):
+        if self._done:
+            # The dialog is logically complete; ignore any late signals so they
+            # can't restart the animation or flip the bar back into busy mode.
+            return
         self._status_label.setText(msg)
         self.log.info("FW_UP %d%% — %s", pct, msg)
 
-        if pct < self._DETERMINATE_FROM:
+        if pct < self._DETERMINATE_FROM and not self._determinate:
             # Begin/erase phase — no measurable progress yet; spin instead of
-            # sitting stuck near zero.
+            # sitting stuck near zero.  Only valid before determinate progress
+            # has begun; once chunks flow we never return to the spinner even if
+            # a stray low value arrives.
             self._set_busy(True)
             return
 
         # Chunks are flowing: switch to the determinate bar and glide toward the
         # latest target.  Never move backwards if a stray lower value arrives.
+        self._determinate = True
         self._set_busy(False)
         self._target_pct = max(self._target_pct, pct)
         if not self._anim_timer.isActive():
@@ -242,17 +251,22 @@ class HidFwUpDialog(QDialog):
             self.log.info("FW_UP_APPLY finished: ok=%s — %s", ok, msg)
         else:
             self.log.warning("FW_UP_APPLY finished: ok=%s — %s", ok, msg)
-        self._cancel_btn.setEnabled(True)
+        # _finalize re-enables the button (disabled for the uninterruptible apply).
         self._finalize(ok, msg)
 
     def _finalize(self, ok: bool, msg: str):
         """Swap the dialog into its finished state (button, close flag, result)."""
+        self._done = True
+        self._anim_timer.stop()
         # Leave any spinner behind so the bar shows a concrete value (a full bar
         # on success, or wherever it stalled on failure).
         self._set_busy(False)
         self._progress_bar.setValue(100 if ok else self._progress_bar.value())
         self._status_label.setText(msg)
 
+        # Re-enable the button: it may have been disabled by a cancel request or
+        # during the uninterruptible apply phase.  Now repurpose it as Close.
+        self._cancel_btn.setEnabled(True)
         self._cancel_btn.setText("Close")
         self._cancel_btn.clicked.disconnect()
         self._cancel_btn.clicked.connect(self.accept)
