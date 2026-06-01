@@ -362,24 +362,11 @@ class CommandsSubMenu:
 
         # Pause the host polling loop for the duration of the flash (and the apply,
         # if requested) so the HID lock is not contested by the 1 s reconnect timer.
-        apply_ok, apply_msg = None, None
+        # The dialog itself chains the apply step when apply_after is set, so the
+        # staging progress and the apply outcome both surface in the same window.
         with self._paused_polling():
-            dlg = HidFwUpDialog(self.keeb.hid, bin_path)
+            dlg = HidFwUpDialog(self.keeb.hid, bin_path, apply_after=apply_after)
             dlg.exec_()
-            staged_ok = getattr(dlg, '_success', False)
-            if apply_after and staged_ok:
-                # Chain activation in the same paused window so the device can
-                # reboot without the reconnect timer fighting for the HID lock.
-                apply_ok, apply_msg = apply_staged_firmware(
-                    self.keeb.hid,
-                    progress_cb=lambda pct, m: self.log.info("FW_UP_APPLY %d%% — %s", pct, m))
-
-        # Report the apply outcome (staging already reported itself in the dialog).
-        if apply_after and apply_ok is not None:
-            if apply_ok:
-                QMessageBox.information(None, "Firmware Applied", apply_msg)
-            else:
-                QMessageBox.warning(None, "Apply Failed", apply_msg)
 
     def apply_staged_firmware_action(self):
         """Trigger the keyboard to install a previously-staged firmware (FW_UP_APPLY).
