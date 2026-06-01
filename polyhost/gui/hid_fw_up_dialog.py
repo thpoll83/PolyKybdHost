@@ -80,6 +80,11 @@ class HidFwUpDialog(QDialog):
     _ANIM_TICK_MS = 16      # ~60 FPS
     _GLIDE_SPEED  = 90.0    # %/s — a full-width jump glides in roughly one second
 
+    # The bar runs at 10x resolution (0..1000 instead of 0..100) so the glide
+    # advances in 0.1% steps rather than visible whole-percent jumps, and the
+    # displayed text carries one decimal place.
+    _SCALE = 10
+
     # The backend reports pct < this while still in the begin/erase phase (0 =
     # sending BEGIN, 1 = erasing) and >= this once chunks start flowing.  Below
     # the threshold the real progress is unknown, so we show a busy spinner.
@@ -121,9 +126,9 @@ class HidFwUpDialog(QDialog):
         layout.addWidget(self._status_label)
 
         self._progress_bar = QProgressBar()
-        self._progress_bar.setRange(0, 100)
-        self._progress_bar.setValue(0)
+        self._progress_bar.setRange(0, 100 * self._SCALE)
         self._progress_bar.setTextVisible(True)
+        self._show_pct(0.0)
         layout.addWidget(self._progress_bar)
 
         # Drives the smooth catch-up of the bar toward the reported percent.
@@ -169,6 +174,11 @@ class HidFwUpDialog(QDialog):
         if not self._anim_timer.isActive():
             self._anim_timer.start()
 
+    def _show_pct(self, pct: float):
+        """Render a percentage on the bar at 10x resolution with one decimal."""
+        self._progress_bar.setValue(int(round(pct * self._SCALE)))
+        self._progress_bar.setFormat(f"{pct:.1f}%")
+
     def _set_busy(self, busy: bool):
         """Toggle the bar between an indeterminate spinner and the normal 0–100
         scale.  Qt renders a QProgressBar with a zero-width range (0, 0) as a
@@ -179,16 +189,17 @@ class HidFwUpDialog(QDialog):
         if busy:
             self._anim_timer.stop()
             self._progress_bar.setRange(0, 0)
+            self._progress_bar.setFormat("")
         else:
-            self._progress_bar.setRange(0, 100)
-            self._progress_bar.setValue(int(round(self._display_pct)))
+            self._progress_bar.setRange(0, 100 * self._SCALE)
+            self._show_pct(self._display_pct)
 
     def _animate_step(self):
         """Advance the displayed value toward the target at a constant speed."""
         if self._display_pct < self._target_pct:
             step = self._GLIDE_SPEED * (self._ANIM_TICK_MS / 1000.0)
             self._display_pct = min(self._display_pct + step, float(self._target_pct))
-            self._progress_bar.setValue(int(round(self._display_pct)))
+            self._show_pct(self._display_pct)
 
         if self._display_pct >= self._target_pct:
             # Caught up — nothing left to animate for now.
@@ -261,7 +272,9 @@ class HidFwUpDialog(QDialog):
         # Leave any spinner behind so the bar shows a concrete value (a full bar
         # on success, or wherever it stalled on failure).
         self._set_busy(False)
-        self._progress_bar.setValue(100 if ok else self._progress_bar.value())
+        if ok:
+            self._display_pct = 100.0
+        self._show_pct(self._display_pct)
         self._status_label.setText(msg)
 
         # Re-enable the button: it may have been disabled by a cancel request or
