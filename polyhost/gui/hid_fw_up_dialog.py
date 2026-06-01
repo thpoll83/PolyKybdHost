@@ -77,13 +77,13 @@ class HidFwUpDialog(QDialog):
     # Bar animation: a timer interpolates the displayed value toward the latest
     # reported one.  Constant velocity (percent per second) means the glide time
     # is proportional to the size of the jump, so the speed feels consistent.
-    _ANIM_TICK_MS = 16      # ~60 FPS
-    _GLIDE_SPEED  = 90.0    # %/s — a full-width jump glides in roughly one second
+    _ANIM_TICK_MS = 5
+    _GLIDE_SPEED  = 2.5    # %/s — a full-width jump glides in roughly one second
 
     # The bar runs at 10x resolution (0..1000 instead of 0..100) so the glide
     # advances in 0.1% steps rather than visible whole-percent jumps, and the
     # displayed text carries one decimal place.
-    _SCALE = 10
+    _SCALE = 100
 
     # The backend reports pct < this while still in the begin/erase phase (0 =
     # sending BEGIN, 1 = erasing) and >= this once chunks start flowing.  Below
@@ -177,7 +177,7 @@ class HidFwUpDialog(QDialog):
     def _show_pct(self, pct: float):
         """Render a percentage on the bar at 10x resolution with one decimal."""
         self._progress_bar.setValue(int(round(pct * self._SCALE)))
-        self._progress_bar.setFormat(f"{pct:.1f}%")
+        self._progress_bar.setFormat(f"{pct:.2f}%")
 
     def _set_busy(self, busy: bool):
         """Toggle the bar between an indeterminate spinner and the normal 0–100
