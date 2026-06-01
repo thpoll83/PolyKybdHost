@@ -80,6 +80,11 @@ class HidFwUpDialog(QDialog):
     _ANIM_TICK_MS = 5
     _GLIDE_SPEED  = 2.5    # %/s — a full-width jump glides in roughly one second
 
+    # If a newer progress report arrives while the bar is still catching up to
+    # the previous target, the bar has fallen behind the real transfer — glide
+    # that stretch this much faster so it catches up, then drop back to normal.
+    _CATCHUP_FACTOR = 10
+
     # The bar runs at 10x resolution (0..1000 instead of 0..100) so the glide
     # advances in 0.1% steps rather than visible whole-percent jumps, and the
     # displayed text carries one decimal place.
@@ -107,6 +112,7 @@ class HidFwUpDialog(QDialog):
         self._apply_worker   = None  # _ApplyWorker, created after staging succeeds
         self._determinate    = False # True once chunks start; spinner never returns after
         self._done           = False # True once finalized; late signals are ignored
+        self._behind         = False # bar fell behind a fresh report; catch up faster
 
         self.setWindowTitle("Firmware Update")
         self.setMinimumWidth(500)
@@ -170,7 +176,12 @@ class HidFwUpDialog(QDialog):
         # latest target.  Never move backwards if a stray lower value arrives.
         self._determinate = True
         self._set_busy(False)
-        self._target_pct = max(self._target_pct, pct)
+        new_target = max(self._target_pct, pct)
+        # A fresh report arrived before the bar reached the previous target — it
+        # has fallen behind the real transfer, so speed up until it catches up.
+        if new_target > self._target_pct and self._display_pct < self._target_pct:
+            self._behind = True
+        self._target_pct = new_target
         if not self._anim_timer.isActive():
             self._anim_timer.start()
 
@@ -197,12 +208,16 @@ class HidFwUpDialog(QDialog):
     def _animate_step(self):
         """Advance the displayed value toward the target at a constant speed."""
         if self._display_pct < self._target_pct:
-            step = self._GLIDE_SPEED * (self._ANIM_TICK_MS / 1000.0)
+            speed = self._GLIDE_SPEED
+            if self._behind:
+                speed *= self._CATCHUP_FACTOR
+            step = speed * (self._ANIM_TICK_MS / 1000.0)
             self._display_pct = min(self._display_pct + step, float(self._target_pct))
             self._show_pct(self._display_pct)
 
         if self._display_pct >= self._target_pct:
-            # Caught up — nothing left to animate for now.
+            # Caught up — back to normal speed; nothing left to animate for now.
+            self._behind = False
             self._anim_timer.stop()
             if self._pending_apply:
                 self._pending_apply = False
