@@ -78,12 +78,12 @@ class HidFwUpDialog(QDialog):
     # reported one.  Constant velocity (percent per second) means the glide time
     # is proportional to the size of the jump, so the speed feels consistent.
     _ANIM_TICK_MS = 5
-    _GLIDE_SPEED  = 2.5    # %/s — a full-width jump glides in roughly one second
+    _GLIDE_SPEED  = 2.3    # %/s — a full-width jump glides in roughly one second
 
     # If a newer progress report arrives while the bar is still catching up to
     # the previous target, the bar has fallen behind the real transfer — glide
     # that stretch this much faster so it catches up, then drop back to normal.
-    _CATCHUP_FACTOR = 10
+    _CATCHUP_FACTOR = 3
 
     # The bar runs at 10x resolution (0..1000 instead of 0..100) so the glide
     # advances in 0.1% steps rather than visible whole-percent jumps, and the
