@@ -263,6 +263,27 @@ class PolyKybd:
                        "True" if idle else "False")
         return self.hid.send_and_read_validate(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
 
+    def set_handedness(self, master_is_left: bool) -> tuple[bool, Any]:
+        """Fix which half is the left side and which is the right side.
+
+        Master/slave is decided by which half holds the USB cable (VBUS), and is
+        independent of left/right (handedness lives in each half's EEPROM via
+        EE_HANDS). A HID command only reaches the master (USB) half, so the
+        assignment is expressed relative to it:
+
+          master_is_left=True  -> the connected (master) half = LEFT,  other = RIGHT
+          master_is_left=False -> the connected (master) half = RIGHT, other = LEFT
+
+        The master persists its handedness, pushes the opposite to the slave over
+        the split link, then both halves reboot onto the corrected assignment
+        (about 10 s, no replug needed). The keyboard resets right after receiving
+        this command and does not send a reliable reply, so we only send (like
+        activate_bootloader) — there is no ACK to wait for.
+        """
+        self.log.info("Setting handedness: connected half = %s.",
+                      "LEFT" if master_is_left else "RIGHT")
+        return self.hid.send(compose_cmd(Cmd.SET_HANDEDNESS, 0 if master_is_left else 1))
+
     def query_current_lang(self) -> tuple[bool, str]:
         """Query current keyboard language"""
 

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 from polyhost.device.cmd_composer import (
     compose_cmd_str, compose_cmd, compose_roi_header, expect
 )
-from polyhost.device.command_ids import HidId
+from polyhost.device.command_ids import HidId, Cmd
 from polyhost.device.keys import Modifier
 
 P = HidId.ID_POLYKYBD.value  # protocol prefix byte
@@ -57,6 +57,23 @@ class TestUtilityFunctions(unittest.TestCase):
         result = expect(self.mock_cmd)
         expected = "P" + chr(self.mock_cmd.value)
         self.assertEqual(result, bytearray(expected, encoding="utf-8"))
+
+
+class TestHandednessCommand(unittest.TestCase):
+    """The handedness command is expressed relative to the master (USB) half:
+    payload 0 = connected half is LEFT, payload 1 = connected half is RIGHT."""
+
+    def test_set_handedness_master_left(self):
+        result = compose_cmd(Cmd.SET_HANDEDNESS, 0)
+        self.assertEqual(result, bytearray([P, Cmd.SET_HANDEDNESS.value, 0]))
+
+    def test_set_handedness_master_right(self):
+        result = compose_cmd(Cmd.SET_HANDEDNESS, 1)
+        self.assertEqual(result, bytearray([P, Cmd.SET_HANDEDNESS.value, 1]))
+
+    def test_command_id_matches_firmware(self):
+        # Firmware hid_com.c dispatches this as case 25.
+        self.assertEqual(Cmd.SET_HANDEDNESS.value, 25)
 
 
 if __name__ == '__main__':
