@@ -37,7 +37,7 @@ from polyhost.device.poly_kybd import PolyKybd
 from polyhost.device.poly_kybd_mock import PolyKybdMock
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.device_manager import DeviceManager
-from polyhost._version import __version__
+from polyhost._version import __version__, __protocol__
 
 from polyhost.input.unicode_input import get_input_method
 from polyhost.services.sunlight_helper import Sunlight
@@ -291,13 +291,6 @@ class PolyHost(QApplication):
         palette.setColor(QPalette.HighlightedText, highlight_text_color)
         self.setPalette(palette)
         
-    # def on_activated(self, i_reason):
-    #     if i_reason == QSystemTrayIcon.Trigger:
-    #         if not self.menu.isVisible():
-    #             self.menu.popup(QCursor.pos())
-    #         else:
-    #             self.menu.hide()
-
     def managed_connection_status(self):
         for action in self.menu.actions():
             action.setEnabled(self.connected and not self.paused)
@@ -339,18 +332,38 @@ class PolyHost(QApplication):
                 self.connected, msg = self.keeb.query_version_info()
                 if self.connected:
                     kb_version = self.keeb.get_sw_version()
+                    kb_proto = self.keeb.get_protocol_version()
                     self.kb_sw_version = self.keeb.get_sw_version_number()
-                    expected = __version__
-                    if kb_version.startswith(expected[:3]):
-                        if kb_version != expected:
-                            self.log.warning("Warning! Minor version mismatch, expected '%s', got '%s'.", expected, kb_version)
-                            self.status.setIcon(get_icon("sync_problem.svg"))
-                            self.status.setText(
-                                f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version}, please update to {expected}!)")
-                        else:
+                    compatible = False
+                    if kb_proto is not None:
+                        if kb_proto == __protocol__:
+                            compatible = True
                             self.status.setIcon(get_icon("sync.svg"))
                             self.status.setText(
-                                f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
+                                f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} (FW {kb_version}, P{kb_proto})")
+                        else:
+                            self.status.setIcon(get_icon("sync_disabled.svg"))
+                            self.status.setText(
+                                f"Protocol mismatch: host P{__protocol__}, firmware P{kb_proto}. Please update.")
+                            self.connected = False
+                    else:
+                        expected = __version__
+                        if kb_version.startswith(expected[:3]):
+                            compatible = True
+                            if kb_version != expected:
+                                self.log.warning("Warning! Version mismatch, expected '%s', got '%s'.", expected, kb_version)
+                                self.status.setIcon(get_icon("sync_problem.svg"))
+                                self.status.setText(
+                                    f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version}, please update firmware!)")
+                            else:
+                                self.status.setIcon(get_icon("sync.svg"))
+                                self.status.setText(
+                                    f"PolyKybd {self.keeb.get_name()} {self.keeb.get_hw_version()} ({kb_version})")
+                        else:
+                            self.status.setIcon(get_icon("sync_disabled.svg"))
+                            self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
+                            self.connected = False
+                    if compatible:
                         if connected_now and self.poly_settings.get("unicode_send_composition_mode"):
                             mode = get_input_method()
                             self.log.info("Setting unicode mode to str %s", mode)
@@ -360,10 +373,6 @@ class PolyHost(QApplication):
                         self.overlay_handler.force_resend()
                         self._needs_overlay_reset = True
                         self.log.info("Connected: active window resend queued.")
-                    else:
-                        self.status.setIcon(get_icon("sync_disabled.svg"))
-                        self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
-                        self.connected = False
                 else:
                     self.status.setIcon(get_icon("sync_disabled.svg"))
                     self.status.setText(msg)
@@ -411,7 +420,6 @@ class PolyHost(QApplication):
                 action.setText(text)
 
     def open_layout_editor(self):
-        #webbrowser.open("https://usevia.app", new=0, autoraise=True)
         self.layout_dialog = KbLayoutDialog(self.keeb, self.device_settings)
         self.layout_dialog.show()
 
@@ -639,8 +647,6 @@ class PolyHost(QApplication):
 
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
-        # except Exception as e:
-        #    self.log.warning("Failed to report active window: %s", e)
 
     def execute_10min_task(self):
         if self.poly_settings.get("brightness_set_daylight_dependent"):

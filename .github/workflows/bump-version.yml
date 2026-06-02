@@ -1,0 +1,83 @@
+name: Bump Version on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine bump type from PR labels
+        id: bump_type
+        run: |
+          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+          if echo "$LABELS" | grep -q '"bump:major"'; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif echo "$LABELS" | grep -q '"bump:minor"'; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          elif echo "$LABELS" | grep -q '"bump:protocol"'; then
+            echo "type=protocol" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version in _version.py
+        run: |
+          python3 - <<'PYEOF'
+          import re
+
+          path = "polyhost/_version.py"
+          with open(path) as f:
+              content = f.read()
+
+          major   = int(re.search(r'__major__\s*=\s*(\d+)',    content).group(1))
+          minor   = int(re.search(r'__minor__\s*=\s*(\d+)',    content).group(1))
+          patch   = int(re.search(r'__patch__\s*=\s*(\d+)',    content).group(1))
+          proto   = int(re.search(r'__protocol__\s*=\s*(\d+)', content).group(1))
+
+          bump = "${{ steps.bump_type.outputs.type }}"
+          if bump == "major":
+              major += 1; minor = 0; patch = 0
+          elif bump == "minor":
+              minor += 1; patch = 0
+          elif bump == "protocol":
+              proto += 1
+          else:
+              patch += 1
+
+          content = re.sub(r'__major__\s*=\s*\d+',    f'__major__ = {major}',    content)
+          content = re.sub(r'__minor__\s*=\s*\d+',    f'__minor__ = {minor}',    content)
+          content = re.sub(r'__patch__\s*=\s*\d+',    f'__patch__ = {patch}',    content)
+          content = re.sub(r'__protocol__\s*=\s*\d+', f'__protocol__ = {proto}', content)
+
+          with open(path, "w") as f:
+              f.write(content)
+
+          print(f"Host bumped to {major}.{minor}.{patch} (protocol {proto})")
+          PYEOF
+
+      - name: Commit and push
+        run: |
+          VERSION=$(python3 -c "
+import re
+c = open('polyhost/_version.py').read()
+parts = [re.search(r'__'+k+r'__\\s*=\\s*(\\d+)', c).group(1) for k in ['major','minor','patch']]
+print('.'.join(parts))
+")
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add polyhost/_version.py
+          git diff --cached --quiet || git commit -m "chore: bump host version to ${VERSION} [skip ci]"
+          git push
