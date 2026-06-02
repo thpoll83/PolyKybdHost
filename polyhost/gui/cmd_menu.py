@@ -169,9 +169,42 @@ class CommandsSubMenu:
         action.triggered.connect(self.activate_bootloader)
         cmd_menu.addAction(action)
 
+        hand_menu = cmd_menu.addMenu(get_icon("keyboard.svg"), "Fix Left/Right Side")
+        action = QAction("Connected half is LEFT (other is RIGHT)", parent=self.parent)
+        action.setData(True)
+        # noinspection PyUnresolvedReferences
+        action.triggered.connect(self.set_handedness)
+        hand_menu.addAction(action)
+
+        action = QAction("Connected half is RIGHT (other is LEFT)", parent=self.parent)
+        action.setData(False)
+        # noinspection PyUnresolvedReferences
+        action.triggered.connect(self.set_handedness)
+        hand_menu.addAction(action)
+
     def activate_bootloader(self):
         result, msg = self.keeb.activate_bootloader()
         self.parent.report_device_result("Error", f"Failed to activate bootloader: '{msg}'", result)
+
+    def set_handedness(self):
+        master_is_left = self.parent.sender().data()
+        connected = "LEFT" if master_is_left else "RIGHT"
+        other = "RIGHT" if master_is_left else "LEFT"
+        confirm_msg = (
+            f"<b>Set the half the USB cable is plugged into as the {connected} side?</b>"
+            f"<br><br>The other half becomes the {other} side. Both halves save the "
+            f"new handedness and reboot onto it (about 10 s, no replug needed).<br><br>"
+            f"Make sure the USB cable is plugged into the half you want to be the "
+            f"<b>{connected}</b> side, then continue."
+        )
+        reply = QMessageBox.question(
+            None, "Fix Left/Right Side", confirm_msg,
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            self.log.info("Set handedness: user cancelled at confirmation.")
+            return
+        result, msg = self.keeb.set_handedness(master_is_left)
+        self.parent.report_device_result("Error", f"Failed to set handedness: '{msg}'", result)
 
     def reset_dynamic_keymap(self):
         result, msg = self.keeb.reset_dynamic_keymap()
