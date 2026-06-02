@@ -12,6 +12,9 @@ jobs:
   bump:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    concurrency:
+      group: bump-version-main
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v4
@@ -70,12 +73,7 @@ jobs:
 
       - name: Commit and push
         run: |
-          VERSION=$(python3 -c "
-import re
-c = open('polyhost/_version.py').read()
-parts = [re.search(r'__'+k+r'__\\s*=\\s*(\\d+)', c).group(1) for k in ['major','minor','patch']]
-print('.'.join(parts))
-")
+          VERSION=$(awk -F' = ' '/^__major__/{m=$2} /^__minor__/{n=$2} /^__patch__/{p=$2} END{print m"."n"."p}' polyhost/_version.py)
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add polyhost/_version.py
