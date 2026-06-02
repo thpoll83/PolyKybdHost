@@ -41,6 +41,7 @@ class PolyKybd:
         self.sw_version = None
         self.sw_version_num = None
         self.hw_version = None
+        self.protocol_version = None
         self.device_settings = settings
         self.poly_settings = poly_settings
         self.num_layers = None
@@ -137,12 +138,13 @@ class PolyKybd:
             return False, msg
         try:
             match = re.search(
-                r"(?P<name>.+)\W(?P<sw>\d\.\d\.\d)\WHW(?P<hw>\w*)", msg)
+                r"(?P<name>.+)\W(?P<sw>\d\.\d\.\d)\W(P(?P<proto>\d+)\W)?HW(?P<hw>\w*)", msg)
             if match:
                 self.name = match.group("name")
                 self.sw_version = match.group("sw")
                 self.sw_version_num = [int(x)
                                        for x in self.sw_version.split(".")]
+                self.protocol_version = int(match.group("proto")) if match.group("proto") else None
                 self.hw_version = match.group("hw")
                 return True, msg
             else:
@@ -165,6 +167,10 @@ class PolyKybd:
 
     def get_hw_version(self) -> str:
         return self.hw_version
+
+    def get_protocol_version(self) -> int | None:
+        """Return the protocol version reported by the firmware, or None for old firmware."""
+        return self.protocol_version
 
     def reset_overlay_mapping(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlay Mapping...")
@@ -486,7 +492,6 @@ class PolyKybd:
         end = self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT - \
             self.device_settings.OVERLAY_CMD_BYTES_ROI_ONCE
         for msg_num in range(0, num_msgs):
-            # self.log.info(f"Sending roi overlay msg {msg_num + 1} of {overlay.roi_msg_msgs} with {end-start} bytes.")
             cmd = hdr if msg_num == 0 else compose_cmd(Cmd.SEND_ROI_OVERLAY)
             data = cmd + buffer[start:end]
             start = end
@@ -496,10 +501,6 @@ class PolyKybd:
                 self.log.error(
                     "Error sending roi overlay message %d/%d (%s)", msg_num+1, msg_num, msg)
                 return num_msgs
-
-        # _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock)
-        # self.log.debug_detailed(
-        #     "send_overlay_roi_for_keycode: Drained %d of %d HID reports (compressed %s)", drained, num_msgs, str(compressed))
 
         if lock:
             lock.release()
@@ -511,14 +512,12 @@ class PolyKybd:
         msg_cnt = 0
         max_msgs = self.device_settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
         for msg_num in range(0, max_msgs):
-            # self.log.debug("Sending msg %d of %d", msg_num + 1, max_msgs)
             cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode,
                               modifier.value, msg_num)
             from_idx = msg_num * self.device_settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
             to_idx = from_idx + self.device_settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
             data = overlay.all_bytes[from_idx:to_idx]
             if skip_empty and msg_num+1 != max_msgs and all(b == 0 for b in data):
-                # self.log.debug("Skipping msg %d as all bytes are 0", msg_num + 1)
                 continue
             result, msg, lock = self.hid.send_multiple(cmd + data, lock)
             if not result:
@@ -527,13 +526,8 @@ class PolyKybd:
                 return msg_cnt
             msg_cnt += 1
 
-        # _, drained, _, lock = self.hid.drain_read_buffer(max_msgs, lock)
-        # self.log.debug_detailed(
-        #     "send_overlay_for_keycode: Drained %d of %d HID reports", drained, max_msgs)
-
         if lock:
             lock.release()
-        # self.log.info(f"Keycode {keycode}: Sent {msg_cnt} plain msgs")
         return msg_cnt
 
     def send_overlay_for_keycode_compressed(self, keycode: int, modifier: Modifier, mapping: dict) -> int:
@@ -546,7 +540,6 @@ class PolyKybd:
         end = self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT - \
             self.device_settings.OVERLAY_CMD_BYTES_COMPRESSED_ONCE
         for msg_num in range(0, overlay.compressed_msgs):
-            # self.log.info(f"Sending compressed msg {msg_num + 1} of {max_msg} with {end-start} bytes.")
             cmd = hdr if msg_num == 0 else compose_cmd(
                 Cmd.SEND_COMPRESSED_OVERLAY)
             data = cmd + overlay.compressed_bytes[start:end]
@@ -558,14 +551,8 @@ class PolyKybd:
                     "Error sending compressed overlay message %d/%d (%s)", msg_num + 1, msg_num, msg)
                 return msg_num
 
-        # _, drained, _, lock = self.hid.drain_read_buffer(
-        #     overlay.compressed_msgs, lock)
-        # self.log.debug_detailed(
-        #     "send_overlay_for_keycode_compressed: Drained %d of %d HID reports", drained, overlay.compressed_msgs)
-
         if lock:
             lock.release()
-        # self.log.info(f"Keycode {keycode}: Sent {max_msg} compressed msgs")
         return overlay.compressed_msgs
 
     def send_overlays_mru(self, filenames: list, cache: OverlayMRUCache) -> bool:
@@ -582,14 +569,6 @@ class PolyKybd:
 
         display_to_pool: dict[int, int] = {}
 
-        # Single HID command that (a) turns on MIRROR_OVERLAYS so every upload
-        # reaches both halves regardless of the upload's keycode side, and
-        # (b) resets the firmware's overlay_map[] to identity plus clears all
-        # use_overlay[] bits before uploads start. The reset is required
-        # because fill_overlay_buffer applies get_overlay_mapping(idx) at
-        # upload time — without resetting first, stale from→to entries from a
-        # previous program's MRU would redirect this send's bytes into the
-        # wrong pool slot.
         self.prepare_for_mru_send()
 
         with cache.batch():
@@ -630,28 +609,6 @@ class PolyKybd:
         self.log.info("MRU: %d HID image messages, %d display positions mapped",
                       hid_msg_counter, len(display_to_pool))
 
-        # Drain the ACKs generated by the send_multiple overlay uploads above.
-        # send_multiple() never reads the keyboard's ACK reply; leaving them in
-        # the HID buffer causes later send_and_read_validate calls (e.g. the
-        # periodic query_id in connect()) to read stale replies, misinterpret
-        # them as a failed GET_ID, and needlessly tear down the HID interface.
-        # if hid_msg_counter > 0:
-        #     _, drained, _, _ = self.hid.drain_read_buffer(hid_msg_counter, None, timeout=20)
-        #     self.log.debug("send_overlays_mru: Drained %d of %d overlay ACKs", drained, hid_msg_counter)
-        
-        # Belt-and-braces: if the prepare_for_mru_send state sync above failed
-        # to reach the slave, slave's MIRROR_OVERLAYS would have been off during
-        # uploads and its set_overlay_usage_post_upload would have set bits at
-        # every pool index. That contamination would show through at any unmapped
-        # display position whose firmware address coincides with a pool slot we
-        # just wrote. Forcing one more USAGE_RESET here clears any such pollution
-        # right before send_overlay_mapping puts the legitimate from-index bits
-        # in. On the master and on a slave that processed prepare_for_mru_send
-        # correctly this is a harmless no-op.
-        # self.reset_overlay_usage()
-        
-        # send_overlay_mapping re-establishes both the mapping and the
-        # use_overlay bit for every from-index in this program.
         ok, msg = self.send_overlay_mapping(display_to_pool)
         if not ok:
             self.log.warning("send_overlays_mru: mapping failed: %s", msg)
