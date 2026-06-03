@@ -244,9 +244,45 @@ class TestApplyUpdate(unittest.TestCase):
             install = Path(td) / "install"
             install.mkdir()
             with mock.patch.object(updater.subprocess, "run") as mock_run:
-                mock_run.return_value = mock.Mock(returncode=1, stderr="boom")
+                mock_run.return_value = mock.Mock(returncode=1, stderr="boom", stdout="")
                 updater.apply_update(src, install)
             self.assertTrue((install / "marker").exists())
+
+    def test_requirements_pip_failure_does_not_raise(self):
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "src"
+            src.mkdir()
+            (src / "requirements.txt").write_text("requests\n")
+            install = Path(td) / "install"
+            install.mkdir()
+
+            def fake_run(cmd, **kwargs):
+                # First call (install -e .) succeeds; second (-r requirements.txt) fails.
+                if "-r" in cmd:
+                    return mock.Mock(returncode=1, stderr="resolve error", stdout="")
+                return mock.Mock(returncode=0, stderr="", stdout="")
+
+            with mock.patch.object(updater.subprocess, "run", side_effect=fake_run) as mock_run:
+                with mock.patch.object(updater.log, "warning") as mock_warn:
+                    updater.apply_update(src, install)
+
+            self.assertEqual(mock_run.call_count, 2)
+            warnings = " ".join(str(c) for c in mock_warn.call_args_list)
+            self.assertIn("install -r requirements.txt", warnings)
+
+    def test_pip_failure_falls_back_to_stdout_when_stderr_empty(self):
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "src"
+            src.mkdir()
+            install = Path(td) / "install"
+            install.mkdir()
+            with mock.patch.object(updater.subprocess, "run") as mock_run, \
+                 mock.patch.object(updater.log, "warning") as mock_warn:
+                mock_run.return_value = mock.Mock(
+                    returncode=1, stderr="", stdout="diagnostic on stdout")
+                updater.apply_update(src, install)
+            warnings = " ".join(str(c) for c in mock_warn.call_args_list)
+            self.assertIn("diagnostic on stdout", warnings)
 
 
 if __name__ == "__main__":

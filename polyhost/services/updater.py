@@ -156,8 +156,9 @@ def _run_pip(args: list, label: str) -> None:
             check=False, capture_output=True, text=True, timeout=300,
         )
         if result.returncode != 0:
+            details = (result.stderr or "").strip() or (result.stdout or "").strip()
             log.warning("pip %s after update returned %d: %s",
-                        label, result.returncode, result.stderr.strip()[-500:])
+                        label, result.returncode, details[-500:])
     except (subprocess.SubprocessError, OSError) as e:
         log.warning("pip %s after update failed to run: %s", label, e)
 
