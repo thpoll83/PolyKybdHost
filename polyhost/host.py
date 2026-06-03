@@ -210,6 +210,7 @@ class PolyHost(QApplication):
         self._update_checker = None
         self._update_installer = None
         self._update_progress = None
+        self._await_manual_prompt = False
 
         if debug_mode > 0:
             debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
@@ -314,6 +315,7 @@ class PolyHost(QApplication):
         self.log_dialog.setEnabled(True)
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
+        self.update_action.setEnabled(True)
         self.status.setEnabled(True)
         self.support.setEnabled(True)
         self.about.setEnabled(True)
@@ -556,15 +558,24 @@ class PolyHost(QApplication):
         with open(filename, "w") as f:
             f.write(yaml.dump(self.mapping))
 
-    def _start_update_check(self):
+    def _start_update_check(self, on_no_update=None):
+        """Start a background update check. `on_no_update` is invoked on the
+        UI thread when the check completes with no newer release (used for
+        manual-check feedback; automatic checks pass None and stay silent)."""
         if self._update_checker is not None and self._update_checker.isRunning():
             return
         self.log.debug("Starting update check...")
         self._update_checker = UpdateChecker(parent=self)
+
+        def _no_update():
+            self.log.debug("No update available")
+            if on_no_update is not None:
+                on_no_update()
+
         # noinspection PyUnresolvedReferences
         self._update_checker.update_available.connect(self._on_update_available)
         # noinspection PyUnresolvedReferences
-        self._update_checker.no_update.connect(lambda: self.log.debug("No update available"))
+        self._update_checker.no_update.connect(_no_update)
         # noinspection PyUnresolvedReferences
         self._update_checker.error.connect(lambda msg: self.log.warning("Update check error: %s", msg))
         self._update_checker.start()
@@ -573,13 +584,30 @@ class PolyHost(QApplication):
         self._pending_release = release
         self.update_action.setText(f"Update to v{release.version} available")
         self.log.info("Update available: %s", release.version)
+        if self._await_manual_prompt:
+            self._await_manual_prompt = False
+            self._prompt_and_install(release)
 
     def _on_update_clicked(self):
-        if self._pending_release is None:
-            self.update_action.setText("Checking for updates...")
-            self._start_update_check()
+        if self._update_installer is not None and self._update_installer.isRunning():
             return
-        release = self._pending_release
+        if self._pending_release is not None:
+            self._prompt_and_install(self._pending_release)
+            return
+        self.update_action.setText("Checking for updates...")
+        self._await_manual_prompt = True
+        self._start_update_check(on_no_update=self._on_manual_no_update)
+
+    def _on_manual_no_update(self):
+        self._await_manual_prompt = False
+        self.update_action.setText("No updates available")
+        QMessageBox.information(
+            None, "PolyKybdHost Update",
+            f"You are running the latest version (v{__version__}).",
+        )
+        self.update_action.setText("Check for updates...")
+
+    def _prompt_and_install(self, release):
         reply = QMessageBox.question(
             None,
             "Update PolyKybdHost",
@@ -593,10 +621,16 @@ class PolyHost(QApplication):
         self._run_update_installer(release)
 
     def _run_update_installer(self, release):
+        if self._update_installer is not None and self._update_installer.isRunning():
+            self.log.debug("Update installer already running; ignoring re-entry")
+            return
+
+        self.update_action.setEnabled(False)
         self._update_progress = QProgressDialog(
             "Downloading update...", "Cancel", 0, 100, None,
         )
         self._update_progress.setWindowTitle("PolyKybdHost Update")
+        self._update_progress.setWindowFlag(Qt.WindowStaysOnTopHint, True)
         self._update_progress.setMinimumDuration(0)
         self._update_progress.setAutoClose(False)
         self._update_progress.setCancelButton(None)
@@ -630,6 +664,7 @@ class PolyHost(QApplication):
         if self._update_progress is not None:
             self._update_progress.close()
             self._update_progress = None
+        self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
         QMessageBox.warning(None, "Update failed",
                             f"Could not apply the update:\n\n{message}")

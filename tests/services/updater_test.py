@@ -114,8 +114,25 @@ class TestSafeExtract(unittest.TestCase):
             dest = Path(td) / "out"
             dest.mkdir()
             with tarfile.open(tar_path, "r:gz") as tar:
-                with self.assertRaises(Exception):
+                with self.assertRaises(RuntimeError):
                     updater._safe_extract(tar, dest)
+
+    def test_rejects_symlink_member(self):
+        with tempfile.TemporaryDirectory() as td:
+            tar_path = Path(td) / "link.tar.gz"
+            with tarfile.open(tar_path, "w:gz") as tar:
+                info = tarfile.TarInfo(name="link")
+                info.type = tarfile.SYMTYPE
+                info.linkname = "/etc/passwd"
+                tar.addfile(info)
+
+            dest = Path(td) / "out"
+            dest.mkdir()
+            with mock.patch("polyhost.services.updater.sys") as fake_sys:
+                fake_sys.version_info = (3, 11, 0)
+                with tarfile.open(tar_path, "r:gz") as tar:
+                    with self.assertRaises(RuntimeError):
+                        updater._safe_extract(tar, dest)
 
     def test_extracts_normal_tarball(self):
         with tempfile.TemporaryDirectory() as td:

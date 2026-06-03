@@ -98,12 +98,20 @@ def check_latest() -> Optional[ReleaseInfo]:
 
 
 def _safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
-    """Extract a tarball, refusing any member that resolves outside `dest`."""
+    """Extract `tar` into `dest`, refusing any path-traversal or link members.
+
+    On Python >=3.12, delegates to the stdlib `filter="data"` extractor which
+    enforces these constraints itself. On older Pythons, symlink and hardlink
+    members are rejected outright (otherwise a tarball could plant a link
+    under `dest` and have a later entry write through it to escape `dest`).
+    """
     if sys.version_info >= (3, 12):
         tar.extractall(path=dest, filter="data")
         return
     dest_resolved = dest.resolve()
     for member in tar.getmembers():
+        if member.issym() or member.islnk():
+            raise RuntimeError(f"Refusing link tar member: {member.name}")
         target = (dest / member.name).resolve()
         if dest_resolved != target and dest_resolved not in target.parents:
             raise RuntimeError(f"Refusing unsafe tar member: {member.name}")
