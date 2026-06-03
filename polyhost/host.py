@@ -214,10 +214,9 @@ class PolyHost(QApplication):
         self._update_progress = None
         self._await_manual_prompt = False
 
-        self.firmware_update_action = QAction(get_icon("keyboard.svg"), "", parent=self)
+        self.firmware_update_action = QAction(get_icon("keyboard.svg"), "Check for firmware update…", parent=self)
         # noinspection PyUnresolvedReferences
         self.firmware_update_action.triggered.connect(self._on_fw_up_clicked)
-        self.firmware_update_action.setVisible(False)
         self.menu.addAction(self.firmware_update_action)
         self._pending_fw_release = None
         self._fw_up_downloader = None
@@ -328,9 +327,7 @@ class PolyHost(QApplication):
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
         self.update_action.setEnabled(True)
-        self.firmware_update_action.setEnabled(
-            self.connected and self._pending_fw_release is not None
-        )
+        self.firmware_update_action.setEnabled(self.connected)
         self.status.setEnabled(True)
         self.support.setEnabled(True)
         self.about.setEnabled(True)
@@ -597,6 +594,15 @@ class PolyHost(QApplication):
             if not _error_seen[0] and on_check_error is not None:
                 on_check_error(msg)
             _error_seen[0] = True
+            # Reset firmware manual check regardless of which check failed — both
+            # host and firmware errors emit the same signal, either can leave it stuck.
+            if self._await_manual_fw_prompt:
+                self._await_manual_fw_prompt = False
+                self.firmware_update_action.setText(
+                    f"Update firmware to v{self._pending_fw_release.version}…"
+                    if self._pending_fw_release else "Check for firmware update…"
+                )
+                self.firmware_update_action.setEnabled(self.connected)
 
         def _host_no_update():
             if _error_seen[0]:
@@ -777,12 +783,17 @@ class PolyHost(QApplication):
         if self._pending_fw_release is not None:
             self._prompt_and_flash(self._pending_fw_release)
             return
-        self.firmware_update_action.setText("Checking for firmware updates…")
+        self.firmware_update_action.setText("Checking for firmware update…")
+        self.firmware_update_action.setEnabled(False)
         self._await_manual_fw_prompt = True
-        self._start_update_check(on_no_update=self._on_manual_no_fw_update)
+        # No on_no_update here: the firmware result comes via _await_manual_fw_prompt
+        # and the _fw_no_update closure in _start_update_check.
+        self._start_update_check()
 
     def _on_manual_no_fw_update(self):
         self._await_manual_fw_prompt = False
+        self.firmware_update_action.setText("Check for firmware update…")
+        self.firmware_update_action.setEnabled(self.connected)
         fw_version = self.keeb.get_sw_version() if self.connected else "unknown"
         QMessageBox.information(
             None, "PolyKybd Firmware",
