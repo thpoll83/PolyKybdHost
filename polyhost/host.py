@@ -17,7 +17,8 @@ from PyQt5.QtWidgets import (
     QAction,
     QDialog,
     QMessageBox,
-    QFileDialog, )
+    QFileDialog,
+    QProgressDialog, )
 
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
@@ -41,6 +42,7 @@ from polyhost._version import __version__, __protocol__
 
 from polyhost.input.unicode_input import get_input_method
 from polyhost.services.sunlight_helper import Sunlight
+from polyhost.services.updater import UpdateChecker, UpdateInstaller, restart_app
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
@@ -200,6 +202,16 @@ class PolyHost(QApplication):
         self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
 
+        self.update_action = QAction(get_icon("sync.svg"), "Check for updates...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.update_action.triggered.connect(self._on_update_clicked)
+        self.menu.addAction(self.update_action)
+        self._pending_release = None
+        self._update_checker = None
+        self._update_installer = None
+        self._update_progress = None
+        self._await_manual_prompt = False
+
         if debug_mode > 0:
             debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
             self.debug_lang_menu = debug_menu.addMenu(get_icon("language.svg"), "Change System Input Language")
@@ -255,6 +267,12 @@ class PolyHost(QApplication):
         self.tray.setContextMenu(self.menu)
         self.tray.show()
 
+        QTimer.singleShot(15_000, self._start_update_check)
+        self._update_timer = QTimer(self)
+        # noinspection PyUnresolvedReferences
+        self._update_timer.timeout.connect(self._start_update_check)
+        self._update_timer.start(24 * 60 * 60 * 1000)
+
         self.log.debug("Read overlay mapping file...")
         self.mapping = {}
         self.read_overlay_mapping_file(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/overlay-mapping.poly.yaml"))
@@ -297,6 +315,7 @@ class PolyHost(QApplication):
         self.log_dialog.setEnabled(True)
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
+        self.update_action.setEnabled(True)
         self.status.setEnabled(True)
         self.support.setEnabled(True)
         self.about.setEnabled(True)
@@ -538,6 +557,117 @@ class PolyHost(QApplication):
     def save_overlay_mapping_file(self, filename="overlay-mapping.poly.yaml"):
         with open(filename, "w") as f:
             f.write(yaml.dump(self.mapping))
+
+    def _start_update_check(self, on_no_update=None):
+        """Start a background update check. `on_no_update` is invoked on the
+        UI thread when the check completes with no newer release (used for
+        manual-check feedback; automatic checks pass None and stay silent)."""
+        if self._update_checker is not None and self._update_checker.isRunning():
+            return
+        self.log.debug("Starting update check...")
+        self._update_checker = UpdateChecker(parent=self)
+
+        def _no_update():
+            self.log.debug("No update available")
+            if on_no_update is not None:
+                on_no_update()
+
+        # noinspection PyUnresolvedReferences
+        self._update_checker.update_available.connect(self._on_update_available)
+        # noinspection PyUnresolvedReferences
+        self._update_checker.no_update.connect(_no_update)
+        # noinspection PyUnresolvedReferences
+        self._update_checker.error.connect(lambda msg: self.log.warning("Update check error: %s", msg))
+        self._update_checker.start()
+
+    def _on_update_available(self, release):
+        self._pending_release = release
+        self.update_action.setText(f"Update to v{release.version} available")
+        self.log.info("Update available: %s", release.version)
+        if self._await_manual_prompt:
+            self._await_manual_prompt = False
+            self._prompt_and_install(release)
+
+    def _on_update_clicked(self):
+        if self._update_installer is not None and self._update_installer.isRunning():
+            return
+        if self._pending_release is not None:
+            self._prompt_and_install(self._pending_release)
+            return
+        self.update_action.setText("Checking for updates...")
+        self._await_manual_prompt = True
+        self._start_update_check(on_no_update=self._on_manual_no_update)
+
+    def _on_manual_no_update(self):
+        self._await_manual_prompt = False
+        self.update_action.setText("No updates available")
+        QMessageBox.information(
+            None, "PolyKybdHost Update",
+            f"You are running the latest version (v{__version__}).",
+        )
+        self.update_action.setText("Check for updates...")
+
+    def _prompt_and_install(self, release):
+        reply = QMessageBox.question(
+            None,
+            "Update PolyKybdHost",
+            f"A new version v{release.version} is available.\n\n"
+            f"Download, install, and restart now?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        self._run_update_installer(release)
+
+    def _run_update_installer(self, release):
+        if self._update_installer is not None and self._update_installer.isRunning():
+            self.log.debug("Update installer already running; ignoring re-entry")
+            return
+
+        self.update_action.setEnabled(False)
+        self._update_progress = QProgressDialog(
+            "Downloading update...", "Cancel", 0, 100, None,
+        )
+        self._update_progress.setWindowTitle("PolyKybdHost Update")
+        self._update_progress.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+        self._update_progress.setMinimumDuration(0)
+        self._update_progress.setAutoClose(False)
+        self._update_progress.setCancelButton(None)
+        self._update_progress.setValue(0)
+        self._update_progress.show()
+
+        self._update_installer = UpdateInstaller(release, parent=self)
+        # noinspection PyUnresolvedReferences
+        self._update_installer.progress.connect(self._on_update_progress)
+        # noinspection PyUnresolvedReferences
+        self._update_installer.finished_ok.connect(self._on_update_done)
+        # noinspection PyUnresolvedReferences
+        self._update_installer.failed.connect(self._on_update_failed)
+        self._update_installer.start()
+
+    def _on_update_progress(self, percent, message):
+        if self._update_progress is None:
+            return
+        self._update_progress.setLabelText(message)
+        self._update_progress.setValue(percent)
+
+    def _on_update_done(self):
+        if self._update_progress is not None:
+            self._update_progress.close()
+            self._update_progress = None
+        self.log.info("Update applied, restarting...")
+        self.quit_app()
+        restart_app()
+
+    def _on_update_failed(self, message):
+        if self._update_progress is not None:
+            self._update_progress.close()
+            self._update_progress = None
+        self.update_action.setEnabled(True)
+        self.log.error("Update failed: %s", message)
+        QMessageBox.warning(None, "Update failed",
+                            f"Could not apply the update:\n\n{message}")
 
     def quit_app(self):
         self.icon_manager.set_disconnected()
