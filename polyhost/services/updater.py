@@ -310,23 +310,76 @@ def _run_pip(args: list, label: str) -> None:
         log.warning("pip %s after update failed to run: %s", label, e)
 
 
-def apply_update(extracted_dir: Path, install_root: Path) -> None:
+# On Windows the running process holds native DLLs (e.g. hidapi.dll) open,
+# so shutil.copy2 fails with WinError 32 when trying to overwrite them.
+# apply_update() collects those files and returns them; UpdateInstaller
+# writes this script to the temp dir, launches it detached, then quits.
+# The relay waits for the app to exit (releasing DLL handles), copies the
+# remaining files, relaunches, and cleans up.
+_RELAY_SCRIPT_TEMPLATE = """\
+import shutil, subprocess, sys, time
+
+time.sleep(2)
+for src, dst in {pairs!r}:
+    try:
+        shutil.copy2(src, dst)
+    except Exception as e:
+        print(f"polyhost relay: {{e}}", file=sys.stderr)
+
+subprocess.Popen({restart_args!r}, close_fds=False)
+shutil.rmtree({tmp_dir!r}, ignore_errors=True)
+"""
+
+
+def _write_relay_script(locked: list, tmp_dir: Path) -> Path:
+    """Write a detached relay script that copies locked files after app exit."""
+    restart_args = [sys.executable, "-m", "polyhost", *sys.argv[1:]]
+    script = tmp_dir / "_polyhost_relay.py"
+    script.write_text(
+        _RELAY_SCRIPT_TEMPLATE.format(
+            pairs=locked,
+            restart_args=restart_args,
+            tmp_dir=str(tmp_dir),
+        ),
+        encoding="utf-8",
+    )
+    return script
+
+
+def apply_update(extracted_dir: Path, install_root: Path) -> list:
     """Copy files from `extracted_dir` over `install_root`, then refresh deps.
 
-    Runs `pip install -e .` to pick up `setup.py` changes and, if a
-    `requirements.txt` is present, `pip install -r requirements.txt` so new
-    runtime deps declared only there are installed into the active venv.
+    On Windows, native DLLs locked by the running process are skipped and
+    returned as a list of ``(src, dst)`` string pairs for deferred copy via
+    a relay script.  On other platforms the list is always empty.
+
+    Runs ``pip install -e .`` to pick up ``setup.py`` changes and, if a
+    ``requirements.txt`` is present, ``pip install -r requirements.txt``.
     """
+    locked: list = []
+
+    def _copy2(src, dst):
+        try:
+            shutil.copy2(src, dst)
+        except OSError as e:
+            if sys.platform == "win32" and getattr(e, "winerror", None) == 32:
+                locked.append((str(src), str(dst)))
+                log.debug("Deferring locked file: %s", src)
+            else:
+                raise
+
     shutil.copytree(
         extracted_dir,
         install_root,
         dirs_exist_ok=True,
         ignore=shutil.ignore_patterns(*EXCLUDES),
+        copy_function=_copy2,
     )
     _run_pip(["install", "-e", str(install_root)], "install -e .")
     requirements = install_root / "requirements.txt"
     if requirements.is_file():
         _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt")
+    return locked
 
 
 def restart_app() -> None:
@@ -393,9 +446,10 @@ class UpdateChecker(QThread):
 class UpdateInstaller(QThread):
     """Background thread that downloads, extracts, and applies an update."""
 
-    progress = pyqtSignal(int, str)
+    progress    = pyqtSignal(int, str)
     finished_ok = pyqtSignal()
-    failed = pyqtSignal(str)
+    relay_needed = pyqtSignal(str)  # path to relay script (Windows locked-file path)
+    failed      = pyqtSignal(str)
 
     def __init__(self, release: ReleaseInfo, parent=None):
         super().__init__(parent)
@@ -408,21 +462,32 @@ class UpdateInstaller(QThread):
             self.failed.emit(f"Install dir not writable: {e}")
             return
 
+        # Use mkdtemp (not TemporaryDirectory context manager) so that on Windows
+        # we can leave the directory alive for the relay script to consume.
+        tmp_dir = Path(tempfile.mkdtemp(prefix="polyhost-update-"))
         try:
-            with tempfile.TemporaryDirectory(prefix="polyhost-update-") as td:
-                tmp = Path(td)
-                self.progress.emit(0, "Downloading...")
-                extracted = download_and_extract(
-                    self.release.tarball_url, tmp,
-                    progress_cb=lambda pct: self.progress.emit(pct, "Downloading..."),
-                )
-                self.progress.emit(100, "Applying update...")
-                apply_update(extracted, install_root)
+            self.progress.emit(0, "Downloading...")
+            extracted = download_and_extract(
+                self.release.tarball_url, tmp_dir,
+                progress_cb=lambda pct: self.progress.emit(pct, "Downloading..."),
+            )
+            self.progress.emit(100, "Applying update...")
+            locked = apply_update(extracted, install_root)
         except Exception as e:  # noqa: BLE001
             log.exception("Update install failed")
+            shutil.rmtree(tmp_dir, ignore_errors=True)
             self.failed.emit(str(e))
             return
-        self.finished_ok.emit()
+
+        if locked:
+            relay_path = _write_relay_script(locked, tmp_dir)
+            log.info("Relay script written for %d locked file(s): %s", len(locked), relay_path)
+            # Do NOT clean up tmp_dir — relay script needs the source files and
+            # will delete the directory itself after copying them.
+            self.relay_needed.emit(str(relay_path))
+        else:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            self.finished_ok.emit()
 
 
 class FwUpDownloader(QThread):
