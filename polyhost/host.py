@@ -573,17 +573,33 @@ class PolyHost(QApplication):
         with open(filename, "w") as f:
             f.write(yaml.dump(self.mapping))
 
-    def _start_update_check(self, on_no_update=None):
-        """Start a background update check. `on_no_update` is invoked on the
-        UI thread when the check completes with no newer release (used for
-        manual-check feedback; automatic checks pass None and stay silent)."""
+    def _start_update_check(self, on_no_update=None, on_check_error=None):
+        """Start a background update check.
+
+        ``on_no_update`` is called when the check succeeds but finds no newer release.
+        ``on_check_error`` is called (with a message string) when the API/network
+        call itself fails — distinct from "no update available".
+        Both are None for the automatic periodic check (silent failure).
+        """
         if self._update_checker is not None and self._update_checker.isRunning():
             return
         self.log.debug("Starting update check...")
         fw_version = self.keeb.get_sw_version() if self.connected else None
         self._update_checker = UpdateChecker(current_fw_version=fw_version, parent=self)
 
+        # Track whether the error signal fires before host_no_update so we can
+        # suppress the "no update" callback and show the real failure reason.
+        _error_seen = [False]
+
+        def _on_error(msg):
+            _error_seen[0] = True
+            self.log.warning("Update check error: %s", msg)
+            if on_check_error is not None:
+                on_check_error(msg)
+
         def _host_no_update():
+            if _error_seen[0]:
+                return  # error was already surfaced via on_check_error
             self.log.debug("No host update available")
             if on_no_update is not None:
                 on_no_update()
@@ -603,7 +619,7 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self._update_checker.fw_no_update.connect(_fw_no_update)
         # noinspection PyUnresolvedReferences
-        self._update_checker.error.connect(lambda msg: self.log.warning("Update check error: %s", msg))
+        self._update_checker.error.connect(_on_error)
         self._update_checker.start()
 
     def _on_update_available(self, release):
@@ -622,7 +638,10 @@ class PolyHost(QApplication):
             return
         self.update_action.setText("Checking for updates...")
         self._await_manual_prompt = True
-        self._start_update_check(on_no_update=self._on_manual_no_update)
+        self._start_update_check(
+            on_no_update=self._on_manual_no_update,
+            on_check_error=self._on_manual_check_error,
+        )
 
     def _on_manual_no_update(self):
         self._await_manual_prompt = False
@@ -632,6 +651,15 @@ class PolyHost(QApplication):
             f"You are running the latest version (v{__version__}).",
         )
         self.update_action.setText("Check for updates...")
+
+    def _on_manual_check_error(self, msg: str):
+        self._await_manual_prompt = False
+        self.update_action.setText("Check for updates...")
+        QMessageBox.warning(
+            None, "PolyKybdHost Update",
+            f"Could not check for updates:\n\n{msg}\n\n"
+            f"Run with --debug 1 for details.",
+        )
 
     def _prompt_and_install(self, release):
         reply = QMessageBox.question(

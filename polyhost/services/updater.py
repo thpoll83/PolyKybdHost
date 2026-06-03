@@ -40,6 +40,13 @@ ReleaseInfo   = namedtuple("ReleaseInfo",   ["tag", "version", "tarball_url", "h
 FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "uf2_url", "html_url"])
 
 
+class UpdateCheckError(RuntimeError):
+    """Raised when the GitHub releases API is unreachable or returns an unexpected response.
+
+    Distinct from returning None (which means "API succeeded but no newer version exists").
+    """
+
+
 class NotWritableError(RuntimeError):
     """Raised when the install directory cannot be modified (e.g. system site-packages)."""
 
@@ -57,7 +64,11 @@ def _current_version() -> Version:
 
 
 def check_latest() -> Optional[ReleaseInfo]:
-    """Return ReleaseInfo if GitHub's latest release is strictly newer; else None."""
+    """Return ReleaseInfo if GitHub's latest release is strictly newer; else None.
+
+    Raises UpdateCheckError if the API call fails (network error, non-200 response,
+    or malformed payload) so callers can distinguish "no update" from "check failed".
+    """
     try:
         resp = requests.get(
             GITHUB_API,
@@ -65,15 +76,12 @@ def check_latest() -> Optional[ReleaseInfo]:
             timeout=HTTP_TIMEOUT,
         )
     except requests.RequestException as e:
-        log.warning("Update check failed (network): %s", e)
-        return None
+        raise UpdateCheckError(f"Network error: {e}") from e
 
     if resp.status_code == 403:
-        log.warning("Update check rate-limited by GitHub (HTTP 403)")
-        return None
+        raise UpdateCheckError("GitHub rate limit reached — try again later")
     if resp.status_code != 200:
-        log.warning("Update check failed: HTTP %s", resp.status_code)
-        return None
+        raise UpdateCheckError(f"GitHub API returned HTTP {resp.status_code}")
 
     try:
         data = resp.json()
@@ -81,15 +89,13 @@ def check_latest() -> Optional[ReleaseInfo]:
         tarball_url = data["tarball_url"]
         html_url = data.get("html_url", "")
     except (ValueError, KeyError) as e:
-        log.warning("Update check: malformed release payload: %s", e)
-        return None
+        raise UpdateCheckError(f"Malformed GitHub response: {e}") from e
 
     version_str = tag.lstrip("vV")
     try:
         latest = Version(version_str)
     except InvalidVersion:
-        log.warning("Update check: tag %r is not a valid version", tag)
-        return None
+        raise UpdateCheckError(f"Release tag {tag!r} is not a valid version")
 
     if latest <= _current_version():
         log.debug("Update check: current %s is up-to-date (latest %s)", __version__, latest)
@@ -100,7 +106,11 @@ def check_latest() -> Optional[ReleaseInfo]:
 
 
 def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
-    """Return FwUpReleaseInfo if the latest firmware release is strictly newer; else None."""
+    """Return FwUpReleaseInfo if the latest firmware release is strictly newer; else None.
+
+    Raises UpdateCheckError on network/API failure.
+    Returns None for "up to date" or "release has no .bin asset".
+    """
     try:
         resp = requests.get(
             GITHUB_FW_API,
@@ -108,15 +118,12 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
             timeout=HTTP_TIMEOUT,
         )
     except requests.RequestException as e:
-        log.warning("Firmware update check failed (network): %s", e)
-        return None
+        raise UpdateCheckError(f"Network error: {e}") from e
 
     if resp.status_code == 403:
-        log.warning("Firmware update check rate-limited by GitHub (HTTP 403)")
-        return None
+        raise UpdateCheckError("GitHub rate limit reached — try again later")
     if resp.status_code != 200:
-        log.warning("Firmware update check failed: HTTP %s", resp.status_code)
-        return None
+        raise UpdateCheckError(f"GitHub API returned HTTP {resp.status_code}")
 
     try:
         data = resp.json()
@@ -124,15 +131,13 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
         html_url = data.get("html_url", "")
         assets = data.get("assets", [])
     except (ValueError, KeyError) as e:
-        log.warning("Firmware update check: malformed release payload: %s", e)
-        return None
+        raise UpdateCheckError(f"Malformed GitHub response: {e}") from e
 
     version_str = tag.lstrip("vV")
     try:
         latest = Version(version_str)
     except InvalidVersion:
-        log.warning("Firmware update check: tag %r is not a valid version", tag)
-        return None
+        raise UpdateCheckError(f"Release tag {tag!r} is not a valid version")
 
     try:
         current = Version(current_version.lstrip("vV"))
@@ -271,23 +276,31 @@ class UpdateChecker(QThread):
 
         try:
             host_release = check_latest()
+        except UpdateCheckError as e:
+            log.warning("Host update check failed: %s", e)
+            self.error.emit(str(e))
         except Exception as e:  # noqa: BLE001
             log.exception("Host update check crashed")
             self.error.emit(str(e))
 
-        if self._current_fw_version:
-            try:
-                fw_release = check_fw_latest(self._current_fw_version)
-            except Exception as e:  # noqa: BLE001
-                log.exception("Firmware update check crashed")
-                self.error.emit(str(e))
-
+        # Always emit host_no_update so the caller can reset its UI.  The error
+        # signal fires first when the check failed, letting callers distinguish
+        # "API/network error" from "genuinely no newer version".
         if host_release:
             self.update_available.emit(host_release)
         else:
             self.host_no_update.emit()
 
         if self._current_fw_version:
+            try:
+                fw_release = check_fw_latest(self._current_fw_version)
+            except UpdateCheckError as e:
+                log.warning("Firmware update check failed: %s", e)
+                self.error.emit(str(e))
+            except Exception as e:  # noqa: BLE001
+                log.exception("Firmware update check crashed")
+                self.error.emit(str(e))
+
             if fw_release:
                 self.fw_up_available.emit(fw_release)
             else:
