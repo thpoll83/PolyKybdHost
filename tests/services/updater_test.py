@@ -1,5 +1,6 @@
 import io
 import json
+import sys
 import tarfile
 import tempfile
 import unittest
@@ -213,6 +214,27 @@ class TestApplyUpdate(unittest.TestCase):
             self.assertFalse((install / "__pycache__").exists(),
                              "__pycache__ must be excluded")
             mock_run.assert_called_once()
+            self.assertEqual(mock_run.call_args.args[0][:4],
+                             [sys.executable, "-m", "pip", "install"])
+
+    def test_installs_requirements_when_present(self):
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "src"
+            src.mkdir()
+            (src / "requirements.txt").write_text("requests\npackaging\n")
+            install = Path(td) / "install"
+            install.mkdir()
+
+            with mock.patch.object(updater.subprocess, "run") as mock_run:
+                mock_run.return_value = mock.Mock(returncode=0, stderr="")
+                updater.apply_update(src, install)
+
+            self.assertEqual(mock_run.call_count, 2)
+            cmds = [c.args[0] for c in mock_run.call_args_list]
+            self.assertIn("install", cmds[0])
+            self.assertIn("-e", cmds[0])
+            self.assertIn("-r", cmds[1])
+            self.assertEqual(cmds[1][-1], str(install / "requirements.txt"))
 
     def test_pip_failure_does_not_raise(self):
         with tempfile.TemporaryDirectory() as td:
