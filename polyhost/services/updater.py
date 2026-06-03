@@ -24,7 +24,8 @@ from polyhost._version import __version__
 
 log = logging.getLogger(__name__)
 
-GITHUB_API = "https://api.github.com/repos/thpoll83/PolyKybdHost/releases/latest"
+GITHUB_API    = "https://api.github.com/repos/thpoll83/PolyKybdHost/releases/latest"
+GITHUB_FW_API = "https://api.github.com/repos/thpoll83/qmk_firmware/releases/latest"
 USER_AGENT = f"PolyKybdHost/{__version__}"
 HTTP_TIMEOUT = 5
 DOWNLOAD_CHUNK = 64 * 1024
@@ -35,7 +36,8 @@ EXCLUDES = (
 )
 
 
-ReleaseInfo = namedtuple("ReleaseInfo", ["tag", "version", "tarball_url", "html_url"])
+ReleaseInfo   = namedtuple("ReleaseInfo",   ["tag", "version", "tarball_url", "html_url"])
+FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "uf2_url", "html_url"])
 
 
 class NotWritableError(RuntimeError):
@@ -95,6 +97,63 @@ def check_latest() -> Optional[ReleaseInfo]:
 
     log.info("Update check: new version available: %s -> %s", __version__, latest)
     return ReleaseInfo(tag=tag, version=str(latest), tarball_url=tarball_url, html_url=html_url)
+
+
+def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
+    """Return FwUpReleaseInfo if the latest firmware release is strictly newer; else None."""
+    try:
+        resp = requests.get(
+            GITHUB_FW_API,
+            headers={"User-Agent": USER_AGENT, "Accept": "application/vnd.github+json"},
+            timeout=HTTP_TIMEOUT,
+        )
+    except requests.RequestException as e:
+        log.warning("Firmware update check failed (network): %s", e)
+        return None
+
+    if resp.status_code == 403:
+        log.warning("Firmware update check rate-limited by GitHub (HTTP 403)")
+        return None
+    if resp.status_code != 200:
+        log.warning("Firmware update check failed: HTTP %s", resp.status_code)
+        return None
+
+    try:
+        data = resp.json()
+        tag = data["tag_name"]
+        html_url = data.get("html_url", "")
+        assets = data.get("assets", [])
+    except (ValueError, KeyError) as e:
+        log.warning("Firmware update check: malformed release payload: %s", e)
+        return None
+
+    version_str = tag.lstrip("vV")
+    try:
+        latest = Version(version_str)
+    except InvalidVersion:
+        log.warning("Firmware update check: tag %r is not a valid version", tag)
+        return None
+
+    try:
+        current = Version(current_version.lstrip("vV"))
+    except InvalidVersion:
+        log.warning("Firmware update check: current version %r not parseable", current_version)
+        return None
+
+    if latest <= current:
+        log.debug("Firmware update check: current %s is up-to-date (latest %s)", current_version, latest)
+        return None
+
+    bin_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".bin")), None)
+    uf2_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".uf2")), None)
+
+    if not bin_url:
+        log.warning("Firmware update check: release %s has no .bin asset — skipping", tag)
+        return None
+
+    log.info("Firmware update check: new version available: %s -> %s", current_version, latest)
+    return FwUpReleaseInfo(tag=tag, version=str(latest), bin_url=bin_url,
+                           uf2_url=uf2_url or "", html_url=html_url)
 
 
 def _safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
@@ -194,23 +253,40 @@ def restart_app() -> None:
 
 
 class UpdateChecker(QThread):
-    """Background thread that polls GitHub once and emits the result."""
+    """Background thread that polls GitHub for host and firmware updates."""
 
-    update_available = pyqtSignal(object)
-    no_update = pyqtSignal()
-    error = pyqtSignal(str)
+    update_available = pyqtSignal(object)    # ReleaseInfo
+    fw_up_available  = pyqtSignal(object)    # FwUpReleaseInfo
+    no_update        = pyqtSignal()          # neither host nor firmware has a new release
+    error            = pyqtSignal(str)
+
+    def __init__(self, current_fw_version: str = None, parent=None):
+        super().__init__(parent)
+        self._current_fw_version = current_fw_version
 
     def run(self):
+        host_release = None
+        fw_release   = None
+
         try:
-            release = check_latest()
+            host_release = check_latest()
         except Exception as e:  # noqa: BLE001
-            log.exception("Update check crashed")
+            log.exception("Host update check crashed")
             self.error.emit(str(e))
-            return
-        if release is None:
+
+        if self._current_fw_version:
+            try:
+                fw_release = check_fw_latest(self._current_fw_version)
+            except Exception as e:  # noqa: BLE001
+                log.exception("Firmware update check crashed")
+                self.error.emit(str(e))
+
+        if host_release:
+            self.update_available.emit(host_release)
+        if fw_release:
+            self.fw_up_available.emit(fw_release)
+        if not host_release and not fw_release:
             self.no_update.emit()
-        else:
-            self.update_available.emit(release)
 
 
 class UpdateInstaller(QThread):
@@ -246,3 +322,49 @@ class UpdateInstaller(QThread):
             self.failed.emit(str(e))
             return
         self.finished_ok.emit()
+
+
+class FwUpDownloader(QThread):
+    """Download a firmware .bin from a GitHub release asset URL to a temp file."""
+
+    progress = pyqtSignal(int, str)        # (percent, message)
+    finished = pyqtSignal(bool, str, str)  # (ok, error_or_empty, bin_path_or_empty)
+
+    def __init__(self, release: FwUpReleaseInfo, parent=None):
+        super().__init__(parent)
+        self.release = release
+
+    def run(self):
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                prefix="polykybd-fw-", suffix=".bin", delete=False
+            ) as tmp:
+                tmp_path = tmp.name
+                self.progress.emit(0, "Connecting…")
+                with requests.get(
+                    self.release.bin_url,
+                    headers={"User-Agent": USER_AGENT},
+                    stream=True,
+                    timeout=HTTP_TIMEOUT * 6,
+                ) as r:
+                    r.raise_for_status()
+                    total = int(r.headers.get("Content-Length") or 0)
+                    written = 0
+                    for chunk in r.iter_content(DOWNLOAD_CHUNK):
+                        if not chunk:
+                            continue
+                        tmp.write(chunk)
+                        written += len(chunk)
+                        if total:
+                            pct = int(written * 100 / total)
+                            self.progress.emit(pct, f"Downloading firmware… {written // 1024} / {total // 1024} KB")
+                        else:
+                            self.progress.emit(0, f"Downloading firmware… {written // 1024} KB")
+        except Exception as e:  # noqa: BLE001
+            log.exception("Firmware download failed")
+            if tmp_path and os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+            self.finished.emit(False, str(e), "")
+            return
+        self.finished.emit(True, "", tmp_path)

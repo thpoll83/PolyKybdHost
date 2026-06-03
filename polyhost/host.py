@@ -42,7 +42,8 @@ from polyhost._version import __version__, __protocol__
 
 from polyhost.input.unicode_input import get_input_method
 from polyhost.services.sunlight_helper import Sunlight
-from polyhost.services.updater import UpdateChecker, UpdateInstaller, restart_app
+from polyhost.services.updater import UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app
+from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
@@ -212,6 +213,16 @@ class PolyHost(QApplication):
         self._update_progress = None
         self._await_manual_prompt = False
 
+        self.firmware_update_action = QAction(get_icon("keyboard.svg"), "", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.firmware_update_action.triggered.connect(self._on_fw_up_clicked)
+        self.firmware_update_action.setVisible(False)
+        self.menu.addAction(self.firmware_update_action)
+        self._pending_fw_release = None
+        self._fw_up_downloader = None
+        self._fw_up_progress = None
+        self._await_manual_fw_prompt = False
+
         if debug_mode > 0:
             debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
             self.debug_lang_menu = debug_menu.addMenu(get_icon("language.svg"), "Change System Input Language")
@@ -316,6 +327,9 @@ class PolyHost(QApplication):
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
         self.update_action.setEnabled(True)
+        self.firmware_update_action.setEnabled(
+            self.connected and self._pending_fw_release is not None
+        )
         self.status.setEnabled(True)
         self.support.setEnabled(True)
         self.about.setEnabled(True)
@@ -565,7 +579,8 @@ class PolyHost(QApplication):
         if self._update_checker is not None and self._update_checker.isRunning():
             return
         self.log.debug("Starting update check...")
-        self._update_checker = UpdateChecker(parent=self)
+        fw_version = self.keeb.get_sw_version() if self.connected else None
+        self._update_checker = UpdateChecker(current_fw_version=fw_version, parent=self)
 
         def _no_update():
             self.log.debug("No update available")
@@ -574,6 +589,8 @@ class PolyHost(QApplication):
 
         # noinspection PyUnresolvedReferences
         self._update_checker.update_available.connect(self._on_update_available)
+        # noinspection PyUnresolvedReferences
+        self._update_checker.fw_up_available.connect(self._on_fw_up_available)
         # noinspection PyUnresolvedReferences
         self._update_checker.no_update.connect(_no_update)
         # noinspection PyUnresolvedReferences
@@ -668,6 +685,124 @@ class PolyHost(QApplication):
         self.log.error("Update failed: %s", message)
         QMessageBox.warning(None, "Update failed",
                             f"Could not apply the update:\n\n{message}")
+
+    # ------------------------------------------------------------------
+    # Balloon notifications
+    # ------------------------------------------------------------------
+
+    def show_balloon(self, title: str, message: str, msec: int = 8000):
+        self.tray.showMessage(title, message, QSystemTrayIcon.Information, msec)
+
+    # ------------------------------------------------------------------
+    # Firmware update
+    # ------------------------------------------------------------------
+
+    def _on_fw_up_available(self, release):
+        self._pending_fw_release = release
+        self.firmware_update_action.setText(f"Update firmware to v{release.version}…")
+        self.firmware_update_action.setVisible(True)
+        self.managed_connection_status()
+        self.log.info("Firmware update available: %s", release.version)
+        if self._await_manual_fw_prompt:
+            self._await_manual_fw_prompt = False
+            self._prompt_and_flash(release)
+        else:
+            self.show_balloon(
+                "PolyKybd Firmware Update",
+                f"New firmware v{release.version} is available. "
+                "Click the tray icon to update.",
+            )
+
+    def _on_fw_up_clicked(self):
+        if self._fw_up_downloader is not None and self._fw_up_downloader.isRunning():
+            return
+        if self._pending_fw_release is not None:
+            self._prompt_and_flash(self._pending_fw_release)
+            return
+        self.firmware_update_action.setText("Checking for firmware updates…")
+        self._await_manual_fw_prompt = True
+        self._start_update_check(on_no_update=self._on_manual_no_fw_update)
+
+    def _on_manual_no_fw_update(self):
+        self._await_manual_fw_prompt = False
+        fw_version = self.keeb.get_sw_version() if self.connected else "unknown"
+        QMessageBox.information(
+            None, "PolyKybd Firmware",
+            f"You are running the latest firmware (v{fw_version}).",
+        )
+
+    def _prompt_and_flash(self, release):
+        if not self.connected:
+            QMessageBox.warning(
+                None, "Firmware Update",
+                "The keyboard must be connected to update the firmware.",
+            )
+            return
+        reply = QMessageBox.question(
+            None,
+            "Update PolyKybd Firmware",
+            f"A new firmware v{release.version} is available.\n\n"
+            "The keyboard will update both halves over HID and reboot automatically.\n\n"
+            "Download and flash now?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        self._run_fw_up_downloader(release)
+
+    def _run_fw_up_downloader(self, release):
+        if self._fw_up_downloader is not None and self._fw_up_downloader.isRunning():
+            return
+
+        self.firmware_update_action.setEnabled(False)
+        self._fw_up_progress = QProgressDialog(
+            "Connecting…", None, 0, 100, None,
+        )
+        self._fw_up_progress.setWindowTitle("Firmware Update — Downloading")
+        self._fw_up_progress.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+        self._fw_up_progress.setMinimumDuration(0)
+        self._fw_up_progress.setAutoClose(False)
+        self._fw_up_progress.setCancelButton(None)
+        self._fw_up_progress.setValue(0)
+        self._fw_up_progress.show()
+
+        self._fw_up_downloader = FwUpDownloader(release, parent=self)
+        # noinspection PyUnresolvedReferences
+        self._fw_up_downloader.progress.connect(self._on_fw_download_progress)
+        # noinspection PyUnresolvedReferences
+        self._fw_up_downloader.finished.connect(self._on_fw_download_done)
+        self._fw_up_downloader.start()
+
+    def _on_fw_download_progress(self, percent: int, message: str):
+        if self._fw_up_progress is None:
+            return
+        self._fw_up_progress.setLabelText(message)
+        self._fw_up_progress.setValue(percent)
+
+    def _on_fw_download_done(self, ok: bool, error: str, bin_path: str):
+        if self._fw_up_progress is not None:
+            self._fw_up_progress.close()
+            self._fw_up_progress = None
+
+        if not ok:
+            self.firmware_update_action.setEnabled(True)
+            self.log.error("Firmware download failed: %s", error)
+            QMessageBox.warning(None, "Firmware Update Failed",
+                                f"Could not download the firmware:\n\n{error}")
+            return
+
+        import os
+        try:
+            dlg = HidFwUpDialog(self.keeb.hid, bin_path, parent=None, apply_after=True)
+            dlg.exec_()
+        finally:
+            if os.path.exists(bin_path):
+                os.unlink(bin_path)
+
+        self._pending_fw_release = None
+        self.firmware_update_action.setVisible(False)
+        self.managed_connection_status()
 
     def quit_app(self):
         self.icon_manager.set_disconnected()
