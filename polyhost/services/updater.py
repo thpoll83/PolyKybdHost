@@ -148,24 +148,38 @@ def download_and_extract(tarball_url: str, tmpdir: Path,
     return children[0]
 
 
+def _run_pip(args: list, label: str) -> None:
+    """Run `pip <args>` in the active interpreter; log on non-zero exit."""
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", *args],
+            check=False, capture_output=True, text=True, timeout=300,
+        )
+        if result.returncode != 0:
+            details = (result.stderr or "").strip() or (result.stdout or "").strip()
+            log.warning("pip %s after update returned %d: %s",
+                        label, result.returncode, details[-500:])
+    except (subprocess.SubprocessError, OSError) as e:
+        log.warning("pip %s after update failed to run: %s", label, e)
+
+
 def apply_update(extracted_dir: Path, install_root: Path) -> None:
-    """Copy files from `extracted_dir` over `install_root`, then refresh deps."""
+    """Copy files from `extracted_dir` over `install_root`, then refresh deps.
+
+    Runs `pip install -e .` to pick up `setup.py` changes and, if a
+    `requirements.txt` is present, `pip install -r requirements.txt` so new
+    runtime deps declared only there are installed into the active venv.
+    """
     shutil.copytree(
         extracted_dir,
         install_root,
         dirs_exist_ok=True,
         ignore=shutil.ignore_patterns(*EXCLUDES),
     )
-    try:
-        result = subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-e", str(install_root)],
-            check=False, capture_output=True, text=True, timeout=300,
-        )
-        if result.returncode != 0:
-            log.warning("pip install after update returned %d: %s",
-                        result.returncode, result.stderr.strip()[-500:])
-    except (subprocess.SubprocessError, OSError) as e:
-        log.warning("pip install after update failed to run: %s", e)
+    _run_pip(["install", "-e", str(install_root)], "install -e .")
+    requirements = install_root / "requirements.txt"
+    if requirements.is_file():
+        _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt")
 
 
 def restart_app() -> None:
