@@ -636,6 +636,12 @@ class PolyHost(QApplication):
         if self._await_manual_prompt:
             self._await_manual_prompt = False
             self._prompt_and_install(release)
+        else:
+            self.show_balloon(
+                "PolyKybdHost Update",
+                f"Version {release.version} is available. "
+                "Click the tray icon to update.",
+            )
 
     def _on_update_clicked(self):
         if self._update_installer is not None and self._update_installer.isRunning():
