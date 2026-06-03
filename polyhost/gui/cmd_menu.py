@@ -1,4 +1,5 @@
 import logging
+import sys
 from contextlib import contextmanager
 
 from PyQt5.QtWidgets import (
@@ -30,9 +31,15 @@ def _get_open_file_explicit(caption: str, name_filter: str) -> str:
     Open (never accepts on a single click).  Returns the chosen path, or '' if
     cancelled.
 
-    The platform's native dialog can't be overridden from the app, so this uses
-    Qt's own dialog and disables single-click activation on its item views.
+    On Windows and macOS the OS-native picker is used directly.  On Linux the
+    Qt dialog is used instead, with single-click activation disabled — needed
+    because KDE Plasma's default "activate on single click" setting would
+    otherwise accept the dialog the moment the user clicks a file.
     """
+    if sys.platform in ('win32', 'darwin'):
+        path, _ = QFileDialog.getOpenFileName(None, caption, "", name_filter)
+        return path
+
     dlg = QFileDialog(None, caption, "", name_filter)
     dlg.setFileMode(QFileDialog.ExistingFile)
     dlg.setOption(QFileDialog.DontUseNativeDialog, True)
