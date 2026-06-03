@@ -592,10 +592,10 @@ class PolyHost(QApplication):
         _error_seen = [False]
 
         def _on_error(msg):
-            _error_seen[0] = True
             self.log.warning("Update check error: %s", msg)
-            if on_check_error is not None:
+            if not _error_seen[0] and on_check_error is not None:
                 on_check_error(msg)
+            _error_seen[0] = True
 
         def _host_no_update():
             if _error_seen[0]:
