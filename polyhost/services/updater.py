@@ -4,6 +4,7 @@ Polls the GitHub releases API for a newer version, downloads the auto-generated
 source tarball, copies the files over the install directory, and triggers an
 in-process restart. Designed for source-from-checkout installs on Win/Mac/Linux.
 """
+import json
 import logging
 import os
 import shutil
@@ -15,6 +16,7 @@ from collections import namedtuple
 from pathlib import Path
 from typing import Optional
 
+import platformdirs
 import requests
 from PyQt5.QtCore import QThread, pyqtSignal
 from packaging.version import InvalidVersion, Version
@@ -28,6 +30,25 @@ GITHUB_API    = "https://api.github.com/repos/thpoll83/PolyKybdHost/releases/lat
 GITHUB_FW_API = "https://api.github.com/repos/thpoll83/qmk_firmware/releases/latest"
 USER_AGENT = f"PolyKybdHost/{__version__}"
 HTTP_TIMEOUT = 5
+
+# Persists ETag values across restarts so conditional requests (If-None-Match)
+# return 304 Not Modified without counting against GitHub's rate limit.
+_ETAG_CACHE = Path(platformdirs.user_cache_dir("PolyKybdHost")) / "update_etags.json"
+
+
+def _load_etag_cache() -> dict:
+    try:
+        return json.loads(_ETAG_CACHE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_etag_cache(data: dict) -> None:
+    try:
+        _ETAG_CACHE.parent.mkdir(parents=True, exist_ok=True)
+        _ETAG_CACHE.write_text(json.dumps(data), encoding="utf-8")
+    except OSError as e:
+        log.debug("Could not save update ETag cache: %s", e)
 DOWNLOAD_CHUNK = 64 * 1024
 
 EXCLUDES = (
@@ -66,17 +87,38 @@ def _current_version() -> Version:
 def check_latest() -> Optional[ReleaseInfo]:
     """Return ReleaseInfo if GitHub's latest release is strictly newer; else None.
 
-    Raises UpdateCheckError if the API call fails (network error, non-200 response,
-    or malformed payload) so callers can distinguish "no update" from "check failed".
+    Uses ETag caching: conditional requests that receive 304 Not Modified do not
+    count against GitHub's anonymous rate limit (60 req/hour per IP).
+
+    Raises UpdateCheckError on network/API failure so callers can distinguish
+    "check failed" from "no update available".
     """
+    cache = _load_etag_cache()
+    host = cache.get("host", {})
+
+    headers = {"User-Agent": USER_AGENT, "Accept": "application/vnd.github+json"}
+    if etag := host.get("etag"):
+        headers["If-None-Match"] = etag
+
     try:
-        resp = requests.get(
-            GITHUB_API,
-            headers={"User-Agent": USER_AGENT, "Accept": "application/vnd.github+json"},
-            timeout=HTTP_TIMEOUT,
-        )
+        resp = requests.get(GITHUB_API, headers=headers, timeout=HTTP_TIMEOUT)
     except requests.RequestException as e:
         raise UpdateCheckError(f"Network error: {e}") from e
+
+    if resp.status_code == 304:
+        # Release unchanged since last check — re-evaluate against current version.
+        cached_ver = host.get("version")
+        if cached_ver and Version(cached_ver) > _current_version():
+            log.info("Update check (cached): new version available: %s -> %s",
+                     __version__, cached_ver)
+            return ReleaseInfo(
+                tag=host["tag"],
+                version=cached_ver,
+                tarball_url=host["tarball_url"],
+                html_url=host.get("html_url", ""),
+            )
+        log.debug("Update check (cached): current %s is up-to-date", __version__)
+        return None
 
     if resp.status_code == 403:
         raise UpdateCheckError("GitHub rate limit reached — try again later")
@@ -97,6 +139,16 @@ def check_latest() -> Optional[ReleaseInfo]:
     except InvalidVersion:
         raise UpdateCheckError(f"Release tag {tag!r} is not a valid version")
 
+    # Persist the ETag and release info for future conditional requests.
+    cache["host"] = {
+        "etag": resp.headers.get("ETag", ""),
+        "tag": tag,
+        "version": str(latest),
+        "tarball_url": tarball_url,
+        "html_url": html_url,
+    }
+    _save_etag_cache(cache)
+
     if latest <= _current_version():
         log.debug("Update check: current %s is up-to-date (latest %s)", __version__, latest)
         return None
@@ -108,17 +160,42 @@ def check_latest() -> Optional[ReleaseInfo]:
 def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
     """Return FwUpReleaseInfo if the latest firmware release is strictly newer; else None.
 
+    Uses ETag caching — 304 Not Modified responses don't count against the rate limit.
     Raises UpdateCheckError on network/API failure.
     Returns None for "up to date" or "release has no .bin asset".
     """
     try:
-        resp = requests.get(
-            GITHUB_FW_API,
-            headers={"User-Agent": USER_AGENT, "Accept": "application/vnd.github+json"},
-            timeout=HTTP_TIMEOUT,
-        )
+        current = Version(current_version.lstrip("vV"))
+    except InvalidVersion:
+        log.warning("Firmware update check: current version %r not parseable", current_version)
+        return None
+
+    cache = _load_etag_cache()
+    fw = cache.get("fw", {})
+
+    headers = {"User-Agent": USER_AGENT, "Accept": "application/vnd.github+json"}
+    if etag := fw.get("etag"):
+        headers["If-None-Match"] = etag
+
+    try:
+        resp = requests.get(GITHUB_FW_API, headers=headers, timeout=HTTP_TIMEOUT)
     except requests.RequestException as e:
         raise UpdateCheckError(f"Network error: {e}") from e
+
+    if resp.status_code == 304:
+        cached_ver = fw.get("version")
+        if cached_ver and Version(cached_ver) > current and fw.get("bin_url"):
+            log.info("Firmware update check (cached): new version available: %s -> %s",
+                     current_version, cached_ver)
+            return FwUpReleaseInfo(
+                tag=fw["tag"],
+                version=cached_ver,
+                bin_url=fw["bin_url"],
+                uf2_url=fw.get("uf2_url", ""),
+                html_url=fw.get("html_url", ""),
+            )
+        log.debug("Firmware update check (cached): current %s is up-to-date", current_version)
+        return None
 
     if resp.status_code == 403:
         raise UpdateCheckError("GitHub rate limit reached — try again later")
@@ -139,18 +216,24 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
     except InvalidVersion:
         raise UpdateCheckError(f"Release tag {tag!r} is not a valid version")
 
-    try:
-        current = Version(current_version.lstrip("vV"))
-    except InvalidVersion:
-        log.warning("Firmware update check: current version %r not parseable", current_version)
-        return None
+    bin_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".bin")), None)
+    uf2_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".uf2")), None)
+
+    # Cache ETag and asset URLs regardless of whether an update is available,
+    # so future checks can use conditional requests.
+    cache["fw"] = {
+        "etag": resp.headers.get("ETag", ""),
+        "tag": tag,
+        "version": str(latest),
+        "bin_url": bin_url or "",
+        "uf2_url": uf2_url or "",
+        "html_url": html_url,
+    }
+    _save_etag_cache(cache)
 
     if latest <= current:
         log.debug("Firmware update check: current %s is up-to-date (latest %s)", current_version, latest)
         return None
-
-    bin_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".bin")), None)
-    uf2_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".uf2")), None)
 
     if not bin_url:
         log.warning("Firmware update check: release %s has no .bin asset — skipping", tag)
