@@ -107,16 +107,22 @@ def check_latest() -> Optional[ReleaseInfo]:
 
     if resp.status_code == 304:
         # Release unchanged since last check — re-evaluate against current version.
-        cached_ver = host.get("version")
-        if cached_ver and Version(cached_ver) > _current_version():
-            log.info("Update check (cached): new version available: %s -> %s",
-                     __version__, cached_ver)
-            return ReleaseInfo(
-                tag=host["tag"],
-                version=cached_ver,
-                tarball_url=host["tarball_url"],
-                html_url=host.get("html_url", ""),
-            )
+        try:
+            cached_ver = host.get("version")
+            if cached_ver and Version(cached_ver) > _current_version():
+                log.info("Update check (cached): new version available: %s -> %s",
+                         __version__, cached_ver)
+                return ReleaseInfo(
+                    tag=host["tag"],
+                    version=cached_ver,
+                    tarball_url=host["tarball_url"],
+                    html_url=host.get("html_url", ""),
+                )
+        except (KeyError, InvalidVersion) as e:
+            log.warning("Corrupt ETag cache for host update — discarding: %s", e)
+            cache.pop("host", None)
+            _save_etag_cache(cache)
+            return None
         log.debug("Update check (cached): current %s is up-to-date", __version__)
         return None
 
@@ -137,7 +143,7 @@ def check_latest() -> Optional[ReleaseInfo]:
     try:
         latest = Version(version_str)
     except InvalidVersion:
-        raise UpdateCheckError(f"Release tag {tag!r} is not a valid version")
+        raise UpdateCheckError(f"Release tag {tag!r} is not a valid version") from None
 
     # Persist the ETag and release info for future conditional requests.
     cache["host"] = {
@@ -183,17 +189,23 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
         raise UpdateCheckError(f"Network error: {e}") from e
 
     if resp.status_code == 304:
-        cached_ver = fw.get("version")
-        if cached_ver and Version(cached_ver) > current and fw.get("bin_url"):
-            log.info("Firmware update check (cached): new version available: %s -> %s",
-                     current_version, cached_ver)
-            return FwUpReleaseInfo(
-                tag=fw["tag"],
-                version=cached_ver,
-                bin_url=fw["bin_url"],
-                uf2_url=fw.get("uf2_url", ""),
-                html_url=fw.get("html_url", ""),
-            )
+        try:
+            cached_ver = fw.get("version")
+            if cached_ver and Version(cached_ver) > current and fw.get("bin_url"):
+                log.info("Firmware update check (cached): new version available: %s -> %s",
+                         current_version, cached_ver)
+                return FwUpReleaseInfo(
+                    tag=fw["tag"],
+                    version=cached_ver,
+                    bin_url=fw["bin_url"],
+                    uf2_url=fw.get("uf2_url", ""),
+                    html_url=fw.get("html_url", ""),
+                )
+        except (KeyError, InvalidVersion) as e:
+            log.warning("Corrupt ETag cache for firmware update — discarding: %s", e)
+            cache.pop("fw", None)
+            _save_etag_cache(cache)
+            return None
         log.debug("Firmware update check (cached): current %s is up-to-date", current_version)
         return None
 
@@ -214,7 +226,7 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
     try:
         latest = Version(version_str)
     except InvalidVersion:
-        raise UpdateCheckError(f"Release tag {tag!r} is not a valid version")
+        raise UpdateCheckError(f"Release tag {tag!r} is not a valid version") from None
 
     bin_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".bin")), None)
     uf2_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".uf2")), None)

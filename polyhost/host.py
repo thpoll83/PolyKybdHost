@@ -733,11 +733,12 @@ class PolyHost(QApplication):
         if self._update_progress is not None:
             self._update_progress.setLabelText("Restarting to complete update…")
             self._update_progress.setValue(100)
-        subprocess.Popen(
-            [sys.executable, relay_path],
-            close_fds=False,
-            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
-        )
+        popen_kwargs: dict = {"close_fds": False}
+        if sys.platform == "win32":
+            popen_kwargs["creationflags"] = (
+                subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+            )
+        subprocess.Popen([sys.executable, relay_path], **popen_kwargs)
         # Brief pause so the user sees the "Restarting" label before the window vanishes.
         QTimer.singleShot(1200, self.quit)
 
