@@ -257,7 +257,8 @@ class UpdateChecker(QThread):
 
     update_available = pyqtSignal(object)    # ReleaseInfo
     fw_up_available  = pyqtSignal(object)    # FwUpReleaseInfo
-    no_update        = pyqtSignal()          # neither host nor firmware has a new release
+    host_no_update   = pyqtSignal()          # host check found no newer release
+    fw_no_update     = pyqtSignal()          # firmware check found no newer release
     error            = pyqtSignal(str)
 
     def __init__(self, current_fw_version: str = None, parent=None):
@@ -283,10 +284,14 @@ class UpdateChecker(QThread):
 
         if host_release:
             self.update_available.emit(host_release)
-        if fw_release:
-            self.fw_up_available.emit(fw_release)
-        if not host_release and not fw_release:
-            self.no_update.emit()
+        else:
+            self.host_no_update.emit()
+
+        if self._current_fw_version:
+            if fw_release:
+                self.fw_up_available.emit(fw_release)
+            else:
+                self.fw_no_update.emit()
 
 
 class UpdateInstaller(QThread):

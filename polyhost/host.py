@@ -406,6 +406,7 @@ class PolyHost(QApplication):
                         self.overlay_handler.force_resend()
                         self._needs_overlay_reset = True
                         self.log.info("Connected: active window resend queued.")
+                        QTimer.singleShot(0, self._start_update_check)
                 else:
                     self.status.setIcon(get_icon("sync_disabled.svg"))
                     self.status.setText(msg)
@@ -582,17 +583,25 @@ class PolyHost(QApplication):
         fw_version = self.keeb.get_sw_version() if self.connected else None
         self._update_checker = UpdateChecker(current_fw_version=fw_version, parent=self)
 
-        def _no_update():
-            self.log.debug("No update available")
+        def _host_no_update():
+            self.log.debug("No host update available")
             if on_no_update is not None:
                 on_no_update()
+
+        def _fw_no_update():
+            self.log.debug("No firmware update available")
+            if self._await_manual_fw_prompt:
+                self._await_manual_fw_prompt = False
+                self._on_manual_no_fw_update()
 
         # noinspection PyUnresolvedReferences
         self._update_checker.update_available.connect(self._on_update_available)
         # noinspection PyUnresolvedReferences
         self._update_checker.fw_up_available.connect(self._on_fw_up_available)
         # noinspection PyUnresolvedReferences
-        self._update_checker.no_update.connect(_no_update)
+        self._update_checker.host_no_update.connect(_host_no_update)
+        # noinspection PyUnresolvedReferences
+        self._update_checker.fw_no_update.connect(_fw_no_update)
         # noinspection PyUnresolvedReferences
         self._update_checker.error.connect(lambda msg: self.log.warning("Update check error: %s", msg))
         self._update_checker.start()
