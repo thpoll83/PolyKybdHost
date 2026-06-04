@@ -312,17 +312,28 @@ def download_and_extract(tarball_url: str, tmpdir: Path,
     return children[0]
 
 
-def _run_pip(args: list, label: str) -> None:
-    """Run `pip <args>` in the active interpreter; log on non-zero exit."""
+def _run_pip(args: list, label: str, line_cb=None) -> None:
+    """Run `pip <args>` in the active interpreter; log on non-zero exit.
+
+    Streams stdout+stderr line by line.  Each non-empty line is passed to
+    ``line_cb(line)`` when provided, so callers can surface it as UI feedback.
+    """
     try:
-        result = subprocess.run(
+        proc = subprocess.Popen(
             [sys.executable, "-m", "pip", *args],
-            check=False, capture_output=True, text=True, timeout=300,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         )
-        if result.returncode != 0:
-            details = (result.stderr or "").strip() or (result.stdout or "").strip()
+        captured = []
+        for raw in proc.stdout:
+            line = raw.rstrip()
+            if line:
+                captured.append(line)
+                if line_cb:
+                    line_cb(line)
+        proc.wait()
+        if proc.returncode != 0:
             log.warning("pip %s after update returned %d: %s",
-                        label, result.returncode, details[-500:])
+                        label, proc.returncode, "\n".join(captured[-20:])[-500:])
     except (subprocess.SubprocessError, OSError) as e:
         log.warning("pip %s after update failed to run: %s", label, e)
 
@@ -363,7 +374,7 @@ def _write_relay_script(locked: list, tmp_dir: Path) -> Path:
     return script
 
 
-def apply_update(extracted_dir: Path, install_root: Path) -> list:
+def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
     """Copy files from `extracted_dir` over `install_root`, then refresh deps.
 
     On Windows, native DLLs locked by the running process are skipped and
@@ -372,6 +383,7 @@ def apply_update(extracted_dir: Path, install_root: Path) -> list:
 
     Runs ``pip install -e .`` to pick up ``setup.py`` changes and, if a
     ``requirements.txt`` is present, ``pip install -r requirements.txt``.
+    ``line_cb``, when provided, is called with each non-empty pip output line.
     """
     locked: list = []
 
@@ -392,10 +404,10 @@ def apply_update(extracted_dir: Path, install_root: Path) -> list:
         ignore=shutil.ignore_patterns(*EXCLUDES),
         copy_function=_copy2,
     )
-    _run_pip(["install", "-e", str(install_root)], "install -e .")
+    _run_pip(["install", "-e", str(install_root)], "install -e .", line_cb)
     requirements = install_root / "requirements.txt"
     if requirements.is_file():
-        _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt")
+        _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt", line_cb)
     return locked
 
 
@@ -489,7 +501,10 @@ class UpdateInstaller(QThread):
                 progress_cb=lambda pct: self.progress.emit(pct, "Downloading..."),
             )
             self.progress.emit(-1, "Applying update...")
-            locked = apply_update(extracted, install_root)
+            locked = apply_update(
+                extracted, install_root,
+                line_cb=lambda line: self.progress.emit(-1, line),
+            )
         except Exception as e:  # noqa: BLE001
             log.exception("Update install failed")
             shutil.rmtree(tmp_dir, ignore_errors=True)
