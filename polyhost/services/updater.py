@@ -38,7 +38,13 @@ _ETAG_CACHE = Path(platformdirs.user_cache_dir("PolyKybdHost")) / "update_etags.
 
 def _load_etag_cache() -> dict:
     try:
-        return json.loads(_ETAG_CACHE.read_text(encoding="utf-8"))
+        data = json.loads(_ETAG_CACHE.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise ValueError("ETag cache root must be an object")
+        for key in ("host", "fw"):
+            if key in data and not isinstance(data[key], dict):
+                data.pop(key)
+        return data
     except (OSError, ValueError):
         return {}
 
@@ -332,10 +338,12 @@ def _run_pip(args: list, label: str, line_cb=None) -> None:
                     line_cb(line)
         proc.wait()
         if proc.returncode != 0:
-            log.warning("pip %s after update returned %d: %s",
-                        label, proc.returncode, "\n".join(captured[-20:])[-500:])
+            msg = (f"pip {label} after update returned {proc.returncode}: "
+                   f'{" ".join(captured[-20:])[-500:]}')
+            log.warning(msg)
+            raise RuntimeError(msg)
     except (subprocess.SubprocessError, OSError) as e:
-        log.warning("pip %s after update failed to run: %s", label, e)
+        raise RuntimeError(f"pip {label} after update failed to run: {e}") from e
 
 
 # On Windows the running process holds native DLLs (e.g. hidapi.dll) open,
@@ -347,12 +355,16 @@ def _run_pip(args: list, label: str, line_cb=None) -> None:
 _RELAY_SCRIPT_TEMPLATE = """\
 import shutil, subprocess, sys, time
 
-time.sleep(2)
 for src, dst in {pairs!r}:
-    try:
-        shutil.copy2(src, dst)
-    except Exception as e:
-        print(f"polyhost relay: {{e}}", file=sys.stderr)
+    for attempt in range(4):
+        try:
+            shutil.copy2(src, dst)
+            break
+        except Exception as e:
+            if attempt < 3:
+                time.sleep(2)
+            else:
+                print(f"polyhost relay: {{e}}", file=sys.stderr)
 
 subprocess.Popen({restart_args!r}, close_fds=False)
 shutil.rmtree({tmp_dir!r}, ignore_errors=True)
@@ -511,15 +523,20 @@ class UpdateInstaller(QThread):
             self.failed.emit(str(e))
             return
 
-        if locked:
-            relay_path = _write_relay_script(locked, tmp_dir)
-            log.info("Relay script written for %d locked file(s): %s", len(locked), relay_path)
-            # Do NOT clean up tmp_dir — relay script needs the source files and
-            # will delete the directory itself after copying them.
-            self.relay_needed.emit(str(relay_path))
-        else:
+        try:
+            if locked:
+                relay_path = _write_relay_script(locked, tmp_dir)
+                log.info("Relay script written for %d locked file(s): %s", len(locked), relay_path)
+                # Do NOT clean up tmp_dir — relay script needs the source files and
+                # will delete the directory itself after copying them.
+                self.relay_needed.emit(str(relay_path))
+            else:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+                self.finished_ok.emit()
+        except Exception as e:  # noqa: BLE001
+            log.exception("Preparing relay install failed")
             shutil.rmtree(tmp_dir, ignore_errors=True)
-            self.finished_ok.emit()
+            self.failed.emit(str(e))
 
 
 class FwUpDownloader(QThread):
