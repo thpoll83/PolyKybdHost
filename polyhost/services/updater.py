@@ -514,10 +514,10 @@ class UpdateInstaller(QThread):
         # we can leave the directory alive for the relay script to consume.
         tmp_dir = Path(tempfile.mkdtemp(prefix="polyhost-update-"))
         try:
-            self.progress.emit(0, "Downloading...")
+            self.progress.emit(0, "Starting download...")
             extracted = download_and_extract(
                 self.release.tarball_url, tmp_dir,
-                progress_cb=lambda pct: self.progress.emit(pct, "Downloading..."),
+                progress_cb=lambda pct: self.progress.emit(pct, f"Downloading v{self.release.version}..."),
             )
             self.progress.emit(-1, "Applying update...")
             locked = apply_update(
