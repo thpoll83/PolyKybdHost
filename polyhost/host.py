@@ -85,8 +85,8 @@ class MultiLineFormatter(logging.Formatter):
 
 
 # Shared dimensions for all update / firmware dialogs — 2:1 aspect ratio.
-_UPD_DLG_W = 440
-_UPD_DLG_H = _UPD_DLG_W // 2  # 220
+_UPD_DLG_W = 400
+_UPD_DLG_H = 160
 
 
 def _msgbox(icon, title: str, text: str,
