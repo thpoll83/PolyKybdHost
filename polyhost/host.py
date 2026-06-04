@@ -3,6 +3,7 @@ from logging.handlers import RotatingFileHandler
 import os
 import pathlib
 import platform
+import subprocess
 import sys
 import time
 import webbrowser
@@ -16,9 +17,15 @@ from PyQt5.QtWidgets import (
     QMenu,
     QAction,
     QDialog,
+    QDialogButtonBox,
+    QHBoxLayout,
+    QLabel,
     QMessageBox,
     QFileDialog,
-    QProgressDialog, )
+    QProgressDialog,
+    QSizePolicy,
+    QStyle,
+    QVBoxLayout, )
 
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
@@ -75,6 +82,117 @@ class MultiLineFormatter(logging.Formatter):
         timestamp = self.formatTime(record)
         formatted_lines = [f"[{timestamp}] {line}" for line in lines[:-1]]
         return lines[0] + "\n".join(formatted_lines)
+
+
+# Shared dimensions for all update / firmware dialogs — 2:1 aspect ratio.
+_UPD_DLG_W = 400
+_UPD_DLG_H = 160
+
+
+def _fmt_release_date(published_at: str) -> str:
+    """Return a human-readable date string from an ISO 8601 timestamp, or '' on failure."""
+    if not published_at:
+        return ""
+    try:
+        import datetime
+        dt = datetime.datetime.strptime(published_at[:10], "%Y-%m-%d")
+        return dt.strftime("%B %d, %Y").replace(" 0", " ")
+    except (ValueError, TypeError):
+        return ""
+
+
+def _msgbox(icon, title: str, text: str,
+            buttons=QMessageBox.Ok, default=None) -> int:
+    """QDialog-based message box so setFixedSize is reliably respected."""
+    _ICON_MAP = {
+        QMessageBox.Information: QStyle.SP_MessageBoxInformation,
+        QMessageBox.Warning:     QStyle.SP_MessageBoxWarning,
+        QMessageBox.Critical:    QStyle.SP_MessageBoxCritical,
+        QMessageBox.Question:    QStyle.SP_MessageBoxQuestion,
+    }
+    _BTN_MAP = {
+        QMessageBox.Ok:     QDialogButtonBox.Ok,
+        QMessageBox.Yes:    QDialogButtonBox.Yes,
+        QMessageBox.No:     QDialogButtonBox.No,
+        QMessageBox.Cancel: QDialogButtonBox.Cancel,
+    }
+
+    dlg = QDialog(None)
+    dlg.setWindowTitle(title)
+    dlg.setFixedSize(_UPD_DLG_W, _UPD_DLG_H)
+
+    outer = QVBoxLayout(dlg)
+    outer.setContentsMargins(16, 16, 16, 12)
+    outer.setSpacing(12)
+
+    # Icon + text row
+    row = QHBoxLayout()
+    row.setSpacing(12)
+    icon_lbl = QLabel()
+    sp = _ICON_MAP.get(icon)
+    if sp is not None:
+        px = dlg.style().standardPixmap(sp)
+        icon_lbl.setPixmap(px)
+    icon_lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+    row.addWidget(icon_lbl, 0, Qt.AlignTop)
+
+    text_lbl = QLabel(text)
+    text_lbl.setWordWrap(True)
+    text_lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+    row.addWidget(text_lbl, 1)
+    outer.addLayout(row, 1)
+
+    # Button row
+    db_flags = QDialogButtonBox.StandardButtons()
+    for mb_flag, db_flag in _BTN_MAP.items():
+        if buttons & mb_flag:
+            db_flags |= db_flag
+    btn_box = QDialogButtonBox(db_flags)
+    btn_box.accepted.connect(dlg.accept)
+    btn_box.rejected.connect(dlg.reject)
+    outer.addWidget(btn_box, 0, Qt.AlignRight)
+
+    # Set default button focus
+    if default is not None:
+        db_default = _BTN_MAP.get(default)
+        if db_default is not None:
+            b = btn_box.button(db_default)
+            if b:
+                b.setDefault(True)
+                b.setFocus()
+
+    result = dlg.exec_()
+
+    # Map QDialog result back to QMessageBox codes
+    if result == QDialog.Accepted:
+        if buttons & QMessageBox.Yes:
+            return QMessageBox.Yes
+        return QMessageBox.Ok
+    else:
+        if buttons & QMessageBox.No:
+            return QMessageBox.No
+        return QMessageBox.Cancel
+
+
+def _progress_dlg(label: str, title: str) -> QProgressDialog:
+    dlg = QProgressDialog(label, None, 0, 100, None)
+    dlg.setWindowTitle(title)
+    dlg.setWindowFlag(Qt.WindowStaysOnTopHint, True)
+    dlg.setMinimumDuration(0)
+    dlg.setAutoClose(False)
+    dlg.setCancelButton(None)
+    dlg.setValue(0)
+    dlg.setFixedSize(_UPD_DLG_W, _UPD_DLG_H)
+    lbl = dlg.findChild(QLabel)
+    if lbl:
+        lbl.setWordWrap(True)
+    layout = dlg.layout()
+    if layout is not None:
+        m = layout.contentsMargins()
+        layout.setContentsMargins(m.left(), m.top(), m.right(),
+                                  m.bottom() + _UPD_DLG_H // 10)
+    dlg.show()
+    return dlg
 
 
 class PolyHost(QApplication):
@@ -213,10 +331,9 @@ class PolyHost(QApplication):
         self._update_progress = None
         self._await_manual_prompt = False
 
-        self.firmware_update_action = QAction(get_icon("keyboard.svg"), "", parent=self)
+        self.firmware_update_action = QAction(get_icon("keyboard.svg"), "Check for firmware update…", parent=self)
         # noinspection PyUnresolvedReferences
         self.firmware_update_action.triggered.connect(self._on_fw_up_clicked)
-        self.firmware_update_action.setVisible(False)
         self.menu.addAction(self.firmware_update_action)
         self._pending_fw_release = None
         self._fw_up_downloader = None
@@ -276,6 +393,8 @@ class PolyHost(QApplication):
         # Add the menu to the tray
         # self.tray.activated.connect(self.on_activated)
         self.tray.setContextMenu(self.menu)
+        # noinspection PyUnresolvedReferences
+        self.tray.messageClicked.connect(self._on_balloon_clicked)
         self.tray.show()
 
         QTimer.singleShot(15_000, self._start_update_check)
@@ -327,9 +446,7 @@ class PolyHost(QApplication):
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
         self.update_action.setEnabled(True)
-        self.firmware_update_action.setEnabled(
-            self.connected and self._pending_fw_release is not None
-        )
+        self.firmware_update_action.setEnabled(self.connected)
         self.status.setEnabled(True)
         self.support.setEnabled(True)
         self.about.setEnabled(True)
@@ -406,6 +523,7 @@ class PolyHost(QApplication):
                         self.overlay_handler.force_resend()
                         self._needs_overlay_reset = True
                         self.log.info("Connected: active window resend queued.")
+                        QTimer.singleShot(0, self._start_update_check)
                 else:
                     self.status.setIcon(get_icon("sync_disabled.svg"))
                     self.status.setText(msg)
@@ -572,29 +690,62 @@ class PolyHost(QApplication):
         with open(filename, "w") as f:
             f.write(yaml.dump(self.mapping))
 
-    def _start_update_check(self, on_no_update=None):
-        """Start a background update check. `on_no_update` is invoked on the
-        UI thread when the check completes with no newer release (used for
-        manual-check feedback; automatic checks pass None and stay silent)."""
+    def _start_update_check(self, on_no_update=None, on_check_error=None):
+        """Start a background update check.
+
+        ``on_no_update`` is called when the check succeeds but finds no newer release.
+        ``on_check_error`` is called (with a message string) when the API/network
+        call itself fails — distinct from "no update available".
+        Both are None for the automatic periodic check (silent failure).
+        """
         if self._update_checker is not None and self._update_checker.isRunning():
             return
         self.log.debug("Starting update check...")
         fw_version = self.keeb.get_sw_version() if self.connected else None
         self._update_checker = UpdateChecker(current_fw_version=fw_version, parent=self)
 
-        def _no_update():
-            self.log.debug("No update available")
+        # Track whether the error signal fires before host_no_update so we can
+        # suppress the "no update" callback and show the real failure reason.
+        _error_seen = [False]
+
+        def _on_error(msg):
+            self.log.warning("Update check error: %s", msg)
+            if not _error_seen[0] and on_check_error is not None:
+                on_check_error(msg)
+            _error_seen[0] = True
+            # Reset firmware manual check regardless of which check failed — both
+            # host and firmware errors emit the same signal, either can leave it stuck.
+            if self._await_manual_fw_prompt:
+                self._await_manual_fw_prompt = False
+                self.firmware_update_action.setText(
+                    f"Update firmware to v{self._pending_fw_release.version}…"
+                    if self._pending_fw_release else "Check for firmware update…"
+                )
+                self.firmware_update_action.setEnabled(self.connected)
+
+        def _host_no_update():
+            if _error_seen[0]:
+                return  # error was already surfaced via on_check_error
+            self.log.debug("No host update available")
             if on_no_update is not None:
                 on_no_update()
+
+        def _fw_no_update():
+            self.log.debug("No firmware update available")
+            if self._await_manual_fw_prompt:
+                self._await_manual_fw_prompt = False
+                self._on_manual_no_fw_update()
 
         # noinspection PyUnresolvedReferences
         self._update_checker.update_available.connect(self._on_update_available)
         # noinspection PyUnresolvedReferences
         self._update_checker.fw_up_available.connect(self._on_fw_up_available)
         # noinspection PyUnresolvedReferences
-        self._update_checker.no_update.connect(_no_update)
+        self._update_checker.host_no_update.connect(_host_no_update)
         # noinspection PyUnresolvedReferences
-        self._update_checker.error.connect(lambda msg: self.log.warning("Update check error: %s", msg))
+        self._update_checker.fw_no_update.connect(_fw_no_update)
+        # noinspection PyUnresolvedReferences
+        self._update_checker.error.connect(_on_error)
         self._update_checker.start()
 
     def _on_update_available(self, release):
@@ -604,6 +755,12 @@ class PolyHost(QApplication):
         if self._await_manual_prompt:
             self._await_manual_prompt = False
             self._prompt_and_install(release)
+        else:
+            self.show_balloon(
+                "PolyKybdHost Update",
+                f"Version {release.version} is available. "
+                "Click the tray icon to update.",
+            )
 
     def _on_update_clicked(self):
         if self._update_installer is not None and self._update_installer.isRunning():
@@ -613,27 +770,32 @@ class PolyHost(QApplication):
             return
         self.update_action.setText("Checking for updates...")
         self._await_manual_prompt = True
-        self._start_update_check(on_no_update=self._on_manual_no_update)
+        self._start_update_check(
+            on_no_update=self._on_manual_no_update,
+            on_check_error=self._on_manual_check_error,
+        )
 
     def _on_manual_no_update(self):
         self._await_manual_prompt = False
         self.update_action.setText("No updates available")
-        QMessageBox.information(
-            None, "PolyKybdHost Update",
-            f"You are running the latest version (v{__version__}).",
-        )
+        _msgbox(QMessageBox.Information, "PolyKybdHost Update",
+                f"You are running the latest version (v{__version__}).")
         self.update_action.setText("Check for updates...")
 
+    def _on_manual_check_error(self, msg: str):
+        self._await_manual_prompt = False
+        self.update_action.setText("Check for updates...")
+        _msgbox(QMessageBox.Warning, "PolyKybdHost Update",
+                f"Could not check for updates:\n\n{msg}\n\n"
+                "Run with --debug 1 for details.")
+
     def _prompt_and_install(self, release):
-        reply = QMessageBox.question(
-            None,
-            "Update PolyKybdHost",
-            f"A new version v{release.version} is available.\n\n"
-            f"Download, install, and restart now?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes,
-        )
-        if reply != QMessageBox.Yes:
+        date_str = _fmt_release_date(release.published_at)
+        info = f"Released: {date_str}\n" if date_str else ""
+        if _msgbox(QMessageBox.Question, "Update PolyKybdHost",
+                   f"Version {release.version} is available.\n{info}\n"
+                   "Download, install, and restart now?",
+                   QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) != QMessageBox.Yes:
             return
         self._run_update_installer(release)
 
@@ -643,22 +805,16 @@ class PolyHost(QApplication):
             return
 
         self.update_action.setEnabled(False)
-        self._update_progress = QProgressDialog(
-            "Downloading update...", "Cancel", 0, 100, None,
-        )
-        self._update_progress.setWindowTitle("PolyKybdHost Update")
-        self._update_progress.setWindowFlag(Qt.WindowStaysOnTopHint, True)
-        self._update_progress.setMinimumDuration(0)
-        self._update_progress.setAutoClose(False)
-        self._update_progress.setCancelButton(None)
-        self._update_progress.setValue(0)
-        self._update_progress.show()
+        self._update_progress = _progress_dlg(
+            f"Downloading v{release.version}…", "PolyKybdHost Update")
 
         self._update_installer = UpdateInstaller(release, parent=self)
         # noinspection PyUnresolvedReferences
         self._update_installer.progress.connect(self._on_update_progress)
         # noinspection PyUnresolvedReferences
         self._update_installer.finished_ok.connect(self._on_update_done)
+        # noinspection PyUnresolvedReferences
+        self._update_installer.relay_needed.connect(self._on_relay_needed)
         # noinspection PyUnresolvedReferences
         self._update_installer.failed.connect(self._on_update_failed)
         self._update_installer.start()
@@ -667,7 +823,12 @@ class PolyHost(QApplication):
         if self._update_progress is None:
             return
         self._update_progress.setLabelText(message)
-        self._update_progress.setValue(percent)
+        if percent < 0:
+            self._update_progress.setRange(0, 0)  # indeterminate / busy pulse
+        else:
+            if self._update_progress.maximum() == 0:
+                self._update_progress.setRange(0, 100)
+            self._update_progress.setValue(percent)
 
     def _on_update_done(self):
         if self._update_progress is not None:
@@ -677,14 +838,33 @@ class PolyHost(QApplication):
         self.quit_app()
         restart_app()
 
+    def _on_relay_needed(self, relay_path: str):
+        """Windows: some files (e.g. hidapi.dll) were locked by the running process.
+
+        A relay script was written that will copy them once we exit and release
+        the handles, then relaunch the app.  All non-DLL files were already copied.
+        """
+        self.log.info("Relay restart needed for locked files: %s", relay_path)
+        if self._update_progress is not None:
+            self._update_progress.setLabelText("Restarting to complete update…")
+            self._update_progress.setValue(100)
+        popen_kwargs: dict = {"close_fds": False}
+        if sys.platform == "win32":
+            popen_kwargs["creationflags"] = (
+                subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+            )
+        subprocess.Popen([sys.executable, relay_path], **popen_kwargs)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        # Brief pause so the user sees the "Restarting" label before the window vanishes.
+        QTimer.singleShot(1200, self.quit)
+
     def _on_update_failed(self, message):
         if self._update_progress is not None:
             self._update_progress.close()
             self._update_progress = None
         self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
-        QMessageBox.warning(None, "Update failed",
-                            f"Could not apply the update:\n\n{message}")
+        _msgbox(QMessageBox.Warning, "Update failed",
+                f"Could not apply the update:\n\n{message}")
 
     # ------------------------------------------------------------------
     # Balloon notifications
@@ -692,6 +872,14 @@ class PolyHost(QApplication):
 
     def show_balloon(self, title: str, message: str, msec: int = 8000):
         self.tray.showMessage(title, message, QSystemTrayIcon.Information, msec)
+
+    def _on_balloon_clicked(self):
+        if self._update_installer is not None and self._update_installer.isRunning():
+            return
+        if self._pending_release is not None:
+            self._prompt_and_install(self._pending_release)
+        elif self._pending_fw_release is not None:
+            self._prompt_and_flash(self._pending_fw_release)
 
     # ------------------------------------------------------------------
     # Firmware update
@@ -719,35 +907,33 @@ class PolyHost(QApplication):
         if self._pending_fw_release is not None:
             self._prompt_and_flash(self._pending_fw_release)
             return
-        self.firmware_update_action.setText("Checking for firmware updates…")
+        self.firmware_update_action.setText("Checking for firmware update…")
+        self.firmware_update_action.setEnabled(False)
         self._await_manual_fw_prompt = True
-        self._start_update_check(on_no_update=self._on_manual_no_fw_update)
+        # No on_no_update here: the firmware result comes via _await_manual_fw_prompt
+        # and the _fw_no_update closure in _start_update_check.
+        self._start_update_check()
 
     def _on_manual_no_fw_update(self):
         self._await_manual_fw_prompt = False
+        self.firmware_update_action.setText("Check for firmware update…")
+        self.firmware_update_action.setEnabled(self.connected)
         fw_version = self.keeb.get_sw_version() if self.connected else "unknown"
-        QMessageBox.information(
-            None, "PolyKybd Firmware",
-            f"You are running the latest firmware (v{fw_version}).",
-        )
+        _msgbox(QMessageBox.Information, "PolyKybd Firmware",
+                f"You are running the latest firmware (v{fw_version}).")
 
     def _prompt_and_flash(self, release):
         if not self.connected:
-            QMessageBox.warning(
-                None, "Firmware Update",
-                "The keyboard must be connected to update the firmware.",
-            )
+            _msgbox(QMessageBox.Warning, "Firmware Update",
+                    "The keyboard must be connected to update the firmware.")
             return
-        reply = QMessageBox.question(
-            None,
-            "Update PolyKybd Firmware",
-            f"A new firmware v{release.version} is available.\n\n"
-            "The keyboard will update both halves over HID and reboot automatically.\n\n"
-            "Download and flash now?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.Yes,
-        )
-        if reply != QMessageBox.Yes:
+        date_str = _fmt_release_date(release.published_at)
+        info = f"Released: {date_str}\n" if date_str else ""
+        if _msgbox(QMessageBox.Question, "Update PolyKybd Firmware",
+                   f"Firmware {release.version} is available.\n{info}\n"
+                   "Both halves update over HID and reboot automatically.\n\n"
+                   "Download and flash now?",
+                   QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) != QMessageBox.Yes:
             return
         self._run_fw_up_downloader(release)
 
@@ -756,16 +942,8 @@ class PolyHost(QApplication):
             return
 
         self.firmware_update_action.setEnabled(False)
-        self._fw_up_progress = QProgressDialog(
-            "Connecting…", None, 0, 100, None,
-        )
-        self._fw_up_progress.setWindowTitle("Firmware Update — Downloading")
-        self._fw_up_progress.setWindowFlag(Qt.WindowStaysOnTopHint, True)
-        self._fw_up_progress.setMinimumDuration(0)
-        self._fw_up_progress.setAutoClose(False)
-        self._fw_up_progress.setCancelButton(None)
-        self._fw_up_progress.setValue(0)
-        self._fw_up_progress.show()
+        self._fw_up_progress = _progress_dlg(
+            f"Downloading firmware v{release.version}…", "Firmware Update")
 
         self._fw_up_downloader = FwUpDownloader(release, parent=self)
         # noinspection PyUnresolvedReferences
@@ -788,8 +966,8 @@ class PolyHost(QApplication):
         if not ok:
             self.firmware_update_action.setEnabled(True)
             self.log.error("Firmware download failed: %s", error)
-            QMessageBox.warning(None, "Firmware Update Failed",
-                                f"Could not download the firmware:\n\n{error}")
+            _msgbox(QMessageBox.Warning, "Firmware Update Failed",
+                    f"Could not download the firmware:\n\n{error}")
             return
 
         import os
