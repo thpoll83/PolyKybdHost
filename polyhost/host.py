@@ -17,10 +17,15 @@ from PyQt5.QtWidgets import (
     QMenu,
     QAction,
     QDialog,
+    QDialogButtonBox,
+    QHBoxLayout,
     QLabel,
     QMessageBox,
     QFileDialog,
-    QProgressDialog, )
+    QProgressDialog,
+    QSizePolicy,
+    QStyle,
+    QVBoxLayout, )
 
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
@@ -86,17 +91,75 @@ _UPD_DLG_H = _UPD_DLG_W // 2  # 220
 
 def _msgbox(icon, title: str, text: str,
             buttons=QMessageBox.Ok, default=None) -> int:
-    dlg = QMessageBox(None)
+    """QDialog-based message box so setFixedSize is reliably respected."""
+    _ICON_MAP = {
+        QMessageBox.Information: QStyle.SP_MessageBoxInformation,
+        QMessageBox.Warning:     QStyle.SP_MessageBoxWarning,
+        QMessageBox.Critical:    QStyle.SP_MessageBoxCritical,
+        QMessageBox.Question:    QStyle.SP_MessageBoxQuestion,
+    }
+    _BTN_MAP = {
+        QMessageBox.Ok:     QDialogButtonBox.Ok,
+        QMessageBox.Yes:    QDialogButtonBox.Yes,
+        QMessageBox.No:     QDialogButtonBox.No,
+        QMessageBox.Cancel: QDialogButtonBox.Cancel,
+    }
+
+    dlg = QDialog(None)
     dlg.setWindowTitle(title)
-    dlg.setText(text)
-    dlg.setIcon(icon)
-    dlg.setStandardButtons(buttons)
+    dlg.setFixedSize(_UPD_DLG_W, _UPD_DLG_H)
+
+    outer = QVBoxLayout(dlg)
+    outer.setContentsMargins(16, 16, 16, 12)
+    outer.setSpacing(12)
+
+    # Icon + text row
+    row = QHBoxLayout()
+    row.setSpacing(12)
+    icon_lbl = QLabel()
+    sp = _ICON_MAP.get(icon)
+    if sp is not None:
+        px = dlg.style().standardPixmap(sp)
+        icon_lbl.setPixmap(px)
+    icon_lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+    row.addWidget(icon_lbl, 0, Qt.AlignTop)
+
+    text_lbl = QLabel(text)
+    text_lbl.setWordWrap(True)
+    text_lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+    row.addWidget(text_lbl, 1)
+    outer.addLayout(row, 1)
+
+    # Button row
+    db_flags = QDialogButtonBox.StandardButtons()
+    for mb_flag, db_flag in _BTN_MAP.items():
+        if buttons & mb_flag:
+            db_flags |= db_flag
+    btn_box = QDialogButtonBox(db_flags)
+    btn_box.accepted.connect(dlg.accept)
+    btn_box.rejected.connect(dlg.reject)
+    outer.addWidget(btn_box, 0, Qt.AlignRight)
+
+    # Set default button focus
     if default is not None:
-        dlg.setDefaultButton(default)
-    # Fix width; let height grow to fit content so nothing is clipped.
-    dlg.setFixedWidth(_UPD_DLG_W)
-    dlg.setMinimumHeight(_UPD_DLG_H)
-    return dlg.exec_()
+        db_default = _BTN_MAP.get(default)
+        if db_default is not None:
+            b = btn_box.button(db_default)
+            if b:
+                b.setDefault(True)
+                b.setFocus()
+
+    result = dlg.exec_()
+
+    # Map QDialog result back to QMessageBox codes
+    if result == QDialog.Accepted:
+        if buttons & QMessageBox.Yes:
+            return QMessageBox.Yes
+        return QMessageBox.Ok
+    else:
+        if buttons & QMessageBox.No:
+            return QMessageBox.No
+        return QMessageBox.Cancel
 
 
 def _progress_dlg(label: str, title: str) -> QProgressDialog:
