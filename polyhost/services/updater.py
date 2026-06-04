@@ -287,14 +287,19 @@ def download_and_extract(tarball_url: str, tmpdir: Path,
         r.raise_for_status()
         total = int(r.headers.get("Content-Length") or 0)
         written = 0
+        _indeterminate_sent = False
         with open(archive, "wb") as fh:
             for chunk in r.iter_content(DOWNLOAD_CHUNK):
                 if not chunk:
                     continue
                 fh.write(chunk)
                 written += len(chunk)
-                if progress_cb and total:
-                    progress_cb(int(written * 100 / total))
+                if progress_cb:
+                    if total:
+                        progress_cb(int(written * 100 / total))
+                    elif not _indeterminate_sent:
+                        progress_cb(-1)  # signal: no Content-Length → indeterminate
+                        _indeterminate_sent = True
 
     extract_dir = tmpdir / "extracted"
     extract_dir.mkdir()

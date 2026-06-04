@@ -719,7 +719,12 @@ class PolyHost(QApplication):
         if self._update_progress is None:
             return
         self._update_progress.setLabelText(message)
-        self._update_progress.setValue(percent)
+        if percent < 0:
+            self._update_progress.setRange(0, 0)  # indeterminate / busy pulse
+        else:
+            if self._update_progress.maximum() == 0:
+                self._update_progress.setRange(0, 100)
+            self._update_progress.setValue(percent)
 
     def _on_update_done(self):
         if self._update_progress is not None:
