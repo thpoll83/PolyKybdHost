@@ -89,6 +89,18 @@ _UPD_DLG_W = 400
 _UPD_DLG_H = 160
 
 
+def _fmt_release_date(published_at: str) -> str:
+    """Return a human-readable date string from an ISO 8601 timestamp, or '' on failure."""
+    if not published_at:
+        return ""
+    try:
+        import datetime
+        dt = datetime.datetime.strptime(published_at[:10], "%Y-%m-%d")
+        return dt.strftime("%B %d, %Y").replace(" 0", " ")
+    except (ValueError, TypeError):
+        return ""
+
+
 def _msgbox(icon, title: str, text: str,
             buttons=QMessageBox.Ok, default=None) -> int:
     """QDialog-based message box so setFixedSize is reliably respected."""
@@ -778,8 +790,10 @@ class PolyHost(QApplication):
                 "Run with --debug 1 for details.")
 
     def _prompt_and_install(self, release):
+        date_str = _fmt_release_date(release.published_at)
+        info = f"Released: {date_str}\n" if date_str else ""
         if _msgbox(QMessageBox.Question, "Update PolyKybdHost",
-                   f"A new version v{release.version} is available.\n\n"
+                   f"Version {release.version} is available.\n{info}\n"
                    "Download, install, and restart now?",
                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) != QMessageBox.Yes:
             return
@@ -791,7 +805,8 @@ class PolyHost(QApplication):
             return
 
         self.update_action.setEnabled(False)
-        self._update_progress = _progress_dlg("Downloading update…", "PolyKybdHost Update")
+        self._update_progress = _progress_dlg(
+            f"Downloading v{release.version}…", "PolyKybdHost Update")
 
         self._update_installer = UpdateInstaller(release, parent=self)
         # noinspection PyUnresolvedReferences
@@ -912,9 +927,11 @@ class PolyHost(QApplication):
             _msgbox(QMessageBox.Warning, "Firmware Update",
                     "The keyboard must be connected to update the firmware.")
             return
+        date_str = _fmt_release_date(release.published_at)
+        info = f"Released: {date_str}\n" if date_str else ""
         if _msgbox(QMessageBox.Question, "Update PolyKybd Firmware",
-                   f"A new firmware v{release.version} is available.\n\n"
-                   "The keyboard will update both halves over HID and reboot automatically.\n\n"
+                   f"Firmware {release.version} is available.\n{info}\n"
+                   "Both halves update over HID and reboot automatically.\n\n"
                    "Download and flash now?",
                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) != QMessageBox.Yes:
             return
@@ -925,7 +942,8 @@ class PolyHost(QApplication):
             return
 
         self.firmware_update_action.setEnabled(False)
-        self._fw_up_progress = _progress_dlg("Connecting…", "Firmware Update — Downloading")
+        self._fw_up_progress = _progress_dlg(
+            f"Downloading firmware v{release.version}…", "Firmware Update")
 
         self._fw_up_downloader = FwUpDownloader(release, parent=self)
         # noinspection PyUnresolvedReferences
