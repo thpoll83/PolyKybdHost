@@ -79,9 +79,9 @@ class MultiLineFormatter(logging.Formatter):
         return lines[0] + "\n".join(formatted_lines)
 
 
-# Fixed width (px) shared by all update / firmware dialogs so their size
-# stays consistent across the question → download → apply sequence.
+# Fixed size (px) shared by all update / firmware dialogs — 5:3 aspect ratio.
 _UPD_DLG_W = 440
+_UPD_DLG_H = 264   # 440 * 3/5
 
 
 def _msgbox(icon, title: str, text: str,
@@ -93,7 +93,7 @@ def _msgbox(icon, title: str, text: str,
     dlg.setStandardButtons(buttons)
     if default is not None:
         dlg.setDefaultButton(default)
-    dlg.setFixedWidth(_UPD_DLG_W)
+    dlg.setFixedSize(_UPD_DLG_W, _UPD_DLG_H)
     return dlg.exec_()
 
 
@@ -105,7 +105,7 @@ def _progress_dlg(label: str, title: str) -> QProgressDialog:
     dlg.setAutoClose(False)
     dlg.setCancelButton(None)
     dlg.setValue(0)
-    dlg.setFixedWidth(_UPD_DLG_W)
+    dlg.setFixedSize(_UPD_DLG_W, _UPD_DLG_H)
     lbl = dlg.findChild(QLabel)
     if lbl:
         lbl.setWordWrap(True)
