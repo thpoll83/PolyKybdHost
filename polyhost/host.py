@@ -276,6 +276,8 @@ class PolyHost(QApplication):
         # Add the menu to the tray
         # self.tray.activated.connect(self.on_activated)
         self.tray.setContextMenu(self.menu)
+        # noinspection PyUnresolvedReferences
+        self.tray.messageClicked.connect(self._on_balloon_clicked)
         self.tray.show()
 
         QTimer.singleShot(15_000, self._start_update_check)
@@ -768,6 +770,14 @@ class PolyHost(QApplication):
 
     def show_balloon(self, title: str, message: str, msec: int = 8000):
         self.tray.showMessage(title, message, QSystemTrayIcon.Information, msec)
+
+    def _on_balloon_clicked(self):
+        if self._update_installer is not None and self._update_installer.isRunning():
+            return
+        if self._pending_release is not None:
+            self._prompt_and_install(self._pending_release)
+        elif self._pending_fw_release is not None:
+            self._prompt_and_flash(self._pending_fw_release)
 
     # ------------------------------------------------------------------
     # Firmware update

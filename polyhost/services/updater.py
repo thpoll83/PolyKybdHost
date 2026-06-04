@@ -488,7 +488,7 @@ class UpdateInstaller(QThread):
                 self.release.tarball_url, tmp_dir,
                 progress_cb=lambda pct: self.progress.emit(pct, "Downloading..."),
             )
-            self.progress.emit(100, "Applying update...")
+            self.progress.emit(-1, "Applying update...")
             locked = apply_update(extracted, install_root)
         except Exception as e:  # noqa: BLE001
             log.exception("Update install failed")
