@@ -152,6 +152,13 @@ class TestVersionFromTag(unittest.TestCase):
     def test_no_version_returns_empty(self):
         self.assertEqual(updater._version_from_tag("not-a-version"), "")
 
+    def test_preserves_prerelease_suffix(self):
+        # The numeric run is anchored, but a trailing prerelease/build suffix is
+        # kept so Version() orders it correctly (rc1 sorts before the final).
+        self.assertEqual(updater._version_from_tag("v1.2.3rc1"), "1.2.3rc1")
+        self.assertEqual(updater._version_from_tag("PolyKybd-fw-v1.0.0-beta.1"),
+                         "1.0.0-beta.1")
+
 
 def _fw_release_json(tag="PolyKybd-fw-v0.8.3", with_bin=True, with_uf2=True):
     assets = []
