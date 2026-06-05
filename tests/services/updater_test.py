@@ -285,5 +285,86 @@ class TestApplyUpdate(unittest.TestCase):
             self.assertIn("diagnostic on stdout", warnings)
 
 
+class TestVersionFromTag(unittest.TestCase):
+
+    def test_plain_version(self):
+        self.assertEqual(updater._version_from_tag("1.2.3"), "1.2.3")
+
+    def test_v_prefix(self):
+        self.assertEqual(updater._version_from_tag("v1.2.3"), "1.2.3")
+
+    def test_firmware_prefix(self):
+        # The firmware repo tags releases as PolyKybd-fw-vX.Y.Z.
+        self.assertEqual(updater._version_from_tag("PolyKybd-fw-v0.8.3"), "0.8.3")
+
+    def test_multi_digit_components(self):
+        self.assertEqual(updater._version_from_tag("PolyKybd-fw-v0.8.10"), "0.8.10")
+
+    def test_digit_in_prefix_is_skipped(self):
+        # A stray digit in the prefix must not be mistaken for the version.
+        self.assertEqual(updater._version_from_tag("PolyKybd2-fw-v0.8.3"), "0.8.3")
+
+    def test_no_version_returns_empty(self):
+        self.assertEqual(updater._version_from_tag("not-a-version"), "")
+
+
+def _fw_release_json(tag="PolyKybd-fw-v0.8.3", with_bin=True, with_uf2=True):
+    assets = []
+    if with_bin:
+        assets.append({"name": "handwired_polykybd_split72_default.bin",
+                       "browser_download_url": "https://example.com/fw.bin"})
+    if with_uf2:
+        assets.append({"name": "handwired_polykybd_split72_default.uf2",
+                       "browser_download_url": "https://example.com/fw.uf2"})
+    return {
+        "tag_name": tag,
+        "assets": assets,
+        "html_url": "https://example.com/fw-release",
+        "published_at": "2026-06-05T09:12:22Z",
+    }
+
+
+class TestCheckFwLatest(unittest.TestCase):
+
+    def setUp(self):
+        # Isolate from the on-disk ETag cache so checks behave deterministically.
+        for name, kw in (("_load_etag_cache", {"return_value": {}}),
+                         ("_save_etag_cache", {})):
+            patcher = mock.patch.object(updater, name, **kw)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    @staticmethod
+    def _resp(status_code, payload=None):
+        resp = mock.Mock()
+        resp.status_code = status_code
+        resp.json.return_value = payload or {}
+        resp.headers = {"ETag": '"deadbeef"'}
+        return resp
+
+    def test_prefixed_firmware_tag_is_parsed(self):
+        # Regression: PolyKybd-fw-v* tags must parse rather than raise.
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(200, _fw_release_json("PolyKybd-fw-v0.8.3"))):
+            release = updater.check_fw_latest("0.8.1")
+        self.assertIsNotNone(release)
+        self.assertEqual(release.version, "0.8.3")
+        self.assertEqual(release.tag, "PolyKybd-fw-v0.8.3")
+        self.assertEqual(release.bin_url, "https://example.com/fw.bin")
+        self.assertEqual(release.uf2_url, "https://example.com/fw.uf2")
+
+    def test_up_to_date_returns_none(self):
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(200, _fw_release_json("PolyKybd-fw-v0.8.1"))):
+            self.assertIsNone(updater.check_fw_latest("0.8.1"))
+
+    def test_newer_without_bin_returns_none(self):
+        # A newer release that has no .bin asset cannot be flashed over HID.
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(
+                                   200, _fw_release_json("PolyKybd-fw-v0.9.0", with_bin=False))):
+            self.assertIsNone(updater.check_fw_latest("0.8.1"))
+
+
 if __name__ == "__main__":
     unittest.main()
