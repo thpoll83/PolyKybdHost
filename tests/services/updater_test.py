@@ -1,5 +1,4 @@
 import io
-import json
 import sys
 import tarfile
 import tempfile
@@ -20,18 +19,28 @@ def _release_json(tag="v0.8.0", tarball_url="https://example.com/tarball/0.8.0")
     }
 
 
-def _make_response(status_code, payload=None, raise_for_status=False):
+def _make_response(status_code, payload=None, headers=None):
     resp = mock.Mock()
     resp.status_code = status_code
     resp.json.return_value = payload or {}
-    if raise_for_status:
-        resp.raise_for_status.side_effect = requests.HTTPError("boom")
-    else:
-        resp.raise_for_status.return_value = None
+    # A real dict so the ETag-cache write (json.dumps) doesn't choke on a Mock.
+    resp.headers = headers or {}
+    resp.raise_for_status.return_value = None
     return resp
 
 
 class TestCheckLatest(unittest.TestCase):
+
+    def setUp(self):
+        # Isolate from the on-disk ETag cache: deterministic, and never touches
+        # the user's real cache file. Tests that exercise the 304 path override
+        # ``self.mock_load.return_value``.
+        load_p = mock.patch.object(updater, "_load_etag_cache", return_value={})
+        save_p = mock.patch.object(updater, "_save_etag_cache")
+        self.mock_load = load_p.start()
+        save_p.start()
+        self.addCleanup(load_p.stop)
+        self.addCleanup(save_p.stop)
 
     def test_returns_release_when_newer(self):
         with mock.patch.object(updater, "__version__", "0.7.2"), \
@@ -68,27 +77,164 @@ class TestCheckLatest(unittest.TestCase):
             release = updater.check_latest()
         self.assertEqual(release.version, "1.2.3")
 
-    def test_returns_none_on_network_error(self):
+    def test_raises_on_network_error(self):
+        # Network/API failures raise UpdateCheckError so callers can tell them
+        # apart from "no newer version" (None).
         with mock.patch.object(updater.requests, "get",
                                side_effect=requests.ConnectionError("nope")):
-            self.assertIsNone(updater.check_latest())
+            with self.assertRaises(updater.UpdateCheckError):
+                updater.check_latest()
 
-    def test_returns_none_on_rate_limit(self):
+    def test_raises_on_rate_limit(self):
         with mock.patch.object(updater.requests, "get",
                                return_value=_make_response(403)):
-            self.assertIsNone(updater.check_latest())
+            with self.assertRaises(updater.UpdateCheckError):
+                updater.check_latest()
 
-    def test_returns_none_on_invalid_version_tag(self):
+    def test_raises_on_invalid_version_tag(self):
         with mock.patch.object(updater, "__version__", "0.0.1"), \
              mock.patch.object(updater.requests, "get",
                                return_value=_make_response(200, _release_json("not-a-version"))):
-            self.assertIsNone(updater.check_latest())
+            with self.assertRaises(updater.UpdateCheckError):
+                updater.check_latest()
 
-    def test_returns_none_on_malformed_json(self):
+    def test_raises_on_malformed_json(self):
         resp = _make_response(200)
         resp.json.side_effect = ValueError("bad json")
         with mock.patch.object(updater.requests, "get", return_value=resp):
+            with self.assertRaises(updater.UpdateCheckError):
+                updater.check_latest()
+
+    def test_returns_cached_release_on_304(self):
+        # 304 Not Modified: re-evaluate the cached release against the current
+        # version without a fresh download.
+        self.mock_load.return_value = {"host": {
+            "etag": '"abc"', "tag": "v1.2.3", "version": "1.2.3",
+            "tarball_url": "https://example.com/tarball/1.2.3",
+            "html_url": "https://example.com/release", "published_at": "",
+        }}
+        with mock.patch.object(updater, "__version__", "0.0.1"), \
+             mock.patch.object(updater.requests, "get", return_value=_make_response(304)):
+            release = updater.check_latest()
+        self.assertIsNotNone(release)
+        self.assertEqual(release.version, "1.2.3")
+        self.assertEqual(release.tarball_url, "https://example.com/tarball/1.2.3")
+
+    def test_returns_none_on_304_when_up_to_date(self):
+        self.mock_load.return_value = {"host": {
+            "etag": '"abc"', "tag": "v1.2.3", "version": "1.2.3",
+            "tarball_url": "https://example.com/t", "html_url": "", "published_at": "",
+        }}
+        with mock.patch.object(updater, "__version__", "1.2.3"), \
+             mock.patch.object(updater.requests, "get", return_value=_make_response(304)):
             self.assertIsNone(updater.check_latest())
+
+
+class TestVersionFromTag(unittest.TestCase):
+
+    def test_plain_version(self):
+        self.assertEqual(updater._version_from_tag("1.2.3"), "1.2.3")
+
+    def test_v_prefix(self):
+        self.assertEqual(updater._version_from_tag("v1.2.3"), "1.2.3")
+
+    def test_firmware_prefix(self):
+        # The firmware repo tags releases as PolyKybd-fw-vX.Y.Z.
+        self.assertEqual(updater._version_from_tag("PolyKybd-fw-v0.8.3"), "0.8.3")
+
+    def test_multi_digit_components(self):
+        self.assertEqual(updater._version_from_tag("PolyKybd-fw-v0.8.10"), "0.8.10")
+
+    def test_digit_in_prefix_is_skipped(self):
+        # A stray digit in the prefix must not be mistaken for the version.
+        self.assertEqual(updater._version_from_tag("PolyKybd2-fw-v0.8.3"), "0.8.3")
+
+    def test_no_version_returns_empty(self):
+        self.assertEqual(updater._version_from_tag("not-a-version"), "")
+
+    def test_preserves_prerelease_suffix(self):
+        # The numeric run is anchored, but a trailing prerelease/build suffix is
+        # kept so Version() orders it correctly (rc1 sorts before the final).
+        self.assertEqual(updater._version_from_tag("v1.2.3rc1"), "1.2.3rc1")
+        self.assertEqual(updater._version_from_tag("PolyKybd-fw-v1.0.0-beta.1"),
+                         "1.0.0-beta.1")
+
+
+def _fw_release_json(tag="PolyKybd-fw-v0.8.3", with_bin=True, with_uf2=True):
+    assets = []
+    if with_bin:
+        assets.append({"name": "handwired_polykybd_split72_default.bin",
+                       "browser_download_url": "https://example.com/fw.bin"})
+    if with_uf2:
+        assets.append({"name": "handwired_polykybd_split72_default.uf2",
+                       "browser_download_url": "https://example.com/fw.uf2"})
+    return {
+        "tag_name": tag,
+        "assets": assets,
+        "html_url": "https://example.com/fw-release",
+        "published_at": "2026-06-05T09:12:22Z",
+    }
+
+
+class TestCheckFwLatest(unittest.TestCase):
+
+    def setUp(self):
+        # Isolate from the on-disk ETag cache (see TestCheckLatest.setUp).
+        load_p = mock.patch.object(updater, "_load_etag_cache", return_value={})
+        save_p = mock.patch.object(updater, "_save_etag_cache")
+        self.mock_load = load_p.start()
+        save_p.start()
+        self.addCleanup(load_p.stop)
+        self.addCleanup(save_p.stop)
+
+    @staticmethod
+    def _resp(status_code, payload=None):
+        resp = mock.Mock()
+        resp.status_code = status_code
+        resp.json.return_value = payload or {}
+        resp.headers = {"ETag": '"deadbeef"'}
+        return resp
+
+    def test_prefixed_firmware_tag_is_parsed(self):
+        # Regression: PolyKybd-fw-v* tags must parse rather than raise.
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(200, _fw_release_json("PolyKybd-fw-v0.8.3"))):
+            release = updater.check_fw_latest("0.8.1")
+        self.assertIsNotNone(release)
+        self.assertEqual(release.version, "0.8.3")
+        self.assertEqual(release.tag, "PolyKybd-fw-v0.8.3")
+        self.assertEqual(release.bin_url, "https://example.com/fw.bin")
+        self.assertEqual(release.uf2_url, "https://example.com/fw.uf2")
+
+    def test_up_to_date_returns_none(self):
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(200, _fw_release_json("PolyKybd-fw-v0.8.1"))):
+            self.assertIsNone(updater.check_fw_latest("0.8.1"))
+
+    def test_newer_without_bin_returns_none(self):
+        # A newer release that has no .bin asset cannot be flashed over HID.
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(
+                                   200, _fw_release_json("PolyKybd-fw-v0.9.0", with_bin=False))):
+            self.assertIsNone(updater.check_fw_latest("0.8.1"))
+
+    def test_returns_cached_release_on_304(self):
+        self.mock_load.return_value = {"fw": {
+            "etag": '"abc"', "tag": "PolyKybd-fw-v0.9.0", "version": "0.9.0",
+            "bin_url": "https://example.com/fw.bin",
+            "uf2_url": "https://example.com/fw.uf2",
+            "html_url": "https://example.com/fw-release", "published_at": "",
+        }}
+        with mock.patch.object(updater.requests, "get", return_value=self._resp(304)):
+            release = updater.check_fw_latest("0.8.1")
+        self.assertIsNotNone(release)
+        self.assertEqual(release.version, "0.9.0")
+        self.assertEqual(release.bin_url, "https://example.com/fw.bin")
+
+    def test_raises_on_rate_limit(self):
+        with mock.patch.object(updater.requests, "get", return_value=self._resp(403)):
+            with self.assertRaises(updater.UpdateCheckError):
+                updater.check_fw_latest("0.8.1")
 
 
 def _build_tarball(path: Path, top_dir: str, files: dict):
@@ -181,6 +327,33 @@ class TestDownloadAndExtract(unittest.TestCase):
             self.assertTrue((top / "polyhost" / "_version.py").exists())
 
 
+class _FakePopen:
+    """Minimal stand-in for subprocess.Popen as used by updater._run_pip."""
+
+    def __init__(self, returncode=0, lines=()):
+        self.stdout = iter(lines)
+        self.returncode = returncode
+
+    def wait(self):
+        return self.returncode
+
+
+def _popen_side_effect(*results):
+    """Yield a _FakePopen per Popen call.
+
+    Each entry in ``results`` is a ``(returncode, lines)`` tuple applied to
+    successive calls, so a test can make the first pip invocation succeed and a
+    later one fail.
+    """
+    it = iter(results)
+
+    def _factory(cmd, **kwargs):
+        returncode, lines = next(it)
+        return _FakePopen(returncode, list(lines))
+
+    return _factory
+
+
 class TestApplyUpdate(unittest.TestCase):
 
     def test_copies_and_excludes(self):
@@ -201,9 +374,9 @@ class TestApplyUpdate(unittest.TestCase):
             (install / "polyhost" / "_version.py").write_text("old\n")
             (install / "polyhost" / "stale.py").write_text("stale\n")
 
-            with mock.patch.object(updater.subprocess, "run") as mock_run:
-                mock_run.return_value = mock.Mock(returncode=0, stderr="")
-                updater.apply_update(src, install)
+            with mock.patch.object(updater.subprocess, "Popen",
+                                   side_effect=_popen_side_effect((0, []))) as mock_popen:
+                locked = updater.apply_update(src, install)
 
             self.assertEqual((install / "polyhost" / "_version.py").read_text(), "new\n")
             self.assertTrue((install / "polyhost" / "newfile.py").exists())
@@ -213,9 +386,11 @@ class TestApplyUpdate(unittest.TestCase):
                              ".git must be excluded")
             self.assertFalse((install / "__pycache__").exists(),
                              "__pycache__ must be excluded")
-            mock_run.assert_called_once()
-            self.assertEqual(mock_run.call_args.args[0][:4],
-                             [sys.executable, "-m", "pip", "install"])
+            self.assertEqual(locked, [], "no locked files expected on non-Windows")
+            mock_popen.assert_called_once()
+            cmd = mock_popen.call_args.args[0]
+            self.assertEqual(cmd[:4], [sys.executable, "-m", "pip", "install"])
+            self.assertIn("-e", cmd)
 
     def test_installs_requirements_when_present(self):
         with tempfile.TemporaryDirectory() as td:
@@ -225,64 +400,46 @@ class TestApplyUpdate(unittest.TestCase):
             install = Path(td) / "install"
             install.mkdir()
 
-            with mock.patch.object(updater.subprocess, "run") as mock_run:
-                mock_run.return_value = mock.Mock(returncode=0, stderr="")
+            with mock.patch.object(updater.subprocess, "Popen",
+                                   side_effect=_popen_side_effect((0, []), (0, []))) as mock_popen:
                 updater.apply_update(src, install)
 
-            self.assertEqual(mock_run.call_count, 2)
-            cmds = [c.args[0] for c in mock_run.call_args_list]
-            self.assertIn("install", cmds[0])
+            self.assertEqual(mock_popen.call_count, 2)
+            cmds = [c.args[0] for c in mock_popen.call_args_list]
             self.assertIn("-e", cmds[0])
             self.assertIn("-r", cmds[1])
             self.assertEqual(cmds[1][-1], str(install / "requirements.txt"))
 
-    def test_pip_failure_does_not_raise(self):
+    def test_pip_failure_raises(self):
+        # _run_pip now raises on a non-zero exit, and apply_update lets it
+        # propagate. The captured pip output is surfaced in the message.
         with tempfile.TemporaryDirectory() as td:
             src = Path(td) / "src"
             src.mkdir()
             (src / "marker").write_text("x")
             install = Path(td) / "install"
             install.mkdir()
-            with mock.patch.object(updater.subprocess, "run") as mock_run:
-                mock_run.return_value = mock.Mock(returncode=1, stderr="boom", stdout="")
-                updater.apply_update(src, install)
+            with mock.patch.object(updater.subprocess, "Popen",
+                                   side_effect=_popen_side_effect((1, ["boom"]))):
+                with self.assertRaises(RuntimeError) as ctx:
+                    updater.apply_update(src, install)
+            self.assertIn("boom", str(ctx.exception))
+            # Files are copied before the (failing) pip step runs.
             self.assertTrue((install / "marker").exists())
 
-    def test_requirements_pip_failure_does_not_raise(self):
+    def test_requirements_failure_raises(self):
         with tempfile.TemporaryDirectory() as td:
             src = Path(td) / "src"
             src.mkdir()
             (src / "requirements.txt").write_text("requests\n")
             install = Path(td) / "install"
             install.mkdir()
-
-            def fake_run(cmd, **kwargs):
-                # First call (install -e .) succeeds; second (-r requirements.txt) fails.
-                if "-r" in cmd:
-                    return mock.Mock(returncode=1, stderr="resolve error", stdout="")
-                return mock.Mock(returncode=0, stderr="", stdout="")
-
-            with mock.patch.object(updater.subprocess, "run", side_effect=fake_run) as mock_run:
-                with mock.patch.object(updater.log, "warning") as mock_warn:
+            # First call (install -e .) succeeds; second (-r requirements) fails.
+            with mock.patch.object(updater.subprocess, "Popen",
+                                   side_effect=_popen_side_effect((0, []), (1, ["resolve error"]))):
+                with self.assertRaises(RuntimeError) as ctx:
                     updater.apply_update(src, install)
-
-            self.assertEqual(mock_run.call_count, 2)
-            warnings = " ".join(str(c) for c in mock_warn.call_args_list)
-            self.assertIn("install -r requirements.txt", warnings)
-
-    def test_pip_failure_falls_back_to_stdout_when_stderr_empty(self):
-        with tempfile.TemporaryDirectory() as td:
-            src = Path(td) / "src"
-            src.mkdir()
-            install = Path(td) / "install"
-            install.mkdir()
-            with mock.patch.object(updater.subprocess, "run") as mock_run, \
-                 mock.patch.object(updater.log, "warning") as mock_warn:
-                mock_run.return_value = mock.Mock(
-                    returncode=1, stderr="", stdout="diagnostic on stdout")
-                updater.apply_update(src, install)
-            warnings = " ".join(str(c) for c in mock_warn.call_args_list)
-            self.assertIn("diagnostic on stdout", warnings)
+            self.assertIn("resolve error", str(ctx.exception))
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ in-process restart. Designed for source-from-checkout installs on Win/Mac/Linux.
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -90,6 +91,26 @@ def _current_version() -> Version:
     return Version(__version__)
 
 
+# Release tags carry a repo-specific prefix before the version number: the host
+# publishes ``vX.Y.Z`` while the firmware publishes ``PolyKybd-fw-vX.Y.Z``.
+# Anchor on the first dotted-numeric run so a stray digit in the prefix isn't
+# mistaken for the version; return from there to the end of the string so any
+# trailing prerelease/build suffix is preserved for Version() to interpret.
+_TAG_VERSION_RE = re.compile(r"\d+(?:\.\d+)+")
+
+
+def _version_from_tag(tag: str) -> str:
+    """Extract the version substring from a release tag.
+
+    Handles plain ``1.2.3``, ``v1.2.3`` and prefixed tags such as the firmware
+    repo's ``PolyKybd-fw-v0.8.3``, and preserves any prerelease/build suffix
+    (``v1.2.3rc1`` -> ``1.2.3rc1``). Returns ``""`` when the tag contains no
+    dotted-numeric version, which ``Version()`` then rejects uniformly.
+    """
+    match = _TAG_VERSION_RE.search(tag)
+    return tag[match.start():] if match else ""
+
+
 def check_latest() -> Optional[ReleaseInfo]:
     """Return ReleaseInfo if GitHub's latest release is strictly newer; else None.
 
@@ -147,7 +168,7 @@ def check_latest() -> Optional[ReleaseInfo]:
     except (ValueError, KeyError) as e:
         raise UpdateCheckError(f"Malformed GitHub response: {e}") from e
 
-    version_str = tag.lstrip("vV")
+    version_str = _version_from_tag(tag)
     try:
         latest = Version(version_str)
     except InvalidVersion:
@@ -234,7 +255,7 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
     except (ValueError, KeyError) as e:
         raise UpdateCheckError(f"Malformed GitHub response: {e}") from e
 
-    version_str = tag.lstrip("vV")
+    version_str = _version_from_tag(tag)
     try:
         latest = Version(version_str)
     except InvalidVersion:
