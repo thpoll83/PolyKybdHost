@@ -971,10 +971,23 @@ class PolyHost(QApplication):
             return
 
         import os
+        # Pause the device-polling loop for the whole flash + apply.  Otherwise the
+        # periodic reconnect() (active_window_reporter) keeps re-acquiring the HID
+        # device on the main thread while the flash worker is staging chunks and,
+        # crucially, while the keyboard reboots to apply — the loop grabs the
+        # re-enumerating device out from under the worker's wait_for_reconnect(),
+        # corrupting the transfer and dropping the link.  The manual Flash+Apply
+        # path (cmd_menu.open_hid_fw_up_dialog) already does this; the auto path
+        # must too.  pause() is a toggle, so only flip it when not already paused.
+        was_paused = self.paused
+        if not was_paused:
+            self.pause()
         try:
             dlg = HidFwUpDialog(self.keeb.hid, bin_path, parent=None, apply_after=True)
             dlg.exec_()
         finally:
+            if not was_paused:
+                self.pause()   # toggle back to resume polling
             if os.path.exists(bin_path):
                 os.unlink(bin_path)
 
