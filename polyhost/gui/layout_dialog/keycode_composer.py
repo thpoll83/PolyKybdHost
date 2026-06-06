@@ -45,7 +45,7 @@ class KeycodeComposer(QWidget):
 
     def __init__(self, basic_keycodes: dict[str, int], num_layers: int = 9):
         super().__init__()
-        # Inner-key choices: basic keycodes only (0x00–0xFF) — that is all MT/LT
+        # Inner-key choices: basic keycodes only (0x00-0xFF) - that is all MT/LT
         # and modified keycodes can carry in their low byte.
         self._basic = sorted(
             ((name, kc) for name, kc in basic_keycodes.items() if 0x00 <= kc <= 0xFF),

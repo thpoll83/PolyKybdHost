@@ -224,6 +224,9 @@ class KbLayoutDialog(QMainWindow):
     def keycodeSelected(self, nice_name, name, keycode, font_size_hint):
         if self.selected_key is None:
             return
+        if self.key_buffer is None:
+            self.log.warning("Cannot write keycode: key buffer not initialized")
+            return
         mapping = self.keycode_browser.get_keycode_to_name_mapping()
         main, badge, color = describe_keycode(keycode, mapping)
         self.selected_key.set_display(main, badge, color, 9 if len(main) < 5 else 7)

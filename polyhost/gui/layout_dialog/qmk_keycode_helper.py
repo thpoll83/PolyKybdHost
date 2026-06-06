@@ -328,17 +328,23 @@ def encode_persistent_def_layer(layer: int) -> int:
 
 
 def encode_swap_hands_tap(basic_kc: int) -> int:
-    """Encode SH_T(kc) — tap = kc, hold = swap hands. kc limited to 0..0xEF."""
-    return QK_SWAP_HANDS | (basic_kc & 0xFF)
+    """Encode SH_T(kc) — tap = kc, hold = swap hands. kc limited to 0..0xEF.
+
+    Values 0xF0..0xFF map onto the named swap-hands action block
+    (QK_SWAP_HANDS 0x56F0..0x56FF), not SH_T(kc), so they are rejected.
+    """
+    if not 0x00 <= basic_kc <= 0xEF:
+        raise ValueError("SH_T() tap key must be in range 0x00..0xEF")
+    return QK_SWAP_HANDS | basic_kc
 
 
 def decode_for_composer(value: int):
     """Decode a keycode into the composer's fields, or None if not composable.
 
     Returns (behavior, layer, mods, inner_kc) where behavior is one of the
-    composer behaviour tags (MO/TO/TG/DF/TT/OSL/OSM/MT/LT/MOD). LM() and the
-    persistent-default-layer range are intentionally not composable and yield
-    None, as do plain basic keycodes.
+    composer behaviour tags (MO/TO/TG/DF/TT/OSL/OSM/MT/LT/MOD/LM/PDF/SH_T).
+    Plain basic keycodes and non-composable firmware-defined ranges (TD, named
+    swap-hands actions, MACRO/PB/KB/USER) yield None.
     """
     # Modified keycode (Ctrl+C, RShift+A, …).
     if 0x0100 <= value <= 0x1FFF:

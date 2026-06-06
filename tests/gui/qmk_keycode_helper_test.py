@@ -61,6 +61,13 @@ class TestEncoders(unittest.TestCase):
 
     def test_swap_hands_tap(self):
         self.assertEqual(encode_swap_hands_tap(0x04), 0x5604)
+        self.assertEqual(encode_swap_hands_tap(0xEF), 0x56EF)
+
+    def test_swap_hands_tap_rejects_named_action_range(self):
+        # 0xF0..0xFF would collide with the named swap-hands action block.
+        for bad in (0xF0, 0xFF, -1, 0x100):
+            with self.assertRaises(ValueError):
+                encode_swap_hands_tap(bad)
 
 
 class TestRoundTrip(unittest.TestCase):
