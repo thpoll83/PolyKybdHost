@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
 
 from polyhost.gui.flow_layout import FlowLayout
 from polyhost.gui.layout_dialog.keycode_browser_button import KeycodeBrowserButton
+from polyhost.gui.layout_dialog.keycode_composer import KeycodeComposer
 from polyhost.gui.layout_dialog.qmk_keycode_helper import HEADER_FILE, parse_qmk_keycodes, categorize, create_nice_name, \
     category_order, standard_category, last_key_in_standard_category
 
@@ -13,7 +14,7 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import HEADER_FILE, parse_qmk
 class KeycodeBrowser(QWidget):
     keycodeSelected = pyqtSignal(str, str, int, int)  # uint16
 
-    def __init__(self):
+    def __init__(self, num_layers: int = 9):
         super().__init__()
 
         self.keycodes = parse_qmk_keycodes(HEADER_FILE)
@@ -47,9 +48,18 @@ class KeycodeBrowser(QWidget):
             if category not in CAT_ORDER:
                 tabs.addTab(self._build_tab(categories[category]), category)
 
+        # Composer tab for building layer-switch / one-shot / tap-hold keycodes.
+        self.composer = KeycodeComposer(self.keycodes, num_layers=num_layers)
+        self.composer.keycodeSelected.connect(self.keycodeSelected)
+        tabs.addTab(self.composer, "Layers && Mods")
+
         layout = QVBoxLayout(self)
         layout.addWidget(tabs)
-        
+
+    def set_layer_count(self, num_layers: int):
+        """Update the composer's layer range once the device layer count is known."""
+        self.composer.set_layer_count(num_layers)
+
     def get_name_to_keycode_mapping(self):
         return self.keycodes
     

@@ -211,3 +211,160 @@ def decompose_keycode(value: int, keycode_to_name: dict) -> str:
         return f"DF*({value & 0x1F})"
     # Fall through: look up in full mapping or show hex
     return keycode_to_name.get(value, f"0x{value:04X}")
+
+
+# ---------------------------------------------------------------------------
+# Keycode composition (encode) — the inverse of decompose_keycode().
+#
+# These build the 16-bit QMK keycode for the "special" behaviours from their
+# parameters (layer / modifier mask / inner basic keycode), matching the exact
+# encoding documented in quantum/keycodes.h. Keep these and decompose_keycode()
+# in sync — they are two halves of the same single source of truth.
+# ---------------------------------------------------------------------------
+
+# QK_* range bases (low edge of each range).
+QK_MODS = 0x0000          # modified keycode = (mods << 8) | basic_kc
+QK_MOD_TAP = 0x2000
+QK_LAYER_TAP = 0x4000
+QK_TO = 0x5200
+QK_MOMENTARY = 0x5220
+QK_DEF_LAYER = 0x5240
+QK_TOGGLE_LAYER = 0x5260
+QK_ONE_SHOT_LAYER = 0x5280
+QK_ONE_SHOT_MOD = 0x52A0
+QK_LAYER_TAP_TOGGLE = 0x52C0
+
+# 5-bit modifier mask bits (modifiers.h). Bit 4 selects right-hand mods.
+MOD_CTRL = 0x01
+MOD_SHIFT = 0x02
+MOD_ALT = 0x04
+MOD_GUI = 0x08
+MOD_RIGHT = 0x10
+
+# Layer-switch behaviours that take only a layer argument: name -> range base.
+LAYER_BEHAVIORS = {
+    "MO": QK_MOMENTARY,
+    "TO": QK_TO,
+    "TG": QK_TOGGLE_LAYER,
+    "DF": QK_DEF_LAYER,
+    "TT": QK_LAYER_TAP_TOGGLE,
+    "OSL": QK_ONE_SHOT_LAYER,
+}
+
+
+def encode_mods(ctrl: bool = False, shift: bool = False, alt: bool = False,
+                gui: bool = False, right: bool = False) -> int:
+    """Build a 5-bit QMK modifier mask from individual modifier flags."""
+    mods = 0
+    if ctrl:
+        mods |= MOD_CTRL
+    if shift:
+        mods |= MOD_SHIFT
+    if alt:
+        mods |= MOD_ALT
+    if gui:
+        mods |= MOD_GUI
+    if right and mods:
+        mods |= MOD_RIGHT
+    return mods
+
+
+def encode_layer_switch(behavior: str, layer: int) -> int:
+    """Encode MO/TO/TG/DF/TT/OSL(layer) — layer clamped to 0..31."""
+    base = LAYER_BEHAVIORS[behavior]
+    return base | (layer & 0x1F)
+
+
+def encode_one_shot_mod(mods: int) -> int:
+    """Encode OSM(mods)."""
+    return QK_ONE_SHOT_MOD | (mods & 0x1F)
+
+
+def encode_mod_tap(mods: int, basic_kc: int) -> int:
+    """Encode MT(mods, kc) — tap = kc, hold = mods. kc limited to 0..255."""
+    return QK_MOD_TAP | ((mods & 0x1F) << 8) | (basic_kc & 0xFF)
+
+
+def encode_layer_tap(layer: int, basic_kc: int) -> int:
+    """Encode LT(layer, kc) — tap = kc, hold = layer. layer limited to 0..15."""
+    return QK_LAYER_TAP | ((layer & 0x0F) << 8) | (basic_kc & 0xFF)
+
+
+def encode_modded(mods: int, basic_kc: int) -> int:
+    """Encode a modified keycode like LCTL(kc)/RSFT(kc) — sends mods+kc together."""
+    return QK_MODS | ((mods & 0x1F) << 8) | (basic_kc & 0xFF)
+
+
+# ---------------------------------------------------------------------------
+# Two-line display description — base label + behaviour badge.
+#
+# describe_keycode() turns a 16-bit keycode into (main_text, badge_text,
+# badge_color) so a key tile can show the tap/base key prominently with a small
+# coloured badge for the behaviour (held mod, target layer, one-shot, …).
+# ---------------------------------------------------------------------------
+
+# Badge colours by behaviour family.
+BADGE_COLOR_LAYER = "#FFCC44"   # amber  — layer switches (MO/TO/TG/DF/TT/OSL) & OSM
+BADGE_COLOR_TAP = "#66C2FF"     # cyan   — tap/hold duals (LT/MT)
+BADGE_COLOR_MOD = "#FF9955"     # orange — modified keycodes sent together (LCTL(kc)…)
+
+# Compact modifier glyphs for badges.
+_MOD_GLYPHS = [(MOD_CTRL, "⌃"), (MOD_SHIFT, "⇧"),
+               (MOD_ALT, "⌥"), (MOD_GUI, "⌘")]
+
+
+def _mod_symbols(mods: int) -> str:
+    """Compact modifier glyph string, e.g. 0x12 -> 'R⇧' (right shift)."""
+    glyphs = "".join(g for bit, g in _MOD_GLYPHS if mods & bit)
+    if not glyphs:
+        return "∅"
+    return ("R" + glyphs) if (mods & MOD_RIGHT) else glyphs
+
+
+def describe_keycode(value: int, keycode_to_name: dict):
+    """Return (main_text, badge_text, badge_color) for a two-line key tile.
+
+    badge_text is "" (and badge_color None) for plain keys.
+    """
+    def basic_display(kc: int) -> str:
+        name = keycode_to_name.get(kc)
+        if name is None:
+            name = decompose_keycode(kc, keycode_to_name)
+        return create_nice_name(name)
+
+    # Modified keycode (Ctrl+C, RShift+A, …) — main = key, badge = held mods.
+    if 0x0100 <= value <= 0x1FFF:
+        mods = (value >> 8) & 0x1F
+        return basic_display(value & 0xFF), _mod_symbols(mods), BADGE_COLOR_MOD
+    # Mod-tap MT() — main = tap key, badge = held mods (cyan = tap/hold dual).
+    if 0x2000 <= value <= 0x3FFF:
+        mods = (value >> 8) & 0x1F
+        return basic_display(value & 0xFF), _mod_symbols(mods), BADGE_COLOR_TAP
+    # Layer-tap LT() — main = tap key, badge = hold target layer.
+    if 0x4000 <= value <= 0x4FFF:
+        layer = (value >> 8) & 0x0F
+        return basic_display(value & 0xFF), f"L{layer}", BADGE_COLOR_TAP
+    # Layer-mod LM() — main = target layer, badge = mods.
+    if 0x5000 <= value <= 0x51FF:
+        layer = (value >> 4) & 0x0F
+        return f"L{layer}", "LM" + _mod_symbols(value & 0x0F), BADGE_COLOR_LAYER
+    # Layer switches MO/TO/DF/TG/OSL/TT — main = target layer, badge = behaviour.
+    for lo, hi, tag in (
+        (0x5200, 0x521F, "TO"), (0x5220, 0x523F, "MO"),
+        (0x5240, 0x525F, "DF"), (0x5260, 0x527F, "TG"),
+        (0x5280, 0x529F, "OSL"), (0x52C0, 0x52DF, "TT"),
+    ):
+        if lo <= value <= hi:
+            return f"L{value & 0x1F}", tag, BADGE_COLOR_LAYER
+    # One-shot mod OSM() — main = mods, badge = OSM.
+    if 0x52A0 <= value <= 0x52BF:
+        return _mod_symbols(value & 0x1F), "OSM", BADGE_COLOR_LAYER
+    # Persistent default layer.
+    if 0x52E0 <= value <= 0x52FF:
+        return f"L{value & 0x1F}", "DF*", BADGE_COLOR_LAYER
+
+    # Plain key (or anything else) — single line, no badge.
+    name = keycode_to_name.get(value)
+    if name is None:
+        name = decompose_keycode(value, keycode_to_name)
+    return create_nice_name(name), "", None
