@@ -8,11 +8,22 @@ class LangComp:
         path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "res", "forced_country_match.txt")
         with open(path) as file:
             for line in file.readlines():
-                if "=" in line:
-                    key, value = line.split('=')
-                    key = key.strip(" \n\r")
-                    self.mapping[key] = []
-                    self.mapping[key].append(value.strip(" \n\r"))
+                line = line.strip()
+                # Skip blank lines and '#' comments; only "key=value" lines count.
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip(" \n\r").lower()
+                if not key:
+                    continue
+                # Values may be comma-separated and/or repeated across lines with
+                # the same key; accumulate (de-duplicated) instead of overwriting,
+                # so one layout can list several compatible OS layouts.
+                bucket = self.mapping.setdefault(key, [])
+                for alt in value.split(","):
+                    alt = alt.strip(" \n\r").lower()
+                    if alt and alt not in bucket:
+                        bucket.append(alt)
 
     def has_compatible_lang(self, lang):
         return lang in self.mapping
