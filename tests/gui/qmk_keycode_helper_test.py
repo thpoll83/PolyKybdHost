@@ -5,7 +5,7 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     encode_mods, encode_layer_switch, encode_one_shot_mod,
     encode_mod_tap, encode_layer_tap, encode_modded, encode_layer_mod,
     decompose_keycode, describe_keycode, decode_for_composer,
-    BADGE_COLOR_LAYER, BADGE_COLOR_TAP, BADGE_COLOR_MOD,
+    BADGE_COLOR_LAYER, BADGE_COLOR_TAP, BADGE_COLOR_MOD, BADGE_COLOR_FW,
 )
 
 # Minimal code->name mapping for the inner keys used in the tests.
@@ -166,6 +166,44 @@ class TestDecodeForComposer(unittest.TestCase):
         self.assertIsNone(decode_for_composer(0x0004))   # KC_A
         self.assertIsNone(decode_for_composer(0x0000))   # KC_NO
         self.assertIsNone(decode_for_composer(0x52E1))   # persistent DF* — not composable
+
+
+class TestFirmwareKeycodeDisplay(unittest.TestCase):
+    """Parametric / firmware-defined keycodes that used to fall through to hex."""
+
+    def test_decompose_labels(self):
+        cases = {
+            0x52E2: "PDF(2)",          # persistent default layer
+            0x5604: "SH_T(A)",         # swap-hands tap-hold
+            0x5703: "TD(3)",           # tap dance
+            0x7702: "MACRO(2)",
+            0x7441: "PB(1)",           # programmable button
+            0x7E05: "KB(5)",           # keyboard custom
+            0x7E43: "USER(3)",         # user custom
+        }
+        for kc, expected in cases.items():
+            self.assertEqual(decompose_keycode(kc, KC), expected, hex(kc))
+
+    def test_no_raw_hex_for_these(self):
+        for kc in (0x52E2, 0x5604, 0x5703, 0x7702, 0x7441, 0x7E05, 0x7E43):
+            self.assertNotIn("0x", decompose_keycode(kc, KC), hex(kc))
+
+    def test_named_constant_still_wins(self):
+        # A named entry in the mapping must take priority over parametric decode.
+        mapping = dict(KC)
+        mapping[0x7702] = "MC_MYMACRO"
+        self.assertEqual(decompose_keycode(0x7702, mapping), "MC_MYMACRO")
+
+    def test_describe_badges(self):
+        self.assertEqual(describe_keycode(0x52E2, KC), ("L2", "PDF", BADGE_COLOR_LAYER))
+        self.assertEqual(describe_keycode(0x5604, KC), ("A", "SH", BADGE_COLOR_TAP))
+        self.assertEqual(describe_keycode(0x5703, KC), ("TD", "3", BADGE_COLOR_FW))
+
+    def test_describe_firmware_fallthrough_single_line(self):
+        main, badge, color = describe_keycode(0x7702, KC)   # MACRO(2)
+        self.assertEqual(main, "MACRO(2)")
+        self.assertEqual(badge, "")
+        self.assertIsNone(color)
 
 
 if __name__ == "__main__":

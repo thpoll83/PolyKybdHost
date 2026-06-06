@@ -206,11 +206,30 @@ def decompose_keycode(value: int, keycode_to_name: dict) -> str:
     # QK_LAYER_TAP_TOGGLE: TT() — 0x52C0–0x52DF
     if 0x52C0 <= value <= 0x52DF:
         return f"TT({value & 0x1F})"
-    # QK_PERSISTENT_DEF_LAYER — 0x52E0–0x52FF
+    # QK_PERSISTENT_DEF_LAYER: PDF() — 0x52E0–0x52FF
     if 0x52E0 <= value <= 0x52FF:
-        return f"DF*({value & 0x1F})"
-    # Fall through: look up in full mapping or show hex
-    return keycode_to_name.get(value, f"0x{value:04X}")
+        return f"PDF({value & 0x1F})"
+    # QK_SWAP_HANDS: SH_T(kc) tap-hold — 0x5600–0x56EF (0x56F0+ are named actions)
+    if 0x5600 <= value <= 0x56EF:
+        return f"SH_T({basic_name(value & 0xFF)})"
+    # QK_TAP_DANCE: TD(n) — 0x5700–0x57FF (firmware-defined dance index)
+    if 0x5700 <= value <= 0x57FF:
+        return f"TD({value & 0xFF})"
+
+    # A named constant (parsed from keycodes.h) wins for everything else.
+    name = keycode_to_name.get(value)
+    if name is not None:
+        return name
+    # Firmware-defined parametric keycodes — index encoded in the low bits.
+    if 0x7440 <= value <= 0x747F:
+        return f"PB({value - 0x7440})"          # programmable button
+    if 0x7700 <= value <= 0x777F:
+        return f"MACRO({value - 0x7700})"
+    if 0x7E00 <= value <= 0x7E3F:
+        return f"KB({value - 0x7E00})"           # keyboard-specific custom
+    if 0x7E40 <= value <= 0x7FFF:
+        return f"USER({value - 0x7E40})"         # user custom (QK_USER)
+    return f"0x{value:04X}"
 
 
 # ---------------------------------------------------------------------------
@@ -345,8 +364,9 @@ def decode_for_composer(value: int):
 
 # Badge colours by behaviour family.
 BADGE_COLOR_LAYER = "#FFCC44"   # amber  — layer switches (MO/TO/TG/DF/TT/OSL) & OSM
-BADGE_COLOR_TAP = "#66C2FF"     # cyan   — tap/hold duals (LT/MT)
+BADGE_COLOR_TAP = "#66C2FF"     # cyan   — tap/hold duals (LT/MT/SH_T)
 BADGE_COLOR_MOD = "#FF9955"     # orange — modified keycodes sent together (LCTL(kc)…)
+BADGE_COLOR_FW = "#C792EA"      # violet — firmware-defined (TD/MACRO/PB/KB/USER)
 
 # Compact modifier glyphs for badges.
 _MOD_GLYPHS = [(MOD_CTRL, "⌃"), (MOD_SHIFT, "⇧"),
@@ -399,9 +419,15 @@ def describe_keycode(value: int, keycode_to_name: dict):
     # One-shot mod OSM() — main = mods, badge = OSM.
     if 0x52A0 <= value <= 0x52BF:
         return _mod_symbols(value & 0x1F), "OSM", BADGE_COLOR_LAYER
-    # Persistent default layer.
+    # Persistent default layer PDF().
     if 0x52E0 <= value <= 0x52FF:
-        return f"L{value & 0x1F}", "DF*", BADGE_COLOR_LAYER
+        return f"L{value & 0x1F}", "PDF", BADGE_COLOR_LAYER
+    # Swap-hands tap-hold SH_T() — tap key / hold swap.
+    if 0x5600 <= value <= 0x56EF:
+        return basic_display(value & 0xFF), "SH", BADGE_COLOR_TAP
+    # Tap dance TD() — firmware-defined dance index.
+    if 0x5700 <= value <= 0x57FF:
+        return "TD", str(value & 0xFF), BADGE_COLOR_FW
 
     # Plain key (or anything else) — single line, no badge.
     name = keycode_to_name.get(value)
