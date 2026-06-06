@@ -105,7 +105,7 @@ class KbLayoutDialog(QMainWindow):
         else:
             self.keycode_browser.set_layer_count(self.num_layers)
             my_options = []
-            for idx in range(self.keeb.num_layers):
+            for idx in range(self.num_layers):
                 hint = layer_names.get(idx)
                 my_options.append(f"{idx} {hint}" if hint else str(idx))
 
@@ -131,7 +131,7 @@ class KbLayoutDialog(QMainWindow):
         if success:
             self.log.info("Received dynamic key buffer: %d", len(self.key_buffer))
             ok, default_layer = self.keeb.get_default_layer()
-            if ok and self.keeb.num_layers and 0 <= default_layer < self.keeb.num_layers:
+            if ok and self.num_layers and 0 <= default_layer < self.num_layers:
                 self.current_layer = default_layer
                 self.layers.set_active(default_layer)
             self.set_keycodes_for_layer(self.current_layer)
