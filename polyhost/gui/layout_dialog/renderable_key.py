@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
 KEY_MARGIN_X = 2
 KEY_MARGIN_Y = 2
 KEY_RADIUS = 0.1
+BADGE_BOTTOM_GAP = 20  # px from tile bottom to the badge's top edge
 
 
 class RenderableKey(QGraphicsObject):
@@ -38,13 +39,24 @@ class RenderableKey(QGraphicsObject):
         self.setFlag(self.ItemIsFocusable, True)
         self.setAcceptHoverEvents(True)
 
-        # text label
+        # text label (base / tap keycode, drawn prominently in the centre)
         self.text = QGraphicsTextItem(nice_name, self)
         self.text.setFont(QFont("Arial", 10))
         self.text.setDefaultTextColor(Qt.white)
         opt = QTextOption()
         opt.setAlignment(Qt.AlignCenter)
         self.text.document().setDefaultTextOption(opt)
+
+        # behaviour badge (held mod / target layer / one-shot …), drawn small
+        # near the bottom. Empty + hidden for plain keys.
+        self.badge = QGraphicsTextItem("", self)
+        self.badge.setFont(QFont("Arial", 8, QFont.Bold))
+        self.badge.setDefaultTextColor(QColor("#FFCC44"))
+        badge_opt = QTextOption()
+        badge_opt.setAlignment(Qt.AlignCenter)
+        self.badge.document().setDefaultTextOption(badge_opt)
+        self.badge.setVisible(False)
+
         self.update_text_position()
 
         # hover state
@@ -152,16 +164,39 @@ class RenderableKey(QGraphicsObject):
         super().mousePressEvent(ev)
 
     def setKeycode(self, nice_name, name, keycode, font_size_hint=None):
-        self.nice_name = nice_name
-        self.text.document().setPlainText(nice_name)
+        # Legacy single-line setter (kept for compatibility). Prefer set_display.
+        self.set_display(nice_name, "", None, font_size_hint)
+
+    def set_display(self, main_text, badge_text="", badge_color=None, font_size_hint=None):
+        """Update the tile to show a base/tap label plus an optional behaviour badge."""
+        self.nice_name = main_text
+        self.text.document().setPlainText(main_text or "")
         if font_size_hint is not None and isinstance(font_size_hint, (int, float)):
             self.text.setFont(QFont("Arial", int(font_size_hint)))
+
+        has_badge = bool(badge_text)
+        self.badge.document().setPlainText(badge_text or "")
+        self.badge.setVisible(has_badge)
+        if has_badge and badge_color:
+            self.badge.setDefaultTextColor(QColor(badge_color))
+
         self.update_text_position()
         self.update()
 
     def update_text_position(self):
         rect = self.boundingRect()
         bounding = self.text.boundingRect()
+        # Nudge the main label up a little when a badge is shown so the two
+        # lines sit either side of the tile's display area.
+        y_nudge = 18 if self.badge.isVisible() else 14
         self.text.setPos(rect.x() + (rect.width() - bounding.width())/2,
-                         rect.y() + (rect.height() - bounding.height())/2 - 14)
+                         rect.y() + (rect.height() - bounding.height())/2 - y_nudge)
         self.text.setTextWidth(bounding.width())
+
+        badge_bounds = self.badge.boundingRect()
+        # Anchor the badge a fixed distance from the tile bottom (not by its own
+        # height) so ASCII tags ("MO", "L2") and the taller Unicode modifier
+        # glyphs (⇧⌃⌥⌘) all sit on exactly the same line regardless of colour.
+        self.badge.setPos(rect.x() + (rect.width() - badge_bounds.width())/2,
+                          rect.y() + rect.height() - BADGE_BOTTOM_GAP)
+        self.badge.setTextWidth(badge_bounds.width())

@@ -14,7 +14,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.poly_kybd import PolyKybd
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
-from polyhost.gui.layout_dialog.qmk_keycode_helper import create_nice_name, decompose_keycode, parse_layer_names
+from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
 from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
@@ -79,6 +79,7 @@ class KbLayoutDialog(QMainWindow):
         self.selected_key = None
         self.keys = {}
         self.current_layer = 0
+        self.key_buffer = None
 
         self.init_ui()
 
@@ -103,8 +104,9 @@ class KbLayoutDialog(QMainWindow):
         if not success:
             my_options = ["Could not read layers from device"]
         else:
+            self.keycode_browser.set_layer_count(self.num_layers)
             my_options = []
-            for idx in range(self.keeb.num_layers):
+            for idx in range(self.num_layers):
                 hint = layer_names.get(idx)
                 my_options.append(f"{idx} {hint}" if hint else str(idx))
 
@@ -130,7 +132,7 @@ class KbLayoutDialog(QMainWindow):
         if success:
             self.log.info("Received dynamic key buffer: %d", len(self.key_buffer))
             ok, default_layer = self.keeb.get_default_layer()
-            if ok and self.keeb.num_layers and 0 <= default_layer < self.keeb.num_layers:
+            if ok and self.num_layers and 0 <= default_layer < self.num_layers:
                 self.current_layer = default_layer
                 self.layers.set_active(default_layer)
             self.set_keycodes_for_layer(self.current_layer)
@@ -148,12 +150,8 @@ class KbLayoutDialog(QMainWindow):
             while idx not in self.keys and idx < max_idx:
                 idx += 1
             keycode = self.key_buffer[idx + offset]
-            if keycode in mapping:
-                name = mapping[keycode]
-            else:
-                name = decompose_keycode(keycode, mapping)
-            nice_name = create_nice_name(name)
-            self.keys[idx].setKeycode(nice_name, name, keycode, 9 if len(nice_name) < 5 else 7)
+            main, badge, color = describe_keycode(keycode, mapping)
+            self.keys[idx].set_display(main, badge, color, 9 if len(main) < 5 else 7)
             idx += 1
 
     def layerChanged(self, button):
@@ -216,11 +214,22 @@ class KbLayoutDialog(QMainWindow):
 
     def mouseClickEvent(self, item):
         self.selected_key = item
+        # Reflect the clicked key's current keycode in the composer so its
+        # layer/modifier/tap setup is shown and ready to tweak.
+        idx = item.matrix_index
+        if idx is not None and self.key_buffer:
+            max_idx = self.settings.MATRIX_COLUMNS * self.settings.MATRIX_ROWS
+            self.keycode_browser.show_keycode(self.key_buffer[idx + self.current_layer * max_idx])
 
     def keycodeSelected(self, nice_name, name, keycode, font_size_hint):
         if self.selected_key is None:
             return
-        self.selected_key.setKeycode(nice_name, name, keycode, font_size_hint)
+        if self.key_buffer is None:
+            self.log.warning("Cannot write keycode: key buffer not initialized")
+            return
+        mapping = self.keycode_browser.get_keycode_to_name_mapping()
+        main, badge, color = describe_keycode(keycode, mapping)
+        self.selected_key.set_display(main, badge, color, 9 if len(main) < 5 else 7)
         idx = self.selected_key.matrix_index
         if idx is None:
             return
