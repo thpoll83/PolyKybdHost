@@ -1,2 +1,31 @@
+# PolyKybd - forced keyboard-layout compatibility map.
+#
+# Each line "a=b[,c,...]" declares that, for the PolyKybd layout whose country
+# code is "a", the OS keyboard layout(s) "b","c",... are acceptable equivalents.
+# linux_kde_helper.set_language() consults this when the keyboard's own country
+# code is not installed as an OS layout and switches the OS to the first listed
+# alternative that is present. Keys are normally PolyKybd layout countries;
+# values are xkb / ISO-3166 alpha-2 codes (Arabic's xkb code is "ara"). Values
+# may be comma-separated or repeated across lines with the same key. Lines
+# starting with '#' (or without '=') are ignored. Reverse entries are harmless.
+
+# German keyboard <-> Austrian OS layout (identical QWERTZ).
 de=at
 at=de
+
+# Croatian keyboard covers the shared ex-Yugoslav Latin QWERTZ - the Bosnian,
+# Montenegrin and Slovenian OS layouts are identical to it (Slovenian, Bosnian
+# and Montenegrin are folded onto hr instead of getting their own entries).
+hr=ba,me,si
+
+# Arabic: the PolyKybd entry is ar-SA, but every Arab state's OS layout uses the
+# single xkb code "ara" - map it so the Arabic layout matches everywhere.
+sa=ara
+
+# Finnish and Swedish share one Fennoscandian layout.
+fi=se
+se=fi
+
+# Norwegian and Danish share the same ae / o-slash / a-ring letter positions.
+no=dk
+dk=no
