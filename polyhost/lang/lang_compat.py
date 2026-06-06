@@ -26,9 +26,11 @@ class LangComp:
                         bucket.append(alt)
 
     def has_compatible_lang(self, lang):
-        return lang in self.mapping
+        # Keys are stored lowercased; normalise the lookup too so a match does
+        # not depend on the caller passing a lowercased country code.
+        return bool(lang) and lang.lower() in self.mapping
 
     def get_compatible_lang_list(self, lang):
-        if lang not in self.mapping:
+        if not lang:
             return None
-        return self.mapping[lang]
+        return self.mapping.get(lang.lower())
