@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
 KEY_MARGIN_X = 2
 KEY_MARGIN_Y = 2
 KEY_RADIUS = 0.1
+BADGE_BOTTOM_GAP = 20  # px from tile bottom to the badge's top edge
 
 
 class RenderableKey(QGraphicsObject):
@@ -193,6 +194,9 @@ class RenderableKey(QGraphicsObject):
         self.text.setTextWidth(bounding.width())
 
         badge_bounds = self.badge.boundingRect()
+        # Anchor the badge a fixed distance from the tile bottom (not by its own
+        # height) so ASCII tags ("MO", "L2") and the taller Unicode modifier
+        # glyphs (⇧⌃⌥⌘) all sit on exactly the same line regardless of colour.
         self.badge.setPos(rect.x() + (rect.width() - badge_bounds.width())/2,
-                          rect.y() + rect.height() - badge_bounds.height() + 1)
+                          rect.y() + rect.height() - BADGE_BOTTOM_GAP)
         self.badge.setTextWidth(badge_bounds.width())

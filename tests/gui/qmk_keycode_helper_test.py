@@ -3,7 +3,7 @@ import unittest
 from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     MOD_CTRL, MOD_SHIFT, MOD_ALT, MOD_GUI, MOD_RIGHT,
     encode_mods, encode_layer_switch, encode_one_shot_mod,
-    encode_mod_tap, encode_layer_tap, encode_modded,
+    encode_mod_tap, encode_layer_tap, encode_modded, encode_layer_mod,
     decompose_keycode, describe_keycode, decode_for_composer,
     BADGE_COLOR_LAYER, BADGE_COLOR_TAP, BADGE_COLOR_MOD,
 )
@@ -50,6 +50,11 @@ class TestEncoders(unittest.TestCase):
         self.assertEqual(encode_modded(MOD_CTRL, 0x04), 0x0104)
         self.assertEqual(encode_modded(MOD_CTRL | MOD_RIGHT, 0x04), 0x1104)
 
+    def test_layer_mod(self):
+        # LM(layer, mod) = QK_LAYER_MOD | (layer << 5) | mod
+        self.assertEqual(encode_layer_mod(1, MOD_CTRL), 0x5021)
+        self.assertEqual(encode_layer_mod(2, MOD_SHIFT), 0x5042)
+
 
 class TestRoundTrip(unittest.TestCase):
     """encode_* must produce keycodes that decompose_keycode reads back correctly."""
@@ -76,6 +81,11 @@ class TestRoundTrip(unittest.TestCase):
     def test_one_shot_mod_roundtrip(self):
         kc = encode_one_shot_mod(MOD_SHIFT)
         self.assertEqual(decompose_keycode(kc, KC), "OSM(LSFT)")
+
+    def test_layer_mod_roundtrip(self):
+        kc = encode_layer_mod(2, MOD_CTRL | MOD_SHIFT)
+        self.assertEqual(decompose_keycode(kc, KC), "LM(2,LCTL+LSFT)")
+        self.assertEqual(decode_for_composer(kc), ("LM", 2, MOD_CTRL | MOD_SHIFT, 0))
 
 
 class TestDescribeKeycode(unittest.TestCase):
@@ -155,8 +165,7 @@ class TestDecodeForComposer(unittest.TestCase):
     def test_plain_and_unsupported_return_none(self):
         self.assertIsNone(decode_for_composer(0x0004))   # KC_A
         self.assertIsNone(decode_for_composer(0x0000))   # KC_NO
-        self.assertIsNone(decode_for_composer(0x5020))   # LM() — not composable
-        self.assertIsNone(decode_for_composer(0x52E1))   # persistent DF*
+        self.assertIsNone(decode_for_composer(0x52E1))   # persistent DF* — not composable
 
 
 if __name__ == "__main__":

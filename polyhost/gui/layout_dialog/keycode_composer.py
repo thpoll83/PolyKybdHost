@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (
 from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     decompose_keycode, create_nice_name,
     encode_mods, encode_layer_switch, encode_one_shot_mod,
-    encode_mod_tap, encode_layer_tap, encode_modded,
+    encode_mod_tap, encode_layer_tap, encode_modded, encode_layer_mod,
     decode_for_composer, MOD_CTRL, MOD_SHIFT, MOD_ALT, MOD_GUI, MOD_RIGHT,
 )
 
@@ -31,6 +31,7 @@ BEHAVIORS = [
     ("OSL", "OSL — One-shot layer", True, False, False),
     ("OSM", "OSM — One-shot modifier", False, True, False),
     ("LT", "LT — Layer-tap (hold layer / tap key)", True, False, True),
+    ("LM", "LM — Layer + modifier (momentary)", True, True, False),
     ("MT", "MT — Mod-tap (hold mod / tap key)", False, True, True),
     ("MOD", "Modified key (Ctrl/Shift/… + key)", False, True, True),
 ]
@@ -197,6 +198,8 @@ class KeycodeComposer(QWidget):
             return encode_layer_switch(key, layer)
         if key == "OSM":
             return encode_one_shot_mod(mods)
+        if key == "LM":
+            return encode_layer_mod(layer, mods)
         if key == "LT":
             return encode_layer_tap(layer, inner)
         if key == "MT":

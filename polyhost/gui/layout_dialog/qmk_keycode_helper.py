@@ -180,10 +180,10 @@ def decompose_keycode(value: int, keycode_to_name: dict) -> str:
         layer = (value >> 8) & 0x0F
         key = value & 0xFF
         return f"LT({layer},{basic_name(key)})"
-    # QK_LAYER_MOD: LM() — 0x5000–0x51FF
+    # QK_LAYER_MOD: LM() — 0x5000–0x51FF (layer<<5 | 5-bit mod)
     if 0x5000 <= value <= 0x51FF:
-        layer = (value >> 4) & 0x0F
-        mods = value & 0x0F
+        layer = (value >> 5) & 0x0F
+        mods = value & 0x1F
         return f"LM({layer},{_mod_str(mods)})"
     # QK_TO: TO() — 0x5200–0x521F
     if 0x5200 <= value <= 0x521F:
@@ -226,6 +226,7 @@ def decompose_keycode(value: int, keycode_to_name: dict) -> str:
 QK_MODS = 0x0000          # modified keycode = (mods << 8) | basic_kc
 QK_MOD_TAP = 0x2000
 QK_LAYER_TAP = 0x4000
+QK_LAYER_MOD = 0x5000
 QK_TO = 0x5200
 QK_MOMENTARY = 0x5220
 QK_DEF_LAYER = 0x5240
@@ -295,6 +296,11 @@ def encode_modded(mods: int, basic_kc: int) -> int:
     return QK_MODS | ((mods & 0x1F) << 8) | (basic_kc & 0xFF)
 
 
+def encode_layer_mod(layer: int, mods: int) -> int:
+    """Encode LM(layer, mods) — momentary layer while holding the given mods."""
+    return QK_LAYER_MOD | ((layer & 0x0F) << 5) | (mods & 0x1F)
+
+
 def decode_for_composer(value: int):
     """Decode a keycode into the composer's fields, or None if not composable.
 
@@ -312,6 +318,9 @@ def decode_for_composer(value: int):
     # Layer-tap LT().
     if 0x4000 <= value <= 0x4FFF:
         return "LT", (value >> 8) & 0x0F, 0, value & 0xFF
+    # Layer-mod LM().
+    if 0x5000 <= value <= 0x51FF:
+        return "LM", (value >> 5) & 0x0F, value & 0x1F, 0
     # Layer switches that take only a layer argument.
     for lo, hi, tag in (
         (0x5200, 0x521F, "TO"), (0x5220, 0x523F, "MO"),
@@ -377,8 +386,8 @@ def describe_keycode(value: int, keycode_to_name: dict):
         return basic_display(value & 0xFF), f"L{layer}", BADGE_COLOR_TAP
     # Layer-mod LM() — main = target layer, badge = mods.
     if 0x5000 <= value <= 0x51FF:
-        layer = (value >> 4) & 0x0F
-        return f"L{layer}", "LM" + _mod_symbols(value & 0x0F), BADGE_COLOR_LAYER
+        layer = (value >> 5) & 0x0F
+        return f"L{layer}", "LM" + _mod_symbols(value & 0x1F), BADGE_COLOR_LAYER
     # Layer switches MO/TO/DF/TG/OSL/TT — main = target layer, badge = behaviour.
     for lo, hi, tag in (
         (0x5200, 0x521F, "TO"), (0x5220, 0x523F, "MO"),
