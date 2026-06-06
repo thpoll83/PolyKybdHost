@@ -18,6 +18,7 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     decompose_keycode, create_nice_name,
     encode_mods, encode_layer_switch, encode_one_shot_mod,
     encode_mod_tap, encode_layer_tap, encode_modded, encode_layer_mod,
+    encode_persistent_def_layer, encode_swap_hands_tap,
     decode_for_composer, MOD_CTRL, MOD_SHIFT, MOD_ALT, MOD_GUI, MOD_RIGHT,
 )
 
@@ -27,6 +28,7 @@ BEHAVIORS = [
     ("TO", "TO — Switch to layer", True, False, False),
     ("TG", "TG — Toggle layer", True, False, False),
     ("DF", "DF — Set default layer", True, False, False),
+    ("PDF", "PDF — Persistent default layer", True, False, False),
     ("TT", "TT — Tap-toggle layer", True, False, False),
     ("OSL", "OSL — One-shot layer", True, False, False),
     ("OSM", "OSM — One-shot modifier", False, True, False),
@@ -34,6 +36,7 @@ BEHAVIORS = [
     ("LM", "LM — Layer + modifier (momentary)", True, True, False),
     ("MT", "MT — Mod-tap (hold mod / tap key)", False, True, True),
     ("MOD", "Modified key (Ctrl/Shift/… + key)", False, True, True),
+    ("SH_T", "SH_T — Swap-hands tap-hold (tap key / hold swap)", False, False, True),
 ]
 
 
@@ -196,12 +199,16 @@ class KeycodeComposer(QWidget):
 
         if key in ("MO", "TO", "TG", "DF", "TT", "OSL"):
             return encode_layer_switch(key, layer)
+        if key == "PDF":
+            return encode_persistent_def_layer(layer)
         if key == "OSM":
             return encode_one_shot_mod(mods)
         if key == "LM":
             return encode_layer_mod(layer, mods)
         if key == "LT":
             return encode_layer_tap(layer, inner)
+        if key == "SH_T":
+            return encode_swap_hands_tap(inner)
         if key == "MT":
             return encode_mod_tap(mods, inner)
         if key == "MOD":

@@ -253,6 +253,8 @@ QK_TOGGLE_LAYER = 0x5260
 QK_ONE_SHOT_LAYER = 0x5280
 QK_ONE_SHOT_MOD = 0x52A0
 QK_LAYER_TAP_TOGGLE = 0x52C0
+QK_PERSISTENT_DEF_LAYER = 0x52E0
+QK_SWAP_HANDS = 0x5600
 
 # 5-bit modifier mask bits (modifiers.h). Bit 4 selects right-hand mods.
 MOD_CTRL = 0x01
@@ -320,6 +322,16 @@ def encode_layer_mod(layer: int, mods: int) -> int:
     return QK_LAYER_MOD | ((layer & 0x0F) << 5) | (mods & 0x1F)
 
 
+def encode_persistent_def_layer(layer: int) -> int:
+    """Encode PDF(layer) — set the default layer and persist it to EEPROM."""
+    return QK_PERSISTENT_DEF_LAYER | (layer & 0x1F)
+
+
+def encode_swap_hands_tap(basic_kc: int) -> int:
+    """Encode SH_T(kc) — tap = kc, hold = swap hands. kc limited to 0..0xEF."""
+    return QK_SWAP_HANDS | (basic_kc & 0xFF)
+
+
 def decode_for_composer(value: int):
     """Decode a keycode into the composer's fields, or None if not composable.
 
@@ -351,6 +363,12 @@ def decode_for_composer(value: int):
     # One-shot mod OSM().
     if 0x52A0 <= value <= 0x52BF:
         return "OSM", 0, value & 0x1F, 0
+    # Persistent default layer PDF().
+    if 0x52E0 <= value <= 0x52FF:
+        return "PDF", value & 0x1F, 0, 0
+    # Swap-hands tap-hold SH_T().
+    if 0x5600 <= value <= 0x56EF:
+        return "SH_T", 0, 0, value & 0xFF
     return None
 
 

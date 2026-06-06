@@ -4,6 +4,7 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     MOD_CTRL, MOD_SHIFT, MOD_ALT, MOD_GUI, MOD_RIGHT,
     encode_mods, encode_layer_switch, encode_one_shot_mod,
     encode_mod_tap, encode_layer_tap, encode_modded, encode_layer_mod,
+    encode_persistent_def_layer, encode_swap_hands_tap,
     decompose_keycode, describe_keycode, decode_for_composer,
     BADGE_COLOR_LAYER, BADGE_COLOR_TAP, BADGE_COLOR_MOD, BADGE_COLOR_FW,
 )
@@ -55,6 +56,12 @@ class TestEncoders(unittest.TestCase):
         self.assertEqual(encode_layer_mod(1, MOD_CTRL), 0x5021)
         self.assertEqual(encode_layer_mod(2, MOD_SHIFT), 0x5042)
 
+    def test_persistent_def_layer(self):
+        self.assertEqual(encode_persistent_def_layer(2), 0x52E2)
+
+    def test_swap_hands_tap(self):
+        self.assertEqual(encode_swap_hands_tap(0x04), 0x5604)
+
 
 class TestRoundTrip(unittest.TestCase):
     """encode_* must produce keycodes that decompose_keycode reads back correctly."""
@@ -86,6 +93,16 @@ class TestRoundTrip(unittest.TestCase):
         kc = encode_layer_mod(2, MOD_CTRL | MOD_SHIFT)
         self.assertEqual(decompose_keycode(kc, KC), "LM(2,LCTL+LSFT)")
         self.assertEqual(decode_for_composer(kc), ("LM", 2, MOD_CTRL | MOD_SHIFT, 0))
+
+    def test_persistent_def_layer_roundtrip(self):
+        kc = encode_persistent_def_layer(3)
+        self.assertEqual(decompose_keycode(kc, KC), "PDF(3)")
+        self.assertEqual(decode_for_composer(kc), ("PDF", 3, 0, 0))
+
+    def test_swap_hands_tap_roundtrip(self):
+        kc = encode_swap_hands_tap(0x04)
+        self.assertEqual(decompose_keycode(kc, KC), "SH_T(A)")
+        self.assertEqual(decode_for_composer(kc), ("SH_T", 0, 0, 0x04))
 
 
 class TestDescribeKeycode(unittest.TestCase):
@@ -165,7 +182,9 @@ class TestDecodeForComposer(unittest.TestCase):
     def test_plain_and_unsupported_return_none(self):
         self.assertIsNone(decode_for_composer(0x0004))   # KC_A
         self.assertIsNone(decode_for_composer(0x0000))   # KC_NO
-        self.assertIsNone(decode_for_composer(0x52E1))   # persistent DF* — not composable
+        self.assertIsNone(decode_for_composer(0x5703))   # TD() — firmware-defined
+        self.assertIsNone(decode_for_composer(0x56F0))   # SH_TOGG — named action, not SH_T
+        self.assertIsNone(decode_for_composer(0x7702))   # MACRO() — firmware-defined
 
 
 class TestFirmwareKeycodeDisplay(unittest.TestCase):
