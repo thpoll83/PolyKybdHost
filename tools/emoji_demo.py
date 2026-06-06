@@ -29,11 +29,12 @@ import re
 from dataclasses import replace
 
 from kle_render import GlyphRenderer, KeyContent, KleRenderer
+from gfx_font import GfxGlyphRenderer
 
-# Page-nav arrows. The firmware uses custom icon-font glyphs (ICON_LEFT/RIGHT);
-# here we use clean chevrons so they read as "prev / next page", not play buttons.
-ARROW_PREV, ARROW_NEXT = '‹', '›'   # ‹ ›
-ARROW_SCALE = 0.5                    # render the arrows small, not filling the cap
+# Page-nav arrows. 'gfx' mode draws the firmware's real ICON_LEFT/RIGHT
+# (codepoints 0x83/0x84 in IconsFont); 'ttf' mode falls back to chevrons.
+ARROW_PREV, ARROW_NEXT = '', ''
+ARROW_SCALE = 0.5                    # only used in ttf mode (gfx draws native size)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
@@ -165,7 +166,11 @@ def main():
     ap.add_argument('--settle', type=int, default=1500, help='ms each page is held')
     ap.add_argument('--max-pages', type=int, default=0,
                     help='cap pages shown per category (0 = all)')
-    ap.add_argument('--fontdir', default=os.path.join(HOME, '.cache', 'emojigif', 'fonts'))
+    ap.add_argument('--fontdir', default=os.path.join(HOME, '.cache', 'emojigif', 'fonts'),
+                    help='TTF fonts dir (ttf mode only)')
+    ap.add_argument('--font-mode', choices=['gfx', 'ttf'], default='gfx',
+                    help='gfx = pixel-exact from the generated GFX headers (default); '
+                         'ttf = live Noto render, scaled to fit')
     ap.add_argument('--still', action='store_true', help='also write a still PNG of frame 0')
     ap.add_argument('--no-bezel', action='store_true')
     args = ap.parse_args()
@@ -187,16 +192,24 @@ def main():
     print(f"  {len(cats)} categories, sizes={[len(c) for c in cats]}")
     print(f"  tabs={sum(1 for r in roles if r[0]=='tab')} slots={sum(1 for r in roles if r[0]=='slot')}")
 
-    font_chain = [
-        (os.path.join(args.fontdir, 'NotoEmoji.ttf'), 'mono'),
-        (os.path.join(args.fontdir, 'NotoSansSymbols2.ttf'), 'mono'),
-        ('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 'mono'),
-        ('/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf', 'color'),
-    ]
-    glyphs = GlyphRenderer(font_chain)
+    global ARROW_PREV, ARROW_NEXT
+    if args.font_mode == 'gfx':
+        glyphs = GfxGlyphRenderer(os.path.join(pk, 'base', 'fonts'))
+        ARROW_PREV, ARROW_NEXT = chr(0x83), chr(0x84)   # real ICON_LEFT / ICON_RIGHT
+        print(f"  gfx: {len(glyphs.fonts)} fonts in ALL_FONTS (pixel-exact)")
+    else:
+        font_chain = [
+            (os.path.join(args.fontdir, 'NotoEmoji.ttf'), 'mono'),
+            (os.path.join(args.fontdir, 'NotoSansSymbols2.ttf'), 'mono'),
+            ('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 'mono'),
+            ('/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf', 'color'),
+        ]
+        glyphs = GlyphRenderer(font_chain)
+        ARROW_PREV, ARROW_NEXT = '‹', '›'
     renderer = KleRenderer(json.load(open(args.kle, encoding='utf-8')),
                            unit=args.unit, glyphs=glyphs, bezel=not args.no_bezel,
-                           margin=args.margin, exclude=exclude)
+                           margin=args.margin, exclude=exclude,
+                           dither=(args.font_mode == 'ttf'))
     # Slide the halves together (left = matrix rows 0-4, right = 5-9).
     renderer.compact_halves(lambda mp: 'L' if int(mp.split(',')[0]) < 5 else 'R', gap_px=args.gap)
 
