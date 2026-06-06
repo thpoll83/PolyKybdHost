@@ -33,6 +33,7 @@ from kle_render import GlyphRenderer, KeyContent, KleRenderer
 # Page-nav arrows. The firmware uses custom icon-font glyphs (ICON_LEFT/RIGHT);
 # here we use clean chevrons so they read as "prev / next page", not play buttons.
 ARROW_PREV, ARROW_NEXT = '‹', '›'   # ‹ ›
+ARROW_SCALE = 0.5                    # render the arrows small, not filling the cap
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
@@ -132,10 +133,12 @@ def build_state(matrix_roles, cats, icons, cat: int, page: int) -> dict[str, Key
             out[mp] = KeyContent(glyph=chr(cp) if cp else None,
                                  frame='cap' if n == cat else 'bar')
         elif role == 'prev':
-            out[mp] = KeyContent(glyph=ARROW_PREV if page > 0 else None, blank=(page == 0))
+            out[mp] = KeyContent(glyph=ARROW_PREV if page > 0 else None,
+                                 blank=(page == 0), scale=ARROW_SCALE)
         elif role == 'next':
             has = page + 1 < pages
-            out[mp] = KeyContent(glyph=ARROW_NEXT if has else None, blank=not has)
+            out[mp] = KeyContent(glyph=ARROW_NEXT if has else None,
+                                 blank=not has, scale=ARROW_SCALE)
         elif role == 'slot':
             idx = page * SLOTS_PER_PAGE + n
             cp = cats[cat][idx] if idx < len(cats[cat]) else None
@@ -156,8 +159,12 @@ def main():
     ap.add_argument('--scale', type=float, default=1.0, help='final GIF scale factor')
     ap.add_argument('--margin', type=int, default=5, help='outer margin in px')
     ap.add_argument('--gap', type=int, default=10, help='gap between the two halves in px')
-    ap.add_argument('--exclude', default='8,0',
-                    help='semicolon-separated matrix positions with no display, e.g. "8,0" (the encoder)')
+    ap.add_argument('--exclude', default='3,7;8,0',
+                    help='semicolon-separated matrix positions with no display '
+                         '(the left & right rotary encoders: "3,7" and "8,0")')
+    ap.add_argument('--settle', type=int, default=1500, help='ms each page is held')
+    ap.add_argument('--max-pages', type=int, default=0,
+                    help='cap pages shown per category (0 = all)')
     ap.add_argument('--fontdir', default=os.path.join(HOME, '.cache', 'emojigif', 'fonts'))
     ap.add_argument('--still', action='store_true', help='also write a still PNG of frame 0')
     ap.add_argument('--no-bezel', action='store_true')
@@ -198,7 +205,7 @@ def main():
     prev_mx = next(mp for mp, (role, _) in matrix_roles.items() if role == 'prev')
     next_mx = next(mp for mp, (role, _) in matrix_roles.items() if role == 'next')
 
-    FLASH, SETTLE, HOLD = 90, 720, 1100   # ms — flash is the quick key-press blink
+    FLASH, SETTLE, HOLD = 90, args.settle, args.settle + 500   # ms — flash is the quick press blink
 
     frames, durations = [], []
 
@@ -213,19 +220,21 @@ def main():
             s[flash] = replace(s[flash], invert=True, frame=None if is_tab else s[flash].frame)
         return s
 
-    # 1) open on Smileys
-    add(st(0, 0), HOLD)
-    # 2) sweep every tab — each press blinks the tab, then it settles with the ∩ cap
-    for c in range(1, len(cats)):
-        add(st(c, 0, flash=tab_mx[c], is_tab=True), FLASH)
-        add(st(c, 0), SETTLE)
-    # 3) back to Smileys, then page back and forth so the ‹ / › arrows blink on press
-    add(st(0, 0, flash=tab_mx[0], is_tab=True), FLASH)
-    add(st(0, 0), 600)
-    add(st(0, 0, flash=next_mx), FLASH); add(st(0, 1), SETTLE)   # press › on page 0 → page 1
-    add(st(0, 1, flash=next_mx), FLASH); add(st(0, 2), SETTLE)   # press › on page 1 → page 2
-    add(st(0, 2, flash=prev_mx), FLASH); add(st(0, 1), SETTLE)   # press ‹ on page 2 → page 1
-    add(st(0, 1, flash=prev_mx), FLASH); add(st(0, 0), SETTLE)   # press ‹ on page 1 → page 0
+    def page_count(cat):
+        n = max(1, math.ceil(len(cats[cat]) / SLOTS_PER_PAGE)) if cats[cat] else 1
+        return min(n, args.max_pages) if args.max_pages else n
+
+    # For each tab: press it, then cycle through every page (› blinks on each
+    # advance) before moving on to the next tab.
+    for ci in range(len(cats)):
+        if ci == 0:
+            add(st(0, 0), HOLD)                                    # open on Smileys
+        else:
+            add(st(ci, 0, flash=tab_mx[ci], is_tab=True), FLASH)   # press the tab
+            add(st(ci, 0), SETTLE)
+        for pg in range(1, page_count(ci)):
+            add(st(ci, pg - 1, flash=next_mx), FLASH)              # press › on the current page
+            add(st(ci, pg), SETTLE)                                # settle on the next page
 
     if args.still:
         png = os.path.splitext(args.out)[0] + '_still.png'

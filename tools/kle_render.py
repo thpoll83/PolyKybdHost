@@ -93,6 +93,7 @@ class KeyContent:
     blank: bool = False           # a real key, but its OLED is intentionally empty
     invert: bool = False          # invert the OLED (dark glyph on lit bg) — the kdisp_invert
                                   # press-feedback flash the firmware does on key-down
+    scale: float = 1.0            # glyph size within the OLED (e.g. 0.5 for small page arrows)
 
 
 @dataclass
@@ -136,10 +137,11 @@ class GlyphRenderer:
                 return pil, kind
         return None
 
-    def render(self, ch: str) -> Image.Image:
+    def render(self, ch: str, scale: float = 1.0) -> Image.Image:
         """Return an OLED_W x OLED_H mode-'L' image (white glyph on black)."""
-        if ch in self._cache:
-            return self._cache[ch]
+        key = (ch, round(scale, 3))
+        if key in self._cache:
+            return self._cache[key]
         canvas = Image.new('L', (OLED_W, OLED_H), 0)
         pick = self._font_for(ord(ch)) if ch else None
         if pick is not None:
@@ -147,7 +149,7 @@ class GlyphRenderer:
             glyph = self._raster(ch, pil, kind)
             if glyph is not None:
                 # Fit within the OLED with a small margin, preserving aspect.
-                max_w, max_h = OLED_W - 4, OLED_H - 4
+                max_w, max_h = (OLED_W - 4) * scale, (OLED_H - 4) * scale
                 gw, gh = glyph.size
                 scale = min(max_w / gw, max_h / gh)
                 nw, nh = max(1, round(gw * scale)), max(1, round(gh * scale))
@@ -155,7 +157,7 @@ class GlyphRenderer:
                 ox = (OLED_W - nw) // 2
                 oy = (OLED_H - nh) // 2
                 canvas.paste(glyph, (ox, oy))
-        self._cache[ch] = canvas
+        self._cache[key] = canvas
         return canvas
 
     @staticmethod
@@ -273,7 +275,7 @@ class KleRenderer:
             return None
         buf = Image.new('L', (OLED_W, OLED_H), 0)
         if c.glyph and self.glyphs is not None:
-            buf = self.glyphs.render(c.glyph).copy()
+            buf = self.glyphs.render(c.glyph, c.scale).copy()
         elif c.label:
             d = ImageDraw.Draw(buf)
             try:
