@@ -29,3 +29,8 @@ se=fi
 # Norwegian and Danish share the same ae / o-slash / a-ring letter positions.
 no=dk
 dk=no
+
+# Latin-American Spanish (PolyKybd es-MX) uses the xkb "latam" layout code -
+# there is no "mx" xkb layout, so map the Mexican country code onto it.
+mx=latam
+latam=mx
