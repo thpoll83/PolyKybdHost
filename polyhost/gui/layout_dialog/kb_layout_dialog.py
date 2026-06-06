@@ -79,6 +79,7 @@ class KbLayoutDialog(QMainWindow):
         self.selected_key = None
         self.keys = {}
         self.current_layer = 0
+        self.key_buffer = None
 
         self.init_ui()
 
@@ -213,6 +214,12 @@ class KbLayoutDialog(QMainWindow):
 
     def mouseClickEvent(self, item):
         self.selected_key = item
+        # Reflect the clicked key's current keycode in the composer so its
+        # layer/modifier/tap setup is shown and ready to tweak.
+        idx = item.matrix_index
+        if idx is not None and self.key_buffer:
+            max_idx = self.settings.MATRIX_COLUMNS * self.settings.MATRIX_ROWS
+            self.keycode_browser.show_keycode(self.key_buffer[idx + self.current_layer * max_idx])
 
     def keycodeSelected(self, nice_name, name, keycode, font_size_hint):
         if self.selected_key is None:

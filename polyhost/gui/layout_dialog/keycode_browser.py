@@ -22,6 +22,7 @@ class KeycodeBrowser(QWidget):
 
         tabs = QTabWidget()
         tabs.setTabPosition(QTabWidget.North)
+        self.tabs = tabs
         self.setMaximumHeight(400)
 
         CAT_ORDER = category_order()
@@ -59,6 +60,16 @@ class KeycodeBrowser(QWidget):
     def set_layer_count(self, num_layers: int):
         """Update the composer's layer range once the device layer count is known."""
         self.composer.set_layer_count(num_layers)
+
+    def show_keycode(self, keycode: int):
+        """Reflect a selected key's keycode in the composer.
+
+        For composable keycodes (layer switch / one-shot / mod-tap / layer-tap /
+        modified key) the composer is populated and brought to the front so the
+        user sees the key's current setup. Plain keys leave the view unchanged.
+        """
+        if self.composer.load_from_keycode(keycode):
+            self.tabs.setCurrentWidget(self.composer)
 
     def get_name_to_keycode_mapping(self):
         return self.keycodes

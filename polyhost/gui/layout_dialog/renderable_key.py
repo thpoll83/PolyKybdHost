@@ -194,5 +194,5 @@ class RenderableKey(QGraphicsObject):
 
         badge_bounds = self.badge.boundingRect()
         self.badge.setPos(rect.x() + (rect.width() - badge_bounds.width())/2,
-                          rect.y() + rect.height() - badge_bounds.height() - 4)
+                          rect.y() + rect.height() - badge_bounds.height() + 1)
         self.badge.setTextWidth(badge_bounds.width())

@@ -18,6 +18,7 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     decompose_keycode, create_nice_name,
     encode_mods, encode_layer_switch, encode_one_shot_mod,
     encode_mod_tap, encode_layer_tap, encode_modded,
+    decode_for_composer, MOD_CTRL, MOD_SHIFT, MOD_ALT, MOD_GUI, MOD_RIGHT,
 )
 
 # Behaviour definitions: key -> (label, needs_layer, needs_mods, needs_inner_key)
@@ -115,6 +116,46 @@ class KeycodeComposer(QWidget):
         self._num_layers = max(1, num_layers)
         self.layer_spin.setRange(0, self._num_layers - 1)
         self._update_preview()
+
+    def load_from_keycode(self, value: int) -> bool:
+        """Populate the controls from an existing keycode.
+
+        Returns True if the keycode is one of the composable behaviours (and the
+        controls were updated), False otherwise (plain key / LM / unsupported).
+        """
+        decoded = decode_for_composer(value)
+        if decoded is None:
+            return False
+        behavior, layer, mods, inner = decoded
+        idx = self.behavior_combo.findData(behavior)
+        if idx < 0:
+            return False
+
+        # Suppress per-widget preview churn while we batch-set the controls.
+        widgets = (self.behavior_combo, self.layer_spin, self.inner_combo,
+                   self.cb_ctrl, self.cb_shift, self.cb_alt, self.cb_gui,
+                   self.rb_left, self.rb_right)
+        for w in widgets:
+            w.blockSignals(True)
+        try:
+            self.behavior_combo.setCurrentIndex(idx)
+            self.layer_spin.setValue(min(layer, self.layer_spin.maximum()))
+            self.cb_ctrl.setChecked(bool(mods & MOD_CTRL))
+            self.cb_shift.setChecked(bool(mods & MOD_SHIFT))
+            self.cb_alt.setChecked(bool(mods & MOD_ALT))
+            self.cb_gui.setChecked(bool(mods & MOD_GUI))
+            (self.rb_right if mods & MOD_RIGHT else self.rb_left).setChecked(True)
+            if inner:
+                inner_idx = self.inner_combo.findData(inner)
+                if inner_idx >= 0:
+                    self.inner_combo.setCurrentIndex(inner_idx)
+        finally:
+            for w in widgets:
+                w.blockSignals(False)
+
+        # Refresh enabled states + preview once, now that everything is set.
+        self._on_behavior_changed()
+        return True
 
     def _select_default_inner(self):
         """Default the inner-key combo to KC_A if present."""

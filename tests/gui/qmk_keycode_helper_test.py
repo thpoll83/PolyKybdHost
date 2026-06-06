@@ -4,7 +4,7 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     MOD_CTRL, MOD_SHIFT, MOD_ALT, MOD_GUI, MOD_RIGHT,
     encode_mods, encode_layer_switch, encode_one_shot_mod,
     encode_mod_tap, encode_layer_tap, encode_modded,
-    decompose_keycode, describe_keycode,
+    decompose_keycode, describe_keycode, decode_for_composer,
     BADGE_COLOR_LAYER, BADGE_COLOR_TAP, BADGE_COLOR_MOD,
 )
 
@@ -114,6 +114,49 @@ class TestDescribeKeycode(unittest.TestCase):
         self.assertIn("⇧", main)
         self.assertEqual(badge, "OSM")
         self.assertEqual(color, BADGE_COLOR_LAYER)
+
+
+class TestDecodeForComposer(unittest.TestCase):
+    def test_layer_switches(self):
+        for tag in ("MO", "TO", "TG", "DF", "TT", "OSL"):
+            self.assertEqual(
+                decode_for_composer(encode_layer_switch(tag, 3)),
+                (tag, 3, 0, 0),
+            )
+
+    def test_one_shot_mod(self):
+        self.assertEqual(
+            decode_for_composer(encode_one_shot_mod(MOD_SHIFT)),
+            ("OSM", 0, MOD_SHIFT, 0),
+        )
+
+    def test_mod_tap(self):
+        self.assertEqual(
+            decode_for_composer(encode_mod_tap(MOD_SHIFT, 0x04)),
+            ("MT", 0, MOD_SHIFT, 0x04),
+        )
+
+    def test_layer_tap(self):
+        self.assertEqual(
+            decode_for_composer(encode_layer_tap(2, 0x2C)),
+            ("LT", 2, 0, 0x2C),
+        )
+
+    def test_modded_left_and_right(self):
+        self.assertEqual(
+            decode_for_composer(encode_modded(MOD_CTRL, 0x04)),
+            ("MOD", 0, MOD_CTRL, 0x04),
+        )
+        self.assertEqual(
+            decode_for_composer(encode_modded(MOD_CTRL | MOD_RIGHT, 0x04)),
+            ("MOD", 0, MOD_CTRL | MOD_RIGHT, 0x04),
+        )
+
+    def test_plain_and_unsupported_return_none(self):
+        self.assertIsNone(decode_for_composer(0x0004))   # KC_A
+        self.assertIsNone(decode_for_composer(0x0000))   # KC_NO
+        self.assertIsNone(decode_for_composer(0x5020))   # LM() — not composable
+        self.assertIsNone(decode_for_composer(0x52E1))   # persistent DF*
 
 
 if __name__ == "__main__":

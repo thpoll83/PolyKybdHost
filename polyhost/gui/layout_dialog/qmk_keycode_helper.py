@@ -295,6 +295,37 @@ def encode_modded(mods: int, basic_kc: int) -> int:
     return QK_MODS | ((mods & 0x1F) << 8) | (basic_kc & 0xFF)
 
 
+def decode_for_composer(value: int):
+    """Decode a keycode into the composer's fields, or None if not composable.
+
+    Returns (behavior, layer, mods, inner_kc) where behavior is one of the
+    composer behaviour tags (MO/TO/TG/DF/TT/OSL/OSM/MT/LT/MOD). LM() and the
+    persistent-default-layer range are intentionally not composable and yield
+    None, as do plain basic keycodes.
+    """
+    # Modified keycode (Ctrl+C, RShift+A, …).
+    if 0x0100 <= value <= 0x1FFF:
+        return "MOD", 0, (value >> 8) & 0x1F, value & 0xFF
+    # Mod-tap MT().
+    if 0x2000 <= value <= 0x3FFF:
+        return "MT", 0, (value >> 8) & 0x1F, value & 0xFF
+    # Layer-tap LT().
+    if 0x4000 <= value <= 0x4FFF:
+        return "LT", (value >> 8) & 0x0F, 0, value & 0xFF
+    # Layer switches that take only a layer argument.
+    for lo, hi, tag in (
+        (0x5200, 0x521F, "TO"), (0x5220, 0x523F, "MO"),
+        (0x5240, 0x525F, "DF"), (0x5260, 0x527F, "TG"),
+        (0x5280, 0x529F, "OSL"), (0x52C0, 0x52DF, "TT"),
+    ):
+        if lo <= value <= hi:
+            return tag, value & 0x1F, 0, 0
+    # One-shot mod OSM().
+    if 0x52A0 <= value <= 0x52BF:
+        return "OSM", 0, value & 0x1F, 0
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Two-line display description — base label + behaviour badge.
 #
