@@ -91,6 +91,8 @@ class KeyContent:
     frame: str | None = None      # 'cap' = active-tab ∩ border, 'bar' = inactive-tab bottom bar
     selected: bool = False        # highlight (e.g. the just-pressed key)
     blank: bool = False           # a real key, but its OLED is intentionally empty
+    invert: bool = False          # invert the OLED (dark glyph on lit bg) — the kdisp_invert
+                                  # press-feedback flash the firmware does on key-down
 
 
 @dataclass
@@ -185,7 +187,8 @@ class GlyphRenderer:
 class KleRenderer:
     def __init__(self, kle_json: list, unit: int = 72, key_pad: int = 3,
                  theme: Theme | None = None, glyphs: GlyphRenderer | None = None,
-                 bezel: bool = True, dither: bool = True):
+                 bezel: bool = True, dither: bool = True, margin: int = 24,
+                 exclude: set[str] | None = None):
         self.rows, self.cols, self.km = parse_kle(kle_json)
         self.unit = unit
         self.key_pad = key_pad
@@ -193,8 +196,36 @@ class KleRenderer:
         self.glyphs = glyphs
         self.bezel = bezel
         self.dither = dither
+        self.margin = margin
+        self.exclude = set(exclude or ())   # matrix positions with no display (e.g. encoder)
         self._geom()
         self._bezel_tile = self._make_bezel_tile() if bezel else None
+
+    def compact_halves(self, side_of, gap_px: int = 10):
+        """Slide the two halves together to a fixed pixel gap. ``side_of`` maps a
+        matrix position to 'L' / 'R' / None; right-half keys (origin included) are
+        translated left so the inner gap becomes ``gap_px``."""
+        U = self.unit
+        left_max, right_min = [], []
+        for mp, p in self.km.items():
+            if mp in self.exclude:
+                continue
+            xs = [x for x, _ in self._corners_px(p)]
+            side = side_of(mp)
+            if side == 'L':
+                left_max.append(max(xs))
+            elif side == 'R':
+                right_min.append(min(xs))
+        if not left_max or not right_min:
+            return
+        delta_units = ((min(right_min) - max(left_max)) - gap_px) / U
+        if abs(delta_units) < 1e-9:
+            return
+        for mp, p in self.km.items():
+            if side_of(mp) == 'R':
+                p['x'] -= delta_units
+                p['rx'] -= delta_units   # shift rotation pivot too, so rotated keys translate cleanly
+        self._geom()
 
     # -- geometry ------------------------------------------------------------
     def _rot(self, px, py, rx, ry, deg):
@@ -214,14 +245,16 @@ class KleRenderer:
 
     def _geom(self):
         xs, ys = [], []
-        for p in self.km.values():
+        for mp, p in self.km.items():
+            if mp in self.exclude:
+                continue
             for (x, y) in self._corners_px(p):
                 xs.append(x); ys.append(y)
-        margin = self.unit // 2
-        self.ox = min(xs) - margin
-        self.oy = min(ys) - margin
-        self.cw = int(math.ceil(max(xs) - self.ox + margin))
-        self.ch = int(math.ceil(max(ys) - self.oy + margin))
+        m = self.margin
+        self.ox = min(xs) - m
+        self.oy = min(ys) - m
+        self.cw = int(math.ceil(max(xs) - self.ox + m))
+        self.ch = int(math.ceil(max(ys) - self.oy + m))
 
     def _make_bezel_tile(self) -> Image.Image:
         # Diagonal hatch, echoing the editor's striped keycap "attachment".
@@ -235,7 +268,8 @@ class KleRenderer:
     # -- per-key tile --------------------------------------------------------
     def _oled_buffer(self, c: KeyContent) -> Image.Image | None:
         """Build the 72x40 monochrome OLED image (RGB) for a key, or None."""
-        if c.dim or (c.glyph is None and c.label is None and not c.frame and not c.blank):
+        if c.dim or (c.glyph is None and c.label is None and not c.frame
+                     and not c.blank and not c.invert):
             return None
         buf = Image.new('L', (OLED_W, OLED_H), 0)
         if c.glyph and self.glyphs is not None:
@@ -263,9 +297,12 @@ class KleRenderer:
         one = buf.convert('1') if self.dither else buf.point(lambda v: 255 if v >= 110 else 0).convert('1')
         on = self.theme.oled_on
         bg = self.theme.oled_dim_bg if c.dim else self.theme.oled_bg
-        rgb = Image.new('RGB', (OLED_W, OLED_H), bg)
-        white = Image.new('RGB', (OLED_W, OLED_H), on)
-        rgb.paste(white, (0, 0), one)
+        if c.invert:   # kdisp_invert: lit background, dark glyph
+            rgb = Image.new('RGB', (OLED_W, OLED_H), on)
+            rgb.paste(Image.new('RGB', (OLED_W, OLED_H), bg), (0, 0), one)
+        else:
+            rgb = Image.new('RGB', (OLED_W, OLED_H), bg)
+            rgb.paste(Image.new('RGB', (OLED_W, OLED_H), on), (0, 0), one)
         return rgb
 
     def _key_tile(self, p, c: KeyContent) -> Image.Image:
@@ -311,6 +348,8 @@ class KleRenderer:
     def render_frame(self, contents: dict[str, KeyContent]) -> Image.Image:
         img = Image.new('RGB', (self.cw, self.ch), self.theme.bg)
         for mp, p in self.km.items():
+            if mp in self.exclude:
+                continue
             c = contents.get(mp, KeyContent(dim=True))
             tile = self._key_tile(p, c)
             if p['r']:
