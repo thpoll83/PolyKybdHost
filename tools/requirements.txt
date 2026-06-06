@@ -1,0 +1,5 @@
+# Dependencies for the tools/ keycap demo renderer only.
+# These are NOT runtime deps of the polyhost app — install them separately
+# (e.g. into a venv) when generating demo GIFs.
+Pillow>=10
+fonttools>=4

@@ -83,9 +83,12 @@ def _split_args(inner: str) -> list[str]:
 def parse_emj_layer_roles(keymap_c: str) -> list[tuple[str, int | None]]:
     """arg index -> (role, n) for the [_EMJ] layer."""
     text = strip_c_comments(open(keymap_c, encoding='utf-8').read())
-    i = text.index('[_EMJ]')
-    k = text.index('(', text.index(LAYOUT_NAME, i))
-    depth = 0
+    try:
+        i = text.index('[_EMJ]')
+        k = text.index('(', text.index(LAYOUT_NAME, i))
+    except ValueError as exc:
+        raise SystemExit(f"could not locate [_EMJ] / {LAYOUT_NAME} in {keymap_c}") from exc
+    depth, end = 0, None
     for m in range(k, len(text)):
         if text[m] == '(':
             depth += 1
@@ -94,6 +97,8 @@ def parse_emj_layer_roles(keymap_c: str) -> list[tuple[str, int | None]]:
             if depth == 0:
                 end = m
                 break
+    if end is None:
+        raise SystemExit(f"unbalanced {LAYOUT_NAME} parentheses in {keymap_c}")
     roles = []
     for tok in _split_args(text[k + 1:end]):
         if tok == 'KC_EMJ_PAGE_PREV':
@@ -189,6 +194,8 @@ def main():
     matrix_roles = dict(zip(matrices, roles))
     cats = parse_categories(emoji_data_h)
     icons = parse_tab_icons(emoji_layer_c)
+    if not cats:
+        raise SystemExit(f"no emoji categories parsed from {emoji_data_h}")
     print(f"  {len(cats)} categories, sizes={[len(c) for c in cats]}")
     print(f"  tabs={sum(1 for r in roles if r[0]=='tab')} slots={sum(1 for r in roles if r[0]=='slot')}")
 
@@ -215,8 +222,12 @@ def main():
 
     # Reverse lookups: which physical key is each tab / page arrow.
     tab_mx = {n: mp for mp, (role, n) in matrix_roles.items() if role == 'tab'}
-    prev_mx = next(mp for mp, (role, _) in matrix_roles.items() if role == 'prev')
-    next_mx = next(mp for mp, (role, _) in matrix_roles.items() if role == 'next')
+    prev_mx = next((mp for mp, (role, _) in matrix_roles.items() if role == 'prev'), None)
+    next_mx = next((mp for mp, (role, _) in matrix_roles.items() if role == 'next'), None)
+    missing = [i for i in range(len(cats)) if i not in tab_mx]
+    if missing or prev_mx is None or next_mx is None:
+        raise SystemExit(f"emoji role mapping incomplete: missing tabs={missing}, "
+                         f"prev={prev_mx is not None}, next={next_mx is not None}")
 
     FLASH, SETTLE, HOLD = 90, args.settle, args.settle + 500   # ms — flash is the quick press blink
 

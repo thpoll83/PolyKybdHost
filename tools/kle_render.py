@@ -34,7 +34,7 @@ try:  # pragma: no cover - import shim
     if _REPO not in sys.path:
         sys.path.insert(0, _REPO)
     from polyhost.kle.kle_praser import parse_kle  # type: ignore
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover — running outside the repo
     def parse_kle(json_data: list):
         key_matrix = {}
         y_cursor = 0.0
@@ -368,6 +368,8 @@ class KleRenderer:
     def save_gif(self, frames: Iterable[dict[str, KeyContent]], path: str,
                  durations, loop: int = 0, scale: float = 1.0):
         imgs = [self.render_frame(f) for f in frames]
+        if not imgs:
+            raise ValueError("save_gif() requires at least one frame")
         if scale != 1.0:
             size = (int(self.cw * scale), int(self.ch * scale))
             imgs = [im.resize(size, Image.LANCZOS) for im in imgs]
@@ -376,7 +378,11 @@ class KleRenderer:
         pimgs = [im.quantize(palette=pal, dither=Image.NONE) for im in imgs]
         if isinstance(durations, (int, float)):
             durations = [durations] * len(pimgs)
+        else:
+            durations = list(durations)
+            if len(durations) != len(pimgs):
+                raise ValueError(f"durations ({len(durations)}) != frames ({len(pimgs)})")
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         pimgs[0].save(path, save_all=True, append_images=pimgs[1:],
-                      duration=list(durations), loop=loop, optimize=True, disposal=2)
+                      duration=durations, loop=loop, optimize=True, disposal=2)
         return path
