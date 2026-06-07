@@ -34,3 +34,12 @@ dk=no
 # there is no "mx" xkb layout, so map the Mexican country code onto it.
 mx=latam
 latam=mx
+
+# Taiwanese Bopomofo/Zhuyin (zh-TW) is entered via an IME that sits on a plain
+# US-QWERTY physical layout (the xkb "tw" layout is a different Latin/IPA map),
+# so fold the keyboard onto "us".
+tw=us
+
+# Indonesian (id-ID) is plain US QWERTY with no special characters and has no
+# dedicated xkb layout - fold it onto "us".
+id=us
