@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from polyhost.services import add_to_startup
@@ -53,6 +54,33 @@ class WindowsAutostartFallbackTest(unittest.TestCase):
         stale.unlink.assert_called_once()
         # Only the Start-menu launcher shortcut is created (no Startup fallback).
         self.assertEqual(mk_lnk.call_count, 1)
+
+
+class HiddenInvocationTest(unittest.TestCase):
+    """A .bat launcher must be wrapped in wscript + hidden .vbs (no console
+    flash); a frozen exe is windowless and passed through unchanged."""
+
+    def test_bat_wrapped_in_wscript(self):
+        with mock.patch.object(add_to_startup, "create_windows_hidden_vbs",
+                               return_value=r"C:\x\start_polyhost_hidden.vbs"), \
+             mock.patch.object(add_to_startup, "_wscript_path",
+                               return_value=r"C:\Windows\System32\wscript.exe"):
+            exe, args = add_to_startup._windows_hidden_invocation(r"C:\x\start_polyhost.bat", "")
+        self.assertTrue(exe.lower().endswith("wscript.exe"))
+        self.assertEqual(args, '"C:\\x\\start_polyhost_hidden.vbs"')
+
+    def test_exe_passed_through(self):
+        result = add_to_startup._windows_hidden_invocation(r"C:\x\PolyHost.exe", "--debug 1")
+        self.assertEqual(result, (r"C:\x\PolyHost.exe", "--debug 1"))
+
+    def test_vbs_content_is_hidden_launch(self):
+        import tempfile
+        bat = Path(tempfile.mkdtemp()) / "start_polyhost.bat"
+        vbs = add_to_startup.create_windows_hidden_vbs(str(bat))
+        content = Path(vbs).read_text()
+        self.assertIn(", 0, False", content)  # window style 0 == hidden
+        self.assertIn(str(bat), content)
+        self.assertIn("Wscript.Shell", content)
 
 
 if __name__ == "__main__":

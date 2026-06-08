@@ -143,7 +143,7 @@ def create_windows_shortcut_powershell(target_path, shortcut_path, working_dir, 
 $WshShell = New-Object -ComObject WScript.Shell
 $Shortcut = $WshShell.CreateShortcut("{shortcut_path}")
 $Shortcut.TargetPath = "{target_path}"
-$Shortcut.Arguments = "{arguments}"
+$Shortcut.Arguments = '{_ps_single_quote(arguments)}'
 $Shortcut.WorkingDirectory = "{working_dir}"
 {icon_line}
 $Shortcut.WindowStyle = 7
@@ -180,6 +180,42 @@ cmd /c start /min "" powershell -WindowStyle Hidden -ExecutionPolicy Bypass -Com
     wrapper_path.write_text(bat_content, encoding="utf-8")
     print(f"Windows wrapper script created at: {wrapper_path}")
     return wrapper_path
+
+def _wscript_path():
+    """Full path to wscript.exe (the windowless Windows Script Host)."""
+    windir = os.getenv("WINDIR") or r"C:\Windows"
+    return str(Path(windir) / "System32" / "wscript.exe")
+
+def create_windows_hidden_vbs(bat_path, vbs_path=None):
+    """Write a tiny VBScript that launches the .bat with a hidden window.
+
+    Running the launcher via ``wscript.exe`` (which itself has no console)
+    with window style 0 means no console window flashes at logon or on a
+    manual launch, while the proven .bat launcher underneath is unchanged.
+    """
+    bat_path = Path(bat_path)
+    if vbs_path is None:
+        vbs_path = bat_path.with_name("start_polyhost_hidden.vbs")
+    # In a VBScript double-quoted literal, embedded quotes are doubled ("").
+    vbs_content = (
+        'CreateObject("Wscript.Shell").Run '
+        f'"cmd /c ""{bat_path}""", 0, False\r\n'
+    )
+    Path(vbs_path).write_text(vbs_content, encoding="utf-8")
+    print(f"Windows hidden-launch script created at: {vbs_path}")
+    return str(vbs_path)
+
+def _windows_hidden_invocation(execute, arguments):
+    """Wrap a .bat launcher so it runs without a console window.
+
+    Returns the (execute, arguments) to actually register. For a .bat this is
+    ``wscript.exe "<vbs>"``; a frozen exe is already windowless and returned
+    unchanged.
+    """
+    if str(execute).lower().endswith(".bat"):
+        vbs = create_windows_hidden_vbs(execute)
+        return _wscript_path(), f'"{vbs}"'
+    return execute, arguments
 
 def _windows_launch_target(script_path, args):
     """Resolve (executable, arguments, working_dir) for launching on Windows.
@@ -218,19 +254,23 @@ def _install_windows_autostart(execute, win_args, working_dir, icon_path):
     startup_lnk = _windows_startup_lnk()
     startup_lnk.parent.mkdir(parents=True, exist_ok=True)
 
+    # Run the launcher windowless (wscript + hidden .vbs for a .bat) so no
+    # console flashes — at logon or on a manual launch.
+    run_exec, run_args = _windows_hidden_invocation(execute, win_args)
+
     # Convenience Start-menu entry for manual launching (not autostart).
     startmenu_lnk = _windows_startmenu_lnk()
     startmenu_lnk.parent.mkdir(parents=True, exist_ok=True)
-    create_windows_shortcut_powershell(execute, startmenu_lnk, working_dir, icon_path, win_args)
+    create_windows_shortcut_powershell(run_exec, startmenu_lnk, working_dir, icon_path, run_args)
 
-    if register_windows_logon_task(execute, win_args, working_dir):
+    if register_windows_logon_task(run_exec, run_args, working_dir):
         # Remove any stale Startup-folder shortcut to avoid a double launch.
         if startup_lnk.exists():
             startup_lnk.unlink()
         return "scheduled task (at logon)"
 
     # Fallback: Startup-folder shortcut (needs no special rights).
-    create_windows_shortcut_powershell(execute, startup_lnk, working_dir, icon_path, win_args)
+    create_windows_shortcut_powershell(run_exec, startup_lnk, working_dir, icon_path, run_args)
     return "Startup folder shortcut (fallback)"
 
 # ---------------------------------------------------------------------------
