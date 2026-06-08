@@ -172,6 +172,57 @@ class TestPolyKybdMockLanguage(unittest.TestCase):
         self.assertEqual(self.mock.get_current_lang(), "enUS")
 
 
+# All 58 languages from hid_com.c case 8 (cog-generated, 4 HID packets)
+_ALL_FIRMWARE_LANGS = (
+    "enUSdeDEfrFResESptPTitITtrTRkoKRjaJParSAelGRukUAruRUbeBYkkKZ"  # packet 1
+    "bgBGplPLroROzhCNnlNLheILsvSEfiFInnNOdaDKhuHUcsCZhrHRskSKltLT"  # packet 2
+    "lvLVetEEptBRsrRSmkMKfaIRhiINmrINneNPmnMNurPKenGBesMXdeCHfrBE"  # packet 3
+    "frCAthTHbnINteINtaINzhTWkaGEhyAMidIDazAZisISviVNzhHK"          # packet 4
+)
+
+_ALL_FIRMWARE_LANG_CODES = [
+    # packet 1
+    "enUS", "deDE", "frFR", "esES", "ptPT", "itIT", "trTR", "koKR",
+    "jaJP", "arSA", "elGR", "ukUA", "ruRU", "beBY", "kkKZ",
+    # packet 2
+    "bgBG", "plPL", "roRO", "zhCN", "nlNL", "heIL", "svSE", "fiFI",
+    "nnNO", "daDK", "huHU", "csCZ", "hrHR", "skSK", "ltLT",
+    # packet 3
+    "lvLV", "etEE", "ptBR", "srRS", "mkMK", "faIR", "hiIN", "mrIN",
+    "neNP", "mnMN", "urPK", "enGB", "esMX", "deCH", "frBE",
+    # packet 4
+    "frCA", "thTH", "bnIN", "teIN", "taIN", "zhTW", "kaGE", "hyAM",
+    "idID", "azAZ", "isIS", "viVN", "zhHK",
+]
+
+
+class TestPolyKybdMockAllFirmwareLanguages(unittest.TestCase):
+    """Mock initialised with the full 58-language set from the firmware."""
+
+    def setUp(self):
+        self.mock = make_mock(lang="enUS", langs=_ALL_FIRMWARE_LANGS)
+
+    def test_enumerate_lang_returns_full_string(self):
+        ok, langs = self.mock.enumerate_lang()
+        self.assertTrue(ok)
+        self.assertEqual(langs, _ALL_FIRMWARE_LANGS)
+
+    def test_lang_list_has_58_entries(self):
+        self.assertEqual(len(self.mock.get_lang_list()), 58)
+
+    def test_all_language_codes_present(self):
+        langs = self.mock.get_lang_list()
+        for code in _ALL_FIRMWARE_LANG_CODES:
+            with self.subTest(code=code):
+                self.assertIn(code, langs)
+
+    def test_change_to_every_language_succeeds(self):
+        for code in _ALL_FIRMWARE_LANG_CODES:
+            with self.subTest(code=code):
+                ok, _ = self.mock.change_language(code)
+                self.assertTrue(ok)
+
+
 class TestPolyKybdMockOverlayMapping(unittest.TestCase):
     def setUp(self):
         self.mock = make_mock()
