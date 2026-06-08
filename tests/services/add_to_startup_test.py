@@ -41,6 +41,17 @@ class WindowsAutostartFallbackTest(unittest.TestCase):
         # Start-menu launcher + Startup-folder fallback shortcut both created.
         self.assertEqual(mk_lnk.call_count, 2)
 
+    def test_returns_none_when_task_and_fallback_both_fail(self):
+        # Task refused AND the fallback shortcut creation fails -> nothing is
+        # actually installed, so the reported method must be "none".
+        with mock.patch.object(add_to_startup, "register_windows_logon_task", return_value=False), \
+             mock.patch.object(add_to_startup, "create_windows_shortcut_powershell", return_value=False), \
+             mock.patch.object(add_to_startup, "_windows_startup_lnk") as startup, \
+             mock.patch.object(add_to_startup, "_windows_startmenu_lnk"):
+            startup.return_value.exists.return_value = False
+            method = add_to_startup._install_windows_autostart("pythonw.exe", "-m polyhost", "C:\\repo", None)
+        self.assertEqual(method, "none")
+
     def test_uses_task_and_removes_stale_shortcut_on_success(self):
         with mock.patch.object(add_to_startup, "register_windows_logon_task", return_value=True), \
              mock.patch.object(add_to_startup, "create_windows_shortcut_powershell") as mk_lnk, \

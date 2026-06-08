@@ -21,6 +21,7 @@ def is_venv():
     )
 
 def _icon_path():
+    """Absolute path to the platform-appropriate tray/app icon."""
     icon_path = os.path.join(Path(__file__).parent.parent.resolve(), "res", "icons")
     if platform.system() == "Darwin":
         return os.path.join(icon_path, "pcolor.icns")
@@ -72,10 +73,12 @@ def _appdata_dir():
     return Path(appdata) if appdata else Path.home() / "AppData" / "Roaming"
 
 def _windows_startup_lnk():
+    """Path to the per-user Startup-folder shortcut (the autostart fallback)."""
     startup_dir = _appdata_dir() / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
     return startup_dir / f"{APP_NAME}.lnk"
 
 def _windows_startmenu_lnk():
+    """Path to the Start-menu shortcut (the manual launcher, not autostart)."""
     programs_dir = _appdata_dir() / "Microsoft" / "Windows" / "Start Menu" / "Programs"
     return programs_dir / f"{APP_NAME}.lnk"
 
@@ -133,7 +136,9 @@ def unregister_windows_logon_task(task_name=APP_NAME):
     _run_powershell(ps)
 
 def create_windows_shortcut_powershell(target_path, shortcut_path, working_dir, icon_path, arguments=""):
-    # Use PowerShell to create a shortcut without pywin32 dependency
+    """Create a .lnk shortcut via PowerShell (no pywin32 dependency).
+    Returns True on success, False if PowerShell reported a failure.
+    """
     if working_dir is None:
         working_dir = Path(target_path).parent
     else:
@@ -159,8 +164,9 @@ $Shortcut.Save()
     completed = _run_powershell(ps_script)
     if completed.returncode == 0:
         print(f"Shortcut created at: {shortcut_path}")
-    else:
-        print(f"Failed to create shortcut. PowerShell output:\n{completed.stderr}")
+        return True
+    print(f"Failed to create shortcut. PowerShell output:\n{completed.stderr}")
+    return False
 
 def create_windows_bat_wrapper(venv_path, script_path, args="", wrapper_path=None):
     """Create the proven venv-activating launcher.
@@ -247,10 +253,12 @@ def _windows_launch_target(script_path, args):
         wrapper = create_windows_bat_wrapper(venv_path, script_path, win_args)
         return str(wrapper), "", repo_root
 
-    # System Python (no venv): simple wrapper that runs the script directly.
+    # System Python (no venv): run the package as a module from the repo root
+    # (`-m polyhost`, not the script by path — the latter breaks `polyhost.*`
+    # imports because the package dir, not its parent, lands on sys.path).
     python_exe = Path(sys.executable).resolve()
     wrapper = script_path.parent / "start_polyhost.bat"
-    content = f'@echo off\n"{python_exe}" "{script_path}" {win_args}\n'
+    content = f'@echo off\ncd "{repo_root}"\n"{python_exe}" -m polyhost {win_args}\n'
     wrapper.write_text(content, encoding="utf-8")
     print(f"Windows simple wrapper created at: {wrapper}")
     return str(wrapper), "", repo_root
@@ -279,14 +287,16 @@ def _install_windows_autostart(execute, win_args, working_dir, icon_path):
         return "scheduled task (at logon)"
 
     # Fallback: Startup-folder shortcut (needs no special rights).
-    create_windows_shortcut_powershell(run_exec, startup_lnk, working_dir, icon_path, run_args)
-    return "Startup folder shortcut (fallback)"
+    if create_windows_shortcut_powershell(run_exec, startup_lnk, working_dir, icon_path, run_args):
+        return "Startup folder shortcut (fallback)"
+    return "none"  # both the task and the fallback shortcut failed
 
 # ---------------------------------------------------------------------------
 # Unix / macOS helpers (wrapper-script based)
 # ---------------------------------------------------------------------------
 
 def create_unix_shell_wrapper(venv_path, script_path, args="", wrapper_path=None):
+    """Create a shell launcher that activates the venv and runs the app."""
     venv_path = Path(venv_path)
     script_path = Path(script_path)
     if wrapper_path is None:
@@ -306,6 +316,7 @@ python -m polyhost {args}
     return wrapper_path
 
 def create_linux_shortcut_desktop(app_name, autostart_dir, wrapper_path, icon_path):
+    """Write a freedesktop .desktop entry pointing at the launcher wrapper."""
     desktop_file = autostart_dir / f"{app_name}.desktop"
     content = f"""[Desktop Entry]
 Type=Application
@@ -321,12 +332,14 @@ Name={app_name}
     print(f"Startup desktop entry created at: {desktop_file}")
 
 def _linux_autostart_files(app_name=APP_NAME):
+    """The .desktop files this app writes (autostart dir + applications dir)."""
     return [
         Path.home() / ".config" / "autostart" / f"{app_name}.desktop",
         Path.home() / ".local" / "share" / "applications" / f"{app_name}.desktop",
     ]
 
 def _macos_plist_path(app_name=APP_NAME):
+    """Path to this app's launchd LaunchAgent plist."""
     return Path.home() / "Library" / "LaunchAgents" / f"com.{app_name}.plist"
 
 def add_to_startup(wrapper_path, app_name, icon_path):
@@ -462,9 +475,12 @@ def setup_autostart_for_app(script_path, args):
         execute_this = create_unix_shell_wrapper(venv_path, script_path, joined_args)
         print(f"Unix venv wrapper created at: {execute_this}")
     else:
+        # Run the package as a module from the repo root (`-m polyhost`, not
+        # the script by path — the latter breaks `polyhost.*` imports).
         python_exe = Path(sys.executable).resolve()
         execute_this = script_path.parent / "start_polyhost.sh"
-        content = f'#!/bin/bash\n"{python_exe}" "{script_path}" {joined_args}\n'
+        content = (f'#!/bin/bash\ncd "{script_path.parent.parent}"\n'
+                   f'"{python_exe}" -m polyhost {joined_args}\n')
         execute_this.write_text(content, encoding="utf-8")
         execute_this.chmod(0o755)
         print(f"Unix simple wrapper created at: {execute_this}")
