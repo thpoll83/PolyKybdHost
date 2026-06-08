@@ -13,6 +13,7 @@ keycap should show.
 | `kle_render.py` | Reusable renderer. Reuses `polyhost.kle.kle_praser.parse_kle` (note: the module file really is spelled `kle_praser.py`), lays out the keyboard (rotated thumb cluster included), and draws each key as a dark cap with a 72×40 monochrome "OLED". Per-frame API is `{matrix_pos: KeyContent}`; `save_gif()` writes the animation. |
 | `gfx_font.py` | Pixel-exact glyph rendering from the firmware's generated Adafruit-GFX headers (`base/fonts/`), reproducing `kdisp_write_gfx_char`/`text`. Used by `--font-mode gfx` (the default). |
 | `emoji_demo.py` | Data-driven driver for the emoji layer. Pulls geometry + roles + glyphs straight from the firmware so the demo always matches the keyboard. |
+| `oled_preview.py` | Pixel-exact **language keycap** preview (rendering analysis). For a chosen layout it replicates the firmware's per-key draw (`translate_keycode` + the letter/num/sym h/v offsets + shift-preview clear/clamp/stagger + AltGr preview), straight from `lang/lang_lut.xlsx` + `named_glyphs.h`, reusing `gfx_font.py`. Writes a contact sheet of every key (or one key with `--key`). Use it to check glyph clipping / overlaps before flashing. Needs `openpyxl` in addition to Pillow. |
 | `dl-demo-fonts.sh` | Downloads the mono Noto Emoji + Symbols2 fonts (only needed for `--font-mode ttf`). |
 
 ## Setup
