@@ -158,11 +158,15 @@ $Shortcut.Save()
         print(f"Failed to create shortcut. PowerShell output:\n{completed.stderr}")
 
 def create_windows_bat_wrapper(venv_path, script_path, args="", wrapper_path=None):
-    """Create the proven venv-activating launcher (no console window).
+    """Create the proven venv-activating launcher.
 
-    Activates the venv, cd's to the repo root and starts the app via a hidden
-    PowerShell so no console window stays open. This is the launch target the
-    scheduled task and the shortcuts point at.
+    Activates the venv, cd's to the repo root and runs the app in the
+    foreground. When triggered via autostart this .bat is launched windowless
+    through wscript + a hidden .vbs (see ``create_windows_hidden_vbs``), so
+    ``python`` runs inside that already-hidden console with no flash. (It does
+    *not* spawn its own ``powershell -WindowStyle Hidden`` — that briefly
+    creates a visible conhost window before hiding, which was the residual
+    flash.)
     """
     venv_path = Path(venv_path)
     script_path = Path(script_path)
@@ -174,7 +178,7 @@ def create_windows_bat_wrapper(venv_path, script_path, args="", wrapper_path=Non
     bat_content = f"""@echo off
 call "{activate_bat}"
 cd "{script_path.parent.parent}"
-cmd /c start /min "" powershell -WindowStyle Hidden -ExecutionPolicy Bypass -Command "python -m polyhost {args}"
+python -m polyhost {args}
 """
 
     wrapper_path.write_text(bat_content, encoding="utf-8")
