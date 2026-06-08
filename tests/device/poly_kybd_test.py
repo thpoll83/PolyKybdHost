@@ -80,3 +80,16 @@ class TestEnumerateLangMultiPacket(unittest.TestCase):
         langs = keeb.get_lang_list()
         self.assertIn("enUS", langs)   # P1 was processed
         self.assertNotIn("bgBG", langs)  # loop stopped before P2
+
+    def test_unexpected_prefix_mid_stream_stops_loop(self):
+        """Bad prefix after a valid follow-up packet: earlier langs kept, later ones dropped."""
+        keeb = _make_keeb()
+        junk = _pad(b"X\x00.garbage")
+        keeb.hid.send_and_read_validate_with_lock.return_value = (True, _P1, None)
+        keeb.hid.read_with_lock.side_effect = [(True, _P2, None), (True, junk, None)]
+        ok, _ = keeb.enumerate_lang()
+        self.assertTrue(ok)
+        langs = keeb.get_lang_list()
+        self.assertIn("enUS", langs)   # P1 retained
+        self.assertIn("bgBG", langs)   # P2 retained (arrived before junk)
+        self.assertNotIn("lvLV", langs)  # P3 never reached
