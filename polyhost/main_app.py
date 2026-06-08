@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication
 
 from polyhost.forwarder import PolyForwarder
 from polyhost.host import PolyHost
-from polyhost.services.add_to_startup import setup_autostart_for_app
+from polyhost.services.add_to_startup import setup_autostart_for_app, remove_autostart, get_autostart_status
 
 def main():
     parser = argparse.ArgumentParser(
@@ -20,7 +20,14 @@ def main():
     parser.add_argument('--host-file', help='Path to a file containing the host IP, written by a session hook (see folder autorun_forwarder for examples). This option has higher priority than `--host`.')
     args=parser.parse_args()
 
-    if not args.portable:
+    if args.portable:
+        # Portable run: don't autostart, and remove any entry a previous
+        # (non-portable) run may have left behind so nothing lingers.
+        existing = get_autostart_status()
+        if existing != "none":
+            print(f"Portable mode: removing existing autostart ({existing}).")
+            remove_autostart()
+    else:
         setup_autostart_for_app(__file__, sys.argv[1:])
 
     # Important for XWayland icon matching

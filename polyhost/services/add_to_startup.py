@@ -6,6 +6,10 @@ import shlex
 import subprocess
 from pathlib import Path
 
+# Name used for the autostart entry across all mechanisms (scheduled task,
+# Startup-folder shortcut, .desktop file, launchd plist).
+APP_NAME = "PolyHost"
+
 def is_frozen():
     """Detect if running in PyInstaller bundle or similar."""
     return getattr(sys, 'frozen', False) or hasattr(sys, '_MEIPASS')
@@ -17,23 +21,187 @@ def is_venv():
         (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)
     )
 
-def create_windows_bat_wrapper(venv_path, script_path, args="", wrapper_path=None):
-    venv_path = Path(venv_path)
-    script_path = Path(script_path)
-    if wrapper_path is None:
-        wrapper_path = script_path.parent / "start_polyhost.bat"
+def _icon_path():
+    icon_path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "res", "icons")
+    if platform.system() == "Darwin":
+        return os.path.join(icon_path, "pcolor.icns")
+    if platform.system() == "Windows":
+        return os.path.join(icon_path, "pcolor.ico")
+    return os.path.join(icon_path, "pcolor.png")
 
-    activate_bat = venv_path / "Scripts" / "activate.bat"
+# ---------------------------------------------------------------------------
+# Windows helpers
+# ---------------------------------------------------------------------------
 
-    bat_content = f"""@echo off
-call "{activate_bat}"
-cd "{script_path.parent.parent}"
-cmd /c start /min "" powershell -WindowStyle Hidden -ExecutionPolicy Bypass -Command "python -m polyhost {args}"
+def _win_quote_args(args):
+    """Join CLI args into a single Windows command-line string.
+
+    Note: ``shlex.quote`` always uses POSIX rules (single quotes), which is
+    wrong on Windows, so we do our own minimal double-quote wrapping.
+    """
+    out = []
+    for a in args:
+        a = str(a)
+        if a == "" or any(c in a for c in ' \t"'):
+            out.append('"' + a.replace('"', '\\"') + '"')
+        else:
+            out.append(a)
+    return " ".join(out)
+
+def _win_user():
+    """Return ``DOMAIN\\user`` (or bare user) for the current account."""
+    domain = os.getenv("USERDOMAIN") or os.getenv("COMPUTERNAME") or ""
+    user = os.getenv("USERNAME") or ""
+    return f"{domain}\\{user}" if domain else user
+
+def _run_powershell(ps_script):
+    """Run a PowerShell snippet, returning the CompletedProcess."""
+    return subprocess.run(
+        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
+        capture_output=True,
+        text=True,
+    )
+
+def _ps_single_quote(value):
+    """Escape a value for embedding inside a PowerShell single-quoted string."""
+    return str(value).replace("'", "''")
+
+def _windows_startup_lnk():
+    startup_dir = Path(os.getenv("APPDATA")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+    return startup_dir / f"{APP_NAME}.lnk"
+
+def _windows_startmenu_lnk():
+    programs_dir = Path(os.getenv("APPDATA")) / "Microsoft" / "Windows" / "Start Menu" / "Programs"
+    return programs_dir / f"{APP_NAME}.lnk"
+
+def register_windows_logon_task(execute, arguments, working_dir, task_name=APP_NAME):
+    """Register a per-user, non-elevated "at log on" scheduled task.
+
+    Runs in the current user's interactive context at *limited* (non-elevated)
+    privilege, so it needs no admin rights and triggers no UAC prompt. Logon
+    tasks are not subject to Explorer's Startup-folder/Run-key delay, so the
+    app comes up noticeably earlier. Returns True on success, False if task
+    creation was refused (e.g. Task Scheduler locked down by Group Policy).
+    """
+    user = _ps_single_quote(_win_user())
+    execute = _ps_single_quote(execute)
+    arguments = _ps_single_quote(arguments)
+    working_dir = _ps_single_quote(working_dir)
+    task_name_q = _ps_single_quote(task_name)
+
+    ps = f"""
+$ErrorActionPreference = 'Stop'
+try {{
+    $action = New-ScheduledTaskAction -Execute '{execute}' -Argument '{arguments}' -WorkingDirectory '{working_dir}'
+    $trigger = New-ScheduledTaskTrigger -AtLogOn -User '{user}'
+    $principal = New-ScheduledTaskPrincipal -UserId '{user}' -LogonType Interactive -RunLevel Limited
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit ([TimeSpan]::Zero)
+    Register-ScheduledTask -TaskName '{task_name_q}' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
+    exit 0
+}} catch {{
+    Write-Error $_
+    exit 1
+}}
 """
+    completed = _run_powershell(ps)
+    if completed.returncode == 0:
+        print(f"Scheduled logon task '{task_name}' registered.")
+        return True
+    print("Could not register scheduled task (will fall back to Startup folder):\n"
+          f"{(completed.stderr or completed.stdout).strip()}")
+    return False
 
-    wrapper_path.write_text(bat_content, encoding="utf-8")
-    print(f"Windows wrapper script created at: {wrapper_path}")
-    return wrapper_path
+def windows_task_exists(task_name=APP_NAME):
+    """Return True if a scheduled task with this name exists for the user."""
+    completed = subprocess.run(
+        ["schtasks", "/query", "/tn", task_name],
+        capture_output=True, text=True,
+    )
+    return completed.returncode == 0
+
+def unregister_windows_logon_task(task_name=APP_NAME):
+    """Remove the scheduled task if present (no error if it doesn't exist)."""
+    ps = (f"Unregister-ScheduledTask -TaskName '{_ps_single_quote(task_name)}' "
+          "-Confirm:$false -ErrorAction SilentlyContinue")
+    _run_powershell(ps)
+
+def create_windows_shortcut_powershell(target_path, shortcut_path, working_dir, icon_path, arguments=""):
+    # Use PowerShell to create a shortcut without pywin32 dependency
+    if working_dir is None:
+        working_dir = Path(target_path).parent
+    else:
+        working_dir = Path(working_dir)
+
+    target_path = Path(target_path).resolve()
+    shortcut_path = Path(shortcut_path).resolve()
+
+    icon_line = f'$Shortcut.IconLocation = "{icon_path}"' if icon_path else ""
+
+    ps_script = f'''
+$WshShell = New-Object -ComObject WScript.Shell
+$Shortcut = $WshShell.CreateShortcut("{shortcut_path}")
+$Shortcut.TargetPath = "{target_path}"
+$Shortcut.Arguments = "{arguments}"
+$Shortcut.WorkingDirectory = "{working_dir}"
+{icon_line}
+$Shortcut.WindowStyle = 7
+$Shortcut.Save()
+'''
+
+    # Run the PowerShell script
+    completed = _run_powershell(ps_script)
+    if completed.returncode == 0:
+        print(f"Shortcut created at: {shortcut_path}")
+    else:
+        print(f"Failed to create shortcut. PowerShell output:\n{completed.stderr}")
+
+def _windows_launch_target(script_path, args):
+    """Resolve (executable, arguments, working_dir) for launching on Windows.
+
+    Collapses the old ``.bat -> activate -> cmd start -> powershell -> python``
+    chain down to a single direct call: PyInstaller exe when frozen, otherwise
+    the interpreter's ``pythonw.exe`` (windowless, no console) running
+    ``-m polyhost`` from the repo root.
+    """
+    if is_frozen():
+        execute = str(Path(sys.executable).resolve())
+        return execute, _win_quote_args(args), str(Path(execute).parent)
+
+    py_dir = Path(sys.executable).resolve().parent
+    pythonw = py_dir / "pythonw.exe"
+    execute = str(pythonw if pythonw.exists() else py_dir / "python.exe")
+    win_args = "-m polyhost"
+    if args:
+        win_args += " " + _win_quote_args(args)
+    working_dir = str(script_path.parent.parent)  # repo root, so `-m polyhost` resolves
+    return execute, win_args, working_dir
+
+def _install_windows_autostart(execute, win_args, working_dir, icon_path):
+    """Install Windows autostart, preferring a logon task, falling back to a
+    Startup-folder shortcut. Always (re)creates the Start-menu launcher.
+    Returns a short string naming the mechanism actually in place.
+    """
+    startup_lnk = _windows_startup_lnk()
+    startup_lnk.parent.mkdir(parents=True, exist_ok=True)
+
+    # Convenience Start-menu entry for manual launching (not autostart).
+    startmenu_lnk = _windows_startmenu_lnk()
+    startmenu_lnk.parent.mkdir(parents=True, exist_ok=True)
+    create_windows_shortcut_powershell(execute, startmenu_lnk, working_dir, icon_path, win_args)
+
+    if register_windows_logon_task(execute, win_args, working_dir):
+        # Remove any stale Startup-folder shortcut to avoid a double launch.
+        if startup_lnk.exists():
+            startup_lnk.unlink()
+        return "scheduled task (at logon)"
+
+    # Fallback: Startup-folder shortcut (needs no special rights).
+    create_windows_shortcut_powershell(execute, startup_lnk, working_dir, icon_path, win_args)
+    return "Startup folder shortcut (fallback)"
+
+# ---------------------------------------------------------------------------
+# Unix / macOS helpers (wrapper-script based)
+# ---------------------------------------------------------------------------
 
 def create_unix_shell_wrapper(venv_path, script_path, args="", wrapper_path=None):
     venv_path = Path(venv_path)
@@ -54,37 +222,6 @@ python -m polyhost {args}
     print(f"Unix shell wrapper script created at: {wrapper_path}")
     return wrapper_path
 
-def create_windows_shortcut_powershell(target_path, shortcut_path, working_dir, icon_path):
-    # Use PowerShell to create a shortcut without pywin32 dependency
-    if working_dir is None:
-        working_dir = Path(target_path).parent
-    else:
-        working_dir = Path(working_dir)
-
-    target_path = Path(target_path).resolve()
-    shortcut_path = Path(shortcut_path).resolve()
-
-    ps_script = f'''
-$WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("{shortcut_path}")
-$Shortcut.TargetPath = "{target_path}"
-$Shortcut.WorkingDirectory = "{working_dir}"
-{"$Shortcut.IconLocation = \"" + icon_path + "\"" if icon_path else ""}
-$Shortcut.WindowStyle = 7
-$Shortcut.Save()
-'''
-
-    # Run the PowerShell script
-    completed = subprocess.run(
-        ["powershell", "-NoProfile", "-Command", ps_script],
-        capture_output=True,
-        text=True,
-    )
-    if completed.returncode == 0:
-        print(f"Shortcut created at: {shortcut_path}")
-    else:
-        print(f"Failed to create shortcut. PowerShell output:\n{completed.stderr}")
-
 def create_linux_shortcut_desktop(app_name, autostart_dir, wrapper_path, icon_path):
     desktop_file = autostart_dir / f"{app_name}.desktop"
     content = f"""[Desktop Entry]
@@ -100,21 +237,21 @@ Name={app_name}
     desktop_file.chmod(0o755)
     print(f"Startup desktop entry created at: {desktop_file}")
 
+def _linux_autostart_files(app_name=APP_NAME):
+    return [
+        Path.home() / ".config" / "autostart" / f"{app_name}.desktop",
+        Path.home() / ".local" / "share" / "applications" / f"{app_name}.desktop",
+    ]
+
+def _macos_plist_path(app_name=APP_NAME):
+    return Path.home() / "Library" / "LaunchAgents" / f"com.{app_name}.plist"
+
 def add_to_startup(wrapper_path, app_name, icon_path):
+    """Register autostart on Linux/macOS (Windows is handled separately)."""
     system = platform.system()
     wrapper_path = Path(wrapper_path)
 
-    if system == "Windows":
-        startup_dir = Path(os.getenv("APPDATA")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
-        startup_dir.mkdir(parents=True, exist_ok=True)
-        shortcut_path = startup_dir / f"{app_name}.lnk"
-        create_windows_shortcut_powershell(wrapper_path, shortcut_path, wrapper_path.parent, icon_path)
-        startup_dir = Path(os.getenv("APPDATA")) / "Microsoft" / "Windows" / "Start Menu" / "Programs"
-        startup_dir.mkdir(parents=True, exist_ok=True)
-        shortcut_path = startup_dir / f"{app_name}.lnk"
-        create_windows_shortcut_powershell(wrapper_path, shortcut_path, wrapper_path.parent, icon_path)
-
-    elif system == "Linux":
+    if system == "Linux":
         autostart_dir = Path.home() / ".config" / "autostart"
         autostart_dir.mkdir(parents=True, exist_ok=True)
         create_linux_shortcut_desktop(app_name, autostart_dir, wrapper_path, icon_path)
@@ -122,9 +259,8 @@ def add_to_startup(wrapper_path, app_name, icon_path):
         autostart_dir.mkdir(parents=True, exist_ok=True)
         create_linux_shortcut_desktop(app_name, autostart_dir, wrapper_path, icon_path)
 
-
     elif system == "Darwin":
-        plist_path = Path.home() / "Library" / "LaunchAgents" / f"com.{app_name}.plist"
+        plist_path = _macos_plist_path(app_name)
         plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
 "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -150,58 +286,101 @@ def add_to_startup(wrapper_path, app_name, icon_path):
     else:
         print(f"Unsupported OS: {system}")
 
+# ---------------------------------------------------------------------------
+# Status / removal (cross-platform)
+# ---------------------------------------------------------------------------
+
+def get_autostart_status(app_name=APP_NAME):
+    """Return a human-readable description of what autostart entry, if any, is
+    currently registered for this app. Useful to verify which mechanism is in
+    place after an upgrade.
+    """
+    system = platform.system()
+    found = []
+    if system == "Windows":
+        if windows_task_exists(app_name):
+            found.append("scheduled task (at logon)")
+        if _windows_startup_lnk().exists():
+            found.append(f"Startup folder shortcut ({_windows_startup_lnk()})")
+    elif system == "Linux":
+        for f in _linux_autostart_files(app_name):
+            if f.exists():
+                found.append(f"desktop entry ({f})")
+    elif system == "Darwin":
+        plist = _macos_plist_path(app_name)
+        if plist.exists():
+            found.append(f"launchd plist ({plist})")
+
+    if not found:
+        return "none"
+    return ", ".join(found)
+
+def remove_autostart(app_name=APP_NAME):
+    """Remove any autostart entry this app may have registered (all mechanisms).
+    Safe to call when nothing is installed.
+    """
+    system = platform.system()
+    if system == "Windows":
+        unregister_windows_logon_task(app_name)
+        lnk = _windows_startup_lnk()
+        if lnk.exists():
+            lnk.unlink()
+            print(f"Removed Startup folder shortcut: {lnk}")
+    elif system == "Linux":
+        for f in _linux_autostart_files(app_name):
+            if f.exists():
+                f.unlink()
+                print(f"Removed desktop entry: {f}")
+    elif system == "Darwin":
+        plist = _macos_plist_path(app_name)
+        if plist.exists():
+            subprocess.run(["launchctl", "unload", str(plist)], check=False)
+            plist.unlink()
+            print(f"Removed launchd plist: {plist}")
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
 
 def setup_autostart_for_app(script_path, args):
-    """
-    If inside venv: create wrapper to activate venv and run script,
-    else just run script directly.
-    Then add to autostart.
+    """Register the app to start automatically at login.
+
+    Windows: a non-elevated "at log on" scheduled task (falling back to a
+    Startup-folder shortcut), launching ``pythonw.exe -m polyhost`` directly.
+    Linux/macOS: a venv-activating wrapper script referenced from the
+    autostart directory / launchd. Returns a string describing the mechanism
+    that ended up in place.
     """
     script_path = Path(script_path).resolve()
     args = [a.strip() for a in args]
-    joined_args = " ".join(shlex.quote(a.strip()) for a in args)
+    icon_path = _icon_path()
 
+    if platform.system() == "Windows":
+        execute, win_args, working_dir = _windows_launch_target(script_path, args)
+        if is_frozen():
+            print(f"Detected PyInstaller bundle: {execute} {win_args}")
+        method = _install_windows_autostart(execute, win_args, working_dir, icon_path)
+        print(f"Autostart in place: {method}")
+        return method
+
+    # Unix / macOS: wrapper-script based.
+    joined_args = " ".join(shlex.quote(a) for a in args)
     if is_frozen():
-        # Running from PyInstaller exe, just add the exe itself to startup
         execute_this = Path(sys.executable).resolve()
-        if len(args)>0:
-            execute_this = f'"{execute_this}" {joined_args}'
-
         print(f"Detected PyInstaller bundle: {execute_this}")
-
     elif is_venv():
-        venv_path = Path(sys.prefix).resolve()  # current venv root
-        system = platform.system()
-        if system == "Windows":
-            execute_this = create_windows_bat_wrapper(venv_path, script_path, joined_args)
-            print(f"Windows venv wrapper created at: {execute_this}")
-        else:
-            execute_this = create_unix_shell_wrapper(venv_path, script_path, joined_args)
-            print(f"Unix venv wrapper created at: {execute_this}")
+        venv_path = Path(sys.prefix).resolve()
+        execute_this = create_unix_shell_wrapper(venv_path, script_path, joined_args)
+        print(f"Unix venv wrapper created at: {execute_this}")
     else:
-        # Not in venv — just autostart python with script directly
         python_exe = Path(sys.executable).resolve()
-        # Construct a simple wrapper script or shortcut that runs python script directly
-        # For simplicity create a minimal wrapper script anyway:
+        execute_this = script_path.parent / "start_polyhost.sh"
+        content = f'#!/bin/bash\n"{python_exe}" "{script_path}" {joined_args}\n'
+        execute_this.write_text(content, encoding="utf-8")
+        execute_this.chmod(0o755)
+        print(f"Unix simple wrapper created at: {execute_this}")
 
-        if platform.system() == "Windows":
-            # Simple .bat that calls python with script
-            execute_this = script_path.parent / "start_polyhost.bat"
-            content = f'@echo off\n"{python_exe}" "{script_path}" {joined_args}\n'
-            execute_this.write_text(content, encoding="utf-8")
-            print(f"Windows simple wrapper created at: {execute_this}")
-        else:
-            execute_this = script_path.parent / "start_polyhost.sh"
-            content = f'#!/bin/bash\n"{python_exe}" "{script_path}" {joined_args}\n'
-            execute_this.write_text(content, encoding="utf-8")
-            execute_this.chmod(0o755)
-            print(f"Unix simple wrapper created at: {execute_this}")
-
-    icon_path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "res", "icons")
-    if platform.system() == "Darwin":
-        icon_path = os.path.join(icon_path, "pcolor.icns")
-    elif platform.system() == "Windows":
-        icon_path = os.path.join(icon_path, "pcolor.ico")
-    else:
-        icon_path = os.path.join(icon_path, "pcolor.png")
-    add_to_startup(execute_this, "PolyHost", icon_path)
+    add_to_startup(execute_this, APP_NAME, icon_path)
+    status = get_autostart_status()
+    print(f"Autostart in place: {status}")
+    return status
