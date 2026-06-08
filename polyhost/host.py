@@ -258,7 +258,9 @@ class PolyHost(QApplication):
         
         
         self.setApplicationName('PolyHost')
-        
+
+        # Persist the keyboard MRU just before the system sleeps (Linux/logind).
+        self._install_sleep_listener()
 
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False
@@ -998,8 +1000,46 @@ class PolyHost(QApplication):
     def quit_app(self):
         self.icon_manager.set_disconnected()
         self.is_closing = True
+        # Persist the keyboard's MRU recents on a clean shutdown (the firmware
+        # only writes if they changed). USB suspend covers the sleep case; this
+        # covers a clean quit/logout where USB suspend may not fire.
+        self.save_keeb_mru()
         self.overlay_handler.close()
         self.quit()
+
+    def save_keeb_mru(self):
+        """Best-effort request to persist the keyboard's emoji/language MRU.
+
+        Safe to call when disconnected — the HID layer just reports failure and
+        we swallow any error so shutdown/sleep is never blocked."""
+        try:
+            if self.keeb:
+                self.keeb.save_mru()
+        except Exception as e:  # never let a save attempt break shutdown/sleep
+            self.log.debug("MRU save request failed: %s", e)
+
+    def _install_sleep_listener(self):
+        """On Linux, ask systemd-logind to tell us just before the system sleeps
+        so we can persist the keyboard MRU. No-op (logged) where unavailable."""
+        try:
+            from PyQt5.QtDBus import QDBusConnection
+            bus = QDBusConnection.systemBus()
+            if not bus.isConnected():
+                self.log.debug("System D-Bus not available; no sleep listener.")
+                return
+            ok = bus.connect(
+                "org.freedesktop.login1", "/org/freedesktop/login1",
+                "org.freedesktop.login1.Manager", "PrepareForSleep",
+                self._on_prepare_for_sleep)
+            self.log.debug("logind PrepareForSleep listener installed: %s", ok)
+        except Exception as e:
+            self.log.debug("Could not install sleep listener: %s", e)
+
+    def _on_prepare_for_sleep(self, going_to_sleep):
+        # PrepareForSleep(true) fires just before the system suspends.
+        if going_to_sleep:
+            self.log.info("System is about to sleep — saving keyboard MRU.")
+            self.save_keeb_mru()
 
     # noinspection PyPep8Naming
     def closeEvent(self, _):

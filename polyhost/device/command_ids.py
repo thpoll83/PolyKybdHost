@@ -47,3 +47,4 @@ class Cmd(Enum):
     ENTER_BOOTLOADER = 23
     DISPLAY_OFF = 24
     SET_HANDEDNESS = 25
+    SAVE_MRU = 26
