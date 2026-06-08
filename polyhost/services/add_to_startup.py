@@ -85,14 +85,16 @@ def register_windows_logon_task(execute, arguments, working_dir, task_name=APP_N
     """
     user = _ps_single_quote(_win_user())
     execute = _ps_single_quote(execute)
-    arguments = _ps_single_quote(arguments)
     working_dir = _ps_single_quote(working_dir)
     task_name_q = _ps_single_quote(task_name)
+    # PowerShell rejects an empty string for -Argument, so only include it when
+    # there actually are arguments (the .bat launcher has none).
+    arg_param = f" -Argument '{_ps_single_quote(arguments)}'" if arguments else ""
 
     ps = f"""
 $ErrorActionPreference = 'Stop'
 try {{
-    $action = New-ScheduledTaskAction -Execute '{execute}' -Argument '{arguments}' -WorkingDirectory '{working_dir}'
+    $action = New-ScheduledTaskAction -Execute '{execute}'{arg_param} -WorkingDirectory '{working_dir}'
     $trigger = New-ScheduledTaskTrigger -AtLogOn -User '{user}'
     $principal = New-ScheduledTaskPrincipal -UserId '{user}' -LogonType Interactive -RunLevel Limited
     $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit ([TimeSpan]::Zero)
