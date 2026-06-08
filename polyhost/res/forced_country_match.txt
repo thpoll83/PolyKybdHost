@@ -43,3 +43,9 @@ tw=us
 # Indonesian (id-ID) is plain US QWERTY with no special characters and has no
 # dedicated xkb layout - fold it onto "us".
 id=us
+
+# Simplified-Chinese Pinyin (zh-CN) is entered via an IME on a plain US-QWERTY
+# physical layout (the xkb "cn" layout is a Tibetan map, not Latin), so fold the
+# keyboard onto "us" - the keycaps carry no Han glyphs, matching real mainland
+# Pinyin keyboards. (Shape-based Cangjie/Bopomofo live on zh-HK / zh-TW instead.)
+cn=us
