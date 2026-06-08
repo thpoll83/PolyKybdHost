@@ -75,12 +75,75 @@ class HiddenInvocationTest(unittest.TestCase):
 
     def test_vbs_content_is_hidden_launch(self):
         import tempfile
-        bat = Path(tempfile.mkdtemp()) / "start_polyhost.bat"
-        vbs = add_to_startup.create_windows_hidden_vbs(str(bat))
-        content = Path(vbs).read_text()
+        with tempfile.TemporaryDirectory() as tmp:
+            bat = Path(tmp) / "start_polyhost.bat"
+            vbs = add_to_startup.create_windows_hidden_vbs(str(bat))
+            content = Path(vbs).read_text()
         self.assertIn(", 0, False", content)  # window style 0 == hidden
         self.assertIn(str(bat), content)
         self.assertIn("Wscript.Shell", content)
+
+
+class AutostartStatusTest(unittest.TestCase):
+    """get_autostart_status reports the autostart mechanism(s) in place."""
+
+    def _lnk(self, exists):
+        lnk = mock.MagicMock()
+        lnk.exists.return_value = exists
+        return lnk
+
+    def test_only_scheduled_task(self):
+        with mock.patch.object(add_to_startup.platform, "system", return_value="Windows"), \
+             mock.patch.object(add_to_startup, "windows_task_exists", return_value=True), \
+             mock.patch.object(add_to_startup, "_windows_startup_lnk", return_value=self._lnk(False)):
+            status = add_to_startup.get_autostart_status()
+        self.assertIn("scheduled task", status.lower())
+        self.assertNotIn("startup folder", status.lower())
+
+    def test_task_and_startup_shortcut(self):
+        with mock.patch.object(add_to_startup.platform, "system", return_value="Windows"), \
+             mock.patch.object(add_to_startup, "windows_task_exists", return_value=True), \
+             mock.patch.object(add_to_startup, "_windows_startup_lnk", return_value=self._lnk(True)):
+            status = add_to_startup.get_autostart_status()
+        self.assertIn("scheduled task", status.lower())
+        self.assertIn("startup folder", status.lower())
+
+    def test_none_when_nothing_registered(self):
+        with mock.patch.object(add_to_startup.platform, "system", return_value="Windows"), \
+             mock.patch.object(add_to_startup, "windows_task_exists", return_value=False), \
+             mock.patch.object(add_to_startup, "_windows_startup_lnk", return_value=self._lnk(False)):
+            self.assertEqual(add_to_startup.get_autostart_status(), "none")
+
+
+class RemoveAutostartTest(unittest.TestCase):
+    """remove_autostart tears down every artifact and is idempotent."""
+
+    def _lnk(self, exists):
+        lnk = mock.MagicMock()
+        lnk.exists.return_value = exists
+        return lnk
+
+    def test_removes_task_and_both_shortcuts(self):
+        startup, startmenu = self._lnk(True), self._lnk(True)
+        with mock.patch.object(add_to_startup.platform, "system", return_value="Windows"), \
+             mock.patch.object(add_to_startup, "unregister_windows_logon_task") as unreg, \
+             mock.patch.object(add_to_startup, "_windows_startup_lnk", return_value=startup), \
+             mock.patch.object(add_to_startup, "_windows_startmenu_lnk", return_value=startmenu):
+            add_to_startup.remove_autostart()
+        unreg.assert_called_once()
+        startup.unlink.assert_called_once()
+        startmenu.unlink.assert_called_once()
+
+    def test_idempotent_when_nothing_exists(self):
+        startup, startmenu = self._lnk(False), self._lnk(False)
+        with mock.patch.object(add_to_startup.platform, "system", return_value="Windows"), \
+             mock.patch.object(add_to_startup, "unregister_windows_logon_task") as unreg, \
+             mock.patch.object(add_to_startup, "_windows_startup_lnk", return_value=startup), \
+             mock.patch.object(add_to_startup, "_windows_startmenu_lnk", return_value=startmenu):
+            add_to_startup.remove_autostart()  # must not raise
+        unreg.assert_called_once()
+        startup.unlink.assert_not_called()
+        startmenu.unlink.assert_not_called()
 
 
 if __name__ == "__main__":

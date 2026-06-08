@@ -1,4 +1,3 @@
-import pathlib
 import platform
 import os
 import sys
@@ -22,7 +21,7 @@ def is_venv():
     )
 
 def _icon_path():
-    icon_path = os.path.join(pathlib.Path(__file__).parent.parent.resolve(), "res", "icons")
+    icon_path = os.path.join(Path(__file__).parent.parent.resolve(), "res", "icons")
     if platform.system() == "Darwin":
         return os.path.join(icon_path, "pcolor.icns")
     if platform.system() == "Windows":
@@ -66,12 +65,18 @@ def _ps_single_quote(value):
     """Escape a value for embedding inside a PowerShell single-quoted string."""
     return str(value).replace("'", "''")
 
+def _appdata_dir():
+    """Roaming AppData dir, falling back to ~/AppData/Roaming if %APPDATA%
+    is unset (rare, but avoids constructing Path(None))."""
+    appdata = os.getenv("APPDATA")
+    return Path(appdata) if appdata else Path.home() / "AppData" / "Roaming"
+
 def _windows_startup_lnk():
-    startup_dir = Path(os.getenv("APPDATA")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+    startup_dir = _appdata_dir() / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
     return startup_dir / f"{APP_NAME}.lnk"
 
 def _windows_startmenu_lnk():
-    programs_dir = Path(os.getenv("APPDATA")) / "Microsoft" / "Windows" / "Start Menu" / "Programs"
+    programs_dir = _appdata_dir() / "Microsoft" / "Windows" / "Start Menu" / "Programs"
     return programs_dir / f"{APP_NAME}.lnk"
 
 def register_windows_logon_task(execute, arguments, working_dir, task_name=APP_NAME):
@@ -376,10 +381,13 @@ def get_autostart_status(app_name=APP_NAME):
     system = platform.system()
     found = []
     if system == "Windows":
+        # Reports autostart mechanisms only — the Start-menu shortcut is a
+        # manual launcher, not autostart, so it is intentionally not listed.
         if windows_task_exists(app_name):
             found.append("scheduled task (at logon)")
-        if _windows_startup_lnk().exists():
-            found.append(f"Startup folder shortcut ({_windows_startup_lnk()})")
+        startup_lnk = _windows_startup_lnk()
+        if startup_lnk.exists():
+            found.append(f"Startup folder shortcut ({startup_lnk})")
     elif system == "Linux":
         for f in _linux_autostart_files(app_name):
             if f.exists():
@@ -400,10 +408,12 @@ def remove_autostart(app_name=APP_NAME):
     system = platform.system()
     if system == "Windows":
         unregister_windows_logon_task(app_name)
-        lnk = _windows_startup_lnk()
-        if lnk.exists():
-            lnk.unlink()
-            print(f"Removed Startup folder shortcut: {lnk}")
+        # Remove both the autostart Startup-folder shortcut and the manual
+        # Start-menu launcher so teardown leaves nothing behind.
+        for lnk in (_windows_startup_lnk(), _windows_startmenu_lnk()):
+            if lnk.exists():
+                lnk.unlink()
+                print(f"Removed shortcut: {lnk}")
     elif system == "Linux":
         for f in _linux_autostart_files(app_name):
             if f.exists():
