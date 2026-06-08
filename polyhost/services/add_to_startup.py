@@ -155,26 +155,58 @@ $Shortcut.Save()
     else:
         print(f"Failed to create shortcut. PowerShell output:\n{completed.stderr}")
 
+def create_windows_bat_wrapper(venv_path, script_path, args="", wrapper_path=None):
+    """Create the proven venv-activating launcher (no console window).
+
+    Activates the venv, cd's to the repo root and starts the app via a hidden
+    PowerShell so no console window stays open. This is the launch target the
+    scheduled task and the shortcuts point at.
+    """
+    venv_path = Path(venv_path)
+    script_path = Path(script_path)
+    if wrapper_path is None:
+        wrapper_path = script_path.parent / "start_polyhost.bat"
+
+    activate_bat = venv_path / "Scripts" / "activate.bat"
+
+    bat_content = f"""@echo off
+call "{activate_bat}"
+cd "{script_path.parent.parent}"
+cmd /c start /min "" powershell -WindowStyle Hidden -ExecutionPolicy Bypass -Command "python -m polyhost {args}"
+"""
+
+    wrapper_path.write_text(bat_content, encoding="utf-8")
+    print(f"Windows wrapper script created at: {wrapper_path}")
+    return wrapper_path
+
 def _windows_launch_target(script_path, args):
     """Resolve (executable, arguments, working_dir) for launching on Windows.
 
-    Collapses the old ``.bat -> activate -> cmd start -> powershell -> python``
-    chain down to a single direct call: PyInstaller exe when frozen, otherwise
-    the interpreter's ``pythonw.exe`` (windowless, no console) running
-    ``-m polyhost`` from the repo root.
+    Uses the same proven launcher the app has always used (a venv-activating
+    ``.bat`` wrapper, or the PyInstaller exe when frozen) — what changes vs.
+    before is only *how* it is triggered: a logon scheduled task instead of a
+    throttled Startup-folder shortcut. The launch mechanism itself is
+    unchanged, so this can't regress whether the app actually starts.
     """
+    win_args = _win_quote_args(args)
+    repo_root = str(script_path.parent.parent)
+
     if is_frozen():
         execute = str(Path(sys.executable).resolve())
-        return execute, _win_quote_args(args), str(Path(execute).parent)
+        return execute, win_args, str(Path(execute).parent)
 
-    py_dir = Path(sys.executable).resolve().parent
-    pythonw = py_dir / "pythonw.exe"
-    execute = str(pythonw if pythonw.exists() else py_dir / "python.exe")
-    win_args = "-m polyhost"
-    if args:
-        win_args += " " + _win_quote_args(args)
-    working_dir = str(script_path.parent.parent)  # repo root, so `-m polyhost` resolves
-    return execute, win_args, working_dir
+    if is_venv():
+        venv_path = Path(sys.prefix).resolve()
+        wrapper = create_windows_bat_wrapper(venv_path, script_path, win_args)
+        return str(wrapper), "", repo_root
+
+    # System Python (no venv): simple wrapper that runs the script directly.
+    python_exe = Path(sys.executable).resolve()
+    wrapper = script_path.parent / "start_polyhost.bat"
+    content = f'@echo off\n"{python_exe}" "{script_path}" {win_args}\n'
+    wrapper.write_text(content, encoding="utf-8")
+    print(f"Windows simple wrapper created at: {wrapper}")
+    return str(wrapper), "", repo_root
 
 def _install_windows_autostart(execute, win_args, working_dir, icon_path):
     """Install Windows autostart, preferring a logon task, falling back to a
@@ -346,7 +378,8 @@ def setup_autostart_for_app(script_path, args):
     """Register the app to start automatically at login.
 
     Windows: a non-elevated "at log on" scheduled task (falling back to a
-    Startup-folder shortcut), launching ``pythonw.exe -m polyhost`` directly.
+    Startup-folder shortcut) that triggers the proven venv-activating launcher
+    earlier than the throttled Startup folder would.
     Linux/macOS: a venv-activating wrapper script referenced from the
     autostart directory / launchd. Returns a string describing the mechanism
     that ended up in place.
