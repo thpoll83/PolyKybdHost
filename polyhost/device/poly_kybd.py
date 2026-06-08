@@ -321,9 +321,12 @@ class PolyKybd:
             return False, "Could not receive language list."
         lang_str = ""
 
+        expected = expect(Cmd.GET_LANG_LIST).decode()
         reply = reply.decode().strip('\x00')
         while result and len(reply) > 3:
-            assert reply.startswith(expect(Cmd.GET_LANG_LIST).decode())
+            if not reply.startswith(expected):
+                self.log.warning("enumerate_lang: unexpected reply prefix, stopping early")
+                break
             lang_str = f"{lang_str}{reply[3:]}"
             result, reply, lock = self.hid.read_with_lock(15, lock)
             reply = reply.decode().strip('\x00')
