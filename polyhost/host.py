@@ -514,6 +514,8 @@ class PolyHost(QApplication):
                             self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
                             self.connected = False
                     if compatible:
+                        if self.keeb_lang_menu is None:
+                            self.add_supported_lang(self.menu)
                         if connected_now and self.poly_settings.get("unicode_send_composition_mode"):
                             mode = get_input_method()
                             self.log.info("Setting unicode mode to str %s", mode)
