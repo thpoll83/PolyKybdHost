@@ -989,7 +989,8 @@ class PolyHost(QApplication):
         if not was_paused:
             self.pause()
         try:
-            dlg = HidFwUpDialog(self.keeb.hid, bin_path, parent=None, apply_after=True)
+            dlg = HidFwUpDialog(self.keeb.hid, bin_path, parent=None, apply_after=True,
+                               tray_icon=self.tray)
             dlg.exec_()
         finally:
             if not was_paused:

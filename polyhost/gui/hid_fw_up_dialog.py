@@ -1,8 +1,9 @@
 import logging
+import time
 
 from PyQt5.QtCore import QThread, pyqtSignal, Qt, QTimer
 from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QPushButton,
+    QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QPushButton,
 )
 
 from polyhost.device.hid_fw_up import flash_firmware, apply_staged_firmware
@@ -95,11 +96,12 @@ class HidFwUpDialog(QDialog):
     # the threshold the real progress is unknown, so we show a busy spinner.
     _DETERMINATE_FROM = 2
 
-    def __init__(self, hid, bin_path: str, parent=None, apply_after=False):
+    def __init__(self, hid, bin_path: str, parent=None, apply_after=False, tray_icon=None):
         super().__init__(parent)
         self.log         = logging.getLogger('PolyHost')
         self._hid        = hid
         self._apply_after = apply_after
+        self._tray_icon  = tray_icon
         self._success    = False      # staging succeeded
         self._apply_ok   = None       # apply result, or None if not attempted
 
@@ -113,6 +115,11 @@ class HidFwUpDialog(QDialog):
         self._determinate    = False # True once chunks start; spinner never returns after
         self._done           = False # True once finalized; late signals are ignored
         self._behind         = False # bar fell behind a fresh report; catch up faster
+
+        # ETA tracking for the chunk-transfer phase (pct 2–98).
+        self._transfer_start_time = None  # monotonic, set when chunks begin flowing
+        self._last_reported_pct   = 0     # latest pct in [2, 98) — drives ETA calculation
+        self._positioned          = False  # move-to-corner only on the first showEvent
 
         self.setWindowTitle("Firmware Update")
         self.setMinimumWidth(500)
@@ -137,11 +144,21 @@ class HidFwUpDialog(QDialog):
         self._show_pct(0.0)
         layout.addWidget(self._progress_bar)
 
+        self._eta_label = QLabel("")
+        self._eta_label.setAlignment(Qt.AlignRight)
+        self._eta_label.setStyleSheet("color: gray;")
+        layout.addWidget(self._eta_label)
+
         # Drives the smooth catch-up of the bar toward the reported percent.
         # Started lazily on the first progress update and stopped once settled.
         self._anim_timer = QTimer(self)
         self._anim_timer.setInterval(self._ANIM_TICK_MS)
         self._anim_timer.timeout.connect(self._animate_step)
+
+        # Updates the "~N s remaining" estimate once per second during transfer.
+        self._eta_timer = QTimer(self)
+        self._eta_timer.setInterval(1000)
+        self._eta_timer.timeout.connect(self._update_eta)
 
         btn_row = QHBoxLayout()
         self._cancel_btn = QPushButton("Cancel")
@@ -154,6 +171,68 @@ class HidFwUpDialog(QDialog):
         self._worker.progress.connect(self._on_progress)
         self._worker.finished.connect(self._on_finished)
         self._worker.start()
+
+    # ------------------------------------------------------------------
+    def showEvent(self, event):
+        super().showEvent(event)
+        if not self._positioned:
+            self._positioned = True
+            # Defer one event-loop tick so the WM has finalised the frame size.
+            QTimer.singleShot(0, self._position_near_tray)
+
+    def _position_near_tray(self):
+        """Move the dialog to the screen corner nearest the system-tray icon."""
+        tray_geom = self._tray_icon.geometry() if self._tray_icon else None
+
+        # Find the screen that contains the tray icon, fall back to primary.
+        screen = None
+        if tray_geom and not tray_geom.isEmpty():
+            screen = QApplication.screenAt(tray_geom.center())
+        if screen is None:
+            screen = QApplication.primaryScreen()
+        if screen is None:
+            return
+
+        avail   = screen.availableGeometry()
+        dw      = self.frameGeometry().width()
+        dh      = self.frameGeometry().height()
+        margin  = 12
+
+        if tray_geom and not tray_geom.isEmpty():
+            # Snap to whichever corner of the available area the tray icon is in.
+            right  = tray_geom.center().x() >= avail.center().x()
+            bottom = tray_geom.center().y() >= avail.center().y()
+            x = avail.right()  - dw - margin if right  else avail.left()  + margin
+            y = avail.bottom() - dh - margin if bottom else avail.top()   + margin
+        else:
+            x = avail.right()  - dw - margin
+            y = avail.bottom() - dh - margin
+
+        self.move(x, y)
+
+    # ------------------------------------------------------------------
+    def _update_eta(self):
+        """Recompute and display the estimated remaining transfer time."""
+        if self._transfer_start_time is None or self._done:
+            self._eta_label.setText("")
+            return
+        pct = self._last_reported_pct
+        if pct >= 98 or pct < 2:
+            self._eta_label.setText("")
+            return
+        elapsed       = time.monotonic() - self._transfer_start_time
+        fraction_done = (pct - 2) / 96.0
+        # Wait for at least 5 % chunk progress and 2 s elapsed before showing
+        # an estimate — early values are noisy and misleadingly large.
+        if fraction_done < 0.05 or elapsed < 2.0:
+            return
+        remaining = max(0.0, elapsed / fraction_done - elapsed)
+        if remaining < 60:
+            self._eta_label.setText(f"~{round(remaining)} s remaining")
+        else:
+            mins = int(remaining // 60)
+            secs = int(remaining % 60)
+            self._eta_label.setText(f"~{mins}m {secs:02d}s remaining")
 
     # ------------------------------------------------------------------
     def _on_progress(self, pct: int, msg: str):
@@ -184,6 +263,15 @@ class HidFwUpDialog(QDialog):
         self._target_pct = new_target
         if not self._anim_timer.isActive():
             self._anim_timer.start()
+
+        # ETA: record when chunk transfer started and keep the latest pct.
+        self._last_reported_pct = max(self._last_reported_pct, pct)
+        if self._transfer_start_time is None and pct < 98:
+            self._transfer_start_time = time.monotonic()
+            self._eta_timer.start()
+        elif pct >= 98:
+            self._eta_timer.stop()
+            self._eta_label.setText("")
 
     def _show_pct(self, pct: float):
         """Render a percentage on the bar at 10x resolution with one decimal."""
@@ -284,6 +372,8 @@ class HidFwUpDialog(QDialog):
         """Swap the dialog into its finished state (button, close flag, result)."""
         self._done = True
         self._anim_timer.stop()
+        self._eta_timer.stop()
+        self._eta_label.setText("")
         # Leave any spinner behind so the bar shows a concrete value (a full bar
         # on success, or wherever it stalled on failure).
         self._set_busy(False)
