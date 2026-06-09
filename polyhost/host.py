@@ -63,6 +63,38 @@ def sort_by_country_abc(item):
     return item[2:]
 
 
+# Country-code → display region for the language submenu grouping.
+# Key = 2-letter ISO country code (upper-case, matching lang[2:].upper()).
+_LANG_REGION = {
+    "US": "Americas", "BR": "Americas", "MX": "Americas", "CA": "Americas",
+    "GB": "Europe",   "DE": "Europe",   "CH": "Europe",   "FR": "Europe",
+    "BE": "Europe",   "ES": "Europe",   "PT": "Europe",   "IT": "Europe",
+    "NL": "Europe",   "SE": "Europe",   "FI": "Europe",   "NO": "Europe",
+    "DK": "Europe",   "IS": "Europe",   "GR": "Europe",   "PL": "Europe",
+    "CZ": "Europe",   "SK": "Europe",   "HU": "Europe",   "RO": "Europe",
+    "BG": "Europe",   "RS": "Europe",   "HR": "Europe",   "MK": "Europe",
+    "UA": "Europe",   "RU": "Europe",   "BY": "Europe",   "LT": "Europe",
+    "LV": "Europe",   "EE": "Europe",   "TR": "Europe",
+    "SA": "Middle East & Caucasus", "IL": "Middle East & Caucasus",
+    "IR": "Middle East & Caucasus", "GE": "Middle East & Caucasus",
+    "AM": "Middle East & Caucasus", "AZ": "Middle East & Caucasus",
+    "IN": "South & Central Asia",   "PK": "South & Central Asia",
+    "NP": "South & Central Asia",   "KZ": "South & Central Asia",
+    "KR": "East & Southeast Asia",  "JP": "East & Southeast Asia",
+    "CN": "East & Southeast Asia",  "TW": "East & Southeast Asia",
+    "HK": "East & Southeast Asia",  "TH": "East & Southeast Asia",
+    "ID": "East & Southeast Asia",  "VN": "East & Southeast Asia",
+    "MN": "East & Southeast Asia",
+}
+_LANG_REGION_ORDER = [
+    "Americas",
+    "Europe",
+    "Middle East & Caucasus",
+    "South & Central Asia",
+    "East & Southeast Asia",
+]
+
+
 def get_overlay_path(filepath):
     return os.path.join(os.path.dirname(__file__), "res", "overlays", filepath)
 
@@ -567,23 +599,42 @@ class PolyHost(QApplication):
                 self.keeb_lang_menu.setTitle(title)
                 self.keeb_lang_menu.clear()
 
+            # Group by region, preserving alphabetical-by-country order within each.
             all_languages = sorted(self.keeb.get_lang_list(), key=sort_by_country_abc)
             self.log.debug("Adding %s to language menu", all_languages)
+            by_region: dict[str, list] = {}
             for lang in all_languages:
-                text = f"{lang[:2]} {lang[2:].upper()}"
-                if lang == self.current_lang:
-                    text = f"{text} {chr(0x2714)}"
-                item = self.keeb_lang_menu.addAction(text, self.change_keeb_language)
-                item.setData(lang)
-                icon = self.unicode_cache.get_icon_for(lang[2:])
-                item.setIcon(icon)
+                region = _LANG_REGION.get(lang[2:].upper(), "Other")
+                by_region.setdefault(region, []).append(lang)
+
+            for region in _LANG_REGION_ORDER + (["Other"] if "Other" in by_region else []):
+                langs = by_region.get(region)
+                if not langs:
+                    continue
+                sub = self.keeb_lang_menu.addMenu(region)
+                for lang in langs:
+                    text = f"{lang[:2]} {lang[2:].upper()}"
+                    if lang == self.current_lang:
+                        text = f"{text} {chr(0x2714)}"
+                    item = sub.addAction(text, self.change_keeb_language)
+                    item.setData(lang)
+                    item.setIcon(self.unicode_cache.get_icon_for(lang[2:]))
         else:
             self.log.warning("Enumerating PolyKybd languages failed with '%s'", msg)
+
+    def _lang_actions(self):
+        """Iterate every language QAction across all region submenus."""
+        if not self.keeb_lang_menu:
+            return
+        for region_action in self.keeb_lang_menu.actions():
+            sub = region_action.menu()
+            if sub is not None:
+                yield from sub.actions()
 
     def update_ui_on_lang_change(self, new_lang):
         if self.keeb_lang_menu:
             self.keeb_lang_menu.setTitle(f"Selected Language: {new_lang[:2]} {self.langcode_to_flag(new_lang[2:])}")
-            for action in self.keeb_lang_menu.actions():
+            for action in self._lang_actions():
                 lang = action.data()
                 text = f"{lang[:2]} {self.langcode_to_flag(lang[2:])}"
                 if lang == new_lang:
