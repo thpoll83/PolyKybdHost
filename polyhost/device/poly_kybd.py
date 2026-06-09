@@ -138,7 +138,7 @@ class PolyKybd:
             return False, msg
         try:
             match = re.search(
-                r"(?P<name>.+)\W(?P<sw>\d\.\d\.\d)\W(P(?P<proto>\d+)\W)?HW(?P<hw>\w*)", msg)
+                r"(?P<name>.+)\W(?P<sw>\d+\.\d+\.\d+)\W(P(?P<proto>\d+)\W)?HW(?P<hw>\w*)", msg)
             if match:
                 self.name = match.group("name")
                 self.sw_version = match.group("sw")
