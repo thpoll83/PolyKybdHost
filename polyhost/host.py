@@ -39,6 +39,7 @@ from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
 from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
 from polyhost.input.macos_helper import MacOSInputHelper
 from polyhost.input.win_helper import WindowsInputHelper
+from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost.settings import PolySettings
 from polyhost.device.poly_kybd import PolyKybd
@@ -196,7 +197,7 @@ def _progress_dlg(label: str, title: str) -> QProgressDialog:
 
 
 class PolyHost(QApplication):
-    def __init__(self, log_level, debug_mode):
+    def __init__(self, log_level, debug_mode, ignore_version=False):
         super().__init__(sys.argv)
         fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
         level = DEBUG_DETAILED if debug_mode>1 else log_level
@@ -237,6 +238,9 @@ class PolyHost(QApplication):
         self.kb_sw_version = None
         self.connected = False
         self.paused = False
+        self._ignore_version = ignore_version
+        if ignore_version:
+            self.log.warning("--ignore-version active: firmware version/protocol checks will be bypassed")
         self.poly_settings = PolySettings()
         self.device_settings = DeviceSettings()
         self.keeb = PolyKybd(self.device_settings, self.poly_settings)
@@ -480,6 +484,9 @@ class PolyHost(QApplication):
                 connected_now, response = self.keeb.query_current_lang()
             if connected_now != self.connected:
                 self.connected, msg = self.keeb.query_version_info()
+                if not self.connected and self._ignore_version:
+                    self.log.warning("FW version string could not be parsed (%s) — continuing via --ignore-version", msg)
+                    self.connected = True
                 if self.connected:
                     kb_version = self.keeb.get_sw_version()
                     kb_proto = self.keeb.get_protocol_version()
@@ -498,7 +505,7 @@ class PolyHost(QApplication):
                             self.connected = False
                     else:
                         expected = __version__
-                        if kb_version.startswith(expected[:3]):
+                        if kb_version and kb_version.startswith(expected[:3]):
                             compatible = True
                             if kb_version != expected:
                                 self.log.warning("Warning! Version mismatch, expected '%s', got '%s'.", expected, kb_version)
@@ -513,6 +520,14 @@ class PolyHost(QApplication):
                             self.status.setIcon(get_icon("sync_disabled.svg"))
                             self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
                             self.connected = False
+                    if not compatible and self._ignore_version:
+                        compatible = True
+                        self.connected = True
+                        self.log.warning("Version/protocol mismatch bypassed via --ignore-version: %s", msg)
+                        self.status.setIcon(get_icon("sync_problem.svg"))
+                        ver  = self.keeb.get_sw_version() or "?"
+                        name = self.keeb.get_name() or "PolyKybd"
+                        self.status.setText(f"{name} FW {ver} — version check bypassed (--ignore-version)")
                     if compatible:
                         self.add_supported_lang(self.menu)
                         if connected_now and self.poly_settings.get("unicode_send_composition_mode"):
@@ -553,23 +568,42 @@ class PolyHost(QApplication):
                 self.keeb_lang_menu.setTitle(title)
                 self.keeb_lang_menu.clear()
 
+            # Group by region, preserving alphabetical-by-country order within each.
             all_languages = sorted(self.keeb.get_lang_list(), key=sort_by_country_abc)
             self.log.debug("Adding %s to language menu", all_languages)
+            by_region: dict[str, list] = {}
             for lang in all_languages:
-                text = f"{lang[:2]} {lang[2:].upper()}"
-                if lang == self.current_lang:
-                    text = f"{text} {chr(0x2714)}"
-                item = self.keeb_lang_menu.addAction(text, self.change_keeb_language)
-                item.setData(lang)
-                icon = self.unicode_cache.get_icon_for(lang[2:])
-                item.setIcon(icon)
+                region = LANG_REGION.get(lang[2:].upper(), "Other")
+                by_region.setdefault(region, []).append(lang)
+
+            for region in LANG_REGION_ORDER + (["Other"] if "Other" in by_region else []):
+                langs = by_region.get(region)
+                if not langs:
+                    continue
+                sub = self.keeb_lang_menu.addMenu(region)
+                for lang in langs:
+                    text = f"{lang[:2]} {lang[2:].upper()}"
+                    if lang == self.current_lang:
+                        text = f"{text} {chr(0x2714)}"
+                    item = sub.addAction(text, self.change_keeb_language)
+                    item.setData(lang)
+                    item.setIcon(self.unicode_cache.get_icon_for(lang[2:]))
         else:
             self.log.warning("Enumerating PolyKybd languages failed with '%s'", msg)
+
+    def _lang_actions(self):
+        """Iterate every language QAction across all region submenus."""
+        if not self.keeb_lang_menu:
+            return
+        for region_action in self.keeb_lang_menu.actions():
+            sub = region_action.menu()
+            if sub is not None:
+                yield from sub.actions()
 
     def update_ui_on_lang_change(self, new_lang):
         if self.keeb_lang_menu:
             self.keeb_lang_menu.setTitle(f"Selected Language: {new_lang[:2]} {self.langcode_to_flag(new_lang[2:])}")
-            for action in self.keeb_lang_menu.actions():
+            for action in self._lang_actions():
                 lang = action.data()
                 text = f"{lang[:2]} {self.langcode_to_flag(lang[2:])}"
                 if lang == new_lang:
@@ -989,7 +1023,8 @@ class PolyHost(QApplication):
         if not was_paused:
             self.pause()
         try:
-            dlg = HidFwUpDialog(self.keeb.hid, bin_path, parent=None, apply_after=True)
+            dlg = HidFwUpDialog(self.keeb.hid, bin_path, parent=None, apply_after=True,
+                               tray_icon=self.tray)
             dlg.exec_()
         finally:
             if not was_paused:

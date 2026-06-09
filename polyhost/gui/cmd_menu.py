@@ -368,15 +368,18 @@ class CommandsSubMenu:
         # image right after staging (single-step "flash + apply").
         if apply_after:
             dlg_title = "Flash + Apply Firmware"
-            activation_note = (
-                "then <b>activate it</b>: both halves reboot onto the new firmware "
-                "(about 10 s, no replug needed)."
+            confirm_body = (
+                "This will transfer the new firmware to the keyboard, verify it "
+                "(CRC32), then <b>activate it</b> — both halves reboot onto the "
+                "new firmware automatically (no replug needed)."
             )
         else:
             dlg_title = "Flash Firmware"
-            activation_note = (
-                "The image is stored but <b>not activated yet</b> — the keyboard "
-                "keeps running its current firmware (activation is a separate step)."
+            confirm_body = (
+                "This will transfer and stage the new firmware on the keyboard, "
+                "then verify it (CRC32). The image is stored but "
+                "<b>not activated yet</b> — the keyboard keeps running its "
+                "current firmware until you apply it separately."
             )
 
         # Query current keyboard version for the confirmation dialog.
@@ -389,9 +392,7 @@ class CommandsSubMenu:
         else:
             head = (f"Could not query current firmware version.<br><br>"
                     f"Selected file:<br>{bin_path}<br><br>")
-        confirm_msg = (head +
-            "This will transfer and stage the new firmware on the keyboard, then "
-            "verify it (CRC32). " + activation_note + "<br><br>Continue?")
+        confirm_msg = head + confirm_body + "<br><br>Continue?"
 
         reply = QMessageBox.question(
             None, dlg_title, confirm_msg,
@@ -405,7 +406,8 @@ class CommandsSubMenu:
         # The dialog itself chains the apply step when apply_after is set, so the
         # staging progress and the apply outcome both surface in the same window.
         with self._paused_polling():
-            dlg = HidFwUpDialog(self.keeb.hid, bin_path, apply_after=apply_after)
+            dlg = HidFwUpDialog(self.keeb.hid, bin_path, apply_after=apply_after,
+                                tray_icon=getattr(self.parent, 'tray', None))
             dlg.exec_()
 
     def apply_staged_firmware_action(self):
@@ -424,10 +426,10 @@ class CommandsSubMenu:
 
         confirm_msg = (
             "<b>Apply the staged firmware?</b><br><br>"
-            "Both halves install the previously-staged image and reboot onto it "
-            "(about 10 s, no replug needed).<br><br>"
-            "If this firmware build has in-app apply disabled, the keyboard safely "
-            "reports that apply is unavailable and leaves the staged image "
+            "Both keyboard halves will install the previously-staged image and "
+            "reboot onto the new firmware automatically (no replug needed).<br><br>"
+            "If this firmware was not built with in-app apply enabled, the keyboard "
+            "safely reports apply unavailable and leaves the staged image "
             "untouched.<br><br>"
             "Continue?"
         )

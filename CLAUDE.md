@@ -84,3 +84,4 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
   - **Linux**: `.desktop` autostart entry; **macOS**: `launchd` plist.
   - `get_autostart_status()` reports which mechanism is in place (printed at startup); `remove_autostart()` tears all of them down. `--portable` removes any existing entry rather than just skipping registration.
 - **Layout dialog** (`polyhost/gui/layout_dialog/`): fully implemented — layer switching re-renders all key labels from the cached buffer; clicking a key then selecting from the browser writes immediately to the device via `set_dynamic_keycode()` and keeps the local buffer in sync. `RenderableKey` carries `matrix_index` for row/col derivation.
+
