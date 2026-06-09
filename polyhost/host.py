@@ -1016,11 +1016,16 @@ class PolyHost(QApplication):
             if self.keeb:
                 self.keeb.save_mru()
         except Exception as e:  # never let a save attempt break shutdown/sleep
-            self.log.debug("MRU save request failed: %s", e)
+            self.log.debug("MRU save request failed: %s: %s", type(e).__name__, e)
 
     def _install_sleep_listener(self):
         """On Linux, ask systemd-logind to tell us just before the system sleeps
         so we can persist the keyboard MRU. No-op (logged) where unavailable."""
+        # logind / Qt DBus is Linux-only; skip cleanly elsewhere so the QtDBus
+        # import is never attempted on platforms (or minimal Qt builds) without it.
+        if not sys.platform.startswith("linux"):
+            self.log.debug("Sleep listener is Linux-only; skipping on %s.", sys.platform)
+            return
         try:
             from PyQt5.QtDBus import QDBusConnection
             bus = QDBusConnection.systemBus()
@@ -1033,7 +1038,7 @@ class PolyHost(QApplication):
                 self._on_prepare_for_sleep)
             self.log.debug("logind PrepareForSleep listener installed: %s", ok)
         except Exception as e:
-            self.log.debug("Could not install sleep listener: %s", e)
+            self.log.debug("Could not install sleep listener: %s: %s", type(e).__name__, e)
 
     def _on_prepare_for_sleep(self, going_to_sleep):
         # PrepareForSleep(true) fires just before the system suspends.
