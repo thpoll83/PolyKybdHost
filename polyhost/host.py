@@ -196,7 +196,7 @@ def _progress_dlg(label: str, title: str) -> QProgressDialog:
 
 
 class PolyHost(QApplication):
-    def __init__(self, log_level, debug_mode):
+    def __init__(self, log_level, debug_mode, ignore_version=False):
         super().__init__(sys.argv)
         fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
         level = DEBUG_DETAILED if debug_mode>1 else log_level
@@ -237,6 +237,9 @@ class PolyHost(QApplication):
         self.kb_sw_version = None
         self.connected = False
         self.paused = False
+        self._ignore_version = ignore_version
+        if ignore_version:
+            self.log.warning("--ignore-version active: firmware version/protocol checks will be bypassed")
         self.poly_settings = PolySettings()
         self.device_settings = DeviceSettings()
         self.keeb = PolyKybd(self.device_settings, self.poly_settings)
@@ -480,6 +483,9 @@ class PolyHost(QApplication):
                 connected_now, response = self.keeb.query_current_lang()
             if connected_now != self.connected:
                 self.connected, msg = self.keeb.query_version_info()
+                if not self.connected and self._ignore_version:
+                    self.log.warning("FW version string could not be parsed (%s) — continuing via --ignore-version", msg)
+                    self.connected = True
                 if self.connected:
                     kb_version = self.keeb.get_sw_version()
                     kb_proto = self.keeb.get_protocol_version()
@@ -498,7 +504,7 @@ class PolyHost(QApplication):
                             self.connected = False
                     else:
                         expected = __version__
-                        if kb_version.startswith(expected[:3]):
+                        if kb_version and kb_version.startswith(expected[:3]):
                             compatible = True
                             if kb_version != expected:
                                 self.log.warning("Warning! Version mismatch, expected '%s', got '%s'.", expected, kb_version)
@@ -513,6 +519,14 @@ class PolyHost(QApplication):
                             self.status.setIcon(get_icon("sync_disabled.svg"))
                             self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
                             self.connected = False
+                    if not compatible and self._ignore_version:
+                        compatible = True
+                        self.connected = True
+                        self.log.warning("Version/protocol mismatch bypassed via --ignore-version: %s", msg)
+                        self.status.setIcon(get_icon("sync_problem.svg"))
+                        ver  = self.keeb.get_sw_version() or "?"
+                        name = self.keeb.get_name() or "PolyKybd"
+                        self.status.setText(f"{name} FW {ver} — version check bypassed (--ignore-version)")
                     if compatible:
                         self.add_supported_lang(self.menu)
                         if connected_now and self.poly_settings.get("unicode_send_composition_mode"):

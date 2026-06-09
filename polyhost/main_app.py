@@ -16,6 +16,8 @@ def main():
     parser.add_argument('--portable', default=False, action='store_true',
                         help='Do not add an autorun entry to your system')
     parser.add_argument('--debug', type=int, default=0, choices=[0, 1, 2], help='Set debug level: 0 (no debug), 1 (basic debug), 2 (detailed debug)')
+    parser.add_argument('--ignore-version', default=False, action='store_true',
+                        help='Skip firmware version/protocol compatibility check (use as a last resort if the keyboard cannot connect due to a version mismatch)')
     parser.add_argument('--host', help='Specify a host where the PolyKybd is physically connected to')
     parser.add_argument('--host-file', help='Path to a file containing the host IP, written by a session hook (see folder autorun_forwarder for examples). This option has higher priority than `--host`.')
     args=parser.parse_args()
@@ -40,7 +42,8 @@ def main():
         app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file)
     else:
         print("Executing PolyHost...")
-        app = PolyHost(logging.DEBUG if args.debug>0 else logging.INFO, args.debug)
+        app = PolyHost(logging.DEBUG if args.debug>0 else logging.INFO, args.debug,
+                       ignore_version=args.ignore_version)
 
     sys.exit(app.exec_())
     
