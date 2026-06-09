@@ -514,6 +514,7 @@ class PolyHost(QApplication):
                             self.status.setText(f"Incompatible version: {msg}, expected {expected}, got {kb_version}'.")
                             self.connected = False
                     if compatible:
+                        self.add_supported_lang(self.menu)
                         if connected_now and self.poly_settings.get("unicode_send_composition_mode"):
                             mode = get_input_method()
                             self.log.info("Setting unicode mode to str %s", mode)
@@ -545,7 +546,12 @@ class PolyHost(QApplication):
         result, msg = self.keeb.enumerate_lang()
         if result:
             self.current_lang = self.keeb.get_current_lang()
-            self.keeb_lang_menu = menu.addMenu(get_icon("language.svg"), f"Selected Language: {self.current_lang[:2]} {self.langcode_to_flag(self.current_lang[2:])}")
+            title = f"Selected Language: {self.current_lang[:2]} {self.langcode_to_flag(self.current_lang[2:])}"
+            if self.keeb_lang_menu is None:
+                self.keeb_lang_menu = menu.addMenu(get_icon("language.svg"), title)
+            else:
+                self.keeb_lang_menu.setTitle(title)
+                self.keeb_lang_menu.clear()
 
             all_languages = sorted(self.keeb.get_lang_list(), key=sort_by_country_abc)
             self.log.debug("Adding %s to language menu", all_languages)
