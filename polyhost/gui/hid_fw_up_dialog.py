@@ -405,4 +405,6 @@ class HidFwUpDialog(QDialog):
         if self._worker.isRunning() or (self._apply_worker is not None and self._apply_worker.isRunning()):
             event.ignore()   # Block close while flashing
         else:
+            self._anim_timer.stop()
+            self._eta_timer.stop()
             event.accept()
