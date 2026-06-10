@@ -43,7 +43,8 @@ pip install -e .
 - `polyhost/forwarder.py` — `PolyForwarder`: Forwarder mode; no device access, only TCP window reporting
 
 ### Device communication (`polyhost/device/`)
-- `poly_kybd.py` — `PolyKybd`: primary device interface; HID communication, command dispatch, state management. Uses 64-byte HID reports (protocol v0.7.0+).
+- `poly_kybd.py` — `PolyKybd`: primary device interface; HID communication, command dispatch, state management. Uses 64-byte HID reports (protocol v0.7.0+). Long-running ops (`send_overlays`, `send_overlays_mru`, `execute_commands`, `press_and_release_key`) take an optional `threading.Event` cancel token.
+- `hid_worker.py` — `HidWorker`: dedicated device thread + coalescing job queue (pure Python, no Qt). **All HID I/O runs here after `PolyHost.__init__`** — see "Threading model" below. Full contract in `docs/hid-worker-refactor.md`.
 - `hid_helper.py` — device enumeration/access via `hid` (hidapi)
 - `cmd_composer.py` / `command_ids.py` — command building and HID ID enums
 - `bit_packing.py` — binary packing helpers for HID payloads
@@ -71,6 +72,15 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 - `unicode_cache.py` — pre-computed unicode character mappings
 - `sunlight_helper.py` — adaptive brightness via solar irradiance
 - `add_to_startup.py` — OS autostart registration (see Key notes below)
+
+## Threading model (HID worker)
+
+Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main thread does **no device I/O** after `PolyHost.__init__` (the one synchronous connect/enumerate at startup is the only exception):
+
+- `HidWorker` (`polyhost/device/hid_worker.py`) owns the device. Periodic tasks on the worker: reconnect probe (1 s), console/serial reads (250 ms), daylight brightness incl. its network lookups (10 min).
+- UI code enqueues jobs (`worker.submit`); overlay sends use `coalesce_key="overlay"` so rapid app switches supersede/cancel stale transfers instead of replaying them. Dialogs use `worker.run_sync` (short bounded block; raises `RuntimeError` while suspended). Firmware flash/apply wraps the dialog in `worker.exclusive()`; tray pause maps to `suspend()`/`resume()`, and `exclusive()` restores the prior suspend state on exit.
+- Results return via `WorkerBridge.job_done` (`polyhost/gui/worker_bridge.py`), a queued Qt signal dispatched in `PolyHost._on_job_done`. **Worker-side code must never touch Qt objects** — emit through the bridge instead. `decide_reconnect_apply` (same module) is the Qt-free reconnect decision tree, unit-tested in `tests/gui/worker_bridge_test.py`.
+- Reconnect is split: `_reconnect_probe` (worker, device I/O, returns a plain snapshot dict; pops the firmware fresh-boot marker on every successful probe) and `_apply_reconnect_result` (main thread, UI + decision tree). `active_window_reporter` keeps window tracking (pywinctl) on the main thread.
 
 ## Key notes
 

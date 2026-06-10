@@ -76,9 +76,11 @@ Semantics (each is a unit-test requirement):
   schedule.
 - **`exclusive()`**: sets suspended, sets the in-flight job's cancel event,
   waits for it to finish, then yields. While suspended: `submit` still
-  queues (jobs run after resume), periodic tasks do not run, `run_sync`
-  raises `RuntimeError` (a dialog must not deadlock against a fw flash).
-  On exit: resumes.
+  queues (jobs run after resume), periodic tasks do not run (their cancel
+  events are set so a long-running one aborts), `run_sync` raises
+  `RuntimeError` (a dialog must not deadlock against a fw flash).
+  On exit: restores the prior suspend state — a worker the user had already
+  suspended (tray pause) stays suspended after a flash.
 - **Exception safety**: an exception in `fn` never kills the worker thread.
   It is logged and passed to `on_done` as the result (the exception object).
 - **`stop()`**: cancels in-flight + queued jobs, wakes the thread, joins.
@@ -144,7 +146,10 @@ Integration changes:
     `query_current_lang()`, and — only when connectivity state changed —
     `query_version_info()` + `enumerate_lang()` + the unicode-mode set.
     Returns a snapshot dict (connected_now, lang, version fields, lang list,
-    fresh_boot, …). No UI access.
+    fresh_boot, …). No UI access. `pop_fresh_boot()` is consumed on EVERY
+    successful probe (not only on connectivity changes) — the firmware can
+    reboot and come back between two probes without the host ever seeing a
+    disconnect, and the MRU cache must still be invalidated.
   - `_apply_reconnect_result(snapshot)` (main thread, via signal): the
     existing compatibility decision tree, status text/icon updates,
     `add_supported_lang` menu rebuild (from the snapshot's lang list — it

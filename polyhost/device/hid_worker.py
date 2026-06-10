@@ -229,15 +229,20 @@ class HidWorker:
         """Context manager granting exclusive device access.
 
         Suspends the worker, cancels the in-flight job and waits for it to
-        finish, yields, then resumes on exit (even on error). While suspended,
-        submit() still queues jobs for after resume.
+        finish, yields, then restores the prior suspend state on exit (even on
+        error) — a worker the user had already suspended (tray pause) stays
+        suspended after e.g. a firmware flash. While suspended, submit() still
+        queues jobs for after resume.
         """
+        with self._cond:
+            was_suspended = self._suspended
         self.suspend()
         try:
             self._wait_inflight_idle()
             yield
         finally:
-            self.resume()
+            if not was_suspended:
+                self.resume()
 
     # ------------------------------------------------------------------ #
     # worker thread

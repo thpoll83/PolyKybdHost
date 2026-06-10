@@ -298,6 +298,17 @@ class TestExclusive(WorkerTestBase):
         self.assertTrue(ran.wait(WAIT))
         self.assertTrue(job.done.wait(WAIT))
 
+    def test_exclusive_preserves_prior_suspend_state(self):
+        # A worker the user already suspended (tray pause) must stay suspended
+        # after an exclusive section (e.g. a firmware flash) exits.
+        self.worker.suspend()
+        with self.worker.exclusive():
+            pass
+        job = self.worker.submit("while_suspended", lambda c: None)
+        self.assertFalse(job.done.wait(0.2))   # still suspended: job must not run
+        self.worker.resume()
+        self.assertTrue(job.done.wait(WAIT))   # resumes normally afterwards
+
 
 class TestExceptionSafety(WorkerTestBase):
 
