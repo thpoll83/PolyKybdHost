@@ -86,3 +86,85 @@ ar=latam
 # Uzbek Latin: the xkb "uz" default is Cyrillic; the Latin variant differs from
 # plain US only by the tutuq (ʻ) on the apostrophe key - fall back to "us".
 uz=us
+
+# ── 2026-06 compat easy-win batch (62 fold/clone languages) ──────────────────
+# Spanish Latin-American locales all type on the common "latam" layout (the same
+# layout es-MX / es-AR use); none have a dedicated country xkb code.
+co=latam
+pe=latam
+ve=latam
+cl=latam
+ec=latam
+gt=latam
+do=latam
+bo=latam
+py=latam
+cr=latam
+sv=latam
+hn=latam
+pa=latam
+uy=latam
+ni=latam
+
+# Arabic states (Levant / Gulf / Maghreb) use the shared xkb "ara" layout like
+# ar-SA. dz/sd/tn/ly are Maghreb/Sudan; the rest are the Arabian peninsula+Levant.
+ae=ara
+sy=ara
+jo=ara
+lb=ara
+ye=ara
+kw=ara
+om=ara
+ps=ara
+qa=ara
+bh=ara
+dz=ara
+sd=ara
+tn=ara
+ly=ara
+
+# Francophone Africa + New Caledonia type on the French AZERTY layout ("fr").
+cd=fr
+ci=fr
+cm=fr
+sn=fr
+mg=fr
+nc=fr
+
+# Lusophone Africa types on the Portuguese layout ("pt").
+ao=pt
+mz=pt
+
+# Kyrgyz / Tajik are Cyrillic; their own xkb codes (kg/tj) are preferred, with
+# Russian as the fallback (same Cyrillic base, a few letters differ).
+kg=ru
+tj=ru
+
+# Bengali Bangladesh: the "bd" xkb layout is preferred; India Bengali ("in") is
+# an acceptable fallback (same Bengali script, InScript-family positions).
+bd=in
+
+# European folds whose own country xkb code is normally present; these are the
+# last-resort fallbacks. Austrian->German already mapped above (at=de). Bosnian
+# and Slovenian share the ex-Yugoslav Latin QWERTZ (hr); Faroese shares the
+# Danish layout. (nl-BE=be, ca-ES=es and fr-CH=ch resolve via the country code.)
+ba=hr
+si=hr
+fo=dk
+
+# Plain-US-QWERTY English (and Swahili-TZ) markets without a distinct layout.
+# Where a national xkb layout exists it is matched first by country code; "us"
+# is the fold fallback. ie prefers the UK layout, then US.
+ie=gb,us
+gh=us
+ug=us
+zm=us
+tz=us
+in=us
+pk=us
+sg=us
+lk=us
+gu=us
+sb=us
+vu=us
+fm=us
