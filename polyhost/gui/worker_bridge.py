@@ -19,6 +19,28 @@ class WorkerBridge(QObject):
     job_done = pyqtSignal(str, object)
 
 
+def decide_probe_publish(connected_now, last_applied_connected, fail_streak,
+                         threshold=3):
+    """Debounce for the reconnect probe. Returns (publish, new_streak).
+
+    The keyboard goes deaf for hundreds of ms after a large overlay transfer
+    (it is syncing the images to the slave half over UART), so a single failed
+    probe right after a send must NOT flap the connection state — doing so
+    resets the MRU cache and forces a full overlay resend, which keeps the
+    keyboard busy and makes the next probe fail too: a self-sustaining
+    wipe-and-resend oscillation. Only after ``threshold`` consecutive failures
+    is a disconnect published. Successful probes always publish and clear the
+    streak; an already-disconnected device keeps publishing (cheap no-op
+    applies, matching the old 1 s "Reconnect failed" cadence).
+    """
+    if connected_now:
+        return True, 0
+    streak = fail_streak + 1
+    if last_applied_connected and streak < threshold:
+        return False, streak
+    return True, streak
+
+
 def decide_reconnect_apply(snapshot, host_protocol, host_version, ignore_version):
     """Pure decision tree for the reconnect compatibility check.
 

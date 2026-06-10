@@ -53,7 +53,7 @@ from polyhost.services.sunlight_helper import Sunlight
 from polyhost.services.updater import UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.device.hid_worker import HidWorker
-from polyhost.gui.worker_bridge import WorkerBridge, decide_reconnect_apply
+from polyhost.gui.worker_bridge import WorkerBridge, decide_reconnect_apply, decide_probe_publish
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
@@ -432,6 +432,8 @@ class PolyHost(QApplication):
         # full re-query is needed. A bool read/write is atomic under the GIL:
         # the worker reads it, the main thread writes it in _apply_reconnect_result.
         self._last_applied_connected = self.connected
+        # Consecutive failed probes (worker-thread only) — see decide_probe_publish.
+        self._probe_fail_streak = 0
         self.bridge = WorkerBridge()
         # noinspection PyUnresolvedReferences
         self.bridge.job_done.connect(self._on_job_done)
@@ -522,14 +524,27 @@ class PolyHost(QApplication):
 
     def _reconnect_probe(self, cancel):
         """Runs on the WORKER thread. Performs all device I/O for a reconnect
-        and returns a plain dict snapshot — no Qt / PolyHost UI access.
+        and returns a plain dict snapshot (or None to publish nothing) — no
+        Qt / PolyHost UI access.
 
         Only re-queries version/lang info when the probed connectivity differs
         from the host's last applied state (read atomically under the GIL)."""
         connected_now = False
         response = ""
+        if self.keeb.hid is not None:
+            # Flush replies that arrived after their command gave up waiting
+            # (the keyboard answers late while it syncs a large overlay
+            # transfer to the slave half) — otherwise they get misread as the
+            # replies to this probe's queries.
+            self.keeb.hid.drain_replies(timeout_ms=2)
         if self.keeb.connect():
             connected_now, response = self.keeb.query_current_lang()
+
+        # Debounce: a busy keyboard misses probes without being disconnected.
+        publish, self._probe_fail_streak = decide_probe_publish(
+            connected_now, self._last_applied_connected, self._probe_fail_streak)
+        if not publish:
+            return None
 
         snapshot = {
             "connected_now": connected_now,
@@ -543,6 +558,20 @@ class PolyHost(QApplication):
             "fresh_boot": self.keeb.pop_fresh_boot() if connected_now else False,
         }
         if not snapshot["state_changed"]:
+            return snapshot
+
+        if not connected_now:
+            # Going disconnected: do NOT query version/languages — stale late
+            # replies from the failed probe can make query_version_info
+            # "succeed" and fake a fresh connect (cache reset + full overlay
+            # resend) against a device that just failed to answer GET_LANG.
+            snapshot.update({
+                "version_ok": False,
+                "version_msg": "Could not read reply from PolyKybd",
+                "kb_version": None, "kb_proto": None, "kb_sw_version": None,
+                "name": None, "hw_version": None,
+                "lang_list": None, "current_lang": None,
+            })
             return snapshot
 
         version_ok, version_msg = self.keeb.query_version_info()

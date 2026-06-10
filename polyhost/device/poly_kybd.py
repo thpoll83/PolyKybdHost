@@ -122,8 +122,11 @@ class PolyKybd:
 
     def query_id(self) -> tuple[bool, str]:
         try:
+            # Generous timeout: the keyboard answers late while it syncs a large
+            # overlay transfer to the slave half. This runs on the HID worker
+            # thread, so waiting here no longer blocks the UI.
             result, msg = self.hid.send_and_read_validate(
-                compose_cmd(Cmd.GET_ID), 50, expect(Cmd.GET_ID))
+                compose_cmd(Cmd.GET_ID), 250, expect(Cmd.GET_ID))
             msg = msg.decode().strip('\x00')
             if not result:
                 return False, msg
@@ -317,7 +320,7 @@ class PolyKybd:
 
         try:
             result, msg = self.hid.send_and_read_validate(
-                compose_cmd(Cmd.GET_LANG), 50, expect(Cmd.GET_LANG))
+                compose_cmd(Cmd.GET_LANG), 150, expect(Cmd.GET_LANG))
             if result:
                 msg = msg.decode().strip('\x00')
                 self.current_lang = msg[3:]
@@ -448,7 +451,11 @@ class PolyKybd:
         # SEND_OVERLAY_MAPPING (cmd 21) is the only overlay-related command that
         # produces a firmware ACK per chunk; drain them now so they don't
         # accumulate and confuse later send_and_read_validate calls.
-        _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock, timeout=20)
+        # 100 ms per ACK: the firmware ACKs each mapping chunk only after
+        # bridging it to the slave half, which routinely takes >20 ms. Leaving
+        # the ACKs undrained poisons the read buffer for later commands; the
+        # wait is cheap now that this runs on the HID worker thread.
+        _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock, timeout=100)
         self.log.debug("send_overlay_mapping: Drained %d of %d HID ACKs", drained, num_msgs)
 
         if lock:

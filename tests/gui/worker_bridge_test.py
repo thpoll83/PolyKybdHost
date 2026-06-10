@@ -5,7 +5,7 @@ it can be exercised without a QApplication.
 """
 import unittest
 
-from polyhost.gui.worker_bridge import decide_reconnect_apply
+from polyhost.gui.worker_bridge import decide_reconnect_apply, decide_probe_publish
 
 HOST_PROTO = 7
 HOST_VERSION = "1.2.3"
@@ -105,6 +105,39 @@ class DecideReconnectApplyTest(unittest.TestCase):
         self.assertEqual(d["icon"], "sync_problem.svg")
         self.assertIn("version check bypassed", d["text"])
         self.assertEqual(d["ignore_bypass_msg"], "bad")
+
+
+class TestDecideProbePublish(unittest.TestCase):
+    """Debounce of the reconnect probe: a keyboard that is busy syncing a
+    large overlay transfer to its slave half misses probes without being
+    disconnected — flapping the state wipes and resends the overlays in a
+    self-sustaining loop (observed in the field, 2026-06-10)."""
+
+    def test_success_publishes_and_resets_streak(self):
+        self.assertEqual(decide_probe_publish(True, True, 2), (True, 0))
+        self.assertEqual(decide_probe_publish(True, False, 5), (True, 0))
+
+    def test_transient_failures_while_connected_are_suppressed(self):
+        publish, streak = decide_probe_publish(False, True, 0)
+        self.assertEqual((publish, streak), (False, 1))
+        publish, streak = decide_probe_publish(False, True, streak)
+        self.assertEqual((publish, streak), (False, 2))
+
+    def test_threshold_consecutive_failures_publish_disconnect(self):
+        publish, streak = decide_probe_publish(False, True, 2)
+        self.assertEqual((publish, streak), (True, 3))
+
+    def test_failure_while_already_disconnected_publishes(self):
+        # Matches the old 1 s "Reconnect failed" cadence while unplugged.
+        publish, _ = decide_probe_publish(False, False, 0)
+        self.assertTrue(publish)
+
+    def test_recovery_within_streak_publishes_success(self):
+        # Two missed probes, then the device answers again: publish, streak gone.
+        _, streak = decide_probe_publish(False, True, 0)
+        _, streak = decide_probe_publish(False, True, streak)
+        publish, streak = decide_probe_publish(True, True, streak)
+        self.assertEqual((publish, streak), (True, 0))
 
 
 if __name__ == "__main__":
