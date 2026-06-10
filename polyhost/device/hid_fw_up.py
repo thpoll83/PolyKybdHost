@@ -139,6 +139,25 @@ def get_fw_version(hid) -> tuple[bool, dict]:
     return True, {'version': version, 'fw_size': fw_size, 'fw_crc': fw_crc}
 
 
+def _abort_cleanup(hid) -> None:
+    """Best-effort cleanup after a failed/cancelled transfer.
+
+    A started update leaves BOTH halves in fw_up mode: housekeeping is
+    suppressed and core1 is halted (no overlay decompression), so without
+    cleanup the keyboard appears stuck until it is replugged.  FW_UP_COMMIT's
+    fw_staging_finalize() clears fw_up_active and restarts core1 on each half
+    unconditionally — its CRC verdict only decides the reply — so sending a
+    COMMIT doubles as the abort signal.  The expected '!' (CRC mismatch) reply
+    is ignored; the partially-staged image is never marked valid (the staging
+    header is only stamped on a CRC match).
+    """
+    try:
+        pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_COMMIT])
+        hid.send_and_read(pkt, timeout=5000)
+    except Exception:   # noqa: BLE001 — cleanup must never mask the original error
+        pass
+
+
 def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
     """Full HID firmware update flow: BEGIN -> N*CHUNK -> COMMIT.
 
@@ -203,6 +222,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
 
     while not begin_ready:
         if time.monotonic() > deadline:
+            _abort_cleanup(hid)
             return False, ("FW_UP_BEGIN timed out — keyboard did not finish erasing "
                            "within 90 s.  Check the USB cable and try again.")
 
@@ -228,6 +248,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
             # Loop continues — re-poll.
         else:
             # Explicit '!' NACK — slave can't be prepared (disconnected, old fw, etc.)
+            _abort_cleanup(hid)
             hid.close_interface()
             return False, (
                 "FW_UP_BEGIN failed — the slave half could not be prepared.\n"
@@ -240,13 +261,19 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
 
     # -- FW_UP_CHUNK x N --
     # The firmware relays each chunk to the slave via the split bridge, which
-    # does up to 10 retries.  With a slow/disconnected slave each retry can
-    # take ~500 ms → up to ~5 s total before the firmware sends a NACK.
-    # Use 8 s so the NACK arrives within the window; retry only on genuine
-    # timeouts (empty reply), not on explicit NACKs.
-    _CHUNK_TIMEOUT = 8000
+    # does up to 10 back-to-back retries.  The slave's per-page flash program
+    # (~5 ms IRQ-off every 5th chunk) can occasionally outlast that whole burst,
+    # in which case the master NACKs — but it deliberately keeps both write
+    # cursors un-advanced so the host can SAFELY RE-SEND THE SAME CHUNK (see
+    # hid_fw_up.c CMD_FW_UP_CHUNK).  So a NACK is retried here too, with a
+    # growing pause that gives the slave time to drain its flash work; only
+    # repeated failure of the same chunk aborts.  Use an 8 s read window so a
+    # late NACK still lands inside it.
+    _CHUNK_TIMEOUT  = 8000
+    _CHUNK_ATTEMPTS = 8
     for i in range(total_chunks):
         if cancelled():
+            _abort_cleanup(hid)
             hid.close_interface()
             return False, "Update cancelled by user."
 
@@ -255,20 +282,28 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         padded    = raw_chunk + b'\xff' * (FW_UP_CHUNK_SIZE - len(raw_chunk))
         pkt       = bytearray([HID_POLYKYBD, CMD_FW_UP_CHUNK]) + struct.pack('<I', offset) + padded
 
-        for attempt in range(3):
+        for attempt in range(_CHUNK_ATTEMPTS):
             ok, reply = hid.send_and_read(pkt, timeout=_CHUNK_TIMEOUT)
             if ok and len(reply) >= 3 and reply[2] == ord('.'):
                 break
-            if ok and len(reply) >= 3 and reply[2] != ord('.'):
-                # Firmware sent explicit NACK — slave half likely not ready.
+            if attempt == _CHUNK_ATTEMPTS - 1:
+                reason = ("keyboard rejected the chunk" if ok and len(reply) >= 3
+                          else "no reply from the keyboard")
+                _abort_cleanup(hid)
                 hid.close_interface()
                 return False, (
-                    f"FW_UP_CHUNK failed at offset {offset} — keyboard rejected the chunk.\n"
-                    "Ensure both keyboard halves are connected and running the same firmware."
+                    f"FW_UP_CHUNK failed at offset {offset} after {_CHUNK_ATTEMPTS} attempts "
+                    f"— {reason}.\n"
+                    "Ensure both keyboard halves are connected and running the same firmware, "
+                    "then try again — the update resumes from scratch and is safe to repeat."
                 )
-            if attempt == 2:
-                hid.close_interface()
-                return False, f"FW_UP_CHUNK timed out at offset {offset} after 3 retries."
+            # NACK or timeout: back off so the slave half can finish its flash
+            # write / split-link recovery, then re-send the same offset.
+            pause = min(0.05 * (2 ** attempt), 1.0)
+            report(2 + int(96 * (i + 1) / total_chunks),
+                   f"Chunk {i + 1}/{total_chunks} — retry {attempt + 1}/{_CHUNK_ATTEMPTS - 1} "
+                   f"(waiting {int(pause * 1000)} ms)…")
+            time.sleep(pause)
 
         if i % 100 == 0 or i == total_chunks - 1:
             pct = 2 + int(96 * (i + 1) / total_chunks)

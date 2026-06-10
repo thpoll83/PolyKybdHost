@@ -20,7 +20,7 @@ import struct
 import tempfile
 import os
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from polyhost.device.hid_fw_up import (
     get_fw_version,
@@ -641,35 +641,65 @@ class TestFlashFirmwareChunks(unittest.TestCase):
         finally:
             os.unlink(path)
 
-    def test_chunk_nack_fails_immediately_no_retry(self):
-        # Explicit NACK (slave not ready) must not be retried — fail on first attempt.
+    def test_chunk_nack_retried_then_succeeds(self):
+        # Explicit NACK (slave missed the split RPC) is retried — the firmware
+        # keeps both write cursors un-advanced so re-sending the same offset is
+        # safe (see hid_fw_up.c CMD_FW_UP_CHUNK).
         fw   = _make_polykybd_fw()
         path = _write_bin(fw)
+        n    = _chunks(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_FW_UP_BEGIN))] +
-                [(True, _nack_reply(CMD_FW_UP_CHUNK))]   # single NACK → immediate fail
-            )
-            ok, msg = flash_firmware(hid, path)
-            self.assertFalse(ok)
-            self.assertIn('CHUNK', msg)
-            self.assertEqual(hid.send_and_read.call_count, 2)  # 1 BEGIN + 1 attempt only
+            with patch('polyhost.device.hid_fw_up.time.sleep'):
+                hid = _make_hid(
+                    [(True, _ack_reply(CMD_FW_UP_BEGIN)),
+                     (True, _nack_reply(CMD_FW_UP_CHUNK)),    # NACK → retry
+                     (True, _ack_reply(CMD_FW_UP_CHUNK))] +   # retry succeeds
+                    [(True, _ack_reply(CMD_FW_UP_CHUNK))] * (n - 1) +
+                    [(True, _ack_reply(CMD_FW_UP_COMMIT))]
+                )
+                ok, _ = flash_firmware(hid, path)
+                self.assertTrue(ok)
         finally:
             os.unlink(path)
 
-    def test_chunk_timeout_retried_3_times_then_fails(self):
-        # Timeout (ok=False / empty reply) should be retried up to 3 times.
+    def test_chunk_nack_fails_after_8_attempts_with_cleanup(self):
+        # A chunk NACK'd on all 8 attempts aborts — and a cleanup COMMIT is sent
+        # so both halves leave fw_up mode (core1 restart, housekeeping resumes).
         fw   = _make_polykybd_fw()
         path = _write_bin(fw)
         try:
-            hid = _make_hid(
-                [(True, _ack_reply(CMD_FW_UP_BEGIN))] +
-                [(False, bytearray(64))] * 3            # 3 timeouts → fail
-            )
-            ok, msg = flash_firmware(hid, path)
-            self.assertFalse(ok)
-            self.assertIn('CHUNK', msg)
-            self.assertEqual(hid.send_and_read.call_count, 4)  # 1 BEGIN + 3 attempts
+            with patch('polyhost.device.hid_fw_up.time.sleep'):
+                hid = _make_hid(
+                    [(True, _ack_reply(CMD_FW_UP_BEGIN))] +
+                    [(True, _nack_reply(CMD_FW_UP_CHUNK))] * 8 +     # all attempts NACK
+                    [(True, _nack_reply(CMD_FW_UP_COMMIT))]          # cleanup commit
+                )
+                ok, msg = flash_firmware(hid, path)
+                self.assertFalse(ok)
+                self.assertIn('CHUNK', msg)
+                # 1 BEGIN + 8 chunk attempts + 1 cleanup COMMIT
+                self.assertEqual(hid.send_and_read.call_count, 10)
+                last_pkt = hid.send_and_read.call_args_list[-1][0][0]
+                self.assertEqual(last_pkt[1], CMD_FW_UP_COMMIT)
+        finally:
+            os.unlink(path)
+
+    def test_chunk_timeout_retried_8_times_then_fails(self):
+        # Timeout (ok=False / empty reply) is retried up to 8 attempts total.
+        fw   = _make_polykybd_fw()
+        path = _write_bin(fw)
+        try:
+            with patch('polyhost.device.hid_fw_up.time.sleep'):
+                hid = _make_hid(
+                    [(True, _ack_reply(CMD_FW_UP_BEGIN))] +
+                    [(False, bytearray(64))] * 8 +                   # 8 timeouts → fail
+                    [(True, _nack_reply(CMD_FW_UP_COMMIT))]          # cleanup commit
+                )
+                ok, msg = flash_firmware(hid, path)
+                self.assertFalse(ok)
+                self.assertIn('CHUNK', msg)
+                # 1 BEGIN + 8 attempts + 1 cleanup COMMIT
+                self.assertEqual(hid.send_and_read.call_count, 10)
         finally:
             os.unlink(path)
 
@@ -775,7 +805,8 @@ class TestFlashFirmwareCancellation(unittest.TestCase):
             ok, msg = flash_firmware(hid, path, cancel_flag=cancel_flag)
             self.assertFalse(ok)
             self.assertIn('cancel', msg.lower())
-            self.assertEqual(calls[0], 1)  # only BEGIN was sent
+            # BEGIN + the cleanup COMMIT that takes both halves out of fw_up mode
+            self.assertEqual(calls[0], 2)
         finally:
             os.unlink(path)
 
@@ -799,7 +830,8 @@ class TestFlashFirmwareCancellation(unittest.TestCase):
             ok, msg = flash_firmware(hid, path, cancel_flag=cancel_flag)
             self.assertFalse(ok)
             self.assertIn('cancel', msg.lower())
-            self.assertEqual(calls[0], 4)  # BEGIN + 3 chunks
+            # BEGIN + 3 chunks + the cleanup COMMIT
+            self.assertEqual(calls[0], 5)
         finally:
             os.unlink(path)
 
