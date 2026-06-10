@@ -2,6 +2,7 @@ import array
 import logging
 import math
 import re
+import threading
 import time
 from typing import Any
 
@@ -244,13 +245,18 @@ class PolyKybd:
         self.log.info("Setting Display Brightness to %d...", brightness)
         return self.hid.send_and_read_validate(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
 
-    def press_and_release_key(self, keycode: int, duration: int) -> tuple[bool, Any]:
+    def press_and_release_key(self, keycode: int, duration: int,
+                              cancel: threading.Event | None = None) -> tuple[bool, Any]:
         self.log.info("Pressing 0x%2x for %f sec...", keycode, duration)
         result, reply = self.hid.send(compose_cmd(
             Cmd.KEYPRESS, keycode >> 8, keycode & 255, 0))
         if result:
-            # for now, it is fine to block this thread
-            time.sleep(duration)
+            # A cancel cuts the hold short, but the release MUST still go out —
+            # bailing here would leave the key stuck down on the device.
+            if cancel is not None:
+                cancel.wait(duration)
+            else:
+                time.sleep(duration)
             return self.hid.send_and_read_validate(compose_cmd(Cmd.KEYPRESS, keycode >> 8, keycode & 255, 1))
         else:
             return result, reply
@@ -449,14 +455,21 @@ class PolyKybd:
             lock.release()
         return True, "Mapping sent"
 
-    def send_overlays(self, filenames: list) -> bool:
+    def send_overlays(self, filenames: list, cancel: threading.Event | None = None) -> bool:
         overlay_counter = 0
         hid_msg_counter = 0
         hid_msg_counter_old = 0
         enabled = False
-        
+
         MAX_MSG_BEFORE_DELAY = self.poly_settings.get("max_hid_message_before_delay")
         DELAY_TIME_AFTER_MAX_MSG = self.poly_settings.get("delay_time_after_max_hid_messages")
+
+        # Cancellation is checked between keycodes (never mid-keycap), so a
+        # superseded send aborts promptly while leaving every keycap atomic on
+        # the device. On abort we return False without enable_overlays() — the
+        # superseding send repaints everything anyway.
+        if cancel is not None and cancel.is_set():
+            return False
 
         all_keys = ""
         num_keys = 0
@@ -491,6 +504,9 @@ class PolyKybd:
                             self.log.debug_detailed("Sending ESC first")
 
                     for keycode in overlay_map:
+                        if cancel is not None and cancel.is_set():
+                            self.log.debug_detailed("send_overlays cancelled")
+                            return False
                         hid_msg_counter += self.send_smallest_overlay(
                             keycode, modifier, overlay_map)
 
@@ -498,10 +514,15 @@ class PolyKybd:
                         "Overlays for keycodes %s have been sent", overlay_map.keys())
                     overlay_counter += 1
                     self.get_console_output(False)
-                    
+
                     if hid_msg_counter_old < hid_msg_counter-MAX_MSG_BEFORE_DELAY:
                         hid_msg_counter_old = hid_msg_counter
-                        time.sleep(DELAY_TIME_AFTER_MAX_MSG)
+                        if cancel is not None:
+                            if cancel.wait(DELAY_TIME_AFTER_MAX_MSG):
+                                self.log.debug_detailed("send_overlays cancelled during rate-limit pause")
+                                return False
+                        else:
+                            time.sleep(DELAY_TIME_AFTER_MAX_MSG)
                         self.log.debug_detailed("Waiting before sending more overlays")
 
         self.log.info("%d overlays sent, %d hid messages for %d keys:%s",
@@ -610,7 +631,8 @@ class PolyKybd:
             lock.release()
         return overlay.compressed_msgs
 
-    def send_overlays_mru(self, filenames: list, cache: OverlayMRUCache) -> bool:
+    def send_overlays_mru(self, filenames: list, cache: OverlayMRUCache,
+                          cancel: threading.Event | None = None) -> bool:
         """
         Send only overlay images not already in the keyboard's MRU pool, then
         update the display-position → pool-slot mapping in one command.
@@ -626,6 +648,12 @@ class PolyKybd:
 
         self.prepare_for_mru_send()
 
+        # On cancel we bail before send_overlay_mapping / record_transferred_mapping
+        # / enable_overlays. The firmware was reset to identity by
+        # prepare_for_mru_send(), so an aborted send leaves overlays disabled —
+        # safe, because the superseding send immediately follows. Slots already
+        # allocated via get_or_allocate for images that WERE sent stay in the
+        # cache; only the mapping commit is skipped.
         with cache.batch():
             for filename in filenames:
                 self.log.info("Send Overlay MRU '%s'...", filename)
@@ -640,6 +668,9 @@ class PolyKybd:
                         continue
 
                     for keycode, overlay_data in overlay_map.items():
+                        if cancel is not None and cancel.is_set():
+                            self.log.debug_detailed("send_overlays_mru cancelled")
+                            return False
                         content_key = (os.path.basename(filename), modifier.value, keycode)
                         pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
 
@@ -659,7 +690,12 @@ class PolyKybd:
 
                         if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
                             hid_msg_counter_old = hid_msg_counter
-                            time.sleep(DELAY_TIME_AFTER_MAX_MSG)
+                            if cancel is not None:
+                                if cancel.wait(DELAY_TIME_AFTER_MAX_MSG):
+                                    self.log.debug_detailed("send_overlays_mru cancelled during rate-limit pause")
+                                    return False
+                            else:
+                                time.sleep(DELAY_TIME_AFTER_MAX_MSG)
 
         self.log.info("MRU: %d HID image messages, %d display positions mapped",
                       hid_msg_counter, len(display_to_pool))
@@ -672,16 +708,26 @@ class PolyKybd:
         self.enable_overlays()
         return True
 
-    def execute_commands(self, command_list: list) -> None:
+    def execute_commands(self, command_list: list,
+                         cancel: threading.Event | None = None) -> None:
         """Execute a list of commands"""
         for cmd_str in command_list:
+            # Checked between commands so a superseded run stops promptly; the
+            # cancel also interrupts an in-progress "wait" via cancel.wait().
+            if cancel is not None and cancel.is_set():
+                self.log.debug_detailed("execute_commands cancelled")
+                return
             cmd_str = cmd_str.strip()
             end = cmd_str.find(" ")
             cmd = cmd_str[:end] if end != -1 else cmd_str
             try:
                 match cmd:
                     case "wait":
-                        time.sleep(float(cmd_str[end + 1:]))
+                        duration = float(cmd_str[end + 1:])
+                        if cancel is not None:
+                            cancel.wait(duration)
+                        else:
+                            time.sleep(duration)
                     case "press":
                         self.press_key(int(cmd_str[end + 1:], 0))
                     case "release":
@@ -692,7 +738,12 @@ class PolyKybd:
                         cmd = params[:end] if end != -1 else params
                         match cmd:
                             case "send":
-                                self.send_overlays([params[end + 1:]])
+                                # Forward cancel only when present so the None
+                                # path stays call-compatible with existing tests.
+                                if cancel is not None:
+                                    self.send_overlays([params[end + 1:]], cancel)
+                                else:
+                                    self.send_overlays([params[end + 1:]])
                             case "reset":
                                 self.reset_overlays()
                             case "reset-usage":
