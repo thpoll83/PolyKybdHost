@@ -49,3 +49,40 @@ id=us
 # keyboard onto "us" - the keycaps carry no Han glyphs, matching real mainland
 # Pinyin keyboards. (Shape-based Cangjie/Bopomofo live on zh-HK / zh-TW instead.)
 cn=us
+
+# Plain-US-QWERTY markets (2026-06 world batch): English locales typed on a US
+# board (en-AU/en-NZ/en-ZA/en-CA/en-PG), plain-Latin languages with no extra
+# letters (fj-FJ, tl-PH Filipino, sw-KE Swahili, ms-MY Malay) and IME-composed
+# scripts on a US base (am-ET Amharic phonetic input). The xkb country layouts,
+# where they exist (au/nz/za/ke/ng/ph/et), are preferred automatically because
+# set_language() matches the country code first - these folds are the fallback
+# when only "us" is installed.
+au=us
+nz=us
+fj=us
+ws=us
+ph=us
+za=us
+ke=us
+et=us
+ng=us
+my=us
+ca=us
+pg=us
+
+# French Polynesia (ty-PF): Tahitian is typed on the French AZERTY layout.
+pf=fr
+
+# Maghreb / Mashreq Arabic locales (ar-EG / ar-MA / ar-IQ) use the common xkb
+# "ara" Arabic layout like ar-SA (Morocco's azerty variant keeps the same
+# Arabic letter positions).
+eg=ara
+ma=ara
+iq=ara
+
+# Argentina (es-AR) types on the common Latin-American layout, xkb "latam".
+ar=latam
+
+# Uzbek Latin: the xkb "uz" default is Cyrillic; the Latin variant differs from
+# plain US only by the tutuq (ʻ) on the apostrophe key - fall back to "us".
+uz=us
