@@ -41,8 +41,9 @@ That's the whole list — the decoupling is smaller than it looks.
             │  in-process observer (M1) │  JSON-RPC over local socket
             ▼                           ▼
 ┌──────────────────────────────────────────────────────┐
-│  Control server: JSON-RPC 2.0, newline-delimited     │
-│  (UDS on Linux/macOS, localhost TCP+token on Windows)│
+│  Control server: JSON-RPC 2.0-shaped, framed JSON    │
+│  (stdlib multiprocessing.connection: UDS / named pipe│
+│   + authkey HMAC)                                    │
 ├──────────────────────────────────────────────────────┤
 │  PolyCore (Qt-free facade)                           │
 │   commands in → events out (observer callbacks)      │
@@ -74,27 +75,48 @@ A plain-Python object that absorbs the *operational* half of today's
 `PolyHost` shrinks to: tray icon + menus + dialogs + a Qt adapter that turns
 core events into queued signals. Nothing else.
 
-### 2.2 Control server — protocol choice
+### 2.2 Control server — protocol & library choice
 
-**JSON-RPC 2.0, newline-delimited JSON, over a local socket.**
+**JSON-RPC 2.0-shaped messages over stdlib `multiprocessing.connection`.**
 
-- Socket location via `platformdirs` (already a dependency), not raw
-  `$XDG_RUNTIME_DIR`: Linux `user_runtime_dir` (falls back sanely), macOS
-  `~/Library/Application Support/PolyHost/` — both Unix domain sockets,
-  mode 0600. Windows: `127.0.0.1` TCP with a random token written 0600 to
-  the config dir (AF_UNIX on Windows exists but is still unreliable across
-  Python/Win versions; named pipes would need pywin32 — rejected).
+The transport — the genuinely fiddly cross-platform part — comes entirely
+from the standard library: `multiprocessing.connection.Listener/Client`
+provide Unix domain sockets (Linux/macOS), **real Windows named pipes**
+(`AF_PIPE`, no pywin32), built-in **HMAC challenge authentication**
+(`authkey`; Python 3.12+ negotiates a stronger digest than the legacy MD5),
+and length-prefixed **message framing** (`send_bytes`/`recv_bytes`). Zero
+new dependencies, maintained with CPython itself — which also serves the
+"stays fully update-able" constraint.
+
+- Endpoint location via `platformdirs` (already a dependency): Linux
+  `user_runtime_dir`, macOS `~/Library/Application Support/PolyHost/` —
+  socket files mode 0600. Windows: named pipe `\\.\pipe\polykybd-<user>`.
+  The `authkey` secret lives in a 0600 file in the config dir on all
+  platforms (defense in depth on POSIX, the primary gate on Windows).
+- **Never use the pickling `send()`/`recv()`** — only
+  `send_bytes`/`recv_bytes` carrying UTF-8 JSON, keeping the protocol
+  language-agnostic and safe. The dispatch layer is JSON-RPC 2.0-shaped
+  (id/method/params/result/error) but hand-rolled (~100 lines for our ~20
+  methods).
 - Requests/responses per JSON-RPC; **server-push events as JSON-RPC
   notifications** on the same connection after the client sends
-  `events.subscribe`.
+  `events.subscribe`. One reader thread per connection server-side; writes
+  serialized through a per-connection lock. No asyncio conversion of the
+  codebase.
 - First exchange is `hello` carrying protocol version + host version; clients
   refuse on major mismatch (same philosophy as the firmware protocol gate).
-- Rejected alternatives: gRPC (heavy dependency for a tray app), D-Bus
-  (not portable to Windows/macOS), REST (no push — the tray icon needs
-  events), raw pickle (unsafe).
-- Implementation: stdlib only (`socketserver`/`selectors` + `json`), one
-  reader thread per connection, writes serialized through a lock. No asyncio
-  conversion of the codebase.
+
+Library evaluation (2026-06):
+
+| Candidate | Verdict |
+|-----------|---------|
+| stdlib `multiprocessing.connection` | **Chosen** — transport/auth/framing for free, no deps |
+| RPyC 6.x | Closest full framework: threaded, bidirectional (events = callbacks), maintained. Rejected because the API becomes *implicit* (transparent object proxies — no clean `hello` version gate, harder protocol evolution across self-updates) and clients must be Python. Revisit if the explicit protocol becomes a burden. |
+| `jsonrpcserver`/`jsonrpcclient` | Protocol-only helpers; dormant (last release 2022). Hand dispatch is less code than integrating them. |
+| Pyro5 | Maintained but server→client callbacks need a client-side daemon (clunky for tray events); TCP-only on Windows. |
+| zerorpc | Depends on gevent — a hard conflict with PyQt and modern CPython; effectively legacy. |
+| gRPC / FastAPI+WebSocket | Heavy dependency/codegen or an asyncio web stack for a tray app; rejected (gRPC also per original plan). |
+| D-Bus / REST / raw pickle | Rejected as before (portability / no push / unsafe). |
 
 ### 2.3 API surface v1 (each maps 1:1 to an existing call)
 
@@ -192,17 +214,18 @@ Hard requirement: every phase works on all three OSes. Per-component matrix:
 
 | Component | Linux | Windows | macOS |
 |-----------|-------|---------|-------|
-| Control transport | UDS (`platformdirs` runtime dir) | localhost TCP + token file | UDS (app-support dir) |
+| Control transport | UDS via `multiprocessing.connection` (`platformdirs` runtime dir) | named pipe (`AF_PIPE`) + authkey, no pywin32 | UDS (app-support dir) |
 | Image decode (Pillow) | wheels everywhere — strictly *more* portable than the Qt decode (no Qt platform plugin needed headless) | ✓ | ✓ |
 | Window tracking | pywinctl/X11 (needs display; lazy import, §5.4) | pywinctl ✓ | pywinctl (needs Accessibility permission — unchanged from today) |
 | Sleep → MRU save | logind via `jeepney` (replaces QtDBus; Linux-only **as today** — the current listener is already guarded by `sys.platform`) | none today; firmware-side USB suspend covers it. Optional later: `WM_POWERBROADCAST` listener in the GUI client forwarding `mru.save` | none today; USB suspend covers it |
 | Autostart | unchanged through M1/M2 — autostart keeps launching the same entry point it does today. **Windows: do NOT touch the venv-activating `.bat`/`.vbs` wrapper chain** (`add_to_startup.py`, see CLAUDE.md — regressed once before). Only M3 (daemon-by-default) would revisit autostart, which is one more reason it's deferred. | | |
 | `polyctl` | console-script entry point; stdlib sockets on all three | ✓ (`polyctl.exe` shim from the same venv) | ✓ |
 
-CI-less repo: the loopback/RPC tests must be platform-conditional where
-transport differs (UDS vs TCP+token paths both get tests; the TCP+token path
-is testable on any OS, so Windows behavior is covered even when developing on
-Linux).
+CI-less repo: the loopback/RPC tests run against whatever address family the
+host OS provides (`multiprocessing.connection` picks UDS on POSIX, named
+pipes on Windows behind the same `Listener`/`Client` API), so the transport
+code under test is identical on every platform; the authkey handshake and
+framing are exercised everywhere.
 
 ## 5c. Updatability — the app must stay fully self-updating
 
@@ -251,7 +274,7 @@ restart; Windows locked-DLL relay restart for `hidapi.dll`; firmware download
   (extends `tests/gui/worker_bridge_test.py`'s pure-logic approach).
 - **RPC loopback tests**: start the server on a temp socket in-process,
   speak raw JSON over a client socket — request/response, event push,
-  malformed input, version handshake, auth token (Windows path). No Qt.
+  malformed input, version handshake, authkey rejection on mismatch. No Qt.
 - **Import-guard test**: poison `PyQt5` in `sys.modules`
   (`sys.modules['PyQt5'] = None`) and import `polyhost.core`,
   `polyhost.server`, `polyhost.cli` — proves the headless tree never touches
