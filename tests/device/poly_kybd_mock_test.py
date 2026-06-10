@@ -172,7 +172,9 @@ class TestPolyKybdMockLanguage(unittest.TestCase):
         self.assertEqual(self.mock.get_current_lang(), "enUS")
 
 
-# All 143 languages from hid_com.c case 8 (cog-generated, 10 HID packets)
+# The full 143-language firmware list (the cog-generated `languages` table that
+# hid_com.c now emits via the packed GET_LANG_LIST_PACKED, cmd 27). Grouped below
+# in the original 15-per-row layout purely for readability.
 _ALL_FIRMWARE_LANGS = (
     "enUSdeDEfrFResESptPTitITtrTRkoKRjaJParSAelGRukUAruRUbeBYkkKZ"  # packet 1
     "bgBGplPLroROzhCNnlNLheILsvSEfiFInnNOdaDKhuHUcsCZhrHRskSKltLT"  # packet 2
