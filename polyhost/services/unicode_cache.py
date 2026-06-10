@@ -41,7 +41,10 @@ class UnicodeCache:
             pixmap = pixmap.scaled(self.size, self.size)
             pixmap.save(str(filename))
             print(f"[UnicodeCache] Cached: {filename.name}")
-        except Exception as e:
+        except (requests.RequestException, OSError) as e:
+            # Only expected network/filesystem failures go into the negative
+            # cache — anything else is a bug that should surface, not become a
+            # silent permanent session failure.
             self._failed_downloads.add(codepoints)
             print(f"[UnicodeCache] Failed to fetch icon {codepoints}: {e}")
 

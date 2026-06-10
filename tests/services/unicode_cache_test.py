@@ -68,7 +68,7 @@ class TestDownloadFailureHandling(unittest.TestCase):
         get.side_effect = ConnectionError("offline")
         cache = self._make_cache()
         cache.get_icon_for("ZZ")   # not shipped in res/flags -> download path
-        self.assertIn("timeout", get.call_args.kwargs)
+        self.assertEqual(get.call_args.kwargs.get("timeout"), 5)
 
     @mock.patch("polyhost.services.unicode_cache.requests.get")
     def test_failed_download_not_retried_in_same_session(self, get):

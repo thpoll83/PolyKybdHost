@@ -1037,7 +1037,7 @@ class TestApplyStagedFirmware(unittest.TestCase):
         # USB torn down right after accepting the command — empty reply,
         # proceed to the reconnect wait.
         hid = _make_hid([(True, bytearray())], reconnect=True)
-        ok, msg = apply_staged_firmware(hid)
+        ok, _ = apply_staged_firmware(hid)
         self.assertTrue(ok)
         hid.wait_for_reconnect.assert_called_once()
 
@@ -1045,7 +1045,7 @@ class TestApplyStagedFirmware(unittest.TestCase):
         # A failed send (device already re-enumerating) is not a NACK —
         # the apply may well be in progress, so wait for the device.
         hid = _make_hid([(False, bytearray())], reconnect=True)
-        ok, msg = apply_staged_firmware(hid)
+        ok, _ = apply_staged_firmware(hid)
         self.assertTrue(ok)
         hid.wait_for_reconnect.assert_called_once()
 

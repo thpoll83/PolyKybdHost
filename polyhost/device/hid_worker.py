@@ -266,8 +266,10 @@ class HidWorker:
                 with self._cond:
                     self._inflight = None
                     self._cond.notify_all()
-            else:
-                self._run_due_periodics()
+            # Run due periodics between jobs as well as when idle — checking
+            # only on idle would starve them whenever the queue stays busy
+            # (e.g. a burst of overlay sends deferring the reconnect probe).
+            self._run_due_periodics()
 
     def _next_wait_locked(self):
         """Seconds to wait before the next wakeup. Caller holds _cond."""

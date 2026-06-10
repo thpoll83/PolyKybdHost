@@ -91,7 +91,7 @@ def decide_reconnect_apply(snapshot, host_protocol, host_version, ignore_version
                 out["text"] = f"PolyKybd {name} {hw_version} ({kb_version})"
         else:
             out["icon"] = "sync_disabled.svg"
-            out["text"] = f"Incompatible version: {msg}, expected {expected}, got {kb_version}'."
+            out["text"] = f"Incompatible version: {msg}, expected {expected}, got {kb_version}."
             connected = False
 
     if not compatible and ignore_version:

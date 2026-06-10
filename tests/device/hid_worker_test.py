@@ -215,16 +215,37 @@ class TestPeriodic(WorkerTestBase):
 
         self.worker.suspend()
         before = len(runs)
-        # While suspended, submit a marker job — it should NOT run (queued),
-        # proving the worker is idle and periodics are skipped. We instead
-        # assert no growth over a bounded number of poll cycles by resuming
-        # and confirming runs increase again.
-        # Give the worker time to attempt periodics by waiting on a fresh event.
         ran.clear()
+        # Bounded wait spanning several 0.02 s intervals: the periodic must
+        # NOT fire while suspended.
+        self.assertFalse(ran.wait(0.15), "periodic fired while suspended")
+        self.assertEqual(len(runs), before)
         # Resume and confirm periodics fire again.
         self.worker.resume()
         self.assertTrue(ran.wait(WAIT))
         self.assertGreater(len(runs), before)
+
+    def test_periodic_runs_between_queued_jobs(self):
+        # A busy queue must not starve periodics: they run between jobs, not
+        # only when the worker goes idle. order is appended exclusively on the
+        # worker thread (periodics and jobs alike), so it needs no lock.
+        order = []
+        done = threading.Event()
+        self.worker.add_periodic("tick", 0.01, lambda c: order.append("tick"))
+
+        def busy_job(cancel):
+            order.append("job")
+            cancel.wait(0.03)   # each job outlasts the periodic interval
+
+        for _ in range(4):
+            self.worker.submit("busy", busy_job)
+        self.worker.submit("last", lambda c: done.set())
+        self.assertTrue(done.wait(WAIT))
+        # The queue never drained during the burst, so a tick before the
+        # final busy job proves periodics run between jobs, not only on idle.
+        last_job_idx = max(i for i, e in enumerate(order) if e == "job")
+        self.assertIn("tick", order[:last_job_idx],
+                      "periodic starved while the queue stayed busy")
 
     def test_periodic_cancel_event_set_on_suspend_cleared_on_resume(self):
         seen = []

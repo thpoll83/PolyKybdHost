@@ -414,7 +414,11 @@ class PolyKybdMock:
             try:
                 match cmd:
                     case "wait":
-                        time.sleep(float(cmd_str[end + 1:]))
+                        duration = float(cmd_str[end + 1:])
+                        if cancel is not None:
+                            cancel.wait(duration)
+                        else:
+                            time.sleep(duration)
                     case "press":
                         self.press_key(int(cmd_str[end + 1:], 0))
                     case "release":
@@ -425,7 +429,10 @@ class PolyKybdMock:
                         cmd = params[:end] if end != -1 else params
                         match cmd:
                             case "send":
-                                self.send_overlays([params[end + 1:]])
+                                if cancel is not None:
+                                    self.send_overlays([params[end + 1:]], cancel)
+                                else:
+                                    self.send_overlays([params[end + 1:]])
                             case "reset":
                                 self.reset_overlays()
                             case "reset-usage":
