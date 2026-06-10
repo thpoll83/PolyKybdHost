@@ -172,12 +172,14 @@ class TestPolyKybdMockLanguage(unittest.TestCase):
         self.assertEqual(self.mock.get_current_lang(), "enUS")
 
 
-# All 58 languages from hid_com.c case 8 (cog-generated, 4 HID packets)
+# All 81 languages from hid_com.c case 8 (cog-generated, 6 HID packets)
 _ALL_FIRMWARE_LANGS = (
     "enUSdeDEfrFResESptPTitITtrTRkoKRjaJParSAelGRukUAruRUbeBYkkKZ"  # packet 1
     "bgBGplPLroROzhCNnlNLheILsvSEfiFInnNOdaDKhuHUcsCZhrHRskSKltLT"  # packet 2
     "lvLVetEEptBRsrRSmkMKfaIRhiINmrINneNPmnMNurPKenGBesMXdeCHfrBE"  # packet 3
-    "frCAthTHbnINteINtaINzhTWkaGEhyAMidIDazAZisISviVNzhHK"          # packet 4
+    "frCAthTHbnINteINtaINzhTWkaGEhyAMidIDazAZisISviVNzhHKenAUenNZ"  # packet 4
+    "miNZsmWSfjFJtlPHhwUSenZAafZAarEGswKEamETyoNGenNGarMAarIQkuIQ"  # packet 5
+    "msMYuzUZenCAesARenPGtyPF"                                      # packet 6
 )
 
 _ALL_FIRMWARE_LANG_CODES = [
@@ -192,12 +194,17 @@ _ALL_FIRMWARE_LANG_CODES = [
     "neNP", "mnMN", "urPK", "enGB", "esMX", "deCH", "frBE",
     # packet 4
     "frCA", "thTH", "bnIN", "teIN", "taIN", "zhTW", "kaGE", "hyAM",
-    "idID", "azAZ", "isIS", "viVN", "zhHK",
+    "idID", "azAZ", "isIS", "viVN", "zhHK", "enAU", "enNZ",
+    # packet 5
+    "miNZ", "smWS", "fjFJ", "tlPH", "hwUS", "enZA", "afZA", "arEG",
+    "swKE", "amET", "yoNG", "enNG", "arMA", "arIQ", "kuIQ",
+    # packet 6
+    "msMY", "uzUZ", "enCA", "esAR", "enPG", "tyPF",
 ]
 
 
 class TestPolyKybdMockAllFirmwareLanguages(unittest.TestCase):
-    """Mock initialised with the full 58-language set from the firmware."""
+    """Mock initialised with the full 81-language set from the firmware."""
 
     def setUp(self):
         self.mock = make_mock(lang="enUS", langs=_ALL_FIRMWARE_LANGS)
@@ -207,8 +214,8 @@ class TestPolyKybdMockAllFirmwareLanguages(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(langs, _ALL_FIRMWARE_LANGS)
 
-    def test_lang_list_has_58_entries(self):
-        self.assertEqual(len(self.mock.get_lang_list()), 58)
+    def test_lang_list_has_81_entries(self):
+        self.assertEqual(len(self.mock.get_lang_list()), 81)
 
     def test_all_language_codes_present(self):
         langs = self.mock.get_lang_list()
