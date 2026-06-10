@@ -9,7 +9,7 @@ import time
 import webbrowser
 import yaml
 
-from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtCore import QTimer, Qt, pyqtSlot
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import (
     QApplication,
@@ -1239,6 +1239,10 @@ class PolyHost(QApplication):
         except Exception as e:
             self.log.debug("Could not install sleep listener: %s: %s", type(e).__name__, e)
 
+    # QtDBus only accepts pyqtSlot-decorated methods as signal targets — without
+    # the decorator bus.connect() raises TypeError and the listener never
+    # installs (seen in the field: MRU was not saved before system sleep).
+    @pyqtSlot(bool)
     def _on_prepare_for_sleep(self, going_to_sleep):
         # PrepareForSleep(true) fires just before the system suspends.
         if going_to_sleep:
