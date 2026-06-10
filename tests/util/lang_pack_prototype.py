@@ -12,7 +12,13 @@ round-trips the 5-bit codec to prove it is lossless.
 Run:  PolyKybdHost/.venv/bin/python tests/util/lang_pack_prototype.py
 """
 
+import os
+import sys
+
 from polyhost.util.rle_util import rle_compress
+
+sys.path.insert(0, os.path.dirname(__file__))
+import iso_lang_country as iso  # frozen ISO 639-1 / 3166-1 index tables
 
 # The full 81-code list, exactly as firmware hid_com.c case 0x08 emits it.
 LANGS = (
@@ -88,21 +94,40 @@ def unpack5(buf: bytearray) -> list[str]:
     return codes
 
 
+# ---------------------------------------------------------------------------
+# ISO-index: 1 count byte, then (lang_idx, country_idx) byte pair per code,
+# using the frozen ISO 639-1 / ISO 3166-1 alpha-2 tables (single source of truth).
+# ---------------------------------------------------------------------------
+def pack_iso(codes: list[str]) -> bytearray:
+    out = bytearray([len(codes)])
+    for code in codes:
+        out += iso.encode_pair(code)
+    return out
+
+
+def unpack_iso(buf: bytearray) -> list[str]:
+    count = buf[0]
+    return [iso.decode_pair(buf[1 + 2 * i], buf[2 + 2 * i]) for i in range(count)]
+
+
 def main() -> None:
     n = len(LANGS)
     raw = "".join(LANGS).encode("ascii")
 
     rle = rle_compress(raw)
     packed = pack5(LANGS)
+    isobuf = pack_iso(LANGS)
 
     # correctness
     assert unpack5(packed) == LANGS, "5-bit round-trip FAILED"
+    assert unpack_iso(isobuf) == LANGS, "ISO-index round-trip FAILED"
 
     print(f"languages: {n}\n")
     rows = [
         ("current (raw 4-char ASCII)", len(raw)),
         ("existing bit-RLE",           len(rle)),
         ("proposed 5-bit pack",        len(packed)),
+        ("proposed ISO-index (2 B)",   len(isobuf)),
     ]
     print(f"{'scheme':<30}{'bytes':>8}{'reports':>9}{'vs raw':>9}")
     print("-" * 56)
@@ -110,7 +135,16 @@ def main() -> None:
     for name, size in rows:
         print(f"{name:<30}{size:>8}{reports_for(size):>9}{size / base:>8.0%}")
 
-    print("\n5-bit round-trip: OK (lossless)")
+    print("\n5-bit round-trip:     OK (lossless)")
+    print("ISO-index round-trip: OK (lossless)")
+
+    # Firmware side carries NO runtime table: each language emits 2 precomputed
+    # index bytes instead of the 4 ASCII bytes it stores today -> .rodata shrinks.
+    fw_now = n * 4
+    fw_iso = n * 2
+    print(f"\nfirmware payload .rodata: {fw_now} B -> {fw_iso} B "
+          f"({fw_iso - fw_now:+d} B). Host decode table: "
+          f"{len(iso.LANG_CODES)}+{len(iso.COUNTRY_CODES)} codes (frozen, shared).")
 
 
 if __name__ == "__main__":
