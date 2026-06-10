@@ -29,7 +29,7 @@ class HidId(Enum):
 class Cmd(Enum):
     GET_ID = 6
     GET_LANG = 7
-    GET_LANG_LIST = 8
+    GET_LANG_LIST = 8  # RETIRED (protocol v2): firmware NACKs it — use GET_LANG_LIST_PACKED (27)
     CHANGE_LANG = 9
     SEND_OVERLAY = 10
     OVERLAY_FLAGS_ON = 11
