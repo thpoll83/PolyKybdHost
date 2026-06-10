@@ -21,8 +21,14 @@ class UnicodeCache:
         # Reuse one keep-alive connection across flag downloads instead of a new
         # TLS handshake per icon (the menu fetches ~150 flags on first run).
         self._session = requests.Session()
+        # Codepoints that failed to download this session — don't retry them on
+        # every reconnect; downloads run on the GUI thread and each blocked
+        # attempt stalls the UI for up to the request timeout.
+        self._failed_downloads = set()
 
     def _download_and_cache(self, codepoints: str, filename: Path):
+        if codepoints in self._failed_downloads:
+            return
         url = f"https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/{codepoints}.png"
 
         try:
@@ -36,6 +42,7 @@ class UnicodeCache:
             pixmap.save(str(filename))
             print(f"[UnicodeCache] Cached: {filename.name}")
         except Exception as e:
+            self._failed_downloads.add(codepoints)
             print(f"[UnicodeCache] Failed to fetch icon {codepoints}: {e}")
 
     def get_icon_for(self, flag: str) -> QIcon:
