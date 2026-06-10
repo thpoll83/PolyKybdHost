@@ -269,6 +269,16 @@ class PolyKybd:
                        "True" if idle else "False")
         return self.hid.send_and_read_validate(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
 
+    def save_mru(self) -> tuple[bool, Any]:
+        """Ask the keyboard to persist its emoji/language MRU recents to EEPROM.
+
+        The firmware only writes when the lists actually changed, so this is
+        cheap to send on system suspend/shutdown. The keyboard also saves the
+        MRU autonomously on USB suspend; this is the host-driven "do both" path
+        for clean shutdowns where USB suspend may not fire."""
+        self.log.debug("Requesting MRU save...")
+        return self.hid.send_and_read_validate(compose_cmd(Cmd.SAVE_MRU))
+
     def set_handedness(self, master_is_left: bool) -> tuple[bool, Any]:
         """Fix which half is the left side and which is the right side.
 
