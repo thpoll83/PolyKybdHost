@@ -6,9 +6,10 @@ These tests verify that all 6 are consumed and parsed, not just the first.
 import unittest
 from unittest.mock import MagicMock
 
-from polyhost.device.poly_kybd import PolyKybd
+from polyhost.device.poly_kybd import PolyKybd, PACKED_LANG_LIST_MIN_PROTOCOL
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.settings import PolySettings
+from polyhost.services import iso_lang_country as iso
 
 
 def _pad(data: bytes, size: int = 64) -> bytes:
@@ -99,3 +100,84 @@ class TestEnumerateLangMultiPacket(unittest.TestCase):
         self.assertIn("enUS", langs)   # P1 retained
         self.assertIn("bgBG", langs)   # P2 retained (arrived before junk)
         self.assertNotIn("lvLV", langs)  # P3 never reached
+
+
+# Full firmware language list reconstructed from the ASCII reference packets.
+_ALL_LANGS = [
+    "".join(p[3:].rstrip(b"\x00").decode())
+    for p in (_P1, _P2, _P3, _P4, _P5, _P6)
+]
+_ALL_LANGS = [c for chunk in _ALL_LANGS for c in
+              [chunk[i:i + 4] for i in range(0, len(chunk), 4)]]
+
+
+def _packed_reports(codes, cmd_val=27):
+    """Split iso.encode_packed(codes) into firmware-style HID reports:
+    each report = 'P<cmd>.' header + up to 61 payload bytes, padded to 64."""
+    payload = iso.encode_packed(codes)
+    header = b"P" + bytes([cmd_val]) + b"."
+    reports = []
+    for i in range(0, len(payload), 61):
+        reports.append(_pad(header + payload[i:i + 61]))
+    return reports
+
+
+class TestEnumerateLangPacked(unittest.TestCase):
+
+    def _make_keeb(self, protocol):
+        keeb = PolyKybd(DeviceSettings(), PolySettings())
+        keeb.protocol_version = protocol
+        keeb.hid = MagicMock()
+        keeb.hid.send_and_read_validate.return_value = (True, _GET_LANG_ACK)
+        return keeb
+
+    def test_packed_path_decodes_all_languages(self):
+        keeb = self._make_keeb(PACKED_LANG_LIST_MIN_PROTOCOL)
+        reports = _packed_reports(_ALL_LANGS)
+        keeb.hid.send_and_read_validate_with_lock.return_value = (True, reports[0], None)
+        keeb.hid.read_with_lock.side_effect = [(True, r, None) for r in reports[1:]]
+
+        ok, value = keeb.enumerate_lang()
+        self.assertTrue(ok)
+        self.assertEqual(keeb.get_lang_list(), _ALL_LANGS)
+        for tricky in ("enUS", "hwUS", "kuIQ", "tyPF", "amET"):
+            self.assertIn(tricky, keeb.get_lang_list())
+
+    def test_packed_uses_packed_command_not_ascii(self):
+        keeb = self._make_keeb(PACKED_LANG_LIST_MIN_PROTOCOL)
+        reports = _packed_reports(_ALL_LANGS)
+        keeb.hid.send_and_read_validate_with_lock.return_value = (True, reports[0], None)
+        keeb.hid.read_with_lock.side_effect = [(True, r, None) for r in reports[1:]]
+        keeb.enumerate_lang()
+        sent_cmd = keeb.hid.send_and_read_validate_with_lock.call_args[0][0]
+        self.assertEqual(sent_cmd[1], 27)  # Cmd.GET_LANG_LIST_PACKED
+
+    def test_old_protocol_uses_ascii_path(self):
+        keeb = self._make_keeb(1)  # below the packed threshold
+        keeb.hid.send_and_read_validate_with_lock.return_value = (True, _P1, None)
+        keeb.hid.read_with_lock.side_effect = [(True, b'', None)]
+        ok, _ = keeb.enumerate_lang()
+        self.assertTrue(ok)
+        sent_cmd = keeb.hid.send_and_read_validate_with_lock.call_args[0][0]
+        self.assertEqual(sent_cmd[1], 8)  # Cmd.GET_LANG_LIST (ASCII)
+
+    def test_no_protocol_version_uses_ascii_path(self):
+        keeb = self._make_keeb(None)  # old firmware, no protocol field
+        keeb.hid.send_and_read_validate_with_lock.return_value = (True, _P1, None)
+        keeb.hid.read_with_lock.side_effect = [(True, b'', None)]
+        ok, _ = keeb.enumerate_lang()
+        self.assertTrue(ok)
+        sent_cmd = keeb.hid.send_and_read_validate_with_lock.call_args[0][0]
+        self.assertEqual(sent_cmd[1], 8)
+
+    def test_packed_nack_falls_back_to_ascii(self):
+        keeb = self._make_keeb(PACKED_LANG_LIST_MIN_PROTOCOL)
+        nack = _pad(b"P\x1b!")  # firmware NACKs the packed command
+        # First call (packed) -> NACK; second call (ASCII fallback) -> P1.
+        keeb.hid.send_and_read_validate_with_lock.side_effect = [
+            (True, nack, None), (True, _P1, None)]
+        keeb.hid.read_with_lock.side_effect = [(True, b'', None)]
+        ok, _ = keeb.enumerate_lang()
+        self.assertTrue(ok)
+        self.assertIn("enUS", keeb.get_lang_list())
+        self.assertEqual(keeb.hid.send_and_read_validate_with_lock.call_count, 2)

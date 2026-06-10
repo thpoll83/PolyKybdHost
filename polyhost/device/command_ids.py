@@ -48,3 +48,4 @@ class Cmd(Enum):
     DISPLAY_OFF = 24
     SET_HANDEDNESS = 25
     SAVE_MRU = 26
+    GET_LANG_LIST_PACKED = 27
