@@ -78,10 +78,12 @@ core events into queued signals. Nothing else.
 
 **JSON-RPC 2.0, newline-delimited JSON, over a local socket.**
 
-- Linux/macOS: Unix domain socket at `$XDG_RUNTIME_DIR/polykybd/control.sock`
-  (mode 0600). Windows: `127.0.0.1` TCP with a random token written 0600 to
+- Socket location via `platformdirs` (already a dependency), not raw
+  `$XDG_RUNTIME_DIR`: Linux `user_runtime_dir` (falls back sanely), macOS
+  `~/Library/Application Support/PolyHost/` — both Unix domain sockets,
+  mode 0600. Windows: `127.0.0.1` TCP with a random token written 0600 to
   the config dir (AF_UNIX on Windows exists but is still unreliable across
-  Python/Win versions).
+  Python/Win versions; named pipes would need pywin32 — rejected).
 - Requests/responses per JSON-RPC; **server-push events as JSON-RPC
   notifications** on the same connection after the client sends
   `events.subscribe`.
@@ -106,6 +108,7 @@ core events into queued signals. Nothing else.
 | `commands.execute {lines}` | `execute_commands` job (cancel-aware) |
 | `fw.version` / `fw.flash {path, apply}` / `fw.apply_staged` | `get_fw_version` via `run_sync`; flash inside `worker.exclusive()` with `fw.progress` events |
 | `pause.set {bool}` | worker suspend/resume + core state |
+| `update.check` / `update.install {component}` | threaded updater (host + firmware); progress via events |
 | `mru.save`, `settings.get/set`, `host.shutdown` | existing calls |
 | `logs.tail {n}` | core-owned log files |
 
@@ -182,6 +185,62 @@ Must work with PyQt5 not installed (enforced by test, §6).
 8. **`HidHelper` lock-passing API removal** (follow-up noted in the worker
    refactor) folds naturally into H1 — single-consumer ownership makes it
    dead code.
+
+## 5b. Cross-platform requirements (Linux / Windows / macOS)
+
+Hard requirement: every phase works on all three OSes. Per-component matrix:
+
+| Component | Linux | Windows | macOS |
+|-----------|-------|---------|-------|
+| Control transport | UDS (`platformdirs` runtime dir) | localhost TCP + token file | UDS (app-support dir) |
+| Image decode (Pillow) | wheels everywhere — strictly *more* portable than the Qt decode (no Qt platform plugin needed headless) | ✓ | ✓ |
+| Window tracking | pywinctl/X11 (needs display; lazy import, §5.4) | pywinctl ✓ | pywinctl (needs Accessibility permission — unchanged from today) |
+| Sleep → MRU save | logind via `jeepney` (replaces QtDBus; Linux-only **as today** — the current listener is already guarded by `sys.platform`) | none today; firmware-side USB suspend covers it. Optional later: `WM_POWERBROADCAST` listener in the GUI client forwarding `mru.save` | none today; USB suspend covers it |
+| Autostart | unchanged through M1/M2 — autostart keeps launching the same entry point it does today. **Windows: do NOT touch the venv-activating `.bat`/`.vbs` wrapper chain** (`add_to_startup.py`, see CLAUDE.md — regressed once before). Only M3 (daemon-by-default) would revisit autostart, which is one more reason it's deferred. | | |
+| `polyctl` | console-script entry point; stdlib sockets on all three | ✓ (`polyctl.exe` shim from the same venv) | ✓ |
+
+CI-less repo: the loopback/RPC tests must be platform-conditional where
+transport differs (UDS vs TCP+token paths both get tests; the TCP+token path
+is testable on any OS, so Windows behavior is covered even when developing on
+Linux).
+
+## 5c. Updatability — the app must stay fully self-updating
+
+The current mechanism (GitHub-release check → in-place file replacement →
+restart; Windows locked-DLL relay restart for `hidapi.dll`; firmware download
++ HID flash) must survive every milestone:
+
+1. **Single package, no skew**: core, GUI, and `polyctl` ship in one
+   install/venv. An update replaces all of them atomically (same installer as
+   today), so client↔core version skew can only exist during the restart
+   window — and the `hello` protocol-version gate catches exactly that:
+   a client that reconnects to a newer/older core gets a clean "restart me"
+   signal instead of undefined behavior.
+2. **Updater lives in core** (it needs to: headless mode must self-update with
+   no GUI attached). `update.check` runs on the same 24 h cadence as today;
+   `update_available` is an event; the *decision* comes from any client
+   (`polyctl update install` or the GUI prompt) or — config-gated — a future
+   auto-install option for unattended headless machines.
+3. **Restart paths**:
+   - M1 (GUI hosts core): identical to today — installer replaces files,
+     `restart_app()` relaunches the whole process. `restart_app` and the
+     installer are already Qt-free logic; the H0 de-Qt of `updater.py` keeps
+     them that way.
+   - M2 (`--headless`): same flow; the **Windows relay script must re-exec the
+     original command line** (capture `sys.argv` when writing the relay, so a
+     headless core relaunches headless, a GUI process relaunches the GUI).
+     This is a one-line generalization of the existing relay writer.
+   - Clients across a core restart: `polyctl` fails fast with a clear message;
+     the GUI runs a reconnect loop with backoff and greys the tray icon while
+     the core is down (it already has a disconnected icon state).
+4. **Update vs. firmware flash mutual exclusion**: an update install must
+   never restart the process while a fw flash holds `worker.exclusive()`.
+   The installer's final restart step is sequenced through the worker (a
+   normal job that the exclusive section naturally delays), mirroring how the
+   flash already serializes against everything else.
+5. **Firmware updates** are unaffected: `fw.flash` wraps the existing
+   exclusive-flash path; `polyctl flash` makes firmware updates scriptable on
+   headless machines — a net gain for updatability.
 
 ## 6. Test strategy
 
