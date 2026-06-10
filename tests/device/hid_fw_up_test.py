@@ -662,6 +662,46 @@ class TestFlashFirmwareChunks(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    def test_chunk_nack_with_resume_offset_rewinds(self):
+        # A NACK carrying a resume offset (bytes 3..6) rewinds the stream to
+        # that offset: the keyboard reported the lower of its two halves' write
+        # cursors after a desync, and duplicate chunks are ACK'd idempotently.
+        fw   = _make_polykybd_fw()          # 280 bytes = 5 chunks
+        path = _write_bin(fw)
+        n    = _chunks(fw)
+        sent_offsets = []
+
+        def nack_with_resume(resume):
+            buf = _nack_reply(CMD_FW_UP_CHUNK)
+            struct.pack_into('<I', buf, 3, resume)
+            return buf
+
+        replies = (
+            [(True, _ack_reply(CMD_FW_UP_BEGIN))] +
+            [(True, _ack_reply(CMD_FW_UP_CHUNK))] * 3 +          # chunks 0,1,2
+            [(True, nack_with_resume(1 * FW_UP_CHUNK_SIZE))] +   # chunk 3 → rewind to 1
+            [(True, _ack_reply(CMD_FW_UP_CHUNK))] * (n - 1) +    # chunks 1..4 again
+            [(True, _ack_reply(CMD_FW_UP_COMMIT))]
+        )
+        reply_iter = iter(replies)
+
+        def side_effect(pkt, timeout):
+            if pkt[1] == CMD_FW_UP_CHUNK:
+                sent_offsets.append(struct.unpack_from('<I', pkt, 2)[0])
+            return next(reply_iter)
+
+        try:
+            with patch('polyhost.device.hid_fw_up.time.sleep'):
+                hid = MagicMock()
+                hid.send_and_read.side_effect = side_effect
+                ok, _ = flash_firmware(hid, path)
+                self.assertTrue(ok)
+                # 0,1,2,3 then rewind: 1,2,3,4
+                expected = [0, 56, 112, 168, 56, 112, 168, 224]
+                self.assertEqual(sent_offsets, expected)
+        finally:
+            os.unlink(path)
+
     def test_chunk_nack_fails_after_8_attempts_with_cleanup(self):
         # A chunk NACK'd on all 8 attempts aborts — and a cleanup COMMIT is sent
         # so both halves leave fw_up mode (core1 restart, housekeeping resumes).
