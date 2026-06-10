@@ -39,7 +39,7 @@ from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
 from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
 from polyhost.input.macos_helper import MacOSInputHelper
 from polyhost.input.win_helper import WindowsInputHelper
-from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER
+from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER, LANG_REGION_OVERRIDE
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost.settings import PolySettings
 from polyhost.device.poly_kybd import PolyKybd
@@ -575,7 +575,7 @@ class PolyHost(QApplication):
             self.log.debug("Adding %s to language menu", all_languages)
             by_region: dict[str, list] = {}
             for lang in all_languages:
-                region = LANG_REGION.get(lang[2:].upper(), "Other")
+                region = LANG_REGION_OVERRIDE.get(lang, LANG_REGION.get(lang[2:].upper(), "Other"))
                 by_region.setdefault(region, []).append(lang)
 
             for region in LANG_REGION_ORDER + (["Other"] if "Other" in by_region else []):

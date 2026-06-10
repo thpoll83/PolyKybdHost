@@ -235,7 +235,12 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
         if v_off != HIDE and h_off != HIDE:
             alt = L.var(li, row, VAR_ALTGR)
             if alt is not None:
-                R.draw(px, alt, 28 + h_off, BASELINE + v_off)
+                # mirror the firmware's right-edge clamp (keymap.c altgr preview)
+                amin, amax = R.bounds(alt)
+                alt_x = 28 + h_off
+                if alt_x + amax > BUFFER_X + SCREEN_WIDTH - 1:
+                    alt_x = (BUFFER_X + SCREEN_WIDTH - 1) - amax
+                R.draw(px, alt, alt_x, BASELINE + v_off)
     return img
 
 
