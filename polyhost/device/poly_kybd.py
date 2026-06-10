@@ -19,6 +19,13 @@ from polyhost.device.hid_helper import HidHelper
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
+from polyhost.services import iso_lang_country
+
+# Firmware PROTOCOL_VERSION at which GET_LANG_LIST_PACKED (the compact 2-byte
+# index encoding of the language list) became available. Older firmware (or
+# firmware that reports no protocol version) only understands the ASCII
+# GET_LANG_LIST, so the host stays on that path and never probes the new command.
+PACKED_LANG_LIST_MIN_PROTOCOL = 2
 
 import hid
 
@@ -321,6 +328,53 @@ class PolyKybd:
         if not result:
             return False, msg
 
+        # Firmware new enough for the compact 2-byte-per-language encoding sends
+        # it via GET_LANG_LIST_PACKED. Fall back to the ASCII list if that fails.
+        if (self.protocol_version is not None
+                and self.protocol_version >= PACKED_LANG_LIST_MIN_PROTOCOL):
+            ok, value = self._enumerate_lang_packed()
+            if ok:
+                return ok, value
+            self.log.warning(
+                "Packed language list failed, falling back to ASCII list.")
+        return self._enumerate_lang_ascii()
+
+    def _enumerate_lang_packed(self) -> tuple[bool, str]:
+        """Read the language list as packed (lang_idx, country_idx) byte pairs.
+
+        Wire format mirrors the ASCII list: every HID report is prefixed with the
+        "P<cmd>." response header; the payload across reports is a count byte
+        followed by two index bytes per language. The count makes the total length
+        known after the first report, so termination is deterministic (no reliance
+        on a read timeout). Payload is binary, so it must not be decoded/stripped.
+        """
+        lock = None
+        result, reply, lock = self.hid.send_and_read_validate_with_lock(
+            compose_cmd(Cmd.GET_LANG_LIST_PACKED), 15,
+            expect(Cmd.GET_LANG_LIST_PACKED), lock)
+        # reply[2] is the ACK ('.') / NACK ('!') marker; anything else => unsupported.
+        if not result or len(reply) < 4 or reply[2] != ord('.'):
+            if lock:
+                lock.release()
+            return False, "Could not receive packed language list."
+
+        data = bytearray(reply[3:])
+        total = 1 + 2 * data[0]  # count byte + 2 bytes per language
+        while len(data) < total and result:
+            result, reply, lock = self.hid.read_with_lock(15, lock)
+            data += reply[3:]
+        if lock:
+            lock.release()
+
+        if len(data) < total:
+            return False, "Truncated packed language list."
+        try:
+            self.all_languages = iso_lang_country.decode_packed(data[:total])
+        except (KeyError, IndexError) as e:
+            return False, f"Could not decode packed language list: {e}"
+        return True, "".join(self.all_languages)
+
+    def _enumerate_lang_ascii(self) -> tuple[bool, str]:
         lock = None
         result, reply, lock = self.hid.send_and_read_validate_with_lock(
             compose_cmd(Cmd.GET_LANG_LIST), 15, expect(Cmd.GET_LANG_LIST), lock)

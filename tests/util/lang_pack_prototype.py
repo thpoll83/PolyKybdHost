@@ -16,9 +16,7 @@ import os
 import sys
 
 from polyhost.util.rle_util import rle_compress
-
-sys.path.insert(0, os.path.dirname(__file__))
-import iso_lang_country as iso  # frozen ISO 639-1 / 3166-1 index tables
+from polyhost.services import iso_lang_country as iso  # frozen ISO index tables
 
 # The full 81-code list, exactly as firmware hid_com.c case 0x08 emits it.
 LANGS = (
@@ -98,29 +96,17 @@ def unpack5(buf: bytearray) -> list[str]:
 # ISO-index: 1 count byte, then (lang_idx, country_idx) byte pair per code,
 # using the frozen ISO 639-1 / ISO 3166-1 alpha-2 tables (single source of truth).
 # ---------------------------------------------------------------------------
-def pack_iso(codes: list[str]) -> bytearray:
-    out = bytearray([len(codes)])
-    for code in codes:
-        out += iso.encode_pair(code)
-    return out
-
-
-def unpack_iso(buf: bytearray) -> list[str]:
-    count = buf[0]
-    return [iso.decode_pair(buf[1 + 2 * i], buf[2 + 2 * i]) for i in range(count)]
-
-
 def main() -> None:
     n = len(LANGS)
     raw = "".join(LANGS).encode("ascii")
 
     rle = rle_compress(raw)
     packed = pack5(LANGS)
-    isobuf = pack_iso(LANGS)
+    isobuf = iso.encode_packed(LANGS)
 
     # correctness
     assert unpack5(packed) == LANGS, "5-bit round-trip FAILED"
-    assert unpack_iso(isobuf) == LANGS, "ISO-index round-trip FAILED"
+    assert iso.decode_packed(isobuf) == LANGS, "ISO-index round-trip FAILED"
 
     print(f"languages: {n}\n")
     rows = [
