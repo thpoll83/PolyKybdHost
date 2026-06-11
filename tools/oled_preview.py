@@ -30,6 +30,11 @@ HOST_REPO = os.path.dirname(HERE)
 HOME = os.path.dirname(HOST_REPO)
 HIDE = -128
 SCREEN_WIDTH = 72
+# How many px outside the real 72x40 viewport to KEEP and render (instead of
+# silently clipping like the hardware does). oled_to_rgb paints this border red
+# with any lit pixels in yellow, so glyphs that get cut off on the device are
+# obvious in the preview. 0 = hardware-exact (no margin). Overridable via --overshoot.
+OVERSHOOT = 2
 
 # keycode -> lang_lut row, in translate_keycode order
 LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -183,7 +188,11 @@ class Renderer:
                     if bits & 0x80:
                         vx = xc + g['xOffset'] + xx - BUFFER_X
                         vy = gy + g['yOffset'] + yy
-                        if 0 <= vx < OLED_W and 0 <= vy < OLED_H: px[vx, vy] = 255
+                        # keep up to OVERSHOOT px outside the viewport so clipped glyph
+                        # pixels stay visible (oled_to_rgb flags that margin); the
+                        # buffer is offset by OVERSHOOT so vx/vy=-OVERSHOOT maps to 0.
+                        if -OVERSHOOT <= vx < OLED_W + OVERSHOOT and -OVERSHOOT <= vy < OLED_H + OVERSHOOT:
+                            px[vx + OVERSHOOT, vy + OVERSHOOT] = 255
                     bits = (bits << 1) & 0xFF; bit += 1
             xc += g['xAdvance']
 
@@ -197,7 +206,7 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     vrow, hrow = SET[cat]
 
     used_lang, base = L.small(li, row)
-    img = Image.new('L', (OLED_W, OLED_H), 0); px = img.load()
+    img = Image.new('L', (OLED_W + 2 * OVERSHOOT, OLED_H + 2 * OVERSHOOT), 0); px = img.load()
     if base is None:
         return img
 
@@ -252,11 +261,30 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
 
 
 def oled_to_rgb(img: Image.Image, scale: int) -> Image.Image:
-    big = img.resize((OLED_W * scale, OLED_H * scale), Image.NEAREST)
-    return Image.merge('RGB', (big, big, big))   # white-on-black like the real OLED
+    # img is the expanded (OLED_W+2*OVERSHOOT) x (OLED_H+2*OVERSHOOT) grayscale buffer.
+    # Central OLED_W x OLED_H = the real viewport (white-on-black, hardware-exact). The
+    # OVERSHOOT-px border = pixels the device CLIPS: painted dark red, with any lit
+    # pixel there shown YELLOW so a glyph cut off at an edge is impossible to miss.
+    if OVERSHOOT == 0:
+        big = img.resize((OLED_W * scale, OLED_H * scale), Image.NEAREST)
+        return Image.merge('RGB', (big, big, big))
+    ew, eh = img.size
+    src = img.load()
+    rgb = Image.new('RGB', (ew, eh)); dst = rgb.load()
+    for y in range(eh):
+        iny = OVERSHOOT <= y < OLED_H + OVERSHOOT
+        for x in range(ew):
+            inside = iny and (OVERSHOOT <= x < OLED_W + OVERSHOOT)
+            lit = src[x, y] > 0
+            if inside:
+                dst[x, y] = (255, 255, 255) if lit else (0, 0, 0)
+            else:
+                dst[x, y] = (255, 255, 0) if lit else (48, 0, 0)
+    return rgb.resize((ew * scale, eh * scale), Image.NEAREST)
 
 
 def main():
+    global OVERSHOOT
     ap = argparse.ArgumentParser()
     ap.add_argument('--lang', required=True, help='e.g. ka-GE, ta-IN, vi-VN')
     ap.add_argument('--key', help='single keycode, e.g. KC_Q (default: contact sheet of all keys)')
@@ -264,8 +292,11 @@ def main():
     ap.add_argument('--caps', action='store_true', help='render with caps lock')
     ap.add_argument('--qmk', default=os.path.join(HOME, 'qmk_firmware'))
     ap.add_argument('--cell-scale', type=int, default=3)
+    ap.add_argument('--overshoot', type=int, default=OVERSHOOT,
+                    help='px of out-of-viewport render to keep & flag (red margin, yellow pixels); 0 = hardware-exact')
     ap.add_argument('--out', default=None)
     a = ap.parse_args()
+    OVERSHOOT = a.overshoot
 
     pk = os.path.join(a.qmk, 'keyboards', 'handwired', 'polykybd')
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
@@ -283,7 +314,8 @@ def main():
     # contact sheet
     try: font = ImageFont.truetype("DejaVuSans.ttf", 10)
     except Exception: font = ImageFont.load_default()
-    cw, ch = OLED_W * s, OLED_H * s
+    ew, eh = OLED_W + 2 * OVERSHOOT, OLED_H + 2 * OVERSHOOT
+    cw, ch = ew * s, eh * s
     pad, lab = 6, 12
     cols = max(len(r) for r in SHEET); rows = len(SHEET)
     W = cols * (cw + pad) + pad; H = rows * (ch + lab + pad) + pad + 18
@@ -295,7 +327,10 @@ def main():
             d.text((x, y), kc.replace("KC_", ""), font=font, fill=(180, 180, 180))
             cell = oled_to_rgb(render_key(L, R, a.lang, kc, a.shift, a.caps), s)
             sheet.paste(cell, (x, y + lab))
-            d.rectangle([x, y + lab, x + cw - 1, y + lab + ch - 1], outline=(70, 70, 70))
+            # outline the REAL 72x40 viewport (inset by the overshoot margin) so the
+            # red border sits clearly outside it
+            vx0 = x + OVERSHOOT * s; vy0 = y + lab + OVERSHOOT * s
+            d.rectangle([vx0, vy0, vx0 + OLED_W * s - 1, vy0 + OLED_H * s - 1], outline=(70, 70, 70))
     out = a.out or os.path.join(HERE, 'out', f'oled_{a.lang}.png')
     os.makedirs(os.path.dirname(out), exist_ok=True); sheet.save(out)
     print("wrote", out)
