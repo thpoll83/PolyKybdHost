@@ -455,18 +455,11 @@ class PolyKybd:
             self.log.debug("send_overlay_mapping: Sent %s", dict_part)
             
         self.log.info("send_overlay_mapping: Sent %d mapping messages", num_msgs)
-        # SEND_OVERLAY_MAPPING (cmd 21) is the only overlay-related command that
-        # produces a firmware ACK per chunk; drain them now so they don't
-        # accumulate and confuse later send_and_read_validate calls.
-        # 250 ms per ACK: the firmware ACKs each mapping chunk only after
-        # bridging it to the slave half, which routinely takes >20 ms (and
-        # >100 ms was seen in the field on Windows, 2026-06-11 — the missed
-        # ACK then surfaced as a stale "P." reply in a later GET_ID). Leaving
-        # the ACKs undrained poisons the read buffer for later commands; the
-        # wait is cheap now that this runs on the HID worker thread.
-        _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock, timeout=250)
-        if drained < num_msgs:
-            self.log.debug("send_overlay_mapping: Drained only %d of %d HID ACKs", drained, num_msgs)
+        # SEND_OVERLAY_MAPPING (cmd 21) is silent since protocol v3 — like the
+        # other bulk overlay commands there is no per-chunk ACK, so nothing to
+        # read or drain here. (The old per-chunk ACK arrived only after the
+        # firmware's blocking UART bridge to the slave; escaped ACKs were the
+        # main source of stale replies poisoning later commands' reads.)
 
         if lock:
             lock.release()

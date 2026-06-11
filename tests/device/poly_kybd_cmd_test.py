@@ -410,6 +410,18 @@ class TestSendOverlayMapping(unittest.TestCase, LockCheckMixin):
         self.assertFalse(ok)
         self.assert_lock_free(keeb)
 
+    def test_mapping_send_performs_no_reads(self):
+        # Protocol v3: cmd 21 is fire-and-forget (firmware sends no per-chunk
+        # ACK), so the host must not read or drain after sending. A queued
+        # sentinel reply surviving the call proves no read happened.
+        sentinel = ack(0x06, b'sentinel')
+        keeb, device = make_keeb(replies=[sentinel])
+        ok, msg = keeb.send_overlay_mapping({1: 100, 2: 200})
+        self.assertTrue(ok)
+        self.assertEqual(len(device.replies), 1)
+        self.assertEqual(device.replies[0], sentinel)
+        self.assert_lock_free(keeb)
+
 
 # ---------------------------------------------------------------------------
 # Overlay transmission paths

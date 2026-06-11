@@ -197,30 +197,6 @@ class TestSendMultiple(unittest.TestCase):
         self.assertFalse(ok)
 
 
-class TestDrainReadBuffer(unittest.TestCase):
-
-    def test_drains_exactly_queued_replies(self):
-        helper, device = _helper(replies=[GOOD, GOOD, GOOD])
-        ok, drained, msg, lock = helper.drain_read_buffer(3, None, timeout=5)
-        self.assertTrue(ok)
-        self.assertEqual(drained, 3)
-        lock.release()
-
-    def test_fewer_replies_than_requested(self):
-        helper, device = _helper(replies=[GOOD])
-        ok, drained, msg, lock = helper.drain_read_buffer(4, None, timeout=5)
-        self.assertTrue(ok)
-        self.assertEqual(drained, 1)
-        lock.release()
-
-    def test_read_exception_releases_lock(self):
-        helper, device = _helper()
-        device.read_exception = RuntimeError("USB gone")
-        ok, drained, msg, lock = helper.drain_read_buffer(1, None, timeout=5)
-        self.assertFalse(ok)
-        self.assertFalse(helper.lock.locked())
-
-
 class TestSimpleSendAndRead(unittest.TestCase):
 
     def test_send_writes_and_ignores_reply(self):

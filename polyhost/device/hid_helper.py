@@ -183,33 +183,6 @@ class HidHelper:
 
         return True, result, self.lock
 
-    def drain_read_buffer(self, num_msgs: int, received_lock: threading.Lock, timeout: int = 100) -> tuple[bool, int, str, threading.Lock]:
-        """Drain up to num_msgs buffered HID replies while holding the lock.
-
-        timeout controls how long to wait for each individual reply (ms).
-        Use a small value (e.g. 10) when replies are expected to already be
-        queued; the default of 100 is kept for backward compatibility.
-        """
-        if self.interface is None:
-            return False, 0, "No Interface", received_lock
-        num_drained = 0
-        try:
-            if received_lock is None:
-                self.lock.acquire()
-            elif received_lock != self.lock:
-                return False, num_drained, "Lock mismatch", received_lock
-            if not self.lock.locked():
-                return False, num_drained, "Not locked", self.lock
-
-            for _ in range(num_msgs):
-                if len(self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)) > 0:
-                    num_drained += 1
-        except Exception as e:
-            self.lock.release()
-            return False, num_drained, f"Exception: {e}", self.lock
-
-        return True, num_drained, "", self.lock
-    
     def read(self, timeout: int) -> tuple[bool, bytearray]:
         if self.interface is None:
             return False, bytearray("No Interface", 'utf-8')
@@ -269,8 +242,13 @@ class HidHelper:
 
             self.interface.write(request_report)
 
-            # Drain stale buffered replies (e.g. unread SEND_OVERLAY_MAPPING ACKs)
-            # until we find the expected prefix or the buffer runs dry.
+            # Drain stale buffered replies until we find the expected prefix or
+            # the buffer runs dry. Since protocol v3 the firmware sends no
+            # unsolicited replies, so a stale reply here means one thing only:
+            # a previous command's response arrived after the host's read timed
+            # out (e.g. GET_ID answered late while the keyboard was busy syncing
+            # the slave half). This is a safety net for that race, not a normal
+            # code path.
             # The first read and the read right after the buffer ran dry use
             # the full caller timeout (the real reply may still be in flight);
             # in-between reads use timeout=0 (non-blocking) to consume
