@@ -368,10 +368,18 @@ class PolyKybd:
 
         if len(data) < total:
             return False, "Truncated packed language list."
-        try:
-            self.all_languages = iso_lang_country.decode_packed(data[:total])
-        except (KeyError, IndexError) as e:
-            return False, f"Could not decode packed language list: {e}"
+        # Decode tolerantly: an index this (possibly older) host doesn't know about
+        # is logged and skipped rather than discarding the whole list.
+        skipped: list[tuple[int, int, int]] = []
+        self.all_languages = iso_lang_country.decode_packed(
+            data[:total], on_skip=lambda pos, li, ci: skipped.append((pos, li, ci)))
+        for pos, li, ci in skipped:
+            logging.warning(
+                "Skipping unsupported packed language at position %d "
+                "(lang_idx=%d, country_idx=%d) - update PolyHost to recognise it",
+                pos, li, ci)
+        if not self.all_languages:
+            return False, "Could not decode packed language list (no known languages)."
         return True, "".join(self.all_languages)
 
     def _enumerate_lang_ascii(self) -> tuple[bool, str]:
