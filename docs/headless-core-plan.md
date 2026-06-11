@@ -83,7 +83,10 @@ The transport — the genuinely fiddly cross-platform part — comes entirely
 from the standard library: `multiprocessing.connection.Listener/Client`
 provide Unix domain sockets (Linux/macOS), **real Windows named pipes**
 (`AF_PIPE`, no pywin32), built-in **HMAC challenge authentication**
-(`authkey`; Python 3.12+ negotiates a stronger digest than the legacy MD5),
+(`authkey`; Python 3.12+ negotiates a stronger digest, while older
+interpreters — which this repo does not exclude via `python_requires` —
+fall back to legacy HMAC-MD5; acceptable here because the transport is
+local-only and gated by filesystem permissions, not a network boundary),
 and length-prefixed **message framing** (`send_bytes`/`recv_bytes`). Zero
 new dependencies, maintained with CPython itself — which also serves the
 "stays fully update-able" constraint.
@@ -293,9 +296,10 @@ restart; Windows locked-DLL relay restart for `hidapi.dll`; firmware download
 | **H4** *(optional)* | GUI as pure socket client; daemon-by-default; forwarder as client | Full symmetry (M3) | Medium — only after M1/M2 soak |
 
 Each phase is independently shippable and keeps the full suite green.
-H0 and H2 are parallelizable (disjoint files) once H1's event names/payloads
-are pinned in this doc; H1 is sequential in between; same agent-orchestration
-pattern as the worker refactor.
+H0 touches disjoint files and can start any time. H2 can be developed in
+parallel with H1 *only after* H1's event names/payloads are pinned in this
+doc (the server's notification schema mirrors them) — until then H2 waits.
+H3 builds on H1+H2; same agent-orchestration pattern as the worker refactor.
 
 ## 8. Out of scope
 

@@ -90,11 +90,14 @@ class KbLayoutDialog(QMainWindow):
         return self.selected_key
 
     def _read_sync(self, name, fn, default):
-        """Run a device read through the worker. If the worker is suspended
-        (e.g. during a firmware flash) run_sync raises RuntimeError — surface the
+        """Run a device read through the worker. If no worker was passed
+        (dialog opened standalone) or the worker is suspended (e.g. during a
+        firmware flash, where run_sync raises RuntimeError) — surface the
         existing not-connected message box and return ``default`` instead of
         crashing."""
         try:
+            if self.worker is None:
+                raise RuntimeError("no HID worker available")
             return self.worker.run_sync(name, fn, timeout=5)
         except RuntimeError:
             QMessageBox.warning(
@@ -271,6 +274,9 @@ class KbLayoutDialog(QMainWindow):
                                  keycode, layer, row, col)
 
         # Fire-and-forget write (result logged); keeps the local buffer in sync above.
+        if self.worker is None:
+            self.log.warning("No HID worker — keycode 0x%04x not written to device", keycode)
+            return
         self.worker.submit("set_dynamic_keycode",
                            lambda c: self.keeb.set_dynamic_keycode(layer, row, col, keycode),
                            on_done=_on_done)

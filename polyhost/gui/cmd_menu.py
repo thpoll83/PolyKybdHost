@@ -277,7 +277,7 @@ class CommandsSubMenu:
         value = self.parent.sender().data()
         self._submit_reported("set_brightness",
                               lambda c: self.keeb.set_brightness(value),
-                              lambda msg: f"Failed disabling overlays: '{msg}'")
+                              lambda msg: f"Failed setting brightness: '{msg}'")
 
     def change_idle(self):
         idle = self.parent.sender().data()
@@ -338,7 +338,7 @@ class CommandsSubMenu:
 
         self._submit_reported("mapping_test",
                               lambda c: self.keeb.send_overlay_mapping(from_to),
-                              lambda msg: f"Failed to change idle mode: '{msg}'")
+                              lambda msg: f"Failed sending test mapping: '{msg}'")
 
     def load_commands(self):
         file_name = _get_open_file_explicit('Open file', "PolyKybd commands (*.poly.cmd)")

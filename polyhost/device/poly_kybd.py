@@ -92,7 +92,11 @@ class PolyKybd:
                 result, msg = self.query_id()
                 if result:
                     return True
-                self.log.warning("ID query failed (attempt %d/%d): %s", attempt + 1, retries, msg if msg else "EMPTY REPLY")
+                # A single failed attempt is routine right after a large overlay
+                # send (the keyboard is busy syncing the slave half) — keep it
+                # out of the default log and only warn when the failure repeats.
+                log = self.log.debug if attempt == 0 else self.log.warning
+                log("ID query failed (attempt %d/%d): %s", attempt + 1, retries, ascii(msg) if msg else "EMPTY REPLY")
             # All retries exhausted — HID handle is stale after a reset/reflash;
             # re-enumerate so the new USB path is picked up.
             self.log.warning("Re-enumerating HID after %d failed attempts...", retries)
@@ -364,9 +368,12 @@ class PolyKybd:
         known after the first report, so termination is deterministic (no reliance
         on a read timeout). Payload is binary, so it must not be decoded/stripped.
         """
+        # 100 ms timeouts: Windows delivers HID input reports on a ~16 ms timer
+        # tick, so 15 ms reads intermittently miss the multi-report list there
+        # (seen in the field 2026-06-11 as a startup enumeration failure).
         lock = None
         result, reply, lock = self.hid.send_and_read_validate_with_lock(
-            compose_cmd(Cmd.GET_LANG_LIST_PACKED), 15,
+            compose_cmd(Cmd.GET_LANG_LIST_PACKED), 100,
             expect(Cmd.GET_LANG_LIST_PACKED), lock)
         # reply[2] is the ACK ('.') / NACK ('!') marker; anything else => unsupported.
         if not result or len(reply) < 4 or reply[2] != ord('.'):
@@ -377,7 +384,7 @@ class PolyKybd:
         data = bytearray(reply[3:])
         total = 1 + 2 * data[0]  # count byte + 2 bytes per language
         while len(data) < total and result:
-            result, reply, lock = self.hid.read_with_lock(15, lock)
+            result, reply, lock = self.hid.read_with_lock(100, lock)
             data += reply[3:]
         if lock:
             lock.release()
@@ -416,7 +423,7 @@ class PolyKybd:
             return False, f"Language '{lang}' not present on PolyKybd"
 
         result, msg = self.hid.send_and_read_validate(
-            compose_cmd_str(Cmd.CHANGE_LANG, lang), 15, expect(Cmd.CHANGE_LANG))
+            compose_cmd_str(Cmd.CHANGE_LANG, lang), 100, expect(Cmd.CHANGE_LANG))
         msg = msg.decode().strip('\x00')
         if not result:
             return False, f"Could not change to {lang} ({msg})"
@@ -451,12 +458,15 @@ class PolyKybd:
         # SEND_OVERLAY_MAPPING (cmd 21) is the only overlay-related command that
         # produces a firmware ACK per chunk; drain them now so they don't
         # accumulate and confuse later send_and_read_validate calls.
-        # 100 ms per ACK: the firmware ACKs each mapping chunk only after
-        # bridging it to the slave half, which routinely takes >20 ms. Leaving
+        # 250 ms per ACK: the firmware ACKs each mapping chunk only after
+        # bridging it to the slave half, which routinely takes >20 ms (and
+        # >100 ms was seen in the field on Windows, 2026-06-11 — the missed
+        # ACK then surfaced as a stale "P." reply in a later GET_ID). Leaving
         # the ACKs undrained poisons the read buffer for later commands; the
         # wait is cheap now that this runs on the HID worker thread.
-        _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock, timeout=100)
-        self.log.debug("send_overlay_mapping: Drained %d of %d HID ACKs", drained, num_msgs)
+        _, drained, _, lock = self.hid.drain_read_buffer(num_msgs, lock, timeout=250)
+        if drained < num_msgs:
+            self.log.debug("send_overlay_mapping: Drained only %d of %d HID ACKs", drained, num_msgs)
 
         if lock:
             lock.release()
@@ -768,7 +778,7 @@ class PolyKybd:
     def get_default_layer(self) -> tuple[bool, int]:
         try:
             result, reply = self.hid.send_and_read_validate(
-                compose_cmd(Cmd.GET_DEFAULT_LAYER), 15, expect(Cmd.GET_DEFAULT_LAYER))
+                compose_cmd(Cmd.GET_DEFAULT_LAYER), 100, expect(Cmd.GET_DEFAULT_LAYER))
             if result and len(reply) > 3 and reply[2:3] == b'.':
                 return True, reply[3]
         except Exception:

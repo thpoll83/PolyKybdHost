@@ -240,7 +240,10 @@ class HidHelper:
 
         return True, response_report, self.lock
 
-    def send_and_read_validate(self, data: bytearray, timeout: int = 30, expected_prefix: bytearray = None) -> tuple[bool, bytearray]:
+    # Default read timeout: 100 ms. Windows delivers HID input reports on a
+    # ~16 ms timer tick, so sub-30 ms timeouts are unreliable there; all HID
+    # I/O runs on the worker thread, so a generous wait costs nothing.
+    def send_and_read_validate(self, data: bytearray, timeout: int = 100, expected_prefix: bytearray = None) -> tuple[bool, bytearray]:
         if expected_prefix is None:
             expected_prefix = data[:2]
         if self.interface is None:
@@ -268,20 +271,28 @@ class HidHelper:
 
             # Drain stale buffered replies (e.g. unread SEND_OVERLAY_MAPPING ACKs)
             # until we find the expected prefix or the buffer runs dry.
-            # First read uses the full caller timeout; subsequent reads use
-            # timeout=0 (non-blocking) to consume already-queued stale replies
-            # without introducing extra latency.
+            # The first read and the read right after the buffer ran dry use
+            # the full caller timeout (the real reply may still be in flight);
+            # in-between reads use timeout=0 (non-blocking) to consume
+            # already-queued stale replies without extra latency. Only one
+            # full-timeout re-wait is granted after the buffer first runs dry,
+            # but stale replies returned by that re-wait keep the drain going
+            # instead of being misreported as the response.
             _MAX_DRAIN = 16
             response_report = bytearray()
+            waited_after_drain = False
             for _i in range(_MAX_DRAIN):
                 t = timeout if _i == 0 else 0
                 response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=t)
                 if not response_report:
-                    if _i > 0:
-                        # Buffer exhausted after draining stale replies;
-                        # wait once more for the actual response.
-                        response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
-                    break
+                    if _i == 0 or waited_after_drain:
+                        break
+                    # Buffer exhausted after draining stale replies;
+                    # wait once more for the actual response.
+                    waited_after_drain = True
+                    response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
+                    if not response_report:
+                        break
                 if response_report.startswith(expected_prefix):
                     return True, response_report, self.lock
                 # Stale reply — keep draining

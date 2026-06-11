@@ -61,6 +61,28 @@ class TestSendAndReadValidate(unittest.TestCase):
         self.assertTrue(ok)
         self.assertTrue(reply.startswith(EXPECT))
 
+    def test_stale_on_full_timeout_rewait_keeps_draining(self):
+        # The buffer runs dry, the one full-timeout re-wait returns ANOTHER
+        # stale (a late ACK from a previous command, seen in the field on
+        # Windows 2026-06-11), and the real reply is right behind it. The
+        # drain must continue past the re-wait stale instead of misreporting
+        # it as the response.
+        helper, device = _helper(replies=[STALE, b'', STALE, GOOD])
+        ok, reply = helper.send_and_read_validate(CMD, 30, EXPECT)
+        self.assertTrue(ok)
+        self.assertTrue(reply.startswith(EXPECT))
+        self.assertFalse(helper.lock.locked())
+
+    def test_only_one_full_timeout_rewait_is_granted(self):
+        # After the single re-wait the drain continues non-blocking only;
+        # a second dry buffer ends the call without further blocking reads.
+        helper, device = _helper(replies=[STALE, b'', STALE, b'', GOOD])
+        ok, reply = helper.send_and_read_validate(CMD, 30, EXPECT)
+        self.assertFalse(ok)
+        self.assertFalse(helper.lock.locked())
+        # Both empty reads consumed; GOOD stays queued for the next command.
+        self.assertEqual(device.replies[0], GOOD)
+
     def test_no_reply_returns_false(self):
         helper, device = _helper()
         ok, reply = helper.send_and_read_validate(CMD, 30, EXPECT)

@@ -311,7 +311,12 @@ class PolyHost(QApplication):
         self.menu.addAction(self.status)
         # Initial language enumeration is synchronous (runs once, before the
         # worker exists). The worker-driven reconnect path supplies the lang
-        # list via the reconnect snapshot afterwards.
+        # list via the reconnect snapshot afterwards. The version query must
+        # run first: enumerate_lang() gates on the firmware protocol version
+        # (the packed list is protocol v2+) and it is still unknown here —
+        # without it the startup enumeration always failed against protocol-2
+        # firmware (seen in the field 2026-06-11).
+        self.keeb.query_version_info()
         init_lang_ok, _ = self.keeb.enumerate_lang()
         init_lang_list = self.keeb.get_lang_list() if init_lang_ok else None
         init_current_lang = self.keeb.get_current_lang() if init_lang_ok else None
