@@ -172,7 +172,7 @@ class TestPolyKybdMockLanguage(unittest.TestCase):
         self.assertEqual(self.mock.get_current_lang(), "enUS")
 
 
-# All 156 languages from hid_com.c case 8 (cog-generated, 11 HID packets)
+# All 157 languages from hid_com.c case 8 (cog-generated, 11 HID packets)
 _ALL_FIRMWARE_LANGS = (
     "enUSdeDEfrFResESptPTitITtrTRkoKRjaJParSAelGRukUAruRUbeBYkkKZ"  # packet 1
     "bgBGplPLroROzhCNnlNLheILsvSEfiFInnNOdaDKhuHUcsCZhrHRskSKltLT"  # packet 2
@@ -184,7 +184,7 @@ _ALL_FIRMWARE_LANGS = (
     "arSYarJOarLBarYEarKWarOMarPSarQAarBHarDZarSDarTNarLYfrCDfrCI"  # packet 8
     "frCMfrSNfrMGenGHenUGenZMswTZptAOptMZbnBDenINenPKenPHenSGenLK"  # packet 9
     "kyKGtgTJenGUenSBenVUenFMfrNCtoTOeuESglESrmCHcyGBgaIEmtMTlbLU"  # packet 10
-    "seNOgnPYquPEayBOnvUSnhMX"                                      # packet 11
+    "seNOgnPYquPEayBOnvUSnhMXpsAF"                                  # packet 11
 )
 
 _ALL_FIRMWARE_LANG_CODES = [
@@ -219,12 +219,12 @@ _ALL_FIRMWARE_LANG_CODES = [
     "kyKG", "tgTJ", "enGU", "enSB", "enVU", "enFM", "frNC", "toTO",
     "euES", "glES", "rmCH", "cyGB", "gaIE", "mtMT", "lbLU",
     # packet 11
-    "seNO", "gnPY", "quPE", "ayBO", "nvUS", "nhMX",
+    "seNO", "gnPY", "quPE", "ayBO", "nvUS", "nhMX", "psAF",
 ]
 
 
 class TestPolyKybdMockAllFirmwareLanguages(unittest.TestCase):
-    """Mock initialised with the full 156-language set from the firmware."""
+    """Mock initialised with the full 157-language set from the firmware."""
 
     def setUp(self):
         self.mock = make_mock(lang="enUS", langs=_ALL_FIRMWARE_LANGS)
@@ -234,8 +234,8 @@ class TestPolyKybdMockAllFirmwareLanguages(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(langs, _ALL_FIRMWARE_LANGS)
 
-    def test_lang_list_has_156_entries(self):
-        self.assertEqual(len(self.mock.get_lang_list()), 156)
+    def test_lang_list_has_157_entries(self):
+        self.assertEqual(len(self.mock.get_lang_list()), 157)
 
     def test_all_language_codes_present(self):
         langs = self.mock.get_lang_list()
