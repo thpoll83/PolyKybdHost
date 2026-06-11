@@ -165,7 +165,7 @@ class Renderer:
         if mx < mn: mn = mx = 0
         return mn, mx
 
-    def draw(self, px, cps, x, y):
+    def draw(self, setpix, cps, x, y):
         xc, yc = x, y
         for cp in cps:
             if cp == 0x05: yc += 2; continue
@@ -189,16 +189,22 @@ class Renderer:
                         vx = xc + g['xOffset'] + xx - BUFFER_X
                         vy = gy + g['yOffset'] + yy
                         # keep up to OVERSHOOT px outside the viewport so clipped glyph
-                        # pixels stay visible (oled_to_rgb flags that margin); the
-                        # buffer is offset by OVERSHOOT so vx/vy=-OVERSHOOT maps to 0.
+                        # pixels stay visible (oled_to_rgb flags that margin). setpix
+                        # receives viewport coords; it owns the OVERSHOOT offset + target.
                         if -OVERSHOOT <= vx < OLED_W + OVERSHOOT and -OVERSHOOT <= vy < OLED_H + OVERSHOOT:
-                            px[vx + OVERSHOOT, vy + OVERSHOOT] = 255
+                            setpix(vx, vy)
                     bits = (bits << 1) & 0xFF; bit += 1
             xc += g['xAdvance']
 
 
-def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool) -> Image.Image:
-    """Replicate the per-key draw in keymap.c (process_record_user render path)."""
+def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool,
+               channels: bool = False) -> Image.Image:
+    """Replicate the per-key draw in keymap.c (process_record_user render path).
+
+    channels=True renders each element into its own colour channel - base->green,
+    Shift->blue, AltGr->red - so any overlap between them mixes (base+Shift=cyan,
+    base+AltGr=yellow, Shift+AltGr=magenta, all three=white) and is easy to spot.
+    """
     li = L.langs.index(lang); row = ROW[kc]
     is_letter = kc[:3] == "KC_" and len(kc) == 4 and kc[3] in LETTERS
     is_num = kc in [f"KC_{d}" for d in "1234567890"]
@@ -206,7 +212,9 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     vrow, hrow = SET[cat]
 
     used_lang, base = L.small(li, row)
-    img = Image.new('L', (OLED_W + 2 * OVERSHOOT, OLED_H + 2 * OVERSHOOT), 0); px = img.load()
+    ew, eh = OLED_W + 2 * OVERSHOOT, OLED_H + 2 * OVERSHOOT
+    img = Image.new('RGB', (ew, eh), (0, 0, 0)) if channels else Image.new('L', (ew, eh), 0)
+    px = img.load()
     if base is None:
         return img
 
@@ -243,9 +251,21 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                 if preview_x + pmin <= base_x + bmax:
                     base_v -= 6; preview_v += 4
 
-    R.draw(px, base, base_x, BASELINE + base_v)
+    EXP = OVERSHOOT
+    if channels:
+        def setter(ci):           # 0=R (AltGr), 1=G (base), 2=B (Shift)
+            def s(vx, vy):
+                X, Y = vx + EXP, vy + EXP
+                c = list(px[X, Y]); c[ci] = 255; px[X, Y] = tuple(c)
+            return s
+        sp_base, sp_shift, sp_alt = setter(1), setter(2), setter(0)
+    else:
+        def s(vx, vy): px[vx + EXP, vy + EXP] = 255
+        sp_base = sp_shift = sp_alt = s
+
+    R.draw(sp_base, base, base_x, BASELINE + base_v)
     if shift_letter is not None:
-        R.draw(px, shift_letter, preview_x, BASELINE + preview_v)
+        R.draw(sp_shift, shift_letter, preview_x, BASELINE + preview_v)
     if not shift and not caps:
         v_off = get_setting(L, vrow, li, VAR_ALTGR); h_off = get_setting(L, hrow, li, VAR_ALTGR)
         if v_off != HIDE and h_off != HIDE:
@@ -256,12 +276,25 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                 alt_x = 28 + h_off
                 if alt_x + amax > BUFFER_X + SCREEN_WIDTH - 1:
                     alt_x = (BUFFER_X + SCREEN_WIDTH - 1) - amax
-                R.draw(px, alt, alt_x, BASELINE + v_off)
+                R.draw(sp_alt, alt, alt_x, BASELINE + v_off)
     return img
 
 
 def oled_to_rgb(img: Image.Image, scale: int) -> Image.Image:
-    # img is the expanded (OLED_W+2*OVERSHOOT) x (OLED_H+2*OVERSHOOT) grayscale buffer.
+    # img is the expanded (OLED_W+2*OVERSHOOT) x (OLED_H+2*OVERSHOOT) buffer.
+    if img.mode == 'RGB':
+        # --channels: base=green, Shift=blue, AltGr=red already baked in (overlaps
+        # mix). Just tint the unlit overshoot margin gray so the viewport edge shows.
+        ew, eh = img.size
+        if OVERSHOOT:
+            px = img.load()
+            for y in range(eh):
+                iny = OVERSHOOT <= y < OLED_H + OVERSHOOT
+                for x in range(ew):
+                    if not (iny and OVERSHOOT <= x < OLED_W + OVERSHOOT) and px[x, y] == (0, 0, 0):
+                        px[x, y] = (40, 40, 40)
+        return img.resize((ew * scale, eh * scale), Image.NEAREST)
+    # img is the expanded grayscale buffer.
     # Central OLED_W x OLED_H = the real viewport (white-on-black, hardware-exact). The
     # OVERSHOOT-px border = pixels the device CLIPS: painted dark red, with any lit
     # pixel there shown YELLOW so a glyph cut off at an edge is impossible to miss.
@@ -294,6 +327,8 @@ def main():
     ap.add_argument('--cell-scale', type=int, default=3)
     ap.add_argument('--overshoot', type=int, default=OVERSHOOT,
                     help='px of out-of-viewport render to keep & flag (red margin, yellow pixels); 0 = hardware-exact')
+    ap.add_argument('--channels', action='store_true',
+                    help='overlap-detect: base=green, Shift=blue, AltGr=red; overlaps mix (cyan/yellow/magenta/white)')
     ap.add_argument('--out', default=None)
     a = ap.parse_args()
     OVERSHOOT = a.overshoot
@@ -306,7 +341,7 @@ def main():
     s = a.cell_scale
 
     if a.key:
-        img = oled_to_rgb(render_key(L, R, a.lang, a.key.upper(), a.shift, a.caps), s)
+        img = oled_to_rgb(render_key(L, R, a.lang, a.key.upper(), a.shift, a.caps, a.channels), s)
         out = a.out or os.path.join(HERE, 'out', f'oled_{a.lang}_{a.key}.png')
         os.makedirs(os.path.dirname(out), exist_ok=True); img.save(out)
         print("wrote", out); return
@@ -320,12 +355,14 @@ def main():
     cols = max(len(r) for r in SHEET); rows = len(SHEET)
     W = cols * (cw + pad) + pad; H = rows * (ch + lab + pad) + pad + 18
     sheet = Image.new('RGB', (W, H), (32, 32, 32)); d = ImageDraw.Draw(sheet)
-    d.text((pad, 4), f"{a.lang}{'  [shift]' if a.shift else ''}{'  [caps]' if a.caps else ''}", font=font, fill=(255, 255, 0))
+    title = f"{a.lang}{'  [shift]' if a.shift else ''}{'  [caps]' if a.caps else ''}"
+    if a.channels: title += "   channels: base=green Shift=blue AltGr=red (overlap=mix)"
+    d.text((pad, 4), title, font=font, fill=(255, 255, 0))
     for ri, krow in enumerate(SHEET):
         for ci, kc in enumerate(krow):
             x = pad + ci * (cw + pad); y = 18 + pad + ri * (ch + lab + pad)
             d.text((x, y), kc.replace("KC_", ""), font=font, fill=(180, 180, 180))
-            cell = oled_to_rgb(render_key(L, R, a.lang, kc, a.shift, a.caps), s)
+            cell = oled_to_rgb(render_key(L, R, a.lang, kc, a.shift, a.caps, a.channels), s)
             sheet.paste(cell, (x, y + lab))
             # outline the REAL 72x40 viewport (inset by the overshoot margin) so the
             # red border sits clearly outside it
