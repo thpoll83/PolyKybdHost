@@ -217,7 +217,14 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     if not shift and not caps:
         v_pv = get_setting(L, vrow, li, VAR_SHIFT); h_pv = get_setting(L, hrow, li, VAR_SHIFT)
         if v_pv != HIDE and h_pv != HIDE:
-            shift_letter = L.var(used_lang, row, VAR_SHIFT)
+            # mirror translate_keycode_only_shift(): the language's OWN Shift glyph,
+            # falling back to the en-US Shift only when the key has neither its own
+            # Shift nor its own base. A key that inherits only the base (e.g. the
+            # ck-US number keys: en-US digit base + a Cherokee Shift syllable) keeps
+            # its Shift - so this is NOT tied to small()'s used_lang (which drops to 0).
+            shift_letter = L.var(li, row, VAR_SHIFT)
+            if shift_letter is None and L.cell(li, row, VAR_SMALL) is None:
+                shift_letter = L.var(0, row, VAR_SHIFT)
             if shift_letter is not None:
                 bmin, bmax = R.bounds(base); pmin, pmax = R.bounds(shift_letter)
                 preview_x = 28 + h_pv
