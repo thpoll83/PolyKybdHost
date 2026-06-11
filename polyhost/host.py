@@ -699,9 +699,13 @@ class PolyHost(QApplication):
         # Consumes the language list/current language from the reconnect snapshot
         # (or the synchronous initial enumerate) — never queries the device here,
         # which keeps this method off the HID worker's ownership path.
+        # Deliberately does NOT touch self.current_lang: that field tracks the
+        # language the OS is set to, and _apply_reconnect_result compares it
+        # against the keyboard's language to decide whether to switch the OS.
+        # Overwriting it here (this runs first in the reconnect apply) made the
+        # comparison always equal, silently skipping the OS switch on reconnect.
         if lang_list is not None and current_lang is not None:
-            self.current_lang = current_lang
-            title = f"Selected Language: {self.current_lang[:2]} {self.langcode_to_flag(self.current_lang[2:])}"
+            title = f"Selected Language: {current_lang[:2]} {self.langcode_to_flag(current_lang[2:])}"
             if self.keeb_lang_menu is None:
                 # Place the language menu right under the first entry (the status
                 # action) instead of appending it last. It may be created lazily
@@ -733,7 +737,7 @@ class PolyHost(QApplication):
                 sub = self.keeb_lang_menu.addMenu(region)
                 for lang in langs:
                     text = f"{lang[:2]} {lang[2:].upper()}"
-                    if lang == self.current_lang:
+                    if lang == current_lang:
                         text = f"{text} {chr(0x2714)}"
                     item = sub.addAction(text, self.change_keeb_language)
                     item.setData(lang)

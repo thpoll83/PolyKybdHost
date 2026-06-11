@@ -537,6 +537,11 @@ class PolyKybd:
 
         self.log.info("%d overlays sent, %d hid messages for %d keys:%s",
                       overlay_counter, hid_msg_counter, num_keys, all_keys)
+        # Re-check right before the commit: the token can flip after the last
+        # keycap upload, and enabling then would flash a superseded render.
+        if cancel is not None and cancel.is_set():
+            self.log.debug_detailed("send_overlays cancelled before enable")
+            return False
         if not enabled:
             self.enable_overlays()
         return True
@@ -709,6 +714,13 @@ class PolyKybd:
 
         self.log.info("MRU: %d HID image messages, %d display positions mapped",
                       hid_msg_counter, len(display_to_pool))
+
+        # Re-check right before the commit: the token can flip after the last
+        # pool upload, and committing the mapping then would flash a superseded
+        # render (the superseding send repaints everything anyway).
+        if cancel is not None and cancel.is_set():
+            self.log.debug_detailed("send_overlays_mru cancelled before mapping commit")
+            return False
 
         ok, msg = self.send_overlay_mapping(display_to_pool)
         if not ok:

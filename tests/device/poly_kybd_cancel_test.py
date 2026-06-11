@@ -151,6 +151,28 @@ class TestSendOverlaysCancel(unittest.TestCase, LockCheckMixin):
         self.assert_lock_free(keeb)
 
     @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_cancel_after_last_keycode_skips_enable(self, MockConverter):
+        # The token flips after the LAST upload, so no loop iteration sees it.
+        # The pre-commit guard must still abort before enable_overlays(), or a
+        # superseded render gets committed to the keyboard.
+        MockConverter.return_value = _converter({KeyCode.KC_A.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        cancel = threading.Event()
+
+        real_send = keeb.send_smallest_overlay
+
+        def tracking_send(keycode, modifier, mapping):
+            count = real_send(keycode, modifier, mapping)
+            cancel.set()
+            return count
+
+        keeb.send_smallest_overlay = tracking_send
+
+        self.assertFalse(keeb.send_overlays(["fake.png"], cancel))
+        self.assertNotIn(ENABLE_OVERLAYS, [p[:3] for p in device.payloads()])
+        self.assert_lock_free(keeb)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
     def test_cancel_none_behaves_as_before(self, MockConverter):
         MockConverter.return_value = _converter({KeyCode.KC_A.value: _overlay("dot")})
         keeb, device = make_keeb(auto_ack=True)
@@ -243,6 +265,30 @@ class TestSendOverlaysMruCancel(unittest.TestCase, LockCheckMixin):
         self.assertNotIn(SEND_OVERLAY_MAPPING, cmd_ids)   # no mapping command
         self.assertNotIn(ENABLE_OVERLAYS,
                          [p[:3] for p in device.payloads()])  # no enable_overlays
+        self.assert_lock_free(keeb)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_cancel_after_last_image_skips_mapping_commit(self, MockConverter):
+        # The token flips after the LAST pool upload — only the pre-commit
+        # guard stands between a cancelled send and the mapping/enable commit.
+        MockConverter.return_value = _converter({KeyCode.KC_A.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+        cancel = threading.Event()
+
+        real_send = keeb.send_smallest_overlay
+
+        def tracking_send(keycode, modifier, mapping):
+            count = real_send(keycode, modifier, mapping)
+            cancel.set()
+            return count
+
+        keeb.send_smallest_overlay = tracking_send
+
+        self.assertFalse(keeb.send_overlays_mru(["fake.png"], cache, cancel))
+        cmd_ids = [p[1] for p in device.payloads()]
+        self.assertNotIn(SEND_OVERLAY_MAPPING, cmd_ids)
+        self.assertNotIn(ENABLE_OVERLAYS, [p[:3] for p in device.payloads()])
         self.assert_lock_free(keeb)
 
     @mock.patch("polyhost.device.poly_kybd.ImageConverter")
