@@ -37,6 +37,12 @@ dropdown then has a single entry); both share the same render mirror and page co
   origin** (the anchor the H/V offset sets).
 - A red border / label flags a key with out-of-bounds or overlap; the top line tallies
   them. An **en-US** badge marks a key with no own glyph (Latin fallback).
+- The line **under each preview** is that key's positioning **control-char sequence**
+  (`\f` up · `\x05` down · `\b` left · `\x06` right), coloured per element — i.e. the
+  escapes that get written into the cell. `·` means no offset.
+- On the selected key you can **drag** the active glyph in the preview to position it;
+  it **snaps to 2px** (one control char — the firmware has no 1px positioning code).
+  The d-pad does the same in fixed 2px steps.
 - Click a key → bottom-left: nudge **base/Shift/AltGr** with the ↑↓←→ d-pad (2px per
   press) or tick **drop**. The active element (base/Shift/AltGr, in its own colour)
   gets a tint overlay showing its origin quadrant — everything except the **top-right**
