@@ -50,9 +50,11 @@ button); both share the same render mirror and page code.
   gets a tint overlay showing its origin quadrant — everything except the **top-right**
   of the origin. Click an element's control block to activate it and preview its tint
   **without nudging**; selecting a key activates **base** by default.
-- Bottom-right: the **whole-layout offsets** (letter/num/sym × small/shift/altgr) — each
-  is a **d-pad** (▲▼ = V up/down, ◀▶ = H left/right) over H/V number inputs, mirroring
-  the per-key d-pad.
+- Bottom-right: the **whole-layout offsets** grouped by category (**letter** = purple,
+  **num** = orange, **sym** = apple-green; each labelled with examples, e.g. `num: 1, 2,
+  3, …`). Each category × small/shift/altgr is a **d-pad** (▲▼ = V up/down, ◀▶ = H
+  left/right) over H/V number inputs, mirroring the per-key d-pad. **Click a category
+  label** to frame all of that category's keys in its colour (click again to clear).
 - **Export changes** → paste the box back to whoever applies it.
 
 ## Export format → how to apply

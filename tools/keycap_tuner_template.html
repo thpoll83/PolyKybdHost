@@ -31,8 +31,9 @@
  .off{font-size:11px;color:#9c9;margin-left:4px} .drop{font-size:11px;margin-left:4px}
  #offctrl{border-left:2px solid #3a3a3a;padding-left:12px}
  .offhdr{font-size:12px;color:#9bd;margin-bottom:4px}
- .offgroups{display:flex;gap:14px}
- .offgroup{display:flex;flex-direction:column;gap:2px} .offgroup .gname{font-size:12px;color:#9bd}
+ .offgroups{display:flex;gap:10px}
+ .offgroup{display:flex;flex-direction:column;gap:2px;border:1px solid #444;border-radius:4px;padding:3px 6px}
+ .offgroup .gname{font-size:11px;cursor:pointer;white-space:nowrap;user-select:none} .offgroup .gname .ex{color:#888;font-size:10px}
  .offrow{display:flex;gap:8px}
  .offdpad{display:flex;flex-direction:column;align-items:center;gap:2px}
  .offdpad .vn{font-size:11px;color:#888} .offdpad .vn.small{color:#4f4}.offdpad .vn.shift{color:#6af}.offdpad .vn.altgr{color:#f66}
@@ -61,6 +62,10 @@ const C=DATA.consts,HIDE=DATA.HIDE,BY=DATA.base_yadv;
 const OW=C.OLED_W,OH=C.OLED_H,BX=C.BUFFER_X,SW=C.SCREEN_WIDTH,BL=C.BASELINE;
 const SCALE=4,MARG=9,LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 function catOf(kc){const c=kc.startsWith("KC_")&&kc.length===4?kc[3]:"";if(LETTERS.includes(c))return"letter";if(/^KC_[0-9]$/.test(kc))return"num";return"sym";}
+const CATCOL={letter:"#b07cff",num:"#ff9a3c",sym:"#7ed957"};        // purple / orange / apple-green
+const CATEX={letter:"A, B, C, …",num:"1, 2, 3, …",sym:". , / …"};
+let hlCat=null;                                                     // clicking a category frames its keys
+function toggleCat(c){hlCat=(hlCat===c?null:c);buildOffPanel();buildGrid();}
 // All layouts share the DATA.glyphs pool; per-layout cells/offsets live in DATA.langs.
 // st (per-key nudge state), OFF (mutable offsets) and O0 (pristine offsets) are
 // repointed at the current layout by loadLang(); STATE keeps each layout's edits
@@ -132,6 +137,7 @@ let selected=null,activeEl=null;
 function buildGrid(){const g=document.getElementById("grid");g.innerHTML="";let warnN=0;
  for(const row of DATA.rows){const rd=document.createElement("div");rd.style.display="flex";rd.style.flexWrap="wrap";rd.style.gap="4px";rd.style.flexBasis="100%";
   for(const kc of row){if(!(kc in st))continue;const d=document.createElement("div");d.className="key"+(kc===selected?" sel":"");
+   if(hlCat&&catOf(kc)===hlCat){d.style.outline="2px solid "+CATCOL[hlCat];d.style.outlineOffset="1px";}
    const cv=document.createElement("canvas");cv.width=(OW+2*MARG)*SCALE;cv.height=(OH+2*MARG)*SCALE;
    cv.style.width=((OW+2*MARG)*SCALE/2)+"px";cv.style.height=((OH+2*MARG)*SCALE/2)+"px";d.appendChild(cv);
    const lab=document.createElement("div");lab.className="lab";lab.textContent=kc.replace("KC_","");d.appendChild(lab);
@@ -162,8 +168,9 @@ function offCtl(c,t){const o=OFF[c][t];
  return`<div class="offdpad"><span class="vn ${t}">${t}</span>
   <div class="offpad"><span class="sp"></span>${f('V',-1,'▲')}<span class="sp"></span>${f('H',-1,'◀')}<span class="sp"></span>${f('H',1,'▶')}<span class="sp"></span>${f('V',1,'▼')}<span class="sp"></span></div>
   <div class="offins">H${ip('H')} V${ip('V')}</div></div>`;}
-function buildOffPanel(){let h=`<div class="offhdr">layout offsets (whole ${LANG})</div><div class="offgroups">`;
- for(const c of['letter','num','sym']){h+=`<div class="offgroup"><span class="gname">${c}</span><div class="offrow">`;
+function buildOffPanel(){let h=`<div class="offhdr">layout offsets (whole ${LANG}) — click a category to frame its keys</div><div class="offgroups">`;
+ for(const c of['letter','num','sym']){const hl=hlCat===c?`box-shadow:0 0 0 2px ${CATCOL[c]} inset;`:'';
+  h+=`<div class="offgroup" style="border-color:${CATCOL[c]};${hl}"><span class="gname" style="color:${CATCOL[c]}" onclick="toggleCat('${c}')">${c}: <span class="ex">${CATEX[c]}</span></span><div class="offrow">`;
   for(const t of['small','shift','altgr'])h+=offCtl(c,t);h+='</div></div>';}
  document.getElementById("offctrl").innerHTML=h+'</div>';}
 function adjOff(c,t,ax,d){OFF[c][t][ax]+=d;document.getElementById(`o_${c}_${t}_${ax}`).value=OFF[c][t][ax];buildGrid();}
