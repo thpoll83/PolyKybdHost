@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"><title>PolyKybd __LANG__ keycap tuner</title>
+<html lang="en"><head><meta charset="utf-8"><title>PolyKybd keycap tuner</title>
 <style>
  body{font-family:system-ui,sans-serif;background:#1b1b1b;color:#ddd;margin:0;padding:12px 12px 215px}
  h1{font-size:17px;margin:0 0 2px} .sub{color:#888;font-size:12px;margin-bottom:6px;max-width:1150px}
@@ -35,9 +35,10 @@
  #exp{width:100%;max-width:1150px;height:80px;background:#111;color:#9f9;font-family:monospace;font-size:11px;border:1px solid #444;margin-top:4px}
  .hint{font-size:12px;color:#888;align-self:center}
 </style></head><body>
-<h1>PolyKybd · __LANG__ keycap tuner</h1>
+<h1>PolyKybd · <span id="langname"></span> keycap tuner</h1>
 <div class="sub">base=<span style="color:#4f4">green</span> · Shift=<span style="color:#6af">blue</span> · AltGr=<span style="color:#f66">red</span> · overlaps mix · faded = clipped off-keycap · faint crosshair = each element's offset <b>origin</b>. <span style="color:#a85">en-US</span>=Latin fallback. Click a key; nudge it (bottom-left) or the whole-layout offsets (bottom-right).</div>
-<div class="top"><button class="act" onclick="exportAll()">Export changes</button><span class="hint">…then paste the box back to Claude</span></div>
+<div class="top"><label class="hint">Layout <select id="langsel" onchange="switchLang(this.value)"></select></label>
+ <button class="act" onclick="exportAll()">Export changes</button><span class="hint">…then paste the box back to Claude (or feed it to apply_tuner.py)</span></div>
 <textarea id="exp" placeholder="changed cells + offsets appear here on Export"></textarea>
 <div id="warnsum"></div>
 <div id="grid"></div>
@@ -47,13 +48,23 @@ const DATA=__DATA__;
 const C=DATA.consts,HIDE=DATA.HIDE,BY=DATA.base_yadv;
 const OW=C.OLED_W,OH=C.OLED_H,BX=C.BUFFER_X,SW=C.SCREEN_WIDTH,BL=C.BASELINE;
 const SCALE=4,MARG=9,LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const O0=JSON.parse(JSON.stringify(DATA.offsets));
 function catOf(kc){const c=kc.startsWith("KC_")&&kc.length===4?kc[3]:"";if(LETTERS.includes(c))return"letter";if(/^KC_[0-9]$/.test(kc))return"num";return"sym";}
-const st={};
-for(const kc in DATA.keys){st[kc]={};const K=DATA.keys[kc];
- for(const el of["base","shift","altgr"]){const s=K[el];if(!s){st[kc][el]=null;continue;}
-  let dx=0,dy=0;for(const cp of s.esc){if(cp===6)dx+=2;else if(cp===8)dx-=2;else if(cp===5)dy+=2;else if(cp===12)dy-=2;}
-  st[kc][el]={dx,dy,glyph:s.glyph,tok:s.tok,fb:!!s.fb,odx:dx,ody:dy,drop:false,odrop:false};}}
+// All layouts share the DATA.glyphs pool; per-layout cells/offsets live in DATA.langs.
+// st (per-key nudge state), OFF (mutable offsets) and O0 (pristine offsets) are
+// repointed at the current layout by loadLang(); STATE keeps each layout's edits
+// alive while you switch the dropdown so nothing is lost.
+let LANG=DATA.order[0],st,OFF,O0;
+const STATE={};
+function buildSt(keys){const s={};
+ for(const kc in keys){s[kc]={};const K=keys[kc];
+  for(const el of["base","shift","altgr"]){const sp=K[el];if(!sp){s[kc][el]=null;continue;}
+   let dx=0,dy=0;for(const cp of sp.esc){if(cp===6)dx+=2;else if(cp===8)dx-=2;else if(cp===5)dy+=2;else if(cp===12)dy-=2;}
+   s[kc][el]={dx,dy,glyph:sp.glyph,tok:sp.tok,fb:!!sp.fb,odx:dx,ody:dy,drop:false,odrop:false};}}
+ return s;}
+function loadLang(code){LANG=code;
+ if(!STATE[code]){const off=DATA.langs[code].offsets;
+  STATE[code]={st:buildSt(DATA.langs[code].keys),off:JSON.parse(JSON.stringify(off)),o0:JSON.parse(JSON.stringify(off))};}
+ const S=STATE[code];st=S.st;OFF=S.off;O0=S.o0;selected=null;activeEl=null;}
 function gen(dx,dy){const e=[];if(dy<0)for(let i=0;i<-dy/2;i++)e.push(12);if(dy>0)for(let i=0;i<dy/2;i++)e.push(5);
  if(dx<0)for(let i=0;i<-dx/2;i++)e.push(8);if(dx>0)for(let i=0;i<dx/2;i++)e.push(6);return e;}
 function glyphOf(cp){return DATA.glyphs[cp]||null;}
@@ -72,7 +83,7 @@ function draw(cps,x,y,plot){let xc=x,yc=y;
   for(let yy=0;yy<g.h;yy++)for(let xx=0;xx<g.w;xx++){if((bit&7)===0)bits=g.bits[bo++];
    if(bits&0x80)plot(xc+g.xo+xx-BX,gy+g.yo+yy);bits=(bits<<1)&0xFF;bit++;}xc+=g.xadv;}}
 function cpsOf(e){return e&&!e.drop?gen(e.dx,e.dy).concat(e.glyph):null;}
-function renderKey(kc){const o=DATA.offsets[catOf(kc)],K=st[kc];const base=cpsOf(K.base);if(!base)return{empty:true};
+function renderKey(kc){const o=OFF[catOf(kc)],K=st[kc];const base=cpsOf(K.base);if(!base)return{empty:true};
  let bx=28+o.small.H,bv=o.small.V;let scps=null,px2=0,pv=0;
  if(K.shift&&!K.shift.drop&&o.shift.H!==HIDE&&o.shift.V!==HIDE){scps=cpsOf(K.shift);
   const[bmin,bmax]=bounds(base),[pmin,pmax]=bounds(scps);px2=28+o.shift.H;
@@ -126,16 +137,16 @@ function buildKeyCtrl(){const p=document.getElementById("keyctrl");if(!selected)
   h+=`<span class="tok">${E.tok}${E.fb?' <span class=fbm>(en-US)</span>':''}</span>${dpad(selected,el)}<span class="off">dx=${E.dx} dy=${E.dy}</span>
    <label class="drop"><input type="checkbox" ${E.drop?"checked":""} onchange="setdrop('${selected}','${el}',this.checked)">drop</label></div>`;}
  p.innerHTML=h;}
-function offCtl(c,t){const o=DATA.offsets[c][t];
+function offCtl(c,t){const o=OFF[c][t];
  const f=(ax,d,s)=>`<button onclick="adjOff('${c}','${t}','${ax}',${d})">${s}</button>`;
  const ip=(ax)=>`<input id="o_${c}_${t}_${ax}" type="number" value="${o[ax]}" onchange="setOffV('${c}','${t}','${ax}',this.value)">`;
  return`<span class="offt ${t}"><b>${t}</b> H${f('H',-1,'◀')}${ip('H')}${f('H',1,'▶')} V${f('V',-1,'▲')}${ip('V')}${f('V',1,'▼')}</span>`;}
-function buildOffPanel(){let h='<div class="offhdr">layout offsets (whole __LANG__)</div>';
+function buildOffPanel(){let h=`<div class="offhdr">layout offsets (whole ${LANG})</div>`;
  for(const c of['letter','num','sym']){h+=`<div class="offcat"><span class="offcatn">${c}</span>`;
   for(const t of['small','shift','altgr'])h+=offCtl(c,t);h+='</div>';}
  document.getElementById("offctrl").innerHTML=h;}
-function adjOff(c,t,ax,d){DATA.offsets[c][t][ax]+=d;document.getElementById(`o_${c}_${t}_${ax}`).value=DATA.offsets[c][t][ax];buildGrid();}
-function setOffV(c,t,ax,v){DATA.offsets[c][t][ax]=parseInt(v,10)||0;buildGrid();}
+function adjOff(c,t,ax,d){OFF[c][t][ax]+=d;document.getElementById(`o_${c}_${t}_${ax}`).value=OFF[c][t][ax];buildGrid();}
+function setOffV(c,t,ax,v){OFF[c][t][ax]=parseInt(v,10)||0;buildGrid();}
 function nudge(kc,el,dx,dy){const E=st[kc][el];E.dx+=dx;E.dy+=dy;activeEl=el;buildGrid();buildKeyCtrl();}
 function reset1(kc,el){const E=st[kc][el];E.dx=E.odx;E.dy=E.ody;E.drop=E.odrop;buildGrid();buildKeyCtrl();}
 function setdrop(kc,el,v){st[kc][el].drop=v;buildGrid();buildKeyCtrl();}
@@ -143,12 +154,23 @@ function setActive(el){activeEl=el;buildGrid();buildKeyCtrl();}
 function escStr(cp){return cp===12?"\\f":cp===8?"\\b":cp===5?"\\x05":cp===6?"\\x06":"\\x"+cp.toString(16);}
 function cellFor(E){const esc=gen(E.dx,E.dy),named=/^[A-Z][A-Z0-9_]+$/.test(E.tok);
  if(esc.length===0)return E.tok;const s=esc.map(escStr).join("");return named?`U"${s}" ${E.tok}`:`U"${s}${E.tok}"`;}
-function exportAll(){const out=[];
- for(const kc in st)for(const el of["base","shift","altgr"]){const E=st[kc][el];if(!E)continue;
+// Emit one `=== code ===` block per layout that has changes (across every layout
+// visited this session). apply_tuner.py parses exactly this format.
+function exportLang(S){const out=[];
+ for(const kc in S.st)for(const el of["base","shift","altgr"]){const E=S.st[kc][el];if(!E)continue;
   if(E.drop&&!E.odrop){out.push(`${kc} ${el}: <drop / empty>`);continue;}
   if(E.dx!==E.odx||E.dy!==E.ody)out.push(`${kc} ${el}: ${cellFor(E)}`);}
- for(const c in DATA.offsets)for(const t in DATA.offsets[c])for(const ax of["H","V"])
-  if(DATA.offsets[c][t][ax]!==O0[c][t][ax])out.push(`[offset] ${c} ${t} ${ax} = ${DATA.offsets[c][t][ax]}`);
+ for(const c in S.off)for(const t in S.off[c])for(const ax of["H","V"])
+  if(S.off[c][t][ax]!==S.o0[c][t][ax])out.push(`[offset] ${c} ${t} ${ax} = ${S.off[c][t][ax]}`);
+ return out;}
+function exportAll(){const out=[];
+ for(const code of DATA.order){const S=STATE[code];if(!S)continue;
+  const lines=exportLang(S);if(lines.length){out.push(`=== ${code} ===`,...lines);}}
  document.getElementById("exp").value=out.length?out.join("\n"):"(no changes yet)";}
+function switchLang(code){loadLang(code);document.getElementById("langname").textContent=code;
+ buildOffPanel();buildGrid();buildKeyCtrl();}
+const _sel=document.getElementById("langsel");
+for(const code of DATA.order){const o=document.createElement("option");o.value=code;o.textContent=code;_sel.appendChild(o);}
+loadLang(DATA.order[0]);document.getElementById("langname").textContent=LANG;
 buildOffPanel();buildGrid();
 </script></body></html>

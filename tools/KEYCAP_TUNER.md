@@ -5,12 +5,14 @@ a PolyKybd language layout (base / Shift / AltGr) and the whole-layout offsets, 
 exporting the result for `lang_lut.xlsx`. It renders **pixel-identical to the
 firmware**, so what you see is what the panel shows.
 
-## Generate one for any layout
+## Generate one for any layout — or all of them
 
 ```bash
 cd PolyKybdHost/tools
-python gen_keycap_tuner.py --lang ps-AF          # -> /tmp/ps-AF_tuner.html
+python gen_keycap_tuner.py --lang ps-AF          # one layout   -> /tmp/ps-AF_tuner.html
 python gen_keycap_tuner.py --lang te-IN --out /tmp/te.html
+python gen_keycap_tuner.py --all                 # every layout -> /tmp/all_tuner.html
+python gen_keycap_tuner.py --all --out /tmp/all.html
 ```
 
 Open the file in any browser (no install, no network). It already shows the layout's
@@ -19,6 +21,14 @@ Open the file in any browser (no install, no network). It already shows the layo
 It works for **every** layout in `lang_lut.xlsx` — the generator pulls that lang's
 cells, the exact glyph bitmaps it uses (any script), the category offsets, and the
 en-US fallback glyphs, and embeds them in the page.
+
+`--all` bakes **every** layout into one file behind a **Layout dropdown** at the top.
+The glyph bitmaps are stored once in a **shared pool keyed by codepoint** (Latin
+layouts reuse the same a/b/c bitmaps), so the page stays a few MB even with every
+script. Switching the dropdown keeps each layout's edits alive, and **Export** emits
+one `=== code ===` block per edited layout — feed the whole box straight to
+`apply_tuner.py` (below). `--lang X` is just `--all` restricted to one layout (the
+dropdown then has a single entry); both share the same render mirror and page code.
 
 ## Using it
 
@@ -37,13 +47,29 @@ en-US fallback glyphs, and embeds them in the page.
 ## Export format → how to apply
 
 ```
+=== ps-AF ===                          # one block per edited layout (Export adds these)
 KC_Q base: U"\f\f" ARABIC_DAD          # a cell value -> lang_lut.xlsx (var base/shift/altgr)
 KC_D altgr: <drop / empty>             # clear that cell
 [offset] letter shift H = 44           # a settings value -> the SET[cat] offset rows
 ```
-Per-key lines go into the `key_lut` sheet (`KC_* row`, col = lang*4 + {base:0,shift:1,
-altgr:3}); `[offset]` lines go into the offset rows (`oled_preview.SET[cat]` = the
-voffset/hoffset rows). Then `cog -r lang_lut.c`, build, flash.
+
+**Apply it automatically** — `apply_tuner.py` parses exactly this format and writes the
+cells straight back into `lang_lut.xlsx`:
+
+```bash
+python apply_tuner.py changes.txt              # from a file
+pbpaste | python apply_tuner.py -              # from the clipboard (paste the Export box)
+python apply_tuner.py changes.txt --dry-run    # just print the resolved cell edits
+```
+
+It edits **only** `xl/worksheets/sheet2.xml` (set / clear cells) and copies every other
+zip entry byte-for-byte, so the formula caches in the other sheets stay intact — the
+same surgical approach as `lang/_patch_xlsx.py`, which only *appends* columns. Per-key
+lines map to the `key_lut` sheet (`KC_* row`, col = lang\*4 + {base:0, shift:1,
+altgr:3}); `[offset]` lines map to the offset rows (`oled_preview.SET[cat]` =
+voffset/hoffset, var {small:0, shift:1, altgr:3}); `<drop / empty>` clears the cell.
+After applying: `cog -r lang_lut.c`, build, flash. (To apply by hand instead, the same
+row/col mapping is all you need.)
 
 ## The 2px positioning control codes (cells)
 
@@ -78,10 +104,13 @@ the JS must agree with the firmware-faithful `oled_preview.warn_key` for every k
 
 ```bash
 # render the JS render logic in node and diff its per-key out-of-bounds/overlap
-# against oled_preview.py --check-bounds for the same lang (they must be identical)
+# against oled_preview.py --check-bounds for the same lang (they must be identical).
+# Slice off the DOM-touching init (node has no document), then load the layout and
+# walk the keys. Generate the file with --lang ps-AF so DATA.order[0] is that layout.
 node <(python - <<'PY'
 import re; h=open("/tmp/ps-AF_tuner.html").read()
-print(re.search(r"<script>(.*)</script>",h,re.S).group(1).split("buildOffPanel();")[0]
+js=re.search(r"<script>(.*)</script>",h,re.S).group(1).split("const _sel=")[0]
+print(js + 'loadLang(DATA.order[0]);'
   + 'for(const r of DATA.rows)for(const k of r){if(!(k in st))continue;const w=keyWarn(renderKey(k));if(w)console.log(k,w);}')
 PY
 )
@@ -90,7 +119,8 @@ python oled_preview.py --lang ps-AF --check-bounds
 
 ## Notes / limits
 
-- One layout per file (the glyph set is per-lang to keep the page small).
+- `--lang` is one layout per file; `--all` puts every layout in one file behind the
+  dropdown, sharing a single codepoint-keyed glyph pool to keep the page small.
 - Combining marks the layout drops (e.g. Arabic harakat, the nukta hint) follow the
   layout; the tuner shows what `lang_lut.xlsx` has.
 - A key with no own glyph renders the **en-US** fallback (tagged); nudging it exports a
