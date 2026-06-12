@@ -7,7 +7,6 @@ import subprocess
 import sys
 import time
 import webbrowser
-import yaml
 
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPalette, QColor
@@ -33,7 +32,6 @@ from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
 from polyhost.gui.settings_dialog import SettingsDialog
 from polyhost.gui.cmd_menu import CommandsSubMenu
-from polyhost.handler.active_window import OverlayHandler
 from polyhost.handler.common import OverlayCommand
 from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
 from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
@@ -41,20 +39,13 @@ from polyhost.input.macos_helper import MacOSInputHelper
 from polyhost.input.win_helper import WindowsInputHelper
 from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER, LANG_REGION_OVERRIDE
 from polyhost.services.unicode_cache import UnicodeCache
-from polyhost.settings import PolySettings
-from polyhost.device.poly_kybd import PolyKybd
-from polyhost.device.poly_kybd_mock import PolyKybdMock
-from polyhost.device.device_settings import DeviceSettings
-from polyhost.device.device_manager import DeviceManager
 from polyhost._version import __version__, __protocol__
 
 from polyhost.input.unicode_input import get_input_method
-from polyhost.services.sleep_listener import install_sleep_listener
-from polyhost.services.sunlight_helper import Sunlight
 from polyhost.services.updater import UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
-from polyhost.device.hid_worker import HidWorker
-from polyhost.gui.worker_bridge import WorkerBridge, decide_reconnect_apply, decide_probe_publish
+from polyhost.gui.worker_bridge import WorkerBridge, decide_reconnect_apply
+from polyhost.core.poly_core import PolyCore
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
@@ -66,9 +57,6 @@ NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 def sort_by_country_abc(item):
     return item[2:]
 
-
-def get_overlay_path(filepath):
-    return os.path.join(os.path.dirname(__file__), "res", "overlays", filepath)
 
 def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
@@ -228,40 +216,34 @@ class PolyHost(QApplication):
         self.keeb_log.propagate = False
 
         self.kb_sw_version = None
-        self.connected = False
-        # A device is "present" when it answers protocol-independent queries
-        # (GET_ID/GET_LANG) even if the protocol/version check fails. Firmware
-        # flash/apply keys off this, not off `connected` — see _fw_actions_allowed.
-        self.device_present = False
-        self.paused = False
         self._ignore_version = ignore_version
         if ignore_version:
             self.log.warning("--ignore-version active: firmware version/protocol checks will be bypassed")
-        self.poly_settings = PolySettings()
-        self.device_settings = DeviceSettings()
-        self.keeb = PolyKybd(self.device_settings, self.poly_settings)
 
-        self.device_mgr = DeviceManager(self.device_settings)
-        self.device_mgr.add(self.keeb, "PolyKybd", is_primary=True)
-        if self.poly_settings.get("dev_mock_enabled"):
-            mock = PolyKybdMock(self.device_settings, f"{__version__}")
-            self.device_mgr.add(mock, "PolyKybdMock", is_primary=False)
-            self.log.info("Mock device added as secondary.")
+        # The Qt adapter: core events fire on core/worker threads and are
+        # marshalled onto the Qt main thread through the bridge's queued
+        # signal. Event names match _on_job_done's dispatch by contract
+        # (polyhost/core/events.py).
+        self.bridge = WorkerBridge()
+        # noinspection PyUnresolvedReferences
+        self.bridge.job_done.connect(self._on_job_done)
 
-        connected = self.keeb.connect()
-        self.device_present = connected
-        self.device_mgr.connect_secondaries()
-        self.device_mgr.reset_all_caches()
-        if connected:
-            self.log.info("Connected to PolyKybd.")
-        else:
-            self.log.info("Not yet connected to PolyKybd...")
-        
-        
+        # The Qt-free operational core owns the device stack, the HID worker
+        # and all background work (headless-core plan, H1). PolyHost is the
+        # Qt client: tray, menus, dialogs, and this event adapter.
+        self.core = PolyCore(log=self.log, ignore_version=ignore_version,
+                             start_worker=False)
+        self.core.subscribe(self._on_core_event)
+
+        # Stable aliases — these objects never rebind after construction.
+        self.keeb = self.core.keeb
+        self.worker = self.core.worker
+        self.device_mgr = self.core.device_mgr
+        self.poly_settings = self.core.poly_settings
+        self.device_settings = self.core.device_settings
+        self.overlay_handler = self.core.overlay_handler
+
         self.setApplicationName('PolyHost')
-
-        # Persist the keyboard MRU just before the system sleeps (Linux/logind).
-        self._install_sleep_listener()
 
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False
@@ -418,40 +400,61 @@ class PolyHost(QApplication):
         self._update_timer.timeout.connect(self._start_update_check)
         self._update_timer.start(24 * 60 * 60 * 1000)
 
-        self.log.debug("Read overlay mapping file...")
-        self.mapping = {}
-        self.read_overlay_mapping_file(os.path.join(pathlib.Path(__file__).parent.resolve(), "res/overlay-mapping.poly.yaml"))
-        self.overlay_handler = OverlayHandler(self.mapping)
-
-        self.log.debug("Get sunlight data...")
-        self.sunlight = Sunlight(self.poly_settings.get("brightness_allow_online_location_lookup"), self.poly_settings.get("brightness_allow_online_irradiance_request"))
-
-        # --- HID worker thread -------------------------------------------------
         # After __init__ completes, only the worker thread (or code holding
-        # worker.exclusive()) calls into the device. The bridge marshals worker
-        # on_done results back onto the Qt main thread via a queued signal.
-        # _last_applied_connected is the worker-side notion of the host's last
-        # applied connection state, used by _reconnect_probe to decide whether a
-        # full re-query is needed. A bool read/write is atomic under the GIL:
-        # the worker reads it, the main thread writes it in _apply_reconnect_result.
-        self._last_applied_connected = self.connected
-        # Consecutive failed probes (worker-thread only) — see decide_probe_publish.
-        self._probe_fail_streak = 0
-        self.bridge = WorkerBridge()
-        # noinspection PyUnresolvedReferences
-        self.bridge.job_done.connect(self._on_job_done)
-        self.worker = HidWorker(log=self.log)
-        self.worker.add_periodic("reconnect", RECONNECT_CYCLE_MSEC / 1000.0,
-                                 self._reconnect_periodic)
-        self.worker.add_periodic("console", UPDATE_CYCLE_MSEC / 1000.0,
-                                 self._console_periodic)
-        self.worker.add_periodic("brightness", PERIODIC_10MIN_CYCLE_MSEC / 1000.0,
-                                 self._brightness_periodic)
-
+        # worker.exclusive()) calls into the device. The core owns the worker
+        # and all periodics; results arrive as core events through the bridge.
         self.log.debug("Starting cyclic checks...")
-        self.worker.start()
+        self.core.worker.start()
         QTimer.singleShot(UPDATE_CYCLE_MSEC * 2, self.active_window_reporter)
  
+
+    # ------------------------------------------------------------------
+    # Core adapter: events + shared connection state
+    # ------------------------------------------------------------------
+
+    def _on_core_event(self, name, payload):
+        """Core observer (fires on core/worker threads): hop to the Qt main
+        thread via the bridge's queued signal. Never touch Qt here."""
+        self.bridge.job_done.emit(name, payload)
+
+    def _emit_done(self, name, result):
+        """Worker-thread on_done shim: forward to the main thread via the bridge."""
+        self.bridge.job_done.emit(name, result)
+
+    # Connection state lives in the core (the worker-side probe reads it; a
+    # bool read/write is atomic under the GIL). These properties keep the
+    # GUI code and dialogs reading/writing the single source of truth.
+    @property
+    def connected(self):
+        return self.core.connected
+
+    @connected.setter
+    def connected(self, value):
+        self.core.connected = value
+
+    @property
+    def device_present(self):
+        return self.core.device_present
+
+    @device_present.setter
+    def device_present(self, value):
+        self.core.device_present = value
+
+    @property
+    def paused(self):
+        return self.core.paused
+
+    @property
+    def _last_applied_connected(self):
+        return self.core.last_applied_connected
+
+    @_last_applied_connected.setter
+    def _last_applied_connected(self, value):
+        self.core.last_applied_connected = value
+
+    @property
+    def mapping(self):
+        return self.core.mapping
 
     def set_style(self):
         self.setStyle("Fusion")
@@ -513,108 +516,17 @@ class PolyHost(QApplication):
             self.log.log(level, "%s: %s", title, msg)
 
     def pause(self):
-        self.paused = not self.paused
+        self.core.set_paused(not self.paused)
         if self.paused:
             self.status.setText("Reconnect")
-            self.connected = False
-            self._last_applied_connected = False
             self.status.setToolTip("")
-            # suspend() is idempotent, so toggling pause while already suspended
-            # (e.g. a flash holds exclusive()) is safe.
-            self.worker.suspend()
         else:
             self.status.setToolTip("Press to pause connection")
-            self.worker.resume()
         self.managed_connection_status()
 
     # ------------------------------------------------------------------
     # Reconnect: worker-side probe + main-thread apply
     # ------------------------------------------------------------------
-
-    def _reconnect_periodic(self, cancel):
-        """Worker periodic (1 s): probe the device, hand the snapshot to the
-        main thread via the bridge. Skipped automatically while suspended."""
-        snapshot = self._reconnect_probe(cancel)
-        if snapshot is not None:
-            self.bridge.job_done.emit("reconnect", snapshot)
-
-    def _reconnect_probe(self, cancel):
-        """Runs on the WORKER thread. Performs all device I/O for a reconnect
-        and returns a plain dict snapshot (or None to publish nothing) — no
-        Qt / PolyHost UI access.
-
-        Only re-queries version/lang info when the probed connectivity differs
-        from the host's last applied state (read atomically under the GIL)."""
-        connected_now = False
-        present_now = False
-        response = ""
-        if self.keeb.hid is not None:
-            # Flush replies that arrived after their command gave up waiting
-            # (the keyboard answers late while it syncs a large overlay
-            # transfer to the slave half) — otherwise they get misread as the
-            # replies to this probe's queries.
-            self.keeb.hid.drain_replies(timeout_ms=2)
-        if self.keeb.connect():
-            # connect() succeeding (GET_ID answered / interface re-opened)
-            # already proves a flashable device is present, even if the
-            # GET_LANG probe below fails on a busy keyboard.
-            present_now = True
-            connected_now, response = self.keeb.query_current_lang()
-
-        # Debounce: a busy keyboard misses probes without being disconnected.
-        publish, self._probe_fail_streak = decide_probe_publish(
-            connected_now, self._last_applied_connected, self._probe_fail_streak)
-        if not publish:
-            return None
-
-        snapshot = {
-            "connected_now": connected_now,
-            "device_present": present_now,
-            "lang": response,
-            "state_changed": connected_now != self._last_applied_connected,
-            # Popped on every successful probe: the firmware sets the fresh-boot
-            # marker on any reboot, including ones too fast for the host to see a
-            # disconnect (watchdog reset, firmware apply). Consuming it only on
-            # connectivity changes would leave a stale MRU cache. Not popped on a
-            # failed probe so the marker survives until a probe that gets applied.
-            "fresh_boot": self.keeb.pop_fresh_boot() if connected_now else False,
-        }
-        if not snapshot["state_changed"]:
-            return snapshot
-
-        if not connected_now:
-            # Going disconnected: do NOT query version/languages — stale late
-            # replies from the failed probe can make query_version_info
-            # "succeed" and fake a fresh connect (cache reset + full overlay
-            # resend) against a device that just failed to answer GET_LANG.
-            snapshot.update({
-                "version_ok": False,
-                "version_msg": "Could not read reply from PolyKybd",
-                "kb_version": None, "kb_proto": None, "kb_sw_version": None,
-                "name": None, "hw_version": None,
-                "lang_list": None, "current_lang": None,
-            })
-            return snapshot
-
-        version_ok, version_msg = self.keeb.query_version_info()
-        snapshot.update({
-            "version_ok": version_ok,
-            "version_msg": version_msg,
-            "kb_version": self.keeb.get_sw_version(),
-            "kb_proto": self.keeb.get_protocol_version(),
-            "kb_sw_version": self.keeb.get_sw_version_number(),
-            "name": self.keeb.get_name(),
-            "hw_version": self.keeb.get_hw_version(),
-        })
-        # Enumerate languages for the menu rebuild (apply consumes the list).
-        if version_ok or self._ignore_version:
-            enum_ok, _ = self.keeb.enumerate_lang()
-            snapshot["lang_list"] = self.keeb.get_lang_list() if enum_ok else None
-            snapshot["current_lang"] = self.keeb.get_current_lang() if enum_ok else None
-        else:
-            snapshot["lang_list"] = None
-            snapshot["current_lang"] = None
-        return snapshot
 
     def _apply_reconnect_result(self, snapshot):
         """Runs on the MAIN thread. Reproduces the original reconnect decision
@@ -913,14 +825,10 @@ class PolyHost(QApplication):
         if not file:
             file = QFileDialog.getOpenFileName(None, 'Open file', '', "PolyKybd overlay mapping (*.poly.yaml)")
         if len(file) > 0:
-            with open(file, 'r') as f:
-                self.mapping = yaml.load(f, Loader=yaml.FullLoader)
-        else:
-            self.log.info("No file selected. Operation canceled.")
+            self.core.load_overlay_mapping(file)
 
     def save_overlay_mapping_file(self, filename="overlay-mapping.poly.yaml"):
-        with open(filename, "w") as f:
-            f.write(yaml.dump(self.mapping))
+        self.core.save_overlay_mapping(filename)
 
     def _start_update_check(self, on_no_update=None, on_check_error=None):
         """Start a background update check.
@@ -1234,142 +1142,42 @@ class PolyHost(QApplication):
     def quit_app(self):
         self.icon_manager.set_disconnected()
         self.is_closing = True
-        # Persist the keyboard's MRU recents on a clean shutdown (the firmware
-        # only writes if they changed). USB suspend covers the sleep case; this
-        # covers a clean quit/logout where USB suspend may not fire. Run it
-        # synchronously (short bounded wait) BEFORE stopping the worker, but never
-        # let it block shutdown.
-        try:
-            self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
-        except Exception as e:  # never let a save attempt break shutdown
-            self.log.debug("MRU save request failed: %s: %s", type(e).__name__, e)
-        if self._sleep_listener is not None:
-            self._sleep_listener.close()
-        self.worker.stop()
-        self.overlay_handler.close()
+        # Operational shutdown (MRU persist, sleep listener, worker stop,
+        # window-handler close) is the core's job; never blocks on failure.
+        self.core.shutdown()
         self.quit()
 
     def save_keeb_mru(self):
-        """Best-effort request to persist the keyboard's emoji/language MRU.
-
-        Safe to call when disconnected — the HID layer just reports failure and
-        we swallow any error so shutdown/sleep is never blocked. Submitted as a
-        normal worker job (device I/O stays on the worker thread)."""
-        try:
-            if self.keeb:
-                self.worker.submit("save_mru", lambda c: self.keeb.save_mru())
-        except Exception as e:  # never let a save attempt break shutdown/sleep
-            self.log.debug("MRU save request failed: %s: %s", type(e).__name__, e)
-
-    def _install_sleep_listener(self):
-        """On Linux, ask systemd-logind to tell us just before the system sleeps
-        so we can persist the keyboard MRU. No-op (logged) where unavailable.
-
-        Delegates to the Qt-free ``services.sleep_listener`` (jeepney) module —
-        the callback fires on its daemon thread, not the Qt main thread, so the
-        handler (``save_keeb_mru``) must stay thread-safe: it only logs and calls
-        ``worker.submit`` (a pure-Python queue). No Qt is touched from there."""
-        self._sleep_listener = install_sleep_listener(self.save_keeb_mru, self.log)
+        """Best-effort MRU persist — delegated to the core (worker job)."""
+        self.core.save_mru()
 
     # noinspection PyPep8Naming
     def closeEvent(self, _):
         self.cmdMenu.disable_overlays()
 
     def send_overlay_data(self, data):
-        files = []
-        if isinstance(data, str):
-            files.append(get_overlay_path(data))
-        else:
-            for overlay in data:
-                files.append(get_overlay_path(overlay))
-
-        if len(files) == 0:
-            return
-        # Device I/O runs on the worker; coalesce_key="overlay" supersedes a
-        # pending/in-flight send so rapid alt-tabbing doesn't replay transfers.
-        self.icon_manager.set_thinking()
-        self.worker.submit("overlay", lambda cancel: self._overlay_send_job(files, cancel),
-                           coalesce_key="overlay", on_done=self._emit_done)
-
-    def _overlay_send_job(self, files, cancel):
-        """Worker-thread overlay send. Mirrors the original send_overlay_data
-        body; reset/enable that accompany a send stay inside this job so
-        ordering is preserved, and the cancel event is forwarded through."""
-        try:
-            mru_enabled = self.poly_settings.get("overlay_mru_cache_enabled")
-            mock_mru_enabled = self.poly_settings.get("dev_mock_overlay_mru_cache_enabled")
-            for entry in self.device_mgr.all_entries:
-                if cancel.is_set():
-                    return
-                use_mru = entry.cache is not None and (
-                    (entry.is_primary and mru_enabled) or
-                    (not entry.is_primary and mock_mru_enabled)
-                )
-                if use_mru:
-                    entry.device.send_overlays_mru(files, entry.cache, cancel)
-                else:
-                    entry.device.reset_overlays_and_usage()
-                    entry.device.send_overlays(files, cancel)
-        except Exception as e:
-            msg = f"Failed to send overlays '{files}': {e}"
-            self.log.warning(msg)
-            # Runs on the worker thread — the tray icon update must hop to the
-            # main thread via the bridge (set_warning touches Qt objects).
-            self.bridge.job_done.emit("overlay_warning", msg)
-
-        self.keeb.set_idle(False)
-
-    def _overlay_cmd_job(self, cmd, cancel):
-        """Worker-thread enable/disable of overlays on every device entry."""
-        for entry in self.device_mgr.all_entries:
-            if cancel.is_set():
-                return
-            if cmd == OverlayCommand.DISABLE:
-                entry.device.disable_overlays()
-            elif cmd == OverlayCommand.ENABLE:
-                entry.device.enable_overlays()
-
-    def _emit_done(self, name, result):
-        """Worker-thread on_done shim: forward to the main thread via the bridge."""
-        self.bridge.job_done.emit(name, result)
+        # Device I/O runs on the core's worker (coalesced); the tray icon is
+        # the GUI's concern. The "overlay" completion event settles it.
+        if self.core.send_overlay_data(data):
+            self.icon_manager.set_thinking()
 
     def active_window_reporter(self):
-        # Main-thread timer: NO device I/O. Window tracking (pywinctl) stays here;
-        # everything that touches HID is submitted to the worker.
-        if self.connected:
-            data, cmd = self.overlay_handler.handle_active_window(
-                UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
-            if cmd in (OverlayCommand.DISABLE, OverlayCommand.ENABLE):
-                self.worker.submit("overlay", lambda c, cmd=cmd: self._overlay_cmd_job(cmd, c),
-                                   coalesce_key="overlay")
-            if data and cmd == OverlayCommand.OFF_ON:
-                self.send_overlay_data(data)
-        elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
-            self.overlay_handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
+        # Main-thread timer: NO device I/O. Window tracking (pywinctl) stays
+        # here; everything that touches HID goes through the core's worker.
+        handler = self.core.overlay_handler
+        if handler is not None:
+            if self.connected:
+                data, cmd = handler.handle_active_window(
+                    UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
+                if cmd in (OverlayCommand.DISABLE, OverlayCommand.ENABLE):
+                    self.core.submit_overlay_cmd(cmd)
+                if data and cmd == OverlayCommand.OFF_ON:
+                    self.send_overlay_data(data)
+            elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
+                handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
 
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
-
-    # ------------------------------------------------------------------
-    # Worker periodics (console/serial reads, brightness) + result dispatch
-    # ------------------------------------------------------------------
-
-    def _console_periodic(self, cancel):
-        """Worker periodic (250 ms): read serial + console; deliver via bridge."""
-        kb_serial = self.keeb.read_serial()
-        kb_log = self.keeb.get_console_output()
-        if kb_serial or kb_log:
-            self.bridge.job_done.emit("console", (kb_serial, kb_log))
-
-    def _brightness_periodic(self, cancel):
-        """Worker periodic (10 min): daylight-dependent brightness incl. the
-        network lookups — kept entirely off the GUI thread."""
-        if self.poly_settings.get("brightness_set_daylight_dependent"):
-            min_val = self.poly_settings.get("irradiance_min")
-            max_val = self.poly_settings.get("irradiance_max")
-            prescaler = self.poly_settings.get("irradiance_prescaler")
-            brightness = self.sunlight.get_brightness_now(min_val, max_val, prescaler)
-            self.keeb.set_brightness(2 + brightness * 48)
 
     def _on_job_done(self, name, result):
         """Main-thread slot for the bridge's job_done signal."""
