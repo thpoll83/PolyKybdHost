@@ -565,7 +565,17 @@ class PolyHost(QApplication):
             self.current_lang = self.keeb.get_current_lang()
             title = f"Selected Language: {self.current_lang[:2]} {self.langcode_to_flag(self.current_lang[2:])}"
             if self.keeb_lang_menu is None:
-                self.keeb_lang_menu = menu.addMenu(get_icon("language.svg"), title)
+                # Place the language menu right under the first entry (the status
+                # action) instead of appending it last. It may be created lazily
+                # once the firmware version is known, by which point the rest of
+                # the menu already exists, so insert rather than add.
+                self.keeb_lang_menu = QMenu(title)
+                self.keeb_lang_menu.menuAction().setIcon(get_icon("language.svg"))
+                actions = menu.actions()
+                if len(actions) > 1:
+                    menu.insertMenu(actions[1], self.keeb_lang_menu)
+                else:
+                    menu.addMenu(self.keeb_lang_menu)
             else:
                 self.keeb_lang_menu.setTitle(title)
                 self.keeb_lang_menu.clear()
