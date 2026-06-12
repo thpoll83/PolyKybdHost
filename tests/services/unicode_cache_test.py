@@ -63,14 +63,14 @@ class TestDownloadFailureHandling(unittest.TestCase):
                         return_value=tmp):
             return UnicodeCache()
 
-    @mock.patch("polyhost.services.unicode_cache.requests.get")
+    @mock.patch("polyhost.services.unicode_cache.requests.Session.get")
     def test_download_uses_bounded_timeout(self, get):
         get.side_effect = ConnectionError("offline")
         cache = self._make_cache()
         cache.get_icon_for("ZZ")   # not shipped in res/flags -> download path
-        self.assertEqual(get.call_args.kwargs.get("timeout"), 5)
+        self.assertEqual(get.call_args.kwargs.get("timeout"), 10)
 
-    @mock.patch("polyhost.services.unicode_cache.requests.get")
+    @mock.patch("polyhost.services.unicode_cache.requests.Session.get")
     def test_failed_download_not_retried_in_same_session(self, get):
         get.side_effect = ConnectionError("offline")
         cache = self._make_cache()
@@ -78,7 +78,7 @@ class TestDownloadFailureHandling(unittest.TestCase):
         cache.get_icon_for("ZZ")   # reconnect would call this again
         self.assertEqual(get.call_count, 1)
 
-    @mock.patch("polyhost.services.unicode_cache.requests.get")
+    @mock.patch("polyhost.services.unicode_cache.requests.Session.get")
     def test_distinct_flags_each_get_one_attempt(self, get):
         get.side_effect = ConnectionError("offline")
         cache = self._make_cache()
