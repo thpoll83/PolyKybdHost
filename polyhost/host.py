@@ -9,7 +9,7 @@ import time
 import webbrowser
 import yaml
 
-from PyQt5.QtCore import QTimer, Qt, pyqtSlot
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import (
     QApplication,
@@ -49,6 +49,7 @@ from polyhost.device.device_manager import DeviceManager
 from polyhost._version import __version__, __protocol__
 
 from polyhost.input.unicode_input import get_input_method
+from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
 from polyhost.services.updater import UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
@@ -1230,6 +1231,8 @@ class PolyHost(QApplication):
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
             self.log.debug("MRU save request failed: %s: %s", type(e).__name__, e)
+        if self._sleep_listener is not None:
+            self._sleep_listener.close()
         self.worker.stop()
         self.overlay_handler.close()
         self.quit()
@@ -1248,35 +1251,13 @@ class PolyHost(QApplication):
 
     def _install_sleep_listener(self):
         """On Linux, ask systemd-logind to tell us just before the system sleeps
-        so we can persist the keyboard MRU. No-op (logged) where unavailable."""
-        # logind / Qt DBus is Linux-only; skip cleanly elsewhere so the QtDBus
-        # import is never attempted on platforms (or minimal Qt builds) without it.
-        if not sys.platform.startswith("linux"):
-            self.log.debug("Sleep listener is Linux-only; skipping on %s.", sys.platform)
-            return
-        try:
-            from PyQt5.QtDBus import QDBusConnection
-            bus = QDBusConnection.systemBus()
-            if not bus.isConnected():
-                self.log.debug("System D-Bus not available; no sleep listener.")
-                return
-            ok = bus.connect(
-                "org.freedesktop.login1", "/org/freedesktop/login1",
-                "org.freedesktop.login1.Manager", "PrepareForSleep",
-                self._on_prepare_for_sleep)
-            self.log.debug("logind PrepareForSleep listener installed: %s", ok)
-        except Exception as e:
-            self.log.debug("Could not install sleep listener: %s: %s", type(e).__name__, e)
+        so we can persist the keyboard MRU. No-op (logged) where unavailable.
 
-    # QtDBus only accepts pyqtSlot-decorated methods as signal targets — without
-    # the decorator bus.connect() raises TypeError and the listener never
-    # installs (seen in the field: MRU was not saved before system sleep).
-    @pyqtSlot(bool)
-    def _on_prepare_for_sleep(self, going_to_sleep):
-        # PrepareForSleep(true) fires just before the system suspends.
-        if going_to_sleep:
-            self.log.info("System is about to sleep — saving keyboard MRU.")
-            self.save_keeb_mru()
+        Delegates to the Qt-free ``services.sleep_listener`` (jeepney) module —
+        the callback fires on its daemon thread, not the Qt main thread, so the
+        handler (``save_keeb_mru``) must stay thread-safe: it only logs and calls
+        ``worker.submit`` (a pure-Python queue). No Qt is touched from there."""
+        self._sleep_listener = install_sleep_listener(self.save_keeb_mru, self.log)
 
     # noinspection PyPep8Naming
     def closeEvent(self, _):

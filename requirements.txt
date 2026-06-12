@@ -13,3 +13,4 @@ pvlib
 requests
 pyserial
 packaging
+jeepney; sys_platform == "linux"
