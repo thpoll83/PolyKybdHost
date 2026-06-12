@@ -66,6 +66,24 @@ class TestPackedCodec(unittest.TestCase):
         self.assertEqual(buf, b"\x00")
         self.assertEqual(iso.decode_packed(buf), [])
 
+    def test_packed_skips_unknown_index(self):
+        # An index pair past the end of the tables (e.g. a newer firmware's code)
+        # is skipped + reported via on_skip, not fatal: the known codes survive.
+        buf = bytearray(iso.encode_packed(["enUS", "deDE"]))
+        buf[0] = 3                              # claim one more entry than encoded
+        buf += bytes([255, 255])               # ... an out-of-range (lang, country)
+        skipped = []
+        codes = iso.decode_packed(buf, on_skip=lambda *a: skipped.append(a))
+        self.assertEqual(codes, ["enUS", "deDE"])
+        self.assertEqual(skipped, [(2, 255, 255)])
+
+    def test_packed_skips_unknown_index_silent(self):
+        # Without on_skip the unknown pair is still skipped (no exception raised).
+        buf = bytearray(iso.encode_packed(["enUS"]))
+        buf[0] = 2
+        buf += bytes([254, 0])
+        self.assertEqual(iso.decode_packed(buf), ["enUS"])
+
 
 if __name__ == "__main__":
     unittest.main()

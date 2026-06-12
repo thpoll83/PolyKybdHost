@@ -30,6 +30,11 @@ HOST_REPO = os.path.dirname(HERE)
 HOME = os.path.dirname(HOST_REPO)
 HIDE = -128
 SCREEN_WIDTH = 72
+# How many px outside the real 72x40 viewport to KEEP and render (instead of
+# silently clipping like the hardware does). oled_to_rgb paints this border red
+# with any lit pixels in yellow, so glyphs that get cut off on the device are
+# obvious in the preview. 0 = hardware-exact (no margin). Overridable via --overshoot.
+OVERSHOOT = 2
 
 # keycode -> lang_lut row, in translate_keycode order
 LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -98,20 +103,23 @@ class Lang:
         if val is None or val == '': return None
         if isinstance(val, (int, float)): return [ord(c) for c in str(int(val))]
         s = str(val).strip()
-        # multi-token: e.g.  u"\f\f" MICRO_SIGN   or   u" " EURO_SIGN
-        toks = s.split()
-        if len(toks) > 1:
-            cps = []
-            for t in toks:
-                cps += self.resolve_token(t)
-            return cps
-        return self.resolve_token(s)
+        # Tokenise like the firmware's make_key: a u"..."/U"..." literal is ONE token
+        # even if it contains spaces (e.g. u"[ {", u"` ~"); only whitespace OUTSIDE a
+        # quoted literal separates tokens (e.g. u"\f\f" MICRO_SIGN). Splitting on plain
+        # whitespace shattered space-containing literals (the ro-RO/bracket-key bug).
+        cps = []
+        for m in re.finditer(r'[uU]"(?:\\.|[^"\\])*"|\S+', s):
+            cps += self.resolve_token(m.group(0))
+        return cps or None
 
     def resolve_token(self, t: str) -> list[int]:
         if t in self.named: return list(self.named[t])
         m = re.match(r'^[uU]"((?:\\.|[^"\\])*)"$', t)
         if m: return parse_u_string(m.group(1))
-        return [ord(c) for c in t]    # bare literal char(s)
+        # A bare cell is the body of an implicit U"..." (make_key wraps it), so it can
+        # carry \x.. / \f escapes — parse them instead of rendering the literal text
+        # (a bare "\xb4\xb4" is U+00B4 U+00B4, not the 8 chars backslash-x-b-4...).
+        return parse_u_string(t)
 
     # translate_keycode (small) with NULL -> en-US(0) fallback; returns (used_lang, cps|None)
     def small(self, lang_idx, row):
@@ -140,7 +148,14 @@ class Renderer:
 
     def _font(self, cp):
         for f in self.fonts:
-            if f.first <= cp <= f.last: return f
+            if f.first <= cp <= f.last:
+                g = f.glyphs[cp - f.first]
+                # skip an empty padding gap (non-contiguous range filled with 0x0
+                # glyphs) so a later font with the real glyph wins; a real space is
+                # (1,1)/advance>0 and is never skipped. Mirrors disp_array.c.
+                if g['width'] == 0 and g['height'] == 0 and g['xAdvance'] == 0:
+                    continue
+                return f
         return None
 
     def bounds(self, cps):
@@ -150,20 +165,25 @@ class Renderer:
             if cp in (0x05, 0x0c, 0x0b): continue
             if cp in (0x18, 0x0d, 0x0a): x = 0; continue
             if cp == 0x08: x = x - 2 if x > 1 else 0; continue
+            if cp == 0x06: x += 2; continue
             if cp == 0x09: x += ((x) // 36 + 1) * 36; continue
             f = self._font(cp); ch = cp
             if f is None: f = self.fonts[0]; ch = ord('!')
             if not (f.first <= ch <= f.last): continue
             g = f.glyphs[ch - f.first]
-            mn = min(mn, x + g['xOffset']); mx = max(mx, x + g['xOffset'] + g['width'])
+            w = g['width']
+            if w > 0:                                   # match kdisp_gfx_text_bounds' w>0 guard
+                l = x + g['xOffset']; r = x + g['xOffset'] + w - 1   # -1: rightMOST pixel, not one past
+                mn = min(mn, l); mx = max(mx, r)
             x += g['xAdvance']
         if mx < mn: mn = mx = 0
         return mn, mx
 
-    def draw(self, px, cps, x, y):
+    def draw(self, setpix, cps, x, y):
         xc, yc = x, y
         for cp in cps:
             if cp == 0x05: yc += 2; continue
+            if cp == 0x06: xc += 2; continue
             if cp == 0x18: xc, yc = x, y; continue
             if cp == 0x08: xc = xc - 2 if xc > 1 else 0; continue
             if cp == 0x0c: yc = yc - 2 if yc > 1 else 0; continue
@@ -183,13 +203,23 @@ class Renderer:
                     if bits & 0x80:
                         vx = xc + g['xOffset'] + xx - BUFFER_X
                         vy = gy + g['yOffset'] + yy
-                        if 0 <= vx < OLED_W and 0 <= vy < OLED_H: px[vx, vy] = 255
+                        # keep up to OVERSHOOT px outside the viewport so clipped glyph
+                        # pixels stay visible (oled_to_rgb flags that margin). setpix
+                        # receives viewport coords; it owns the OVERSHOOT offset + target.
+                        if -OVERSHOOT <= vx < OLED_W + OVERSHOOT and -OVERSHOOT <= vy < OLED_H + OVERSHOOT:
+                            setpix(vx, vy)
                     bits = (bits << 1) & 0xFF; bit += 1
             xc += g['xAdvance']
 
 
-def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool) -> Image.Image:
-    """Replicate the per-key draw in keymap.c (process_record_user render path)."""
+def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool,
+               channels: bool = False, report: dict | None = None) -> Image.Image:
+    """Replicate the per-key draw in keymap.c (process_record_user render path).
+
+    channels=True renders each element into its own colour channel - base->green,
+    Shift->blue, AltGr->red - so any overlap between them mixes (base+Shift=cyan,
+    base+AltGr=yellow, Shift+AltGr=magenta, all three=white) and is easy to spot.
+    """
     li = L.langs.index(lang); row = ROW[kc]
     is_letter = kc[:3] == "KC_" and len(kc) == 4 and kc[3] in LETTERS
     is_num = kc in [f"KC_{d}" for d in "1234567890"]
@@ -197,7 +227,9 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     vrow, hrow = SET[cat]
 
     used_lang, base = L.small(li, row)
-    img = Image.new('L', (OLED_W, OLED_H), 0); px = img.load()
+    ew, eh = OLED_W + 2 * OVERSHOOT, OLED_H + 2 * OVERSHOOT
+    img = Image.new('RGB', (ew, eh), (0, 0, 0)) if channels else Image.new('L', (ew, eh), 0)
+    px = img.load()
     if base is None:
         return img
 
@@ -217,7 +249,14 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     if not shift and not caps:
         v_pv = get_setting(L, vrow, li, VAR_SHIFT); h_pv = get_setting(L, hrow, li, VAR_SHIFT)
         if v_pv != HIDE and h_pv != HIDE:
-            shift_letter = L.var(used_lang, row, VAR_SHIFT)
+            # mirror translate_keycode_only_shift(): the language's OWN Shift glyph,
+            # falling back to the en-US Shift only when the key has neither its own
+            # Shift nor its own base. A key that inherits only the base (e.g. the
+            # ck-US number keys: en-US digit base + a Cherokee Shift syllable) keeps
+            # its Shift - so this is NOT tied to small()'s used_lang (which drops to 0).
+            shift_letter = L.var(li, row, VAR_SHIFT)
+            if shift_letter is None and L.cell(li, row, VAR_SMALL) is None:
+                shift_letter = L.var(0, row, VAR_SHIFT)
             if shift_letter is not None:
                 bmin, bmax = R.bounds(base); pmin, pmax = R.bounds(shift_letter)
                 preview_x = 28 + h_pv
@@ -227,9 +266,23 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                 if preview_x + pmin <= base_x + bmax:
                     base_v -= 6; preview_v += 4
 
-    R.draw(px, base, base_x, BASELINE + base_v)
+    EXP = OVERSHOOT
+    # report: per-element pixel sets so callers can flag out-of-bounds (a pixel the
+    # firmware would clip at the keycap edge) and overlap (a pixel two elements share).
+    rpx = {'base': set(), 'shift': set(), 'altgr': set()} if report is not None else None
+    def make_setter(ci, name):    # ci: 0=R (AltGr), 1=G (base), 2=B (Shift)
+        def s(vx, vy):
+            if channels:
+                X, Y = vx + EXP, vy + EXP; c = list(px[X, Y]); c[ci] = 255; px[X, Y] = tuple(c)
+            else:
+                px[vx + EXP, vy + EXP] = 255
+            if rpx is not None: rpx[name].add((vx, vy))
+        return s
+    sp_base, sp_shift, sp_alt = make_setter(1, 'base'), make_setter(2, 'shift'), make_setter(0, 'altgr')
+
+    R.draw(sp_base, base, base_x, BASELINE + base_v)
     if shift_letter is not None:
-        R.draw(px, shift_letter, preview_x, BASELINE + preview_v)
+        R.draw(sp_shift, shift_letter, preview_x, BASELINE + preview_v)
     if not shift and not caps:
         v_off = get_setting(L, vrow, li, VAR_ALTGR); h_off = get_setting(L, hrow, li, VAR_ALTGR)
         if v_off != HIDE and h_off != HIDE:
@@ -240,16 +293,73 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                 alt_x = 28 + h_off
                 if alt_x + amax > BUFFER_X + SCREEN_WIDTH - 1:
                     alt_x = (BUFFER_X + SCREEN_WIDTH - 1) - amax
-                R.draw(px, alt, alt_x, BASELINE + v_off)
+                R.draw(sp_alt, alt, alt_x, BASELINE + v_off)
+    if report is not None:
+        def _oob(s): return sum(1 for (vx, vy) in s if vx < 0 or vx >= OLED_W or vy < 0 or vy >= OLED_H)
+        report['oob'] = {k: _oob(v) for k, v in rpx.items()}
+        b, sh, al = rpx['base'], rpx['shift'], rpx['altgr']
+        report['overlap'] = len((b & sh) | (b & al) | (sh & al))
+        report['overlap_detail'] = {'base^shift': len(b & sh), 'base^altgr': len(b & al), 'shift^altgr': len(sh & al)}
     return img
 
 
+def warn_key(L: Lang, R: Renderer, lang: str, kc: str) -> list[str]:
+    """Render a key off-screen with a wide margin and report any element that draws
+    out of bounds (clipped at the keycap edge) or overlaps another element."""
+    global OVERSHOOT
+    save = OVERSHOOT; OVERSHOOT = 60
+    try:
+        rep: dict = {}
+        render_key(L, R, lang, kc, False, False, channels=True, report=rep)
+    finally:
+        OVERSHOOT = save
+    msgs = []
+    for el, n in rep['oob'].items():
+        if n: msgs.append(f"OUT-OF-BOUNDS {el} {n}px clipped")
+    if rep['overlap']:
+        d = ", ".join(f"{k}={v}" for k, v in rep['overlap_detail'].items() if v)
+        msgs.append(f"OVERLAP {rep['overlap']}px ({d})")
+    return msgs
+
+
 def oled_to_rgb(img: Image.Image, scale: int) -> Image.Image:
-    big = img.resize((OLED_W * scale, OLED_H * scale), Image.NEAREST)
-    return Image.merge('RGB', (big, big, big))   # white-on-black like the real OLED
+    # img is the expanded (OLED_W+2*OVERSHOOT) x (OLED_H+2*OVERSHOOT) buffer.
+    if img.mode == 'RGB':
+        # --channels: base=green, Shift=blue, AltGr=red already baked in (overlaps
+        # mix). Just tint the unlit overshoot margin gray so the viewport edge shows.
+        ew, eh = img.size
+        if OVERSHOOT:
+            px = img.load()
+            for y in range(eh):
+                iny = OVERSHOOT <= y < OLED_H + OVERSHOOT
+                for x in range(ew):
+                    if not (iny and OVERSHOOT <= x < OLED_W + OVERSHOOT) and px[x, y] == (0, 0, 0):
+                        px[x, y] = (40, 40, 40)
+        return img.resize((ew * scale, eh * scale), Image.NEAREST)
+    # img is the expanded grayscale buffer.
+    # Central OLED_W x OLED_H = the real viewport (white-on-black, hardware-exact). The
+    # OVERSHOOT-px border = pixels the device CLIPS: painted dark red, with any lit
+    # pixel there shown YELLOW so a glyph cut off at an edge is impossible to miss.
+    if OVERSHOOT == 0:
+        big = img.resize((OLED_W * scale, OLED_H * scale), Image.NEAREST)
+        return Image.merge('RGB', (big, big, big))
+    ew, eh = img.size
+    src = img.load()
+    rgb = Image.new('RGB', (ew, eh)); dst = rgb.load()
+    for y in range(eh):
+        iny = OVERSHOOT <= y < OLED_H + OVERSHOOT
+        for x in range(ew):
+            inside = iny and (OVERSHOOT <= x < OLED_W + OVERSHOOT)
+            lit = src[x, y] > 0
+            if inside:
+                dst[x, y] = (255, 255, 255) if lit else (0, 0, 0)
+            else:
+                dst[x, y] = (255, 255, 0) if lit else (48, 0, 0)
+    return rgb.resize((ew * scale, eh * scale), Image.NEAREST)
 
 
 def main():
+    global OVERSHOOT
     ap = argparse.ArgumentParser()
     ap.add_argument('--lang', required=True, help='e.g. ka-GE, ta-IN, vi-VN')
     ap.add_argument('--key', help='single keycode, e.g. KC_Q (default: contact sheet of all keys)')
@@ -257,18 +367,40 @@ def main():
     ap.add_argument('--caps', action='store_true', help='render with caps lock')
     ap.add_argument('--qmk', default=os.path.join(HOME, 'qmk_firmware'))
     ap.add_argument('--cell-scale', type=int, default=3)
+    ap.add_argument('--overshoot', type=int, default=OVERSHOOT,
+                    help='px of out-of-viewport render to keep & flag (red margin, yellow pixels); 0 = hardware-exact')
+    ap.add_argument('--channels', action='store_true',
+                    help='overlap-detect: base=green, Shift=blue, AltGr=red; overlaps mix (cyan/yellow/magenta/white)')
     ap.add_argument('--out', default=None)
+    ap.add_argument('--check-bounds', action='store_true',
+                    help='audit out-of-bounds + element overlap (this lang, or ALL langs with --lang ALL); no image')
     a = ap.parse_args()
+    OVERSHOOT = a.overshoot
 
     pk = os.path.join(a.qmk, 'keyboards', 'handwired', 'polykybd')
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
-    if a.lang not in L.langs: sys.exit(f"unknown lang {a.lang}; have {L.langs}")
+    if a.lang != 'ALL' and a.lang not in L.langs: sys.exit(f"unknown lang {a.lang}; have {L.langs}")
     R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
     s = a.cell_scale
 
+    if a.check_bounds:
+        langs = L.langs if a.lang == 'ALL' else [a.lang]
+        total = 0
+        for lang in langs:
+            hits = []
+            for kc in ROW:
+                w = warn_key(L, R, lang, kc)
+                if w: hits.append(f"  {kc.replace('KC_',''):6s} {'; '.join(w)}")
+            if hits:
+                print(f"{lang}:"); print("\n".join(hits)); total += len(hits)
+        print(f"\n{total} key(s) with out-of-bounds/overlap across {len(langs)} lang(s)")
+        return
+
     if a.key:
-        img = oled_to_rgb(render_key(L, R, a.lang, a.key.upper(), a.shift, a.caps), s)
+        w = warn_key(L, R, a.lang, a.key.upper())
+        for m in w: print(f"  ⚠ {a.lang} {a.key.upper()}: {m}", file=sys.stderr)
+        img = oled_to_rgb(render_key(L, R, a.lang, a.key.upper(), a.shift, a.caps, a.channels), s)
         out = a.out or os.path.join(HERE, 'out', f'oled_{a.lang}_{a.key}.png')
         os.makedirs(os.path.dirname(out), exist_ok=True); img.save(out)
         print("wrote", out); return
@@ -276,19 +408,25 @@ def main():
     # contact sheet
     try: font = ImageFont.truetype("DejaVuSans.ttf", 10)
     except Exception: font = ImageFont.load_default()
-    cw, ch = OLED_W * s, OLED_H * s
+    ew, eh = OLED_W + 2 * OVERSHOOT, OLED_H + 2 * OVERSHOOT
+    cw, ch = ew * s, eh * s
     pad, lab = 6, 12
     cols = max(len(r) for r in SHEET); rows = len(SHEET)
     W = cols * (cw + pad) + pad; H = rows * (ch + lab + pad) + pad + 18
     sheet = Image.new('RGB', (W, H), (32, 32, 32)); d = ImageDraw.Draw(sheet)
-    d.text((pad, 4), f"{a.lang}{'  [shift]' if a.shift else ''}{'  [caps]' if a.caps else ''}", font=font, fill=(255, 255, 0))
+    title = f"{a.lang}{'  [shift]' if a.shift else ''}{'  [caps]' if a.caps else ''}"
+    if a.channels: title += "   channels: base=green Shift=blue AltGr=red (overlap=mix)"
+    d.text((pad, 4), title, font=font, fill=(255, 255, 0))
     for ri, krow in enumerate(SHEET):
         for ci, kc in enumerate(krow):
             x = pad + ci * (cw + pad); y = 18 + pad + ri * (ch + lab + pad)
             d.text((x, y), kc.replace("KC_", ""), font=font, fill=(180, 180, 180))
-            cell = oled_to_rgb(render_key(L, R, a.lang, kc, a.shift, a.caps), s)
+            cell = oled_to_rgb(render_key(L, R, a.lang, kc, a.shift, a.caps, a.channels), s)
             sheet.paste(cell, (x, y + lab))
-            d.rectangle([x, y + lab, x + cw - 1, y + lab + ch - 1], outline=(70, 70, 70))
+            # outline the REAL 72x40 viewport (inset by the overshoot margin) so the
+            # red border sits clearly outside it
+            vx0 = x + OVERSHOOT * s; vy0 = y + lab + OVERSHOOT * s
+            d.rectangle([vx0, vy0, vx0 + OLED_W * s - 1, vy0 + OLED_H * s - 1], outline=(70, 70, 70))
     out = a.out or os.path.join(HERE, 'out', f'oled_{a.lang}.png')
     os.makedirs(os.path.dirname(out), exist_ok=True); sheet.save(out)
     print("wrote", out)

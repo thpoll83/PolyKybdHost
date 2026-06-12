@@ -11,7 +11,8 @@ CMD_FW_UP_APPLY       = 0x44
 
 FW_UP_CHUNK_SIZE  = 56
 FW_UP_VERSION_LEN = 16
-FW_UP_MAX_SIZE    = 1024 * 1024   # 1 MB hard limit
+FW_UP_MAX_SIZE    = 0x1FF000      # ~2 MB hard limit (2 MB staging region minus the 4 KB header);
+                                  # must match FW_UP_MAX_SIZE in qmk .../base/fw_staging.h
 
 # RP2040 memory map constants used for firmware validation
 _RP2040_BOOT2_SIZE  = 256

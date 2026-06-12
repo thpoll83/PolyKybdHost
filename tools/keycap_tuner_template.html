@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>PolyKybd __LANG__ keycap tuner</title>
+<style>
+ body{font-family:system-ui,sans-serif;background:#1b1b1b;color:#ddd;margin:0;padding:12px 12px 215px}
+ h1{font-size:17px;margin:0 0 2px} .sub{color:#888;font-size:12px;margin-bottom:6px;max-width:1150px}
+ #warnsum{font-size:12px;margin:4px 0;color:#f3a}
+ #grid{display:flex;flex-wrap:wrap;gap:4px;max-width:1500px}
+ .key{background:#000;border:2px solid #333;border-radius:4px;padding:2px;cursor:pointer;position:relative}
+ .key.sel{border-color:#4af} .key.warn{border-color:#e44}
+ .key .lab{position:absolute;top:1px;left:3px;font-size:9px;color:#9b9;pointer-events:none;text-shadow:0 0 2px #000}
+ .key .wl{position:absolute;bottom:1px;right:3px;font-size:9px;color:#f66;pointer-events:none}
+ .key .fb{position:absolute;top:1px;right:3px;font-size:8px;color:#a85;pointer-events:none}
+ #panel{position:fixed;left:0;right:0;bottom:0;height:198px;background:#242424;border-top:2px solid #444;
+   padding:6px 10px;display:flex;gap:16px;box-sizing:border-box;overflow-x:auto}
+ #keyctrl{display:flex;gap:10px;align-items:flex-start;min-width:480px}
+ #keyctrl h2{font-size:15px;margin:0 6px 0 0;align-self:center}
+ .el{border-left:1px solid #3a3a3a;padding:0 8px;min-width:140px}
+ .el .nm{font-weight:bold} .el.base .nm{color:#4f4}.el.shift .nm{color:#6af}.el.altgr .nm{color:#f66}
+ .el .tok{color:#aaa;font-size:11px;word-break:break-all;display:block;margin:2px 0}
+ .el .fbm{color:#a85;font-size:10px}
+ .el.active{background:#2e2e2e;border-radius:3px}
+ .dpad{display:inline-grid;grid-template-columns:repeat(3,27px);grid-gap:2px}
+ .dpad button,.offt button{background:#333;color:#ddd;border:1px solid #555;border-radius:3px;cursor:pointer}
+ .dpad button{width:27px;height:21px;font-size:13px} .dpad button:hover{background:#444} .dpad .sp{visibility:hidden}
+ .off{font-size:11px;color:#9c9;margin-left:4px} .drop{font-size:11px;margin-left:4px}
+ #offctrl{border-left:2px solid #3a3a3a;padding-left:12px}
+ .offhdr{font-size:12px;color:#9bd;margin-bottom:3px}
+ .offcat{display:flex;align-items:center;gap:6px;margin:1px 0} .offcatn{width:42px;color:#9bd;font-size:12px;text-align:right}
+ .offt{font-size:11px;color:#bbb;white-space:nowrap}
+ .offt b{color:#888;font-weight:normal}.offt.shift b{color:#6af}.offt.altgr b{color:#f66}.offt.small b{color:#4f4}
+ .offt button{width:18px;height:18px;font-size:10px;padding:0;vertical-align:middle}
+ .offt input{width:34px;background:#111;color:#dd9;border:1px solid #444;font-size:11px;text-align:center;margin:0 1px}
+ .top{display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+ button.act{background:#264;color:#cfc;border:1px solid #485;border-radius:4px;padding:5px 9px;cursor:pointer}
+ #exp{width:100%;max-width:1150px;height:80px;background:#111;color:#9f9;font-family:monospace;font-size:11px;border:1px solid #444;margin-top:4px}
+ .hint{font-size:12px;color:#888;align-self:center}
+</style></head><body>
+<h1>PolyKybd · __LANG__ keycap tuner</h1>
+<div class="sub">base=<span style="color:#4f4">green</span> · Shift=<span style="color:#6af">blue</span> · AltGr=<span style="color:#f66">red</span> · overlaps mix · faded = clipped off-keycap · faint crosshair = each element's offset <b>origin</b>. <span style="color:#a85">en-US</span>=Latin fallback. Click a key; nudge it (bottom-left) or the whole-layout offsets (bottom-right).</div>
+<div class="top"><button class="act" onclick="exportAll()">Export changes</button><span class="hint">…then paste the box back to Claude</span></div>
+<textarea id="exp" placeholder="changed cells + offsets appear here on Export"></textarea>
+<div id="warnsum"></div>
+<div id="grid"></div>
+<div id="panel"><div id="keyctrl"><span class="hint">click a key to edit</span></div><div id="offctrl"></div></div>
+<script>
+const DATA=__DATA__;
+const C=DATA.consts,HIDE=DATA.HIDE,BY=DATA.base_yadv;
+const OW=C.OLED_W,OH=C.OLED_H,BX=C.BUFFER_X,SW=C.SCREEN_WIDTH,BL=C.BASELINE;
+const SCALE=4,MARG=9,LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const O0=JSON.parse(JSON.stringify(DATA.offsets));
+function catOf(kc){const c=kc.startsWith("KC_")&&kc.length===4?kc[3]:"";if(LETTERS.includes(c))return"letter";if(/^KC_[0-9]$/.test(kc))return"num";return"sym";}
+const st={};
+for(const kc in DATA.keys){st[kc]={};const K=DATA.keys[kc];
+ for(const el of["base","shift","altgr"]){const s=K[el];if(!s){st[kc][el]=null;continue;}
+  let dx=0,dy=0;for(const cp of s.esc){if(cp===6)dx+=2;else if(cp===8)dx-=2;else if(cp===5)dy+=2;else if(cp===12)dy-=2;}
+  st[kc][el]={dx,dy,glyph:s.glyph,tok:s.tok,fb:!!s.fb,odx:dx,ody:dy,drop:false,odrop:false};}}
+function gen(dx,dy){const e=[];if(dy<0)for(let i=0;i<-dy/2;i++)e.push(12);if(dy>0)for(let i=0;i<dy/2;i++)e.push(5);
+ if(dx<0)for(let i=0;i<-dx/2;i++)e.push(8);if(dx>0)for(let i=0;i<dx/2;i++)e.push(6);return e;}
+function glyphOf(cp){return DATA.glyphs[cp]||null;}
+function bounds(cps){let x=0,mn=127,mx=-128;
+ for(const cp of cps){if(cp===5||cp===12||cp===11)continue;if(cp===24||cp===13||cp===10){x=0;continue;}
+  if(cp===8){x=x>1?x-2:0;continue;}if(cp===6){x+=2;continue;}if(cp===9){x+=(Math.floor(x/36)+1)*36;continue;}
+  let g=glyphOf(cp)||glyphOf(33);if(!g)continue;const w=g.w;
+  if(w>0){const l=x+g.xo,r=x+g.xo+w-1;if(l<mn)mn=l;if(r>mx)mx=r;}x+=g.xadv;}
+ if(mx<mn){mn=0;mx=0;}return[mn,mx];}
+function draw(cps,x,y,plot){let xc=x,yc=y;
+ for(const cp of cps){if(cp===5){yc+=2;continue;}if(cp===6){xc+=2;continue;}if(cp===24){xc=x;yc=y;continue;}
+  if(cp===8){xc=xc>1?xc-2:0;continue;}if(cp===12){yc=yc>1?yc-2:0;continue;}
+  if(cp===9){xc+=(Math.floor((xc-x)/36)+1)*36;continue;}if(cp===10){yc+=BY;xc=x;continue;}
+  if(cp===11){yc+=(Math.floor((yc-y)/15)+1)*15;continue;}if(cp===13){xc=x;continue;}
+  let g=glyphOf(cp)||glyphOf(33);if(!g)continue;const gy=yc+(g.yadv-BY);let bo=0,bit=0,bits=0;
+  for(let yy=0;yy<g.h;yy++)for(let xx=0;xx<g.w;xx++){if((bit&7)===0)bits=g.bits[bo++];
+   if(bits&0x80)plot(xc+g.xo+xx-BX,gy+g.yo+yy);bits=(bits<<1)&0xFF;bit++;}xc+=g.xadv;}}
+function cpsOf(e){return e&&!e.drop?gen(e.dx,e.dy).concat(e.glyph):null;}
+function renderKey(kc){const o=DATA.offsets[catOf(kc)],K=st[kc];const base=cpsOf(K.base);if(!base)return{empty:true};
+ let bx=28+o.small.H,bv=o.small.V;let scps=null,px2=0,pv=0;
+ if(K.shift&&!K.shift.drop&&o.shift.H!==HIDE&&o.shift.V!==HIDE){scps=cpsOf(K.shift);
+  const[bmin,bmax]=bounds(base),[pmin,pmax]=bounds(scps);px2=28+o.shift.H;
+  if(px2+pmin<bx+bmax+2)px2=bx+bmax+2-pmin;if(px2+pmax>BX+SW-1)px2=(BX+SW-1)-pmax;pv=o.shift.V;
+  if(px2+pmin<=bx+bmax){bv-=6;pv+=4;}}
+ let acps=null,axx=0,av=0;
+ if(K.altgr&&!K.altgr.drop&&o.altgr.H!==HIDE&&o.altgr.V!==HIDE){acps=cpsOf(K.altgr);
+  const[amin,amax]=bounds(acps);axx=28+o.altgr.H;if(axx+amax>BX+SW-1)axx=(BX+SW-1)-amax;av=o.altgr.V;}
+ const map={},sets={base:new Set(),shift:new Set(),altgr:new Set()};
+ const mk=(ch,nm)=>(vx,vy)=>{const k=vx+","+vy;map[k]=(map[k]||0)|ch;sets[nm].add(k);};
+ draw(base,bx,BL+bv,mk(2,"base"));if(scps)draw(scps,px2,BL+pv,mk(4,"shift"));if(acps)draw(acps,axx,BL+av,mk(1,"altgr"));
+ const oob={base:0,shift:0,altgr:0};
+ for(const nm in sets)for(const k of sets[nm]){const[vx,vy]=k.split(",").map(Number);if(vx<0||vx>=OW||vy<0||vy>=OH)oob[nm]++;}
+ const ov=new Set();for(const k of sets.base)if(sets.shift.has(k)||sets.altgr.has(k))ov.add(k);for(const k of sets.shift)if(sets.altgr.has(k))ov.add(k);
+ const origins={base:[bx-BX,BL+bv],shift:scps?[px2-BX,BL+pv]:null,altgr:acps?[axx-BX,BL+av]:null};
+ return{map,oob,overlap:ov.size,origins};}
+function keyWarn(r){if(r.empty)return"";const o=r.oob,w=[];for(const nm of["base","shift","altgr"])if(o[nm])w.push(nm[0].toUpperCase()+":"+o[nm]);if(r.overlap)w.push("ov:"+r.overlap);return w.join(" ");}
+const COL={1:[255,80,80],2:[80,255,80],4:[100,170,255],3:[255,255,80],5:[255,170,80],6:[120,255,255],7:[255,255,255]};
+const GC={base:[80,255,80],shift:[100,170,255],altgr:[255,80,80]};
+function paintR(cv,kc){const r=renderKey(kc),ctx=cv.getContext("2d");ctx.fillStyle="#000";ctx.fillRect(0,0,cv.width,cv.height);
+ ctx.strokeStyle="#333";ctx.strokeRect(MARG*SCALE-0.5,MARG*SCALE-0.5,OW*SCALE,OH*SCALE);if(r.empty)return r;
+ for(const nm of["base","shift","altgr"]){const o=r.origins[nm];if(!o)continue;const[ox,oy]=o;const g=GC[nm];
+  ctx.fillStyle=`rgba(${g[0]},${g[1]},${g[2]},0.32)`;
+  ctx.fillRect((ox+MARG)*SCALE-1,MARG*SCALE,3,OH*SCALE); ctx.fillRect(MARG*SCALE,(oy+MARG)*SCALE-1,OW*SCALE,3);}
+ for(const k in r.map){const[vx,vy]=k.split(",").map(Number);const oo=(vx<0||vx>=OW||vy<0||vy>=OH);
+  const c=COL[r.map[k]]||[200,200,200];ctx.fillStyle=`rgba(${c[0]},${c[1]},${c[2]},${oo?0.32:1})`;ctx.fillRect((vx+MARG)*SCALE,(vy+MARG)*SCALE,SCALE,SCALE);}
+ if(kc===selected&&(activeEl==="shift"||activeEl==="altgr")&&r.origins[activeEl]){let[ox,oy]=r.origins[activeEl];
+  ox=Math.max(0,Math.min(OW,ox));oy=Math.max(0,Math.min(OH,oy));const g=GC[activeEl];
+  ctx.fillStyle=`rgba(${g[0]},${g[1]},${g[2]},0.18)`;
+  ctx.fillRect(MARG*SCALE,MARG*SCALE,OW*SCALE,oy*SCALE);                 // above origin (full width)
+  ctx.fillRect(MARG*SCALE,(oy+MARG)*SCALE,ox*SCALE,(OH-oy)*SCALE);}     // left of origin, below it
+ return r;}
+let selected=null,activeEl=null;
+function buildGrid(){const g=document.getElementById("grid");g.innerHTML="";let warnN=0;
+ for(const row of DATA.rows){const rd=document.createElement("div");rd.style.display="flex";rd.style.gap="4px";rd.style.flexBasis="100%";
+  for(const kc of row){if(!(kc in st))continue;const d=document.createElement("div");d.className="key"+(kc===selected?" sel":"");
+   const cv=document.createElement("canvas");cv.width=(OW+2*MARG)*SCALE;cv.height=(OH+2*MARG)*SCALE;
+   cv.style.width=((OW+2*MARG)*SCALE/2)+"px";cv.style.height=((OH+2*MARG)*SCALE/2)+"px";d.appendChild(cv);
+   const lab=document.createElement("div");lab.className="lab";lab.textContent=kc.replace("KC_","");d.appendChild(lab);
+   if(st[kc].base&&st[kc].base.fb){const fb=document.createElement("div");fb.className="fb";fb.textContent="en-US";d.appendChild(fb);}
+   const r=paintR(cv,kc),w=keyWarn(r);
+   if(w){d.classList.add("warn");const wl=document.createElement("div");wl.className="wl";wl.textContent=w;d.appendChild(wl);warnN++;}
+   d.onclick=()=>{selected=kc;activeEl=(st[kc].shift?"shift":(st[kc].altgr?"altgr":null));buildGrid();buildKeyCtrl();};rd.appendChild(d);}g.appendChild(rd);}
+ document.getElementById("warnsum").textContent=warnN?(warnN+" key(s) flag out-of-bounds / overlap"):"no out-of-bounds or overlap ✓";}
+function dpad(kc,el){const b=(dx,dy,t)=>`<button onclick="nudge('${kc}','${el}',${dx},${dy})">${t}</button>`;
+ return`<div class="dpad"><span class="sp"></span>${b(0,-2,"↑")}<span class="sp"></span>${b(-2,0,"←")}<button onclick="reset1('${kc}','${el}')">·</button>${b(2,0,"→")}<span class="sp"></span>${b(0,2,"↓")}<span class="sp"></span></div>`;}
+function buildKeyCtrl(){const p=document.getElementById("keyctrl");if(!selected){p.innerHTML="<span class='hint'>click a key to edit</span>";return;}
+ const K=st[selected];let h=`<h2>${selected.replace("KC_","")}</h2>`;
+ for(const el of["base","shift","altgr"]){const E=K[el];h+=`<div class="el ${el}${el===activeEl?' active':''}"><span class="nm" style="cursor:pointer" onclick="setActive('${el}')">${el}</span>`;
+  if(!E){h+=` <span class='hint'>none</span></div>`;continue;}
+  h+=`<span class="tok">${E.tok}${E.fb?' <span class=fbm>(en-US)</span>':''}</span>${dpad(selected,el)}<span class="off">dx=${E.dx} dy=${E.dy}</span>
+   <label class="drop"><input type="checkbox" ${E.drop?"checked":""} onchange="setdrop('${selected}','${el}',this.checked)">drop</label></div>`;}
+ p.innerHTML=h;}
+function offCtl(c,t){const o=DATA.offsets[c][t];
+ const f=(ax,d,s)=>`<button onclick="adjOff('${c}','${t}','${ax}',${d})">${s}</button>`;
+ const ip=(ax)=>`<input id="o_${c}_${t}_${ax}" type="number" value="${o[ax]}" onchange="setOffV('${c}','${t}','${ax}',this.value)">`;
+ return`<span class="offt ${t}"><b>${t}</b> H${f('H',-1,'◀')}${ip('H')}${f('H',1,'▶')} V${f('V',-1,'▲')}${ip('V')}${f('V',1,'▼')}</span>`;}
+function buildOffPanel(){let h='<div class="offhdr">layout offsets (whole __LANG__)</div>';
+ for(const c of['letter','num','sym']){h+=`<div class="offcat"><span class="offcatn">${c}</span>`;
+  for(const t of['small','shift','altgr'])h+=offCtl(c,t);h+='</div>';}
+ document.getElementById("offctrl").innerHTML=h;}
+function adjOff(c,t,ax,d){DATA.offsets[c][t][ax]+=d;document.getElementById(`o_${c}_${t}_${ax}`).value=DATA.offsets[c][t][ax];buildGrid();}
+function setOffV(c,t,ax,v){DATA.offsets[c][t][ax]=parseInt(v,10)||0;buildGrid();}
+function nudge(kc,el,dx,dy){const E=st[kc][el];E.dx+=dx;E.dy+=dy;activeEl=el;buildGrid();buildKeyCtrl();}
+function reset1(kc,el){const E=st[kc][el];E.dx=E.odx;E.dy=E.ody;E.drop=E.odrop;buildGrid();buildKeyCtrl();}
+function setdrop(kc,el,v){st[kc][el].drop=v;buildGrid();buildKeyCtrl();}
+function setActive(el){activeEl=el;buildGrid();buildKeyCtrl();}
+function escStr(cp){return cp===12?"\\f":cp===8?"\\b":cp===5?"\\x05":cp===6?"\\x06":"\\x"+cp.toString(16);}
+function cellFor(E){const esc=gen(E.dx,E.dy),named=/^[A-Z][A-Z0-9_]+$/.test(E.tok);
+ if(esc.length===0)return E.tok;const s=esc.map(escStr).join("");return named?`U"${s}" ${E.tok}`:`U"${s}${E.tok}"`;}
+function exportAll(){const out=[];
+ for(const kc in st)for(const el of["base","shift","altgr"]){const E=st[kc][el];if(!E)continue;
+  if(E.drop&&!E.odrop){out.push(`${kc} ${el}: <drop / empty>`);continue;}
+  if(E.dx!==E.odx||E.dy!==E.ody)out.push(`${kc} ${el}: ${cellFor(E)}`);}
+ for(const c in DATA.offsets)for(const t in DATA.offsets[c])for(const ax of["H","V"])
+  if(DATA.offsets[c][t][ax]!==O0[c][t][ax])out.push(`[offset] ${c} ${t} ${ax} = ${DATA.offsets[c][t][ax]}`);
+ document.getElementById("exp").value=out.length?out.join("\n"):"(no changes yet)";}
+buildOffPanel();buildGrid();
+</script></body></html>

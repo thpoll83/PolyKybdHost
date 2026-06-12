@@ -152,6 +152,20 @@ ba=hr
 si=hr
 fo=dk
 
+# ── 2026-06 Europe + Americas minority/sibling batch ─────────────────────────
+# Basque (eu-ES) and Galician (gl-ES) use the Spanish layout; Romansh (rm-CH) the
+# Swiss German one; Welsh (cy-GB) the UK layout; Maltese (mt-MT) has its own "mt"
+# xkb layout; Northern Sami (se-NO) the Norwegian one; Irish (ga-IE) maps via the
+# existing ie=gb,us. All resolve through their own country code, so the only
+# Europe fold needed is Luxembourg, which has no dedicated xkb layout and uses the
+# Swiss (French) QWERTZ — fold onto "ch", French as the secondary fallback.
+lu=ch,fr
+
+# Americas: Guarani (gn-PY), Quechua (qu-PE), Aymara (ay-BO) and Nahuatl (nh-MX)
+# all type on the common Latin-American layout ("latam"); their country folds
+# (py/pe/bo=latam, mx=latam) are already declared above. Navajo (nv-US) types on
+# a plain US base (us, resolves natively).
+
 # Plain-US-QWERTY English (and Swahili-TZ) markets without a distinct layout.
 # Where a national xkb layout exists it is matched first by country code; "us"
 # is the fold fallback. ie prefers the UK layout, then US.
