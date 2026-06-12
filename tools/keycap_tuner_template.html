@@ -118,7 +118,7 @@ function paintR(cv,kc){const r=renderKey(kc),ctx=cv.getContext("2d");ctx.fillSty
  return r;}
 let selected=null,activeEl=null;
 function buildGrid(){const g=document.getElementById("grid");g.innerHTML="";let warnN=0;
- for(const row of DATA.rows){const rd=document.createElement("div");rd.style.display="flex";rd.style.gap="4px";rd.style.flexBasis="100%";
+ for(const row of DATA.rows){const rd=document.createElement("div");rd.style.display="flex";rd.style.flexWrap="wrap";rd.style.gap="4px";rd.style.flexBasis="100%";
   for(const kc of row){if(!(kc in st))continue;const d=document.createElement("div");d.className="key"+(kc===selected?" sel":"");
    const cv=document.createElement("canvas");cv.width=(OW+2*MARG)*SCALE;cv.height=(OH+2*MARG)*SCALE;
    cv.style.width=((OW+2*MARG)*SCALE/2)+"px";cv.style.height=((OH+2*MARG)*SCALE/2)+"px";d.appendChild(cv);
