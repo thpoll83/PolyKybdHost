@@ -239,6 +239,10 @@ class PolyHost(QApplication):
 
         self.kb_sw_version = None
         self.connected = False
+        # A device is "present" when it answers protocol-independent queries
+        # (GET_ID/GET_LANG) even if the protocol/version check fails. Firmware
+        # flash/apply keys off this, not off `connected` — see _fw_actions_allowed.
+        self.device_present = False
         self.paused = False
         self._ignore_version = ignore_version
         if ignore_version:
@@ -255,6 +259,7 @@ class PolyHost(QApplication):
             self.log.info("Mock device added as secondary.")
 
         connected = self.keeb.connect()
+        self.device_present = connected
         self.device_mgr.connect_secondaries()
         self.device_mgr.reset_all_caches()
         if connected:
@@ -478,14 +483,27 @@ class PolyHost(QApplication):
         palette.setColor(QPalette.HighlightedText, highlight_text_color)
         self.setPalette(palette)
         
+    def _fw_actions_allowed(self):
+        """Firmware flash/apply must stay reachable whenever a device is
+        present — including on a protocol/version mismatch, which is exactly
+        when the user needs to update. The HID flash protocol (hid_fw_up) is
+        dispatched independently of PROTOCOL_VERSION in the firmware, so it
+        only needs a present device, not a compatible one."""
+        return (self.connected or self.device_present) and not self.paused
+
     def managed_connection_status(self):
+        enabled = self.connected and not self.paused
+        fw_enabled = self._fw_actions_allowed()
         for action in self.menu.actions():
-            action.setEnabled(self.connected and not self.paused)
+            action.setEnabled(enabled)
+        # Re-enable the firmware actions inside the commands submenu (the loop
+        # above just disabled its parent action on a mismatch).
+        self.cmdMenu.update_enabled(enabled, fw_enabled)
         self.log_dialog.setEnabled(True)
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
         self.update_action.setEnabled(True)
-        self.firmware_update_action.setEnabled(self.connected)
+        self.firmware_update_action.setEnabled(fw_enabled)
         self.status.setEnabled(True)
         self.support.setEnabled(True)
         self.about.setEnabled(True)
@@ -606,6 +624,9 @@ class PolyHost(QApplication):
             return
         connected_now = snapshot["connected_now"]
         response = snapshot["lang"]
+        # GET_LANG answering is protocol-independent: a device that fails the
+        # protocol/version check below is still *present* and flashable.
+        self.device_present = connected_now
 
         if snapshot["state_changed"]:
             decision = decide_reconnect_apply(
@@ -910,7 +931,9 @@ class PolyHost(QApplication):
         if self._update_checker is not None and self._update_checker.isRunning():
             return
         self.log.debug("Starting update check...")
-        fw_version = self.keeb.get_sw_version() if self.connected else None
+        # device_present (not connected): the firmware version is known even on
+        # a protocol mismatch, and that's exactly when an update must be offered.
+        fw_version = self.keeb.get_sw_version() if self._fw_actions_allowed() else None
         self._update_checker = UpdateChecker(current_fw_version=fw_version, parent=self)
 
         # Track whether the error signal fires before host_no_update so we can
@@ -930,7 +953,7 @@ class PolyHost(QApplication):
                     f"Update firmware to v{self._pending_fw_release.version}…"
                     if self._pending_fw_release else "Check for firmware update…"
                 )
-                self.firmware_update_action.setEnabled(self.connected)
+                self.firmware_update_action.setEnabled(self._fw_actions_allowed())
 
         def _host_no_update():
             if _error_seen[0]:
@@ -1126,13 +1149,15 @@ class PolyHost(QApplication):
     def _on_manual_no_fw_update(self):
         self._await_manual_fw_prompt = False
         self.firmware_update_action.setText("Check for firmware update…")
-        self.firmware_update_action.setEnabled(self.connected)
-        fw_version = self.keeb.get_sw_version() if self.connected else "unknown"
+        self.firmware_update_action.setEnabled(self._fw_actions_allowed())
+        fw_version = self.keeb.get_sw_version() if self._fw_actions_allowed() else "unknown"
         _msgbox(QMessageBox.Information, "PolyKybd Firmware",
                 f"You are running the latest firmware (v{fw_version}).")
 
     def _prompt_and_flash(self, release):
-        if not self.connected:
+        # Deliberately NOT gated on self.connected: a protocol-mismatched
+        # keyboard reports connected=False but must remain updatable.
+        if not self._fw_actions_allowed():
             _msgbox(QMessageBox.Warning, "Firmware Update",
                     "The keyboard must be connected to update the firmware.")
             return

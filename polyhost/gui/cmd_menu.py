@@ -87,6 +87,11 @@ class CommandsSubMenu:
 
     def build_menu(self, parent_menu):
         cmd_menu = parent_menu.addMenu(get_icon("settings.svg"), "All PolyKybd Commands")
+        self._cmd_menu = cmd_menu
+        # Firmware flash/apply/bootloader actions stay enabled on a
+        # protocol/version mismatch (see PolyHost._fw_actions_allowed) —
+        # update_enabled() re-enables exactly these when the rest is greyed out.
+        self._fw_actions = []
 
         action = QAction(get_icon("toggle_off.svg"), "Stop Idle", parent=self.parent)
         action.setData(False)
@@ -171,16 +176,19 @@ class CommandsSubMenu:
         # noinspection PyUnresolvedReferences
         action.triggered.connect(lambda: self.open_hid_fw_up_dialog(apply_after=True))
         cmd_menu.addAction(action)
+        self._fw_actions.append(action)
 
         action = QAction(get_icon("keyboard_input.svg"), "Flash Firmware only (.bin, stage)…", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(lambda: self.open_hid_fw_up_dialog(apply_after=False))
         cmd_menu.addAction(action)
+        self._fw_actions.append(action)
 
         action = QAction(get_icon("keyboard_input.svg"), "Apply Staged Firmware (both halves)…", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.apply_staged_firmware_action)
         cmd_menu.addAction(action)
+        self._fw_actions.append(action)
 
         action = QAction("Test mapping...", parent=self.parent)
         # noinspection PyUnresolvedReferences
@@ -193,6 +201,7 @@ class CommandsSubMenu:
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.activate_bootloader)
         cmd_menu.addAction(action)
+        self._fw_actions.append(action)
 
         hand_menu = cmd_menu.addMenu(get_icon("keyboard.svg"), "Fix Left/Right Side")
         action = QAction("Connected half is LEFT (other is RIGHT)", parent=self.parent)
@@ -206,6 +215,18 @@ class CommandsSubMenu:
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.set_handedness)
         hand_menu.addAction(action)
+
+    def update_enabled(self, connected, fw_enabled):
+        """Protocol-dependent commands follow ``connected``; the firmware
+        flash/apply/bootloader actions follow ``fw_enabled`` so a keyboard
+        with a mismatched protocol can still be updated. The submenu's own
+        parent action must be enabled for the firmware items to be reachable.
+        """
+        self._cmd_menu.menuAction().setEnabled(connected or fw_enabled)
+        for action in self._cmd_menu.actions():
+            action.setEnabled(connected)
+        for action in self._fw_actions:
+            action.setEnabled(fw_enabled)
 
     def activate_bootloader(self):
         # Send-only (device resets without replying).
