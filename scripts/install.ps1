@@ -12,7 +12,8 @@
 $ErrorActionPreference = "Stop"
 
 $RepoUrl   = "https://github.com/thpoll83/PolyKybdHost.git"
-$TargetDir = if ($env:POLYKYBD_DIR) { $env:POLYKYBD_DIR } else { "PolyKybdHost" }
+$DefaultDir = Join-Path (Get-Location) "PolyKybdHost"
+$TargetDir = if ($env:POLYKYBD_DIR) { $env:POLYKYBD_DIR } else { $DefaultDir }
 
 Write-Host ">> PolyKybdHost installer"
 
@@ -20,6 +21,18 @@ Write-Host ">> PolyKybdHost installer"
 if (Test-Path "polyhost/__main__.py") {
     Write-Host ">> Already inside a PolyKybdHost checkout, installing here."
     $TargetDir = "."
+} else {
+    # Offer the default location and let the user pick another, unless the
+    # path was pinned via POLYKYBD_DIR.
+    if (-not $env:POLYKYBD_DIR) {
+        $reply = Read-Host ">> Install location [$TargetDir]"
+        if ($reply) { $TargetDir = $reply }
+    }
+    Write-Host ">> Installing into '$TargetDir'."
+}
+
+if ($TargetDir -eq ".") {
+    # already inside the checkout, nothing to fetch
 } elseif (Test-Path "$TargetDir/.git") {
     Write-Host ">> Updating existing checkout in '$TargetDir'."
     git -C $TargetDir pull --ff-only
