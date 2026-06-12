@@ -339,6 +339,12 @@ class PolyHost(QApplication):
         self._update_installer = None
         self._update_progress = None
         self._await_manual_prompt = False
+        # Per-check closures wired up by _start_update_check; invoked from the Qt
+        # main thread via the bridge (see _on_job_done) since the checker
+        # callbacks fire on its worker thread.
+        self._update_check_error = None
+        self._update_host_no_update = None
+        self._update_fw_no_update = None
 
         self.firmware_update_action = QAction(get_icon("keyboard.svg"), "Check for firmware update…", parent=self)
         # noinspection PyUnresolvedReferences
@@ -924,16 +930,19 @@ class PolyHost(QApplication):
         call itself fails — distinct from "no update available".
         Both are None for the automatic periodic check (silent failure).
         """
-        if self._update_checker is not None and self._update_checker.isRunning():
+        if self._update_checker is not None and self._update_checker.is_alive():
             return
         self.log.debug("Starting update check...")
         # device_present (not connected): the firmware version is known even on
         # a protocol mismatch, and that's exactly when an update must be offered.
         fw_version = self.keeb.get_sw_version() if self._fw_actions_allowed() else None
-        self._update_checker = UpdateChecker(current_fw_version=fw_version, parent=self)
 
-        # Track whether the error signal fires before host_no_update so we can
+        # Track whether the error event fires before host_no_update so we can
         # suppress the "no update" callback and show the real failure reason.
+        # The checker callbacks run on its own thread and are marshalled to the
+        # Qt main thread through the bridge (see _on_job_done); these closures
+        # capture this call's on_no_update/on_check_error and therefore live on
+        # self for the bridge dispatch to reach them.
         _error_seen = [False]
 
         def _on_error(msg):
@@ -942,7 +951,7 @@ class PolyHost(QApplication):
                 on_check_error(msg)
             _error_seen[0] = True
             # Reset firmware manual check regardless of which check failed — both
-            # host and firmware errors emit the same signal, either can leave it stuck.
+            # host and firmware errors emit the same event, either can leave it stuck.
             if self._await_manual_fw_prompt:
                 self._await_manual_fw_prompt = False
                 self.firmware_update_action.setText(
@@ -964,16 +973,19 @@ class PolyHost(QApplication):
                 self._await_manual_fw_prompt = False
                 self._on_manual_no_fw_update()
 
-        # noinspection PyUnresolvedReferences
-        self._update_checker.update_available.connect(self._on_update_available)
-        # noinspection PyUnresolvedReferences
-        self._update_checker.fw_up_available.connect(self._on_fw_up_available)
-        # noinspection PyUnresolvedReferences
-        self._update_checker.host_no_update.connect(_host_no_update)
-        # noinspection PyUnresolvedReferences
-        self._update_checker.fw_no_update.connect(_fw_no_update)
-        # noinspection PyUnresolvedReferences
-        self._update_checker.error.connect(_on_error)
+        self._update_check_error = _on_error
+        self._update_host_no_update = _host_no_update
+        self._update_fw_no_update = _fw_no_update
+
+        b = self.bridge
+        self._update_checker = UpdateChecker(
+            current_fw_version=fw_version,
+            on_update_available=lambda r: b.job_done.emit("update_available", r),
+            on_fw_up_available=lambda r: b.job_done.emit("fw_up_available", r),
+            on_host_no_update=lambda: b.job_done.emit("update_host_no_update", None),
+            on_fw_no_update=lambda: b.job_done.emit("update_fw_no_update", None),
+            on_error=lambda msg: b.job_done.emit("update_check_error", msg),
+        )
         self._update_checker.start()
 
     def _on_update_available(self, release):
@@ -991,7 +1003,7 @@ class PolyHost(QApplication):
             )
 
     def _on_update_clicked(self):
-        if self._update_installer is not None and self._update_installer.isRunning():
+        if self._update_installer is not None and self._update_installer.is_alive():
             return
         if self._pending_release is not None:
             self._prompt_and_install(self._pending_release)
@@ -1028,7 +1040,7 @@ class PolyHost(QApplication):
         self._run_update_installer(release)
 
     def _run_update_installer(self, release):
-        if self._update_installer is not None and self._update_installer.isRunning():
+        if self._update_installer is not None and self._update_installer.is_alive():
             self.log.debug("Update installer already running; ignoring re-entry")
             return
 
@@ -1036,15 +1048,14 @@ class PolyHost(QApplication):
         self._update_progress = _progress_dlg(
             f"Downloading v{release.version}…", "PolyKybdHost Update")
 
-        self._update_installer = UpdateInstaller(release, parent=self)
-        # noinspection PyUnresolvedReferences
-        self._update_installer.progress.connect(self._on_update_progress)
-        # noinspection PyUnresolvedReferences
-        self._update_installer.finished_ok.connect(self._on_update_done)
-        # noinspection PyUnresolvedReferences
-        self._update_installer.relay_needed.connect(self._on_relay_needed)
-        # noinspection PyUnresolvedReferences
-        self._update_installer.failed.connect(self._on_update_failed)
+        b = self.bridge
+        self._update_installer = UpdateInstaller(
+            release,
+            on_progress=lambda pct, msg: b.job_done.emit("update_progress", (pct, msg)),
+            on_finished_ok=lambda: b.job_done.emit("update_finished_ok", None),
+            on_relay_needed=lambda path: b.job_done.emit("update_relay_needed", path),
+            on_failed=lambda msg: b.job_done.emit("update_failed", msg),
+        )
         self._update_installer.start()
 
     def _on_update_progress(self, percent, message):
@@ -1102,7 +1113,7 @@ class PolyHost(QApplication):
         self.tray.showMessage(title, message, QSystemTrayIcon.Information, msec)
 
     def _on_balloon_clicked(self):
-        if self._update_installer is not None and self._update_installer.isRunning():
+        if self._update_installer is not None and self._update_installer.is_alive():
             return
         if self._pending_release is not None:
             self._prompt_and_install(self._pending_release)
@@ -1130,7 +1141,7 @@ class PolyHost(QApplication):
             )
 
     def _on_fw_up_clicked(self):
-        if self._fw_up_downloader is not None and self._fw_up_downloader.isRunning():
+        if self._fw_up_downloader is not None and self._fw_up_downloader.is_alive():
             return
         if self._pending_fw_release is not None:
             self._prompt_and_flash(self._pending_fw_release)
@@ -1168,18 +1179,19 @@ class PolyHost(QApplication):
         self._run_fw_up_downloader(release)
 
     def _run_fw_up_downloader(self, release):
-        if self._fw_up_downloader is not None and self._fw_up_downloader.isRunning():
+        if self._fw_up_downloader is not None and self._fw_up_downloader.is_alive():
             return
 
         self.firmware_update_action.setEnabled(False)
         self._fw_up_progress = _progress_dlg(
             f"Downloading firmware v{release.version}…", "Firmware Update")
 
-        self._fw_up_downloader = FwUpDownloader(release, parent=self)
-        # noinspection PyUnresolvedReferences
-        self._fw_up_downloader.progress.connect(self._on_fw_download_progress)
-        # noinspection PyUnresolvedReferences
-        self._fw_up_downloader.finished.connect(self._on_fw_download_done)
+        b = self.bridge
+        self._fw_up_downloader = FwUpDownloader(
+            release,
+            on_progress=lambda pct, msg: b.job_done.emit("fw_download_progress", (pct, msg)),
+            on_finished=lambda ok, err, path: b.job_done.emit("fw_download_done", (ok, err, path)),
+        )
         self._fw_up_downloader.start()
 
     def _on_fw_download_progress(self, percent: int, message: str):
@@ -1380,3 +1392,31 @@ class PolyHost(QApplication):
                 self._on_change_keeb_language_done(result)
         elif name == "cmd_result":
             self.report_device_result(*result)
+        # Updater events: the updater threads (UpdateChecker / UpdateInstaller /
+        # FwUpDownloader) fire plain callbacks on their own thread; those callbacks
+        # emit through the bridge so the GUI handlers below run on the main thread.
+        elif name == "update_available":
+            self._on_update_available(result)
+        elif name == "fw_up_available":
+            self._on_fw_up_available(result)
+        elif name == "update_host_no_update":
+            if self._update_host_no_update is not None:
+                self._update_host_no_update()
+        elif name == "update_fw_no_update":
+            if self._update_fw_no_update is not None:
+                self._update_fw_no_update()
+        elif name == "update_check_error":
+            if self._update_check_error is not None:
+                self._update_check_error(result)
+        elif name == "update_progress":
+            self._on_update_progress(*result)
+        elif name == "update_finished_ok":
+            self._on_update_done()
+        elif name == "update_relay_needed":
+            self._on_relay_needed(result)
+        elif name == "update_failed":
+            self._on_update_failed(result)
+        elif name == "fw_download_progress":
+            self._on_fw_download_progress(*result)
+        elif name == "fw_download_done":
+            self._on_fw_download_done(*result)

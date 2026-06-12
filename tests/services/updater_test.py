@@ -442,5 +442,246 @@ class TestApplyUpdate(unittest.TestCase):
             self.assertIn("resolve error", str(ctx.exception))
 
 
+class _Recorder:
+    """Records callback invocations as ``(name, args)`` tuples.
+
+    Replaces the old pyqtSignal-spy pattern: the threaded updater classes now
+    take plain callables, so a test passes recorder methods and asserts on the
+    captured sequence. ``names`` preserves emission order — the contract the Qt
+    queued-signal delivery used to provide.
+    """
+
+    def __init__(self):
+        self.calls = []
+
+    def make(self, name):
+        return lambda *args: self.calls.append((name, args))
+
+    @property
+    def names(self):
+        return [name for name, _ in self.calls]
+
+    def args_for(self, name):
+        return [args for n, args in self.calls if n == name]
+
+
+class TestUpdateChecker(unittest.TestCase):
+    """The threaded checker maps check_latest/check_fw_latest results to callbacks.
+
+    Each test drives ``run()`` synchronously (no thread start) so the assertions
+    are race-free; the thread body is identical either way.
+    """
+
+    def _run(self, rec, current_fw_version=None):
+        checker = updater.UpdateChecker(
+            current_fw_version=current_fw_version,
+            on_update_available=rec.make("update_available"),
+            on_fw_up_available=rec.make("fw_up_available"),
+            on_host_no_update=rec.make("host_no_update"),
+            on_fw_no_update=rec.make("fw_no_update"),
+            on_error=rec.make("error"),
+        )
+        self.assertTrue(checker.daemon)
+        checker.run()
+
+    def test_host_update_available(self):
+        rec = _Recorder()
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        with mock.patch.object(updater, "check_latest", return_value=rel):
+            self._run(rec)
+        self.assertEqual(rec.names, ["update_available"])
+        self.assertEqual(rec.args_for("update_available"), [(rel,)])
+
+    def test_host_no_update(self):
+        rec = _Recorder()
+        with mock.patch.object(updater, "check_latest", return_value=None):
+            self._run(rec)
+        self.assertEqual(rec.names, ["host_no_update"])
+
+    def test_host_error_then_no_update(self):
+        # On failure the error callback fires first, then host_no_update — the
+        # ordering callers rely on to distinguish "error" from "no newer version".
+        rec = _Recorder()
+        with mock.patch.object(updater, "check_latest",
+                               side_effect=updater.UpdateCheckError("boom")):
+            self._run(rec)
+        self.assertEqual(rec.names, ["error", "host_no_update"])
+        self.assertEqual(rec.args_for("error"), [("boom",)])
+
+    def test_firmware_checked_only_when_version_given(self):
+        rec = _Recorder()
+        with mock.patch.object(updater, "check_latest", return_value=None), \
+             mock.patch.object(updater, "check_fw_latest") as mock_fw:
+            self._run(rec)  # no current_fw_version
+        mock_fw.assert_not_called()
+        self.assertEqual(rec.names, ["host_no_update"])
+
+    def test_firmware_update_available(self):
+        rec = _Recorder()
+        fw = updater.FwUpReleaseInfo("PolyKybd-fw-v0.9.0", "0.9.0",
+                                     "bin", "uf2", "html", "")
+        with mock.patch.object(updater, "check_latest", return_value=None), \
+             mock.patch.object(updater, "check_fw_latest", return_value=fw):
+            self._run(rec, current_fw_version="0.8.0")
+        self.assertEqual(rec.names, ["host_no_update", "fw_up_available"])
+        self.assertEqual(rec.args_for("fw_up_available"), [(fw,)])
+
+    def test_firmware_no_update(self):
+        rec = _Recorder()
+        with mock.patch.object(updater, "check_latest", return_value=None), \
+             mock.patch.object(updater, "check_fw_latest", return_value=None):
+            self._run(rec, current_fw_version="0.8.0")
+        self.assertEqual(rec.names, ["host_no_update", "fw_no_update"])
+
+    def test_none_callbacks_are_skipped(self):
+        # A checker with no callbacks wired up must not raise.
+        with mock.patch.object(updater, "check_latest", return_value=None):
+            updater.UpdateChecker().run()
+
+
+class TestUpdateInstaller(unittest.TestCase):
+
+    def _make(self, release, rec):
+        inst = updater.UpdateInstaller(
+            release,
+            on_progress=rec.make("progress"),
+            on_finished_ok=rec.make("finished_ok"),
+            on_relay_needed=rec.make("relay_needed"),
+            on_failed=rec.make("failed"),
+        )
+        self.assertTrue(inst.daemon)
+        return inst
+
+    def test_finished_ok_when_no_locked_files(self):
+        rec = _Recorder()
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater, "download_and_extract", return_value=Path("/extracted")), \
+             mock.patch.object(updater, "apply_update", return_value=[]), \
+             mock.patch.object(updater.shutil, "rmtree"), \
+             mock.patch.object(updater.tempfile, "mkdtemp", return_value="/tmp/x"):
+            self._make(rel, rec).run()
+        self.assertIn("finished_ok", rec.names)
+        self.assertNotIn("relay_needed", rec.names)
+        self.assertNotIn("failed", rec.names)
+
+    def test_relay_needed_when_locked_files(self):
+        rec = _Recorder()
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater, "download_and_extract", return_value=Path("/extracted")), \
+             mock.patch.object(updater, "apply_update", return_value=[("a", "b")]), \
+             mock.patch.object(updater, "_write_relay_script", return_value=Path("/tmp/x/relay.py")), \
+             mock.patch.object(updater.tempfile, "mkdtemp", return_value="/tmp/x"):
+            self._make(rel, rec).run()
+        self.assertIn("relay_needed", rec.names)
+        self.assertNotIn("finished_ok", rec.names)
+        self.assertEqual(rec.args_for("relay_needed"), [("/tmp/x/relay.py",)])
+
+    def test_failed_when_install_dir_not_writable(self):
+        rec = _Recorder()
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        with mock.patch.object(updater, "get_install_root",
+                               side_effect=updater.NotWritableError("/install")):
+            self._make(rel, rec).run()
+        self.assertEqual(rec.names, ["failed"])
+        self.assertIn("/install", rec.args_for("failed")[0][0])
+
+    def test_failed_on_download_error(self):
+        rec = _Recorder()
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater, "download_and_extract",
+                               side_effect=RuntimeError("net down")), \
+             mock.patch.object(updater.shutil, "rmtree"), \
+             mock.patch.object(updater.tempfile, "mkdtemp", return_value="/tmp/x"):
+            self._make(rel, rec).run()
+        self.assertIn("failed", rec.names)
+        self.assertEqual(rec.args_for("failed"), [("net down",)])
+
+
+class _NamedFile:
+    """A real file handle with a writable ``name`` (the downloader reads tmp.name).
+
+    ``tempfile.NamedTemporaryFile`` yields an object whose ``.name`` is the path;
+    a plain ``open()`` handle's ``.name`` is read-only, so this thin wrapper
+    forwards writes to the underlying file while exposing a settable name.
+    """
+
+    def __init__(self, fh, name):
+        self._fh = fh
+        self.name = name
+
+    def write(self, data):
+        return self._fh.write(data)
+
+
+class TestFwUpDownloader(unittest.TestCase):
+
+    @staticmethod
+    def _stream_response(chunks, total):
+        ctx = mock.MagicMock()
+        resp = ctx.__enter__.return_value
+        resp.iter_content.return_value = chunks
+        resp.headers = {"Content-Length": str(total)} if total else {}
+        resp.raise_for_status.return_value = None
+        return ctx
+
+    def test_finished_ok_writes_bin(self):
+        rec = _Recorder()
+        rel = updater.FwUpReleaseInfo("PolyKybd-fw-v0.9.0", "0.9.0",
+                                      "https://example.com/fw.bin", "", "html", "")
+        dl = updater.FwUpDownloader(
+            rel,
+            on_progress=rec.make("progress"),
+            on_finished=rec.make("finished"),
+        )
+        self.assertTrue(dl.daemon)
+        with tempfile.TemporaryDirectory() as td:
+            ctx = self._stream_response([b"abc", b"def"], total=6)
+            bin_path = Path(td) / "fw.bin"
+            raw = open(bin_path, "wb")
+            fh = _NamedFile(raw, str(bin_path))
+            with mock.patch.object(updater.requests, "get", return_value=ctx), \
+                 mock.patch.object(updater.tempfile, "NamedTemporaryFile") as mock_ntf:
+                mock_ntf.return_value.__enter__.return_value = fh
+                try:
+                    dl.run()
+                finally:
+                    raw.close()
+            written = bin_path.read_bytes()
+        self.assertEqual(rec.args_for("finished"), [(True, "", str(bin_path))])
+        self.assertEqual(written, b"abcdef")
+        # progress reported at least once (Connecting + per-chunk).
+        self.assertGreaterEqual(len(rec.args_for("progress")), 1)
+
+    def test_finished_failure_unlinks_partial(self):
+        rec = _Recorder()
+        rel = updater.FwUpReleaseInfo("PolyKybd-fw-v0.9.0", "0.9.0",
+                                      "https://example.com/fw.bin", "", "html", "")
+        dl = updater.FwUpDownloader(
+            rel,
+            on_progress=rec.make("progress"),
+            on_finished=rec.make("finished"),
+        )
+        with tempfile.TemporaryDirectory() as td:
+            bin_path = Path(td) / "fw.bin"
+            raw = open(bin_path, "wb")
+            fh = _NamedFile(raw, str(bin_path))
+            with mock.patch.object(updater.requests, "get",
+                                   side_effect=requests.ConnectionError("nope")), \
+                 mock.patch.object(updater.tempfile, "NamedTemporaryFile") as mock_ntf:
+                mock_ntf.return_value.__enter__.return_value = fh
+                try:
+                    dl.run()
+                finally:
+                    raw.close()
+            ok, err, path = rec.args_for("finished")[0]
+            self.assertFalse(ok)
+            self.assertEqual(path, "")
+            self.assertIn("nope", err)
+            self.assertFalse(bin_path.exists(), "partial download must be unlinked")
+
+
 if __name__ == "__main__":
     unittest.main()
