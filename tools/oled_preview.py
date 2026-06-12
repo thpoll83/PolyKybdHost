@@ -148,7 +148,14 @@ class Renderer:
 
     def _font(self, cp):
         for f in self.fonts:
-            if f.first <= cp <= f.last: return f
+            if f.first <= cp <= f.last:
+                g = f.glyphs[cp - f.first]
+                # skip an empty padding gap (non-contiguous range filled with 0x0
+                # glyphs) so a later font with the real glyph wins; a real space is
+                # (1,1)/advance>0 and is never skipped. Mirrors disp_array.c.
+                if g['width'] == 0 and g['height'] == 0 and g['xAdvance'] == 0:
+                    continue
+                return f
         return None
 
     def bounds(self, cps):
