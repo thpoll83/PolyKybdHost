@@ -327,6 +327,13 @@ class PolyKybd:
         if not result:
             return False, msg
 
+        # enumerate_lang() can run during the initial menu build, before
+        # query_version_info() has populated protocol_version (it is otherwise
+        # only refreshed on a connection-state transition). Without this, a
+        # protocol-2 board is misreported as "too old" on the first pass.
+        if self.protocol_version is None:
+            self.query_version_info()
+
         # Protocol v2+ delivers the language list via GET_LANG_LIST_PACKED
         # (compact 2-byte ISO index pairs). The legacy ASCII GET_LANG_LIST
         # (cmd 8) has been retired — the firmware NACKs it — so there is no
