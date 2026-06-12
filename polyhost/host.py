@@ -39,12 +39,12 @@ from polyhost.input.macos_helper import MacOSInputHelper
 from polyhost.input.win_helper import WindowsInputHelper
 from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER, LANG_REGION_OVERRIDE
 from polyhost.services.unicode_cache import UnicodeCache
-from polyhost._version import __version__, __protocol__
+from polyhost._version import __version__
 
 from polyhost.input.unicode_input import get_input_method
 from polyhost.services.updater import UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
-from polyhost.gui.worker_bridge import WorkerBridge, decide_reconnect_apply
+from polyhost.gui.worker_bridge import WorkerBridge
 from polyhost.core.poly_core import PolyCore
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -215,7 +215,6 @@ class PolyHost(QApplication):
         self.keeb_log.addHandler(file_handler)
         self.keeb_log.propagate = False
 
-        self.kb_sw_version = None
         self._ignore_version = ignore_version
         if ignore_version:
             self.log.warning("--ignore-version active: firmware version/protocol checks will be bypassed")
@@ -248,7 +247,6 @@ class PolyHost(QApplication):
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False
         self.debug_mode = debug_mode
-        self._needs_overlay_reset = False
 
         # Create the menu
         self.log.debug("Building menu...")
@@ -456,6 +454,10 @@ class PolyHost(QApplication):
     def mapping(self):
         return self.core.mapping
 
+    @property
+    def kb_sw_version(self):
+        return self.core.kb_sw_version
+
     def set_style(self):
         self.setStyle("Fusion")
         # Now use a palette to switch to dark colors:
@@ -533,78 +535,38 @@ class PolyHost(QApplication):
         tree exactly, then drives the language-changed flow."""
         if self.paused:
             return
-        connected_now = snapshot["connected_now"]
-        response = snapshot["lang"]
-        # Presence (= flashable) comes from the probe's connect()/GET_ID, not
-        # from the GET_LANG result: a keyboard that answers GET_ID but misses
-        # the language probe (busy syncing the slave half) and one that fails
-        # the protocol/version check below must both keep firmware actions
-        # available. Fall back to connected_now for snapshots without the key.
-        self.device_present = snapshot.get("device_present", connected_now)
+        # Operational half (state, decision tree, post-connect jobs, cache
+        # resets) is the core's; this method renders the result: status
+        # entry, language menu, OS-language switch, update-check kick-off.
+        applied = self.core.apply_reconnect(snapshot)
+        if applied is None:
+            return
+        connected_now = applied["connected_now"]
+        response = applied["lang"]
+        decision = applied["decision"]
 
-        if snapshot["state_changed"]:
-            decision = decide_reconnect_apply(
-                snapshot, __protocol__, __version__, self._ignore_version)
-
-            # Mirror the original warning logs.
-            if not snapshot["version_ok"] and self._ignore_version:
-                self.log.warning(
-                    "FW version string could not be parsed (%s) — continuing via --ignore-version",
-                    snapshot["version_msg"])
-            if "version_warning" in decision:
-                expected, kb_version = decision["version_warning"]
-                self.log.warning("Warning! Version mismatch, expected '%s', got '%s'.",
-                                 expected, kb_version)
-            if "ignore_bypass_msg" in decision:
-                self.log.warning("Version/protocol mismatch bypassed via --ignore-version: %s",
-                                 decision["ignore_bypass_msg"])
-
-            self.connected = decision["connected"]
+        if decision is not None:
             if decision["icon"] is not None:
                 self.status.setIcon(get_icon(decision["icon"]))
             if decision["text"] is not None:
                 self.status.setText(decision["text"])
-            if snapshot["version_ok"] or self._ignore_version:
-                self.kb_sw_version = snapshot["kb_sw_version"]
-
             if decision["do_post_connect"]:
                 self.add_supported_lang(self.menu, snapshot["lang_list"], snapshot["current_lang"])
                 if connected_now and self.poly_settings.get("unicode_send_composition_mode"):
-                    mode = get_input_method()
-                    self.log.info("Setting unicode mode to str %s", mode)
-                    # set_unicode_mode is device I/O -> worker job.
-                    self.worker.submit("set_unicode_mode",
-                                       lambda c, m=mode: self.keeb.set_unicode_mode(m))
                     self.update_ui_on_lang_change(response)
-                self.device_mgr.reset_all_caches()
-                self.overlay_handler.force_resend()
-                self._needs_overlay_reset = True
-                self.log.info("Connected: active window resend queued.")
                 QTimer.singleShot(0, self._start_update_check)
 
-        # The main thread now owns the applied-connection state the worker reads.
-        self._last_applied_connected = self.connected
         self.managed_connection_status()
         self.icon_manager.update()
 
-        if connected_now:
-            kb_lang = response
-        else:
-            self.log.warning("Reconnect failed: '%s'", response if response else "NO RESPONSE")
-            kb_lang = self.current_lang
+        kb_lang = response if connected_now else self.current_lang
 
         if not self.connected:
             return
 
-        if snapshot["state_changed"] and self._needs_overlay_reset:
-            self._needs_overlay_reset = False
+        if applied["do_overlay_reset"]:
             self.cmdMenu.reset_overlays_and_usage()
             self.log.info("Connected: overlay state cleared.")
-        # Independent of state_changed: a fast reboot (no observed disconnect)
-        # still must invalidate the host-side MRU cache.
-        if snapshot.get("fresh_boot"):
-            self.device_mgr.reset_all_caches()
-            self.log.info("Firmware restart detected — overlay MRU cache reset.")
 
         # Language-changed flow (helper.set_language stays on the main thread).
         if kb_lang and self.current_lang != kb_lang:

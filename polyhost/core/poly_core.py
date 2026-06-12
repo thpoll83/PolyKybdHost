@@ -21,8 +21,8 @@ import os
 import pathlib
 import threading
 
-from polyhost._version import __version__
-from polyhost.core.decisions import decide_probe_publish
+from polyhost._version import __version__, __protocol__
+from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.hid_worker import HidWorker
@@ -65,6 +65,11 @@ class PolyCore:
         # writes it (a bool read/write is atomic under the GIL).
         self.last_applied_connected = False
         self._probe_fail_streak = 0
+        # Firmware version (parsed) of the connected keyboard, for update checks.
+        self.kb_sw_version = None
+        # Set on a fresh connect; consumed by the first applied snapshot after
+        # it so the overlay state on the keyboard is cleared exactly once.
+        self.needs_overlay_reset = False
 
         self.poly_settings = PolySettings()
         self.device_settings = DeviceSettings()
@@ -369,6 +374,102 @@ class PolyCore:
             snapshot["lang_list"] = None
             snapshot["current_lang"] = None
         return snapshot
+
+    def apply_reconnect(self, snapshot):
+        """Apply a probe snapshot: the OPERATIONAL half of the reconnect.
+
+        Updates core connection state, runs the version/protocol decision
+        tree, and on a fresh compatible connect performs the post-connect
+        work (unicode mode push, cache resets, window-handler resend).
+        Returns an ``applied`` dict the calling client renders from (status
+        text/icon, menu rebuild, OS-language switch); the same data is
+        emitted as a ``status_changed`` event for passive observers.
+
+        Thread-agnostic: no UI access; device work goes through worker jobs.
+        """
+        if self.paused:
+            return None
+        connected_now = snapshot["connected_now"]
+        # Presence (= flashable) comes from the probe's connect()/GET_ID, not
+        # from the GET_LANG result: a keyboard that answers GET_ID but misses
+        # the language probe (busy syncing the slave half) and one that fails
+        # the protocol/version check below must both keep firmware actions
+        # available. Fall back to connected_now for snapshots without the key.
+        self.device_present = snapshot.get("device_present", connected_now)
+
+        applied = {
+            "state_changed": snapshot["state_changed"],
+            "connected_now": connected_now,
+            "lang": snapshot["lang"],
+            "decision": None,
+            "do_overlay_reset": False,
+            "fresh_boot": False,
+        }
+
+        if snapshot["state_changed"]:
+            decision = decide_reconnect_apply(
+                snapshot, __protocol__, __version__, self.ignore_version)
+            applied["decision"] = decision
+
+            # Mirror the original warning logs.
+            if not snapshot["version_ok"] and self.ignore_version:
+                self.log.warning(
+                    "FW version string could not be parsed (%s) — continuing via --ignore-version",
+                    snapshot["version_msg"])
+            if "version_warning" in decision:
+                expected, kb_version = decision["version_warning"]
+                self.log.warning("Warning! Version mismatch, expected '%s', got '%s'.",
+                                 expected, kb_version)
+            if "ignore_bypass_msg" in decision:
+                self.log.warning("Version/protocol mismatch bypassed via --ignore-version: %s",
+                                 decision["ignore_bypass_msg"])
+
+            self.connected = decision["connected"]
+            if snapshot["version_ok"] or self.ignore_version:
+                self.kb_sw_version = snapshot["kb_sw_version"]
+
+            if decision["do_post_connect"]:
+                if connected_now and self.poly_settings.get("unicode_send_composition_mode"):
+                    from polyhost.input.unicode_input import get_input_method
+                    mode = get_input_method()
+                    self.log.info("Setting unicode mode to str %s", mode)
+                    # set_unicode_mode is device I/O -> worker job.
+                    self.worker.submit("set_unicode_mode",
+                                       lambda c, m=mode: self.keeb.set_unicode_mode(m))
+                self.device_mgr.reset_all_caches()
+                if self.overlay_handler is not None:
+                    self.overlay_handler.force_resend()
+                self.needs_overlay_reset = True
+                self.log.info("Connected: active window resend queued.")
+
+        # The applying client owns the applied-connection state the worker reads.
+        self.last_applied_connected = self.connected
+
+        if not connected_now:
+            self.log.warning("Reconnect failed: '%s'",
+                             snapshot["lang"] if snapshot["lang"] else "NO RESPONSE")
+
+        if self.connected:
+            if snapshot["state_changed"] and self.needs_overlay_reset:
+                self.needs_overlay_reset = False
+                applied["do_overlay_reset"] = True
+            # Independent of state_changed: a fast reboot (no observed
+            # disconnect) still must invalidate the host-side MRU cache.
+            if snapshot.get("fresh_boot"):
+                self.device_mgr.reset_all_caches()
+                self.log.info("Firmware restart detected — overlay MRU cache reset.")
+                applied["fresh_boot"] = True
+
+        self.emit("status_changed", {
+            "connected": self.connected,
+            "device_present": self.device_present,
+            "paused": self.paused,
+            "state_changed": snapshot["state_changed"],
+            "text": (applied["decision"] or {}).get("text"),
+            "icon": (applied["decision"] or {}).get("icon"),
+            "lang": snapshot["lang"],
+        })
+        return applied
 
     def _console_periodic(self, cancel):
         """Worker periodic (250 ms): read serial + console; publish."""
