@@ -1,1 +1,3 @@
-include README.rst
+include README.md
+include requirements.txt
+recursive-include polyhost/device *.dll *.rules
