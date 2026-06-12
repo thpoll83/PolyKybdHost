@@ -50,8 +50,9 @@ button); both share the same render mirror and page code.
   gets a tint overlay showing its origin quadrant — everything except the **top-right**
   of the origin. Click an element's control block to activate it and preview its tint
   **without nudging**; selecting a key activates **base** by default.
-- Bottom-right: the **whole-layout offsets** (letter/num/sym × small/shift/altgr × H/V)
-  with ◀▶ / ▲▼ buttons.
+- Bottom-right: the **whole-layout offsets** (letter/num/sym × small/shift/altgr) — each
+  is a **d-pad** (▲▼ = V up/down, ◀▶ = H left/right) over H/V number inputs, mirroring
+  the per-key d-pad.
 - **Export changes** → paste the box back to whoever applies it.
 
 ## Export format → how to apply

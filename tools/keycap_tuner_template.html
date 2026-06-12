@@ -26,16 +26,20 @@
  .el .fbm{color:#a85;font-size:10px}
  .el.active{background:#2e2e2e;border-radius:3px}
  .dpad{display:inline-grid;grid-template-columns:repeat(3,27px);grid-gap:2px}
- .dpad button,.offt button{background:#333;color:#ddd;border:1px solid #555;border-radius:3px;cursor:pointer}
+ .dpad button,.offpad button{background:#333;color:#ddd;border:1px solid #555;border-radius:3px;cursor:pointer}
  .dpad button{width:27px;height:21px;font-size:13px} .dpad button:hover{background:#444} .dpad .sp{visibility:hidden}
  .off{font-size:11px;color:#9c9;margin-left:4px} .drop{font-size:11px;margin-left:4px}
  #offctrl{border-left:2px solid #3a3a3a;padding-left:12px}
- .offhdr{font-size:12px;color:#9bd;margin-bottom:3px}
- .offcat{display:flex;align-items:center;gap:6px;margin:1px 0} .offcatn{width:42px;color:#9bd;font-size:12px;text-align:right}
- .offt{font-size:11px;color:#bbb;white-space:nowrap}
- .offt b{color:#888;font-weight:normal}.offt.shift b{color:#6af}.offt.altgr b{color:#f66}.offt.small b{color:#4f4}
- .offt button{width:18px;height:18px;font-size:10px;padding:0;vertical-align:middle}
- .offt input{width:34px;background:#111;color:#dd9;border:1px solid #444;font-size:11px;text-align:center;margin:0 1px}
+ .offhdr{font-size:12px;color:#9bd;margin-bottom:4px}
+ .offgroups{display:flex;gap:14px}
+ .offgroup{display:flex;flex-direction:column;gap:2px} .offgroup .gname{font-size:12px;color:#9bd}
+ .offrow{display:flex;gap:8px}
+ .offdpad{display:flex;flex-direction:column;align-items:center;gap:2px}
+ .offdpad .vn{font-size:11px;color:#888} .offdpad .vn.small{color:#4f4}.offdpad .vn.shift{color:#6af}.offdpad .vn.altgr{color:#f66}
+ .offpad{display:inline-grid;grid-template-columns:repeat(3,18px);grid-gap:1px}
+ .offpad button{width:18px;height:15px;font-size:10px;padding:0} .offpad button:hover{background:#444} .offpad .sp{visibility:hidden}
+ .offins{display:flex;align-items:center;gap:1px;font-size:10px;color:#888}
+ .offins input{width:26px;background:#111;color:#dd9;border:1px solid #444;font-size:10px;text-align:center}
  .top{display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
  button.act{background:#264;color:#cfc;border:1px solid #485;border-radius:4px;padding:5px 9px;cursor:pointer}
  #exp{width:100%;max-width:1150px;height:80px;background:#111;color:#9f9;font-family:monospace;font-size:11px;border:1px solid #444;margin-top:4px}
@@ -150,14 +154,18 @@ function buildKeyCtrl(){const p=document.getElementById("keyctrl");if(!selected)
   h+=`<span class="tok">${E.tok}${E.fb?' <span class=fbm>(en-US)</span>':''}</span>${dpad(selected,el)}<span class="off">dx=${E.dx} dy=${E.dy}</span>
    <label class="drop"><input type="checkbox" ${E.drop?"checked":""} onclick="event.stopPropagation()" onchange="setdrop('${selected}','${el}',this.checked)">drop</label></div>`;}
  p.innerHTML=h;}
+// a category offset as a d-pad (▲▼ = V up/down, ◀▶ = H left/right) over two number
+// inputs, mirroring the per-key d-pad so both feel the same to operate.
 function offCtl(c,t){const o=OFF[c][t];
  const f=(ax,d,s)=>`<button onclick="adjOff('${c}','${t}','${ax}',${d})">${s}</button>`;
  const ip=(ax)=>`<input id="o_${c}_${t}_${ax}" type="number" value="${o[ax]}" onchange="setOffV('${c}','${t}','${ax}',this.value)">`;
- return`<span class="offt ${t}"><b>${t}</b> H${f('H',-1,'◀')}${ip('H')}${f('H',1,'▶')} V${f('V',-1,'▲')}${ip('V')}${f('V',1,'▼')}</span>`;}
-function buildOffPanel(){let h=`<div class="offhdr">layout offsets (whole ${LANG})</div>`;
- for(const c of['letter','num','sym']){h+=`<div class="offcat"><span class="offcatn">${c}</span>`;
-  for(const t of['small','shift','altgr'])h+=offCtl(c,t);h+='</div>';}
- document.getElementById("offctrl").innerHTML=h;}
+ return`<div class="offdpad"><span class="vn ${t}">${t}</span>
+  <div class="offpad"><span class="sp"></span>${f('V',-1,'▲')}<span class="sp"></span>${f('H',-1,'◀')}<span class="sp"></span>${f('H',1,'▶')}<span class="sp"></span>${f('V',1,'▼')}<span class="sp"></span></div>
+  <div class="offins">H${ip('H')} V${ip('V')}</div></div>`;}
+function buildOffPanel(){let h=`<div class="offhdr">layout offsets (whole ${LANG})</div><div class="offgroups">`;
+ for(const c of['letter','num','sym']){h+=`<div class="offgroup"><span class="gname">${c}</span><div class="offrow">`;
+  for(const t of['small','shift','altgr'])h+=offCtl(c,t);h+='</div></div>';}
+ document.getElementById("offctrl").innerHTML=h+'</div>';}
 function adjOff(c,t,ax,d){OFF[c][t][ax]+=d;document.getElementById(`o_${c}_${t}_${ax}`).value=OFF[c][t][ax];buildGrid();}
 function setOffV(c,t,ax,v){OFF[c][t][ax]=parseInt(v,10)||0;buildGrid();}
 function nudge(kc,el,dx,dy){const E=st[kc][el];E.dx+=dx;E.dy+=dy;activeEl=el;buildGrid();buildKeyCtrl();}
