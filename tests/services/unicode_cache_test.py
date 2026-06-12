@@ -1,6 +1,8 @@
+import tempfile
 import unittest
+from unittest import mock
 
-from polyhost.services.unicode_cache import _unicode_flag_to_codepoints
+from polyhost.services.unicode_cache import UnicodeCache, _unicode_flag_to_codepoints
 
 
 class TestUnicodeFlagToCodepoints(unittest.TestCase):
@@ -49,6 +51,40 @@ class TestUnicodeFlagToCodepoints(unittest.TestCase):
             expected = ord(letter) + 127397
             codepoint_str = _unicode_flag_to_codepoints(letter + "A").split("-")[0]
             self.assertEqual(int(codepoint_str, 16), expected)
+
+
+class TestDownloadFailureHandling(unittest.TestCase):
+    """Icon downloads run on the GUI thread: they must use a bounded timeout
+    and must not be retried within the same session once they failed."""
+
+    def _make_cache(self):
+        tmp = tempfile.mkdtemp(prefix="unicode_cache_test_")
+        with mock.patch("polyhost.services.unicode_cache.user_config_dir",
+                        return_value=tmp):
+            return UnicodeCache()
+
+    @mock.patch("polyhost.services.unicode_cache.requests.Session.get")
+    def test_download_uses_bounded_timeout(self, get):
+        get.side_effect = ConnectionError("offline")
+        cache = self._make_cache()
+        cache.get_icon_for("ZZ")   # not shipped in res/flags -> download path
+        self.assertEqual(get.call_args.kwargs.get("timeout"), 10)
+
+    @mock.patch("polyhost.services.unicode_cache.requests.Session.get")
+    def test_failed_download_not_retried_in_same_session(self, get):
+        get.side_effect = ConnectionError("offline")
+        cache = self._make_cache()
+        cache.get_icon_for("ZZ")
+        cache.get_icon_for("ZZ")   # reconnect would call this again
+        self.assertEqual(get.call_count, 1)
+
+    @mock.patch("polyhost.services.unicode_cache.requests.Session.get")
+    def test_distinct_flags_each_get_one_attempt(self, get):
+        get.side_effect = ConnectionError("offline")
+        cache = self._make_cache()
+        cache.get_icon_for("ZZ")
+        cache.get_icon_for("ZY")
+        self.assertEqual(get.call_count, 2)
 
 
 if __name__ == '__main__':

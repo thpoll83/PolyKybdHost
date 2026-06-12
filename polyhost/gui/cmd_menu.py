@@ -67,8 +67,31 @@ class CommandsSubMenu:
         self.keeb = keeb
         self.log = logging.getLogger('PolyHost')
 
+    def _submit_reported(self, name, fn, err_msg_fn, coalesce_key=None):
+        """Submit a device command on the worker; route its (result, msg) outcome
+        to parent.report_device_result on the main thread via the bridge.
+
+        ``err_msg_fn(msg)`` builds the failure message string from the device's
+        reply, preserving the original per-command wording."""
+        def _on_done(_name, result):
+            if isinstance(result, BaseException):
+                payload = ("Error", str(result), False)
+            else:
+                ok, msg = result
+                payload = ("Error", err_msg_fn(msg), ok)
+            # Hop to the main thread before touching report_device_result.
+            self.parent.bridge.job_done.emit("cmd_result", payload)
+
+        return self.parent.worker.submit(name, fn, coalesce_key=coalesce_key,
+                                         on_done=_on_done)
+
     def build_menu(self, parent_menu):
         cmd_menu = parent_menu.addMenu(get_icon("settings.svg"), "All PolyKybd Commands")
+        self._cmd_menu = cmd_menu
+        # Firmware flash/apply/bootloader actions stay enabled on a
+        # protocol/version mismatch (see PolyHost._fw_actions_allowed) —
+        # update_enabled() re-enables exactly these when the rest is greyed out.
+        self._fw_actions = []
 
         action = QAction(get_icon("toggle_off.svg"), "Stop Idle", parent=self.parent)
         action.setData(False)
@@ -153,16 +176,19 @@ class CommandsSubMenu:
         # noinspection PyUnresolvedReferences
         action.triggered.connect(lambda: self.open_hid_fw_up_dialog(apply_after=True))
         cmd_menu.addAction(action)
+        self._fw_actions.append(action)
 
         action = QAction(get_icon("keyboard_input.svg"), "Flash Firmware only (.bin, stage)…", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(lambda: self.open_hid_fw_up_dialog(apply_after=False))
         cmd_menu.addAction(action)
+        self._fw_actions.append(action)
 
         action = QAction(get_icon("keyboard_input.svg"), "Apply Staged Firmware (both halves)…", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.apply_staged_firmware_action)
         cmd_menu.addAction(action)
+        self._fw_actions.append(action)
 
         action = QAction("Test mapping...", parent=self.parent)
         # noinspection PyUnresolvedReferences
@@ -175,6 +201,7 @@ class CommandsSubMenu:
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.activate_bootloader)
         cmd_menu.addAction(action)
+        self._fw_actions.append(action)
 
         hand_menu = cmd_menu.addMenu(get_icon("keyboard.svg"), "Fix Left/Right Side")
         action = QAction("Connected half is LEFT (other is RIGHT)", parent=self.parent)
@@ -189,9 +216,22 @@ class CommandsSubMenu:
         action.triggered.connect(self.set_handedness)
         hand_menu.addAction(action)
 
+    def update_enabled(self, connected, fw_enabled):
+        """Protocol-dependent commands follow ``connected``; the firmware
+        flash/apply/bootloader actions follow ``fw_enabled`` so a keyboard
+        with a mismatched protocol can still be updated. The submenu's own
+        parent action must be enabled for the firmware items to be reachable.
+        """
+        self._cmd_menu.menuAction().setEnabled(connected or fw_enabled)
+        for action in self._cmd_menu.actions():
+            action.setEnabled(connected)
+        for action in self._fw_actions:
+            action.setEnabled(fw_enabled)
+
     def activate_bootloader(self):
-        result, msg = self.keeb.activate_bootloader()
-        self.parent.report_device_result("Error", f"Failed to activate bootloader: '{msg}'", result)
+        # Send-only (device resets without replying).
+        self.parent.worker.submit("activate_bootloader",
+                                  lambda c: self.keeb.activate_bootloader())
 
     def set_handedness(self):
         master_is_left = self.parent.sender().data()
@@ -210,48 +250,61 @@ class CommandsSubMenu:
         if reply != QMessageBox.Yes:
             self.log.info("Set handedness: user cancelled at confirmation.")
             return
-        result, msg = self.keeb.set_handedness(master_is_left)
-        self.parent.report_device_result("Error", f"Failed to set handedness: '{msg}'", result)
+        # Send-only (both halves reboot onto the new handedness without replying).
+        self.parent.worker.submit("set_handedness",
+                                  lambda c: self.keeb.set_handedness(master_is_left))
 
     def reset_dynamic_keymap(self):
-        result, msg = self.keeb.reset_dynamic_keymap()
-        self.parent.report_device_result("Error", f"Failed resetting dynamic keymap: {msg}", result)
+        self._submit_reported("reset_dynamic_keymap",
+                              lambda c: self.keeb.reset_dynamic_keymap(),
+                              lambda msg: f"Failed resetting dynamic keymap: {msg}")
 
     def reset_overlay_mapping(self):
-        result, msg = self.keeb.reset_overlay_mapping()
-        self.parent.report_device_result("Error", f"Failed clearing overlays: '{msg}'", result)
+        self._submit_reported("reset_overlay_mapping",
+                              lambda c: self.keeb.reset_overlay_mapping(),
+                              lambda msg: f"Failed clearing overlays: '{msg}'")
 
     def set_all_overlay_usage(self):
-        result, msg = self.keeb.set_all_overlay_usage()
-        self.parent.report_device_result("Error", f"Failed setting all overlay usage: '{msg}'", result)
+        self._submit_reported("set_all_overlay_usage",
+                              lambda c: self.keeb.set_all_overlay_usage(),
+                              lambda msg: f"Failed setting all overlay usage: '{msg}'")
 
     def reset_overlays_and_usage(self):
-        result, msg = self.keeb.reset_overlays_and_usage()
-        self.parent.report_device_result("Error", f"Failed clearing overlays and usage: '{msg}'", result)
+        self._submit_reported("reset_overlays_and_usage",
+                              lambda c: self.keeb.reset_overlays_and_usage(),
+                              lambda msg: f"Failed clearing overlays and usage: '{msg}'")
 
     def reset_overlay_usage(self):
-        result, msg = self.keeb.reset_overlay_usage()
-        self.parent.report_device_result("Error", f"Failed clearing overlay usage: '{msg}'", result)
+        self._submit_reported("reset_overlay_usage",
+                              lambda c: self.keeb.reset_overlay_usage(),
+                              lambda msg: f"Failed clearing overlay usage: '{msg}'")
 
     def reset_overlays(self):
-        result, msg = self.keeb.reset_overlays()
-        self.parent.report_device_result("Error", f"Failed clearing overlays: '{msg}'", result)
+        self._submit_reported("reset_overlays",
+                              lambda c: self.keeb.reset_overlays(),
+                              lambda msg: f"Failed clearing overlays: '{msg}'")
 
     def enable_overlays(self):
-        result, msg = self.keeb.enable_overlays()
-        self.parent.report_device_result("Error", f"Failed enabling overlays: '{msg}'", result)
+        self._submit_reported("enable_overlays",
+                              lambda c: self.keeb.enable_overlays(),
+                              lambda msg: f"Failed enabling overlays: '{msg}'")
 
     def disable_overlays(self):
-        result, msg = self.keeb.disable_overlays()
-        self.parent.report_device_result("Error", f"Failed disabling overlays: '{msg}'", result)
+        self._submit_reported("disable_overlays",
+                              lambda c: self.keeb.disable_overlays(),
+                              lambda msg: f"Failed disabling overlays: '{msg}'")
 
     def set_brightness(self):
-        result, msg = self.keeb.set_brightness(self.parent.sender().data())
-        self.parent.report_device_result("Error", f"Failed disabling overlays: '{msg}'", result)
+        value = self.parent.sender().data()
+        self._submit_reported("set_brightness",
+                              lambda c: self.keeb.set_brightness(value),
+                              lambda msg: f"Failed setting brightness: '{msg}'")
 
     def change_idle(self):
-        result, msg = self.keeb.set_idle(self.parent.sender().data())
-        self.parent.report_device_result("Error", f"Failed to change idle mode: '{msg}'", result)
+        idle = self.parent.sender().data()
+        self._submit_reported("change_idle",
+                              lambda c: self.keeb.set_idle(idle),
+                              lambda msg: f"Failed to change idle mode: '{msg}'")
 
     def mapping_test(self):
         from_to = {}
@@ -304,32 +357,30 @@ class CommandsSubMenu:
         from_to[from_key] = to_key
         from_to[to_key] = from_key
 
-        result, msg = self.keeb.send_overlay_mapping(from_to)
-        self.parent.report_device_result("Error", f"Failed to change idle mode: '{msg}'", result)
+        self._submit_reported("mapping_test",
+                              lambda c: self.keeb.send_overlay_mapping(from_to),
+                              lambda msg: f"Failed sending test mapping: '{msg}'")
 
     def load_commands(self):
         file_name = _get_open_file_explicit('Open file', "PolyKybd commands (*.poly.cmd)")
         if file_name:
             with open(file_name) as f:
-                self.keeb.execute_commands(f.readlines())
+                lines = f.readlines()
+            # Forward the job's cancel event so a superseded run stops promptly.
+            self.parent.worker.submit("load_commands",
+                                      lambda cancel: self.keeb.execute_commands(lines, cancel))
         else:
             self.log.info("No file selected. Operation canceled.")
 
     @contextmanager
     def _paused_polling(self):
-        """Pause the host's device-polling loop for a critical HID operation
-        (firmware flash / apply) so it doesn't contend for the HID lock while
-        the keyboard reboots and re-enumerates.  Resumes on exit, even if the
-        body raises."""
-        host = self.parent
-        was_paused = getattr(host, 'paused', False)
-        if hasattr(host, 'pause') and not was_paused:
-            host.pause()
-        try:
+        """Hold the HID worker off for a critical HID operation (firmware flash /
+        apply) so its periodic reconnect probe doesn't contend for the device
+        while the keyboard reboots and re-enumerates.  exclusive() cancels the
+        in-flight job, waits for it to finish, suspends periodics, and resumes on
+        exit (even if the body raises)."""
+        with self.parent.worker.exclusive():
             yield
-        finally:
-            if hasattr(host, 'pause') and not was_paused:
-                host.pause()   # toggle back to resume
 
     def open_hid_fw_up_dialog(self, apply_after=False):
         from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
@@ -382,8 +433,15 @@ class CommandsSubMenu:
                 "current firmware until you apply it separately."
             )
 
-        # Query current keyboard version for the confirmation dialog.
-        ok, info = get_fw_version(self.keeb.hid)
+        # Query current keyboard version for the confirmation dialog. The worker
+        # is still live here (exclusive() is entered later), so route the read
+        # through run_sync to avoid interleaving with a queued device job.
+        try:
+            ok, info = self.parent.worker.run_sync(
+                "get_fw_version", lambda c: get_fw_version(self.keeb.hid), timeout=5)
+        except Exception as exc:
+            self.log.warning("FW version query failed: %s", exc)
+            ok, info = False, {}
         if ok:
             current = info.get('version', '?')
             size_kb = info.get('fw_size', 0) // 1024

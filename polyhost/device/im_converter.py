@@ -3,8 +3,7 @@ import logging
 import numpy as np
 from enum import Enum
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QImage
 
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_data import OverlayData
@@ -20,14 +19,30 @@ class ImageConverter:
         self._num_y = 9
 
     def open(self, filename):
-        pixmap = QPixmap()
+        # QImage, not QPixmap: overlay conversion runs on the HID worker
+        # thread and QPixmap is GUI-thread-only. The explicit convertToFormat
+        # below pins the byte layout the numpy views rely on (little-endian
+        # ARGB32 = B,G,R,A; RGB888 = 3 bytes/px), where the old QPixmap path
+        # depended on whatever format the decoder happened to produce.
+        q_image = QImage()
         try:
-            pixmap.load(filename, "", Qt.NoFormatConversion)
-            self.w = pixmap.width()
-            self.h = pixmap.height()
+            if not q_image.load(filename):
+                self.log.warning("Couldn't read overlay: %s", filename)
+                return False
+            self.w = q_image.width()
+            self.h = q_image.height()
         except Exception as e:
             self.log.warning("Couldn't read overlay: %s", e)
             return False
+
+        has_alpha = q_image.hasAlphaChannel()
+        q_image = q_image.convertToFormat(
+            QImage.Format_ARGB32 if has_alpha else QImage.Format_RGB888)
+        depth = 4 if has_alpha else 3
+        buf = q_image.constBits()
+        buf.setsize(q_image.bytesPerLine() * q_image.height())
+        im = np.ndarray((q_image.height(), q_image.width(), depth), buffer=buf,
+                        strides=[q_image.bytesPerLine(), depth, 1], dtype=np.uint8)
 
         if ".mods." in filename:
             if ".combo.mods." in filename:
@@ -40,24 +55,13 @@ class ImageConverter:
                 key_r = Modifier.CTRL
                 key_g = Modifier.ALT
                 key_b = Modifier.SHIFT
-            if not pixmap.hasAlphaChannel():
-                q_image = pixmap.toImage()
-                im = np.ndarray((q_image.height(), q_image.width(), 3), buffer=q_image.constBits(),
-                                   strides=[q_image.bytesPerLine(), 3, 1], dtype=np.uint8)
+            if not has_alpha:
                 [b, g, r] = np.dsplit(im, im.shape[-1])
                 self.image[key_r] = np.array(r, dtype=bool)
                 self.image[key_g] = np.array(g, dtype=bool)
                 self.image[key_b] = np.array(b, dtype=bool)
-                # plt.imshow(self.image[Modifier.SHIFT])
-                # plt.show()
                 self.log.debug_detailed("Loaded 3 channels from %s: %dx%d", filename, self.w, self.h)
             else:
-                q_image = pixmap.toImage()
-                b = q_image.bits()
-                b.setsize(q_image.width() * q_image.height() * 4)
-
-                im = np.ndarray((q_image.height(), q_image.width(), 4), buffer=b,
-                                strides=[q_image.bytesPerLine(), 4, 1], dtype=np.uint8)
                 [b, g, r, a] = np.dsplit(im, im.shape[-1])
                 self.image[key_a] = np.array(a, dtype=bool)
                 self.image[key_r] = np.array(r, dtype=bool)
@@ -65,23 +69,12 @@ class ImageConverter:
                 self.image[key_b] = np.array(b, dtype=bool)
                 self.log.debug_detailed("Loaded 4 channels from %s: %dx%d", filename, self.w, self.h)
         else:
-            if not pixmap.hasAlphaChannel():
-                q_image = pixmap.toImage()
-                im = np.ndarray((q_image.height(), q_image.width(), 3), buffer=q_image.constBits(),
-                                   strides=[q_image.bytesPerLine(), 3, 1], dtype=np.uint8)
-            else:
-                q_image = pixmap.toImage()
-                b = q_image.bits()
-                b.setsize(q_image.width() * q_image.height() * 4)
-
-                im = np.ndarray((q_image.height(), q_image.width(), 4), buffer=b,
-                                strides=[q_image.bytesPerLine(), 4, 1], dtype=np.uint8)
             # convert the image to b/w
             self.image[Modifier.NO_MOD] = np.array(np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
                                                    dtype=bool)
-            
+
             self.log.debug("Loaded %s: %dx%d", filename, self.w, self.h)
-            
+
         #not supported for now
         if Modifier.GUI_KEY in self.image:
             self.image.pop(Modifier.GUI_KEY)

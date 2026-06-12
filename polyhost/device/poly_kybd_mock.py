@@ -212,7 +212,8 @@ class PolyKybdMock:
     # Key press / release
     # -------------------------------------------------------------------------
 
-    def press_and_release_key(self, keycode: int, duration: int) -> tuple[bool, str]:
+    def press_and_release_key(self, keycode: int, duration: int,
+                              cancel=None) -> tuple[bool, str]:
         self._log_call("press_and_release_key", keycode, duration)
         return True, ""
 
@@ -290,8 +291,10 @@ class PolyKybdMock:
 
         return True, f"{counter} overlays sent {all_keys}."
 
-    def send_overlays(self, filenames: list) -> bool:
+    def send_overlays(self, filenames: list, cancel=None) -> bool:
         self._log_call("send_overlays", filenames)
+        if cancel is not None and cancel.is_set():
+            return False
         overlay_counter = 0
         hid_msg_counter = 0
         key_counter = 0
@@ -332,7 +335,9 @@ class PolyKybdMock:
         self._sent_overlays.extend(filenames)
         return True
 
-    def send_overlays_mru(self, filenames: list, cache) -> bool:
+    def send_overlays_mru(self, filenames: list, cache, cancel=None) -> bool:
+        if cancel is not None and cancel.is_set():
+            return False
         display_to_pool: dict[int, int] = {}
 
         # Parity with the real device path; see PolyKybd.send_overlays_mru.
@@ -399,15 +404,21 @@ class PolyKybdMock:
     def get_console_output(self, flush_and_return=True):
         return "" if flush_and_return else None
 
-    def execute_commands(self, command_list):
+    def execute_commands(self, command_list, cancel=None):
         for cmd_str in command_list:
+            if cancel is not None and cancel.is_set():
+                return
             cmd_str = cmd_str.strip()
             end = cmd_str.find(" ")
             cmd = cmd_str[:end] if end != -1 else cmd_str
             try:
                 match cmd:
                     case "wait":
-                        time.sleep(float(cmd_str[end + 1:]))
+                        duration = float(cmd_str[end + 1:])
+                        if cancel is not None:
+                            cancel.wait(duration)
+                        else:
+                            time.sleep(duration)
                     case "press":
                         self.press_key(int(cmd_str[end + 1:], 0))
                     case "release":
@@ -418,7 +429,10 @@ class PolyKybdMock:
                         cmd = params[:end] if end != -1 else params
                         match cmd:
                             case "send":
-                                self.send_overlays([params[end + 1:]])
+                                if cancel is not None:
+                                    self.send_overlays([params[end + 1:]], cancel)
+                                else:
+                                    self.send_overlays([params[end + 1:]])
                             case "reset":
                                 self.reset_overlays()
                             case "reset-usage":

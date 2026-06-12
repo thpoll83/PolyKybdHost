@@ -25,6 +25,7 @@ from unittest.mock import MagicMock, patch
 from polyhost.device.hid_fw_up import (
     get_fw_version,
     flash_firmware,
+    apply_staged_firmware,
     validate_rp2040_firmware,
     validate_polykybd_firmware,
     HID_POLYKYBD,
@@ -32,6 +33,7 @@ from polyhost.device.hid_fw_up import (
     CMD_FW_UP_BEGIN,
     CMD_FW_UP_CHUNK,
     CMD_FW_UP_COMMIT,
+    CMD_FW_UP_APPLY,
     FW_UP_CHUNK_SIZE,
     FW_UP_VERSION_LEN,
     FW_UP_MAX_SIZE,
@@ -1000,6 +1002,79 @@ class TestRealFirmwareBinary(unittest.TestCase):
     def test_manufacturer_string_present(self):
         sig = "Poly".encode('utf-16-le')
         self.assertIn(sig, self.fw, "Manufacturer prefix 'Poly' UTF-16LE not found in binary")
+
+
+# ---------------------------------------------------------------------------
+# apply_staged_firmware
+# ---------------------------------------------------------------------------
+
+class TestApplyStagedFirmware(unittest.TestCase):
+
+    def test_apply_packet_format_and_timeout(self):
+        hid = _make_hid([(True, _ack_reply(CMD_FW_UP_APPLY))], reconnect=True)
+        apply_staged_firmware(hid)
+        pkt, kwargs = hid.send_and_read.call_args[0][0], hid.send_and_read.call_args[1]
+        self.assertEqual(bytes(pkt), bytes([HID_POLYKYBD, CMD_FW_UP_APPLY]))
+        self.assertEqual(kwargs['timeout'], 5000)
+
+    def test_ack_then_reconnect_succeeds(self):
+        hid = _make_hid([(True, _ack_reply(CMD_FW_UP_APPLY))], reconnect=True)
+        ok, msg = apply_staged_firmware(hid)
+        self.assertTrue(ok)
+        self.assertIn("reconnected", msg)
+        hid.wait_for_reconnect.assert_called_once_with(timeout_s=30)
+
+    def test_nack_is_safe_noop_without_reconnect_wait(self):
+        # '!' means "no valid staged image / in-app apply not built in":
+        # the keyboard did NOT reboot, so we must not sit in a 30 s wait.
+        hid = _make_hid([(True, _nack_reply(CMD_FW_UP_APPLY))], reconnect=True)
+        ok, msg = apply_staged_firmware(hid)
+        self.assertFalse(ok)
+        self.assertIn("not available", msg)
+        hid.wait_for_reconnect.assert_not_called()
+
+    def test_no_reply_treated_as_rebooting(self):
+        # USB torn down right after accepting the command — empty reply,
+        # proceed to the reconnect wait.
+        hid = _make_hid([(True, bytearray())], reconnect=True)
+        ok, _ = apply_staged_firmware(hid)
+        self.assertTrue(ok)
+        hid.wait_for_reconnect.assert_called_once()
+
+    def test_hid_failure_still_waits_for_reconnect(self):
+        # A failed send (device already re-enumerating) is not a NACK —
+        # the apply may well be in progress, so wait for the device.
+        hid = _make_hid([(False, bytearray())], reconnect=True)
+        ok, _ = apply_staged_firmware(hid)
+        self.assertTrue(ok)
+        hid.wait_for_reconnect.assert_called_once()
+
+    def test_reconnect_timeout_fails_with_recovery_hint(self):
+        hid = _make_hid([(True, _ack_reply(CMD_FW_UP_APPLY))], reconnect=False)
+        ok, msg = apply_staged_firmware(hid)
+        self.assertFalse(ok)
+        self.assertIn("BOOTSEL", msg)
+
+    def test_drains_replies_before_send_and_after_reconnect(self):
+        hid = _make_hid([(True, _ack_reply(CMD_FW_UP_APPLY))], reconnect=True)
+        apply_staged_firmware(hid)
+        self.assertEqual(hid.drain_replies.call_count, 2)
+
+    def test_nack_drains_only_once(self):
+        hid = _make_hid([(True, _nack_reply(CMD_FW_UP_APPLY))], reconnect=True)
+        apply_staged_firmware(hid)
+        self.assertEqual(hid.drain_replies.call_count, 1)
+
+    def test_progress_reports_start_mid_end(self):
+        hid = _make_hid([(True, _ack_reply(CMD_FW_UP_APPLY))], reconnect=True)
+        percents = []
+        apply_staged_firmware(hid, progress_cb=lambda pct, msg: percents.append(pct))
+        self.assertEqual(percents, [0, 50, 100])
+
+    def test_progress_callback_optional(self):
+        hid = _make_hid([(True, _ack_reply(CMD_FW_UP_APPLY))], reconnect=True)
+        ok, _ = apply_staged_firmware(hid)   # no callback — must not raise
+        self.assertTrue(ok)
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ class Sunlight:
     def init_location(self):
         if self.location_lookup and not self.location_known:
             try:
-                self.location = geocoder.ip('me')
+                self.location = geocoder.ip('me', timeout=5.0)
                 self.latitude, self.longitude = self.location.latlng
 
                 # Create location object
@@ -49,7 +49,9 @@ class Sunlight:
                     f"&timezone=auto"
                 )
 
-                response = requests.get(url)
+                # Bounded timeout: this runs on the GUI thread (10-min brightness
+                # task) — without it a stalled connection freezes the UI.
+                response = requests.get(url, timeout=10)
                 data = response.json()
 
                 # Step 4: Extract current hour's solar radiation
