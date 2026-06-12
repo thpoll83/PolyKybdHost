@@ -84,6 +84,22 @@ case "$(uname -s)" in
         ;;
 esac
 
+launch_app() {
+    echo ">> Starting PolyKybd..."
+    nohup .venv/bin/python -m polyhost >/dev/null 2>&1 &
+    echo ">> PolyKybd started (PID $!); it also registers itself to autostart at login."
+}
+
 echo ""
-echo ">> Done. Start PolyKybdHost with:"
-echo "       cd $(pwd) && .venv/bin/python -m polyhost"
+echo ">> Done."
+if [ -r /dev/tty ]; then
+    printf ">> Start PolyKybd now? [Y/n] " > /dev/tty
+    read -r ans < /dev/tty || ans=""
+    case "$ans" in
+        [Nn]*) echo ">> Not started. Launch it later with:  cd \"$(pwd)\" && .venv/bin/python -m polyhost" ;;
+        *)     launch_app ;;
+    esac
+else
+    # No terminal to ask on (not started interactively) - start right away.
+    launch_app
+fi
