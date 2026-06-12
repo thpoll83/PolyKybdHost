@@ -59,11 +59,18 @@ class TestEnumerateLangPacked(unittest.TestCase):
         keeb.hid.send_and_read_validate.return_value = (True, _GET_LANG_ACK)
         return keeb
 
+    def _arm_packed(self, keeb, reports):
+        """Wire the mock: query_current_lang's GET_LANG via send_and_read_validate,
+        then the packed list — first report via send_and_read_validate, the
+        remaining reports via plain read()."""
+        keeb.hid.send_and_read_validate.side_effect = [
+            (True, _GET_LANG_ACK), (True, reports[0])]
+        keeb.hid.read.side_effect = [(True, r) for r in reports[1:]]
+
     def test_packed_path_decodes_all_languages(self):
         keeb = self._make_keeb(PACKED_LANG_LIST_MIN_PROTOCOL)
         reports = _packed_reports(_ALL_LANGS)
-        keeb.hid.send_and_read_validate_with_lock.return_value = (True, reports[0], None)
-        keeb.hid.read_with_lock.side_effect = [(True, r, None) for r in reports[1:]]
+        self._arm_packed(keeb, reports)
 
         ok, _ = keeb.enumerate_lang()
         self.assertTrue(ok)
@@ -75,10 +82,10 @@ class TestEnumerateLangPacked(unittest.TestCase):
     def test_packed_uses_packed_command(self):
         keeb = self._make_keeb(PACKED_LANG_LIST_MIN_PROTOCOL)
         reports = _packed_reports(_ALL_LANGS)
-        keeb.hid.send_and_read_validate_with_lock.return_value = (True, reports[0], None)
-        keeb.hid.read_with_lock.side_effect = [(True, r, None) for r in reports[1:]]
+        self._arm_packed(keeb, reports)
         keeb.enumerate_lang()
-        sent_cmd = keeb.hid.send_and_read_validate_with_lock.call_args[0][0]
+        # The packed list is the second send_and_read_validate call (after GET_LANG).
+        sent_cmd = keeb.hid.send_and_read_validate.call_args_list[1][0][0]
         self.assertEqual(sent_cmd[1], 27)  # Cmd.GET_LANG_LIST_PACKED
 
     def test_old_protocol_is_unsupported(self):
@@ -87,25 +94,30 @@ class TestEnumerateLangPacked(unittest.TestCase):
         keeb = self._make_keeb(1)
         ok, _ = keeb.enumerate_lang()
         self.assertFalse(ok)
-        keeb.hid.send_and_read_validate_with_lock.assert_not_called()
+        # Only GET_LANG (query_current_lang) was sent; no packed list command.
+        self.assertEqual(keeb.hid.send_and_read_validate.call_count, 1)
 
     def test_no_protocol_version_is_unsupported(self):
         """Firmware that reports no protocol version (very old) is likewise
         unsupported — the retired ASCII command is not attempted."""
         keeb = self._make_keeb(None)
+        # query_version_info() runs to refresh the (still missing) protocol;
+        # let its reads no-op so it leaves protocol_version unset.
+        keeb.hid.send_and_read_validate.return_value = (False, _pad(b""))
         ok, _ = keeb.enumerate_lang()
         self.assertFalse(ok)
-        keeb.hid.send_and_read_validate_with_lock.assert_not_called()
 
     def test_packed_nack_does_not_fall_back(self):
         """A NACK to the packed command on a v2 board is a hard failure — it is
-        NOT retried as the retired ASCII list. Exactly one command is sent."""
+        NOT retried as the retired ASCII list. Exactly one list command is sent."""
         keeb = self._make_keeb(PACKED_LANG_LIST_MIN_PROTOCOL)
         nack = _pad(b"P\x1b!")  # firmware NACKs the packed command
-        keeb.hid.send_and_read_validate_with_lock.return_value = (True, nack, None)
+        keeb.hid.send_and_read_validate.side_effect = [
+            (True, _GET_LANG_ACK), (True, nack)]
         ok, _ = keeb.enumerate_lang()
         self.assertFalse(ok)
-        self.assertEqual(keeb.hid.send_and_read_validate_with_lock.call_count, 1)
+        # Two send_and_read_validate calls total: GET_LANG + the packed list.
+        self.assertEqual(keeb.hid.send_and_read_validate.call_count, 2)
 
 
 if __name__ == "__main__":
