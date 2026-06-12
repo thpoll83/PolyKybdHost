@@ -425,7 +425,9 @@ class PolyKybd:
         result, msg = self.hid.send_and_read_validate(
             compose_cmd_str(Cmd.CHANGE_LANG, lang), 100, expect(Cmd.CHANGE_LANG))
         msg = msg.decode().strip('\x00')
-        if not result:
+        # The prefix check only matches "P\x09" — byte 2 carries the ACK ('.')
+        # vs NACK ('!') marker, so a NACK must not be reported as success.
+        if not result or len(msg) < 3 or msg[2] != '.':
             return False, f"Could not change to {lang} ({msg})"
 
         self.log.info("Language changed to %s (%s).", lang, msg)
@@ -506,8 +508,11 @@ class PolyKybd:
                     # Send ESC first
                     if not enabled and modifier == Modifier.NO_MOD:
                         if KeyCode.KC_ESCAPE.value in overlay_map.keys():
-                            hid_msg_counter += self.send_smallest_overlay(
+                            sent = self.send_smallest_overlay(
                                 KeyCode.KC_ESCAPE.value, modifier, overlay_map)
+                            if sent < 0:
+                                return False
+                            hid_msg_counter += sent
                             overlay_map.pop(KeyCode.KC_ESCAPE.value)
                             self.enable_overlays()
                             enabled = True
@@ -517,8 +522,11 @@ class PolyKybd:
                         if cancel is not None and cancel.is_set():
                             self.log.debug_detailed("send_overlays cancelled")
                             return False
-                        hid_msg_counter += self.send_smallest_overlay(
+                        sent = self.send_smallest_overlay(
                             keycode, modifier, overlay_map)
+                        if sent < 0:
+                            return False
+                        hid_msg_counter += sent
 
                     self.log.debug_detailed(
                         "Overlays for keycodes %s have been sent", overlay_map.keys())
@@ -547,6 +555,7 @@ class PolyKybd:
         return True
 
     def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict) -> int:
+        """Returns the number of HID messages sent, or -1 on a send failure."""
         ov = mapping[keycode]
         smallest = min(ov.all_msgs, ov.compressed_msgs,
                        ov.roi_msgs, ov.compressed_roi_msgs)
@@ -591,7 +600,7 @@ class PolyKybd:
             if not result:
                 self.log.error(
                     "Error sending roi overlay message %d/%d (%s)", msg_num+1, msg_num, msg)
-                return num_msgs
+                return -1
 
         if lock:
             lock.release()
@@ -614,7 +623,7 @@ class PolyKybd:
             if not result:
                 self.log.error(
                     "Error sending plain overlay message %d/%d (%s)", msg_num + 1, msg_num, msg)
-                return msg_cnt
+                return -1
             msg_cnt += 1
 
         if lock:
@@ -640,7 +649,7 @@ class PolyKybd:
             if not result:
                 self.log.error(
                     "Error sending compressed overlay message %d/%d (%s)", msg_num + 1, msg_num, msg)
-                return msg_num
+                return -1
 
         if lock:
             lock.release()
@@ -661,7 +670,13 @@ class PolyKybd:
 
         display_to_pool: dict[int, int] = {}
 
-        self.prepare_for_mru_send()
+        ok, msg = self.prepare_for_mru_send()
+        if not ok:
+            # Without the mirror+reset the firmware may still hold the previous
+            # program's mapping/usage bits — sending against that state would
+            # redirect display positions to the wrong pool slots.
+            self.log.warning("send_overlays_mru: prepare failed: %s", msg)
+            return False
 
         # On cancel we bail before send_overlay_mapping / record_transferred_mapping
         # / enable_overlays. The firmware was reset to identity by
@@ -694,8 +709,14 @@ class PolyKybd:
                             self.log.debug_detailed(
                                 "MRU miss: sending 0x%x/%s to pool slot %d (addr 0x%x/%s)",
                                 keycode, modifier, pool_slot, pool_kc, pool_mod)
-                            hid_msg_counter += self.send_smallest_overlay(
+                            sent = self.send_smallest_overlay(
                                 pool_kc, pool_mod, {pool_kc: overlay_data})
+                            if sent < 0:
+                                # Abort before the mapping commit: recording a
+                                # slot whose image never reached the keyboard
+                                # would turn into a permanent stale MRU hit.
+                                return False
+                            hid_msg_counter += sent
                         else:
                             self.log.debug_detailed(
                                 "MRU hit: 0x%x/%s already in pool slot %d", keycode, modifier, pool_slot)

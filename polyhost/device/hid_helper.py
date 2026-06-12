@@ -216,7 +216,7 @@ class HidHelper:
     # Default read timeout: 100 ms. Windows delivers HID input reports on a
     # ~16 ms timer tick, so sub-30 ms timeouts are unreliable there; all HID
     # I/O runs on the worker thread, so a generous wait costs nothing.
-    def send_and_read_validate(self, data: bytearray, timeout: int = 100, expected_prefix: bytearray = None) -> tuple[bool, bytearray]:
+    def send_and_read_validate(self, data: bytearray, timeout: int = 100, expected_prefix: bytearray | None = None) -> tuple[bool, bytearray]:
         if expected_prefix is None:
             expected_prefix = data[:2]
         if self.interface is None:

@@ -166,6 +166,10 @@ class KbLayoutDialog(QMainWindow):
             self.set_keycodes_for_layer(self.current_layer)
         else:
             self.log.warning("Failed to receive dynamic key buffer")
+            # key_buffer is None: any layer switch or keycode assignment would
+            # index it and crash, so lock the interactive widgets down.
+            self.layers.setEnabled(False)
+            self.keycode_browser.setEnabled(False)
     
     def set_keycodes_for_layer(self, layer):
         mapping = self.keycode_browser.get_keycode_to_name_mapping()

@@ -16,6 +16,7 @@ import numpy as np
 
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.keys import KeyCode, Modifier
+from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_data import OverlayData
 from polyhost.device.poly_kybd import PolyKybd
 from polyhost.input.unicode_input import InputMethod
@@ -174,9 +175,10 @@ class TestLanguageCommands(unittest.TestCase, LockCheckMixin):
         keeb, device = make_keeb(replies=[nack(0x09)])
         keeb.all_languages = ['deDE']
         ok, msg = keeb.change_language('deDE')
-        # NACK reply still starts with the expected 'P\x09' prefix, so the HID
-        # layer validates it — characterization of current behavior.
-        self.assertTrue(ok)
+        # The NACK reply 'P\x09!' passes the 2-byte prefix validation in the
+        # HID layer; change_language must reject it via the ACK marker byte.
+        self.assertFalse(ok)
+        self.assertIn('deDE', msg)
         self.assert_lock_free(keeb)
 
 
@@ -520,6 +522,22 @@ class TestOverlaySendPaths(unittest.TestCase, LockCheckMixin):
         keeb.send_overlay_for_keycode_compressed(0x29, Modifier.NO_MOD, {0x29: overlay})
         self.assert_lock_free(keeb)
 
+    def test_overlay_write_failure_returns_negative(self):
+        # A failed send must be distinguishable from a successful one — the
+        # ROI sender used to return num_msgs (the success value) on failure,
+        # so send_overlays/send_overlays_mru could not detect it.
+        keeb, device = make_keeb()
+        device.write_exception = RuntimeError("USB gone")
+        overlay = _overlay("rect")
+        self.assertEqual(
+            keeb.send_overlay_for_keycode(0x29, Modifier.NO_MOD, {0x29: overlay}), -1)
+        self.assertEqual(
+            keeb.send_overlay_for_keycode_compressed(0x29, Modifier.NO_MOD, {0x29: overlay}), -1)
+        self.assertEqual(
+            keeb.send_overlay_roi_for_keycode(0x29, Modifier.NO_MOD, {0x29: overlay},
+                                              compressed=False), -1)
+        self.assert_lock_free(keeb)
+
 
 class TestSendOverlays(unittest.TestCase, LockCheckMixin):
     """send_overlays end-to-end with a patched ImageConverter."""
@@ -577,6 +595,59 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
         keeb, device = make_keeb()
         self.assertFalse(keeb.send_overlays(["missing.png"]))
         self.assertEqual(len(device.writes), 0)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_send_failure_aborts_and_returns_false(self, MockConverter):
+        MockConverter.return_value = self._converter({KeyCode.KC_A.value: _overlay("dot")})
+        keeb, device = make_keeb()
+        device.write_exception = RuntimeError("USB gone")
+        self.assertFalse(keeb.send_overlays(["fake.png"]))
+        # aborted before enable_overlays
+        self.assertNotIn(bytes([POLY, 11, 0x01]), device.payloads())
+        self.assert_lock_free(keeb)
+
+
+class TestSendOverlaysMruFailure(unittest.TestCase, LockCheckMixin):
+    """send_overlays_mru must abort (and skip the mapping commit) when the
+    prepare command or a pool upload fails — recording a mapping for an image
+    that never reached the keyboard becomes a permanent stale MRU hit."""
+
+    def _converter(self, overlay_map):
+        converter = MagicMock()
+        converter.open.return_value = True
+        converter.extract_overlays.side_effect = (
+            lambda mod: dict(overlay_map) if mod == Modifier.NO_MOD else None)
+        return converter
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_prepare_failure_returns_false_without_uploads(self, MockConverter):
+        MockConverter.return_value = self._converter({KeyCode.KC_A.value: _overlay("dot")})
+        keeb, device = make_keeb()   # no replies: prepare's read times out
+        cache = OverlayMRUCache(20)
+        self.assertFalse(keeb.send_overlays_mru(["fake.png"], cache))
+        self.assertEqual(len(device.payloads()), 1)   # only the prepare command
+        self.assert_lock_free(keeb)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_upload_failure_skips_mapping_commit(self, MockConverter):
+        MockConverter.return_value = self._converter({KeyCode.KC_A.value: _overlay("dot")})
+        # Let the prepare command succeed, then fail every later write.
+        keeb, device = make_keeb(replies=[ack(11)])
+        cache = OverlayMRUCache(20)
+        original_write = device.write
+        state = {"writes": 0}
+
+        def write_fails_after_prepare(report):
+            state["writes"] += 1
+            if state["writes"] > 1:    # write 1 = prepare command
+                raise RuntimeError("USB gone")
+            return original_write(report)
+        device.write = write_fails_after_prepare
+
+        self.assertFalse(keeb.send_overlays_mru(["fake.png"], cache))
+        self.assertNotIn(21, [p[1] for p in device.payloads()])   # no mapping cmd
+        self.assertNotIn(bytes([POLY, 11, 0x01]), device.payloads())  # no enable
+        self.assert_lock_free(keeb)
 
 
 # ---------------------------------------------------------------------------

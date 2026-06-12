@@ -553,6 +553,7 @@ class PolyHost(QApplication):
         Only re-queries version/lang info when the probed connectivity differs
         from the host's last applied state (read atomically under the GIL)."""
         connected_now = False
+        present_now = False
         response = ""
         if self.keeb.hid is not None:
             # Flush replies that arrived after their command gave up waiting
@@ -561,6 +562,10 @@ class PolyHost(QApplication):
             # replies to this probe's queries.
             self.keeb.hid.drain_replies(timeout_ms=2)
         if self.keeb.connect():
+            # connect() succeeding (GET_ID answered / interface re-opened)
+            # already proves a flashable device is present, even if the
+            # GET_LANG probe below fails on a busy keyboard.
+            present_now = True
             connected_now, response = self.keeb.query_current_lang()
 
         # Debounce: a busy keyboard misses probes without being disconnected.
@@ -571,6 +576,7 @@ class PolyHost(QApplication):
 
         snapshot = {
             "connected_now": connected_now,
+            "device_present": present_now,
             "lang": response,
             "state_changed": connected_now != self._last_applied_connected,
             # Popped on every successful probe: the firmware sets the fresh-boot
@@ -624,9 +630,12 @@ class PolyHost(QApplication):
             return
         connected_now = snapshot["connected_now"]
         response = snapshot["lang"]
-        # GET_LANG answering is protocol-independent: a device that fails the
-        # protocol/version check below is still *present* and flashable.
-        self.device_present = connected_now
+        # Presence (= flashable) comes from the probe's connect()/GET_ID, not
+        # from the GET_LANG result: a keyboard that answers GET_ID but misses
+        # the language probe (busy syncing the slave half) and one that fails
+        # the protocol/version check below must both keep firmware actions
+        # available. Fall back to connected_now for snapshots without the key.
+        self.device_present = snapshot.get("device_present", connected_now)
 
         if snapshot["state_changed"]:
             decision = decide_reconnect_apply(
