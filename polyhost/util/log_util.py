@@ -38,6 +38,22 @@ class ColorFormatter(logging.Formatter):
         return f"{color}{super().format(record)}{self._RESET}" if color else super().format(record)
 
 
+class MultiLineFormatter(logging.Formatter):
+    """Prefix every continuation line of a multi-line record with the record's
+    timestamp, so a batched keyboard-console flush reads like one line per
+    console message. lines[0] already carries the fmt-applied prefix and must
+    not be prefixed (or emitted) again, and no line may be dropped — the old
+    implementation re-emitted the first line and swallowed the last one."""
+
+    def format(self, record):
+        message = super().format(record)
+        lines = message.splitlines()
+        if len(lines) <= 1:
+            return message.strip("\n")
+        timestamp = self.formatTime(record)
+        return "\n".join([lines[0], *(f"[{timestamp}] {line}" for line in lines[1:])])
+
+
 def make_stream_handler(fmt: str) -> logging.StreamHandler:
     handler = logging.StreamHandler(stream=sys.stdout)
     handler.setFormatter(ColorFormatter(fmt) if sys.stdout.isatty() else logging.Formatter(fmt))

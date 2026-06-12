@@ -73,18 +73,7 @@ def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
 
 
-from polyhost.util.log_util import DEBUG_DETAILED, ColorFormatter, make_stream_handler, make_collapse_handler
-
-
-class MultiLineFormatter(logging.Formatter):
-    def format(self, record):
-        message = super().format(record)
-        lines = message.splitlines()
-        if len(lines)==1:
-            return message.strip("\n")
-        timestamp = self.formatTime(record)
-        formatted_lines = [f"[{timestamp}] {line}" for line in lines[:-1]]
-        return lines[0] + "\n".join(formatted_lines)
+from polyhost.util.log_util import DEBUG_DETAILED, ColorFormatter, MultiLineFormatter, make_stream_handler, make_collapse_handler
 
 
 # Shared dimensions for all update / firmware dialogs — 2:1 aspect ratio.
@@ -314,18 +303,15 @@ class PolyHost(QApplication):
         self.unicode_cache = UnicodeCache()
         #self.reconnect()
         self.menu.addAction(self.status)
-        # Initial language enumeration is synchronous (runs once, before the
-        # worker exists). The worker-driven reconnect path supplies the lang
-        # list via the reconnect snapshot afterwards. The version query must
-        # run first: enumerate_lang() gates on the firmware protocol version
-        # (the packed list is protocol v2+) and it is still unknown here —
-        # without it the startup enumeration always failed against protocol-2
-        # firmware (seen in the field 2026-06-11).
-        self.keeb.query_version_info()
-        init_lang_ok, _ = self.keeb.enumerate_lang()
-        init_lang_list = self.keeb.get_lang_list() if init_lang_ok else None
-        init_current_lang = self.keeb.get_current_lang() if init_lang_ok else None
-        self.add_supported_lang(self.menu, init_lang_list, init_current_lang)
+        # No synchronous language enumeration here: self.connected is still
+        # False at this point (only the reconnect decision tree may set it —
+        # that's where the protocol/version gate lives), so the first worker
+        # probe always sees a False→True transition and runs the full fresh-
+        # connect flow anyway: enumerate_lang + add_supported_lang + unicode
+        # mode + cache reset. Enumerating here as well just did all of that
+        # twice within the first second (double menu build seen in the field
+        # 2026-06-13). The language menu is inserted right after the status
+        # action whenever it is created, so arriving ~1 s late costs nothing.
 
         self.cmdMenu = CommandsSubMenu(self, self.keeb)
         self.cmdMenu.build_menu(self.menu)
