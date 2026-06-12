@@ -171,7 +171,10 @@ class Renderer:
             if f is None: f = self.fonts[0]; ch = ord('!')
             if not (f.first <= ch <= f.last): continue
             g = f.glyphs[ch - f.first]
-            mn = min(mn, x + g['xOffset']); mx = max(mx, x + g['xOffset'] + g['width'])
+            w = g['width']
+            if w > 0:                                   # match kdisp_gfx_text_bounds' w>0 guard
+                l = x + g['xOffset']; r = x + g['xOffset'] + w - 1   # -1: rightMOST pixel, not one past
+                mn = min(mn, l); mx = max(mx, r)
             x += g['xAdvance']
         if mx < mn: mn = mx = 0
         return mn, mx
