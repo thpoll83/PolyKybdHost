@@ -66,7 +66,10 @@ function Start-PolyKybd {
 
 Write-Host ""
 Write-Host ">> Done."
-if ([Environment]::UserInteractive -and -not [Console]::IsInputRedirected) {
+if ($env:POLYKYBD_NO_LAUNCH) {
+    # Opt out of auto-launch (e.g. CI / headless). Don't start the app.
+    Write-Host ">> POLYKYBD_NO_LAUNCH set - not starting. Launch it later with:  .venv\Scripts\python.exe -m polyhost"
+} elseif ([Environment]::UserInteractive -and -not [Console]::IsInputRedirected) {
     $ans = Read-Host ">> Start PolyKybd now? [Y/n]"
     if ($ans -match '^[Nn]') {
         Write-Host ">> Not started. Launch it later with:  .venv\Scripts\python.exe -m polyhost"

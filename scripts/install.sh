@@ -92,11 +92,15 @@ launch_app() {
 
 echo ""
 echo ">> Done."
-if [ -r /dev/tty ]; then
+RUN_HINT="cd \"$(pwd)\" && .venv/bin/python -m polyhost"
+if [ -n "${POLYKYBD_NO_LAUNCH:-}" ]; then
+    # Opt out of auto-launch (e.g. CI / headless). Don't start the app.
+    echo ">> POLYKYBD_NO_LAUNCH set - not starting. Launch it later with:  $RUN_HINT"
+elif [ -r /dev/tty ]; then
     printf ">> Start PolyKybd now? [Y/n] " > /dev/tty
     read -r ans < /dev/tty || ans=""
     case "$ans" in
-        [Nn]*) echo ">> Not started. Launch it later with:  cd \"$(pwd)\" && .venv/bin/python -m polyhost" ;;
+        [Nn]*) echo ">> Not started. Launch it later with:  $RUN_HINT" ;;
         *)     launch_app ;;
     esac
 else
