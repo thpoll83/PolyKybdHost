@@ -18,6 +18,13 @@ location up front without the prompt, set `POLYKYBD_DIR` first — e.g.
 `POLYKYBD_DIR=~/apps/polykybd` (bash) or `$env:POLYKYBD_DIR="C:\Tools\PolyKybd"`
 (PowerShell).
 
+When it finishes, the installer offers to start PolyKybd. If you ran it from a
+terminal it asks first (`Start PolyKybd now? [Y/n]`); if it was launched
+non-interactively it starts the app right away. Set `POLYKYBD_NO_LAUNCH=1` to
+skip starting the app altogether (useful for CI/headless installs). Either way
+the app registers itself for autostart on its first run, so the manual
+`python -m polyhost` commands below are only needed for later/manual launches.
+
 **Linux / macOS**
 
 ```bash
