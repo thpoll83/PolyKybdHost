@@ -103,20 +103,23 @@ class Lang:
         if val is None or val == '': return None
         if isinstance(val, (int, float)): return [ord(c) for c in str(int(val))]
         s = str(val).strip()
-        # multi-token: e.g.  u"\f\f" MICRO_SIGN   or   u" " EURO_SIGN
-        toks = s.split()
-        if len(toks) > 1:
-            cps = []
-            for t in toks:
-                cps += self.resolve_token(t)
-            return cps
-        return self.resolve_token(s)
+        # Tokenise like the firmware's make_key: a u"..."/U"..." literal is ONE token
+        # even if it contains spaces (e.g. u"[ {", u"` ~"); only whitespace OUTSIDE a
+        # quoted literal separates tokens (e.g. u"\f\f" MICRO_SIGN). Splitting on plain
+        # whitespace shattered space-containing literals (the ro-RO/bracket-key bug).
+        cps = []
+        for m in re.finditer(r'[uU]"(?:\\.|[^"\\])*"|\S+', s):
+            cps += self.resolve_token(m.group(0))
+        return cps or None
 
     def resolve_token(self, t: str) -> list[int]:
         if t in self.named: return list(self.named[t])
         m = re.match(r'^[uU]"((?:\\.|[^"\\])*)"$', t)
         if m: return parse_u_string(m.group(1))
-        return [ord(c) for c in t]    # bare literal char(s)
+        # A bare cell is the body of an implicit U"..." (make_key wraps it), so it can
+        # carry \x.. / \f escapes — parse them instead of rendering the literal text
+        # (a bare "\xb4\xb4" is U+00B4 U+00B4, not the 8 chars backslash-x-b-4...).
+        return parse_u_string(t)
 
     # translate_keycode (small) with NULL -> en-US(0) fallback; returns (used_lang, cps|None)
     def small(self, lang_idx, row):
