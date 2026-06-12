@@ -18,12 +18,17 @@ class UnicodeCache:
         self.cache_dir = Path(os.path.join(user_config_dir(self.APP_NAME), "icon_cache"))
         self.cache_dir.mkdir(exist_ok=True)
         self.size = size
+        # Reuse one keep-alive connection across flag downloads instead of a new
+        # TLS handshake per icon (the menu fetches ~150 flags on first run).
+        self._session = requests.Session()
 
     def _download_and_cache(self, codepoints: str, filename: Path):
         url = f"https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/{codepoints}.png"
 
         try:
-            response = requests.get(url)
+            # Always pass a timeout: this runs on the GUI thread while the menu
+            # is built, so a stalled CDN request would otherwise hang the app.
+            response = self._session.get(url, timeout=10)
             response.raise_for_status()
             pixmap = QPixmap()
             pixmap.loadFromData(response.content)
