@@ -1,6 +1,7 @@
 PyQt5
 hid
 NumPy
+Pillow
 PyWinCtl
 pywin32; sys_platform == "win32"
 pynput
