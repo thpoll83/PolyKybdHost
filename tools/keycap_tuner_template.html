@@ -63,11 +63,15 @@ const DATA=__DATA__;
 const C=DATA.consts,HIDE=DATA.HIDE,BY=DATA.base_yadv;
 const OW=C.OLED_W,OH=C.OLED_H,BX=C.BUFFER_X,SW=C.SCREEN_WIDTH,BL=C.BASELINE;
 const SCALE=4,MARG=9,LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-function catOf(kc){const c=kc.startsWith("KC_")&&kc.length===4?kc[3]:"";if(LETTERS.includes(c))return"letter";if(/^KC_[0-9]$/.test(kc))return"num";return"sym";}
+// mirror oled_preview: letter iff KC_<A-Z> (4 chars), num iff KC_<0-9>, else sym.
+// NB: guard the empty c — "ABC..".includes("") is true in JS, which used to make
+// every non-4-char keycode (KC_GRAVE, KC_MINUS, KC_LBRC, …) misclassify as letter.
+function catOf(kc){const c=kc.startsWith("KC_")&&kc.length===4?kc[3]:"";if(c&&LETTERS.includes(c))return"letter";if(/^KC_[0-9]$/.test(kc))return"num";return"sym";}
 const CATCOL={letter:"#b07cff",num:"#ff9a3c",sym:"#7ed957"};        // purple / orange / apple-green
 const CATEX={letter:"A, B, C, …",num:"1, 2, 3, …",sym:". , / …"};
 let hlCat=null;                                                     // clicking a category frames its keys
 function toggleCat(c){hlCat=(hlCat===c?null:c);buildOffPanel();buildGrid();}
+function escHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
 // All layouts share the DATA.glyphs pool; per-layout cells/offsets live in DATA.langs.
 // st (per-key nudge state), OFF (mutable offsets) and O0 (pristine offsets) are
 // repointed at the current layout by loadLang(); STATE keeps each layout's edits
@@ -77,8 +81,12 @@ const STATE={};
 function buildSt(keys){const s={};
  for(const kc in keys){s[kc]={};const K=keys[kc];
   for(const el of["base","shift","altgr"]){const sp=K[el];if(!sp){s[kc][el]=null;continue;}
-   let dx=0,dy=0;for(const cp of sp.esc){if(cp===6)dx+=2;else if(cp===8)dx-=2;else if(cp===5)dy+=2;else if(cp===12)dy-=2;}
-   s[kc][el]={dx,dy,glyph:sp.glyph,tok:sp.tok,fb:!!sp.fb,odx:dx,ody:dy,drop:false,odrop:false};}}
+   // the esc prefix may carry the four 2px nudge codes (editable -> dx/dy) AND other
+   // structural control chars (\t \n \v=0x0b \r \x18) that must be replayed verbatim,
+   // or glyphs like the Arabic 0x0b-prefixed shift legends render at the wrong place.
+   let dx=0,dy=0;const struct=[];
+   for(const cp of sp.esc){if(cp===6)dx+=2;else if(cp===8)dx-=2;else if(cp===5)dy+=2;else if(cp===12)dy-=2;else struct.push(cp);}
+   s[kc][el]={dx,dy,struct,glyph:sp.glyph,tok:sp.tok,fb:!!sp.fb,odx:dx,ody:dy,drop:false,odrop:false};}}
  return s;}
 function loadLang(code){LANG=code;
  if(!STATE[code]){const off=DATA.langs[code].offsets;
@@ -101,7 +109,7 @@ function draw(cps,x,y,plot){let xc=x,yc=y;
   let g=glyphOf(cp)||glyphOf(33);if(!g)continue;const gy=yc+(g.yadv-BY);let bo=0,bit=0,bits=0;
   for(let yy=0;yy<g.h;yy++)for(let xx=0;xx<g.w;xx++){if((bit&7)===0)bits=g.bits[bo++];
    if(bits&0x80)plot(xc+g.xo+xx-BX,gy+g.yo+yy);bits=(bits<<1)&0xFF;bit++;}xc+=g.xadv;}}
-function cpsOf(e){return e&&!e.drop?gen(e.dx,e.dy).concat(e.glyph):null;}
+function cpsOf(e){return e&&!e.drop?e.struct.concat(gen(e.dx,e.dy)).concat(e.glyph):null;}
 function renderKey(kc){const o=OFF[catOf(kc)],K=st[kc];const base=cpsOf(K.base);if(!base)return{empty:true};
  let bx=28+o.small.H,bv=o.small.V;let scps=null,px2=0,pv=0;
  if(K.shift&&!K.shift.drop&&o.shift.H!==HIDE&&o.shift.V!==HIDE){scps=cpsOf(K.shift);
@@ -159,7 +167,7 @@ function buildKeyCtrl(){const p=document.getElementById("keyctrl");if(!selected)
  // editing; the inner buttons/checkbox stopPropagation so they don't double-fire.
  for(const el of["base","shift","altgr"]){const E=K[el];h+=`<div class="el ${el}${el===activeEl?' active':''}" style="cursor:pointer" onclick="setActive('${el}')"><span class="nm">${el}</span>`;
   if(!E){h+=` <span class='hint'>none</span></div>`;continue;}
-  h+=`<span class="tok">${E.tok}${E.fb?' <span class=fbm>(en-US)</span>':''}</span>${dpad(selected,el)}<span class="off">dx=${E.dx} dy=${E.dy}</span>
+  h+=`<span class="tok">${escHtml(E.tok)}${E.fb?' <span class=fbm>(en-US)</span>':''}</span>${dpad(selected,el)}<span class="off">dx=${E.dx} dy=${E.dy}</span>
    <label class="drop"><input type="checkbox" ${E.drop?"checked":""} onclick="event.stopPropagation()" onchange="setdrop('${selected}','${el}',this.checked)">drop</label></div>`;}
  p.innerHTML=h;}
 // a category offset as a d-pad (▲▼ = V up/down, ◀▶ = H left/right) over two number
@@ -197,7 +205,7 @@ function escStr(cp){return cp===12?"\\f":cp===8?"\\b":cp===5?"\\x05":cp===6?"\\x
 // per-key control-char sequence line under the preview: the leading positioning
 // escapes (\f up, \x05 down, \b left, \x06 right) each element carries, coloured.
 const SEQCOL={base:"#4f4",shift:"#6af",altgr:"#f66"};
-function seqOf(E){return E&&!E.drop?gen(E.dx,E.dy).map(escStr).join(""):"";}
+function seqOf(E){return E&&!E.drop?E.struct.concat(gen(E.dx,E.dy)).map(escStr).join(""):"";}
 function seqLine(kc){const K=st[kc],out=[];
  for(const el of["base","shift","altgr"]){const s=seqOf(K[el]);if(s)out.push(`<span style="color:${SEQCOL[el]}">${el[0]}${s}</span>`);}
  return out.join(" ")||"<span style='color:#555'>·</span>";}
@@ -211,7 +219,7 @@ function onDrag(e){if(!drag)return;const f=SCALE/2;          // CSS px per OLED 
  E.dx=drag.dx0+2*Math.round((e.clientX-drag.sx)/f/2);E.dy=drag.dy0+2*Math.round((e.clientY-drag.sy)/f/2);
  paintR(drag.cv,drag.kc);}                                  // live repaint just this key while dragging
 function endDrag(){if(!drag)return;document.removeEventListener("mousemove",onDrag);document.removeEventListener("mouseup",endDrag);drag=null;buildGrid();buildKeyCtrl();}
-function cellFor(E){const esc=gen(E.dx,E.dy),named=/^[A-Z][A-Z0-9_]+$/.test(E.tok);
+function cellFor(E){const esc=E.struct.concat(gen(E.dx,E.dy)),named=/^[A-Z][A-Z0-9_]+$/.test(E.tok);
  if(esc.length===0)return E.tok;const s=esc.map(escStr).join("");return named?`U"${s}" ${E.tok}`:`U"${s}${E.tok}"`;}
 // Emit one `=== code ===` block per layout that has changes (across every layout
 // visited this session). apply_tuner.py parses exactly this format.

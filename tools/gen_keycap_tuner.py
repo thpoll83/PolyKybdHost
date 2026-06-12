@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Generate a self-contained HTML keycap tuner for PolyKybd language layouts.
 
-    python gen_keycap_tuner.py --lang ps-AF            # one layout
-    python gen_keycap_tuner.py --lang te-IN --out /tmp/te.html
-    python gen_keycap_tuner.py --all                   # every layout, one file
-    python gen_keycap_tuner.py --all --out /tmp/all.html
+    .venv/bin/python gen_keycap_tuner.py --lang ps-AF            # one layout
+    .venv/bin/python gen_keycap_tuner.py --lang te-IN --out /tmp/te.html
+    .venv/bin/python gen_keycap_tuner.py --all                   # every layout, one file
+    .venv/bin/python gen_keycap_tuner.py --all --out /tmp/all.html
 
 The tuner is a single offline HTML file (open it in a browser) that renders the
 per-keycap OLED preview *exactly* like the firmware and lets you nudge each glyph
@@ -144,7 +144,9 @@ def main():
     codes = None if a.all else [a.lang]
     data = build_data(a.qmk, codes)
     tmpl = open(os.path.join(HERE, 'keycap_tuner_template.html'), encoding='utf-8').read()
-    html = tmpl.replace('__DATA__', json.dumps(data))
+    # escape "</" so a glyph/token containing "</script>" can't close the <script> block
+    data_json = json.dumps(data).replace('</', '<\\/')
+    html = tmpl.replace('__DATA__', data_json)
     out = a.out or os.path.join('/tmp', ('all' if a.all else a.lang) + '_tuner.html')
     open(out, 'w', encoding='utf-8').write(html)
     nkeys = sum(len(v["keys"]) for v in data["langs"].values())

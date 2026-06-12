@@ -86,7 +86,8 @@ class Lang:
     def __init__(self, xlsx: str, named: dict):
         from openpyxl import load_workbook
         wb = load_workbook(xlsx, data_only=True, read_only=True)
-        ws = wb['key_lut']; self.named = named
+        ws = wb['key_lut']
+        self.named = named
         # Materialise the sheet once. A read_only worksheet streams forward, so random
         # `.cell(row, col)` access re-scans and is O(n) per call - fine for one layout,
         # but it made --all (every layout x ~49 keys) crawl. A single iter_rows pass
@@ -100,7 +101,8 @@ class Lang:
         self.langs = []
         i = 0
         while self.grid.get((1, 2 + i * 4)):
-            self.langs.append(self.grid[(1, 2 + i * 4)]); i += 1
+            self.langs.append(self.grid[(1, 2 + i * 4)])
+            i += 1
 
     def basecol(self, lang): return 2 + self.langs.index(lang) * 4
 

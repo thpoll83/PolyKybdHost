@@ -67,7 +67,7 @@ button); both share the same render mirror and page code.
 
 ## Export format → how to apply
 
-```
+```text
 === ps-AF ===                          # one block per edited layout (Export adds these)
 KC_Q base: U"\f\f" ARABIC_DAD          # a cell value -> lang_lut.xlsx (var base/shift/altgr)
 KC_D altgr: <drop / empty>             # clear that cell
