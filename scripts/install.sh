@@ -71,7 +71,9 @@ case "$(uname -s)" in
         elif command -v dnf >/dev/null 2>&1; then
             sudo dnf install -y hidapi
         elif command -v pacman >/dev/null 2>&1; then
-            sudo pacman -Sy --noconfirm hidapi
+            # Plain -S (not -Sy): refreshing only the hidapi entry risks partial
+            # upgrades on rolling distros. Assume the system is kept up to date.
+            sudo pacman -S --noconfirm hidapi
         else
             echo "!! Could not detect a package manager - install hidapi (libhidapi-hidraw0) yourself."
         fi
