@@ -86,17 +86,29 @@ class Lang:
     def __init__(self, xlsx: str, named: dict):
         from openpyxl import load_workbook
         wb = load_workbook(xlsx, data_only=True, read_only=True)
-        self.sh = wb['key_lut']; self.named = named
+        ws = wb['key_lut']
+        self.named = named
+        # Materialise the sheet once. A read_only worksheet streams forward, so random
+        # `.cell(row, col)` access re-scans and is O(n) per call - fine for one layout,
+        # but it made --all (every layout x ~49 keys) crawl. A single iter_rows pass
+        # into a {(row,col): value} grid makes every later lookup O(1).
+        self.grid = {}
+        for r, rowvals in enumerate(ws.iter_rows(values_only=True), start=1):
+            for c, v in enumerate(rowvals, start=1):
+                if v is not None and v != '':
+                    self.grid[(r, c)] = v
+        wb.close()
         self.langs = []
         i = 0
-        while self.sh.cell(row=1, column=2 + i * 4).value:
-            self.langs.append(self.sh.cell(row=1, column=2 + i * 4).value); i += 1
+        while self.grid.get((1, 2 + i * 4)):
+            self.langs.append(self.grid[(1, 2 + i * 4)])
+            i += 1
 
     def basecol(self, lang): return 2 + self.langs.index(lang) * 4
 
     def cell(self, lang_idx0, row, var):
         """raw cell value at language (0-based index), row, variation column."""
-        return self.sh.cell(row=row, column=2 + lang_idx0 * 4 + var).value
+        return self.grid.get((row, 2 + lang_idx0 * 4 + var))
 
     def resolve(self, val) -> list[int] | None:
         """cell value -> list of codepoints (the U'...' the firmware would build), or None."""
