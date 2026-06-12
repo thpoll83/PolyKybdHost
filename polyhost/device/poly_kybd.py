@@ -11,7 +11,6 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.serial_helper import SerialHelper
 from polyhost.input.unicode_input import InputMethod
 from polyhost.settings import PolySettings
-from polyhost.util.dict_util import split_by_n_chars
 from polyhost.device.bit_packing import pack_dict_10_bit
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
 from polyhost.device.command_ids import Cmd, HidId
@@ -21,10 +20,10 @@ from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.services import iso_lang_country
 
-# Firmware PROTOCOL_VERSION at which GET_LANG_LIST_PACKED (the compact 2-byte
-# index encoding of the language list) became available. Older firmware (or
-# firmware that reports no protocol version) only understands the ASCII
-# GET_LANG_LIST, so the host stays on that path and never probes the new command.
+# Minimum firmware PROTOCOL_VERSION required for GET_LANG_LIST_PACKED (the compact
+# 2-byte index encoding of the language list). This is now the *only* way the host
+# reads the list: the legacy ASCII GET_LANG_LIST (cmd 8) has been retired and the
+# firmware NACKs it, so firmware reporting a lower version (or none) is unsupported.
 PACKED_LANG_LIST_MIN_PROTOCOL = 2
 
 import hid
@@ -328,16 +327,17 @@ class PolyKybd:
         if not result:
             return False, msg
 
-        # Firmware new enough for the compact 2-byte-per-language encoding sends
-        # it via GET_LANG_LIST_PACKED. Fall back to the ASCII list if that fails.
-        if (self.protocol_version is not None
-                and self.protocol_version >= PACKED_LANG_LIST_MIN_PROTOCOL):
-            ok, value = self._enumerate_lang_packed()
-            if ok:
-                return ok, value
-            self.log.warning(
-                "Packed language list failed, falling back to ASCII list.")
-        return self._enumerate_lang_ascii()
+        # Protocol v2+ delivers the language list via GET_LANG_LIST_PACKED
+        # (compact 2-byte ISO index pairs). The legacy ASCII GET_LANG_LIST
+        # (cmd 8) has been retired — the firmware NACKs it — so there is no
+        # fallback: firmware older than v2 is simply unsupported here.
+        if (self.protocol_version is None
+                or self.protocol_version < PACKED_LANG_LIST_MIN_PROTOCOL):
+            return False, (
+                "Firmware protocol too old for the packed language list "
+                f"(need v{PACKED_LANG_LIST_MIN_PROTOCOL}+). Please update the "
+                "PolyKybd firmware.")
+        return self._enumerate_lang_packed()
 
     def _enumerate_lang_packed(self) -> tuple[bool, str]:
         """Read the language list as packed (lang_idx, country_idx) byte pairs.
@@ -381,33 +381,6 @@ class PolyKybd:
         if not self.all_languages:
             return False, "Could not decode packed language list (no known languages)."
         return True, "".join(self.all_languages)
-
-    def _enumerate_lang_ascii(self) -> tuple[bool, str]:
-        lock = None
-        result, reply, lock = self.hid.send_and_read_validate_with_lock(
-            compose_cmd(Cmd.GET_LANG_LIST), 15, expect(Cmd.GET_LANG_LIST), lock)
-
-        if not result:
-            if lock:
-                lock.release()
-            return False, "Could not receive language list."
-        lang_str = ""
-
-        expected = expect(Cmd.GET_LANG_LIST).decode()
-        reply = reply.decode().strip('\x00')
-        while result and len(reply) > 3:
-            if not reply.startswith(expected):
-                self.log.warning("enumerate_lang: unexpected reply prefix, stopping early")
-                break
-            lang_str = f"{lang_str}{reply[3:]}"
-            result, reply, lock = self.hid.read_with_lock(15, lock)
-            reply = reply.decode().strip('\x00')
-
-        if lock:
-            lock.release()
-
-        self.all_languages = split_by_n_chars(lang_str, 4)
-        return True, lang_str
 
     def get_lang_list(self) -> list:
         return self.all_languages
