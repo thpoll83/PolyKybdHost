@@ -2,6 +2,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Start PolyHost",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "polyhost",
+            "console": "integratedTerminal"
+        },
+        {
+            // Requires scalene in the venv: `pip install scalene`
             "name": "[WIN] Profile PolyHost",
             "type": "python",
             "request": "launch",
@@ -9,13 +17,6 @@
             "args": [ "-m", "polyhost" ],
             "console": "integratedTerminal",
             "justMyCode": false
-        },
-        {
-            "name": "Start PolyHost",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "polyhost",
-            "console": "integratedTerminal"
         },
         {
             "name": "Debug PolyHost",
