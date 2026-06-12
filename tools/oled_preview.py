@@ -165,6 +165,7 @@ class Renderer:
             if cp in (0x05, 0x0c, 0x0b): continue
             if cp in (0x18, 0x0d, 0x0a): x = 0; continue
             if cp == 0x08: x = x - 2 if x > 1 else 0; continue
+            if cp == 0x06: x += 2; continue
             if cp == 0x09: x += ((x) // 36 + 1) * 36; continue
             f = self._font(cp); ch = cp
             if f is None: f = self.fonts[0]; ch = ord('!')
@@ -179,6 +180,7 @@ class Renderer:
         xc, yc = x, y
         for cp in cps:
             if cp == 0x05: yc += 2; continue
+            if cp == 0x06: xc += 2; continue
             if cp == 0x18: xc, yc = x, y; continue
             if cp == 0x08: xc = xc - 2 if xc > 1 else 0; continue
             if cp == 0x0c: yc = yc - 2 if yc > 1 else 0; continue
@@ -208,7 +210,7 @@ class Renderer:
 
 
 def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool,
-               channels: bool = False) -> Image.Image:
+               channels: bool = False, report: dict | None = None) -> Image.Image:
     """Replicate the per-key draw in keymap.c (process_record_user render path).
 
     channels=True renders each element into its own colour channel - base->green,
@@ -262,16 +264,18 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                     base_v -= 6; preview_v += 4
 
     EXP = OVERSHOOT
-    if channels:
-        def setter(ci):           # 0=R (AltGr), 1=G (base), 2=B (Shift)
-            def s(vx, vy):
-                X, Y = vx + EXP, vy + EXP
-                c = list(px[X, Y]); c[ci] = 255; px[X, Y] = tuple(c)
-            return s
-        sp_base, sp_shift, sp_alt = setter(1), setter(2), setter(0)
-    else:
-        def s(vx, vy): px[vx + EXP, vy + EXP] = 255
-        sp_base = sp_shift = sp_alt = s
+    # report: per-element pixel sets so callers can flag out-of-bounds (a pixel the
+    # firmware would clip at the keycap edge) and overlap (a pixel two elements share).
+    rpx = {'base': set(), 'shift': set(), 'altgr': set()} if report is not None else None
+    def make_setter(ci, name):    # ci: 0=R (AltGr), 1=G (base), 2=B (Shift)
+        def s(vx, vy):
+            if channels:
+                X, Y = vx + EXP, vy + EXP; c = list(px[X, Y]); c[ci] = 255; px[X, Y] = tuple(c)
+            else:
+                px[vx + EXP, vy + EXP] = 255
+            if rpx is not None: rpx[name].add((vx, vy))
+        return s
+    sp_base, sp_shift, sp_alt = make_setter(1, 'base'), make_setter(2, 'shift'), make_setter(0, 'altgr')
 
     R.draw(sp_base, base, base_x, BASELINE + base_v)
     if shift_letter is not None:
@@ -287,7 +291,32 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                 if alt_x + amax > BUFFER_X + SCREEN_WIDTH - 1:
                     alt_x = (BUFFER_X + SCREEN_WIDTH - 1) - amax
                 R.draw(sp_alt, alt, alt_x, BASELINE + v_off)
+    if report is not None:
+        def _oob(s): return sum(1 for (vx, vy) in s if vx < 0 or vx >= OLED_W or vy < 0 or vy >= OLED_H)
+        report['oob'] = {k: _oob(v) for k, v in rpx.items()}
+        b, sh, al = rpx['base'], rpx['shift'], rpx['altgr']
+        report['overlap'] = len((b & sh) | (b & al) | (sh & al))
+        report['overlap_detail'] = {'base^shift': len(b & sh), 'base^altgr': len(b & al), 'shift^altgr': len(sh & al)}
     return img
+
+
+def warn_key(L: Lang, R: Renderer, lang: str, kc: str) -> list[str]:
+    """Render a key off-screen with a wide margin and report any element that draws
+    out of bounds (clipped at the keycap edge) or overlaps another element."""
+    global OVERSHOOT
+    save = OVERSHOOT; OVERSHOOT = 60
+    try:
+        rep: dict = {}
+        render_key(L, R, lang, kc, False, False, channels=True, report=rep)
+    finally:
+        OVERSHOOT = save
+    msgs = []
+    for el, n in rep['oob'].items():
+        if n: msgs.append(f"OUT-OF-BOUNDS {el} {n}px clipped")
+    if rep['overlap']:
+        d = ", ".join(f"{k}={v}" for k, v in rep['overlap_detail'].items() if v)
+        msgs.append(f"OVERLAP {rep['overlap']}px ({d})")
+    return msgs
 
 
 def oled_to_rgb(img: Image.Image, scale: int) -> Image.Image:
@@ -340,17 +369,34 @@ def main():
     ap.add_argument('--channels', action='store_true',
                     help='overlap-detect: base=green, Shift=blue, AltGr=red; overlaps mix (cyan/yellow/magenta/white)')
     ap.add_argument('--out', default=None)
+    ap.add_argument('--check-bounds', action='store_true',
+                    help='audit out-of-bounds + element overlap (this lang, or ALL langs with --lang ALL); no image')
     a = ap.parse_args()
     OVERSHOOT = a.overshoot
 
     pk = os.path.join(a.qmk, 'keyboards', 'handwired', 'polykybd')
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
-    if a.lang not in L.langs: sys.exit(f"unknown lang {a.lang}; have {L.langs}")
+    if a.lang != 'ALL' and a.lang not in L.langs: sys.exit(f"unknown lang {a.lang}; have {L.langs}")
     R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
     s = a.cell_scale
 
+    if a.check_bounds:
+        langs = L.langs if a.lang == 'ALL' else [a.lang]
+        total = 0
+        for lang in langs:
+            hits = []
+            for kc in ROW:
+                w = warn_key(L, R, lang, kc)
+                if w: hits.append(f"  {kc.replace('KC_',''):6s} {'; '.join(w)}")
+            if hits:
+                print(f"{lang}:"); print("\n".join(hits)); total += len(hits)
+        print(f"\n{total} key(s) with out-of-bounds/overlap across {len(langs)} lang(s)")
+        return
+
     if a.key:
+        w = warn_key(L, R, a.lang, a.key.upper())
+        for m in w: print(f"  ⚠ {a.lang} {a.key.upper()}: {m}", file=sys.stderr)
         img = oled_to_rgb(render_key(L, R, a.lang, a.key.upper(), a.shift, a.caps, a.channels), s)
         out = a.out or os.path.join(HERE, 'out', f'oled_{a.lang}_{a.key}.png')
         os.makedirs(os.path.dirname(out), exist_ok=True); img.save(out)
