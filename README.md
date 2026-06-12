@@ -7,9 +7,16 @@ computer the keyboard is plugged into.
 
 ## Quick install (one line)
 
-These commands clone the repo into `PolyKybdHost/`, create a virtual
-environment, install the Python requirements, and (on Linux/macOS) set up the
-native hidapi library and HID permissions.
+These commands clone the repo, create a virtual environment, install the Python
+requirements, and (on Linux/macOS) set up the native hidapi library and HID
+permissions.
+
+By default the app is installed into a `PolyKybdHost/` folder **in the
+directory you run the command from**. The installer prints this location and
+lets you type a different one (press Enter to accept the default). To pick the
+location up front without the prompt, set `POLYKYBD_DIR` first — e.g.
+`POLYKYBD_DIR=~/apps/polykybd` (bash) or `$env:POLYKYBD_DIR="C:\Tools\PolyKybd"`
+(PowerShell).
 
 **Linux / macOS**
 

@@ -12,7 +12,7 @@
 set -euo pipefail
 
 REPO_URL="https://github.com/thpoll83/PolyKybdHost.git"
-TARGET_DIR="${POLYKYBD_DIR:-PolyKybdHost}"
+TARGET_DIR="${POLYKYBD_DIR:-$(pwd)/PolyKybdHost}"
 
 echo ">> PolyKybdHost installer"
 
@@ -20,6 +20,20 @@ echo ">> PolyKybdHost installer"
 if [ -f "polyhost/__main__.py" ]; then
     echo ">> Already inside a PolyKybdHost checkout, installing here."
     TARGET_DIR="."
+else
+    # Offer the default location and let the user pick another, unless the
+    # path was pinned via POLYKYBD_DIR or there is no terminal to ask on
+    # (e.g. piped in CI).
+    if [ -z "${POLYKYBD_DIR:-}" ] && [ -r /dev/tty ]; then
+        printf ">> Install location [%s]: " "$TARGET_DIR" > /dev/tty
+        read -r reply < /dev/tty || reply=""
+        [ -n "$reply" ] && TARGET_DIR="$reply"
+    fi
+    echo ">> Installing into '$TARGET_DIR'."
+fi
+
+if [ "$TARGET_DIR" = "." ]; then
+    :  # already inside the checkout, nothing to fetch
 elif [ -d "$TARGET_DIR/.git" ]; then
     echo ">> Updating existing checkout in '$TARGET_DIR'."
     git -C "$TARGET_DIR" pull --ff-only
