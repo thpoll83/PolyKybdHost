@@ -55,6 +55,25 @@ $venvPy = Join-Path (Get-Location) ".venv\Scripts\python.exe"
 & $venvPy -m pip install --upgrade pip
 & $venvPy -m pip install -r requirements.txt
 
+function Start-PolyKybd {
+    Write-Host ">> Starting PolyKybd..."
+    # Prefer pythonw.exe so the GUI/tray app launches without a console window.
+    $pyw = Join-Path (Get-Location) ".venv\Scripts\pythonw.exe"
+    if (-not (Test-Path $pyw)) { $pyw = $venvPy }
+    Start-Process -FilePath $pyw -ArgumentList "-m", "polyhost" -WorkingDirectory (Get-Location)
+    Write-Host ">> PolyKybd started; it also registers itself to autostart at login."
+}
+
 Write-Host ""
-Write-Host ">> Done. Start PolyKybdHost with:"
-Write-Host "       cd $(Get-Location); .venv\Scripts\python.exe -m polyhost"
+Write-Host ">> Done."
+if ([Environment]::UserInteractive -and -not [Console]::IsInputRedirected) {
+    $ans = Read-Host ">> Start PolyKybd now? [Y/n]"
+    if ($ans -match '^[Nn]') {
+        Write-Host ">> Not started. Launch it later with:  .venv\Scripts\python.exe -m polyhost"
+    } else {
+        Start-PolyKybd
+    }
+} else {
+    # Not started interactively - start right away.
+    Start-PolyKybd
+}
