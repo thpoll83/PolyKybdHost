@@ -22,13 +22,15 @@ It works for **every** layout in `lang_lut.xlsx` — the generator pulls that la
 cells, the exact glyph bitmaps it uses (any script), the category offsets, and the
 en-US fallback glyphs, and embeds them in the page.
 
-`--all` bakes **every** layout into one file behind a **Layout dropdown** at the top.
-The glyph bitmaps are stored once in a **shared pool keyed by codepoint** (Latin
-layouts reuse the same a/b/c bitmaps), so the page stays a few MB even with every
-script. Switching the dropdown keeps each layout's edits alive, and **Export** emits
-one `=== code ===` block per edited layout — feed the whole box straight to
-`apply_tuner.py` (below). `--lang X` is just `--all` restricted to one layout (the
-dropdown then has a single entry); both share the same render mirror and page code.
+`--all` bakes **every** layout into one file behind a **push-button layout bar** at
+the top — one button per layout; click to switch. The glyph bitmaps are stored once
+in a **shared pool keyed by codepoint** (Latin layouts reuse the same a/b/c bitmaps),
+so the page stays a few MB even with every script. Switching keeps each layout's edits
+alive, and an edited layout's button turns **amber** (the current one is highlighted).
+**Reset layout** reverts every edit of the current layout; **Export** emits one
+`=== code ===` block per edited layout — feed the whole box straight to `apply_tuner.py`
+(below). `--lang X` is just `--all` restricted to one layout (the bar then has a single
+button); both share the same render mirror and page code.
 
 ## Using it
 
@@ -117,7 +119,7 @@ the JS must agree with the firmware-faithful `oled_preview.warn_key` for every k
 # walk the keys. Generate the file with --lang ps-AF so DATA.order[0] is that layout.
 node <(python - <<'PY'
 import re; h=open("/tmp/ps-AF_tuner.html").read()
-js=re.search(r"<script>(.*)</script>",h,re.S).group(1).split("const _sel=")[0]
+js=re.search(r"<script>(.*)</script>",h,re.S).group(1).split("buildLangBar();")[0]
 print(js + 'loadLang(DATA.order[0]);'
   + 'for(const r of DATA.rows)for(const k of r){if(!(k in st))continue;const w=keyWarn(renderKey(k));if(w)console.log(k,w);}')
 PY
@@ -128,7 +130,7 @@ python oled_preview.py --lang ps-AF --check-bounds
 ## Notes / limits
 
 - `--lang` is one layout per file; `--all` puts every layout in one file behind the
-  dropdown, sharing a single codepoint-keyed glyph pool to keep the page small.
+  layout button bar, sharing a single codepoint-keyed glyph pool to keep the page small.
 - Combining marks the layout drops (e.g. Arabic harakat, the nukta hint) follow the
   layout; the tuner shows what `lang_lut.xlsx` has.
 - A key with no own glyph renders the **en-US** fallback (tagged); nudging it exports a
