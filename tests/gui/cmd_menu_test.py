@@ -65,6 +65,8 @@ class TestUpdateEnabled(unittest.TestCase):
         self.assertFalse(cm._cmd_menu.menuAction().isEnabled())
         for action in cm._fw_actions:
             self.assertFalse(action.isEnabled(), action.text())
+        for action in _non_fw_actions(cm):
+            self.assertFalse(action.isEnabled(), action.text())
 
 
 if __name__ == '__main__':
