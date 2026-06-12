@@ -19,6 +19,24 @@ import sys
 log = logging.getLogger(__name__)
 
 
+def _marker_applies(line: str) -> bool:
+    """True if the requirement's environment marker matches this platform.
+
+    A line like ``pywin32; sys_platform == "win32"`` should be ignored on
+    Linux/macOS, otherwise it is reported missing on every launch and the
+    bootstrap reruns pip needlessly. Falls back to including the line if
+    `packaging` isn't importable yet (it gets installed on the first run).
+    """
+    if ";" not in line:
+        return True
+    try:
+        from packaging.requirements import Requirement
+        req = Requirement(line)
+        return req.marker is None or req.marker.evaluate()
+    except Exception:
+        return True
+
+
 def missing_requirements(req_file: str) -> list:
     """Return pip-install names from `req_file` that aren't installed.
 
@@ -32,6 +50,8 @@ def missing_requirements(req_file: str) -> list:
         for raw in fh:
             line = raw.split("#", 1)[0].strip()
             if not line or line.startswith("-"):
+                continue
+            if not _marker_applies(line):
                 continue
             name = re.split(r"[<>=!~;\[ ]", line, maxsplit=1)[0].strip()
             if not name:

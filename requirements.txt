@@ -2,6 +2,7 @@ PyQt5
 hid
 NumPy
 PyWinCtl
+pywin32; sys_platform == "win32"
 pynput
 PyYAML
 platformdirs
