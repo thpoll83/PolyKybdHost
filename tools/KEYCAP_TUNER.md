@@ -55,6 +55,14 @@ button); both share the same render mirror and page code.
   3, …`). Each category × small/shift/altgr is a **d-pad** (▲▼ = V up/down, ◀▶ = H
   left/right) over H/V number inputs, mirroring the per-key d-pad. **Click a category
   label** to frame all of that category's keys in its colour (click again to clear).
+  The centre **H** button hides that variation (both axes → `HIDE_KEY` = **-128**, the
+  firmware "do not show" sentinel, exported as the cell string `HIDE`); a hidden axis
+  shows blank. Stepping (or typing) into the negative also hides; the first step out of
+  a hidden/negative state wakes both axes to 0. Note `HIDE_KEY` is honoured per *view*:
+  it hides the shift-preview (`VAR_SHIFT`), the altgr-preview (`VAR_ALTGR`) and the
+  AltGr-held view (`VAR_SMALL`); the unshifted **base** is never hidden (it always
+  draws), so hiding **small** only affects the AltGr-held view — in the tuner's
+  unshifted preview it just pushes the base off-keycap (flagged out-of-bounds).
 - **Export changes** → paste the box back to whoever applies it.
 
 ## Export format → how to apply

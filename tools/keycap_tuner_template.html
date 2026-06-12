@@ -39,8 +39,10 @@
  .offdpad .vn{font-size:11px;color:#888} .offdpad .vn.small{color:#4f4}.offdpad .vn.shift{color:#6af}.offdpad .vn.altgr{color:#f66}
  .offpad{display:inline-grid;grid-template-columns:repeat(3,18px);grid-gap:1px}
  .offpad button{width:18px;height:15px;font-size:10px;padding:0} .offpad button:hover{background:#444} .offpad .sp{visibility:hidden}
+ .offpad .hbtn{font-weight:bold;color:#fa6} .offpad .hbtn.on{background:#a33;color:#fff;border-color:#c55}
  .offins{display:flex;align-items:center;gap:1px;font-size:10px;color:#888}
  .offins input{width:26px;background:#111;color:#dd9;border:1px solid #444;font-size:10px;text-align:center}
+ .offdpad.hidden .vn{text-decoration:line-through;opacity:.85} .offdpad.hidden .offins input{color:#f88;border-color:#a44}
  .top{display:flex;gap:10px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
  button.act{background:#264;color:#cfc;border:1px solid #485;border-radius:4px;padding:5px 9px;cursor:pointer}
  #exp{width:100%;max-width:1150px;height:80px;background:#111;color:#9f9;font-family:monospace;font-size:11px;border:1px solid #444;margin-top:4px}
@@ -162,19 +164,31 @@ function buildKeyCtrl(){const p=document.getElementById("keyctrl");if(!selected)
  p.innerHTML=h;}
 // a category offset as a d-pad (▲▼ = V up/down, ◀▶ = H left/right) over two number
 // inputs, mirroring the per-key d-pad so both feel the same to operate.
-function offCtl(c,t){const o=OFF[c][t];
+function offCtl(c,t){const o=OFF[c][t];const hid=(o.H===HIDE||o.V===HIDE);
  const f=(ax,d,s)=>`<button onclick="adjOff('${c}','${t}','${ax}',${d})">${s}</button>`;
- const ip=(ax)=>`<input id="o_${c}_${t}_${ax}" type="number" value="${o[ax]}" onchange="setOffV('${c}','${t}','${ax}',this.value)">`;
- return`<div class="offdpad"><span class="vn ${t}">${t}</span>
-  <div class="offpad"><span class="sp"></span>${f('V',-1,'▲')}<span class="sp"></span>${f('H',-1,'◀')}<span class="sp"></span>${f('H',1,'▶')}<span class="sp"></span>${f('V',1,'▼')}<span class="sp"></span></div>
+ const ip=(ax)=>`<input id="o_${c}_${t}_${ax}" type="number" value="${o[ax]===HIDE?'':o[ax]}" placeholder="${o[ax]===HIDE?'hid':''}" onchange="setOffV('${c}','${t}','${ax}',this.value)">`;
+ const H=`<button class="hbtn${hid?' on':''}" title="hide this variation (both axes -> HIDE)" onclick="hideOff('${c}','${t}')">H</button>`;
+ return`<div class="offdpad${hid?' hidden':''}"><span class="vn ${t}">${t}</span>
+  <div class="offpad"><span class="sp"></span>${f('V',-1,'▲')}<span class="sp"></span>${f('H',-1,'◀')}${H}${f('H',1,'▶')}<span class="sp"></span>${f('V',1,'▼')}<span class="sp"></span></div>
   <div class="offins">H${ip('H')} V${ip('V')}</div></div>`;}
 function buildOffPanel(){let h=`<div class="offhdr">layout offsets (whole ${LANG}) — click a category to frame its keys</div><div class="offgroups">`;
  for(const c of['letter','num','sym']){const hl=hlCat===c?`box-shadow:0 0 0 2px ${CATCOL[c]} inset;`:'';
   h+=`<div class="offgroup" style="border-color:${CATCOL[c]};${hl}"><span class="gname" style="color:${CATCOL[c]}" onclick="toggleCat('${c}')">${c}: <span class="ex">${CATEX[c]}</span></span><div class="offrow">`;
   for(const t of['small','shift','altgr'])h+=offCtl(c,t);h+='</div></div>';}
  document.getElementById("offctrl").innerHTML=h+'</div>';}
-function adjOff(c,t,ax,d){OFF[c][t][ax]+=d;document.getElementById(`o_${c}_${t}_${ax}`).value=OFF[c][t][ax];buildGrid();}
-function setOffV(c,t,ax,v){OFF[c][t][ax]=parseInt(v,10)||0;buildGrid();}
+// HIDE_KEY (-128) is the firmware "do not show" sentinel; we treat any negative the
+// same. A step out of a hidden/negative state wakes both axes to 0; a step (or typed
+// value) into the negative hides both. The H button toggles hide directly.
+function adjOff(c,t,ax,d){const o=OFF[c][t];
+ if(o.H===HIDE||o.V===HIDE||o.H<0||o.V<0){o.H=0;o.V=0;}        // wake hidden/negative -> 0,0
+ else{o[ax]+=d;if(o[ax]<0){o.H=HIDE;o.V=HIDE;}}                // stepped below 0 -> hide both
+ buildOffPanel();buildGrid();}
+function setOffV(c,t,ax,v){const n=parseInt(v,10);const o=OFF[c][t];
+ if(isNaN(n)||n<0){o.H=HIDE;o.V=HIDE;}else{o[ax]=n;}           // blank or negative -> hide both
+ buildOffPanel();buildGrid();}
+function hideOff(c,t){const o=OFF[c][t];
+ if(o.H===HIDE||o.V===HIDE){o.H=0;o.V=0;}else{o.H=HIDE;o.V=HIDE;}   // toggle hide
+ buildOffPanel();buildGrid();}
 function nudge(kc,el,dx,dy){const E=st[kc][el];E.dx+=dx;E.dy+=dy;activeEl=el;buildGrid();buildKeyCtrl();}
 function reset1(kc,el){const E=st[kc][el];E.dx=E.odx;E.dy=E.ody;E.drop=E.odrop;buildGrid();buildKeyCtrl();}
 function setdrop(kc,el,v){st[kc][el].drop=v;buildGrid();buildKeyCtrl();}
