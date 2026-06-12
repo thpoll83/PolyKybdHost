@@ -37,6 +37,8 @@ button); both share the same render mirror and page code.
 - **base = green, Shift = blue, AltGr = red**; overlaps mix; faded pixels are
   **clipped off the 72×40 keycap**; a faint crosshair marks each element's **offset
   origin** (the anchor the H/V offset sets).
+- Keys are grouped into three rows: **symbols**, then **numbers** (1-9, 0), then
+  **letters A-Z** — matching the offset categories.
 - A red border / label flags a key with out-of-bounds or overlap; the top line tallies
   them. An **en-US** badge marks a key with no own glyph (Latin fallback).
 - The line **under each preview** is that key's positioning **control-char sequence**

@@ -72,6 +72,12 @@ const CATEX={letter:"A, B, C, …",num:"1, 2, 3, …",sym:". , / …"};
 let hlCat=null;                                                     // clicking a category frames its keys
 function toggleCat(c){hlCat=(hlCat===c?null:c);buildOffPanel();buildGrid();}
 function escHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+// grid order: all symbols (keyboard order), then numbers (1-9,0), then letters A-Z.
+function orderedRows(){const flat=[];for(const r of DATA.rows)for(const k of r)if(k in st)flat.push(k);
+ const sym=flat.filter(k=>catOf(k)==="sym");
+ const num=["KC_1","KC_2","KC_3","KC_4","KC_5","KC_6","KC_7","KC_8","KC_9","KC_0"].filter(k=>k in st);
+ const letter=flat.filter(k=>catOf(k)==="letter").sort();
+ return [sym,num,letter];}
 // All layouts share the DATA.glyphs pool; per-layout cells/offsets live in DATA.langs.
 // st (per-key nudge state), OFF (mutable offsets) and O0 (pristine offsets) are
 // repointed at the current layout by loadLang(); STATE keeps each layout's edits
@@ -145,7 +151,7 @@ function paintR(cv,kc){const r=renderKey(kc),ctx=cv.getContext("2d");ctx.fillSty
  return r;}
 let selected=null,activeEl=null;
 function buildGrid(){const g=document.getElementById("grid");g.innerHTML="";let warnN=0;
- for(const row of DATA.rows){const rd=document.createElement("div");rd.style.display="flex";rd.style.flexWrap="wrap";rd.style.gap="4px";rd.style.flexBasis="100%";
+ for(const row of orderedRows()){const rd=document.createElement("div");rd.style.display="flex";rd.style.flexWrap="wrap";rd.style.gap="4px";rd.style.flexBasis="100%";
   for(const kc of row){if(!(kc in st))continue;const d=document.createElement("div");d.className="key"+(kc===selected?" sel":"");
    if(hlCat&&catOf(kc)===hlCat){d.style.outline="2px solid "+CATCOL[hlCat];d.style.outlineOffset="1px";}
    const cv=document.createElement("canvas");cv.width=(OW+2*MARG)*SCALE;cv.height=(OH+2*MARG)*SCALE;
