@@ -38,8 +38,10 @@ dropdown then has a single entry); both share the same render mirror and page co
 - A red border / label flags a key with out-of-bounds or overlap; the top line tallies
   them. An **en-US** badge marks a key with no own glyph (Latin fallback).
 - Click a key → bottom-left: nudge **base/Shift/AltGr** with the ↑↓←→ d-pad (2px per
-  press) or tick **drop**. The active Shift/AltGr element gets a tint overlay showing
-  its origin quadrant.
+  press) or tick **drop**. The active element (base/Shift/AltGr, in its own colour)
+  gets a tint overlay showing its origin quadrant — everything except the **top-right**
+  of the origin. Click an element's control block to activate it and preview its tint
+  **without nudging**; selecting a key activates **base** by default.
 - Bottom-right: the **whole-layout offsets** (letter/num/sym × small/shift/altgr × H/V)
   with ◀▶ / ▲▼ buttons.
 - **Export changes** → paste the box back to whoever applies it.

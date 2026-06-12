@@ -110,11 +110,11 @@ function paintR(cv,kc){const r=renderKey(kc),ctx=cv.getContext("2d");ctx.fillSty
   ctx.fillRect((ox+MARG)*SCALE-1,MARG*SCALE,3,OH*SCALE); ctx.fillRect(MARG*SCALE,(oy+MARG)*SCALE-1,OW*SCALE,3);}
  for(const k in r.map){const[vx,vy]=k.split(",").map(Number);const oo=(vx<0||vx>=OW||vy<0||vy>=OH);
   const c=COL[r.map[k]]||[200,200,200];ctx.fillStyle=`rgba(${c[0]},${c[1]},${c[2]},${oo?0.32:1})`;ctx.fillRect((vx+MARG)*SCALE,(vy+MARG)*SCALE,SCALE,SCALE);}
- if(kc===selected&&(activeEl==="shift"||activeEl==="altgr")&&r.origins[activeEl]){let[ox,oy]=r.origins[activeEl];
+ if(kc===selected&&activeEl&&r.origins[activeEl]){let[ox,oy]=r.origins[activeEl];   // base/shift/altgr all tint
   ox=Math.max(0,Math.min(OW,ox));oy=Math.max(0,Math.min(OH,oy));const g=GC[activeEl];
   ctx.fillStyle=`rgba(${g[0]},${g[1]},${g[2]},0.18)`;
-  ctx.fillRect(MARG*SCALE,MARG*SCALE,OW*SCALE,oy*SCALE);                 // above origin (full width)
-  ctx.fillRect(MARG*SCALE,(oy+MARG)*SCALE,ox*SCALE,(OH-oy)*SCALE);}     // left of origin, below it
+  ctx.fillRect(MARG*SCALE,(oy+MARG)*SCALE,OW*SCALE,(OH-oy)*SCALE);       // below origin (full width)
+  ctx.fillRect(MARG*SCALE,MARG*SCALE,ox*SCALE,oy*SCALE);}               // left of origin, above it -> top-right stays clear
  return r;}
 let selected=null,activeEl=null;
 function buildGrid(){const g=document.getElementById("grid");g.innerHTML="";let warnN=0;
@@ -126,16 +126,18 @@ function buildGrid(){const g=document.getElementById("grid");g.innerHTML="";let 
    if(st[kc].base&&st[kc].base.fb){const fb=document.createElement("div");fb.className="fb";fb.textContent="en-US";d.appendChild(fb);}
    const r=paintR(cv,kc),w=keyWarn(r);
    if(w){d.classList.add("warn");const wl=document.createElement("div");wl.className="wl";wl.textContent=w;d.appendChild(wl);warnN++;}
-   d.onclick=()=>{selected=kc;activeEl=(st[kc].shift?"shift":(st[kc].altgr?"altgr":null));buildGrid();buildKeyCtrl();};rd.appendChild(d);}g.appendChild(rd);}
+   d.onclick=()=>{selected=kc;activeEl=(st[kc].base?"base":(st[kc].shift?"shift":(st[kc].altgr?"altgr":null)));buildGrid();buildKeyCtrl();};rd.appendChild(d);}g.appendChild(rd);}
  document.getElementById("warnsum").textContent=warnN?(warnN+" key(s) flag out-of-bounds / overlap"):"no out-of-bounds or overlap ✓";}
-function dpad(kc,el){const b=(dx,dy,t)=>`<button onclick="nudge('${kc}','${el}',${dx},${dy})">${t}</button>`;
- return`<div class="dpad"><span class="sp"></span>${b(0,-2,"↑")}<span class="sp"></span>${b(-2,0,"←")}<button onclick="reset1('${kc}','${el}')">·</button>${b(2,0,"→")}<span class="sp"></span>${b(0,2,"↓")}<span class="sp"></span></div>`;}
+function dpad(kc,el){const b=(dx,dy,t)=>`<button onclick="event.stopPropagation();nudge('${kc}','${el}',${dx},${dy})">${t}</button>`;
+ return`<div class="dpad"><span class="sp"></span>${b(0,-2,"↑")}<span class="sp"></span>${b(-2,0,"←")}<button onclick="event.stopPropagation();reset1('${kc}','${el}')">·</button>${b(2,0,"→")}<span class="sp"></span>${b(0,2,"↓")}<span class="sp"></span></div>`;}
 function buildKeyCtrl(){const p=document.getElementById("keyctrl");if(!selected){p.innerHTML="<span class='hint'>click a key to edit</span>";return;}
  const K=st[selected];let h=`<h2>${selected.replace("KC_","")}</h2>`;
- for(const el of["base","shift","altgr"]){const E=K[el];h+=`<div class="el ${el}${el===activeEl?' active':''}"><span class="nm" style="cursor:pointer" onclick="setActive('${el}')">${el}</span>`;
+ // the whole .el block is clickable to activate that element (show its tint) without
+ // editing; the inner buttons/checkbox stopPropagation so they don't double-fire.
+ for(const el of["base","shift","altgr"]){const E=K[el];h+=`<div class="el ${el}${el===activeEl?' active':''}" style="cursor:pointer" onclick="setActive('${el}')"><span class="nm">${el}</span>`;
   if(!E){h+=` <span class='hint'>none</span></div>`;continue;}
   h+=`<span class="tok">${E.tok}${E.fb?' <span class=fbm>(en-US)</span>':''}</span>${dpad(selected,el)}<span class="off">dx=${E.dx} dy=${E.dy}</span>
-   <label class="drop"><input type="checkbox" ${E.drop?"checked":""} onchange="setdrop('${selected}','${el}',this.checked)">drop</label></div>`;}
+   <label class="drop"><input type="checkbox" ${E.drop?"checked":""} onclick="event.stopPropagation()" onchange="setdrop('${selected}','${el}',this.checked)">drop</label></div>`;}
  p.innerHTML=h;}
 function offCtl(c,t){const o=OFF[c][t];
  const f=(ax,d,s)=>`<button onclick="adjOff('${c}','${t}','${ax}',${d})">${s}</button>`;
