@@ -239,7 +239,9 @@ class ControlServerTest(unittest.TestCase):
         self._hello_then(conn)
         resp = self._call(conn, 13, p.M_HOST_SHUTDOWN)
         self.assertEqual(resp["result"], {"shutting_down": True})
-        self.assertTrue(self.shutdown_called.is_set())
+        # Teardown now fires after the reply is written (see _dispatch), so the
+        # client sees the ack first; wait briefly for the deferred callback.
+        self.assertTrue(self.shutdown_called.wait(2))
 
     def test_events_subscribe_then_emit(self):
         conn = self._connect()

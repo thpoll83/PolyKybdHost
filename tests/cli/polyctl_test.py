@@ -116,6 +116,7 @@ class PolyctlTest(unittest.TestCase):
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             with self.assertRaises(polyctl.RpcError) as ctx:
                 polyctl.RpcClient(client_conn)
+        client_conn.close()  # unblock the server's recv_message so join() is prompt
         server.join()
         self.assertIn("protocol mismatch", str(ctx.exception).lower())
 
@@ -138,6 +139,7 @@ class PolyctlTest(unittest.TestCase):
                 rc = polyctl.main(["status"])
         finally:
             polyctl.connect = orig
+            client_conn.close()  # unblock the server's recv_message so join() is prompt
         server.join()
         self.assertNotEqual(rc, 0)
         self.assertIn("mismatch", err.getvalue().lower())
@@ -217,7 +219,7 @@ class ImportGuardTest(unittest.TestCase):
         code = ("import sys; sys.modules['PyQt5'] = None; "
                 "import polyhost.cli.polyctl; print('ok')")
         proc = subprocess.run([sys.executable, "-c", code],
-                              capture_output=True, text=True)
+                              capture_output=True, text=True, timeout=30)
         self.assertEqual(proc.returncode, 0,
                          msg=f"stdout={proc.stdout!r} stderr={proc.stderr!r}")
         self.assertIn("ok", proc.stdout)

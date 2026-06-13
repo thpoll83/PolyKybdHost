@@ -7,7 +7,8 @@ import tempfile
 import unittest
 
 from polyhost.server.control_server import ControlServer
-from polyhost.server.instance import probe_existing, clear_stale_endpoint
+from polyhost.server.instance import (
+    probe_existing, clear_stale_endpoint, LIVE, STALE)
 
 
 class _StubCore:
@@ -28,15 +29,27 @@ class TestInstanceLock(unittest.TestCase):
         srv = ControlServer(_StubCore(), "0.0.0", _quiet(), address=addr, authkey=key)
         srv.start()
         try:
-            self.assertTrue(probe_existing(addr, key))
+            self.assertEqual(probe_existing(addr, key), LIVE)
         finally:
             srv.stop()
         # After stop, nothing answers (a stale socket file may remain).
-        self.assertFalse(probe_existing(addr, key))
+        self.assertEqual(probe_existing(addr, key), STALE)
 
-    def test_probe_false_when_nothing_listening(self):
+    def test_probe_stale_when_nothing_listening(self):
         addr = _addr()
-        self.assertFalse(probe_existing(addr, b"k"))
+        self.assertEqual(probe_existing(addr, b"k"), STALE)
+
+    def test_probe_auth_mismatch_is_not_stale(self):
+        # A live server on a different authkey must NOT read as stale — clearing
+        # its socket would let a second host start and fight over the device.
+        from polyhost.server.instance import AUTH_MISMATCH
+        addr = _addr()
+        srv = ControlServer(_StubCore(), "0.0.0", _quiet(), address=addr, authkey=b"right")
+        srv.start()
+        try:
+            self.assertEqual(probe_existing(addr, b"wrong"), AUTH_MISMATCH)
+        finally:
+            srv.stop()
 
     def test_clear_stale_endpoint_removes_dead_socket(self):
         addr, key = _addr(), b"k"
@@ -51,7 +64,7 @@ class TestInstanceLock(unittest.TestCase):
         srv2 = ControlServer(_StubCore(), "0.0.0", _quiet(), address=addr, authkey=key)
         srv2.start()
         try:
-            self.assertTrue(probe_existing(addr, key))
+            self.assertEqual(probe_existing(addr, key), LIVE)
         finally:
             srv2.stop()
 

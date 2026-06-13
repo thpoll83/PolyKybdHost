@@ -330,8 +330,13 @@ def _run_with_client(client, argv=None):
     except RpcError as exc:
         print(f"error: {exc.message}", file=sys.stderr)
         return 1
-    except (OSError, EOFError) as exc:
+    except (ConnectionError, EOFError) as exc:
         print(f"error: lost connection to PolyKybdHost ({exc})", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        # A local file/system error (e.g. `commands` with a missing file) —
+        # not a transport failure, so don't mislabel it as a lost connection.
+        print(f"error: {exc}", file=sys.stderr)
         return 1
 
 
@@ -344,7 +349,10 @@ def main(argv=None):
     except RpcError as exc:
         print(f"error: {exc.message}", file=sys.stderr)
         return 1
-    except (ConnectionError, FileNotFoundError, OSError) as exc:
+    except (ConnectionError, FileNotFoundError, OSError, EOFError) as exc:
+        # EOFError: the server accepted the connection then closed before
+        # sending HELLO (RpcClient reads it on construction) — treat as
+        # unreachable rather than letting it escape as a traceback.
         print(f"error: cannot reach PolyKybdHost ({exc}). Is PolyKybdHost running?",
               file=sys.stderr)
         return 1

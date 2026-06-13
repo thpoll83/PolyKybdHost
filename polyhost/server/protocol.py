@@ -105,21 +105,41 @@ def load_or_create_authkey() -> bytes:
     On POSIX the 0600 file is defense-in-depth (the socket is already perm-
     gated); on Windows it is the primary gate for the named pipe."""
     path = authkey_path()
-    try:
-        with open(path, "rb") as f:
-            key = f.read().strip()
+    # Create atomically with O_EXCL so two near-simultaneous first launches
+    # can't each generate a different key and have the later writer overwrite
+    # the key the earlier server already bound with (which would then fail
+    # every probe_existing/polyctl auth until restart). The loser of the race
+    # gets FileExistsError and rereads the winner's key.
+    for _ in range(5):
+        try:
+            with open(path, "rb") as f:
+                key = f.read().strip()
             if key:
                 return key
-    except OSError:
-        pass
-    key = secrets.token_hex(32).encode("ascii")
-    # Write 0600 (best effort on Windows, which ignores the mode bits).
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    try:
-        os.write(fd, key)
-    finally:
-        os.close(fd)
-    return key
+        except OSError:
+            pass
+        new_key = secrets.token_hex(32).encode("ascii")
+        try:
+            # 0600 best effort on Windows, which ignores the mode bits.
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError:
+            # Another launch created it first; loop to reread its key. A
+            # zero-byte file (crash mid-write under the old code) is corrupt —
+            # drop it and retry rather than spin forever.
+            try:
+                if not os.path.getsize(path):
+                    os.unlink(path)
+            except OSError:
+                pass
+            continue
+        try:
+            os.write(fd, new_key)
+        finally:
+            os.close(fd)
+        return new_key
+    # Last resort after repeated races: use whatever is on disk.
+    with open(path, "rb") as f:
+        return f.read().strip()
 
 
 def secure_endpoint(address: str) -> None:

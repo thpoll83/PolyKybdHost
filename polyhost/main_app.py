@@ -50,9 +50,19 @@ def main():
         # Single-instance lock: the control socket is the lock. If a PolyHost
         # is already serving it, defer to that one instead of fighting over the
         # HID device; otherwise clear any stale socket and become the host.
-        from polyhost.server.instance import probe_existing, clear_stale_endpoint
-        if probe_existing():
+        from polyhost.server.instance import (
+            probe_existing, clear_stale_endpoint, LIVE, STALE)
+        outcome = probe_existing()
+        if outcome == LIVE:
             print("PolyKybdHost is already running (control socket answered). Exiting.")
+            sys.exit(0)
+        if outcome != STALE:
+            # INCOMPATIBLE / AUTH_MISMATCH: a real process owns the endpoint but
+            # we can't speak to it. Don't unlink its socket and fight over the
+            # HID device — defer and let the user sort out the version/key.
+            print(f"PolyKybdHost control endpoint is in use ({outcome}) but not "
+                  "answering compatibly. Exiting rather than starting a second "
+                  "host. Restart the running instance if this is unexpected.")
             sys.exit(0)
         clear_stale_endpoint()
         print("Executing PolyHost...")

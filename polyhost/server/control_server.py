@@ -17,6 +17,7 @@ Core events are fanned out to every connection that has sent
 ``start()`` and pushes :func:`protocol.make_event` notifications.
 """
 import multiprocessing.connection as mpc
+import queue
 import threading
 
 from polyhost.server import protocol as p
@@ -69,6 +70,17 @@ class ControlServer:
         self._subscribed = set()
         self._lock = threading.Lock()    # guards the three structures above
 
+        # Core events are handed off to this queue and sent by a dedicated
+        # thread; the emitting core/worker thread must never do socket I/O (a
+        # full socket buffer would stall the reconnect probe / device work —
+        # see the threading-model notes in CLAUDE.md).
+        self._event_q = queue.Queue()
+        self._sender_thread = None
+
+        # Set by host.shutdown; the teardown callback fires only after the
+        # reply has been written (see _dispatch), so the client sees the ack.
+        self._pending_shutdown = False
+
         self.registry = self._build_registry()
 
     # ------------------------------------------------------------------
@@ -79,9 +91,13 @@ class ControlServer:
         """Bind the listener, tighten its permissions, and start accepting."""
         self._listener = mpc.Listener(self.address, authkey=self.authkey)
         p.secure_endpoint(self.address)
+        self._running = True
+        # Start the event sender before subscribing so no event is dropped.
+        self._sender_thread = threading.Thread(
+            target=self._event_sender_loop, name="control-events", daemon=True)
+        self._sender_thread.start()
         # Subscribe to the core exactly once; fan-out filters by subscription.
         self.core.subscribe(self._on_core_event)
-        self._running = True
         self._accept_thread = threading.Thread(
             target=self._accept_loop, name="control-accept", daemon=True)
         self._accept_thread.start()
@@ -89,6 +105,8 @@ class ControlServer:
     def stop(self):
         """Stop accepting and close everything. Best-effort, never raises."""
         self._running = False
+        # Wake the sender thread so it can exit its blocking queue.get().
+        self._event_q.put(None)
         listener = self._listener
         # Unblock the blocking accept() by connecting a throwaway client, then
         # close the listener. Both wrapped — a half-torn-down listener on a
@@ -201,6 +219,14 @@ class ControlServer:
 
         self._reply(conn, lock, reply)
 
+        # host.shutdown defers teardown to here so the reply is on the wire
+        # before quit_app() closes the connection (client would otherwise see
+        # EOF instead of {"shutting_down": True}).
+        if self._pending_shutdown:
+            self._pending_shutdown = False
+            if self._on_shutdown is not None:
+                self._on_shutdown()
+
     def _reply(self, conn, lock, obj):
         try:
             with lock:
@@ -223,23 +249,35 @@ class ControlServer:
     # ------------------------------------------------------------------
 
     def _on_core_event(self, name, payload):
-        """Called on core/worker threads — fan an event out to subscribers."""
-        with self._lock:
-            targets = [(c, self._conn_locks.get(c)) for c in self._subscribed]
-        if not targets:
-            return
-        event = p.make_event(name, payload)
-        dead = []
-        for conn, lock in targets:
-            if lock is None:
+        """Called on core/worker threads — hand off without blocking.
+
+        Only enqueues; the dedicated sender thread does the socket I/O so a
+        slow/stopped subscriber can never stall the emitting thread."""
+        self._event_q.put((name, payload))
+
+    def _event_sender_loop(self):
+        """Drain queued core events and push them to subscribers (own thread)."""
+        while True:
+            item = self._event_q.get()
+            if item is None:        # sentinel from stop()
+                break
+            name, payload = item
+            with self._lock:
+                targets = [(c, self._conn_locks.get(c)) for c in self._subscribed]
+            if not targets:
                 continue
-            try:
-                with lock:
-                    p.send_message(conn, event)
-            except Exception:
-                dead.append(conn)
-        for conn in dead:
-            self._drop(conn)
+            event = p.make_event(name, payload)
+            dead = []
+            for conn, lock in targets:
+                if lock is None:
+                    continue
+                try:
+                    with lock:
+                        p.send_message(conn, event)
+                except Exception:   # noqa: BLE001 — subscriber went away
+                    dead.append(conn)
+            for conn in dead:
+                self._drop(conn)
 
     # ------------------------------------------------------------------
     # Method registry
@@ -286,8 +324,8 @@ class ControlServer:
         return {"queued": True}
 
     def _cmd_host_shutdown(self, conn, params):
-        if self._on_shutdown is not None:
-            self._on_shutdown()
+        # Defer the actual teardown until _dispatch has written this reply.
+        self._pending_shutdown = True
         return {"shutting_down": True}
 
     def _cmd_events_subscribe(self, conn, params):

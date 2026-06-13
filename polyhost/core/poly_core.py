@@ -579,12 +579,23 @@ class PolyCore:
         return ok, payload
 
     def set_brightness(self, value):
+        # Validate before _device_call so a bad value returns the uniform
+        # (False, msg) contract instead of raising past it (the lambda default
+        # was evaluated at call-construction time, outside _device_call's guard).
+        try:
+            v = int(value)
+        except (TypeError, ValueError):
+            return False, f"Invalid brightness value: {value!r}"
         return self._device_call(
-            "brightness_set", lambda c, v=int(value): self.keeb.set_brightness(v))
+            "brightness_set", lambda c, v=v: self.keeb.set_brightness(v))
 
     def set_idle(self, idle):
+        # Reject non-bool input rather than bool()-coercing it: bool("false")
+        # is True, which would silently invert the caller's intent over RPC.
+        if not isinstance(idle, bool):
+            return False, f"Invalid idle flag: {idle!r}"
         return self._device_call(
-            "idle_set", lambda c, i=bool(idle): self.keeb.set_idle(i))
+            "idle_set", lambda c, i=idle: self.keeb.set_idle(i))
 
     def enable_overlays(self):
         return self._device_call("enable_overlays", lambda c: self.keeb.enable_overlays())
