@@ -1118,26 +1118,15 @@ class PolyHost(QApplication):
         self.cmdMenu.disable_overlays()
 
     def send_overlay_data(self, data):
-        # Device I/O runs on the core's worker (coalesced); the tray icon is
-        # the GUI's concern. The "overlay" completion event settles it.
-        if self.core.send_overlay_data(data):
-            self.icon_manager.set_thinking()
+        # Device I/O runs on the core's worker (coalesced). The tray icon is
+        # driven by the core's "overlay_activity"/"overlay" events, not set here.
+        self.core.send_overlay_data(data)
 
     def active_window_reporter(self):
-        # Main-thread timer: NO device I/O. Window tracking (pywinctl) stays
-        # here; everything that touches HID goes through the core's worker.
-        handler = self.core.overlay_handler
-        if handler is not None:
-            if self.connected:
-                data, cmd = handler.handle_active_window(
-                    UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
-                if cmd in (OverlayCommand.DISABLE, OverlayCommand.ENABLE):
-                    self.core.submit_overlay_cmd(cmd)
-                if data and cmd == OverlayCommand.OFF_ON:
-                    self.send_overlay_data(data)
-            elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
-                handler.handle_active_window(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
-
+        # Main-thread timer: the active-window poll (pywinctl) must stay on the
+        # Qt main thread (macOS constraint, per the worker refactor); the core
+        # does the switching decision and routes all HID through its worker.
+        self.core.tick_window_tracking(UPDATE_CYCLE_MSEC, NEW_WINDOW_ACCEPT_TIME_MSEC)
         if not self.is_closing:
             QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
 
@@ -1151,6 +1140,10 @@ class PolyHost(QApplication):
                 self.log.info("Received serial communication: %s", kb_serial)
             if kb_log:
                 self.keeb_log.info(kb_log)
+        elif name == "overlay_activity":
+            # Core signalled a send was queued — show the thinking icon.
+            if isinstance(result, dict) and result.get("state") == "thinking":
+                self.icon_manager.set_thinking()
         elif name == "overlay":
             # A coalesced (superseded) overlay send leaves the icon thinking;
             # the superseding send's on_done settles it.

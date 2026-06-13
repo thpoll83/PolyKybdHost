@@ -36,6 +36,7 @@ from polyhost.settings import PolySettings
 RECONNECT_CYCLE_MSEC = 1000
 UPDATE_CYCLE_MSEC = 250
 PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
+NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 
 _RES_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res"
 
@@ -238,10 +239,35 @@ class PolyCore:
             return False
         # Device I/O runs on the worker; coalesce_key="overlay" supersedes a
         # pending/in-flight send so rapid alt-tabbing doesn't replay transfers.
+        # A client renders "thinking" off this event and clears it on the
+        # "overlay" completion event.
+        self.emit("overlay_activity", {"state": "thinking"})
         self.worker.submit("overlay", lambda cancel: self._overlay_send_job(files, cancel),
                            coalesce_key="overlay",
                            on_done=lambda name, result: self.emit(name, result))
         return True
+
+    def tick_window_tracking(self, update_cycle_msec=UPDATE_CYCLE_MSEC,
+                             new_window_accept_msec=NEW_WINDOW_ACCEPT_TIME_MSEC):
+        """One active-window poll: switch overlays for the focused app.
+
+        NO direct device I/O — pushes go through the worker. The active-window
+        query (pywinctl) runs on the CALLER's thread: the GUI calls this from
+        its main-thread QTimer (pywinctl/macOS must stay main-thread, per the
+        worker refactor); headless mode calls it from the core's own tick
+        thread (H3). When there is no window handler (no display) this is a
+        no-op — explicit overlay sends via the API still work."""
+        handler = self.overlay_handler
+        if handler is None:
+            return
+        if self.connected:
+            data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
+            if cmd in (OverlayCommand.DISABLE, OverlayCommand.ENABLE):
+                self.submit_overlay_cmd(cmd)
+            if data and cmd == OverlayCommand.OFF_ON:
+                self.send_overlay_data(data)
+        elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
+            handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
 
     def submit_overlay_cmd(self, cmd):
         """Queue an enable/disable of overlays (coalesces with sends)."""
