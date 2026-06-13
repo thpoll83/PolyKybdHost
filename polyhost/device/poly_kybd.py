@@ -722,7 +722,12 @@ class PolyKybd:
                             else:
                                 time.sleep(DELAY_TIME_AFTER_MAX_MSG)
 
-        self.log.info("MRU: %d HID image messages, %d display positions mapped",
+        # hid_msg_counter counts ONLY image uploads (cache misses). A full cache
+        # hit is 0 here even though the mapping send (logged separately below)
+        # and enable_overlays still go over HID — that 0 is the MRU win, not a
+        # "nothing was sent". Word it so the log can't be misread.
+        self.log.info("MRU: %d image upload(s) (rest served from cache), "
+                      "%d display positions to map",
                       hid_msg_counter, len(display_to_pool))
 
         # Re-check right before the commit: the token can flip after the last

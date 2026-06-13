@@ -20,6 +20,7 @@ lazily and degrades to "off" with a warning (plan §5.4).
 import os
 import pathlib
 import threading
+import time
 
 from polyhost._version import __version__, __protocol__
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
@@ -34,6 +35,13 @@ from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
 
 RECONNECT_CYCLE_MSEC = 1000
+# After an overlay/MRU send the keyboard goes deaf for a few hundred ms while it
+# bridges the images/mapping to the slave half over UART, so a probe landing in
+# that window gets an EMPTY REPLY (harmless — the debounce absorbs it, but it's
+# log noise and a wasted query). Skip the probe for one cycle's worth of time
+# after the last overlay activity; a genuine disconnect is still caught once the
+# window lapses (sends stop, so the timestamp goes stale within this window).
+OVERLAY_PROBE_COOLDOWN_S = 1.0
 UPDATE_CYCLE_MSEC = 250
 PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
@@ -49,9 +57,14 @@ def get_overlay_path(filepath):
 class PolyCore:
     """Operational facade: commands in, events out. No Qt, no widgets."""
 
-    def __init__(self, log, ignore_version=False, start_worker=True):
+    def __init__(self, log, ignore_version=False, start_worker=True,
+                 apply_reconnect_in_core=False):
         self.log = log
         self.ignore_version = ignore_version
+        # When True (headless, no GUI to render), the reconnect periodic
+        # applies its own snapshot (state + post-connect + status_changed).
+        # The Qt client leaves this False and applies in _apply_reconnect_result.
+        self.apply_reconnect_in_core = apply_reconnect_in_core
 
         # Connection state. `connected` means present AND protocol/version
         # compatible (only the reconnect decision tree may set it).
@@ -66,6 +79,9 @@ class PolyCore:
         # writes it (a bool read/write is atomic under the GIL).
         self.last_applied_connected = False
         self._probe_fail_streak = 0
+        # monotonic timestamp of the last overlay/MRU send or enable/disable, so
+        # the reconnect probe can skip the keyboard's post-send deaf window.
+        self._last_overlay_activity = 0.0
         # Firmware version (parsed) of the connected keyboard, for update checks.
         self.kb_sw_version = None
         # Set on a fresh connect; consumed by the first applied snapshot after
@@ -124,6 +140,13 @@ class PolyCore:
         # worker exists so the callback always has a queue to submit to.
         self._sleep_listener = install_sleep_listener(self.save_mru, self.log)
 
+        # Optional core-owned window-tracking tick (headless mode, H3). The Qt
+        # client drives tick_window_tracking() from its main-thread QTimer
+        # instead (pywinctl/macOS), so it never starts this.
+        self._tick_thread = None
+        self._tick_stop = threading.Event()
+        self._tick_lock = threading.Lock()
+
         if start_worker:
             self.worker.start()
 
@@ -162,6 +185,36 @@ class PolyCore:
         else:
             self.worker.resume()
 
+    def start_window_tracking(self, interval_s=UPDATE_CYCLE_MSEC / 1000.0):
+        """Run the active-window tick on a core-owned daemon thread.
+
+        For headless mode (H3): there is no Qt main-thread QTimer to drive
+        ``tick_window_tracking``. No-op when there is no window handler (no
+        display) — explicit overlay sends via the API still work. The Qt
+        client must NOT call this (it drives the tick from the main thread to
+        satisfy the pywinctl/macOS constraint)."""
+        if self.overlay_handler is None:
+            self.log.info("No window handler — core window tracking stays off.")
+            return
+
+        def _loop():
+            while not self._tick_stop.is_set():
+                try:
+                    self.tick_window_tracking()
+                except Exception:
+                    self.log.exception("Window-tracking tick failed")
+                self._tick_stop.wait(interval_s)
+
+        # Guard the check-and-create so two callers can't start two threads.
+        with self._tick_lock:
+            if self._tick_thread is not None:
+                return
+            self._tick_stop.clear()
+            self._tick_thread = threading.Thread(
+                target=_loop, name="poly-window-tick", daemon=True)
+            self._tick_thread.start()
+        self.log.info("Core-owned window tracking started.")
+
     def shutdown(self):
         """Orderly stop: persist MRU, stop listeners/threads. Never raises.
 
@@ -170,6 +223,10 @@ class PolyCore:
         covers a clean quit/logout where USB suspend may not fire. Run it
         synchronously (short bounded wait) BEFORE stopping the worker, but
         never let it block shutdown."""
+        self._tick_stop.set()
+        if self._tick_thread is not None:
+            self._tick_thread.join(timeout=1)
+            self._tick_thread = None
         try:
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
@@ -307,6 +364,9 @@ class PolyCore:
             self.emit("overlay_warning", msg)
 
         self.keeb.set_idle(False)
+        # The send + enable just bridged data to the slave; mark the deaf window
+        # so the next reconnect probe skips it (avoids the EMPTY REPLY).
+        self._last_overlay_activity = time.monotonic()
 
     def _overlay_cmd_job(self, cmd, cancel):
         """Worker-thread enable/disable of overlays on every device entry."""
@@ -317,6 +377,8 @@ class PolyCore:
                 entry.device.disable_overlays()
             elif cmd == OverlayCommand.ENABLE:
                 entry.device.enable_overlays()
+        # enable/disable force-syncs state to the slave too — same deaf window.
+        self._last_overlay_activity = time.monotonic()
 
     # ------------------------------------------------------------------
     # Worker periodics: reconnect probe, console/serial reads, brightness
@@ -327,6 +389,18 @@ class PolyCore:
         observers. Skipped automatically while suspended."""
         snapshot = self._reconnect_probe(cancel)
         if snapshot is not None:
+            # Headless: no GUI calls apply_reconnect, so the core applies its
+            # own snapshot (settles state + runs post-connect, emits
+            # status_changed). The Qt client applies it itself and leaves the
+            # flag False, so this never double-applies.
+            if self.apply_reconnect_in_core:
+                try:
+                    self.apply_reconnect(snapshot)
+                except Exception:
+                    # Never let an apply failure swallow the reconnect event —
+                    # subscribers (e.g. ControlServer's fan-out to polyctl
+                    # watch) must still see it.
+                    self.log.exception("apply_reconnect failed in core periodic")
             self.emit("reconnect", snapshot)
 
     def _reconnect_probe(self, cancel):
@@ -336,6 +410,15 @@ class PolyCore:
 
         Only re-queries version/lang info when the probed connectivity differs
         from the last applied state (read atomically under the GIL)."""
+        # Skip the probe inside the post-send deaf window: while we still think
+        # we're connected and an overlay/MRU send just bridged to the slave, the
+        # GET_ID would get an EMPTY REPLY. Publishing nothing leaves state and
+        # the fail-streak untouched; the next cycle (window lapsed) probes for
+        # real, and a genuine disconnect is caught then since sends have stopped.
+        if (self.last_applied_connected
+                and time.monotonic() - self._last_overlay_activity
+                < OVERLAY_PROBE_COOLDOWN_S):
+            return None
         connected_now = False
         present_now = False
         response = ""
