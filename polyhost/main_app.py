@@ -41,6 +41,14 @@ def main():
         print(f"Executing Forwarder. Sending to {addr}.")
         app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file)
     else:
+        # Single-instance lock: the control socket is the lock. If a PolyHost
+        # is already serving it, defer to that one instead of fighting over the
+        # HID device; otherwise clear any stale socket and become the host.
+        from polyhost.server.instance import probe_existing, clear_stale_endpoint
+        if probe_existing():
+            print("PolyKybdHost is already running (control socket answered). Exiting.")
+            sys.exit(0)
+        clear_stale_endpoint()
         print("Executing PolyHost...")
         app = PolyHost(logging.DEBUG if args.debug>0 else logging.INFO, args.debug,
                        ignore_version=args.ignore_version)

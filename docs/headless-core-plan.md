@@ -291,7 +291,7 @@ restart; Windows locked-DLL relay restart for `hidapi.dll`; firmware download
 |-------|-------|-------------|------|
 | **H0 ✅ done** | Qt-ectomy of operational deps: `im_converter`→Pillow (+golden tests), updater→threads, sleep listener→jeepney | Fixes QPixmap-off-main-thread bug | Low (golden tests gate) |
 | **H1 ✅ done** | Extract `PolyCore` from `host.py`; window-tracking decision (`tick_window_tracking`) + events (`status_changed`/`overlay_activity`) replace direct UI calls; Qt adapter on the existing bridge; drop `HidHelper` lock-passing API | `host.py` 1401→1185 lines, core 515; `PolyCore` runs a full lifecycle headless with PyQt5 poisoned | **Highest** — done as C1 (extract) / C2 (reconnect apply) / C3 (window tick + event) |
-| **H2** | JSON-RPC server + protocol doc + loopback tests; `polyctl`; socket-as-instance-lock | CLI works against the running tray app (M1) | Low–medium |
+| **H2 ✅ done** | JSON-RPC control server (`polyhost/server/`) + `protocol.py` contract + loopback tests; `polyctl` CLI (`polyhost/cli/`, stdlib-only); socket-as-instance-lock | `polyctl` drives the running tray app (M1); verified CLI→server→core end-to-end headless with PyQt5 poisoned | Low–medium |
 | **H3** | `--headless` entry point; core-owned tick thread; GUI attach-or-host startup; updater check trigger into core for self-update | Server without Qt (M2) — the stated goal | Medium (startup/instance UX) |
 | **H4** *(optional, out of this effort)* | GUI as pure socket client; daemon-by-default; forwarder as client | Full symmetry (M3) | Medium — only after M1/M2 soak |
 

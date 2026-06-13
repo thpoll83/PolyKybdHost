@@ -519,3 +519,122 @@ class PolyCore:
             prescaler = self.poly_settings.get("irradiance_prescaler")
             brightness = self.sunlight.get_brightness_now(min_val, max_val, prescaler)
             self.keeb.set_brightness(2 + brightness * 48)
+
+    # ------------------------------------------------------------------
+    # Command API — the surface clients (CLI / RPC / GUI) drive (H2).
+    #
+    # Each device-touching call goes through the worker: short
+    # request/response commands use run_sync (bounded block, raises while
+    # suspended); long/coalescing ones (overlay send, command scripts) use
+    # submit. Return shapes are plain JSON-serializable values/dicts so the
+    # in-process observer and the socket transport are identical.
+    # ------------------------------------------------------------------
+
+    DEVICE_CALL_TIMEOUT = 5  # seconds for a bounded run_sync device command
+
+    def _device_call(self, name, fn):
+        """run_sync wrapper returning a uniform (ok, payload) result.
+
+        Normalizes the two operational failure modes into a clean error
+        instead of an exception: worker suspended (paused / firmware flash
+        holds exclusive()) and timeout."""
+        try:
+            result = self.worker.run_sync(name, fn, timeout=self.DEVICE_CALL_TIMEOUT)
+        except RuntimeError as e:       # suspended / stopping
+            return False, str(e)
+        except TimeoutError as e:
+            return False, str(e)
+        except Exception as e:          # device exception re-raised by run_sync
+            self.log.debug("Device call %s failed: %s", name, e)
+            return False, f"{type(e).__name__}: {e}"
+        if isinstance(result, tuple) and len(result) == 2:
+            ok, payload = result
+            return bool(ok), payload
+        return True, result
+
+    def get_status(self):
+        """Snapshot of connection state — no device I/O (reads cached state)."""
+        return {
+            "connected": self.connected,
+            "device_present": self.device_present,
+            "paused": self.paused,
+            "name": self.keeb.get_name(),
+            "fw_version": self.keeb.get_sw_version(),
+            "protocol": self.keeb.get_protocol_version(),
+            "hw_version": self.keeb.get_hw_version(),
+            "current_lang": self.keeb.get_current_lang(),
+            "host_version": __version__,
+        }
+
+    def list_languages(self):
+        """Cached language list from the last enumeration (no device I/O)."""
+        return list(self.keeb.get_lang_list() or [])
+
+    def set_language(self, lang):
+        """Change the keyboard language; emits ``lang_changed`` on success."""
+        ok, payload = self._device_call(
+            "lang_set", lambda c, l=lang: self.keeb.change_language(l))
+        if ok:
+            self.emit("lang_changed", {"lang": lang})
+        return ok, payload
+
+    def set_brightness(self, value):
+        return self._device_call(
+            "brightness_set", lambda c, v=int(value): self.keeb.set_brightness(v))
+
+    def set_idle(self, idle):
+        return self._device_call(
+            "idle_set", lambda c, i=bool(idle): self.keeb.set_idle(i))
+
+    def enable_overlays(self):
+        return self._device_call("enable_overlays", lambda c: self.keeb.enable_overlays())
+
+    def disable_overlays(self):
+        return self._device_call("disable_overlays", lambda c: self.keeb.disable_overlays())
+
+    def reset_overlays(self):
+        return self._device_call(
+            "reset_overlays_and_usage", lambda c: self.keeb.reset_overlays_and_usage())
+
+    def keymap_layer_count(self):
+        return self._device_call(
+            "keymap_layer_count", lambda c: self.keeb.get_dynamic_layer_count())
+
+    def keymap_default_layer(self):
+        return self._device_call(
+            "keymap_default_layer", lambda c: self.keeb.get_default_layer())
+
+    def keymap_buffer(self):
+        return self._device_call(
+            "keymap_buffer", lambda c: self.keeb.get_dynamic_buffer())
+
+    def keymap_set(self, layer, row, col, keycode):
+        return self._device_call(
+            "keymap_set",
+            lambda c: self.keeb.set_dynamic_keycode(int(layer), int(row), int(col), int(keycode)))
+
+    def get_fw_version(self):
+        """Parsed firmware version string (cached; no device I/O)."""
+        return self.keeb.get_sw_version()
+
+    def execute_commands(self, lines):
+        """Queue a (cancel-aware) command script across every device entry."""
+        def _job(cancel):
+            for entry in self.device_mgr.all_entries:
+                if cancel.is_set():
+                    return
+                entry.device.execute_commands(list(lines), cancel)
+        self.worker.submit("execute_commands", _job)
+        return True
+
+    def settings_get(self, key):
+        return self.poly_settings.get(key)
+
+    def settings_set(self, key, value):
+        """Set one known setting and persist. Returns (ok, msg)."""
+        alls = self.poly_settings.get_all()
+        if key not in alls:
+            return False, f"Unknown setting '{key}'"
+        alls[key] = value
+        self.poly_settings.set_all(alls)
+        return True, key
