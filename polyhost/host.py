@@ -585,6 +585,12 @@ class PolyHost(QApplication):
         # Language-changed flow (helper.set_language stays on the main thread).
         if kb_lang and self.current_lang != kb_lang:
             self.icon_manager.set_thinking()
+            # Reflect the keyboard's active language in the tray menu. This also
+            # covers a language changed ON THE KEYBOARD itself (its _LL layer):
+            # the probe reports the keyboard's current language every cycle, but
+            # the menu title/checkmark are otherwise only redrawn at (re)connect,
+            # so a keyboard-side switch would leave the tray menu stale.
+            self.update_ui_on_lang_change(kb_lang)
             lang, country = get_lang_and_country(kb_lang)
             success, msg = self.helper.set_language(lang, country)
             if success:
