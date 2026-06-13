@@ -289,11 +289,17 @@ restart; Windows locked-DLL relay restart for `hidapi.dll`; firmware download
 
 | Phase | Scope | Ships value | Risk |
 |-------|-------|-------------|------|
-| **H0** | Qt-ectomy of operational deps: `im_converter`→Pillow (+golden tests), updater→threads, sleep listener→jeepney | Fixes QPixmap-off-main-thread bug | Low (golden tests gate) |
-| **H1** | Extract `PolyCore` from `host.py`; window tick to core thread; events replace direct UI calls; Qt adapter on the existing bridge; drop `HidHelper` lock-passing API | `host.py` shrinks to pure GUI (~half its size) | **Highest** — same care as Phase C of the worker refactor |
+| **H0 ✅ done** | Qt-ectomy of operational deps: `im_converter`→Pillow (+golden tests), updater→threads, sleep listener→jeepney | Fixes QPixmap-off-main-thread bug | Low (golden tests gate) |
+| **H1 ✅ done** | Extract `PolyCore` from `host.py`; window-tracking decision (`tick_window_tracking`) + events (`status_changed`/`overlay_activity`) replace direct UI calls; Qt adapter on the existing bridge; drop `HidHelper` lock-passing API | `host.py` 1401→1185 lines, core 515; `PolyCore` runs a full lifecycle headless with PyQt5 poisoned | **Highest** — done as C1 (extract) / C2 (reconnect apply) / C3 (window tick + event) |
 | **H2** | JSON-RPC server + protocol doc + loopback tests; `polyctl`; socket-as-instance-lock | CLI works against the running tray app (M1) | Low–medium |
-| **H3** | `--headless` entry point; import-guard test; GUI attach-or-host startup | Server without Qt (M2) — the stated goal | Medium (startup/instance UX) |
-| **H4** *(optional)* | GUI as pure socket client; daemon-by-default; forwarder as client | Full symmetry (M3) | Medium — only after M1/M2 soak |
+| **H3** | `--headless` entry point; core-owned tick thread; GUI attach-or-host startup; updater check trigger into core for self-update | Server without Qt (M2) — the stated goal | Medium (startup/instance UX) |
+| **H4** *(optional, out of this effort)* | GUI as pure socket client; daemon-by-default; forwarder as client | Full symmetry (M3) | Medium — only after M1/M2 soak |
+
+**H1 actuals / notes for H2–H3:**
+- The window-tracking *decision* is `PolyCore.tick_window_tracking()`; the pywinctl poll itself stays on the GUI main thread (macOS Accessibility constraint, per the worker refactor). H3 wires a core-owned tick thread for headless.
+- Per-user-action device methods the CLI needs (`lang.set` ← `change_keeb_language`, `overlay.send` ← `send_shortcuts`/`send_overlay_data`, firmware flow) are still GUI-orchestrated; H2 promotes them to explicit `PolyCore` methods that both the GUI and the JSON-RPC layer call.
+- The updater threads are Qt-free (H0b) but still constructed/triggered in `host.py`; H3 moves the check trigger into the core for headless self-update (§5c).
+- Event names/payloads pinned by H1 (mirror these in the H2 notification schema): `reconnect` (probe snapshot dict), `status_changed` `{connected, device_present, paused, state_changed, text, icon, lang}`, `overlay_activity` `{state: "thinking"}`, `overlay` (completion → idle), `overlay_warning` (str), `console` `(serial, text)`, `change_keeb_language` `(lang, ok, msg)`, plus the updater events in `core/events.py`.
 
 Each phase is independently shippable and keeps the full suite green.
 H0 touches disjoint files and can start any time. H2 can be developed in

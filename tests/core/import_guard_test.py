@@ -21,6 +21,12 @@ sys.meta_path.insert(0, _Poison())
 import polyhost.core.poly_core
 import polyhost.core.decisions
 import polyhost.core.events
+# H0 de-Qt deliverables — these leaf modules must also stay Qt-free
+# (im_converter runs on the worker thread; updater/sleep_listener move
+# fully into the headless core in H3).
+import polyhost.device.im_converter
+import polyhost.services.updater
+import polyhost.services.sleep_listener
 print("CORE_OK")
 """
 
