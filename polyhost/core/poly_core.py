@@ -134,6 +134,7 @@ class PolyCore:
         # instead (pywinctl/macOS), so it never starts this.
         self._tick_thread = None
         self._tick_stop = threading.Event()
+        self._tick_lock = threading.Lock()
 
         if start_worker:
             self.worker.start()
@@ -184,9 +185,6 @@ class PolyCore:
         if self.overlay_handler is None:
             self.log.info("No window handler — core window tracking stays off.")
             return
-        if self._tick_thread is not None:
-            return
-        self._tick_stop.clear()
 
         def _loop():
             while not self._tick_stop.is_set():
@@ -196,9 +194,14 @@ class PolyCore:
                     self.log.exception("Window-tracking tick failed")
                 self._tick_stop.wait(interval_s)
 
-        self._tick_thread = threading.Thread(
-            target=_loop, name="poly-window-tick", daemon=True)
-        self._tick_thread.start()
+        # Guard the check-and-create so two callers can't start two threads.
+        with self._tick_lock:
+            if self._tick_thread is not None:
+                return
+            self._tick_stop.clear()
+            self._tick_thread = threading.Thread(
+                target=_loop, name="poly-window-tick", daemon=True)
+            self._tick_thread.start()
         self.log.info("Core-owned window tracking started.")
 
     def shutdown(self):
@@ -375,7 +378,13 @@ class PolyCore:
             # status_changed). The Qt client applies it itself and leaves the
             # flag False, so this never double-applies.
             if self.apply_reconnect_in_core:
-                self.apply_reconnect(snapshot)
+                try:
+                    self.apply_reconnect(snapshot)
+                except Exception:
+                    # Never let an apply failure swallow the reconnect event —
+                    # subscribers (e.g. ControlServer's fan-out to polyctl
+                    # watch) must still see it.
+                    self.log.exception("apply_reconnect failed in core periodic")
             self.emit("reconnect", snapshot)
 
     def _reconnect_probe(self, cancel):

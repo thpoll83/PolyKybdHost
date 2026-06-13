@@ -69,6 +69,33 @@ class TestHeadlessHost(unittest.TestCase):
         finally:
             host.stop()
 
+    def test_run_loop_exits_on_request_stop(self):
+        # Drive the real run() wait-loop on a thread and confirm request_stop
+        # makes it return (and tear down) promptly.
+        import threading
+        from polyhost.headless import HeadlessHost
+        host = HeadlessHost(_quiet())
+        t = threading.Thread(target=host.run, daemon=True)
+        t.start()
+        try:
+            import time
+            time.sleep(0.2)            # let run() enter its wait-loop
+            self.assertTrue(t.is_alive())
+            host.request_stop()
+            t.join(timeout=5)
+            self.assertFalse(t.is_alive())   # run() returned
+            self.assertTrue(host._stopped)   # stop() ran in finally
+        finally:
+            host.stop()  # idempotent — safe even though run() already stopped
+
+    def test_stop_is_idempotent(self):
+        from polyhost.headless import HeadlessHost
+        host = HeadlessHost(_quiet())
+        host.start()
+        host.stop()
+        host.stop()  # second call must be a no-op, not raise
+        self.assertTrue(host._stopped)
+
 
 class TestHeadlessImportsNoQt(unittest.TestCase):
     def test_headless_entry_imports_without_qt(self):

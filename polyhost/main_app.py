@@ -40,10 +40,11 @@ def main():
     else:
         setup_autostart_for_app(__file__, sys.argv[1:])
 
-    # Single-instance lock: the control socket is the lock. If a PolyHost
-    # (GUI or headless) already serves it, defer to that one instead of
-    # fighting over the HID device; otherwise clear any stale socket and
-    # become the host. (Forwarder mode has no device and no socket.)
+    # Single-instance lock: the control socket is the lock. Guards both the
+    # GUI and headless paths (this branch) — if a PolyHost already serves the
+    # socket, defer to it instead of fighting over the HID device; otherwise
+    # clear any stale socket and become the host. Forwarder mode (--host) has
+    # no device and no socket, so it is excluded here.
     if not (args.host or args.host_file):
         from polyhost.server.instance import probe_existing, clear_stale_endpoint
         if probe_existing():

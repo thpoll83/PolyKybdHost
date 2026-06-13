@@ -30,6 +30,7 @@ class HeadlessHost:
     def __init__(self, log, ignore_version=False):
         self.log = log
         self._stop = threading.Event()
+        self._stopped = False
         self.core = PolyCore(log=log, ignore_version=ignore_version,
                              start_worker=False, apply_reconnect_in_core=True)
         self.control_server = ControlServer(
@@ -47,7 +48,12 @@ class HeadlessHost:
         self._stop.set()
 
     def stop(self):
-        # Stop accepting clients first, then the operational shutdown.
+        # Idempotent: run() calls this in its finally, but a signal handler or
+        # test may call it too. Stop accepting clients first, then the
+        # operational shutdown.
+        if self._stopped:
+            return
+        self._stopped = True
         try:
             self.control_server.stop()
         finally:
@@ -69,5 +75,6 @@ def run_headless(log_level=logging.INFO, ignore_version=False):
     """Entry point for ``--headless`` (see polyhost/main_app.py)."""
     logging.basicConfig(level=log_level)
     log = logging.getLogger("PolyHost")
+    log.info("PolyKybdHost %s running headless.", __version__)
     host = HeadlessHost(log, ignore_version=ignore_version)
     host.run()
