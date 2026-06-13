@@ -371,23 +371,24 @@ class PolyKybd:
         # 100 ms timeouts: Windows delivers HID input reports on a ~16 ms timer
         # tick, so 15 ms reads intermittently miss the multi-report list there
         # (seen in the field 2026-06-11 as a startup enumeration failure).
-        lock = None
-        result, reply, lock = self.hid.send_and_read_validate_with_lock(
+        result, reply = self.hid.send_and_read_validate(
             compose_cmd(Cmd.GET_LANG_LIST_PACKED), 100,
-            expect(Cmd.GET_LANG_LIST_PACKED), lock)
+            expect(Cmd.GET_LANG_LIST_PACKED))
         # reply[2] is the ACK ('.') / NACK ('!') marker; anything else => unsupported.
         if not result or len(reply) < 4 or reply[2] != ord('.'):
-            if lock:
-                lock.release()
             return False, "Could not receive packed language list."
 
         data = bytearray(reply[3:])
         total = 1 + 2 * data[0]  # count byte + 2 bytes per language
         while len(data) < total and result:
-            result, reply, lock = self.hid.read_with_lock(100, lock)
+            result, reply = self.hid.read(100)
+            # A timeout returns (True, b'') and a NACK/garbage continuation has
+            # no valid "P<cmd>." header — break either way so a device that
+            # stops mid-list can't spin this worker-thread loop forever; the
+            # truncation check below then reports the failure.
+            if not result or len(reply) < 4 or reply[2] != ord('.'):
+                break
             data += reply[3:]
-        if lock:
-            lock.release()
 
         if len(data) < total:
             return False, "Truncated packed language list."
@@ -438,7 +439,6 @@ class PolyKybd:
         split_per_msg = split_dict(from_to, chunk_size)
 
         cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING)
-        lock = None
         num_msgs = 0
         for dict_part in split_per_msg:
             # Pad to chunk_size so every HID message carries exactly chunk_size pairs.
@@ -450,12 +450,12 @@ class PolyKybd:
                 padded[noop_key] = 810
                 noop_key += 1
             msg = cmd + pack_dict_10_bit(padded)
-            result, msg, lock = self.hid.send_multiple(msg, lock)
+            result, msg = self.hid.send_multiple(msg)
             num_msgs += 1
             if not result:
                 return False, f"Error sending overlay mapping: {msg}"
             self.log.debug("send_overlay_mapping: Sent %s", dict_part)
-            
+
         self.log.info("send_overlay_mapping: Sent %d mapping messages", num_msgs)
         # SEND_OVERLAY_MAPPING (cmd 21) is silent since protocol v3 — like the
         # other bulk overlay commands there is no per-chunk ACK, so nothing to
@@ -463,8 +463,6 @@ class PolyKybd:
         # firmware's blocking UART bridge to the slave; escaped ACKs were the
         # main source of stale replies poisoning later commands' reads.)
 
-        if lock:
-            lock.release()
         return True, "Mapping sent"
 
     def send_overlays(self, filenames: list, cancel: threading.Event | None = None) -> bool:
@@ -584,7 +582,6 @@ class PolyKybd:
 
         hdr = compose_roi_header(
             Cmd.START_ROI_OVERLAY, keycode, modifier, overlay, compressed)
-        lock = None
         buffer = overlay.compressed_roi_bytes if compressed else overlay.roi_bytes
         num_msgs = overlay.compressed_roi_msgs if compressed else overlay.roi_msgs
         num_bytes = len(buffer)
@@ -596,18 +593,15 @@ class PolyKybd:
             data = cmd + buffer[start:end]
             start = end
             end = min(end + self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT, num_bytes)
-            result, msg, lock = self.hid.send_multiple(data, lock)
+            result, msg = self.hid.send_multiple(data)
             if not result:
                 self.log.error(
                     "Error sending roi overlay message %d/%d (%s)", msg_num+1, msg_num, msg)
                 return -1
 
-        if lock:
-            lock.release()
         return num_msgs
 
     def send_overlay_for_keycode(self, keycode: int, modifier: Modifier, mapping: dict, skip_empty: bool = True) -> int:
-        lock = None
         overlay = mapping[keycode]
         msg_cnt = 0
         max_msgs = self.device_settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
@@ -619,19 +613,16 @@ class PolyKybd:
             data = overlay.all_bytes[from_idx:to_idx]
             if skip_empty and msg_num+1 != max_msgs and all(b == 0 for b in data):
                 continue
-            result, msg, lock = self.hid.send_multiple(cmd + data, lock)
+            result, msg = self.hid.send_multiple(cmd + data)
             if not result:
                 self.log.error(
                     "Error sending plain overlay message %d/%d (%s)", msg_num + 1, msg_num, msg)
                 return -1
             msg_cnt += 1
 
-        if lock:
-            lock.release()
         return msg_cnt
 
     def send_overlay_for_keycode_compressed(self, keycode: int, modifier: Modifier, mapping: dict) -> int:
-        lock = None
         overlay = mapping[keycode]
         hdr = compose_cmd(Cmd.START_COMPRESSED_OVERLAY,
                           keycode, modifier.value)
@@ -645,14 +636,12 @@ class PolyKybd:
             data = cmd + overlay.compressed_bytes[start:end]
             start = end
             end = min(end + self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT, num_bytes)
-            result, msg, lock = self.hid.send_multiple(data, lock)
+            result, msg = self.hid.send_multiple(data)
             if not result:
                 self.log.error(
                     "Error sending compressed overlay message %d/%d (%s)", msg_num + 1, msg_num, msg)
                 return -1
 
-        if lock:
-            lock.release()
         return overlay.compressed_msgs
 
     def send_overlays_mru(self, filenames: list, cache: OverlayMRUCache,

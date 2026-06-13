@@ -160,28 +160,27 @@ class HidHelper:
 
         return True, result
 
-    def send_multiple(self, data: bytearray, received_lock: threading.Lock) -> tuple[bool, Any, threading.Lock]:
+    def send_multiple(self, data: bytearray) -> tuple[bool, Any]:
+        """ Write one report of a multi-report burst without reading a response.
+
+        Sequencing across reports is guaranteed by the single worker thread that
+        owns the device, so no lock is held across reports — the internal lock is
+        a per-call guard only (released on exception by construction).
+        """
         if self.interface is None:
-            return False, "No Interface", received_lock
+            return False, "No Interface"
 
         request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1) # First byte is Report ID
         request_data[1:len(data) + 1] = data
         request_report = bytes(request_data)
 
         try:
-            if received_lock is None:
-                self.lock.acquire()
-            elif received_lock != self.lock:
-                return False, "Lock mismatch", received_lock
-            if not self.lock.locked():
-                return False, "Not locked", self.lock
-
-            result = self.interface.write(request_report)
+            with self.lock:
+                result = self.interface.write(request_report)
         except Exception as e:
-            self.lock.release()
-            return False, f"Exception: {e}", self.lock
+            return False, f"Exception: {e}"
 
-        return True, result, self.lock
+        return True, result
 
     def read(self, timeout: int) -> tuple[bool, bytearray]:
         if self.interface is None:
@@ -195,24 +194,6 @@ class HidHelper:
 
         return True, response_report
 
-    def read_with_lock(self, timeout: int, received_lock: threading.Lock) -> tuple[bool, bytearray, threading.Lock]:
-        if self.interface is None:
-            return False, "No Interface", received_lock
-
-        try:
-            if received_lock is None:
-                self.lock.acquire()
-            elif received_lock != self.lock:
-                return False, bytearray("Lock mismatch", 'utf-8'), received_lock
-            if not self.lock.locked():
-                return False, bytearray("Not locked", 'utf-8'), self.lock
-
-            response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
-        except Exception as e:
-            return False, bytearray(f"Exception: {e}", 'utf-8'), self.lock
-
-        return True, response_report, self.lock
-
     # Default read timeout: 100 ms. Windows delivers HID input reports on a
     # ~16 ms timer tick, so sub-30 ms timeouts are unreliable there; all HID
     # I/O runs on the worker thread, so a generous wait costs nothing.
@@ -221,65 +202,52 @@ class HidHelper:
             expected_prefix = data[:2]
         if self.interface is None:
             return False, bytearray("No Interface", 'utf-8')
-        lock = None
-        result, reply, lock = self.send_and_read_validate_with_lock(data, timeout, expected_prefix, lock)
-        if lock:
-            lock.release()
-        return result, reply
 
-    def send_and_read_validate_with_lock(self, data: bytearray, timeout: int, expected_prefix: bytearray, received_lock: threading.Lock) -> tuple[bool, bytearray, threading.Lock]:
         try:
-            if received_lock is None:
-                self.lock.acquire()
-            elif received_lock != self.lock:
-                return False, bytearray("Lock mismatch", 'utf-8'), received_lock
-            if not self.lock.locked():
-                return False, bytearray("Not locked", 'utf-8'), self.lock
+            with self.lock:
+                request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1)  # First byte is Report ID
+                request_data[1:len(data) + 1] = data
+                request_report = bytes(request_data)
 
-            request_data = [0x00] * (self.settings.HID_REPORT_SIZE + 1)  # First byte is Report ID
-            request_data[1:len(data) + 1] = data
-            request_report = bytes(request_data)
+                self.interface.write(request_report)
 
-            self.interface.write(request_report)
-
-            # Drain stale buffered replies until we find the expected prefix or
-            # the buffer runs dry. Since protocol v3 the firmware sends no
-            # unsolicited replies, so a stale reply here means one thing only:
-            # a previous command's response arrived after the host's read timed
-            # out (e.g. GET_ID answered late while the keyboard was busy syncing
-            # the slave half). This is a safety net for that race, not a normal
-            # code path.
-            # The first read and the read right after the buffer ran dry use
-            # the full caller timeout (the real reply may still be in flight);
-            # in-between reads use timeout=0 (non-blocking) to consume
-            # already-queued stale replies without extra latency. Only one
-            # full-timeout re-wait is granted after the buffer first runs dry,
-            # but stale replies returned by that re-wait keep the drain going
-            # instead of being misreported as the response.
-            _MAX_DRAIN = 16
-            response_report = bytearray()
-            waited_after_drain = False
-            for _i in range(_MAX_DRAIN):
-                t = timeout if _i == 0 else 0
-                response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=t)
-                if not response_report:
-                    if _i == 0 or waited_after_drain:
-                        break
-                    # Buffer exhausted after draining stale replies;
-                    # wait once more for the actual response.
-                    waited_after_drain = True
-                    response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
+                # Drain stale buffered replies until we find the expected prefix or
+                # the buffer runs dry. Since protocol v3 the firmware sends no
+                # unsolicited replies, so a stale reply here means one thing only:
+                # a previous command's response arrived after the host's read timed
+                # out (e.g. GET_ID answered late while the keyboard was busy syncing
+                # the slave half). This is a safety net for that race, not a normal
+                # code path.
+                # The first read and the read right after the buffer ran dry use
+                # the full caller timeout (the real reply may still be in flight);
+                # in-between reads use timeout=0 (non-blocking) to consume
+                # already-queued stale replies without extra latency. Only one
+                # full-timeout re-wait is granted after the buffer first runs dry,
+                # but stale replies returned by that re-wait keep the drain going
+                # instead of being misreported as the response.
+                _MAX_DRAIN = 16
+                response_report = bytearray()
+                waited_after_drain = False
+                for _i in range(_MAX_DRAIN):
+                    t = timeout if _i == 0 else 0
+                    response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=t)
                     if not response_report:
-                        break
-                if response_report.startswith(expected_prefix):
-                    return True, response_report, self.lock
-                # Stale reply — keep draining
+                        if _i == 0 or waited_after_drain:
+                            break
+                        # Buffer exhausted after draining stale replies;
+                        # wait once more for the actual response.
+                        waited_after_drain = True
+                        response_report = self.interface.read(self.settings.HID_REPORT_SIZE, timeout=timeout)
+                        if not response_report:
+                            break
+                    if response_report.startswith(expected_prefix):
+                        return True, response_report
+                    # Stale reply — keep draining
         except Exception as e:
-            # self.lock.release()
-            return False, bytearray(f"Exception: {e}", 'utf-8'), self.lock
+            return False, bytearray(f"Exception: {e}", 'utf-8')
 
-        return response_report.startswith(expected_prefix), response_report, self.lock
-    
+        return response_report.startswith(expected_prefix), response_report
+
     def close_interface(self):
         """Close the raw-HID interface without attempting to reopen it.
 
