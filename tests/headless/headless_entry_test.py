@@ -13,7 +13,7 @@ from unittest import mock
 from contextlib import redirect_stdout
 
 from polyhost.server import protocol
-from polyhost.server.instance import probe_existing
+from polyhost.server.instance import probe_existing, LIVE, STALE
 
 
 def _quiet():
@@ -48,7 +48,7 @@ class TestHeadlessHost(unittest.TestCase):
         host = HeadlessHost(_quiet(), ignore_version=False)
         host.start()
         try:
-            self.assertTrue(probe_existing(self._addr, self._key))
+            self.assertEqual(probe_existing(self._addr, self._key), LIVE)
             # polyctl talks the real socket end-to-end (no device attached).
             out = io.StringIO()
             with redirect_stdout(out):
@@ -57,7 +57,7 @@ class TestHeadlessHost(unittest.TestCase):
             self.assertIn("connected:", out.getvalue())
         finally:
             host.stop()
-        self.assertFalse(probe_existing(self._addr, self._key))
+        self.assertEqual(probe_existing(self._addr, self._key), STALE)
 
     def test_request_stop_via_shutdown_callback(self):
         from polyhost.headless import HeadlessHost
