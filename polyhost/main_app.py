@@ -22,6 +22,12 @@ def main():
     parser.add_argument('--host-file', help='Path to a file containing the host IP, written by a session hook (see folder autorun_forwarder for examples). This option has higher priority than `--host`.')
     args=parser.parse_args()
 
+    # Pillow logs every PNG chunk at DEBUG ("STREAM b'IDAT' …", "Importing
+    # PngImagePlugin"); under --debug that floods the host log (and interleaves
+    # with our lines) since overlay decode moved to Pillow. Cap the PIL logger
+    # so our DEBUG output stays readable. Harmless when not debugging.
+    logging.getLogger("PIL").setLevel(logging.INFO)
+
     if args.portable:
         # Portable run: don't autostart, and remove any entry a previous
         # (non-portable) run may have left behind so nothing lingers.
