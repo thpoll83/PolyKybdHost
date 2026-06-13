@@ -34,4 +34,5 @@ setup(name='PolyHost',
       url='https://github.com/thpoll83/PolyKybdHost',
       author='thpoll',
       packages=find_packages(exclude=['tests', 'tests.*']),
-      install_requires=requirements())
+      install_requires=requirements(),
+      entry_points={"console_scripts": ["polyctl = polyhost.cli.polyctl:main"]})
