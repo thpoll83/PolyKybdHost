@@ -49,9 +49,14 @@ def get_overlay_path(filepath):
 class PolyCore:
     """Operational facade: commands in, events out. No Qt, no widgets."""
 
-    def __init__(self, log, ignore_version=False, start_worker=True):
+    def __init__(self, log, ignore_version=False, start_worker=True,
+                 apply_reconnect_in_core=False):
         self.log = log
         self.ignore_version = ignore_version
+        # When True (headless, no GUI to render), the reconnect periodic
+        # applies its own snapshot (state + post-connect + status_changed).
+        # The Qt client leaves this False and applies in _apply_reconnect_result.
+        self.apply_reconnect_in_core = apply_reconnect_in_core
 
         # Connection state. `connected` means present AND protocol/version
         # compatible (only the reconnect decision tree may set it).
@@ -124,6 +129,12 @@ class PolyCore:
         # worker exists so the callback always has a queue to submit to.
         self._sleep_listener = install_sleep_listener(self.save_mru, self.log)
 
+        # Optional core-owned window-tracking tick (headless mode, H3). The Qt
+        # client drives tick_window_tracking() from its main-thread QTimer
+        # instead (pywinctl/macOS), so it never starts this.
+        self._tick_thread = None
+        self._tick_stop = threading.Event()
+
         if start_worker:
             self.worker.start()
 
@@ -162,6 +173,34 @@ class PolyCore:
         else:
             self.worker.resume()
 
+    def start_window_tracking(self, interval_s=UPDATE_CYCLE_MSEC / 1000.0):
+        """Run the active-window tick on a core-owned daemon thread.
+
+        For headless mode (H3): there is no Qt main-thread QTimer to drive
+        ``tick_window_tracking``. No-op when there is no window handler (no
+        display) — explicit overlay sends via the API still work. The Qt
+        client must NOT call this (it drives the tick from the main thread to
+        satisfy the pywinctl/macOS constraint)."""
+        if self.overlay_handler is None:
+            self.log.info("No window handler — core window tracking stays off.")
+            return
+        if self._tick_thread is not None:
+            return
+        self._tick_stop.clear()
+
+        def _loop():
+            while not self._tick_stop.is_set():
+                try:
+                    self.tick_window_tracking()
+                except Exception:
+                    self.log.exception("Window-tracking tick failed")
+                self._tick_stop.wait(interval_s)
+
+        self._tick_thread = threading.Thread(
+            target=_loop, name="poly-window-tick", daemon=True)
+        self._tick_thread.start()
+        self.log.info("Core-owned window tracking started.")
+
     def shutdown(self):
         """Orderly stop: persist MRU, stop listeners/threads. Never raises.
 
@@ -170,6 +209,10 @@ class PolyCore:
         covers a clean quit/logout where USB suspend may not fire. Run it
         synchronously (short bounded wait) BEFORE stopping the worker, but
         never let it block shutdown."""
+        self._tick_stop.set()
+        if self._tick_thread is not None:
+            self._tick_thread.join(timeout=1)
+            self._tick_thread = None
         try:
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
@@ -327,6 +370,12 @@ class PolyCore:
         observers. Skipped automatically while suspended."""
         snapshot = self._reconnect_probe(cancel)
         if snapshot is not None:
+            # Headless: no GUI calls apply_reconnect, so the core applies its
+            # own snapshot (settles state + runs post-connect, emits
+            # status_changed). The Qt client applies it itself and leaves the
+            # flag False, so this never double-applies.
+            if self.apply_reconnect_in_core:
+                self.apply_reconnect(snapshot)
             self.emit("reconnect", snapshot)
 
     def _reconnect_probe(self, cancel):
