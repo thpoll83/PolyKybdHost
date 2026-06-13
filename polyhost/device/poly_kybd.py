@@ -382,6 +382,12 @@ class PolyKybd:
         total = 1 + 2 * data[0]  # count byte + 2 bytes per language
         while len(data) < total and result:
             result, reply = self.hid.read(100)
+            # A timeout returns (True, b'') and a NACK/garbage continuation has
+            # no valid "P<cmd>." header — break either way so a device that
+            # stops mid-list can't spin this worker-thread loop forever; the
+            # truncation check below then reports the failure.
+            if not result or len(reply) < 4 or reply[2] != ord('.'):
+                break
             data += reply[3:]
 
         if len(data) < total:

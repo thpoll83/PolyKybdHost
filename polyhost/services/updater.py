@@ -548,7 +548,13 @@ class UpdateInstaller(threading.Thread):
     def __init__(self, release: ReleaseInfo, *,
                  on_progress=None, on_finished_ok=None,
                  on_relay_needed=None, on_failed=None):
-        super().__init__(daemon=True)
+        # NON-daemon: run() rewrites the install tree in place
+        # (copytree dirs_exist_ok) and runs pip; a daemon thread killed at
+        # interpreter exit mid-apply would leave the package half-updated.
+        # As a non-daemon thread the process stays alive until the install
+        # finishes (it ends in a restart/relay handoff anyway). The checker
+        # and fw-downloader stay daemon — their work is interruptible.
+        super().__init__(daemon=False)
         self.release = release
         self._on_progress = on_progress
         self._on_finished_ok = on_finished_ok

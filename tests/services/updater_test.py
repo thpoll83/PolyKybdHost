@@ -549,7 +549,9 @@ class TestUpdateInstaller(unittest.TestCase):
             on_relay_needed=rec.make("relay_needed"),
             on_failed=rec.make("failed"),
         )
-        self.assertTrue(inst.daemon)
+        # NON-daemon by design: apply_update() rewrites the install tree + runs
+        # pip; the process must not exit and kill it mid-install.
+        self.assertFalse(inst.daemon)
         return inst
 
     def test_finished_ok_when_no_locked_files(self):

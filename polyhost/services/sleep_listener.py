@@ -136,6 +136,17 @@ def install_sleep_listener(on_sleep, log):
                   type(e).__name__, e)
         return None
     listener = SleepListener(conn, on_sleep, log)
-    listener.start()
+    try:
+        listener.start()
+    except RuntimeError as e:
+        # "can't start new thread" etc. — stay best-effort: the contract is to
+        # return None when unavailable rather than abort core startup.
+        log.debug("Could not start sleep listener; no sleep listener (%s: %s).",
+                  type(e).__name__, e)
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return None
     log.debug("logind PrepareForSleep listener installed.")
     return listener

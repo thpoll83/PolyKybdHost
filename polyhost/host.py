@@ -801,7 +801,11 @@ class PolyHost(QApplication):
         Both are None for the automatic periodic check (silent failure).
         """
         if self._update_checker is not None and self._update_checker.is_alive():
-            return
+            # A check is already in flight with its own (auto) callbacks — do
+            # NOT start a second. Returns False so a manual caller knows its
+            # on_no_update/on_error closures were not installed and can avoid
+            # switching the UI into a "checking…" state it can't clear.
+            return False
         self.log.debug("Starting update check...")
         # device_present (not connected): the firmware version is known even on
         # a protocol mismatch, and that's exactly when an update must be offered.
@@ -857,6 +861,7 @@ class PolyHost(QApplication):
             on_error=lambda msg: b.job_done.emit("update_check_error", msg),
         )
         self._update_checker.start()
+        return True
 
     def _on_update_available(self, release):
         self._pending_release = release
@@ -878,12 +883,15 @@ class PolyHost(QApplication):
         if self._pending_release is not None:
             self._prompt_and_install(self._pending_release)
             return
-        self.update_action.setText("Checking for updates...")
-        self._await_manual_prompt = True
-        self._start_update_check(
+        # Only switch the UI into "checking" mode if a run actually started —
+        # otherwise an in-flight auto-check (with silent callbacks) would leave
+        # the action stuck on "Checking…" and drop the manual error dialog.
+        if self._start_update_check(
             on_no_update=self._on_manual_no_update,
             on_check_error=self._on_manual_check_error,
-        )
+        ):
+            self.update_action.setText("Checking for updates...")
+            self._await_manual_prompt = True
 
     def _on_manual_no_update(self):
         self._await_manual_prompt = False
@@ -1016,12 +1024,13 @@ class PolyHost(QApplication):
         if self._pending_fw_release is not None:
             self._prompt_and_flash(self._pending_fw_release)
             return
-        self.firmware_update_action.setText("Checking for firmware update…")
-        self.firmware_update_action.setEnabled(False)
-        self._await_manual_fw_prompt = True
         # No on_no_update here: the firmware result comes via _await_manual_fw_prompt
-        # and the _fw_no_update closure in _start_update_check.
-        self._start_update_check()
+        # and the _fw_no_update closure in _start_update_check. Only flip the UI
+        # if a run actually started (see _on_update_clicked).
+        if self._start_update_check():
+            self.firmware_update_action.setText("Checking for firmware update…")
+            self.firmware_update_action.setEnabled(False)
+            self._await_manual_fw_prompt = True
 
     def _on_manual_no_fw_update(self):
         self._await_manual_fw_prompt = False

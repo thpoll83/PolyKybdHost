@@ -107,6 +107,31 @@ class TestEnumerateLangPacked(unittest.TestCase):
         ok, _ = keeb.enumerate_lang()
         self.assertFalse(ok)
 
+    def test_packed_truncated_empty_continuation_terminates(self):
+        """A continuation read() that times out (True, b'') must NOT spin the
+        worker loop forever — it breaks and reports a truncated list."""
+        keeb = self._make_keeb(PACKED_LANG_LIST_MIN_PROTOCOL)
+        reports = _packed_reports(_ALL_LANGS)   # spans several reports
+        keeb.hid.send_and_read_validate.side_effect = [
+            (True, _GET_LANG_ACK), (True, reports[0])]
+        # One empty continuation, then exhaustion (StopIteration) — if the fix
+        # regressed and looped, the test would hang or raise StopIteration.
+        keeb.hid.read.side_effect = [(True, _pad(b""))]
+        ok, msg = keeb.enumerate_lang()
+        self.assertFalse(ok)
+        self.assertEqual(keeb.hid.read.call_count, 1)
+
+    def test_packed_nack_continuation_terminates(self):
+        """A NACK/garbage continuation (no 'P<cmd>.' header) also breaks."""
+        keeb = self._make_keeb(PACKED_LANG_LIST_MIN_PROTOCOL)
+        reports = _packed_reports(_ALL_LANGS)
+        keeb.hid.send_and_read_validate.side_effect = [
+            (True, _GET_LANG_ACK), (True, reports[0])]
+        keeb.hid.read.side_effect = [(True, _pad(b"P\x1b!"))]
+        ok, _ = keeb.enumerate_lang()
+        self.assertFalse(ok)
+        self.assertEqual(keeb.hid.read.call_count, 1)
+
     def test_packed_nack_does_not_fall_back(self):
         """A NACK to the packed command on a v2 board is a hard failure — it is
         NOT retried as the retired ASCII list. Exactly one list command is sent."""

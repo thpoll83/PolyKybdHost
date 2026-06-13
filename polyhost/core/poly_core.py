@@ -200,8 +200,14 @@ class PolyCore:
         import yaml
         try:
             with open(path, encoding="utf-8") as f:
-                self.mapping = yaml.load(f, Loader=yaml.FullLoader)
-        except OSError as e:
+                # safe_load: the mapping file is plain title→overlay-name data;
+                # never instantiate arbitrary Python objects from it.
+                loaded = yaml.safe_load(f) or {}
+            if not isinstance(loaded, dict):
+                self.log.warning("Overlay mapping %s is not a mapping; ignoring.", path)
+                loaded = {}
+            self.mapping = loaded
+        except (OSError, yaml.YAMLError) as e:
             self.log.warning("Could not read overlay mapping %s: %s", path, e)
             self.mapping = {}
 

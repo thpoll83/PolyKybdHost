@@ -119,7 +119,7 @@ class TestSendMultiple(unittest.TestCase):
 
     def test_writes_and_frees_lock(self):
         helper, device = _helper()
-        ok, result = helper.send_multiple(CMD)
+        ok, _ = helper.send_multiple(CMD)
         self.assertTrue(ok)
         self.assertEqual(len(device.writes), 1)
         self.assertFalse(helper.lock.locked())
@@ -127,7 +127,7 @@ class TestSendMultiple(unittest.TestCase):
     def test_sequence_of_sends(self):
         helper, device = _helper()
         for _ in range(3):
-            ok, result = helper.send_multiple(CMD)
+            ok, _ = helper.send_multiple(CMD)
             self.assertTrue(ok)
             self.assertFalse(helper.lock.locked())
         self.assertEqual(len(device.writes), 3)
@@ -135,14 +135,14 @@ class TestSendMultiple(unittest.TestCase):
     def test_write_exception_releases_lock(self):
         helper, device = _helper()
         device.write_exception = RuntimeError("USB gone")
-        ok, result = helper.send_multiple(CMD)
+        ok, _ = helper.send_multiple(CMD)
         self.assertFalse(ok)
         self.assertFalse(helper.lock.locked())
 
     def test_no_interface_returns_false(self):
-        helper, device = _helper()
+        helper, _device = _helper()
         helper.interface = None
-        ok, result = helper.send_multiple(CMD)
+        ok, _ = helper.send_multiple(CMD)
         self.assertFalse(ok)
 
 

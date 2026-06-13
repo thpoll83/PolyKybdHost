@@ -13,8 +13,15 @@ which is why these names intentionally match the existing
 
 # Reconnect probe snapshot (dict, see PolyCore._reconnect_probe) — the GUI
 # applies the decision tree and updates menus; headless clients may ignore it
-# in favour of STATUS_CHANGED (emitted in a later phase).
+# in favour of STATUS_CHANGED.
 RECONNECT = "reconnect"
+
+# Semantic connection state after a probe is applied (JSON dict:
+# {connected, device_present, paused, state_changed, text, icon, lang}).
+STATUS_CHANGED = "status_changed"
+
+# Overlay send queued ({"state": "thinking"}); cleared by OVERLAY completion.
+OVERLAY_ACTIVITY = "overlay_activity"
 
 # (serial_bytes, console_text) read from the keyboard (250 ms cadence).
 CONSOLE = "console"
@@ -32,7 +39,10 @@ CHANGE_KEEB_LANGUAGE = "change_keeb_language"
 # (title, msg, result) — generic device command result for logging/UI.
 CMD_RESULT = "cmd_result"
 
-# Updater events (payloads: ReleaseInfo / FwUpReleaseInfo / str / (pct, msg)).
+# Updater events. NOTE: payloads here are still in-process objects
+# (ReleaseInfo / FwUpReleaseInfo / str / (pct, msg)) consumed by the GUI in
+# the same process — they are NOT yet JSON-shaped. The updater moves into
+# the core in H3; serialize these payloads when wiring the socket transport.
 UPDATE_AVAILABLE = "update_available"
 FW_UP_AVAILABLE = "fw_up_available"
 UPDATE_HOST_NO_UPDATE = "update_host_no_update"

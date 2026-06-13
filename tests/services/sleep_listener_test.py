@@ -55,11 +55,13 @@ class InstallSleepListenerPlatformTest(unittest.TestCase):
         cb.assert_not_called()
 
     def test_unavailable_system_bus_returns_none(self):
-        # This container genuinely has no system D-Bus — exercise the real path.
-        # Force the linux branch so the open_dbus_connection attempt runs and
-        # fails gracefully to None rather than raising.
+        # Force the linux branch AND make the bus connect raise, so the
+        # graceful-None fallback is exercised deterministically regardless of
+        # whether the host actually exposes a system D-Bus (CI runners may).
         cb = mock.Mock()
-        with mock.patch.object(sleep_listener.sys, "platform", "linux"):
+        with mock.patch.object(sleep_listener.sys, "platform", "linux"), \
+             mock.patch("jeepney.io.blocking.open_dbus_connection",
+                        side_effect=OSError("no system bus")):
             result = install_sleep_listener(cb, _quiet_log())
         self.assertIsNone(result)
         cb.assert_not_called()
