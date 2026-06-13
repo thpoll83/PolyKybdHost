@@ -46,6 +46,7 @@ from polyhost.services.updater import UpdateChecker, UpdateInstaller, FwUpDownlo
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.worker_bridge import WorkerBridge
 from polyhost.core.poly_core import PolyCore
+from polyhost.server.control_server import ControlServer
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
@@ -404,6 +405,19 @@ class PolyHost(QApplication):
         self.log.debug("Starting cyclic checks...")
         self.core.worker.start()
         QTimer.singleShot(UPDATE_CYCLE_MSEC * 2, self.active_window_reporter)
+
+        # Control socket (M1): embed the JSON-RPC server so a CLI / headless
+        # client can drive this running tray app. host.shutdown fires on a
+        # server thread, so hop to the Qt main thread via the bridge.
+        self.control_server = None
+        try:
+            self.control_server = ControlServer(
+                self.core, __version__, self.log,
+                on_shutdown=lambda: self.bridge.job_done.emit("host_shutdown", None))
+            self.control_server.start()
+        except Exception as e:
+            # A failed control socket must never stop the tray app from running.
+            self.log.warning("Control server not started (%s: %s).", type(e).__name__, e)
  
 
     # ------------------------------------------------------------------
@@ -1113,8 +1127,11 @@ class PolyHost(QApplication):
     def quit_app(self):
         self.icon_manager.set_disconnected()
         self.is_closing = True
-        # Operational shutdown (MRU persist, sleep listener, worker stop,
-        # window-handler close) is the core's job; never blocks on failure.
+        # Stop accepting control clients first, then the operational shutdown
+        # (MRU persist, sleep listener, worker stop, window-handler close) —
+        # both best-effort, never block on failure.
+        if getattr(self, "control_server", None) is not None:
+            self.control_server.stop()
         self.core.shutdown()
         self.quit()
 
@@ -1143,6 +1160,10 @@ class PolyHost(QApplication):
         """Main-thread slot for the bridge's job_done signal."""
         if name == "reconnect":
             self._apply_reconnect_result(result)
+        elif name == "host_shutdown":
+            # A control client (polyctl shutdown) asked the app to quit; the
+            # request arrived on a server thread and was hopped here.
+            self.quit_app()
         elif name == "console":
             kb_serial, kb_log = result
             if kb_serial:
