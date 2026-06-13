@@ -8,6 +8,7 @@ the status_changed emission. UI rendering stays in the GUI and is out
 of scope here.
 """
 import logging
+import time
 import unittest
 from unittest.mock import MagicMock
 
@@ -26,6 +27,8 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core.last_applied_connected = connected
     core.kb_sw_version = None
     core.needs_overlay_reset = False
+    core._probe_fail_streak = 0
+    core._last_overlay_activity = 0.0
     core._observers = []
     import threading
     core._observers_lock = threading.Lock()
@@ -162,6 +165,37 @@ class TestApplyReconnect(unittest.TestCase):
         core._reconnect_periodic(cancel=None)
         self.assertEqual(events, ["reconnect"])     # no in-core status_changed
         self.assertTrue(core.connected)             # unchanged — GUI applies
+
+
+class TestProbeOverlayCooldown(unittest.TestCase):
+    """The probe skips the keyboard's post-send deaf window (no ID query)."""
+
+    def test_probe_skipped_during_overlay_cooldown(self):
+        core = make_core(connected=True)
+        core.last_applied_connected = True
+        core._last_overlay_activity = time.monotonic()      # just sent overlays
+        self.assertIsNone(core._reconnect_probe(cancel=None))
+        core.keeb.connect.assert_not_called()               # no ID query issued
+
+    def test_probe_runs_after_overlay_cooldown(self):
+        core = make_core(connected=True)
+        core.last_applied_connected = True
+        core._last_overlay_activity = time.monotonic() - 5.0  # window lapsed
+        core.keeb.hid = None                                  # skip the drain step
+        core.keeb.connect.return_value = False
+        core._reconnect_probe(cancel=None)
+        core.keeb.connect.assert_called_once()                # probe ran, not skipped
+
+    def test_probe_runs_when_disconnected_even_if_recent_activity(self):
+        # Defensive: while disconnected the probe must always run so reconnect
+        # isn't delayed, regardless of a stale overlay-activity timestamp.
+        core = make_core(connected=False)
+        core.last_applied_connected = False
+        core._last_overlay_activity = time.monotonic()
+        core.keeb.hid = None
+        core.keeb.connect.return_value = False
+        core._reconnect_probe(cancel=None)
+        core.keeb.connect.assert_called_once()
 
 
 if __name__ == '__main__':

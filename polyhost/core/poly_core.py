@@ -20,6 +20,7 @@ lazily and degrades to "off" with a warning (plan §5.4).
 import os
 import pathlib
 import threading
+import time
 
 from polyhost._version import __version__, __protocol__
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
@@ -34,6 +35,13 @@ from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
 
 RECONNECT_CYCLE_MSEC = 1000
+# After an overlay/MRU send the keyboard goes deaf for a few hundred ms while it
+# bridges the images/mapping to the slave half over UART, so a probe landing in
+# that window gets an EMPTY REPLY (harmless — the debounce absorbs it, but it's
+# log noise and a wasted query). Skip the probe for one cycle's worth of time
+# after the last overlay activity; a genuine disconnect is still caught once the
+# window lapses (sends stop, so the timestamp goes stale within this window).
+OVERLAY_PROBE_COOLDOWN_S = 1.0
 UPDATE_CYCLE_MSEC = 250
 PERIODIC_10MIN_CYCLE_MSEC = 1000 * 60 * 10
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
@@ -71,6 +79,9 @@ class PolyCore:
         # writes it (a bool read/write is atomic under the GIL).
         self.last_applied_connected = False
         self._probe_fail_streak = 0
+        # monotonic timestamp of the last overlay/MRU send or enable/disable, so
+        # the reconnect probe can skip the keyboard's post-send deaf window.
+        self._last_overlay_activity = 0.0
         # Firmware version (parsed) of the connected keyboard, for update checks.
         self.kb_sw_version = None
         # Set on a fresh connect; consumed by the first applied snapshot after
@@ -353,6 +364,9 @@ class PolyCore:
             self.emit("overlay_warning", msg)
 
         self.keeb.set_idle(False)
+        # The send + enable just bridged data to the slave; mark the deaf window
+        # so the next reconnect probe skips it (avoids the EMPTY REPLY).
+        self._last_overlay_activity = time.monotonic()
 
     def _overlay_cmd_job(self, cmd, cancel):
         """Worker-thread enable/disable of overlays on every device entry."""
@@ -363,6 +377,8 @@ class PolyCore:
                 entry.device.disable_overlays()
             elif cmd == OverlayCommand.ENABLE:
                 entry.device.enable_overlays()
+        # enable/disable force-syncs state to the slave too — same deaf window.
+        self._last_overlay_activity = time.monotonic()
 
     # ------------------------------------------------------------------
     # Worker periodics: reconnect probe, console/serial reads, brightness
@@ -394,6 +410,15 @@ class PolyCore:
 
         Only re-queries version/lang info when the probed connectivity differs
         from the last applied state (read atomically under the GIL)."""
+        # Skip the probe inside the post-send deaf window: while we still think
+        # we're connected and an overlay/MRU send just bridged to the slave, the
+        # GET_ID would get an EMPTY REPLY. Publishing nothing leaves state and
+        # the fail-streak untouched; the next cycle (window lapsed) probes for
+        # real, and a genuine disconnect is caught then since sends have stopped.
+        if (self.last_applied_connected
+                and time.monotonic() - self._last_overlay_activity
+                < OVERLAY_PROBE_COOLDOWN_S):
+            return None
         connected_now = False
         present_now = False
         response = ""
