@@ -69,10 +69,16 @@ class RpcClient:
                 raise RpcError(err.get("code"), err.get("message", "unknown error"))
             return msg.get("result")
 
-    def watch(self):
-        """Subscribe to events and yield (name, payload) tuples until the
-        server closes the connection (EOF ends the generator cleanly)."""
+    def subscribe_events(self):
+        """Register for server-pushed event notifications."""
         self.call(protocol.EVENTS_SUBSCRIBE)
+
+    def events(self):
+        """Yield (name, payload) from pushed notifications until EOF.
+
+        Assumes :meth:`subscribe_events` was already called. EOF (server
+        closed the connection — e.g. the host restarting after an update)
+        ends the generator cleanly."""
         while True:
             try:
                 msg = protocol.recv_message(self._conn)
@@ -81,6 +87,12 @@ class RpcClient:
             if msg.get("method") == protocol.EVENT_NOTIFICATION:
                 params = msg.get("params") or {}
                 yield params.get("name"), params.get("payload")
+
+    def watch(self):
+        """Subscribe to events and yield (name, payload) tuples until the
+        server closes the connection (EOF ends the generator cleanly)."""
+        self.subscribe_events()
+        yield from self.events()
 
     def close(self):
         try:
@@ -188,8 +200,77 @@ def _cmd_commands(client, args):
     return 0
 
 
+def _fmt_progress(label, payload):
+    pct = (payload or {}).get("pct")
+    msg = (payload or {}).get("msg", "")
+    if isinstance(pct, int) and pct >= 0:
+        return f"  {label} [{pct:3d}%] {msg}"
+    return f"  {label}: {msg}"
+
+
 def _cmd_fw(client, args):
+    if getattr(args, "fw_action", None) == "flash":
+        # Subscribe BEFORE issuing the flash so no progress event is missed,
+        # then stream until the terminal done event.
+        client.subscribe_events()
+        # A bad file / absent device fails fast here as an RpcError.
+        client.call(protocol.M_FW_FLASH, {"path": args.file, "apply": bool(args.apply)})
+        print(f"flashing {args.file}{' (will apply on success)' if args.apply else ''}…")
+        for name, payload in client.events():
+            if name == "fw_flash_progress":
+                print(_fmt_progress("flash", payload))
+            elif name == "fw_apply_progress":
+                print(_fmt_progress("apply", payload))
+            elif name == "fw_flash_done":
+                if not (payload or {}).get("ok"):
+                    print(f"flash failed: {(payload or {}).get('msg')}", file=sys.stderr)
+                    return 1
+                print(f"flash complete: {(payload or {}).get('msg')}")
+                if not args.apply:
+                    return 0
+            elif name == "fw_apply_done":
+                ok = (payload or {}).get("ok")
+                m = (payload or {}).get("msg")
+                if ok:
+                    print(f"applied: {m}")
+                    return 0
+                print(f"apply failed: {m}", file=sys.stderr)
+                return 1
+        print("error: connection closed before flash completed", file=sys.stderr)
+        return 1
+    # default: version
     print(client.call(protocol.M_FW_VERSION))
+    return 0
+
+
+def _cmd_update(client, args):
+    if args.update_action == "check":
+        res = client.call(protocol.M_UPDATE_CHECK) or {}
+        if res.get("available"):
+            print(f"update available: {res.get('version')}  {res.get('url', '')}".rstrip())
+        else:
+            print(f"up to date (host {res.get('version')})")
+        return 0
+    # install
+    client.subscribe_events()
+    # No update / check failure surfaces here as an RpcError (non-zero exit).
+    res = client.call(protocol.M_UPDATE_INSTALL) or {}
+    print(f"installing host update {res.get('version', '')}…".rstrip())
+    for name, payload in client.events():
+        if name == "update_progress":
+            print(_fmt_progress("update", payload))
+        elif name == "update_finished_ok":
+            print(f"update applied ({(payload or {}).get('version', '')}); "
+                  "host is restarting.".rstrip())
+            return 0
+        elif name == "update_relay_needed":
+            print("update staged; host will finish on restart (locked files relayed).")
+            return 0
+        elif name == "update_failed":
+            print(f"update failed: {(payload or {}).get('msg')}", file=sys.stderr)
+            return 1
+    # EOF without an explicit terminal event: the host most likely restarted.
+    print("connection closed (host may be restarting after the update).")
     return 0
 
 
@@ -291,7 +372,20 @@ def build_parser():
     p_fw = sub.add_parser("fw", help="firmware operations")
     fw_sub = p_fw.add_subparsers(dest="fw_action", required=True)
     fw_sub.add_parser("version", help="print firmware version")
+    p_fw_flash = fw_sub.add_parser(
+        "flash", help="upload a firmware .bin (streams progress)")
+    p_fw_flash.add_argument("file", help="path to the firmware .bin")
+    p_fw_flash.add_argument(
+        "--apply", action="store_true",
+        help="apply (reboot into) the firmware after a successful upload")
     p_fw.set_defaults(func=_cmd_fw)
+
+    p_upd = sub.add_parser("update", help="host self-update")
+    upd_sub = p_upd.add_subparsers(dest="update_action", required=True)
+    upd_sub.add_parser("check", help="check for a newer host release")
+    upd_sub.add_parser(
+        "install", help="download and apply the latest host release (restarts the host)")
+    p_upd.set_defaults(func=_cmd_update)
 
     sub.add_parser("pause", help="pause the host (suspend the worker)").set_defaults(func=_cmd_pause)
     sub.add_parser("resume", help="resume the host").set_defaults(func=_cmd_resume)

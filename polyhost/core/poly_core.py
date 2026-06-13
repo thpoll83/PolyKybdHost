@@ -26,6 +26,7 @@ from polyhost._version import __version__, __protocol__
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
+from polyhost.device import hid_fw_up
 from polyhost.device.hid_worker import HidWorker
 from polyhost.device.poly_kybd import PolyKybd
 from polyhost.device.poly_kybd_mock import PolyKybdMock
@@ -732,3 +733,103 @@ class PolyCore:
         alls[key] = value
         self.poly_settings.set_all(alls)
         return True, key
+
+    # ------------------------------------------------------------------
+    # Firmware flash + host self-update (headless / polyctl)
+    # ------------------------------------------------------------------
+
+    def _fw_actions_allowed(self):
+        """Firmware flash/apply gate: a present device (even on a mismatched
+        protocol) that isn't paused. Mirrors PolyHost._fw_actions_allowed —
+        do NOT gate on self.connected (a protocol-mismatched keyboard must
+        still be flashable)."""
+        return (self.connected or self.device_present) and not self.paused
+
+    def flash_firmware(self, path, apply=False):
+        """Flash a firmware ``.bin`` (optionally apply it) as a worker job.
+
+        Gating + file validation happen synchronously and return the uniform
+        ``(ok, payload)`` contract — a bad file / absent device fails fast.
+        Once accepted the upload runs on the HID worker (its single thread
+        naturally blocks the reconnect probe for the duration, so no
+        ``exclusive()`` is needed) and streams progress as
+        ``fw_flash_progress`` / ``fw_apply_progress`` events with a terminal
+        ``fw_flash_done`` / ``fw_apply_done``."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot flash."
+        try:
+            with open(path, "rb") as f:
+                fw_bytes = f.read()
+        except OSError as e:
+            return False, f"Cannot read firmware file: {e}"
+        ok, msg = hid_fw_up.validate_rp2040_firmware(fw_bytes)
+        if not ok:
+            return False, f"Not a valid RP2040 image: {msg}"
+        ok, msg = hid_fw_up.validate_polykybd_firmware(fw_bytes)
+        if not ok:
+            return False, f"Not a PolyKybd firmware: {msg}"
+
+        def _job(cancel):
+            cancel_flag = [False]
+
+            def _flash_progress(pct, m):
+                if cancel.is_set():
+                    cancel_flag[0] = True      # relay supersede/suspend to hid_fw_up
+                self.emit("fw_flash_progress", {"pct": pct, "msg": m})
+
+            fok, fmsg = hid_fw_up.flash_firmware(
+                self.keeb.hid, path, progress_cb=_flash_progress, cancel_flag=cancel_flag)
+            self.emit("fw_flash_done", {"ok": bool(fok), "msg": fmsg})
+            if fok and apply:
+                aok, amsg = hid_fw_up.apply_staged_firmware(
+                    self.keeb.hid,
+                    progress_cb=lambda pct, m: self.emit(
+                        "fw_apply_progress", {"pct": pct, "msg": m}))
+                self.emit("fw_apply_done", {"ok": bool(aok), "msg": amsg})
+
+        # No coalesce_key: a flash must never be superseded by a later job.
+        self.worker.submit("fw_flash", _job)
+        return True, {"queued": True, "apply": bool(apply)}
+
+    def check_update(self):
+        """Check GitHub for a newer host release (synchronous HTTP — runs on
+        the caller's control-server thread, never the worker). Returns
+        ``(ok, payload)``: ``(True, {"available", "version", "url"})`` or
+        ``(False, msg)`` on an API/network error."""
+        from polyhost.services import updater
+        try:
+            rel = updater.check_latest()
+        except updater.UpdateCheckError as e:
+            return False, str(e)
+        except Exception as e:                      # network/parse failure
+            return False, f"{type(e).__name__}: {e}"
+        if rel is None:
+            return True, {"available": False, "version": __version__}
+        return True, {"available": True, "version": rel.version, "url": rel.html_url}
+
+    def install_update(self):
+        """Find the latest host release and apply it in the background.
+
+        Streams ``update_progress`` and a terminal ``update_finished_ok`` /
+        ``update_relay_needed`` / ``update_failed`` (JSON payloads). The core
+        never restarts the process itself — the owning host (HeadlessHost /
+        PolyHost) reacts to the terminal event. Returns ``(ok, payload)``:
+        ``(False, msg)`` when already up to date or the check failed; else
+        ``(True, {"queued", "version"})``."""
+        from polyhost.services import updater
+        try:
+            rel = updater.check_latest()
+        except updater.UpdateCheckError as e:
+            return False, f"Update check failed: {e}"
+        except Exception as e:
+            return False, f"{type(e).__name__}: {e}"
+        if rel is None:
+            return False, "Already up to date."
+        inst = updater.UpdateInstaller(
+            rel,
+            on_progress=lambda pct, m: self.emit("update_progress", {"pct": pct, "msg": m}),
+            on_finished_ok=lambda: self.emit("update_finished_ok", {"version": rel.version}),
+            on_relay_needed=lambda p: self.emit("update_relay_needed", {"relay_path": p}),
+            on_failed=lambda m: self.emit("update_failed", {"msg": m}))
+        inst.start()
+        return True, {"queued": True, "version": rel.version}

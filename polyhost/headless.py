@@ -31,10 +31,30 @@ class HeadlessHost:
         self.log = log
         self._stop = threading.Event()
         self._stopped = False
+        # Set when a self-update lands so run() re-execs into the new version
+        # after a clean stop (there is no GUI prompt to drive the restart).
+        self._restart_after_stop = False
+        self._relay_path = None
         self.core = PolyCore(log=log, ignore_version=ignore_version,
                              start_worker=False, apply_reconnect_in_core=True)
+        # React to a core-driven self-update (`polyctl update install`): the
+        # core only applies + emits; the host owns the restart.
+        self.core.subscribe(self._on_update_event)
         self.control_server = ControlServer(
             self.core, __version__, log, on_shutdown=self.request_stop)
+
+    def _on_update_event(self, name, payload):
+        """Restart (or hand off to the Windows relay) once an update applies.
+        Fires on the installer thread — just flag + request stop; run()'s
+        finally does the actual re-exec after server/core are down."""
+        if name == "update_finished_ok":
+            self.log.info("Self-update applied; restarting headless host.")
+            self._restart_after_stop = True
+            self.request_stop()
+        elif name == "update_relay_needed":
+            self._relay_path = (payload or {}).get("relay_path")
+            self._restart_after_stop = True
+            self.request_stop()
 
     def start(self):
         self.core.worker.start()
@@ -69,6 +89,23 @@ class HeadlessHost:
             self.log.info("Interrupted — shutting down.")
         finally:
             self.stop()
+            self._restart_if_requested()
+
+    def _restart_if_requested(self):
+        """Re-exec into the freshly-installed version (or launch the Windows
+        locked-file relay, which relaunches us). No-op unless a self-update
+        completed."""
+        if not self._restart_after_stop:
+            return
+        from polyhost.services import updater
+        if self._relay_path:
+            import subprocess
+            import sys
+            # The relay waits for this process to exit, copies the locked files,
+            # then relaunches — so we just spawn it and let run() return.
+            subprocess.Popen([sys.executable, self._relay_path], close_fds=False)
+            return
+        updater.restart_app()
 
 
 def run_headless(log_level=logging.INFO, ignore_version=False):

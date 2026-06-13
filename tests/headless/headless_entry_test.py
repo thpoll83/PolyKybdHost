@@ -96,6 +96,23 @@ class TestHeadlessHost(unittest.TestCase):
         host.stop()  # second call must be a no-op, not raise
         self.assertTrue(host._stopped)
 
+    def test_update_finished_flags_restart_and_requests_stop(self):
+        # A core-driven self-update must make the headless host re-exec: the
+        # event flags the restart and trips the stop so run()'s finally runs it.
+        from polyhost.headless import HeadlessHost
+        host = HeadlessHost(_quiet())
+        host._on_update_event("update_finished_ok", {"version": "0.9.0"})
+        self.assertTrue(host._restart_after_stop)
+        self.assertTrue(host._stop.is_set())
+        self.assertIsNone(host._relay_path)
+
+    def test_relay_needed_flags_restart_with_path(self):
+        from polyhost.headless import HeadlessHost
+        host = HeadlessHost(_quiet())
+        host._on_update_event("update_relay_needed", {"relay_path": "/tmp/relay.py"})
+        self.assertTrue(host._restart_after_stop)
+        self.assertEqual(host._relay_path, "/tmp/relay.py")
+
 
 class TestHeadlessImportsNoQt(unittest.TestCase):
     def test_headless_entry_imports_without_qt(self):

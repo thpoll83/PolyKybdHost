@@ -39,10 +39,21 @@ CHANGE_KEEB_LANGUAGE = "change_keeb_language"
 # (title, msg, result) — generic device command result for logging/UI.
 CMD_RESULT = "cmd_result"
 
-# Updater events. NOTE: payloads here are still in-process objects
-# (ReleaseInfo / FwUpReleaseInfo / str / (pct, msg)) consumed by the GUI in
-# the same process — they are NOT yet JSON-shaped. The updater moves into
-# the core in H3; serialize these payloads when wiring the socket transport.
+# Firmware flash (PolyCore.flash_firmware → `polyctl fw flash`). JSON payloads.
+FW_FLASH_PROGRESS = "fw_flash_progress"  # {"pct": int (-1 = indeterminate), "msg": str}
+FW_FLASH_DONE = "fw_flash_done"          # {"ok": bool, "msg": str}
+FW_APPLY_PROGRESS = "fw_apply_progress"  # {"pct": int, "msg": str}
+FW_APPLY_DONE = "fw_apply_done"          # {"ok": bool, "msg": str}
+
+# Updater events. NOTE: two producers with DIFFERENT payload shapes:
+#   * The Qt GUI's in-process installer (host.py) emits the original in-process
+#     objects (ReleaseInfo / FwUpReleaseInfo / str / (pct, msg)).
+#   * PolyCore.check_update / install_update (headless / `polyctl update …`)
+#     emit JSON-shaped dicts: update_progress {"pct","msg"},
+#     update_finished_ok {"version"}, update_relay_needed {"relay_path"},
+#     update_failed {"msg"}. These cross the socket, so they must stay JSON.
+# The two paths don't mix today (the GUI drives its own installer, never
+# core.install_update); H4 unifies them.
 UPDATE_AVAILABLE = "update_available"
 FW_UP_AVAILABLE = "fw_up_available"
 UPDATE_HOST_NO_UPDATE = "update_host_no_update"

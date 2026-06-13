@@ -302,6 +302,10 @@ class ControlServer:
                 params["layer"], params["row"], params["col"], params["keycode"])),
             p.M_COMMANDS_EXECUTE: self._cmd_commands_execute,
             p.M_FW_VERSION: lambda conn, params: c.get_fw_version(),
+            p.M_FW_FLASH: lambda conn, params: _unwrap(c.flash_firmware(
+                params["path"], params.get("apply", False))),
+            p.M_UPDATE_CHECK: lambda conn, params: _unwrap(c.check_update()),
+            p.M_UPDATE_INSTALL: lambda conn, params: _unwrap(c.install_update()),
             p.M_PAUSE_SET: self._cmd_pause_set,
             p.M_MRU_SAVE: self._cmd_mru_save,
             p.M_SETTINGS_GET: lambda conn, params: c.settings_get(params["key"]),

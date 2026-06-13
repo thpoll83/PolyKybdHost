@@ -86,9 +86,10 @@ crash with an `ImportError` if a dependency slipped through.
 ## Running
 
 ```bash
-python -m polyhost                 # normal mode
+python -m polyhost                 # normal mode (system-tray GUI)
 python -m polyhost --debug 1       # debug logging
 python -m polyhost --portable      # skip autostart registration
+python -m polyhost --headless      # no GUI / no Qt — drive it with polyctl (see below)
 ```
 
 ### Forwarder mode
@@ -107,6 +108,110 @@ the remote in `overlay-mapping.poly.yaml`:
 nxplayer:
   remote: IP_ADDR_OF_REMOTE   # or NAME_OF_REMOTE
 ```
+
+## Command-line control (`polyctl`)
+
+`polyctl` is a small command-line client for controlling a running PolyKybdHost
+— querying status, switching languages, pushing overlays, writing keymaps,
+flashing firmware, and updating the host. It is **stdlib-only and never imports
+Qt**, so it works the same whether the host is the tray GUI or a headless
+service.
+
+### How it connects
+
+The host (GUI or headless) listens on a local **control socket** — a Unix
+domain socket on Linux/macOS, a per-user named pipe on Windows — protected by
+filesystem permissions and an auto-generated auth key (both under the per-user
+config dir). The same socket doubles as the **single-instance lock**, so there
+is always at most one host and `polyctl` always talks to that one. No ports, no
+network exposure; everything is local to your user account.
+
+`polyctl` is installed as a console script with the package (`pip install -e .`),
+or run it as a module:
+
+```bash
+polyctl status
+python -m polyhost.cli.polyctl status   # equivalent if the script isn't on PATH
+```
+
+You need a host running first. For a machine with no display (a server, an SSH
+session, a kiosk), start one headless:
+
+```bash
+python -m polyhost --headless          # owns the keyboard, serves the socket, no GUI
+```
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| `polyctl status` | Print connection/device status (connected, device, language, versions). |
+| `polyctl lang list` | List the language codes the keyboard supports. |
+| `polyctl lang set deDE` | Switch the keyboard's active language. |
+| `polyctl brightness 30` | Set keycap brightness (0–50). |
+| `polyctl idle on` / `off` | Enable/disable the idle (display-off) state. |
+| `polyctl overlay send a.png b.png` | Send overlay image file(s) to the keycaps. |
+| `polyctl overlay enable` / `disable` / `reset` | Toggle / clear overlays. |
+| `polyctl keymap layer-count` | Number of dynamic keymap layers. |
+| `polyctl keymap default-layer` | Current default layer. |
+| `polyctl keymap buffer` | Dump the raw keymap buffer. |
+| `polyctl keymap set <layer> <row> <col> <keycode>` | Write one keycode (decimal or `0x..`). |
+| `polyctl commands <file>` | Run a device-command script (one command per line). |
+| `polyctl fw version` | Print the firmware version. |
+| `polyctl fw flash <file.bin> [--apply]` | Upload a firmware image; `--apply` reboots into it. |
+| `polyctl pause` / `resume` | Suspend / resume all device traffic. |
+| `polyctl mru save` | Persist the keyboard's MRU overlay cache now. |
+| `polyctl settings get <key>` | Read one settings value. |
+| `polyctl settings set <key> <value>` | Set one settings value (JSON, falls back to string). |
+| `polyctl update check` | Check GitHub for a newer host release. |
+| `polyctl update install` | Download and apply the latest host release (restarts the host). |
+| `polyctl watch` | Stream host events (status changes, overlay activity, …) until Ctrl-C. |
+| `polyctl shutdown` | Ask the host to shut down. |
+
+### Flashing firmware
+
+`fw flash` streams upload progress and (with `--apply`) the apply/reboot step:
+
+```bash
+polyctl fw flash ./split72_default.bin            # stage only
+polyctl fw flash ./split72_default.bin --apply    # stage, then reboot into it
+```
+
+The image is validated before anything is sent (RP2040 boot2 CRC + a PolyKybd
+signature), and a firmware update works even when the keyboard is on a
+mismatched protocol version — exactly like the GUI's updater. The deliverable
+to flash is the raw `.bin` (not the `.uf2`).
+
+### Updating the host
+
+```bash
+polyctl update check      # "update available: 0.9.0  <url>"  or  "up to date (host 0.8.31)"
+polyctl update install    # downloads, applies, then the host restarts itself
+```
+
+In headless mode the daemon re-execs into the new version automatically once the
+update lands; `polyctl` reports the restart and exits.
+
+### Streaming events
+
+Long-running commands (`fw flash`, `update install`) print progress as it
+happens. To watch everything the host emits — connection changes, overlay
+sends, language switches, console output — use:
+
+```bash
+polyctl watch
+```
+
+### Exit codes & troubleshooting
+
+`polyctl` exits `0` on success and non-zero on failure. Common cases:
+
+- **`cannot reach PolyKybdHost … Is PolyKybdHost running?`** — no host is
+  serving the socket. Start one (`python -m polyhost` or `--headless`).
+- **`control protocol mismatch …`** — the `polyctl` and the running host are
+  from different versions; restart the host so both match.
+- **`error: <device message>`** — the device rejected the command (e.g. an
+  invalid brightness value, or the keyboard is paused/disconnected).
 
 ## Autostart
 

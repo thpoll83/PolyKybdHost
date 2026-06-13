@@ -98,6 +98,16 @@ class FakeCore:
     def get_fw_version(self):
         return "0.7.0"
 
+    def flash_firmware(self, path, apply=False):
+        self.calls.append(("flash_firmware", path, apply))
+        return (True, {"queued": True, "apply": bool(apply)})
+
+    def check_update(self):
+        return (True, {"available": True, "version": "0.9.0", "url": "http://x"})
+
+    def install_update(self):
+        return (True, {"queued": True, "version": "0.9.0"})
+
     def execute_commands(self, lines):
         self.calls.append(("execute_commands", list(lines)))
         return True
@@ -242,6 +252,21 @@ class ControlServerTest(unittest.TestCase):
         # Teardown now fires after the reply is written (see _dispatch), so the
         # client sees the ack first; wait briefly for the deferred callback.
         self.assertTrue(self.shutdown_called.wait(2))
+
+    def test_fw_flash_dispatch(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 30, p.M_FW_FLASH, {"path": "fw.bin", "apply": True})
+        self.assertEqual(resp["result"], {"queued": True, "apply": True})
+        self.assertIn(("flash_firmware", "fw.bin", True), self.core.calls)
+
+    def test_update_check_and_install_dispatch(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        chk = self._call(conn, 31, p.M_UPDATE_CHECK)
+        self.assertTrue(chk["result"]["available"])
+        ins = self._call(conn, 32, p.M_UPDATE_INSTALL)
+        self.assertEqual(ins["result"], {"queued": True, "version": "0.9.0"})
 
     def test_events_subscribe_then_emit(self):
         conn = self._connect()

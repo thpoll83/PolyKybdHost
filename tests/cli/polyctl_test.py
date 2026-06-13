@@ -213,6 +213,100 @@ class PolyctlTest(unittest.TestCase):
                          {"files": ["a.png", "b.png"]})
 
 
+class StreamingServer:
+    """Hello → answer events.subscribe + one scripted method call → push a
+    list of (name, payload) event notifications → close. Models the
+    subscribe-then-call-then-stream flow of `fw flash` / `update install`.
+    """
+
+    def __init__(self, conn, method, result, events):
+        self._conn = conn
+        self._method = method
+        self._result = result
+        self._events = events
+        self._thread = threading.Thread(target=self._run, daemon=True)
+
+    def start(self):
+        self._thread.start()
+
+    def join(self, timeout=5):
+        self._thread.join(timeout)
+
+    def _run(self):
+        protocol.send_message(self._conn, protocol.make_notification(
+            protocol.HELLO, protocol.hello_params("9.9.9")))
+        try:
+            while True:
+                msg = protocol.recv_message(self._conn)
+                rid, method = msg.get("id"), msg.get("method")
+                if method == protocol.EVENTS_SUBSCRIBE:
+                    protocol.send_message(self._conn, protocol.make_response(rid, {"subscribed": True}))
+                elif method == self._method:
+                    protocol.send_message(self._conn, protocol.make_response(rid, self._result))
+                    for name, payload in self._events:
+                        protocol.send_message(self._conn, protocol.make_event(name, payload))
+                    break
+                else:
+                    protocol.send_message(self._conn, protocol.make_response(rid, {}))
+        except EOFError:
+            pass
+        finally:
+            self._conn.close()
+
+
+def run_streaming(argv, method, result, events):
+    client_conn, server_conn = Pipe()
+    server = StreamingServer(server_conn, method, result, events)
+    server.start()
+    rpc = polyctl.RpcClient(client_conn)
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        rc = polyctl._run_with_client(rpc, argv)
+    rpc.close()
+    server.join()
+    return rc, out.getvalue(), err.getvalue()
+
+
+class FwFlashUpdateTest(unittest.TestCase):
+    def test_fw_flash_apply_streams_to_completion(self):
+        events = [("fw_flash_progress", {"pct": 50, "msg": "writing"}),
+                  ("fw_flash_done", {"ok": True, "msg": "staged"}),
+                  ("fw_apply_progress", {"pct": 50, "msg": "applying"}),
+                  ("fw_apply_done", {"ok": True, "msg": "applied"})]
+        rc, out, err = run_streaming(["fw", "flash", "fw.bin", "--apply"],
+                                     protocol.M_FW_FLASH, {"queued": True, "apply": True}, events)
+        self.assertEqual(rc, 0)
+        self.assertIn("applied", out)
+
+    def test_fw_flash_done_without_apply_returns_zero(self):
+        events = [("fw_flash_done", {"ok": True, "msg": "staged"})]
+        rc, out, _ = run_streaming(["fw", "flash", "fw.bin"],
+                                   protocol.M_FW_FLASH, {"queued": True, "apply": False}, events)
+        self.assertEqual(rc, 0)
+        self.assertIn("flash complete", out)
+
+    def test_fw_flash_failure_returns_nonzero(self):
+        events = [("fw_flash_done", {"ok": False, "msg": "crc mismatch"})]
+        rc, _, err = run_streaming(["fw", "flash", "fw.bin"],
+                                   protocol.M_FW_FLASH, {"queued": True, "apply": False}, events)
+        self.assertNotEqual(rc, 0)
+        self.assertIn("crc mismatch", err)
+
+    def test_update_install_streams_to_restart(self):
+        events = [("update_progress", {"pct": 40, "msg": "downloading"}),
+                  ("update_finished_ok", {"version": "0.9.0"})]
+        rc, out, _ = run_streaming(["update", "install"],
+                                   protocol.M_UPDATE_INSTALL, {"queued": True, "version": "0.9.0"}, events)
+        self.assertEqual(rc, 0)
+        self.assertIn("restart", out.lower())
+
+    def test_update_check_reports_availability(self):
+        rc, out, _, _ = run_main(["update", "check"],
+                                 {protocol.M_UPDATE_CHECK: {"available": True, "version": "0.9.0", "url": "http://x"}})
+        self.assertEqual(rc, 0)
+        self.assertIn("0.9.0", out)
+
+
 class ImportGuardTest(unittest.TestCase):
     def test_cli_imports_without_pyqt5(self):
         import subprocess
