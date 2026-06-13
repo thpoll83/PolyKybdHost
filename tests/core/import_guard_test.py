@@ -27,6 +27,14 @@ import polyhost.core.events
 import polyhost.device.im_converter
 import polyhost.services.updater
 import polyhost.services.sleep_listener
+# H2/H3 headless tree: control socket, CLI, headless host, and the CLI
+# entry module must all be importable with zero Qt.
+import polyhost.server.protocol
+import polyhost.server.control_server
+import polyhost.server.instance
+import polyhost.cli.polyctl
+import polyhost.headless
+import polyhost.main_app
 print("CORE_OK")
 """
 

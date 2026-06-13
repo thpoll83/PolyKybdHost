@@ -19,6 +19,7 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core = PolyCore.__new__(PolyCore)
     core.log = logging.getLogger("test.polycore")
     core.ignore_version = False
+    core.apply_reconnect_in_core = False
     core.paused = paused
     core.connected = connected
     core.device_present = connected
@@ -127,6 +128,40 @@ class TestApplyReconnect(unittest.TestCase):
         applied = core.apply_reconnect(connect_snapshot())
         self.assertTrue(core.connected)
         self.assertTrue(applied["do_overlay_reset"])
+
+    def test_reconnect_periodic_auto_applies_in_core_when_flagged(self):
+        # Headless: the periodic applies its own snapshot (no GUI to do it).
+        core = make_core(connected=True)
+        core.apply_reconnect_in_core = True
+        disconnect = connect_snapshot(
+            connected_now=False, device_present=False, lang="",
+            version_ok=False, version_msg="gone",
+            kb_version=None, kb_proto=None, kb_sw_version=None,
+            name=None, hw_version=None, lang_list=None, current_lang=None)
+        core._reconnect_probe = lambda cancel: disconnect
+        events = []
+        core.subscribe(lambda n, p: events.append(n))
+        core._reconnect_periodic(cancel=None)
+        # Applied in-core: state settled AND a reconnect event still emitted.
+        self.assertFalse(core.connected)
+        self.assertFalse(core.device_present)
+        self.assertIn("status_changed", events)
+        self.assertIn("reconnect", events)
+
+    def test_reconnect_periodic_does_not_apply_when_flag_off(self):
+        # GUI default: the periodic only emits; the client applies.
+        core = make_core(connected=True)
+        self.assertFalse(core.apply_reconnect_in_core)
+        core._reconnect_probe = lambda cancel: connect_snapshot(
+            connected_now=False, device_present=False, lang="",
+            version_ok=False, version_msg="gone", kb_version=None, kb_proto=None,
+            kb_sw_version=None, name=None, hw_version=None,
+            lang_list=None, current_lang=None)
+        events = []
+        core.subscribe(lambda n, p: events.append(n))
+        core._reconnect_periodic(cancel=None)
+        self.assertEqual(events, ["reconnect"])     # no in-core status_changed
+        self.assertTrue(core.connected)             # unchanged — GUI applies
 
 
 if __name__ == '__main__':

@@ -2,10 +2,10 @@ import argparse
 import logging
 import sys
 
-from PyQt5.QtWidgets import QApplication
-
-from polyhost.forwarder import PolyForwarder
-from polyhost.host import PolyHost
+# NOTE: Qt (PyQt5) and the Qt-dependent classes (PolyHost / PolyForwarder)
+# are imported LAZILY inside the GUI branch of main() so that
+# `--headless` runs in a process that never imports Qt (M2). Keep the
+# top level Qt-free — guarded by tests/headless/headless_entry_test.py.
 from polyhost.services.add_to_startup import setup_autostart_for_app, remove_autostart, get_autostart_status
 
 def main():
@@ -18,6 +18,8 @@ def main():
     parser.add_argument('--debug', type=int, default=0, choices=[0, 1, 2], help='Set debug level: 0 (no debug), 1 (basic debug), 2 (detailed debug)')
     parser.add_argument('--ignore-version', default=False, action='store_true',
                         help='Skip firmware version/protocol compatibility check (use as a last resort if the keyboard cannot connect due to a version mismatch)')
+    parser.add_argument('--headless', default=False, action='store_true',
+                        help='Run the operational core + control socket with no GUI (no Qt). Drive it with the polyctl CLI.')
     parser.add_argument('--host', help='Specify a host where the PolyKybd is physically connected to')
     parser.add_argument('--host-file', help='Path to a file containing the host IP, written by a session hook (see folder autorun_forwarder for examples). This option has higher priority than `--host`.')
     args=parser.parse_args()
@@ -38,23 +40,38 @@ def main():
     else:
         setup_autostart_for_app(__file__, sys.argv[1:])
 
-    # Important for XWayland icon matching
-    if sys.platform.startswith('linux'):
-        QApplication.setDesktopFileName('PolyHost')
-
-    if args.host or args.host_file:
-        addr = args.host or f"IP set in {args.host_file}"
-        print(f"Executing Forwarder. Sending to {addr}.")
-        app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file)
-    else:
-        # Single-instance lock: the control socket is the lock. If a PolyHost
-        # is already serving it, defer to that one instead of fighting over the
-        # HID device; otherwise clear any stale socket and become the host.
+    # Single-instance lock: the control socket is the lock. If a PolyHost
+    # (GUI or headless) already serves it, defer to that one instead of
+    # fighting over the HID device; otherwise clear any stale socket and
+    # become the host. (Forwarder mode has no device and no socket.)
+    if not (args.host or args.host_file):
         from polyhost.server.instance import probe_existing, clear_stale_endpoint
         if probe_existing():
             print("PolyKybdHost is already running (control socket answered). Exiting.")
             sys.exit(0)
         clear_stale_endpoint()
+
+    if args.headless:
+        # No Qt in this process — import nothing Qt-dependent.
+        print("Executing PolyHost (headless)...")
+        from polyhost.headless import run_headless
+        run_headless(logging.DEBUG if args.debug > 0 else logging.INFO,
+                     ignore_version=args.ignore_version)
+        sys.exit(0)
+
+    # GUI / forwarder paths: import Qt lazily, only here.
+    from PyQt5.QtWidgets import QApplication
+    # Important for XWayland icon matching
+    if sys.platform.startswith('linux'):
+        QApplication.setDesktopFileName('PolyHost')
+
+    if args.host or args.host_file:
+        from polyhost.forwarder import PolyForwarder
+        addr = args.host or f"IP set in {args.host_file}"
+        print(f"Executing Forwarder. Sending to {addr}.")
+        app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file)
+    else:
+        from polyhost.host import PolyHost
         print("Executing PolyHost...")
         app = PolyHost(logging.DEBUG if args.debug>0 else logging.INFO, args.debug,
                        ignore_version=args.ignore_version)
