@@ -206,15 +206,24 @@ class PolyHost(QApplication):
         self.keeb_log = logging.getLogger("PolyKybdConsole")
         self.keeb_log.setLevel(logging.INFO)  # Set log level for logger 'b'
 
-        # Add a file handler for 'b' (with a different filename)
-        file_handler = RotatingFileHandler(
-            filename="polykybd_console.txt",  # Separate log file for 'b'
-            maxBytes=5 * 1024 * 1024,  # 5 MB
-            backupCount=3,
-            encoding="utf-8"
-        )
-        file_handler.setFormatter(MultiLineFormatter(fmt="[%(asctime)s] %(message)s"))
-        self.keeb_log.addHandler(file_handler)
+        # Persist the keyboard console to its own file — but only when this
+        # process OWNS the device. In --connect client mode the daemon owns the
+        # device and writes polykybd_console.txt; if the client also opened a
+        # RotatingFileHandler on the same co-located file, two processes would
+        # fight over it (and its rotation). The client still receives forwarded
+        # `console` events for live use, but drops them to a NullHandler; the
+        # log viewer reads the daemon-written file.
+        if client_mode:
+            self.keeb_log.addHandler(logging.NullHandler())
+        else:
+            file_handler = RotatingFileHandler(
+                filename="polykybd_console.txt",  # Separate log file for 'b'
+                maxBytes=5 * 1024 * 1024,  # 5 MB
+                backupCount=3,
+                encoding="utf-8"
+            )
+            file_handler.setFormatter(MultiLineFormatter(fmt="[%(asctime)s] %(message)s"))
+            self.keeb_log.addHandler(file_handler)
         self.keeb_log.propagate = False
 
         self._ignore_version = ignore_version

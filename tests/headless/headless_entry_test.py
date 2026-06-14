@@ -128,6 +128,11 @@ class TestRunHeadlessLogging(unittest.TestCase):
         root = logging.getLogger()
         saved_handlers, saved_level = root.handlers[:], root.level
         root.handlers.clear()
+        # run_headless also configures the PolyKybdConsole logger — snapshot it
+        # so we don't leak a handler pointing at a deleted temp file.
+        keeb = logging.getLogger("PolyKybdConsole")
+        saved_keeb = keeb.handlers[:]
+        keeb.handlers.clear()
 
         cwd = os.getcwd()
         tmp = tempfile.mkdtemp(prefix="poly_dlog_")
@@ -150,17 +155,37 @@ class TestRunHeadlessLogging(unittest.TestCase):
             self.assertTrue(os.path.exists(log_path), "daemon_log.txt not created")
             with open(log_path, encoding="utf-8") as f:
                 self.assertIn("running headless", f.read())
+            # The keyboard-console log file is set up too (mirrors the GUI).
+            self.assertTrue(os.path.exists(os.path.join(tmp, "polykybd_console.txt")))
         finally:
             os.chdir(cwd)
-            for h in root.handlers:
-                try:
-                    h.close()
-                except Exception:
-                    pass
-            root.handlers[:] = saved_handlers
+            for lg, saved in ((root, saved_handlers), (keeb, saved_keeb)):
+                for h in lg.handlers:
+                    try:
+                        h.close()
+                    except Exception:
+                        pass
+                lg.handlers[:] = saved
             root.setLevel(saved_level)
             import shutil
             shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_console_event_routed_to_keeb_log(self):
+        from polyhost.headless import HeadlessHost
+        host = HeadlessHost(_quiet())
+        self.addCleanup(host.stop)
+        seen = []
+        cap = logging.Handler()
+        cap.emit = lambda r: seen.append(r.getMessage())
+        host.keeb_log.addHandler(cap)
+        try:
+            host._on_console_event("console", ("", "Stop idle."))
+            self.assertIn("Stop idle.", seen)
+            seen.clear()
+            host._on_console_event("status_changed", {"connected": True})
+            self.assertEqual(seen, [])   # non-console events ignored
+        finally:
+            host.keeb_log.removeHandler(cap)
 
 
 class TestHeadlessImportsNoQt(unittest.TestCase):

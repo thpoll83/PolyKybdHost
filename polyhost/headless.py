@@ -40,8 +40,26 @@ class HeadlessHost:
         # React to a core-driven self-update (`polyctl update install`): the
         # core only applies + emits; the host owns the restart.
         self.core.subscribe(self._on_update_event)
+        # Persist the keyboard console (uprintf output: "Stop idle." etc.) to
+        # its own file, like the GUI does — the daemon owns the device, so it's
+        # the right writer. The handler is installed by run_headless; here we
+        # just log to the named logger when a `console` event arrives.
+        self.keeb_log = logging.getLogger("PolyKybdConsole")
+        self.keeb_log.setLevel(logging.INFO)
+        self.core.subscribe(self._on_console_event)
         self.control_server = ControlServer(
             self.core, __version__, log, on_shutdown=self.request_stop)
+
+    def _on_console_event(self, name, payload):
+        """Mirror the GUI: route the keyboard's console output to its log file.
+        Fires on the core/worker thread (logging is thread-safe)."""
+        if name != "console":
+            return
+        kb_serial, kb_log = payload
+        if kb_serial:
+            self.log.info("Received serial communication: %s", kb_serial)
+        if kb_log:
+            self.keeb_log.info(kb_log)
 
     def _on_update_event(self, name, payload):
         """Restart (or hand off to the Windows relay) once an update applies.
@@ -120,7 +138,8 @@ def run_headless(log_level=logging.INFO, ignore_version=False):
     handlers get the repeat-collapse wrapper so the reconnect-probe spam while
     the keyboard is in the bootloader doesn't flood the file."""
     from logging.handlers import RotatingFileHandler
-    from polyhost.util.log_util import make_stream_handler, make_collapse_handler
+    from polyhost.util.log_util import (
+        make_stream_handler, make_collapse_handler, MultiLineFormatter)
 
     fmt = "[%(asctime)s] %(levelname)-7s %(message)s"
     file_handler = RotatingFileHandler(
@@ -131,6 +150,21 @@ def run_headless(log_level=logging.INFO, ignore_version=False):
         make_collapse_handler(file_handler),
         make_collapse_handler(make_stream_handler(fmt)),
     ])
+
+    # The keyboard console gets its own file (matching the GUI's
+    # polykybd_console.txt), fed by HeadlessHost's `console` subscription. The
+    # daemon is the device owner, so it's the writer; a co-located --connect GUI
+    # only reads this file in its log viewer (its own console handler is a
+    # NullHandler — see host.py).
+    keeb_log = logging.getLogger("PolyKybdConsole")
+    keeb_log.setLevel(logging.INFO)
+    keeb_handler = RotatingFileHandler(
+        filename="polykybd_console.txt", maxBytes=5 * 1024 * 1024, backupCount=3,
+        encoding="utf-8")
+    keeb_handler.setFormatter(MultiLineFormatter(fmt="[%(asctime)s] %(message)s"))
+    keeb_log.addHandler(keeb_handler)
+    keeb_log.propagate = False
+
     log = logging.getLogger("PolyHost")
     log.info("PolyKybdHost %s running headless.", __version__)
     host = HeadlessHost(log, ignore_version=ignore_version)
