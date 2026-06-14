@@ -71,6 +71,7 @@ M_UPDATE_INSTALL = "update.install"    # {} -> {"queued": bool, "version": str} 
 M_PAUSE_SET = "pause.set"              # {"paused": bool} -> {"paused": bool}
 M_MRU_SAVE = "mru.save"                # {} -> {"queued": True}
 M_SETTINGS_GET = "settings.get"        # {"key": str} -> value
+M_SETTINGS_LIST = "settings.list"      # {} -> {key: value, ...} (all settings)
 M_SETTINGS_SET = "settings.set"        # {"key","value"} -> (ok, payload)
 M_HOST_SHUTDOWN = "host.shutdown"      # {} -> {"shutting_down": True}
 

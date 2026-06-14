@@ -751,6 +751,10 @@ class PolyCore:
     def settings_get(self, key):
         return self.poly_settings.get(key)
 
+    def settings_list(self):
+        """All settings as a plain dict (for the client's settings dialog)."""
+        return dict(self.poly_settings.get_all())
+
     def settings_set(self, key, value):
         """Set one known setting and persist. Returns (ok, msg)."""
         alls = self.poly_settings.get_all()

@@ -109,8 +109,19 @@ green (RemoteCore must not be needed headless, but must itself be importable).
   `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too.
 - `polyctl.RpcClient.events()` now ends on `OSError` as well as `EOFError`.
 
+## Status (2026-06-14) — H4a-2a: settings dialog over RPC
+- `settings.list` RPC (`PolyCore.settings_list` / `RemoteCore.settings_list`);
+  the settings dialog now opens in client mode, reads the daemon's settings
+  over RPC, and pushes changed keys back via `settings.set`.
+- Hardware-found H4a-1 follow-ups also fixed: client-mode update check no longer
+  reached `self.keeb`; the keyboard-firmware *check* is skipped in client mode
+  (no `firmware_update_action` there); language changes route through
+  `core.set_language`; headless window tracking `CoInitialize`s on Windows; the
+  core installs `Logger.debug_detailed` so headless overlay sends work.
+
 ### Deferred to later H4a slices
-- Settings dialog + layout editor over RPC (need `device.info` + `settings.list`).
+- Layout editor over RPC — needs `KbLayoutDialog` to drive off the `keymap.*`
+  RPCs (+ a `device.info` for matrix geometry) instead of `keeb`/`worker`.
 - Keyboard-firmware *release* download+flash from a truly remote GUI (needs a
   daemon-side `fw.update` RPC; co-located local-bin flash works today).
 - The advanced device-command submenu (`CommandsSubMenu`) over RPC.

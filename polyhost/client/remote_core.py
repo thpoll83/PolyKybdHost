@@ -263,6 +263,12 @@ class RemoteCore:
         except RpcError:
             return None
 
+    def settings_list(self):
+        try:
+            return self._rpc_call(p.M_SETTINGS_LIST) or {}
+        except RpcError:
+            return {}
+
     def settings_set(self, key, value):
         return self._device(p.M_SETTINGS_SET, {"key": key, "value": value})
 

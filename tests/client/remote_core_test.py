@@ -60,6 +60,9 @@ class FakeCore:
     def get_fw_version(self):
         return "0.8.0"
 
+    def settings_list(self):
+        return {"brightness": 25, "unicode_send_composition_mode": True}
+
 
 def _addr():
     return os.path.join(tempfile.mkdtemp(prefix="polyrc_"), "ctl.sock")
@@ -120,6 +123,11 @@ class TestRemoteCore(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(payload, {"queued": True, "apply": True})
         self.assertIn(("flash", "fw.bin", True), self.core.calls)
+
+    def test_settings_list_round_trips(self):
+        settings = self.rc.settings_list()
+        self.assertEqual(settings.get("brightness"), 25)
+        self.assertTrue(settings.get("unicode_send_composition_mode"))
 
     def test_event_fanout_and_cache_refresh(self):
         seen = []

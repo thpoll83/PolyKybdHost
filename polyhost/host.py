@@ -341,12 +341,14 @@ class PolyHost(QApplication):
             # noinspection PyUnresolvedReferences
             self.layout_editor.triggered.connect(self.open_layout_editor)
             self.menu.addAction(self.layout_editor)
-            self.menu.addAction(self.settings_dialog)
         else:
             self._flash_action = QAction(get_icon("keyboard.svg"), "Flash firmware .bin…", parent=self)
             # noinspection PyUnresolvedReferences
             self._flash_action.triggered.connect(self._client_flash_firmware)
             self.menu.addAction(self._flash_action)
+        # The settings dialog is device-independent (edits settings, not the
+        # device), so it works in client mode too — over RPC (H4a-2).
+        self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
 
         self.update_action = QAction(get_icon("sync.svg"), "Check for updates...", parent=self)
@@ -563,10 +565,10 @@ class PolyHost(QApplication):
             # loop above just disabled its parent action on a mismatch).
             self.cmdMenu.update_enabled(enabled, fw_enabled)
             self.layout_editor.setEnabled(True)
-            self.settings_dialog.setEnabled(True)
             self.firmware_update_action.setEnabled(fw_enabled)
         elif self._flash_action is not None:
             self._flash_action.setEnabled(fw_enabled)
+        self.settings_dialog.setEnabled(True)   # device-independent, both modes
         self.log_dialog.setEnabled(True)
         self.update_action.setEnabled(True)
         self.status.setEnabled(True)
@@ -826,9 +828,18 @@ class PolyHost(QApplication):
 
     def open_settings(self):
         dlg = SettingsDialog()
-        dlg.setup(self.poly_settings.get_all(), self.debug_mode)
+        # Client mode edits the DAEMON's settings over RPC (the local file may
+        # be shared when co-located, but the daemon holds the live copy).
+        current = self.core.settings_list() if self.client_mode else self.poly_settings.get_all()
+        dlg.setup(current, self.debug_mode)
         if dlg.exec_() == QDialog.Accepted:
-            self.poly_settings.set_all(dlg.get_updated_settings())
+            updated = dlg.get_updated_settings()
+            if self.client_mode:
+                for key, value in updated.items():
+                    if current.get(key) != value:
+                        self.core.settings_set(key, value)
+            else:
+                self.poly_settings.set_all(updated)
         dlg.close()
 
     def open_log(self):
@@ -979,8 +990,12 @@ class PolyHost(QApplication):
         self.log.debug("Starting update check...")
         # device_present (not connected): the firmware version is known even on
         # a protocol mismatch, and that's exactly when an update must be offered.
-        # Read it via the core-backed property (self.keeb is None in client mode).
-        fw_version = self.kb_sw_version if self._fw_actions_allowed() else None
+        # Read it via the core-backed property (self.keeb is None in client
+        # mode). In client mode we skip the firmware check entirely — the
+        # keyboard-firmware release/flash flow is in-process only, so there's no
+        # firmware_update_action to drive (a falsy fw_version skips the fw check).
+        fw_version = self.kb_sw_version \
+            if (self._fw_actions_allowed() and not self.client_mode) else None
 
         # Track whether the error event fires before host_no_update so we can
         # suppress the "no update" callback and show the real failure reason.

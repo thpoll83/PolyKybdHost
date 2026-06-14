@@ -121,6 +121,9 @@ class FakeCore:
     def settings_get(self, key):
         return {"brightness": 25}.get(key)
 
+    def settings_list(self):
+        return {"brightness": 25, "idle": True}
+
     def settings_set(self, key, value):
         if key == "brightness":
             return (True, key)
@@ -259,6 +262,12 @@ class ControlServerTest(unittest.TestCase):
         resp = self._call(conn, 30, p.M_FW_FLASH, {"path": "fw.bin", "apply": True})
         self.assertEqual(resp["result"], {"queued": True, "apply": True})
         self.assertIn(("flash_firmware", "fw.bin", True), self.core.calls)
+
+    def test_settings_list_dispatch(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 33, p.M_SETTINGS_LIST)
+        self.assertEqual(resp["result"], {"brightness": 25, "idle": True})
 
     def test_update_check_and_install_dispatch(self):
         conn = self._connect()

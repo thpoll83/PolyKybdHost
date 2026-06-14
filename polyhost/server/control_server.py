@@ -309,6 +309,7 @@ class ControlServer:
             p.M_PAUSE_SET: self._cmd_pause_set,
             p.M_MRU_SAVE: self._cmd_mru_save,
             p.M_SETTINGS_GET: lambda conn, params: c.settings_get(params["key"]),
+            p.M_SETTINGS_LIST: lambda conn, params: c.settings_list(),
             p.M_SETTINGS_SET: lambda conn, params: _unwrap(c.settings_set(
                 params["key"], params["value"])),
             p.M_HOST_SHUTDOWN: self._cmd_host_shutdown,
