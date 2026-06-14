@@ -84,3 +84,48 @@ RemoteCore unit tests against a fake RpcClient (method mapping + event→bridge
 translation); an end-to-end test that starts a real headless core + connects a
 RemoteCore and drives status/language/overlay; the Qt-free import guard stays
 green (RemoteCore must not be needed headless, but must itself be importable).
+
+## Status (2026-06-14)
+- **RemoteCore: DONE** — `polyhost/client/remote_core.py`, tested end-to-end
+  against a real `ControlServer` (`tests/client/remote_core_test.py`, 6 tests):
+  two-connection model, status caching, method round-trip, the (ok,payload)
+  contract, event fan-out + cache refresh, and synthesize-disconnect on stream
+  end. `polyctl.RpcClient.events()` now ends on `OSError` as well as `EOFError`.
+
+## Host integration — concrete plan & a hard CONSTRAINT
+**Constraint discovered: `polyhost/host.py` cannot be imported or run in the
+dev/CI container** — `pynput` (imported at host.py top) requires an X server;
+the Qt `xcb` plugin is missing system libs; constructing `PolyHost` under
+`xvfb-run` aborts. There is also **no automated coverage** of `PolyHost`. So
+every host.py change (its `__init__` runs in the *default* in-process path too)
+must be validated on a real desktop — blind edits risk the working tray app.
+
+The `--connect` client-mode wiring (next slice) needs, in `host.py`:
+1. `PolyHost.__init__(..., client_mode=False, endpoint=None)`; in client mode
+   build `self.core = RemoteCore.connect(...)` and **do not** alias
+   `self.keeb/worker/device_mgr` (they don't exist on RemoteCore) — guard every
+   consumer.
+2. A **client-mode status renderer**: RemoteCore has no `apply_reconnect`, so the
+   GUI must render from the `status_changed` event (text/icon/connected/lang)
+   instead of calling `core.apply_reconnect(snapshot)`.
+3. **Client-side OS-language switch**: the daemon doesn't change the *client*
+   machine's OS language; the GUI must still call `helper.set_language` when
+   `status_changed.lang` changes.
+4. Guard the device-coupled menus in client mode: `CommandsSubMenu` (takes
+   `keeb`), the layout editor (`worker.run_sync` + `device_settings`),
+   `send_shortcuts` (`device_mgr.all_entries`), debug menus; skip
+   `worker.start()`, the embedded `ControlServer`, and the active-window timer
+   (the daemon owns window tracking).
+5. `quit_app` already does `core.shutdown()` — RemoteCore.shutdown() closes the
+   client sockets only, leaving the daemon running. Good as-is.
+
+## OPEN DECISION — flashing firmware from a remote GUI
+`fw.flash` takes a **server-side path** — the `.bin` must live on the *daemon's*
+machine. So:
+- **Co-located GUI + daemon (the H4b target):** a "Flash a .bin…" action that
+  picks a local path and calls `core.flash_firmware(path, apply)` works directly
+  (same filesystem), with an event-driven progress dialog on `fw_flash_*`.
+- **Truly remote GUI:** the release auto-download writes the `.bin` on the
+  *client*, which the daemon can't read. That needs either daemon-side
+  download+flash (a new `fw.update` RPC) or byte upload over the socket — a
+  design choice, not a wire-up. Deferred until chosen.
