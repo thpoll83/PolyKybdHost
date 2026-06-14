@@ -76,13 +76,13 @@ class RpcClient:
     def events(self):
         """Yield (name, payload) from pushed notifications until EOF.
 
-        Assumes :meth:`subscribe_events` was already called. EOF (server
-        closed the connection — e.g. the host restarting after an update)
-        ends the generator cleanly."""
+        Assumes :meth:`subscribe_events` was already called. A closed
+        connection — clean EOF or a forced/reset close (OSError) when the host
+        stops or restarts — ends the generator cleanly."""
         while True:
             try:
                 msg = protocol.recv_message(self._conn)
-            except EOFError:
+            except (EOFError, OSError):
                 return
             if msg.get("method") == protocol.EVENT_NOTIFICATION:
                 params = msg.get("params") or {}
