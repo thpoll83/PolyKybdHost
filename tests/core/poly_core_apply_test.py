@@ -91,6 +91,20 @@ class TestApplyReconnect(unittest.TestCase):
         self.assertTrue(applied["decision"]["do_post_connect"])
         self.assertEqual(events[-1][0], "status_changed")
         self.assertTrue(events[-1][1]["connected"])
+        # GUI mode (apply_reconnect_in_core=False): the core leaves the keyboard
+        # pool clear to the GUI (host.py consumes do_overlay_reset).
+        core.keeb.reset_overlays_and_usage.assert_not_called()
+
+    def test_headless_connect_clears_keyboard_overlay_pool(self):
+        # Headless owns the apply (no GUI consumes do_overlay_reset), so the
+        # core must clear the keyboard's stale pool itself — otherwise the empty
+        # MRU cache and a populated keyboard pool desync (stale icons bleed
+        # through). Mirrors the GUI's core.reset_overlays() on connect.
+        core = make_core()
+        core.apply_reconnect_in_core = True
+        applied = core.apply_reconnect(connect_snapshot())
+        self.assertTrue(applied["do_overlay_reset"])
+        core.keeb.reset_overlays_and_usage.assert_called_once()
 
     def test_protocol_mismatch_keeps_presence_for_flashing(self):
         core = make_core()

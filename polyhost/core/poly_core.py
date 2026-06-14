@@ -595,6 +595,27 @@ class PolyCore:
             if snapshot["state_changed"] and self.needs_overlay_reset:
                 self.needs_overlay_reset = False
                 applied["do_overlay_reset"] = True
+                # We just reset our OWN MRU cache (reset_all_caches above) to
+                # empty, but the keyboard kept whatever pool it had — a fresh
+                # host process (or daemon restart) connects to a keyboard that
+                # never rebooted, so its overlay pool is still populated. Unless
+                # we clear it, the empty host cache and the stale keyboard pool
+                # are desynced and a later cache-hit ("0 upload") send maps
+                # display positions onto slots the new session never wrote —
+                # icons from a previous app/session bleed through.
+                #
+                # The GUI consumes do_overlay_reset and calls core.reset_overlays()
+                # itself. Headless (apply_reconnect_in_core) ignores the returned
+                # `applied`, so nothing cleared the keyboard there. Do it now —
+                # we're on the worker thread, so call the device directly
+                # (reset_overlays() would worker.run_sync and deadlock the worker
+                # on itself).
+                if self.apply_reconnect_in_core:
+                    try:
+                        self.keeb.reset_overlays_and_usage()
+                        self.log.info("Connected: keyboard overlay state cleared.")
+                    except Exception as e:
+                        self.log.warning("Connect-time overlay reset failed: %s", e)
             # Independent of state_changed: a fast reboot (no observed
             # disconnect) still must invalidate the host-side MRU cache.
             if snapshot.get("fresh_boot"):
