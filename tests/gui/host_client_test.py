@@ -50,6 +50,7 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("SMOKE OK", proc.stdout)
         self.assertIn("CORE_TYPE RemoteCore", proc.stdout)
         self.assertIn("CONNECTED True", proc.stdout)
+        self.assertIn("UPDATE_CHECK_OK", proc.stdout)
         self.assertIn("STATUS_TEXT PolyKybd Test", proc.stdout)
         self.assertIn("SERVER_RUNNING True", proc.stdout)
 
@@ -118,6 +119,9 @@ def _smoke_client():
             app = PolyHost(logging.CRITICAL, 0, client_mode=True, endpoint=addr)
             print("CORE_TYPE", type(app.core).__name__)
             print("CONNECTED", app.core.connected)
+            # Update check must not reach self.keeb (None in client mode).
+            app._start_update_check()
+            print("UPDATE_CHECK_OK")
             core.emit("status_changed", {"connected": True, "device_present": True,
                                          "state_changed": True, "text": "PolyKybd Test",
                                          "icon": "sync.svg", "lang": "deDE"})

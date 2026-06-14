@@ -929,6 +929,17 @@ class PolyHost(QApplication):
     def change_keeb_language(self):
         lang = self.sender().data()
 
+        if self.client_mode:
+            # No local worker/keeb — change via the daemon over RPC. The menu
+            # checkmark also follows the daemon's next status_changed, but
+            # update it now for immediate feedback.
+            ok, msg = self.core.set_language(lang)
+            if ok:
+                self.update_ui_on_lang_change(lang)
+            elif self.keeb_lang_menu is not None:
+                self.keeb_lang_menu.setTitle(f"Could not set {lang}: {msg}")
+            return
+
         def _job(cancel):
             result, msg = self.keeb.change_language(lang)
             return (lang, result, msg)
@@ -968,7 +979,8 @@ class PolyHost(QApplication):
         self.log.debug("Starting update check...")
         # device_present (not connected): the firmware version is known even on
         # a protocol mismatch, and that's exactly when an update must be offered.
-        fw_version = self.keeb.get_sw_version() if self._fw_actions_allowed() else None
+        # Read it via the core-backed property (self.keeb is None in client mode).
+        fw_version = self.kb_sw_version if self._fw_actions_allowed() else None
 
         # Track whether the error event fires before host_no_update so we can
         # suppress the "no update" callback and show the real failure reason.
