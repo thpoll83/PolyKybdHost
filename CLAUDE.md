@@ -67,6 +67,7 @@ Abstract base `unicode_input.py` with per-platform implementations:
 - `active_window.py` — `OverlayHandler`: active-window tracking, triggers keymap/language/overlay switches on the device based on which app is focused
 - `remote_window.py` — TCP-based window title relay for multi-machine setups
 - `kde_win_reporter.py` — KDE D-Bus integration for window events
+- **Active-window backend selection** (in both `active_window.py` and `forwarder.py`): `XDG_CURRENT_DESKTOP == "KDE"` → `kde_win_reporter` (KWin script → journal); else `XDG_SESSION_TYPE == "wayland"` → `gnome_wayland_reporter`; else → `pywinctl` (X11). `gnome_wayland_reporter.py` is **⚠️ UNTESTED on hardware** — pywinctl can't see native Wayland windows, so it queries the *Window Calls* GNOME Shell extension (`org.gnome.Shell.Extensions.Windows`) over `gdbus`; without the extension it returns None and warns **once** (instead of pywinctl's silent Wayland failure). The **X11 path is unaffected** (it never enters the Wayland branch); only the output parsing is unit-tested. Immediate GNOME-Wayland workaround is an Xorg login session.
 
 ### GUI (`polyhost/gui/`)
 PyQt5 widgets: main window (`host.py`), settings dialog, command menu, log viewer, layout editor (`layout_dialog/`), tray icon state manager.

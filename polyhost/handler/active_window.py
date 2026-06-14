@@ -7,11 +7,16 @@ from polyhost.handler.common import OverlayCommand, Flags
 from polyhost.handler.remote_window import RemoteHandler
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
+_IS_WAYLAND = os.getenv("XDG_SESSION_TYPE") == "wayland"
 
-if not IS_PLASMA:
-    import pywinctl as pwc
-else:
+if IS_PLASMA:
     import polyhost.handler.kde_win_reporter as pwc
+elif _IS_WAYLAND:
+    # pywinctl can't see native Wayland windows; use the GNOME Shell extension
+    # reporter (untested — needs the 'Window Calls' extension). X11 is unaffected.
+    import polyhost.handler.gnome_wayland_reporter as pwc
+else:
+    import pywinctl as pwc
 
 
 TITLE_SW = "titles-startswith"
