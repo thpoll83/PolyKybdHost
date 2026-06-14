@@ -20,6 +20,10 @@ def main():
                         help='Skip firmware version/protocol compatibility check (use as a last resort if the keyboard cannot connect due to a version mismatch)')
     parser.add_argument('--headless', default=False, action='store_true',
                         help='Run the operational core + control socket with no GUI (no Qt). Drive it with the polyctl CLI.')
+    parser.add_argument('--connect', nargs='?', const='', default=None, metavar='ENDPOINT',
+                        help='Run the tray GUI as a CLIENT of an already-running core over the '
+                             'control socket (H4a), instead of owning the device in-process. '
+                             'Optionally pass a socket path; omit for the default endpoint.')
     parser.add_argument('--host', help='Specify a host where the PolyKybd is physically connected to')
     parser.add_argument('--host-file', help='Path to a file containing the host IP, written by a session hook (see folder autorun_forwarder for examples). This option has higher priority than `--host`.')
     args=parser.parse_args()
@@ -30,13 +34,20 @@ def main():
     # so our DEBUG output stays readable. Harmless when not debugging.
     logging.getLogger("PIL").setLevel(logging.INFO)
 
-    if args.portable:
-        # Portable run: don't autostart, and remove any entry a previous
-        # (non-portable) run may have left behind so nothing lingers.
-        existing = get_autostart_status()
-        if existing != "none":
-            print(f"Portable mode: removing existing autostart ({existing}).")
-            remove_autostart()
+    # Client mode (--connect): the tray GUI attaches to an already-running core
+    # over the control socket. It owns no device, so it neither registers
+    # autostart (that's the daemon's job) nor takes the single-instance lock —
+    # it connects to the existing instance rather than becoming one.
+    client_mode = args.connect is not None
+
+    if args.portable or client_mode:
+        # Portable / client run: don't autostart, and remove any entry a
+        # previous (non-portable) run may have left behind so nothing lingers.
+        if args.portable:
+            existing = get_autostart_status()
+            if existing != "none":
+                print(f"Portable mode: removing existing autostart ({existing}).")
+                remove_autostart()
     else:
         setup_autostart_for_app(__file__, sys.argv[1:])
 
@@ -44,8 +55,9 @@ def main():
     # GUI and headless paths — if a PolyHost already serves the socket, defer
     # to it instead of fighting over the HID device; otherwise clear any stale
     # socket and become the host. Forwarder mode (--host) has no device and no
-    # socket, so it is excluded here.
-    if not (args.host or args.host_file):
+    # socket, and client mode (--connect) WANTS the existing instance, so both
+    # are excluded here.
+    if not (args.host or args.host_file or client_mode):
         from polyhost.server.instance import (
             probe_existing, clear_stale_endpoint, LIVE, STALE)
         outcome = probe_existing()
@@ -83,8 +95,12 @@ def main():
         app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file)
     else:
         from polyhost.host import PolyHost
-        print("Executing PolyHost...")
+        if client_mode:
+            print("Executing PolyHost (client of a running core)...")
+        else:
+            print("Executing PolyHost...")
         app = PolyHost(logging.DEBUG if args.debug>0 else logging.INFO, args.debug,
-                       ignore_version=args.ignore_version)
+                       ignore_version=args.ignore_version,
+                       client_mode=client_mode, endpoint=args.connect or None)
 
     sys.exit(app.exec_())

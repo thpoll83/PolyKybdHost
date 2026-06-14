@@ -178,7 +178,8 @@ def _progress_dlg(label: str, title: str) -> QProgressDialog:
 
 
 class PolyHost(QApplication):
-    def __init__(self, log_level, debug_mode, ignore_version=False):
+    def __init__(self, log_level, debug_mode, ignore_version=False,
+                 client_mode=False, endpoint=None):
         super().__init__(sys.argv)
         fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
         level = DEBUG_DETAILED if debug_mode>1 else log_level
@@ -228,20 +229,44 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.bridge.job_done.connect(self._on_job_done)
 
-        # The Qt-free operational core owns the device stack, the HID worker
-        # and all background work (headless-core plan, H1). PolyHost is the
-        # Qt client: tray, menus, dialogs, and this event adapter.
-        self.core = PolyCore(log=self.log, ignore_version=ignore_version,
-                             start_worker=False)
+        # The operational core. Normally an in-process Qt-free PolyCore that
+        # owns the device stack + HID worker (H1). In CLIENT mode (H4a,
+        # `--connect`) the core lives in another process (a headless daemon or
+        # another GUI's embedded server) and RemoteCore proxies its API over
+        # the control socket — there are no in-process device objects here.
+        self.client_mode = client_mode
+        if client_mode:
+            from polyhost.client.remote_core import RemoteCore
+            from polyhost.cli.polyctl import RpcError
+            from polyhost.settings import PolySettings
+            from polyhost.device.device_settings import DeviceSettings
+            try:
+                self.core = RemoteCore.connect(self.log, address=endpoint or None)
+            except (RpcError, OSError, EOFError) as e:
+                self.log.error("Cannot reach a running PolyKybdHost core (%s)", e)
+                print(f"error: cannot connect to a PolyKybdHost core ({e}). "
+                      "Start one first (e.g. `python -m polyhost --headless`).",
+                      file=sys.stderr)
+                sys.exit(1)
+            # No in-process device objects — the daemon owns them. Client-side
+            # settings (the shared XDG file when co-located) feed the input
+            # helper; the settings/layout dialogs are deferred (H4a-2).
+            self.keeb = None
+            self.worker = None
+            self.device_mgr = None
+            self.overlay_handler = None
+            self.poly_settings = PolySettings()
+            self.device_settings = DeviceSettings()
+        else:
+            self.core = PolyCore(log=self.log, ignore_version=ignore_version,
+                                 start_worker=False)
+            self.keeb = self.core.keeb
+            self.worker = self.core.worker
+            self.device_mgr = self.core.device_mgr
+            self.poly_settings = self.core.poly_settings
+            self.device_settings = self.core.device_settings
+            self.overlay_handler = self.core.overlay_handler
         self.core.subscribe(self._on_core_event)
-
-        # Stable aliases — these objects never rebind after construction.
-        self.keeb = self.core.keeb
-        self.worker = self.core.worker
-        self.device_mgr = self.core.device_mgr
-        self.poly_settings = self.core.poly_settings
-        self.device_settings = self.core.device_settings
-        self.overlay_handler = self.core.overlay_handler
 
         self.setApplicationName('PolyHost')
 
@@ -295,20 +320,33 @@ class PolyHost(QApplication):
         # 2026-06-13). The language menu is inserted right after the status
         # action whenever it is created, so arriving ~1 s late costs nothing.
 
-        self.cmdMenu = CommandsSubMenu(self, self.keeb)
-        self.cmdMenu.build_menu(self.menu)
+        # Device-command / layout / settings menus reach the device
+        # synchronously (keeb / worker.run_sync / device_settings); they are
+        # in-process only for now. Client mode (H4a-1) gets a firmware-flash
+        # action that routes through the daemon over RPC instead.
+        self.cmdMenu = None
+        self.layout_editor = None
+        self._flash_action = None
+        if not self.client_mode:
+            self.cmdMenu = CommandsSubMenu(self, self.keeb)
+            self.cmdMenu.build_menu(self.menu)
 
-        # TODO: enable/disable depending on MRU usage
-        action = QAction(get_icon("overlays.svg"), "Send Shortcut Overlay...", parent=self)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.send_shortcuts)
-        self.menu.addAction(action)
+            # TODO: enable/disable depending on MRU usage
+            action = QAction(get_icon("overlays.svg"), "Send Shortcut Overlay...", parent=self)
+            # noinspection PyUnresolvedReferences
+            action.triggered.connect(self.send_shortcuts)
+            self.menu.addAction(action)
 
-        self.layout_editor = QAction(get_icon("keyboard.svg"), "Configure Keymap", parent=self)
-        # noinspection PyUnresolvedReferences
-        self.layout_editor.triggered.connect(self.open_layout_editor)
-        self.menu.addAction(self.layout_editor)
-        self.menu.addAction(self.settings_dialog)
+            self.layout_editor = QAction(get_icon("keyboard.svg"), "Configure Keymap", parent=self)
+            # noinspection PyUnresolvedReferences
+            self.layout_editor.triggered.connect(self.open_layout_editor)
+            self.menu.addAction(self.layout_editor)
+            self.menu.addAction(self.settings_dialog)
+        else:
+            self._flash_action = QAction(get_icon("keyboard.svg"), "Flash firmware .bin…", parent=self)
+            # noinspection PyUnresolvedReferences
+            self._flash_action.triggered.connect(self._client_flash_firmware)
+            self.menu.addAction(self._flash_action)
         self.menu.addAction(self.log_dialog)
 
         self.update_action = QAction(get_icon("sync.svg"), "Check for updates...", parent=self)
@@ -327,10 +365,16 @@ class PolyHost(QApplication):
         self._update_host_no_update = None
         self._update_fw_no_update = None
 
-        self.firmware_update_action = QAction(get_icon("keyboard.svg"), "Check for firmware update…", parent=self)
-        # noinspection PyUnresolvedReferences
-        self.firmware_update_action.triggered.connect(self._on_fw_up_clicked)
-        self.menu.addAction(self.firmware_update_action)
+        # The keyboard-firmware release flow downloads the .bin locally then
+        # flashes over HID — that can't drive a remote daemon, so it's
+        # in-process only (client mode flashes a local .bin via RPC instead;
+        # daemon-side release download is a later slice).
+        self.firmware_update_action = None
+        if not self.client_mode:
+            self.firmware_update_action = QAction(get_icon("keyboard.svg"), "Check for firmware update…", parent=self)
+            # noinspection PyUnresolvedReferences
+            self.firmware_update_action.triggered.connect(self._on_fw_up_clicked)
+            self.menu.addAction(self.firmware_update_action)
         self._pending_fw_release = None
         self._fw_up_downloader = None
         self._fw_up_progress = None
@@ -339,14 +383,16 @@ class PolyHost(QApplication):
         if debug_mode > 0:
             debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
             self.debug_lang_menu = debug_menu.addMenu(get_icon("language.svg"), "Change System Input Language")
-            mru_action = QAction(get_icon("overlays.svg"), "Inspect MRU Cache...", parent=self)
-            # noinspection PyUnresolvedReferences
-            mru_action.triggered.connect(self.open_mru_inspector)
-            debug_menu.addAction(mru_action)
-            dump_action = QAction(get_icon("overlays.svg"), "Dump Mock Bitmaps...", parent=self)
-            # noinspection PyUnresolvedReferences
-            dump_action.triggered.connect(self.dump_mock_bitmaps)
-            debug_menu.addAction(dump_action)
+            if not self.client_mode:
+                # MRU inspector + mock dump read the in-process device_mgr.
+                mru_action = QAction(get_icon("overlays.svg"), "Inspect MRU Cache...", parent=self)
+                # noinspection PyUnresolvedReferences
+                mru_action.triggered.connect(self.open_mru_inspector)
+                debug_menu.addAction(mru_action)
+                dump_action = QAction(get_icon("overlays.svg"), "Dump Mock Bitmaps...", parent=self)
+                # noinspection PyUnresolvedReferences
+                dump_action.triggered.connect(self.dump_mock_bitmaps)
+                debug_menu.addAction(dump_action)
 
         self.menu.addAction(self.support)
         self.menu.addAction(self.about)
@@ -399,25 +445,29 @@ class PolyHost(QApplication):
         self._update_timer.timeout.connect(self._start_update_check)
         self._update_timer.start(24 * 60 * 60 * 1000)
 
-        # After __init__ completes, only the worker thread (or code holding
-        # worker.exclusive()) calls into the device. The core owns the worker
-        # and all periodics; results arrive as core events through the bridge.
-        self.log.debug("Starting cyclic checks...")
-        self.core.worker.start()
-        QTimer.singleShot(UPDATE_CYCLE_MSEC * 2, self.active_window_reporter)
-
-        # Control socket (M1): embed the JSON-RPC server so a CLI / headless
-        # client can drive this running tray app. host.shutdown fires on a
-        # server thread, so hop to the Qt main thread via the bridge.
+        # Device-owning startup is in-process only. In CLIENT mode the daemon
+        # owns the worker, the active-window poll, and the control socket — the
+        # GUI just renders the daemon's events and issues RPC commands.
         self.control_server = None
-        try:
-            self.control_server = ControlServer(
-                self.core, __version__, self.log,
-                on_shutdown=lambda: self.bridge.job_done.emit("host_shutdown", None))
-            self.control_server.start()
-        except Exception as e:
-            # A failed control socket must never stop the tray app from running.
-            self.log.warning("Control server not started (%s: %s).", type(e).__name__, e)
+        if not self.client_mode:
+            # After __init__ completes, only the worker thread (or code holding
+            # worker.exclusive()) calls into the device. The core owns the
+            # worker and all periodics; results arrive as core events.
+            self.log.debug("Starting cyclic checks...")
+            self.core.worker.start()
+            QTimer.singleShot(UPDATE_CYCLE_MSEC * 2, self.active_window_reporter)
+
+            # Control socket (M1): embed the JSON-RPC server so a CLI / headless
+            # client can drive this running tray app. host.shutdown fires on a
+            # server thread, so hop to the Qt main thread via the bridge.
+            try:
+                self.control_server = ControlServer(
+                    self.core, __version__, self.log,
+                    on_shutdown=lambda: self.bridge.job_done.emit("host_shutdown", None))
+                self.control_server.start()
+            except Exception as e:
+                # A failed control socket must never stop the tray app running.
+                self.log.warning("Control server not started (%s: %s).", type(e).__name__, e)
  
 
     # ------------------------------------------------------------------
@@ -508,14 +558,17 @@ class PolyHost(QApplication):
         fw_enabled = self._fw_actions_allowed()
         for action in self.menu.actions():
             action.setEnabled(enabled)
-        # Re-enable the firmware actions inside the commands submenu (the loop
-        # above just disabled its parent action on a mismatch).
-        self.cmdMenu.update_enabled(enabled, fw_enabled)
+        if not self.client_mode:
+            # Re-enable the firmware actions inside the commands submenu (the
+            # loop above just disabled its parent action on a mismatch).
+            self.cmdMenu.update_enabled(enabled, fw_enabled)
+            self.layout_editor.setEnabled(True)
+            self.settings_dialog.setEnabled(True)
+            self.firmware_update_action.setEnabled(fw_enabled)
+        elif self._flash_action is not None:
+            self._flash_action.setEnabled(fw_enabled)
         self.log_dialog.setEnabled(True)
-        self.layout_editor.setEnabled(True)
-        self.settings_dialog.setEnabled(True)
         self.update_action.setEnabled(True)
-        self.firmware_update_action.setEnabled(fw_enabled)
         self.status.setEnabled(True)
         self.support.setEnabled(True)
         self.about.setEnabled(True)
@@ -603,6 +656,92 @@ class PolyHost(QApplication):
                 self.log.warning("%s (%s)", warning, msg)
             self.current_lang = kb_lang
             self.icon_manager.set_idle()
+
+    # ------------------------------------------------------------------
+    # Client mode (H4a): render from the daemon's status_changed events
+    # ------------------------------------------------------------------
+
+    def _render_remote_status(self, payload):
+        """Client-mode status renderer (the daemon applied the reconnect and
+        pushed status_changed; RemoteCore re-emitted it). Mirrors the rendering
+        half of _apply_reconnect_result: status entry, language menu, and the
+        CLIENT-side OS-language switch (the daemon can't change this machine's
+        OS language)."""
+        if self.paused or not isinstance(payload, dict):
+            return
+        if payload.get("icon"):
+            self.status.setIcon(get_icon(payload["icon"]))
+        if payload.get("text"):
+            self.status.setText(payload["text"])
+        connected = bool(payload.get("connected"))
+        # Rebuild the language menu on a fresh compatible connect (the daemon's
+        # status_changed doesn't carry the list; fetch it over RPC).
+        if connected and payload.get("state_changed"):
+            langs = self.core.list_languages()
+            if langs:
+                self.add_supported_lang(self.menu, langs, payload.get("lang"))
+        self.managed_connection_status()
+        self.icon_manager.update()
+
+        kb_lang = payload.get("lang") if connected else self.current_lang
+        if connected and kb_lang and self.current_lang != kb_lang:
+            self.icon_manager.set_thinking()
+            self.update_ui_on_lang_change(kb_lang)
+            lang, country = get_lang_and_country(kb_lang)
+            success, msg = self.helper.set_language(lang, country)
+            if not success:
+                warning = f"Could not change OS language {kb_lang}."
+                self.icon_manager.set_warning(warning, 5000)
+                self.log.warning("%s (%s)", warning, msg)
+            self.current_lang = kb_lang
+            self.icon_manager.set_idle()
+
+    def _client_flash_firmware(self):
+        """Client-mode firmware flash: pick a local .bin and have the daemon
+        flash it over RPC. The path must be readable by the daemon — works when
+        the GUI and daemon share a filesystem (co-located / same machine)."""
+        path, _ = QFileDialog.getOpenFileName(
+            None, "Select firmware .bin", "", "Firmware image (*.bin)")
+        if not path:
+            return
+        self._flash_progress = _progress_dlg(
+            f"Flashing {os.path.basename(path)}…", "PolyKybd Firmware")
+        ok, payload = self.core.flash_firmware(path, apply=True)
+        if not ok:
+            self._flash_progress.close()
+            self._flash_progress = None
+            _msgbox(QMessageBox.Warning, "Firmware flash", str(payload))
+
+    def _on_flash_progress(self, name, payload):
+        dlg = getattr(self, "_flash_progress", None)
+        if dlg is None or not isinstance(payload, dict):
+            return
+        pct = payload.get("pct")
+        phase = "Applying" if name == "fw_apply_progress" else "Flashing"
+        dlg.setLabelText(f"{phase}: {payload.get('msg', '')}")
+        if isinstance(pct, int) and pct >= 0:
+            dlg.setValue(pct)
+
+    def _on_flash_done(self, name, payload):
+        dlg = getattr(self, "_flash_progress", None)
+        payload = payload or {}
+        ok = bool(payload.get("ok"))
+        # _client_flash_firmware always requests apply, so a successful
+        # fw_flash_done is followed by fw_apply_done — only the latter (or any
+        # failure) is terminal.
+        if name == "fw_flash_done" and ok:
+            if dlg is not None:
+                dlg.setLabelText("Staged — applying…")
+            return
+        if dlg is not None:
+            dlg.close()
+            self._flash_progress = None
+        if ok:
+            self.icon_manager.set_idle()
+        else:
+            phase = "apply" if name == "fw_apply_done" else "flash"
+            self.icon_manager.set_warning(f"Firmware {phase} failed", 5000)
+            _msgbox(QMessageBox.Warning, "Firmware flash failed", str(payload.get("msg")))
 
     @staticmethod
     def langcode_to_flag(lang_code):
@@ -1147,7 +1286,11 @@ class PolyHost(QApplication):
 
     # noinspection PyPep8Naming
     def closeEvent(self, _):
-        self.cmdMenu.disable_overlays()
+        if self.cmdMenu is not None:
+            self.cmdMenu.disable_overlays()
+        else:
+            # Client mode: no in-process cmd menu — disable via the daemon.
+            self.core.disable_overlays()
 
     def send_overlay_data(self, data):
         # Device I/O runs on the core's worker (coalesced). The tray icon is
@@ -1165,7 +1308,18 @@ class PolyHost(QApplication):
     def _on_job_done(self, name, result):
         """Main-thread slot for the bridge's job_done signal."""
         if name == "reconnect":
-            self._apply_reconnect_result(result)
+            # In-process: render from the probe snapshot via apply_reconnect.
+            # Client mode renders from status_changed instead (RemoteCore has
+            # no apply_reconnect), so ignore the raw snapshot there.
+            if not self.client_mode:
+                self._apply_reconnect_result(result)
+        elif name == "status_changed":
+            if self.client_mode:
+                self._render_remote_status(result)
+        elif name in ("fw_flash_progress", "fw_apply_progress"):
+            self._on_flash_progress(name, result)
+        elif name in ("fw_flash_done", "fw_apply_done"):
+            self._on_flash_done(name, result)
         elif name == "host_shutdown":
             # A control client (polyctl shutdown) asked the app to quit; the
             # request arrived on a server thread and was hopped here.

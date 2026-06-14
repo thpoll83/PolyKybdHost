@@ -85,12 +85,35 @@ translation); an end-to-end test that starts a real headless core + connects a
 RemoteCore and drives status/language/overlay; the Qt-free import guard stays
 green (RemoteCore must not be needed headless, but must itself be importable).
 
-## Status (2026-06-14)
-- **RemoteCore: DONE** — `polyhost/client/remote_core.py`, tested end-to-end
-  against a real `ControlServer` (`tests/client/remote_core_test.py`, 6 tests):
-  two-connection model, status caching, method round-trip, the (ok,payload)
-  contract, event fan-out + cache refresh, and synthesize-disconnect on stream
-  end. `polyctl.RpcClient.events()` now ends on `OSError` as well as `EOFError`.
+## Status (2026-06-14) — H4a-1 DONE
+- **RemoteCore** — `polyhost/client/remote_core.py`, tested end-to-end against a
+  real `ControlServer` (`tests/client/remote_core_test.py`): two-connection
+  model, status caching, method round-trip, the (ok,payload) contract, event
+  fan-out + cache refresh, synthesize-disconnect on stream end.
+- **`--connect` client mode** — `main_app.py` adds `--connect[=ENDPOINT]`
+  (skips autostart + the single-instance lock; it attaches to the existing
+  core). `PolyHost(client_mode=, endpoint=)` builds a RemoteCore instead of a
+  PolyCore, renders from `status_changed` (no `apply_reconnect` on RemoteCore),
+  does the **client-side** OS-language switch, and guards every device-coupled
+  menu (cmd menu / layout / settings / release-firmware / MRU debug) — those
+  stay in-process for now. Quitting the client leaves the daemon running.
+- **Co-located firmware flash** — a "Flash firmware .bin…" action picks a local
+  path and calls `flash_firmware(path, apply=True)` over RPC, with an
+  event-driven progress dialog on `fw_flash_*`/`fw_apply_*`. Works when GUI +
+  daemon share a filesystem.
+- **GUI harness** — `tests/gui/host_client_test.py`: each `PolyHost`
+  construction runs in its own subprocess (Qt singleton + pynput-needs-X), Qt
+  forced to `offscreen`, input helper mocked. Covers default-mode construction
+  (regression guard) and client-mode connect/render/quit. Skipped unless
+  `DISPLAY` is set — run `xvfb-run -a … -m unittest …` to exercise. Installing
+  `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too.
+- `polyctl.RpcClient.events()` now ends on `OSError` as well as `EOFError`.
+
+### Deferred to later H4a slices
+- Settings dialog + layout editor over RPC (need `device.info` + `settings.list`).
+- Keyboard-firmware *release* download+flash from a truly remote GUI (needs a
+  daemon-side `fw.update` RPC; co-located local-bin flash works today).
+- The advanced device-command submenu (`CommandsSubMenu`) over RPC.
 
 ## Host integration — concrete plan & a hard CONSTRAINT
 **Constraint discovered: `polyhost/host.py` cannot be imported or run in the
