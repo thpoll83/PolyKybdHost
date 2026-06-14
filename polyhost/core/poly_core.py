@@ -24,6 +24,11 @@ import threading
 import time
 
 from polyhost._version import __version__, __protocol__
+# Imported for its side effect: installs Logger.debug_detailed (used by the
+# device code, e.g. poly_kybd). The Qt GUI gets this via host.py's log_util
+# import; the headless process and bare tests would otherwise hit
+# 'Logger' object has no attribute 'debug_detailed'. log_util is Qt-free.
+import polyhost.util.log_util  # noqa: F401
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
