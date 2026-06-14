@@ -701,9 +701,13 @@ class PolyKybd:
                             sent = self.send_smallest_overlay(
                                 pool_kc, pool_mod, {pool_kc: overlay_data})
                             if sent < 0:
-                                # Abort before the mapping commit: recording a
-                                # slot whose image never reached the keyboard
-                                # would turn into a permanent stale MRU hit.
+                                # Roll back the slot get_or_allocate just
+                                # recorded: its image never reached the keyboard,
+                                # so leaving the entry would be a permanent stale
+                                # MRU hit (the keycap shows whatever really
+                                # occupies that slot, and the image is never
+                                # re-sent). Then abort before the mapping commit.
+                                cache.forget(content_key)
                                 return False
                             hid_msg_counter += sent
                         else:

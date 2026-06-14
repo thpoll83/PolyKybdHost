@@ -121,6 +121,33 @@ class OverlayMRUCache:
         self._version += 1
         return slot, False
 
+    def forget(self, content_key: tuple) -> None:
+        """Undo a just-recorded allocation whose image never reached the device.
+
+        ``get_or_allocate`` records the slot *before* the caller uploads the
+        image. If that upload fails (or is otherwise not committed), the entry
+        must be removed — otherwise it becomes a permanent stale MRU *hit*: the
+        host thinks the image is in the pool, never re-sends it, and the keycap
+        shows whatever actually occupies that slot. Idempotent; a no-op for an
+        unknown key or one that is only a dedup alias of a still-valid slot."""
+        slot = self._cache.pop(content_key, None)
+        if slot is None:
+            return
+        self._version += 1
+        # If another content_key still maps to this slot (byte-dedup alias),
+        # the slot is still valid — only this alias goes away.
+        if slot in self._cache.values():
+            return
+        self._slot_batch.pop(slot, None)
+        b = self._slot_to_bytes.pop(slot, None)
+        if b is not None:
+            self._bytes_to_slot.pop(b, None)
+        self._slot_to_info.pop(slot, None)
+        # Reclaim the index if it was the most recent fresh allocation, so the
+        # pool doesn't leak a slot on every failure.
+        if slot == self._next_free - 1:
+            self._next_free -= 1
+
     def _evict_oldest_slot(self) -> int:
         """Pick a victim slot. Prefer the smallest batch that is not the current
         batch; only fall back to the current batch when nothing older remains."""
