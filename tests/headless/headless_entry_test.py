@@ -116,6 +116,53 @@ class TestHeadlessHost(unittest.TestCase):
         self.assertEqual(host._relay_path, "/tmp/relay.py")
 
 
+class TestRunHeadlessLogging(unittest.TestCase):
+    """run_headless must write a rotating daemon_log.txt — a GUI-spawned daemon
+    runs detached with stdio at DEVNULL, so without the file its logs vanish."""
+
+    def test_run_headless_creates_daemon_log_file(self):
+        import polyhost.headless as headless
+
+        # Isolate the root logger so basicConfig actually attaches our handlers
+        # regardless of what earlier tests configured (and restore after).
+        root = logging.getLogger()
+        saved_handlers, saved_level = root.handlers[:], root.level
+        root.handlers.clear()
+
+        cwd = os.getcwd()
+        tmp = tempfile.mkdtemp(prefix="poly_dlog_")
+
+        class _StubHost:
+            def __init__(self, log, ignore_version=False):
+                log.info("stub daemon up")
+
+            def run(self):
+                pass  # don't block
+
+        try:
+            os.chdir(tmp)
+            with mock.patch.object(headless, "HeadlessHost", _StubHost):
+                headless.run_headless(logging.INFO)
+            # Flush handlers so the file content is on disk before we read it.
+            for h in root.handlers:
+                h.flush()
+            log_path = os.path.join(tmp, "daemon_log.txt")
+            self.assertTrue(os.path.exists(log_path), "daemon_log.txt not created")
+            with open(log_path, encoding="utf-8") as f:
+                self.assertIn("running headless", f.read())
+        finally:
+            os.chdir(cwd)
+            for h in root.handlers:
+                try:
+                    h.close()
+                except Exception:
+                    pass
+            root.handlers[:] = saved_handlers
+            root.setLevel(saved_level)
+            import shutil
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 class TestHeadlessImportsNoQt(unittest.TestCase):
     def test_headless_entry_imports_without_qt(self):
         code = (

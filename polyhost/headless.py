@@ -109,8 +109,28 @@ class HeadlessHost:
 
 
 def run_headless(log_level=logging.INFO, ignore_version=False):
-    """Entry point for ``--headless`` (see polyhost/main_app.py)."""
-    logging.basicConfig(level=log_level)
+    """Entry point for ``--headless`` (see polyhost/main_app.py).
+
+    Logs to a rotating ``daemon_log.txt`` **and** to the stream. The file
+    matters because a GUI-spawned daemon (daemon-by-default, H4b) runs detached
+    with its stdio sent to DEVNULL — without a file its logs would be lost. The
+    stream handler keeps a manual ``--headless`` run in a terminal readable. The
+    daemon uses its own filename (the GUI writes ``host_log.txt``) so a
+    co-located daemon + ``--connect`` GUI never write the same log file. Both
+    handlers get the repeat-collapse wrapper so the reconnect-probe spam while
+    the keyboard is in the bootloader doesn't flood the file."""
+    from logging.handlers import RotatingFileHandler
+    from polyhost.util.log_util import make_stream_handler, make_collapse_handler
+
+    fmt = "[%(asctime)s] %(levelname)-7s %(message)s"
+    file_handler = RotatingFileHandler(
+        filename="daemon_log.txt", maxBytes=5 * 1024 * 1024, backupCount=3,
+        encoding="utf-8")
+    file_handler.setFormatter(logging.Formatter(fmt))
+    logging.basicConfig(level=log_level, handlers=[
+        make_collapse_handler(file_handler),
+        make_collapse_handler(make_stream_handler(fmt)),
+    ])
     log = logging.getLogger("PolyHost")
     log.info("PolyKybdHost %s running headless.", __version__)
     host = HeadlessHost(log, ignore_version=ignore_version)
