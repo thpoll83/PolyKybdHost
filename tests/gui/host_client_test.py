@@ -51,7 +51,10 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("CORE_TYPE RemoteCore", proc.stdout)
         self.assertIn("CONNECTED True", proc.stdout)
         self.assertIn("UPDATE_CHECK_OK", proc.stdout)
-        self.assertIn("STATUS_TEXT PolyKybd Test", proc.stdout)
+        # Synthesized from cached device info (no text in the steady-state event).
+        self.assertIn("STATUS_TEXT PolyKybd Split72", proc.stdout)
+        self.assertIn("FW 0.8.0", proc.stdout)
+        self.assertIn("LANG_MENU_BUILT True", proc.stdout)
         self.assertIn("LAYOUT_OK layers=9", proc.stdout)
         self.assertIn("SERVER_RUNNING True", proc.stdout)
 
@@ -97,6 +100,7 @@ def _smoke_client():
 
         def get_status(self):
             return {"connected": True, "device_present": True, "paused": False,
+                    "name": "Split72", "hw_version": "1.0", "protocol": 3,
                     "fw_version": "0.8.0", "current_lang": "enUS"}
 
         def list_languages(self):
@@ -135,13 +139,17 @@ def _smoke_client():
             # Update check must not reach self.keeb (None in client mode).
             app._start_update_check()
             print("UPDATE_CHECK_OK")
+            # The REAL scenario: a late-connecting client gets a steady-state
+            # status_changed with NO text/icon and state_changed False. It must
+            # still render a descriptive status (from cached device info) and
+            # build the language menu — not stay on "Waiting for PolyKybd".
             core.emit("status_changed", {"connected": True, "device_present": True,
-                                         "state_changed": True, "text": "PolyKybd Test",
-                                         "icon": "sync.svg", "lang": "deDE"})
+                                         "state_changed": False, "lang": "enUS"})
             for _ in range(60):
                 app.processEvents()
                 time.sleep(0.02)
             print("STATUS_TEXT", app.status.text())
+            print("LANG_MENU_BUILT", app.keeb_lang_menu is not None)
             # Layout editor over RPC (keymap_* via the daemon) — must construct.
             app.open_layout_editor()
             app.processEvents()

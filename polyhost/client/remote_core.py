@@ -107,6 +107,14 @@ class RemoteCore:
         with self._status_lock:
             return self._status.get(key, default)
 
+    def status_snapshot(self):
+        """The cached status (seeded from status.get, kept fresh by
+        status_changed). Carries the device fields — name/fw_version/protocol/
+        hw_version — that the steady-state status_changed events omit, so the
+        client can render a descriptive status without an RPC per event."""
+        with self._status_lock:
+            return dict(self._status)
+
     @property
     def connected(self):
         return bool(self._get("connected", False))

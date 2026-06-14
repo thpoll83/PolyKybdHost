@@ -257,6 +257,9 @@ class PolyHost(QApplication):
             self.overlay_handler = None
             self.poly_settings = PolySettings()
             self.device_settings = DeviceSettings()
+            # Whether the first connected status render (language-menu build) has
+            # run — the client likely missed the daemon's fresh-connect event.
+            self._remote_connected_rendered = False
         else:
             self.core = PolyCore(log=self.log, ignore_version=ignore_version,
                                  start_worker=False)
@@ -668,35 +671,56 @@ class PolyHost(QApplication):
         pushed status_changed; RemoteCore re-emitted it). Mirrors the rendering
         half of _apply_reconnect_result: status entry, language menu, and the
         CLIENT-side OS-language switch (the daemon can't change this machine's
-        OS language)."""
+        OS language).
+
+        The daemon emits status_changed every probe cycle, but only state
+        *changes* carry text/icon, and a client that connected after the
+        daemon's fresh-connect event missed it — so synthesize a descriptive
+        status from the cached device info, and build the language menu on the
+        first connected render rather than only on state_changed."""
         if self.paused or not isinstance(payload, dict):
             return
-        if payload.get("icon"):
-            self.status.setIcon(get_icon(payload["icon"]))
-        if payload.get("text"):
-            self.status.setText(payload["text"])
         connected = bool(payload.get("connected"))
-        # Rebuild the language menu on a fresh compatible connect (the daemon's
-        # status_changed doesn't carry the list; fetch it over RPC).
-        if connected and payload.get("state_changed"):
+        self.status.setIcon(get_icon(payload.get("icon") or
+                                     ("sync.svg" if connected else "sync_disabled.svg")))
+        self.status.setText(payload.get("text") or self._remote_status_text(connected))
+
+        lang = payload.get("lang") or payload.get("current_lang")
+        if connected and (payload.get("state_changed") or not self._remote_connected_rendered):
             langs = self.core.list_languages()
             if langs:
-                self.add_supported_lang(self.menu, langs, payload.get("lang"))
+                self.add_supported_lang(self.menu, langs, lang)
+            self._remote_connected_rendered = True
+        elif not connected:
+            self._remote_connected_rendered = False
+
         self.managed_connection_status()
         self.icon_manager.update()
 
-        kb_lang = payload.get("lang") if connected else self.current_lang
-        if connected and kb_lang and self.current_lang != kb_lang:
+        if connected and lang and self.current_lang != lang:
             self.icon_manager.set_thinking()
-            self.update_ui_on_lang_change(kb_lang)
-            lang, country = get_lang_and_country(kb_lang)
-            success, msg = self.helper.set_language(lang, country)
+            self.update_ui_on_lang_change(lang)
+            lng, country = get_lang_and_country(lang)
+            success, msg = self.helper.set_language(lng, country)
             if not success:
-                warning = f"Could not change OS language {kb_lang}."
+                warning = f"Could not change OS language {lang}."
                 self.icon_manager.set_warning(warning, 5000)
                 self.log.warning("%s (%s)", warning, msg)
-            self.current_lang = kb_lang
+            self.current_lang = lang
             self.icon_manager.set_idle()
+
+    def _remote_status_text(self, connected):
+        """Descriptive status line from the cached device info (client mode)."""
+        if not connected:
+            return "Waiting for PolyKybd..."
+        st = self.core.status_snapshot()
+        name = st.get("name") or "PolyKybd"
+        hw = st.get("hw_version") or ""
+        fw = st.get("fw_version") or "?"
+        proto = st.get("protocol")
+        if proto is not None:
+            return f"PolyKybd {name} {hw} (FW {fw}, P{proto})"
+        return f"PolyKybd {name} {hw} ({fw})"
 
     def _client_flash_firmware(self):
         """Client-mode firmware flash: pick a local .bin and have the daemon
