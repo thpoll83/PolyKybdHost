@@ -63,6 +63,16 @@ class FakeCore:
     def settings_list(self):
         return {"brightness": 25, "unicode_send_composition_mode": True}
 
+    def reset_dynamic_keymap(self):
+        return (True, "reset")
+
+    def activate_bootloader(self):
+        return (True, {"queued": True})
+
+    def send_overlay_mapping(self, mapping):
+        self.calls.append(("send_overlay_mapping", mapping))
+        return (True, "mapped")
+
 
 def _addr():
     return os.path.join(tempfile.mkdtemp(prefix="polyrc_"), "ctl.sock")
@@ -128,6 +138,18 @@ class TestRemoteCore(unittest.TestCase):
         settings = self.rc.settings_list()
         self.assertEqual(settings.get("brightness"), 25)
         self.assertTrue(settings.get("unicode_send_composition_mode"))
+
+    def test_command_methods_round_trip(self):
+        ok, msg = self.rc.reset_dynamic_keymap()
+        self.assertTrue(ok)
+        self.assertEqual(msg, "reset")
+        ok, payload = self.rc.activate_bootloader()
+        self.assertTrue(ok)
+        self.assertEqual(payload, {"queued": True})
+        ok, _ = self.rc.send_overlay_mapping({4: 5})
+        self.assertTrue(ok)
+        # Keys cross JSON as strings; the daemon-side core coerces them back.
+        self.assertIn(("send_overlay_mapping", {"4": 5}), self.core.calls)
 
     def test_event_fanout_and_cache_refresh(self):
         seen = []

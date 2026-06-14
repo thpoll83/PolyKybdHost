@@ -863,3 +863,66 @@ class PolyCore:
             on_failed=lambda m: self.emit("update_failed", {"msg": m}))
         inst.start()
         return True, {"queued": True, "version": rel.version}
+
+    # ------------------------------------------------------------------
+    # Advanced device commands (the GUI "All PolyKybd Commands" submenu)
+    # ------------------------------------------------------------------
+
+    def reset_dynamic_keymap(self):
+        return self._device_call("reset_dynamic_keymap",
+                                 lambda c: self.keeb.reset_dynamic_keymap())
+
+    def reset_overlay_buffers(self):
+        return self._device_call("reset_overlays",
+                                 lambda c: self.keeb.reset_overlays())
+
+    def reset_overlay_mapping(self):
+        return self._device_call("reset_overlay_mapping",
+                                 lambda c: self.keeb.reset_overlay_mapping())
+
+    def reset_overlay_usage(self):
+        return self._device_call("reset_overlay_usage",
+                                 lambda c: self.keeb.reset_overlay_usage())
+
+    def set_all_overlay_usage(self):
+        return self._device_call("set_all_overlay_usage",
+                                 lambda c: self.keeb.set_all_overlay_usage())
+
+    def send_overlay_mapping(self, mapping):
+        # Over JSON-RPC the dict keys arrive as strings; coerce back to int so
+        # the in-process and client paths behave identically.
+        m = {int(k): int(v) for k, v in dict(mapping).items()}
+        return self._device_call("send_overlay_mapping",
+                                  lambda c: self.keeb.send_overlay_mapping(m))
+
+    def activate_bootloader(self):
+        """Send-only (the device resets without replying)."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused)."
+        self.worker.submit("activate_bootloader", lambda c: self.keeb.activate_bootloader())
+        return True, {"queued": True}
+
+    def set_handedness(self, master_is_left):
+        """Send-only (both halves reboot onto the new handedness)."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused)."
+        self.worker.submit("set_handedness",
+                           lambda c, m=bool(master_is_left): self.keeb.set_handedness(m))
+        return True, {"queued": True}
+
+    def apply_staged_firmware(self):
+        """Apply a previously-staged firmware on the worker; streams
+        fw_apply_progress / fw_apply_done (same events as flash_firmware's apply
+        step). Returns (ok, payload): (False, msg) if unavailable; else
+        (True, {"queued": True})."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot apply firmware."
+
+        def _job(cancel):
+            aok, amsg = hid_fw_up.apply_staged_firmware(
+                self.keeb.hid,
+                progress_cb=lambda pct, m: self.emit("fw_apply_progress", {"pct": pct, "msg": m}))
+            self.emit("fw_apply_done", {"ok": bool(aok), "msg": amsg})
+
+        self.worker.submit("apply_staged_firmware", _job)
+        return True, {"queued": True}

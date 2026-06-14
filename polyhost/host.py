@@ -323,26 +323,18 @@ class PolyHost(QApplication):
         # 2026-06-13). The language menu is inserted right after the status
         # action whenever it is created, so arriving ~1 s late costs nothing.
 
-        # Device-command / layout / settings menus reach the device
-        # synchronously (keeb / worker.run_sync / device_settings); they are
-        # in-process only for now. Client mode (H4a-1) gets a firmware-flash
-        # action that routes through the daemon over RPC instead.
-        self.cmdMenu = None
-        self._flash_action = None
+        # The commands submenu now routes every action through the core
+        # (worker job in-process, RPC in client mode), so it works in both
+        # modes (H4a-2c). Send-Shortcut still reads the in-process device_mgr,
+        # so it stays in-process only.
+        self.cmdMenu = CommandsSubMenu(self)
+        self.cmdMenu.build_menu(self.menu)
         if not self.client_mode:
-            self.cmdMenu = CommandsSubMenu(self, self.keeb)
-            self.cmdMenu.build_menu(self.menu)
-
             # TODO: enable/disable depending on MRU usage
             action = QAction(get_icon("overlays.svg"), "Send Shortcut Overlay...", parent=self)
             # noinspection PyUnresolvedReferences
             action.triggered.connect(self.send_shortcuts)
             self.menu.addAction(action)
-        else:
-            self._flash_action = QAction(get_icon("keyboard.svg"), "Flash firmware .bin…", parent=self)
-            # noinspection PyUnresolvedReferences
-            self._flash_action.triggered.connect(self._client_flash_firmware)
-            self.menu.addAction(self._flash_action)
         # The layout editor and settings dialog are device-independent of the
         # in-process worker — they drive the device through core.keymap_* /
         # settings.* (RPC in client mode), so both work in either mode (H4a-2).
@@ -562,13 +554,11 @@ class PolyHost(QApplication):
         fw_enabled = self._fw_actions_allowed()
         for action in self.menu.actions():
             action.setEnabled(enabled)
+        # Re-enable the firmware actions inside the commands submenu (the loop
+        # above just disabled its parent action on a mismatch). Both modes.
+        self.cmdMenu.update_enabled(enabled, fw_enabled)
         if not self.client_mode:
-            # Re-enable the firmware actions inside the commands submenu (the
-            # loop above just disabled its parent action on a mismatch).
-            self.cmdMenu.update_enabled(enabled, fw_enabled)
             self.firmware_update_action.setEnabled(fw_enabled)
-        elif self._flash_action is not None:
-            self._flash_action.setEnabled(fw_enabled)
         # Available in both modes (driven via core methods).
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
@@ -637,7 +627,7 @@ class PolyHost(QApplication):
             return
 
         if applied["do_overlay_reset"]:
-            self.cmdMenu.reset_overlays_and_usage()
+            self.core.reset_overlays()   # reset overlays + usage (in-process)
             self.log.info("Connected: overlay state cleared.")
 
         # Language-changed flow (helper.set_language stays on the main thread).
@@ -722,21 +712,32 @@ class PolyHost(QApplication):
             return f"PolyKybd {name} {hw} (FW {fw}, P{proto})"
         return f"PolyKybd {name} {hw} ({fw})"
 
-    def _client_flash_firmware(self):
+    def _client_flash_firmware(self, apply=True):
         """Client-mode firmware flash: pick a local .bin and have the daemon
         flash it over RPC. The path must be readable by the daemon — works when
-        the GUI and daemon share a filesystem (co-located / same machine)."""
+        the GUI and daemon share a filesystem (co-located / same machine).
+        Progress arrives as fw_flash_*/fw_apply_* events (see _on_flash_*)."""
         path, _ = QFileDialog.getOpenFileName(
             None, "Select firmware .bin", "", "Firmware image (*.bin)")
         if not path:
             return
         self._flash_progress = _progress_dlg(
             f"Flashing {os.path.basename(path)}…", "PolyKybd Firmware")
-        ok, payload = self.core.flash_firmware(path, apply=True)
+        ok, payload = self.core.flash_firmware(path, apply=apply)
         if not ok:
             self._flash_progress.close()
             self._flash_progress = None
             _msgbox(QMessageBox.Warning, "Firmware flash", str(payload))
+
+    def _client_apply_staged(self):
+        """Client-mode 'apply staged firmware' over RPC, with the event-driven
+        progress dialog (fw_apply_* events)."""
+        self._flash_progress = _progress_dlg("Applying staged firmware…", "PolyKybd Firmware")
+        ok, payload = self.core.apply_staged_firmware()
+        if not ok:
+            self._flash_progress.close()
+            self._flash_progress = None
+            _msgbox(QMessageBox.Warning, "Apply staged firmware", str(payload))
 
     def _on_flash_progress(self, name, payload):
         dlg = getattr(self, "_flash_progress", None)
@@ -1339,11 +1340,7 @@ class PolyHost(QApplication):
 
     # noinspection PyPep8Naming
     def closeEvent(self, _):
-        if self.cmdMenu is not None:
-            self.cmdMenu.disable_overlays()
-        else:
-            # Client mode: no in-process cmd menu — disable via the daemon.
-            self.core.disable_overlays()
+        self.cmdMenu.disable_overlays()
 
     def send_overlay_data(self, data):
         # Device I/O runs on the core's worker (coalesced). The tray icon is

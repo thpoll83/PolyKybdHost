@@ -21,7 +21,7 @@ class _StubHost(QObject):
 
 def _build():
     menu = QMenu()
-    cm = CommandsSubMenu(_StubHost(), keeb=None)
+    cm = CommandsSubMenu(_StubHost())
     cm.build_menu(menu)
     return cm, menu
 

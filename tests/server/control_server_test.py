@@ -102,6 +102,35 @@ class FakeCore:
         self.calls.append(("flash_firmware", path, apply))
         return (True, {"queued": True, "apply": bool(apply)})
 
+    def reset_dynamic_keymap(self):
+        return (True, "keymap reset")
+
+    def reset_overlay_buffers(self):
+        return (True, "buffers")
+
+    def reset_overlay_mapping(self):
+        return (True, "mapping")
+
+    def reset_overlay_usage(self):
+        return (True, "usage")
+
+    def set_all_overlay_usage(self):
+        return (True, "all")
+
+    def send_overlay_mapping(self, mapping):
+        self.calls.append(("send_overlay_mapping", mapping))
+        return (True, "mapped")
+
+    def activate_bootloader(self):
+        return (True, {"queued": True})
+
+    def set_handedness(self, master_is_left):
+        self.calls.append(("set_handedness", master_is_left))
+        return (True, {"queued": True})
+
+    def apply_staged_firmware(self):
+        return (True, {"queued": True})
+
     def check_update(self):
         return (True, {"available": True, "version": "0.9.0", "url": "http://x"})
 
@@ -268,6 +297,18 @@ class ControlServerTest(unittest.TestCase):
         self._hello_then(conn)
         resp = self._call(conn, 33, p.M_SETTINGS_LIST)
         self.assertEqual(resp["result"], {"brightness": 25, "idle": True})
+
+    def test_command_submenu_dispatch(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        self.assertEqual(self._call(conn, 40, p.M_RESET_DYNAMIC_KEYMAP)["result"], "keymap reset")
+        self.assertEqual(self._call(conn, 41, p.M_OVERLAY_RESET_BUFFERS)["result"], "buffers")
+        self.assertEqual(self._call(conn, 42, p.M_ACTIVATE_BOOTLOADER)["result"], {"queued": True})
+        self.assertEqual(self._call(conn, 43, p.M_FW_APPLY_STAGED)["result"], {"queued": True})
+        self._call(conn, 44, p.M_SET_HANDEDNESS, {"master_is_left": True})
+        self.assertIn(("set_handedness", True), self.core.calls)
+        self._call(conn, 45, p.M_OVERLAY_MAPPING_SEND, {"mapping": {"4": 5}})
+        self.assertIn(("send_overlay_mapping", {"4": 5}), self.core.calls)
 
     def test_update_check_and_install_dispatch(self):
         conn = self._connect()

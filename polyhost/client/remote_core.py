@@ -250,6 +250,34 @@ class RemoteCore:
     def install_update(self):
         return self._device(p.M_UPDATE_INSTALL)
 
+    # -- advanced device commands ("All PolyKybd Commands" submenu) ---------
+    def reset_dynamic_keymap(self):
+        return self._device(p.M_RESET_DYNAMIC_KEYMAP)
+
+    def reset_overlay_buffers(self):
+        return self._device(p.M_OVERLAY_RESET_BUFFERS)
+
+    def reset_overlay_mapping(self):
+        return self._device(p.M_OVERLAY_RESET_MAPPING)
+
+    def reset_overlay_usage(self):
+        return self._device(p.M_OVERLAY_RESET_USAGE)
+
+    def set_all_overlay_usage(self):
+        return self._device(p.M_OVERLAY_SET_ALL_USAGE)
+
+    def send_overlay_mapping(self, mapping):
+        return self._device(p.M_OVERLAY_MAPPING_SEND, {"mapping": dict(mapping)})
+
+    def activate_bootloader(self):
+        return self._device(p.M_ACTIVATE_BOOTLOADER)
+
+    def set_handedness(self, master_is_left):
+        return self._device(p.M_SET_HANDEDNESS, {"master_is_left": bool(master_is_left)})
+
+    def apply_staged_firmware(self):
+        return self._device(p.M_FW_APPLY_STAGED)
+
     # -- lifecycle / settings ----------------------------------------------
     def set_paused(self, paused):
         try:

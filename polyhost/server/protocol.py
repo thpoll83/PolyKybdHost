@@ -73,6 +73,16 @@ M_MRU_SAVE = "mru.save"                # {} -> {"queued": True}
 M_SETTINGS_GET = "settings.get"        # {"key": str} -> value
 M_SETTINGS_LIST = "settings.list"      # {} -> {key: value, ...} (all settings)
 M_SETTINGS_SET = "settings.set"        # {"key","value"} -> (ok, payload)
+# Advanced device commands (the GUI "All PolyKybd Commands" submenu).
+M_RESET_DYNAMIC_KEYMAP = "keymap.reset"        # {} -> (ok, payload)
+M_OVERLAY_RESET_BUFFERS = "overlay.reset_buffers"   # {} -> (ok, payload)
+M_OVERLAY_RESET_MAPPING = "overlay.reset_mapping"   # {} -> (ok, payload)
+M_OVERLAY_RESET_USAGE = "overlay.reset_usage"       # {} -> (ok, payload)
+M_OVERLAY_SET_ALL_USAGE = "overlay.set_all_usage"   # {} -> (ok, payload)
+M_OVERLAY_MAPPING_SEND = "overlay.mapping_send"     # {"mapping": {idx: idx}} -> (ok, payload)
+M_ACTIVATE_BOOTLOADER = "fw.bootloader"             # {} -> {"queued": True}
+M_SET_HANDEDNESS = "fw.set_handedness"              # {"master_is_left": bool} -> {"queued": True}
+M_FW_APPLY_STAGED = "fw.apply_staged"               # {} -> {"queued": True} (streams fw_apply_* events)
 M_HOST_SHUTDOWN = "host.shutdown"      # {} -> {"shutting_down": True}
 
 # ---------------------------------------------------------------------------

@@ -151,5 +151,47 @@ class TestUpdate(unittest.TestCase):
         m_inst.return_value.start.assert_called_once()
 
 
+class TestDeviceCommands(unittest.TestCase):
+
+    def test_send_overlay_mapping_coerces_json_string_keys(self):
+        core = make_core()
+        # Drive _device_call's run_sync so the lambda actually hits keeb.
+        core.worker.run_sync.side_effect = lambda name, fn, timeout=None: fn(None)
+        core.keeb.send_overlay_mapping.return_value = (True, "ok")
+        ok, _ = core.send_overlay_mapping({"4": "5", "6": 7})
+        self.assertTrue(ok)
+        self.assertEqual(core.keeb.send_overlay_mapping.call_args.args[0], {4: 5, 6: 7})
+
+    def test_activate_bootloader_gating_and_submit(self):
+        blocked = make_core(device_present=False, connected=False)
+        ok, _ = blocked.activate_bootloader()
+        self.assertFalse(ok)
+        blocked.worker.submit.assert_not_called()
+
+        core = make_core()
+        ok, payload = core.activate_bootloader()
+        self.assertTrue(ok)
+        self.assertEqual(payload, {"queued": True})
+        self.assertEqual(core.worker.submit.call_args.args[0], "activate_bootloader")
+
+    def test_set_handedness_submits(self):
+        core = make_core()
+        ok, _ = core.set_handedness(True)
+        self.assertTrue(ok)
+        self.assertEqual(core.worker.submit.call_args.args[0], "set_handedness")
+
+    def test_apply_staged_gating(self):
+        blocked = make_core(device_present=False, connected=False)
+        ok, _ = blocked.apply_staged_firmware()
+        self.assertFalse(ok)
+        blocked.worker.submit.assert_not_called()
+
+        core = make_core()
+        ok, payload = core.apply_staged_firmware()
+        self.assertTrue(ok)
+        self.assertEqual(payload, {"queued": True})
+        self.assertEqual(core.worker.submit.call_args.args[0], "apply_staged_firmware")
+
+
 if __name__ == "__main__":
     unittest.main()
