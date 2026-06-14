@@ -27,10 +27,14 @@ from polyhost.server import protocol as p
 class RemoteCore:
     """RPC-backed proxy for the GUI's ``self.core`` (see docs/headless-h4-plan.md)."""
 
-    def __init__(self, rpc_client, event_client, log):
+    def __init__(self, rpc_client, event_client, log, address=None, authkey=None):
         self.log = log
         self._rpc = rpc_client
         self._evt = event_client
+        # Endpoint kept so a dropped request connection can be re-established
+        # (the daemon may still be running — only this pipe died).
+        self._address = address
+        self._authkey = authkey
         self._rpc_lock = threading.Lock()      # GUI dialogs may call off-main-thread
         self._observers = []
         self._observers_lock = threading.Lock()
@@ -59,7 +63,7 @@ class RemoteCore:
         from polyhost.cli import polyctl
         rpc = polyctl.connect(address, authkey)
         evt = polyctl.connect(address, authkey)
-        return cls(rpc, evt, log)
+        return cls(rpc, evt, log, address=address, authkey=authkey)
 
     # ------------------------------------------------------------------
     # Observer plumbing (mirrors PolyCore)
@@ -158,9 +162,41 @@ class RemoteCore:
     # RPC-backed command surface
     # ------------------------------------------------------------------
 
+    def _reconnect_rpc(self):
+        """Re-establish the request/response connection after a transport drop.
+
+        Only the request pipe is rebuilt here — the event pump owns ``_evt`` and
+        synthesizes its own disconnect on EOF. Returns True if a fresh
+        connection was opened. Best-effort: a failure here just leaves the next
+        call to fail the same way (the daemon may genuinely be gone)."""
+        from polyhost.cli import polyctl
+        try:
+            self._rpc.close()
+        except Exception:
+            pass
+        try:
+            self._rpc = polyctl.connect(self._address, self._authkey)
+            return True
+        except (RpcError, OSError, EOFError) as e:
+            self.log.warning("RemoteCore: RPC reconnect failed: %s", e)
+            return False
+
     def _rpc_call(self, method, params=None):
         with self._rpc_lock:
-            return self._rpc.call(method, params)
+            try:
+                return self._rpc.call(method, params)
+            except (EOFError, OSError) as e:
+                # The request pipe dropped (e.g. a transient Windows named-pipe
+                # break). The daemon may have already executed this call, so we
+                # do NOT retry it — that would double-apply non-idempotent
+                # commands (brightness, language, flash). Rebuild the pipe for
+                # the next call and surface a clean RpcError so every caller's
+                # RpcError handling degrades gracefully instead of crashing the
+                # GUI with a raw EOFError.
+                self.log.warning("RemoteCore: RPC call %r lost connection: %s", method, e)
+                self._reconnect_rpc()
+                raise RpcError(p.ERR_UNAVAILABLE,
+                               f"lost connection to the core ({e})")
 
     def _device(self, method, params=None):
         """RPC for a ``(ok, payload)``-contract device call: map RpcError back

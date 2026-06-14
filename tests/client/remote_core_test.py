@@ -104,7 +104,8 @@ class TestRemoteCore(unittest.TestCase):
                                  address=self.addr, authkey=self.key)
         self.srv.start()
         self.rc = RemoteCore(polyctl.connect(self.addr, self.key),
-                             polyctl.connect(self.addr, self.key), _quiet())
+                             polyctl.connect(self.addr, self.key), _quiet(),
+                             address=self.addr, authkey=self.key)
 
     def tearDown(self):
         try:
@@ -157,6 +158,20 @@ class TestRemoteCore(unittest.TestCase):
         self.core.emit("status_changed", {"connected": False, "device_present": False})
         self.assertTrue(_wait(lambda: any(n == "status_changed" for n, _ in seen)))
         self.assertFalse(self.rc.connected)        # cache updated from the event
+
+    def test_dropped_rpc_connection_degrades_and_reconnects(self):
+        # Simulate a transient transport drop: close the underlying request
+        # connection out from under the call. The GUI must NOT see a raw
+        # EOFError/OSError — _device maps it to (False, msg) — and the pipe
+        # must be rebuilt so the next call succeeds against the live daemon.
+        self.rc._rpc._conn.close()
+        ok, msg = self.rc.set_language("deDE")
+        self.assertFalse(ok)                       # degraded, not crashed
+        self.assertIsInstance(msg, str)
+        # The next call works again (pipe was transparently re-established).
+        ok2, payload2 = self.rc.set_language("enUS")
+        self.assertTrue(ok2)
+        self.assertEqual(payload2, "enUS")
 
 
 class _FakeRpc:
