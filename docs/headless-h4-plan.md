@@ -134,6 +134,44 @@ socket) + an offscreen construction smoke.
   daemon-side `fw.update` RPC; co-located local-bin flash works today).
 - The advanced device-command submenu (`CommandsSubMenu`) over RPC.
 
+## Status (2026-06-14) — H4b-1: daemon-by-default (opt-in, mechanism in place)
+**host.py and the Windows autostart `.bat`/`.vbs` chain are deliberately
+untouched** — all the new logic is Qt-free and lives in `main_app.py` +
+`polyhost/server/daemon_launch.py`, and it reuses the H4a `--connect` client
+path. Opt-in via the new **`daemon_mode` setting (default False)**, overridable
+per launch with `--daemon` / `--no-daemon`. When off, startup is byte-for-byte
+the legacy behavior (zero regression).
+
+- `daemon_launch.decide_startup_mode(outcome, daemon_mode)` — **pure** decision
+  over a `probe_existing()` outcome: daemon_mode off ⇒ legacy (LIVE→defer,
+  STALE→in-process); on ⇒ LIVE→**attach as client**, STALE→**spawn daemon +
+  attach**, INCOMPATIBLE/AUTH→defer (never fight over the HID device).
+- `daemon_launch.spawn_headless_daemon()` — launches `python -m polyhost
+  --headless --no-autostart` **detached** (`DETACHED_PROCESS|CREATE_NEW_PROCESS_GROUP`
+  on Windows, `start_new_session` on POSIX, stdio → DEVNULL) so the daemon
+  outlives the GUI. The GUI spawns it as a child of its **own venv-activated
+  process**, so it inherits PATH — sidestepping the autostart PATH landmine.
+- `daemon_launch.wait_until_live()` — polls the endpoint until the spawned
+  daemon answers `hello`; on timeout the GUI terminates the child and **falls
+  back to in-process** (never two device owners).
+- `main_app.py`: for a plain GUI launch only, reads `daemon_mode` (or
+  `--daemon/--no-daemon`), runs the decision, and flips `client_mode`/`endpoint`
+  accordingly. A daemon-mode GUI **still registers autostart** (it brings the
+  daemon up on login); the spawned daemon runs with the new internal
+  `--no-autostart` so it never touches the GUI's autostart entry.
+- Tested: `tests/server/daemon_launch_test.py` (decision table, detached-spawn
+  flags via a mocked Popen, polled wait). The Qt-free import guard stays green.
+
+### Still to validate on a real desktop (can't be done in-container)
+- The end-to-end spawn→attach on Windows + macOS + Linux, daemon survival across
+  GUI quit/relaunch, and the in-process fallback when the daemon can't start.
+
+### Deferred to later H4b slices
+- Flipping the *default* to daemon mode once validated.
+- Optionally moving autostart to launch the daemon directly (vs. the GUI
+  spawning it) — only after confirming the venv/PATH story holds for a cold
+  scheduler launch (the documented `.bat` wrapper concern).
+
 ## Host integration — concrete plan & a hard CONSTRAINT
 **Constraint discovered: `polyhost/host.py` cannot be imported or run in the
 dev/CI container** — `pynput` (imported at host.py top) requires an X server;
