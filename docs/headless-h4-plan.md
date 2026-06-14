@@ -162,15 +162,30 @@ the legacy behavior (zero regression).
 - Tested: `tests/server/daemon_launch_test.py` (decision table, detached-spawn
   flags via a mocked Popen, polled wait). The Qt-free import guard stays green.
 
-### Still to validate on a real desktop (can't be done in-container)
-- The end-to-end spawn→attach on Windows + macOS + Linux, daemon survival across
-  GUI quit/relaunch, and the in-process fallback when the daemon can't start.
+### Validated on a real desktop (Windows, 2026-06-14)
+- Spawn→attach end-to-end, daemon survival across GUI restart, the separate
+  `daemon_log.txt` / `polykybd_console.txt`, and the connect-time keyboard
+  overlay reset (the headless MRU-parity fix). macOS/Linux still rely on the
+  same individually-exercised pieces + the in-process fallback.
+
+## Status (2026-06-14) — H4b-2: daemon-by-default is now the default
+`daemon_mode` defaults to **True** (`polyhost/settings.py`). A plain
+`python -m polyhost` now spawns/attaches a headless daemon; `--no-daemon` (or
+the setting) opts out. Non-disruptive: settings `load()` uses `setdefault`, so
+existing configs keep their persisted value — adopt it via the settings dialog
+("Daemon → Mode", auto-generated from the settings dict) or
+`polyctl settings set daemon_mode true`. **No autostart change**: autostart still
+launches the GUI, which reads the setting and brings the daemon up, so the
+Windows `.bat`/`.vbs` chain is untouched. `decide_startup_mode` already returns
+IN_PROCESS for `daemon_mode` off and CLIENT/SPAWN_CLIENT for on, so only the
+default value changed.
 
 ### Deferred to later H4b slices
-- Flipping the *default* to daemon mode once validated.
 - Optionally moving autostart to launch the daemon directly (vs. the GUI
   spawning it) — only after confirming the venv/PATH story holds for a cold
-  scheduler launch (the documented `.bat` wrapper concern).
+  scheduler launch (the documented `.bat` wrapper concern). Not needed for
+  daemon-by-default; the GUI-spawns-daemon path already delivers it.
+- macOS/Linux end-to-end validation of the spawn→attach flow.
 
 ## Host integration — concrete plan & a hard CONSTRAINT
 **Constraint discovered: `polyhost/host.py` cannot be imported or run in the

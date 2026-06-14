@@ -39,9 +39,12 @@ class PolySettings:
             # Daemon-by-default (headless-core H4b): when True, a plain GUI
             # launch runs the operational core in a separate headless daemon and
             # attaches this GUI to it as a client (spawning the daemon if none is
-            # running). When False (default), the GUI owns the device in-process
-            # exactly as before. Overridable per-launch with --daemon/--no-daemon.
-            "daemon_mode": False,
+            # running), so the core survives GUI restarts. When False, the GUI
+            # owns the device in-process exactly as before. Default True (H4b-2);
+            # spawn/connect failure falls back to in-process, and a per-launch
+            # --no-daemon (or this setting) opts out — e.g. for development, where
+            # in-process keeps your code edits in the same process as the GUI.
+            "daemon_mode": True,
         }
         self._legacy_key_renames = {
             "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",
