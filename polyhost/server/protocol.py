@@ -170,8 +170,26 @@ def secure_endpoint(address: str) -> None:
 # Framing — UTF-8 JSON over send_bytes/recv_bytes (never pickle send/recv)
 # ---------------------------------------------------------------------------
 
+def _json_default(obj):
+    """Last-resort encoder for values JSON can't represent natively.
+
+    Device-call results ride the ``(ok, payload)`` contract as opaque
+    payloads, and the payload is frequently the **raw HID reply** — a
+    ``bytes``/``bytearray`` like the ACK ``b"P\\x0d."``. The client only logs
+    it, but ``json.dumps`` can't encode bytes, so without this the whole frame
+    failed to serialize and the server dropped the connection mid-reply (the
+    client saw a bare EOF after the device had already applied the change —
+    e.g. brightness.set turned the displays bright yet reported a lost
+    connection). Decode such payloads to a string so the reply goes out
+    cleanly. Genuinely unexpected types still raise, surfacing real bugs."""
+    if isinstance(obj, (bytes, bytearray)):
+        return bytes(obj).decode("latin-1")
+    raise TypeError(
+        f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
 def send_message(conn, obj) -> None:
-    conn.send_bytes(json.dumps(obj).encode("utf-8"))
+    conn.send_bytes(json.dumps(obj, default=_json_default).encode("utf-8"))
 
 
 def recv_message(conn):

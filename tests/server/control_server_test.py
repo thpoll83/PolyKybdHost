@@ -65,7 +65,9 @@ class FakeCore:
         return self.lang_set_result
 
     def set_brightness(self, value):
-        return (True, int(value))
+        # Mirror the real device: the payload is the raw HID reply bytearray
+        # (the ACK), not a tidy int — it must still serialize over the wire.
+        return (True, bytearray(b"P\x0d."))
 
     def set_idle(self, idle):
         return (True, bool(idle))
@@ -268,6 +270,18 @@ class ControlServerTest(unittest.TestCase):
         self._hello_then(conn)
         resp = self._call(conn, 11, p.M_OVERLAY_SEND, {"files": ["a", "b"]})
         self.assertEqual(resp["result"], {"queued": True})
+
+    def test_bytes_payload_replies_without_dropping(self):
+        # A device call whose payload is the raw HID bytearray must produce a
+        # successful reply (string-encoded), not a dropped connection / EOF.
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 40, p.M_BRIGHTNESS_SET, {"value": 50})
+        self.assertEqual(resp["id"], 40)
+        self.assertEqual(resp["result"], "P\r.")
+        # The connection is still usable afterwards.
+        resp2 = self._call(conn, 41, p.M_STATUS_GET)
+        self.assertEqual(resp2["id"], 41)
 
     def test_pause_set(self):
         conn = self._connect()
