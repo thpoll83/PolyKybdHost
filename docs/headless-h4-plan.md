@@ -119,9 +119,17 @@ green (RemoteCore must not be needed headless, but must itself be importable).
   `core.set_language`; headless window tracking `CoInitialize`s on Windows; the
   core installs `Logger.debug_detailed` so headless overlay sends work.
 
+## Status (2026-06-14) — H4a-2b: layout editor over RPC
+`KbLayoutDialog` now takes `core` instead of `keeb`+`worker` and drives all
+keymap I/O through `core.keymap_layer_count/buffer/default_layer/set` — which
+return an identical `(ok, payload)` in BOTH modes (PolyCore via `worker.run_sync`,
+RemoteCore via RPC). So "Configure Keymap" works for an in-process or a
+`--connect` GUI with no dialog-internal mode branching. Matrix geometry comes
+from `DeviceSettings` (static, available locally), so no `device.info` was
+needed. Validated by the GUI harness (opens the editor in client mode over the
+socket) + an offscreen construction smoke.
+
 ### Deferred to later H4a slices
-- Layout editor over RPC — needs `KbLayoutDialog` to drive off the `keymap.*`
-  RPCs (+ a `device.info` for matrix geometry) instead of `keeb`/`worker`.
 - Keyboard-firmware *release* download+flash from a truly remote GUI (needs a
   daemon-side `fw.update` RPC; co-located local-bin flash works today).
 - The advanced device-command submenu (`CommandsSubMenu`) over RPC.

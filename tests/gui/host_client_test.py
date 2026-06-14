@@ -52,6 +52,7 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("CONNECTED True", proc.stdout)
         self.assertIn("UPDATE_CHECK_OK", proc.stdout)
         self.assertIn("STATUS_TEXT PolyKybd Test", proc.stdout)
+        self.assertIn("LAYOUT_OK layers=9", proc.stdout)
         self.assertIn("SERVER_RUNNING True", proc.stdout)
 
 
@@ -101,6 +102,18 @@ def _smoke_client():
         def list_languages(self):
             return ["enUS", "deDE"]
 
+        def keymap_layer_count(self):
+            return (True, 9)
+
+        def keymap_buffer(self):
+            return (False, "no device")   # dialog takes the failed-read path
+
+        def keymap_default_layer(self):
+            return (True, 0)
+
+        def settings_list(self):
+            return {"brightness": 25}
+
     addr = os.path.join(tempfile.mkdtemp(), "ctl.sock")
     key = protocol.load_or_create_authkey()
     lg = logging.getLogger("smoke")
@@ -129,6 +142,11 @@ def _smoke_client():
                 app.processEvents()
                 time.sleep(0.02)
             print("STATUS_TEXT", app.status.text())
+            # Layout editor over RPC (keymap_* via the daemon) — must construct.
+            app.open_layout_editor()
+            app.processEvents()
+            print("LAYOUT_OK layers=%s" % app.layout_dialog.num_layers)
+            app.layout_dialog.close()
             app.quit_app()
         print("SERVER_RUNNING", srv._running)
     finally:

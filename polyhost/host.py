@@ -325,7 +325,6 @@ class PolyHost(QApplication):
         # in-process only for now. Client mode (H4a-1) gets a firmware-flash
         # action that routes through the daemon over RPC instead.
         self.cmdMenu = None
-        self.layout_editor = None
         self._flash_action = None
         if not self.client_mode:
             self.cmdMenu = CommandsSubMenu(self, self.keeb)
@@ -336,18 +335,18 @@ class PolyHost(QApplication):
             # noinspection PyUnresolvedReferences
             action.triggered.connect(self.send_shortcuts)
             self.menu.addAction(action)
-
-            self.layout_editor = QAction(get_icon("keyboard.svg"), "Configure Keymap", parent=self)
-            # noinspection PyUnresolvedReferences
-            self.layout_editor.triggered.connect(self.open_layout_editor)
-            self.menu.addAction(self.layout_editor)
         else:
             self._flash_action = QAction(get_icon("keyboard.svg"), "Flash firmware .bin…", parent=self)
             # noinspection PyUnresolvedReferences
             self._flash_action.triggered.connect(self._client_flash_firmware)
             self.menu.addAction(self._flash_action)
-        # The settings dialog is device-independent (edits settings, not the
-        # device), so it works in client mode too — over RPC (H4a-2).
+        # The layout editor and settings dialog are device-independent of the
+        # in-process worker — they drive the device through core.keymap_* /
+        # settings.* (RPC in client mode), so both work in either mode (H4a-2).
+        self.layout_editor = QAction(get_icon("keyboard.svg"), "Configure Keymap", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.layout_editor.triggered.connect(self.open_layout_editor)
+        self.menu.addAction(self.layout_editor)
         self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
 
@@ -564,11 +563,12 @@ class PolyHost(QApplication):
             # Re-enable the firmware actions inside the commands submenu (the
             # loop above just disabled its parent action on a mismatch).
             self.cmdMenu.update_enabled(enabled, fw_enabled)
-            self.layout_editor.setEnabled(True)
             self.firmware_update_action.setEnabled(fw_enabled)
         elif self._flash_action is not None:
             self._flash_action.setEnabled(fw_enabled)
-        self.settings_dialog.setEnabled(True)   # device-independent, both modes
+        # Available in both modes (driven via core methods).
+        self.layout_editor.setEnabled(True)
+        self.settings_dialog.setEnabled(True)
         self.log_dialog.setEnabled(True)
         self.update_action.setEnabled(True)
         self.status.setEnabled(True)
@@ -823,7 +823,9 @@ class PolyHost(QApplication):
                 action.setText(text)
 
     def open_layout_editor(self):
-        self.layout_dialog = KbLayoutDialog(self.keeb, self.device_settings, worker=self.worker)
+        # Driven through the core's keymap_* methods, so it works in-process
+        # (worker run_sync) and in client mode (RPC) alike.
+        self.layout_dialog = KbLayoutDialog(self.core, self.device_settings)
         self.layout_dialog.show()
 
     def open_settings(self):
