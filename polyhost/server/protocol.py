@@ -84,6 +84,12 @@ M_ACTIVATE_BOOTLOADER = "fw.bootloader"             # {} -> {"queued": True}
 M_SET_HANDEDNESS = "fw.set_handedness"              # {"master_is_left": bool} -> {"queued": True}
 M_FW_APPLY_STAGED = "fw.apply_staged"               # {} -> {"queued": True} (streams fw_apply_* events)
 M_HOST_SHUTDOWN = "host.shutdown"      # {} -> {"shutting_down": True}
+# Inject an external active-window report into remote window tracking (H4c).
+# {"handle": str|int, "name": str, "title": str} -> (ok, payload). Same data the
+# cross-machine TCP relay carries, but over the control socket (a local client /
+# polyctl). The matcher/transport unification is a follow-up; this just feeds the
+# existing remote path.
+M_WINDOW_REPORT = "window.report"
 
 # ---------------------------------------------------------------------------
 # Endpoint location + authkey (filesystem-permission gated, local only)

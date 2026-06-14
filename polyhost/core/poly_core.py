@@ -359,6 +359,22 @@ class PolyCore:
         elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
 
+    def report_window(self, handle, name, title):
+        """Inject an external active-window report into remote window tracking
+        (the ``window.report`` RPC / ``polyctl window report``).
+
+        Mirrors what the cross-machine TCP relay does, but over the control
+        socket — a local client (or a future unified transport) can feed the
+        daemon's remote window matching without the bespoke TCP. No device I/O
+        and no worker needed: it just stores the report; the next
+        window-tracking tick applies it if a remote-mapping entry is active.
+        Returns the uniform ``(ok, payload)`` the RPC layer unwraps."""
+        handler = self.overlay_handler
+        if handler is None or getattr(handler, "remote_handler", None) is None:
+            return False, "window tracking unavailable"
+        handler.remote_handler.report_window(handle, name, title)
+        return True, {"reported": True}
+
     def submit_overlay_cmd(self, cmd):
         """Queue an enable/disable of overlays (coalesces with sends)."""
         self.worker.submit("overlay", lambda c, cmd=cmd: self._overlay_cmd_job(cmd, c),

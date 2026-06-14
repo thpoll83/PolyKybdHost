@@ -187,6 +187,28 @@ default value changed.
   daemon-by-default; the GUI-spawns-daemon path already delivers it.
 - macOS/Linux end-to-end validation of the spawn→attach flow.
 
+## Status (2026-06-14) — H4c-1: window.report RPC (safe subset)
+The active-window report now has a control-socket entry point: a `window.report`
+RPC (`M_WINDOW_REPORT`) → `PolyCore.report_window(handle, name, title)` →
+`RemoteHandler.report_window`, which writes the **same `connections` store the
+cross-machine TCP relay feeds**, so the existing remote matching (`remote_changed`
+/ `try_to_match_window_remote`) picks it up unchanged. `polyctl window report
+--name … [--handle …] [--title …]` drives it; the GUI/CLI can now inject a window
+report into the daemon's remote tracking over the local socket. No device I/O
+(it just stores the report; the next window tick applies it).
+
+**Deliberately the safe subset** (per the scoping decision): the cross-machine
+TCP wire and `receive_from_forwarder` are **untouched** (the field forwarder
+keeps working as-is), and the matcher is **not** deduped yet.
+
+### Deferred to a follow-up (H4c-2, "the advanced version")
+- Kill the duplicate matcher: `RemoteHandler.try_to_match_window_remote` is a
+  near-copy of `OverlayHandler.try_to_match_window`. Extract one shared matcher
+  both paths use.
+- Route `receive_from_forwarder` through `report_window` so the TCP relay is a
+  thin transport over the unified entry point (no bespoke dict stash).
+- Cross-machine validation (needs two machines + hardware).
+
 ## Host integration — concrete plan & a hard CONSTRAINT
 **Constraint discovered: `polyhost/host.py` cannot be imported or run in the
 dev/CI container** — `pynput` (imported at host.py top) requires an X server;

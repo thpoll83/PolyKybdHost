@@ -119,6 +119,10 @@ class FakeCore:
     def set_all_overlay_usage(self):
         return (True, "all")
 
+    def report_window(self, handle, name, title):
+        self.calls.append(("report_window", handle, name, title))
+        return (True, {"reported": True})
+
     def send_overlay_mapping(self, mapping):
         self.calls.append(("send_overlay_mapping", mapping))
         return (True, "mapped")
@@ -282,6 +286,14 @@ class ControlServerTest(unittest.TestCase):
         # The connection is still usable afterwards.
         resp2 = self._call(conn, 41, p.M_STATUS_GET)
         self.assertEqual(resp2["id"], 41)
+
+    def test_window_report_dispatch(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 42, p.M_WINDOW_REPORT,
+                          {"handle": "7", "name": "Code.exe", "title": "x - VS Code"})
+        self.assertEqual(resp["result"], {"reported": True})
+        self.assertIn(("report_window", "7", "Code.exe", "x - VS Code"), self.core.calls)
 
     def test_pause_set(self):
         conn = self._connect()

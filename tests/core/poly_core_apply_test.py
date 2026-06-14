@@ -63,6 +63,23 @@ def connect_snapshot(**over):
     return snap
 
 
+class TestReportWindow(unittest.TestCase):
+    def test_delegates_to_remote_handler(self):
+        core = make_core()
+        ok, payload = core.report_window("7", "Code.exe", "x - VS Code")
+        self.assertTrue(ok)
+        self.assertEqual(payload, {"reported": True})
+        core.overlay_handler.remote_handler.report_window.assert_called_once_with(
+            "7", "Code.exe", "x - VS Code")
+
+    def test_no_window_tracking_returns_error(self):
+        core = make_core()
+        core.overlay_handler = None
+        ok, msg = core.report_window("7", "Code.exe", "x")
+        self.assertFalse(ok)
+        self.assertIsInstance(msg, str)
+
+
 class TestApplyReconnect(unittest.TestCase):
 
     def test_paused_returns_none(self):

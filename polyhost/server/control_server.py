@@ -321,6 +321,8 @@ class ControlServer:
             p.M_SETTINGS_LIST: lambda conn, params: c.settings_list(),
             p.M_SETTINGS_SET: lambda conn, params: _unwrap(c.settings_set(
                 params["key"], params["value"])),
+            p.M_WINDOW_REPORT: lambda conn, params: _unwrap(c.report_window(
+                params["handle"], params["name"], params.get("title", ""))),
             p.M_HOST_SHUTDOWN: self._cmd_host_shutdown,
             p.EVENTS_SUBSCRIBE: self._cmd_events_subscribe,
         }
