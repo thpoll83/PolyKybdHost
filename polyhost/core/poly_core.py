@@ -19,6 +19,7 @@ lazily and degrades to "off" with a warning (plan §5.4).
 """
 import os
 import pathlib
+import sys
 import threading
 import time
 
@@ -199,12 +200,32 @@ class PolyCore:
             return
 
         def _loop():
-            while not self._tick_stop.is_set():
+            # pywinctl talks COM on Windows; a freshly-spawned thread must
+            # initialize COM or getActiveWindow() fails with "Invalid syntax"
+            # (0x80040E14). The Qt GUI gets this free on its main thread, but
+            # this core-owned tick thread (headless / H3) does not.
+            com_inited = False
+            if sys.platform == "win32":
                 try:
-                    self.tick_window_tracking()
+                    import pythoncom
+                    pythoncom.CoInitialize()
+                    com_inited = True
                 except Exception:
-                    self.log.exception("Window-tracking tick failed")
-                self._tick_stop.wait(interval_s)
+                    self.log.warning("COM init for window tracking failed", exc_info=True)
+            try:
+                while not self._tick_stop.is_set():
+                    try:
+                        self.tick_window_tracking()
+                    except Exception:
+                        self.log.exception("Window-tracking tick failed")
+                    self._tick_stop.wait(interval_s)
+            finally:
+                if com_inited:
+                    try:
+                        import pythoncom
+                        pythoncom.CoUninitialize()
+                    except Exception:
+                        pass
 
         # Guard the check-and-create so two callers can't start two threads.
         with self._tick_lock:
