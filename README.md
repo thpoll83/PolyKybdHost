@@ -241,3 +241,141 @@ The line `Autostart in place: ...` printed at startup tells you which mechanism
 is active. Run with `--portable` to skip registration; if an entry already
 exists from a previous run it is removed, so a portable run leaves nothing
 behind.
+
+## Architecture (developer notes)
+
+PolyHost is split into a **Qt-free operational core** and one or more
+**frontends** that drive it over a local **control socket**. The core owns the
+device; a frontend is just a client. This is the "headless-core" design
+(plans `H1`–`H4`).
+
+- **Core** — [`polyhost/core/poly_core.py`](polyhost/core/poly_core.py)
+  (`PolyCore`): owns the device stack, the reconnect probe, overlay/keymap/
+  language commands, active-window tracking, MRU cache and brightness. It never
+  imports PyQt5 and emits results as JSON-serializable events
+  (`subscribe`/`emit`). All HID I/O runs on a dedicated worker thread
+  ([`device/hid_worker.py`](polyhost/device/hid_worker.py)).
+- **Control socket** — [`polyhost/server/`](polyhost/server): a small JSON-RPC
+  protocol ([`protocol.py`](polyhost/server/protocol.py)) over the stdlib
+  `multiprocessing.connection` transport (Unix socket / Windows named pipe +
+  HMAC authkey), served by [`control_server.py`](polyhost/server/control_server.py).
+  The same socket doubles as the single-instance lock
+  ([`instance.py`](polyhost/server/instance.py)).
+- **Frontends** — the PyQt5 **tray GUI**
+  ([`host.py`](polyhost/host.py)), the stdlib **`polyctl` CLI**
+  ([`cli/polyctl.py`](polyhost/cli/polyctl.py)), and the **`--headless` daemon**
+  ([`headless.py`](polyhost/headless.py)).
+
+### Operating modes
+
+| Mode | How | Who owns the device |
+|------|-----|---------------------|
+| **Daemon + GUI client** (default) | `python -m polyhost` with `daemon_mode` on | A spawned `--headless` daemon; the GUI attaches as a [`RemoteCore`](polyhost/client/remote_core.py) client |
+| **In-process GUI** | `python -m polyhost --no-daemon` | The GUI process (`PolyHost` owns `PolyCore`); it still embeds a control server for `polyctl` |
+| **Headless** | `python -m polyhost --headless` | The daemon; drive it with `polyctl` (no Qt) |
+| **Forwarder** | `python -m polyhost --host <ip>` | Nothing — relays the active window of a *remote* machine to the keyboard machine |
+
+### Component view (default daemon mode)
+
+```mermaid
+flowchart LR
+    GUI["Tray GUI (PyQt5)<br/>host.py + RemoteCore"]
+    CLI["polyctl CLI"]
+    subgraph Daemon["Headless daemon (Qt-free process)"]
+        CS["ControlServer<br/>server/control_server.py"]
+        PC["PolyCore<br/>core/poly_core.py"]
+        HW["HidWorker thread<br/>device/hid_worker.py"]
+        CS --- PC
+        PC --- HW
+    end
+    KB["PolyKybd<br/>(HID device)"]
+    GUI -- "JSON-RPC + event stream" --> CS
+    CLI -- "JSON-RPC" --> CS
+    HW <-- "64-byte HID reports" --> KB
+```
+
+In `--no-daemon` mode the GUI *is* the daemon box (it owns `PolyCore` + the
+worker and embeds the `ControlServer`), so `polyctl` still works.
+
+### Startup decision (daemon-by-default)
+
+The mode is chosen in [`main_app.py`](polyhost/main_app.py) using the pure
+helper in [`server/daemon_launch.py`](polyhost/server/daemon_launch.py):
+
+```mermaid
+flowchart TD
+    A["python -m polyhost"] --> B{"daemon_mode?"}
+    B -- off --> IP["In-process GUI owns PolyCore"]
+    B -- on --> P{"control socket?"}
+    P -- "LIVE" --> C["Attach GUI as client"]
+    P -- "stale / none" --> S["Spawn --headless daemon (detached)"]
+    S --> W{"came up?"}
+    W -- yes --> C
+    W -- no --> IP
+    P -- "incompatible / auth mismatch" --> X["Defer (exit)"]
+```
+
+### Forwarder (multi-machine)
+
+A keyboard can follow whichever computer you're working on. The remote machine
+runs a forwarder that reports its active window over TCP to the keyboard
+machine; see [`forwarder.py`](polyhost/forwarder.py) and
+[`handler/remote_window.py`](polyhost/handler/remote_window.py).
+
+```mermaid
+flowchart LR
+    subgraph Remote["Remote machine (no keyboard)"]
+        FW["PolyForwarder<br/>--host &lt;ip&gt;"]
+    end
+    subgraph Local["Keyboard machine"]
+        D["PolyHost core"]
+        KB["PolyKybd"]
+        D --- KB
+    end
+    FW -- "active window over TCP :50162" --> D
+```
+
+A control-socket `window.report` RPC (driven by `polyctl window report`) is a
+newer local entry point into the same matcher; unifying the cross-machine
+transport onto it is recorded as future work in
+[`docs/headless-h4-plan.md`](docs/headless-h4-plan.md).
+
+### Threading model (in short)
+
+After startup the Qt main thread does **no** device I/O — everything HID runs on
+the `HidWorker` thread (periodics: reconnect probe ~1 s, console reads ~250 ms,
+daylight brightness ~10 min). The core publishes results as events; the Qt
+client marshals them onto the main thread via `WorkerBridge`. Worker/core code
+must never touch Qt objects. Full contract:
+[`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md).
+
+### Source map
+
+| Concept | File |
+|---------|------|
+| Entry / mode selection | [`polyhost/main_app.py`](polyhost/main_app.py) |
+| Operational core (Qt-free) | [`polyhost/core/poly_core.py`](polyhost/core/poly_core.py) |
+| HID worker thread | [`polyhost/device/hid_worker.py`](polyhost/device/hid_worker.py) |
+| Device interface | [`polyhost/device/poly_kybd.py`](polyhost/device/poly_kybd.py) |
+| Tray GUI | [`polyhost/host.py`](polyhost/host.py) |
+| GUI-as-client adapter | [`polyhost/client/remote_core.py`](polyhost/client/remote_core.py) |
+| Control protocol (wire) | [`polyhost/server/protocol.py`](polyhost/server/protocol.py) |
+| Control server | [`polyhost/server/control_server.py`](polyhost/server/control_server.py) |
+| Single-instance lock | [`polyhost/server/instance.py`](polyhost/server/instance.py) |
+| Daemon spawn / attach decision | [`polyhost/server/daemon_launch.py`](polyhost/server/daemon_launch.py) |
+| Headless daemon | [`polyhost/headless.py`](polyhost/headless.py) |
+| CLI | [`polyhost/cli/polyctl.py`](polyhost/cli/polyctl.py) |
+| Active-window tracking | [`polyhost/handler/active_window.py`](polyhost/handler/active_window.py) |
+| Forwarder (multi-machine) | [`polyhost/forwarder.py`](polyhost/forwarder.py) |
+| Firmware-flash dialog | [`polyhost/gui/hid_fw_up_dialog.py`](polyhost/gui/hid_fw_up_dialog.py) |
+
+### Further reading
+
+- [`docs/headless-core-plan.md`](docs/headless-core-plan.md) — the H1–H3 design
+  (extracting `PolyCore`, the control socket, `--headless`).
+- [`docs/headless-h4-plan.md`](docs/headless-h4-plan.md) — H4 (GUI as a client,
+  daemon-by-default, `window.report`) and the deferred follow-ups.
+- [`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md) — the HID worker
+  threading contract.
+- [`CLAUDE.md`](CLAUDE.md) — the working dev guide (conventions, test commands,
+  hard-won gotchas).
