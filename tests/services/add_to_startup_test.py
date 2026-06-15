@@ -67,6 +67,41 @@ class WindowsAutostartFallbackTest(unittest.TestCase):
         self.assertEqual(mk_lnk.call_count, 1)
 
 
+class BatWrapperTest(unittest.TestCase):
+    """The venv launcher .bat must activate the venv and run the GUI windowless
+    (pythonw, no console) — a console window would otherwise open and closing it
+    would kill the app."""
+
+    def test_uses_pythonw_when_available_and_activates(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            venv = Path(tmp) / "venv"
+            (venv / "Scripts").mkdir(parents=True)
+            (venv / "Scripts" / "pythonw.exe").write_text("")   # pythonw present
+            (venv / "Scripts" / "activate.bat").write_text("")
+            script = Path(tmp) / "polyhost" / "__main__.py"
+            script.parent.mkdir(parents=True)
+            wrapper = Path(tmp) / "start_polyhost.bat"
+            add_to_startup.create_windows_bat_wrapper(venv, script, "", wrapper)
+            content = wrapper.read_text()
+        self.assertIn("activate.bat", content)          # venv activated first
+        self.assertIn("pythonw -m polyhost", content)   # console-free interpreter
+        self.assertNotIn("\npython -m polyhost", content)
+
+    def test_falls_back_to_python_without_pythonw(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            venv = Path(tmp) / "venv"
+            (venv / "Scripts").mkdir(parents=True)         # no pythonw.exe
+            (venv / "Scripts" / "activate.bat").write_text("")
+            script = Path(tmp) / "polyhost" / "__main__.py"
+            script.parent.mkdir(parents=True)
+            wrapper = Path(tmp) / "start_polyhost.bat"
+            add_to_startup.create_windows_bat_wrapper(venv, script, "", wrapper)
+            content = wrapper.read_text()
+        self.assertIn("python -m polyhost", content)
+
+
 class HiddenInvocationTest(unittest.TestCase):
     """A .bat launcher must be wrapped in wscript + hidden .vbs (no console
     flash); a frozen exe is windowless and passed through unchanged."""
