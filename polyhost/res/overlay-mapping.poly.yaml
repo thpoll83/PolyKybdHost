@@ -40,3 +40,15 @@ lockapp:
   overlay: windows_lockscreen_template.png
 slack:
   overlay: [slack_template.mods.png, slack_template.combo.mods.png]
+notepad++:
+  overlay: [notepadpp_template.mods.png, notepadpp_template.combo.mods.png]
+explorer:
+  overlay: [explorer_template.mods.png, explorer_template.combo.mods.png]
+winword:
+  overlay: [word_template.mods.png, word_template.combo.mods.png]
+excel:
+  overlay: [excel_template.mods.png, excel_template.combo.mods.png]
+outlook:
+  overlay: [outlook_template.mods.png, outlook_template.combo.mods.png]
+powerpnt:
+  overlay: [powerpoint_template.mods.png, powerpoint_template.combo.mods.png]

@@ -1,0 +1,61 @@
+# Windows File Explorer shortcut overlays for PolyKybd.
+#
+# Icons: Microsoft Fluent UI System Icons (MIT) — native style for a MS app.
+# Program icon (ESC, all layers): a folder (swap for the real Explorer logo by
+# committing icons/explorer.png). See SOURCES.md. Shortcuts: Windows 10/11 defaults.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/explorer/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/explorer/bindings.yaml --preview /tmp/exp_preview
+app: explorer
+match: [explorer]              # confirm vs the active-window name (explorer / explorer.exe)
+output: explorer_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [36, 32]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: explorer.png      # 32x32 white-on-black line art — placed 1:1
+program_icon_mode: bright        # source is white-on-black: light the white pixels
+program_icon_anchor: bottom-right
+program_icon_region: [32, 32]    # native size -> no scaling (1:1), bigger than shortcuts
+program_icon_margin: 1
+program_icon_threshold: 128
+
+bindings:
+  # --- edit (Ctrl -> R channel of primary) ---
+  - { key: C, mods: [CTRL], icon: copy.png,      label: Copy,        source: "ms-fluent/Copy (MIT)" }
+  - { key: X, mods: [CTRL], icon: cut.png,       label: Cut,         source: "ms-fluent/Cut (MIT)" }
+  - { key: V, mods: [CTRL], icon: paste.png,     label: Paste,       source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: Z, mods: [CTRL], icon: undo.png,      label: Undo,        source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: Y, mods: [CTRL], icon: redo.png,      label: Redo,        source: "ms-fluent/Arrow Redo (MIT)" }
+  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
+
+  # --- file / window (Ctrl) ---
+  - { key: F, mods: [CTRL], icon: find.png,      label: Search,      source: "ms-fluent/Search (MIT)" }
+  - { key: N, mods: [CTRL], icon: newwindow.png, label: "New window", source: "ms-fluent/Window New (MIT)" }
+  - { key: W, mods: [CTRL], icon: close.png,     label: Close,       source: "ms-fluent/Dismiss (MIT)" }
+  - { key: L, mods: [CTRL], icon: address.png,   label: "Address bar", source: "ms-fluent/Location (MIT)" }
+
+  # --- plain keys (no-mod -> A channel) ---
+  - { key: F2, mods: [], icon: rename.png,     label: Rename,    source: "ms-fluent/Rename (MIT)" }
+  - { key: DELETE, mods: [], icon: delete.png, label: Delete,    source: "ms-fluent/Delete (MIT)" }
+  - { key: F5, mods: [], icon: refresh.png,    label: Refresh,   source: "ms-fluent/Arrow Sync (MIT)" }
+  - { key: BACKSPACE, mods: [], icon: back.png, label: Back,     source: "ms-fluent/Arrow Left (MIT)" }
+  - { key: F11, mods: [], icon: fullscreen.png, label: "Full screen", source: "ms-fluent/Full Screen Maximize (MIT)" }
+
+  # --- Shift -> B channel of primary ---
+  - { key: DELETE, mods: [SHIFT], icon: deleteperm.png, label: "Delete (perm)", source: "ms-fluent/Delete Dismiss (MIT)" }
+
+  # --- Alt -> G channel of primary (navigation) ---
+  - { key: ENTER, mods: [ALT], icon: properties.png, label: Properties, source: "ms-fluent/Settings (MIT)" }
+  - { key: UP,    mods: [ALT], icon: uplevel.png,    label: "Up level", source: "ms-fluent/Arrow Up (MIT)" }
+  - { key: LEFT,  mods: [ALT], icon: back.png,       label: Back,       source: "ms-fluent/Arrow Left (MIT)" }
+  - { key: RIGHT, mods: [ALT], icon: forward.png,    label: Forward,    source: "ms-fluent/Arrow Right (MIT)" }
+
+  # --- Ctrl+Shift -> R channel of combo ---
+  - { key: N, mods: [CTRL, SHIFT], icon: newfolder.png, label: "New folder", source: "ms-fluent/Folder Add (MIT)" }
