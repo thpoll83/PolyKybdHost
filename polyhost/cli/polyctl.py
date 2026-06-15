@@ -76,13 +76,13 @@ class RpcClient:
     def events(self):
         """Yield (name, payload) from pushed notifications until EOF.
 
-        Assumes :meth:`subscribe_events` was already called. EOF (server
-        closed the connection — e.g. the host restarting after an update)
-        ends the generator cleanly."""
+        Assumes :meth:`subscribe_events` was already called. A closed
+        connection — clean EOF or a forced/reset close (OSError) when the host
+        stops or restarts — ends the generator cleanly."""
         while True:
             try:
                 msg = protocol.recv_message(self._conn)
-            except EOFError:
+            except (EOFError, OSError):
                 return
             if msg.get("method") == protocol.EVENT_NOTIFICATION:
                 params = msg.get("params") or {}
@@ -311,6 +311,11 @@ def _cmd_watch(client, args):
     return 0
 
 
+def _cmd_window_report(client, args):
+    _print_result(client.call(protocol.M_WINDOW_REPORT, {
+        "handle": args.handle, "name": args.name, "title": args.title}))
+
+
 def _cmd_shutdown(client, args):
     _print_result(client.call(protocol.M_HOST_SHUTDOWN))
     return 0
@@ -403,6 +408,15 @@ def build_parser():
     p_set_set.add_argument("key")
     p_set_set.add_argument("value", help="JSON value (falls back to string)")
     p_set.set_defaults(func=_cmd_settings)
+
+    p_win = sub.add_parser("window", help="report an active window to the core (remote/forwarder)")
+    win_sub = p_win.add_subparsers(dest="window_cmd", required=True)
+    p_win_report = win_sub.add_parser(
+        "report", help="inject an active-window report (handle/name/title) over the control socket")
+    p_win_report.add_argument("--handle", default="0", help="window handle (any string/int)")
+    p_win_report.add_argument("--name", required=True, help="application name, e.g. Code.exe")
+    p_win_report.add_argument("--title", default="", help="window title")
+    p_win_report.set_defaults(func=_cmd_window_report)
 
     sub.add_parser("watch", help="stream events until Ctrl-C").set_defaults(func=_cmd_watch)
     sub.add_parser("shutdown", help="ask the host to shut down").set_defaults(func=_cmd_shutdown)

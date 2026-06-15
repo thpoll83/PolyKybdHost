@@ -11,7 +11,6 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.device.device_settings import DeviceSettings
-from polyhost.device.poly_kybd import PolyKybd
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
@@ -60,7 +59,7 @@ class KeyEditDialog(QDialog):
 
 
 class KbLayoutDialog(QMainWindow):
-    def __init__(self, keeb: PolyKybd, settings: DeviceSettings, parent=None, worker=None):
+    def __init__(self, core, settings: DeviceSettings, parent=None):
         super().__init__(parent)
         self.log = logging.getLogger('PolyHost')
         self.settings = settings
@@ -70,11 +69,12 @@ class KbLayoutDialog(QMainWindow):
         self.row_count = 0
         self.col_count = 0
 
-        self.keeb = keeb
-        # All device I/O goes through the HID worker (the host owns it). Reads use
-        # run_sync (short bounded block); writes are fire-and-forget submits.
-        self.worker = worker
-        
+        # Keymap I/O goes through the core's keymap_* methods, which return a
+        # uniform (ok, payload) in BOTH modes: PolyCore runs them on the HID
+        # worker (run_sync), RemoteCore over the control socket (RPC). So the
+        # dialog works identically for an in-process or a --connect GUI.
+        self.core = core
+
         self.scale_factor = 1.0
         self._zoom_step = 1.2   # multiplicative step for each + / - press
         self._zoom_min = 0.2
@@ -89,25 +89,6 @@ class KbLayoutDialog(QMainWindow):
     def get_selected_key(self):
         return self.selected_key
 
-    def _read_sync(self, name, fn, default):
-        """Run a device read through the worker. If no worker was passed
-        (dialog opened standalone) or the worker is suspended (e.g. during a
-        firmware flash, where run_sync raises RuntimeError) — surface the
-        existing not-connected message box and return ``default`` instead of
-        crashing."""
-        try:
-            if self.worker is None:
-                raise RuntimeError("no HID worker available")
-            return self.worker.run_sync(name, fn, timeout=5)
-        except RuntimeError:
-            QMessageBox.warning(
-                None, "Not Connected",
-                "PolyKybd is not connected. Please connect the keyboard and try again.")
-            return default
-        except Exception as exc:
-            self.log.warning("%s failed: %s", name, exc)
-            return default
-
     def init_ui(self):
         central = QWidget()
         main_layout = QVBoxLayout()
@@ -120,12 +101,14 @@ class KbLayoutDialog(QMainWindow):
         self.keycode_browser = KeycodeBrowser()
         self.keycode_browser.keycodeSelected.connect(self.keycodeSelected)
 
-        success, self.num_layers = self._read_sync(
-            "get_dynamic_layer_count", lambda c: self.keeb.get_dynamic_layer_count(),
-            (False, 0))
+        success, num_layers = self.core.keymap_layer_count()
+        self.num_layers = num_layers if success else 0
         layer_names = parse_layer_names()
 
         if not success:
+            QMessageBox.warning(
+                None, "Not Connected",
+                "PolyKybd is not reachable. Please connect the keyboard and try again.")
             my_options = ["Could not read layers from device"]
         else:
             self.keycode_browser.set_layer_count(self.num_layers)
@@ -152,14 +135,11 @@ class KbLayoutDialog(QMainWindow):
 
         self.load_from_file(str(KLE_DEFINITION))
 
-        success, self.key_buffer = self._read_sync(
-            "get_dynamic_buffer", lambda c: self.keeb.get_dynamic_buffer(),
-            (False, None))
+        success, buf = self.core.keymap_buffer()
+        self.key_buffer = buf if success else None
         if success:
             self.log.info("Received dynamic key buffer: %d", len(self.key_buffer))
-            ok, default_layer = self._read_sync(
-                "get_default_layer", lambda c: self.keeb.get_default_layer(),
-                (False, 0))
+            ok, default_layer = self.core.keymap_default_layer()
             if ok and self.num_layers and 0 <= default_layer < self.num_layers:
                 self.current_layer = default_layer
                 self.layers.set_active(default_layer)
@@ -271,19 +251,12 @@ class KbLayoutDialog(QMainWindow):
         col = idx % self.settings.MATRIX_COLUMNS
         layer = self.current_layer
 
-        def _on_done(_name, result):
-            ok = result[0] if isinstance(result, tuple) else False
-            if not ok:
-                self.log.warning("Failed to write keycode 0x%04x to device (layer=%d row=%d col=%d)",
-                                 keycode, layer, row, col)
-
-        # Fire-and-forget write (result logged); keeps the local buffer in sync above.
-        if self.worker is None:
-            self.log.warning("No HID worker — keycode 0x%04x not written to device", keycode)
-            return
-        self.worker.submit("set_dynamic_keycode",
-                           lambda c: self.keeb.set_dynamic_keycode(layer, row, col, keycode),
-                           on_done=_on_done)
+        # Single-key write via the core (a quick HID write in-process, or an RPC
+        # round-trip in client mode); keeps the local buffer in sync above.
+        ok, _ = self.core.keymap_set(layer, row, col, keycode)
+        if not ok:
+            self.log.warning("Failed to write keycode 0x%04x to device (layer=%d row=%d col=%d)",
+                             keycode, layer, row, col)
 
             
     def render_keys(self):

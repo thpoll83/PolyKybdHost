@@ -54,6 +54,9 @@ echo ">> Creating virtual environment in .venv"
 . .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+# Editable install too, so the `polyctl` console script lands in .venv/bin
+# (deps are already satisfied above; this just adds the package link + script).
+python -m pip install -e .
 
 # --- native hidapi + permissions --------------------------------------------
 case "$(uname -s)" in

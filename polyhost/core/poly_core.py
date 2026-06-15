@@ -359,6 +359,22 @@ class PolyCore:
         elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
 
+    def report_window(self, handle, name, title):
+        """Inject an external active-window report into remote window tracking
+        (the ``window.report`` RPC / ``polyctl window report``).
+
+        Mirrors what the cross-machine TCP relay does, but over the control
+        socket — a local client (or a future unified transport) can feed the
+        daemon's remote window matching without the bespoke TCP. No device I/O
+        and no worker needed: it just stores the report; the next
+        window-tracking tick applies it if a remote-mapping entry is active.
+        Returns the uniform ``(ok, payload)`` the RPC layer unwraps."""
+        handler = self.overlay_handler
+        if handler is None or getattr(handler, "remote_handler", None) is None:
+            return False, "window tracking unavailable"
+        handler.remote_handler.report_window(handle, name, title)
+        return True, {"reported": True}
+
     def submit_overlay_cmd(self, cmd):
         """Queue an enable/disable of overlays (coalesces with sends)."""
         self.worker.submit("overlay", lambda c, cmd=cmd: self._overlay_cmd_job(cmd, c),
@@ -595,6 +611,27 @@ class PolyCore:
             if snapshot["state_changed"] and self.needs_overlay_reset:
                 self.needs_overlay_reset = False
                 applied["do_overlay_reset"] = True
+                # We just reset our OWN MRU cache (reset_all_caches above) to
+                # empty, but the keyboard kept whatever pool it had — a fresh
+                # host process (or daemon restart) connects to a keyboard that
+                # never rebooted, so its overlay pool is still populated. Unless
+                # we clear it, the empty host cache and the stale keyboard pool
+                # are desynced and a later cache-hit ("0 upload") send maps
+                # display positions onto slots the new session never wrote —
+                # icons from a previous app/session bleed through.
+                #
+                # The GUI consumes do_overlay_reset and calls core.reset_overlays()
+                # itself. Headless (apply_reconnect_in_core) ignores the returned
+                # `applied`, so nothing cleared the keyboard there. Do it now —
+                # we're on the worker thread, so call the device directly
+                # (reset_overlays() would worker.run_sync and deadlock the worker
+                # on itself).
+                if self.apply_reconnect_in_core:
+                    try:
+                        self.keeb.reset_overlays_and_usage()
+                        self.log.info("Connected: keyboard overlay state cleared.")
+                    except Exception as e:
+                        self.log.warning("Connect-time overlay reset failed: %s", e)
             # Independent of state_changed: a fast reboot (no observed
             # disconnect) still must invalidate the host-side MRU cache.
             if snapshot.get("fresh_boot"):
@@ -751,6 +788,10 @@ class PolyCore:
     def settings_get(self, key):
         return self.poly_settings.get(key)
 
+    def settings_list(self):
+        """All settings as a plain dict (for the client's settings dialog)."""
+        return dict(self.poly_settings.get_all())
+
     def settings_set(self, key, value):
         """Set one known setting and persist. Returns (ok, msg)."""
         alls = self.poly_settings.get_all()
@@ -859,3 +900,66 @@ class PolyCore:
             on_failed=lambda m: self.emit("update_failed", {"msg": m}))
         inst.start()
         return True, {"queued": True, "version": rel.version}
+
+    # ------------------------------------------------------------------
+    # Advanced device commands (the GUI "All PolyKybd Commands" submenu)
+    # ------------------------------------------------------------------
+
+    def reset_dynamic_keymap(self):
+        return self._device_call("reset_dynamic_keymap",
+                                 lambda c: self.keeb.reset_dynamic_keymap())
+
+    def reset_overlay_buffers(self):
+        return self._device_call("reset_overlays",
+                                 lambda c: self.keeb.reset_overlays())
+
+    def reset_overlay_mapping(self):
+        return self._device_call("reset_overlay_mapping",
+                                 lambda c: self.keeb.reset_overlay_mapping())
+
+    def reset_overlay_usage(self):
+        return self._device_call("reset_overlay_usage",
+                                 lambda c: self.keeb.reset_overlay_usage())
+
+    def set_all_overlay_usage(self):
+        return self._device_call("set_all_overlay_usage",
+                                 lambda c: self.keeb.set_all_overlay_usage())
+
+    def send_overlay_mapping(self, mapping):
+        # Over JSON-RPC the dict keys arrive as strings; coerce back to int so
+        # the in-process and client paths behave identically.
+        m = {int(k): int(v) for k, v in dict(mapping).items()}
+        return self._device_call("send_overlay_mapping",
+                                  lambda c: self.keeb.send_overlay_mapping(m))
+
+    def activate_bootloader(self):
+        """Send-only (the device resets without replying)."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused)."
+        self.worker.submit("activate_bootloader", lambda c: self.keeb.activate_bootloader())
+        return True, {"queued": True}
+
+    def set_handedness(self, master_is_left):
+        """Send-only (both halves reboot onto the new handedness)."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused)."
+        self.worker.submit("set_handedness",
+                           lambda c, m=bool(master_is_left): self.keeb.set_handedness(m))
+        return True, {"queued": True}
+
+    def apply_staged_firmware(self):
+        """Apply a previously-staged firmware on the worker; streams
+        fw_apply_progress / fw_apply_done (same events as flash_firmware's apply
+        step). Returns (ok, payload): (False, msg) if unavailable; else
+        (True, {"queued": True})."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot apply firmware."
+
+        def _job(cancel):
+            aok, amsg = hid_fw_up.apply_staged_firmware(
+                self.keeb.hid,
+                progress_cb=lambda pct, m: self.emit("fw_apply_progress", {"pct": pct, "msg": m}))
+            self.emit("fw_apply_done", {"ok": bool(aok), "msg": amsg})
+
+        self.worker.submit("apply_staged_firmware", _job)
+        return True, {"queued": True}

@@ -101,6 +101,7 @@ class TestHeadlessHost(unittest.TestCase):
         # event flags the restart and trips the stop so run()'s finally runs it.
         from polyhost.headless import HeadlessHost
         host = HeadlessHost(_quiet())
+        self.addCleanup(host.stop)   # shut the core down so its listeners don't leak
         host._on_update_event("update_finished_ok", {"version": "0.9.0"})
         self.assertTrue(host._restart_after_stop)
         self.assertTrue(host._stop.is_set())
@@ -109,9 +110,82 @@ class TestHeadlessHost(unittest.TestCase):
     def test_relay_needed_flags_restart_with_path(self):
         from polyhost.headless import HeadlessHost
         host = HeadlessHost(_quiet())
+        self.addCleanup(host.stop)   # shut the core down so its listeners don't leak
         host._on_update_event("update_relay_needed", {"relay_path": "/tmp/relay.py"})
         self.assertTrue(host._restart_after_stop)
         self.assertEqual(host._relay_path, "/tmp/relay.py")
+
+
+class TestRunHeadlessLogging(unittest.TestCase):
+    """run_headless must write a rotating daemon_log.txt — a GUI-spawned daemon
+    runs detached with stdio at DEVNULL, so without the file its logs vanish."""
+
+    def test_run_headless_creates_daemon_log_file(self):
+        import polyhost.headless as headless
+
+        # Isolate the root logger so basicConfig actually attaches our handlers
+        # regardless of what earlier tests configured (and restore after).
+        root = logging.getLogger()
+        saved_handlers, saved_level = root.handlers[:], root.level
+        root.handlers.clear()
+        # run_headless also configures the PolyKybdConsole logger — snapshot it
+        # so we don't leak a handler pointing at a deleted temp file.
+        keeb = logging.getLogger("PolyKybdConsole")
+        saved_keeb = keeb.handlers[:]
+        keeb.handlers.clear()
+
+        cwd = os.getcwd()
+        tmp = tempfile.mkdtemp(prefix="poly_dlog_")
+
+        class _StubHost:
+            def __init__(self, log, ignore_version=False):
+                log.info("stub daemon up")
+
+            def run(self):
+                pass  # don't block
+
+        try:
+            os.chdir(tmp)
+            with mock.patch.object(headless, "HeadlessHost", _StubHost):
+                headless.run_headless(logging.INFO)
+            # Flush handlers so the file content is on disk before we read it.
+            for h in root.handlers:
+                h.flush()
+            log_path = os.path.join(tmp, "daemon_log.txt")
+            self.assertTrue(os.path.exists(log_path), "daemon_log.txt not created")
+            with open(log_path, encoding="utf-8") as f:
+                self.assertIn("running headless", f.read())
+            # The keyboard-console log file is set up too (mirrors the GUI).
+            self.assertTrue(os.path.exists(os.path.join(tmp, "polykybd_console.txt")))
+        finally:
+            os.chdir(cwd)
+            for lg, saved in ((root, saved_handlers), (keeb, saved_keeb)):
+                for h in lg.handlers:
+                    try:
+                        h.close()
+                    except Exception:
+                        pass
+                lg.handlers[:] = saved
+            root.setLevel(saved_level)
+            import shutil
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_console_event_routed_to_keeb_log(self):
+        from polyhost.headless import HeadlessHost
+        host = HeadlessHost(_quiet())
+        self.addCleanup(host.stop)
+        seen = []
+        cap = logging.Handler()
+        cap.emit = lambda r: seen.append(r.getMessage())
+        host.keeb_log.addHandler(cap)
+        try:
+            host._on_console_event("console", ("", "Stop idle."))
+            self.assertIn("Stop idle.", seen)
+            seen.clear()
+            host._on_console_event("status_changed", {"connected": True})
+            self.assertEqual(seen, [])   # non-console events ignored
+        finally:
+            host.keeb_log.removeHandler(cap)
 
 
 class TestHeadlessImportsNoQt(unittest.TestCase):

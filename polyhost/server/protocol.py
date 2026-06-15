@@ -71,8 +71,25 @@ M_UPDATE_INSTALL = "update.install"    # {} -> {"queued": bool, "version": str} 
 M_PAUSE_SET = "pause.set"              # {"paused": bool} -> {"paused": bool}
 M_MRU_SAVE = "mru.save"                # {} -> {"queued": True}
 M_SETTINGS_GET = "settings.get"        # {"key": str} -> value
+M_SETTINGS_LIST = "settings.list"      # {} -> {key: value, ...} (all settings)
 M_SETTINGS_SET = "settings.set"        # {"key","value"} -> (ok, payload)
+# Advanced device commands (the GUI "All PolyKybd Commands" submenu).
+M_RESET_DYNAMIC_KEYMAP = "keymap.reset"        # {} -> (ok, payload)
+M_OVERLAY_RESET_BUFFERS = "overlay.reset_buffers"   # {} -> (ok, payload)
+M_OVERLAY_RESET_MAPPING = "overlay.reset_mapping"   # {} -> (ok, payload)
+M_OVERLAY_RESET_USAGE = "overlay.reset_usage"       # {} -> (ok, payload)
+M_OVERLAY_SET_ALL_USAGE = "overlay.set_all_usage"   # {} -> (ok, payload)
+M_OVERLAY_MAPPING_SEND = "overlay.mapping_send"     # {"mapping": {idx: idx}} -> (ok, payload)
+M_ACTIVATE_BOOTLOADER = "fw.bootloader"             # {} -> {"queued": True}
+M_SET_HANDEDNESS = "fw.set_handedness"              # {"master_is_left": bool} -> {"queued": True}
+M_FW_APPLY_STAGED = "fw.apply_staged"               # {} -> {"queued": True} (streams fw_apply_* events)
 M_HOST_SHUTDOWN = "host.shutdown"      # {} -> {"shutting_down": True}
+# Inject an external active-window report into remote window tracking (H4c).
+# {"handle": str|int, "name": str, "title": str} -> (ok, payload). Same data the
+# cross-machine TCP relay carries, but over the control socket (a local client /
+# polyctl). The matcher/transport unification is a follow-up; this just feeds the
+# existing remote path.
+M_WINDOW_REPORT = "window.report"
 
 # ---------------------------------------------------------------------------
 # Endpoint location + authkey (filesystem-permission gated, local only)
@@ -159,8 +176,26 @@ def secure_endpoint(address: str) -> None:
 # Framing — UTF-8 JSON over send_bytes/recv_bytes (never pickle send/recv)
 # ---------------------------------------------------------------------------
 
+def _json_default(obj):
+    """Last-resort encoder for values JSON can't represent natively.
+
+    Device-call results ride the ``(ok, payload)`` contract as opaque
+    payloads, and the payload is frequently the **raw HID reply** — a
+    ``bytes``/``bytearray`` like the ACK ``b"P\\x0d."``. The client only logs
+    it, but ``json.dumps`` can't encode bytes, so without this the whole frame
+    failed to serialize and the server dropped the connection mid-reply (the
+    client saw a bare EOF after the device had already applied the change —
+    e.g. brightness.set turned the displays bright yet reported a lost
+    connection). Decode such payloads to a string so the reply goes out
+    cleanly. Genuinely unexpected types still raise, surfacing real bugs."""
+    if isinstance(obj, (bytes, bytearray)):
+        return bytes(obj).decode("latin-1")
+    raise TypeError(
+        f"Object of type {type(obj).__name__} is not JSON serializable")
+
+
 def send_message(conn, obj) -> None:
-    conn.send_bytes(json.dumps(obj).encode("utf-8"))
+    conn.send_bytes(json.dumps(obj, default=_json_default).encode("utf-8"))
 
 
 def recv_message(conn):

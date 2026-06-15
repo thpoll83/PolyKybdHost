@@ -63,6 +63,23 @@ def connect_snapshot(**over):
     return snap
 
 
+class TestReportWindow(unittest.TestCase):
+    def test_delegates_to_remote_handler(self):
+        core = make_core()
+        ok, payload = core.report_window("7", "Code.exe", "x - VS Code")
+        self.assertTrue(ok)
+        self.assertEqual(payload, {"reported": True})
+        core.overlay_handler.remote_handler.report_window.assert_called_once_with(
+            "7", "Code.exe", "x - VS Code")
+
+    def test_no_window_tracking_returns_error(self):
+        core = make_core()
+        core.overlay_handler = None
+        ok, msg = core.report_window("7", "Code.exe", "x")
+        self.assertFalse(ok)
+        self.assertIsInstance(msg, str)
+
+
 class TestApplyReconnect(unittest.TestCase):
 
     def test_paused_returns_none(self):
@@ -91,6 +108,20 @@ class TestApplyReconnect(unittest.TestCase):
         self.assertTrue(applied["decision"]["do_post_connect"])
         self.assertEqual(events[-1][0], "status_changed")
         self.assertTrue(events[-1][1]["connected"])
+        # GUI mode (apply_reconnect_in_core=False): the core leaves the keyboard
+        # pool clear to the GUI (host.py consumes do_overlay_reset).
+        core.keeb.reset_overlays_and_usage.assert_not_called()
+
+    def test_headless_connect_clears_keyboard_overlay_pool(self):
+        # Headless owns the apply (no GUI consumes do_overlay_reset), so the
+        # core must clear the keyboard's stale pool itself — otherwise the empty
+        # MRU cache and a populated keyboard pool desync (stale icons bleed
+        # through). Mirrors the GUI's core.reset_overlays() on connect.
+        core = make_core()
+        core.apply_reconnect_in_core = True
+        applied = core.apply_reconnect(connect_snapshot())
+        self.assertTrue(applied["do_overlay_reset"])
+        core.keeb.reset_overlays_and_usage.assert_called_once()
 
     def test_protocol_mismatch_keeps_presence_for_flashing(self):
         core = make_core()

@@ -19,6 +19,21 @@ class TestFraming(unittest.TestCase):
         self.assertEqual(msg["method"], "status.get")
         self.assertEqual(msg["params"], {"x": 1})
 
+    def test_bytes_payload_serializes_instead_of_dropping(self):
+        # Device replies ride the (ok, payload) contract as the raw HID
+        # bytearray (e.g. the ACK b"P\x0d."). It must serialize to a string,
+        # not raise mid-send and drop the connection.
+        a, b = multiprocessing.Pipe()
+        p.send_message(a, p.make_response(5, bytearray(b"P\x0d.")))
+        msg = p.recv_message(b)
+        self.assertEqual(msg["id"], 5)
+        self.assertEqual(msg["result"], "P\r.")
+
+    def test_unknown_type_still_raises(self):
+        a, _ = multiprocessing.Pipe()
+        with self.assertRaises(TypeError):
+            p.send_message(a, p.make_response(6, object()))
+
     def test_event_notification_shape(self):
         ev = p.make_event("status_changed", {"connected": True})
         self.assertNotIn("id", ev)

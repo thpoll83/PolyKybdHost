@@ -65,7 +65,9 @@ class FakeCore:
         return self.lang_set_result
 
     def set_brightness(self, value):
-        return (True, int(value))
+        # Mirror the real device: the payload is the raw HID reply bytearray
+        # (the ACK), not a tidy int — it must still serialize over the wire.
+        return (True, bytearray(b"P\x0d."))
 
     def set_idle(self, idle):
         return (True, bool(idle))
@@ -102,6 +104,39 @@ class FakeCore:
         self.calls.append(("flash_firmware", path, apply))
         return (True, {"queued": True, "apply": bool(apply)})
 
+    def reset_dynamic_keymap(self):
+        return (True, "keymap reset")
+
+    def reset_overlay_buffers(self):
+        return (True, "buffers")
+
+    def reset_overlay_mapping(self):
+        return (True, "mapping")
+
+    def reset_overlay_usage(self):
+        return (True, "usage")
+
+    def set_all_overlay_usage(self):
+        return (True, "all")
+
+    def report_window(self, handle, name, title):
+        self.calls.append(("report_window", handle, name, title))
+        return (True, {"reported": True})
+
+    def send_overlay_mapping(self, mapping):
+        self.calls.append(("send_overlay_mapping", mapping))
+        return (True, "mapped")
+
+    def activate_bootloader(self):
+        return (True, {"queued": True})
+
+    def set_handedness(self, master_is_left):
+        self.calls.append(("set_handedness", master_is_left))
+        return (True, {"queued": True})
+
+    def apply_staged_firmware(self):
+        return (True, {"queued": True})
+
     def check_update(self):
         return (True, {"available": True, "version": "0.9.0", "url": "http://x"})
 
@@ -120,6 +155,9 @@ class FakeCore:
 
     def settings_get(self, key):
         return {"brightness": 25}.get(key)
+
+    def settings_list(self):
+        return {"brightness": 25, "idle": True}
 
     def settings_set(self, key, value):
         if key == "brightness":
@@ -237,6 +275,26 @@ class ControlServerTest(unittest.TestCase):
         resp = self._call(conn, 11, p.M_OVERLAY_SEND, {"files": ["a", "b"]})
         self.assertEqual(resp["result"], {"queued": True})
 
+    def test_bytes_payload_replies_without_dropping(self):
+        # A device call whose payload is the raw HID bytearray must produce a
+        # successful reply (string-encoded), not a dropped connection / EOF.
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 40, p.M_BRIGHTNESS_SET, {"value": 50})
+        self.assertEqual(resp["id"], 40)
+        self.assertEqual(resp["result"], "P\r.")
+        # The connection is still usable afterwards.
+        resp2 = self._call(conn, 41, p.M_STATUS_GET)
+        self.assertEqual(resp2["id"], 41)
+
+    def test_window_report_dispatch(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 42, p.M_WINDOW_REPORT,
+                          {"handle": "7", "name": "Code.exe", "title": "x - VS Code"})
+        self.assertEqual(resp["result"], {"reported": True})
+        self.assertIn(("report_window", "7", "Code.exe", "x - VS Code"), self.core.calls)
+
     def test_pause_set(self):
         conn = self._connect()
         self._hello_then(conn)
@@ -259,6 +317,24 @@ class ControlServerTest(unittest.TestCase):
         resp = self._call(conn, 30, p.M_FW_FLASH, {"path": "fw.bin", "apply": True})
         self.assertEqual(resp["result"], {"queued": True, "apply": True})
         self.assertIn(("flash_firmware", "fw.bin", True), self.core.calls)
+
+    def test_settings_list_dispatch(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 33, p.M_SETTINGS_LIST)
+        self.assertEqual(resp["result"], {"brightness": 25, "idle": True})
+
+    def test_command_submenu_dispatch(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        self.assertEqual(self._call(conn, 40, p.M_RESET_DYNAMIC_KEYMAP)["result"], "keymap reset")
+        self.assertEqual(self._call(conn, 41, p.M_OVERLAY_RESET_BUFFERS)["result"], "buffers")
+        self.assertEqual(self._call(conn, 42, p.M_ACTIVATE_BOOTLOADER)["result"], {"queued": True})
+        self.assertEqual(self._call(conn, 43, p.M_FW_APPLY_STAGED)["result"], {"queued": True})
+        self._call(conn, 44, p.M_SET_HANDEDNESS, {"master_is_left": True})
+        self.assertIn(("set_handedness", True), self.core.calls)
+        self._call(conn, 45, p.M_OVERLAY_MAPPING_SEND, {"mapping": {"4": 5}})
+        self.assertIn(("send_overlay_mapping", {"4": 5}), self.core.calls)
 
     def test_update_check_and_install_dispatch(self):
         conn = self._connect()

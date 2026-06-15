@@ -86,11 +86,22 @@ crash with an `ImportError` if a dependency slipped through.
 ## Running
 
 ```bash
-python -m polyhost                 # normal mode (system-tray GUI)
+python -m polyhost                 # normal mode (tray GUI); daemon-by-default:
+                                   #   runs the core in a headless daemon and
+                                   #   attaches the GUI as a client (spawning the
+                                   #   daemon if needed), so the core survives
+                                   #   GUI restarts
+python -m polyhost --no-daemon     # legacy in-process GUI (owns the device
+                                   #   directly; use for development)
+python -m polyhost --daemon        # force daemon-by-default regardless of setting
 python -m polyhost --debug 1       # debug logging
 python -m polyhost --portable      # skip autostart registration
 python -m polyhost --headless      # no GUI / no Qt — drive it with polyctl (see below)
 ```
+
+Daemon-by-default is controlled by the `daemon_mode` setting (default on). The
+GUI spawns/attaches the daemon; quitting the GUI leaves the daemon running
+(stop it with `polyctl shutdown`).
 
 ### Forwarder mode
 
@@ -165,6 +176,7 @@ python -m polyhost --headless          # owns the keyboard, serves the socket, n
 | `polyctl settings set <key> <value>` | Set one settings value (JSON, falls back to string). |
 | `polyctl update check` | Check GitHub for a newer host release. |
 | `polyctl update install` | Download and apply the latest host release (restarts the host). |
+| `polyctl window report --name Code.exe [--handle H] [--title T]` | Inject an active-window report into the core's remote window tracking (the control-socket path used by the forwarder feature). |
 | `polyctl watch` | Stream host events (status changes, overlay activity, …) until Ctrl-C. |
 | `polyctl shutdown` | Ask the host to shut down. |
 
