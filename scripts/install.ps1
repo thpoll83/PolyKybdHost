@@ -58,8 +58,16 @@ $venvPy = Join-Path (Get-Location) ".venv\Scripts\python.exe"
 function Start-PolyKybd {
     Write-Host ">> Starting PolyKybd..."
     # Prefer pythonw.exe so the GUI/tray app launches without a console window.
-    $pyw = Join-Path (Get-Location) ".venv\Scripts\pythonw.exe"
+    $scripts = Join-Path (Get-Location) ".venv\Scripts"
+    $pyw = Join-Path $scripts "pythonw.exe"
     if (-not (Test-Path $pyw)) { $pyw = $venvPy }
+    # Put the venv's Scripts dir on PATH for the launched process. Running the
+    # venv interpreter WITHOUT activation drops Scripts from PATH and the app
+    # dies silently on Windows (see the autostart notes in CLAUDE.md / the
+    # proven .bat wrapper). Mirror what Activate.ps1 does so the install-time
+    # launch behaves like a normal activated run; the child inherits this env.
+    $env:VIRTUAL_ENV = Join-Path (Get-Location) ".venv"
+    $env:PATH = "$scripts;" + $env:PATH
     Start-Process -FilePath $pyw -ArgumentList "-m", "polyhost" -WorkingDirectory (Get-Location)
     Write-Host ">> PolyKybd started; it also registers itself to autostart at login."
 }
