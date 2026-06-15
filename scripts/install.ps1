@@ -54,6 +54,9 @@ Write-Host ">> Creating virtual environment in .venv"
 $venvPy = Join-Path (Get-Location) ".venv\Scripts\python.exe"
 & $venvPy -m pip install --upgrade pip
 & $venvPy -m pip install -r requirements.txt
+# Editable install too, so the `polyctl` console script lands in .venv\Scripts
+# (deps are already satisfied above; this just adds the package link + script).
+& $venvPy -m pip install -e .
 
 function Start-PolyKybd {
     Write-Host ">> Starting PolyKybd..."
