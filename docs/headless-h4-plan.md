@@ -246,3 +246,54 @@ machine. So:
   *client*, which the daemon can't read. That needs either daemon-side
   download+flash (a new `fw.update` RPC) or byte upload over the socket — a
   design choice, not a wire-up. Deferred until chosen.
+
+## Future work — forwarder transport unification (H4c-2 / H4d)
+
+Status today (H4c-1, shipped): the cross-machine forwarder still uses the
+**bespoke TCP relay** — `polyhost/handler/remote_window.py` `receive_from_forwarder`
+listens on TCP **port 50162** and `PolyForwarder.send_to_host` sends plaintext
+`"{handle};{name};{title}"`. H4c-1 only added a *local* control-socket entry
+point: the `window.report` RPC → `PolyCore.report_window` → `RemoteHandler.report_window`,
+which writes the **same `connections` store** the TCP relay feeds, so the existing
+remote matcher picks it up unchanged.
+
+### H4c-2 — dedupe the matcher, route the TCP receiver through `report_window`
+- `RemoteHandler.try_to_match_window_remote` is a near-copy of
+  `OverlayHandler.try_to_match_window` (two matchers to keep in sync). Extract one
+  shared matcher both call.
+- Make `receive_from_forwarder` call `core.report_window(...)` (via a callback)
+  instead of stashing into the `connections` dict directly, so the TCP relay
+  becomes a thin transport over the single unified entry point.
+- Keeps the TCP wire; cross-machine behavior unchanged. Needs two machines to
+  validate.
+
+### H4d — networked control endpoint (retire the bespoke TCP relay)
+Make the forwarder a **real control-protocol client over the network** that calls
+the `window.report` RPC, instead of the plaintext TCP relay. The protocol layer
+already supports this: `multiprocessing.connection` works with an `AF_INET`
+address plus the existing HMAC authkey + `hello` version gate. One transport and
+one matcher for local *and* remote.
+
+**Pros**
+- Single protocol/code path (control socket) for local + remote; deletes the
+  bespoke relay + plaintext wire.
+- Authenticated + version-gated, vs today's relay which accepts unauthenticated
+  plaintext from anyone who can reach port 50162.
+
+**Cons / must-solve-first**
+- **Security surface.** The control socket exposes *device control* — brightness,
+  language, **firmware flash**, bootloader. Binding the *full* registry to the
+  network gates all of it behind only the authkey. Do **not** simply bind the
+  existing endpoint to `AF_INET`.
+- **Key distribution.** The authkey is per-machine (0600 in the config dir); the
+  forwarder needs the daemon's key shared across machines.
+- Both machines must be updated together (the wire changes).
+
+**Recommended first slice (safe):** a **dedicated, window-report-only network
+listener** — a separate `AF_INET` endpoint whose method registry contains *only*
+`window.report` (not the full control registry), with its own authkey, leaving
+the bootloader/flash/etc. surface on the local-only endpoint. That delivers the
+authenticated unified report path without exposing the device-control surface to
+the network. Then `PolyForwarder.send_to_host` is replaced by an RPC client call,
+and the legacy `receive_from_forwarder`/port-50162 relay can be retired (or kept
+one release for compatibility).
