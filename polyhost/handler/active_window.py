@@ -3,7 +3,10 @@ import os
 import platform
 import re
 
-from polyhost.handler.common import OverlayCommand, Flags
+from polyhost.handler.common import (
+    OverlayCommand, Flags, find_matching_entry,
+    TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, FLAGS,
+)
 from polyhost.handler.remote_window import RemoteHandler
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -19,12 +22,9 @@ else:
     import pywinctl as pwc
 
 
-TITLE_SW = "titles-startswith"
-TITLE_EW = "titles-endswith"
-TITLE_HAS = "titles-contains"
-TITLE = "title"
+# TITLE/TITLE_SW/TITLE_EW/TITLE_HAS/FLAGS are imported from common (shared with
+# the matcher and RemoteHandler).
 INDEX = "index"
-FLAGS = "flags"
 OVERLAY = "overlay"
 REMOTE = "remote"
 
@@ -98,65 +98,27 @@ class OverlayHandler:
         self.handle = handle
 
     def try_to_match_window(self, name, entry):
-        (
-            has_overlay,
-            has_remote,
-            has_title,
-            has_starts_with,
-            has_ends_with,
-            has_contains,
-        ) = entry[FLAGS]
-        match = has_overlay or has_remote
+        # The recursion lives in common.find_matching_entry (shared with the
+        # remote path); here we add the ENABLE-vs-OFF_ON decision and the
+        # current/last-entry bookkeeping. A re-enter of the same matched entry
+        # is ENABLE (overlays already mapped); a different one is a full OFF_ON.
         try:
-            if match:
-                words = self.title.split() if (self.title and (has_starts_with or has_ends_with)) else []
-                if len(words) > 0:
-                    if (
-                        has_starts_with
-                        and words[0] in entry[TITLE_SW].keys()
-                    ):
-                        found, cmd = self.try_to_match_window(
-                            name, entry[TITLE_SW][words[0]]
-                        )
-                        if found:
-                            return True, cmd
-                    if (
-                        has_ends_with
-                        and words[-1] in entry[TITLE_EW].keys()
-                    ):
-                        found, cmd = self.try_to_match_window(
-                            name, entry[TITLE_EW][words[-1]]
-                        )
-                        if found:
-                            return True, cmd
-                    if has_contains:
-                        contains = entry[TITLE_HAS]
-                        for word in words:
-                            if word in contains.keys():
-                                found, cmd = self.try_to_match_window(name, contains[word])
-                                if found:
-                                    return True, cmd
-                if self.title and has_title:
-                    match = match and re.search(entry[TITLE], self.title)
+            matched = find_matching_entry(self.title, entry)
         except re.error as e:
             self.log.warning(
                 "Cannot match entry '%s': %s, because '%s'@%d with '%s'",
-                name,
-                entry,
-                e.msg,
-                e.pos,
-                e.pattern,
+                name, entry, e.msg, e.pos, e.pattern,
             )
             return False, OverlayCommand.NONE
 
-        if match:
-            if self.last_entry == entry:
-                self.current_entry = entry
-                return True, OverlayCommand.ENABLE
-            self.current_entry = entry
-            self.last_entry = entry
-            return True, OverlayCommand.OFF_ON
-        return False, OverlayCommand.NONE
+        if matched is None:
+            return False, OverlayCommand.NONE
+        if self.last_entry == matched:
+            self.current_entry = matched
+            return True, OverlayCommand.ENABLE
+        self.current_entry = matched
+        self.last_entry = matched
+        return True, OverlayCommand.OFF_ON
 
     def log_win(self, raw_app_name):
         """Log active window"""

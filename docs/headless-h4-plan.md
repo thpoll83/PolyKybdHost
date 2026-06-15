@@ -257,15 +257,21 @@ point: the `window.report` RPC → `PolyCore.report_window` → `RemoteHandler.r
 which writes the **same `connections` store** the TCP relay feeds, so the existing
 remote matcher picks it up unchanged.
 
-### H4c-2 — dedupe the matcher, route the TCP receiver through `report_window`
-- `RemoteHandler.try_to_match_window_remote` is a near-copy of
-  `OverlayHandler.try_to_match_window` (two matchers to keep in sync). Extract one
-  shared matcher both call.
-- Make `receive_from_forwarder` call `core.report_window(...)` (via a callback)
-  instead of stashing into the `connections` dict directly, so the TCP relay
-  becomes a thin transport over the single unified entry point.
-- Keeps the TCP wire; cross-machine behavior unchanged. Needs two machines to
-  validate.
+### H4c-2 — dedupe the matcher, route the TCP receiver through `report_window` ✅ DONE (2026-06-15)
+- The recursion is now the single `common.find_matching_entry(title, entry)` —
+  a **pure** function both `OverlayHandler.try_to_match_window` (which adds the
+  ENABLE/OFF_ON decision + current/last bookkeeping) and `RemoteHandler` (via
+  the new `_match_remote`) call. `try_to_match_window_remote` is gone. Being
+  pure + display-free, the matcher is unit-tested in CI
+  (`tests/handler/matcher_test.py`) instead of being buried in the
+  pywinctl-coupled `active_window.py`.
+- `receive_from_forwarder` now calls `on_report(handle, name, title)` —
+  `RemoteHandler.report_window`, the same entry point the `window.report` RPC
+  uses — instead of writing the `connections` dict directly. One entry point for
+  local and remote; the read path (`remote_changed` → latest report) is
+  unchanged, so the TCP wire and cross-machine behavior are preserved.
+- Validated: full suite + the xvfb `active_window_test` (OverlayHandler matching
+  still behaves). Cross-machine still wants a two-machine smoke.
 
 ### H4d — networked control endpoint (retire the bespoke TCP relay)
 Make the forwarder a **real control-protocol client over the network** that calls
