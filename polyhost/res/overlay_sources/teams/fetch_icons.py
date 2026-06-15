@@ -63,32 +63,54 @@ def _get(url: str) -> bytes:
 
 
 def _draw_teams_logo(path: Path) -> None:
-    """Generic, license-clean Teams program mark (no Microsoft logo): a rounded-
-    square *outline* with the monogram 'Te' drawn inside — the unified outlined-
-    monogram style shared with the other app marks. White on transparent
-    (alpha = the lit linework) -> program_icon_mode: alpha."""
+    """Generic, license-clean Teams program mark (no Microsoft logo). Uses the
+    same generic 'Office document' style as the Word mark — a 90deg-rotated
+    trapezoid page on the left with a letter knocked out (negative space), plus
+    a few text lines on the right — but stamped with a 'T' instead of a 'W', so
+    Teams sits visually with the other Office apps. White shape on transparent
+    (alpha = the lit shape) -> program_icon_mode: alpha."""
     ss = 4
     u = RENDER_PX * ss
-    m = Image.new("L", (u, u), 0)
-    d = ImageDraw.Draw(m)
-    d.rounded_rectangle([0.12 * u, 0.12 * u, 0.88 * u, 0.88 * u],
-                        radius=0.16 * u, outline=255, width=int(u * 0.05))
+    px = lambda n: n * ss          # final px -> supersampled px
+
+    # rounded rectangle around the text lines (right), with the lines inside
+    right = Image.new("L", (u, u), 0)
+    dr = ImageDraw.Draw(right)
+    dr.rounded_rectangle([0.50 * u, 0.24 * u, 0.93 * u, 0.76 * u],
+                         radius=0.10 * u, outline=255, width=px(3))
+    for y in (0.36, 0.50, 0.64):
+        dr.line([(0.58 * u, y * u), (0.86 * u, y * u)], fill=255, width=int(u * 0.05))
+
+    # left trapezoid (parallel vertical sides, right side taller -> looks rotated),
+    # extended right so it overlaps well into the rounded rect and hides its left edge
+    right_x = 0.58 * u
+    trap = Image.new("L", (u, u), 0)
+    ImageDraw.Draw(trap).polygon(
+        [(0.10 * u, 0.20 * u), (right_x, 0.11 * u),
+         (right_x, 0.89 * u), (0.10 * u, 0.80 * u)], fill=255)
+    # 'T' to knock out of the trapezoid
+    tmask = Image.new("L", (u, u), 0)
+    dt = ImageDraw.Draw(tmask)
     font = None
-    for cand in ("DejaVuSans-Bold.ttf",
-                 "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"):
+    for cand in ("DejaVuSans-Bold.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"):
         try:
-            font = ImageFont.truetype(cand, int(u * 0.42))
+            font = ImageFont.truetype(cand, int(u * 0.40))
             break
         except OSError:
             continue
     if font:
-        bb = d.textbbox((0, 0), "Te", font=font)
-        cx, cy = 0.50 * u, 0.50 * u
-        d.text((cx - (bb[2] - bb[0]) / 2 - bb[0], cy - (bb[3] - bb[1]) / 2 - bb[1]),
-               "Te", font=font, fill=255)
+        bb = dt.textbbox((0, 0), "T", font=font)
+        cx, cy = (0.10 * u + right_x) / 2, 0.50 * u
+        dt.text((cx - (bb[2] - bb[0]) / 2 - bb[0], cy - (bb[3] - bb[1]) / 2 - bb[1]),
+                "T", font=font, fill=255)
+    knock = np.where(np.asarray(tmask) > 127, 0, np.asarray(trap)).astype(np.uint8)
+
+    # trapezoid drawn on top of the rounded rect -> its solid fill swallows the
+    # rect's left edge (max() merges the overlap into one lit shape)
+    alpha = np.maximum(np.asarray(right), knock)
     rgba = np.zeros((u, u, 4), np.uint8)
     rgba[..., :3] = 255
-    rgba[..., 3] = np.asarray(m)
+    rgba[..., 3] = alpha
     Image.fromarray(rgba, "RGBA").resize((RENDER_PX, RENDER_PX), Image.LANCZOS).save(path)
 
 

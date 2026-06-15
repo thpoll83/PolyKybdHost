@@ -69,12 +69,13 @@ Weaker / interpretive matches worth knowing:
 ## Program icon (ESC, all layers)
 
 `program_icon: teams_logo.png` is a **generic, license-clean mark drawn in code**
-(no Microsoft Teams logo): a rounded-square **outline** with the monogram **Te**
-drawn inside — the unified outlined-monogram style shared with the other app marks
-(Ai, Ps, Kr, Fi). Drawn by `_draw_teams_logo()` in `fetch_icons.py`
-(white-on-transparent → `program_icon_mode: alpha`), fully reproducible and
-carrying no trademark/licence risk. Drop a real Teams logo as `icons/teams_logo.png`
-to override — the fetch script skips it if it already exists.
+(no Microsoft Teams logo): the same **'Office document'** style as the Word mark —
+a 90° rotated trapezoid page with a letter knocked out (negative space) + text
+lines on the right — but stamped with a **T** instead of a W, so Teams sits
+visually with the other Office apps. Drawn by `_draw_teams_logo()` in
+`fetch_icons.py` (white-on-transparent → `program_icon_mode: alpha`), fully
+reproducible and carrying no trademark/licence risk. Drop a real Teams logo as
+`icons/teams_logo.png` to override — the fetch script skips it if it already exists.
 
 ## Transformations
 
