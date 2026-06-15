@@ -360,6 +360,7 @@ class PolyHost(QApplication):
         self.menu.addAction(self.update_action)
         self._pending_release = None
         self._update_checker = None
+        self._update_check_last = None   # monotonic ts of the last AUTOMATIC check (throttle)
         self._update_installer = None
         self._update_progress = None
         self._await_manual_prompt = False
@@ -1009,14 +1010,29 @@ class PolyHost(QApplication):
     def save_overlay_mapping_file(self, filename="overlay-mapping.poly.yaml"):
         self.core.save_overlay_mapping(filename)
 
-    def _start_update_check(self, on_no_update=None, on_check_error=None):
+    def _start_update_check(self, on_no_update=None, on_check_error=None, force=False):
         """Start a background update check.
 
         ``on_no_update`` is called when the check succeeds but finds no newer release.
         ``on_check_error`` is called (with a message string) when the API/network
         call itself fails — distinct from "no update available".
         Both are None for the automatic periodic check (silent failure).
+        ``force`` bypasses the throttle for user-initiated (menu) checks.
         """
+        # Throttle AUTOMATIC checks (startup / 24h timer / on-connect). GitHub's
+        # unauthenticated API allows only ~60 requests/hour per IP, and a connect
+        # triggers a check — so reconnects (every firmware flash reboots the
+        # keyboard) and several machines behind one office IP exhaust it
+        # ("GitHub rate limit reached"). Skip an automatic check when one ran in
+        # the last 6 h. A MANUAL menu check passes force=True and always runs.
+        if not force:
+            now = time.monotonic()
+            if (self._update_check_last is not None
+                    and now - self._update_check_last < 6 * 3600):
+                self.log.debug("Update check throttled (%.0f min since last automatic check)",
+                               (now - self._update_check_last) / 60)
+                return False
+            self._update_check_last = now
         if self._update_checker is not None and self._update_checker.is_alive():
             # A check is already in flight with its own (auto) callbacks — do
             # NOT start a second. Returns False so a manual caller knows its
@@ -1111,6 +1127,7 @@ class PolyHost(QApplication):
         if self._start_update_check(
             on_no_update=self._on_manual_no_update,
             on_check_error=self._on_manual_check_error,
+            force=True,
         ):
             self.update_action.setText("Checking for updates...")
             self._await_manual_prompt = True
@@ -1249,7 +1266,7 @@ class PolyHost(QApplication):
         # No on_no_update here: the firmware result comes via _await_manual_fw_prompt
         # and the _fw_no_update closure in _start_update_check. Only flip the UI
         # if a run actually started (see _on_update_clicked).
-        if self._start_update_check():
+        if self._start_update_check(force=True):
             self.firmware_update_action.setText("Checking for firmware update…")
             self.firmware_update_action.setEnabled(False)
             self._await_manual_fw_prompt = True
