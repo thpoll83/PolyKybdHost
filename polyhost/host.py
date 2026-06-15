@@ -44,6 +44,7 @@ from polyhost._version import __version__
 from polyhost.input.unicode_input import get_input_method
 from polyhost.services.updater import UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
+from polyhost.gui.dialog_util import position_near_tray
 from polyhost.gui.worker_bridge import WorkerBridge
 from polyhost.core.poly_core import PolyCore
 from polyhost.server.control_server import ControlServer
@@ -156,7 +157,7 @@ def _msgbox(icon, title: str, text: str,
         return QMessageBox.Cancel
 
 
-def _progress_dlg(label: str, title: str) -> QProgressDialog:
+def _progress_dlg(label: str, title: str, tray_icon=None) -> QProgressDialog:
     dlg = QProgressDialog(label, None, 0, 100, None)
     dlg.setWindowTitle(title)
     dlg.setWindowFlag(Qt.WindowStaysOnTopHint, True)
@@ -174,6 +175,9 @@ def _progress_dlg(label: str, title: str) -> QProgressDialog:
         layout.setContentsMargins(m.left(), m.top(), m.right(),
                                   m.bottom() + _UPD_DLG_H // 10)
     dlg.show()
+    # Snap to the tray corner like HidFwUpDialog (defer a tick so the WM has
+    # finalised the frame size); harmless when no tray icon is available.
+    QTimer.singleShot(0, lambda: position_near_tray(dlg, tray_icon))
     return dlg
 
 
@@ -1164,7 +1168,8 @@ class PolyHost(QApplication):
 
         self.update_action.setEnabled(False)
         self._update_progress = _progress_dlg(
-            f"Downloading v{release.version}…", "PolyKybdHost Update")
+            f"Downloading v{release.version}…", "PolyKybdHost Update",
+            tray_icon=self.tray)
 
         b = self.bridge
         self._update_installer = UpdateInstaller(
@@ -1303,7 +1308,8 @@ class PolyHost(QApplication):
 
         self.firmware_update_action.setEnabled(False)
         self._fw_up_progress = _progress_dlg(
-            f"Downloading firmware v{release.version}…", "Firmware Update")
+            f"Downloading firmware v{release.version}…", "Firmware Update",
+            tray_icon=self.tray)
 
         b = self.bridge
         self._fw_up_downloader = FwUpDownloader(

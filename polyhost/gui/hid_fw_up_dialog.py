@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.device.hid_fw_up import flash_firmware, apply_staged_firmware
+from polyhost.gui.dialog_util import position_near_tray
 
 
 class _HidFwUpWorker(QThread):
@@ -218,33 +219,7 @@ class HidFwUpDialog(QDialog):
 
     def _position_near_tray(self):
         """Move the dialog to the screen corner nearest the system-tray icon."""
-        tray_geom = self._tray_icon.geometry() if self._tray_icon else None
-
-        # Find the screen that contains the tray icon, fall back to primary.
-        screen = None
-        if tray_geom and not tray_geom.isEmpty():
-            screen = QApplication.screenAt(tray_geom.center())
-        if screen is None:
-            screen = QApplication.primaryScreen()
-        if screen is None:
-            return
-
-        avail   = screen.availableGeometry()
-        dw      = self.frameGeometry().width()
-        dh      = self.frameGeometry().height()
-        margin  = 12
-
-        if tray_geom and not tray_geom.isEmpty():
-            # Snap to whichever corner of the available area the tray icon is in.
-            right  = tray_geom.center().x() >= avail.center().x()
-            bottom = tray_geom.center().y() >= avail.center().y()
-            x = avail.right()  - dw - margin if right  else avail.left()  + margin
-            y = avail.bottom() - dh - margin if bottom else avail.top()   + margin
-        else:
-            x = avail.right()  - dw - margin
-            y = avail.bottom() - dh - margin
-
-        self.move(x, y)
+        position_near_tray(self, self._tray_icon)
 
     # ------------------------------------------------------------------
     def _update_eta(self):
