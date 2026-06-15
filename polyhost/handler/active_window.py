@@ -7,11 +7,16 @@ from polyhost.handler.common import OverlayCommand, Flags
 from polyhost.handler.remote_window import RemoteHandler
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
+_IS_WAYLAND = os.getenv("XDG_SESSION_TYPE") == "wayland"
 
-if not IS_PLASMA:
-    import pywinctl as pwc
-else:
+if IS_PLASMA:
     import polyhost.handler.kde_win_reporter as pwc
+elif _IS_WAYLAND:
+    # pywinctl can't see native Wayland windows; use the GNOME Shell extension
+    # reporter (untested — needs the 'Window Calls' extension). X11 is unaffected.
+    import polyhost.handler.gnome_wayland_reporter as pwc
+else:
+    import pywinctl as pwc
 
 
 TITLE_SW = "titles-startswith"
@@ -37,6 +42,10 @@ class OverlayHandler:
         self.handle = None
         self.current_entry = None
         self.last_entry = None
+        # Tracks whether overlays are currently enabled on the device, so a
+        # same-app title change doesn't re-issue an ENABLE that's already in
+        # effect (see handle_active_window).
+        self.overlays_enabled = False
         self.mapping = self.annotate(mapping.items())
         self.remote_handler = RemoteHandler(self.mapping)
 
@@ -154,6 +163,26 @@ class OverlayHandler:
         self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %d", raw_app_name, self.win.title.encode('utf-8'), self.win.getHandle())
 
     def handle_active_window(self, update_cycle_time_msec, accept_time_msec):
+        """Decide the overlay action for the focused window and track the
+        resulting device state, suppressing redundant re-enables.
+
+        When the same app stays focused and only the window *title* changes,
+        the matcher returns ENABLE, but overlays are already on and nothing was
+        resent — re-enabling just costs a blocking slave bridge-sync + full
+        keycap refresh on the keyboard for no visible change. We downgrade that
+        to NONE. A genuine re-enable (overlays were turned off since, e.g. after
+        an unmapped window) still goes through because overlays_enabled is then
+        False."""
+        data, cmd = self._decide_active_window(update_cycle_time_msec, accept_time_msec)
+        if cmd == OverlayCommand.ENABLE and self.overlays_enabled:
+            return None, OverlayCommand.NONE
+        if cmd in (OverlayCommand.ENABLE, OverlayCommand.OFF_ON):
+            self.overlays_enabled = True
+        elif cmd == OverlayCommand.DISABLE:
+            self.overlays_enabled = False
+        return data, cmd
+
+    def _decide_active_window(self, update_cycle_time_msec, accept_time_msec):
         self.last_update_msec = self.last_update_msec + update_cycle_time_msec
         win = None
         try:
@@ -246,6 +275,9 @@ class OverlayHandler:
         self.handle = None
         self.last_entry = None
         self.last_update_msec = 0
+        # The device's overlays were reset/cleared on (re)connect, so the next
+        # match must be allowed to enable them again (don't suppress).
+        self.overlays_enabled = False
         self.remote_handler.reset_for_resend()
 
     def close(self):

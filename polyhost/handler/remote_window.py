@@ -82,6 +82,24 @@ class RemoteHandler:
         self.forwarder.daemon = True
         self.forwarder.start()
 
+    def report_window(self, handle, name, title):
+        """Inject an active-window report from a non-TCP source (the
+        ``window.report`` control-socket RPC / ``polyctl window report``).
+
+        Writes the same ``connections`` store the TCP relay (`receive_from_forwarder`)
+        feeds, under a synthetic key, and marks it latest — so ``remote_changed``
+        picks it up through the existing matching with no change to that path.
+        Unifying the matcher and routing the TCP receiver through here too is a
+        deferred follow-up (the cross-machine wire stays untouched for now)."""
+        self.connections["_report"] = {
+            "handle": str(handle),
+            "name": str(name),
+            "title": str(title),
+        }
+        self.connections["_latest"] = "_report"
+        self.log.debug_detailed(
+            "report_window: handle=%s name=%s title=%s", handle, name, title)
+
     def try_to_match_window_remote(self, name, entry):
         (
             has_overlay,

@@ -1,6 +1,7 @@
 PyQt5
 hid
 NumPy
+Pillow
 PyWinCtl
 pywin32; sys_platform == "win32"
 pynput
@@ -12,3 +13,4 @@ pvlib
 requests
 pyserial
 packaging
+jeepney; sys_platform == "linux"

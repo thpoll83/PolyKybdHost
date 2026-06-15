@@ -1,12 +1,10 @@
 """Characterization tests for HidHelper.
 
-These pin the current locking and reply-draining behavior ahead of the
-HID worker-thread / command-queue refactoring. The key invariant: after any
-public call that does NOT hand the lock back to the caller, the lock must be
-free — including on every error path. The *_with_lock variants hand a held
-lock back to the caller, who is responsible for releasing it.
+These pin the locking and reply-draining behavior of HidHelper. Since the
+HID worker-thread refactor a single thread owns the device, so the lock is a
+purely internal per-call guard: after any public call the lock must be free —
+including on every error path. No lock is ever handed back to the caller.
 """
-import threading
 import unittest
 
 from polyhost.device.device_settings import DeviceSettings
@@ -117,83 +115,34 @@ class TestSendAndReadValidate(unittest.TestCase):
         self.assertFalse(ok)
 
 
-class TestSendAndReadValidateWithLock(unittest.TestCase):
-    """The *_with_lock variant hands a HELD lock back; the caller releases."""
-
-    def test_lock_is_held_after_successful_call(self):
-        helper, device = _helper(replies=[GOOD])
-        ok, reply, lock = helper.send_and_read_validate_with_lock(CMD, 30, EXPECT, None)
-        self.assertTrue(ok)
-        self.assertIs(lock, helper.lock)
-        self.assertTrue(lock.locked())
-        lock.release()
-
-    def test_lock_is_still_held_after_exception(self):
-        # Characterization: the exception path does NOT release — the caller
-        # (e.g. send_and_read_validate) is responsible. The queue refactor
-        # should eliminate this hand-off entirely.
-        helper, device = _helper()
-        device.write_exception = RuntimeError("USB gone")
-        ok, reply, lock = helper.send_and_read_validate_with_lock(CMD, 30, EXPECT, None)
-        self.assertFalse(ok)
-        self.assertTrue(lock.locked())
-        lock.release()
-
-    def test_foreign_lock_is_rejected(self):
-        helper, device = _helper(replies=[GOOD])
-        foreign = threading.Lock()
-        ok, reply, lock = helper.send_and_read_validate_with_lock(CMD, 30, EXPECT, foreign)
-        self.assertFalse(ok)
-        self.assertEqual(bytes(reply), b'Lock mismatch')
-        self.assertFalse(helper.lock.locked())
-
-    def test_passing_held_own_lock_reuses_it(self):
-        helper, device = _helper(replies=[GOOD, GOOD])
-        ok1, _, lock = helper.send_and_read_validate_with_lock(CMD, 30, EXPECT, None)
-        ok2, _, lock = helper.send_and_read_validate_with_lock(CMD, 30, EXPECT, lock)
-        self.assertTrue(ok1)
-        self.assertTrue(ok2)
-        lock.release()
-
-
 class TestSendMultiple(unittest.TestCase):
 
-    def test_acquires_lock_when_none_passed_and_keeps_it(self):
+    def test_writes_and_frees_lock(self):
         helper, device = _helper()
-        ok, result, lock = helper.send_multiple(CMD, None)
+        ok, _ = helper.send_multiple(CMD)
         self.assertTrue(ok)
-        self.assertIs(lock, helper.lock)
-        self.assertTrue(lock.locked())
-        lock.release()
-
-    def test_sequence_of_sends_under_one_lock(self):
-        helper, device = _helper()
-        lock = None
-        for _ in range(3):
-            ok, result, lock = helper.send_multiple(CMD, lock)
-            self.assertTrue(ok)
-        lock.release()
-        self.assertEqual(len(device.writes), 3)
-
-    def test_foreign_lock_is_rejected(self):
-        helper, device = _helper()
-        foreign = threading.Lock()
-        ok, result, lock = helper.send_multiple(CMD, foreign)
-        self.assertFalse(ok)
-        self.assertEqual(result, "Lock mismatch")
+        self.assertEqual(len(device.writes), 1)
         self.assertFalse(helper.lock.locked())
+
+    def test_sequence_of_sends(self):
+        helper, device = _helper()
+        for _ in range(3):
+            ok, _ = helper.send_multiple(CMD)
+            self.assertTrue(ok)
+            self.assertFalse(helper.lock.locked())
+        self.assertEqual(len(device.writes), 3)
 
     def test_write_exception_releases_lock(self):
         helper, device = _helper()
         device.write_exception = RuntimeError("USB gone")
-        ok, result, lock = helper.send_multiple(CMD, None)
+        ok, _ = helper.send_multiple(CMD)
         self.assertFalse(ok)
         self.assertFalse(helper.lock.locked())
 
     def test_no_interface_returns_false(self):
-        helper, device = _helper()
+        helper, _device = _helper()
         helper.interface = None
-        ok, result, lock = helper.send_multiple(CMD, None)
+        ok, _ = helper.send_multiple(CMD)
         self.assertFalse(ok)
 
 

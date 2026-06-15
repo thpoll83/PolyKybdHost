@@ -1,9 +1,8 @@
 import logging
 
 import numpy as np
-from enum import Enum
 
-from PyQt5.QtGui import QImage
+from PIL import Image
 
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_data import OverlayData
@@ -19,30 +18,42 @@ class ImageConverter:
         self._num_y = 9
 
     def open(self, filename):
-        # QImage, not QPixmap: overlay conversion runs on the HID worker
-        # thread and QPixmap is GUI-thread-only. The explicit convertToFormat
-        # below pins the byte layout the numpy views rely on (little-endian
-        # ARGB32 = B,G,R,A; RGB888 = 3 bytes/px), where the old QPixmap path
-        # depended on whatever format the decoder happened to produce.
-        q_image = QImage()
+        # Pillow decode (Qt-free: this runs on the non-Qt HID worker thread).
+        # We normalise to an (H, W, depth) uint8 array with the SAME channel
+        # order the old QImage path produced, so the extracted overlay bytes
+        # stay byte-identical (gated by tests/device/im_converter_golden_test).
+        #
+        # The legacy path converted to little-endian ARGB32 when the source
+        # had an alpha channel (byte order B,G,R,A) and to RGB888 (R,G,B)
+        # otherwise. It used QImage.hasAlphaChannel() to choose. Pillow modes
+        # with alpha are RGBA / LA / PA and palettes carrying transparency, so
+        # we mirror that test and build the channels in B,G,R[,A] order to
+        # match the ARGB32 byte layout the downstream code expects.
         try:
-            if not q_image.load(filename):
-                self.log.warning("Couldn't read overlay: %s", filename)
-                return False
-            self.w = q_image.width()
-            self.h = q_image.height()
+            with Image.open(filename) as pil_image:
+                pil_image.load()
+                src_mode = pil_image.mode
+                has_alpha = (
+                    "A" in src_mode
+                    or "transparency" in pil_image.info
+                )
+                if has_alpha:
+                    rgba = pil_image.convert("RGBA")
+                    rgb_arr = np.asarray(rgba, dtype=np.uint8)  # R,G,B,A
+                    # Reorder to B,G,R,A to match QImage Format_ARGB32 bytes.
+                    im = rgb_arr[..., [2, 1, 0, 3]]
+                    depth = 4
+                else:
+                    rgb = pil_image.convert("RGB")
+                    rgb_arr = np.asarray(rgb, dtype=np.uint8)  # R,G,B
+                    # RGB888 in the old path was R,G,B order.
+                    im = rgb_arr
+                    depth = 3
+                self.w = im.shape[1]
+                self.h = im.shape[0]
         except Exception as e:
             self.log.warning("Couldn't read overlay: %s", e)
             return False
-
-        has_alpha = q_image.hasAlphaChannel()
-        q_image = q_image.convertToFormat(
-            QImage.Format_ARGB32 if has_alpha else QImage.Format_RGB888)
-        depth = 4 if has_alpha else 3
-        buf = q_image.constBits()
-        buf.setsize(q_image.bytesPerLine() * q_image.height())
-        im = np.ndarray((q_image.height(), q_image.width(), depth), buffer=buf,
-                        strides=[q_image.bytesPerLine(), depth, 1], dtype=np.uint8)
 
         if ".mods." in filename:
             if ".combo.mods." in filename:

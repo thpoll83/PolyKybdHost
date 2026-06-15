@@ -13,13 +13,13 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import threading
 from collections import namedtuple
 from pathlib import Path
 from typing import Optional
 
 import platformdirs
 import requests
-from PyQt5.QtCore import QThread, pyqtSignal
 from packaging.version import InvalidVersion, Version
 
 import polyhost
@@ -462,18 +462,40 @@ def restart_app() -> None:
         os.execv(sys.executable, args)
 
 
-class UpdateChecker(QThread):
-    """Background thread that polls GitHub for host and firmware updates."""
+def _fire(cb, *args):
+    """Invoke ``cb(*args)`` if it is not None. Callbacks run on the worker thread.
 
-    update_available = pyqtSignal(object)    # ReleaseInfo
-    fw_up_available  = pyqtSignal(object)    # FwUpReleaseInfo
-    host_no_update   = pyqtSignal()          # host check found no newer release
-    fw_no_update     = pyqtSignal()          # firmware check found no newer release
-    error            = pyqtSignal(str)
+    A None callback is silently skipped, so call sites only wire up the events
+    they care about.
+    """
+    if cb is not None:
+        cb(*args)
 
-    def __init__(self, current_fw_version: str = None, parent=None):
-        super().__init__(parent)
+
+class UpdateChecker(threading.Thread):
+    """Background thread that polls GitHub for host and firmware updates.
+
+    Callbacks fire on this thread (not the caller's), so consumers that touch
+    GUI state must marshal back to their own loop. They mirror the previous Qt
+    signals one-to-one:
+
+    - ``on_update_available(ReleaseInfo)`` — newer host release found
+    - ``on_fw_up_available(FwUpReleaseInfo)`` — newer firmware release found
+    - ``on_host_no_update()`` — host check found no newer release
+    - ``on_fw_no_update()`` — firmware check found no newer release
+    - ``on_error(str)`` — host/firmware check failed (network/API)
+    """
+
+    def __init__(self, current_fw_version: str = None, *,
+                 on_update_available=None, on_fw_up_available=None,
+                 on_host_no_update=None, on_fw_no_update=None, on_error=None):
+        super().__init__(daemon=True)
         self._current_fw_version = current_fw_version
+        self._on_update_available = on_update_available
+        self._on_fw_up_available = on_fw_up_available
+        self._on_host_no_update = on_host_no_update
+        self._on_fw_no_update = on_fw_no_update
+        self._on_error = on_error
 
     def run(self):
         host_release = None
@@ -483,72 +505,87 @@ class UpdateChecker(QThread):
             host_release = check_latest()
         except UpdateCheckError as e:
             log.warning("Host update check failed: %s", e)
-            self.error.emit(str(e))
+            _fire(self._on_error, str(e))
         except Exception as e:  # noqa: BLE001
             log.exception("Host update check crashed")
-            self.error.emit(str(e))
+            _fire(self._on_error, str(e))
 
-        # Always emit host_no_update so the caller can reset its UI.  The error
-        # signal fires first when the check failed, letting callers distinguish
+        # Always fire host_no_update so the caller can reset its UI.  The error
+        # callback fires first when the check failed, letting callers distinguish
         # "API/network error" from "genuinely no newer version".
         if host_release:
-            self.update_available.emit(host_release)
+            _fire(self._on_update_available, host_release)
         else:
-            self.host_no_update.emit()
+            _fire(self._on_host_no_update)
 
         if self._current_fw_version:
             try:
                 fw_release = check_fw_latest(self._current_fw_version)
             except UpdateCheckError as e:
                 log.warning("Firmware update check failed: %s", e)
-                self.error.emit(str(e))
+                _fire(self._on_error, str(e))
             except Exception as e:  # noqa: BLE001
                 log.exception("Firmware update check crashed")
-                self.error.emit(str(e))
+                _fire(self._on_error, str(e))
 
             if fw_release:
-                self.fw_up_available.emit(fw_release)
+                _fire(self._on_fw_up_available, fw_release)
             else:
-                self.fw_no_update.emit()
+                _fire(self._on_fw_no_update)
 
 
-class UpdateInstaller(QThread):
-    """Background thread that downloads, extracts, and applies an update."""
+class UpdateInstaller(threading.Thread):
+    """Background thread that downloads, extracts, and applies an update.
 
-    progress    = pyqtSignal(int, str)
-    finished_ok = pyqtSignal()
-    relay_needed = pyqtSignal(str)  # path to relay script (Windows locked-file path)
-    failed      = pyqtSignal(str)
+    Callbacks fire on this thread; they mirror the previous Qt signals:
 
-    def __init__(self, release: ReleaseInfo, parent=None):
-        super().__init__(parent)
+    - ``on_progress(int, str)`` — percent (``-1`` = indeterminate) + message
+    - ``on_finished_ok()`` — update applied, no locked files
+    - ``on_relay_needed(str)`` — path to the Windows locked-file relay script
+    - ``on_failed(str)`` — install failed
+    """
+
+    def __init__(self, release: ReleaseInfo, *,
+                 on_progress=None, on_finished_ok=None,
+                 on_relay_needed=None, on_failed=None):
+        # NON-daemon: run() rewrites the install tree in place
+        # (copytree dirs_exist_ok) and runs pip; a daemon thread killed at
+        # interpreter exit mid-apply would leave the package half-updated.
+        # As a non-daemon thread the process stays alive until the install
+        # finishes (it ends in a restart/relay handoff anyway). The checker
+        # and fw-downloader stay daemon — their work is interruptible.
+        super().__init__(daemon=False)
         self.release = release
+        self._on_progress = on_progress
+        self._on_finished_ok = on_finished_ok
+        self._on_relay_needed = on_relay_needed
+        self._on_failed = on_failed
 
     def run(self):
         try:
             install_root = get_install_root()
         except NotWritableError as e:
-            self.failed.emit(f"Install dir not writable: {e}")
+            _fire(self._on_failed, f"Install dir not writable: {e}")
             return
 
         # Use mkdtemp (not TemporaryDirectory context manager) so that on Windows
         # we can leave the directory alive for the relay script to consume.
         tmp_dir = Path(tempfile.mkdtemp(prefix="polyhost-update-"))
         try:
-            self.progress.emit(0, "Starting download...")
+            _fire(self._on_progress, 0, "Starting download...")
             extracted = download_and_extract(
                 self.release.tarball_url, tmp_dir,
-                progress_cb=lambda pct: self.progress.emit(pct, f"Downloading v{self.release.version}..."),
+                progress_cb=lambda pct: _fire(self._on_progress, pct, f"Downloading v{self.release.version}..."),
             )
-            self.progress.emit(-1, "Applying update...")
+            _fire(self._on_progress, -1, "Applying update...")
             locked = apply_update(
                 extracted, install_root,
-                line_cb=lambda line: self.progress.emit(-1, line),
+                line_cb=lambda line: _fire(self._on_progress, -1, line),
             )
         except Exception as e:  # noqa: BLE001
             log.exception("Update install failed")
             shutil.rmtree(tmp_dir, ignore_errors=True)
-            self.failed.emit(str(e))
+            _fire(self._on_failed, str(e))
             return
 
         try:
@@ -557,25 +594,31 @@ class UpdateInstaller(QThread):
                 log.info("Relay script written for %d locked file(s): %s", len(locked), relay_path)
                 # Do NOT clean up tmp_dir — relay script needs the source files and
                 # will delete the directory itself after copying them.
-                self.relay_needed.emit(str(relay_path))
+                _fire(self._on_relay_needed, str(relay_path))
             else:
                 shutil.rmtree(tmp_dir, ignore_errors=True)
-                self.finished_ok.emit()
+                _fire(self._on_finished_ok)
         except Exception as e:  # noqa: BLE001
             log.exception("Preparing relay install failed")
             shutil.rmtree(tmp_dir, ignore_errors=True)
-            self.failed.emit(str(e))
+            _fire(self._on_failed, str(e))
 
 
-class FwUpDownloader(QThread):
-    """Download a firmware .bin from a GitHub release asset URL to a temp file."""
+class FwUpDownloader(threading.Thread):
+    """Download a firmware .bin from a GitHub release asset URL to a temp file.
 
-    progress = pyqtSignal(int, str)        # (percent, message)
-    finished = pyqtSignal(bool, str, str)  # (ok, error_or_empty, bin_path_or_empty)
+    Callbacks fire on this thread; they mirror the previous Qt signals:
 
-    def __init__(self, release: FwUpReleaseInfo, parent=None):
-        super().__init__(parent)
+    - ``on_progress(int, str)`` — percent + message
+    - ``on_finished(bool, str, str)`` — (ok, error_or_empty, bin_path_or_empty)
+    """
+
+    def __init__(self, release: FwUpReleaseInfo, *,
+                 on_progress=None, on_finished=None):
+        super().__init__(daemon=True)
         self.release = release
+        self._on_progress = on_progress
+        self._on_finished = on_finished
 
     def run(self):
         tmp_path = None
@@ -584,7 +627,7 @@ class FwUpDownloader(QThread):
                 prefix="polykybd-fw-", suffix=".bin", delete=False
             ) as tmp:
                 tmp_path = tmp.name
-                self.progress.emit(0, "Connecting…")
+                _fire(self._on_progress, 0, "Connecting…")
                 with requests.get(
                     self.release.bin_url,
                     headers={"User-Agent": USER_AGENT},
@@ -601,13 +644,13 @@ class FwUpDownloader(QThread):
                         written += len(chunk)
                         if total:
                             pct = int(written * 100 / total)
-                            self.progress.emit(pct, f"Downloading firmware… {written // 1024} / {total // 1024} KB")
+                            _fire(self._on_progress, pct, f"Downloading firmware… {written // 1024} / {total // 1024} KB")
                         else:
-                            self.progress.emit(0, f"Downloading firmware… {written // 1024} KB")
+                            _fire(self._on_progress, 0, f"Downloading firmware… {written // 1024} KB")
         except Exception as e:  # noqa: BLE001
             log.exception("Firmware download failed")
             if tmp_path and os.path.exists(tmp_path):
                 os.unlink(tmp_path)
-            self.finished.emit(False, str(e), "")
+            _fire(self._on_finished, False, str(e), "")
             return
-        self.finished.emit(True, "", tmp_path)
+        _fire(self._on_finished, True, "", tmp_path)

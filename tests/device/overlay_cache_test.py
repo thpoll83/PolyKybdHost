@@ -95,6 +95,53 @@ class TestOverlayMRUCacheBasics(unittest.TestCase):
         self.assertEqual(cache.get_occupied_slots(), set())
 
 
+class TestForgetRollback(unittest.TestCase):
+    """forget() undoes an allocation whose upload failed, so it never becomes a
+    stale MRU hit (the keycap-corruption bug after a failed/partial send)."""
+
+    def test_forget_makes_a_failed_upload_a_miss_again(self):
+        cache = OverlayMRUCache(10)
+        key = ("chrome.png", 0, 5)
+        slot, hit = cache.get_or_allocate(key, bytes_data=b"img")
+        self.assertFalse(hit)
+        cache.forget(key)                       # upload failed -> roll back
+        # Next time the same image is requested it must be a MISS (re-uploaded),
+        # not a stale hit pointing at a slot the keyboard never received.
+        slot2, hit2 = cache.get_or_allocate(key, bytes_data=b"img")
+        self.assertFalse(hit2)
+        self.assertEqual(cache.used_slots(), 1)
+
+    def test_forget_reclaims_the_slot_index(self):
+        cache = OverlayMRUCache(10)
+        cache.get_or_allocate(("a.png", 0, 1), bytes_data=b"a")   # slot 0
+        slot1, _ = cache.get_or_allocate(("b.png", 0, 2), bytes_data=b"b")  # slot 1
+        self.assertEqual(slot1, 1)
+        cache.forget(("b.png", 0, 2))
+        self.assertEqual(cache.used_slots(), 1)
+        self.assertNotIn(1, cache.get_occupied_slots())
+        # The reclaimed index is handed back out on the next allocation.
+        slot_next, _ = cache.get_or_allocate(("c.png", 0, 3), bytes_data=b"c")
+        self.assertEqual(slot_next, 1)
+
+    def test_forget_keeps_slot_alive_for_a_dedup_alias(self):
+        cache = OverlayMRUCache(10)
+        a = ("a.png", 0, 1)
+        b = ("b.png", 0, 2)
+        slot_a, _ = cache.get_or_allocate(a, bytes_data=b"same")
+        slot_b, hit_b = cache.get_or_allocate(b, bytes_data=b"same")  # dedup hit
+        self.assertTrue(hit_b)
+        self.assertEqual(slot_a, slot_b)
+        cache.forget(a)                          # forget one alias
+        # The slot is still valid for the other key (its image really is there).
+        _, hit_b2 = cache.get_or_allocate(b, bytes_data=b"same")
+        self.assertTrue(hit_b2)
+
+    def test_forget_unknown_key_is_noop(self):
+        cache = OverlayMRUCache(10)
+        cache.forget(("nope.png", 0, 9))         # must not raise
+        self.assertEqual(cache.used_slots(), 0)
+
+
 class TestPoolSlotToFirmwareAddress(unittest.TestCase):
 
     def test_slot_0_is_kc_a_no_mod(self):
