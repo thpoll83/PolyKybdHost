@@ -96,12 +96,18 @@ class HidFwUpDialog(QDialog):
     # the threshold the real progress is unknown, so we show a busy spinner.
     _DETERMINATE_FROM = 2
 
-    def __init__(self, hid, bin_path: str, parent=None, apply_after=False, tray_icon=None):
+    def __init__(self, hid, bin_path: str, parent=None, apply_after=False, tray_icon=None,
+                 external=False, apply_only=False):
         super().__init__(parent)
         self.log         = logging.getLogger('PolyHost')
         self._hid        = hid
         self._apply_after = apply_after
         self._tray_icon  = tray_icon
+        # external: the flash runs elsewhere (the daemon, over RPC) and progress
+        # is pushed in via feed_*() — no local HID worker. apply_only: there's no
+        # staging phase, the dialog opens straight into the apply spinner.
+        self._external   = external
+        self._apply_only = apply_only
         self._success    = False      # staging succeeded
         self._apply_ok   = None       # apply result, or None if not attempted
 
@@ -132,9 +138,10 @@ class HidFwUpDialog(QDialog):
 
         self._file_label = QLabel(f"<b>File:</b> {bin_path}")
         self._file_label.setWordWrap(True)
+        self._file_label.setVisible(bool(bin_path))
         layout.addWidget(self._file_label)
 
-        self._status_label = QLabel("Starting…")
+        self._status_label = QLabel("Applying staged firmware…" if apply_only else "Starting…")
         self._status_label.setWordWrap(True)
         layout.addWidget(self._status_label)
 
@@ -167,10 +174,35 @@ class HidFwUpDialog(QDialog):
         btn_row.addWidget(self._cancel_btn)
         layout.addLayout(btn_row)
 
-        self._worker = _HidFwUpWorker(hid, bin_path)
-        self._worker.progress.connect(self._on_progress)
-        self._worker.finished.connect(self._on_finished)
-        self._worker.start()
+        if external:
+            # Display-only: the daemon runs the flash and pushes progress via
+            # feed_*(). No local HID worker, and Cancel can't reach a remote
+            # flash, so hide it until _finalize repurposes it as Close.
+            self._worker = None
+            self._cancel_btn.setVisible(False)
+            if apply_only:
+                # No staging phase — open straight into the apply spinner.
+                self._set_busy(True)
+        else:
+            self._worker = _HidFwUpWorker(hid, bin_path)
+            self._worker.progress.connect(self._on_progress)
+            self._worker.finished.connect(self._on_finished)
+            self._worker.start()
+
+    # ------------------------------------------------------------------
+    # External (event-driven) feed: the daemon's fw_flash_*/fw_apply_* events
+    # drive the same handlers the local worker's signals would.
+    def feed_progress(self, pct, msg):
+        self._on_progress(int(pct), str(msg))
+
+    def feed_finished(self, ok, msg):
+        self._on_finished(bool(ok), str(msg))
+
+    def feed_apply_progress(self, pct, msg):
+        self._on_apply_progress(int(pct), str(msg))
+
+    def feed_apply_finished(self, ok, msg):
+        self._on_apply_finished(bool(ok), str(msg))
 
     # ------------------------------------------------------------------
     def showEvent(self, event):
@@ -349,6 +381,10 @@ class HidFwUpDialog(QDialog):
         # Apply can't be interrupted; the button is meaningless until it returns.
         self._cancel_btn.setEnabled(False)
 
+        if self._external:
+            # Apply runs in the daemon; feed_apply_*() drive the rest.
+            return
+
         self._apply_worker = _ApplyWorker(self._hid)
         self._apply_worker.progress.connect(self._on_apply_progress)
         self._apply_worker.finished.connect(self._on_apply_finished)
@@ -383,7 +419,9 @@ class HidFwUpDialog(QDialog):
         self._status_label.setText(msg)
 
         # Re-enable the button: it may have been disabled by a cancel request or
-        # during the uninterruptible apply phase.  Now repurpose it as Close.
+        # during the uninterruptible apply phase.  Now repurpose it as Close
+        # (and re-show it — external mode hid it since there was nothing to cancel).
+        self._cancel_btn.setVisible(True)
         self._cancel_btn.setEnabled(True)
         self._cancel_btn.setText("Close")
         self._cancel_btn.clicked.disconnect()
@@ -394,7 +432,7 @@ class HidFwUpDialog(QDialog):
         self.show()
 
     def _on_cancel(self):
-        if self._worker.isRunning():
+        if self._worker is not None and self._worker.isRunning():
             self._worker.cancel()
             self._cancel_btn.setEnabled(False)
             self._status_label.setText("Cancelling — waiting for current chunk to finish…")
@@ -402,7 +440,11 @@ class HidFwUpDialog(QDialog):
             self.reject()
 
     def closeEvent(self, event):
-        if self._worker.isRunning() or (self._apply_worker is not None and self._apply_worker.isRunning()):
+        worker_busy = self._worker is not None and self._worker.isRunning()
+        apply_busy = self._apply_worker is not None and self._apply_worker.isRunning()
+        # In external mode there is no local worker to poll, so block close until
+        # the daemon-driven flash has finalized (feed_*_finished sets _done).
+        if worker_busy or apply_busy or (self._external and not self._done):
             event.ignore()   # Block close while flashing
         else:
             self._anim_timer.stop()

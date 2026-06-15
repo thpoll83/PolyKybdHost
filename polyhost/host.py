@@ -731,54 +731,55 @@ class PolyHost(QApplication):
             None, "Select firmware .bin", "", "Firmware image (*.bin)")
         if not path:
             return
-        self._flash_progress = _progress_dlg(
-            f"Flashing {os.path.basename(path)}…", "PolyKybd Firmware")
+        # Same polished dialog as the in-process flash (tray-corner + ETA), just
+        # fed by the daemon's fw_flash_*/fw_apply_* events instead of a local HID
+        # worker (external=True). Without this the client got a bare QProgressDialog.
+        self._flash_dialog = HidFwUpDialog(
+            None, path, parent=None, apply_after=apply, tray_icon=self.tray, external=True)
+        self._flash_dialog.show()
         ok, payload = self.core.flash_firmware(path, apply=apply)
         if not ok:
-            self._flash_progress.close()
-            self._flash_progress = None
-            _msgbox(QMessageBox.Warning, "Firmware flash", str(payload))
+            self._flash_dialog.feed_finished(False, str(payload))
 
     def _client_apply_staged(self):
         """Client-mode 'apply staged firmware' over RPC, with the event-driven
         progress dialog (fw_apply_* events)."""
-        self._flash_progress = _progress_dlg("Applying staged firmware…", "PolyKybd Firmware")
+        self._flash_dialog = HidFwUpDialog(
+            None, "", parent=None, tray_icon=self.tray, external=True, apply_only=True)
+        self._flash_dialog.show()
         ok, payload = self.core.apply_staged_firmware()
         if not ok:
-            self._flash_progress.close()
-            self._flash_progress = None
-            _msgbox(QMessageBox.Warning, "Apply staged firmware", str(payload))
+            self._flash_dialog.feed_apply_finished(False, str(payload))
 
     def _on_flash_progress(self, name, payload):
-        dlg = getattr(self, "_flash_progress", None)
+        dlg = getattr(self, "_flash_dialog", None)
         if dlg is None or not isinstance(payload, dict):
             return
         pct = payload.get("pct")
-        phase = "Applying" if name == "fw_apply_progress" else "Flashing"
-        dlg.setLabelText(f"{phase}: {payload.get('msg', '')}")
-        if isinstance(pct, int) and pct >= 0:
-            dlg.setValue(pct)
+        pct = pct if isinstance(pct, int) and pct >= 0 else 0
+        msg = payload.get("msg", "")
+        if name == "fw_apply_progress":
+            dlg.feed_apply_progress(pct, msg)
+        else:
+            dlg.feed_progress(pct, msg)
 
     def _on_flash_done(self, name, payload):
-        dlg = getattr(self, "_flash_progress", None)
+        dlg = getattr(self, "_flash_dialog", None)
         payload = payload or {}
         ok = bool(payload.get("ok"))
-        # _client_flash_firmware always requests apply, so a successful
-        # fw_flash_done is followed by fw_apply_done — only the latter (or any
-        # failure) is terminal.
-        if name == "fw_flash_done" and ok:
-            if dlg is not None:
-                dlg.setLabelText("Staged — applying…")
-            return
+        msg = payload.get("msg", "")
+        # The dialog drives its own staging→apply chaining (apply_after=True) and
+        # finalizes itself (showing a Close button), so we just feed the result.
         if dlg is not None:
-            dlg.close()
-            self._flash_progress = None
+            if name == "fw_flash_done":
+                dlg.feed_finished(ok, msg)
+            else:  # fw_apply_done
+                dlg.feed_apply_finished(ok, msg)
         if ok:
             self.icon_manager.set_idle()
         else:
             phase = "apply" if name == "fw_apply_done" else "flash"
             self.icon_manager.set_warning(f"Firmware {phase} failed", 5000)
-            _msgbox(QMessageBox.Warning, "Firmware flash failed", str(payload.get("msg")))
 
     @staticmethod
     def langcode_to_flag(lang_code):
