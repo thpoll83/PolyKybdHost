@@ -96,6 +96,10 @@ class HidFwUpDialog(QDialog):
     # the threshold the real progress is unknown, so we show a busy spinner.
     _DETERMINATE_FROM = 2
 
+    # On success there's nothing for the user to do — show the completed state
+    # this long, then dismiss automatically (no Close button to mis-place).
+    _SUCCESS_AUTOCLOSE_MS = 1500
+
     def __init__(self, hid, bin_path: str, parent=None, apply_after=False, tray_icon=None,
                  external=False, apply_only=False):
         super().__init__(parent)
@@ -405,7 +409,7 @@ class HidFwUpDialog(QDialog):
         self._finalize(ok, msg)
 
     def _finalize(self, ok: bool, msg: str):
-        """Swap the dialog into its finished state (button, close flag, result)."""
+        """Finish: success dismisses itself; failure keeps a Close button."""
         self._done = True
         self._anim_timer.stop()
         self._eta_timer.stop()
@@ -418,18 +422,26 @@ class HidFwUpDialog(QDialog):
         self._show_pct(self._display_pct)
         self._status_label.setText(msg)
 
-        # Re-enable the button: it may have been disabled by a cancel request or
-        # during the uninterruptible apply phase.  Now repurpose it as Close
-        # (and re-show it — external mode hid it since there was nothing to cancel).
+        if ok:
+            # Nothing for the user to do — show the completed state briefly, then
+            # close. No Close button (so none can land under the taskbar), and we
+            # don't touch the window flags/size (the old re-show grew the frame).
+            self._cancel_btn.setVisible(False)
+            QTimer.singleShot(self._SUCCESS_AUTOCLOSE_MS, self.accept)
+            return
+
+        # Failure: keep a Close button so the error stays readable. Repurpose the
+        # existing in-layout button instead of re-adding WindowCloseButtonHint +
+        # re-showing (that re-decoration grew the frame and pushed the button
+        # under the taskbar). Re-snap into the available area in case the final
+        # message wrapped and grew the dialog.
         self._cancel_btn.setVisible(True)
         self._cancel_btn.setEnabled(True)
         self._cancel_btn.setText("Close")
         self._cancel_btn.clicked.disconnect()
-        self._cancel_btn.clicked.connect(self.accept)
-
-        # Re-enable the close button now that it's safe
-        self.setWindowFlags(self.windowFlags() | Qt.WindowCloseButtonHint)
-        self.show()
+        self._cancel_btn.clicked.connect(self.reject)
+        self._positioned = False
+        QTimer.singleShot(0, self._position_near_tray)
 
     def _on_cancel(self):
         if self._worker is not None and self._worker.isRunning():

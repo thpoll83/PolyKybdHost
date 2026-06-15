@@ -36,13 +36,22 @@ class TestHidFwUpDialogExternal(unittest.TestCase):
         dlg = self._dlg(apply_after=False)
         self.assertIsNone(dlg._worker)        # no local HID thread in external mode
 
-    def test_failure_finalizes_immediately(self):
+    def test_failure_keeps_close_button(self):
         dlg = self._dlg(apply_after=True)
         dlg.feed_progress(2, "erasing")
         dlg.feed_progress(40, "chunks")
         dlg.feed_finished(False, "device busy")   # failure → finalize now (no glide)
         self.assertTrue(dlg._done)
         self.assertIn("device busy", dlg._status_label.text())
+        # Failure keeps a Close button so the error stays readable.
+        self.assertFalse(dlg._cancel_btn.isHidden())
+        self.assertEqual(dlg._cancel_btn.text(), "Close")
+
+    def test_apply_only_failure_keeps_close_button(self):
+        dlg = self._dlg(bin_path="", apply_only=True)
+        dlg.feed_apply_finished(False, "apply failed")
+        self.assertTrue(dlg._done)
+        self.assertFalse(dlg._cancel_btn.isHidden())
 
     def test_success_staging_targets_full_bar(self):
         dlg = self._dlg(apply_after=False)
@@ -51,13 +60,15 @@ class TestHidFwUpDialogExternal(unittest.TestCase):
         dlg.feed_finished(True, "staged")          # success → glide toward 100
         self.assertEqual(dlg._target_pct, 100)     # don't wait on the glide timing
 
-    def test_apply_only_opens_in_spinner_and_finalizes(self):
+    def test_apply_only_opens_in_spinner_and_auto_dismisses(self):
         dlg = self._dlg(bin_path="", apply_only=True)
         self.assertIsNone(dlg._worker)
         self.assertTrue(dlg._busy)                 # opens directly in the apply spinner
         dlg.feed_apply_progress(0, "rebooting")
         dlg.feed_apply_finished(True, "applied")   # apply finish finalizes immediately
         self.assertTrue(dlg._done)
+        # Success auto-dismisses: no Close button shown.
+        self.assertTrue(dlg._cancel_btn.isHidden())
 
     def test_apply_after_chains_to_apply_on_staging_success(self):
         # fw_flash_done(ok) must not finalize when apply_after — it chains to apply.
