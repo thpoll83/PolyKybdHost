@@ -186,10 +186,18 @@ def create_windows_bat_wrapper(venv_path, script_path, args="", wrapper_path=Non
 
     activate_bat = venv_path / "Scripts" / "activate.bat"
 
+    # Use pythonw (no console subsystem) for the tray GUI so it never opens or
+    # owns a console window — `python.exe` allocates one, and closing that window
+    # kills the app (the user-reported "console opens, closing it drops the
+    # connection"). The `call activate.bat` above keeps the venv Scripts dir on
+    # PATH, so pythonw resolves — the documented "don't call pythonw WITHOUT
+    # activation" regression doesn't apply here (we activate first).
+    interp = "pythonw" if (venv_path / "Scripts" / "pythonw.exe").exists() else "python"
+
     bat_content = f"""@echo off
 call "{activate_bat}"
 cd "{script_path.parent.parent}"
-python -m polyhost {args}
+{interp} -m polyhost {args}
 """
 
     wrapper_path.write_text(bat_content, encoding="utf-8")
@@ -257,8 +265,13 @@ def _windows_launch_target(script_path, args):
     # (`-m polyhost`, not the script by path — the latter breaks `polyhost.*`
     # imports because the package dir, not its parent, lands on sys.path).
     python_exe = Path(sys.executable).resolve()
+    # Prefer pythonw.exe (no console window) for the tray GUI; fall back to
+    # python.exe if it's somehow absent.
+    launcher = python_exe.with_name("pythonw.exe")
+    if not launcher.exists():
+        launcher = python_exe
     wrapper = script_path.parent / "start_polyhost.bat"
-    content = f'@echo off\ncd "{repo_root}"\n"{python_exe}" -m polyhost {win_args}\n'
+    content = f'@echo off\ncd "{repo_root}"\n"{launcher}" -m polyhost {win_args}\n'
     wrapper.write_text(content, encoding="utf-8")
     print(f"Windows simple wrapper created at: {wrapper}")
     return str(wrapper), "", repo_root
