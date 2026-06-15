@@ -49,6 +49,12 @@ class HeadlessHost:
         self.core.subscribe(self._on_console_event)
         self.control_server = ControlServer(
             self.core, __version__, log, on_shutdown=self.request_stop)
+        # Optional network window-report listener (H4d) — opt-in, off by
+        # default. Serves ONLY `window.report` (auth + version gated) so a
+        # remote forwarder can push the active window over an authenticated
+        # connection instead of the plaintext TCP relay. Built in start() so a
+        # bind failure can't break construction; never exposes device control.
+        self._winreport_server = None
 
     def _on_console_event(self, name, payload):
         """Mirror the GUI: route the keyboard's console output to its log file.
@@ -79,7 +85,25 @@ class HeadlessHost:
         # Core-owned active-window tracking (no-op without a display).
         self.core.start_window_tracking()
         self.control_server.start()
+        self._maybe_start_window_report_server()
         self.log.info("PolyKybdHost running headless. Drive it with `polyctl`.")
+
+    def _maybe_start_window_report_server(self):
+        """Start the opt-in network window-report listener if enabled."""
+        try:
+            enabled = bool(self.core.settings_get("window_report_network_enabled"))
+        except Exception:
+            enabled = False
+        if not enabled:
+            return
+        from polyhost.server.window_report_server import WindowReportServer
+        try:
+            self._winreport_server = WindowReportServer(
+                self.core.report_window, __version__, self.log)
+            self._winreport_server.start()
+        except Exception:
+            self.log.exception("Could not start the window-report network listener")
+            self._winreport_server = None
 
     def request_stop(self):
         """Signal the run loop to exit (called from a server thread)."""
@@ -93,6 +117,11 @@ class HeadlessHost:
             return
         self._stopped = True
         try:
+            if self._winreport_server is not None:
+                try:
+                    self._winreport_server.stop()
+                except Exception:
+                    pass
             self.control_server.stop()
         finally:
             self.core.shutdown()

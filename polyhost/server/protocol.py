@@ -95,6 +95,14 @@ M_WINDOW_REPORT = "window.report"
 # Endpoint location + authkey (filesystem-permission gated, local only)
 # ---------------------------------------------------------------------------
 
+# Network window-report endpoint (H4d). A *separate* AF_INET listener that
+# serves ONLY `window.report` (see polyhost/server/window_report_server.py),
+# distinct from the local device-control socket above. Its own port + its own
+# authkey keep it isolated from the full control registry. The legacy plaintext
+# relay (polyhost/handler/remote_window.py) still uses TCP_PORT 50162; this uses
+# a different port so the two can coexist during the transition.
+WINDOW_REPORT_PORT = 50163
+
 def _config_dir() -> str:
     d = user_config_dir(APP_NAME)
     os.makedirs(d, exist_ok=True)
@@ -119,12 +127,25 @@ def authkey_path() -> str:
     return os.path.join(_config_dir(), "polykybd.authkey")
 
 
-def load_or_create_authkey() -> bytes:
+def window_report_authkey_path() -> str:
+    """Authkey for the network window-report endpoint (H4d).
+
+    Deliberately a *separate* key from the local control socket's: the network
+    listener serves only `window.report`, so leaking/sharing this key (which the
+    forwarder on another machine needs) never grants the device-control surface.
+    """
+    return os.path.join(_config_dir(), "polykybd-winreport.authkey")
+
+
+def load_or_create_authkey(path=None) -> bytes:
     """Return the shared HMAC secret, creating a 0600 file on first use.
 
-    On POSIX the 0600 file is defense-in-depth (the socket is already perm-
-    gated); on Windows it is the primary gate for the named pipe."""
-    path = authkey_path()
+    With no argument this is the local control socket's key (``authkey_path``);
+    pass ``window_report_authkey_path()`` for the separate network
+    window-report key. On POSIX the 0600 file is defense-in-depth (the socket is
+    already perm-gated); on Windows it is the primary gate for the named pipe."""
+    if path is None:
+        path = authkey_path()
     # Create atomically with O_EXCL so two near-simultaneous first launches
     # can't each generate a different key and have the later writer overwrite
     # the key the earlier server already bound with (which would then fail

@@ -45,6 +45,15 @@ class PolySettings:
             # --no-daemon (or this setting) opts out — e.g. for development, where
             # in-process keeps your code edits in the same process as the GUI.
             "daemon_mode": True,
+            # Window-report network endpoint (headless-core H4d): when True the
+            # daemon/host opens a separate, auth-gated AF_INET listener that
+            # serves ONLY `window.report` (port WINDOW_REPORT_PORT), so a remote
+            # forwarder can push the active window over an authenticated control
+            # connection instead of the legacy unauthenticated plaintext TCP
+            # relay. Default False — it opens a network port; opt in only when
+            # using a forwarder with `--report-rpc`. The device-control surface
+            # is never exposed (separate registry + separate authkey).
+            "window_report_network_enabled": False,
         }
         self._legacy_key_renames = {
             "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",
