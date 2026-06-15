@@ -35,6 +35,19 @@ def main():
                              'GUI-spawned headless daemon so it does not touch the GUI autostart entry.')
     parser.add_argument('--host', help='Specify a host where the PolyKybd is physically connected to')
     parser.add_argument('--host-file', help='Path to a file containing the host IP, written by a session hook (see folder autorun_forwarder for examples). This option has higher priority than `--host`.')
+    parser.add_argument('--report-rpc', default=False, action='store_true',
+                        help='Forwarder: push the active window over the authenticated, '
+                             'version-gated window-report network endpoint (H4d) instead of the '
+                             'legacy unauthenticated plaintext TCP relay. The target host must '
+                             'have window_report_network_enabled set.')
+    parser.add_argument('--report-port', type=int, default=None,
+                        help='Forwarder (--report-rpc): port of the window-report endpoint '
+                             '(default: the built-in WINDOW_REPORT_PORT).')
+    parser.add_argument('--report-authkey-file',
+                        help='Forwarder (--report-rpc): path to a file holding the target '
+                             "daemon's window-report authkey (its polykybd-winreport.authkey, "
+                             'copied from the keyboard machine). Required across machines; if '
+                             "omitted, this machine's local key is used (same-machine only).")
     args=parser.parse_args()
 
     # Pillow logs every PNG chunk at DEBUG ("STREAM b'IDAT' …", "Importing
@@ -152,7 +165,9 @@ def main():
         from polyhost.forwarder import PolyForwarder
         addr = args.host or f"IP set in {args.host_file}"
         print(f"Executing Forwarder. Sending to {addr}.")
-        app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file)
+        app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file,
+                            report_rpc=args.report_rpc, report_port=args.report_port,
+                            report_authkey_file=args.report_authkey_file)
     else:
         from polyhost.host import PolyHost
         if client_mode:
