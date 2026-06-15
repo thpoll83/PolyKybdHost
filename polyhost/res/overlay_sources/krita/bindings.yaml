@@ -1,9 +1,10 @@
 # Krita shortcut overlays for PolyKybd.
 #
-# Icons: Microsoft Fluent UI System Icons (MIT) for most actions; a few painting
-# glyphs (brush-size +/-, switch-preset) and the program mark are drawn in code
-# (white-on-transparent, mode: alpha). Krita's own icons are GPLv3 and are NOT
-# bundled (host is GPL-2.0). See SOURCES.md.
+# Icons: KDE Breeze icons (LGPLv3) — the set Krita's own UI uses — for the action/
+# tool keys; one Fluent (MIT) holdout (copy-merged); a few painting glyphs
+# (brush-size +/-, switch-preset) + the program mark are drawn in code
+# (mode: alpha). Breeze is license-compatible since the host is GPL-2.0-or-later.
+# See SOURCES.md.
 #
 # Shortcuts: Krita default key bindings (STABLE GLOBAL set). Verified against the
 # Krita docs / KDE Community Wiki — see SOURCES.md. Actions with no confirmed
@@ -33,36 +34,36 @@ program_icon_margin: 0
 
 bindings:
   # --- file (Ctrl -> R channel of primary) ---
-  - { key: N, mods: [CTRL], icon: new.png,   label: New,    source: "ms-fluent/Document Add (MIT)" }
-  - { key: O, mods: [CTRL], icon: open.png,  label: Open,   source: "ms-fluent/Folder Open (MIT)" }
-  - { key: S, mods: [CTRL], icon: save.png,  label: Save,   source: "ms-fluent/Save (MIT)" }
-  - { key: W, mods: [CTRL], icon: close.png, label: Close,  source: "ms-fluent/Document Dismiss (MIT)" }
+  - { key: N, mods: [CTRL], icon: new.png,   label: New,    source: "breeze-icons/document-new (LGPLv3)" }
+  - { key: O, mods: [CTRL], icon: open.png,  label: Open,   source: "breeze-icons/document-open (LGPLv3)" }
+  - { key: S, mods: [CTRL], icon: save.png,  label: Save,   source: "breeze-icons/document-save (LGPLv3)" }
+  - { key: W, mods: [CTRL], icon: close.png, label: Close,  source: "breeze-icons/document-close (LGPLv3)" }
 
   # --- edit (Ctrl) ---
-  - { key: Z, mods: [CTRL], icon: undo.png,      label: Undo,         source: "ms-fluent/Arrow Undo (MIT)" }
-  - { key: C, mods: [CTRL], icon: copy.png,      label: Copy,         source: "ms-fluent/Copy (MIT)" }
-  - { key: X, mods: [CTRL], icon: cut.png,       label: Cut,          source: "ms-fluent/Cut (MIT)" }
-  - { key: V, mods: [CTRL], icon: paste.png,     label: Paste,        source: "ms-fluent/Clipboard Paste (MIT)" }
-  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all", source: "ms-fluent/Select All On (MIT)" }
-  - { key: T, mods: [CTRL], icon: transform.png, label: Transform,    source: "ms-fluent/Resize (MIT)" }
-  - { key: E, mods: [CTRL], icon: mergedown.png, label: "Merge down", source: "ms-fluent/Layer (MIT)" }
-  - { key: G, mods: [CTRL], icon: group.png,     label: "Group",      source: "ms-fluent/Group (MIT)" }
+  - { key: Z, mods: [CTRL], icon: undo.png,      label: Undo,         source: "breeze-icons/edit-undo (LGPLv3)" }
+  - { key: C, mods: [CTRL], icon: copy.png,      label: Copy,         source: "breeze-icons/edit-copy (LGPLv3)" }
+  - { key: X, mods: [CTRL], icon: cut.png,       label: Cut,          source: "breeze-icons/edit-cut (LGPLv3)" }
+  - { key: V, mods: [CTRL], icon: paste.png,     label: Paste,        source: "breeze-icons/edit-paste (LGPLv3)" }
+  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all", source: "breeze-icons/edit-select-all (LGPLv3)" }
+  - { key: T, mods: [CTRL], icon: transform.png, label: Transform,    source: "breeze-icons/transform-scale (LGPLv3)" }
+  - { key: E, mods: [CTRL], icon: mergedown.png, label: "Merge down", source: "breeze-icons/layer-bottom (LGPLv3)" }
+  - { key: G, mods: [CTRL], icon: group.png,     label: "Group",      source: "breeze-icons/object-group (LGPLv3)" }
 
   # --- Ctrl+Shift -> R channel of combo ---
-  - { key: Z, mods: [CTRL, SHIFT], icon: redo.png,       label: Redo,             source: "ms-fluent/Arrow Redo (MIT)" }
-  - { key: S, mods: [CTRL, SHIFT], icon: saveas.png,     label: "Save as",        source: "ms-fluent/Save Edit (MIT)" }
-  - { key: A, mods: [CTRL, SHIFT], icon: deselect.png,   label: Deselect,         source: "ms-fluent/Select All Off (MIT)" }
-  - { key: I, mods: [CTRL, SHIFT], icon: invertsel.png,  label: "Invert sel",     source: "ms-fluent/Square Hint (MIT)" }
-  - { key: C, mods: [CTRL, SHIFT], icon: copymerged.png, label: "Copy merged",    source: "ms-fluent/Layer Diagonal (MIT)" }
-  - { key: E, mods: [CTRL, SHIFT], icon: flatten.png,    label: "Flatten image",  source: "ms-fluent/Group List (MIT)" }
+  - { key: Z, mods: [CTRL, SHIFT], icon: redo.png,       label: Redo,             source: "breeze-icons/edit-redo (LGPLv3)" }
+  - { key: S, mods: [CTRL, SHIFT], icon: saveas.png,     label: "Save as",        source: "breeze-icons/document-save-as (LGPLv3)" }
+  - { key: A, mods: [CTRL, SHIFT], icon: deselect.png,   label: Deselect,         source: "breeze-icons/edit-select-none (LGPLv3)" }
+  - { key: I, mods: [CTRL, SHIFT], icon: invertsel.png,  label: "Invert sel",     source: "breeze-icons/edit-select-invert (LGPLv3)" }
+  - { key: C, mods: [CTRL, SHIFT], icon: copymerged.png, label: "Copy merged",    source: "ms-fluent/Layer Diagonal (MIT) — no readable Breeze glyph" }
+  - { key: E, mods: [CTRL, SHIFT], icon: flatten.png,    label: "Flatten image",  source: "breeze-icons/layer-visible-on (LGPLv3)" }
 
   # --- plain keys / tools (no-mod -> A channel) ---
-  - { key: B, mods: [], icon: brush.png,    label: "Brush",     source: "ms-fluent/Inking Tool (MIT)" }
-  - { key: E, mods: [], icon: eraser.png,   label: "Eraser",    source: "ms-fluent/Eraser (MIT)" }
-  - { key: M, mods: [], icon: mirror.png,   label: "Mirror view", source: "ms-fluent/Flip Horizontal (MIT)" }
+  - { key: B, mods: [], icon: brush.png,    label: "Brush",     source: "breeze-icons/draw-brush (LGPLv3)" }
+  - { key: E, mods: [], icon: eraser.png,   label: "Eraser",    source: "breeze-icons/draw-eraser (LGPLv3)" }
+  - { key: M, mods: [], icon: mirror.png,   label: "Mirror view", source: "breeze-icons/object-flip-horizontal (LGPLv3)" }
   - { key: "/", mods: [], icon: preset.png, mode: alpha, label: "Prev preset", source: "custom (drawn: two swatches + swap arrow)" }
   - { key: "[", mods: [], icon: brushdec.png, mode: alpha, label: "Brush -", source: "custom (drawn: small dot)" }
   - { key: "]", mods: [], icon: brushinc.png, mode: alpha, label: "Brush +", source: "custom (drawn: large dot)" }
-  - { key: "1", mods: [], icon: zoom100.png,  label: "Zoom 100%", source: "ms-fluent/Ratio One To One (MIT)" }
-  - { key: "2", mods: [], icon: fitpage.png,  label: "Fit page",  source: "ms-fluent/Resize (MIT)" }
-  - { key: "3", mods: [], icon: fitwidth.png, label: "Fit width", source: "ms-fluent/Arrow Autofit Width (MIT)" }
+  - { key: "1", mods: [], icon: zoom100.png,  label: "Zoom 100%", source: "breeze-icons/zoom-original (LGPLv3)" }
+  - { key: "2", mods: [], icon: fitpage.png,  label: "Fit page",  source: "breeze-icons/zoom-fit-best (LGPLv3)" }
+  - { key: "3", mods: [], icon: fitwidth.png, label: "Fit width", source: "breeze-icons/zoom-fit-width (LGPLv3)" }

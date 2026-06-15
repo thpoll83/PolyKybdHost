@@ -57,30 +57,37 @@ deliberately dropped:
 
 ## Icons
 
-All icons are either **Microsoft Fluent UI System Icons (MIT)** or **drawn in
-code**. Krita's own icons are **GPLv3** — incompatible with the host's GPL-2.0 —
-so they are **not bundled**.
+Action/tool glyphs are the **KDE Breeze icons** — the icon set Krita's own UI
+uses — with one **Microsoft Fluent (MIT)** holdout and a few **drawn-in-code**
+glyphs. Breeze is **LGPLv3**, license-compatible now that the host is
+**GPL-2.0-or-later** (see the repo README/`LICENSE`); this is why the authentic
+icons can be bundled (an earlier version of this overlay used Fluent stand-ins
+because the host was then GPL-2.0-only).
 
-### Fluent (MIT) — 24 glyphs
+### Breeze (LGPLv3) — 23 glyphs
 
-`microsoft/fluentui-system-icons`, `main`,
-`assets/<Name>/SVG/ic_fluent_*_24_regular.svg`, rendered to 96px RGBA via
-cairosvg. Mapping in `fetch_icons.py`; each binding's `source:` notes the glyph.
-**Every asset name was probed (raw fetch → HTTP 200) before use — there were no
-404s and so no substitutions were needed.**
+`KDE/breeze-icons`, `master`, `icons/actions/<size>/<name>.svg`, rendered to 96px
+RGBA via cairosvg. `_breeze()` in `fetch_icons.py` probes sizes `22,24,16,32`
+(then `apps/`) and takes the first that resolves — deterministic for a given
+breeze-icons state. Mapping (`BREEZE_ICONS`): file/edit/view actions map to the
+standard freedesktop names (`document-*`, `edit-*`, `zoom-*`), plus `draw-brush`,
+`draw-eraser`, `object-flip-horizontal` (Mirror), `object-group` (Group).
 
-Weaker / approximate matches worth knowing:
+The four cells that needed care (a Breeze name that actually reads at 1-bit):
 
-- **Invert selection** → "Square Hint" (a dashed marquee box — reads as a
-  selection outline; Fluent has no dedicated invert-selection glyph).
-- **Transform** → "Resize" and **Fit page** → "Resize": same Fluent glyph. They
-  live on different layers/channels (Ctrl+T vs. plain `2`) so never appear on the
-  same keycap, but the art is shared.
-- **Copy merged** → "Layer Diagonal" (a single tilted layer) vs. **Merge down** →
-  "Layer" (a stack) — chosen to keep the two visually distinct.
-- **Flatten image** → "Group List" (a stack collapsed to lines).
-- **Brush** → "Inking Tool", **Eraser** → "Eraser", **Mirror view** → "Flip
-  Horizontal".
+- **Transform (Ctrl+T)** → `transform-scale` — dotted bounding-box + handles (the
+  free-transform metaphor); `transform-move` was just 4-way arrows ("move").
+- **Merge down (Ctrl+E)** → `layer-bottom` — a down-arrow into stacked layers.
+- **Flatten (Ctrl+Shift+E)** → `layer-visible-on` — solid stacked sheets,
+  deliberately distinct from Merge-down (which has the arrow). The generic
+  `merge` glyph was an unreadable blob and dup'd between the two.
+
+### Fluent (MIT) — 1 holdout
+
+`copymerged` → "Layer Diagonal" (`microsoft/fluentui-system-icons`). **Copy
+merged** has no readable Breeze glyph — every `edit-copy-*` variant 404s and
+plain `edit-copy` just duplicates Copy — so it keeps the Fluent layer glyph,
+which stays visually distinct from `edit-copy` (Copy).
 
 ### Drawn glyphs (white-on-transparent, `mode: alpha`)
 

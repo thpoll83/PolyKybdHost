@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
 """Fetch + render the Krita shortcut icons (reproducible).
 
-Most glyphs are Microsoft Fluent UI System Icons (MIT) — license-clean (the host
-is GPL-2.0, and MIT is GPLv2-compatible). Rendered to 96x96 RGBA PNG; the
-generator's `luma` mode keeps the linework at 1-bit.
+Action/tool glyphs are the **KDE Breeze icons** — the icon set Krita's own UI
+uses — fetched from the `KDE/breeze-icons` repo. Breeze is LGPLv3, which is
+license-compatible now that the host is **GPL-2.0-or-later** (see the repo
+README / `LICENSE`). Rendered to 96x96 RGBA PNG; the generator's `luma` mode
+keeps the linework at 1-bit. `_breeze()` probes `icons/actions/{22,24,16,32}/`
+then `apps/` and uses the first size that resolves (deterministic given a repo
+state), mirroring the "probe before use" approach.
 
-A few painting actions have no clean Fluent glyph, so they are drawn directly in
+One action — **copy-merged** — has no readable Breeze glyph (every `edit-copy-*`
+variant 404s and plain `edit-copy` just dups Copy), so it keeps a Microsoft
+Fluent (MIT) glyph; see `FLUENT_ICONS`.
+
+A few painting actions have no clean icon either, so they are drawn directly in
 this file as white-on-transparent glyphs (consumed with `mode: alpha`):
 brush-size decrease/increase (a small / large dot) and switch-to-previous-preset
 (two swatches with a swap arrow).
 
-⚠️ We deliberately do NOT bundle Krita's own icons — they are GPLv3, which is
-incompatible with the host's GPL-2.0. The program mark (ESC) is a generic
-license-clean "Kr" monogram drawn in code, NOT Krita's logo.
+The program mark (ESC) is a generic "Kr" monogram drawn in code, NOT Krita's
+logo: the real logo is now licence-compatible but reduces to an illegible blob
+at the keycap's 1-bit resolution (see `_draw_krita_logo` / SOURCES.md).
 
     pip install cairosvg
     python polyhost/res/overlay_sources/krita/fetch_icons.py
@@ -29,37 +37,33 @@ from PIL import Image, ImageDraw, ImageFont
 
 RENDER_PX = 96
 MS = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/assets/{}"
+BREEZE = "https://raw.githubusercontent.com/KDE/breeze-icons/master/icons/{cat}/{size}/{name}.svg"
+BREEZE_SIZES = ("22", "24", "16", "32")
+BREEZE_CATS = ("actions", "apps")
 
-# All probed (raw fetch, HTTP 200) before being relied on. See SOURCES.md.
-MS_ICONS = {
+# Breeze icon name per overlay glyph (the set Krita's own UI uses). All resolved
+# (raw fetch, HTTP 200) before being relied on; see SOURCES.md for the mapping
+# rationale and the 4 "weak cell" decisions (transform/merge/flatten/copy-merged).
+BREEZE_ICONS = {
     # --- file ---
-    "new": "Document Add/SVG/ic_fluent_document_add_24_regular.svg",
-    "open": "Folder Open/SVG/ic_fluent_folder_open_24_regular.svg",
-    "save": "Save/SVG/ic_fluent_save_24_regular.svg",
-    "saveas": "Save Edit/SVG/ic_fluent_save_edit_24_regular.svg",
-    "close": "Document Dismiss/SVG/ic_fluent_document_dismiss_24_regular.svg",
+    "new": "document-new", "open": "document-open", "save": "document-save",
+    "saveas": "document-save-as", "close": "document-close",
     # --- edit ---
-    "copy": "Copy/SVG/ic_fluent_copy_24_regular.svg",
-    "cut": "Cut/SVG/ic_fluent_cut_24_regular.svg",
-    "paste": "Clipboard Paste/SVG/ic_fluent_clipboard_paste_24_regular.svg",
-    "undo": "Arrow Undo/SVG/ic_fluent_arrow_undo_24_regular.svg",
-    "redo": "Arrow Redo/SVG/ic_fluent_arrow_redo_24_regular.svg",
-    "selectall": "Select All On/SVG/ic_fluent_select_all_on_24_regular.svg",
-    "deselect": "Select All Off/SVG/ic_fluent_select_all_off_24_regular.svg",
-    "invertsel": "Square Hint/SVG/ic_fluent_square_hint_24_regular.svg",
-    "transform": "Resize/SVG/ic_fluent_resize_24_regular.svg",
-    "copymerged": "Layer Diagonal/SVG/ic_fluent_layer_diagonal_24_regular.svg",
+    "copy": "edit-copy", "cut": "edit-cut", "paste": "edit-paste",
+    "undo": "edit-undo", "redo": "edit-redo", "selectall": "edit-select-all",
+    "deselect": "edit-select-none", "invertsel": "edit-select-invert",
+    "transform": "transform-scale",
     # --- layers ---
-    "mergedown": "Layer/SVG/ic_fluent_layer_24_regular.svg",
-    "group": "Group/SVG/ic_fluent_group_24_regular.svg",
-    "flatten": "Group List/SVG/ic_fluent_group_list_24_regular.svg",
+    "mergedown": "layer-bottom", "group": "object-group", "flatten": "layer-visible-on",
     # --- tools / view ---
-    "brush": "Inking Tool/SVG/ic_fluent_inking_tool_24_regular.svg",
-    "eraser": "Eraser/SVG/ic_fluent_eraser_24_regular.svg",
-    "mirror": "Flip Horizontal/SVG/ic_fluent_flip_horizontal_24_regular.svg",
-    "zoom100": "Ratio One To One/SVG/ic_fluent_ratio_one_to_one_24_regular.svg",
-    "fitpage": "Resize/SVG/ic_fluent_resize_24_regular.svg",
-    "fitwidth": "Arrow Autofit Width/SVG/ic_fluent_arrow_autofit_width_24_regular.svg",
+    "brush": "draw-brush", "eraser": "draw-eraser", "mirror": "object-flip-horizontal",
+    "zoom100": "zoom-original", "fitpage": "zoom-fit-best", "fitwidth": "zoom-fit-width",
+}
+
+# Copy-merged has no readable Breeze glyph (edit-copy-* all 404; edit-copy dups
+# Copy), so it keeps a Fluent (MIT) icon, distinct from plain Copy.
+FLUENT_ICONS = {
+    "copymerged": "Layer Diagonal/SVG/ic_fluent_layer_diagonal_24_regular.svg",
 }
 
 
@@ -163,10 +167,28 @@ DRAWN = {
 }
 
 
+def _breeze_svg(name: str) -> tuple[str, bytes]:
+    """Fetch a Breeze icon, trying the action sizes (then apps/) in order and
+    returning the first that resolves. Returns (cat/size, svg_bytes)."""
+    for cat in BREEZE_CATS:
+        for size in BREEZE_SIZES:
+            url = BREEZE.format(cat=cat, size=size, name=name)
+            try:
+                return f"{cat}/{size}", _get(url)
+            except Exception:
+                continue
+    raise RuntimeError(f"Breeze icon not found: {name}")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
-    for fname, asset in MS_ICONS.items():
+    for fname, name in BREEZE_ICONS.items():
+        where, svg = _breeze_svg(name)
+        png = cairosvg.svg2png(bytestring=svg, output_width=RENDER_PX, output_height=RENDER_PX)
+        (out / f"{fname}.png").write_bytes(png)
+        print(f"  {fname}.png  <- breeze/{where}/{name}")
+    for fname, asset in FLUENT_ICONS.items():
         enc = "/".join(urllib.parse.quote(s) for s in asset.split("/"))
         png = cairosvg.svg2png(bytestring=_get(MS.format(enc)),
                                output_width=RENDER_PX, output_height=RENDER_PX)
