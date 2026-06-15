@@ -148,8 +148,10 @@ def _draw_krita_logo(path: Path) -> None:
     """Generic, license-clean 'Kr' program mark (NOT Krita's logo): a rounded-
     square *outline* with the monogram 'Kr' drawn inside it — the unified
     outlined-monogram style shared with the other creative-app marks. White on
-    transparent, rendered with `program_icon_mode: alpha`. Krita's real icons are
-    GPLv3 and are deliberately not used."""
+    transparent, rendered with `program_icon_mode: alpha`. Krita's real logo is
+    GPLv3 — now licence-compatible since the host is GPL-2.0-or-later — but it is
+    a colour, organic shape that reduces to an illegible blob at the keycap's
+    1-bit resolution, so the clean monogram is kept on legibility grounds."""
     _draw_outlined_monogram(path, "Kr")
 
 

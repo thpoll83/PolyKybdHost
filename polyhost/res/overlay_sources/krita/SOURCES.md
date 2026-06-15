@@ -94,12 +94,20 @@ For painting actions with no clean Fluent match (drawn in `fetch_icons.py`):
 
 ## Program icon (ESC, all layers)
 
-`program_icon: krita.png` is a **generic, license-clean "Kr" monogram drawn in
-code** (NOT Krita's logo): a rounded-square **outline** with `Kr` drawn inside —
-the unified outlined-monogram style shared with the other creative-app marks (Ai,
-Ps, Fi, Te). Drawn by `_draw_krita_logo()` → `_draw_outlined_monogram()` in
-`fetch_icons.py` (white-on-transparent → `program_icon_mode: alpha`), reproducible
-and carrying no trademark/licence risk.
+`program_icon: krita.png` is a **generic "Kr" monogram drawn in code** (NOT
+Krita's logo): a rounded-square **outline** with `Kr` drawn inside — the unified
+outlined-monogram style shared with the other creative-app marks (Ai, Ps, Fi).
+Drawn by `_draw_krita_logo()` → `_draw_outlined_monogram()` in `fetch_icons.py`
+(white-on-transparent → `program_icon_mode: alpha`), reproducible.
+
+> **Why not the real Krita logo?** Krita is GPLv3, and since the host moved to
+> **GPL-2.0-or-later** its logo is now licence-compatible. But the real logo
+> (`krita/pics/branding/default/*-apps-krita.png`) is a colour, organic shape:
+> reduced to the keycap's 1-bit monochrome it collapses to an unrecognisable
+> blob (alpha silhouette) or a fragmented mess (luma threshold). The clean
+> monogram is far more legible at this resolution, so it is kept deliberately.
+> Krita's **tool** icons (line-art, from the `breeze-icons` repo) would reduce
+> fine and are now usable too, should authentic tool glyphs be wanted later.
 
 ## Transformations
 

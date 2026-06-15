@@ -379,3 +379,14 @@ must never touch Qt objects. Full contract:
   threading contract.
 - [`CLAUDE.md`](CLAUDE.md) — the working dev guide (conventions, test commands,
   hard-won gotchas).
+
+## License
+
+PolyKybdHost is free software: you can redistribute it and/or modify it under
+the terms of the **GNU General Public License** as published by the Free Software
+Foundation, **either version 2 of the License, or (at your option) any later
+version** (GPL-2.0-or-later). See [`LICENSE`](LICENSE) for the full text of GPL
+version 2.
+
+This project depends on PyQt5, which is licensed under the GPL v3; the
+"or any later version" grant above keeps the combined work license-consistent.
