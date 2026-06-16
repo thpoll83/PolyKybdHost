@@ -39,10 +39,12 @@ Target: the **new Microsoft Teams** desktop app on **Windows**. Official referen
 
 ### Dropped / not included (flagged)
 
-- **Reply (Alt+Shift+R), mark-as-unread, find-in-chat, filter** — these are either
-  Alt+arrow / nav-area shortcuts, vary between classic and new Teams, or could not
-  be confirmed as stable new-Teams defaults from the official material. **Not
-  invented** — omitted rather than guessed.
+- **Reply (Alt+Shift+R) and Filter (Ctrl+Shift+F)** were originally omitted here as
+  unconfirmed — the **2026-06 coverage audit** corroborated both as stable Windows
+  defaults across multiple sources, so they are now **added** (see "Coverage audit
+  additions" below), along with Mark-important (Ctrl+Shift+I).
+- **mark-as-unread, find-in-chat** — still omitted: vary between classic and new
+  Teams or not confirmable as stable new-Teams defaults. **Not invented.**
 - No Ctrl+Alt+Shift or Win/GUI Teams shortcuts exist in the target set, so nothing
   hit the un-representable channels (the generator reported 0 drops).
 
