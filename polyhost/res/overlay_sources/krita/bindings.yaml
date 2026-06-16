@@ -67,3 +67,17 @@ bindings:
   - { key: "1", mods: [], icon: zoom100.png,  label: "Zoom 100%", source: "breeze-icons/zoom-original (LGPLv3)" }
   - { key: "2", mods: [], icon: fitpage.png,  label: "Fit page",  source: "breeze-icons/zoom-fit-best (LGPLv3)" }
   - { key: "3", mods: [], icon: fitwidth.png, label: "Fit width", source: "breeze-icons/zoom-fit-width (LGPLv3)" }
+
+  # --- added tools (coverage audit 2026-06) ---
+  - { key: F, mods: [], icon: filltool.png,   label: "Fill tool",    source: "breeze-icons/fill-color (LGPLv3)" }
+  - { key: T, mods: [], icon: move.png,       label: "Move tool",    source: "breeze-icons/transform-move (LGPLv3)" }
+  - { key: P, mods: [], icon: picker.png,     label: "Color picker", source: "breeze-icons/color-picker (LGPLv3)" }
+  - { key: R, mods: [], icon: rectselect.png, label: "Rect select",  source: "breeze-icons/select-rectangular (LGPLv3)" }
+  - { key: V, mods: [], icon: linetool.png,   label: "Line tool",    source: "breeze-icons/draw-line (LGPLv3)" }
+  - { key: R, mods: [SHIFT], icon: rectangle.png, label: "Rectangle", source: "breeze-icons/draw-rectangle (LGPLv3)" }
+  - { key: J, mods: [SHIFT], icon: ellipse.png,   label: "Ellipse",   source: "breeze-icons/draw-ellipse (LGPLv3)" }
+  - { key: BACKSPACE, mods: [],      icon: fillbg.png, mode: alpha, label: "Fill BG color", source: "custom (drawn: solid square)" }
+  - { key: BACKSPACE, mods: [SHIFT], icon: fillfg.png, mode: alpha, label: "Fill FG color", source: "custom (drawn: framed square)" }
+  - { key: I, mods: [CTRL], icon: invert.png, mode: alpha, label: "Invert", source: "custom (drawn: half-filled circle)" }
+  - { key: D, mods: [CTRL, SHIFT], icon: reselect.png, mode: alpha, label: "Reselect", source: "custom (drawn: dashed box + arrow)" }
+  - { key: INSERT, mods: [], icon: newlayer.png, label: "New layer", source: "breeze-icons/list-add (LGPLv3)" }

@@ -58,6 +58,10 @@ BREEZE_ICONS = {
     # --- tools / view ---
     "brush": "draw-brush", "eraser": "draw-eraser", "mirror": "object-flip-horizontal",
     "zoom100": "zoom-original", "fitpage": "zoom-fit-best", "fitwidth": "zoom-fit-width",
+    # --- added tools (audit 2026-06): more of Krita's everyday tool/view set ---
+    "filltool": "fill-color", "move": "transform-move", "picker": "color-picker",
+    "rectselect": "select-rectangular", "linetool": "draw-line",
+    "rectangle": "draw-rectangle", "ellipse": "draw-ellipse", "newlayer": "list-add",
 }
 
 # Copy-merged has no readable Breeze glyph (edit-copy-* all 404; edit-copy dups
@@ -122,6 +126,66 @@ def _draw_preset(path: Path) -> None:
     _save_alpha(np.asarray(img), path)
 
 
+def _draw_invert(path: Path) -> None:
+    """Invert (Ctrl+I): a circle with its left half filled — the classic
+    contrast/invert glyph."""
+    ss = 4
+    u = RENDER_PX * ss
+    ring = Image.new("L", (u, u), 0)
+    ImageDraw.Draw(ring).ellipse([0.20 * u, 0.20 * u, 0.80 * u, 0.80 * u],
+                                 outline=255, width=int(u * 0.06))
+    half = Image.new("L", (u, u), 0)
+    ImageDraw.Draw(half).pieslice([0.20 * u, 0.20 * u, 0.80 * u, 0.80 * u],
+                                  90, 270, fill=255)
+    _save_alpha(np.maximum(np.asarray(ring), np.asarray(half)).astype(np.uint8), path)
+
+
+def _draw_fillbg(path: Path) -> None:
+    """Fill with background colour (Backspace): a solid filled square."""
+    ss = 4
+    u = RENDER_PX * ss
+    m = Image.new("L", (u, u), 0)
+    ImageDraw.Draw(m).rectangle([0.22 * u, 0.22 * u, 0.78 * u, 0.78 * u], fill=255)
+    _save_alpha(np.asarray(m).astype(np.uint8), path)
+
+
+def _draw_fillfg(path: Path) -> None:
+    """Fill with foreground colour (Shift+Backspace): a framed square with a
+    solid centre — distinct from the solid BG-fill square and the bucket tool."""
+    ss = 4
+    u = RENDER_PX * ss
+    m = Image.new("L", (u, u), 0)
+    d = ImageDraw.Draw(m)
+    d.rectangle([0.18 * u, 0.18 * u, 0.82 * u, 0.82 * u], outline=255, width=int(u * 0.07))
+    d.rectangle([0.36 * u, 0.36 * u, 0.64 * u, 0.64 * u], fill=255)
+    _save_alpha(np.asarray(m).astype(np.uint8), path)
+
+
+def _draw_reselect(path: Path) -> None:
+    """Reselect (Ctrl+Shift+D): a dashed marquee box + a small re- arrow,
+    distinct from Deselect (dashed box + x) and Select-all."""
+    ss = 4
+    u = RENDER_PX * ss
+    m = Image.new("L", (u, u), 0)
+    d = ImageDraw.Draw(m)
+    x0, y0, x1, y1 = 0.20 * u, 0.24 * u, 0.80 * u, 0.76 * u
+    dash = int(u * 0.07)
+    w = int(u * 0.05)
+    x = x0
+    while x < x1:
+        d.line([(x, y0), (min(x + dash, x1), y0)], fill=255, width=w)
+        d.line([(x, y1), (min(x + dash, x1), y1)], fill=255, width=w)
+        x += 2 * dash
+    y = y0
+    while y < y1:
+        d.line([(x0, y), (x0, min(y + dash, y1))], fill=255, width=w)
+        d.line([(x1, y), (x1, min(y + dash, y1))], fill=255, width=w)
+        y += 2 * dash
+    d.arc([0.36 * u, 0.36 * u, 0.64 * u, 0.64 * u], 300, 210, fill=255, width=w)
+    d.polygon([(0.64 * u, 0.46 * u), (0.56 * u, 0.40 * u), (0.55 * u, 0.52 * u)], fill=255)
+    _save_alpha(np.asarray(m).astype(np.uint8), path)
+
+
 def _draw_outlined_monogram(path: Path, text: str) -> None:
     """Shared program-mark style across the creative apps: a rounded-square
     *outline* with a centred monogram, white-on-transparent (alpha = the lit
@@ -163,6 +227,10 @@ DRAWN = {
     "brushdec.png": _draw_brushdec,
     "brushinc.png": _draw_brushinc,
     "preset.png": _draw_preset,
+    "invert.png": _draw_invert,
+    "fillbg.png": _draw_fillbg,
+    "fillfg.png": _draw_fillfg,
+    "reselect.png": _draw_reselect,
     "krita.png": _draw_krita_logo,
 }
 
