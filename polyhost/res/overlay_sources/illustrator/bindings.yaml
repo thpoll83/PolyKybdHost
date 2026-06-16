@@ -99,3 +99,17 @@ bindings:
   - { key: W, mods: [SHIFT], icon: width.png, mode: alpha, label: "Width tool", source: "custom (drawn: variable width)" }
   - { key: B, mods: [SHIFT], icon: paintbrush.png, label: "Blob brush",     source: "ms-fluent/Paint Brush (MIT)" }
   - { key: L, mods: [SHIFT], icon: livepaint.png,  label: "Live paint select", source: "ms-fluent/Paint Bucket (MIT)" }
+
+  # ===== added: coverage audit 2026-06 =====
+  - { key: Y, mods: [CTRL], icon: outline.png, mode: alpha, label: "Outline mode", source: "custom (drawn: wireframe + handles)" }
+  - { key: J, mods: [CTRL], icon: join.png,    label: "Join paths", source: "ms-fluent/Link (MIT)" }
+  - { key: R, mods: [CTRL], icon: rulers.png,  label: "Rulers", source: "ms-fluent/Ruler (MIT)" }
+  - { key: ";", mods: [CTRL], icon: guides.png, mode: alpha, label: "Guides", source: "custom (drawn: dashed cross)" }
+  - { key: U, mods: [CTRL], icon: smartguides.png, mode: alpha, label: "Smart guides", source: "custom (drawn: diag align + sparkle)" }
+  - { key: H, mods: [CTRL], icon: hideedges.png, label: "Hide edges", source: "ms-fluent/Eye Off (MIT)" }
+  - { key: L, mods: [CTRL], icon: newlayer.png, label: "New layer", source: "ms-fluent/Add Square (MIT)" }
+  - { key: K, mods: [CTRL], icon: prefs.png,   label: "Preferences", source: "ms-fluent/Settings (MIT)" }
+  - { key: E, mods: [CTRL, SHIFT], icon: applyeffect.png, label: "Apply last effect", source: "ms-fluent/Sparkle (MIT)" }
+  - { key: J, mods: [CTRL, ALT], icon: average.png, mode: alpha, label: "Average points", source: "custom (drawn: points to centre)" }
+  - { key: B, mods: [CTRL, ALT], icon: blend.png, mode: alpha, label: "Make blend", source: "custom (drawn: shrinking shapes)" }
+  - { key: "3", mods: [CTRL, ALT], icon: showall.png, label: "Show all", source: "ms-fluent/Eye (MIT)" }

@@ -78,6 +78,14 @@ MS_ICONS = {
     # --- view (Ctrl) ---
     "zoomin": "Zoom In/SVG/ic_fluent_zoom_in_24_regular.svg",
     "zoomout": "Zoom Out/SVG/ic_fluent_zoom_out_24_regular.svg",
+    # --- added (coverage audit 2026-06) ---
+    "join": "Link/SVG/ic_fluent_link_24_regular.svg",                   # Ctrl+J Join
+    "rulers": "Ruler/SVG/ic_fluent_ruler_24_regular.svg",              # Ctrl+R Rulers
+    "hideedges": "Eye Off/SVG/ic_fluent_eye_off_24_regular.svg",       # Ctrl+H Hide edges
+    "newlayer": "Add Square/SVG/ic_fluent_add_square_24_regular.svg",  # Ctrl+L New layer
+    "applyeffect": "Sparkle/SVG/ic_fluent_sparkle_24_regular.svg",     # Ctrl+Shift+E Apply last effect
+    "prefs": "Settings/SVG/ic_fluent_settings_24_regular.svg",         # Ctrl+K Preferences
+    "showall": "Eye/SVG/ic_fluent_eye_24_regular.svg",                 # Ctrl+Alt+3 Show all
 }
 
 
@@ -214,6 +222,77 @@ def _draw_ai_logo(path: Path) -> None:
     _save(img, path)
 
 
+def _draw_outline(path: Path) -> None:
+    """Outline/Preview view (Ctrl+Y): a wireframe square with anchor handles."""
+    u, img, d = _new()
+    w = int(u * 0.05)
+    d.rectangle([0.26 * u, 0.26 * u, 0.74 * u, 0.74 * u], outline=WHITE, width=w)
+    r = int(u * 0.055)
+    for cx, cy in [(0.26 * u, 0.26 * u), (0.74 * u, 0.26 * u),
+                   (0.26 * u, 0.74 * u), (0.74 * u, 0.74 * u)]:
+        d.rectangle([cx - r, cy - r, cx + r, cy + r], fill=WHITE)
+    _save(img, path)
+
+
+def _draw_guides(path: Path) -> None:
+    """Show/Hide guides (Ctrl+;): a dashed vertical + horizontal guide cross."""
+    u, img, d = _new()
+    w = int(u * 0.05)
+    dash = int(u * 0.09)
+    y = 0.12 * u
+    while y < 0.88 * u:
+        d.line([(0.5 * u, y), (0.5 * u, min(y + dash, 0.88 * u))], fill=WHITE, width=w)
+        y += 2 * dash
+    x = 0.12 * u
+    while x < 0.88 * u:
+        d.line([(x, 0.5 * u), (min(x + dash, 0.88 * u), 0.5 * u)], fill=WHITE, width=w)
+        x += 2 * dash
+    _save(img, path)
+
+
+def _draw_smartguides(path: Path) -> None:
+    """Smart guides (Ctrl+U): a dashed diagonal alignment line + node + a sparkle."""
+    u, img, d = _new()
+    w = int(u * 0.05)
+    x0, y0, x1, y1 = 0.16 * u, 0.84 * u, 0.84 * u, 0.16 * u
+    n = 7
+    for i in range(0, n, 2):
+        ax, ay = x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n
+        bx, by = x0 + (x1 - x0) * (i + 1) / n, y0 + (y1 - y0) * (i + 1) / n
+        d.line([(ax, ay), (bx, by)], fill=WHITE, width=w)
+    d.ellipse([0.43 * u, 0.43 * u, 0.57 * u, 0.57 * u], fill=WHITE)
+    sw = int(w * 0.7)
+    d.line([(0.74 * u, 0.16 * u), (0.74 * u, 0.30 * u)], fill=WHITE, width=sw)
+    d.line([(0.67 * u, 0.23 * u), (0.81 * u, 0.23 * u)], fill=WHITE, width=sw)
+    _save(img, path)
+
+
+def _draw_average(path: Path) -> None:
+    """Average anchor points (Ctrl+Alt+J): outer points converging on a centre."""
+    u, img, d = _new()
+    w = int(u * 0.05)
+    r = int(u * 0.06)
+    pts = [(0.22 * u, 0.28 * u), (0.78 * u, 0.28 * u),
+           (0.30 * u, 0.80 * u), (0.70 * u, 0.80 * u)]
+    for cx, cy in pts:
+        d.line([(cx, cy), (0.5 * u, 0.5 * u)], fill=WHITE, width=int(w * 0.5))
+    for cx, cy in pts:
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=WHITE, width=int(w * 0.8))
+    cr = int(u * 0.085)
+    d.ellipse([0.5 * u - cr, 0.5 * u - cr, 0.5 * u + cr, 0.5 * u + cr], fill=WHITE)
+    _save(img, path)
+
+
+def _draw_blend(path: Path) -> None:
+    """Make blend (Ctrl+Alt+B): a row of shapes shrinking left→right (blend steps)."""
+    u, img, d = _new()
+    w = int(u * 0.045)
+    for cx, rr in [(0.22 * u, 0.18 * u), (0.46 * u, 0.13 * u),
+                   (0.66 * u, 0.09 * u), (0.82 * u, 0.055 * u)]:
+        d.ellipse([cx - rr, 0.5 * u - rr, cx + rr, 0.5 * u + rr], outline=WHITE, width=w)
+    _save(img, path)
+
+
 # drawn glyphs: filename -> draw function (only created if not already committed)
 DRAWN = {
     "pen.png": _draw_pen,
@@ -222,6 +301,11 @@ DRAWN = {
     "swap.png": _draw_swap,
     "default.png": _draw_default,
     "line.png": _draw_line,
+    "outline.png": _draw_outline,
+    "guides.png": _draw_guides,
+    "smartguides.png": _draw_smartguides,
+    "average.png": _draw_average,
+    "blend.png": _draw_blend,
 }
 
 

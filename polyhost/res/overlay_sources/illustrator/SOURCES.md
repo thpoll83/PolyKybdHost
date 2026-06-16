@@ -130,3 +130,13 @@ Paste into `polyhost/res/overlay-mapping.poly.yaml`:
 illustrator:
   overlay: [illustrator_template.mods.png, illustrator_template.combo.mods.png]
 ```
+
+## Coverage audit additions (2026-06)
+
+Added 12 high-value defaults that were missing (55 → 67): `Ctrl+Y` outline mode
+(drawn wireframe), `Ctrl+J` join (Link), `Ctrl+R` rulers (Ruler), `Ctrl+;` guides
+(drawn dashed cross), `Ctrl+U` smart guides (drawn), `Ctrl+H` hide edges (Eye
+Off), `Ctrl+L` new layer (Add Square), `Ctrl+K` preferences (Settings),
+`Ctrl+Shift+E` apply last effect (Sparkle), `Ctrl+Alt+J` average (drawn),
+`Ctrl+Alt+B` make blend (drawn), `Ctrl+Alt+3` show all (Eye). Fluent (MIT) +
+drawn glyphs; sources per binding `source:`.
