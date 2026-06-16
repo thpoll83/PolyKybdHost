@@ -93,3 +93,10 @@ To add to `polyhost/res/overlay-mapping.poly.yaml` (NOT edited here):
 ms-teams,teams:
   overlay: [teams_template.mods.png, teams_template.combo.mods.png]
 ```
+
+## Coverage audit additions (2026-06)
+
+Added 3 high-confidence defaults that were missing (26 → 29): `Ctrl+Shift+F`
+filter (Filter), `Ctrl+Shift+I` mark important (Important), `Alt+Shift+R` reply to
+thread (Arrow Reply). All Fluent (MIT). (Lower-confidence call/compose variants —
+e.g. Ctrl+Shift+B, Alt+Shift+C — were left out pending in-app confirmation.)

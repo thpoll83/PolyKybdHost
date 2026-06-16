@@ -54,6 +54,10 @@ MS_ICONS = {
     "raisehand": "Hand Right/SVG/ic_fluent_hand_right_24_regular.svg",
     "background": "Blur/SVG/ic_fluent_blur_24_regular.svg",
     "expand": "Arrow Expand/SVG/ic_fluent_arrow_expand_24_regular.svg",
+    # --- added (coverage audit 2026-06) ---
+    "filter": "Filter/SVG/ic_fluent_filter_24_regular.svg",
+    "important": "Important/SVG/ic_fluent_important_24_regular.svg",
+    "reply": "Arrow Reply/SVG/ic_fluent_arrow_reply_24_regular.svg",
 }
 
 

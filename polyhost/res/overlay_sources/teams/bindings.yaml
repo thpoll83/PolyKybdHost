@@ -60,3 +60,8 @@ bindings:
   - { key: K, mods: [CTRL, SHIFT], icon: raisehand.png,   label: "Raise hand",    source: "ms-fluent/Hand Right (MIT)" }
   - { key: P, mods: [CTRL, SHIFT], icon: background.png,  label: "Background blur", source: "ms-fluent/Blur (MIT)" }
   - { key: X, mods: [CTRL, SHIFT], icon: expand.png,      label: "Expand compose box", source: "ms-fluent/Arrow Expand (MIT)" }
+
+  # --- added: coverage audit 2026-06 ---
+  - { key: F, mods: [CTRL, SHIFT], icon: filter.png,    label: "Filter",          source: "ms-fluent/Filter (MIT)" }
+  - { key: I, mods: [CTRL, SHIFT], icon: important.png, label: "Mark important",  source: "ms-fluent/Important (MIT)" }
+  - { key: R, mods: [ALT, SHIFT],  icon: reply.png,     label: "Reply to thread", source: "ms-fluent/Arrow Reply (MIT)" }
