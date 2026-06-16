@@ -80,3 +80,15 @@ bindings:
   - { key: G, mods: [CTRL, ALT], icon: frameselection.png, mode: alpha, label: "Frame sel", source: "custom (drawn: frame brackets + object)" }
   - { key: K, mods: [CTRL, ALT], icon: component.png,      label: Component,    source: "ms-fluent/Cube Add (MIT)" }
   - { key: B, mods: [CTRL, ALT], icon: detach.png,         label: "Detach inst", source: "ms-fluent/Plug Disconnected (MIT)" }
+  - { key: C, mods: [CTRL, ALT], icon: copy.png,  label: "Copy properties",  source: "ms-fluent/Copy (MIT)" }
+  - { key: V, mods: [CTRL, ALT], icon: paste.png, label: "Paste properties", source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: M, mods: [CTRL, ALT], icon: mask.png,  label: "Use as mask",      source: "ms-fluent/Crop (MIT)" }
+  - { key: A, mods: [CTRL, ALT], icon: selinverse.png, label: "Select inverse", source: "ms-fluent/Arrow Swap (MIT)" }
+
+  # --- added: coverage audit 2026-06 ---
+  - { key: "/", mods: [CTRL], icon: find.png,    label: "Search",        source: "ms-fluent/Search (MIT)" }
+  - { key: "'", mods: [CTRL], icon: grid.png,    label: "Pixel grid",    source: "ms-fluent/Grid (MIT)" }
+  - { key: "]", mods: [CTRL], icon: forward.png, label: "Bring forward", source: "ms-fluent/Arrow Up (MIT)" }
+  - { key: "[", mods: [CTRL], icon: backward.png, label: "Send backward", source: "ms-fluent/Arrow Down (MIT)" }
+  - { key: "]", mods: [CTRL, SHIFT], icon: tofront.png, label: "Bring to front", source: "ms-fluent/Position To Front (MIT)" }
+  - { key: "[", mods: [CTRL, SHIFT], icon: toback.png,  label: "Send to back",   source: "ms-fluent/Position To Back (MIT)" }

@@ -106,3 +106,12 @@ Paste into `polyhost/res/overlay-mapping.poly.yaml`:
 figma:
   overlay: [figma_template.mods.png, figma_template.combo.mods.png]
 ```
+
+## Coverage audit additions (2026-06)
+
+Added 10 high-value defaults that were missing (44 → 54): `Ctrl+/` search and
+`Ctrl+'` pixel grid (reuse the existing Search / Grid glyphs), `Ctrl+]`/`Ctrl+[`
+bring-forward / send-backward (Arrow Up/Down), `Ctrl+Shift+]`/`[` to-front /
+to-back (Position To Front/Back), `Ctrl+Alt+C`/`V` copy / paste properties (reuse
+Copy / Paste), `Ctrl+Alt+M` use as mask (Crop), `Ctrl+Alt+A` select inverse
+(Arrow Swap). All Fluent (MIT); sources per binding `source:`.

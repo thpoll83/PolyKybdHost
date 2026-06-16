@@ -74,6 +74,13 @@ MS_ICONS = {
     # --- Ctrl+Alt ---
     "component": "Cube Add/SVG/ic_fluent_cube_add_20_regular.svg",
     "detach": "Plug Disconnected/SVG/ic_fluent_plug_disconnected_24_regular.svg",
+    # --- added (coverage audit 2026-06) ---
+    "tofront": "Position To Front/SVG/ic_fluent_position_to_front_24_regular.svg",
+    "toback": "Position To Back/SVG/ic_fluent_position_to_back_24_regular.svg",
+    "forward": "Arrow Up/SVG/ic_fluent_arrow_up_24_regular.svg",
+    "backward": "Arrow Down/SVG/ic_fluent_arrow_down_24_regular.svg",
+    "mask": "Crop/SVG/ic_fluent_crop_24_regular.svg",
+    "selinverse": "Arrow Swap/SVG/ic_fluent_arrow_swap_24_regular.svg",
 }
 
 
