@@ -60,7 +60,7 @@ deliberately dropped:
 Action/tool glyphs are the **KDE Breeze icons** — the icon set Krita's own UI
 uses — with one **Microsoft Fluent (MIT)** holdout and a few **drawn-in-code**
 glyphs. Breeze is **LGPLv3**, license-compatible now that the host is
-**GPL-2.0-or-later** (see the repo README/`LICENSE`); this is why the authentic
+**GPL-3.0-or-later** (see the repo README/`LICENSE`); this is why the authentic
 icons can be bundled (an earlier version of this overlay used Fluent stand-ins
 because the host was then GPL-2.0-only).
 
@@ -108,7 +108,7 @@ Drawn by `_draw_krita_logo()` → `_draw_outlined_monogram()` in `fetch_icons.py
 (white-on-transparent → `program_icon_mode: alpha`), reproducible.
 
 > **Why not the real Krita logo?** Krita is GPLv3, and since the host moved to
-> **GPL-2.0-or-later** its logo is now licence-compatible. But the real logo
+> **GPL-3.0-or-later** its logo is now licence-compatible. But the real logo
 > (`krita/pics/branding/default/*-apps-krita.png`) is a colour, organic shape:
 > reduced to the keycap's 1-bit monochrome it collapses to an unrecognisable
 > blob (alpha silhouette) or a fragmented mess (luma threshold). The clean

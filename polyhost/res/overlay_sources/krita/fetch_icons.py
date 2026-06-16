@@ -3,7 +3,7 @@
 
 Action/tool glyphs are the **KDE Breeze icons** — the icon set Krita's own UI
 uses — fetched from the `KDE/breeze-icons` repo. Breeze is LGPLv3, which is
-license-compatible now that the host is **GPL-2.0-or-later** (see the repo
+license-compatible now that the host is **GPL-3.0-or-later** (see the repo
 README / `LICENSE`). Rendered to 96x96 RGBA PNG; the generator's `luma` mode
 keeps the linework at 1-bit. `_breeze()` probes `icons/actions/{22,24,16,32}/`
 then `apps/` and uses the first size that resolves (deterministic given a repo
@@ -217,7 +217,7 @@ def _draw_krita_logo(path: Path) -> None:
     square *outline* with the monogram 'Kr' drawn inside it — the unified
     outlined-monogram style shared with the other creative-app marks. White on
     transparent, rendered with `program_icon_mode: alpha`. Krita's real logo is
-    GPLv3 — now licence-compatible since the host is GPL-2.0-or-later — but it is
+    GPLv3 — now licence-compatible since the host is GPL-3.0-or-later — but it is
     a colour, organic shape that reduces to an illegible blob at the keycap's
     1-bit resolution, so the clean monogram is kept on legibility grounds."""
     _draw_outlined_monogram(path, "Kr")

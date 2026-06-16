@@ -3,7 +3,7 @@
 # Icons: KDE Breeze icons (LGPLv3) — the set Krita's own UI uses — for the action/
 # tool keys; one Fluent (MIT) holdout (copy-merged); a few painting glyphs
 # (brush-size +/-, switch-preset) + the program mark are drawn in code
-# (mode: alpha). Breeze is license-compatible since the host is GPL-2.0-or-later.
+# (mode: alpha). Breeze is license-compatible since the host is GPL-3.0-or-later.
 # See SOURCES.md.
 #
 # Shortcuts: Krita default key bindings (STABLE GLOBAL set). Verified against the

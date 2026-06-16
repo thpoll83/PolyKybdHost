@@ -52,7 +52,7 @@ Target: the **new Microsoft Teams** desktop app on **Windows**. Official referen
 
 All 26 glyphs are **Microsoft Fluent UI System Icons (MIT)**
 (`microsoft/fluentui-system-icons`, `main`, `assets/<Name>/SVG/ic_fluent_*_24_regular.svg`)
-— the native style for a Microsoft app and license-compatible with the GPL-2.0 host.
+— the native style for a Microsoft app and license-compatible with the GPL-3.0-or-later host.
 Every Fluent asset name was **probed (raw fetch, 404 check)** before use on
 2026-06-15. Mapping lives in `fetch_icons.py`; each binding's `source:` notes the glyph.
 

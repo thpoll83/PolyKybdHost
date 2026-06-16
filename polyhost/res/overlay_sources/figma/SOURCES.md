@@ -56,7 +56,7 @@ the authoritative source; cross-checked against:
 
 41 of 45 glyphs are **Microsoft Fluent UI System Icons (MIT)**
 (`microsoft/fluentui-system-icons`, `main`, `assets/<Name>/SVG/ic_fluent_*_24_regular.svg`,
-except `Cube Add` which only ships a `_20_regular` variant). MIT is GPLv2-compatible.
+except `Cube Add` which only ships a `_20_regular` variant). MIT is GPL-compatible.
 Every asset name was probed (raw fetch, 200 check) before use. Mapping lives in
 `fetch_icons.py`; each binding's `source:` notes the glyph.
 

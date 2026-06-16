@@ -2,7 +2,7 @@
 """Fetch + render the Adobe Photoshop shortcut icons (reproducible).
 
 Stock glyphs are Microsoft Fluent UI System Icons (MIT) — license-clean (host is
-GPL-2.0; Adobe's real tool icons are proprietary and are NOT used). Rendered to
+GPL-3.0-or-later; Adobe's real tool icons are proprietary and are NOT used). Rendered to
 96x96 RGBA PNG; the generator's `luma` mode keeps the linework at 1-bit.
 
 Photoshop's signature *tools* (marquee, lasso, magic wand, clone stamp, healing

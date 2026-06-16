@@ -384,9 +384,11 @@ must never touch Qt objects. Full contract:
 
 PolyKybdHost is free software: you can redistribute it and/or modify it under
 the terms of the **GNU General Public License** as published by the Free Software
-Foundation, **either version 2 of the License, or (at your option) any later
-version** (GPL-2.0-or-later). See [`LICENSE`](LICENSE) for the full text of GPL
-version 2.
+Foundation, **either version 3 of the License, or (at your option) any later
+version** (GPL-3.0-or-later). See [`LICENSE`](LICENSE) for the full text of GPL
+version 3.
 
-This project depends on PyQt5, which is licensed under the GPL v3; the
-"or any later version" grant above keeps the combined work license-consistent.
+This project depends on PyQt5, which is licensed under the GPL v3; GPLv3 keeps
+the combined work license-consistent. Moving from GPLv2-or-later to GPLv3 also
+makes the project compatible with **Apache-2.0** assets (e.g. the Material
+Symbols icon set), which GPLv2 is not.

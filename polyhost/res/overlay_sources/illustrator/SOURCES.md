@@ -67,7 +67,7 @@ No shortcut in the placed set lacked a documented default; nothing was invented.
 ### Fluent (MIT) — 43 glyphs
 
 Microsoft Fluent UI System Icons (`microsoft/fluentui-system-icons`, `main`,
-`assets/<Name>/SVG/ic_fluent_*_24_regular.svg`), MIT-licensed (GPLv2-compatible).
+`assets/<Name>/SVG/ic_fluent_*_24_regular.svg`), MIT-licensed (GPL-compatible).
 **Every asset name was probed (raw fetch, 404-checked) before use.** Mapping in
 `fetch_icons.py`; each binding's `source:` notes the glyph. Notable weaker
 matches (best available Fluent glyph for an Illustrator concept):

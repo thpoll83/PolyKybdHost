@@ -39,7 +39,7 @@ coexist on the same key in different channels — that is intended and correct.
 ## Icons
 
 All glyphs are either **Microsoft Fluent UI System Icons (MIT)** or **custom drawn**
-(white-on-transparent, `mode: alpha`). MIT is GPLv2-compatible (host is GPL-2.0).
+(white-on-transparent, `mode: alpha`). MIT is GPL-compatible (host is GPL-3.0-or-later).
 Adobe's own tool icons are proprietary and are **not** used.
 
 ### Fluent (MIT) — `microsoft/fluentui-system-icons`, branch `main`, `assets/<Name>/SVG/ic_fluent_*_24_regular.svg`

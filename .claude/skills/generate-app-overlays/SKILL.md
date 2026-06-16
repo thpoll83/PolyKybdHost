@@ -117,10 +117,13 @@ are the icons the user actually sees. Order of preference:
 Rules:
 - Only use art you may redistribute; **record source URL + license per icon in
   `SOURCES.md`**. If a license is unclear, don't commit it — draw a substitute.
-- **License-check the host vs the icon source.** PolyKybdHost is **GPL-2.0**;
-  GPLv3 app icons (e.g. Notepad++) are *not* compatible with GPLv2-only. If the
-  app's icons are GPLv3 and that's a problem, source everything from an MIT set
-  instead and say so. Flag the conflict to the user — don't silently bundle it.
+- **License-check the host vs the icon source.** PolyKybdHost is
+  **GPL-3.0-or-later** (relicensed from GPLv2-or-later in 2026-06). GPLv3 is
+  compatible with MIT, BSD, ISC, LGPLv3, GPLv3 *and* **Apache-2.0** — so the
+  Material Symbols set is now usable (it was not under GPLv2). The only art to
+  avoid is proprietary / no-redistribution (most apps' real logos); for those,
+  draw a license-clean substitute. Record source URL + license per icon and flag
+  anything unclear to the user — don't silently bundle it.
 - **Conversion mode matters** (`mode:` in `bindings.yaml`, per-binding override):
   - `alpha` — opaque pixels lit. Best for a **glyph on transparent** (the alpha
     is the shape) and for thin outline/stroke icons.

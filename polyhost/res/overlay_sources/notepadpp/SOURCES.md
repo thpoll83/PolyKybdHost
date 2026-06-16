@@ -15,7 +15,7 @@ combos are excluded (not representable — see `../../overlay_specification.md`)
 
 ## Icons — all-MIT (license-clean)
 
-PolyKybdHost is **GPL-2.0**; to avoid mixing GPLv3 app icons, **all 20 shortcut
+PolyKybdHost is **GPL-3.0-or-later**; **all 20 shortcut
 glyphs come from Microsoft Fluent UI System Icons (MIT)** in one consistent flat
 style. One glyph is custom-drawn. (An earlier revision used Notepad++'s own
 GPL-3.0 toolbar icons — switched to all-MIT deliberately.)

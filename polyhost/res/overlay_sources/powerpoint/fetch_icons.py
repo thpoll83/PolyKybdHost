@@ -2,7 +2,7 @@
 """Fetch + render the Microsoft PowerPoint shortcut icons (reproducible).
 
 All glyphs are Microsoft Fluent UI System Icons (MIT) — native style for a MS app,
-license-clean (host is GPL-2.0). Rendered to 96x96 RGBA PNG; the generator's
+license-clean (host is GPL-3.0-or-later). Rendered to 96x96 RGBA PNG; the generator's
 `luma` mode keeps the linework at 1-bit. The program icon (ESC) is a generic mark
 drawn in code (no Microsoft logo): the Word-style trapezoid + knocked-out 'P' +
 rounded rect with text lines. Intended to be hand-tuned.

@@ -2,7 +2,7 @@
 """Fetch + render the Adobe Illustrator shortcut icons (reproducible).
 
 Most glyphs are Microsoft Fluent UI System Icons (MIT) — license-clean (host is
-GPL-2.0; MIT is GPLv2-compatible). Adobe's own icons are proprietary and are NOT
+GPL-3.0-or-later; MIT is GPL-compatible). Adobe's own icons are proprietary and are NOT
 used. A handful of vector-editing tools have no clean Fluent glyph (pen nib,
 scissors, swap/default fill-stroke, the width tool) — those are drawn here as
 simple white-on-transparent glyphs and consumed with `mode: alpha`.

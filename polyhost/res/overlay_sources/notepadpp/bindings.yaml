@@ -1,7 +1,7 @@
 # Notepad++ shortcut overlays for PolyKybd.
 #
 # Icons: Microsoft Fluent UI System Icons (MIT) for all shortcuts (one consistent
-# style, license-clean vs the GPL-2.0 host); one custom-drawn glyph (delete line).
+# style, license-clean vs the GPL-3.0-or-later host); one custom-drawn glyph (delete line).
 # Program icon (ESC, all layers): the actual Notepad++ logo. See SOURCES.md.
 # Shortcuts: Notepad++ default keymap.
 #

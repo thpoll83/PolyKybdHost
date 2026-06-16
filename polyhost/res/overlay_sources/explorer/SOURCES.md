@@ -33,7 +33,7 @@ key cell, different modifier channel. Back is on both `Backspace` and `Alt+Left`
 All 20 glyphs + the program icon are **Microsoft Fluent UI System Icons (MIT)**
 (`microsoft/fluentui-system-icons`, `main`,
 `assets/<Name>/SVG/ic_fluent_*_24_regular.svg`) — the native style for a Microsoft
-app and license-clean vs the GPL-2.0 host. Mapping in `fetch_icons.py`
+app and license-clean vs the GPL-3.0-or-later host. Mapping in `fetch_icons.py`
 (`MS_ICONS`); each binding's `source:` notes the glyph.
 
 ## Program icon (ESC, all layers)
