@@ -12,10 +12,18 @@ It sits alongside the other peer sources used by the per-app `fetch_icons.py`:
   * KDE Breeze                          - LGPLv3
   * Google Material Symbols (this file) - Apache-2.0
 
+Status: **backup / comparison source only.** Fluent (MIT) is the house style for
+every app overlay; a full Photoshop+Illustrator A/B (2026-06) kept Fluent. Reach
+for Material to fill a gap Fluent lacks, or to cherry-pick one of the glyphs it
+draws better (`tune`, `filter_b_and_w`, `invert_colors`, `line_weight`,
+`library_add`, `format_shapes`, `join_inner`, `grid`). Render at **weight 250-300**
+for keycap legibility: `wght200` is too thin to survive the 1-bit/40 px downscale
+and the bare default (~400) is a touch heavy.
+
 Usage from an app's `fetch_icons.py`::
 
     from polyhost.res.overlay_sources import material_symbols as ms
-    ms.render("content_cut", out_dir / "cut.png")              # outlined, 96px
+    ms.render("content_cut", out_dir / "cut.png", weight=300)  # outlined, 96px
     ms.render("visibility", out_dir / "eye.png", fill=True)    # filled variant
 
 Browse / pick names at https://fonts.google.com/icons (the icon's name in

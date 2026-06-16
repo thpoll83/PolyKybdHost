@@ -108,10 +108,26 @@ are the icons the user actually sees. Order of preference:
 2. A **freely-licensed package** for the actions the app has no icon for
    (there are always gaps — toolbars cover ~13 of ~21 shortcuts). Microsoft
    **Fluent UI System Icons** (MIT, `microsoft/fluentui-system-icons`,
-   `assets/<Name>/SVG/ic_fluent_<snake>_24_regular.svg`) is large and covers
-   nearly every action; Tabler/Lucide/Material are also fine. **Don't assume the
-   app's icons come from one of these** — verify (render both and compare
-   silhouettes); they're usually custom and only *style*-compatible.
+   `assets/<Name>/SVG/ic_fluent_<snake>_24_regular.svg`) is the **house style** —
+   it's deployed across every app overlay, so default to it for consistency.
+   Tabler/Lucide are also fine (MIT/ISC). **Don't assume the app's icons come
+   from one of these** — verify (render both and compare silhouettes); they're
+   usually custom and only *style*-compatible.
+   - **Material Symbols (Apache-2.0) is available as a backup / comparison
+     source**, via the shared helper
+     `polyhost/res/overlay_sources/material_symbols.py`
+     (`ms.render(name, path, weight=300)`; browse names at
+     fonts.google.com/icons). It became license-clean with the **2026-06 GPLv3
+     relicense** (Apache-2.0 is GPLv2-incompatible but GPLv3-compatible). A full
+     Photoshop+Illustrator A/B (2026-06) concluded: **keep Fluent** — Material is
+     a wash for bread-and-butter glyphs, *better* for a handful of abstract
+     menu commands (`tune`, `filter_b_and_w`, `invert_colors`, `line_weight`,
+     `library_add`, `format_shapes`, `join_inner`, `grid`), and *worse* for the
+     apps' drawn signature tools (pen nib, gradient, 1:1 zoom, single-letter
+     Type — no good Material match). **Reach for it only to fill a gap Fluent
+     lacks, or to cherry-pick one of those clear wins** — and render at
+     **`weight` 250–300, not the default**: `wght200` is too thin to survive the
+     1-bit/40 px downscale, and the bare default (~400) is a touch heavy.
 3. **Draw it** with `scripts/make_sample_icons.py` primitives as a last resort.
 
 Rules:
