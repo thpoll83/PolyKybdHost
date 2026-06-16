@@ -52,3 +52,13 @@ outlook:
   overlay: [outlook_template.mods.png, outlook_template.combo.mods.png]
 powerpnt:
   overlay: [powerpoint_template.mods.png, powerpoint_template.combo.mods.png]
+photoshop:
+  overlay: [photoshop_template.mods.png, photoshop_template.combo.mods.png]
+illustrator:
+  overlay: [illustrator_template.mods.png, illustrator_template.combo.mods.png]
+figma:
+  overlay: [figma_template.mods.png, figma_template.combo.mods.png]
+krita:
+  overlay: [krita_template.mods.png, krita_template.combo.mods.png]
+ms-teams,teams:
+  overlay: [teams_template.mods.png, teams_template.combo.mods.png]

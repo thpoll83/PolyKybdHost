@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Fetch + render the Notepad++ shortcut icons (reproducible source step).
 
-License-clean route: **all shortcut icons come from Microsoft Fluent UI System
-Icons (MIT)**, in one consistent flat style, so nothing inherits Notepad++'s
-GPL-3.0 (PolyKybdHost is GPL-2.0). Line-specific glyphs are used where a generic
+Style route: **all shortcut icons come from Microsoft Fluent UI System
+Icons (MIT)**, in one consistent flat style. (PolyKybdHost is now
+GPL-3.0-or-later, so Notepad++'s own GPL-3.0 icons would be license-compatible
+too; the all-MIT set is kept for visual consistency.) Line-specific glyphs are used where a generic
 one would be ambiguous (e.g. "Row Triple" for duplicate-line). One icon is
 custom-drawn (delete-line strike). The ESC **program icon** is the actual
 Notepad++ logo (the app's own identity icon, used to mark which overlay is

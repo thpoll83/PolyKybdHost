@@ -2,7 +2,7 @@
 """Fetch + render the Windows File Explorer shortcut icons (reproducible).
 
 By default all glyphs are Microsoft Fluent UI System Icons (MIT) — the open twin
-of Win11's Segoe Fluent, license-clean (host is GPL-2.0). For *pixel-exact*
+of Win11's Segoe Fluent, license-clean (host is GPL-3.0-or-later). For *pixel-exact*
 Windows 11 glyphs, drop the proprietary `SegoeIcons.ttf`
 (C:\\Windows\\Fonts\\SegoeIcons.ttf) into this folder (it is git-ignored, not
 redistributed) and re-run: the script then renders every action from the real
