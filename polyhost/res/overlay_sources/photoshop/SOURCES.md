@@ -132,3 +132,13 @@ exists-check. Region `[42, 34]`, bottom-right, so the firmware's key legend (top
 `anchor: bottom-right`, `margin: 0`. Drawn glyphs override per-binding to `mode: alpha`.
 Fluent `.svg` → cairosvg 96px in `fetch_icons.py`. Pin the branch to a SHA for byte-exact
 reproducibility if needed; the committed `icons/` freeze the current render.
+
+## Coverage audit additions (2026-06)
+
+Added 12 high-value defaults that were missing (55 → 67): `[` `]` brush size and
+`Shift+[` `Shift+]` brush hardness (drawn dots / rings), `F` screen mode
+(Full Screen Maximize), `Alt+Bksp` / `Ctrl+Bksp` fill FG/BG (drawn solid / framed
+square), `Ctrl+Alt+Z` step backward (History), `Ctrl+1` zoom 100% (Ratio One To
+One), `Ctrl+Shift+J` new layer via cut (Add Square), `Shift+F6` feather (Blur),
+`Shift+Bksp` Fill dialog (reuses the Paint Bucket). All representable; sourced
+per binding `source:`.

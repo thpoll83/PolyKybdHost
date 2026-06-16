@@ -82,6 +82,11 @@ MS_ICONS = {
     "shape": "Shapes/SVG/ic_fluent_shapes_24_regular.svg",
     "historybrush": "History/SVG/ic_fluent_history_24_regular.svg",
     "fill": "Paint Bucket/SVG/ic_fluent_paint_bucket_24_regular.svg",
+    # --- added (coverage audit 2026-06) ---
+    "screenmode": "Full Screen Maximize/SVG/ic_fluent_full_screen_maximize_24_regular.svg",
+    "stepback": "History/SVG/ic_fluent_history_24_regular.svg",
+    "zoom1to1": "Ratio One To One/SVG/ic_fluent_ratio_one_to_one_24_regular.svg",
+    "feather": "Blur/SVG/ic_fluent_blur_24_regular.svg",
 }
 
 SS = 4               # supersample factor for drawn glyphs
@@ -223,6 +228,55 @@ def _draw_defaultcolors(path: Path) -> None:
     _save(img, path)
 
 
+def _draw_brushdec(path: Path) -> None:
+    """Decrease brush size ([): a small filled dot."""
+    img, d, u = _canvas()
+    d.ellipse([0.42 * u, 0.42 * u, 0.58 * u, 0.58 * u], fill=WHITE)
+    _save(img, path)
+
+
+def _draw_brushinc(path: Path) -> None:
+    """Increase brush size (]): a large filled dot."""
+    img, d, u = _canvas()
+    d.ellipse([0.26 * u, 0.26 * u, 0.74 * u, 0.74 * u], fill=WHITE)
+    _save(img, path)
+
+
+def _draw_hardnessdec(path: Path) -> None:
+    """Decrease brush hardness (Shift+[): a small core with a soft dashed ring."""
+    img, d, u = _canvas()
+    w = int(u * 0.04)
+    d.ellipse([0.41 * u, 0.41 * u, 0.59 * u, 0.59 * u], fill=WHITE)
+    cx, cy, r = 0.5 * u, 0.5 * u, 0.30 * u
+    for a in range(0, 360, 30):                       # dashed = "soft" edge
+        d.arc([cx - r, cy - r, cx + r, cy + r], a, a + 15, fill=WHITE, width=w)
+    _save(img, path)
+
+
+def _draw_hardnessinc(path: Path) -> None:
+    """Increase brush hardness (Shift+]): a core with a solid (hard) ring."""
+    img, d, u = _canvas()
+    d.ellipse([0.41 * u, 0.41 * u, 0.59 * u, 0.59 * u], fill=WHITE)
+    d.ellipse([0.22 * u, 0.22 * u, 0.78 * u, 0.78 * u], outline=WHITE, width=int(u * 0.05))
+    _save(img, path)
+
+
+def _draw_fillfg(path: Path) -> None:
+    """Fill with foreground colour (Alt+Backspace): a solid filled square."""
+    img, d, u = _canvas()
+    d.rectangle([0.24 * u, 0.24 * u, 0.76 * u, 0.76 * u], fill=WHITE)
+    _save(img, path)
+
+
+def _draw_fillbg(path: Path) -> None:
+    """Fill with background colour (Ctrl+Backspace): a framed square with a solid
+    centre — distinct from the solid FG-fill square."""
+    img, d, u = _canvas()
+    d.rectangle([0.20 * u, 0.20 * u, 0.80 * u, 0.80 * u], outline=WHITE, width=int(u * 0.07))
+    d.rectangle([0.38 * u, 0.38 * u, 0.62 * u, 0.62 * u], fill=WHITE)
+    _save(img, path)
+
+
 def _draw_gradient(path: Path) -> None:
     """Gradient tool (G): a swatch split on the diagonal into a lit and an unlit
     half — the universally-recognised gradient glyph, and visually distinct from
@@ -293,6 +347,12 @@ _DRAWN = {
     "defaultcolors": _draw_defaultcolors,
     "quickmask": _draw_quickmask,
     "gradient": _draw_gradient,
+    "brushdec": _draw_brushdec,
+    "brushinc": _draw_brushinc,
+    "hardnessdec": _draw_hardnessdec,
+    "hardnessinc": _draw_hardnessinc,
+    "fillfg": _draw_fillfg,
+    "fillbg": _draw_fillbg,
 }
 
 

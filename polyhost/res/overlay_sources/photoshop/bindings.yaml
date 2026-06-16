@@ -104,3 +104,19 @@ bindings:
   # SHIFT  (-> B channel of primary)                             #
   # ============================================================= #
   - { key: F5, mods: [SHIFT], icon: fill.png, label: "Fill", source: "ms-fluent/Paint Bucket (MIT)" }
+  - { key: "[", mods: [SHIFT], icon: hardnessdec.png, mode: alpha, label: "Brush hardness -", source: "custom (drawn: soft dashed ring)" }
+  - { key: "]", mods: [SHIFT], icon: hardnessinc.png, mode: alpha, label: "Brush hardness +", source: "custom (drawn: hard solid ring)" }
+  - { key: F6, mods: [SHIFT], icon: feather.png, label: "Feather selection", source: "ms-fluent/Blur (MIT)" }
+  - { key: BACKSPACE, mods: [SHIFT], icon: fill.png, label: "Fill dialog", source: "ms-fluent/Paint Bucket (MIT)" }
+
+  # ============================================================= #
+  # no-mod / Alt / Ctrl+Alt  (coverage audit 2026-06)            #
+  # ============================================================= #
+  - { key: "[", mods: [], icon: brushdec.png, mode: alpha, label: "Brush size -", source: "custom (drawn: small dot)" }
+  - { key: "]", mods: [], icon: brushinc.png, mode: alpha, label: "Brush size +", source: "custom (drawn: large dot)" }
+  - { key: F, mods: [], icon: screenmode.png, label: "Screen mode", source: "ms-fluent/Full Screen Maximize (MIT)" }
+  - { key: BACKSPACE, mods: [ALT], icon: fillfg.png, mode: alpha, label: "Fill FG color", source: "custom (drawn: solid square)" }
+  - { key: BACKSPACE, mods: [CTRL], icon: fillbg.png, mode: alpha, label: "Fill BG color", source: "custom (drawn: framed square)" }
+  - { key: Z, mods: [CTRL, ALT], icon: stepback.png, label: "Step backward", source: "ms-fluent/History (MIT)" }
+  - { key: "1", mods: [CTRL], icon: zoom1to1.png, label: "Zoom 100%", source: "ms-fluent/Ratio One To One (MIT)" }
+  - { key: J, mods: [CTRL, SHIFT], icon: newlayer.png, label: "New layer via cut", source: "ms-fluent/Add Square (MIT)" }
