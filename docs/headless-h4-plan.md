@@ -295,11 +295,48 @@ one matcher for local *and* remote.
   forwarder needs the daemon's key shared across machines.
 - Both machines must be updated together (the wire changes).
 
-**Recommended first slice (safe):** a **dedicated, window-report-only network
-listener** — a separate `AF_INET` endpoint whose method registry contains *only*
-`window.report` (not the full control registry), with its own authkey, leaving
-the bootloader/flash/etc. surface on the local-only endpoint. That delivers the
-authenticated unified report path without exposing the device-control surface to
-the network. Then `PolyForwarder.send_to_host` is replaced by an RPC client call,
-and the legacy `receive_from_forwarder`/port-50162 relay can be retired (or kept
-one release for compatibility).
+#### Status (2026-06-15) — H4d-1: window-report-only network listener (safe first slice) DONE
+The recommended safe slice is shipped: a **dedicated, window-report-only**
+`AF_INET` listener, isolated from the device-control surface.
+
+- **`polyhost/server/window_report_server.py` — `WindowReportServer`.** Its own
+  AF_INET accept loop, the same `hello` version gate + HMAC authkey as the local
+  socket, and a registry of **exactly one** method (`window.report`). It holds
+  **no PolyCore reference** — only an injected `on_report(handle, name, title)`
+  callback — so by construction it cannot reach brightness/lang/flash/bootloader;
+  any other method NACKs `ERR_METHOD_NOT_FOUND`. No event fan-out.
+- **Separate authkey** (`protocol.window_report_authkey_path()` →
+  `polykybd-winreport.authkey`) distinct from the control socket's, so the key
+  the remote forwarder needs never unlocks device control. New port
+  `protocol.WINDOW_REPORT_PORT = 50163` (distinct from the legacy relay's 50162,
+  so both can coexist during the transition).
+- **`polyhost/server/window_report_client.py` — `WindowReportClient`.**
+  stdlib-only, Qt-free; AF_INET connect with a **bounded** socket timeout (the
+  forwarder polls on the Qt main thread, so a stuck connect must not freeze the
+  tray) + `conn.poll`-bounded request/response.
+- **Daemon wiring:** `HeadlessHost._maybe_start_window_report_server()` starts it
+  **only** when the new `window_report_network_enabled` setting is True
+  (**default False** — it opens a network port), fed by `core.report_window`.
+  Torn down with the host.
+- **Forwarder wiring:** `--report-rpc` (+ `--report-port`,
+  `--report-authkey-file`) makes `PolyForwarder.send_to_host` push over the RPC
+  client instead of the plaintext relay; default keeps the proven TCP path
+  untouched. The forwarder loads the target's authkey from
+  `--report-authkey-file` (its `polykybd-winreport.authkey`, copied from the
+  keyboard machine — the documented manual key-distribution step); same-machine
+  testing falls back to the local key.
+- Tested: `tests/server/window_report_server_test.py` (real AF_INET socket — happy
+  path, callback-failure → error, **only `window.report` served**, wrong authkey
+  rejected, concurrent clients) + `TestWindowReportWiring` in the headless suite
+  (opt-in gating + the report_window seam). The multiprocessing AF_INET HMAC auth
+  isn't strong crypto (stdlib caveat) but is vastly better than the plaintext
+  relay and right-sized for a LAN window feed.
+- **Still on the bespoke TCP wire (not retired yet):** `receive_from_forwarder` /
+  port 50162 remain for compatibility; cross-machine validation of the RPC path
+  needs two machines + hardware (UNTESTED on hardware — the default TCP path is
+  unaffected).
+
+#### H4d-2 — retire the plaintext relay (follow-up)
+Once the RPC path is validated cross-machine, drop `receive_from_forwarder` /
+port 50162 and make `--report-rpc` the forwarder default. Optionally surface the
+network authkey via `polyctl` to ease key distribution.

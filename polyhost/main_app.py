@@ -35,6 +35,19 @@ def main():
                              'GUI-spawned headless daemon so it does not touch the GUI autostart entry.')
     parser.add_argument('--host', help='Specify a host where the PolyKybd is physically connected to')
     parser.add_argument('--host-file', help='Path to a file containing the host IP, written by a session hook (see folder autorun_forwarder for examples). This option has higher priority than `--host`.')
+    parser.add_argument('--report-rpc', default=False, action='store_true',
+                        help='Forwarder: push the active window over the authenticated, '
+                             'version-gated window-report network endpoint (H4d) instead of the '
+                             'legacy unauthenticated plaintext TCP relay. The target host must '
+                             'have window_report_network_enabled set.')
+    parser.add_argument('--report-port', type=int, default=None,
+                        help='Forwarder (--report-rpc): port of the window-report endpoint '
+                             '(default: the built-in WINDOW_REPORT_PORT).')
+    parser.add_argument('--report-authkey-file',
+                        help='Forwarder (--report-rpc): path to a file holding the target '
+                             "daemon's window-report authkey (its polykybd-winreport.authkey, "
+                             'copied from the keyboard machine). Required across machines; if '
+                             "omitted, this machine's local key is used (same-machine only).")
     args=parser.parse_args()
 
     # Pillow logs every PNG chunk at DEBUG ("STREAM b'IDAT' …", "Importing
@@ -138,8 +151,17 @@ def main():
         # No Qt in this process — import nothing Qt-dependent.
         print("Executing PolyHost (headless)...")
         from polyhost.headless import run_headless
-        run_headless(logging.DEBUG if args.debug > 0 else logging.INFO,
-                     ignore_version=args.ignore_version)
+        from polyhost.util.log_util import DEBUG_DETAILED  # Qt-free
+        # Mirror the GUI's level mapping: --debug 2 drops to DEBUG_DETAILED so the
+        # daemon surfaces debug_detailed lines (e.g. window-report receipts);
+        # --debug 1 = DEBUG, no flag = INFO.
+        if args.debug > 1:
+            hl_level = DEBUG_DETAILED
+        elif args.debug > 0:
+            hl_level = logging.DEBUG
+        else:
+            hl_level = logging.INFO
+        run_headless(hl_level, ignore_version=args.ignore_version)
         sys.exit(0)
 
     # GUI / forwarder paths: import Qt lazily, only here.
@@ -152,7 +174,9 @@ def main():
         from polyhost.forwarder import PolyForwarder
         addr = args.host or f"IP set in {args.host_file}"
         print(f"Executing Forwarder. Sending to {addr}.")
-        app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file)
+        app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file,
+                            report_rpc=args.report_rpc, report_port=args.report_port,
+                            report_authkey_file=args.report_authkey_file)
     else:
         from polyhost.host import PolyHost
         if client_mode:

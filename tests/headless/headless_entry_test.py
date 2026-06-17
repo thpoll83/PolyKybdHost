@@ -116,6 +116,49 @@ class TestHeadlessHost(unittest.TestCase):
         self.assertEqual(host._relay_path, "/tmp/relay.py")
 
 
+class TestWindowReportWiring(unittest.TestCase):
+    """The network window-report listener (H4d) is opt-in: HeadlessHost starts
+    it only when window_report_network_enabled is set, fed by the core's
+    report_window (never the full control registry)."""
+
+    def setUp(self):
+        self._addr = os.path.join(tempfile.mkdtemp(prefix="poly_wr_"), "p.sock")
+        self._patches = [
+            mock.patch.object(protocol, "endpoint_address", return_value=self._addr),
+            mock.patch.object(protocol, "load_or_create_authkey", return_value=b"k"),
+        ]
+        for p in self._patches:
+            p.start()
+
+    def tearDown(self):
+        for p in self._patches:
+            p.stop()
+
+    def test_disabled_by_default(self):
+        from polyhost.headless import HeadlessHost
+        host = HeadlessHost(_quiet())
+        self.addCleanup(host.stop)
+        with mock.patch.object(host.core, "settings_get", return_value=False):
+            host._maybe_start_window_report_server()
+        self.assertIsNone(host._winreport_server)
+
+    def test_started_when_enabled_with_report_callback(self):
+        import polyhost.server.window_report_server as wrs
+        from polyhost.headless import HeadlessHost
+        host = HeadlessHost(_quiet())
+        self.addCleanup(host.stop)
+        with mock.patch.object(host.core, "settings_get", return_value=True), \
+             mock.patch.object(wrs, "WindowReportServer") as MockSrv:
+            host._maybe_start_window_report_server()
+        MockSrv.assert_called_once()
+        # The server is fed the core's report_window — the only seam it can reach.
+        self.assertEqual(MockSrv.call_args.args[0], host.core.report_window)
+        MockSrv.return_value.start.assert_called_once()
+        # And it is torn down with the host.
+        host.stop()
+        MockSrv.return_value.stop.assert_called_once()
+
+
 class TestRunHeadlessLogging(unittest.TestCase):
     """run_headless must write a rotating daemon_log.txt — a GUI-spawned daemon
     runs detached with stdio at DEVNULL, so without the file its logs vanish."""

@@ -13,13 +13,33 @@ IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 _IS_WAYLAND = os.getenv("XDG_SESSION_TYPE") == "wayland"
 
 if IS_PLASMA:
+    _BACKEND_NAME = "kde_win_reporter"
     import polyhost.handler.kde_win_reporter as pwc
 elif _IS_WAYLAND:
+    _BACKEND_NAME = "gnome_wayland_reporter"
     # pywinctl can't see native Wayland windows; use the GNOME Shell extension
     # reporter (untested — needs the 'Window Calls' extension). X11 is unaffected.
     import polyhost.handler.gnome_wayland_reporter as pwc
 else:
+    _BACKEND_NAME = "pywinctl"
     import pywinctl as pwc
+
+
+def log_env_info(log):
+    """Log OS, desktop environment, session type, display vars, and the selected
+    active-window backend. Call once at startup from any entry point that does
+    window tracking (OverlayHandler on the keyboard machine, PolyForwarder on
+    remote machines)."""
+    log.info(
+        "Platform: %s %s | Desktop: %s | Session: %s | "
+        "DISPLAY: %s | WAYLAND_DISPLAY: %s | Window backend: %s",
+        platform.system(), platform.release(),
+        os.getenv("XDG_CURRENT_DESKTOP", "n/a"),
+        os.getenv("XDG_SESSION_TYPE", "n/a"),
+        os.getenv("DISPLAY", "n/a"),
+        os.getenv("WAYLAND_DISPLAY", "n/a"),
+        _BACKEND_NAME,
+    )
 
 
 # TITLE/TITLE_SW/TITLE_EW/TITLE_HAS/FLAGS are imported from common (shared with
@@ -35,6 +55,7 @@ class OverlayHandler:
 
     def __init__(self, mapping):
         self.log = logging.getLogger("PolyHost")
+        log_env_info(self.log)
         self.last_update_msec = 0
         self.prev_win = None
         self.win = None
