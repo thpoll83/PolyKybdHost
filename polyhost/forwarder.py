@@ -39,12 +39,23 @@ NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
+from polyhost.handler.active_window import log_env_info
 
 class PolyForwarder(QApplication):
-    def __init__(self, log_level, host=None, host_file=None):
+    def __init__(self, log_level, host=None, host_file=None,
+                 report_rpc=False, report_port=None, report_authkey_file=None):
         super().__init__(sys.argv)
         self.host = host
         self.host_file = os.path.expanduser(host_file) if host_file else None
+
+        # H4d: optionally push the active window over the authenticated network
+        # window-report endpoint instead of the plaintext TCP relay. ⚠️ The RPC
+        # transport is unit-tested but UNTESTED on hardware / cross-machine; the
+        # default (report_rpc False) keeps the proven TCP path untouched.
+        self._report_rpc = report_rpc
+        self._report_port = report_port
+        self._report_client = None
+        self._report_authkey = None
 
         fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} - %(message)s"
         file_handler = RotatingFileHandler(
@@ -59,6 +70,25 @@ class PolyForwarder(QApplication):
             make_collapse_handler(make_stream_handler(fmt)),
         ])
         self.log = logging.getLogger("PolyForwarder")
+        log_env_info(self.log)
+
+        if self._report_rpc:
+            from polyhost.server import protocol as _proto
+            if report_authkey_file:
+                try:
+                    with open(report_authkey_file, "rb") as f:
+                        self._report_authkey = f.read().strip()
+                except OSError as e:
+                    self.log.error("Could not read report authkey file %s: %s",
+                                   report_authkey_file, e)
+            if not self._report_authkey:
+                self._report_authkey = _proto.load_or_create_authkey(
+                    _proto.window_report_authkey_path())
+                self.log.warning(
+                    "Using this machine's local window-report authkey; for a "
+                    "different keyboard machine pass --report-authkey-file with "
+                    "its polykybd-winreport.authkey.")
+            self.log.info("Forwarder using the authenticated window-report endpoint (H4d).")
 
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
@@ -129,14 +159,41 @@ class PolyForwarder(QApplication):
         palette.setColor(QPalette.HighlightedText, highlight_text_color)
         self.setPalette(palette)
         
-    def send_to_host(self, handle, title, name):
+    def _resolve_host(self):
+        """Return the target host string (from --host or the host-file), or None."""
         host = self.host
         if self.host_file:
             try:
                 with open(self.host_file) as f:
                     host = f.read().strip()
             except OSError:
-                return False  # file absent means no active session
+                return None  # file absent means no active session
+        return host or None
+
+    def _send_via_rpc(self, handle, title, name):
+        """Push the active window over the authenticated window-report endpoint
+        (H4d). Keeps a persistent connection, reconnecting on any failure."""
+        host = self._resolve_host()
+        if not host:
+            return False
+        try:
+            if self._report_client is None:
+                from polyhost.server.window_report_client import connect
+                self._report_client = connect(
+                    host, self._report_port, self._report_authkey)
+            self._report_client.report(handle, name, title)
+            return True
+        except Exception as e:
+            self.log.error("Window-report RPC to %s failed: %s", host, e)
+            if self._report_client is not None:
+                self._report_client.close()
+                self._report_client = None
+            return False
+
+    def send_to_host(self, handle, title, name):
+        if self._report_rpc:
+            return self._send_via_rpc(handle, title, name)
+        host = self._resolve_host()
         if not host:
             return False
         try:
@@ -184,6 +241,9 @@ class PolyForwarder(QApplication):
     def quit_app(self):
         self.icon_manager.set_disconnected()
         self.is_closing = True
+        if self._report_client is not None:
+            self._report_client.close()
+            self._report_client = None
         self.quit()
 
     def active_window_reporter(self):

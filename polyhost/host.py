@@ -423,6 +423,7 @@ class PolyHost(QApplication):
         if not self.helper:
             self.log.error("Unsupported OS! Exiting...")
             sys.exit(-1)
+        self.log.info("Input helper: %s", type(self.helper).__name__)
 
         entries = self.helper.get_languages()
 
@@ -887,7 +888,15 @@ class PolyHost(QApplication):
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately
         delta = time.perf_counter()
-        self.log_viewer = LogViewerDialog({"PolyHost Log": "host_log.txt", "PolyKybd Console Log": "polykybd_console.txt"})
+        log_files = {"PolyHost Log": "host_log.txt",
+                     "PolyKybd Console Log": "polykybd_console.txt"}
+        # In daemon mode the operational core runs in a separate headless process
+        # that writes its own daemon_log.txt (the GUI's host_log.txt only covers
+        # the client side). Surface it as a tab when present so the daemon's
+        # reconnect/overlay/window activity is visible from the tray GUI.
+        if os.path.exists("daemon_log.txt"):
+            log_files["Daemon Log"] = "daemon_log.txt"
+        self.log_viewer = LogViewerDialog(log_files)
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
