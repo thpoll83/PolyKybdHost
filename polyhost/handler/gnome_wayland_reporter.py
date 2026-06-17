@@ -146,7 +146,7 @@ def _query_extension():
         return _UNAVAILABLE
 
     payload = _unwrap_gdbus_string(res.stdout)
-    if payload == "null":
+    if payload.strip() == "null":
         return None  # extension is up; genuinely nothing focused — do NOT fall back
     try:
         win = json.loads(payload)
