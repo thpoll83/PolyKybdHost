@@ -419,6 +419,7 @@ class PolyHost(QApplication):
         if not self.helper:
             self.log.error("Unsupported OS! Exiting...")
             sys.exit(-1)
+        self.log.info("Input helper: %s", type(self.helper).__name__)
 
         entries = self.helper.get_languages()
 

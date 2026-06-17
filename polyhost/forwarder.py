@@ -39,6 +39,7 @@ NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
+from polyhost.handler.active_window import log_env_info
 
 class PolyForwarder(QApplication):
     def __init__(self, log_level, host=None, host_file=None,
@@ -69,6 +70,7 @@ class PolyForwarder(QApplication):
             make_collapse_handler(make_stream_handler(fmt)),
         ])
         self.log = logging.getLogger("PolyForwarder")
+        log_env_info(self.log)
 
         if self._report_rpc:
             from polyhost.server import protocol as _proto

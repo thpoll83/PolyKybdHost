@@ -194,7 +194,18 @@ def run_headless(log_level=logging.INFO, ignore_version=False):
     keeb_log.addHandler(keeb_handler)
     keeb_log.propagate = False
 
+    import os as _os
+    import platform as _platform
     log = logging.getLogger("PolyHost")
     log.info("PolyKybdHost %s running headless.", __version__)
+    log.info(
+        "Platform: %s %s | Desktop: %s | Session: %s | "
+        "DISPLAY: %s | WAYLAND_DISPLAY: %s",
+        _platform.system(), _platform.release(),
+        _os.getenv("XDG_CURRENT_DESKTOP", "n/a"),
+        _os.getenv("XDG_SESSION_TYPE", "n/a"),
+        _os.getenv("DISPLAY", "n/a"),
+        _os.getenv("WAYLAND_DISPLAY", "n/a"),
+    )
     host = HeadlessHost(log, ignore_version=ignore_version)
     host.run()
