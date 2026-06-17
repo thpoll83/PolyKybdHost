@@ -5,9 +5,14 @@ expose for native Wayland windows — so on GNOME-Wayland active-window detectio
 needs help from the compositor. This module queries a **GNOME Shell extension**
 over D-Bus: *Window Calls* / *Window Calls Extended*
 (``org.gnome.Shell.Extensions.Windows``), which must be installed and enabled on
-the machine. Without it, ``getActiveWindow()`` returns ``None`` (warned once) and
-window tracking degrades to off — but with a clear message instead of failing
-silently the way bare ``pywinctl`` does under Wayland.
+the machine. Without it, ``getActiveWindow()`` **falls back to pywinctl
+(X11/XWayland)** — so X11-backed apps (Chrome, VS Code, JetBrains, …) running
+under XWayland are still tracked, though native Wayland windows are not — and
+warns once. That beats bare ``pywinctl``'s silent Wayland failure, and means a
+session that got flipped to Wayland by an OS update keeps tracking most apps.
+The fallback imports pywinctl **lazily and guarded** (it can ``sys.exit()`` when
+no X server is reachable), so the module still loads with zero pywinctl/Qt at
+import time and stays headless-safe.
 
 It mirrors the ``pywinctl`` / ``kde_win_reporter`` surface the callers
 (``active_window.py``, ``forwarder.py``) use: ``getActiveWindow()`` returns an
@@ -33,14 +38,51 @@ _TIMEOUT = 1.5
 
 _warned = False  # warn at most once that the extension is missing/unreachable
 
+# Lazily-imported pywinctl fallback (see _pywinctl_fallback). Module-level so the
+# import is attempted once, not on every poll.
+_pywinctl = None
+_pywinctl_tried = False
+
+# Sentinel: the extension is unavailable (caller should fall back), as opposed to
+# the extension being up but reporting no focused window (a real None).
+_UNAVAILABLE = object()
+
 
 def _warn_once(msg, *args):
     global _warned
     if not _warned:
-        _log.warning("GNOME/Wayland window reporter: " + msg + " — install/enable the "
-                     "'Window Calls' GNOME Shell extension, or use an Xorg session.",
-                     *args)
+        _log.warning("GNOME/Wayland window reporter: " + msg + " — the 'Window Calls' "
+                     "GNOME Shell extension is unavailable; falling back to X11/XWayland "
+                     "(native Wayland windows won't be tracked). Install the extension or "
+                     "use an Xorg session for full coverage.", *args)
         _warned = True
+
+
+def _pywinctl_fallback():
+    """Lazily import pywinctl as an XWayland fallback, guarded.
+
+    pywinctl reads X11/EWMH, so under a Wayland session with XWayland running it
+    still sees X11-backed windows (Chrome, VS Code, JetBrains, …) — just not
+    native Wayland ones. The import is guarded because pywinctl/pymonctl can
+    ``sys.exit()`` when no X server / xrandr is reachable, which must not take
+    down the host or forwarder. Returns the module, or None if unavailable."""
+    global _pywinctl, _pywinctl_tried
+    if _pywinctl_tried:
+        return _pywinctl
+    _pywinctl_tried = True
+    try:
+        import pywinctl
+        _pywinctl = pywinctl
+        _log.info("GNOME/Wayland: using pywinctl (X11/XWayland) as the active-window "
+                  "fallback — native Wayland windows won't be tracked.")
+    except SystemExit:
+        _log.warning("GNOME/Wayland: pywinctl fallback unavailable (no X server/XWayland "
+                     "reachable).")
+        _pywinctl = None
+    except Exception as e:  # noqa: BLE001 — any import failure disables the fallback
+        _log.warning("GNOME/Wayland: pywinctl fallback import failed: %s", e)
+        _pywinctl = None
+    return _pywinctl
 
 
 def _gdbus(method, *args):
@@ -82,27 +124,30 @@ class GnomeWin:
         return self._id == other.getHandle()
 
 
-def getActiveWindow():
+def _query_extension():
+    """Query the Window Calls extension. Returns a :class:`GnomeWin`, ``None``
+    (extension is up but nothing is focused), or ``_UNAVAILABLE`` (extension
+    missing/unreachable — the caller should fall back to pywinctl)."""
     try:
         res = _gdbus("List")
     except FileNotFoundError:
         _warn_once("gdbus not found")
-        return None
+        return _UNAVAILABLE
     except subprocess.TimeoutExpired:
         _warn_once("window query timed out")
-        return None
+        return _UNAVAILABLE
     if res.returncode != 0:
         _warn_once("window query failed (%s)", (res.stderr or "").strip() or "no extension?")
-        return None
+        return _UNAVAILABLE
     try:
         windows = json.loads(_unwrap_gdbus_string(res.stdout))
     except (ValueError, TypeError) as e:
         _log.debug("GNOME/Wayland: malformed window list (transient): %s", e)
-        return None
+        return _UNAVAILABLE
 
     focused = next((w for w in windows if w.get("focus")), None)
     if not focused:
-        return None
+        return None  # extension is up; genuinely nothing focused — do NOT fall back
     # Base "Window Calls" omits the title from List() (privacy); fetch on demand.
     if not focused.get("title") and focused.get("id") is not None:
         try:
@@ -112,3 +157,19 @@ def getActiveWindow():
         except (FileNotFoundError, subprocess.TimeoutExpired):
             pass
     return GnomeWin(focused)
+
+
+def getActiveWindow():
+    win = _query_extension()
+    if win is not _UNAVAILABLE:
+        return win  # GnomeWin, or None when the extension is up but nothing focused
+    # Extension unavailable — fall back to pywinctl so X11/XWayland apps are still
+    # tracked (native Wayland windows are not visible to it).
+    pwc = _pywinctl_fallback()
+    if pwc is None:
+        return None
+    try:
+        return pwc.getActiveWindow()
+    except Exception as e:  # noqa: BLE001 — fallback must never raise into the poll
+        _log.debug("GNOME/Wayland: pywinctl fallback getActiveWindow failed: %s", e)
+        return None
