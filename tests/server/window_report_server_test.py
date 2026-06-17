@@ -12,6 +12,8 @@ import socket
 import threading
 import unittest
 
+from multiprocessing.connection import AuthenticationError
+
 from polyhost.server import protocol as p
 from polyhost.server.window_report_server import WindowReportServer
 from polyhost.server import window_report_client as wrc
@@ -90,7 +92,10 @@ class WindowReportServerTest(unittest.TestCase):
         self.assertEqual(self.reports, [])  # callback never ran
 
     def test_wrong_authkey_cannot_connect(self):
-        with self.assertRaises(Exception):
+        # answer_challenge() raises AuthenticationError specifically on a key
+        # mismatch — assert that exact type so an unrelated socket failure
+        # can't make this pass.
+        with self.assertRaises(AuthenticationError):
             self._client(authkey=b"the-wrong-key")
         self.assertEqual(self.reports, [])
 
