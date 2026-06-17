@@ -14,7 +14,7 @@ from polyhost.input.unicode_input import InputMethod
 from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import pack_dict_10_bit
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
-from polyhost.device.command_ids import Cmd, HidId
+from polyhost.device.command_ids import Cmd, HidId, IdleStyle
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
@@ -26,6 +26,9 @@ from polyhost.services import iso_lang_country
 # reads the list: the legacy ASCII GET_LANG_LIST (cmd 8) has been retired and the
 # firmware NACKs it, so firmware reporting a lower version (or none) is unsupported.
 PACKED_LANG_LIST_MIN_PROTOCOL = 2
+
+# Minimum firmware PROTOCOL_VERSION for the idle-style get/set command (cmd 28).
+IDLE_STYLE_MIN_PROTOCOL = 4
 
 import hid
 
@@ -287,6 +290,39 @@ class PolyKybd:
         self.log.debug("Setting idle state to %s...",
                        "True" if idle else "False")
         return self.hid.send_and_read_validate(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
+
+    def _idle_style_supported(self) -> bool:
+        if self.protocol_version is None:
+            self.query_version_info()
+        return (self.protocol_version is not None
+                and self.protocol_version >= IDLE_STYLE_MIN_PROTOCOL)
+
+    def set_idle_style(self, style: IdleStyle | int) -> tuple[bool, Any]:
+        """Select the idle (anti-burn-in) display style (cmd 28, protocol v4+).
+
+        The firmware persists it to EEPROM (flushed at the next suspend/store), so
+        it survives reboots without reflashing."""
+        value = style.value if isinstance(style, IdleStyle) else int(style)
+        if not self._idle_style_supported():
+            return False, (
+                f"Firmware protocol too old for idle-style control "
+                f"(need v{IDLE_STYLE_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        self.log.info("Setting idle style to %d...", value)
+        return self.hid.send_and_read_validate(
+            compose_cmd(Cmd.IDLE_STYLE, value), 100, expect(Cmd.IDLE_STYLE))
+
+    def get_idle_style(self) -> tuple[bool, int]:
+        """Read the current idle style (returns the raw enum value, 0=pulse, 1=jitter)."""
+        if not self._idle_style_supported():
+            return False, 0
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.IDLE_STYLE, 0xFF), 100, expect(Cmd.IDLE_STYLE))
+            if result and len(reply) > 3 and reply[2:3] == b'.':
+                return True, reply[3]
+        except Exception:
+            pass
+        return False, 0
 
     def save_mru(self) -> tuple[bool, Any]:
         """Ask the keyboard to persist its emoji/language MRU recents to EEPROM.

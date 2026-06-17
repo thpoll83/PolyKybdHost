@@ -158,6 +158,21 @@ def _cmd_idle(client, args):
     return 0
 
 
+_IDLE_STYLE_NAMES = {0: "pulse", 1: "jitter"}
+_IDLE_STYLE_VALUES = {v: k for k, v in _IDLE_STYLE_NAMES.items()}
+
+
+def _cmd_idle_style(client, args):
+    if args.style is None:
+        value = client.call(protocol.M_IDLE_STYLE_GET, {})
+        print(f"idle style: {_IDLE_STYLE_NAMES.get(value, value)} ({value})")
+    else:
+        value = _IDLE_STYLE_VALUES[args.style]
+        client.call(protocol.M_IDLE_STYLE_SET, {"value": value})
+        print(f"idle style set to {args.style} ({value})")
+    return 0
+
+
 def _cmd_overlay(client, args):
     if args.overlay_action == "send":
         client.call(protocol.M_OVERLAY_SEND, {"files": list(args.files)})
@@ -347,6 +362,13 @@ def build_parser():
     p_idle = sub.add_parser("idle", help="enable or disable idle")
     p_idle.add_argument("state", choices=["on", "off"])
     p_idle.set_defaults(func=_cmd_idle)
+
+    p_idle_style = sub.add_parser(
+        "idle-style", help="get or set the idle anti-burn-in style (firmware v4+)")
+    p_idle_style.add_argument(
+        "style", nargs="?", choices=["pulse", "jitter"], default=None,
+        help="omit to print the current style; 'pulse' = legacy, 'jitter' = move the legend")
+    p_idle_style.set_defaults(func=_cmd_idle_style)
 
     p_ov = sub.add_parser("overlay", help="overlay control")
     ov_sub = p_ov.add_subparsers(dest="overlay_action", required=True)

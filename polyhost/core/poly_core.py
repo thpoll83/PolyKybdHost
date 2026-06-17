@@ -744,6 +744,18 @@ class PolyCore:
         return self._device_call(
             "idle_set", lambda c, i=idle: self.keeb.set_idle(i))
 
+    def set_idle_style(self, value):
+        try:
+            v = int(value)
+        except (TypeError, ValueError):
+            return False, f"Invalid idle style: {value!r}"
+        return self._device_call(
+            "idle_style_set", lambda c, v=v: self.keeb.set_idle_style(v))
+
+    def get_idle_style(self):
+        return self._device_call(
+            "idle_style_get", lambda c: self.keeb.get_idle_style())
+
     def enable_overlays(self):
         return self._device_call("enable_overlays", lambda c: self.keeb.enable_overlays())
 
