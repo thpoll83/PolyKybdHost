@@ -104,6 +104,14 @@ class FakeCore:
         self.calls.append(("flash_firmware", path, apply))
         return (True, {"queued": True, "apply": bool(apply)})
 
+    def flash_fontpack(self, path):
+        self.calls.append(("flash_fontpack", path))
+        return (True, {"queued": True})
+
+    def get_fontpack_status(self):
+        self.calls.append(("get_fontpack_status",))
+        return (True, {"present": True, "abi": 1, "content_version": 7, "font_count": 3})
+
     def reset_dynamic_keymap(self):
         return (True, "keymap reset")
 
@@ -317,6 +325,17 @@ class ControlServerTest(unittest.TestCase):
         resp = self._call(conn, 30, p.M_FW_FLASH, {"path": "fw.bin", "apply": True})
         self.assertEqual(resp["result"], {"queued": True, "apply": True})
         self.assertIn(("flash_firmware", "fw.bin", True), self.core.calls)
+
+    def test_fontpack_flash_and_status_dispatch(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 31, p.M_FONTPACK_FLASH, {"path": "fonts.plyf"})
+        self.assertEqual(resp["result"], {"queued": True})
+        self.assertIn(("flash_fontpack", "fonts.plyf"), self.core.calls)
+        resp = self._call(conn, 32, p.M_FONTPACK_STATUS)
+        self.assertEqual(resp["result"],
+                         {"present": True, "abi": 1, "content_version": 7, "font_count": 3})
+        self.assertIn(("get_fontpack_status",), self.core.calls)
 
     def test_settings_list_dispatch(self):
         conn = self._connect()

@@ -258,6 +258,35 @@ def _cmd_fw(client, args):
     return 0
 
 
+def _cmd_fontpack(client, args):
+    if getattr(args, "fontpack_action", None) == "flash":
+        # Subscribe BEFORE issuing the flash so no progress event is missed.
+        client.subscribe_events()
+        client.call(protocol.M_FONTPACK_FLASH, {"path": args.file})
+        print(f"flashing font pack {args.file}…")
+        for name, payload in client.events():
+            if name == "fontpack_flash_progress":
+                print(_fmt_progress("fontpack", payload))
+            elif name == "fontpack_flash_done":
+                ok = (payload or {}).get("ok")
+                m = (payload or {}).get("msg")
+                if ok:
+                    print(f"flash complete: {m}")
+                    return 0
+                print(f"flash failed: {m}", file=sys.stderr)
+                return 1
+        print("error: connection closed before flash completed", file=sys.stderr)
+        return 1
+    # default: status
+    info = client.call(protocol.M_FONTPACK_STATUS)
+    if not info.get("present"):
+        print(f"font pack: none loaded (resident fonts only) — abi v{info.get('abi')}")
+    else:
+        print(f"font pack: loaded — content v{info.get('content_version')}, "
+              f"{info.get('font_count')} fonts, abi v{info.get('abi')}")
+    return 0
+
+
 def _cmd_update(client, args):
     if args.update_action == "check":
         res = client.call(protocol.M_UPDATE_CHECK) or {}
@@ -406,6 +435,14 @@ def build_parser():
         "--apply", action="store_true",
         help="apply (reboot into) the firmware after a successful upload")
     p_fw.set_defaults(func=_cmd_fw)
+
+    p_fp = sub.add_parser("fontpack", help="external-flash font pack operations")
+    fp_sub = p_fp.add_subparsers(dest="fontpack_action", required=True)
+    fp_sub.add_parser("status", help="print the keyboard's loaded font pack")
+    p_fp_flash = fp_sub.add_parser(
+        "flash", help="upload a font pack .plyf (streams progress; no reboot)")
+    p_fp_flash.add_argument("file", help="path to the font pack .plyf")
+    p_fp.set_defaults(func=_cmd_fontpack)
 
     p_upd = sub.add_parser("update", help="host self-update")
     upd_sub = p_upd.add_subparsers(dest="update_action", required=True)

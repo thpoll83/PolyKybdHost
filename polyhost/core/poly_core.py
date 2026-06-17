@@ -33,6 +33,7 @@ from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device import hid_fw_up
+from polyhost.device import hid_fontpack
 from polyhost.device.hid_worker import HidWorker
 from polyhost.device.poly_kybd import PolyKybd
 from polyhost.handler.common import OverlayCommand
@@ -951,6 +952,56 @@ class PolyCore:
         # No coalesce_key: a flash must never be superseded by a later job.
         self.worker.submit("fw_flash", _job)
         return True, {"queued": True, "apply": bool(apply)}
+
+    def flash_fontpack(self, path):
+        """Flash an external-flash ``.plyf`` font pack as a worker job.
+
+        Same shape as :meth:`flash_firmware` minus the apply step — the firmware
+        re-loads fonts in place on COMMIT (no reboot). Gating + header validation
+        happen synchronously (uniform ``(ok, payload)``); the upload then streams
+        ``fontpack_flash_progress`` events with a terminal ``fontpack_flash_done``."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot flash."
+        try:
+            with open(path, "rb") as f:
+                pack_bytes = f.read()
+        except OSError as e:
+            return False, f"Cannot read font-pack file: {e}"
+        ok, msg = hid_fontpack.validate_fontpack(pack_bytes)
+        if not ok:
+            return False, msg
+
+        def _job(cancel):
+            cancel_flag = [False]
+
+            def _progress(pct, m):
+                if cancel.is_set():
+                    cancel_flag[0] = True      # relay supersede/suspend to hid_fontpack
+                self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+
+            fok, fmsg = hid_fontpack.flash_fontpack(
+                self.keeb.hid, path, progress_cb=_progress, cancel_flag=cancel_flag)
+            self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg})
+
+        # No coalesce_key: a flash must never be superseded by a later job.
+        self.worker.submit("fontpack_flash", _job)
+        return True, {"queued": True}
+
+    def get_fontpack_status(self):
+        """Query the keyboard's currently-loaded font pack (present / abi /
+        content_version / font_count). Bounded device read on the worker."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused)."
+        try:
+            ok, info = self.worker.run_sync(
+                "fontpack_status",
+                lambda c: hid_fontpack.get_fontpack_status(self.keeb.hid),
+                timeout=self.DEVICE_CALL_TIMEOUT)
+        except (RuntimeError, TimeoutError) as e:
+            return False, f"Font-pack status query failed: {e}"
+        if not ok:
+            return False, "Keyboard did not report font-pack status (firmware too old?)."
+        return True, info
 
     def check_update(self):
         """Check GitHub for a newer host release (synchronous HTTP — runs on

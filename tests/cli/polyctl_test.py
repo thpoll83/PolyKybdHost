@@ -292,6 +292,21 @@ class FwFlashUpdateTest(unittest.TestCase):
         self.assertNotEqual(rc, 0)
         self.assertIn("crc mismatch", err)
 
+    def test_fontpack_flash_streams_to_completion(self):
+        events = [("fontpack_flash_progress", {"pct": 50, "msg": "sending"}),
+                  ("fontpack_flash_done", {"ok": True, "msg": "loaded v7"})]
+        rc, out, _ = run_streaming(["fontpack", "flash", "fonts.plyf"],
+                                   protocol.M_FONTPACK_FLASH, {"queued": True}, events)
+        self.assertEqual(rc, 0)
+        self.assertIn("flash complete", out)
+
+    def test_fontpack_flash_failure_returns_nonzero(self):
+        events = [("fontpack_flash_done", {"ok": False, "msg": "crc mismatch"})]
+        rc, _, err = run_streaming(["fontpack", "flash", "fonts.plyf"],
+                                   protocol.M_FONTPACK_FLASH, {"queued": True}, events)
+        self.assertNotEqual(rc, 0)
+        self.assertIn("crc mismatch", err)
+
     def test_update_install_streams_to_restart(self):
         events = [("update_progress", {"pct": 40, "msg": "downloading"}),
                   ("update_finished_ok", {"version": "0.9.0"})]

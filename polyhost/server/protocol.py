@@ -85,6 +85,8 @@ M_OVERLAY_MAPPING_SEND = "overlay.mapping_send"     # {"mapping": {idx: idx}} ->
 M_ACTIVATE_BOOTLOADER = "fw.bootloader"             # {} -> {"queued": True}
 M_SET_HANDEDNESS = "fw.set_handedness"              # {"master_is_left": bool} -> {"queued": True}
 M_FW_APPLY_STAGED = "fw.apply_staged"               # {} -> {"queued": True} (streams fw_apply_* events)
+M_FONTPACK_FLASH = "fontpack.flash"    # {"path": str} -> {"queued": bool} (streams fontpack_flash_* events)
+M_FONTPACK_STATUS = "fontpack.status"  # {} -> {"present", "abi", "content_version", "font_count"}
 M_HOST_SHUTDOWN = "host.shutdown"      # {} -> {"shutting_down": True}
 # Inject an external active-window report into remote window tracking (H4c).
 # {"handle": str|int, "name": str, "title": str} -> (ok, payload). Same data the

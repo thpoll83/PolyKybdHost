@@ -317,6 +317,8 @@ class ControlServer:
             p.M_ACTIVATE_BOOTLOADER: lambda conn, params: _unwrap(c.activate_bootloader()),
             p.M_SET_HANDEDNESS: lambda conn, params: _unwrap(c.set_handedness(params["master_is_left"])),
             p.M_FW_APPLY_STAGED: lambda conn, params: _unwrap(c.apply_staged_firmware()),
+            p.M_FONTPACK_FLASH: lambda conn, params: _unwrap(c.flash_fontpack(params["path"])),
+            p.M_FONTPACK_STATUS: lambda conn, params: _unwrap(c.get_fontpack_status()),
             p.M_PAUSE_SET: self._cmd_pause_set,
             p.M_MRU_SAVE: self._cmd_mru_save,
             p.M_SETTINGS_GET: lambda conn, params: c.settings_get(params["key"]),
