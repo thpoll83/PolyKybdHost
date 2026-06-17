@@ -3,14 +3,18 @@ import re
 import socket
 import threading
 
-from polyhost.handler.common import Flags
+from polyhost.handler.common import Flags, find_matching_entry
 
 TCP_PORT = 50162
 BUFFER_SIZE = 1024
 
 
 # Needs to be started as thread
-def receive_from_forwarder(log, connections, stop_event):
+def receive_from_forwarder(log, on_report, stop_event):
+    """Accept ``handle;name;title`` reports from a forwarder and hand each to
+    ``on_report(handle, name, title)`` — the same entry point the window.report
+    RPC uses (RemoteHandler.report_window), so the TCP relay is now just a
+    transport over the unified path rather than poking a separate store."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -33,12 +37,7 @@ def receive_from_forwarder(log, connections, stop_event):
                 data = data.decode("utf-8")
                 entries = [0, "", ""] if not data else data.split(";")
                 if len(entries) > 2:
-                    connections[addr] = {
-                        "handle": entries[0],
-                        "name": entries[1],
-                        "title": entries[2],
-                    }
-                    connections["_latest"] = addr
+                    on_report(entries[0], entries[1], entries[2])
                     log.debug_detailed("Remote data from %s: handle=%s name=%s", addr, entries[0], entries[1])
             finally:
                 conn.close()
@@ -77,20 +76,18 @@ class RemoteHandler:
         self.forwarder = threading.Thread(
             target=receive_from_forwarder,
             name="PolyKybd Remote Handler",
-            args=(self.log, self.connections, self.stop_event),
+            args=(self.log, self.report_window, self.stop_event),
         )
         self.forwarder.daemon = True
         self.forwarder.start()
 
     def report_window(self, handle, name, title):
-        """Inject an active-window report from a non-TCP source (the
-        ``window.report`` control-socket RPC / ``polyctl window report``).
+        """Single entry point for an active-window report, from either source:
+        the cross-machine TCP relay (`receive_from_forwarder`) or the
+        ``window.report`` control-socket RPC / ``polyctl window report``.
 
-        Writes the same ``connections`` store the TCP relay (`receive_from_forwarder`)
-        feeds, under a synthetic key, and marks it latest — so ``remote_changed``
-        picks it up through the existing matching with no change to that path.
-        Unifying the matcher and routing the TCP receiver through here too is a
-        deferred follow-up (the cross-machine wire stays untouched for now)."""
+        Stores the latest report; ``remote_changed`` reads it and runs the
+        shared matcher (`common.find_matching_entry`)."""
         self.connections["_report"] = {
             "handle": str(handle),
             "name": str(name),
@@ -100,67 +97,24 @@ class RemoteHandler:
         self.log.debug_detailed(
             "report_window: handle=%s name=%s title=%s", handle, name, title)
 
-    def try_to_match_window_remote(self, name, entry):
-        (
-            has_overlay,
-            has_remote,
-            has_title,
-            has_starts_with,
-            has_ends_with,
-            has_contains,
-        ) = entry["flags"]
-        match = has_overlay or has_remote
+    def _match_remote(self):
+        """Match the current remote window's app/title against the mapping using
+        the shared matcher, updating current/last_entry. Returns True on match."""
+        if self.name not in self.mapping:
+            return False
         try:
-            if match:
-                title_elements = (
-                    self.title.split() if has_starts_with or has_ends_with else []
-                )
-                if len(title_elements) > 0:
-                    if (
-                        has_starts_with
-                        and title_elements[0] in entry["titles-startswith"].keys()
-                    ):
-                        found = self.try_to_match_window_remote(
-                            name, entry["titles-startswith"][title_elements[0]]
-                        )
-                        if found:
-                            return True
-                    if (
-                        has_ends_with
-                        and title_elements[-1] in entry["titles-endswith"].keys()
-                    ):
-                        found = self.try_to_match_window_remote(
-                            name, entry["titles-endswith"][title_elements[-1]]
-                        )
-                        if found:
-                            return True
-                    if has_contains:
-                        contains = entry["titles-contains"]
-                        for elem in title_elements:
-                            if elem in contains.keys():
-                                found = self.try_to_match_window_remote(
-                                    name, contains[elem]
-                                )
-                                if found:
-                                    return True
-                if self.title and has_title:
-                    match = match and re.search(entry["title"], self.title)
+            matched = find_matching_entry(self.title, self.mapping[self.name])
         except re.error as e:
             self.log.warning(
                 "Cannot match entry '%s': %s, because '%s'@%d with '%s'",
-                name,
-                entry,
-                e.msg,
-                e.pos,
-                e.pattern,
+                self.name, self.mapping[self.name], e.msg, e.pos, e.pattern,
             )
             return False
-
-        if match:
-            self.current_entry = entry
-            self.last_entry = entry
-            return True
-        return False
+        if matched is None:
+            return False
+        self.current_entry = matched
+        self.last_entry = matched
+        return True
 
     def remote_changed(self, remote_entry: dict):
         self.listen_to_forwarder()  # restart listener if it died (e.g. bind failed on first try)
@@ -189,10 +143,7 @@ class RemoteHandler:
                 self.handle,
             )
 
-            found = False
-            if self.name in self.mapping.keys():
-                found = self.try_to_match_window_remote(self.name, self.mapping[self.name])
-            if self.current_entry and not found:
+            if not self._match_remote() and self.current_entry:
                 self.current_entry = None
             return True
         self.log.debug_detailed(
