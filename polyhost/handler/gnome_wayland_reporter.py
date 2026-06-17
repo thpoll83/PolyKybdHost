@@ -2,10 +2,13 @@
 
 ``pywinctl`` reads the active window via X11/EWMH, which GNOME's Mutter does NOT
 expose for native Wayland windows — so on GNOME-Wayland active-window detection
-needs help from the compositor. This module queries a **GNOME Shell extension**
-over D-Bus: *Window Calls* / *Window Calls Extended*
-(``org.gnome.Shell.Extensions.Windows``), which must be installed and enabled on
-the machine. Without it, ``getActiveWindow()`` **falls back to pywinctl
+needs help from the compositor. This module queries our own purpose-built,
+**read-only** GNOME Shell extension over D-Bus: *PolyKybd Window Reporter*
+(``org.polykybd.WindowReporter``, repo
+https://github.com/thpoll83/gnome-wayland-winreader), which must be installed and
+enabled on the machine. It exposes a single getter — ``GetFocusedWindow()`` — and
+no window-modifying methods, unlike the general *Window Calls* extension it
+replaces. Without it, ``getActiveWindow()`` **falls back to pywinctl
 (X11/XWayland)** — so X11-backed apps (Chrome, VS Code, JetBrains, …) running
 under XWayland are still tracked, though native Wayland windows are not — and
 warns once. That beats bare ``pywinctl``'s silent Wayland failure, and means a
@@ -32,8 +35,8 @@ import subprocess
 _log = logging.getLogger("PolyHost")
 
 _DEST = "org.gnome.Shell"
-_PATH = "/org/gnome/Shell/Extensions/Windows"
-_IFACE = "org.gnome.Shell.Extensions.Windows"
+_PATH = "/org/polykybd/WindowReporter"
+_IFACE = "org.polykybd.WindowReporter"
 _TIMEOUT = 1.5
 
 _warned = False  # warn at most once that the extension is missing/unreachable
@@ -51,10 +54,12 @@ _UNAVAILABLE = object()
 def _warn_once(msg, *args):
     global _warned
     if not _warned:
-        _log.warning("GNOME/Wayland window reporter: " + msg + " — the 'Window Calls' "
-                     "GNOME Shell extension is unavailable; falling back to X11/XWayland "
-                     "(native Wayland windows won't be tracked). Install the extension or "
-                     "use an Xorg session for full coverage.", *args)
+        _log.warning("GNOME/Wayland window reporter: " + msg + " — the 'PolyKybd Window "
+                     "Reporter' GNOME Shell extension is unavailable; falling back to "
+                     "X11/XWayland (native Wayland windows won't be tracked). Install it "
+                     "from https://github.com/thpoll83/gnome-wayland-winreader and run "
+                     "'gnome-extensions enable window-reporter@polykybd.org', or use an "
+                     "Xorg session for full coverage.", *args)
         _warned = True
 
 
@@ -86,7 +91,7 @@ def _pywinctl_fallback():
 
 
 def _gdbus(method, *args):
-    """Call a Windows-extension method via gdbus; returns the CompletedProcess."""
+    """Call a WindowReporter method via gdbus; returns the CompletedProcess."""
     cmd = ["gdbus", "call", "--session", "--dest", _DEST,
            "--object-path", _PATH, "--method", f"{_IFACE}.{method}", *args]
     return subprocess.run(cmd, capture_output=True, text=True, timeout=_TIMEOUT)
@@ -125,11 +130,11 @@ class GnomeWin:
 
 
 def _query_extension():
-    """Query the Window Calls extension. Returns a :class:`GnomeWin`, ``None``
-    (extension is up but nothing is focused), or ``_UNAVAILABLE`` (extension
-    missing/unreachable — the caller should fall back to pywinctl)."""
+    """Query the PolyKybd Window Reporter extension. Returns a :class:`GnomeWin`,
+    ``None`` (extension is up but nothing is focused), or ``_UNAVAILABLE``
+    (extension missing/unreachable — the caller should fall back to pywinctl)."""
     try:
-        res = _gdbus("List")
+        res = _gdbus("GetFocusedWindow")  # one round-trip; returns the title too
     except FileNotFoundError:
         _warn_once("gdbus not found")
         return _UNAVAILABLE
@@ -139,24 +144,16 @@ def _query_extension():
     if res.returncode != 0:
         _warn_once("window query failed (%s)", (res.stderr or "").strip() or "no extension?")
         return _UNAVAILABLE
-    try:
-        windows = json.loads(_unwrap_gdbus_string(res.stdout))
-    except (ValueError, TypeError) as e:
-        _log.debug("GNOME/Wayland: malformed window list (transient): %s", e)
-        return _UNAVAILABLE
 
-    focused = next((w for w in windows if w.get("focus")), None)
-    if not focused:
+    payload = _unwrap_gdbus_string(res.stdout)
+    if payload == "null":
         return None  # extension is up; genuinely nothing focused — do NOT fall back
-    # Base "Window Calls" omits the title from List() (privacy); fetch on demand.
-    if not focused.get("title") and focused.get("id") is not None:
-        try:
-            tr = _gdbus("GetTitle", str(focused["id"]))
-            if tr.returncode == 0:
-                focused["title"] = _unwrap_gdbus_string(tr.stdout)
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            pass
-    return GnomeWin(focused)
+    try:
+        win = json.loads(payload)
+    except (ValueError, TypeError) as e:
+        _log.debug("GNOME/Wayland: malformed focused-window payload (transient): %s", e)
+        return _UNAVAILABLE
+    return GnomeWin(win)
 
 
 def getActiveWindow():
