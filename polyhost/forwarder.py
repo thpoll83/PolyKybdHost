@@ -191,13 +191,7 @@ class PolyForwarder(QApplication):
     def send_to_host(self, handle, title, name):
         if self._report_rpc:
             return self._send_via_rpc(handle, title, name)
-        host = self.host
-        if self.host_file:
-            try:
-                with open(self.host_file) as f:
-                    host = f.read().strip()
-            except OSError:
-                return False  # file absent means no active session
+        host = self._resolve_host()
         if not host:
             return False
         try:

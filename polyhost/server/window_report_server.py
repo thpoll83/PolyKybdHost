@@ -22,6 +22,7 @@ and is appropriate for a LAN window-title feed. It is **opt-in** — off by
 default, since it opens a network port.
 """
 import multiprocessing.connection as mpc
+import socket
 import threading
 
 from polyhost.server import protocol as p
@@ -65,16 +66,20 @@ class WindowReportServer:
         self._running = False
         listener = self._listener
         if listener is not None:
-            # Unblock the blocking accept() with a throwaway local connection,
-            # then close the listener.
+            # Unblock the blocking accept() by poking the port with a
+            # short-lived RAW connection, then close the listener. A bounded raw
+            # socket is used deliberately rather than an authed mpc.Client: if
+            # the accept thread has already exited (a race when stop() lands
+            # right as the loop re-checks _running), an mpc.Client's auth
+            # handshake would have no one to answer it and would block stop()
+            # forever. The raw connect+close just wakes accept()'s socket and
+            # returns within the timeout regardless of the thread's state; the
+            # server-side handshake on it then fails fast (EOF) and the loop,
+            # seeing _running False, breaks.
             try:
-                throwaway = mpc.Client(("127.0.0.1", self.port),
-                                       family="AF_INET", authkey=self.authkey)
-                try:
-                    throwaway.close()
-                except Exception:
-                    pass
-            except Exception:
+                waker = socket.create_connection(("127.0.0.1", self.port), timeout=1.0)
+                waker.close()
+            except OSError:
                 pass
             try:
                 listener.close()
