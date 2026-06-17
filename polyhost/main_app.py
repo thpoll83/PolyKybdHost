@@ -151,8 +151,17 @@ def main():
         # No Qt in this process — import nothing Qt-dependent.
         print("Executing PolyHost (headless)...")
         from polyhost.headless import run_headless
-        run_headless(logging.DEBUG if args.debug > 0 else logging.INFO,
-                     ignore_version=args.ignore_version)
+        from polyhost.util.log_util import DEBUG_DETAILED  # Qt-free
+        # Mirror the GUI's level mapping: --debug 2 drops to DEBUG_DETAILED so the
+        # daemon surfaces debug_detailed lines (e.g. window-report receipts);
+        # --debug 1 = DEBUG, no flag = INFO.
+        if args.debug > 1:
+            hl_level = DEBUG_DETAILED
+        elif args.debug > 0:
+            hl_level = logging.DEBUG
+        else:
+            hl_level = logging.INFO
+        run_headless(hl_level, ignore_version=args.ignore_version)
         sys.exit(0)
 
     # GUI / forwarder paths: import Qt lazily, only here.
