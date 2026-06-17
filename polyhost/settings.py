@@ -25,8 +25,15 @@ class PolySettings:
             "brightness_set_daylight_dependent": True,
             "brightness_allow_online_irradiance_request": True,
             "brightness_allow_online_location_lookup": True,
+            # Maps solar irradiance (W/m^2) to keycap brightness via
+            # perceived = ln(1+irr)*prescaler, clamped to [min, max] then
+            # scaled to the device's 2..50 range. irradiance_min=1.8 floors to
+            # the dimmest value below ~10 W/m^2 (true twilight/night).
+            # irradiance_max=5.2 = ln(1+1000)*0.75, so a clear-sky noon
+            # (~1000 W/m^2) reaches full brightness — the old 6.5 needed an
+            # unreachable ~5800 W/m^2, capping sunny-day brightness at ~36/50.
             "irradiance_min": 1.8,
-            "irradiance_max": 6.5,
+            "irradiance_max": 5.2,
             "irradiance_prescaler": 0.75,
             "max_hid_message_before_delay": 15,
             "delay_time_after_max_hid_messages": 0.3,

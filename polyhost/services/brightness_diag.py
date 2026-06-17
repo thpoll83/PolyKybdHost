@@ -85,7 +85,7 @@ def live_paths(s, min_val, max_val, pre_scale):
         return
     print(f"   location: lat {s.latitude:.4f}  lon {s.longitude:.4f}")
     print(f"   pvlib Location.tz = {getattr(s.site, 'tz', '?')!r} "
-          "(constructed without a tz -> defaults to 'UTC')\n")
+          "(now built with tz='UTC' and fed a UTC-aware 'now')\n")
 
     # (a) The actual call the firmware-facing code makes.
     try:
@@ -114,56 +114,50 @@ def _report_value(label, irr, min_val, max_val, pre_scale):
 
 
 def _clearsky_timezone_probe(s):
-    """Show the modelled clear-sky GHI across today, the buggy (naive-local,
-    treated-as-UTC) way and the timezone-correct way, so the offset is visible."""
+    """Compare the clear-sky model the OLD (buggy) way — naive host-local time,
+    Location default tz='UTC' — against the CURRENT fix (UTC-aware now,
+    Location tz='UTC'), so the timezone correction is visible and verifiable."""
     try:
         import pandas as pd
+        import pytz
         from pvlib.location import Location
     except Exception as e:
         print(f"   (skipping clear-sky timezone probe: {e})")
         return
 
     print("   clear-sky timezone probe (fallback path):")
-    print("   The code calls Location(lat, lon).get_clearsky(pd.Timestamp.now()).")
-    print("   pd.Timestamp.now() is timezone-NAIVE host-local time, and the")
-    print("   Location was built with no tz (default 'UTC'), so pvlib models the")
-    print("   sun as if your wall clock were UTC. If you are far from UTC in")
-    print("   longitude that puts the modelled sun hours away from reality.\n")
+    print("   OLD bug: Location(lat,lon).get_clearsky(pd.Timestamp.now()) fed a")
+    print("   timezone-NAIVE host-local time to a UTC-default Location, so pvlib")
+    print("   modelled the sun as if your wall clock were UTC — shifting it by")
+    print("   your whole UTC offset and reading ~0 W/m^2 during real daylight.")
+    print("   FIX: tz-aware UTC 'now' + Location(tz='UTC') -> correct sun.\n")
 
     today = date.today()
-    hours = pd.date_range(datetime(today.year, today.month, today.day),
-                          periods=24, freq="h")
+    midnight = datetime(today.year, today.month, today.day)
 
-    # Buggy: naive local time, Location default tz='UTC'.
-    site_utc = Location(s.latitude, s.longitude)
-    ghi_buggy = site_utc.get_clearsky(hours)["ghi"]
+    # OLD (buggy): naive local time, Location default tz='UTC'.
+    site_buggy = Location(s.latitude, s.longitude)
+    hours_naive = pd.date_range(midnight, periods=24, freq="h")
+    ghi_buggy = site_buggy.get_clearsky(hours_naive)["ghi"].values
 
-    # Correct: localize the times to the location's own timezone.
-    try:
-        from timezonefinder import TimezoneFinder
-        tz = TimezoneFinder().timezone_at(lat=s.latitude, lng=s.longitude)
-    except Exception:
-        tz = None
-    correct_line = ""
-    if tz:
-        site_local = Location(s.latitude, s.longitude, tz=tz)
-        local_hours = hours.tz_localize(tz)
-        ghi_correct = site_local.get_clearsky(local_hours)["ghi"].values
-        peak_correct = int(local_hours[ghi_correct.argmax()].hour)
-        correct_line = (f"   tz-correct ({tz}): modelled solar peak at "
-                        f"~{peak_correct:02d}:00 local")
+    # CURRENT (fixed): the real UTC instants for each local hour today, against
+    # a tz='UTC' Location — exactly what get_irradiance_now now does per-tick.
+    site_fixed = Location(s.latitude, s.longitude, tz="UTC")
+    local_tz = datetime.now().astimezone().tzinfo
+    hours_local = pd.date_range(midnight, periods=24, freq="h").tz_localize(local_tz)
+    ghi_fixed = site_fixed.get_clearsky(hours_local.tz_convert("UTC"))["ghi"].values
 
-    peak_buggy = int(hours[ghi_buggy.values.argmax()].hour)
-    print(f"   as-coded (naive->UTC): modelled solar peak at ~{peak_buggy:02d}:00 "
-          "of your wall clock")
-    if correct_line:
-        print(correct_line)
+    peak_buggy = int(hours_naive[ghi_buggy.argmax()].hour)
+    peak_fixed = int(hours_local[ghi_fixed.argmax()].hour)
     cur = int(datetime.now().hour)
-    print(f"   modelled GHI at your current hour ({cur:02d}:00) via the as-coded "
-          f"path: {ghi_buggy.values[cur]:.1f} W/m^2")
-    if correct_line and ghi_buggy.values[cur] < 10 <= max(ghi_correct):
-        print("   [!] the as-coded path reads ~0 now while the tz-correct model has "
-              "real daylight\n       -> THIS is the 'stuck at 2' cause on this path.")
+    print(f"   OLD model solar peak : ~{peak_buggy:02d}:00 wall clock   "
+          f"(GHI now {ghi_buggy[cur]:.1f} W/m^2)")
+    print(f"   FIXED model solar peak: ~{peak_fixed:02d}:00 local time  "
+          f"(GHI now {ghi_fixed[cur]:.1f} W/m^2)")
+    if ghi_buggy[cur] < 10 <= ghi_fixed[cur]:
+        print("   [!] the OLD path read ~0 now while the FIXED model has real "
+              "daylight\n       -> the timezone fix resolves the 'stuck at 2' on "
+              "this path.")
     print()
 
 

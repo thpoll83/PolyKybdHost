@@ -10,6 +10,7 @@ platformdirs
 geocoder
 pandas
 pvlib
+pytz
 requests
 pyserial
 packaging
