@@ -29,7 +29,10 @@ def device_value(normalized):
 def normalize(irradiance, min_val, max_val, pre_scale):
     """Mirror of Sunlight.get_brightness_now's normalization (no logging)."""
     perceived = math.log(1 + irradiance) * pre_scale
-    normalized = (max(min_val, min(max_val, perceived)) - min_val) / (max_val - min_val)
+    span = max_val - min_val
+    if span <= 0:                      # degenerate config — avoid div-by-zero
+        return perceived, 0.0
+    normalized = (max(min_val, min(max_val, perceived)) - min_val) / span
     return perceived, normalized
 
 
@@ -42,6 +45,21 @@ def curve_analysis(min_val, max_val, pre_scale):
     print(f"   formula : perceived = ln(1+irr) * {pre_scale}")
     print( "             normalized = clamp(perceived, min, max) mapped to 0..1")
     print( "             device    = 2 + normalized * 48   (then int-clipped 0..50)\n")
+
+    # Detect degenerate configs that pin the output before computing the
+    # physical break-points (which would divide by a zero prescaler).
+    if pre_scale <= 0:
+        print("   [!!] prescaler is <= 0  ->  perceived = ln(1+irr) * 0 = 0 for")
+        print("        EVERY irradiance, so brightness is ALWAYS pinned to the")
+        print("        floor (device value 2) no matter how bright it is outside.")
+        print("        THIS is almost certainly your 'stuck at 2' cause.")
+        print("        Fix: polyctl settings set irradiance_prescaler 0.75\n")
+        return
+    if max_val <= min_val:
+        print("   [!!] irradiance_max <= irradiance_min  ->  the normalization")
+        print("        collapses (or divides by zero) and the curve is unusable.")
+        print("        Fix: set irradiance_min ~1.8 and irradiance_max ~5.2\n")
+        return
 
     # The two physically meaningful break-points of the curve.
     floor_irr = math.exp(min_val / pre_scale) - 1   # below this -> value 2
@@ -59,6 +77,9 @@ def curve_analysis(min_val, max_val, pre_scale):
         print(f"   {irr:>8}    {perceived:8.3f}   {n:8.3f}   {device_value(n):6.1f}"
               f"  (int {int(max(0, min(50, device_value(n))))})")
 
+    if floor_irr > 50:
+        print(f"\n   [!] irradiance_min is high: anything below {floor_irr:.0f} W/m^2")
+        print("       floors to 2, so dim/overcast daylight reads as 'off'.")
     if full_irr > 1361:
         print("\n   [!] max_val is set so high that FULL brightness is physically")
         print("       unreachable — the keyboard tops out well below 50 even in")

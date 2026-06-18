@@ -116,7 +116,16 @@ class Sunlight:
     def get_brightness_now(self, min_val=1.8, max_val=6.5, pre_scale = 0.75):
         irradiance = self.get_irradiance_now()
         perceived_brightness = math.log(1+irradiance)*pre_scale
-        normalized = (max(min_val, min(max_val, perceived_brightness)) - min_val) / (max_val - min_val)
+        span = max_val - min_val
+        if span <= 0:
+            # Degenerate config (max <= min) — would divide by zero. Warn and
+            # treat as "no usable range" rather than crashing the periodic.
+            self.log.warning(
+                "irradiance_max (%s) <= irradiance_min (%s): brightness range is "
+                "empty; defaulting to minimum. Check your brightness settings.",
+                max_val, min_val)
+            return 0.0
+        normalized = (max(min_val, min(max_val, perceived_brightness)) - min_val) / span
         self.log.info(
             "Normalized brightness value: %f, perceived: %f (irradiance %f)",
             normalized,
