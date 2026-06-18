@@ -665,6 +665,17 @@ class PolyCore:
             max_val = self.poly_settings.get("irradiance_max")
             prescaler = self.poly_settings.get("irradiance_prescaler")
             brightness = self.sunlight.get_brightness_now(min_val, max_val, prescaler)
+            # Perceptual gamma on the output. The keycap OLEDs are driven near
+            # the bottom of their contrast range (the firmware caps at 49/50 to
+            # limit current/burn-in), where the eye's response is steepest
+            # (perceived brightness ~ luminance^1/3), so a linear value feels
+            # uneven. Raising the normalized 0..1 to a gamma before scaling to
+            # the device's 2..50 range evens out the perceived steps as the
+            # daylight changes. gamma=1.0 reproduces the old linear behaviour;
+            # >1 dims the mid-range. Endpoints (0->2, 1->50) are preserved.
+            gamma = self.poly_settings.get("brightness_gamma")
+            if gamma and gamma > 0:
+                brightness = brightness ** gamma
             self.keeb.set_brightness(2 + brightness * 48)
 
     # ------------------------------------------------------------------

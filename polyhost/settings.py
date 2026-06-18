@@ -35,6 +35,16 @@ class PolySettings:
             "irradiance_min": 1.8,
             "irradiance_max": 5.2,
             "irradiance_prescaler": 0.75,
+            # Perceptual gamma applied to the daylight brightness before it is
+            # scaled to the keyboard's 2..50 range (see PolyCore._brightness_
+            # periodic). The keycap OLEDs run near the bottom of their contrast
+            # range where perceived brightness ~ luminance^(1/3). This is a
+            # by-eye tuning knob: gamma>1 evens out the perceived ramp but DIMS
+            # the mid-range (e.g. midday can drop noticeably); gamma<1 brightens
+            # it. Default 1.0 = the plain linear mapping (no dimming) — raise it
+            # toward ~2.2 if the ramp feels too steep at low light, lower it if
+            # daytime ends up too dim. Endpoints (0->2, 1->50) are unaffected.
+            "brightness_gamma": 1.0,
             "max_hid_message_before_delay": 15,
             "delay_time_after_max_hid_messages": 0.3,
             "hid_reconnect_retries": 5,
