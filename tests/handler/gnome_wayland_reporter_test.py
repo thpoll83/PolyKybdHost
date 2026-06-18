@@ -1,7 +1,7 @@
 """GNOME/Wayland reporter output parsing (headless-core H4c, untested-on-hw).
 
-The live D-Bus call to the Window Calls extension can only be validated on real
-GNOME-Wayland hardware, but the gdbus-output parsing and the
+The live D-Bus call to the PolyKybd Window Reporter extension can only be
+validated on real GNOME-Wayland hardware, but the gdbus-output parsing and the
 missing-extension/no-focus degradation are pure and unit-tested here. The module
 imports no pywinctl/Qt, so this runs headless.
 """
@@ -16,7 +16,7 @@ def _proc(stdout="", returncode=0, stderr=""):
     return mock.Mock(stdout=stdout, returncode=returncode, stderr=stderr)
 
 
-def _list_out(payload):
+def _gdbus_out(payload):
     # gdbus prints a single string return wrapped as  ('payload',)
     return f"('{payload}',)\n"
 
@@ -28,28 +28,20 @@ class TestGnomeWaylandReporter(unittest.TestCase):
         gw._pywinctl = None
         gw._pywinctl_tried = False
 
-    def test_focused_window_with_title_in_list(self):
-        payload = ('[{"id": 100, "wm_class": "Gnome-terminal", "focus": false, "title": "Term"},'
-                   ' {"id": 200, "wm_class": "firefox", "focus": true, "title": "Mozilla Firefox"}]')
-        with mock.patch.object(subprocess, "run", return_value=_proc(_list_out(payload))):
+    def test_focused_window(self):
+        # GetFocusedWindow returns the focused window (incl. title) in one call.
+        payload = ('{"id": 200, "wm_class": "firefox", '
+                   '"wm_class_instance": "Navigator", "title": "Mozilla Firefox"}')
+        with mock.patch.object(subprocess, "run", return_value=_proc(_gdbus_out(payload))):
             win = gw.getActiveWindow()
         self.assertIsNotNone(win)
         self.assertEqual(win.getHandle(), 200)
         self.assertEqual(win.getAppName(), "firefox")
         self.assertEqual(win.title, "Mozilla Firefox")
 
-    def test_title_fetched_on_demand_when_list_omits_it(self):
-        # Base "Window Calls" List omits title -> a second GetTitle call fills it.
-        list_payload = '[{"id": 7, "wm_class": "Code", "focus": true}]'
-        outs = [_proc(_list_out(list_payload)), _proc("('main.py - VS Code',)\n")]
-        with mock.patch.object(subprocess, "run", side_effect=outs):
-            win = gw.getActiveWindow()
-        self.assertEqual(win.getHandle(), 7)
-        self.assertEqual(win.title, "main.py - VS Code")
-
-    def test_no_focused_window_returns_none(self):
-        payload = '[{"id": 1, "wm_class": "x", "focus": false}]'
-        with mock.patch.object(subprocess, "run", return_value=_proc(_list_out(payload))):
+    def test_null_payload_returns_none(self):
+        # Extension is up but nothing is focused -> the JSON literal 'null'.
+        with mock.patch.object(subprocess, "run", return_value=_proc(_gdbus_out("null"))):
             self.assertIsNone(gw.getActiveWindow())
 
     def test_missing_extension_warns_and_falls_back(self):
@@ -79,8 +71,7 @@ class TestGnomeWaylandReporter(unittest.TestCase):
     def test_no_focus_does_not_fall_back(self):
         # Extension is up and reports nothing focused -> None, WITHOUT consulting
         # the fallback (else a stale XWayland window would mask "nothing focused").
-        payload = '[{"id": 1, "wm_class": "x", "focus": false}]'
-        with mock.patch.object(subprocess, "run", return_value=_proc(_list_out(payload))), \
+        with mock.patch.object(subprocess, "run", return_value=_proc(_gdbus_out("null"))), \
              mock.patch.object(gw, "_pywinctl_fallback") as fb:
             self.assertIsNone(gw.getActiveWindow())
         fb.assert_not_called()
