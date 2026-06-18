@@ -678,6 +678,31 @@ class PolyCore:
                 brightness = brightness ** gamma
             self.keeb.set_brightness(2 + brightness * 48)
 
+    # Settings whose change should immediately recompute + retransmit the
+    # daylight brightness rather than waiting for the next 10-min periodic.
+    _BRIGHTNESS_SETTING_KEYS = frozenset({
+        "brightness_set_daylight_dependent",
+        "irradiance_min", "irradiance_max", "irradiance_prescaler",
+        "brightness_gamma",
+        "brightness_allow_online_irradiance_request",
+        "brightness_allow_online_location_lookup",
+    })
+
+    def refresh_daylight_brightness(self):
+        """Recompute the daylight brightness now and push it to the device,
+        instead of waiting for the next 10-min periodic. Runs on the worker so
+        it never blocks the caller; coalesces so a burst of setting changes
+        results in a single recompute. No-ops without a network hit when
+        daylight dependence is off (the periodic checks the flag first)."""
+        # Keep the Sunlight lookup permissions in sync with the live settings,
+        # so toggling the online-lookup options takes effect immediately too.
+        self.sunlight.allow_online_lookup(
+            bool(self.poly_settings.get("brightness_allow_online_irradiance_request")))
+        self.sunlight.allow_location_lookup(
+            bool(self.poly_settings.get("brightness_allow_online_location_lookup")))
+        self.worker.submit("brightness_now", self._brightness_periodic,
+                           coalesce_key="brightness_now")
+
     # ------------------------------------------------------------------
     # Command API — the surface clients (CLI / RPC / GUI) drive (H2).
     #
@@ -810,6 +835,10 @@ class PolyCore:
             return False, f"Unknown setting '{key}'"
         alls[key] = value
         self.poly_settings.set_all(alls)
+        # A brightness/daylight setting change takes effect immediately instead
+        # of on the next 10-min cycle (covers polyctl + the client-mode dialog).
+        if key in self._BRIGHTNESS_SETTING_KEYS:
+            self.refresh_daylight_brightness()
         return True, key
 
     # ------------------------------------------------------------------
