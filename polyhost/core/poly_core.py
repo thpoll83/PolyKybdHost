@@ -94,6 +94,11 @@ class PolyCore:
         # Set on a fresh connect; consumed by the first applied snapshot after
         # it so the overlay state on the keyboard is cleared exactly once.
         self.needs_overlay_reset = False
+        # Per-process guard: the font-pack auto-flash fires at most once per host
+        # process (a successful flash makes the keyboard current anyway; a failed
+        # one is NOT auto-retried — manual `fontpack flash` is the override). The
+        # cheap STATUS read still runs on every fresh connect.
+        self._fontpack_auto_attempted = False
 
         self.poly_settings = PolySettings()
         self.device_settings = DeviceSettings()
@@ -608,6 +613,9 @@ class PolyCore:
                 # engage daylight-auto + push the current value, or send AUTO_OFF
                 # so it uses its stored manual brightness. Queued on the worker.
                 self.refresh_daylight_brightness()
+                # Auto-flash the bundled font pack if the keyboard's is missing
+                # or older (queued on the worker; self-terminating — see below).
+                self._maybe_auto_flash_fontpack()
 
         # The applying client owns the applied-connection state the worker reads.
         self.last_applied_connected = self.connected
@@ -1002,6 +1010,50 @@ class PolyCore:
         if not ok:
             return False, "Keyboard did not report font-pack status (firmware too old?)."
         return True, info
+
+    def _maybe_auto_flash_fontpack(self):
+        """Queue the font-pack auto-check on a fresh connect (if enabled).
+
+        Self-terminating: the check only flashes when the keyboard's pack is
+        missing or strictly older than the bundled one, and a successful flash
+        makes the versions equal — so it never loops. The actual decision +
+        flash run on the worker (`_fontpack_autocheck_job`) so they don't block
+        the caller (apply_reconnect may be on the Qt thread)."""
+        if not self.poly_settings.get("fontpack_auto_flash"):
+            return
+        self.worker.submit("fontpack_autocheck", self._fontpack_autocheck_job)
+
+    def _fontpack_autocheck_job(self, cancel):
+        from polyhost.services import fontpack_bundle
+        bpath, binfo = fontpack_bundle.bundled_pack_info(self.poly_settings.get("fontpack_path"))
+        if binfo is None:
+            return   # no pack shipped with this host — feature inert
+        sok, dinfo = hid_fontpack.get_fontpack_status(self.keeb.hid)
+        should, reason = fontpack_bundle.decide_auto_flash(sok, dinfo if sok else None, binfo)
+        if not should:
+            self.log.info("Font pack auto-check: %s.", reason)
+            return
+        if self._fontpack_auto_attempted:
+            self.log.info("Font pack auto-flash already attempted this session — "
+                          "skipping (%s). Use a manual flash to retry.", reason)
+            return
+        self._fontpack_auto_attempted = True
+        self.log.info("Font pack auto-flash: %s — flashing %s.", reason, bpath)
+
+        cancel_flag = [False]
+
+        def _progress(pct, m):
+            if cancel.is_set():
+                cancel_flag[0] = True
+            self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+
+        fok, fmsg = hid_fontpack.flash_fontpack(
+            self.keeb.hid, bpath, progress_cb=_progress, cancel_flag=cancel_flag)
+        self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg, "auto": True})
+        if fok:
+            self.log.info("Font pack auto-flash complete: %s", fmsg)
+        else:
+            self.log.warning("Font pack auto-flash failed: %s", fmsg)
 
     def check_update(self):
         """Check GitHub for a newer host release (synchronous HTTP — runs on
