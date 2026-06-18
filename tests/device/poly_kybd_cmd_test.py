@@ -686,6 +686,27 @@ class TestConnect(unittest.TestCase):
         self.assertEqual(len(device.writes), 2)
         keeb._open_interfaces.assert_called_once()
 
+    def test_reconnect_retries_clamped_to_at_least_one(self):
+        # A misconfigured hid_reconnect_retries=0 must still probe the live
+        # handle once (single GET_ID) before re-enumerating, never skip straight
+        # to a blind re-open on every probe cycle.
+        keeb, device = make_keeb(
+            auto_ack=True, settings=StubPolySettings(hid_reconnect_retries=0))
+        keeb._open_interfaces = MagicMock(return_value=False)
+        self.assertTrue(keeb.connect())          # GET_ID answered → connected
+        self.assertEqual(len(device.writes), 1)  # exactly one probe, not zero
+        keeb._open_interfaces.assert_not_called()  # no re-enumeration needed
+
+    def test_reconnect_retries_clamped_when_negative(self):
+        # A mis-edited negative value must clamp the same way as 0 — one probe,
+        # never a per-cycle blind re-enumeration.
+        keeb, device = make_keeb(
+            auto_ack=True, settings=StubPolySettings(hid_reconnect_retries=-1))
+        keeb._open_interfaces = MagicMock(return_value=False)
+        self.assertTrue(keeb.connect())
+        self.assertEqual(len(device.writes), 1)
+        keeb._open_interfaces.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # Command file execution & console

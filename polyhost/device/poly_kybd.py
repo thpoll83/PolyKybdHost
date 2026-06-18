@@ -87,7 +87,12 @@ class PolyKybd:
             self.log.debug("Connecting to PolyKybd for the first time...")
             return self._open_interfaces()
         else:
-            retries = self.poly_settings.get("hid_reconnect_retries")
+            # Always probe the live handle at least once before re-enumerating.
+            # A misconfigured hid_reconnect_retries <= 0 would otherwise skip the
+            # GET_ID loop entirely and blindly tear down/re-open the HID interface
+            # on every reconnect probe (~1 Hz) — log spam plus disruptive handle
+            # churn that can clip in-flight overlay transfers.
+            retries = max(1, self.poly_settings.get("hid_reconnect_retries"))
             for attempt in range(retries):
                 result, msg = self.query_id()
                 if result:
