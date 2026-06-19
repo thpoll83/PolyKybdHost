@@ -232,6 +232,12 @@ class RemoteCore:
     def set_idle(self, idle):
         return self._device(p.M_IDLE_SET, {"idle": idle})
 
+    def set_idle_style(self, value):
+        return self._device(p.M_IDLE_STYLE_SET, {"value": value})
+
+    def get_idle_style(self):
+        return self._device(p.M_IDLE_STYLE_GET)
+
     # -- overlays -----------------------------------------------------------
     def send_overlay_data(self, files):
         try:
