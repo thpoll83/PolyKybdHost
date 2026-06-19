@@ -2,11 +2,16 @@ import logging
 from datetime import datetime
 import math
 
-import requests
-from pvlib.location import Location
-import pandas as pd
-import pytz
-import geocoder
+# NOTE: pvlib / pandas / geocoder / requests are imported LAZILY inside the
+# methods that use them. Cold-importing that scientific stack (pvlib pulls
+# pandas + scipy) costs seconds on Windows — tens of seconds when antivirus
+# scans each .pyd on first load — and it ran at module import, on the GUI's
+# startup path (host.py imports PolyCore unconditionally) and the daemon's,
+# delaying the tray. The actual lookups all run on the HID worker thread
+# (10-min brightness periodic / on-connect refresh), so deferring the imports
+# there keeps them entirely off the startup path. Client-mode GUIs never touch
+# Sunlight at all and now never pay this cost.
+
 
 class Sunlight:
     def __init__(self, allow_location_lookup, allow_online_lookup):
@@ -22,6 +27,8 @@ class Sunlight:
     def init_location(self):
         if self.location_lookup and not self.location_known:
             try:
+                import geocoder
+                from pvlib.location import Location
                 self.location = geocoder.ip('me', timeout=5.0)
                 self.latitude, self.longitude = self.location.latlng
 
@@ -37,6 +44,9 @@ class Sunlight:
                 self.log.warning("Failed to query location, maybe due to missing internet connection.")
 
     def get_irradiance_now(self):
+        import requests
+        import pandas as pd
+        import pytz
         self.init_location()
 
         if self.location_known:

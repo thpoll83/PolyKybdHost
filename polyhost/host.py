@@ -47,7 +47,6 @@ from polyhost.services.updater import UpdateChecker, UpdateInstaller, FwUpDownlo
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.dialog_util import position_near_tray
 from polyhost.gui.worker_bridge import WorkerBridge
-from polyhost.core.poly_core import PolyCore
 from polyhost.server.control_server import ControlServer
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -281,6 +280,11 @@ class PolyHost(QApplication):
             # run — the client likely missed the daemon's fresh-connect event.
             self._remote_connected_rendered = False
         else:
+            # Imported here, not at module top: PolyCore pulls in the whole
+            # device + brightness stack (pvlib/pandas/scipy via sunlight_helper),
+            # which is dead weight in --connect client mode and just delays the
+            # tray. The client uses RemoteCore instead and never imports this.
+            from polyhost.core.poly_core import PolyCore
             self.core = PolyCore(log=self.log, ignore_version=ignore_version,
                                  start_worker=False)
             self.keeb = self.core.keeb
