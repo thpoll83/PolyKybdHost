@@ -25,9 +25,26 @@ class PolySettings:
             "brightness_set_daylight_dependent": True,
             "brightness_allow_online_irradiance_request": True,
             "brightness_allow_online_location_lookup": True,
+            # Maps solar irradiance (W/m^2) to keycap brightness via
+            # perceived = ln(1+irr)*prescaler, clamped to [min, max] then
+            # scaled to the device's 2..50 range. irradiance_min=1.8 floors to
+            # the dimmest value below ~10 W/m^2 (true twilight/night).
+            # irradiance_max=5.2 = ln(1+1000)*0.75, so a clear-sky noon
+            # (~1000 W/m^2) reaches full brightness — the old 6.5 needed an
+            # unreachable ~5800 W/m^2, capping sunny-day brightness at ~36/50.
             "irradiance_min": 1.8,
-            "irradiance_max": 6.5,
+            "irradiance_max": 5.2,
             "irradiance_prescaler": 0.75,
+            # Perceptual gamma applied to the daylight brightness before it is
+            # scaled to the keyboard's 2..50 range (see PolyCore._brightness_
+            # periodic). The keycap OLEDs run near the bottom of their contrast
+            # range where perceived brightness ~ luminance^(1/3). This is a
+            # by-eye tuning knob: gamma>1 evens out the perceived ramp but DIMS
+            # the mid-range (e.g. midday can drop noticeably); gamma<1 brightens
+            # it. Default 1.0 = the plain linear mapping (no dimming) — raise it
+            # toward ~2.2 if the ramp feels too steep at low light, lower it if
+            # daytime ends up too dim. Endpoints (0->2, 1->50) are unaffected.
+            "brightness_gamma": 1.0,
             "max_hid_message_before_delay": 15,
             "delay_time_after_max_hid_messages": 0.3,
             "hid_reconnect_retries": 5,

@@ -883,6 +883,10 @@ class PolyHost(QApplication):
                         self.core.settings_set(key, value)
             else:
                 self.poly_settings.set_all(updated)
+                # In-process mode writes settings directly (bypassing
+                # core.settings_set), so nudge the core to recompute + push the
+                # daylight brightness now rather than waiting for the next cycle.
+                self.core.refresh_daylight_brightness()
         dlg.close()
 
     def open_log(self):

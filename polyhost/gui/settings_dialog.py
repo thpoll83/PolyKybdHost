@@ -25,6 +25,10 @@ def create_editor(value):
         doublebox = QDoubleSpinBox()
         doublebox.setDecimals(3)
         doublebox.setMaximum(1_000.0)
+        # Default step is 1.0, which silently clamps fine-grained float settings
+        # (e.g. the 0.75 brightness prescaler) to 0.0 on a single scroll/click —
+        # use a small step so these stay editable to their real precision.
+        doublebox.setSingleStep(0.05)
         doublebox.setValue(value)
         return doublebox
     else:  # string fallback

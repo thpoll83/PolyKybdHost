@@ -256,9 +256,13 @@ class PolyKybd:
         self.log.info("Setting unicode mode to %d", mode.value)
         return self.hid.send_and_read_validate(compose_cmd(Cmd.SET_UNICODE_MODE, mode.value))
 
-    def set_brightness(self, brightness: int) -> tuple[bool, Any]:
-        self.log.info("Setting Display Brightness to %d...", brightness)
-        return self.hid.send_and_read_validate(compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50))))
+    def set_brightness(self, brightness: int, flags: int = 0) -> tuple[bool, Any]:
+        # flags (protocol >= 5, firmware base/com.h): bit0 VOLATILE (daylight,
+        # not persisted), bit1 AUTO_ON, bit2 AUTO_OFF. flags=0 is the legacy
+        # persisted set; pre-v5 firmware ignores the extra byte.
+        self.log.info("Setting Display Brightness to %d (flags 0x%x)...", brightness, flags)
+        return self.hid.send_and_read_validate(
+            compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50)), flags & 0xFF))
 
     def press_and_release_key(self, keycode: int, duration: int,
                               cancel: threading.Event | None = None) -> tuple[bool, Any]:
