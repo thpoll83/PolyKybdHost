@@ -51,12 +51,48 @@ class TestMissingRequirements(unittest.TestCase):
 
 class TestBootstrapDependencies(unittest.TestCase):
 
+    def setUp(self):
+        # Isolate the dependency-OK marker from the real venv so tests neither
+        # pollute it nor see each other's marker.
+        self._marker_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(self._marker_dir.cleanup)
+        marker = str(Path(self._marker_dir.name) / ".polyhost_deps_ok")
+        p = mock.patch.object(_bootstrap, "_deps_marker_path", return_value=marker)
+        p.start()
+        self.addCleanup(p.stop)
+        self._marker = marker
+
     def test_skips_pip_when_nothing_missing(self):
         with tempfile.TemporaryDirectory() as td:
             (Path(td) / "requirements.txt").write_text("")
             with mock.patch.object(_bootstrap.subprocess, "run") as run:
                 _bootstrap.bootstrap_dependencies(td)
             run.assert_not_called()
+
+    def test_skips_scan_when_requirements_unchanged(self):
+        # Second call with an unchanged requirements.txt must not even scan.
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "requirements.txt").write_text("requests\n")
+            with mock.patch.object(_bootstrap, "missing_requirements",
+                                   return_value=[]) as scan:
+                _bootstrap.bootstrap_dependencies(td)   # first: scans, writes marker
+                _bootstrap.bootstrap_dependencies(td)   # second: marker hit, no scan
+            self.assertEqual(scan.call_count, 1)
+            self.assertTrue(Path(self._marker).exists())
+
+    def test_rescans_when_requirements_change(self):
+        import os
+        with tempfile.TemporaryDirectory() as td:
+            req = Path(td) / "requirements.txt"
+            req.write_text("requests\n")
+            with mock.patch.object(_bootstrap, "missing_requirements",
+                                   return_value=[]) as scan:
+                _bootstrap.bootstrap_dependencies(td)
+                # Change the file (and its mtime/size) -> signature differs.
+                req.write_text("requests\npackaging\n")
+                os.utime(req, (req.stat().st_atime + 5, req.stat().st_mtime + 5))
+                _bootstrap.bootstrap_dependencies(td)
+            self.assertEqual(scan.call_count, 2)
 
     def test_runs_pip_when_packages_missing(self):
         with tempfile.TemporaryDirectory() as td:

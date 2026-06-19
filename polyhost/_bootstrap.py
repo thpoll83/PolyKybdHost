@@ -63,18 +63,67 @@ def missing_requirements(req_file: str) -> list:
     return missing
 
 
-def bootstrap_dependencies(project_root: str) -> None:
-    """Install `requirements.txt` from `project_root` if anything is missing."""
-    req_file = os.path.join(project_root, "requirements.txt")
-    missing = missing_requirements(req_file)
-    if not missing:
-        return
-    print(f"PolyKybdHost bootstrap: missing packages {missing}, "
-          f"running pip install -r {req_file}", flush=True)
+def _deps_marker_path() -> str:
+    """Per-interpreter marker recording the requirements.txt signature last
+    verified present. Lives in the venv (sys.prefix) — user-writable and
+    git-ignored."""
+    return os.path.join(sys.prefix, ".polyhost_deps_ok")
+
+
+def _req_signature(req_file: str):
+    """Cheap change-detector for requirements.txt: 'mtime:size' (None if absent)."""
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "-r", req_file],
-            check=False, timeout=300,
-        )
-    except (subprocess.SubprocessError, OSError) as e:
-        log.warning("Bootstrap pip install failed: %s", e)
+        st = os.stat(req_file)
+    except OSError:
+        return None
+    return f"{int(st.st_mtime)}:{st.st_size}"
+
+
+def bootstrap_dependencies(project_root: str) -> None:
+    """Install `requirements.txt` from `project_root` if anything is missing.
+
+    The importlib.metadata scan is surprisingly costly on Windows under
+    antivirus (~1.3 s, measured on the GUI's startup path), so skip it entirely
+    when requirements.txt is unchanged since the last successful check — a normal
+    launch then pays nothing. A manual source update that rewrites
+    requirements.txt changes its mtime/size and re-triggers the check. (Trade-off:
+    manually uninstalling a dep without touching requirements.txt won't be
+    re-detected until the file changes — acceptable for a startup safety net.)"""
+    req_file = os.path.join(project_root, "requirements.txt")
+    if not os.path.isfile(req_file):
+        return
+    sig = _req_signature(req_file)
+    marker = _deps_marker_path()
+    if sig is not None:
+        try:
+            with open(marker, encoding="utf-8") as fh:
+                if fh.read().strip() == sig:
+                    return  # unchanged since last OK — skip the scan entirely
+        except OSError:
+            pass
+
+    missing = missing_requirements(req_file)
+    if missing:
+        # print() is a no-op crash under pythonw (sys.stdout is None), so guard it.
+        if sys.stdout is not None:
+            print(f"PolyKybdHost bootstrap: missing packages {missing}, "
+                  f"running pip install -r {req_file}", flush=True)
+        try:
+            proc = subprocess.run(
+                [sys.executable, "-m", "pip", "install", "-r", req_file],
+                check=False, timeout=300,
+            )
+        except (subprocess.SubprocessError, OSError) as e:
+            log.warning("Bootstrap pip install failed: %s", e)
+            return  # leave the marker unwritten so the next launch retries
+        if proc.returncode != 0:
+            return  # install failed — retry next launch, don't record success
+
+    # Everything present (or freshly installed): record the signature so the
+    # next launch skips the scan.
+    if sig is not None:
+        try:
+            with open(marker, "w", encoding="utf-8") as fh:
+                fh.write(sig)
+        except OSError:
+            pass
