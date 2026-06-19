@@ -7,10 +7,6 @@ pywin32; sys_platform == "win32"
 pynput
 PyYAML
 platformdirs
-geocoder
-pandas
-pvlib
-pytz
 requests
 pyserial
 packaging

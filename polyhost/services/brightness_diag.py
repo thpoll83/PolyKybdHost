@@ -15,7 +15,7 @@ It only reads — it never talks to the keyboard and changes no settings.
 """
 
 import math
-from datetime import datetime, date, timedelta
+from datetime import datetime, timezone, timedelta
 
 from polyhost.settings import PolySettings
 from polyhost.services.sunlight_helper import Sunlight
@@ -113,8 +113,8 @@ def live_paths(s, min_val, max_val, pre_scale, gamma=1.0):
         _report_value("hour-of-day fallback", irr, min_val, max_val, pre_scale, gamma)
         return
     print(f"   location: lat {s.latitude:.4f}  lon {s.longitude:.4f}")
-    print(f"   pvlib Location.tz = {getattr(s.site, 'tz', '?')!r} "
-          "(now built with tz='UTC' and fed a UTC-aware 'now')\n")
+    print("   irradiance source: online open-meteo (cloud-aware) with a pure-math\n"
+          "   clear-sky fallback (Haurwitz model) when offline / lookup disabled.\n")
 
     # (a) The actual call the firmware-facing code makes.
     try:
@@ -125,9 +125,9 @@ def live_paths(s, min_val, max_val, pre_scale, gamma=1.0):
         print(f"   get_irradiance_now() raised {type(e).__name__}: {e}")
         print("   (the worker periodic swallows this -> brightness is NOT updated)\n")
 
-    # (b) Clear-sky path the way the code does it (naive local time) vs the
-    #     timezone-correct way — this exposes the tz bug.
-    _clearsky_timezone_probe(s)
+    # (b) Show the pure-math clear-sky fallback over the day, so a "stuck at 2"
+    #     can be traced to e.g. night-time / sun-below-horizon.
+    _clearsky_probe(s)
 
 
 def _report_value(label, irr, min_val, max_val, pre_scale, gamma=1.0):
@@ -150,51 +150,25 @@ def _report_value(label, irr, min_val, max_val, pre_scale, gamma=1.0):
         print()
 
 
-def _clearsky_timezone_probe(s):
-    """Compare the clear-sky model the OLD (buggy) way — naive host-local time,
-    Location default tz='UTC' — against the CURRENT fix (UTC-aware now,
-    Location tz='UTC'), so the timezone correction is visible and verifiable."""
-    try:
-        import pandas as pd
-        import pytz
-        from pvlib.location import Location
-    except Exception as e:
-        print(f"   (skipping clear-sky timezone probe: {e})")
-        return
+def _clearsky_probe(s):
+    """Print the pure-math clear-sky GHI across today (UTC-driven, so it's
+    timezone-correct by construction) and flag night-time, which is the usual
+    legitimate 'stuck at 2' cause on the offline path."""
+    print("   clear-sky model probe (offline fallback path):")
+    print("   Haurwitz GHI = 1098 * cos(Z) * exp(-0.059/cos(Z)), Z from solar")
+    print("   declination + hour angle. Cloudless by nature (offline can't know")
+    print("   clouds); the online open-meteo value above already reflects them.\n")
 
-    print("   clear-sky timezone probe (fallback path):")
-    print("   OLD bug: Location(lat,lon).get_clearsky(pd.Timestamp.now()) fed a")
-    print("   timezone-NAIVE host-local time to a UTC-default Location, so pvlib")
-    print("   modelled the sun as if your wall clock were UTC — shifting it by")
-    print("   your whole UTC offset and reading ~0 W/m^2 during real daylight.")
-    print("   FIX: tz-aware UTC 'now' + Location(tz='UTC') -> correct sun.\n")
-
-    today = date.today()
-    midnight = datetime(today.year, today.month, today.day)
-
-    # OLD (buggy): naive local time, Location default tz='UTC'.
-    site_buggy = Location(s.latitude, s.longitude)
-    hours_naive = pd.date_range(midnight, periods=24, freq="h")
-    ghi_buggy = site_buggy.get_clearsky(hours_naive)["ghi"].values
-
-    # CURRENT (fixed): the real UTC instants for each local hour today, against
-    # a tz='UTC' Location — exactly what get_irradiance_now now does per-tick.
-    site_fixed = Location(s.latitude, s.longitude, tz="UTC")
-    local_tz = datetime.now().astimezone().tzinfo
-    hours_local = pd.date_range(midnight, periods=24, freq="h").tz_localize(local_tz)
-    ghi_fixed = site_fixed.get_clearsky(hours_local.tz_convert("UTC"))["ghi"].values
-
-    peak_buggy = int(hours_naive[ghi_buggy.argmax()].hour)
-    peak_fixed = int(hours_local[ghi_fixed.argmax()].hour)
-    cur = int(datetime.now().hour)
-    print(f"   OLD model solar peak : ~{peak_buggy:02d}:00 wall clock   "
-          f"(GHI now {ghi_buggy[cur]:.1f} W/m^2)")
-    print(f"   FIXED model solar peak: ~{peak_fixed:02d}:00 local time  "
-          f"(GHI now {ghi_fixed[cur]:.1f} W/m^2)")
-    if ghi_buggy[cur] < 10 <= ghi_fixed[cur]:
-        print("   [!] the OLD path read ~0 now while the FIXED model has real "
-              "daylight\n       -> the timezone fix resolves the 'stuck at 2' on "
-              "this path.")
+    now = datetime.now(timezone.utc)
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    ghis = [(h, s._clearsky_ghi(midnight + timedelta(hours=h))) for h in range(24)]
+    peak_h, peak_ghi = max(ghis, key=lambda hg: hg[1])
+    cur_ghi = s._clearsky_ghi(now)
+    print(f"   solar peak : ~{peak_h:02d}:00 UTC ({peak_ghi:.0f} W/m^2)")
+    print(f"   GHI now    : {cur_ghi:.1f} W/m^2  ({now.strftime('%H:%M')} UTC)")
+    if cur_ghi < 10:
+        print("   [!] sun is at/below the horizon now -> clear-sky GHI ~0, so the")
+        print("       offline fallback floors brightness to 2. Expected at night.")
     print()
 
 
