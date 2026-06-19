@@ -206,6 +206,42 @@ class _FakeEvt:
         pass
 
 
+@unittest.skipIf(sys.platform == "win32", "UDS-based control socket test")
+class TestRemoteCoreDeferredConnect(unittest.TestCase):
+    """connect_deferred must return immediately (tray appears now) and connect on
+    a background thread once the daemon binds its socket — daemon-by-default
+    spawns the daemon, which takes a moment to come up."""
+
+    def test_connects_in_background_once_endpoint_is_live(self):
+        addr, key = _addr(), b"k"
+        # No server yet: the deferred core comes back disconnected, retrying.
+        rc = RemoteCore.connect_deferred(_quiet(), address=addr, authkey=key)
+        try:
+            self.assertFalse(rc.connected)
+            seen = []
+            rc.subscribe(lambda n, p: seen.append((n, p)))
+            # Bring the daemon up after the GUI is already constructed.
+            srv = ControlServer(FakeCore(), "9.9.9", _quiet(), address=addr, authkey=key)
+            srv.start()
+            try:
+                self.assertTrue(_wait(lambda: rc.connected, timeout=5.0))
+                # The first render is pushed as a status_changed once attached.
+                self.assertTrue(_wait(lambda: any(
+                    n == "status_changed" and (p or {}).get("connected")
+                    for n, p in seen), timeout=5.0))
+            finally:
+                srv.stop()
+        finally:
+            rc.shutdown()
+
+    def test_shutdown_while_still_connecting_is_clean(self):
+        # Never bring a server up; shutting down must stop the retry loop without
+        # raising (sockets are still None at this point).
+        rc = RemoteCore.connect_deferred(_quiet(), address=_addr(), authkey=b"k")
+        self.assertFalse(rc.connected)
+        rc.shutdown()  # must not raise
+
+
 class TestRemoteCorePumpEOF(unittest.TestCase):
     """The pump must synthesize a disconnect when the event stream ends (the
     daemon vanished), so the GUI greys out instead of hanging."""

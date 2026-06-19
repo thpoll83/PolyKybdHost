@@ -22,21 +22,24 @@ class WindowsInputHelper(InputHelper):
         super().__init__()
         self.poly_settings = poly_settings
         self.list = None
-        self.query = """$ScriptBlock = {
-        Add-Type -AssemblyName System.Windows.Forms
-        [System.Windows.Forms.InputLanguage]::CurrentInputLanguage
-    }
-    $Job = Start-Job -ScriptBlock $ScriptBlock
-    $Null = Wait-Job -Job $Job
-    $CurrentLanguage = Receive-Job -Job $Job
-    Remove-Job -Job $Job
-    $CurrentLanguage"""
+        # Query the current input language directly. The previous implementation
+        # wrapped this in Start-Job, which spawns a *grandchild* powershell.exe to
+        # run the job — and CREATE_NO_WINDOW only suppresses the console of the
+        # child we launch, not of the job worker PowerShell spins up itself, so a
+        # console window flashed on every query. Running it inline (PowerShell's
+        # console host is STA, which WinForms needs) emits the exact same
+        # InputLanguage object, so the "Culture : xx-XX" line the parser keys on
+        # in get_current_language() is unchanged — with no extra process.
+        self.query = """Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.InputLanguage]::CurrentInputLanguage"""
     
     def get_languages(self):
         if not self.list:
             try:
-                result = subprocess.run(['powershell', 'Get-WinUserLanguageList'], stdout=subprocess.PIPE,
-                                       creationflags=_CREATE_NO_WINDOW, check=True)
+                result = subprocess.run(
+                    ['powershell', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
+                     '-Command', 'Get-WinUserLanguageList'],
+                    stdout=subprocess.PIPE, creationflags=_CREATE_NO_WINDOW, check=True)
                 self.list = []
                 entries = iter(result.stdout.splitlines())
                 for e in entries:
@@ -52,8 +55,10 @@ class WindowsInputHelper(InputHelper):
 
     def get_current_language(self):
         try:
-            result = subprocess.run(['powershell', self.query], stdout=subprocess.PIPE,
-                                   creationflags=_CREATE_NO_WINDOW, check=True)
+            result = subprocess.run(
+                ['powershell', '-NoProfile', '-NonInteractive', '-Sta', '-WindowStyle', 'Hidden',
+                 '-Command', self.query],
+                stdout=subprocess.PIPE, creationflags=_CREATE_NO_WINDOW, check=True)
             entries = iter(result.stdout.splitlines())
             for e in entries:
                 try:

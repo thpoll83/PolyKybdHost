@@ -183,7 +183,7 @@ def _progress_dlg(label: str, title: str, tray_icon=None) -> QProgressDialog:
 
 class PolyHost(QApplication):
     def __init__(self, log_level, debug_mode, ignore_version=False,
-                 client_mode=False, endpoint=None):
+                 client_mode=False, endpoint=None, connect_retry=False):
         super().__init__(sys.argv)
         fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
         level = DEBUG_DETAILED if debug_mode>1 else log_level
@@ -253,14 +253,20 @@ class PolyHost(QApplication):
             from polyhost.cli.polyctl import RpcError
             from polyhost.settings import PolySettings
             from polyhost.device.device_settings import DeviceSettings
-            try:
-                self.core = RemoteCore.connect(self.log, address=endpoint or None)
-            except (RpcError, OSError, EOFError) as e:
-                self.log.error("Cannot reach a running PolyKybdHost core (%s)", e)
-                print(f"error: cannot connect to a PolyKybdHost core ({e}). "
-                      "Start one first (e.g. `python -m polyhost --headless`).",
-                      file=sys.stderr)
-                sys.exit(1)
+            if connect_retry:
+                # Daemon-by-default: we just spawned the daemon and it's still
+                # booting. Connect in the background so the tray appears now and
+                # fills in once the daemon binds its socket (never blocks/exits).
+                self.core = RemoteCore.connect_deferred(self.log, address=endpoint or None)
+            else:
+                try:
+                    self.core = RemoteCore.connect(self.log, address=endpoint or None)
+                except (RpcError, OSError, EOFError) as e:
+                    self.log.error("Cannot reach a running PolyKybdHost core (%s)", e)
+                    print(f"error: cannot connect to a PolyKybdHost core ({e}). "
+                          "Start one first (e.g. `python -m polyhost --headless`).",
+                          file=sys.stderr)
+                    sys.exit(1)
             # No in-process device objects — the daemon owns them. Client-side
             # settings (the shared XDG file when co-located) feed the input
             # helper; the settings/layout dialogs are deferred (H4a-2).

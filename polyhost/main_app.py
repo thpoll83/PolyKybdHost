@@ -130,6 +130,10 @@ def main():
     # identical to before. host.py is untouched: this only flips client_mode and
     # resolves the single-instance lock the same way --connect already does.
     daemon_handled_instance = False
+    # Connect the GUI to the daemon in the background (tray appears immediately,
+    # fills in once the daemon is live) instead of blocking startup — set only
+    # when we spawn a fresh daemon, which takes a moment to bind its socket.
+    defer_connect = False
     is_plain_gui = not (args.headless or explicit_connect or args.host or args.host_file)
     if is_plain_gui:
         if args.daemon is None:
@@ -162,21 +166,22 @@ def main():
                 print("Starting the PolyKybdHost core daemon...")
                 spawned = dl.spawn_headless_daemon(
                     extra_args=_spawned_daemon_flags(args), log=slog)
-                if spawned is not None and dl.wait_until_live():
-                    slog.info("Core daemon (pid %s) is live; attaching as a client.",
+                if spawned is not None:
+                    # Don't block on wait_until_live: importing the daemon's
+                    # device stack + binding the socket takes a few seconds, and
+                    # the user wants the tray up immediately. Attach as a client
+                    # and let RemoteCore connect in the background as soon as the
+                    # daemon answers (it shows "Waiting for PolyKybd…" until then).
+                    slog.info("Core daemon (pid %s) spawned; attaching the tray as a "
+                              "client (connecting in the background).",
                               getattr(spawned, "pid", "?"))
-                    print("Core daemon is up; attaching as a client.")
+                    print("Core daemon starting; the tray will connect as soon as it's up.")
                     client_mode, endpoint, daemon_handled_instance = True, None, True
+                    defer_connect = True
                 else:
-                    slog.warning("Core daemon did not come up (spawned=%s); falling back "
-                                 "to in-process. See daemon_log.txt for the daemon side.",
-                                 "yes" if spawned is not None else "no")
-                    print("Core daemon did not come up; running in-process instead.")
-                    if spawned is not None:
-                        try:
-                            spawned.terminate()
-                        except Exception:
-                            pass
+                    slog.warning("Could not spawn the core daemon; falling back to "
+                                 "in-process. See daemon_log.txt for the daemon side.")
+                    print("Could not start the core daemon; running in-process instead.")
                     clear_stale_endpoint()
                     daemon_handled_instance = True  # socket already resolved here
 
@@ -274,7 +279,8 @@ def main():
         try:
             app = PolyHost(logging.DEBUG if args.debug>0 else logging.INFO, args.debug,
                            ignore_version=args.ignore_version,
-                           client_mode=client_mode, endpoint=endpoint)
+                           client_mode=client_mode, endpoint=endpoint,
+                           connect_retry=defer_connect)
         except Exception:
             # PolyHost configures its own host_log.txt; if it dies during
             # construction (e.g. the client can't reach the daemon) that file may
