@@ -313,6 +313,15 @@ class PolyHost(QApplication):
         self.exit = QAction(get_icon("power.svg"), "Quit", parent=self)
         # noinspection PyUnresolvedReferences
         self.exit.triggered.connect(self.quit_app)
+        # In daemon/client mode, plain Quit leaves the daemon (which owns the
+        # device) running. Offer an explicit "stop the daemon too" action — only
+        # meaningful as a client; in-process Quit already stops everything.
+        self.exit_with_daemon = None
+        if client_mode:
+            self.exit_with_daemon = QAction(get_icon("power.svg"),
+                                            "Quit && stop background daemon", parent=self)
+            # noinspection PyUnresolvedReferences
+            self.exit_with_daemon.triggered.connect(self.quit_app_and_daemon)
         self.support = QAction(get_icon("support.svg"), "Get Support", parent=self)
         # noinspection PyUnresolvedReferences
         self.support.triggered.connect(self.open_support)
@@ -417,6 +426,8 @@ class PolyHost(QApplication):
         self.menu.addAction(self.support)
         self.menu.addAction(self.about)
         self.menu.addAction(self.exit)
+        if self.exit_with_daemon is not None:
+            self.menu.addAction(self.exit_with_daemon)
 
         self.log.debug("Create OS dependent input helper...")
         self.helper = None
@@ -613,6 +624,10 @@ class PolyHost(QApplication):
         self.support.setEnabled(True)
         self.about.setEnabled(True)
         self.exit.setEnabled(True)
+        if self.exit_with_daemon is not None:
+            # Always available — stopping/quitting must work even when the device
+            # is disconnected or the menu is otherwise greyed out.
+            self.exit_with_daemon.setEnabled(True)
         if self.connected:
             self.icon_manager.set_connected()
         else:
@@ -1411,6 +1426,20 @@ class PolyHost(QApplication):
         self._pending_fw_release = None
         self.firmware_update_action.setVisible(False)
         self.managed_connection_status()
+
+    def quit_app_and_daemon(self):
+        """Client mode: ask the core daemon (which owns the device) to exit too,
+        then quit this GUI. Plain Quit leaves the daemon running so the keyboard
+        keeps working for the next GUI launch / other clients. Must run BEFORE
+        quit_app closes the client sockets — the request travels over them."""
+        self.log.info("Quit requested including the background daemon.")
+        try:
+            result = self.core.request_host_shutdown()
+            if isinstance(result, dict) and result.get("error"):
+                self.log.warning("Daemon shutdown request returned: %s", result["error"])
+        except Exception as e:  # noqa: BLE001 — best effort; quit the GUI regardless
+            self.log.warning("Could not ask the core daemon to shut down: %s", e)
+        self.quit_app()
 
     def quit_app(self):
         self.icon_manager.set_disconnected()

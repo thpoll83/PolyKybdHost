@@ -152,6 +152,12 @@ class TestRemoteCore(unittest.TestCase):
         # Keys cross JSON as strings; the daemon-side core coerces them back.
         self.assertIn(("send_overlay_mapping", {"4": 5}), self.core.calls)
 
+    def test_request_host_shutdown_acks(self):
+        # The "Quit & stop daemon" menu entry drives this: the control server
+        # replies before tearing down, so the client gets a clean ack.
+        result = self.rc.request_host_shutdown()
+        self.assertEqual(result, {"shutting_down": True})
+
     def test_event_fanout_and_cache_refresh(self):
         seen = []
         self.rc.subscribe(lambda n, p: seen.append((n, p)))

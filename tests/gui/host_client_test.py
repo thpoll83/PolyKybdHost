@@ -43,6 +43,7 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
         self.assertIn("SMOKE OK", proc.stdout)
         self.assertIn("CORE_TYPE PolyCore", proc.stdout)
+        self.assertIn("DAEMON_QUIT_ACTION absent", proc.stdout)
 
     def test_client_mode_connects_and_renders(self):
         proc = _run_smoke("client")
@@ -56,6 +57,7 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("FW 0.8.0", proc.stdout)
         self.assertIn("LANG_MENU_BUILT True", proc.stdout)
         self.assertIn("LAYOUT_OK layers=9", proc.stdout)
+        self.assertIn("DAEMON_QUIT_ACTION present", proc.stdout)
         self.assertIn("SERVER_RUNNING True", proc.stdout)
 
 
@@ -74,6 +76,8 @@ def _smoke_default():
         app = PolyHost(logging.CRITICAL, 0)
         print("CORE_TYPE", type(app.core).__name__)
         assert app.keeb is not None and app.worker is not None and app.cmdMenu is not None
+        # In-process Quit already stops everything; no separate daemon-quit entry.
+        print("DAEMON_QUIT_ACTION", "absent" if app.exit_with_daemon is None else "present")
         app.quit_app()
     print("SMOKE OK")
 
@@ -155,6 +159,8 @@ def _smoke_client():
             app.processEvents()
             print("LAYOUT_OK layers=%s" % app.layout_dialog.num_layers)
             app.layout_dialog.close()
+            # Client mode offers an explicit "stop the daemon too" entry.
+            print("DAEMON_QUIT_ACTION", "present" if app.exit_with_daemon is not None else "absent")
             app.quit_app()
         print("SERVER_RUNNING", srv._running)
     finally:
