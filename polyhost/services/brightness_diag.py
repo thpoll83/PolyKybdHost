@@ -131,14 +131,21 @@ def live_paths(s, min_val, max_val, pre_scale, gamma=1.0):
 
 
 def _report_value(label, irr, min_val, max_val, pre_scale, gamma=1.0):
-    perceived, n = normalize(irr, min_val, max_val, pre_scale)
+    _perceived, n = normalize(irr, min_val, max_val, pre_scale)
     dv = device_value(n, gamma)
     print(f"   {label}")
     print(f"      irradiance = {irr:.2f} W/m^2  -> device value "
           f"{dv:.1f} (int {int(max(0, min(50, dv)))})")
     if dv <= 2.5:
-        print("      => this is the FLOOR (2). Cause: irradiance read as "
-              f"<= {math.exp(min_val/pre_scale)-1:.1f} W/m^2.\n")
+        if pre_scale > 0:
+            floor_irr = math.exp(min_val / pre_scale) - 1
+            print("      => this is the FLOOR (2). Cause: irradiance read as "
+                  f"<= {floor_irr:.1f} W/m^2.\n")
+        else:
+            # The tool exists to explain degenerate configs; a 0/negative
+            # prescaler pins normalization at the floor, so don't divide by it.
+            print("      => this is the FLOOR (2). Cause: irradiance_prescaler "
+                  "<= 0 pins normalization at the minimum.\n")
     else:
         print()
 
