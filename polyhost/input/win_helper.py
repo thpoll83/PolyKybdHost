@@ -2,7 +2,12 @@ import ctypes
 import locale
 import logging
 import subprocess
+import sys
 from polyhost.input.input_helper import InputHelper
+
+# Under pythonw.exe (and any consoleless parent) Windows allocates a fresh
+# console window for every child process unless CREATE_NO_WINDOW is passed.
+_CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if sys.platform == "win32" else 0
 
 #Get-WinUserLanguageList | ForEach-Object {
 #    "$($_.LanguageTag): $($_.InputMethodTips -join ', ')"
@@ -30,7 +35,8 @@ class WindowsInputHelper(InputHelper):
     def get_languages(self):
         if not self.list:
             try:
-                result = subprocess.run(['powershell', 'Get-WinUserLanguageList'], stdout=subprocess.PIPE, check=True)
+                result = subprocess.run(['powershell', 'Get-WinUserLanguageList'], stdout=subprocess.PIPE,
+                                       creationflags=_CREATE_NO_WINDOW, check=True)
                 self.list = []
                 entries = iter(result.stdout.splitlines())
                 for e in entries:
@@ -46,7 +52,8 @@ class WindowsInputHelper(InputHelper):
 
     def get_current_language(self):
         try:
-            result = subprocess.run(['powershell', self.query], stdout=subprocess.PIPE, check=True)
+            result = subprocess.run(['powershell', self.query], stdout=subprocess.PIPE,
+                                   creationflags=_CREATE_NO_WINDOW, check=True)
             entries = iter(result.stdout.splitlines())
             for e in entries:
                 try:
