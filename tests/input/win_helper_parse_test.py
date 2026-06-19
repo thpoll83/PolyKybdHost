@@ -12,10 +12,14 @@ Importing win_helper pulls pynput (an X server), so this skips without a
 display — like the other GUI-adjacent tests.
 """
 import os
+import sys
 import unittest
 
-if not os.environ.get("DISPLAY"):
-    raise unittest.SkipTest("win_helper import needs pynput/X (no DISPLAY)")
+# Importing win_helper pulls pynput, which needs an X server only on Linux. Skip
+# just that case — Windows/macOS (where DISPLAY is naturally absent) must keep
+# coverage of the parser this test guards.
+if sys.platform.startswith("linux") and not os.environ.get("DISPLAY"):
+    raise unittest.SkipTest("win_helper import needs pynput/X on Linux (no DISPLAY)")
 
 from polyhost.input.win_helper import WindowsInputHelper
 

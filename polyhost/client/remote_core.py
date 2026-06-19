@@ -24,6 +24,16 @@ from polyhost.cli.polyctl import RpcError
 from polyhost.server import protocol as p
 
 
+def _close_quietly(*conns):
+    """Best-effort close of any non-None connections (partial-connect cleanup)."""
+    for c in conns:
+        if c is not None:
+            try:
+                c.close()
+            except Exception:
+                pass
+
+
 class RemoteCore:
     """RPC-backed proxy for the GUI's ``self.core`` (see docs/headless-h4-plan.md)."""
 
@@ -112,11 +122,17 @@ class RemoteCore:
         delay, attempts = 0.1, 0
         while not self._stop.is_set():
             attempts += 1
+            rpc = evt = None
             try:
                 rpc = polyctl.connect(self._address, self._authkey)
                 evt = polyctl.connect(self._address, self._authkey)
+                self._rpc, self._evt = rpc, evt
+                self._attach()   # may raise if the daemon drops mid-handshake
             except RpcError as e:
                 # Version/protocol gate — the daemon is up but incompatible.
+                # Retrying can't fix it, so report and stop.
+                self._rpc = self._evt = None
+                _close_quietly(rpc, evt)
                 self.log.error("RemoteCore: the core rejected the connection: %s", e)
                 self.emit("status_changed", {
                     "connected": False, "device_present": False, "state_changed": True,
@@ -124,16 +140,19 @@ class RemoteCore:
                     "icon": "sync_disabled.svg", "lang": None})
                 return
             except (OSError, EOFError):
+                # Daemon not up yet, or one of the two connects / the attach
+                # handshake failed transiently — drop any half-open client and
+                # retry rather than leaking it or proceeding in a partial state.
+                self._rpc = self._evt = None
+                _close_quietly(rpc, evt)
                 if attempts == 1 or attempts % 20 == 0:
                     self.log.info("RemoteCore: waiting for the core daemon to come up…")
                 if self._stop.wait(delay):
                     return
                 delay = min(delay * 1.5, 2.0)
                 continue
-            self._rpc, self._evt = rpc, evt
             self.log.info("RemoteCore: connected to the core daemon "
                           "(after %d attempt(s)).", attempts)
-            self._attach()
             return
 
     # ------------------------------------------------------------------
@@ -254,6 +273,11 @@ class RemoteCore:
 
     def _rpc_call(self, method, params=None):
         with self._rpc_lock:
+            if self._rpc is None:
+                # Deferred mode: the background connector hasn't dialed through
+                # yet. Surface the normal degraded error so callers go through
+                # their RpcError handling instead of hitting an AttributeError.
+                raise RpcError(p.ERR_UNAVAILABLE, "the core daemon is still starting")
             try:
                 return self._rpc.call(method, params)
             except (EOFError, OSError) as e:

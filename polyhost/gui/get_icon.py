@@ -10,7 +10,7 @@ _ICON_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res" / "icons"
 # every menu rebuild, so that disk churn ran on the Qt main thread and showed
 # up as lag when opening the tray menu. QIcon is implicitly shared, so handing
 # out the same instance is safe.
-_cache: dict[str, QIcon] = {}
+_cache = {}   # name -> QIcon
 
 
 def get_icon(name):

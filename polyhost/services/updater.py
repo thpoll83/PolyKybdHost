@@ -6,6 +6,7 @@ in-process restart. Designed for source-from-checkout installs on Win/Mac/Linux.
 """
 import json
 import logging
+import math
 import os
 import re
 import shutil
@@ -70,9 +71,14 @@ def get_last_check_time() -> float:
     (especially behind a shared office IP). Persisting the timestamp means a
     restart within the throttle window makes no request at all."""
     try:
-        return float(_load_etag_cache().get("checked_at", 0.0))
+        ts = float(_load_etag_cache().get("checked_at", 0.0))
     except (TypeError, ValueError):
         return 0.0
+    # Reject Infinity/NaN/negative — a corrupt value could otherwise suppress
+    # automatic checks forever (Infinity) or never (negative).
+    if not math.isfinite(ts) or ts < 0:
+        return 0.0
+    return ts
 
 
 def set_last_check_time(ts: float) -> None:

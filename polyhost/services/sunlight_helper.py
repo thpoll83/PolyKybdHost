@@ -33,9 +33,12 @@ class Sunlight:
                     self.latitude = float(data["lat"])
                     self.longitude = float(data["lon"])
                     self.location_known = True
-                    self.log.info("Location lat %f long %f (%s)",
-                                  self.latitude, self.longitude,
+                    # Coarse info at INFO; exact coordinates only at DEBUG so
+                    # precise location isn't persisted in routine logs.
+                    self.log.info("Location resolved (timezone %s)",
                                   data.get("timezone", "?"))
+                    self.log.debug("Location lat %f long %f",
+                                   self.latitude, self.longitude)
                 else:
                     self.log.warning("IP geolocation returned no fix: %s",
                                      data.get("message", data))

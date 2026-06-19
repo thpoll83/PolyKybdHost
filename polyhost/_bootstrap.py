@@ -76,12 +76,13 @@ def _deps_marker_path() -> str:
 
 
 def _req_signature(req_file: str):
-    """Cheap change-detector for requirements.txt: 'mtime:size' (None if absent)."""
+    """Cheap change-detector for requirements.txt: 'mtime_ns:size' (None if absent).
+    Nanosecond mtime so two same-size edits within one second still differ."""
     try:
         st = os.stat(req_file)
     except OSError:
         return None
-    return f"{int(st.st_mtime)}:{st.st_size}"
+    return f"{st.st_mtime_ns}:{st.st_size}"
 
 
 def bootstrap_dependencies(project_root: str) -> None:

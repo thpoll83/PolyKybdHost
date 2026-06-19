@@ -36,7 +36,7 @@ class WindowsInputHelper(InputHelper):
             "if ($lang -and $lang.Culture) { 'Culture: ' + $lang.Culture.Name }")
     
     def get_languages(self):
-        if not self.list:
+        if self.list is None:   # None = not queried yet; [] is a valid cached result
             try:
                 # Emit an explicit "LanguageTag: <tag>" line per language rather
                 # than letting PowerShell default-format the list — with 2+

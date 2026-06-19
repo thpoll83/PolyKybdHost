@@ -295,8 +295,12 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
             else:
                 slog.warning("Could not spawn the core daemon; running in-process instead.")
                 print("Could not start the core daemon; running in-process instead.")
-                from polyhost.server.instance import clear_stale_endpoint
-                clear_stale_endpoint()
+                # Re-probe before unlinking: the endpoint was last probed well
+                # before this deferred spawn attempt, and another process could
+                # have bound it meanwhile — only clear it if it's still stale.
+                from polyhost.server.instance import probe_existing, clear_stale_endpoint, STALE
+                if probe_existing() == STALE:
+                    clear_stale_endpoint()
                 client_mode, defer_connect = False, False
         if client_mode:
             slog.info("Launch path: GUI as client of a running core (endpoint=%s).",

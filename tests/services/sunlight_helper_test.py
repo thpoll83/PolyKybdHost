@@ -72,14 +72,16 @@ class OnlineParseTest(unittest.TestCase):
         s = _sun(online=True, location=False)
         s.location_known = True
         s.latitude, s.longitude = 52.0, 13.0
-        # Build a response whose time table contains exactly the current
-        # location-local hour (offset 0 -> local == UTC), so the parse matches it.
-        now = datetime.now(timezone.utc)
-        ts = now.strftime("%Y-%m-%dT%H:00")
+        # Build a response covering the current AND next location-local hour
+        # (offset 0 -> local == UTC), so an hour-boundary crossing between this
+        # snapshot and the code under test still finds a matching entry.
+        now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        ts0 = now.strftime("%Y-%m-%dT%H:00")
+        ts1 = (now + timedelta(hours=1)).strftime("%Y-%m-%dT%H:00")
         fake = mock.Mock()
         fake.json.return_value = {
             "utc_offset_seconds": 0,
-            "hourly": {"time": [ts], "shortwave_radiation": [500.0]},
+            "hourly": {"time": [ts0, ts1], "shortwave_radiation": [500.0, 500.0]},
         }
         with mock.patch("requests.get", return_value=fake) as get:
             self.assertEqual(s._online_irradiance(), 500.0)
@@ -89,12 +91,13 @@ class OnlineParseTest(unittest.TestCase):
         s = _sun(online=True, location=False)
         s.location_known = True
         s.latitude, s.longitude = 52.0, 13.0
-        now = datetime.now(timezone.utc)
-        ts = now.strftime("%Y-%m-%dT%H:00")
+        now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        ts0 = now.strftime("%Y-%m-%dT%H:00")
+        ts1 = (now + timedelta(hours=1)).strftime("%Y-%m-%dT%H:00")
         fake = mock.Mock()
         fake.json.return_value = {
             "utc_offset_seconds": 0,
-            "hourly": {"time": [ts], "shortwave_radiation": [None]},
+            "hourly": {"time": [ts0, ts1], "shortwave_radiation": [None, None]},
         }
         with mock.patch("requests.get", return_value=fake):
             self.assertEqual(s._online_irradiance(), 0.0)
