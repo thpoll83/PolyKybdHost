@@ -74,6 +74,21 @@ class ParseLanguageTagsTest(unittest.TestCase):
         # lacks our 'LanguageTag:' shape, so nothing bogus is returned.
         self.assertEqual(_parse_tags(table), [])
 
+    def test_space_joined_tags_on_one_line(self):
+        # Some Windows/PowerShell builds don't enumerate the language list in the
+        # pipeline, so 'LanguageTag: ' + $_.LanguageTag member-enumerates it and
+        # joins every tag with the default $OFS (a space) onto a single line.
+        # That must expand to one tag per language, not a single bogus tag
+        # 'en-AT en-US de-AT' (field log 2026-06-20).
+        self.assertEqual(
+            _parse_tags("LanguageTag: en-AT en-US de-AT"),
+            ["en-AT", "en-US", "de-AT"])
+
+    def test_space_joined_tags_as_bytes(self):
+        self.assertEqual(
+            _parse_tags(b"LanguageTag: en-AT en-US de-AT\n"),
+            ["en-AT", "en-US", "de-AT"])
+
     def test_empty_output(self):
         self.assertEqual(_parse_tags(""), [])
 

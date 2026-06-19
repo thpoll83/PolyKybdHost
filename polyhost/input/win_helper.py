@@ -57,7 +57,16 @@ class WindowsInputHelper(InputHelper):
     @staticmethod
     def _parse_language_tags(stdout):
         """Collect the IETF tags from 'LanguageTag: <tag>' lines, ignoring a bare
-        table header (no colon). Accepts bytes or str."""
+        table header (no colon). Accepts bytes or str.
+
+        The value after the colon is split on whitespace, so a single line that
+        carries several tags is expanded into one entry per tag. Some Windows /
+        PowerShell builds don't enumerate the WinUserLanguageList in the pipeline,
+        so 'LanguageTag: ' + $_.LanguageTag member-enumerates the whole list and
+        joins it with the default $OFS (a space) into one line
+        ('LanguageTag: en-AT en-US de-AT'). Without the split that arrives as a
+        single bogus tag 'en-AT en-US de-AT', which matches no language (field log
+        2026-06-20) and shows as one entry in the debug language menu."""
         tags = []
         for raw in stdout.splitlines():
             try:
@@ -66,7 +75,7 @@ class WindowsInputHelper(InputHelper):
                 line = str(raw)
             line = line.strip()
             if line.startswith('LanguageTag') and ':' in line:
-                tags.append(line.split(':', 1)[1].strip())
+                tags.extend(line.split(':', 1)[1].split())
         return tags
 
     def get_current_language(self):
