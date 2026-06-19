@@ -38,7 +38,7 @@ from polyhost.device.poly_kybd import PolyKybd
 from polyhost.handler.common import OverlayCommand
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
-from polyhost.settings import PolySettings
+from polyhost.settings import PolySettings, brightness_environment_params
 
 RECONNECT_CYCLE_MSEC = 1000
 # After an overlay/MRU send the keyboard goes deaf for a few hundred ms while it
@@ -678,11 +678,16 @@ class PolyCore:
 
     def _compute_daylight_value(self):
         """Map the current daylight irradiance to a device value (2..50),
-        applying the perceptual gamma. The keycap OLEDs are driven near the
-        bottom of their contrast range (firmware caps at 49/50 for current/
-        burn-in), where perceived brightness ~ luminance^(1/3), so a linear
-        value feels uneven; gamma>1 evens out the perceived steps (1.0 = the
-        old linear behaviour). Endpoints (0->2, 1->50) are preserved."""
+        applying the perceptual gamma, then damping the swing for the configured
+        environment. The keycap OLEDs are driven near the bottom of their
+        contrast range (firmware caps at 49/50 for current/burn-in), where
+        perceived brightness ~ luminance^(1/3), so a linear value feels uneven;
+        gamma>1 evens out the perceived steps (1.0 = the old linear behaviour).
+        The full-swing 'curve' (0->2, 1->50) is then damped toward the
+        environment's baseline (see BRIGHTNESS_ENVIRONMENTS): device = baseline +
+        k*(curve - baseline). The 'window' preset (k=1) leaves the curve
+        untouched; smaller k flattens the daylight swing for desks further from
+        a window, while keeping k>0 so it still dims at night."""
         min_val = self.poly_settings.get("irradiance_min")
         max_val = self.poly_settings.get("irradiance_max")
         prescaler = self.poly_settings.get("irradiance_prescaler")
@@ -690,7 +695,10 @@ class PolyCore:
         gamma = self.poly_settings.get("brightness_gamma")
         if gamma and gamma > 0:
             brightness = brightness ** gamma
-        return 2 + brightness * 48
+        curve = 2 + brightness * 48
+        baseline, k = brightness_environment_params(
+            self.poly_settings.get("brightness_environment"))
+        return baseline + k * (curve - baseline)
 
     def _brightness_periodic(self, cancel):
         """Worker periodic (10 min): daylight-dependent brightness incl. the
@@ -725,6 +733,7 @@ class PolyCore:
     # daylight brightness rather than waiting for the next 10-min periodic.
     _BRIGHTNESS_SETTING_KEYS = frozenset({
         "brightness_set_daylight_dependent",
+        "brightness_environment",
         "irradiance_min", "irradiance_max", "irradiance_prescaler",
         "brightness_gamma",
         "brightness_allow_online_irradiance_request",
