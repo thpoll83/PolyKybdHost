@@ -191,8 +191,8 @@ class PolyKybdMock:
     # Device settings
     # -------------------------------------------------------------------------
 
-    def set_brightness(self, brightness: int) -> tuple[bool, str]:
-        self._log_call("set_brightness", brightness)
+    def set_brightness(self, brightness: int, flags: int = 0) -> tuple[bool, str]:
+        self._log_call("set_brightness", brightness, flags)
         max_brightness = getattr(self.device_settings, "MAX_BRIGHTNESS", 50)
         self._brightness = max(0, min(brightness, max_brightness))
         return True, ""

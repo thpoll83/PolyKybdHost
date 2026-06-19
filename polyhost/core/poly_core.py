@@ -599,6 +599,11 @@ class PolyCore:
                     self.overlay_handler.force_resend()
                 self.needs_overlay_reset = True
                 self.log.info("Connected: active window resend queued.")
+                # Re-assert the host's brightness mode on the freshly-connected
+                # keyboard (its auto mode is RAM-only and defaults off on boot):
+                # engage daylight-auto + push the current value, or send AUTO_OFF
+                # so it uses its stored manual brightness. Queued on the worker.
+                self.refresh_daylight_brightness()
 
         # The applying client owns the applied-connection state the worker reads.
         self.last_applied_connected = self.connected
@@ -657,26 +662,61 @@ class PolyCore:
         if kb_serial or kb_log:
             self.emit("console", (kb_serial, kb_log))
 
+    # HID SET_BRIGHTNESS flag bits — mirror firmware base/com.h (protocol >= 5).
+    # On older firmware the flags byte is ignored (plain persisted set), so we
+    # only send flags when the device advertises support.
+    _BR_FLAG_VOLATILE = 1 << 0   # daylight value: applied only in auto mode, never persisted
+    _BR_FLAG_AUTO_ON  = 1 << 1   # engage host-driven (auto) brightness
+    _BR_FLAG_AUTO_OFF = 1 << 2   # leave auto mode, revert to the keyboard's stored manual level
+    _BRIGHTNESS_FLAGS_PROTOCOL = 5
+
+    def _brightness_flags_supported(self):
+        return (self.keeb.get_protocol_version() or 0) >= self._BRIGHTNESS_FLAGS_PROTOCOL
+
+    def _compute_daylight_value(self):
+        """Map the current daylight irradiance to a device value (2..50),
+        applying the perceptual gamma. The keycap OLEDs are driven near the
+        bottom of their contrast range (firmware caps at 49/50 for current/
+        burn-in), where perceived brightness ~ luminance^(1/3), so a linear
+        value feels uneven; gamma>1 evens out the perceived steps (1.0 = the
+        old linear behaviour). Endpoints (0->2, 1->50) are preserved."""
+        min_val = self.poly_settings.get("irradiance_min")
+        max_val = self.poly_settings.get("irradiance_max")
+        prescaler = self.poly_settings.get("irradiance_prescaler")
+        brightness = self.sunlight.get_brightness_now(min_val, max_val, prescaler)
+        gamma = self.poly_settings.get("brightness_gamma")
+        if gamma and gamma > 0:
+            brightness = brightness ** gamma
+        return 2 + brightness * 48
+
     def _brightness_periodic(self, cancel):
         """Worker periodic (10 min): daylight-dependent brightness incl. the
-        network lookups — kept entirely off any client thread."""
+        network lookups — kept entirely off any client thread. Sends a VOLATILE
+        update only (never AUTO_ON): if the user has taken manual control on the
+        keyboard the firmware ignores it, so a background tick can't override a
+        deliberate choice. Engaging auto is a deliberate act (see _engage)."""
         if self.poly_settings.get("brightness_set_daylight_dependent"):
-            min_val = self.poly_settings.get("irradiance_min")
-            max_val = self.poly_settings.get("irradiance_max")
-            prescaler = self.poly_settings.get("irradiance_prescaler")
-            brightness = self.sunlight.get_brightness_now(min_val, max_val, prescaler)
-            # Perceptual gamma on the output. The keycap OLEDs are driven near
-            # the bottom of their contrast range (the firmware caps at 49/50 to
-            # limit current/burn-in), where the eye's response is steepest
-            # (perceived brightness ~ luminance^1/3), so a linear value feels
-            # uneven. Raising the normalized 0..1 to a gamma before scaling to
-            # the device's 2..50 range evens out the perceived steps as the
-            # daylight changes. gamma=1.0 reproduces the old linear behaviour;
-            # >1 dims the mid-range. Endpoints (0->2, 1->50) are preserved.
-            gamma = self.poly_settings.get("brightness_gamma")
-            if gamma and gamma > 0:
-                brightness = brightness ** gamma
-            self.keeb.set_brightness(2 + brightness * 48)
+            val = self._compute_daylight_value()
+            flags = self._BR_FLAG_VOLATILE if self._brightness_flags_supported() else 0
+            self.keeb.set_brightness(val, flags)
+
+    def _engage_brightness(self, cancel):
+        """Deliberate (re-)assert of the host's brightness mode — runs on a
+        settings change or on connect. Daylight on -> engage auto mode and push
+        the current value (VOLATILE|AUTO_ON); daylight off -> tell the keyboard
+        to leave auto mode and fall back to its stored manual brightness
+        (AUTO_OFF). Both clear any prior keyboard manual override, which is the
+        intended 'the host re-takes control' semantics."""
+        supported = self._brightness_flags_supported()
+        if self.poly_settings.get("brightness_set_daylight_dependent"):
+            val = self._compute_daylight_value()
+            flags = (self._BR_FLAG_VOLATILE | self._BR_FLAG_AUTO_ON) if supported else 0
+            self.keeb.set_brightness(val, flags)
+        elif supported:
+            # Daylight disabled: leave auto mode; the keyboard restores its own
+            # persisted manual brightness (level byte ignored on AUTO_OFF). On
+            # pre-v5 firmware there is no auto mode, so there is nothing to do.
+            self.keeb.set_brightness(0, self._BR_FLAG_AUTO_OFF)
 
     # Settings whose change should immediately recompute + retransmit the
     # daylight brightness rather than waiting for the next 10-min periodic.
@@ -689,18 +729,17 @@ class PolyCore:
     })
 
     def refresh_daylight_brightness(self):
-        """Recompute the daylight brightness now and push it to the device,
-        instead of waiting for the next 10-min periodic. Runs on the worker so
-        it never blocks the caller; coalesces so a burst of setting changes
-        results in a single recompute. No-ops without a network hit when
-        daylight dependence is off (the periodic checks the flag first)."""
+        """(Re-)assert the host brightness mode on the device now, instead of
+        waiting for the next 10-min periodic — used on a settings change and on
+        connect. Runs on the worker so it never blocks the caller; coalesces so
+        a burst of setting changes results in a single push."""
         # Keep the Sunlight lookup permissions in sync with the live settings,
         # so toggling the online-lookup options takes effect immediately too.
         self.sunlight.allow_online_lookup(
             bool(self.poly_settings.get("brightness_allow_online_irradiance_request")))
         self.sunlight.allow_location_lookup(
             bool(self.poly_settings.get("brightness_allow_online_location_lookup")))
-        self.worker.submit("brightness_now", self._brightness_periodic,
+        self.worker.submit("brightness_now", self._engage_brightness,
                            coalesce_key="brightness_now")
 
     # ------------------------------------------------------------------
