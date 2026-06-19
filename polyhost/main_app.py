@@ -134,6 +134,10 @@ def main():
     # fills in once the daemon is live) instead of blocking startup — set only
     # when we spawn a fresh daemon, which takes a moment to bind its socket.
     defer_connect = False
+    # Flags for a daemon we will spawn AFTER the heavy GUI imports load (so the
+    # daemon's cold import doesn't contend with PyQt5 for CPU/disk/AV). None
+    # means "no spawn pending".
+    pending_daemon_spawn = None
     is_plain_gui = not (args.headless or explicit_connect or args.host or args.host_file)
     if is_plain_gui:
         if args.daemon is None:
@@ -145,7 +149,7 @@ def main():
                   "--daemon/--no-daemon" if args.daemon is not None else "setting")
         if daemon_mode:
             from polyhost.server import daemon_launch as dl
-            from polyhost.server.instance import probe_existing, clear_stale_endpoint
+            from polyhost.server.instance import probe_existing
             outcome = probe_existing()
             action = dl.decide_startup_mode(outcome, True)
             slog.info("Control-endpoint probe=%s -> startup action=%s", outcome, action)
@@ -161,29 +165,16 @@ def main():
                 print("Attaching to the running PolyKybdHost core (daemon mode).")
                 client_mode, endpoint, daemon_handled_instance = True, None, True
             elif action == dl.SPAWN_CLIENT:
-                slog.info("No core daemon running; spawning one (%s).",
-                          dl.build_daemon_argv(_spawned_daemon_flags(args)))
+                # Don't spawn yet: defer until after the GUI's heavy imports
+                # (PyQt5 / polyhost.host) have loaded, so the daemon's own cold
+                # import doesn't compete with them for CPU/disk/antivirus and the
+                # tray appears sooner. The actual spawn happens in the GUI branch
+                # below; RemoteCore then connects in the background once it binds.
+                slog.info("No core daemon running; will spawn one after the GUI imports load.")
                 print("Starting the PolyKybdHost core daemon...")
-                spawned = dl.spawn_headless_daemon(
-                    extra_args=_spawned_daemon_flags(args), log=slog)
-                if spawned is not None:
-                    # Don't block on wait_until_live: importing the daemon's
-                    # device stack + binding the socket takes a few seconds, and
-                    # the user wants the tray up immediately. Attach as a client
-                    # and let RemoteCore connect in the background as soon as the
-                    # daemon answers (it shows "Waiting for PolyKybd…" until then).
-                    slog.info("Core daemon (pid %s) spawned; attaching the tray as a "
-                              "client (connecting in the background).",
-                              getattr(spawned, "pid", "?"))
-                    print("Core daemon starting; the tray will connect as soon as it's up.")
-                    client_mode, endpoint, daemon_handled_instance = True, None, True
-                    defer_connect = True
-                else:
-                    slog.warning("Could not spawn the core daemon; falling back to "
-                                 "in-process. See daemon_log.txt for the daemon side.")
-                    print("Could not start the core daemon; running in-process instead.")
-                    clear_stale_endpoint()
-                    daemon_handled_instance = True  # socket already resolved here
+                client_mode, endpoint, daemon_handled_instance = True, None, True
+                defer_connect = True
+                pending_daemon_spawn = _spawned_daemon_flags(args)
 
     # Autostart: a portable run removes any existing entry; an explicit --connect
     # client and the GUI-spawned daemon (--no-autostart) leave autostart alone;
@@ -279,6 +270,22 @@ def main():
                             report_authkey_file=args.report_authkey_file)
     else:
         from polyhost.host import PolyHost
+        # Spawn the deferred daemon now — AFTER the heavy GUI imports above, so
+        # its cold import doesn't slow the tray's appearance. On spawn failure
+        # fall back to owning the device in-process (mirrors the old behavior).
+        if pending_daemon_spawn is not None:
+            from polyhost.server import daemon_launch as dl
+            spawned = dl.spawn_headless_daemon(extra_args=pending_daemon_spawn, log=slog)
+            if spawned is not None:
+                slog.info("Core daemon (pid %s) spawned; attaching as a client "
+                          "(connecting in the background).", getattr(spawned, "pid", "?"))
+                print("Core daemon starting; the tray will connect as soon as it's up.")
+            else:
+                slog.warning("Could not spawn the core daemon; running in-process instead.")
+                print("Could not start the core daemon; running in-process instead.")
+                from polyhost.server.instance import clear_stale_endpoint
+                clear_stale_endpoint()
+                client_mode, defer_connect = False, False
         if client_mode:
             slog.info("Launch path: GUI as client of a running core (endpoint=%s).",
                       endpoint or "default")
