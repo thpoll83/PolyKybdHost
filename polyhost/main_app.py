@@ -201,11 +201,21 @@ def main():
             slog.info("Autostart registration skipped (%s).",
                       "--connect client" if explicit_connect else "--no-autostart daemon")
     else:
-        try:
-            method = setup_autostart_for_app(__file__, sys.argv[1:])
-            slog.info("Autostart registration: %s", method)
-        except Exception:
-            slog.exception("Autostart registration failed")
+        # Registering autostart shells out to PowerShell on Windows (slow cold
+        # starts for the scheduled task + Start-menu shortcut) and nothing in
+        # startup depends on it completing — run it on a background thread so it
+        # never delays the tray appearing. Qt-free, so it's safe off-thread.
+        import threading as _threading
+
+        def _register_autostart():
+            try:
+                method = setup_autostart_for_app(__file__, sys.argv[1:])
+                slog.info("Autostart registration: %s", method)
+            except Exception:
+                slog.exception("Autostart registration failed")
+
+        _threading.Thread(target=_register_autostart, name="autostart-register",
+                          daemon=True).start()
 
     # Single-instance lock: the control socket is the lock. Guards both the
     # GUI and headless paths — if a PolyHost already serves the socket, defer

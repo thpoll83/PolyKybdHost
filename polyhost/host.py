@@ -5,6 +5,7 @@ import pathlib
 import platform
 import subprocess
 import sys
+import threading
 import time
 import webbrowser
 
@@ -431,20 +432,13 @@ class PolyHost(QApplication):
             sys.exit(-1)
         self.log.info("Input helper: %s", type(self.helper).__name__)
 
-        entries = self.helper.get_languages()
-
-        result, info = self.helper.get_current_language()
-        if result:
-            self.log.info("Current System Language: %s", info)
-            self.current_lang = info
-        else:
-            self.icon_manager.set_warning("System language query not supported for this platform.", 5000)
-            self.log.warning("System language query not supported for this platform: '%s'", info)
-
-        if debug_mode>0:
-            for e in entries:
-                self.log.info(" - Enumerating input language %s", e)
-                self.debug_lang_menu.addAction(e, self.change_system_language)
+        # Detecting the OS input language shells out to PowerShell on Windows
+        # (each cold powershell.exe start is hundreds of ms) — and it's only
+        # needed once a keyboard connects (OS-language sync), not to show the
+        # tray. Probe it on a background thread and apply the result on the Qt
+        # main thread via the bridge, so the tray appears immediately.
+        threading.Thread(target=self._probe_input_language, args=(debug_mode > 0,),
+                         name="input-language-probe", daemon=True).start()
 
         self.managed_connection_status()
         
@@ -490,6 +484,33 @@ class PolyHost(QApplication):
     # ------------------------------------------------------------------
     # Core adapter: events + shared connection state
     # ------------------------------------------------------------------
+
+    def _probe_input_language(self, want_debug_menu):
+        """Background-thread input-language probe (PowerShell on Windows is
+        slow). Posts the result to the Qt main thread; never touches Qt here."""
+        try:
+            entries = self.helper.get_languages()
+            result, info = self.helper.get_current_language()
+        except Exception as e:  # noqa: BLE001 — a probe failure must not crash the GUI
+            self.log.warning("Input-language probe failed: %s", e)
+            return
+        self.bridge.job_done.emit("input_language_probe", {
+            "entries": entries or [], "ok": bool(result), "info": info,
+            "debug": want_debug_menu})
+
+    def _apply_input_language_probe(self, result):
+        """Main-thread half of the input-language probe (see _probe_input_language)."""
+        if result.get("ok"):
+            self.log.info("Current System Language: %s", result["info"])
+            self.current_lang = result["info"]
+        else:
+            self.icon_manager.set_warning("System language query not supported for this platform.", 5000)
+            self.log.warning("System language query not supported for this platform: '%s'",
+                             result.get("info"))
+        if result.get("debug") and self.debug_lang_menu is not None:
+            for e in result.get("entries", []):
+                self.log.info(" - Enumerating input language %s", e)
+                self.debug_lang_menu.addAction(e, self.change_system_language)
 
     def _on_core_event(self, name, payload):
         """Core observer (fires on core/worker threads): hop to the Qt main
@@ -1420,6 +1441,8 @@ class PolyHost(QApplication):
             # no apply_reconnect), so ignore the raw snapshot there.
             if not self.client_mode:
                 self._apply_reconnect_result(result)
+        elif name == "input_language_probe":
+            self._apply_input_language_probe(result)
         elif name == "status_changed":
             if self.client_mode:
                 self._render_remote_status(result)
