@@ -116,7 +116,12 @@ def bootstrap_dependencies(project_root: str) -> None:
                   f"running pip install -r {req_file}", flush=True)
         import subprocess
         try:
-            proc = subprocess.run(
+            # Static argv (list form, shell=False): sys.executable + fixed pip
+            # args + req_file, which is os.path.join(project_root,
+            # "requirements.txt") derived from __file__ — never external input.
+            # No command-injection vector; matches the repo's nosemgrep
+            # convention for this rule (see host.py).
+            proc = subprocess.run(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
                 [sys.executable, "-m", "pip", "install", "-r", req_file],
                 check=False, timeout=300,
             )
