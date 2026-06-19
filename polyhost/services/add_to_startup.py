@@ -54,12 +54,27 @@ def _win_user():
     user = os.getenv("USERNAME") or ""
     return f"{domain}\\{user}" if domain else user
 
+def _no_window_kwargs():
+    """Popen/run kwargs that suppress a console window for a child console
+    program (powershell, schtasks) on Windows.
+
+    The tray GUI is launched with ``pythonw.exe``, which has **no console of
+    its own**. When such a process spawns a console program, Windows allocates a
+    brand-new console window for the child — so every PowerShell/schtasks call
+    made during autostart setup flashed a visible terminal (the user-reported
+    "two terminals open and close"). CREATE_NO_WINDOW runs them windowless.
+    No-op off Windows (the flag doesn't exist there)."""
+    if sys.platform == "win32":
+        return {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)}
+    return {}
+
 def _run_powershell(ps_script):
     """Run a PowerShell snippet, returning the CompletedProcess."""
     return subprocess.run(
         ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
         capture_output=True,
         text=True,
+        **_no_window_kwargs(),
     )
 
 def _ps_single_quote(value):
@@ -126,6 +141,7 @@ def windows_task_exists(task_name=APP_NAME):
     completed = subprocess.run(
         ["schtasks", "/query", "/tn", task_name],
         capture_output=True, text=True,
+        **_no_window_kwargs(),
     )
     return completed.returncode == 0
 

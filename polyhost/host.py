@@ -900,6 +900,11 @@ class PolyHost(QApplication):
         # reconnect/overlay/window activity is visible from the tray GUI.
         if os.path.exists("daemon_log.txt"):
             log_files["Daemon Log"] = "daemon_log.txt"
+        # The pre-GUI launch phase (daemon spawn/attach, autostart, single-instance)
+        # logs to startup_log.txt — invaluable when the app fails to come up at all
+        # (especially under Windows pythonw, where print() goes nowhere).
+        if os.path.exists("startup_log.txt"):
+            log_files["Startup Log"] = "startup_log.txt"
         self.log_viewer = LogViewerDialog(log_files)
         self.log_viewer.show()
         delta = time.perf_counter() - delta

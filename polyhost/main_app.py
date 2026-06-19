@@ -8,6 +8,55 @@ import sys
 # top level Qt-free — guarded by tests/headless/headless_entry_test.py.
 from polyhost.services.add_to_startup import setup_autostart_for_app, remove_autostart, get_autostart_status
 
+
+def _setup_startup_logging(debug=0):
+    """Configure a persistent diagnostic log for the **pre-GUI launch phase**.
+
+    Everything before ``PolyHost``/``HeadlessHost`` configures logging — the
+    daemon spawn/attach decision, autostart registration, the single-instance
+    lock — previously only used bare ``print()``. On Windows the tray GUI runs
+    under ``pythonw.exe``, where ``sys.stdout``/``sys.stderr`` are ``None`` and
+    ``print()`` is a silent no-op, so when a launch went wrong (daemon failed to
+    come up, instance deferred, autostart errored) there was **no trace
+    anywhere** to diagnose it from.
+
+    This writes that phase to ``startup_log.txt`` (next to ``host_log.txt`` /
+    ``daemon_log.txt``) regardless of console availability. It uses its own
+    dedicated logger with ``propagate=False`` so it never collides with the
+    root-logger ``logging.basicConfig`` that ``PolyHost``/``HeadlessHost`` run
+    later (``basicConfig`` is a no-op once the root has handlers — touching the
+    root here would silently break ``host_log.txt``).
+
+    Stdlib-only / Qt-free so it stays usable from the top-level launch path.
+    Returns the configured logger.
+    """
+    from logging.handlers import RotatingFileHandler
+
+    slog = logging.getLogger("PolyHostStartup")
+    slog.setLevel(logging.DEBUG if debug else logging.INFO)
+    slog.propagate = False
+    if slog.handlers:  # idempotent if main() is ever re-entered (tests)
+        return slog
+
+    fmt = logging.Formatter("[%(asctime)s] %(levelname)-7s %(message)s")
+    try:
+        fh = RotatingFileHandler(
+            filename="startup_log.txt", maxBytes=1 * 1024 * 1024, backupCount=2,
+            encoding="utf-8")
+        fh.setFormatter(fmt)
+        slog.addHandler(fh)
+    except OSError:
+        # A read-only cwd shouldn't stop the app from launching.
+        pass
+
+    # Mirror to the console too, but only when there's a real stream to write to
+    # — under pythonw.exe sys.stdout is None and a StreamHandler would raise.
+    if getattr(sys, "stdout", None) is not None:
+        sh = logging.StreamHandler(stream=sys.stdout)
+        sh.setFormatter(fmt)
+        slog.addHandler(sh)
+    return slog
+
 def main():
     parser = argparse.ArgumentParser(
                     prog='PolyHost',
@@ -56,6 +105,15 @@ def main():
     # so our DEBUG output stays readable. Harmless when not debugging.
     logging.getLogger("PIL").setLevel(logging.INFO)
 
+    # Diagnostic log for the pre-GUI launch phase (works under pythonw, where
+    # print() is a silent no-op). Captures the daemon decision, autostart, and
+    # single-instance handling that otherwise leave no trace when a launch fails.
+    import platform as _platform
+    slog = _setup_startup_logging(args.debug)
+    from polyhost._version import __version__ as _ver  # Qt-free
+    slog.info("PolyKybdHost %s launching | platform=%s %s | interpreter=%s | argv=%s",
+              _ver, _platform.system(), _platform.release(), sys.executable, sys.argv[1:])
+
     # --connect: the user EXPLICITLY asked to run the GUI as a client of an
     # already-running core. `client_mode` is the *runtime* flag (it may also be
     # turned on below by daemon-by-default); `explicit_connect` records the
@@ -79,27 +137,40 @@ def main():
             daemon_mode = bool(PolySettings().get("daemon_mode"))
         else:
             daemon_mode = args.daemon
+        slog.info("Daemon-by-default: daemon_mode=%s (source=%s)", daemon_mode,
+                  "--daemon/--no-daemon" if args.daemon is not None else "setting")
         if daemon_mode:
             from polyhost.server import daemon_launch as dl
             from polyhost.server.instance import probe_existing, clear_stale_endpoint
-            action = dl.decide_startup_mode(probe_existing(), True)
+            outcome = probe_existing()
+            action = dl.decide_startup_mode(outcome, True)
+            slog.info("Control-endpoint probe=%s -> startup action=%s", outcome, action)
             if action == dl.DEFER:
+                slog.warning("Control endpoint is in use but not answering compatibly; "
+                             "exiting rather than starting a second host.")
                 print("PolyKybdHost control endpoint is in use but not answering "
                       "compatibly. Exiting rather than starting a second host. "
                       "Restart the running instance if this is unexpected.")
                 sys.exit(0)
             elif action == dl.CLIENT:
+                slog.info("A core daemon is already live; attaching this GUI as a client.")
                 print("Attaching to the running PolyKybdHost core (daemon mode).")
                 client_mode, endpoint, daemon_handled_instance = True, None, True
             elif action == dl.SPAWN_CLIENT:
+                slog.info("No core daemon running; spawning one (%s).",
+                          dl.build_daemon_argv(_spawned_daemon_flags(args)))
                 print("Starting the PolyKybdHost core daemon...")
                 spawned = dl.spawn_headless_daemon(
-                    extra_args=_spawned_daemon_flags(args),
-                    log=logging.getLogger("PolyHost"))
+                    extra_args=_spawned_daemon_flags(args), log=slog)
                 if spawned is not None and dl.wait_until_live():
+                    slog.info("Core daemon (pid %s) is live; attaching as a client.",
+                              getattr(spawned, "pid", "?"))
                     print("Core daemon is up; attaching as a client.")
                     client_mode, endpoint, daemon_handled_instance = True, None, True
                 else:
+                    slog.warning("Core daemon did not come up (spawned=%s); falling back "
+                                 "to in-process. See daemon_log.txt for the daemon side.",
+                                 "yes" if spawned is not None else "no")
                     print("Core daemon did not come up; running in-process instead.")
                     if spawned is not None:
                         try:
@@ -118,10 +189,18 @@ def main():
         if args.portable:
             existing = get_autostart_status()
             if existing != "none":
+                slog.info("Portable mode: removing existing autostart (%s).", existing)
                 print(f"Portable mode: removing existing autostart ({existing}).")
                 remove_autostart()
+        else:
+            slog.info("Autostart registration skipped (%s).",
+                      "--connect client" if explicit_connect else "--no-autostart daemon")
     else:
-        setup_autostart_for_app(__file__, sys.argv[1:])
+        try:
+            method = setup_autostart_for_app(__file__, sys.argv[1:])
+            slog.info("Autostart registration: %s", method)
+        except Exception:
+            slog.exception("Autostart registration failed")
 
     # Single-instance lock: the control socket is the lock. Guards both the
     # GUI and headless paths — if a PolyHost already serves the socket, defer
@@ -134,13 +213,17 @@ def main():
         from polyhost.server.instance import (
             probe_existing, clear_stale_endpoint, LIVE, STALE)
         outcome = probe_existing()
+        slog.info("Single-instance lock: control-endpoint probe=%s", outcome)
         if outcome == LIVE:
+            slog.warning("Another PolyKybdHost already serves the control socket; exiting.")
             print("PolyKybdHost is already running (control socket answered). Exiting.")
             sys.exit(0)
         if outcome != STALE:
             # INCOMPATIBLE / AUTH_MISMATCH: a real process owns the endpoint but
             # we can't speak to it. Don't unlink its socket and fight over the
             # HID device — defer and let the user sort out the version/key.
+            slog.warning("Control endpoint in use (%s) but not answering compatibly; exiting.",
+                         outcome)
             print(f"PolyKybdHost control endpoint is in use ({outcome}) but not "
                   "answering compatibly. Exiting rather than starting a second "
                   "host. Restart the running instance if this is unexpected.")
@@ -149,6 +232,7 @@ def main():
 
     if args.headless:
         # No Qt in this process — import nothing Qt-dependent.
+        slog.info("Launch path: headless daemon (no Qt).")
         print("Executing PolyHost (headless)...")
         from polyhost.headless import run_headless
         from polyhost.util.log_util import DEBUG_DETAILED  # Qt-free
@@ -173,6 +257,7 @@ def main():
     if args.host or args.host_file:
         from polyhost.forwarder import PolyForwarder
         addr = args.host or f"IP set in {args.host_file}"
+        slog.info("Launch path: forwarder -> %s", addr)
         print(f"Executing Forwarder. Sending to {addr}.")
         app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file,
                             report_rpc=args.report_rpc, report_port=args.report_port,
@@ -180,13 +265,24 @@ def main():
     else:
         from polyhost.host import PolyHost
         if client_mode:
+            slog.info("Launch path: GUI as client of a running core (endpoint=%s).",
+                      endpoint or "default")
             print("Executing PolyHost (client of a running core)...")
         else:
+            slog.info("Launch path: GUI owning the device in-process.")
             print("Executing PolyHost...")
-        app = PolyHost(logging.DEBUG if args.debug>0 else logging.INFO, args.debug,
-                       ignore_version=args.ignore_version,
-                       client_mode=client_mode, endpoint=endpoint)
+        try:
+            app = PolyHost(logging.DEBUG if args.debug>0 else logging.INFO, args.debug,
+                           ignore_version=args.ignore_version,
+                           client_mode=client_mode, endpoint=endpoint)
+        except Exception:
+            # PolyHost configures its own host_log.txt; if it dies during
+            # construction (e.g. the client can't reach the daemon) that file may
+            # never be written, so record it in the startup log too.
+            slog.exception("PolyHost construction failed")
+            raise
 
+    slog.info("Handoff complete; entering the Qt event loop.")
     sys.exit(app.exec_())
 
 

@@ -78,12 +78,18 @@ def spawn_headless_daemon(extra_args=None, log=None):
     if sys.platform == "win32":
         # DETACHED_PROCESS: the daemon gets no console (so no flash and it can't
         # die with the GUI's console). CREATE_NEW_PROCESS_GROUP keeps it from
-        # receiving Ctrl+C/Ctrl+Break sent to the GUI's group; CREATE_NO_WINDOW
-        # is belt-and-suspenders against a console window.
+        # receiving Ctrl+C/Ctrl+Break sent to the GUI's group.
+        #
+        # Do NOT also OR in CREATE_NO_WINDOW: DETACHED_PROCESS and
+        # CREATE_NO_WINDOW are mutually exclusive console-disposition flags, and
+        # combining them makes CreateProcess fail with ERROR_INVALID_PARAMETER
+        # (87). That failure was swallowed here (spawn returns None), so on
+        # Windows the daemon *never* spawned and daemon-by-default silently fell
+        # back to in-process on every launch. DETACHED_PROCESS alone already
+        # guarantees no console window for both python.exe and pythonw.exe.
         kwargs["creationflags"] = (
             subprocess.DETACHED_PROCESS
-            | subprocess.CREATE_NEW_PROCESS_GROUP
-            | getattr(subprocess, "CREATE_NO_WINDOW", 0))
+            | subprocess.CREATE_NEW_PROCESS_GROUP)
     else:
         # setsid: the daemon leads its own session, so it survives the GUI
         # exiting / its controlling terminal closing.
