@@ -40,7 +40,9 @@ from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER, LANG_
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost._version import __version__
 
-from polyhost.services.updater import UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app
+from polyhost.services.updater import (
+    UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app,
+    get_last_check_time, set_last_check_time)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.dialog_util import position_near_tray
 from polyhost.gui.worker_bridge import WorkerBridge
@@ -372,7 +374,7 @@ class PolyHost(QApplication):
         self.menu.addAction(self.update_action)
         self._pending_release = None
         self._update_checker = None
-        self._update_check_last = None   # monotonic ts of the last AUTOMATIC check (throttle)
+        self._update_check_last = None   # wall-clock ts of last AUTOMATIC check this session
         self._update_installer = None
         self._update_progress = None
         self._await_manual_prompt = False
@@ -1074,16 +1076,24 @@ class PolyHost(QApplication):
         # unauthenticated API allows only ~60 requests/hour per IP, and a connect
         # triggers a check — so reconnects (every firmware flash reboots the
         # keyboard) and several machines behind one office IP exhaust it
-        # ("GitHub rate limit reached"). Skip an automatic check when one ran in
-        # the last 6 h. A MANUAL menu check passes force=True and always runs.
+        # ("GitHub rate limit reached"). The throttle is PERSISTED (wall clock,
+        # via the updater's cache) so it survives restarts — an in-memory-only
+        # throttle reset on every launch, and frequent restarts (or repeated
+        # rate-limited 403s, which still count) burned the quota. Skip an
+        # automatic check when one ran in the last 6 h. The timestamp is recorded
+        # before the request, so a 403 also backs off for 6 h instead of
+        # retrying. A MANUAL menu check passes force=True and always runs.
         if not force:
-            now = time.monotonic()
-            if (self._update_check_last is not None
-                    and now - self._update_check_last < 6 * 3600):
+            now = time.time()
+            last = self._update_check_last
+            if last is None:
+                last = get_last_check_time()    # persisted across restarts
+            if last and now - last < 6 * 3600:
                 self.log.debug("Update check throttled (%.0f min since last automatic check)",
-                               (now - self._update_check_last) / 60)
+                               (now - last) / 60)
                 return False
             self._update_check_last = now
+            set_last_check_time(now)
         if self._update_checker is not None and self._update_checker.is_alive():
             # A check is already in flight with its own (auto) callbacks — do
             # NOT start a second. Returns False so a manual caller knows its

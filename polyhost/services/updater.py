@@ -56,6 +56,30 @@ def _save_etag_cache(data: dict) -> None:
         _ETAG_CACHE.write_text(json.dumps(data), encoding="utf-8")
     except OSError as e:
         log.debug("Could not save update ETag cache: %s", e)
+
+
+def get_last_check_time() -> float:
+    """Unix time of the last automatic update check (0.0 if never checked).
+
+    Persisted (in the ETag cache file) so the check throttle survives restarts.
+    The in-memory throttle reset on every launch, so frequent restarts each
+    fired a check — and ETag/304 responses still count against GitHub's
+    unauthenticated 60-requests/hour-per-IP limit, so that exhausted it
+    (especially behind a shared office IP). Persisting the timestamp means a
+    restart within the throttle window makes no request at all."""
+    try:
+        return float(_load_etag_cache().get("checked_at", 0.0))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def set_last_check_time(ts: float) -> None:
+    """Persist the unix time of the most recent automatic update check."""
+    cache = _load_etag_cache()
+    cache["checked_at"] = float(ts)
+    _save_etag_cache(cache)
+
+
 DOWNLOAD_CHUNK = 64 * 1024
 
 EXCLUDES = (

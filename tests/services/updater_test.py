@@ -130,6 +130,42 @@ class TestCheckLatest(unittest.TestCase):
             self.assertIsNone(updater.check_latest())
 
 
+class TestLastCheckTime(unittest.TestCase):
+    """The update-check throttle is persisted (in the ETag cache file) so it
+    survives restarts — otherwise every relaunch fires a check and exhausts
+    GitHub's 60-req/hour/IP limit."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self._cache = Path(self._tmp.name) / "update_etags.json"
+        self._patch = mock.patch.object(updater, "_ETAG_CACHE", self._cache)
+        self._patch.start()
+
+    def tearDown(self):
+        self._patch.stop()
+        self._tmp.cleanup()
+
+    def test_defaults_to_zero_when_never_checked(self):
+        self.assertEqual(updater.get_last_check_time(), 0.0)
+
+    def test_round_trips(self):
+        updater.set_last_check_time(1_700_000_000.0)
+        self.assertEqual(updater.get_last_check_time(), 1_700_000_000.0)
+
+    def test_does_not_clobber_etag_entries(self):
+        # Persisting the timestamp must not wipe the host/fw ETag entries that
+        # live in the same cache file (and vice-versa).
+        updater._save_etag_cache({"host": {"etag": '"x"', "version": "1.0.0"}})
+        updater.set_last_check_time(123.0)
+        cache = updater._load_etag_cache()
+        self.assertEqual(cache.get("checked_at"), 123.0)
+        self.assertEqual(cache.get("host", {}).get("version"), "1.0.0")
+
+    def test_corrupt_value_falls_back_to_zero(self):
+        updater._save_etag_cache({"checked_at": "not-a-number"})
+        self.assertEqual(updater.get_last_check_time(), 0.0)
+
+
 class TestVersionFromTag(unittest.TestCase):
 
     def test_plain_version(self):
