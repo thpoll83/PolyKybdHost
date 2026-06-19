@@ -8,12 +8,15 @@ ImportError.
 
 Uses only the standard library so it can run before the project's
 dependencies are present.
+
+importlib.metadata / re / subprocess are imported lazily inside the functions
+that need them: importing importlib.metadata cold-pulls a heavy stdlib chain
+(~3s on Windows under antivirus), and on the common path — requirements.txt
+unchanged, scan skipped via the marker — we must not pay that just to read a
+one-line marker file.
 """
-import importlib.metadata
 import logging
 import os
-import re
-import subprocess
 import sys
 
 log = logging.getLogger(__name__)
@@ -45,6 +48,8 @@ def missing_requirements(req_file: str) -> list:
     """
     if not os.path.isfile(req_file):
         return []
+    import importlib.metadata
+    import re
     missing = []
     with open(req_file) as fh:
         for raw in fh:
@@ -108,6 +113,7 @@ def bootstrap_dependencies(project_root: str) -> None:
         if sys.stdout is not None:
             print(f"PolyKybdHost bootstrap: missing packages {missing}, "
                   f"running pip install -r {req_file}", flush=True)
+        import subprocess
         try:
             proc = subprocess.run(
                 [sys.executable, "-m", "pip", "install", "-r", req_file],
