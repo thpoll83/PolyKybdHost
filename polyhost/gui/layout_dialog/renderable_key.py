@@ -2,7 +2,7 @@ from PyQt5.QtGui import QPixmap, QPainter, QColor, QBrush, QTransform, QPen, QFo
 from PyQt5.QtCore import Qt, pyqtSignal, QRectF
 
 from PyQt5.QtWidgets import (
-    QGraphicsObject, QGraphicsSimpleTextItem, QGraphicsTextItem
+    QGraphicsObject, QGraphicsTextItem
 )
 
 KEY_MARGIN_X = 2

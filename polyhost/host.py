@@ -1,7 +1,6 @@
 import logging
 from logging.handlers import RotatingFileHandler
 import os
-import pathlib
 import platform
 import subprocess
 import sys
@@ -33,7 +32,6 @@ from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
 from polyhost.gui.settings_dialog import SettingsDialog
 from polyhost.gui.cmd_menu import CommandsSubMenu
-from polyhost.handler.common import OverlayCommand
 from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
 from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
 from polyhost.input.macos_helper import MacOSInputHelper
@@ -42,7 +40,6 @@ from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER, LANG_
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost._version import __version__
 
-from polyhost.input.unicode_input import get_input_method
 from polyhost.services.updater import UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.dialog_util import position_near_tray
@@ -64,7 +61,7 @@ def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
 
 
-from polyhost.util.log_util import DEBUG_DETAILED, ColorFormatter, MultiLineFormatter, make_stream_handler, make_collapse_handler
+from polyhost.util.log_util import DEBUG_DETAILED, MultiLineFormatter, make_stream_handler, make_collapse_handler
 
 
 # Shared dimensions for all update / firmware dialogs — 2:1 aspect ratio.

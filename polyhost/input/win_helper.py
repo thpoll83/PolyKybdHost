@@ -1,6 +1,5 @@
 import ctypes
 import locale
-import logging
 import subprocess
 import sys
 from polyhost.input.input_helper import InputHelper

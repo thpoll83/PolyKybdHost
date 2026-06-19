@@ -6,8 +6,6 @@ import threading
 import time
 from typing import Any
 
-import numpy as np
-
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.serial_helper import SerialHelper
 from polyhost.input.unicode_input import InputMethod
@@ -29,8 +27,6 @@ PACKED_LANG_LIST_MIN_PROTOCOL = 2
 
 # Minimum firmware PROTOCOL_VERSION for the idle-style get/set command (cmd 28).
 IDLE_STYLE_MIN_PROTOCOL = 4
-
-import hid
 
 from polyhost.util.dict_util import split_dict
 
@@ -262,7 +258,7 @@ class PolyKybd:
         # persisted set; pre-v5 firmware ignores the extra byte.
         self.log.info("Setting Display Brightness to %d (flags 0x%x)...", brightness, flags)
         return self.hid.send_and_read_validate(
-            compose_cmd(Cmd.SET_BRIGHTNESS, int(np.clip(brightness, 0, 50)), flags & 0xFF))
+            compose_cmd(Cmd.SET_BRIGHTNESS, max(0, min(50, int(brightness))), flags & 0xFF))
 
     def press_and_release_key(self, keycode: int, duration: int,
                               cancel: threading.Event | None = None) -> tuple[bool, Any]:

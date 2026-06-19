@@ -3,7 +3,7 @@ import time
 
 from PyQt5.QtCore import QThread, pyqtSignal, Qt, QTimer
 from PyQt5.QtWidgets import (
-    QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QPushButton,
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QProgressBar, QPushButton,
 )
 
 from polyhost.device.hid_fw_up import flash_firmware, apply_staged_firmware
