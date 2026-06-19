@@ -49,3 +49,14 @@ class Cmd(Enum):
     SET_HANDEDNESS = 25
     SAVE_MRU = 26
     GET_LANG_LIST_PACKED = 27
+    IDLE_STYLE = 28  # get/set idle (anti-burn-in) display style (protocol v4+)
+
+
+class IdleStyle(Enum):
+    """Idle (anti-burn-in) display style — mirrors the firmware's poly_idle_style.
+
+    PULSE is the legacy contrast-only breathing; JITTER additionally relocates the
+    key legend by a small random offset each pulse cycle so the lit pixels migrate.
+    """
+    PULSE = 0
+    JITTER = 1

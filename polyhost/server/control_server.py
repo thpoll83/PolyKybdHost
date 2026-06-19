@@ -291,6 +291,8 @@ class ControlServer:
             p.M_LANG_SET: lambda conn, params: _unwrap(c.set_language(params["lang"])),
             p.M_BRIGHTNESS_SET: lambda conn, params: _unwrap(c.set_brightness(params["value"])),
             p.M_IDLE_SET: lambda conn, params: _unwrap(c.set_idle(params["idle"])),
+            p.M_IDLE_STYLE_SET: lambda conn, params: _unwrap(c.set_idle_style(params["value"])),
+            p.M_IDLE_STYLE_GET: lambda conn, params: _unwrap(c.get_idle_style()),
             p.M_OVERLAY_SEND: lambda conn, params: {"queued": c.send_overlay_data(params["files"])},
             p.M_OVERLAY_ENABLE: lambda conn, params: _unwrap(c.enable_overlays()),
             p.M_OVERLAY_DISABLE: lambda conn, params: _unwrap(c.disable_overlays()),

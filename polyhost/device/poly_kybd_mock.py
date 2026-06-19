@@ -202,6 +202,16 @@ class PolyKybdMock:
         self._idle = idle
         return True, ""
 
+    def set_idle_style(self, style) -> tuple[bool, str]:
+        value = getattr(style, "value", style)
+        self._log_call("set_idle_style", value)
+        self._idle_style = int(value)
+        return True, ""
+
+    def get_idle_style(self) -> tuple[bool, int]:
+        self._log_call("get_idle_style")
+        return True, getattr(self, "_idle_style", 0)
+
     def set_unicode_mode(self, mode: InputMethod) -> tuple[bool, str]:
         self._log_call("set_unicode_mode", mode)
         self._unicode_mode = mode
