@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+import time
 
 # NOTE: Qt (PyQt5) and the Qt-dependent classes (PolyHost / PolyForwarder)
 # are imported LAZILY inside the GUI branch of main() so that
@@ -57,7 +58,7 @@ def _setup_startup_logging(debug=0):
         slog.addHandler(sh)
     return slog
 
-def main():
+def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     parser = argparse.ArgumentParser(
                     prog='PolyHost',
                     usage='%(prog)s [options]',
@@ -113,6 +114,17 @@ def main():
     from polyhost._version import __version__ as _ver  # Qt-free
     slog.info("PolyKybdHost %s launching | platform=%s %s | interpreter=%s | argv=%s",
               _ver, _platform.system(), _platform.release(), sys.executable, sys.argv[1:])
+    # Pre-logging timing: how long the dependency bootstrap and the imports
+    # before this point took. If both are small, the rest of the "desktop ->
+    # tray" gap is Windows firing the logon task + cold-starting the interpreter
+    # (outside our control), not our startup code.
+    if launch_monotonic is not None:
+        now = time.monotonic()
+        boot_ms = ((post_bootstrap_monotonic or now) - launch_monotonic) * 1000
+        imports_ms = (now - (post_bootstrap_monotonic or launch_monotonic)) * 1000
+        slog.info("Startup timing: dependency-bootstrap %.0f ms, pre-logging imports %.0f ms "
+                  "(process-start -> here %.0f ms)",
+                  boot_ms, imports_ms, (now - launch_monotonic) * 1000)
 
     # --connect: the user EXPLICITLY asked to run the GUI as a client of an
     # already-running core. `client_mode` is the *runtime* flag (it may also be
