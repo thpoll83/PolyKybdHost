@@ -54,9 +54,19 @@ class MultiLineFormatter(logging.Formatter):
         return "\n".join([lines[0], *(f"[{timestamp}] {line}" for line in lines[1:])])
 
 
-def make_stream_handler(fmt: str) -> logging.StreamHandler:
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setFormatter(ColorFormatter(fmt) if sys.stdout.isatty() else logging.Formatter(fmt))
+def make_stream_handler(fmt: str) -> logging.Handler:
+    stream = sys.stdout
+    if stream is None:
+        # No console to write to. The Windows tray GUI and the GUI-spawned
+        # daemon both run under pythonw.exe, where sys.stdout/stderr are None —
+        # a StreamHandler would crash on `.isatty()` below, taking down
+        # run_headless (daemon never binds its control socket) and
+        # PolyHost.__init__ (the GUI never appears). Logging still reaches the
+        # rotating file handlers; the console mirror is simply a no-op here.
+        return logging.NullHandler()
+    is_tty = bool(getattr(stream, "isatty", lambda: False)())
+    handler = logging.StreamHandler(stream=stream)
+    handler.setFormatter(ColorFormatter(fmt) if is_tty else logging.Formatter(fmt))
     return handler
 
 

@@ -1,11 +1,12 @@
 import logging
 
-import numpy as np
-
-from PIL import Image
-
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_data import OverlayData
+
+# numpy and PIL are imported lazily inside open() (the only place they're used).
+# Both are heavy cold imports and im_converter sits on the daemon's startup
+# import chain (poly_kybd), but conversion only runs on the HID worker thread
+# when an overlay is actually loaded — so deferring the import speeds startup.
 
 class ImageConverter:
     def __init__(self, device_settings):
@@ -29,6 +30,8 @@ class ImageConverter:
         # with alpha are RGBA / LA / PA and palettes carrying transparency, so
         # we mirror that test and build the channels in B,G,R[,A] order to
         # match the ARGB32 byte layout the downstream code expects.
+        import numpy as np
+        from PIL import Image
         try:
             with Image.open(filename) as pil_image:
                 pil_image.load()

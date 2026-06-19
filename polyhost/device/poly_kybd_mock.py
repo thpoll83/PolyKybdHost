@@ -1,7 +1,10 @@
 import logging
 import os
 import time
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np  # for the get_display_image return annotation only
 
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.util.dict_util import split_by_n_chars
@@ -104,11 +107,8 @@ class PolyKybdMock:
     def get_sw_version(self):
         return self.version
 
-    def get_sw_version_number(self):
-        """Get the software version number in as 3 ints: major, minor, patch"""
-        return self.sw_version_num
-
     def get_sw_version_number(self) -> list[int]:
+        """Software version as 3 ints: major, minor, patch."""
         self._log_call("get_sw_version_number")
         return self._sw_version_num
 

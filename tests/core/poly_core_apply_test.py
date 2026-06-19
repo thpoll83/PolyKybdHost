@@ -39,6 +39,10 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core.device_mgr = MagicMock()
     core.overlay_handler = MagicMock()
     core.keeb = MagicMock()
+    # apply_reconnect re-asserts the host brightness mode on connect via
+    # refresh_daylight_brightness(), which reads core.sunlight (set in the real
+    # __init__ this bare core skips).
+    core.sunlight = MagicMock()
     return core
 
 

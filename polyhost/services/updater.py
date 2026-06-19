@@ -6,6 +6,7 @@ in-process restart. Designed for source-from-checkout installs on Win/Mac/Linux.
 """
 import json
 import logging
+import math
 import os
 import re
 import shutil
@@ -27,8 +28,10 @@ from polyhost._version import __version__
 
 log = logging.getLogger(__name__)
 
-GITHUB_API    = "https://api.github.com/repos/thpoll83/PolyKybdHost/releases/latest"
-GITHUB_FW_API = "https://api.github.com/repos/thpoll83/qmk_firmware/releases/latest"
+HOST_REPO = "thpoll83/PolyKybdHost"
+FW_REPO   = "thpoll83/qmk_firmware"
+GITHUB_API    = f"https://api.github.com/repos/{HOST_REPO}/releases/latest"
+GITHUB_FW_API = f"https://api.github.com/repos/{FW_REPO}/releases/latest"
 USER_AGENT = f"PolyKybdHost/{__version__}"
 HTTP_TIMEOUT = 5
 
@@ -56,6 +59,35 @@ def _save_etag_cache(data: dict) -> None:
         _ETAG_CACHE.write_text(json.dumps(data), encoding="utf-8")
     except OSError as e:
         log.debug("Could not save update ETag cache: %s", e)
+
+
+def get_last_check_time() -> float:
+    """Unix time of the last automatic update check (0.0 if never checked).
+
+    Persisted (in the ETag cache file) so the check throttle survives restarts.
+    The in-memory throttle reset on every launch, so frequent restarts each
+    fired a check — and ETag/304 responses still count against GitHub's
+    unauthenticated 60-requests/hour-per-IP limit, so that exhausted it
+    (especially behind a shared office IP). Persisting the timestamp means a
+    restart within the throttle window makes no request at all."""
+    try:
+        ts = float(_load_etag_cache().get("checked_at", 0.0))
+    except (TypeError, ValueError):
+        return 0.0
+    # Reject Infinity/NaN/negative — a corrupt value could otherwise suppress
+    # automatic checks forever (Infinity) or never (negative).
+    if not math.isfinite(ts) or ts < 0:
+        return 0.0
+    return ts
+
+
+def set_last_check_time(ts: float) -> None:
+    """Persist the unix time of the most recent automatic update check."""
+    cache = _load_etag_cache()
+    cache["checked_at"] = float(ts)
+    _save_etag_cache(cache)
+
+
 DOWNLOAD_CHUNK = 64 * 1024
 
 EXCLUDES = (
@@ -111,6 +143,108 @@ def _version_from_tag(tag: str) -> str:
     return tag[match.start():] if match else ""
 
 
+def _latest_tag_via_web(repo: str) -> Optional[str]:
+    """Latest release tag WITHOUT the rate-limited API.
+
+    ``github.com/<repo>/releases/latest`` answers a 3xx redirect whose Location
+    is ``…/releases/tag/<tag>``. That request hits github.com (the web host),
+    which is NOT subject to api.github.com's 60-requests/hour anonymous limit —
+    so it works as a fallback exactly when the API is rate-limited. Returns the
+    tag, or None on any failure."""
+    url = f"https://github.com/{repo}/releases/latest"
+    try:
+        resp = requests.head(url, allow_redirects=False, timeout=HTTP_TIMEOUT,
+                             headers={"User-Agent": USER_AGENT})
+    except requests.RequestException as e:
+        log.debug("Web tag lookup failed for %s: %s", repo, e)
+        return None
+    location = resp.headers.get("Location", "")
+    match = re.search(r"/releases/tag/([^/?#]+)", location)
+    if not match:
+        log.debug("Web tag lookup: no tag in redirect for %s (Location=%r)", repo, location)
+        return None
+    # The tag is URL-encoded in the Location header (e.g. %2B for '+').
+    from urllib.parse import unquote
+    return unquote(match.group(1))
+
+
+def _release_assets_via_web(repo: str, tag: str) -> dict:
+    """Asset download URLs for a release WITHOUT the API.
+
+    Parses the ``releases/expanded_assets/<tag>`` HTML fragment that the GitHub
+    web UI lazy-loads — also github.com (not rate-limited). Returns a dict with
+    'bin'/'uf2' keys for whichever assets are present (empty on failure)."""
+    url = f"https://github.com/{repo}/releases/expanded_assets/{tag}"
+    try:
+        resp = requests.get(url, timeout=HTTP_TIMEOUT,
+                            headers={"User-Agent": USER_AGENT})
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        log.debug("Web asset lookup failed for %s %s: %s", repo, tag, e)
+        return {}
+    assets = {}
+    for href in re.findall(r'href="(/[^"]+/releases/download/[^"]+)"', resp.text):
+        full = "https://github.com" + href
+        if href.endswith(".bin"):
+            assets.setdefault("bin", full)
+        elif href.endswith(".uf2"):
+            assets.setdefault("uf2", full)
+    return assets
+
+
+def _check_latest_via_web() -> Optional[ReleaseInfo]:
+    """Host-update check using only github.com (no rate-limited API).
+
+    Returns ReleaseInfo when a newer release exists, None when up to date, and
+    raises UpdateCheckError when even the web lookup fails (so the caller still
+    surfaces the rate-limit message). The tarball is the github.com archive URL,
+    which download_and_extract handles like the API's (single top-level dir)."""
+    tag = _latest_tag_via_web(HOST_REPO)
+    if not tag:
+        raise UpdateCheckError("GitHub rate limit reached — try again later")
+    try:
+        latest = Version(_version_from_tag(tag))
+    except InvalidVersion:
+        raise UpdateCheckError(f"Release tag {tag!r} is not a valid version") from None
+    if latest <= _current_version():
+        log.debug("Update check (web): current %s is up-to-date (latest %s)", __version__, latest)
+        return None
+    log.info("Update check (web fallback): new version available: %s -> %s", __version__, latest)
+    return ReleaseInfo(
+        tag=tag, version=str(latest),
+        tarball_url=f"https://github.com/{HOST_REPO}/archive/refs/tags/{tag}.tar.gz",
+        html_url=f"https://github.com/{HOST_REPO}/releases/tag/{tag}",
+        published_at="")
+
+
+def _check_fw_latest_via_web(current: Version) -> Optional[FwUpReleaseInfo]:
+    """Firmware-update check using only github.com (no rate-limited API).
+
+    Gets the tag via the redirect, then the .bin/.uf2 URLs from the
+    expanded_assets HTML. Returns None (up to date / no .bin); raises
+    UpdateCheckError when the web lookup itself fails."""
+    tag = _latest_tag_via_web(FW_REPO)
+    if not tag:
+        raise UpdateCheckError("GitHub rate limit reached — try again later")
+    try:
+        latest = Version(_version_from_tag(tag))
+    except InvalidVersion:
+        raise UpdateCheckError(f"Release tag {tag!r} is not a valid version") from None
+    if latest <= current:
+        log.debug("Firmware update check (web): up-to-date (latest %s)", latest)
+        return None
+    assets = _release_assets_via_web(FW_REPO, tag)
+    bin_url = assets.get("bin")
+    if not bin_url:
+        log.info("Firmware update check (web): release %s has no .bin asset link", tag)
+        return None
+    log.info("Firmware update check (web fallback): new version available: %s -> %s",
+             current, latest)
+    return FwUpReleaseInfo(
+        tag=tag, version=str(latest), bin_url=bin_url, uf2_url=assets.get("uf2", ""),
+        html_url=f"https://github.com/{FW_REPO}/releases/tag/{tag}", published_at="")
+
+
 def check_latest() -> Optional[ReleaseInfo]:
     """Return ReleaseInfo if GitHub's latest release is strictly newer; else None.
 
@@ -155,7 +289,10 @@ def check_latest() -> Optional[ReleaseInfo]:
         return None
 
     if resp.status_code == 403:
-        raise UpdateCheckError("GitHub rate limit reached — try again later")
+        # API rate-limited — fall back to the github.com web redirect, which is
+        # not subject to the API limit, so a (manual) check still works.
+        log.info("Host update API rate-limited; trying the web fallback.")
+        return _check_latest_via_web()
     if resp.status_code != 200:
         raise UpdateCheckError(f"GitHub API returned HTTP {resp.status_code}")
 
@@ -242,7 +379,8 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
         return None
 
     if resp.status_code == 403:
-        raise UpdateCheckError("GitHub rate limit reached — try again later")
+        log.info("Firmware update API rate-limited; trying the web fallback.")
+        return _check_fw_latest_via_web(current)
     if resp.status_code != 200:
         raise UpdateCheckError(f"GitHub API returned HTTP {resp.status_code}")
 

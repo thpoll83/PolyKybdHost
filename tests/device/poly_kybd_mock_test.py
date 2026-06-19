@@ -454,7 +454,9 @@ class TestPolyKybdMockCallLog(unittest.TestCase):
         self.mock.set_brightness(30)
         name, args, _ = self.mock.calls[-1]
         self.assertEqual(name, "set_brightness")
-        self.assertEqual(args, (30,))
+        # set_brightness(brightness, flags=0) records both positional args; the
+        # default flags (host-auto bits) is logged as 0.
+        self.assertEqual(args, (30, 0))
 
     def test_multiple_calls_accumulate(self):
         self.mock.press_key(0x04)

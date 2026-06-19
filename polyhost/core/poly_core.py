@@ -35,7 +35,6 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device import hid_fw_up
 from polyhost.device.hid_worker import HidWorker
 from polyhost.device.poly_kybd import PolyKybd
-from polyhost.device.poly_kybd_mock import PolyKybdMock
 from polyhost.handler.common import OverlayCommand
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
@@ -102,6 +101,10 @@ class PolyCore:
         self.device_mgr = DeviceManager(self.device_settings)
         self.device_mgr.add(self.keeb, "PolyKybd", is_primary=True)
         if self.poly_settings.get("dev_mock_enabled"):
+            # Imported here, not at module top: the mock pulls in overlay_sim ->
+            # numpy, which is otherwise dead weight on the daemon's startup import
+            # path (the mock is only used when dev_mock_enabled is set).
+            from polyhost.device.poly_kybd_mock import PolyKybdMock
             mock = PolyKybdMock(self.device_settings, f"{__version__}")
             self.device_mgr.add(mock, "PolyKybdMock", is_primary=False)
             self.log.info("Mock device added as secondary.")

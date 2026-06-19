@@ -24,6 +24,16 @@ from polyhost.cli.polyctl import RpcError
 from polyhost.server import protocol as p
 
 
+def _close_quietly(*conns):
+    """Best-effort close of any non-None connections (partial-connect cleanup)."""
+    for c in conns:
+        if c is not None:
+            try:
+                c.close()
+            except Exception:
+                pass
+
+
 class RemoteCore:
     """RPC-backed proxy for the GUI's ``self.core`` (see docs/headless-h4-plan.md)."""
 
@@ -32,7 +42,8 @@ class RemoteCore:
         self._rpc = rpc_client
         self._evt = event_client
         # Endpoint kept so a dropped request connection can be re-established
-        # (the daemon may still be running — only this pipe died).
+        # (the daemon may still be running — only this pipe died) and so the
+        # background connector (deferred mode) can dial the daemon itself.
         self._address = address
         self._authkey = authkey
         self._rpc_lock = threading.Lock()      # GUI dialogs may call off-main-thread
@@ -41,17 +52,18 @@ class RemoteCore:
         self._status = {}
         self._status_lock = threading.Lock()
         self._stop = threading.Event()
+        self._thread = None
 
-        # Seed cached state, then start the event pump on the second connection.
-        try:
-            self._status = self._rpc.call(p.M_STATUS_GET) or {}
-        except (RpcError, OSError, EOFError) as e:
-            self.log.warning("RemoteCore: initial status.get failed: %s", e)
-            self._status = {}
-        self._evt.subscribe_events()
-        self._thread = threading.Thread(
-            target=self._pump, name="remote-core-events", daemon=True)
-        self._thread.start()
+        if rpc_client is not None and event_client is not None:
+            # Already-connected transport: seed state and start the event pump.
+            self._attach()
+        else:
+            # Deferred (daemon-by-default): connect on a background thread so the
+            # tray can appear immediately while a freshly-spawned daemon is still
+            # importing its device stack and binding the control socket.
+            self._thread = threading.Thread(
+                target=self._connect_loop, name="remote-core-connect", daemon=True)
+            self._thread.start()
 
     @classmethod
     def connect(cls, log, address=None, authkey=None):
@@ -64,6 +76,84 @@ class RemoteCore:
         rpc = polyctl.connect(address, authkey)
         evt = polyctl.connect(address, authkey)
         return cls(rpc, evt, log, address=address, authkey=authkey)
+
+    @classmethod
+    def connect_deferred(cls, log, address=None, authkey=None):
+        """Return a RemoteCore **immediately**, connecting on a background thread.
+
+        Daemon-by-default (H4b) spawns the core daemon and attaches this GUI as a
+        client; the daemon takes a moment to import its device stack and bind the
+        socket. Connecting in the background lets the tray appear instantly (in a
+        disconnected "Waiting for PolyKybd…" state) and fill in the moment the
+        daemon answers, instead of blocking startup on ``wait_until_live``. Never
+        raises: a still-booting daemon just means the next retry, a version
+        mismatch surfaces as a disconnected status."""
+        return cls(None, None, log, address=address, authkey=authkey)
+
+    # ------------------------------------------------------------------
+    # Connection lifecycle
+    # ------------------------------------------------------------------
+
+    def _attach(self):
+        """Seed the status cache from a live connection and start the event pump.
+        Called either synchronously (``connect``) or from the background
+        connector once it dials through (``connect_deferred``)."""
+        try:
+            self._status = self._rpc.call(p.M_STATUS_GET) or {}
+        except (RpcError, OSError, EOFError) as e:
+            self.log.warning("RemoteCore: initial status.get failed: %s", e)
+            self._status = {}
+        self._evt.subscribe_events()
+        self._thread = threading.Thread(
+            target=self._pump, name="remote-core-events", daemon=True)
+        self._thread.start()
+        # Render whatever we just learned. In deferred mode the GUI has already
+        # subscribed by now (the daemon was still booting on the first dial), so
+        # this avoids waiting up to a full probe cycle for the first render; in
+        # synchronous mode there are no observers yet and it's a harmless no-op.
+        with self._status_lock:
+            snapshot = dict(self._status)
+        self.emit("status_changed", {**snapshot, "state_changed": True})
+
+    def _connect_loop(self):
+        """Background dialer for deferred mode: retry until the daemon answers,
+        then attach. A version mismatch is terminal (retrying can't fix it)."""
+        from polyhost.cli import polyctl
+        delay, attempts = 0.1, 0
+        while not self._stop.is_set():
+            attempts += 1
+            rpc = evt = None
+            try:
+                rpc = polyctl.connect(self._address, self._authkey)
+                evt = polyctl.connect(self._address, self._authkey)
+                self._rpc, self._evt = rpc, evt
+                self._attach()   # may raise if the daemon drops mid-handshake
+            except RpcError as e:
+                # Version/protocol gate — the daemon is up but incompatible.
+                # Retrying can't fix it, so report and stop.
+                self._rpc = self._evt = None
+                _close_quietly(rpc, evt)
+                self.log.error("RemoteCore: the core rejected the connection: %s", e)
+                self.emit("status_changed", {
+                    "connected": False, "device_present": False, "state_changed": True,
+                    "text": "Core running but incompatible (version mismatch).",
+                    "icon": "sync_disabled.svg", "lang": None})
+                return
+            except (OSError, EOFError):
+                # Daemon not up yet, or one of the two connects / the attach
+                # handshake failed transiently — drop any half-open client and
+                # retry rather than leaking it or proceeding in a partial state.
+                self._rpc = self._evt = None
+                _close_quietly(rpc, evt)
+                if attempts == 1 or attempts % 20 == 0:
+                    self.log.info("RemoteCore: waiting for the core daemon to come up…")
+                if self._stop.wait(delay):
+                    return
+                delay = min(delay * 1.5, 2.0)
+                continue
+            self.log.info("RemoteCore: connected to the core daemon "
+                          "(after %d attempt(s)).", attempts)
+            return
 
     # ------------------------------------------------------------------
     # Observer plumbing (mirrors PolyCore)
@@ -183,6 +273,11 @@ class RemoteCore:
 
     def _rpc_call(self, method, params=None):
         with self._rpc_lock:
+            if self._rpc is None:
+                # Deferred mode: the background connector hasn't dialed through
+                # yet. Surface the normal degraded error so callers go through
+                # their RpcError handling instead of hitting an AttributeError.
+                raise RpcError(p.ERR_UNAVAILABLE, "the core daemon is still starting")
             try:
                 return self._rpc.call(method, params)
             except (EOFError, OSError) as e:

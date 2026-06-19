@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest import mock
 
 import requests
+from packaging.version import Version
 
 from polyhost.services import updater
 
@@ -86,8 +87,12 @@ class TestCheckLatest(unittest.TestCase):
                 updater.check_latest()
 
     def test_raises_on_rate_limit(self):
+        # 403 now tries the github.com web fallback first; only when that's also
+        # unreachable does the rate-limit error surface.
         with mock.patch.object(updater.requests, "get",
-                               return_value=_make_response(403)):
+                               return_value=_make_response(403)), \
+             mock.patch.object(updater.requests, "head",
+                               side_effect=requests.RequestException("offline")):
             with self.assertRaises(updater.UpdateCheckError):
                 updater.check_latest()
 
@@ -128,6 +133,122 @@ class TestCheckLatest(unittest.TestCase):
         with mock.patch.object(updater, "__version__", "1.2.3"), \
              mock.patch.object(updater.requests, "get", return_value=_make_response(304)):
             self.assertIsNone(updater.check_latest())
+
+
+def _redirect_response(location):
+    resp = mock.Mock()
+    resp.status_code = 302
+    resp.headers = {"Location": location}
+    return resp
+
+
+class TestWebFallback(unittest.TestCase):
+    """When the API is rate-limited (403), fall back to github.com (the web
+    host), which is not subject to the API's 60/hour limit, so manual checks
+    still work."""
+
+    def setUp(self):
+        load_p = mock.patch.object(updater, "_load_etag_cache", return_value={})
+        save_p = mock.patch.object(updater, "_save_etag_cache")
+        self.mock_load = load_p.start()
+        save_p.start()
+        self.addCleanup(load_p.stop)
+        self.addCleanup(save_p.stop)
+
+    def test_latest_tag_via_web_parses_redirect(self):
+        with mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/thpoll83/PolyKybdHost/releases/tag/v0.9.0")):
+            self.assertEqual(updater._latest_tag_via_web(updater.HOST_REPO), "v0.9.0")
+
+    def test_latest_tag_via_web_decodes_and_handles_no_tag(self):
+        with mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/x/y/releases/tag/PolyKybd-fw-v1.2.3%2Bbuild")):
+            self.assertEqual(updater._latest_tag_via_web("x/y"), "PolyKybd-fw-v1.2.3+build")
+        with mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response("https://github.com/x/y/releases")):
+            self.assertIsNone(updater._latest_tag_via_web("x/y"))
+
+    def test_host_403_falls_back_to_web_and_builds_tarball(self):
+        with mock.patch.object(updater, "__version__", "0.0.1"), \
+             mock.patch.object(updater, "_current_version", return_value=Version("0.0.1")), \
+             mock.patch.object(updater.requests, "get", return_value=_make_response(403)), \
+             mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/thpoll83/PolyKybdHost/releases/tag/v0.9.0")):
+            rel = updater.check_latest()
+        self.assertIsNotNone(rel)
+        self.assertEqual(rel.version, "0.9.0")
+        self.assertEqual(rel.tarball_url,
+                         "https://github.com/thpoll83/PolyKybdHost/archive/refs/tags/v0.9.0.tar.gz")
+
+    def test_host_403_web_says_up_to_date_returns_none(self):
+        with mock.patch.object(updater, "_current_version", return_value=Version("9.9.9")), \
+             mock.patch.object(updater.requests, "get", return_value=_make_response(403)), \
+             mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/thpoll83/PolyKybdHost/releases/tag/v0.9.0")):
+            self.assertIsNone(updater.check_latest())
+
+    def test_host_403_web_also_unreachable_raises(self):
+        with mock.patch.object(updater.requests, "get", return_value=_make_response(403)), \
+             mock.patch.object(updater.requests, "head",
+                               side_effect=requests.RequestException("offline")):
+            with self.assertRaises(updater.UpdateCheckError):
+                updater.check_latest()
+
+    def test_fw_403_falls_back_to_web_assets(self):
+        html = ('<a href="/thpoll83/qmk_firmware/releases/download/PolyKybd-fw-v0.9.0/poly.bin">'
+                '<a href="/thpoll83/qmk_firmware/releases/download/PolyKybd-fw-v0.9.0/poly.uf2">')
+        asset_resp = _make_response(200)
+        asset_resp.text = html
+        with mock.patch.object(updater.requests, "get",
+                               side_effect=[_make_response(403), asset_resp]), \
+             mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/thpoll83/qmk_firmware/releases/tag/PolyKybd-fw-v0.9.0")):
+            fw = updater.check_fw_latest("0.8.0")
+        self.assertIsNotNone(fw)
+        self.assertEqual(fw.version, "0.9.0")
+        self.assertTrue(fw.bin_url.endswith("/poly.bin"))
+        self.assertTrue(fw.uf2_url.endswith("/poly.uf2"))
+
+
+class TestLastCheckTime(unittest.TestCase):
+    """The update-check throttle is persisted (in the ETag cache file) so it
+    survives restarts — otherwise every relaunch fires a check and exhausts
+    GitHub's 60-req/hour/IP limit."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self._cache = Path(self._tmp.name) / "update_etags.json"
+        self._patch = mock.patch.object(updater, "_ETAG_CACHE", self._cache)
+        self._patch.start()
+
+    def tearDown(self):
+        self._patch.stop()
+        self._tmp.cleanup()
+
+    def test_defaults_to_zero_when_never_checked(self):
+        self.assertEqual(updater.get_last_check_time(), 0.0)
+
+    def test_round_trips(self):
+        updater.set_last_check_time(1_700_000_000.0)
+        self.assertEqual(updater.get_last_check_time(), 1_700_000_000.0)
+
+    def test_does_not_clobber_etag_entries(self):
+        # Persisting the timestamp must not wipe the host/fw ETag entries that
+        # live in the same cache file (and vice-versa).
+        updater._save_etag_cache({"host": {"etag": '"x"', "version": "1.0.0"}})
+        updater.set_last_check_time(123.0)
+        cache = updater._load_etag_cache()
+        self.assertEqual(cache.get("checked_at"), 123.0)
+        self.assertEqual(cache.get("host", {}).get("version"), "1.0.0")
+
+    def test_corrupt_value_falls_back_to_zero(self):
+        updater._save_etag_cache({"checked_at": "not-a-number"})
+        self.assertEqual(updater.get_last_check_time(), 0.0)
 
 
 class TestVersionFromTag(unittest.TestCase):
@@ -232,7 +353,10 @@ class TestCheckFwLatest(unittest.TestCase):
         self.assertEqual(release.bin_url, "https://example.com/fw.bin")
 
     def test_raises_on_rate_limit(self):
-        with mock.patch.object(updater.requests, "get", return_value=self._resp(403)):
+        # 403 falls back to the github.com web path; raises only if that's down too.
+        with mock.patch.object(updater.requests, "get", return_value=self._resp(403)), \
+             mock.patch.object(updater.requests, "head",
+                               side_effect=requests.RequestException("offline")):
             with self.assertRaises(updater.UpdateCheckError):
                 updater.check_fw_latest("0.8.1")
 

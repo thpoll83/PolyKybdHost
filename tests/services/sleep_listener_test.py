@@ -13,6 +13,14 @@ from polyhost.services.sleep_listener import (
     should_fire_on_sleep,
 )
 
+try:
+    import jeepney  # noqa: F401
+    _HAS_JEEPNEY = True
+except ImportError:
+    # jeepney is a linux-only runtime dep (requirements.txt) imported lazily by
+    # sleep_listener; without it the system-bus test can't patch the connection.
+    _HAS_JEEPNEY = False
+
 
 def _quiet_log():
     log = logging.getLogger("sleep_listener_test")
@@ -54,6 +62,7 @@ class InstallSleepListenerPlatformTest(unittest.TestCase):
         self.assertIsNone(result)
         cb.assert_not_called()
 
+    @unittest.skipUnless(_HAS_JEEPNEY, "jeepney not installed")
     def test_unavailable_system_bus_returns_none(self):
         # Force the linux branch AND make the bus connect raise, so the
         # graceful-None fallback is exercised deterministically regardless of

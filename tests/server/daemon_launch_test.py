@@ -53,6 +53,11 @@ class TestSpawn(unittest.TestCase):
         if sys.platform == "win32":
             self.assertTrue(kwargs["creationflags"] & subprocess.DETACHED_PROCESS)
             self.assertTrue(kwargs["creationflags"] & subprocess.CREATE_NEW_PROCESS_GROUP)
+            # DETACHED_PROCESS and CREATE_NO_WINDOW are mutually exclusive console
+            # flags — ORing them makes CreateProcess fail with ERROR_INVALID_PARAMETER,
+            # which silently broke daemon-by-default on Windows. Never combine them.
+            self.assertFalse(kwargs["creationflags"]
+                             & getattr(subprocess, "CREATE_NO_WINDOW", 0))
         else:
             self.assertTrue(kwargs["start_new_session"])
 

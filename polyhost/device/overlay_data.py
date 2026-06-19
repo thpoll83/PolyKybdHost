@@ -1,11 +1,17 @@
 import math
-import numpy as np
 
 from polyhost.util.rle_util import rle_compress
+
+# numpy is imported lazily inside the functions below. Importing it costs tens
+# of ms warm (seconds cold on Windows) and overlay_data is reached at daemon
+# startup via cmd_composer/im_converter — but the array work only runs when an
+# overlay is actually converted (HID worker thread, after connect), so keeping
+# the import out of module load lets the daemon bind its control socket sooner.
 
 
 def find_roi_rectangle(image):
     """ Find the region of interest - the rectangle in the image containing all set pixels"""
+    import numpy as np
     rows = np.any(image, axis=1)
     cols = np.any(image, axis=0)
 
@@ -22,6 +28,7 @@ class OverlayData:
     """ Container for all overlay data package variations: plain, compressed, region-of-interest, compressed region-of-interest """
 
     def __init__(self, device_settings, image, debug_dump_byte_buffers=False):
+        import numpy as np
         self.device_settings = device_settings
 
         self.all_bytes = np.packbits(image, axis=None).tobytes()

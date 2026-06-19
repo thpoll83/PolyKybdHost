@@ -152,6 +152,12 @@ class TestRemoteCore(unittest.TestCase):
         # Keys cross JSON as strings; the daemon-side core coerces them back.
         self.assertIn(("send_overlay_mapping", {"4": 5}), self.core.calls)
 
+    def test_request_host_shutdown_acks(self):
+        # The "Quit & stop daemon" menu entry drives this: the control server
+        # replies before tearing down, so the client gets a clean ack.
+        result = self.rc.request_host_shutdown()
+        self.assertEqual(result, {"shutting_down": True})
+
     def test_event_fanout_and_cache_refresh(self):
         seen = []
         self.rc.subscribe(lambda n, p: seen.append((n, p)))
@@ -204,6 +210,42 @@ class _FakeEvt:
 
     def close(self):
         pass
+
+
+@unittest.skipIf(sys.platform == "win32", "UDS-based control socket test")
+class TestRemoteCoreDeferredConnect(unittest.TestCase):
+    """connect_deferred must return immediately (tray appears now) and connect on
+    a background thread once the daemon binds its socket — daemon-by-default
+    spawns the daemon, which takes a moment to come up."""
+
+    def test_connects_in_background_once_endpoint_is_live(self):
+        addr, key = _addr(), b"k"
+        # No server yet: the deferred core comes back disconnected, retrying.
+        rc = RemoteCore.connect_deferred(_quiet(), address=addr, authkey=key)
+        try:
+            self.assertFalse(rc.connected)
+            seen = []
+            rc.subscribe(lambda n, p: seen.append((n, p)))
+            # Bring the daemon up after the GUI is already constructed.
+            srv = ControlServer(FakeCore(), "9.9.9", _quiet(), address=addr, authkey=key)
+            srv.start()
+            try:
+                self.assertTrue(_wait(lambda: rc.connected, timeout=5.0))
+                # The first render is pushed as a status_changed once attached.
+                self.assertTrue(_wait(lambda: any(
+                    n == "status_changed" and (p or {}).get("connected")
+                    for n, p in seen), timeout=5.0))
+            finally:
+                srv.stop()
+        finally:
+            rc.shutdown()
+
+    def test_shutdown_while_still_connecting_is_clean(self):
+        # Never bring a server up; shutting down must stop the retry loop without
+        # raising (sockets are still None at this point).
+        rc = RemoteCore.connect_deferred(_quiet(), address=_addr(), authkey=b"k")
+        self.assertFalse(rc.connected)
+        rc.shutdown()  # must not raise
 
 
 class TestRemoteCorePumpEOF(unittest.TestCase):

@@ -8,7 +8,7 @@ polykybd_console.txt (seen in the field 2026-06-13).
 import logging
 import unittest
 
-from polyhost.util.log_util import MultiLineFormatter
+from polyhost.util.log_util import MultiLineFormatter, make_stream_handler
 
 
 def _format(msg: str) -> str:
@@ -47,6 +47,36 @@ class TestMultiLineFormatter(unittest.TestCase):
         out = _format("first line\nlast line\n")
         self.assertIn("last line", out)
         self.assertEqual(len(out.splitlines()), 2)
+
+
+class TestMakeStreamHandler(unittest.TestCase):
+    """Under pythonw.exe (the Windows tray GUI and the GUI-spawned daemon)
+    sys.stdout is None. make_stream_handler must not call None.isatty() — that
+    AttributeError crashed run_headless (daemon never bound its socket) and
+    PolyHost.__init__ (the GUI never appeared)."""
+
+    def test_none_stdout_returns_noop_handler(self):
+        import sys
+        real = sys.stdout
+        sys.stdout = None
+        try:
+            handler = make_stream_handler("%(message)s")
+        finally:
+            sys.stdout = real
+        self.assertIsInstance(handler, logging.NullHandler)
+        # Emitting must be a harmless no-op (no console to write to).
+        handler.emit(logging.LogRecord("x", logging.INFO, "", 0, "hi", (), None))
+
+    def test_real_stream_returns_stream_handler(self):
+        import io
+        import sys
+        real = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            handler = make_stream_handler("%(message)s")
+        finally:
+            sys.stdout = real
+        self.assertIsInstance(handler, logging.StreamHandler)
 
 
 if __name__ == '__main__':

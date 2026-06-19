@@ -1,8 +1,12 @@
 import ctypes
 import locale
-import logging
 import subprocess
+import sys
 from polyhost.input.input_helper import InputHelper
+
+# Under pythonw.exe (and any consoleless parent) Windows allocates a fresh
+# console window for every child process unless CREATE_NO_WINDOW is passed.
+_CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if sys.platform == "win32" else 0
 
 #Get-WinUserLanguageList | ForEach-Object {
 #    "$($_.LanguageTag): $($_.InputMethodTips -join ', ')"
@@ -17,49 +21,83 @@ class WindowsInputHelper(InputHelper):
         super().__init__()
         self.poly_settings = poly_settings
         self.list = None
-        self.query = """$ScriptBlock = {
-        Add-Type -AssemblyName System.Windows.Forms
-        [System.Windows.Forms.InputLanguage]::CurrentInputLanguage
-    }
-    $Job = Start-Job -ScriptBlock $ScriptBlock
-    $Null = Wait-Job -Job $Job
-    $CurrentLanguage = Receive-Job -Job $Job
-    Remove-Job -Job $Job
-    $CurrentLanguage"""
+        # Query the current input language inline (no Start-Job, which would
+        # spawn a grandchild powershell.exe whose console CREATE_NO_WINDOW can't
+        # suppress). We emit a single explicit "Culture: <name>" line rather than
+        # letting PowerShell default-format the InputLanguage object: the live
+        # object renders as a TABLE (a "Culture  Handle  LayoutName" header + a
+        # data row), and the parser matched the header — returning the literal
+        # "Culture   Handle LayoutName" as the current language, so no comparison
+        # ever matched and language switching always failed. Emitting the value
+        # ourselves is formatting-independent (and locale-independent).
+        self.query = (
+            "Add-Type -AssemblyName System.Windows.Forms\n"
+            "$lang = [System.Windows.Forms.InputLanguage]::CurrentInputLanguage\n"
+            "if ($lang -and $lang.Culture) { 'Culture: ' + $lang.Culture.Name }")
     
     def get_languages(self):
-        if not self.list:
+        if self.list is None:   # None = not queried yet; [] is a valid cached result
             try:
-                result = subprocess.run(['powershell', 'Get-WinUserLanguageList'], stdout=subprocess.PIPE, check=True)
-                self.list = []
-                entries = iter(result.stdout.splitlines())
-                for e in entries:
-                    try:
-                        e = str(e, encoding='utf-8')
-                    except UnicodeDecodeError:
-                        e = str(e)
-                    if e.startswith('LanguageTag'):
-                        self.list.append(e.split(":")[-1].strip())
+                # Emit an explicit "LanguageTag: <tag>" line per language rather
+                # than letting PowerShell default-format the list — with 2+
+                # languages it renders as a TABLE whose header row also starts
+                # with "LanguageTag" (and carries no value), the same formatting
+                # trap that broke get_current_language. ForEach-Object is
+                # formatting- and locale-independent.
+                result = subprocess.run(
+                    ['powershell', '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden',
+                     '-Command',
+                     "Get-WinUserLanguageList | ForEach-Object { 'LanguageTag: ' + $_.LanguageTag }"],
+                    stdout=subprocess.PIPE, creationflags=_CREATE_NO_WINDOW, check=True)
+                self.list = self._parse_language_tags(result.stdout)
             except subprocess.CalledProcessError as ex:
                 self.log.warning("Exception when running Get-WinUserLanguageList: %s", ex)
         return self.list
 
+    @staticmethod
+    def _parse_language_tags(stdout):
+        """Collect the IETF tags from 'LanguageTag: <tag>' lines, ignoring a bare
+        table header (no colon). Accepts bytes or str."""
+        tags = []
+        for raw in stdout.splitlines():
+            try:
+                line = raw if isinstance(raw, str) else str(raw, encoding='utf-8')
+            except UnicodeDecodeError:
+                line = str(raw)
+            line = line.strip()
+            if line.startswith('LanguageTag') and ':' in line:
+                tags.append(line.split(':', 1)[1].strip())
+        return tags
+
     def get_current_language(self):
         try:
-            result = subprocess.run(['powershell', self.query], stdout=subprocess.PIPE, check=True)
-            entries = iter(result.stdout.splitlines())
-            for e in entries:
-                try:
-                    e = str(e, encoding='utf-8')
-                except UnicodeDecodeError:
-                    e = str(e)
-                if e.startswith('Culture'):
-                    return True, e.split(":")[-1].strip()
-            return False, str(result.stdout)
+            result = subprocess.run(
+                ['powershell', '-NoProfile', '-NonInteractive', '-Sta', '-WindowStyle', 'Hidden',
+                 '-Command', self.query],
+                stdout=subprocess.PIPE, creationflags=_CREATE_NO_WINDOW, check=True)
+            return self._parse_current_culture(result.stdout)
         except subprocess.CalledProcessError as ex:
             msg = str(ex)
             self.log.warning("Exception when running script block: %s", msg)
             return False, msg
+
+    @staticmethod
+    def _parse_current_culture(stdout):
+        """Extract the IETF culture (e.g. 'en-US') from the query output.
+
+        Matches a line starting with 'Culture' that carries a value after a
+        colon — so the value line ('Culture: en-US') is read while a bare table
+        HEADER ('Culture   Handle   LayoutName', no colon) is correctly ignored.
+        Accepts bytes or str (subprocess stdout is bytes)."""
+        for raw in stdout.splitlines():
+            try:
+                line = raw if isinstance(raw, str) else str(raw, encoding='utf-8')
+            except UnicodeDecodeError:
+                line = str(raw)
+            line = line.strip()
+            if line.startswith('Culture') and ':' in line:
+                return True, line.split(':', 1)[1].strip()
+        return False, str(stdout)
 
     def set_language(self, lang, country):
         if self.poly_settings and self.poly_settings.get("dev_win_native_set_language"):

@@ -1,10 +1,10 @@
 import logging
 from logging.handlers import RotatingFileHandler
 import os
-import pathlib
 import platform
 import subprocess
 import sys
+import threading
 import time
 import webbrowser
 
@@ -32,7 +32,6 @@ from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
 from polyhost.gui.settings_dialog import SettingsDialog
 from polyhost.gui.cmd_menu import CommandsSubMenu
-from polyhost.handler.common import OverlayCommand
 from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
 from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
 from polyhost.input.macos_helper import MacOSInputHelper
@@ -41,12 +40,12 @@ from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER, LANG_
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost._version import __version__
 
-from polyhost.input.unicode_input import get_input_method
-from polyhost.services.updater import UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app
+from polyhost.services.updater import (
+    UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app,
+    get_last_check_time, set_last_check_time)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.dialog_util import position_near_tray
 from polyhost.gui.worker_bridge import WorkerBridge
-from polyhost.core.poly_core import PolyCore
 from polyhost.server.control_server import ControlServer
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -64,7 +63,7 @@ def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
 
 
-from polyhost.util.log_util import DEBUG_DETAILED, ColorFormatter, MultiLineFormatter, make_stream_handler, make_collapse_handler
+from polyhost.util.log_util import DEBUG_DETAILED, MultiLineFormatter, make_stream_handler, make_collapse_handler
 
 
 # Shared dimensions for all update / firmware dialogs — 2:1 aspect ratio.
@@ -183,7 +182,7 @@ def _progress_dlg(label: str, title: str, tray_icon=None) -> QProgressDialog:
 
 class PolyHost(QApplication):
     def __init__(self, log_level, debug_mode, ignore_version=False,
-                 client_mode=False, endpoint=None):
+                 client_mode=False, endpoint=None, connect_retry=False):
         super().__init__(sys.argv)
         fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
         level = DEBUG_DETAILED if debug_mode>1 else log_level
@@ -253,14 +252,20 @@ class PolyHost(QApplication):
             from polyhost.cli.polyctl import RpcError
             from polyhost.settings import PolySettings
             from polyhost.device.device_settings import DeviceSettings
-            try:
-                self.core = RemoteCore.connect(self.log, address=endpoint or None)
-            except (RpcError, OSError, EOFError) as e:
-                self.log.error("Cannot reach a running PolyKybdHost core (%s)", e)
-                print(f"error: cannot connect to a PolyKybdHost core ({e}). "
-                      "Start one first (e.g. `python -m polyhost --headless`).",
-                      file=sys.stderr)
-                sys.exit(1)
+            if connect_retry:
+                # Daemon-by-default: we just spawned the daemon and it's still
+                # booting. Connect in the background so the tray appears now and
+                # fills in once the daemon binds its socket (never blocks/exits).
+                self.core = RemoteCore.connect_deferred(self.log, address=endpoint or None)
+            else:
+                try:
+                    self.core = RemoteCore.connect(self.log, address=endpoint or None)
+                except (RpcError, OSError, EOFError) as e:
+                    self.log.error("Cannot reach a running PolyKybdHost core (%s)", e)
+                    print(f"error: cannot connect to a PolyKybdHost core ({e}). "
+                          "Start one first (e.g. `python -m polyhost --headless`).",
+                          file=sys.stderr)
+                    sys.exit(1)
             # No in-process device objects — the daemon owns them. Client-side
             # settings (the shared XDG file when co-located) feed the input
             # helper; the settings/layout dialogs are deferred (H4a-2).
@@ -274,6 +279,11 @@ class PolyHost(QApplication):
             # run — the client likely missed the daemon's fresh-connect event.
             self._remote_connected_rendered = False
         else:
+            # Imported here, not at module top: PolyCore pulls in the whole
+            # device + brightness stack (pvlib/pandas/scipy via sunlight_helper),
+            # which is dead weight in --connect client mode and just delays the
+            # tray. The client uses RemoteCore instead and never imports this.
+            from polyhost.core.poly_core import PolyCore
             self.core = PolyCore(log=self.log, ignore_version=ignore_version,
                                  start_worker=False)
             self.keeb = self.core.keeb
@@ -303,6 +313,15 @@ class PolyHost(QApplication):
         self.exit = QAction(get_icon("power.svg"), "Quit", parent=self)
         # noinspection PyUnresolvedReferences
         self.exit.triggered.connect(self.quit_app)
+        # In daemon/client mode, plain Quit leaves the daemon (which owns the
+        # device) running. Offer an explicit "stop the daemon too" action — only
+        # meaningful as a client; in-process Quit already stops everything.
+        self.exit_with_daemon = None
+        if client_mode:
+            self.exit_with_daemon = QAction(get_icon("power.svg"),
+                                            "Quit && stop background daemon", parent=self)
+            # noinspection PyUnresolvedReferences
+            self.exit_with_daemon.triggered.connect(self.quit_app_and_daemon)
         self.support = QAction(get_icon("support.svg"), "Get Support", parent=self)
         # noinspection PyUnresolvedReferences
         self.support.triggered.connect(self.open_support)
@@ -364,7 +383,7 @@ class PolyHost(QApplication):
         self.menu.addAction(self.update_action)
         self._pending_release = None
         self._update_checker = None
-        self._update_check_last = None   # monotonic ts of the last AUTOMATIC check (throttle)
+        self._update_check_last = None   # wall-clock ts of last AUTOMATIC check this session
         self._update_installer = None
         self._update_progress = None
         self._await_manual_prompt = False
@@ -407,6 +426,8 @@ class PolyHost(QApplication):
         self.menu.addAction(self.support)
         self.menu.addAction(self.about)
         self.menu.addAction(self.exit)
+        if self.exit_with_daemon is not None:
+            self.menu.addAction(self.exit_with_daemon)
 
         self.log.debug("Create OS dependent input helper...")
         self.helper = None
@@ -425,20 +446,13 @@ class PolyHost(QApplication):
             sys.exit(-1)
         self.log.info("Input helper: %s", type(self.helper).__name__)
 
-        entries = self.helper.get_languages()
-
-        result, info = self.helper.get_current_language()
-        if result:
-            self.log.info("Current System Language: %s", info)
-            self.current_lang = info
-        else:
-            self.icon_manager.set_warning("System language query not supported for this platform.", 5000)
-            self.log.warning("System language query not supported for this platform: '%s'", info)
-
-        if debug_mode>0:
-            for e in entries:
-                self.log.info(" - Enumerating input language %s", e)
-                self.debug_lang_menu.addAction(e, self.change_system_language)
+        # Detecting the OS input language shells out to PowerShell on Windows
+        # (each cold powershell.exe start is hundreds of ms) — and it's only
+        # needed once a keyboard connects (OS-language sync), not to show the
+        # tray. Probe it on a background thread and apply the result on the Qt
+        # main thread via the bridge, so the tray appears immediately.
+        threading.Thread(target=self._probe_input_language, args=(debug_mode > 0,),
+                         name="input-language-probe", daemon=True).start()
 
         self.managed_connection_status()
         
@@ -484,6 +498,33 @@ class PolyHost(QApplication):
     # ------------------------------------------------------------------
     # Core adapter: events + shared connection state
     # ------------------------------------------------------------------
+
+    def _probe_input_language(self, want_debug_menu):
+        """Background-thread input-language probe (PowerShell on Windows is
+        slow). Posts the result to the Qt main thread; never touches Qt here."""
+        try:
+            entries = self.helper.get_languages()
+            result, info = self.helper.get_current_language()
+        except Exception as e:  # noqa: BLE001 — a probe failure must not crash the GUI
+            self.log.warning("Input-language probe failed: %s", e)
+            return
+        self.bridge.job_done.emit("input_language_probe", {
+            "entries": entries or [], "ok": bool(result), "info": info,
+            "debug": want_debug_menu})
+
+    def _apply_input_language_probe(self, result):
+        """Main-thread half of the input-language probe (see _probe_input_language)."""
+        if result.get("ok"):
+            self.log.info("Current System Language: %s", result["info"])
+            self.current_lang = result["info"]
+        else:
+            self.icon_manager.set_warning("System language query not supported for this platform.", 5000)
+            self.log.warning("System language query not supported for this platform: '%s'",
+                             result.get("info"))
+        if result.get("debug") and self.debug_lang_menu is not None:
+            for e in result.get("entries", []):
+                self.log.info(" - Enumerating input language %s", e)
+                self.debug_lang_menu.addAction(e, self.change_system_language)
 
     def _on_core_event(self, name, payload):
         """Core observer (fires on core/worker threads): hop to the Qt main
@@ -583,6 +624,10 @@ class PolyHost(QApplication):
         self.support.setEnabled(True)
         self.about.setEnabled(True)
         self.exit.setEnabled(True)
+        if self.exit_with_daemon is not None:
+            # Always available — stopping/quitting must work even when the device
+            # is disconnected or the menu is otherwise greyed out.
+            self.exit_with_daemon.setEnabled(True)
         if self.connected:
             self.icon_manager.set_connected()
         else:
@@ -900,6 +945,11 @@ class PolyHost(QApplication):
         # reconnect/overlay/window activity is visible from the tray GUI.
         if os.path.exists("daemon_log.txt"):
             log_files["Daemon Log"] = "daemon_log.txt"
+        # The pre-GUI launch phase (daemon spawn/attach, autostart, single-instance)
+        # logs to startup_log.txt — invaluable when the app fails to come up at all
+        # (especially under Windows pythonw, where print() goes nowhere).
+        if os.path.exists("startup_log.txt"):
+            log_files["Startup Log"] = "startup_log.txt"
         self.log_viewer = LogViewerDialog(log_files)
         self.log_viewer.show()
         delta = time.perf_counter() - delta
@@ -1041,16 +1091,24 @@ class PolyHost(QApplication):
         # unauthenticated API allows only ~60 requests/hour per IP, and a connect
         # triggers a check — so reconnects (every firmware flash reboots the
         # keyboard) and several machines behind one office IP exhaust it
-        # ("GitHub rate limit reached"). Skip an automatic check when one ran in
-        # the last 6 h. A MANUAL menu check passes force=True and always runs.
+        # ("GitHub rate limit reached"). The throttle is PERSISTED (wall clock,
+        # via the updater's cache) so it survives restarts — an in-memory-only
+        # throttle reset on every launch, and frequent restarts (or repeated
+        # rate-limited 403s, which still count) burned the quota. Skip an
+        # automatic check when one ran in the last 6 h. The timestamp is recorded
+        # before the request, so a 403 also backs off for 6 h instead of
+        # retrying. A MANUAL menu check passes force=True and always runs.
         if not force:
-            now = time.monotonic()
-            if (self._update_check_last is not None
-                    and now - self._update_check_last < 6 * 3600):
+            now = time.time()
+            last = self._update_check_last
+            if last is None:
+                last = get_last_check_time()    # persisted across restarts
+            if last and now - last < 6 * 3600:
                 self.log.debug("Update check throttled (%.0f min since last automatic check)",
-                               (now - self._update_check_last) / 60)
+                               (now - last) / 60)
                 return False
             self._update_check_last = now
+            set_last_check_time(now)
         if self._update_checker is not None and self._update_checker.is_alive():
             # A check is already in flight with its own (auto) callbacks — do
             # NOT start a second. Returns False so a manual caller knows its
@@ -1369,6 +1427,20 @@ class PolyHost(QApplication):
         self.firmware_update_action.setVisible(False)
         self.managed_connection_status()
 
+    def quit_app_and_daemon(self):
+        """Client mode: ask the core daemon (which owns the device) to exit too,
+        then quit this GUI. Plain Quit leaves the daemon running so the keyboard
+        keeps working for the next GUI launch / other clients. Must run BEFORE
+        quit_app closes the client sockets — the request travels over them."""
+        self.log.info("Quit requested including the background daemon.")
+        try:
+            result = self.core.request_host_shutdown()
+            if isinstance(result, dict) and result.get("error"):
+                self.log.warning("Daemon shutdown request returned: %s", result["error"])
+        except Exception as e:  # noqa: BLE001 — best effort; quit the GUI regardless
+            self.log.warning("Could not ask the core daemon to shut down: %s", e)
+        self.quit_app()
+
     def quit_app(self):
         self.icon_manager.set_disconnected()
         self.is_closing = True
@@ -1409,6 +1481,8 @@ class PolyHost(QApplication):
             # no apply_reconnect), so ignore the raw snapshot there.
             if not self.client_mode:
                 self._apply_reconnect_result(result)
+        elif name == "input_language_probe":
+            self._apply_input_language_probe(result)
         elif name == "status_changed":
             if self.client_mode:
                 self._render_remote_status(result)
