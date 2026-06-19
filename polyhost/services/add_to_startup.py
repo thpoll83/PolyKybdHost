@@ -69,9 +69,15 @@ def _no_window_kwargs():
     return {}
 
 def _run_powershell(ps_script):
-    """Run a PowerShell snippet, returning the CompletedProcess."""
+    """Run a PowerShell snippet, returning the CompletedProcess.
+
+    ``-WindowStyle Hidden`` / ``-NonInteractive`` belt-and-suspenders the
+    CREATE_NO_WINDOW creationflag: powershell.exe can still briefly flash a
+    console under a consoleless (pythonw) parent with CREATE_NO_WINDOW alone, so
+    asking it to start hidden closes that gap (matches WindowsInputHelper)."""
     return subprocess.run(
-        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script],
+        ["powershell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
+         "-ExecutionPolicy", "Bypass", "-Command", ps_script],
         capture_output=True,
         text=True,
         **_no_window_kwargs(),
