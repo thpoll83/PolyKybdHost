@@ -150,6 +150,13 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
     deadline    = time.monotonic() + 90
     timeout_ms  = 15000   # generous for first send (master erases the pack region)
     begin_ready = False
+    erase_start = time.monotonic()
+    # The staging erase (2–4 MB flash region, NOT the running firmware) takes
+    # ~10–15 s; the firmware reports no fine-grained progress, so creep the bar
+    # 1→2 % and show elapsed seconds instead of sitting frozen at a single 1 %.
+    def _erasing(msg):
+        elapsed = int(time.monotonic() - erase_start)
+        report(1, f"{msg} — {elapsed}s elapsed (≈10–15 s)…")
 
     while not begin_ready:
         if cancelled():
@@ -164,7 +171,7 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
         timeout_ms = 5000
 
         if not ok or len(reply) < 3:
-            report(1, "Erasing font-pack region — keyboard will reconnect when done…")
+            _erasing("Erasing font-pack staging area — keyboard will reconnect when done")
             if not hid.wait_for_reconnect(timeout_s=30):
                 return False, ("FONTPACK_BEGIN failed — keyboard did not reconnect "
                                "within 30 s.  Check the USB cable and try again.")
@@ -172,7 +179,7 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
         elif reply[2] == ord('.'):
             begin_ready = True
         elif reply[2] == ord('~'):
-            report(1, "Erasing both halves — please wait…")
+            _erasing("Erasing font-pack staging area (both halves)")
             time.sleep(0.3)
         else:
             _abort_cleanup(hid)
