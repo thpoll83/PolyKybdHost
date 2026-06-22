@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
     QSystemTrayIcon,
     QMenu,
     QAction,
+    QActionGroup,
     QDialog,
     QDialogButtonBox,
     QHBoxLayout,
@@ -26,6 +27,7 @@ from PyQt5.QtWidgets import (
     QStyle,
     QVBoxLayout, )
 
+from polyhost.device.command_ids import IdleStyle
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.log_viewer import LogViewerDialog
@@ -374,6 +376,26 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.layout_editor.triggered.connect(self.open_layout_editor)
         self.menu.addAction(self.layout_editor)
+
+        # Idle anti-burn-in style (firmware v4+). Device-coupled: it drives the
+        # device through core.get/set_idle_style (worker run_sync in-process, RPC
+        # in client mode), so it works in both modes; the blanket enable/disable
+        # in managed_connection_status greys the whole submenu while disconnected.
+        self.idle_style_menu = self.menu.addMenu(get_icon("backlight_high.svg"), "Idle Anti-Burn-In")
+        idle_group = QActionGroup(self)
+        idle_group.setExclusive(True)
+        self.idle_pulse_action = QAction("Pulse (legacy)", parent=self, checkable=True)
+        self.idle_pulse_action.setData(IdleStyle.PULSE.value)
+        self.idle_jitter_action = QAction("Jitter (move legend)", parent=self, checkable=True)
+        self.idle_jitter_action.setData(IdleStyle.JITTER.value)
+        for act in (self.idle_pulse_action, self.idle_jitter_action):
+            idle_group.addAction(act)
+            # noinspection PyUnresolvedReferences
+            act.triggered.connect(self.change_idle_style)
+            self.idle_style_menu.addAction(act)
+        # noinspection PyUnresolvedReferences
+        self.idle_style_menu.aboutToShow.connect(self.refresh_idle_style_menu)
+
         self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
 
@@ -1068,6 +1090,26 @@ class PolyHost(QApplication):
             self.update_ui_on_lang_change(lang)
         else:
             self.keeb_lang_menu.setTitle(f"Could not set {lang}: {msg}")
+
+    def refresh_idle_style_menu(self):
+        # Read the current style straight from the device (core marshals the HID
+        # round-trip onto the worker in-process, or over RPC in client mode) and
+        # tick the matching item. On failure (old firmware / disconnected) leave
+        # both unchecked rather than guessing.
+        ok, value = self.core.get_idle_style()
+        self.idle_pulse_action.setChecked(bool(ok) and value == IdleStyle.PULSE.value)
+        self.idle_jitter_action.setChecked(bool(ok) and value == IdleStyle.JITTER.value)
+
+    def change_idle_style(self):
+        value = self.sender().data()
+        ok, msg = self.core.set_idle_style(value)
+        if ok:
+            self.log.info("Idle anti-burn-in style set to %s.", IdleStyle(value).name.lower())
+        else:
+            # Firmware too old (needs v4+) or device busy — log and re-sync the
+            # checkmark to the device's actual style so the menu doesn't lie.
+            self.report_device_result("Error", f"Could not set idle style: {msg}")
+            self.refresh_idle_style_menu()
 
     def read_overlay_mapping_file(self, file):
         if not file:
