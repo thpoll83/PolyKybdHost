@@ -1030,6 +1030,63 @@ class PolyCore:
         self.worker.submit("fontpack_sync", self._fontpack_autocheck_job)
         return True, {"queued": True}
 
+    def wipe_fontpack(self):
+        """Wipe every font-pack slot — flash the empty-pack sentinel to each shipped
+        bundle's slot, so the keyboard renders resident-only fonts again. Streams the
+        same ``fontpack_flash_progress``/``fontpack_flash_done`` events as a flash, so
+        the tray surfaces it. The next connect re-flashes the bundles (auto-check sees
+        device version 0 < shipped), which is the intended "reset to ship state" flow."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot wipe."
+        self.worker.submit("fontpack_wipe", self._fontpack_wipe_job)
+        return True, {"queued": True}
+
+    def _fontpack_wipe_job(self, cancel):
+        """Flash the empty-pack sentinel to every shipped bundle slot (sequential),
+        clearing the external-flash font pack. Mirrors `_fontpack_autocheck_job`'s
+        progress/guard handling."""
+        import os, tempfile
+        from polyhost.services import fontpack_bundle
+        manifest = fontpack_bundle.load_bundle_manifest()
+        # With no shipped manifest, fall back to wiping the current 6 fixed slots.
+        slots = (manifest["bundles"] if manifest
+                 else [{"id": str(i), "index": i} for i in range(6)])
+        if self._fontpack_flash_in_progress:
+            return
+        self._fontpack_flash_in_progress = True
+        cancel_flag = [False]
+
+        def _progress(pct, m):
+            if cancel.is_set():
+                cancel_flag[0] = True
+            self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+
+        fd, path = tempfile.mkstemp(suffix=".plyf", prefix="polykybd_wipe_")
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(hid_fontpack.build_empty_pack())
+            n = len(slots)
+            for i, b in enumerate(slots):
+                self.log.info("Font pack wipe: bundle %s (slot %d) — wiping (%d/%d).",
+                              b["id"], b["index"], i + 1, n)
+                fok, fmsg = hid_fontpack.flash_fontpack(
+                    self.keeb.hid, path, progress_cb=_progress,
+                    cancel_flag=cancel_flag, bundle_id=b["index"])
+                if not fok:
+                    self.emit("fontpack_flash_done",
+                              {"ok": False, "msg": f"Wipe bundle {b['id']}: {fmsg}"})
+                    return
+                if cancel_flag[0]:
+                    return
+            self.emit("fontpack_flash_done",
+                      {"ok": True, "msg": f"Wiped {n} font-pack slot(s)."})
+        finally:
+            self._fontpack_flash_in_progress = False
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+
     def fontpack_bundle_status(self):
         """Per-bundle status: device version (from the GET_ID block) vs the shipped
         version, and whether each is stale. ``shipped`` is False with no bundles."""

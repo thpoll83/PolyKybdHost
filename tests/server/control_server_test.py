@@ -120,6 +120,10 @@ class FakeCore:
         self.calls.append(("sync_fontpack",))
         return (True, {"queued": True})
 
+    def wipe_fontpack(self):
+        self.calls.append(("wipe_fontpack",))
+        return (True, {"queued": True})
+
     def fontpack_bundle_status(self):
         self.calls.append(("fontpack_bundle_status",))
         return (True, {"shipped": True, "bundles": []})
@@ -363,6 +367,9 @@ class ControlServerTest(unittest.TestCase):
         resp = self._call(conn, 35, p.M_FONTPACK_BUNDLES)
         self.assertEqual(resp["result"], {"shipped": True, "bundles": []})
         self.assertIn(("fontpack_bundle_status",), self.core.calls)
+        resp = self._call(conn, 36, p.M_FONTPACK_WIPE)
+        self.assertEqual(resp["result"], {"queued": True})
+        self.assertIn(("wipe_fontpack",), self.core.calls)
 
     def test_settings_list_dispatch(self):
         conn = self._connect()

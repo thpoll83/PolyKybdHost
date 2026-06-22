@@ -322,6 +322,7 @@ class ControlServer:
                 else c.flash_fontpack(params["path"], params.get("bundle_id", 0))),
             p.M_FONTPACK_STATUS: lambda conn, params: _unwrap(c.get_fontpack_status()),
             p.M_FONTPACK_SYNC: lambda conn, params: _unwrap(c.sync_fontpack()),
+            p.M_FONTPACK_WIPE: lambda conn, params: _unwrap(c.wipe_fontpack()),
             p.M_FONTPACK_BUNDLES: lambda conn, params: _unwrap(c.fontpack_bundle_status()),
             p.M_PAUSE_SET: self._cmd_pause_set,
             p.M_MRU_SAVE: self._cmd_mru_save,

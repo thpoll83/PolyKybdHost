@@ -184,6 +184,25 @@ class CommandsSubMenu:
         cmd_menu.addAction(action)
         self._fw_actions.append(action)
 
+        # Font pack: same HID staging transport as the firmware flash (protocol-
+        # independent), so these follow fw_enabled — usable even on a protocol
+        # mismatch. The submenu's own action goes in _fw_actions too, else
+        # update_enabled() would grey the whole submenu out when only fw is enabled.
+        fp_menu = cmd_menu.addMenu(get_icon("settings.svg"), "Font Pack")
+        self._fw_actions.append(fp_menu.menuAction())
+
+        action = QAction("Sync (flash missing/updated bundles)", parent=self.parent)
+        # noinspection PyUnresolvedReferences
+        action.triggered.connect(self.sync_fontpack)
+        fp_menu.addAction(action)
+        self._fw_actions.append(action)
+
+        action = QAction(get_icon("delete.svg"), "Wipe (empty all bundles)", parent=self.parent)
+        # noinspection PyUnresolvedReferences
+        action.triggered.connect(self.wipe_fontpack)
+        fp_menu.addAction(action)
+        self._fw_actions.append(action)
+
         action = QAction("Test mapping...", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.mapping_test)
@@ -337,6 +356,31 @@ class CommandsSubMenu:
 
         self._report(self._core.send_overlay_mapping(from_to),
                      lambda m: f"Failed sending test mapping: '{m}'")
+
+    def sync_fontpack(self):
+        """Flash any font-pack bundles the keyboard is missing/behind on (the same
+        comparison as the on-connect auto-flash). Progress shows in the tray."""
+        self._report(self._core.sync_fontpack(),
+                     lambda m: f"Failed to sync font pack: '{m}'")
+
+    def wipe_fontpack(self):
+        """Empty every font-pack slot (resident-only fonts until re-flashed). The next
+        connect re-flashes the shipped bundles automatically."""
+        confirm_msg = (
+            "<b>Wipe the external-flash font pack?</b><br><br>"
+            "Every font-pack bundle slot is emptied — the keyboard renders only its "
+            "built-in (resident) fonts until the pack is flashed again. The bundles "
+            "shipped with this host are re-flashed automatically on the next connect "
+            "(or via Font Pack → Sync).<br><br>Continue?"
+        )
+        reply = QMessageBox.question(
+            None, "Wipe Font Pack", confirm_msg,
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            self.log.info("Font pack wipe: user cancelled at confirmation.")
+            return
+        self._report(self._core.wipe_fontpack(),
+                     lambda m: f"Failed to wipe font pack: '{m}'")
 
     def load_commands(self):
         file_name = _get_open_file_explicit('Open file', "PolyKybd commands (*.poly.cmd)")
