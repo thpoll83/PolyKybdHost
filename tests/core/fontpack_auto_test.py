@@ -17,7 +17,7 @@ except Exception:   # noqa: BLE001 — heavy optional deps (numpy/PIL/pvlib/…)
     _HAVE_CORE = False
 
 
-def _fake_core(auto=True, attempted=False, device_versions=None):
+def _fake_core(auto=True, in_progress=False, device_versions=None):
     """Minimal stand-in exposing exactly what the two methods touch."""
     settings = {"fontpack_auto_flash": auto, "fontpack_path": ""}
     submitted = []
@@ -28,7 +28,7 @@ def _fake_core(auto=True, attempted=False, device_versions=None):
         keeb=types.SimpleNamespace(hid=object(), fontpack_bundle_versions=device_versions or {}),
         log=types.SimpleNamespace(info=lambda *a, **k: None, warning=lambda *a, **k: None),
         emit=lambda name, payload: emitted.append((name, payload)),
-        _fontpack_auto_attempted=attempted,
+        _fontpack_flash_in_progress=in_progress,
     )
     core._fontpack_autocheck_job = lambda cancel: None
     core._submitted, core._emitted = submitted, emitted
@@ -79,7 +79,7 @@ class TestAutocheckJob(unittest.TestCase):
         core = _fake_core(device_versions={0: 2, 5: 3})
         ff = self._run(core, _MANIFEST)
         ff.assert_not_called()
-        self.assertFalse(core._fontpack_auto_attempted)
+        self.assertFalse(core._fontpack_flash_in_progress)
 
     def test_only_stale_bundles_flashed(self):
         # symbol up to date (v2), emoji behind (v1 < v3) and missing handled as 0.
@@ -89,7 +89,8 @@ class TestAutocheckJob(unittest.TestCase):
         # flashed emoji to slot 5
         _, kwargs = ff.call_args
         self.assertEqual(kwargs["bundle_id"], 5)
-        self.assertTrue(core._fontpack_auto_attempted)
+        # Guard is cleared once the run completes, so the next reconnect re-checks.
+        self.assertFalse(core._fontpack_flash_in_progress)
         done = [e for e in core._emitted if e[0] == "fontpack_flash_done"]
         self.assertEqual(len(done), 1)
         self.assertTrue(done[0][1]["ok"] and done[0][1]["auto"])
@@ -109,10 +110,11 @@ class TestAutocheckJob(unittest.TestCase):
         self.assertEqual(len(done), 1)
         self.assertFalse(done[0][1]["ok"])
 
-    def test_guard_blocks_second_auto_flash(self):
-        core = _fake_core(attempted=True, device_versions={})
+    def test_in_progress_blocks_concurrent_flash(self):
+        # A flash is already running (e.g. the connection flapped) → don't double-flash.
+        core = _fake_core(in_progress=True, device_versions={})
         ff = self._run(core, _MANIFEST)
-        ff.assert_not_called()        # already attempted this process — no auto-retry
+        ff.assert_not_called()
 
 
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
@@ -156,12 +158,11 @@ class TestManualBundleOps(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("Unknown bundle", msg)
 
-    def test_sync_clears_guard_and_submits(self):
-        core = _fake_core(attempted=True)
+    def test_sync_submits_job(self):
+        core = _fake_core()
         core._fw_actions_allowed = lambda: True
         ok, payload = PolyCore.sync_fontpack(core)
         self.assertTrue(ok and payload["queued"])
-        self.assertFalse(core._fontpack_auto_attempted)   # guard reset so sync always runs
         self.assertEqual(core._submitted[0][0], "fontpack_sync")
 
 
