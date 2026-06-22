@@ -220,6 +220,13 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     deadline    = time.monotonic() + 90
     timeout_ms  = 15000   # generous for first send (master erases ~6 s)
     begin_ready = False
+    erase_start = time.monotonic()
+    # The staging erase (2 MB region) takes ~10–20 s and the firmware reports no
+    # fine-grained progress, so show elapsed seconds (mirrors the font-pack flash)
+    # instead of sitting frozen on a single message.
+    def _erasing(msg):
+        elapsed = int(time.monotonic() - erase_start)
+        report(1, f"{msg} — {elapsed}s elapsed (≈10–20 s)…")
 
     while not begin_ready:
         if time.monotonic() > deadline:
@@ -233,7 +240,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         if not ok or len(reply) < 3:
             # USB dropout (or Windows empty-bytes disconnect) — master may be
             # rebooting after its synchronous flash erase.
-            report(1, "Erasing staging area — keyboard will reconnect when done…")
+            _erasing("Erasing staging area — keyboard will reconnect when done")
             if not hid.wait_for_reconnect(timeout_s=30):
                 return False, ("FW_UP_BEGIN failed — keyboard did not reconnect "
                                "within 30 s.  Check the USB cable and try again.")
@@ -244,7 +251,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
         elif reply[2] == ord('~'):
             # Slave half still erasing (deferred sector-by-sector).  Sleep briefly
             # so the QMK main loop runs and keeps the split transport alive.
-            report(1, "Erasing both halves — please wait…")
+            _erasing("Erasing staging area (both halves)")
             time.sleep(0.3)
             # Loop continues — re-poll.
         else:
