@@ -281,16 +281,13 @@ def _stream_fontpack_op(client, method, params, verb):
 
 def _write_empty_pack() -> str:
     """Write a 32-byte 'empty' PlyF pack (font_count 0) to a temp file; returns its path.
-    Flashing it clears the keyboard's font pack so rendering falls back to the
-    resident fonts only (firmware treats font_count==0 as a valid empty pack)."""
-    import struct, binascii, tempfile, os
-    body_crc = binascii.crc32(b"") & 0xFFFFFFFF          # CRC32 of an empty body
-    # <4sHHIIIIII: magic, abi, flags, content_version, font_count,
-    #              font_table_off, total_size, crc32, reserved
-    hdr = struct.pack("<4sHHIIIIII", b"PlyF", 1, 0, 0, 0, 32, 32, body_crc, 0)
+    Flashing it to a slot wipes that bundle (resident-only rendering there). The pack
+    bytes come from hid_fontpack.build_empty_pack() so the format stays in one place."""
+    import tempfile, os
+    from polyhost.device.hid_fontpack import build_empty_pack
     fd, path = tempfile.mkstemp(suffix=".plyf", prefix="polykybd_wipe_")
     with os.fdopen(fd, "wb") as f:
-        f.write(hdr)
+        f.write(build_empty_pack())
     return path
 
 

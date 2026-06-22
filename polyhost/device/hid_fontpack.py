@@ -34,6 +34,17 @@ _HEADER_SIZE          = struct.calcsize(_HEADER_FMT)   # 32
 assert _HEADER_SIZE == 32, "fontpack header must be 32 bytes"
 
 
+def build_empty_pack() -> bytes:
+    """A minimal valid 32-byte 'empty' PlyF pack (font_count 0). Flashing it to a
+    slot wipes that bundle — the firmware treats font_count==0 as a valid empty pack
+    → that slot contributes no fonts. Built from the shared header constants so the
+    wipe format can't drift from the main pack implementation."""
+    body_crc = binascii.crc32(b"") & 0xFFFFFFFF          # CRC32 of an empty body
+    # _HEADER_FMT: magic, abi, flags, content_version, font_count, font_table_off, total_size, crc32, reserved
+    return struct.pack(_HEADER_FMT, FONTPACK_MAGIC, FONTPACK_ABI_VERSION, 0, 0, 0,
+                       _HEADER_SIZE, _HEADER_SIZE, body_crc, 0)
+
+
 def parse_fontpack_header(pack_bytes) -> tuple[bool, dict]:
     """Parse + validate the 32-byte 'PlyF' header. Returns (ok, info|{'error': str})."""
     data = bytes(pack_bytes)
