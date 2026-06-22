@@ -285,7 +285,8 @@ class PolyHost(QApplication):
             # tray. The client uses RemoteCore instead and never imports this.
             from polyhost.core.poly_core import PolyCore
             self.core = PolyCore(log=self.log, ignore_version=ignore_version,
-                                 start_worker=False)
+                                 start_worker=False,
+                                 allow_key_injection=debug_mode > 0)
             self.keeb = self.core.keeb
             self.worker = self.core.worker
             self.device_mgr = self.core.device_mgr
