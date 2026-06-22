@@ -961,12 +961,14 @@ class PolyCore:
         self.worker.submit("fw_flash", _job)
         return True, {"queued": True, "apply": bool(apply)}
 
-    def flash_fontpack(self, path):
-        """Flash an external-flash ``.plyf`` font pack as a worker job.
+    def flash_fontpack(self, path, bundle_id=0):
+        """Flash an external-flash ``.plyf`` font-pack bundle as a worker job.
 
-        Same shape as :meth:`flash_firmware` minus the apply step — the firmware
-        re-loads fonts in place on COMMIT (no reboot). Gating + header validation
-        happen synchronously (uniform ``(ok, payload)``); the upload then streams
+        ``bundle_id`` selects the fixed flash slot (the bundle's index in
+        res/fontpack/bundles.json); 0 by default. Same shape as
+        :meth:`flash_firmware` minus the apply step — the firmware re-loads fonts
+        in place on COMMIT (no reboot). Gating + header validation happen
+        synchronously (uniform ``(ok, payload)``); the upload then streams
         ``fontpack_flash_progress`` events with a terminal ``fontpack_flash_done``."""
         if not self._fw_actions_allowed():
             return False, "No PolyKybd present (or paused) — cannot flash."
@@ -988,12 +990,60 @@ class PolyCore:
                 self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
 
             fok, fmsg = hid_fontpack.flash_fontpack(
-                self.keeb.hid, path, progress_cb=_progress, cancel_flag=cancel_flag)
+                self.keeb.hid, path, progress_cb=_progress, cancel_flag=cancel_flag,
+                bundle_id=bundle_id)
             self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg})
 
         # No coalesce_key: a flash must never be superseded by a later job.
         self.worker.submit("fontpack_flash", _job)
         return True, {"queued": True}
+
+    def flash_fontpack_bundle(self, bundle):
+        """Flash one shipped bundle (by id, e.g. ``"emoji"``, or its slot index) to
+        its slot — forced, even if the keyboard is already up to date. Resolves the
+        bundle to its res/fontpack/<id>.plyf and delegates to :meth:`flash_fontpack`."""
+        from polyhost.services import fontpack_bundle
+        manifest = fontpack_bundle.load_bundle_manifest()
+        if manifest is None:
+            return False, "No font-pack bundles shipped with this host."
+        b = self._find_bundle(manifest, bundle)
+        if b is None:
+            ids = ", ".join(str(x["id"]) for x in manifest["bundles"])
+            return False, f"Unknown bundle {bundle!r}. Available: {ids}."
+        return self.flash_fontpack(b["path"], bundle_id=b["index"])
+
+    @staticmethod
+    def _find_bundle(manifest, bundle):
+        key = str(bundle)
+        for b in manifest["bundles"]:
+            if b["id"] == key or str(b["index"]) == key:
+                return b
+        return None
+
+    def sync_fontpack(self):
+        """Flash every font-pack bundle the keyboard is missing/behind on — the
+        same comparison as the on-connect auto-flash, triggered manually. Clears
+        the once-per-session guard so an explicit sync always runs."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot flash."
+        self._fontpack_auto_attempted = False
+        self.worker.submit("fontpack_sync", self._fontpack_autocheck_job)
+        return True, {"queued": True}
+
+    def fontpack_bundle_status(self):
+        """Per-bundle status: device version (from the GET_ID block) vs the shipped
+        version, and whether each is stale. ``shipped`` is False with no bundles."""
+        from polyhost.services import fontpack_bundle
+        manifest = fontpack_bundle.load_bundle_manifest()
+        if manifest is None:
+            return True, {"shipped": False, "bundles": []}
+        dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
+        bundles = [{"id": b["id"], "index": b["index"],
+                    "device_version": dev.get(b["index"], 0),
+                    "shipped_version": b["content_version"],
+                    "stale": b["content_version"] > dev.get(b["index"], 0)}
+                   for b in manifest["bundles"]]
+        return True, {"shipped": True, "bundles": bundles}
 
     def get_fontpack_status(self):
         """Query the keyboard's currently-loaded font pack (present / abi /

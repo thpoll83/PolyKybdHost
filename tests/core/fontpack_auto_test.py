@@ -115,5 +115,55 @@ class TestAutocheckJob(unittest.TestCase):
         ff.assert_not_called()        # already attempted this process — no auto-retry
 
 
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class TestManualBundleOps(unittest.TestCase):
+    """The manual (polyctl) bundle ops: status, force-flash one, sync-all."""
+
+    def test_bundle_status_marks_stale(self):
+        core = _fake_core(device_versions={0: 2, 5: 1})
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST):
+            ok, payload = PolyCore.fontpack_bundle_status(core)
+        self.assertTrue(ok and payload["shipped"])
+        by_id = {b["id"]: b for b in payload["bundles"]}
+        self.assertFalse(by_id["symbol"]["stale"])      # device v2 == shipped v2
+        self.assertTrue(by_id["emoji"]["stale"])        # device v1 < shipped v3
+
+    def test_bundle_status_no_manifest(self):
+        core = _fake_core()
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=None):
+            ok, payload = PolyCore.fontpack_bundle_status(core)
+        self.assertTrue(ok)
+        self.assertFalse(payload["shipped"])
+
+    def test_flash_bundle_resolves_id_to_slot(self):
+        core = _fake_core()
+        core._fw_actions_allowed = lambda: True
+        core._find_bundle = PolyCore._find_bundle
+        captured = {}
+        core.flash_fontpack = lambda path, bundle_id=0: captured.update(path=path, bundle_id=bundle_id) or (True, {"queued": True})
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST):
+            ok, _ = PolyCore.flash_fontpack_bundle(core, "emoji")
+        self.assertTrue(ok)
+        self.assertEqual(captured["bundle_id"], 5)
+        self.assertEqual(captured["path"], "/x/emoji.plyf")
+
+    def test_flash_bundle_unknown(self):
+        core = _fake_core()
+        core._fw_actions_allowed = lambda: True
+        core._find_bundle = PolyCore._find_bundle
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST):
+            ok, msg = PolyCore.flash_fontpack_bundle(core, "nope")
+        self.assertFalse(ok)
+        self.assertIn("Unknown bundle", msg)
+
+    def test_sync_clears_guard_and_submits(self):
+        core = _fake_core(attempted=True)
+        core._fw_actions_allowed = lambda: True
+        ok, payload = PolyCore.sync_fontpack(core)
+        self.assertTrue(ok and payload["queued"])
+        self.assertFalse(core._fontpack_auto_attempted)   # guard reset so sync always runs
+        self.assertEqual(core._submitted[0][0], "fontpack_sync")
+
+
 if __name__ == "__main__":
     unittest.main()
