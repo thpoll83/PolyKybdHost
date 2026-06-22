@@ -258,25 +258,56 @@ def _cmd_fw(client, args):
     return 0
 
 
+def _stream_fontpack_flash(client, path, verb):
+    """Issue M_FONTPACK_FLASH for `path` and stream progress. Returns an exit code."""
+    # Subscribe BEFORE issuing the flash so no progress event is missed.
+    client.subscribe_events()
+    client.call(protocol.M_FONTPACK_FLASH, {"path": path})
+    print(f"{verb}…")
+    for name, payload in client.events():
+        if name == "fontpack_flash_progress":
+            print(_fmt_progress("fontpack", payload))
+        elif name == "fontpack_flash_done":
+            ok = (payload or {}).get("ok")
+            m = (payload or {}).get("msg")
+            if ok:
+                print(f"{verb}: complete — {m}")
+                return 0
+            print(f"{verb}: failed — {m}", file=sys.stderr)
+            return 1
+    print(f"error: connection closed before {verb} completed", file=sys.stderr)
+    return 1
+
+
+def _write_empty_pack() -> str:
+    """Write a 32-byte 'empty' PlyF pack (font_count 0) to a temp file; returns its path.
+    Flashing it clears the keyboard's font pack so rendering falls back to the
+    resident fonts only (firmware treats font_count==0 as a valid empty pack)."""
+    import struct, binascii, tempfile, os
+    body_crc = binascii.crc32(b"") & 0xFFFFFFFF          # CRC32 of an empty body
+    # <4sHHIIIIII: magic, abi, flags, content_version, font_count,
+    #              font_table_off, total_size, crc32, reserved
+    hdr = struct.pack("<4sHHIIIIII", b"PlyF", 1, 0, 0, 0, 32, 32, body_crc, 0)
+    fd, path = tempfile.mkstemp(suffix=".plyf", prefix="polykybd_wipe_")
+    with os.fdopen(fd, "wb") as f:
+        f.write(hdr)
+    return path
+
+
 def _cmd_fontpack(client, args):
-    if getattr(args, "fontpack_action", None) == "flash":
-        # Subscribe BEFORE issuing the flash so no progress event is missed.
-        client.subscribe_events()
-        client.call(protocol.M_FONTPACK_FLASH, {"path": args.file})
-        print(f"flashing font pack {args.file}…")
-        for name, payload in client.events():
-            if name == "fontpack_flash_progress":
-                print(_fmt_progress("fontpack", payload))
-            elif name == "fontpack_flash_done":
-                ok = (payload or {}).get("ok")
-                m = (payload or {}).get("msg")
-                if ok:
-                    print(f"flash complete: {m}")
-                    return 0
-                print(f"flash failed: {m}", file=sys.stderr)
-                return 1
-        print("error: connection closed before flash completed", file=sys.stderr)
-        return 1
+    action = getattr(args, "fontpack_action", None)
+    if action == "flash":
+        return _stream_fontpack_flash(client, args.file, f"flashing font pack {args.file}")
+    if action == "wipe":
+        import os
+        path = _write_empty_pack()
+        try:
+            return _stream_fontpack_flash(client, path, "wiping font pack (flashing empty pack)")
+        finally:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
     # default: status
     info = client.call(protocol.M_FONTPACK_STATUS)
     if not info.get("present"):
@@ -442,6 +473,8 @@ def build_parser():
     p_fp_flash = fp_sub.add_parser(
         "flash", help="upload a font pack .plyf (streams progress; no reboot)")
     p_fp_flash.add_argument("file", help="path to the font pack .plyf")
+    fp_sub.add_parser(
+        "wipe", help="clear the font pack (flash an empty pack) — renders with resident fonts only")
     p_fp.set_defaults(func=_cmd_fontpack)
 
     p_upd = sub.add_parser("update", help="host self-update")
