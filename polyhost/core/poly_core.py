@@ -1024,21 +1024,28 @@ class PolyCore:
         self.worker.submit("fontpack_autocheck", self._fontpack_autocheck_job)
 
     def _fontpack_autocheck_job(self, cancel):
+        """Flash any font-pack bundles the keyboard is missing or behind on.
+
+        Compares the device's per-bundle versions (the GET_ID version block,
+        captured by the reconnect probe into keeb.fontpack_bundle_versions)
+        against the shipped bundles.json, and flashes only the stale ones to
+        their fixed slots. Self-terminating: a successful flash makes the
+        versions equal, so the next connect finds nothing to do."""
         from polyhost.services import fontpack_bundle
-        bpath, binfo = fontpack_bundle.bundled_pack_info(self.poly_settings.get("fontpack_path"))
-        if binfo is None:
-            return   # no pack shipped with this host — feature inert
-        sok, dinfo = hid_fontpack.get_fontpack_status(self.keeb.hid)
-        should, reason = fontpack_bundle.decide_auto_flash(sok, dinfo if sok else None, binfo)
-        if not should:
-            self.log.info("Font pack auto-check: %s.", reason)
+        manifest = fontpack_bundle.load_bundle_manifest()
+        if manifest is None:
+            return   # no bundles shipped with this host — feature inert
+        device_versions = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
+        stale = hid_fontpack.decide_stale_bundles(device_versions, manifest["bundles"])
+        if not stale:
+            self.log.info("Font pack auto-check: all %d bundle(s) up to date.",
+                          len(manifest["bundles"]))
             return
         if self._fontpack_auto_attempted:
             self.log.info("Font pack auto-flash already attempted this session — "
-                          "skipping (%s). Use a manual flash to retry.", reason)
+                          "skipping. Use a manual flash to retry.")
             return
         self._fontpack_auto_attempted = True
-        self.log.info("Font pack auto-flash: %s — flashing %s.", reason, bpath)
 
         cancel_flag = [False]
 
@@ -1047,13 +1054,26 @@ class PolyCore:
                 cancel_flag[0] = True
             self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
 
-        fok, fmsg = hid_fontpack.flash_fontpack(
-            self.keeb.hid, bpath, progress_cb=_progress, cancel_flag=cancel_flag)
-        self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg, "auto": True})
-        if fok:
-            self.log.info("Font pack auto-flash complete: %s", fmsg)
-        else:
-            self.log.warning("Font pack auto-flash failed: %s", fmsg)
+        n = len(stale)
+        for i, b in enumerate(stale):
+            dev = device_versions.get(b["index"], 0)
+            self.log.info("Font pack auto-flash: bundle %s (slot %d) device v%d < v%d "
+                          "— flashing (%d/%d).", b["id"], b["index"], dev,
+                          b["content_version"], i + 1, n)
+            fok, fmsg = hid_fontpack.flash_fontpack(
+                self.keeb.hid, b["path"], progress_cb=_progress,
+                cancel_flag=cancel_flag, bundle_id=b["index"])
+            if not fok:
+                self.log.warning("Font pack auto-flash failed for bundle %s: %s", b["id"], fmsg)
+                self.emit("fontpack_flash_done",
+                          {"ok": False, "msg": f"Bundle {b['id']}: {fmsg}", "auto": True})
+                return
+            if cancel_flag[0]:
+                self.log.info("Font pack auto-flash cancelled after bundle %s.", b["id"])
+                return
+        msg = f"Flashed {n} font-pack bundle(s): {', '.join(b['id'] for b in stale)}."
+        self.log.info("Font pack auto-flash complete: %s", msg)
+        self.emit("fontpack_flash_done", {"ok": True, "msg": msg, "auto": True})
 
     def check_update(self):
         """Check GitHub for a newer host release (synchronous HTTP — runs on

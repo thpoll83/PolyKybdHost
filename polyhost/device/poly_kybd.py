@@ -14,6 +14,7 @@ from polyhost.device.bit_packing import pack_dict_10_bit
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
 from polyhost.device.command_ids import Cmd, HidId, IdleStyle
 from polyhost.device.hid_helper import HidHelper
+from polyhost.device.hid_fontpack import parse_id_version_block
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
@@ -53,6 +54,9 @@ class PolyKybd:
         self.num_layers = None
 
         self._fresh_boot = False
+        # {bundle_index: content_version} from the last GET_ID (protocol >= 6); empty
+        # on older firmware. Drives auto-flashing of stale/missing font-pack bundles.
+        self.fontpack_bundle_versions = {}
 
         # Statistics
         self.stat_plain = 0
@@ -135,6 +139,10 @@ class PolyKybd:
             # thread, so waiting here no longer blocks the UI.
             result, msg = self.hid.send_and_read_validate(
                 compose_cmd(Cmd.GET_ID), 250, expect(Cmd.GET_ID))
+            # Parse the per-bundle font-pack version block (protocol >= 6) from the
+            # RAW reply before decoding — it lives in binary after the string's NUL.
+            if result:
+                self.fontpack_bundle_versions = parse_id_version_block(msg)
             msg = msg.decode().strip('\x00')
             if not result:
                 return False, msg

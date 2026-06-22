@@ -16,13 +16,14 @@ import struct
 import time
 
 HID_POLYKYBD        = 0x50   # ord('P')
-CMD_FONTPACK_BEGIN  = 0x50   # data[2..5]=pack_size, data[6..9]=pack_crc32 (whole pack)
+CMD_FONTPACK_BEGIN  = 0x50   # data[2..5]=pack_size, data[6..9]=pack_crc32, data[10]=bundle_id
 CMD_FONTPACK_CHUNK  = 0x51   # data[2..5]=offset, data[6..]=FONTPACK_CHUNK_SIZE bytes
 CMD_FONTPACK_COMMIT = 0x52   # verify CRC from flash + reload (no reboot); reply[3..4]=content_version
 CMD_FONTPACK_STATUS = 0x53   # reply: [3]=present [4]=abi [5..6]=content_version [7]=font_count
 
 FONTPACK_CHUNK_SIZE = 56            # payload bytes/chunk (+4-byte offset = 60); matches firmware FW_UP_CHUNK_SIZE
-FONTPACK_MAX_SIZE   = 0x100000      # 1 MB cap; must match FONTPACK_FLASH_MAX_SIZE in qmk .../base/fontpack.h
+FONTPACK_MAX_SIZE   = 0x200000      # 2 MB cap; the whole bundle window. Per-bundle, the
+                                    # firmware rejects a pack larger than its fixed slot.
 
 # Pack format (base/fontpack.h). The host only needs to parse/validate the header.
 FONTPACK_MAGIC        = b"PlyF"
@@ -110,7 +111,44 @@ def _abort_cleanup(hid) -> None:
         pass
 
 
-def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
+def parse_id_version_block(reply) -> dict:
+    """Parse the per-bundle font-pack version block from a GET_ID (cmd 6) reply.
+
+    Firmware (protocol >= 6) appends, AFTER the NUL-terminated id string,
+    ['V'][count][u16 little-endian content_version x count] in bundle-id order.
+    Returns {bundle_index: content_version} ({} if the block is absent/malformed,
+    e.g. pre-v6 firmware whose reply has no block)."""
+    raw = bytes(reply)
+    nul = raw.find(b"\x00", 3)            # id string starts at offset 3 ("P\x06.")
+    if nul < 0:
+        return {}
+    p = nul + 1
+    if p + 2 > len(raw) or raw[p] != ord("V"):
+        return {}
+    count = raw[p + 1]
+    p += 2
+    if p + count * 2 > len(raw):
+        return {}
+    return {i: int.from_bytes(raw[p + i * 2:p + i * 2 + 2], "little") for i in range(count)}
+
+
+def decide_stale_bundles(device_versions: dict, shipped: list) -> list:
+    """Pick which shipped bundles to (re)flash: those the device is behind on.
+
+    device_versions: {bundle_index: content_version} from parse_id_version_block
+                     (a missing index == version 0, i.e. absent on the device).
+    shipped:         list of {index, content_version, ...} (res/fontpack/bundles.json).
+    Returns the subset of `shipped` whose content_version > the device's, in order."""
+    out = []
+    for b in shipped:
+        dev = device_versions.get(b["index"], 0)
+        if b["content_version"] > dev:
+            out.append(b)
+    return out
+
+
+def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = None,
+                   bundle_id: int = 0) -> tuple[bool, str]:
     """Full HID font-pack flash flow: BEGIN -> N*CHUNK -> COMMIT (no reboot).
 
     Args:
@@ -118,6 +156,8 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
         pack_path:    Path to the .plyf font-pack image.
         progress_cb:  Optional callable(percent: int, message: str).
         cancel_flag:  Optional single-element list; set cancel_flag[0] = True to abort.
+        bundle_id:    Which bundle slot to flash (index in res/fontpack/bundles.json;
+                      firmware resolves it to a fixed flash slot). 0 by default.
 
     Returns:
         (True, success_msg) or (False, error_msg).
@@ -146,7 +186,7 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
 
     # -- FONTPACK_BEGIN -- (same poll protocol as firmware update: '.'/'~'/'!'/no-reply)
     hid.drain_replies()
-    pkt = bytearray([HID_POLYKYBD, CMD_FONTPACK_BEGIN]) + struct.pack('<II', pack_size, pack_crc)
+    pkt = bytearray([HID_POLYKYBD, CMD_FONTPACK_BEGIN]) + struct.pack('<IIB', pack_size, pack_crc, bundle_id)
     deadline    = time.monotonic() + 90
     timeout_ms  = 15000   # generous for first send (master erases the pack region)
     begin_ready = False

@@ -1,0 +1,66 @@
+{
+  "layout_version": 1,
+  "bundle_count": 6,
+  "bundles": [
+    {
+      "id": "symbol",
+      "index": 0,
+      "file": "symbol.plyf",
+      "content_version": 1,
+      "size": 29792,
+      "slot_offset": 4096,
+      "slot_size": 98304,
+      "sha256": "fc26ae915f5b5685"
+    },
+    {
+      "id": "mideast",
+      "index": 1,
+      "file": "mideast.plyf",
+      "content_version": 1,
+      "size": 35404,
+      "slot_offset": 102400,
+      "slot_size": 98304,
+      "sha256": "4d7c762d92ef3dec"
+    },
+    {
+      "id": "syllabic",
+      "index": 2,
+      "file": "syllabic.plyf",
+      "content_version": 1,
+      "size": 46644,
+      "slot_offset": 200704,
+      "slot_size": 98304,
+      "sha256": "ebfbf3fef33cc8ea"
+    },
+    {
+      "id": "asia",
+      "index": 3,
+      "file": "asia.plyf",
+      "content_version": 1,
+      "size": 62380,
+      "slot_offset": 299008,
+      "slot_size": 131072,
+      "sha256": "fa436bc0ccc78d59"
+    },
+    {
+      "id": "flags",
+      "index": 4,
+      "file": "flags.plyf",
+      "content_version": 1,
+      "size": 62932,
+      "slot_offset": 430080,
+      "slot_size": 131072,
+      "sha256": "b1de79e818ac7c35"
+    },
+    {
+      "id": "emoji",
+      "index": 5,
+      "file": "emoji.plyf",
+      "content_version": 1,
+      "size": 227460,
+      "slot_offset": 561152,
+      "slot_size": 1536000,
+      "sha256": "2865962c705f06c3"
+    }
+  ]
+}

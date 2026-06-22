@@ -19,6 +19,8 @@ from polyhost.device.hid_fontpack import (
     validate_fontpack,
     get_fontpack_status,
     flash_fontpack,
+    parse_id_version_block,
+    decide_stale_bundles,
     HID_POLYKYBD,
     CMD_FONTPACK_BEGIN,
     CMD_FONTPACK_CHUNK,
@@ -529,6 +531,54 @@ class TestFlashFontpackCancellationProgress(unittest.TestCase):
                 self.assertLessEqual(a, b)
         finally:
             os.unlink(path)
+
+
+class TestIdVersionBlock(unittest.TestCase):
+    """parse_id_version_block: the per-bundle versions appended to GET_ID (cmd 6)."""
+
+    @staticmethod
+    def _reply(name=b"P\x06.Split72 0.8.50 P6 HW2 ", versions=None, pad_to=64):
+        raw = bytearray(name) + b"\x00"
+        if versions is not None:
+            raw += b"V" + bytes([len(versions)])
+            for v in versions:
+                raw += struct.pack("<H", v)
+        raw += b"\x00" * max(0, pad_to - len(raw))
+        return bytes(raw)
+
+    def test_parses_versions_in_order(self):
+        got = parse_id_version_block(self._reply(versions=[1, 0, 3, 65535, 2, 7]))
+        self.assertEqual(got, {0: 1, 1: 0, 2: 3, 3: 65535, 4: 2, 5: 7})
+
+    def test_absent_block_is_empty(self):           # pre-v6 firmware: no 'V' block
+        self.assertEqual(parse_id_version_block(self._reply(versions=None)), {})
+
+    def test_fresh_boot_marker_does_not_disturb_block(self):
+        r = bytearray(self._reply(versions=[5, 6]))
+        r[2] = ord("*")                              # fresh-boot marker on byte 2
+        self.assertEqual(parse_id_version_block(bytes(r)), {0: 5, 1: 6})
+
+    def test_truncated_block_is_empty(self):         # count says 4 but bytes run out
+        raw = b"P\x06.Split72 0.8.50 P6 HW2 \x00V\x04\x01\x00"
+        self.assertEqual(parse_id_version_block(raw), {})
+
+
+class TestDecideStaleBundles(unittest.TestCase):
+    _SHIPPED = [
+        {"id": "symbol", "index": 0, "content_version": 2},
+        {"id": "emoji",  "index": 5, "content_version": 3},
+    ]
+
+    def test_flashes_only_behind(self):
+        stale = decide_stale_bundles({0: 2, 5: 1}, self._SHIPPED)
+        self.assertEqual([b["id"] for b in stale], ["emoji"])
+
+    def test_missing_index_is_zero(self):            # absent on device == version 0
+        stale = decide_stale_bundles({}, self._SHIPPED)
+        self.assertEqual([b["index"] for b in stale], [0, 5])
+
+    def test_up_to_date_is_empty(self):
+        self.assertEqual(decide_stale_bundles({0: 9, 5: 9}, self._SHIPPED), [])
 
 
 if __name__ == '__main__':

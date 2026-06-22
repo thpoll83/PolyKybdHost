@@ -12,6 +12,7 @@ The bundled pack lives in ``polyhost/res/fontpack/*.plyf`` (dropped there by the
 release build) or at an explicit ``fontpack_path`` setting. With no pack present
 the whole feature is inert (``bundled_pack_info`` returns ``(None, None)``).
 """
+import json
 import os
 from pathlib import Path
 
@@ -20,6 +21,42 @@ from polyhost.device import hid_fontpack
 
 def _res_dir() -> Path:
     return Path(__file__).resolve().parent.parent / "res" / "fontpack"
+
+
+def res_dir() -> Path:
+    """Public accessor for the shipped font-pack resource directory."""
+    return _res_dir()
+
+
+# ── Split-pack bundles (protocol >= 6) ───────────────────────────────────────
+# The pack ships as N per-family bundles in polyhost/res/fontpack/<id>.plyf with
+# a bundles.json manifest {layout_version, bundles:[{id,index,file,content_version,…}]}.
+# On a fresh connect the host compares the device's per-bundle versions (the
+# GET_ID version block) against these and flashes only the missing/stale ones.
+
+def load_bundle_manifest(res: Path | None = None) -> dict | None:
+    """Parse polyhost/res/fontpack/bundles.json, or None if not shipped/invalid.
+
+    Each bundle entry is annotated with an absolute ``path`` to its .plyf for the
+    flasher. Missing .plyf files are dropped (a partially-shipped manifest still
+    flashes what is present)."""
+    d = res or _res_dir()
+    mf = d / "bundles.json"
+    if not mf.is_file():
+        return None
+    try:
+        doc = json.loads(mf.read_text())
+    except (OSError, ValueError):
+        return None
+    bundles = []
+    for b in doc.get("bundles", []):
+        p = d / b.get("file", "")
+        if p.is_file():
+            bundles.append({**b, "path": str(p)})
+    if not bundles:
+        return None
+    doc["bundles"] = bundles
+    return doc
 
 
 def bundled_pack_path(override: str = "") -> str | None:
