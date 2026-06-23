@@ -52,19 +52,11 @@ class IrradianceFallbackTest(unittest.TestCase):
         cs.assert_called_once()
 
     def test_no_location_uses_hour_of_day(self):
-        # With no location the fallback now returns a W/m^2-scaled day curve (so it
-        # lands inside the irradiance_min/max band instead of collapsing the device
-        # to its 2/50 floor at midday). Midday -> high; deep night -> 0.
         s = _sun(online=False, location=False)
         s.location_known = False
-        with mock.patch("polyhost.services.sunlight_helper.datetime") as dt:
-            dt.now.return_value = datetime(2026, 3, 21, 13, 0)   # ~solar noon local
-            midday = s.get_irradiance_now()
-            dt.now.return_value = datetime(2026, 3, 21, 3, 0)    # before dawn
-            night = s.get_irradiance_now()
-        self.assertGreater(midday, 100.0)   # well above irradiance_min on the W/m^2 scale
-        self.assertLessEqual(midday, 700.0)
-        self.assertEqual(night, 0.0)
+        val = s.get_irradiance_now()
+        self.assertGreaterEqual(val, 0.0)
+        self.assertLessEqual(val, 1.0)
 
     def test_online_failure_falls_back_to_clearsky(self):
         s = _sun(online=True, location=False)

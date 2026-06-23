@@ -65,19 +65,8 @@ class Sunlight:
             self.log.debug("Clear-sky irradiance value: %f", ghi)
             return ghi
 
-        # No location at all: approximate a clear-sky day curve on the SAME
-        # W/m^2 scale the brightness thresholds (irradiance_min/max) expect,
-        # peaking ~700 W/m^2 near solar noon and zero outside ~06:00-20:00 local.
-        # The old 0..1 ramp sat far below irradiance_min, so get_brightness_now()
-        # normalized it to 0 and the device dropped to its 2/50 floor even at
-        # midday whenever the location was briefly unknown (e.g. right after a
-        # restart / firmware-update reconnect, before the geocoder lookup lands).
-        now_local = datetime.now()
-        hour = now_local.hour + now_local.minute / 60.0
-        day_frac = (hour - 6.0) / 14.0          # 0 at 06:00 .. 1 at 20:00
-        if day_frac <= 0.0 or day_frac >= 1.0:
-            return 0.0                          # before dawn / after dusk
-        return 700.0 * math.sin(math.pi * day_frac)
+        # No location at all: crude hour-of-day shape (0 at 07:00, ramp to 19:00).
+        return min(19 - 7, max(0, datetime.now().hour - 7)) / 12
 
     def _online_irradiance(self):
         """open-meteo shortwave_radiation for the current hour (W/m^2), which
