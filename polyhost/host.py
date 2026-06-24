@@ -186,6 +186,9 @@ class PolyHost(QApplication):
     def __init__(self, log_level, debug_mode, ignore_version=False,
                  client_mode=False, endpoint=None, connect_retry=False):
         super().__init__(sys.argv)
+        # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
+        from polyhost.util.macos_ui import hide_dock_icon
+        hide_dock_icon()
         fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
         level = DEBUG_DETAILED if debug_mode>1 else log_level
 

@@ -392,10 +392,6 @@ def add_to_startup(wrapper_path, app_name, icon_path):
 
     elif system == "Darwin":
         plist_path = _macos_plist_path(app_name)
-        # ~/Library/LaunchAgents does not exist on a fresh macOS account until
-        # the first LaunchAgent is installed; write_text() would raise
-        # FileNotFoundError otherwise (seen in the field on a clean install).
-        plist_path.parent.mkdir(parents=True, exist_ok=True)
         plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
 "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -414,6 +410,26 @@ def add_to_startup(wrapper_path, app_name, icon_path):
 </dict>
 </plist>
 """
+        # Idempotent: if an identical plist is already loaded, do nothing.
+        # Rewriting the plist and re-running `launchctl load` on every launch
+        # re-registers the login item, which makes macOS (Ventura+) pop up
+        # "Background Items Added" each time. Only touch it when it's missing or
+        # its content actually changed (e.g. the wrapper path moved).
+        try:
+            already = plist_path.read_text()
+        except OSError:
+            already = None
+        if already == plist_content:
+            print(f"Startup plist already up to date: {plist_path}")
+            return
+        # ~/Library/LaunchAgents does not exist on a fresh macOS account until
+        # the first LaunchAgent is installed; write_text() would raise
+        # FileNotFoundError otherwise (seen in the field on a clean install).
+        plist_path.parent.mkdir(parents=True, exist_ok=True)
+        # Unload an existing (stale) definition first so launchd picks up the
+        # new content cleanly instead of keeping the old registration.
+        if already is not None:
+            subprocess.run(["launchctl", "unload", str(plist_path)], check=False)
         plist_path.write_text(plist_content)
         subprocess.run(["launchctl", "load", str(plist_path)], check=False)
         print(f"Startup plist created and loaded at: {plist_path}")
