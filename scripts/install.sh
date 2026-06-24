@@ -44,9 +44,25 @@ fi
 cd "$TARGET_DIR"
 
 # --- python virtual environment ---------------------------------------------
-PY=python3
-command -v "$PY" >/dev/null 2>&1 || PY=python
-command -v "$PY" >/dev/null 2>&1 || { echo "!! Python 3 not found on PATH."; exit 1; }
+# PolyKybdHost needs Python 3.10+ (match statements, PEP 604 unions). Prefer an
+# explicitly-versioned interpreter so we don't silently build the venv on the
+# macOS system python3 (3.9, from the Xcode Command Line Tools), which can't run
+# the app. Fall back to bare python3/python only if it is new enough.
+PY=""
+for cand in python3.13 python3.12 python3.11 python3.10 python3 python; do
+    command -v "$cand" >/dev/null 2>&1 || continue
+    if "$cand" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+        PY=$cand
+        break
+    fi
+done
+if [ -z "$PY" ]; then
+    echo "!! PolyKybdHost requires Python 3.10 or newer, but none was found on PATH."
+    echo "   The macOS system python3 (Xcode Command Line Tools) is 3.9 and will not work."
+    echo "   Install a newer Python, e.g.:  brew install python"
+    exit 1
+fi
+echo ">> Using $PY ($("$PY" --version 2>&1))"
 
 echo ">> Creating virtual environment in .venv"
 "$PY" -m venv .venv

@@ -392,6 +392,10 @@ def add_to_startup(wrapper_path, app_name, icon_path):
 
     elif system == "Darwin":
         plist_path = _macos_plist_path(app_name)
+        # ~/Library/LaunchAgents does not exist on a fresh macOS account until
+        # the first LaunchAgent is installed; write_text() would raise
+        # FileNotFoundError otherwise (seen in the field on a clean install).
+        plist_path.parent.mkdir(parents=True, exist_ok=True)
         plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
 "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

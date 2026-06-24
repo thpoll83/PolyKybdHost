@@ -53,6 +53,12 @@ Then start it:
 
 ## Manual install
 
+> **Requires Python 3.10 or newer.** Create the virtual environment with a
+> 3.10+ interpreter — on macOS the system `python3` from the Xcode Command Line
+> Tools is 3.9 and cannot run the app (you'll get a `TypeError: unsupported
+> operand type(s) for |`). Use `brew install python` (or python.org) and build
+> the venv with e.g. `python3.12 -m venv .venv`.
+
 ```bash
 git clone https://github.com/thpoll83/PolyKybdHost.git
 cd PolyKybdHost
@@ -81,7 +87,11 @@ crash with an `ImportError` if a dependency slipped through.
   sudo udevadm control --reload-rules && sudo udevadm trigger
   ```
   Replug the keyboard afterwards.
-- **macOS** — `brew install hidapi`.
+- **macOS** — `brew install hidapi`. Use a Homebrew/python.org Python 3.10+ for
+  the venv (see the note above); the system `python3` is 3.9. Installing
+  Homebrew's `python` also pulls binary wheels for the `pyobjc-*` frameworks
+  (a transitive dependency of `PyWinCtl`), so the first `pip install` is much
+  faster than compiling them against the Command Line Tools.
 
 ## Running
 
