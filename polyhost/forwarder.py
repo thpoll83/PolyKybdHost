@@ -108,7 +108,6 @@ class PolyForwarder(QApplication):
         self.set_style()
 
         self.menu = QMenu()
-        self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
         self.exit = QAction(get_icon("power.svg"), "Quit", parent=self)
         # noinspection PyUnresolvedReferences
