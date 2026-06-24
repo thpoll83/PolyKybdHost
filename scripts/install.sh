@@ -58,8 +58,34 @@ for cand in python3.13 python3.12 python3.11 python3.10 python3 python; do
 done
 if [ -z "$PY" ]; then
     echo "!! PolyKybdHost requires Python 3.10 or newer, but none was found on PATH."
-    echo "   The macOS system python3 (Xcode Command Line Tools) is 3.9 and will not work."
-    echo "   Install a newer Python, e.g.:  brew install python"
+    case "$(uname -s)" in
+        Darwin)
+            echo "   The macOS system python3 (Xcode Command Line Tools) is 3.9 and will not work."
+            echo "   Install a newer Python, then re-run this installer:"
+            echo
+            if command -v brew >/dev/null 2>&1; then
+                echo "     brew install python        # Homebrew detected"
+            else
+                echo "     # Option A - Homebrew (recommended):"
+                echo "     /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+                echo "     brew install python"
+                echo
+                echo "     # Option B - official installer: download from https://www.python.org/downloads/macos/"
+            fi
+            ;;
+        Linux)
+            echo "   Install Python 3.10+ with your distro's package manager, then re-run this installer:"
+            echo
+            echo "     sudo apt install python3 python3-venv     # Debian/Ubuntu"
+            echo "     sudo dnf install python3                   # Fedora/RHEL"
+            echo "     sudo pacman -S python                      # Arch"
+            echo
+            echo "   If your distro is too old to ship 3.10+, see https://www.python.org/downloads/"
+            ;;
+        *)
+            echo "   Install Python 3.10 or newer from https://www.python.org/downloads/ and re-run this installer."
+            ;;
+    esac
     exit 1
 fi
 echo ">> Using $PY ($("$PY" --version 2>&1))"
