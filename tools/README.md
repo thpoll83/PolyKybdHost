@@ -45,7 +45,7 @@ re-point it there.
 - `split72/keyboard.json` — arg-index → matrix (`LAYOUT_left_right_stacked`)
 - `split72/keymaps/default/keymap.c` — the `[_EMJ]` layer → matrix → key role
   (category tab / emoji slot / page arrow / unused)
-- `keyboards/handwired/polykybd/emoji/emoji_data.h` — codepoints per category
+- `keyboards/polykybd/emoji/emoji_data.h` — codepoints per category
 - `.../emoji/emoji_layer.c` — `emj_tab_icons[]`
 
 So re-ordering categories, adding emojis, or remapping keys is picked up

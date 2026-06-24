@@ -7,7 +7,7 @@ keyboard is older or has no pack, flashes it automatically (see
 `polyhost/services/fontpack_bundle.py` + `PolyCore._fontpack_autocheck_job`).
 
 - The pack is produced by the firmware repo's
-  `keyboards/handwired/polykybd/fonts/generate_fonts.py --emit-pack <out.plyf>`
+  `keyboards/polykybd/fonts/generate_fonts.py --emit-pack <out.plyf>`
   (built with the pinned `fontconvert` for byte-reproducibility).
 - With **no** `.plyf` here the feature is inert — nothing is flashed.
 - Auto-flash is **self-terminating** (only flashes a strictly-older / missing

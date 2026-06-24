@@ -26,7 +26,7 @@ _RP2040_SRAM_END    = 0x20042000   # 264 KB SRAM
 _POLYKYBD_SIGNATURES = (
     "PolyKybd".encode('utf-16-le'),   # USB product string  (keyboard_name = "PolyKybd Split72")
     "Poly".encode('utf-16-le'),       # USB manufacturer prefix (manufacturer = "PolyFabriq")
-    # b'handwired/polykybd',           # QMK_KEYBOARD path (ASCII) -- commented out: path may change
+    # b'polykybd',           # QMK_KEYBOARD path (ASCII) -- commented out: path may change
 )
 
 
@@ -118,7 +118,7 @@ def validate_polykybd_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]
         "This firmware binary does not appear to be built for PolyKybd. "
         "No PolyKybd identifier string was found in the binary. "
         "Make sure you selected a firmware compiled for "
-        "'handwired/polykybd/split72' using 'qmk compile'."
+        "'polykybd/split72' using 'qmk compile'."
     )
 
 
