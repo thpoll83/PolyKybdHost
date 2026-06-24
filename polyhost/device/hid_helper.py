@@ -7,6 +7,31 @@ from typing import Any
 if platform.system() == 'Windows':
     import ctypes
     ctypes.CDLL(os.path.dirname(os.path.realpath(__file__)) + '\\win-hidapi-0-15\\hidapi.dll')
+elif platform.system() == 'Darwin':
+    # The `hid` package loads libhidapi by *leaf* name ("libhidapi.dylib"), but
+    # macOS's default dyld search path excludes Homebrew's lib dirs
+    # (/opt/homebrew/lib on Apple Silicon, /usr/local/lib on Intel) and SIP
+    # strips DYLD_* env vars, so a brew-installed hidapi is invisible to the
+    # import. Pre-load it by absolute path here (mirrors the Windows DLL load
+    # above): once the image is in the process, `hid`'s leaf-name dlopen resolves
+    # to it. Best-effort — if nothing is found, the import below still raises the
+    # helpful "brew install hidapi" message. Absolute paths (not env vars) so it
+    # also works under launchd autostart, where HOMEBREW_PREFIX isn't set.
+    import ctypes
+    import glob as _glob
+    _dirs = ["/opt/homebrew/lib", "/opt/homebrew/opt/hidapi/lib",
+             "/usr/local/lib", "/usr/local/opt/hidapi/lib"]
+    _brew = os.environ.get("HOMEBREW_PREFIX")
+    if _brew:
+        _dirs.insert(0, os.path.join(_brew, "lib"))
+    for _d in _dirs:
+        _hits = _glob.glob(os.path.join(_d, "libhidapi*.dylib"))
+        if _hits:
+            try:
+                ctypes.CDLL(_hits[0])
+                break
+            except OSError:
+                pass
 try:
     import hid
 except ImportError:
