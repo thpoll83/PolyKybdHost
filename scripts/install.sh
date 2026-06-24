@@ -187,8 +187,25 @@ esac
 
 launch_app() {
     echo ">> Starting PolyKybd..."
-    nohup .venv/bin/python -m polyhost >/dev/null 2>&1 &
-    echo ">> PolyKybd started (PID $!); it also registers itself to autostart at login."
+    # Capture startup output to a log instead of /dev/null: if the app exits
+    # immediately (a missing dep, a startup crash) the user otherwise just sees
+    # an empty menu bar with no clue why. The log makes that diagnosable.
+    launch_log="$(pwd)/polyhost_launch.log"
+    nohup .venv/bin/python -m polyhost >"$launch_log" 2>&1 &
+    app_pid=$!
+    echo ">> PolyKybd started (PID $app_pid); it also registers itself to autostart at login."
+    # Give it a moment to fail fast, then check it's still alive.
+    sleep 3
+    if kill -0 "$app_pid" 2>/dev/null; then
+        if [ "$(uname -s)" = "Darwin" ]; then
+            echo ">> Look for the PolyKybd icon in the macOS menu bar (top-right) — it is a"
+            echo "   menu-bar app, so it does not appear in the Dock."
+        fi
+    else
+        echo "!! PolyKybd exited right after starting. Last lines of $launch_log:"
+        tail -n 15 "$launch_log" 2>/dev/null | sed 's/^/   | /'
+        echo ">> Fix the problem above, then relaunch with:  $RUN_HINT"
+    fi
 }
 
 echo ""
