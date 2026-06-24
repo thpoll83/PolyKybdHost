@@ -87,15 +87,30 @@ if [ -z "$PY" ] && [ "$(uname -s)" = "Darwin" ] && [ -r /dev/tty ]; then
         *)  # default: Homebrew
             if ! command -v brew >/dev/null 2>&1; then
                 echo ">> Installing Homebrew (it may ask for your password)..." > /dev/tty
-                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/tty
+                if ! /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/tty; then
+                    echo "!! Homebrew installation failed. Install it manually from https://brew.sh then re-run this installer." >&2
+                    exit 1
+                fi
                 # Put brew on PATH for the rest of this script (Apple Silicon vs Intel).
                 for brewbin in /opt/homebrew/bin/brew /usr/local/bin/brew; do
                     [ -x "$brewbin" ] && eval "$("$brewbin" shellenv)" && break
                 done
+                if ! command -v brew >/dev/null 2>&1; then
+                    echo "!! Homebrew installed but 'brew' is not on PATH. Open a new terminal and re-run this installer." >&2
+                    exit 1
+                fi
             fi
             echo ">> Installing Python via Homebrew..." > /dev/tty
-            brew install python
+            if ! brew install python; then
+                echo "!! 'brew install python' failed (see the brew output above). Resolve it, then re-run this installer." >&2
+                exit 1
+            fi
             PY="$(find_python || true)"
+            if [ -z "$PY" ]; then
+                echo "!! Python was installed via Homebrew but no 3.10+ interpreter is on PATH." >&2
+                echo "   Open a new terminal (so brew's bin dir is picked up) and re-run this installer." >&2
+                exit 1
+            fi
             ;;
     esac
 fi
