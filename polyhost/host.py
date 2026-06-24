@@ -465,6 +465,11 @@ class PolyHost(QApplication):
                 self.helper = LinuxGnomeInputHelper()
         elif platform.system() == "Darwin":
             self.helper = MacOSInputHelper()
+            self.log.info(
+                "macOS: PolyKybd needs 'Input Monitoring' (HID access to the "
+                "keyboard) and 'Accessibility' (Unicode input + window tracking) "
+                "in System Settings > Privacy & Security. This is a one-time grant "
+                "(see the macOS permissions note in the README).")
 
         if not self.helper:
             self.log.error("Unsupported OS! Exiting...")
@@ -725,7 +730,10 @@ class PolyHost(QApplication):
             # so a keyboard-side switch would leave the tray menu stale.
             self.update_ui_on_lang_change(kb_lang)
             lang, country = get_lang_and_country(kb_lang)
-            success, msg = self.helper.set_language(lang, country)
+            if self._should_auto_switch_os_language():
+                success, msg = self.helper.set_language(lang, country)
+            else:
+                success, msg = True, "OS-language auto-switch disabled"
             if success:
                 data = self.overlay_handler.get_overlay_data()
                 if data:
@@ -736,6 +744,18 @@ class PolyHost(QApplication):
                 self.log.warning("%s (%s)", warning, msg)
             self.current_lang = kb_lang
             self.icon_manager.set_idle()
+
+    def _should_auto_switch_os_language(self):
+        """Whether to auto-switch the OS input language to match the keyboard on
+        (re)connect. On macOS this runs `languagesetup` via osascript `with
+        administrator privileges`, which pops a password dialog every time — and
+        the keyboard's lang code never equals macOS's KeyboardLayout Name, so the
+        sync re-fires on every launch. Default it off there (opt in via the
+        `macos_native_set_language` setting); the explicit "Change System Input
+        Language" debug action still works. Other platforms keep prior behavior."""
+        if platform.system() == "Darwin":
+            return bool(self.poly_settings.get("macos_native_set_language"))
+        return True
 
     # ------------------------------------------------------------------
     # Client mode (H4a): render from the daemon's status_changed events
@@ -776,7 +796,10 @@ class PolyHost(QApplication):
             self.icon_manager.set_thinking()
             self.update_ui_on_lang_change(lang)
             lng, country = get_lang_and_country(lang)
-            success, msg = self.helper.set_language(lng, country)
+            if self._should_auto_switch_os_language():
+                success, msg = self.helper.set_language(lng, country)
+            else:
+                success, msg = True, "OS-language auto-switch disabled"
             if not success:
                 warning = f"Could not change OS language {lang}."
                 self.icon_manager.set_warning(warning, 5000)
@@ -881,14 +904,6 @@ class PolyHost(QApplication):
                 # once the firmware version is known, by which point the rest of
                 # the menu already exists, so insert rather than add.
                 self.keeb_lang_menu = QMenu(title)
-                # Enlarge only the language menu's icons — the per-language flag
-                # icons are the ones worth showing big. Applying this on the whole
-                # tray menu (the old behaviour) instead inflated the submenu-title
-                # glyphs (All Commands / Font Pack / Idle Anti-Burn-In / Fix
-                # Left-Right Side), which looked oversized next to the normal
-                # action icons. Scoping it here keeps those at the default size.
-                self.keeb_lang_menu.setStyleSheet(
-                    "QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
                 self.keeb_lang_menu.menuAction().setIcon(get_icon("language.svg"))
                 actions = menu.actions()
                 if len(actions) > 1:

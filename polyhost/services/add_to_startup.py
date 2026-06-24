@@ -330,6 +330,23 @@ def _install_windows_autostart(execute, win_args, working_dir, icon_path):
 # Unix / macOS helpers (wrapper-script based)
 # ---------------------------------------------------------------------------
 
+def _write_executable_if_changed(path, content):
+    """Write `content` to `path` (mode 0755) only if it differs from what's
+    already there. Rewriting the launcher on every startup changes the file a
+    registered macOS LaunchAgent points at, which makes macOS re-fire its
+    "Background Items Added" notification each launch — so leave it untouched
+    when nothing changed."""
+    path = Path(path)
+    try:
+        if path.read_text(encoding="utf-8") == content:
+            return False
+    except OSError:
+        pass
+    path.write_text(content, encoding="utf-8")
+    path.chmod(0o755)
+    return True
+
+
 def create_unix_shell_wrapper(venv_path, script_path, args="", wrapper_path=None):
     """Create a shell launcher that activates the venv and runs the app."""
     venv_path = Path(venv_path)
@@ -345,9 +362,8 @@ cd "{script_path.parent.parent}"
 python -m polyhost {args}
 """
 
-    wrapper_path.write_text(shell_content, encoding="utf-8")
-    wrapper_path.chmod(0o755)
-    print(f"Unix shell wrapper script created at: {wrapper_path}")
+    if _write_executable_if_changed(wrapper_path, shell_content):
+        print(f"Unix shell wrapper script created at: {wrapper_path}")
     return wrapper_path
 
 def create_linux_shortcut_desktop(app_name, autostart_dir, wrapper_path, icon_path):
@@ -536,9 +552,8 @@ def setup_autostart_for_app(script_path, args):
         execute_this = script_path.parent / "start_polyhost.sh"
         content = (f'#!/bin/bash\ncd "{script_path.parent.parent}"\n'
                    f'"{python_exe}" -m polyhost {joined_args}\n')
-        execute_this.write_text(content, encoding="utf-8")
-        execute_this.chmod(0o755)
-        print(f"Unix simple wrapper created at: {execute_this}")
+        if _write_executable_if_changed(execute_this, content):
+            print(f"Unix simple wrapper created at: {execute_this}")
 
     add_to_startup(execute_this, APP_NAME, icon_path)
     status = get_autostart_status()
