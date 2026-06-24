@@ -61,13 +61,31 @@ def get_overlay_path(filepath):
     return os.path.join(_RES_DIR, "overlays", filepath)
 
 
+def strip_key_injection(lines):
+    """Drop the ``press``/``release`` key-injection commands from a script.
+
+    Returns ``(kept_lines, dropped_count)``. Used to enforce that a non-debug
+    host never drives arbitrary keystrokes on the keyboard via a command file
+    or the ``commands.execute`` control RPC (see ``PolyCore.execute_commands``).
+    """
+    kept = [ln for ln in lines
+            if ln.strip().split(" ", 1)[0] not in ("press", "release")]
+    return kept, len(lines) - len(kept)
+
+
 class PolyCore:
     """Operational facade: commands in, events out. No Qt, no widgets."""
 
     def __init__(self, log, ignore_version=False, start_worker=True,
-                 apply_reconnect_in_core=False):
+                 apply_reconnect_in_core=False, allow_key_injection=False):
         self.log = log
         self.ignore_version = ignore_version
+        # SECURITY: the `press`/`release` script commands inject real keystrokes
+        # on the keyboard (firmware HID cmd 14 -> the keyboard types into the
+        # host's focused app). That is a demo/dev capability, so it is honoured
+        # only when the owning process was started in debug mode (--debug). The
+        # firmware also NACKs cmd 14 unless DB_TOGG is on; this is the host half.
+        self.allow_key_injection = allow_key_injection
         # When True (headless, no GUI to render), the reconnect periodic
         # applies its own snapshot (state + post-connect + status_changed).
         # The Qt client leaves this False and applies in _apply_reconnect_result.
@@ -877,7 +895,21 @@ class PolyCore:
         return self.keeb.get_sw_version()
 
     def execute_commands(self, lines):
-        """Queue a (cancel-aware) command script across every device entry."""
+        """Queue a (cancel-aware) command script across every device entry.
+
+        Unless key injection is allowed (host started in debug mode), the
+        ``press``/``release`` commands are stripped here so a command file (or
+        the ``commands.execute`` control RPC) can never drive arbitrary
+        keystrokes on a production host.
+        """
+        lines = list(lines)
+        if not self.allow_key_injection:
+            lines, dropped = strip_key_injection(lines)
+            if dropped:
+                self.log.warning(
+                    "Ignoring %d key-injection command(s) (press/release): host "
+                    "not started in debug mode (--debug).", dropped)
+
         def _job(cancel):
             for entry in self.device_mgr.all_entries:
                 if cancel.is_set():
