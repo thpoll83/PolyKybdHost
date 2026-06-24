@@ -27,7 +27,7 @@ from polyhost.server.control_server import ControlServer
 class HeadlessHost:
     """Qt-free host: core + control server + core-owned window tick."""
 
-    def __init__(self, log, ignore_version=False):
+    def __init__(self, log, ignore_version=False, allow_key_injection=False):
         self.log = log
         self._stop = threading.Event()
         self._stopped = False
@@ -36,7 +36,8 @@ class HeadlessHost:
         self._restart_after_stop = False
         self._relay_path = None
         self.core = PolyCore(log=log, ignore_version=ignore_version,
-                             start_worker=False, apply_reconnect_in_core=True)
+                             start_worker=False, apply_reconnect_in_core=True,
+                             allow_key_injection=allow_key_injection)
         # React to a core-driven self-update (`polyctl update install`): the
         # core only applies + emits; the host owns the restart.
         self.core.subscribe(self._on_update_event)
@@ -207,5 +208,8 @@ def run_headless(log_level=logging.INFO, ignore_version=False):
         _os.getenv("DISPLAY", "n/a"),
         _os.getenv("WAYLAND_DISPLAY", "n/a"),
     )
-    host = HeadlessHost(log, ignore_version=ignore_version)
+    # --debug maps to DEBUG / DEBUG_DETAILED (both <= DEBUG); no flag -> INFO.
+    # Only a debug-mode daemon may honour press/release key-injection commands.
+    host = HeadlessHost(log, ignore_version=ignore_version,
+                        allow_key_injection=log_level <= logging.DEBUG)
     host.run()
