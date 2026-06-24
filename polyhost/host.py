@@ -1349,6 +1349,34 @@ class PolyHost(QApplication):
     def show_balloon(self, title: str, message: str, msec: int = 8000):
         self.tray.showMessage(title, message, QSystemTrayIcon.Information, msec)
 
+    # ------------------------------------------------------------------
+    # Font-pack flash progress (auto on connect, or manual via polyctl)
+    # ------------------------------------------------------------------
+
+    def _on_fontpack_progress(self, result):
+        """Surface a font-pack transfer in the tray. The keyboard can't service
+        keys while flashing, so a quiet first-connect transfer would otherwise be
+        invisible — announce it once, then keep a live percentage in the tooltip."""
+        result = result or {}
+        if not getattr(self, "_fontpack_flashing", False):
+            self._fontpack_flashing = True
+            self.show_balloon("PolyKybd",
+                              "Updating keyboard fonts — please wait, do not unplug…", 5000)
+        pct = result.get("pct")
+        if pct is not None:
+            self.tray.setToolTip(f"PolyKybd — updating fonts ({pct}%)")
+
+    def _on_fontpack_done(self, result):
+        result = result or {}
+        self._fontpack_flashing = False
+        self.tray.setToolTip("")
+        if result.get("ok"):
+            self.show_balloon("PolyKybd", "Keyboard fonts are up to date.", 4000)
+        else:
+            self.tray.showMessage("PolyKybd",
+                                  f"Font update failed: {result.get('msg', '')}",
+                                  QSystemTrayIcon.Warning, 6000)
+
     def _on_balloon_clicked(self):
         if self._update_installer is not None and self._update_installer.is_alive():
             return
@@ -1533,6 +1561,10 @@ class PolyHost(QApplication):
             self._on_flash_progress(name, result)
         elif name in ("fw_flash_done", "fw_apply_done"):
             self._on_flash_done(name, result)
+        elif name == "fontpack_flash_progress":
+            self._on_fontpack_progress(result)
+        elif name == "fontpack_flash_done":
+            self._on_fontpack_done(result)
         elif name == "host_shutdown":
             # A control client (polyctl shutdown) asked the app to quit; the
             # request arrived on a server thread and was hopped here.

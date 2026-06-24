@@ -44,6 +44,8 @@ FW_FLASH_PROGRESS = "fw_flash_progress"  # {"pct": int (-1 = indeterminate), "ms
 FW_FLASH_DONE = "fw_flash_done"          # {"ok": bool, "msg": str}
 FW_APPLY_PROGRESS = "fw_apply_progress"  # {"pct": int, "msg": str}
 FW_APPLY_DONE = "fw_apply_done"          # {"ok": bool, "msg": str}
+FONTPACK_FLASH_PROGRESS = "fontpack_flash_progress"  # {"pct": int (-1 = indeterminate), "msg": str}
+FONTPACK_FLASH_DONE = "fontpack_flash_done"          # {"ok": bool, "msg": str}
 
 # Updater events. NOTE: two producers with DIFFERENT payload shapes:
 #   * The Qt GUI's in-process installer (host.py) emits the original in-process

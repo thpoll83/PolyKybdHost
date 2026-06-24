@@ -71,6 +71,16 @@ class PolySettings:
             # using a forwarder with `--report-rpc`. The device-control surface
             # is never exposed (separate registry + separate authkey).
             "window_report_network_enabled": False,
+            # Font pack auto-flash: when True, on a fresh keyboard connect the
+            # host compares the keyboard's loaded "PlyF" font pack content_version
+            # against the pack bundled with this host release and, if the keyboard
+            # is older / has no pack, flashes it automatically (once per process;
+            # never downgrades, so it's self-terminating — see PolyCore). Set
+            # False to manage the pack only manually (polyctl fontpack flash).
+            "fontpack_auto_flash": True,
+            # Optional explicit path to the font pack .plyf to flash. Empty =
+            # use the pack shipped in polyhost/res/fontpack/ (if any).
+            "fontpack_path": "",
         }
         self._legacy_key_renames = {
             "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",

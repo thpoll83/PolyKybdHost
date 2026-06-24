@@ -33,6 +33,7 @@ from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device import hid_fw_up
+from polyhost.device import hid_fontpack
 from polyhost.device.hid_worker import HidWorker
 from polyhost.device.poly_kybd import PolyKybd
 from polyhost.handler.common import OverlayCommand
@@ -111,6 +112,13 @@ class PolyCore:
         # Set on a fresh connect; consumed by the first applied snapshot after
         # it so the overlay state on the keyboard is cleared exactly once.
         self.needs_overlay_reset = False
+        # Re-entrancy guard for the font-pack auto-flash: True only while a flash
+        # is actually running, so a connection flap mid-flash can't start a second
+        # one — but it is cleared on completion, so each fresh connect (e.g. a
+        # physical reconnect after a wipe) re-checks and flashes any stale bundles.
+        # decide_stale_bundles keeps it self-terminating: once the device is
+        # current, a reconnect finds nothing to do.
+        self._fontpack_flash_in_progress = False
 
         self.poly_settings = PolySettings()
         self.device_settings = DeviceSettings()
@@ -625,6 +633,9 @@ class PolyCore:
                 # engage daylight-auto + push the current value, or send AUTO_OFF
                 # so it uses its stored manual brightness. Queued on the worker.
                 self.refresh_daylight_brightness()
+                # Auto-flash the bundled font pack if the keyboard's is missing
+                # or older (queued on the worker; self-terminating — see below).
+                self._maybe_auto_flash_fontpack()
 
         # The applying client owns the applied-connection state the worker reads.
         self.last_applied_connected = self.connected
@@ -983,6 +994,226 @@ class PolyCore:
         # No coalesce_key: a flash must never be superseded by a later job.
         self.worker.submit("fw_flash", _job)
         return True, {"queued": True, "apply": bool(apply)}
+
+    def flash_fontpack(self, path, bundle_id=0):
+        """Flash an external-flash ``.plyf`` font-pack bundle as a worker job.
+
+        ``bundle_id`` selects the fixed flash slot (the bundle's index in
+        res/fontpack/bundles.json); 0 by default. Same shape as
+        :meth:`flash_firmware` minus the apply step — the firmware re-loads fonts
+        in place on COMMIT (no reboot). Gating + header validation happen
+        synchronously (uniform ``(ok, payload)``); the upload then streams
+        ``fontpack_flash_progress`` events with a terminal ``fontpack_flash_done``."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot flash."
+        try:
+            with open(path, "rb") as f:
+                pack_bytes = f.read()
+        except OSError as e:
+            return False, f"Cannot read font-pack file: {e}"
+        ok, msg = hid_fontpack.validate_fontpack(pack_bytes)
+        if not ok:
+            return False, msg
+
+        def _job(cancel):
+            cancel_flag = [False]
+
+            def _progress(pct, m):
+                if cancel.is_set():
+                    cancel_flag[0] = True      # relay supersede/suspend to hid_fontpack
+                self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+
+            fok, fmsg = hid_fontpack.flash_fontpack(
+                self.keeb.hid, path, progress_cb=_progress, cancel_flag=cancel_flag,
+                bundle_id=bundle_id)
+            self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg})
+
+        # No coalesce_key: a flash must never be superseded by a later job.
+        self.worker.submit("fontpack_flash", _job)
+        return True, {"queued": True}
+
+    def flash_fontpack_bundle(self, bundle):
+        """Flash one shipped bundle (by id, e.g. ``"emoji"``, or its slot index) to
+        its slot — forced, even if the keyboard is already up to date. Resolves the
+        bundle to its res/fontpack/<id>.plyf and delegates to :meth:`flash_fontpack`."""
+        from polyhost.services import fontpack_bundle
+        manifest = fontpack_bundle.load_bundle_manifest()
+        if manifest is None:
+            return False, "No font-pack bundles shipped with this host."
+        b = self._find_bundle(manifest, bundle)
+        if b is None:
+            ids = ", ".join(str(x["id"]) for x in manifest["bundles"])
+            return False, f"Unknown bundle {bundle!r}. Available: {ids}."
+        return self.flash_fontpack(b["path"], bundle_id=b["index"])
+
+    @staticmethod
+    def _find_bundle(manifest, bundle):
+        key = str(bundle)
+        for b in manifest["bundles"]:
+            if b["id"] == key or str(b["index"]) == key:
+                return b
+        return None
+
+    def sync_fontpack(self):
+        """Flash every font-pack bundle the keyboard is missing/behind on — the
+        same comparison as the on-connect auto-flash, triggered manually."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot flash."
+        self.worker.submit("fontpack_sync", self._fontpack_autocheck_job)
+        return True, {"queued": True}
+
+    def wipe_fontpack(self):
+        """Wipe every font-pack slot — flash the empty-pack sentinel to each shipped
+        bundle's slot, so the keyboard renders resident-only fonts again. Streams the
+        same ``fontpack_flash_progress``/``fontpack_flash_done`` events as a flash, so
+        the tray surfaces it. The next connect re-flashes the bundles (auto-check sees
+        device version 0 < shipped), which is the intended "reset to ship state" flow."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot wipe."
+        self.worker.submit("fontpack_wipe", self._fontpack_wipe_job)
+        return True, {"queued": True}
+
+    def _fontpack_wipe_job(self, cancel):
+        """Flash the empty-pack sentinel to every shipped bundle slot (sequential),
+        clearing the external-flash font pack. Mirrors `_fontpack_autocheck_job`'s
+        progress/guard handling."""
+        import os, tempfile
+        from polyhost.services import fontpack_bundle
+        manifest = fontpack_bundle.load_bundle_manifest()
+        # With no shipped manifest, fall back to wiping the current 6 fixed slots.
+        slots = (manifest["bundles"] if manifest
+                 else [{"id": str(i), "index": i} for i in range(6)])
+        if self._fontpack_flash_in_progress:
+            return
+        self._fontpack_flash_in_progress = True
+        cancel_flag = [False]
+
+        def _progress(pct, m):
+            if cancel.is_set():
+                cancel_flag[0] = True
+            self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+
+        fd, path = tempfile.mkstemp(suffix=".plyf", prefix="polykybd_wipe_")
+        try:
+            with os.fdopen(fd, "wb") as f:
+                f.write(hid_fontpack.build_empty_pack())
+            n = len(slots)
+            for i, b in enumerate(slots):
+                self.log.info("Font pack wipe: bundle %s (slot %d) — wiping (%d/%d).",
+                              b["id"], b["index"], i + 1, n)
+                fok, fmsg = hid_fontpack.flash_fontpack(
+                    self.keeb.hid, path, progress_cb=_progress,
+                    cancel_flag=cancel_flag, bundle_id=b["index"])
+                if not fok:
+                    self.emit("fontpack_flash_done",
+                              {"ok": False, "msg": f"Wipe bundle {b['id']}: {fmsg}"})
+                    return
+                if cancel_flag[0]:
+                    return
+            self.emit("fontpack_flash_done",
+                      {"ok": True, "msg": f"Wiped {n} font-pack slot(s)."})
+        finally:
+            self._fontpack_flash_in_progress = False
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+
+    def fontpack_bundle_status(self):
+        """Per-bundle status: device version (from the GET_ID block) vs the shipped
+        version, and whether each is stale. ``shipped`` is False with no bundles."""
+        from polyhost.services import fontpack_bundle
+        manifest = fontpack_bundle.load_bundle_manifest()
+        if manifest is None:
+            return True, {"shipped": False, "bundles": []}
+        dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
+        bundles = [{"id": b["id"], "index": b["index"],
+                    "device_version": dev.get(b["index"], 0),
+                    "shipped_version": b["content_version"],
+                    "stale": b["content_version"] > dev.get(b["index"], 0)}
+                   for b in manifest["bundles"]]
+        return True, {"shipped": True, "bundles": bundles}
+
+    def get_fontpack_status(self):
+        """Query the keyboard's currently-loaded font pack (present / abi /
+        content_version / font_count). Bounded device read on the worker."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused)."
+        try:
+            ok, info = self.worker.run_sync(
+                "fontpack_status",
+                lambda c: hid_fontpack.get_fontpack_status(self.keeb.hid),
+                timeout=self.DEVICE_CALL_TIMEOUT)
+        except (RuntimeError, TimeoutError) as e:
+            return False, f"Font-pack status query failed: {e}"
+        if not ok:
+            return False, "Keyboard did not report font-pack status (firmware too old?)."
+        return True, info
+
+    def _maybe_auto_flash_fontpack(self):
+        """Queue the font-pack auto-check on a fresh connect (if enabled).
+
+        Self-terminating: the check only flashes when the keyboard's pack is
+        missing or strictly older than the bundled one, and a successful flash
+        makes the versions equal — so it never loops. The actual decision +
+        flash run on the worker (`_fontpack_autocheck_job`) so they don't block
+        the caller (apply_reconnect may be on the Qt thread)."""
+        if not self.poly_settings.get("fontpack_auto_flash"):
+            return
+        self.worker.submit("fontpack_autocheck", self._fontpack_autocheck_job)
+
+    def _fontpack_autocheck_job(self, cancel):
+        """Flash any font-pack bundles the keyboard is missing or behind on.
+
+        Compares the device's per-bundle versions (the GET_ID version block,
+        captured by the reconnect probe into keeb.fontpack_bundle_versions)
+        against the shipped bundles.json, and flashes only the stale ones to
+        their fixed slots. Self-terminating: a successful flash makes the
+        versions equal, so the next connect finds nothing to do."""
+        from polyhost.services import fontpack_bundle
+        manifest = fontpack_bundle.load_bundle_manifest()
+        if manifest is None:
+            return   # no bundles shipped with this host — feature inert
+        if self._fontpack_flash_in_progress:
+            return   # a flash is already running (connection flapped) — don't double-flash
+        device_versions = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
+        stale = hid_fontpack.decide_stale_bundles(device_versions, manifest["bundles"])
+        if not stale:
+            self.log.info("Font pack auto-check: all %d bundle(s) up to date.",
+                          len(manifest["bundles"]))
+            return
+
+        self._fontpack_flash_in_progress = True
+        cancel_flag = [False]
+
+        def _progress(pct, m):
+            if cancel.is_set():
+                cancel_flag[0] = True
+            self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+
+        try:
+            n = len(stale)
+            for i, b in enumerate(stale):
+                dev = device_versions.get(b["index"], 0)
+                self.log.info("Font pack auto-flash: bundle %s (slot %d) device v%d < v%d "
+                              "— flashing (%d/%d).", b["id"], b["index"], dev,
+                              b["content_version"], i + 1, n)
+                fok, fmsg = hid_fontpack.flash_fontpack(
+                    self.keeb.hid, b["path"], progress_cb=_progress,
+                    cancel_flag=cancel_flag, bundle_id=b["index"])
+                if not fok:
+                    self.log.warning("Font pack auto-flash failed for bundle %s: %s", b["id"], fmsg)
+                    self.emit("fontpack_flash_done",
+                              {"ok": False, "msg": f"Bundle {b['id']}: {fmsg}", "auto": True})
+                    return
+                if cancel_flag[0]:
+                    self.log.info("Font pack auto-flash cancelled after bundle %s.", b["id"])
+                    return
+            msg = f"Flashed {n} font-pack bundle(s): {', '.join(b['id'] for b in stale)}."
+            self.log.info("Font pack auto-flash complete: %s", msg)
+            self.emit("fontpack_flash_done", {"ok": True, "msg": msg, "auto": True})
+        finally:
+            self._fontpack_flash_in_progress = False
 
     def check_update(self):
         """Check GitHub for a newer host release (synchronous HTTP — runs on

@@ -104,6 +104,30 @@ class FakeCore:
         self.calls.append(("flash_firmware", path, apply))
         return (True, {"queued": True, "apply": bool(apply)})
 
+    def flash_fontpack(self, path, bundle_id=0):
+        self.calls.append(("flash_fontpack", path, bundle_id))
+        return (True, {"queued": True})
+
+    def flash_fontpack_bundle(self, bundle):
+        self.calls.append(("flash_fontpack_bundle", bundle))
+        return (True, {"queued": True})
+
+    def get_fontpack_status(self):
+        self.calls.append(("get_fontpack_status",))
+        return (True, {"present": True, "abi": 1, "content_version": 7, "font_count": 3})
+
+    def sync_fontpack(self):
+        self.calls.append(("sync_fontpack",))
+        return (True, {"queued": True})
+
+    def wipe_fontpack(self):
+        self.calls.append(("wipe_fontpack",))
+        return (True, {"queued": True})
+
+    def fontpack_bundle_status(self):
+        self.calls.append(("fontpack_bundle_status",))
+        return (True, {"shipped": True, "bundles": []})
+
     def reset_dynamic_keymap(self):
         return (True, "keymap reset")
 
@@ -317,6 +341,35 @@ class ControlServerTest(unittest.TestCase):
         resp = self._call(conn, 30, p.M_FW_FLASH, {"path": "fw.bin", "apply": True})
         self.assertEqual(resp["result"], {"queued": True, "apply": True})
         self.assertIn(("flash_firmware", "fw.bin", True), self.core.calls)
+
+    def test_fontpack_flash_and_status_dispatch(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        # path form -> flash_fontpack(path, bundle_id default 0)
+        resp = self._call(conn, 31, p.M_FONTPACK_FLASH, {"path": "fonts.plyf"})
+        self.assertEqual(resp["result"], {"queued": True})
+        self.assertIn(("flash_fontpack", "fonts.plyf", 0), self.core.calls)
+        # bundle form -> flash_fontpack_bundle(id)
+        resp = self._call(conn, 32, p.M_FONTPACK_FLASH, {"bundle": "emoji"})
+        self.assertEqual(resp["result"], {"queued": True})
+        self.assertIn(("flash_fontpack_bundle", "emoji"), self.core.calls)
+        resp = self._call(conn, 33, p.M_FONTPACK_STATUS)
+        self.assertEqual(resp["result"],
+                         {"present": True, "abi": 1, "content_version": 7, "font_count": 3})
+        self.assertIn(("get_fontpack_status",), self.core.calls)
+
+    def test_fontpack_sync_and_bundles_dispatch(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        resp = self._call(conn, 34, p.M_FONTPACK_SYNC)
+        self.assertEqual(resp["result"], {"queued": True})
+        self.assertIn(("sync_fontpack",), self.core.calls)
+        resp = self._call(conn, 35, p.M_FONTPACK_BUNDLES)
+        self.assertEqual(resp["result"], {"shipped": True, "bundles": []})
+        self.assertIn(("fontpack_bundle_status",), self.core.calls)
+        resp = self._call(conn, 36, p.M_FONTPACK_WIPE)
+        self.assertEqual(resp["result"], {"queued": True})
+        self.assertIn(("wipe_fontpack",), self.core.calls)
 
     def test_settings_list_dispatch(self):
         conn = self._connect()

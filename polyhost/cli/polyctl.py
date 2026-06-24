@@ -258,6 +258,109 @@ def _cmd_fw(client, args):
     return 0
 
 
+def _stream_fontpack_op(client, method, params, verb):
+    """Issue a fontpack RPC and stream its fontpack_flash_* events. Returns exit code."""
+    # Subscribe BEFORE issuing the op so no progress event is missed.
+    client.subscribe_events()
+    client.call(method, params)
+    print(f"{verb}…")
+    for name, payload in client.events():
+        if name == "fontpack_flash_progress":
+            print(_fmt_progress("fontpack", payload))
+        elif name == "fontpack_flash_done":
+            ok = (payload or {}).get("ok")
+            m = (payload or {}).get("msg")
+            if ok:
+                print(f"{verb}: complete — {m}")
+                return 0
+            print(f"{verb}: failed — {m}", file=sys.stderr)
+            return 1
+    print(f"error: connection closed before {verb} completed", file=sys.stderr)
+    return 1
+
+
+def _write_empty_pack() -> str:
+    """Write a 32-byte 'empty' PlyF pack (font_count 0) to a temp file; returns its path.
+    Flashing it to a slot wipes that bundle (resident-only rendering there). The pack
+    bytes come from hid_fontpack.build_empty_pack() so the format stays in one place."""
+    import tempfile, os
+    from polyhost.device.hid_fontpack import build_empty_pack
+    fd, path = tempfile.mkstemp(suffix=".plyf", prefix="polykybd_wipe_")
+    with os.fdopen(fd, "wb") as f:
+        f.write(build_empty_pack())
+    return path
+
+
+def _cmd_fontpack(client, args):
+    action = getattr(args, "fontpack_action", None)
+
+    if action == "sync":
+        return _stream_fontpack_op(client, protocol.M_FONTPACK_SYNC, {},
+                                   "syncing font-pack bundles")
+
+    if action == "flash":
+        if args.file:
+            return _stream_fontpack_op(
+                client, protocol.M_FONTPACK_FLASH,
+                {"path": args.file, "bundle_id": args.bundle_id},
+                f"flashing {args.file} to slot {args.bundle_id}")
+        if not args.bundle:
+            print("error: give a bundle id/index, or --file <path>", file=sys.stderr)
+            return 2
+        return _stream_fontpack_op(client, protocol.M_FONTPACK_FLASH,
+                                   {"bundle": args.bundle}, f"flashing bundle {args.bundle}")
+
+    if action == "wipe":
+        import os
+        info = client.call(protocol.M_FONTPACK_BUNDLES)
+        bundles = info.get("bundles", []) if info.get("shipped") else []
+        if args.bundle is not None:
+            match = [b for b in bundles if b["id"] == args.bundle or str(b["index"]) == args.bundle]
+            if not match:
+                # No manifest to resolve against — fall back to the raw slot index.
+                try:
+                    targets = [{"id": args.bundle, "index": int(args.bundle)}]
+                except ValueError:
+                    print(f"error: unknown bundle {args.bundle!r}", file=sys.stderr)
+                    return 2
+            else:
+                targets = match
+        else:
+            targets = bundles or [{"id": "0", "index": 0}]
+        path = _write_empty_pack()
+        try:
+            for b in targets:
+                rc = _stream_fontpack_op(
+                    client, protocol.M_FONTPACK_FLASH,
+                    {"path": path, "bundle_id": b["index"]},
+                    f"wiping bundle {b['id']} (slot {b['index']})")
+                if rc != 0:
+                    return rc
+            return 0
+        finally:
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+
+    # default: status — per-bundle device vs shipped versions.
+    info = client.call(protocol.M_FONTPACK_BUNDLES)
+    if not info.get("shipped"):
+        print("font pack: no bundles shipped with this host.")
+        agg = client.call(protocol.M_FONTPACK_STATUS)
+        if agg.get("present"):
+            print(f"  keyboard has a pack loaded — {agg.get('font_count')} fonts, abi v{agg.get('abi')}")
+        return 0
+    print(f"{'bundle':10} {'slot':>4} {'device':>7} {'shipped':>8}  state")
+    for b in info["bundles"]:
+        state = "STALE -> flash" if b["stale"] else "up to date"
+        print(f"{b['id']:10} {b['index']:>4} {b['device_version']:>7} "
+              f"{b['shipped_version']:>8}  {state}")
+    stale = [b["id"] for b in info["bundles"] if b["stale"]]
+    print(f"\n{len(stale)} stale" + (f": {', '.join(stale)} — run `fontpack sync`" if stale else " — all up to date"))
+    return 0
+
+
 def _cmd_update(client, args):
     if args.update_action == "check":
         res = client.call(protocol.M_UPDATE_CHECK) or {}
@@ -406,6 +509,25 @@ def build_parser():
         "--apply", action="store_true",
         help="apply (reboot into) the firmware after a successful upload")
     p_fw.set_defaults(func=_cmd_fw)
+
+    p_fp = sub.add_parser("fontpack", help="external-flash font pack (per-bundle) operations")
+    fp_sub = p_fp.add_subparsers(dest="fontpack_action", required=True)
+    fp_sub.add_parser("status", help="per-bundle versions: device vs shipped (and which are stale)")
+    fp_sub.add_parser("sync", help="flash every bundle the keyboard is missing/behind on")
+    p_fp_flash = fp_sub.add_parser(
+        "flash", help="flash one bundle (streams progress; no reboot)")
+    p_fp_flash.add_argument(
+        "bundle", nargs="?",
+        help="shipped bundle to flash by id (e.g. emoji) or slot index; "
+             "omit when using --file")
+    p_fp_flash.add_argument("--file", help="flash an arbitrary .plyf instead of a shipped bundle")
+    p_fp_flash.add_argument("--bundle-id", type=int, default=0,
+                            help="target slot index for --file (default 0)")
+    p_fp_wipe = fp_sub.add_parser(
+        "wipe", help="clear a bundle slot (flash an empty pack); omit BUNDLE to wipe all")
+    p_fp_wipe.add_argument("bundle", nargs="?",
+                           help="bundle id/index to wipe; omit to wipe every slot")
+    p_fp.set_defaults(func=_cmd_fontpack)
 
     p_upd = sub.add_parser("update", help="host self-update")
     upd_sub = p_upd.add_subparsers(dest="update_action", required=True)
