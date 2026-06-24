@@ -45,6 +45,9 @@ class PolyForwarder(QApplication):
     def __init__(self, log_level, host=None, host_file=None,
                  report_rpc=False, report_port=None, report_authkey_file=None):
         super().__init__(sys.argv)
+        # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
+        from polyhost.util.macos_ui import hide_dock_icon
+        hide_dock_icon()
         self.host = host
         self.host_file = os.path.expanduser(host_file) if host_file else None
 
@@ -108,7 +111,6 @@ class PolyForwarder(QApplication):
         self.set_style()
 
         self.menu = QMenu()
-        self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
         self.exit = QAction(get_icon("power.svg"), "Quit", parent=self)
         # noinspection PyUnresolvedReferences

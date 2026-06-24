@@ -44,9 +44,107 @@ fi
 cd "$TARGET_DIR"
 
 # --- python virtual environment ---------------------------------------------
-PY=python3
-command -v "$PY" >/dev/null 2>&1 || PY=python
-command -v "$PY" >/dev/null 2>&1 || { echo "!! Python 3 not found on PATH."; exit 1; }
+# PolyKybdHost needs Python 3.10+ (match statements, PEP 604 unions). Prefer an
+# explicitly-versioned interpreter so we don't silently build the venv on the
+# macOS system python3 (3.9, from the Xcode Command Line Tools), which can't run
+# the app. Fall back to bare python3/python only if it is new enough.
+find_python() {  # echoes the first 3.10+ interpreter on PATH, or nothing
+    for cand in python3.13 python3.12 python3.11 python3.10 python3 python; do
+        command -v "$cand" >/dev/null 2>&1 || continue
+        if "$cand" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+            echo "$cand"
+            return 0
+        fi
+    done
+    return 1
+}
+
+PY="$(find_python || true)"
+
+if [ -z "$PY" ] && [ "$(uname -s)" = "Darwin" ] && [ -r /dev/tty ]; then
+    # Interactive macOS fallback: offer to install Python 3.10+ for the user.
+    # Variant A (Homebrew) can be fully automated; variant B (python.org) is a
+    # GUI .pkg, so we point at it rather than driving it.
+    echo "!! PolyKybdHost requires Python 3.10 or newer, but none was found on PATH." > /dev/tty
+    echo "   The macOS system python3 (Xcode Command Line Tools) is 3.9 and will not work." > /dev/tty
+    echo > /dev/tty
+    echo "   Install options:" > /dev/tty
+    echo "     [A] Homebrew  - I can install it now (brew install python)" > /dev/tty
+    echo "     [B] python.org - download the .pkg yourself from https://www.python.org/downloads/macos/" > /dev/tty
+    echo "     [S] Skip       - abort and install Python manually" > /dev/tty
+    printf "   Choose [A/b/s]: " > /dev/tty
+    read -r choice < /dev/tty || choice=""
+    case "$(printf '%s' "$choice" | tr '[:upper:]' '[:lower:]')" in
+        b)
+            echo ">> Opening the python.org downloads page; re-run this installer after installing." > /dev/tty
+            command -v open >/dev/null 2>&1 && open "https://www.python.org/downloads/macos/" || true
+            exit 1
+            ;;
+        s)
+            echo ">> Skipping. Install Python 3.10+ and re-run this installer." > /dev/tty
+            exit 1
+            ;;
+        *)  # default: Homebrew
+            if ! command -v brew >/dev/null 2>&1; then
+                echo ">> Installing Homebrew (it may ask for your password)..." > /dev/tty
+                if ! /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" < /dev/tty; then
+                    echo "!! Homebrew installation failed. Install it manually from https://brew.sh then re-run this installer." >&2
+                    exit 1
+                fi
+                # Put brew on PATH for the rest of this script (Apple Silicon vs Intel).
+                for brewbin in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+                    [ -x "$brewbin" ] && eval "$("$brewbin" shellenv)" && break
+                done
+                if ! command -v brew >/dev/null 2>&1; then
+                    echo "!! Homebrew installed but 'brew' is not on PATH. Open a new terminal and re-run this installer." >&2
+                    exit 1
+                fi
+            fi
+            echo ">> Installing Python via Homebrew..." > /dev/tty
+            if ! brew install python; then
+                echo "!! 'brew install python' failed (see the brew output above). Resolve it, then re-run this installer." >&2
+                exit 1
+            fi
+            PY="$(find_python || true)"
+            if [ -z "$PY" ]; then
+                echo "!! Python was installed via Homebrew but no 3.10+ interpreter is on PATH." >&2
+                echo "   Open a new terminal (so brew's bin dir is picked up) and re-run this installer." >&2
+                exit 1
+            fi
+            ;;
+    esac
+fi
+
+if [ -z "$PY" ]; then
+    echo "!! PolyKybdHost requires Python 3.10 or newer, but none was found on PATH."
+    case "$(uname -s)" in
+        Darwin)
+            echo "   The macOS system python3 (Xcode Command Line Tools) is 3.9 and will not work."
+            echo "   Install a newer Python, then re-run this installer:"
+            echo
+            echo "     # Option A - Homebrew (recommended):"
+            command -v brew >/dev/null 2>&1 || \
+                echo "     /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+            echo "     brew install python"
+            echo
+            echo "     # Option B - official installer: https://www.python.org/downloads/macos/"
+            ;;
+        Linux)
+            echo "   Install Python 3.10+ with your distro's package manager, then re-run this installer:"
+            echo
+            echo "     sudo apt install python3 python3-venv     # Debian/Ubuntu"
+            echo "     sudo dnf install python3                   # Fedora/RHEL"
+            echo "     sudo pacman -S python                      # Arch"
+            echo
+            echo "   If your distro is too old to ship 3.10+, see https://www.python.org/downloads/"
+            ;;
+        *)
+            echo "   Install Python 3.10 or newer from https://www.python.org/downloads/ and re-run this installer."
+            ;;
+    esac
+    exit 1
+fi
+echo ">> Using $PY ($("$PY" --version 2>&1))"
 
 echo ">> Creating virtual environment in .venv"
 "$PY" -m venv .venv

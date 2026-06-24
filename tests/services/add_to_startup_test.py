@@ -192,5 +192,46 @@ class RemoveAutostartTest(unittest.TestCase):
         startmenu.unlink.assert_not_called()
 
 
+class MacAutostartIdempotencyTest(unittest.TestCase):
+    """macOS must not re-register the LaunchAgent on every launch — doing so
+    re-triggers the "Background Items Added" notification (Ventura+). The plist
+    is only (re)written + reloaded when missing or its content changed."""
+
+    def _run(self, tmp, wrapper="/Users/x/.venv/wrap.sh"):
+        plist = Path(tmp) / "LaunchAgents" / "com.PolyHost.plist"
+        with mock.patch.object(add_to_startup.platform, "system", return_value="Darwin"), \
+             mock.patch.object(add_to_startup, "_macos_plist_path", return_value=plist), \
+             mock.patch.object(add_to_startup.subprocess, "run") as run:
+            add_to_startup.add_to_startup(Path(wrapper), "PolyHost", "/icon.png")
+        return plist, run
+
+    def test_first_launch_writes_and_loads(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            plist, run = self._run(tmp)
+            self.assertTrue(plist.exists())
+            # launchctl load was invoked exactly once (no unload — nothing prior).
+            run.assert_called_once()
+            self.assertEqual(run.call_args[0][0][:2], ["launchctl", "load"])
+
+    def test_second_identical_launch_is_noop(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            self._run(tmp)                  # first: registers
+            plist, run = self._run(tmp)     # second: identical content
+            self.assertTrue(plist.exists())
+            run.assert_not_called()         # no launchctl, no re-register
+
+    def test_changed_wrapper_reloads(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            self._run(tmp, wrapper="/Users/x/.venv/old.sh")
+            _, run = self._run(tmp, wrapper="/Users/x/.venv/new.sh")
+            # Path moved -> unload the stale one, then load the new one.
+            calls = [c[0][0][:2] for c in run.call_args_list]
+            self.assertIn(["launchctl", "unload"], calls)
+            self.assertIn(["launchctl", "load"], calls)
+
+
 if __name__ == "__main__":
     unittest.main()

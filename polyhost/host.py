@@ -186,6 +186,9 @@ class PolyHost(QApplication):
     def __init__(self, log_level, debug_mode, ignore_version=False,
                  client_mode=False, endpoint=None, connect_retry=False):
         super().__init__(sys.argv)
+        # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
+        from polyhost.util.macos_ui import hide_dock_icon
+        hide_dock_icon()
         fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
         level = DEBUG_DETAILED if debug_mode>1 else log_level
 
@@ -307,7 +310,6 @@ class PolyHost(QApplication):
         self.log.debug("Building menu...")
         self.set_style()
         self.menu = QMenu()
-        self.menu.setStyleSheet("QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
 
         self.status = QAction(get_icon("sync.svg"), "Waiting for PolyKybd...", parent=self)
         self.status.setToolTip("Press to pause connection")
@@ -879,6 +881,14 @@ class PolyHost(QApplication):
                 # once the firmware version is known, by which point the rest of
                 # the menu already exists, so insert rather than add.
                 self.keeb_lang_menu = QMenu(title)
+                # Enlarge only the language menu's icons — the per-language flag
+                # icons are the ones worth showing big. Applying this on the whole
+                # tray menu (the old behaviour) instead inflated the submenu-title
+                # glyphs (All Commands / Font Pack / Idle Anti-Burn-In / Fix
+                # Left-Right Side), which looked oversized next to the normal
+                # action icons. Scoping it here keeps those at the default size.
+                self.keeb_lang_menu.setStyleSheet(
+                    "QMenu {icon-size: 64px;} QMenu::item {icon-size: 64px; background: transparent;}")
                 self.keeb_lang_menu.menuAction().setIcon(get_icon("language.svg"))
                 actions = menu.actions()
                 if len(actions) > 1:
