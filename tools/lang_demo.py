@@ -46,13 +46,13 @@ HOME = os.path.dirname(HOST_REPO)
 LAYOUT_NAME = "LAYOUT_left_right_stacked"
 BASE_LAYER = "_L0"
 
-# A visually diverse tour, en-US first as orientation, ending on the four newest
-# scripts (Pashto, Cherokee, Inuktitut, Cree — each a font the board only learned
-# recently). Override with --langs.
+# A visually diverse tour, en-US first as orientation, then the newest Canadian
+# Aboriginal Syllabics + Cherokee, an Indian script, Thai, Georgian, an African
+# script, then a spread of more scripts. Override with --langs.
 DEFAULT_TOUR = [
-    "en-US", "el-GR", "ru-RU", "ka-GE", "hy-AM", "he-IL", "ar-SA", "fa-IR",
-    "hi-IN", "bn-IN", "ta-IN", "te-IN", "th-TH", "am-ET", "zh-TW", "hw-US",
-    "ps-AF", "ck-US", "iu-CA", "cr-CA",
+    "en-US", "cr-CA", "ck-US", "hi-IN", "th-TH", "ka-GE", "am-ET", "hy-AM",
+    "el-GR", "he-IL", "ar-EG", "ru-RU", "ta-IN", "ps-AF", "iu-CA", "zh-TW",
+    "ko-KR", "fa-IR", "bn-IN", "yo-NG",
 ]
 
 # Pretty captions; falls back to the code itself for anything not listed.
@@ -63,7 +63,8 @@ LANG_NAMES = {
     "bn-IN": "Bengali", "ta-IN": "Tamil", "te-IN": "Telugu", "th-TH": "Thai",
     "am-ET": "Amharic (Ethiopic)", "zh-TW": "Bopomofo (Zhuyin)",
     "hw-US": "Hawaiian", "ps-AF": "Pashto", "ck-US": "Cherokee",
-    "iu-CA": "Inuktitut", "cr-CA": "Cree",
+    "iu-CA": "Inuktitut", "cr-CA": "Cree", "ar-EG": "Arabic (Egypt)",
+    "ko-KR": "Korean", "yo-NG": "Yoruba",
 }
 
 # QMK keycode aliases → the canonical name used by op.ROW (the language LUT keys)
