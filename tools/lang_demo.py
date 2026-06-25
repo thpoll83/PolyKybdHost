@@ -225,11 +225,13 @@ class LangBoard(KleRenderer):
         d.rounded_rectangle(rect, radius=radius, fill=body, outline=self.theme.key_outline, width=2)
 
         kx, ky, kw, kh = rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]
-        # OLED panel: landscape 72:40, filled to most of the keycap with an even
-        # margin, then CENTRED on both axes (the tuner look). Fit by width, and by
-        # height if that would overflow.
+        # OLED panel: landscape 72:40. The physical display is the SAME size on
+        # every keycap, so size it from the 1U dimension (the key HEIGHT — every key
+        # is 1U tall) and NOT from this key's width. A wider key (1.25U Shift/Tab/…)
+        # therefore shows an identical-size OLED with more bezel on the sides — it
+        # must never be stretched to fill the extra width. Centred on both axes.
         im = max(3, U // 12)
-        disp_w = max(2, kw - 2 * im)
+        disp_w = max(2, kh - 2 * im)
         disp_h = int(disp_w * (OLED_H / OLED_W))
         if disp_h > kh - 2 * im:
             disp_h = max(2, kh - 2 * im)
