@@ -8,6 +8,7 @@ lang_re = re.compile(r"^\s*\d+\) (.*)$")
 
 class MacOSInputHelper(InputHelper):
     def __init__(self):
+        super().__init__()   # sets self.log (the set_language/get_languages error paths use it)
         self.list = None
 
     def get_languages(self):

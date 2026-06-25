@@ -7,10 +7,70 @@ from typing import Any
 if platform.system() == 'Windows':
     import ctypes
     ctypes.CDLL(os.path.dirname(os.path.realpath(__file__)) + '\\win-hidapi-0-15\\hidapi.dll')
-try:
-    import hid
-except ImportError:
-    print("""Library hidapi missing. Please Install:
+
+
+def _import_hid():
+    """Import the `hid` package, working around macOS not finding a
+    Homebrew-installed libhidapi.
+
+    `hid` loads the native library by *leaf* name
+    (``ctypes.cdll.LoadLibrary("libhidapi.dylib")``), but recent macOS / Python
+    framework builds don't search Homebrew's lib dirs (``/usr/local/lib`` on
+    Intel, ``/opt/homebrew/lib`` on Apple Silicon) by default, so a
+    brew-installed hidapi is invisible and the import fails. ``find_library``
+    *does* resolve the absolute path, so on a first-attempt failure we patch the
+    leaf-name load to use that path and retry. Pre-loading the dylib by absolute
+    path does NOT work — dyld won't match an already-loaded image for a leaf name
+    it can't otherwise find (verified on macOS Ventura + python.org 3.14). Runs in
+    every process that touches the device (GUI and headless daemon alike)."""
+    try:
+        import hid
+        return hid
+    except ImportError:
+        if platform.system() != 'Darwin':
+            print(_HIDAPI_MISSING_HELP)
+            raise
+
+    import ctypes
+    import ctypes.util
+    import glob
+    import importlib
+
+    path = ctypes.util.find_library("hidapi")
+    if not path:
+        for d in ("/opt/homebrew/lib", "/opt/homebrew/opt/hidapi/lib",
+                  "/usr/local/lib", "/usr/local/opt/hidapi/lib"):
+            hits = sorted(glob.glob(os.path.join(d, "libhidapi*.dylib")))
+            if hits:
+                path = hits[0]
+                break
+
+    if path:
+        loader = ctypes.cdll
+        original = loader.LoadLibrary
+
+        def _redirect(name):
+            # hid tries several leaf names; send any libhidapi* request to the
+            # resolved absolute path so the leaf-name search can't miss it.
+            if name and os.path.basename(name).startswith("libhidapi"):
+                name = path
+            return original(name)
+
+        loader.LoadLibrary = _redirect
+        try:
+            return importlib.import_module("hid")
+        except ImportError:
+            pass
+        finally:
+            loader.LoadLibrary = original
+
+    # Nothing worked — print the install help and fail.
+    print(_HIDAPI_MISSING_HELP)
+    raise ImportError("Unable to load the hidapi native library "
+                      "(is it installed? on macOS: brew install hidapi)")
+
+
+_HIDAPI_MISSING_HELP = """Library hidapi missing. Please Install:
 
     Arch Linux
     ==========
@@ -70,8 +130,9 @@ except ImportError:
     Binary distributions are available.
 
     pkg install -g 'py3*-hid'
-    """)
-    raise
+    """
+
+hid = _import_hid()
 
 PERMISSION_MSG = f"""It looks like you do not have permission to access the device.
 Please run the following commands, then reconnect the device and restart the application:

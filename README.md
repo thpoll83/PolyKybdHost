@@ -93,6 +93,25 @@ crash with an `ImportError` if a dependency slipped through.
   (a transitive dependency of `PyWinCtl`), so the first `pip install` is much
   faster than compiling them against the Command Line Tools.
 
+  **macOS permissions (one-time).** The first time you run PolyKybd, macOS will
+  ask you to grant a couple of permissions in **System Settings → Privacy &
+  Security** (and prompt for your password to unlock that pane). This is a
+  one-time setup — it should not ask again on later launches:
+  - **Input Monitoring** — the PolyKybd is a keyboard, and macOS gates raw HID
+    access to keyboard-class devices behind this permission. PolyKybd needs it to
+    talk to the board over HID.
+  - **Accessibility** — PolyKybd types Unicode characters into the OS (the
+    composition feature) and reads the active window to switch layouts; macOS
+    requires Accessibility for both.
+
+  PolyKybd does **not** auto-change your macOS *system language* by default —
+  that path uses `languagesetup` with administrator rights and would prompt for
+  your password on every connect. Opt in with the `macos_native_set_language`
+  setting if you want it; otherwise use the keyboard's own language switching.
+  If macOS asks for permissions on *every* launch (not just once), make sure you
+  always start the app the same way (e.g. via the installed autostart entry), as
+  macOS ties each grant to the exact launching binary.
+
 ## Running
 
 ```bash
