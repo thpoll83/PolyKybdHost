@@ -71,10 +71,32 @@ def load_all_fonts(font_dir: str) -> list[GfxFont]:
         _parse_header(open(p, encoding='utf-8', errors='replace').read(),
                       bitmaps, glyph_arrays, raw_fonts)
 
-    used = os.path.join(font_dir, 'gfx_used_fonts.h')
-    order = re.search(r'ALL_FONTS\s*\[\]\s*=\s*\{(.*?)\};',
-                      open(used, encoding='utf-8').read(), re.S)
-    names = re.findall(r'&\s*(\w+)', order.group(1)) if order else list(raw_fonts)
+    # Font priority order (front-to-back, first match wins), mirroring the
+    # firmware's g_all_fonts = RESIDENT_FONTS ++ pack:
+    #   1. generated/all_fonts_order.json — the exact full global order (resident
+    #      + every pack bundle), emitted by generate_fonts.py. Preferred.
+    #   2. the RESIDENT_FONTS[] table in gfx_used_fonts.h (the font-pack split
+    #      renamed it from ALL_FONTS[]), then any remaining parsed fonts appended
+    #      so pack scripts still resolve after the resident set.
+    #   3. bare glob order (last resort).
+    # NOTE: matching only ALL_FONTS used to silently fail after the RESIDENT_FONTS
+    # rename, dropping to glob order — which sorted a stray 56px FreeSansBold24pt
+    # to index 0, so every ASCII letter rendered in that giant font (oversized
+    # keycaps). Keep this resilient to the table name.
+    names = None
+    order_json = os.path.join(font_dir, 'generated', 'all_fonts_order.json')
+    if os.path.exists(order_json):
+        import json
+        names = json.load(open(order_json, encoding='utf-8')).get('order')
+    if not names:
+        used = os.path.join(font_dir, 'gfx_used_fonts.h')
+        order = re.search(r'(?:RESIDENT|ALL)_FONTS\s*\[\]\s*=\s*\{(.*?)\};',
+                          open(used, encoding='utf-8').read(), re.S) if os.path.exists(used) else None
+        if order:
+            names = re.findall(r'&\s*(\w+)', order.group(1))
+            names += [n for n in raw_fonts if n not in names]   # append pack fonts after resident
+        else:
+            names = list(raw_fonts)
 
     out = []
     for n in names:

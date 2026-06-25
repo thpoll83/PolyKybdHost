@@ -3,3 +3,4 @@
 # (e.g. into a venv) when generating demo GIFs.
 Pillow>=10
 fonttools>=4
+openpyxl>=3   # lang_demo.py / oled_preview.py read lang/lang_lut.xlsx
