@@ -321,11 +321,10 @@ def main():
 
     for r in range(nreg):
         pages = region_pages(off, r, spp)
-        if r == 0:
-            add(r, 0, HOLD)
-        else:
-            add(r, 0, FLASH, flash=tab_mx.get(r))    # press the tab
-            add(r, 0, SETTLE)
+        # Every region (America included) opens with a tab press-flash, so the GIF
+        # loops seamlessly — the first frame matches the rhythm of all the others.
+        add(r, 0, FLASH, flash=tab_mx.get(r))          # press the tab
+        add(r, 0, HOLD if r == 0 else SETTLE)          # America dwells a touch longer
         for pg in range(1, pages):
             add(r, pg - 1, FLASH, flash=next_mx)       # press ▶
             add(r, pg, SETTLE)
