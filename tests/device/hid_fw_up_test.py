@@ -246,7 +246,7 @@ class TestValidateRp2040Firmware(unittest.TestCase):
 class TestValidatePolykybdFirmware(unittest.TestCase):
     """Two separate signature entries, each tested independently:
       - "PolyKybd" UTF-16LE  covers the USB product string "PolyKybd Split72"
-      - "Poly" UTF-16LE      covers the USB manufacturer prefix "PolyFabriq"
+      - "Poly" UTF-16LE      covers the USB manufacturer prefix "PolyTasten"
     Either match is sufficient; tests verify each path independently.
     """
 
@@ -257,9 +257,9 @@ class TestValidatePolykybdFirmware(unittest.TestCase):
         self.assertEqual(msg, '')
 
     def test_manufacturer_string_detected(self):
-        # "PolyFabriq" UTF-16LE contains the "Poly" prefix, so it matches the
+        # "PolyTasten" UTF-16LE contains the "Poly" prefix, so it matches the
         # manufacturer signature entry
-        ok, _ = validate_polykybd_firmware(_make_fw("PolyFabriq".encode('utf-16-le')))
+        ok, _ = validate_polykybd_firmware(_make_fw("PolyTasten".encode('utf-16-le')))
         self.assertTrue(ok)
 
     def test_manufacturer_prefix_alone_is_sufficient(self):
