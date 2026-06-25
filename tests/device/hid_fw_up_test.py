@@ -281,7 +281,7 @@ class TestValidatePolykybdFirmware(unittest.TestCase):
 
     def test_error_mentions_keyboard_path(self):
         _, msg = validate_polykybd_firmware(_make_fw())
-        self.assertIn('polykybd', msg)
+        self.assertIn('polykybd/split72', msg)
 
     def test_accepts_bytearray(self):
         ok, _ = validate_polykybd_firmware(bytearray(_make_fw("PolyKybd".encode('utf-16-le'))))
