@@ -25,7 +25,7 @@ _RP2040_SRAM_END    = 0x20042000   # 264 KB SRAM
 # evolvable.
 _POLYKYBD_SIGNATURES = (
     "PolyKybd".encode('utf-16-le'),   # USB product string  (keyboard_name = "PolyKybd Split72")
-    "Poly".encode('utf-16-le'),       # USB manufacturer prefix (manufacturer = "PolyFabriq")
+    "Poly".encode('utf-16-le'),       # USB manufacturer prefix (manufacturer = "PolyTasten")
     # b'polykybd',           # QMK_KEYBOARD path prefix (ASCII, variant-agnostic) -- commented out: path may change
 )
 
@@ -103,7 +103,7 @@ def validate_polykybd_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]
     """Check that fw_bytes contains at least one PolyKybd-specific signature.
 
     QMK embeds the USB product name ("PolyKybd Split72") and manufacturer
-    ("PolyFabriq") as UTF-16LE USB string descriptors.  The signatures table
+    ("PolyTasten") as UTF-16LE USB string descriptors.  The signatures table
     carries one entry per logical check so each can be updated independently.
 
     The full firmware image must be passed; a 264-byte header is not enough.
