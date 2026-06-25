@@ -36,7 +36,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 import oled_preview as op
 from oled_preview import Lang, Renderer, load_named_glyphs
-from gfx_font import load_all_fonts, OLED_W, OLED_H
+from gfx_font import load_all_fonts, OLED_W, OLED_H, BUFFER_X, BASELINE
 from kle_render import KleRenderer, KeyContent, Theme
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -66,15 +66,75 @@ LANG_NAMES = {
     "iu-CA": "Inuktitut", "cr-CA": "Cree",
 }
 
-# Short labels for the non-letter keys so the board still reads as a keyboard
-# (the language render only covers letter/number/symbol keys).
-MOD_LABELS = {
-    "KC_LSFT": "Shift", "KC_RSFT": "Shift", "KC_LCTL": "Ctrl", "KC_RCTL": "Ctrl",
-    "KC_LALT": "Alt", "KC_RALT": "AltGr", "KC_LGUI": "Gui", "KC_RGUI": "Gui",
-    "KC_SPC": "Space", "KC_SPACE": "Space", "KC_ENT": "Enter", "KC_ENTER": "Enter",
-    "KC_BSPC": "Bksp", "KC_TAB": "Tab", "KC_ESC": "Esc", "KC_DEL": "Del",
-    "KC_CAPS": "Caps",
+# QMK keycode aliases → the canonical name used by op.ROW (the language LUT keys)
+# and by keycode_helper.c's switch. The keymap uses short aliases (KC_BSLS) while
+# those tables use the long form (KC_BACKSLASH), so normalise before matching.
+KC_ALIAS = {
+    # symbol keys that belong to the language LUT (op.ROW)
+    "KC_NUBS": "KC_NONUS_BACKSLASH", "KC_BSLS": "KC_BACKSLASH",
+    "KC_SCLN": "KC_SEMICOLON", "KC_NUHS": "KC_NONUS_HASH",
+    "KC_GRV": "KC_GRAVE", "KC_COMM": "KC_COMMA", "KC_MINS": "KC_MINUS",
+    "KC_EQL": "KC_EQUAL", "KC_QUOT": "KC_QUOTE", "KC_SLSH": "KC_SLASH",
+    "KC_LBRC": "KC_LBRC", "KC_RBRC": "KC_RBRC",
+    # special keys → the name keycode_helper.c switches on
+    "KC_ESC": "KC_ESCAPE", "KC_BSPC": "KC_BACKSPACE", "KC_ENT": "KC_ENTER",
+    "KC_DEL": "KC_DELETE", "KC_SPC": "KC_SPACE",
+    "KC_LCTL": "KC_LEFT_CTRL", "KC_RCTL": "KC_RIGHT_CTRL",
+    "KC_LALT": "KC_LEFT_ALT", "KC_RALT": "KC_RIGHT_ALT",
+    "KC_LWIN": "KC_LGUI", "KC_RWIN": "KC_RGUI", "KC_LCMD": "KC_LGUI",
 }
+
+
+def normalize_kc(tok: str) -> str:
+    return KC_ALIAS.get(tok, tok)
+
+
+def _split_ternary(expr: str):
+    """Split `cond ? A : B` at the top level (the ' : ' separator never appears
+    inside the U"..."/macro branches we care about). Returns (cond, A, B) or None."""
+    if ' ? ' not in expr:
+        return None
+    cond, rest = expr.split(' ? ', 1)
+    if ' : ' not in rest:
+        return None
+    a, b = rest.split(' : ', 1)
+    return cond.strip(), a.strip(), b.strip()
+
+
+def _pick_default_branch(expr: str) -> str:
+    """Resolve keycode_helper.c's conditional returns for the *resting* keycap:
+    state_flags = 0 (so MORE_TEXT / MODS_AS_TEXT off → the icon branch, not text),
+    num_lock / caps_lock off. Picks the branch a freshly-booted key would draw."""
+    t = _split_ternary(expr)
+    if t is None:
+        return expr.strip()
+    cond, a, b = t
+    # evaluate the condition under the resting state
+    if '!= 0' in cond:        val = False     # (state_flags & X) != 0  -> 0 != 0 -> false
+    elif '== 0' in cond:      val = True
+    elif cond.startswith('!'): val = True      # !state.num_lock -> !false -> true
+    else:                     val = False      # state.caps_lock / state.num_lock -> false
+    return _pick_default_branch(a if val else b)
+
+
+def parse_static_text_map(keycode_helper_c: str) -> dict:
+    """token -> the icon/text expression keycode_to_static_text() returns at rest.
+    Handles C fall-through (several `case`s sharing one `return`)."""
+    text = strip_c_comments(open(keycode_helper_c, encoding='utf-8').read())
+    body = text[text.index('switch (keycode)'):]
+    out, pending = {}, []
+    for m in re.finditer(r'case\s+([^:]+?)\s*:|return\s+(.*?);', body, re.S):
+        label, ret = m.group(1), m.group(2)
+        if label is not None:
+            pending.append(label.strip())
+        elif ret is not None:
+            # Keep the raw expression — spaces INSIDE a U"..." literal are the
+            # firmware's horizontal offset (U"  " ICON_UP), so don't collapse them.
+            branch = _pick_default_branch(ret.strip())
+            for lbl in pending:
+                out[lbl] = branch
+            pending = []
+    return out
 
 
 def strip_c_comments(s: str) -> str:
@@ -125,11 +185,11 @@ def parse_base_layer_keycodes(keymap_c: str) -> list[str]:
 
 
 def display_keycode(tok: str) -> str:
-    """Reduce a keymap token to a plain keycode where possible.
+    """Reduce a keymap token to the keycode whose legend shows on the base layer.
 
     LT(layer, KC_X) / MT(mod, KC_X) carry an inner tap keycode — use it so a
-    home-row-mod 'A' still letters as A. MO()/TO()/custom keycodes have no letter.
-    """
+    home-row-mod 'A' still letters as A. MO()/TO()/OSL() etc. stay whole (they
+    have their own entries in keycode_to_static_text)."""
     m = re.match(r'(?:LT|MT|LM)\([^,]+,\s*([^)]+)\)', tok)
     if m:
         return m.group(1).strip()
@@ -187,19 +247,38 @@ class LangBoard(KleRenderer):
         return tile
 
 
-def build_frame(L, R, matrix_kc, lang) -> dict[str, KeyContent]:
+def render_static(L, R, expr) -> Image.Image:
+    """Draw a keycode_to_static_text() expression (icons + control codes) into a
+    72x40 'L' image at the firmware's BUFFER_X / baseline origin (poly_keymap.c
+    draws static text at `BUFFER_X, 23`; the strings carry their own offsets)."""
+    img = Image.new('L', (OLED_W, OLED_H), 0)
+    px = img.load()
+    def sp(vx, vy):
+        if 0 <= vx < OLED_W and 0 <= vy < OLED_H:
+            px[vx, vy] = 255
+    cps = L.resolve(expr)
+    if cps:
+        R.draw(sp, cps, BUFFER_X, BASELINE)
+    return img
+
+
+def build_frame(L, R, matrix_kc, lang, static_map) -> dict[str, KeyContent]:
     out: dict[str, KeyContent] = {}
     for mp, tok in matrix_kc.items():
-        kc = display_keycode(tok)
-        if kc in op.ROW:
-            img = op.render_key(L, R, lang, kc, shift=False, caps=False)  # 72x40 'L'
-            c = KeyContent()
-            c._oled = img
-            out[mp] = c
-        elif kc in MOD_LABELS:
-            out[mp] = KeyContent(label=MOD_LABELS[kc])
+        kc = normalize_kc(display_keycode(tok))
+        whole = normalize_kc(tok)
+        if kc in op.ROW:                       # letter / number / symbol (language LUT)
+            img = op.render_key(L, R, lang, kc, shift=False, caps=False)
+        elif whole in static_map:              # MO(_FL0), TO(_EMJ), … (match the wrapped token)
+            img = render_static(L, R, static_map[whole])
+        elif kc in static_map:                 # KC_LSFT, KC_ENTER, KC_SPACE, arrows, …
+            img = render_static(L, R, static_map[kc])
         else:
             out[mp] = KeyContent(dim=True)
+            continue
+        c = KeyContent()
+        c._oled = img
+        out[mp] = c
     return out
 
 
@@ -239,6 +318,7 @@ def main():
         raise SystemExit(f"layout/keymap length mismatch: {len(matrices)} vs {len(kcs)}")
     matrix_kc = dict(zip(matrices, kcs))
 
+    static_map = parse_static_text_map(os.path.join(pk, 'keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
     unknown = [x for x in langs if x not in L.langs]
@@ -262,7 +342,7 @@ def main():
 
     imgs, durations = [], []
     for li, lang in enumerate(langs):
-        board = renderer.render_frame(build_frame(L, R, matrix_kc, lang))
+        board = renderer.render_frame(build_frame(L, R, matrix_kc, lang, static_map))
         frame = Image.new('RGB', (board.width, board.height + CAP_H), Theme().bg)
         frame.paste(board, (0, 0))
         d = ImageDraw.Draw(frame)
