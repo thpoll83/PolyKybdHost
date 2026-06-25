@@ -209,8 +209,13 @@ class LangBoard(KleRenderer):
         if img is None:
             return super()._oled_buffer(c)
         one = img.point(lambda v: 255 if v >= 128 else 0).convert('1')
-        rgb = Image.new('RGB', (OLED_W, OLED_H), self.theme.oled_bg)
-        rgb.paste(Image.new('RGB', (OLED_W, OLED_H), self.theme.oled_on), (0, 0), one)
+        on, bg = self.theme.oled_on, self.theme.oled_bg
+        if c.invert:   # kdisp_invert: brief lit-background / dark-glyph press flash
+            rgb = Image.new('RGB', (OLED_W, OLED_H), on)
+            rgb.paste(Image.new('RGB', (OLED_W, OLED_H), bg), (0, 0), one)
+        else:
+            rgb = Image.new('RGB', (OLED_W, OLED_H), bg)
+            rgb.paste(Image.new('RGB', (OLED_W, OLED_H), on), (0, 0), one)
         return rgb
 
     def _key_tile(self, p, c: KeyContent) -> Image.Image:
