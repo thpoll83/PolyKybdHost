@@ -623,6 +623,16 @@ class PolyCore:
                     # set_unicode_mode is device I/O -> worker job.
                     self.worker.submit("set_unicode_mode",
                                        lambda c, m=mode: self.keeb.set_unicode_mode(m))
+                if connected_now:
+                    # Push the host OS (independent of the unicode mode). The keyboard
+                    # applies it only in auto mode (a manual pin / Android wins), and
+                    # set_os self-gates on protocol v7+, so this is a no-op on older
+                    # firmware. Re-asserted on every connect — host wins when present.
+                    from polyhost.input.unicode_input import get_host_os
+                    host_os = get_host_os()
+                    self.log.info("Pushing host OS %s to keyboard.", host_os)
+                    self.worker.submit("set_os",
+                                       lambda c, o=host_os: self.keeb.set_os(o))
                 self.device_mgr.reset_all_caches()
                 if self.overlay_handler is not None:
                     self.overlay_handler.force_resend()

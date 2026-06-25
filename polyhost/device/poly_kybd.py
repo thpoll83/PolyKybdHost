@@ -12,7 +12,7 @@ from polyhost.input.unicode_input import InputMethod
 from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import pack_dict_10_bit
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
-from polyhost.device.command_ids import Cmd, HidId, IdleStyle
+from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block
 from polyhost.device.im_converter import ImageConverter
@@ -28,6 +28,9 @@ PACKED_LANG_LIST_MIN_PROTOCOL = 2
 
 # Minimum firmware PROTOCOL_VERSION for the idle-style get/set command (cmd 28).
 IDLE_STYLE_MIN_PROTOCOL = 4
+
+# Minimum firmware PROTOCOL_VERSION for the active host-OS get/set command (cmd 29).
+OS_MIN_PROTOCOL = 7
 
 from polyhost.util.dict_util import split_dict
 
@@ -331,6 +334,43 @@ class PolyKybd:
         try:
             result, reply = self.hid.send_and_read_validate(
                 compose_cmd(Cmd.IDLE_STYLE, 0xFF), 100, expect(Cmd.IDLE_STYLE))
+            if result and len(reply) > 3 and reply[2:3] == b'.':
+                return True, reply[3]
+        except Exception:
+            pass
+        return False, 0
+
+    def _os_supported(self) -> bool:
+        if self.protocol_version is None:
+            self.query_version_info()
+        return (self.protocol_version is not None
+                and self.protocol_version >= OS_MIN_PROTOCOL)
+
+    def set_os(self, os: OsType | int, pin: bool = False) -> tuple[bool, Any]:
+        """Set the active host-OS identity (cmd 29, protocol v7+).
+
+        pin=False: a host-auto push — the keyboard applies it only while in auto
+        mode (its default) and lets firmware detection / a manual pin take over
+        otherwise. pin=True: a manual pin that overrides everything and persists.
+        Independent of the unicode input mode (set_unicode_mode / cmd 20)."""
+        value = os.value if isinstance(os, OsType) else int(os)
+        if not self._os_supported():
+            return False, (
+                f"Firmware protocol too old for OS control "
+                f"(need v{OS_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        flags = 0x01 if pin else 0x00
+        self.log.info("Setting OS to %d (pin=%s)...", value, pin)
+        return self.hid.send_and_read_validate(
+            compose_cmd(Cmd.SET_OS, value, flags), 100, expect(Cmd.SET_OS))
+
+    def get_os(self) -> tuple[bool, int]:
+        """Read the active OS (cmd 29 query). Returns the raw enum value; the reply
+        also carries the auto-mode flag in the following byte."""
+        if not self._os_supported():
+            return False, 0
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.SET_OS, 0xFF), 100, expect(Cmd.SET_OS))
             if result and len(reply) > 3 and reply[2:3] == b'.':
                 return True, reply[3]
         except Exception:

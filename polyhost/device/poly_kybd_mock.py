@@ -218,6 +218,16 @@ class PolyKybdMock:
         self.log.info("Setting unicode mode to %d", mode.value)
         return True, ""
 
+    def set_os(self, os, pin: bool = False) -> tuple[bool, str]:
+        self._log_call("set_os", os, pin)
+        self._os = getattr(os, "value", os)
+        self._os_pin = pin
+        return True, ""
+
+    def get_os(self) -> tuple[bool, int]:
+        self._log_call("get_os")
+        return True, getattr(self, "_os", 0)
+
     # -------------------------------------------------------------------------
     # Key press / release
     # -------------------------------------------------------------------------
