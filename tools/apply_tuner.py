@@ -21,7 +21,7 @@ Export format (exactly what the tuner's Export box emits):
     [offset] letter shift H = 44          # set a category-offset cell
 
 After applying, regenerate + rebuild:
-    cd <qmk>/keyboards/handwired/polykybd/lang && cog -r lang_lut.c
+    cd <qmk>/keyboards/polykybd/lang && cog -r lang_lut.c
     (then build / flash as usual)
 """
 import sys, os, re, json, zipfile, shutil, tempfile, atexit, argparse
@@ -189,7 +189,7 @@ def main():
             zout.writestr(item, data)
     shutil.move(out, XLSX)
     print(f"patched {XLSX}")
-    print("next:  cd %s/keyboards/handwired/polykybd/lang && cog -r lang_lut.c" % a.qmk)
+    print("next:  cd %s/keyboards/polykybd/lang && cog -r lang_lut.c" % a.qmk)
 
 
 if __name__ == '__main__':

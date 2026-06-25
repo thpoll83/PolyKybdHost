@@ -281,7 +281,7 @@ class TestValidatePolykybdFirmware(unittest.TestCase):
 
     def test_error_mentions_keyboard_path(self):
         _, msg = validate_polykybd_firmware(_make_fw())
-        self.assertIn('handwired/polykybd', msg)
+        self.assertIn('polykybd/split72', msg)
 
     def test_accepts_bytearray(self):
         ok, _ = validate_polykybd_firmware(bytearray(_make_fw("PolyKybd".encode('utf-16-le'))))
@@ -956,9 +956,9 @@ _FIXTURE_FW_CRC  = 0x3D4BB6A1   # binascii.crc32(fw) & 0xFFFFFFFF  (HID firmware
 
 @unittest.skipUnless(os.path.exists(_FIXTURE_BIN), 'fixture binary not present')
 class TestRealFirmwareBinary(unittest.TestCase):
-    """Integration tests against the real handwired/polykybd/split72 firmware.
+    """Integration tests against the real polykybd/split72 firmware.
 
-    These tests load the actual .bin produced by 'make handwired/polykybd/split72:default'
+    These tests load the actual .bin produced by 'make polykybd/split72:default'
     and confirm that all validation passes and expected metadata is stable.
     """
 

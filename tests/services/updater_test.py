@@ -284,10 +284,10 @@ class TestVersionFromTag(unittest.TestCase):
 def _fw_release_json(tag="PolyKybd-fw-v0.8.3", with_bin=True, with_uf2=True):
     assets = []
     if with_bin:
-        assets.append({"name": "handwired_polykybd_split72_default.bin",
+        assets.append({"name": "polykybd_split72_default.bin",
                        "browser_download_url": "https://example.com/fw.bin"})
     if with_uf2:
-        assets.append({"name": "handwired_polykybd_split72_default.uf2",
+        assets.append({"name": "polykybd_split72_default.uf2",
                        "browser_download_url": "https://example.com/fw.uf2"})
     return {
         "tag_name": tag,
