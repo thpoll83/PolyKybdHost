@@ -881,6 +881,14 @@ class PolyHost(QApplication):
 
     @staticmethod
     def langcode_to_flag(lang_code):
+        # On macOS a pair of regional-indicator codepoints renders as a real
+        # flag emoji — which would duplicate the flag PNG icon already shown on
+        # each language entry (e.g. "de 🇦🇹" + the 🇦🇹 icon). Show the plain
+        # upper-case country code there instead, so the user sees "de AT" plus
+        # the icon, not two flags. Windows/Linux don't render the pair as a flag,
+        # so they keep the regional-indicator text unchanged.
+        if platform.system() == "Darwin":
+            return lang_code.upper()
         result = ""
         for ch in lang_code:
             num = 0x1F1E6 + ord(ch.upper()) - ord('A')
