@@ -42,7 +42,24 @@ def get_host_os():
     elif os == "darwin":
         return OsType.MACOS
     elif os.startswith("linux"):
-        return OsType.LINUX
+        return _linux_de_os(OsType)
     elif os.startswith("freebsd"):
-        return OsType.LINUX
+        return _linux_de_os(OsType)
     return OsType.UNKNOWN
+
+
+def _linux_de_os(OsType):
+    """Refine a Linux host into a desktop-environment-specific OsType so the
+    keyboard can show DE-correct Super-key hints. Only GNOME and KDE differ enough
+    to model (GNOME: Super+Tab switches apps, no Super+D; KDE: Alt+Tab + Super+D);
+    everything else (XFCE, Cinnamon, MATE, …) is Windows-like and stays plain LINUX.
+    Reads $XDG_CURRENT_DESKTOP (colon-separated, e.g. "ubuntu:GNOME")."""
+    import os as _os
+    desktop = (_os.environ.get("XDG_CURRENT_DESKTOP")
+               or _os.environ.get("XDG_SESSION_DESKTOP")
+               or _os.environ.get("DESKTOP_SESSION") or "").lower()
+    if "kde" in desktop or "plasma" in desktop:
+        return OsType.LINUX_KDE
+    if "gnome" in desktop:
+        return OsType.LINUX_GNOME
+    return OsType.LINUX

@@ -67,6 +67,13 @@ class OsType(Enum):
     LINUX = 3
     ANDROID = 4
     IOS = 5
+    # Host-detected Linux desktop environments (from XDG_CURRENT_DESKTOP). They
+    # refine the keyboard's Super-key shortcut hints (GNOME and KDE bind the
+    # launcher/window-switcher differently); otherwise they behave as LINUX. Sent
+    # over cmd 29 to firmware protocol >= 8. Anything else (XFCE, Cinnamon, …)
+    # stays plain LINUX.
+    LINUX_GNOME = 6
+    LINUX_KDE = 7
 
 
 class IdleStyle(Enum):
