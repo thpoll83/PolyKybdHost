@@ -419,20 +419,23 @@ class PolyHost(QApplication):
         self._update_host_no_update = None
         self._update_fw_no_update = None
 
-        # The keyboard-firmware release flow downloads the .bin locally then
-        # flashes over HID — that can't drive a remote daemon, so it's
-        # in-process only (client mode flashes a local .bin via RPC instead;
-        # daemon-side release download is a later slice).
-        self.firmware_update_action = None
-        if not self.client_mode:
-            self.firmware_update_action = QAction(get_icon("keyboard.svg"), "Check for firmware update…", parent=self)
-            # noinspection PyUnresolvedReferences
-            self.firmware_update_action.triggered.connect(self._on_fw_up_clicked)
-            self.menu.addAction(self.firmware_update_action)
+        # The keyboard-firmware release flow checks GitHub for a newer release,
+        # downloads the .bin, then flashes it. In CLIENT mode the GUI has no
+        # local HID, so the download still happens here (network only) but the
+        # flash is handed to the daemon over the fw.flash RPC — the temp .bin is
+        # on the same machine, so the daemon can read it (see _on_fw_download_done).
+        # Available in both modes as of the daemon-default regression fix.
+        self.firmware_update_action = QAction(get_icon("keyboard.svg"), "Check for firmware update…", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.firmware_update_action.triggered.connect(self._on_fw_up_clicked)
+        self.menu.addAction(self.firmware_update_action)
         self._pending_fw_release = None
         self._fw_up_downloader = None
         self._fw_up_progress = None
         self._await_manual_fw_prompt = False
+        # Set in client mode to the downloaded temp .bin that the daemon flashes
+        # asynchronously — cleaned up on the terminal flash event (_on_flash_done).
+        self._pending_fw_tmp_path = None
 
         if debug_mode > 0:
             debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
@@ -643,8 +646,7 @@ class PolyHost(QApplication):
         # Re-enable the firmware actions inside the commands submenu (the loop
         # above just disabled its parent action on a mismatch). Both modes.
         self.cmdMenu.update_enabled(enabled, fw_enabled)
-        if not self.client_mode:
-            self.firmware_update_action.setEnabled(fw_enabled)
+        self.firmware_update_action.setEnabled(fw_enabled)
         # Available in both modes (driven via core methods).
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
@@ -878,6 +880,18 @@ class PolyHost(QApplication):
         else:
             phase = "apply" if name == "fw_apply_done" else "flash"
             self.icon_manager.set_warning(f"Firmware {phase} failed", 5000)
+        # Client-mode GitHub update flow: the downloaded temp .bin must persist
+        # until the daemon's async flash/apply finishes. Clean it up once the
+        # flow reaches a terminal state — apply done, or flash failed (no apply
+        # follows). Guarded by _pending_fw_tmp_path so the manual flash (user's
+        # own file) is untouched.
+        if self._pending_fw_tmp_path and (
+                name == "fw_apply_done" or (name == "fw_flash_done" and not ok)):
+            self._cleanup_fw_release_tmp()
+            # The async client-mode flash is done — restore the manual
+            # "Check for firmware update…" action (it was hidden while flashing).
+            self._pending_fw_release = None
+            self._reset_fw_update_action()
 
     @staticmethod
     def langcode_to_flag(lang_code):
@@ -1186,12 +1200,11 @@ class PolyHost(QApplication):
         self.log.debug("Starting update check...")
         # device_present (not connected): the firmware version is known even on
         # a protocol mismatch, and that's exactly when an update must be offered.
-        # Read it via the core-backed property (self.keeb is None in client
-        # mode). In client mode we skip the firmware check entirely — the
-        # keyboard-firmware release/flash flow is in-process only, so there's no
-        # firmware_update_action to drive (a falsy fw_version skips the fw check).
-        fw_version = self.kb_sw_version \
-            if (self._fw_actions_allowed() and not self.client_mode) else None
+        # Read it via the core-backed property (self.kb_sw_version works in both
+        # in-process and client mode — self.keeb itself is None in client mode).
+        # The firmware check runs in both modes now: the client downloads the
+        # release and flashes it via the daemon's fw.flash RPC.
+        fw_version = self.kb_sw_version if self._fw_actions_allowed() else None
 
         # Track whether the error event fires before host_no_update so we can
         # suppress the "no update" callback and show the real failure reason.
@@ -1448,7 +1461,7 @@ class PolyHost(QApplication):
         self._await_manual_fw_prompt = False
         self.firmware_update_action.setText("Check for firmware update…")
         self.firmware_update_action.setEnabled(self._fw_actions_allowed())
-        fw_version = self.keeb.get_sw_version() if self._fw_actions_allowed() else "unknown"
+        fw_version = self.kb_sw_version if self._fw_actions_allowed() else "unknown"
         _msgbox(QMessageBox.Information, "PolyKybd Firmware",
                 f"You are running the latest firmware (v{fw_version}).")
 
@@ -1504,6 +1517,36 @@ class PolyHost(QApplication):
                     f"Could not download the firmware:\n\n{error}")
             return
 
+        if self.client_mode:
+            # The daemon owns the device — flash the downloaded .bin over the
+            # fw.flash RPC with the same event-driven dialog as the manual
+            # client-mode flash. flash_firmware() queues async on the daemon and
+            # returns immediately, so the temp file must outlive this call: it is
+            # cleaned up on the terminal fw_apply_done / failed fw_flash_done
+            # event (see _on_flash_done), keyed off self._pending_fw_tmp_path.
+            self._pending_fw_tmp_path = bin_path
+            self._flash_dialog = HidFwUpDialog(
+                None, bin_path, parent=None, apply_after=True,
+                tray_icon=self.tray, external=True)
+            self._flash_dialog.show()
+            ok2, payload = self.core.flash_firmware(bin_path, apply=True)
+            if not ok2:
+                # The flash never queued on the daemon, so no terminal
+                # fw_flash_done/fw_apply_done event will arrive to restore the
+                # action — clean up and reset it inline so the manual "Check for
+                # firmware update…" entry isn't lost.
+                self._flash_dialog.feed_finished(False, str(payload))
+                self._cleanup_fw_release_tmp()
+                self._pending_fw_release = None
+                self._reset_fw_update_action()
+                return
+            # Queued OK: hide the "Update firmware to vX…" prompt while the daemon
+            # flashes; the terminal event restores the action (see _on_flash_done).
+            self._pending_fw_release = None
+            self.firmware_update_action.setVisible(False)
+            self.managed_connection_status()
+            return
+
         import os
         # Hold the worker off for the whole flash + apply. Otherwise the periodic
         # reconnect probe keeps re-acquiring the HID device while the flash dialog's
@@ -1520,8 +1563,32 @@ class PolyHost(QApplication):
                     os.unlink(bin_path)
 
         self._pending_fw_release = None
-        self.firmware_update_action.setVisible(False)
+        self._reset_fw_update_action()
         self.managed_connection_status()
+
+    def _reset_fw_update_action(self):
+        """Return the firmware action to its idle 'Check for firmware update…'
+        state (visible, enabled per _fw_actions_allowed) once a flash reaches a
+        terminal outcome, so the manual check entry is never left hidden — in
+        either in-process or client (daemon) mode."""
+        self.firmware_update_action.setText("Check for firmware update…")
+        self.firmware_update_action.setVisible(True)
+        self.firmware_update_action.setEnabled(self._fw_actions_allowed())
+
+    def _cleanup_fw_release_tmp(self):
+        """Remove the temp .bin downloaded for the client-mode GitHub update
+        flow. No-op when there's nothing pending (the manual client flash uses
+        the user's own file, so it never sets _pending_fw_tmp_path)."""
+        path = self._pending_fw_tmp_path
+        if not path:
+            return
+        self._pending_fw_tmp_path = None
+        import os
+        try:
+            if os.path.exists(path):
+                os.unlink(path)
+        except OSError as e:  # noqa: BLE001 — best effort temp cleanup
+            self.log.warning("Could not remove temp firmware file %s: %s", path, e)
 
     def quit_app_and_daemon(self):
         """Client mode: ask the core daemon (which owns the device) to exit too,
