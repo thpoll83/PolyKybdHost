@@ -36,6 +36,9 @@ class UnicodeCache:
         # is used for the decode/scale, never QPixmap (GUI-thread-only).
         self._executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="flagdl")
         self._lock = threading.Lock()
+        # Serialises the negative-cache file writes; kept separate from _lock so
+        # the disk I/O never happens while holding the scheduling lock.
+        self._io_lock = threading.Lock()
         self._inflight: set[str] = set()
         self._futures: list = []
         # Negative cache {codepoints: last_attempt_epoch}, persisted to disk so an
@@ -55,12 +58,17 @@ class UnicodeCache:
             pass
         return {}
 
-    def _save_failed(self):
-        try:
-            with open(self._failed_path, "w", encoding="utf-8") as f:
-                json.dump(self._failed, f)
-        except OSError as e:
-            print(f"[UnicodeCache] Could not persist failed-download cache: {e}")
+    def _persist_failed(self):
+        # Snapshot under the scheduling lock, then write the file under the I/O
+        # lock — so a slow/blocked disk can't stall icon scheduling.
+        with self._lock:
+            snapshot = dict(self._failed)
+        with self._io_lock:
+            try:
+                with open(self._failed_path, "w", encoding="utf-8") as f:
+                    json.dump(snapshot, f)
+            except OSError as e:
+                print(f"[UnicodeCache] Could not persist failed-download cache: {e}")
 
     def _recently_failed(self, codepoints: str) -> bool:
         ts = self._failed.get(codepoints)
@@ -105,25 +113,44 @@ class UnicodeCache:
             image = image.scaled(self.size, self.size)
             image.save(str(filename))
             with self._lock:
-                self._failed.pop(codepoints, None)
-                self._save_failed()
+                cleared = self._failed.pop(codepoints, None) is not None
+            if cleared:
+                self._persist_failed()
             print(f"[UnicodeCache] Cached: {filename.name}")
         except (requests.RequestException, OSError) as e:
             # Only expected network/filesystem failures go into the negative
             # cache — anything else is a bug that should surface.
             with self._lock:
                 self._failed[codepoints] = time.time()
-                self._save_failed()
+            self._persist_failed()
             print(f"[UnicodeCache] Failed to fetch icon {codepoints}: {e}")
         finally:
             with self._lock:
                 self._inflight.discard(codepoints)
 
-    def flush(self, timeout: float = 30.0):
-        """Block until all scheduled downloads finish. For tests and a clean
-        shutdown; never called on the menu-build path."""
+    def flush(self, timeout: float = 30.0) -> bool:
+        """Block until all scheduled downloads finish (best-effort, up to
+        timeout). Returns True iff every pending download completed. For tests
+        and a clean shutdown; never called on the menu-build path."""
         with self._lock:
             futures = list(self._futures)
             self._futures = []
-        if futures:
-            wait(futures, timeout=timeout)
+        if not futures:
+            return True
+        _done, not_done = wait(futures, timeout=timeout)
+        return not not_done
+
+    def shutdown(self, wait: bool = False):
+        """Stop the download executor. Best-effort (wait=False) by default so
+        application teardown isn't blocked by an in-flight CDN request."""
+        self._executor.shutdown(wait=wait)
+
+    def __del__(self):
+        # Don't let worker threads linger past teardown (best-effort; __init__
+        # may not have created the executor if it raised).
+        executor = getattr(self, "_executor", None)
+        if executor is not None:
+            try:
+                executor.shutdown(wait=False)
+            except Exception:  # noqa: BLE001 - teardown must never raise
+                pass

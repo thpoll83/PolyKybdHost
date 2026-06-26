@@ -59,18 +59,27 @@ class TestDownloadFailureHandling(unittest.TestCase):
     with a bounded timeout, and a failure must not be retried — within the
     session or across launches (persistent negative cache)."""
 
+    def setUp(self):
+        self._caches = []
+
+    def tearDown(self):
+        for c in self._caches:
+            c.shutdown(wait=False)
+
     def _make_cache(self, config_dir=None):
         tmp = config_dir or tempfile.mkdtemp(prefix="unicode_cache_test_")
         with mock.patch("polyhost.services.unicode_cache.user_config_dir",
                         return_value=tmp):
-            return UnicodeCache(), tmp
+            cache = UnicodeCache()
+        self._caches.append(cache)
+        return cache, tmp
 
     @mock.patch("polyhost.services.unicode_cache.requests.Session.get")
     def test_download_uses_bounded_timeout(self, get):
         get.side_effect = ConnectionError("offline")
         cache, _ = self._make_cache()
         cache.get_icon_for("ZZ")   # not shipped in res/flags -> download path
-        cache.flush()              # wait for the background worker to run
+        self.assertTrue(cache.flush())   # all workers completed
         self.assertEqual(get.call_args.kwargs.get("timeout"), 10)
 
     @mock.patch("polyhost.services.unicode_cache.requests.Session.get")
@@ -140,6 +149,7 @@ class TestBundledIconResolution(unittest.TestCase):
         cache.flush()
         self.assertEqual(get.call_count, 0)
         self.assertFalse(icon.isNull())
+        cache.shutdown(wait=False)
 
 
 if __name__ == '__main__':
