@@ -112,6 +112,11 @@ class PolyCore:
         # Set on a fresh connect; consumed by the first applied snapshot after
         # it so the overlay state on the keyboard is cleared exactly once.
         self.needs_overlay_reset = False
+        # Last OS value pushed to the keyboard (an OsType.value int, or None). The
+        # window-tracking tick re-asserts the local OS when local windows drive the
+        # display and the forwarder's OS when a remote-forwarded window is active,
+        # deduped against this so set_os only fires on an actual change.
+        self._last_pushed_os = None
         # Re-entrancy guard for the font-pack auto-flash: True only while a flash
         # is actually running, so a connection flap mid-flash can't start a second
         # one — but it is cleared on completion, so each fresh connect (e.g. a
@@ -385,12 +390,53 @@ class PolyCore:
                 self.submit_overlay_cmd(cmd)
             if data and cmd == OverlayCommand.OFF_ON:
                 self.send_overlay_data(data)
+            self._track_active_os(handler)
         elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
 
-    def report_window(self, handle, name, title):
+    def _track_active_os(self, handler):
+        """Keep the keyboard's OS in sync with the machine currently driving the
+        display: the forwarder's OS while a remote-forwarded window is active, else
+        the local OS. This is what makes the OS feature follow a forwarded session
+        (the keyboard reflects whichever computer you're working on), and revert to
+        the local OS when local window tracking takes back over. Deduped via
+        ``_push_os`` so set_os only fires on an actual change."""
+        from polyhost.input.unicode_input import get_host_os
+        from polyhost.device.command_ids import OsType
+        forwarded = None
+        rh = getattr(handler, "remote_handler", None)
+        if rh is not None and handler.is_remote_mapping_entry():
+            forwarded = getattr(rh, "forwarded_os", None)
+        # A forwarded UNKNOWN(0)/None means the forwarder didn't report an OS — keep
+        # the local OS rather than blanking the keyboard back to auto/unknown.
+        desired = get_host_os()
+        if isinstance(forwarded, int) and forwarded:
+            try:
+                desired = OsType(forwarded)
+            except ValueError:
+                pass  # unknown wire value — fall back to the local OS
+        self._push_os(desired)
+
+    def _push_os(self, os):
+        """Submit a host-auto OS push to the keyboard, deduped against the last one.
+
+        Accepts an OsType (or int); a no-op when it matches what was last pushed.
+        set_os self-gates on protocol v7+, so this is harmless on older firmware."""
+        from polyhost.device.command_ids import OsType as _OsType
+        value = os.value if isinstance(os, _OsType) else int(os)
+        if value == self._last_pushed_os:
+            return
+        self._last_pushed_os = value
+        self.log.info("Pushing OS %s to keyboard.", _OsType(value))
+        self.worker.submit("set_os", lambda c, v=value: self.keeb.set_os(v))
+
+    def report_window(self, handle, name, title, os=None):
         """Inject an external active-window report into remote window tracking
         (the ``window.report`` RPC / ``polyctl window report``).
+
+        ``os`` (optional, an OsType value int) is the forwarder's host OS, stored
+        on the remote handler so the window-tracking tick can push it to the
+        keyboard while the forwarded window is the active overlay driver.
 
         Mirrors what the cross-machine TCP relay does, but over the control
         socket — a local client (or a future unified transport) can feed the
@@ -401,7 +447,7 @@ class PolyCore:
         handler = self.overlay_handler
         if handler is None or getattr(handler, "remote_handler", None) is None:
             return False, "window tracking unavailable"
-        handler.remote_handler.report_window(handle, name, title)
+        handler.remote_handler.report_window(handle, name, title, os=os)
         return True, {"reported": True}
 
     def submit_overlay_cmd(self, cmd):
@@ -628,11 +674,10 @@ class PolyCore:
                     # applies it only in auto mode (a manual pin / Android wins), and
                     # set_os self-gates on protocol v7+, so this is a no-op on older
                     # firmware. Re-asserted on every connect — host wins when present.
+                    # Force the push (last_pushed reset) so a reconnect always re-syncs.
                     from polyhost.input.unicode_input import get_host_os
-                    host_os = get_host_os()
-                    self.log.info("Pushing host OS %s to keyboard.", host_os)
-                    self.worker.submit("set_os",
-                                       lambda c, o=host_os: self.keeb.set_os(o))
+                    self._last_pushed_os = None
+                    self._push_os(get_host_os())
                 self.device_mgr.reset_all_caches()
                 if self.overlay_handler is not None:
                     self.overlay_handler.force_resend()

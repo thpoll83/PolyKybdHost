@@ -74,7 +74,13 @@ class TestReportWindow(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(payload, {"reported": True})
         core.overlay_handler.remote_handler.report_window.assert_called_once_with(
-            "7", "Code.exe", "x - VS Code")
+            "7", "Code.exe", "x - VS Code", os=None)
+
+    def test_forwards_os_to_remote_handler(self):
+        core = make_core()
+        core.report_window("7", "Code.exe", "x - VS Code", os=2)
+        core.overlay_handler.remote_handler.report_window.assert_called_once_with(
+            "7", "Code.exe", "x - VS Code", os=2)
 
     def test_no_window_tracking_returns_error(self):
         core = make_core()

@@ -28,6 +28,12 @@ def make_core(*, connected=True, handler=True, run_when_disconnected=False):
     core.poly_settings.get.side_effect = lambda k: {
         "dev_run_window_detection_if_not_connected_to_poly_kybd": run_when_disconnected,
     }.get(k, False)
+    # Seed the OS dedup to the local OS so the window tick's OS-tracking re-assert
+    # is a no-op here (these tests pin overlay-send behaviour, not OS pushes).
+    from polyhost.input.unicode_input import get_host_os
+    core._last_pushed_os = get_host_os().value
+    if handler:
+        core.overlay_handler.is_remote_mapping_entry.return_value = False
     return core
 
 
@@ -85,6 +91,48 @@ class TestTickWindowTracking(unittest.TestCase):
         core.tick_window_tracking()
         core.overlay_handler.handle_active_window.assert_called_once()
         core.worker.submit.assert_not_called()
+
+
+class TestOsTracking(unittest.TestCase):
+    """The window tick pushes the forwarder's OS while a remote-forwarded window
+    drives the display, and reverts to the local OS when local tracking resumes —
+    deduped so set_os only fires on a change."""
+
+    def _os_submits(self, core):
+        return [c for c in core.worker.submit.call_args_list if c.args and c.args[0] == "set_os"]
+
+    def test_forwarded_os_pushed_then_reverts(self):
+        from polyhost.input.unicode_input import get_host_os
+        core = make_core()
+        core._last_pushed_os = None  # nothing pushed yet
+        core.overlay_handler.handle_active_window.return_value = (None, OverlayCommand.NONE)
+
+        # Remote-forwarded window active, forwarder reports macOS (2).
+        core.overlay_handler.is_remote_mapping_entry.return_value = True
+        core.overlay_handler.remote_handler.forwarded_os = 2
+        core.tick_window_tracking()
+        self.assertEqual(self._os_submits(core), self._os_submits(core)[:1])  # at least one
+        self.assertEqual(core._last_pushed_os, 2)
+
+        # A second identical tick is deduped (no new set_os).
+        before = len(self._os_submits(core))
+        core.tick_window_tracking()
+        self.assertEqual(len(self._os_submits(core)), before)
+
+        # Local window takes back over -> revert to the local OS.
+        core.overlay_handler.is_remote_mapping_entry.return_value = False
+        core.tick_window_tracking()
+        self.assertEqual(core._last_pushed_os, get_host_os().value)
+
+    def test_remote_without_os_keeps_local(self):
+        from polyhost.input.unicode_input import get_host_os
+        core = make_core()
+        core._last_pushed_os = None
+        core.overlay_handler.handle_active_window.return_value = (None, OverlayCommand.NONE)
+        core.overlay_handler.is_remote_mapping_entry.return_value = True
+        core.overlay_handler.remote_handler.forwarded_os = None  # old forwarder
+        core.tick_window_tracking()
+        self.assertEqual(core._last_pushed_os, get_host_os().value)
 
 
 if __name__ == '__main__':
