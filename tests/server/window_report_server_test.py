@@ -36,6 +36,7 @@ def _free_port():
 class WindowReportServerTest(unittest.TestCase):
     def setUp(self):
         self.reports = []
+        self.last_os = None
         self.report_result = (True, {"reported": True})
         self.authkey = b"winreport-testkey"
         self.port = _free_port()
@@ -56,8 +57,9 @@ class WindowReportServerTest(unittest.TestCase):
         except Exception:
             pass
 
-    def _on_report(self, handle, name, title):
+    def _on_report(self, handle, name, title, os=None):
         self.reports.append((handle, name, title))
+        self.last_os = os
         return self.report_result
 
     def _client(self, authkey=None):
@@ -72,6 +74,12 @@ class WindowReportServerTest(unittest.TestCase):
         result = c.report(1234, "code.exe", "main.py - VS Code")
         self.assertEqual(result, {"ok": True})
         self.assertEqual(self.reports, [("1234", "code.exe", "main.py - VS Code")])
+        self.assertIsNone(self.last_os)  # no os field -> callback gets None
+
+    def test_report_forwards_os(self):
+        c = self._client()
+        c.report(1, "term", "bash", os=2)  # 2 == OsType.MACOS
+        self.assertEqual(self.last_os, 2)
 
     def test_callback_failure_surfaces_as_error(self):
         self.report_result = (False, "no remote mapping active")

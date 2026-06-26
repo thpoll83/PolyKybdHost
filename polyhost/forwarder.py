@@ -8,13 +8,17 @@ import sys
 import time
 
 
-from PyQt5.QtCore import QTimer, Qt
+import subprocess
+
+from PyQt5.QtCore import QTimer, Qt, QObject, pyqtSignal
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtWidgets import (
     QApplication,
     QSystemTrayIcon,
     QMenu,
-    QAction)
+    QAction,
+    QMessageBox,
+    QProgressDialog)
 from polyhost._version import __version__
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
@@ -41,6 +45,18 @@ HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host c
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
 
+class _UpdateBridge(QObject):
+    """Marshals the updater threads' callbacks (which fire off the Qt thread) back
+    onto the Qt main thread via queued signals — the forwarder has no WorkerBridge."""
+    available = pyqtSignal(object)
+    no_update = pyqtSignal()
+    error = pyqtSignal(str)
+    progress = pyqtSignal(int, str)
+    finished_ok = pyqtSignal()
+    relay_needed = pyqtSignal(str)
+    failed = pyqtSignal(str)
+
+
 class PolyForwarder(QApplication):
     def __init__(self, log_level, host=None, host_file=None,
                  report_rpc=False, report_port=None, report_authkey_file=None):
@@ -59,6 +75,12 @@ class PolyForwarder(QApplication):
         self._report_port = report_port
         self._report_client = None
         self._report_authkey = None
+
+        # This machine's OS, forwarded alongside the active window so the keyboard
+        # reflects the OS of the computer you are working on (not just the one it is
+        # plugged into). Constant for the process lifetime. An OsType value int.
+        from polyhost.input.unicode_input import get_host_os
+        self._os_value = get_host_os().value
 
         fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} - %(message)s"
         file_handler = RotatingFileHandler(
@@ -126,8 +148,26 @@ class PolyForwarder(QApplication):
         # noinspection PyUnresolvedReferences
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
-        
+
+        self.update_action = QAction(get_icon("sync.svg"), "Check for updates...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.update_action.triggered.connect(self._on_update_clicked)
+
+        # Update plumbing (host-app update only — the forwarder has no device).
+        self._update_bridge = _UpdateBridge()
+        self._update_bridge.available.connect(self._on_update_available)
+        self._update_bridge.no_update.connect(self._on_no_update)
+        self._update_bridge.error.connect(self._on_check_error)
+        self._update_bridge.progress.connect(self._on_update_progress)
+        self._update_bridge.finished_ok.connect(self._on_update_done)
+        self._update_bridge.relay_needed.connect(self._on_relay_needed)
+        self._update_bridge.failed.connect(self._on_update_failed)
+        self._update_checker = None
+        self._update_installer = None
+        self._update_progress = None
+
         self.menu.addAction(self.log_dialog)
+        self.menu.addAction(self.update_action)
         self.menu.addAction(self.support)
         self.menu.addAction(self.about)
         self.menu.addAction(self.exit)
@@ -183,7 +223,7 @@ class PolyForwarder(QApplication):
                 from polyhost.server.window_report_client import connect
                 self._report_client = connect(
                     host, self._report_port, self._report_authkey)
-            self._report_client.report(handle, name, title)
+            self._report_client.report(handle, name, title, os=self._os_value)
             return True
         except Exception as e:
             self.log.error("Window-report RPC to %s failed: %s", host, e)
@@ -209,7 +249,9 @@ class PolyForwarder(QApplication):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(3.0)
             s.connect((str(ip), TCP_PORT))
-            s.send(f"{handle};{name};{title}".encode("utf-8"))
+            # 4th field = this machine's OS (an OsType value int); older daemons
+            # split on ';' and read the first three fields, ignoring the extra one.
+            s.send(f"{handle};{name};{title};{self._os_value}".encode("utf-8"))
             s.close()
             return True
         except socket.timeout as err:
@@ -240,6 +282,109 @@ class PolyForwarder(QApplication):
     def open_about():
         webbrowser.open("https://ko-fi.com/polykb", new=0, autoraise=True)
         
+    # ------------------------------------------------------------------
+    # Host-app update (mirrors the tray app's flow, host-only — no firmware,
+    # since the forwarder has no device). Threads marshal back via _update_bridge.
+    # ------------------------------------------------------------------
+    def _on_update_clicked(self):
+        from polyhost.services.updater import UpdateChecker
+        if self._update_installer is not None and self._update_installer.is_alive():
+            return
+        if self._update_checker is not None and self._update_checker.is_alive():
+            return
+        self.update_action.setText("Checking for updates...")
+        ub = self._update_bridge
+        self._update_checker = UpdateChecker(
+            current_fw_version=None,   # host-only: the forwarder owns no keyboard
+            on_update_available=lambda rel: ub.available.emit(rel),
+            on_host_no_update=lambda: ub.no_update.emit(),
+            on_error=lambda msg: ub.error.emit(msg),
+        )
+        self._update_checker.start()
+
+    def _on_update_available(self, release):
+        self.update_action.setText("Check for updates...")
+        if QMessageBox.question(
+                None, "Update PolyKybdHost",
+                f"Version {release.version} is available.\n\n"
+                "Download, install, and restart the forwarder now?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) != QMessageBox.Yes:
+            return
+        self._run_update_installer(release)
+
+    def _on_no_update(self):
+        self.update_action.setText("Check for updates...")
+        QMessageBox.information(
+            None, "PolyKybdHost Update",
+            f"You are running the latest version (v{__version__}).")
+
+    def _on_check_error(self, msg):
+        self.update_action.setText("Check for updates...")
+        QMessageBox.warning(
+            None, "PolyKybdHost Update",
+            f"Could not check for updates:\n\n{msg}\n\nRun with --debug 1 for details.")
+
+    def _run_update_installer(self, release):
+        from polyhost.services.updater import UpdateInstaller
+        if self._update_installer is not None and self._update_installer.is_alive():
+            return
+        self.update_action.setEnabled(False)
+        self._update_progress = QProgressDialog(
+            f"Downloading v{release.version}…", "", 0, 100)
+        self._update_progress.setWindowTitle("PolyKybdHost Update")
+        self._update_progress.setCancelButton(None)
+        self._update_progress.setMinimumDuration(0)
+        self._update_progress.show()
+        ub = self._update_bridge
+        self._update_installer = UpdateInstaller(
+            release,
+            on_progress=lambda pct, m: ub.progress.emit(pct, m),
+            on_finished_ok=lambda: ub.finished_ok.emit(),
+            on_relay_needed=lambda path: ub.relay_needed.emit(path),
+            on_failed=lambda m: ub.failed.emit(m),
+        )
+        self._update_installer.start()
+
+    def _on_update_progress(self, percent, message):
+        if self._update_progress is None:
+            return
+        self._update_progress.setLabelText(message)
+        if percent < 0:
+            self._update_progress.setRange(0, 0)
+        else:
+            if self._update_progress.maximum() == 0:
+                self._update_progress.setRange(0, 100)
+            self._update_progress.setValue(percent)
+
+    def _on_update_done(self):
+        from polyhost.services.updater import restart_app
+        if self._update_progress is not None:
+            self._update_progress.close()
+            self._update_progress = None
+        self.log.info("Update applied, restarting forwarder...")
+        self.quit_app()
+        restart_app()
+
+    def _on_relay_needed(self, relay_path):
+        if self._update_progress is not None:
+            self._update_progress.setLabelText("Restarting to complete update…")
+            self._update_progress.setValue(100)
+        popen_kwargs = {"close_fds": False}
+        if sys.platform == "win32":
+            popen_kwargs["creationflags"] = (
+                subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
+        subprocess.Popen([sys.executable, relay_path], **popen_kwargs)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        QTimer.singleShot(1200, self.quit)
+
+    def _on_update_failed(self, message):
+        if self._update_progress is not None:
+            self._update_progress.close()
+            self._update_progress = None
+        self.update_action.setEnabled(True)
+        self.log.error("Update failed: %s", message)
+        QMessageBox.warning(
+            None, "Update failed", f"Could not apply the update:\n\n{message}")
+
     def quit_app(self):
         self.icon_manager.set_disconnected()
         self.is_closing = True

@@ -11,10 +11,12 @@ BUFFER_SIZE = 1024
 
 # Needs to be started as thread
 def receive_from_forwarder(log, on_report, stop_event):
-    """Accept ``handle;name;title`` reports from a forwarder and hand each to
-    ``on_report(handle, name, title)`` — the same entry point the window.report
-    RPC uses (RemoteHandler.report_window), so the TCP relay is now just a
-    transport over the unified path rather than poking a separate store."""
+    """Accept ``handle;name;title[;os]`` reports from a forwarder and hand each to
+    ``on_report(handle, name, title, os=...)`` — the same entry point the
+    window.report RPC uses (RemoteHandler.report_window), so the TCP relay is now
+    just a transport over the unified path rather than poking a separate store.
+    The optional 4th ``os`` field (an OsType value int) is sent by forwarders that
+    forward their OS; older forwarders omit it (back-compatible split)."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -37,8 +39,14 @@ def receive_from_forwarder(log, on_report, stop_event):
                 data = data.decode("utf-8")
                 entries = [0, "", ""] if not data else data.split(";")
                 if len(entries) > 2:
-                    on_report(entries[0], entries[1], entries[2])
-                    log.debug_detailed("Remote data from %s: handle=%s name=%s", addr, entries[0], entries[1])
+                    os = None
+                    if len(entries) > 3 and entries[3] != "":
+                        try:
+                            os = int(entries[3])
+                        except ValueError:
+                            os = None
+                    on_report(entries[0], entries[1], entries[2], os=os)
+                    log.debug_detailed("Remote data from %s: handle=%s name=%s os=%s", addr, entries[0], entries[1], os)
             finally:
                 conn.close()
         except socket.timeout:
@@ -63,6 +71,9 @@ class RemoteHandler:
         self.last_entry = None
         self.connections = {}
         self.mapping = mapping
+        # Latest OS reported by the forwarder (an OsType value int), or None when
+        # the forwarder does not forward its OS. Read by PolyCore's window tick.
+        self.forwarded_os = None
         self.listen_to_forwarder()
 
     def _has_remote_entries(self):
@@ -81,21 +92,25 @@ class RemoteHandler:
         self.forwarder.daemon = True
         self.forwarder.start()
 
-    def report_window(self, handle, name, title):
+    def report_window(self, handle, name, title, os=None):
         """Single entry point for an active-window report, from either source:
         the cross-machine TCP relay (`receive_from_forwarder`) or the
         ``window.report`` control-socket RPC / ``polyctl window report``.
 
         Stores the latest report; ``remote_changed`` reads it and runs the
-        shared matcher (`common.find_matching_entry`)."""
+        shared matcher (`common.find_matching_entry`). ``os`` (optional, an OsType
+        value int) is the forwarder's OS — kept on ``forwarded_os`` for the window
+        tick; left unchanged when None so a report without an OS never clears it."""
         self.connections["_report"] = {
             "handle": str(handle),
             "name": str(name),
             "title": str(title),
         }
         self.connections["_latest"] = "_report"
+        if os is not None:
+            self.forwarded_os = os
         self.log.debug_detailed(
-            "report_window: handle=%s name=%s title=%s", handle, name, title)
+            "report_window: handle=%s name=%s title=%s os=%s", handle, name, title, os)
 
     def _match_remote(self):
         """Match the current remote window's app/title against the mapping using

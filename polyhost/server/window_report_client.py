@@ -36,13 +36,19 @@ class WindowReportClient:
         if not ok:
             raise WindowReportError(why)
 
-    def report(self, handle, name, title):
-        """Send one window report; raise WindowReportError on failure/timeout."""
+    def report(self, handle, name, title, os=None):
+        """Send one window report; raise WindowReportError on failure/timeout.
+
+        ``os`` (optional, an OsType value int) lets the forwarder forward its host
+        OS; omitted from the params when None so the field is simply absent for
+        forwarders that do not forward their OS."""
         req_id = self._next_id
         self._next_id += 1
+        params = {"handle": str(handle), "name": str(name), "title": str(title)}
+        if os is not None:
+            params["os"] = int(os)
         p.send_message(self._conn, p.make_request(
-            req_id, p.M_WINDOW_REPORT,
-            {"handle": str(handle), "name": str(name), "title": str(title)}))
+            req_id, p.M_WINDOW_REPORT, params))
         while True:
             if not self._conn.poll(self._timeout):
                 raise WindowReportError("timed out waiting for window.report reply")
