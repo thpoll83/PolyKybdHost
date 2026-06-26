@@ -27,3 +27,22 @@ def get_input_method():
     elif os.startswith('freebsd'):
         return InputMethod.BSD
     return InputMethod.Unknown
+
+
+def get_host_os():
+    """The OS identity to push to the keyboard (cmd 29), independent of the unicode
+    input mode. BSD maps to Linux for shortcut purposes (the firmware has no BSD OS;
+    its Ctrl-based chords match). Android/iOS never originate here — the host app
+    doesn't run on them — so they only ever come from firmware detection or a manual
+    pin on the keyboard."""
+    from polyhost.device.command_ids import OsType
+    os = sys.platform
+    if os == "win32":
+        return OsType.WINDOWS
+    elif os == "darwin":
+        return OsType.MACOS
+    elif os.startswith("linux"):
+        return OsType.LINUX
+    elif os.startswith("freebsd"):
+        return OsType.LINUX
+    return OsType.UNKNOWN

@@ -50,6 +50,23 @@ class Cmd(Enum):
     SAVE_MRU = 26
     GET_LANG_LIST_PACKED = 27
     IDLE_STYLE = 28  # get/set idle (anti-burn-in) display style (protocol v4+)
+    SET_OS = 29  # get/set the active host-OS identity (protocol v7+)
+
+
+class OsType(Enum):
+    """Active host-OS identity — mirrors the firmware's enum poly_os.
+
+    A first-class state, independent of the unicode input mode (cmd 20). The host
+    pushes it over cmd 29 (host-auto) and it drives the keyboard's modifier-legend
+    swap, OS icon, and semantic action keys. Values are append-only and shared on
+    the wire with the firmware — never reorder.
+    """
+    UNKNOWN = 0
+    WINDOWS = 1
+    MACOS = 2
+    LINUX = 3
+    ANDROID = 4
+    IOS = 5
 
 
 class IdleStyle(Enum):
