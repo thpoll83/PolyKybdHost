@@ -888,6 +888,10 @@ class PolyHost(QApplication):
         if self._pending_fw_tmp_path and (
                 name == "fw_apply_done" or (name == "fw_flash_done" and not ok)):
             self._cleanup_fw_release_tmp()
+            # The async client-mode flash is done — restore the manual
+            # "Check for firmware update…" action (it was hidden while flashing).
+            self._pending_fw_release = None
+            self._reset_fw_update_action()
 
     @staticmethod
     def langcode_to_flag(lang_code):
@@ -1527,8 +1531,17 @@ class PolyHost(QApplication):
             self._flash_dialog.show()
             ok2, payload = self.core.flash_firmware(bin_path, apply=True)
             if not ok2:
+                # The flash never queued on the daemon, so no terminal
+                # fw_flash_done/fw_apply_done event will arrive to restore the
+                # action — clean up and reset it inline so the manual "Check for
+                # firmware update…" entry isn't lost.
                 self._flash_dialog.feed_finished(False, str(payload))
                 self._cleanup_fw_release_tmp()
+                self._pending_fw_release = None
+                self._reset_fw_update_action()
+                return
+            # Queued OK: hide the "Update firmware to vX…" prompt while the daemon
+            # flashes; the terminal event restores the action (see _on_flash_done).
             self._pending_fw_release = None
             self.firmware_update_action.setVisible(False)
             self.managed_connection_status()
@@ -1550,8 +1563,17 @@ class PolyHost(QApplication):
                     os.unlink(bin_path)
 
         self._pending_fw_release = None
-        self.firmware_update_action.setVisible(False)
+        self._reset_fw_update_action()
         self.managed_connection_status()
+
+    def _reset_fw_update_action(self):
+        """Return the firmware action to its idle 'Check for firmware update…'
+        state (visible, enabled per _fw_actions_allowed) once a flash reaches a
+        terminal outcome, so the manual check entry is never left hidden — in
+        either in-process or client (daemon) mode."""
+        self.firmware_update_action.setText("Check for firmware update…")
+        self.firmware_update_action.setVisible(True)
+        self.firmware_update_action.setEnabled(self._fw_actions_allowed())
 
     def _cleanup_fw_release_tmp(self):
         """Remove the temp .bin downloaded for the client-mode GitHub update
