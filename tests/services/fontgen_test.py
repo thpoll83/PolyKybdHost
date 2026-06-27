@@ -40,6 +40,38 @@ _FONT = _find_font()
 _FONTCONVERT = os.environ.get("FONTCONVERT_BIN") or shutil.which("fontconvert")
 
 
+def _find_cemoji():
+    cands = [os.environ.get("NOTO_CEMOJI"), "/tmp/NotoColorEmoji.ttf",
+             os.path.join(os.path.dirname(__file__), "..", "..", "..", "qmk_firmware",
+                          "keyboards", "polykybd", "fonts", "Noto_CEmoji",
+                          "NotoColorEmoji-Regular.ttf")]
+    for c in cands:
+        if c and os.path.exists(c):
+            return c
+    return None
+
+
+_CEMOJI = _find_cemoji()
+
+
+def _cemoji_renderable():
+    """NotoColorEmoji's CBDT glyphs are PNG-compressed; freetype-py's *bundled*
+    libfreetype is built without PNG and raises 'unimplemented feature'.  Detect
+    whether the active FreeType can decode a colour glyph so the test skips
+    (rather than errors) on a PNG-less build."""
+    if _ERR is not None or _CEMOJI is None:
+        return False
+    try:
+        fontgen.render_range(_CEMOJI, 0x1F600, 0x1F600,
+                             RenderOptions(size=20, render_mode=1, height=40, bits=32))
+        return True
+    except Exception:
+        return False
+
+
+_CEMOJI_OK = _cemoji_renderable()
+
+
 def _parse_header(txt):
     bm = re.search(r'Bitmaps\[\]\s*PROGMEM\s*=\s*\{(.*?)\};', txt, re.S).group(1)
     bm = re.sub(r'/\*.*?\*/', '', bm, flags=re.S)
@@ -186,6 +218,55 @@ class CParityTest(unittest.TestCase):
         self._assert_seq_parity(["-s16", "-C", "-F0xE000"], "41 42",
                                 RenderOptions(size=16, seq_first=0xE000, composite=True),
                                 bitmap_only=True)
+
+
+@unittest.skipIf(_ERR is not None, f"freetype/numpy unavailable: {_ERR}")
+@unittest.skipIf(_FONTCONVERT is None, "no fontconvert binary (set FONTCONVERT_BIN)")
+@unittest.skipUnless(_CEMOJI_OK, "NotoColorEmoji absent or FreeType lacks PNG "
+                                 "(set NOTO_CEMOJI; needs a PNG-enabled libfreetype)")
+class ColorEmojiParityTest(unittest.TestCase):
+    """Byte-for-byte colour-emoji parity (the BGRA dither + -N/-I/-E/-O chain)."""
+
+    def _c(self, args):
+        out = subprocess.run([_FONTCONVERT, "-f", _CEMOJI, *args],
+                             capture_output=True, text=True, check=True)
+        return _parse_header(out.stdout)
+
+    def _parity_range(self, cargs, opts, first, last):
+        c_bitmap, c_glyphs = self._c([*cargs, hex(first), hex(last)])
+        pf = fontgen.render_range(_CEMOJI, first, last, opts)
+        self.assertEqual(c_bitmap, pf.bitmap, "colour bitmap differs")
+        self.assertEqual(c_glyphs, pf.glyphs, "colour glyph records differ")
+
+    def test_plain_color(self):
+        self._parity_range(["-s20", "-g", "-r40", "-b32"],
+                           RenderOptions(size=20, render_mode=1, height=40, bits=32),
+                           0x1F600, 0x1F60F)
+
+    def test_emoji_category_chain(self):
+        # the real emoji category: -g -N -I -E -O1 -Dfs -r40 -Y48
+        self._parity_range(
+            ["-s20", "-g", "-N", "-I", "-E", "-O1", "-Dfs", "-r40", "-Y48", "-b32"],
+            RenderOptions(size=20, render_mode=1, normalize=True, invert=True,
+                          edge_preserve=True, outline=1, height=40, yadvance=48, bits=32),
+            0x1F600, 0x1F60F)
+
+    def test_width_scaled(self):
+        self._parity_range(["-s20", "-g", "-N", "-E", "-O1", "-r40", "-W60", "-b32"],
+                           RenderOptions(size=20, render_mode=1, normalize=True,
+                                         edge_preserve=True, outline=1, height=40,
+                                         max_width=60, bits=32), 0x1F910, 0x1F91F)
+
+    def test_color_flag_sequence(self):
+        # gen-lang-fonts.sh flag options, shaped regional-indicator pairs
+        seq = "1F1E9 1F1EA, 1F1EB 1F1F7, 1F1EF 1F1F5"
+        cargs = ["-s20", "-g", "-r54", "-W72", "-O1", "-Dfs", "-e-0.10", "-F0xE000"]
+        c_bitmap, c_glyphs = self._c([*cargs, "-S", seq])
+        pf = fontgen.render_sequence(_CEMOJI, seq, RenderOptions(
+            size=20, render_mode=1, height=54, max_width=72, outline=1,
+            exposure=-0.10, seq_first=0xE000))
+        self.assertEqual(c_bitmap, pf.bitmap, "flag bitmap differs")
+        self.assertEqual(c_glyphs, pf.glyphs, "flag glyph records differ")
 
 
 if __name__ == "__main__":

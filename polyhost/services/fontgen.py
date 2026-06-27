@@ -16,6 +16,13 @@ tool (deterministic-dither paths) bit-for-bit when the FreeType version matches:
   * the pixel pipeline (mono passthrough / gray / BGRA dither + -N/-I/-E/-O) via
     fontgen_dither.
 
+⚠️ Colour-emoji (NotoColorEmoji) glyphs are PNG-compressed CBDT bitmaps, so they
+need a **PNG-enabled FreeType**.  freetype-py ships a *bundled* libfreetype built
+WITHOUT PNG → colour glyphs raise FreeType "unimplemented feature".  Mono/gray
+fonts work regardless; for colour emoji either install a freetype-py whose bundled
+lib has PNG, or make it load a system libfreetype with PNG (remove/symlink the
+bundled .so so freetype.raw falls back to ctypes.util.find_library('freetype')).
+
 freetype-py / uharfbuzz / numpy are imported lazily so the rest of the host (and
 the read-only inspector) keep working without them.  Both modes are implemented:
 range mode (`render_range`) and HarfBuzz sequence mode (`render_sequence`, the
@@ -129,6 +136,25 @@ def _scale_metric(v: int, num: int, den: int) -> int:
     return int(r + (0.5 if r >= 0 else -0.5))
 
 
+def _load_glyph_rendered(face, gid: int, color: bool):
+    """Load + render one glyph, mirroring extract_range_ft: load WITHOUT
+    FT_LOAD_RENDER (which would try to re-render — and fail with 'unimplemented' —
+    an embedded colour bitmap), then FT_Render_Glyph only for outline glyphs.
+    Returns face.glyph."""
+    import freetype
+    flags = (freetype.FT_LOAD_TARGET_NORMAL | freetype.FT_LOAD_COLOR
+             if color else freetype.FT_LOAD_TARGET_MONO)
+    face.load_glyph(gid, flags)
+    slot = face.glyph
+    if slot.format != freetype.FT_GLYPH_FORMAT_BITMAP:
+        mode = freetype.FT_RENDER_MODE_NORMAL if color else freetype.FT_RENDER_MODE_MONO
+        try:
+            slot.render(mode)
+        except TypeError:
+            freetype.FT_Render_Glyph(slot._FT_GlyphSlot, mode)
+    return slot
+
+
 def _emit_loaded_glyph(slot, bitmap_offset: int, dopts, xshift: int):
     """A glyph already loaded+rendered into `slot` → (GFXglyph dict, packed bytes).
 
@@ -167,11 +193,9 @@ def render_range(font_path: str, first: int, last: int, opts: RenderOptions | No
     _set_tt_interpreter(_TT_V40 if opts.render_mode == 1 else _TT_V35)
     face = freetype.Face(font_path)
     _apply_weight(face, opts.weight)
-    is_strike = _setup_face_size(face, opts)
+    _setup_face_size(face, opts)
 
-    load_flags = (freetype.FT_LOAD_RENDER |
-                  (freetype.FT_LOAD_TARGET_NORMAL | freetype.FT_LOAD_COLOR
-                   if opts.render_mode == 1 else freetype.FT_LOAD_TARGET_MONO))
+    color = opts.render_mode == 1
     dopts = opts._dither_opts()
 
     glyphs: list[dict] = []
@@ -187,8 +211,8 @@ def render_range(font_path: str, first: int, last: int, opts: RenderOptions | No
             # bitmap — e.g. space — keeps its real metrics below, as the C tool does.)
             glyphs.append(_empty_glyph(0))
             continue
-        face.load_glyph(gid, load_flags)
-        rec, packed = _emit_loaded_glyph(face.glyph, len(bitmap), dopts, opts.xshift)
+        slot = _load_glyph_rendered(face, gid, color)
+        rec, packed = _emit_loaded_glyph(slot, len(bitmap), dopts, opts.xshift)
         glyphs.append(rec)
         bitmap += packed
 
@@ -267,17 +291,14 @@ def render_sequence(font_path: str, sequence: str, opts: RenderOptions | None = 
 def _render_shaped(face, hb, hb_font, opts: RenderOptions, groups):
     """Non-composite -S: one GFXglyph per shaped glyph id (font_render.c
     shape_render_group).  Used by language flags and ZWJ emoji."""
-    import freetype
-    load_flags = (freetype.FT_LOAD_RENDER |
-                  (freetype.FT_LOAD_TARGET_NORMAL | freetype.FT_LOAD_COLOR
-                   if opts.render_mode == 1 else freetype.FT_LOAD_TARGET_MONO))
+    color = opts.render_mode == 1
     dopts = opts._dither_opts()
     glyphs, bitmap = [], bytearray()
     for cps in groups:
         infos, _pos = _shape(hb, hb_font, cps)
         for info in infos:
-            face.load_glyph(info.codepoint, load_flags)
-            rec, packed = _emit_loaded_glyph(face.glyph, len(bitmap), dopts, opts.xshift)
+            slot = _load_glyph_rendered(face, info.codepoint, color)
+            rec, packed = _emit_loaded_glyph(slot, len(bitmap), dopts, opts.xshift)
             glyphs.append(rec)
             bitmap += packed
     return glyphs, bitmap
@@ -288,14 +309,13 @@ def _render_composite(face, hb, hb_font, opts: RenderOptions, groups):
     positions, one GFXglyph per group, MONO only (font_render.c
     composite_render_group).  Best-effort port — unverified vs the C tool (needs a
     cluster font like Devanagari); the flag/emoji path above is the tested one."""
-    import freetype
     glyphs, bitmap = [], bytearray()
     for cps in groups:
         infos, pos = _shape(hb, hb_font, cps)
         placed = []   # (bits_2d as set of (x,y), w, h, devL, devT)
         penx = peny = 0.0
         for info, p in zip(infos, pos):
-            face.load_glyph(info.codepoint, freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_MONO)
+            _load_glyph_rendered(face, info.codepoint, False)   # mono, into face.glyph
             bm = face.glyph.bitmap
             w, h = bm.width, bm.rows
             gx = penx + p.x_offset / 64.0
