@@ -343,6 +343,10 @@ class PolyHost(QApplication):
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
+        self.fontpack_inspector_action = QAction(get_icon("overlays.svg"), "Inspect Font Packs...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.fontpack_inspector_action.triggered.connect(self.open_fontpack_inspector)
+
         self.current_lang = None
         self.keeb_lang_menu = None
         self.debug_lang_menu = None
@@ -401,6 +405,7 @@ class PolyHost(QApplication):
 
         self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
+        self.menu.addAction(self.fontpack_inspector_action)
 
         self.update_action = QAction(get_icon("sync.svg"), "Check for updates...", parent=self)
         # noinspection PyUnresolvedReferences
@@ -1024,6 +1029,13 @@ class PolyHost(QApplication):
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
+
+    def open_fontpack_inspector(self):
+        from polyhost.gui.fontpack_inspector_dialog import FontPackInspectorDialog
+        # Inspects the bundles shipped with the host (no device needed), so it
+        # works in normal, client and disconnected states alike.
+        dlg = FontPackInspectorDialog(parent=None)
+        dlg.exec_()
 
     def open_mru_inspector(self):
         from polyhost.gui.mru_inspector_dialog import MRUInspectorDialog

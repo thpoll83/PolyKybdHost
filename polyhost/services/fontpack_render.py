@@ -30,11 +30,15 @@ def glyph_to_image(font, cp: int, scale: int = 1, fg: int = 255, bg: int = 0):
         return Image.new("L", (1, 1), bg)
     img = Image.new("L", (w, h), bg)
     px = img.load()
+    bmp = font.bitmap
+    n = len(bmp)
     bo, bit, cur = g["bitmapOffset"], 0, 0
     for yy in range(h):
         for xx in range(w):
             if (bit & 7) == 0:
-                cur = font.bitmap[bo]
+                # Guard against a truncated/corrupt pack — an inspector must
+                # render what it can rather than crash on bad device data.
+                cur = bmp[bo] if 0 <= bo < n else 0
                 bo += 1
             if cur & 0x80:
                 px[xx, yy] = fg
