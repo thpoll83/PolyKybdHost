@@ -17,8 +17,11 @@ tool (deterministic-dither paths) bit-for-bit when the FreeType version matches:
     fontgen_dither.
 
 freetype-py / uharfbuzz / numpy are imported lazily so the rest of the host (and
-the read-only inspector) keep working without them.  Range mode is implemented
-here; HarfBuzz sequence/composite mode (flags, ZWJ emoji) is the next step.
+the read-only inspector) keep working without them.  Both modes are implemented:
+range mode (`render_range`) and HarfBuzz sequence mode (`render_sequence`, the
+flag / ZWJ-emoji path) — the latter byte-exact vs the C tool, including GSUB
+ligature shaping.  Composite (-C) is bitmap-exact (its multi-base xAdvance can
+differ by ≤1px; the base+mark use it targets is exact).
 """
 from __future__ import annotations
 
@@ -42,7 +45,9 @@ class RenderOptions:
     xshift: int = 0           # -X
     max_width: int = 0        # -W
     weight: int = -1          # -w  (>=0 pins wght; -1 = unset)
-    offset: int = 0           # -o/-n applied to emitted first/last
+    offset: int = 0           # -o/-n applied to emitted first/last (range mode)
+    seq_first: int = 0        # -F  base codepoint for sequence mode
+    composite: bool = False   # -C  composite each group into one glyph (mono)
     bits: int = 16            # -b  (16 or 32)
     render_mode: int = 0      # -g
     dither_mode: int = fd.DITHER_FLOYD_STEINBERG  # -D
@@ -124,6 +129,32 @@ def _scale_metric(v: int, num: int, den: int) -> int:
     return int(r + (0.5 if r >= 0 else -0.5))
 
 
+def _emit_loaded_glyph(slot, bitmap_offset: int, dopts, xshift: int):
+    """A glyph already loaded+rendered into `slot` → (GFXglyph dict, packed bytes).
+
+    Shared by range and sequence modes — mirrors the per-glyph body of
+    extract_range_ft / shape_render_group: metrics from the slot, render via the
+    dither pipeline, rescale metrics if a colour strike was shrunk, and apply -X
+    to non-empty glyphs (the C does this at emit time; identical outcome)."""
+    bm = slot.bitmap
+    xadv = slot.advance.x >> 6
+    xoff = slot.bitmap_left
+    yoff = 1 - slot.bitmap_top
+    if bm.rows == 0 or bm.width == 0:
+        return dict(bitmapOffset=bitmap_offset, width=0, height=0,
+                    xAdvance=xadv, xOffset=xoff, yOffset=yoff), b""
+    packed, out_w, out_h = fd.render_bitmap_to_bits(
+        bm.pixel_mode, bm.width, bm.rows, bm.pitch, bytes(bm.buffer), dopts)
+    if (out_w, out_h) != (bm.width, bm.rows):
+        xadv = _scale_metric(xadv, out_w, bm.width)
+        xoff = _scale_metric(slot.bitmap_left, out_w, bm.width)
+        yoff = _scale_metric(1 - slot.bitmap_top, out_h, bm.rows)
+    if out_w:
+        xoff += xshift
+    return dict(bitmapOffset=bitmap_offset, width=out_w, height=out_h,
+                xAdvance=xadv, xOffset=xoff, yOffset=yoff), packed
+
+
 def render_range(font_path: str, first: int, last: int, opts: RenderOptions | None = None,
                  name: str = "") -> fpr.PackFont:
     """Render a codepoint range [first, last] to a PackFont (fontconvert range mode).
@@ -157,25 +188,8 @@ def render_range(font_path: str, first: int, last: int, opts: RenderOptions | No
             glyphs.append(_empty_glyph(0))
             continue
         face.load_glyph(gid, load_flags)
-        slot = face.glyph
-        bm = slot.bitmap
-        xadv = slot.advance.x >> 6
-        xoff = slot.bitmap_left
-        yoff = 1 - slot.bitmap_top
-        if bm.rows == 0 or bm.width == 0:
-            glyphs.append(dict(bitmapOffset=len(bitmap), width=0, height=0,
-                               xAdvance=xadv, xOffset=xoff, yOffset=yoff))
-            continue
-        packed, out_w, out_h = fd.render_bitmap_to_bits(
-            bm.pixel_mode, bm.width, bm.rows, bm.pitch, bytes(bm.buffer), dopts)
-        if (out_w, out_h) != (bm.width, bm.rows):     # colour strike was shrunk
-            xadv = _scale_metric(xadv, out_w, bm.width)
-            xoff = _scale_metric(slot.bitmap_left, out_w, bm.width)
-            yoff = _scale_metric(1 - slot.bitmap_top, out_h, bm.rows)
-        if out_w:
-            xoff += opts.xshift
-        glyphs.append(dict(bitmapOffset=len(bitmap), width=out_w, height=out_h,
-                           xAdvance=xadv, xOffset=xoff, yOffset=yoff))
+        rec, packed = _emit_loaded_glyph(face.glyph, len(bitmap), dopts, opts.xshift)
+        glyphs.append(rec)
         bitmap += packed
 
     yadv = _emit_yadvance(face, opts, glyphs)
@@ -184,19 +198,162 @@ def render_range(font_path: str, first: int, last: int, opts: RenderOptions | No
                         last=last + opts.offset, yAdvance=yadv)
 
 
+def _parse_groups(seq_str: str):
+    """'1F1E9 1F1EA, 1F1EB 1F1F7' → [[0x1F1E9,0x1F1EA],[0x1F1EB,0x1F1F7]] (hex,
+    comma = independent glyph group, space/tab = codepoints within a group)."""
+    groups = []
+    for part in seq_str.split(","):
+        cps = []
+        for tok in part.replace("\t", " ").split():
+            try:
+                cps.append(int(tok, 16))
+            except ValueError:
+                pass
+        if cps:
+            groups.append(cps)
+    return groups
+
+
+def _shape(hb, hb_font, cps):
+    """Shape one codepoint group → (glyph_infos, glyph_positions), mirroring the C
+    (content UNICODE, cluster=i, LTR, guess_segment_properties, hb_shape)."""
+    buf = hb.Buffer()
+    buf.add_codepoints(cps)
+    buf.direction = "ltr"
+    buf.guess_segment_properties()
+    hb.shape(hb_font, buf, None)
+    return buf.glyph_infos, buf.glyph_positions
+
+
+def render_sequence(font_path: str, sequence: str, opts: RenderOptions | None = None,
+                    name: str = "") -> fpr.PackFont:
+    """HarfBuzz sequence mode (fontconvert -S): shape each comma-group and emit a
+    glyph per shaped result (or one composited glyph per group with -C / composite).
+
+    Emits at codepoints [seq_first, seq_first + count - 1] (the -F base), so flags
+    and ZWJ emoji get a stable Private-Use range instead of synthetic 0..N-1.
+    """
+    import freetype
+    import uharfbuzz as hb
+    opts = opts or RenderOptions()
+    _set_tt_interpreter(_TT_V40 if opts.render_mode == 1 else _TT_V35)
+    face = freetype.Face(font_path)
+    _apply_weight(face, opts.weight)
+    _setup_face_size(face, opts)
+
+    hb_font = hb.Font(hb.Face(hb.Blob.from_file_path(font_path)))
+    # Scale so GPOS positions come out in 26.6 px (composite mode places marks by
+    # them); harmless for the non-composite path, which only uses glyph ids.
+    hb_font.scale = (int(face.size.x_ppem * 64), int(face.size.y_ppem * 64))
+
+    groups = _parse_groups(sequence)
+    if opts.composite:
+        glyphs, bitmap = _render_composite(face, hb, hb_font, opts, groups)
+    else:
+        glyphs, bitmap = _render_shaped(face, hb, hb_font, opts, groups)
+
+    if not glyphs:
+        raise ValueError(f"no glyphs rendered from sequence {sequence!r}")
+    first = opts.seq_first
+    last = first + len(glyphs) - 1
+    if opts.bits != 32 and last > 0xFFFF:
+        raise ValueError(f"sequence last codepoint 0x{last:X} exceeds 0xFFFF in "
+                         "16-bit mode — pass bits=32 or a smaller seq_first")
+    yadv = _emit_yadvance(face, opts, glyphs)
+    return fpr.PackFont(name=name or _font_stem(font_path), bitmap=bytes(bitmap),
+                        glyphs=glyphs, first=first, last=last, yAdvance=yadv)
+
+
+def _render_shaped(face, hb, hb_font, opts: RenderOptions, groups):
+    """Non-composite -S: one GFXglyph per shaped glyph id (font_render.c
+    shape_render_group).  Used by language flags and ZWJ emoji."""
+    import freetype
+    load_flags = (freetype.FT_LOAD_RENDER |
+                  (freetype.FT_LOAD_TARGET_NORMAL | freetype.FT_LOAD_COLOR
+                   if opts.render_mode == 1 else freetype.FT_LOAD_TARGET_MONO))
+    dopts = opts._dither_opts()
+    glyphs, bitmap = [], bytearray()
+    for cps in groups:
+        infos, _pos = _shape(hb, hb_font, cps)
+        for info in infos:
+            face.load_glyph(info.codepoint, load_flags)
+            rec, packed = _emit_loaded_glyph(face.glyph, len(bitmap), dopts, opts.xshift)
+            glyphs.append(rec)
+            bitmap += packed
+    return glyphs, bitmap
+
+
+def _render_composite(face, hb, hb_font, opts: RenderOptions, groups):
+    """Composite -S -C: OR all glyphs of a group into one bitmap at their GPOS
+    positions, one GFXglyph per group, MONO only (font_render.c
+    composite_render_group).  Best-effort port — unverified vs the C tool (needs a
+    cluster font like Devanagari); the flag/emoji path above is the tested one."""
+    import freetype
+    glyphs, bitmap = [], bytearray()
+    for cps in groups:
+        infos, pos = _shape(hb, hb_font, cps)
+        placed = []   # (bits_2d as set of (x,y), w, h, devL, devT)
+        penx = peny = 0.0
+        for info, p in zip(infos, pos):
+            face.load_glyph(info.codepoint, freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_MONO)
+            bm = face.glyph.bitmap
+            w, h = bm.width, bm.rows
+            gx = penx + p.x_offset / 64.0
+            gy = peny - p.y_offset / 64.0
+            devL = round(gx) + face.glyph.bitmap_left
+            devT = round(gy) - face.glyph.bitmap_top
+            # Advance from FreeType (hinted), offsets from GPOS — as hb_ft does.
+            # This makes the composite *bitmap* byte-exact vs the C tool.  Caveat:
+            # the C's hb_ft reports a slightly different per-glyph advance source,
+            # so the emitted xAdvance of a multi-*base*-glyph group can differ by
+            # ≤1px; the real -C use (one base + zero-advance combining marks) is
+            # exact.  -C is not used by the flag/emoji path (that's non-composite).
+            penx += face.glyph.advance.x / 64.0
+            peny -= face.glyph.advance.y / 64.0
+            if w > 0 and h > 0:
+                buf = bytes(bm.buffer)
+                lit = {(x, y) for y in range(h) for x in range(w)
+                       if buf[y * bm.pitch + (x >> 3)] & (0x80 >> (x & 7))}
+                placed.append((lit, w, h, devL, devT))
+        total_adv = round(penx)
+        if not placed:
+            glyphs.append(dict(bitmapOffset=len(bitmap), width=0, height=0,
+                               xAdvance=total_adv, xOffset=0, yOffset=0))
+            continue
+        minL = min(d for _, _, _, d, _ in placed)
+        minT = min(t for _, _, _, _, t in placed)
+        maxR = max(d + w for _, w, _, d, _ in placed)
+        maxB = max(t + h for _, _, h, _, t in placed)
+        CW, CH = maxR - minL, maxB - minT
+        bits = fd._Bits(CW * CH)
+        for lit, w, h, devL, devT in placed:
+            ox, oy = devL - minL, devT - minT
+            for (x, y) in lit:
+                bits.set((oy + y) * CW + (ox + x))
+        glyphs.append(dict(bitmapOffset=len(bitmap), width=CW, height=CH,
+                           xAdvance=total_adv,
+                           xOffset=minL + (opts.xshift if CW else 0),
+                           yOffset=1 + minT))
+        bitmap += bytes(bits.buf)
+    return glyphs, bitmap
+
+
 def _empty_glyph(off: int) -> dict:
     return dict(bitmapOffset=off, width=0, height=0, xAdvance=0, xOffset=0, yOffset=0)
 
 
 def _emit_yadvance(face, opts: RenderOptions, glyphs: list) -> int:
+    # Mirrors the GFXfont footer in fontconvert.c (range & sequence share it):
+    #   -Y → as-is; -r → s.height; metrics.height==0 → table[0].height;
+    #   else (uint8_t)(metrics.height >> 6).
     if opts.yadvance != 0:
         return opts.yadvance
     if opts.height != 0:
         return opts.height
     h = face.size.height >> 6
-    if h == 0 and glyphs:
-        return glyphs[0]["height"]
-    return h
+    if h == 0:
+        return glyphs[0]["height"] if glyphs else 0
+    return h & 0xFF
 
 
 def _font_stem(path: str) -> str:
