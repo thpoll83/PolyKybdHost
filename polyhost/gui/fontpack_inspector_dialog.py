@@ -22,7 +22,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QScrollArea, QWidget, QLabel,
-    QTabWidget, QDoubleSpinBox, QApplication,
+    QTabWidget, QDoubleSpinBox, QComboBox, QApplication,
 )
 
 from polyhost.services import fontpack_reader as fpr
@@ -70,11 +70,18 @@ def load_shipped_packs(res_dir: str | None = None):
 
 
 class _BundleTab(QWidget):
-    """One bundle: a metadata header + a scrollable, zoomable contact sheet."""
+    """One bundle: a metadata header + a scrollable, zoomable contact sheet.
+
+    The contact sheet is rendered lazily and re-rendered on a view-mode switch
+    ("glyph" inventory vs "keycap" 72×40 preview); the zoom control just rescales
+    the cached pixmap."""
 
     def __init__(self, label: str, pack, parent=None):
         super().__init__(parent)
+        self._label = label
         self._pack = pack
+        self._rendered_mode = None
+        self._base_pixmap = None
         v = QVBoxLayout(self)
 
         if not isinstance(pack, fpr.Pack):
@@ -87,16 +94,9 @@ class _BundleTab(QWidget):
                   f"{pack.font_count} fonts · {pack.codepoint_count()} glyphs · "
                   f"{pack.total_size:,} B · crc {crc}")
         hdr = QLabel(header)
-        hdr.setStyleSheet("font-weight: bold; padding: 4px;")
-        if not pack.crc_ok:
-            hdr.setStyleSheet("font-weight: bold; padding: 4px; color: #e33;")
+        colour = "#e33" if not pack.crc_ok else "inherit"
+        hdr.setStyleSheet(f"font-weight: bold; padding: 4px; color: {colour};")
         v.addWidget(hdr)
-
-        # Render the contact sheet once at scale 2; the zoom control rescales the
-        # pixmap (FastTransformation keeps the 1-bit pixels crisp).
-        self._sheet = fprd.contact_sheet(pack, cols=16, scale=2,
-                                         title=f"{label} · {pack.codepoint_count()} glyphs")
-        self._base_pixmap = _pil_l_to_pixmap(self._sheet)
 
         zoom_row = QHBoxLayout()
         zoom_row.addWidget(QLabel("Zoom"))
@@ -116,10 +116,21 @@ class _BundleTab(QWidget):
         scroll.setWidgetResizable(False)
         scroll.setStyleSheet("background: #000;")
         v.addWidget(scroll, 1)
-        self._apply_zoom(1.0)
+
+    def set_mode(self, mode: str):
+        """Render this tab's sheet in `mode` ('glyph'|'keycap'); a no-op if already
+        rendered in that mode, so switching tabs back and forth is cheap."""
+        if self._image is None or mode == self._rendered_mode:
+            return
+        sheet = fprd.contact_sheet(self._pack, cols=16, scale=2, mode=mode,
+                                   title=f"{self._label} · {mode} · "
+                                         f"{self._pack.codepoint_count()} glyphs")
+        self._base_pixmap = _pil_l_to_pixmap(sheet)
+        self._rendered_mode = mode
+        self._apply_zoom(self._zoom.value())
 
     def _apply_zoom(self, factor: float):
-        if self._image is None:
+        if self._image is None or self._base_pixmap is None:
             return
         pm = self._base_pixmap
         scaled = pm.scaled(int(pm.width() * factor), int(pm.height() * factor),
@@ -137,13 +148,41 @@ class FontPackInspectorDialog(QDialog):
         v = QVBoxLayout(self)
         if sources is None:
             sources = load_shipped_packs()
+
+        self._modes = [("Glyph grid (native size)", "glyph"),
+                       ("Keycap preview (72×40)", "keycap")]
+        mode_row = QHBoxLayout()
+        mode_row.addWidget(QLabel("View"))
+        self._mode_combo = QComboBox()
+        for text, _ in self._modes:
+            self._mode_combo.addItem(text)
+        self._mode_combo.currentIndexChanged.connect(self._on_mode_changed)
+        mode_row.addWidget(self._mode_combo)
+        mode_row.addStretch(1)
+        v.addLayout(mode_row)
+
         self._tabs = QTabWidget()
         for label, pack in sources:
             self._tabs.addTab(_BundleTab(label, pack), label)
+        self._tabs.currentChanged.connect(self._render_current)
         if self._tabs.count() == 0:
             v.addWidget(QLabel("No font-pack bundles found."))
+            self._mode_combo.setEnabled(False)
         else:
             v.addWidget(self._tabs, 1)
+            self._render_current()    # render the first visible tab now
+
+    def _mode(self) -> str:
+        return self._modes[self._mode_combo.currentIndex()][1]
+
+    def _render_current(self, *_):
+        tab = self._tabs.currentWidget()
+        if isinstance(tab, _BundleTab):
+            tab.set_mode(self._mode())
+
+    def _on_mode_changed(self, *_):
+        # Lazy: only the visible tab re-renders now; others re-render when shown.
+        self._render_current()
 
 
 def main(argv=None):

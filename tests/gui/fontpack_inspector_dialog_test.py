@@ -46,6 +46,15 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.assertEqual(dlg._tabs.count(), 1)
         self.assertEqual(dlg._tabs.tabText(0), "tiny")
 
+    def test_mode_switch_rerenders(self):
+        dlg = fid.FontPackInspectorDialog(sources=[("tiny", _tiny_pack())])
+        self.addCleanup(dlg.deleteLater)
+        tab = dlg._tabs.currentWidget()
+        self.assertEqual(tab._rendered_mode, "glyph")     # rendered on show
+        dlg._mode_combo.setCurrentIndex(1)                # keycap
+        self.assertEqual(tab._rendered_mode, "keycap")
+        self.assertIsNotNone(tab._base_pixmap)
+
     def test_error_source_does_not_crash(self):
         # a decode failure becomes a labelled tab, never a dead window
         dlg = fid.FontPackInspectorDialog(sources=[("broken", ValueError("bad"))])
