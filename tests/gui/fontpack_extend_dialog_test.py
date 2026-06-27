@@ -1,0 +1,80 @@
+"""FontPackExtendDialog — drives the build→preview→splice→(save/flash) round-trip
+under the offscreen Qt platform.  The build step needs freetype-py + a system TTF
++ the shipped bundles; those sub-tests skip otherwise, but the dialog must still
+*construct* without the [fontgen] deps.
+"""
+import glob
+import os
+import unittest
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+try:
+    from PyQt5.QtWidgets import QApplication
+    from polyhost.gui import fontpack_extend_dialog as fed
+    from polyhost.services import fontpack_reader as fpr
+    _APP = QApplication.instance() or QApplication([])
+    _IMPORT_ERR = None
+except Exception as e:  # pragma: no cover
+    _IMPORT_ERR = e
+
+try:
+    import numpy  # noqa: F401
+    import freetype  # noqa: F401
+    _FONTGEN = True
+except Exception:
+    _FONTGEN = False
+
+_FONT = next(iter(glob.glob("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+                  + glob.glob("/usr/share/fonts/**/*.ttf", recursive=True)), None)
+RES = os.path.join(os.path.dirname(__file__), "..", "..", "polyhost", "res", "fontpack")
+_HAVE_BUNDLES = os.path.exists(os.path.join(RES, "bundles.json"))
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
+class ExtendDialogTest(unittest.TestCase):
+
+    def test_constructs_without_flash_button(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        self.assertFalse(hasattr(dlg, "_flash_btn"))     # no callback -> no Flash
+
+    def test_flash_button_present_with_callback(self):
+        dlg = fed.FontPackExtendDialog(flash_cb=lambda i, d: None)
+        self.addCleanup(dlg.deleteLater)
+        self.assertTrue(hasattr(dlg, "_flash_btn"))
+
+    @unittest.skipUnless(_FONTGEN and _FONT and _HAVE_BUNDLES,
+                         "needs fontgen deps + a TTF + shipped bundles")
+    def test_build_splice_and_flash_callback(self):
+        got = {}
+        dlg = fed.FontPackExtendDialog(flash_cb=lambda i, d: got.update(idx=i, data=d))
+        self.addCleanup(dlg.deleteLater)
+        dlg._src.setText(_FONT)
+        dlg._first.setText("0x2190"); dlg._last.setText("0x2193"); dlg._size.setValue(24)
+        dlg._bundle.setCurrentIndex(0); dlg._default_index()
+        gidx = dlg._gidx.value()
+        dlg._build()
+
+        self.assertIsNotNone(dlg._built)
+        self.assertFalse(dlg._preview.pixmap().isNull())
+        self.assertTrue(dlg._save_btn.isEnabled())
+
+        data = dlg._spliced_bytes()
+        pack = fpr.decode_pack(data)
+        self.assertTrue(pack.crc_ok)
+        target = dlg._bundle.currentData()
+        self.assertEqual(pack.font_count, target.font_count + 1)
+        self.assertTrue(any(f.global_index == gidx for f in pack.fonts))
+
+        # auto-confirm the flash dialog, then verify the callback fires
+        from unittest.mock import patch
+        with patch.object(fed.QMessageBox, "question",
+                          return_value=fed.QMessageBox.Yes):
+            dlg._flash()
+        self.assertEqual(got["idx"], 0)
+        self.assertEqual(got["data"], data)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -58,6 +58,16 @@ class PackFont:
     def covers(self, cp: int) -> bool:
         return self.first <= cp <= self.last
 
+    def bitmap_content_len(self) -> int:
+        """Raw bitmap length (no inter-font padding) — the sum of the per-glyph
+        byte-padded bitmaps.  decode_pack's `bitmap` slice includes 4-align padding
+        up to the next font; the writer trims to this so re-encoding is faithful."""
+        end = 0
+        for g in self.glyphs:
+            if g["width"] and g["height"]:
+                end = max(end, g["bitmapOffset"] + (g["width"] * g["height"] + 7) // 8)
+        return end
+
 
 @dataclass
 class Pack:
@@ -142,6 +152,68 @@ def decode_pack(data, name_hint: str = "") -> Pack:
 def decode_pack_file(path, name_hint: str = "") -> Pack:
     with open(path, "rb") as f:
         return decode_pack(f.read(), name_hint or _stem(path))
+
+
+def _align4(n: int) -> int:
+    return (n + 3) & ~3
+
+
+def encode_pack(fonts, content_version: int = 0, abi_version: int = ABI_VERSION) -> bytes:
+    """Serialize fonts → a "PlyF" pack, byte-identical to the firmware/build
+    serializer (fonts/fontpack.py serialize_pack): header, font table (with each
+    font's global ALL_FONTS index in the record `reserved`), 4-aligned glyph
+    arrays, 4-aligned bitmap blobs.  `fonts` is any iterable of PackFont.
+
+    decode_pack(encode_pack(p.fonts, p.content_version)) reproduces p, and for a
+    pack decoded from disk, encode reproduces the original bytes exactly."""
+    fonts = list(fonts)
+    n = len(fonts)
+    table_off = HEADER_SIZE
+    glyph_blocks, bitmap_blocks = [], []
+    cur = table_off + n * FONT_REC_SIZE
+    glyph_offs = []
+    for f in fonts:
+        glyph_offs.append(cur)
+        blob = b"".join(struct.pack(_GLYPH_FMT, g["bitmapOffset"], g["width"],
+                                    g["height"], g["xAdvance"], g["xOffset"],
+                                    g["yOffset"]) for g in f.glyphs)
+        glyph_blocks.append(blob)
+        cur = _align4(cur + len(blob))
+    bitmap_offs = []
+    for f in fonts:
+        bitmap_offs.append(cur)
+        blob = f.bitmap[:f.bitmap_content_len()]   # trim inter-font padding
+        bitmap_blocks.append(blob)
+        cur = _align4(cur + len(blob))
+    total_size = cur
+
+    table = b"".join(struct.pack(_FONT_FMT, bitmap_offs[i], glyph_offs[i],
+                                 f.first, f.last, f.yAdvance, f.global_index)
+                     for i, f in enumerate(fonts))
+    body = bytearray(total_size - HEADER_SIZE)
+
+    def place(off, blob):
+        body[off - HEADER_SIZE:off - HEADER_SIZE + len(blob)] = blob
+    place(table_off, table)
+    for off, blob in zip(glyph_offs, glyph_blocks):
+        place(off, blob)
+    for off, blob in zip(bitmap_offs, bitmap_blocks):
+        place(off, blob)
+
+    crc = binascii.crc32(bytes(body)) & 0xFFFFFFFF
+    header = struct.pack(_HEADER_FMT, MAGIC, abi_version, 0, content_version,
+                         n, table_off, total_size, crc, 0)
+    return header + bytes(body)
+
+
+def splice_font(pack: Pack, new_font: PackFont) -> list:
+    """Return `pack`'s fonts with `new_font` replacing the one at the same
+    global_index (or inserted in global-index order if none matches) — the core
+    of the font-pack *extend* path.  Caller re-encodes with encode_pack()."""
+    out = [f for f in pack.fonts if f.global_index != new_font.global_index]
+    out.append(new_font)
+    out.sort(key=lambda f: f.global_index)
+    return out
 
 
 def merge_fonts(packs) -> list:

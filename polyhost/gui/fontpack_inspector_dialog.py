@@ -22,7 +22,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QScrollArea, QWidget, QLabel,
-    QTabWidget, QDoubleSpinBox, QComboBox, QApplication,
+    QTabWidget, QDoubleSpinBox, QComboBox, QPushButton, QApplication,
 )
 
 from polyhost.services import fontpack_reader as fpr
@@ -140,8 +140,10 @@ class _BundleTab(QWidget):
 
 
 class FontPackInspectorDialog(QDialog):
-    def __init__(self, sources=None, parent=None):
-        """`sources`: list of (label, Pack) pairs; defaults to the shipped bundles."""
+    def __init__(self, sources=None, parent=None, flash_cb=None):
+        """`sources`: list of (label, Pack) pairs; defaults to the shipped bundles.
+        `flash_cb(bundle_index, plyf_bytes)`: optional, enables the extend dialog's
+        Flash button (the tray passes a device-flash callback)."""
         super().__init__(parent)
         self.setWindowTitle("PolyKybd — Font Pack Inspector")
         self.resize(1100, 800)
@@ -159,7 +161,13 @@ class FontPackInspectorDialog(QDialog):
         self._mode_combo.currentIndexChanged.connect(self._on_mode_changed)
         mode_row.addWidget(self._mode_combo)
         mode_row.addStretch(1)
+        self._extend_btn = QPushButton("Extend…")
+        self._extend_btn.setToolTip("Build new glyphs from a font and splice them "
+                                    "into a bundle")
+        self._extend_btn.clicked.connect(self._open_extend)
+        mode_row.addWidget(self._extend_btn)
         v.addLayout(mode_row)
+        self._flash_cb = flash_cb
 
         self._tabs = QTabWidget()
         for label, pack in sources:
@@ -183,6 +191,11 @@ class FontPackInspectorDialog(QDialog):
     def _on_mode_changed(self, *_):
         # Lazy: only the visible tab re-renders now; others re-render when shown.
         self._render_current()
+
+    def _open_extend(self):
+        from polyhost.gui.fontpack_extend_dialog import FontPackExtendDialog
+        dlg = FontPackExtendDialog(flash_cb=self._flash_cb, parent=self)
+        dlg.exec_()
 
 
 def main(argv=None):

@@ -83,6 +83,46 @@ class RoundTripTest(unittest.TestCase):
         merged = fr.merge_fonts([pack])
         self.assertEqual([f.global_index for f in merged], [3, 7])
 
+    def test_encode_roundtrip(self):
+        data = _build_pack([
+            {"first": 0x41, "last": 0x42, "yadv": 12, "gidx": 7,
+             "glyphs": [(0, 3, 4, 5, -1, -7), (2, 6, 8, 9, 0, -3)],
+             "bitmap": bytes([0x12, 0x34, 0xFF, 0x00, 0xAA, 0x55, 0x0F, 0xF0])},
+            {"first": 0x4E2D, "last": 0x4E2D, "yadv": 43, "gidx": 3,
+             "glyphs": [(0, 2, 2, 4, 0, -2)], "bitmap": bytes([0xC0])},
+        ], content_version=9)
+        pack = fr.decode_pack(data)
+        re_enc = fr.encode_pack(pack.fonts, pack.content_version)
+        self.assertEqual(re_enc, data, "encode(decode(x)) != x")
+
+    def test_splice_replace(self):
+        pack = fr.decode_pack(_build_pack([
+            {"first": 0x41, "last": 0x41, "yadv": 8, "gidx": 2,
+             "glyphs": [(0, 1, 1, 2, 0, 0)], "bitmap": bytes([0x80])},
+            {"first": 0x42, "last": 0x42, "yadv": 8, "gidx": 5,
+             "glyphs": [(0, 1, 1, 2, 0, 0)], "bitmap": bytes([0x80])},
+        ]))
+        repl = fr.PackFont("new", bytes([0x80]),
+                           [dict(bitmapOffset=0, width=1, height=1, xAdvance=3,
+                                 xOffset=0, yOffset=0)], 0x43, 0x43, 8, global_index=2)
+        out = fr.splice_font(pack, repl)
+        self.assertEqual(len(out), 2)                       # replaced, not added
+        self.assertEqual([f.global_index for f in out], [2, 5])
+        self.assertEqual(out[0].first, 0x43)               # the replacement
+
+    def test_splice_insert_in_order(self):
+        pack = fr.decode_pack(_build_pack([
+            {"first": 0x41, "last": 0x41, "yadv": 8, "gidx": 2,
+             "glyphs": [(0, 1, 1, 2, 0, 0)], "bitmap": bytes([0x80])},
+            {"first": 0x42, "last": 0x42, "yadv": 8, "gidx": 8,
+             "glyphs": [(0, 1, 1, 2, 0, 0)], "bitmap": bytes([0x80])},
+        ]))
+        new = fr.PackFont("new", bytes([0x80]),
+                          [dict(bitmapOffset=0, width=1, height=1, xAdvance=3,
+                                xOffset=0, yOffset=0)], 0x43, 0x43, 8, global_index=5)
+        out = fr.splice_font(pack, new)
+        self.assertEqual([f.global_index for f in out], [2, 5, 8])   # inserted in order
+
     def test_crc_mismatch_flagged(self):
         data = bytearray(_build_pack([
             {"first": 0x41, "last": 0x41, "yadv": 8, "glyphs": [(0, 1, 1, 2, 0, 0)],
@@ -118,6 +158,13 @@ class ShippedBundlesTest(unittest.TestCase):
                 for f in pack.fonts:
                     self.assertEqual(len(f.glyphs), f.glyph_count)
                     self.assertGreaterEqual(f.last, f.first)
+
+    def test_encode_roundtrip_byte_identical(self):
+        for b in _load_bundles():
+            with self.subTest(bundle=b["id"]):
+                raw = open(os.path.join(RES, b["file"]), "rb").read()
+                pack = fr.decode_pack(raw, b["id"])
+                self.assertEqual(fr.encode_pack(pack.fonts, pack.content_version), raw)
 
     def test_global_indices_unique_across_bundles(self):
         bundles = _load_bundles()
