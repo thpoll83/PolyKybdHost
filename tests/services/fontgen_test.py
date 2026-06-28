@@ -65,9 +65,10 @@ def _cemoji_renderable():
         return False
     try:
         subprocess.run([_FONTCONVERT, "-f", _CEMOJI, "-s20", "-g", "-r40", "-b32",
-                        "0x1F600", "0x1F600"], capture_output=True, text=True, check=True)
+                        "0x1F600", "0x1F600"],
+                       capture_output=True, text=True, check=True, timeout=30)
         return True
-    except Exception:
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return False
 
 

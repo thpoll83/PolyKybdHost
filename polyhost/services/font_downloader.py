@@ -22,6 +22,10 @@ import urllib.request
 from dataclasses import dataclass
 
 
+class DownloadCancelled(Exception):
+    """Raised by download_font when the caller's cancel event is set mid-transfer."""
+
+
 @dataclass(frozen=True)
 class NotoFont:
     name: str          # human-friendly label for the picker
@@ -36,14 +40,22 @@ def _catalog_path() -> str:
 
 def load_catalog(path: str | None = None) -> list[NotoFont]:
     """Parse noto-fonts.yaml into a list of NotoFont.  The host stores a flat
-    cache, so the local filename is the basename of the firmware-side ``dest``."""
+    cache, so the local filename is the basename of the firmware-side ``dest``.
+
+    The YAML is UTF-8 (its comments carry — / ⚠️); read it as such so it doesn't
+    blow up under a non-UTF-8 locale default (e.g. cp1252 on Windows)."""
     import yaml
-    with open(path or _catalog_path()) as f:
+    with open(path or _catalog_path(), encoding="utf-8") as f:
         doc = yaml.safe_load(f) or {}
-    out = []
+    out, seen = [], set()
     for e in doc.get("fonts", []):
-        out.append(NotoFont(name=e["name"], url=e["url"],
-                            filename=os.path.basename(e["dest"])))
+        filename = os.path.basename(e["dest"])
+        # filename is the sole cache key (local_path/is_downloaded) — a collision
+        # would alias two fonts to one file; fail fast on catalog drift.
+        if filename in seen:
+            raise ValueError(f"duplicate cache filename in noto-fonts.yaml: {filename}")
+        seen.add(filename)
+        out.append(NotoFont(name=e["name"], url=e["url"], filename=filename))
     return out
 
 
@@ -68,12 +80,16 @@ def is_downloaded(font: NotoFont, dest_dir: str | None = None) -> bool:
 
 
 def download_font(font: NotoFont, dest_dir: str | None = None,
-                  progress_cb=None, timeout: float = 60.0) -> str:
+                  progress_cb=None, timeout: float = 60.0, cancel_event=None) -> str:
     """Download one font into ``dest_dir`` (default cache).  Skips if already
     present.  ``progress_cb(done_bytes, total_bytes)`` is called during transfer
     (``total`` may be -1 if the server sends no Content-Length).  Returns the
     local path.  Writes to a ``.part`` temp then renames, so an interrupted
-    download never leaves a truncated file that ``is_downloaded`` would trust."""
+    download never leaves a truncated file that ``is_downloaded`` would trust.
+
+    ``cancel_event`` (a ``threading.Event``-like with ``is_set()``) is polled
+    between chunks; when set, the partial file is removed and ``DownloadCancelled``
+    is raised — this is how the GUI's Cancel button aborts a transfer."""
     dest_dir = dest_dir or default_cache_dir()
     os.makedirs(dest_dir, exist_ok=True)
     final = os.path.join(dest_dir, font.filename)
@@ -81,17 +97,28 @@ def download_font(font: NotoFont, dest_dir: str | None = None,
         return final
     tmp = final + ".part"
     req = urllib.request.Request(font.url, headers={"User-Agent": "PolyKybdHost"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        total = int(resp.headers.get("Content-Length", -1))
-        done = 0
-        with open(tmp, "wb") as f:
-            while True:
-                chunk = resp.read(64 * 1024)
-                if not chunk:
-                    break
-                f.write(chunk)
-                done += len(chunk)
-                if progress_cb:
-                    progress_cb(done, total)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            total = int(resp.headers.get("Content-Length", -1))
+            done = 0
+            with open(tmp, "wb") as f:
+                while True:
+                    if cancel_event is not None and cancel_event.is_set():
+                        raise DownloadCancelled()
+                    chunk = resp.read(64 * 1024)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    done += len(chunk)
+                    if progress_cb:
+                        progress_cb(done, total)
+    except BaseException:
+        # don't leave a half file behind on cancel/error
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+        raise
     os.replace(tmp, final)
     return final

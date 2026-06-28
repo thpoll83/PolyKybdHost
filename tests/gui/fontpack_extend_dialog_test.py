@@ -57,6 +57,16 @@ class ExtendDialogTest(unittest.TestCase):
         self.assertEqual(int(dlg._last.text(), 16), 0x2600)
         self.assertEqual(dlg._gidx.value(), 19)
 
+    @unittest.skipUnless(os.path.exists(os.path.join(RES, "bundles.json")),
+                         "shipped bundles required")
+    def test_unknown_prefill_bundle_rejected(self):
+        # an edit prefill for a bundle not in the source list must fail loudly
+        # rather than silently retargeting another pack
+        with self.assertRaises(ValueError):
+            fed.FontPackExtendDialog(
+                prefill={"bundle": "does-not-exist", "first": 0x2600,
+                         "last": 0x2600, "global_index": 1})
+
     @unittest.skipUnless(_FONTGEN and _FONT and _HAVE_BUNDLES,
                          "needs fontgen deps + a TTF + shipped bundles")
     def test_build_splice_and_flash_callback(self):
@@ -97,6 +107,25 @@ class NotoDownloadDialogTest(unittest.TestCase):
         self.addCleanup(dlg.deleteLater)
         from polyhost.services import font_downloader as fdl
         self.assertEqual(dlg._list.count(), len(fdl.load_catalog()))
+
+    def test_threaded_download_over_file_url(self):
+        import tempfile, pathlib
+        from unittest.mock import patch
+        from polyhost.services import font_downloader as fdl
+        tmp = tempfile.mkdtemp()
+        src = os.path.join(tmp, "remote.ttf")
+        with open(src, "wb") as f:
+            f.write(b"FONTDATA" * 500)
+        font = fdl.NotoFont("Fake", pathlib.Path(src).as_uri(), "Fake-Regular.ttf")
+        cache = os.path.join(tmp, "cache")
+        with patch.object(fdl, "load_catalog", return_value=[font]), \
+             patch.object(fdl, "default_cache_dir", return_value=cache):
+            dlg = fed.NotoDownloadDialog()
+            self.addCleanup(dlg.deleteLater)
+            dlg._list.setCurrentRow(0)
+            dlg._download()                       # real worker thread + file:// fetch
+        self.assertEqual(dlg.result_path, os.path.join(cache, "Fake-Regular.ttf"))
+        self.assertTrue(os.path.exists(dlg.result_path))
 
     def test_cached_font_picked_without_network(self):
         import tempfile

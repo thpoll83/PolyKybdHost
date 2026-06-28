@@ -20,7 +20,7 @@ class CatalogTest(unittest.TestCase):
         # every entry well-formed; filenames flat + unique
         names = set()
         for f in fonts:
-            self.assertTrue(f.name and f.url.startswith("http"))
+            self.assertTrue(f.name and f.url.startswith("https://"))
             self.assertTrue(f.filename.endswith((".ttf", ".otf")))
             self.assertEqual(f.filename, os.path.basename(f.filename))
             names.add(f.filename)

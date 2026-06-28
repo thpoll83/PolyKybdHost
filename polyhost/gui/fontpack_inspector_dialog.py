@@ -211,6 +211,7 @@ class FontPackInspectorDialog(QDialog):
         v = QVBoxLayout(self)
         if sources is None:
             sources = load_shipped_packs()
+        self._sources = sources         # keep the exact inspected bundles for Extend
 
         self._modes = [("Glyph grid (native size)", "glyph"),
                        ("Keycap preview (72×40)", "keycap")]
@@ -276,7 +277,8 @@ class FontPackInspectorDialog(QDialog):
 
     def _open_extend(self, prefill=None):
         from polyhost.gui.fontpack_extend_dialog import FontPackExtendDialog
-        dlg = FontPackExtendDialog(flash_cb=self._flash_cb, parent=self, prefill=prefill)
+        dlg = FontPackExtendDialog(flash_cb=self._flash_cb, parent=self,
+                                   prefill=prefill, sources=self._sources)
         dlg.exec_()
 
 

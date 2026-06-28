@@ -126,7 +126,9 @@ class GlyphCellTest(unittest.TestCase):
         empty = rd.glyph_cell(f, 0x42, 20, 16, scale=2)
         self.assertNotEqual(present.tobytes(), empty.tobytes())
         # the empty cell has some lit (grey) marker pixels but no full-white glyph
-        self.assertTrue(any(p for p in empty.tobytes()))
+        empty_bytes = empty.tobytes()
+        self.assertTrue(any(empty_bytes))
+        self.assertLess(max(empty_bytes), 255)
 
 
 if __name__ == "__main__":

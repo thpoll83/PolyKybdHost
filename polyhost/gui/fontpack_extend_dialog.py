@@ -15,7 +15,9 @@ from __future__ import annotations
 import os
 import sys
 
-from PyQt5.QtCore import Qt
+import threading
+
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QSpinBox,
     QComboBox, QCheckBox, QPushButton, QScrollArea, QFileDialog, QMessageBox,
@@ -30,19 +32,22 @@ _DITHER = ["fs", "stucki", "bayer", "threshold", "random"]
 
 class FontPackExtendDialog(QDialog):
     def __init__(self, res_dir: str | None = None, flash_cb=None, parent=None,
-                 prefill=None):
+                 prefill=None, sources=None):
         """`prefill` (optional): {"bundle": label, "first": cp, "last": cp,
-        "global_index": gidx} to pre-target a glyph for *editing* (replace)."""
+        "global_index": gidx} to pre-target a glyph for *editing* (replace).
+        `sources` (optional): the exact (label, Pack) list the caller is inspecting
+        — pass it so edit/save stay bound to *that* bundle.  Defaults to the
+        shipped bundles when omitted."""
         super().__init__(parent)
         self.setWindowTitle("PolyKybd — Build / Extend Font Pack")
         self.resize(900, 640)
         self._flash_cb = flash_cb
         self._built = None          # (bundle_index, new PackFont)
         self._edit_target = None    # {bundle_index, global_index, cp} in edit mode
-        # Only valid bundles are splice targets — load_shipped_packs may yield
-        # (label, Exception) placeholders for ones that failed to decode.
-        self._packs = [(label, p) for label, p in load_shipped_packs(res_dir)
-                       if isinstance(p, fpr.Pack)]
+        # Only valid bundles are splice targets — sources/load_shipped_packs may
+        # yield (label, Exception) placeholders for ones that failed to decode.
+        raw = sources if sources is not None else load_shipped_packs(res_dir)
+        self._packs = [(label, p) for label, p in raw if isinstance(p, fpr.Pack)]
 
         root = QHBoxLayout(self)
         form = QFormLayout()
@@ -127,12 +132,12 @@ class FontPackExtendDialog(QDialog):
         """Pre-target a single glyph for editing/peek: select its bundle, range =
         [cp, cp].  Records `_edit_target` so Save/Flash inserts the built glyph into
         the existing font (preserving its siblings) instead of a whole-font splice."""
-        bi = 0
-        for i, (label, _pack) in enumerate(self._packs):
-            if label == p.get("bundle"):
-                bi = i
-                self._bundle.setCurrentIndex(i)
-                break
+        bi = next((i for i, (label, _pack) in enumerate(self._packs)
+                   if label == p.get("bundle")), None)
+        if bi is None:
+            # Don't silently retarget another bundle — that would edit the wrong pack.
+            raise ValueError(f"Unknown target bundle: {p.get('bundle')!r}")
+        self._bundle.setCurrentIndex(bi)
         self._mode.setCurrentIndex(0)          # codepoint range
         self._sync_mode()
         cp = p.get("first", 0)
@@ -238,15 +243,18 @@ class FontPackExtendDialog(QDialog):
         bundle_index, new = self._built     # the bundle chosen at Build time
         pack = self._packs[bundle_index][1]
         et = self._edit_target
-        if et is not None and new.glyphs:
+        if et is not None:
             # Edit/peek mode: insert the single built glyph into the existing font
-            # (keeping its siblings), rather than replacing the whole font.
+            # (keeping its siblings), rather than replacing the whole font.  If the
+            # edit target no longer resolves in the chosen bundle, fail loudly —
+            # silently degrading to a whole-font splice would corrupt the bundle.
             existing = next((f for f in pack.fonts
                              if f.global_index == et["global_index"]), None)
-            if existing is not None and existing.covers(et["cp"]):
-                merged = fpr.replace_glyph(existing, et["cp"], new.glyphs[0], new.bitmap)
-                return fpr.encode_pack(fpr.splice_font(pack, merged),
-                                       pack.content_version + 1)
+            if existing is None or not existing.covers(et["cp"]) or not new.glyphs:
+                raise ValueError("Edit target no longer matches the selected bundle")
+            merged = fpr.replace_glyph(existing, et["cp"], new.glyphs[0], new.bitmap)
+            return fpr.encode_pack(fpr.splice_font(pack, merged),
+                                   pack.content_version + 1)
         fonts = fpr.splice_font(pack, new)
         return fpr.encode_pack(fonts, pack.content_version + 1)
 
@@ -335,30 +343,76 @@ class NotoDownloadDialog(QDialog):
             self.result_path = self._fdl.local_path(font)
             self.accept()
             return
+
+        # Run the transfer off the GUI thread so the dialog stays responsive and
+        # Cancel can actually abort it (the worker polls the cancel event).
+        cancel = threading.Event()
         prog = QProgressDialog(f"Downloading {font.name}…", "Cancel", 0, 100, self)
         prog.setWindowModality(Qt.WindowModal)
         prog.setMinimumDuration(0)
+        prog.setAutoClose(False)
+        prog.setAutoReset(False)
         prog.setValue(0)
+        prog.canceled.connect(cancel.set)
 
-        def cb(done, total):
-            if total and total > 0:
-                prog.setValue(min(100, int(done * 100 / total)))
-            else:
-                prog.setValue(0)  # unknown size → keep it indeterminate-ish
+        worker = _DownloadWorker(self._fdl, font, cancel, self)
+        result = {}
+
+        def on_progress(done, total):
+            prog.setValue(min(100, int(done * 100 / total)) if total > 0 else 0)
+
+        def on_ok(path):
+            result["path"] = path
+
+        def on_fail(msg):
+            result["error"] = msg
+
+        # progress drives a GUI widget → must run on the main thread (queued);
+        # ok/fail only stash into a dict → direct so the result is captured
+        # synchronously before the worker reports finished (no post-loop race).
+        worker.progress.connect(on_progress)
+        worker.finished_ok.connect(on_ok, Qt.DirectConnection)
+        worker.failed.connect(on_fail, Qt.DirectConnection)
+        worker.start()
+        while not worker.isFinished():
             QApplication.processEvents()
-
-        try:
-            path = self._fdl.download_font(font, progress_cb=cb)
-        except Exception as e:  # noqa: BLE001
-            prog.close()
-            QMessageBox.critical(self, "Download failed",
-                                 f"Could not download {font.name}:\n{e}")
-            return
-        prog.setValue(100)
+            worker.wait(50)
+        QApplication.processEvents()              # drain any last queued progress
         prog.close()
-        item.setText(self._label(font))      # now shows ✓ cached
-        self.result_path = path
+
+        if "error" in result:
+            QMessageBox.critical(self, "Download failed",
+                                 f"Could not download {font.name}:\n{result['error']}")
+            return
+        if "path" not in result:
+            return                                # cancelled — leave dialog open
+        item.setText(self._label(font))           # now shows ✓ cached
+        self.result_path = result["path"]
         self.accept()
+
+
+class _DownloadWorker(QThread):
+    """Downloads one font off the GUI thread, reporting progress via signals.
+    Cancellation is cooperative: ``cancel_event`` is polled inside download_font."""
+    progress = pyqtSignal(int, int)     # done, total
+    finished_ok = pyqtSignal(str)       # local path
+    failed = pyqtSignal(str)            # error message
+
+    def __init__(self, fdl, font, cancel_event, parent=None):
+        super().__init__(parent)
+        self._fdl, self._font, self._cancel = fdl, font, cancel_event
+
+    def run(self):
+        try:
+            path = self._fdl.download_font(
+                self._font, cancel_event=self._cancel,
+                progress_cb=lambda d, t: self.progress.emit(d, t))
+        except self._fdl.DownloadCancelled:
+            return                                # cancelled → no signal, dialog stays
+        except Exception as e:  # noqa: BLE001
+            self.failed.emit(str(e))
+            return
+        self.finished_ok.emit(path)
 
 
 def main(argv=None):

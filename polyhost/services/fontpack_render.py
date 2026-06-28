@@ -2,10 +2,10 @@
 
 Takes the `PackFont` objects from `fontpack_reader` and rasterises them exactly
 the way the keycap OLED does: 1-bit, MSB-first, ``bit = yy*width + xx`` into the
-glyph's own ``width × height`` box (the packing gotcha from the firmware's
+glyph's own ``width x height`` box (the packing gotcha from the firmware's
 ``base/disp_array.c`` — continuous-bit-packed, byte-padded per *glyph*, never per
 scanline).  This mirrors ``tools/gfx_font.GfxGlyphRenderer._blit`` but draws each
-glyph at native size in its own cell instead of compositing into the 72×40 keycap
+glyph at native size in its own cell instead of compositing into the 72x40 keycap
 window — the right view for browsing/extending a bundle's glyph inventory.
 
 PIL only; no Qt.  The Qt inspector window builds on these (a QImage is one
@@ -41,7 +41,7 @@ def _glyph_for(font, cp: int):
 def glyph_to_image(font, cp: int, scale: int = 1, fg: int = 255, bg: int = 0):
     """Rasterise one glyph at native size (optionally nearest-scaled).
 
-    Returns an ('L', (w*scale, h*scale)) image, or a 1×1 `bg` image for a
+    Returns an ('L', (w*scale, h*scale)) image, or a 1x1 `bg` image for a
     zero-area glyph (e.g. space).  `font` is any object with .first/.glyphs/.bitmap.
     """
     g = _glyph_for(font, cp)
@@ -71,12 +71,12 @@ def glyph_to_image(font, cp: int, scale: int = 1, fg: int = 255, bg: int = 0):
 
 def keycap_image(font, cp: int, base_yadv: int = BASE_YADV, scale: int = 1,
                  fg: int = 255, bg: int = 0):
-    """Composite one glyph into the 72×40 keycap window as the firmware draws it.
+    """Composite one glyph into the 72x40 keycap window as the firmware draws it.
 
     Reproduces ``kdisp_write_gfx_char``: horizontally centred on the glyph's
     visible width, vertically placed at ``BASELINE + (font.yAdvance - base_yadv)
     + yOffset`` — so a tall pack font (e.g. a flag, yAdvance 54) sits shifted down
-    exactly like on hardware, and anything past the 72×40 edge is clipped (the
+    exactly like on hardware, and anything past the 72x40 edge is clipped (the
     firmware's SET_PIXEL_CLIPPED backstop), not wrapped.
     """
     g = _glyph_for(font, cp)
@@ -106,23 +106,25 @@ def keycap_image(font, cp: int, base_yadv: int = BASE_YADV, scale: int = 1,
 
 def glyph_cell(font, cp: int, cell_w: int, cell_h: int, scale: int = 2,
                mode: str = "glyph", base_yadv: int = BASE_YADV, label: bool = True):
-    """Render one labelled cell for the flow view: the glyph (or 72×40 keycap)
-    centred in a `cell_w × cell_h` box plus its codepoint label.  An *empty* entry
+    """Render one labelled cell for the flow view: the glyph (or 72x40 keycap)
+    centred in a `cell_w x cell_h` box plus its codepoint label.  An *empty* entry
     (width 0 — a codepoint with no glyph in the source font, common in the bundles'
     contiguous ranges) is drawn as a dim dashed placeholder so it's clearly
     distinguishable from a black glyph."""
-    g = font.glyphs[cp - font.first]
+    g = _glyph_for(font, cp)
     lab_h = 11 if label else 0
     img = Image.new("L", (cell_w, cell_h + lab_h), 0)
     draw = ImageDraw.Draw(img)
     fnt = ImageFont.load_default()
     is_empty = g["width"] == 0 or g["height"] == 0
     if is_empty:
-        # dashed grey box + "∅" so an empty entry never looks like a black glyph
+        # dashed grey box + placeholder so an empty entry never looks like a glyph
         for x in range(1, cell_w - 1, 4):
-            draw.point((x, 1), fill=70); draw.point((x, cell_h - 2), fill=70)
+            draw.point((x, 1), fill=70)
+            draw.point((x, cell_h - 2), fill=70)
         for y in range(1, cell_h - 1, 4):
-            draw.point((1, y), fill=70); draw.point((cell_w - 2, y), fill=70)
+            draw.point((1, y), fill=70)
+            draw.point((cell_w - 2, y), fill=70)
         draw.text((cell_w // 2 - 3, cell_h // 2 - 6), "ø", fill=90, font=fnt)
         if label:
             draw.text((2, cell_h + 1), f"{cp:04X}", fill=80, font=fnt)
@@ -156,13 +158,14 @@ def contact_sheet(pack, cols: int = 16, scale: int = 2, pad: int = 6,
 
     `mode="glyph"` draws each glyph at native size (column width = the pack's
     largest glyph) — the inventory view.  `mode="keycap"` draws each glyph into a
-    72×40 keycap window with a frame around every cell — how it actually looks on
+    72x40 keycap window with a frame around every cell — how it actually looks on
     the key.  `max_glyphs` (>0) caps the count (with a footer note) for huge bundles.
     """
     keycap = mode == "keycap"
     # Apply the cap *during* iteration so a huge/corrupt range isn't fully
-    # materialised before truncation (+1 to detect that more existed).
-    if max_glyphs:
+    # materialised before truncation (+1 to detect that more existed).  Only a
+    # positive cap limits — 0/negative means "render everything".
+    if max_glyphs > 0:
         glyphs = list(islice(_iter_glyphs(pack), max_glyphs + 1))
         capped = len(glyphs) > max_glyphs
         glyphs = glyphs[:max_glyphs]
