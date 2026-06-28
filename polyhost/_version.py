@@ -1,5 +1,5 @@
 __major__ = 0
 __minor__ = 9
-__patch__ = 12
+__patch__ = 13
 __protocol__ = 8
 __version__ = str(__major__) + "." + str(__minor__) + "." + str(__patch__)
