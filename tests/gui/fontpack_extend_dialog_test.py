@@ -98,6 +98,33 @@ class ExtendDialogTest(unittest.TestCase):
         self.addCleanup(dlg.deleteLater)
         self.assertFalse(dlg._apply_saved_settings(999999))   # unknown -> no prefill
 
+    def test_weight_prefilled(self):
+        settings = fed._render_settings()
+        gi = next((k for k, v in settings.items() if v.get("weight")), None)
+        if gi is None:
+            self.skipTest("no shipped settings with a weight")
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg._apply_saved_settings(int(gi))
+        self.assertEqual(dlg._weight.value(), int(settings[gi]["weight"]))
+        # the value round-trips into RenderOptions (-w)
+        self.assertEqual(dlg._options().weight, int(settings[gi]["weight"]))
+
+    def test_weight_zero_means_unset(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        self.assertEqual(dlg._weight.value(), 0)
+        self.assertEqual(dlg._options().weight, -1)        # 0 in UI -> unset
+
+    def test_download_panel_toggles_and_sets_source(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        self.assertFalse(dlg._dl_panel.isVisible())
+        dlg._toggle_download_panel(True)
+        self.assertTrue(dlg._dl_panel.isVisibleTo(dlg))
+        dlg._dl_panel.font_chosen.emit("/tmp/some-font.ttf")
+        self.assertEqual(dlg._src.text(), "/tmp/some-font.ttf")
+
     @unittest.skipUnless(os.path.exists(os.path.join(RES, "bundles.json")),
                          "shipped bundles required")
     def test_unknown_prefill_bundle_rejected(self):

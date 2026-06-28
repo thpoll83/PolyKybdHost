@@ -90,9 +90,11 @@ class FontPackExtendDialog(QDialog):
         browse = QPushButton("Browse…")
         browse.clicked.connect(self._browse)
         dl = QPushButton("Download Noto…")
-        dl.setToolTip("Fetch a Noto source font (same list as the firmware's "
-                      "dl-fonts.sh) into the local cache and use it here")
-        dl.clicked.connect(self._download_noto)
+        dl.setCheckable(True)
+        dl.setToolTip("Show/hide the Noto download panel (same list as the firmware's "
+                      "dl-fonts.sh); picking one fills the source field")
+        dl.toggled.connect(self._toggle_download_panel)
+        self._dl_toggle = dl
         srow = QHBoxLayout()
         srow.addWidget(self._src, 1); srow.addWidget(browse); srow.addWidget(dl)
         sw = QWidget(); sw.setLayout(srow)
@@ -123,6 +125,14 @@ class FontPackExtendDialog(QDialog):
         self._rsize = self._spin(0, 200, 0); form.addRow("Render size -r (0=off)", self._rsize)
         self._yadv = self._spin(0, 200, 0); form.addRow("yAdvance -Y (0=off)", self._yadv)
         self._maxw = self._spin(0, 200, 0); form.addRow("Max width -W (0=off)", self._maxw)
+        self._weight = self._spin(0, 1000, 0)
+        self._weight.setToolTip("Variable-font wght axis (e.g. 400 Regular, 500 Medium, "
+                                "700 Bold). 0 = the font's default instance.")
+        form.addRow("Weight -w (0=default)", self._weight)
+        self._xshift = self._spin(-128, 128, 0)
+        self._xshift.setToolTip("Horizontal pixel shift of the rendered glyph (rarely "
+                                "needed; e.g. couple emoji use -12).")
+        form.addRow("X shift -X", self._xshift)
 
         self._bundle = QComboBox()
         for label, pack in self._packs:
@@ -153,6 +163,13 @@ class FontPackExtendDialog(QDialog):
         scroll.setStyleSheet("background:#000;")
         right.addWidget(scroll, 1)
         root.addLayout(right, 1)
+
+        # Download UI as an attached side panel (hidden until toggled) rather than a
+        # stacked modal dialog — keeps everything in one window.
+        self._dl_panel = NotoDownloadPanel(self)
+        self._dl_panel.font_chosen.connect(self._on_downloaded_font)
+        self._dl_panel.setVisible(False)
+        root.addWidget(self._dl_panel, 0)
 
         self._default_index()
         if not self._packs:
@@ -217,6 +234,8 @@ class FontPackExtendDialog(QDialog):
         self._rsize.setValue(int(opts.get("render_height") or 0))
         self._yadv.setValue(int(opts.get("yadvance") or 0))
         self._maxw.setValue(int(opts.get("max_width") or 0))
+        self._weight.setValue(int(opts.get("weight") or 0))
+        self._xshift.setValue(int(opts.get("xshift") or 0))
         self._sync_mode()          # reflect the grayscale toggle (enables dither)
         sf = opts.get("source_file")
         if sf and not self._src.text().strip():
@@ -259,10 +278,12 @@ class FontPackExtendDialog(QDialog):
         if path:
             self._src.setText(path)
 
-    def _download_noto(self):
-        dlg = NotoDownloadDialog(self)
-        if dlg.exec_() == QDialog.Accepted and dlg.result_path:
-            self._src.setText(dlg.result_path)
+    def _toggle_download_panel(self, on: bool):
+        self._dl_panel.setVisible(on)
+
+    def _on_downloaded_font(self, path: str):
+        if path:
+            self._src.setText(path)
 
     def _options(self):
         from polyhost.services.fontgen import RenderOptions
@@ -274,6 +295,8 @@ class FontPackExtendDialog(QDialog):
             edge_preserve=self._edge.isChecked(), outline=self._outline.value(),
             height=self._rsize.value(), yadvance=self._yadv.value(),
             max_width=self._maxw.value(),
+            weight=self._weight.value() or -1,    # 0 in the UI = unset (-1)
+            xshift=self._xshift.value(),
             seq_first=int(self._seq_first.text(), 16) if self._seq.isEnabled() else 0,
             bits=32)
 
@@ -375,17 +398,16 @@ class FontPackExtendDialog(QDialog):
         self._status.setText("Flash started — watch the tray/log for progress.")
 
 
-class NotoDownloadDialog(QDialog):
-    """Pick a Noto source font from the shared catalog (noto-fonts.yaml) and
-    download it to the local cache.  On accept, ``result_path`` holds the local
-    file the caller should use; already-cached fonts are marked and picked
-    instantly (no re-download)."""
+class NotoDownloadPanel(QWidget):
+    """Embeddable Noto source-font picker/downloader (no modal).  Lists the shared
+    catalog (noto-fonts.yaml), marks cached fonts, downloads selected / all in the
+    background, and emits ``font_chosen(path)`` when a font is ready to use — so it
+    can sit as a side panel in the extend dialog instead of stacking a dialog."""
+    font_chosen = pyqtSignal(str)       # local path of the picked/downloaded font
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Download Noto source font")
-        self.resize(440, 460)
-        self.result_path = None
+        self.setMaximumWidth(360)
         from polyhost.services import font_downloader as fdl
         self._fdl = fdl
         try:
@@ -395,7 +417,8 @@ class NotoDownloadDialog(QDialog):
             QMessageBox.warning(self, "Download", f"Could not read the font catalog:\n{e}")
 
         v = QVBoxLayout(self)
-        v.addWidget(QLabel("Downloads into:\n" + fdl.default_cache_dir()))
+        v.setContentsMargins(0, 0, 0, 0)
+        v.addWidget(QLabel("Download Noto source fonts\n→ " + fdl.default_cache_dir()))
         self._list = QListWidget()
         self._list.itemDoubleClicked.connect(lambda _it: self._download())
         for f in self._fonts:
@@ -411,14 +434,12 @@ class NotoDownloadDialog(QDialog):
         self._all_btn.setToolTip("Fetch every Noto font in the list into the cache")
         self._all_btn.clicked.connect(self._download_all)
         self._all_btn.setEnabled(bool(self._fonts))
-        self._dl_btn = QPushButton("Download / Use selected")
+        self._dl_btn = QPushButton("Use selected")
+        self._dl_btn.setToolTip("Download if needed, then use it as the source font")
         self._dl_btn.clicked.connect(self._download)
         self._dl_btn.setEnabled(bool(self._fonts))
-        cancel = QPushButton("Close")
-        cancel.clicked.connect(self.reject)
         btns.addWidget(self._all_btn)
         btns.addStretch(1)
-        btns.addWidget(cancel)
         btns.addWidget(self._dl_btn)
         v.addLayout(btns)
 
@@ -438,8 +459,7 @@ class NotoDownloadDialog(QDialog):
         font = item.data(Qt.UserRole)
         # Already cached → use it straight away, no network.
         if self._fdl.is_downloaded(font):
-            self.result_path = self._fdl.local_path(font)
-            self.accept()
+            self.font_chosen.emit(self._fdl.local_path(font))
             return
         paths, err = self._run_downloads([font])
         if err:
@@ -447,8 +467,7 @@ class NotoDownloadDialog(QDialog):
                                  f"Could not download {font.name}:\n{err}")
             return
         if font.filename in paths:                # not cancelled
-            self.result_path = paths[font.filename]
-            self.accept()
+            self.font_chosen.emit(paths[font.filename])
 
     def _download_all(self):
         todo = [f for f in self._fonts if not self._fdl.is_downloaded(f)]
@@ -459,7 +478,7 @@ class NotoDownloadDialog(QDialog):
         if err:
             QMessageBox.critical(self, "Download all", f"Stopped on an error:\n{err}")
             return
-        # stays open so the user can then pick one to use (marks now show ✓ cached)
+        # marks now show ✓ cached; the user can then pick one to use
 
     def _run_downloads(self, fonts):
         """Download `fonts` off the GUI thread behind a cancellable progress dialog.
@@ -498,6 +517,32 @@ class NotoDownloadDialog(QDialog):
         prog.close()
         self._refresh_marks()
         return state["paths"], state.get("error")
+
+
+class NotoDownloadDialog(QDialog):
+    """Standalone modal wrapper around NotoDownloadPanel (kept for direct use /
+    back-compat).  ``result_path`` holds the chosen font on accept."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Download Noto source font")
+        self.resize(440, 460)
+        self.result_path = None
+        v = QVBoxLayout(self)
+        self._panel = NotoDownloadPanel(self)
+        self._panel.setMaximumWidth(16777215)       # full width in its own window
+        self._panel.font_chosen.connect(self._on_chosen)
+        v.addWidget(self._panel, 1)
+        close = QPushButton("Close")
+        close.clicked.connect(self.reject)
+        v.addWidget(close)
+        # delegate the bits the tests/standalone callers reach for
+        self._list = self._panel._list
+        self._download = self._panel._download
+
+    def _on_chosen(self, path):
+        self.result_path = path
+        self.accept()
 
 
 class _DownloadWorker(QThread):
