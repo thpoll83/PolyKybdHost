@@ -104,6 +104,38 @@ def keycap_image(font, cp: int, base_yadv: int = BASE_YADV, scale: int = 1,
     return img
 
 
+def glyph_cell(font, cp: int, cell_w: int, cell_h: int, scale: int = 2,
+               mode: str = "glyph", base_yadv: int = BASE_YADV, label: bool = True):
+    """Render one labelled cell for the flow view: the glyph (or 72×40 keycap)
+    centred in a `cell_w × cell_h` box plus its codepoint label.  An *empty* entry
+    (width 0 — a codepoint with no glyph in the source font, common in the bundles'
+    contiguous ranges) is drawn as a dim dashed placeholder so it's clearly
+    distinguishable from a black glyph."""
+    g = font.glyphs[cp - font.first]
+    lab_h = 11 if label else 0
+    img = Image.new("L", (cell_w, cell_h + lab_h), 0)
+    draw = ImageDraw.Draw(img)
+    fnt = ImageFont.load_default()
+    is_empty = g["width"] == 0 or g["height"] == 0
+    if is_empty:
+        # dashed grey box + "∅" so an empty entry never looks like a black glyph
+        for x in range(1, cell_w - 1, 4):
+            draw.point((x, 1), fill=70); draw.point((x, cell_h - 2), fill=70)
+        for y in range(1, cell_h - 1, 4):
+            draw.point((1, y), fill=70); draw.point((cell_w - 2, y), fill=70)
+        draw.text((cell_w // 2 - 3, cell_h // 2 - 6), "ø", fill=90, font=fnt)
+        if label:
+            draw.text((2, cell_h + 1), f"{cp:04X}", fill=80, font=fnt)
+        return img
+    cimg = (keycap_image(font, cp, base_yadv=base_yadv, scale=scale)
+            if mode == "keycap" else glyph_to_image(font, cp, scale=scale))
+    img.paste(cimg, (max(0, (cell_w - cimg.width) // 2),
+                     max(0, (cell_h - cimg.height) // 2)))
+    if label:
+        draw.text((2, cell_h + 1), f"{cp:04X}", fill=130, font=fnt)
+    return img
+
+
 def _iter_glyphs(pack):
     """Yield (font, codepoint) for every glyph in priority order, deduped by
     codepoint (the first font covering a cp wins — the firmware's front-to-back

@@ -50,10 +50,33 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         dlg = fid.FontPackInspectorDialog(sources=[("tiny", _tiny_pack())])
         self.addCleanup(dlg.deleteLater)
         tab = dlg._tabs.currentWidget()
-        self.assertEqual(tab._rendered_mode, "glyph")     # rendered on show
+        self.assertEqual(tab._built_key[0], "glyph")      # built on show
+        n_cells = tab.cell_count()
+        self.assertGreater(n_cells, 0)
         dlg._mode_combo.setCurrentIndex(1)                # keycap
-        self.assertEqual(tab._rendered_mode, "keycap")
-        self.assertIsNotNone(tab._base_pixmap)
+        self.assertEqual(tab._built_key[0], "keycap")
+        self.assertEqual(tab.cell_count(), n_cells)       # same glyphs, re-rendered
+
+    def test_hide_empty_reduces_cells(self):
+        dlg = fid.FontPackInspectorDialog(sources=[("tiny", _tiny_pack())])
+        self.addCleanup(dlg.deleteLater)
+        tab = dlg._tabs.currentWidget()
+        full = tab.cell_count()
+        tab._hide_empty.setChecked(True)
+        self.assertLessEqual(tab.cell_count(), full)
+
+    def test_double_click_edit_signal(self):
+        # Test the tab's signal in isolation — going through the dialog would also
+        # fire its real handler, which opens a *modal* extend dialog (exec_) and
+        # would block the test.
+        tab = fid._BundleTab("tiny", _tiny_pack())
+        self.addCleanup(tab.deleteLater)
+        tab.set_mode("glyph")
+        got = []
+        tab.edit_requested.connect(lambda font, cp: got.append(cp))
+        idx = tab._model.index(0, 0)
+        tab._on_double(idx)                               # simulate double-click on item 0
+        self.assertEqual(got, [idx.data(fid._CP_ROLE)])
 
     def test_error_source_does_not_crash(self):
         # a decode failure becomes a labelled tab, never a dead window

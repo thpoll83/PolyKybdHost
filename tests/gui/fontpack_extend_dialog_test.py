@@ -44,6 +44,19 @@ class ExtendDialogTest(unittest.TestCase):
         self.addCleanup(dlg.deleteLater)
         self.assertTrue(hasattr(dlg, "_flash_btn"))
 
+    @unittest.skipUnless(os.path.exists(os.path.join(RES, "bundles.json")),
+                         "shipped bundles required")
+    def test_prefill_targets_glyph(self):
+        dlg = fed.FontPackExtendDialog(
+            prefill={"bundle": "symbol", "first": 0x2600, "last": 0x2600,
+                     "global_index": 19})
+        self.addCleanup(dlg.deleteLater)
+        self.assertEqual(dlg._bundle.currentText(), "symbol")
+        self.assertEqual(dlg._mode.currentIndex(), 0)        # codepoint range
+        self.assertEqual(int(dlg._first.text(), 16), 0x2600)
+        self.assertEqual(int(dlg._last.text(), 16), 0x2600)
+        self.assertEqual(dlg._gidx.value(), 19)
+
     @unittest.skipUnless(_FONTGEN and _FONT and _HAVE_BUNDLES,
                          "needs fontgen deps + a TTF + shipped bundles")
     def test_build_splice_and_flash_callback(self):

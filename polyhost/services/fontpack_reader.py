@@ -220,6 +220,38 @@ def encode_pack(fonts, content_version: int = 0, abi_version: int = ABI_VERSION)
     return header + bytes(body)
 
 
+def replace_glyph(font: PackFont, cp: int, glyph: dict, glyph_bitmap: bytes) -> PackFont:
+    """Return a copy of `font` with the single glyph at `cp` replaced (or an empty
+    slot filled) by `glyph` (metrics) + `glyph_bitmap` (its 1-bit bytes), with all
+    bitmap offsets recomputed.  Preserves first/last/yAdvance/global_index and every
+    *other* glyph — the basis of the inspector's per-glyph "peek & take" edit (so
+    editing one codepoint in a multi-glyph font doesn't drop its siblings).
+    """
+    if not font.covers(cp):
+        raise ValueError(f"U+{cp:04X} outside font range U+{font.first:04X}..U+{font.last:04X}")
+    idx = cp - font.first
+    new_glyphs = [dict(g) for g in font.glyphs]
+    repl = dict(glyph)
+    blob = bytearray()
+    for i, g in enumerate(new_glyphs):
+        if i == idx:
+            g.update(width=repl["width"], height=repl["height"], xAdvance=repl["xAdvance"],
+                     xOffset=repl["xOffset"], yOffset=repl["yOffset"])
+        w, h = g["width"], g["height"]
+        g["bitmapOffset"] = len(blob)
+        if w and h:
+            nbytes = (w * h + 7) // 8
+            if i == idx:
+                src = glyph_bitmap[:nbytes]
+            else:
+                off = font.glyphs[i]["bitmapOffset"]
+                src = font.bitmap[off:off + nbytes]
+            blob += src
+    return PackFont(name=font.name, bitmap=bytes(blob), glyphs=new_glyphs,
+                    first=font.first, last=font.last, yAdvance=font.yAdvance,
+                    global_index=font.global_index)
+
+
 def splice_font(pack: Pack, new_font: PackFont) -> list:
     """Return `pack`'s fonts with `new_font` replacing the one at the same
     global_index (or inserted in global-index order if none matches) — the core

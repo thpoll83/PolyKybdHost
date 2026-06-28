@@ -29,12 +29,16 @@ _DITHER = ["fs", "stucki", "bayer", "threshold", "random"]
 
 
 class FontPackExtendDialog(QDialog):
-    def __init__(self, res_dir: str | None = None, flash_cb=None, parent=None):
+    def __init__(self, res_dir: str | None = None, flash_cb=None, parent=None,
+                 prefill=None):
+        """`prefill` (optional): {"bundle": label, "first": cp, "last": cp,
+        "global_index": gidx} to pre-target a glyph for *editing* (replace)."""
         super().__init__(parent)
         self.setWindowTitle("PolyKybd — Build / Extend Font Pack")
         self.resize(900, 640)
         self._flash_cb = flash_cb
         self._built = None          # (bundle_index, new PackFont)
+        self._edit_target = None    # {bundle_index, global_index, cp} in edit mode
         # Only valid bundles are splice targets — load_shipped_packs may yield
         # (label, Exception) placeholders for ones that failed to decode.
         self._packs = [(label, p) for label, p in load_shipped_packs(res_dir)
@@ -111,6 +115,30 @@ class FontPackExtendDialog(QDialog):
         if not self._packs:
             self._build_btn.setEnabled(False)
             self._status.setText("No valid shipped bundles available to extend.")
+        elif prefill:
+            self._apply_prefill(prefill)
+
+    def _apply_prefill(self, p: dict):
+        """Pre-target a single glyph for editing/peek: select its bundle, range =
+        [cp, cp].  Records `_edit_target` so Save/Flash inserts the built glyph into
+        the existing font (preserving its siblings) instead of a whole-font splice."""
+        bi = 0
+        for i, (label, _pack) in enumerate(self._packs):
+            if label == p.get("bundle"):
+                bi = i
+                self._bundle.setCurrentIndex(i)
+                break
+        self._mode.setCurrentIndex(0)          # codepoint range
+        self._sync_mode()
+        cp = p.get("first", 0)
+        self._first.setText(f"0x{cp:04X}")
+        self._last.setText(f"0x{p.get('last', cp):04X}")
+        if "global_index" in p:
+            self._gidx.setValue(p["global_index"])
+            self._edit_target = {"bundle_index": bi, "global_index": p["global_index"],
+                                 "cp": cp}
+        self._status.setText(f"Editing U+{cp:04X} in '{p.get('bundle')}' — pick a source "
+                             "font + options, Build to peek, then Save/Flash to take it.")
 
     # ---- helpers ----
     @staticmethod
@@ -132,7 +160,9 @@ class FontPackExtendDialog(QDialog):
             self._gidx.setValue(max(f.global_index for f in pack.fonts) + 1)
         # A previous build targeted the old bundle — invalidate it so Save/Flash
         # can't splice the built font into a bundle the user has since switched to.
+        # Switching bundles also leaves edit mode (becomes a normal whole-font add).
         self._built = None
+        self._edit_target = None
         self._save_btn.setEnabled(False)
         if self._flash_cb is not None:
             self._flash_btn.setEnabled(False)
@@ -197,6 +227,16 @@ class FontPackExtendDialog(QDialog):
     def _spliced_bytes(self) -> bytes:
         bundle_index, new = self._built     # the bundle chosen at Build time
         pack = self._packs[bundle_index][1]
+        et = self._edit_target
+        if et is not None and new.glyphs:
+            # Edit/peek mode: insert the single built glyph into the existing font
+            # (keeping its siblings), rather than replacing the whole font.
+            existing = next((f for f in pack.fonts
+                             if f.global_index == et["global_index"]), None)
+            if existing is not None and existing.covers(et["cp"]):
+                merged = fpr.replace_glyph(existing, et["cp"], new.glyphs[0], new.bitmap)
+                return fpr.encode_pack(fpr.splice_font(pack, merged),
+                                       pack.content_version + 1)
         fonts = fpr.splice_font(pack, new)
         return fpr.encode_pack(fonts, pack.content_version + 1)
 

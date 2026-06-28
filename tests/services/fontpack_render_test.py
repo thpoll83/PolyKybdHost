@@ -107,5 +107,27 @@ class ContactSheetTest(unittest.TestCase):
         self.assertEqual(img.size, (200, 40))
 
 
+class GlyphCellTest(unittest.TestCase):
+    def _font(self):
+        # 0x41 present (2x2 lit), 0x42 empty (w=0)
+        return _font(0x41, 0x42, 8,
+                     [dict(bitmapOffset=0, width=2, height=2, xAdvance=3, xOffset=0, yOffset=0),
+                      dict(bitmapOffset=1, width=0, height=0, xAdvance=0, xOffset=0, yOffset=0)],
+                     [0xF0])
+
+    def test_cell_size_includes_label(self):
+        f = self._font()
+        img = rd.glyph_cell(f, 0x41, cell_w=20, cell_h=16, scale=2, label=True)
+        self.assertEqual(img.size, (20, 16 + 11))
+
+    def test_present_vs_empty_differ(self):
+        f = self._font()
+        present = rd.glyph_cell(f, 0x41, 20, 16, scale=2)
+        empty = rd.glyph_cell(f, 0x42, 20, 16, scale=2)
+        self.assertNotEqual(present.tobytes(), empty.tobytes())
+        # the empty cell has some lit (grey) marker pixels but no full-white glyph
+        self.assertTrue(any(p for p in empty.tobytes()))
+
+
 if __name__ == "__main__":
     unittest.main()

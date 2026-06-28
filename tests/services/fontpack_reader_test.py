@@ -123,6 +123,42 @@ class RoundTripTest(unittest.TestCase):
         out = fr.splice_font(pack, new)
         self.assertEqual([f.global_index for f in out], [2, 5, 8])   # inserted in order
 
+    def test_replace_glyph_preserves_siblings(self):
+        # two-glyph font: A present, B empty. Fill B, keep A.
+        pack = fr.decode_pack(_build_pack([
+            {"first": 0x41, "last": 0x42, "yadv": 8, "gidx": 3,
+             "glyphs": [(0, 2, 2, 3, 0, -2), (0, 0, 0, 0, 0, 0)],
+             "bitmap": bytes([0xF0])},
+        ]))
+        font = pack.fonts[0]
+        a_before = dict(font.glyphs[0])
+        newg = dict(bitmapOffset=0, width=2, height=2, xAdvance=3, xOffset=0, yOffset=-2)
+        merged = fr.replace_glyph(font, 0x42, newg, bytes([0xC0]))
+        self.assertEqual(merged.first, 0x41)
+        self.assertEqual(merged.last, 0x42)
+        self.assertEqual(merged.global_index, 3)
+        # A (sibling) unchanged in metrics
+        self.assertEqual({k: merged.glyphs[0][k] for k in
+                          ("width", "height", "xAdvance", "xOffset", "yOffset")},
+                         {k: a_before[k] for k in
+                          ("width", "height", "xAdvance", "xOffset", "yOffset")})
+        # B now filled
+        self.assertEqual(merged.glyphs[1]["width"], 2)
+        # re-encodes cleanly and both glyphs' bitmaps are present
+        data = fr.encode_pack([merged], 1)
+        rp = fr.decode_pack(data)
+        self.assertTrue(rp.crc_ok)
+        self.assertEqual(rp.fonts[0].glyphs[1]["width"], 2)
+
+    def test_replace_glyph_out_of_range(self):
+        pack = fr.decode_pack(_build_pack([
+            {"first": 0x41, "last": 0x41, "yadv": 8, "gidx": 0,
+             "glyphs": [(0, 1, 1, 2, 0, 0)], "bitmap": bytes([0x80])}]))
+        with self.assertRaises(ValueError):
+            fr.replace_glyph(pack.fonts[0], 0x99,
+                             dict(bitmapOffset=0, width=1, height=1, xAdvance=2,
+                                  xOffset=0, yOffset=0), bytes([0x80]))
+
     def test_crc_mismatch_flagged(self):
         data = bytearray(_build_pack([
             {"first": 0x41, "last": 0x41, "yadv": 8, "glyphs": [(0, 1, 1, 2, 0, 0)],
