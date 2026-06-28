@@ -116,6 +116,17 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   is the manual path; the tray surfaces flash progress (`_on_fontpack_progress/done`).
   Firmware-side architecture (slots, layout header, GET_ID block) is in the qmk repo's
   CLAUDE.md "Font pack" section.
+- **Font-pack inspect/extend tools** (`polyhost/gui/fontpack_inspector_dialog.py` +
+  `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
+  `fontgen*`): a tray-launchable / standalone window to view every bundle glyph as
+  the keycap draws it and to build/splice new glyphs from a TTF/OTF (pure-Python
+  `fontconvert` parity). The extend dialog's **"Download Noto…"** button fetches the
+  Noto source fonts via `polyhost/services/font_downloader.py`, which reads the
+  catalog from **`polyhost/res/fonts/noto-fonts.yaml`**. ⚠️ That YAML is the **single
+  source of truth shared byte-identically** with the firmware's
+  `qmk_firmware/keyboards/polykybd/fonts/noto-fonts.yaml` (which `dl-fonts.sh` reads)
+  — keep both in sync (`cmp`). The host stores a *flat* cache keyed on
+  `basename(dest)`; the firmware honours the nested `dest` path.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
 - **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.

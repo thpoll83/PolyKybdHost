@@ -89,5 +89,36 @@ class ExtendDialogTest(unittest.TestCase):
         self.assertEqual(got["data"], data)
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
+class NotoDownloadDialogTest(unittest.TestCase):
+
+    def test_lists_catalog(self):
+        dlg = fed.NotoDownloadDialog()
+        self.addCleanup(dlg.deleteLater)
+        from polyhost.services import font_downloader as fdl
+        self.assertEqual(dlg._list.count(), len(fdl.load_catalog()))
+
+    def test_cached_font_picked_without_network(self):
+        import tempfile
+        from unittest.mock import patch
+        from polyhost.services import font_downloader as fdl
+        tmp = tempfile.mkdtemp()
+        fonts = fdl.load_catalog()
+        # pre-seed the cache with the first font so it's "downloaded"
+        cached = fonts[0]
+        os.makedirs(os.path.join(tmp, "fonts"), exist_ok=True)
+        path = os.path.join(tmp, "fonts", cached.filename)
+        with open(path, "wb") as f:
+            f.write(b"x")
+        with patch.object(fdl, "default_cache_dir", return_value=os.path.join(tmp, "fonts")):
+            dlg = fed.NotoDownloadDialog()
+            self.addCleanup(dlg.deleteLater)
+            dlg._list.setCurrentRow(0)
+            # _download must take the cached branch (no urlopen) and accept
+            with patch("urllib.request.urlopen", side_effect=AssertionError("network!")):
+                dlg._download()
+            self.assertEqual(dlg.result_path, path)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -19,7 +19,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QSpinBox,
     QComboBox, QCheckBox, QPushButton, QScrollArea, QFileDialog, QMessageBox,
-    QApplication, QWidget,
+    QApplication, QWidget, QListWidget, QListWidgetItem, QProgressDialog,
 )
 
 from polyhost.services import fontpack_reader as fpr
@@ -51,7 +51,12 @@ class FontPackExtendDialog(QDialog):
         self._src = QLineEdit()
         browse = QPushButton("Browse…")
         browse.clicked.connect(self._browse)
-        srow = QHBoxLayout(); srow.addWidget(self._src, 1); srow.addWidget(browse)
+        dl = QPushButton("Download Noto…")
+        dl.setToolTip("Fetch a Noto source font (same list as the firmware's "
+                      "dl-fonts.sh) into the local cache and use it here")
+        dl.clicked.connect(self._download_noto)
+        srow = QHBoxLayout()
+        srow.addWidget(self._src, 1); srow.addWidget(browse); srow.addWidget(dl)
         sw = QWidget(); sw.setLayout(srow)
         form.addRow("Source font (.ttf/.otf)", sw)
 
@@ -173,6 +178,11 @@ class FontPackExtendDialog(QDialog):
         if path:
             self._src.setText(path)
 
+    def _download_noto(self):
+        dlg = NotoDownloadDialog(self)
+        if dlg.exec_() == QDialog.Accepted and dlg.result_path:
+            self._src.setText(dlg.result_path)
+
     def _options(self):
         from polyhost.services.fontgen import RenderOptions
         from polyhost.services import fontgen_dither as fd
@@ -270,6 +280,85 @@ class FontPackExtendDialog(QDialog):
             QMessageBox.critical(self, "Flash failed", str(e))
             return
         self._status.setText("Flash started — watch the tray/log for progress.")
+
+
+class NotoDownloadDialog(QDialog):
+    """Pick a Noto source font from the shared catalog (noto-fonts.yaml) and
+    download it to the local cache.  On accept, ``result_path`` holds the local
+    file the caller should use; already-cached fonts are marked and picked
+    instantly (no re-download)."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Download Noto source font")
+        self.resize(440, 460)
+        self.result_path = None
+        from polyhost.services import font_downloader as fdl
+        self._fdl = fdl
+        try:
+            self._fonts = fdl.load_catalog()
+        except Exception as e:  # noqa: BLE001
+            self._fonts = []
+            QMessageBox.warning(self, "Download", f"Could not read the font catalog:\n{e}")
+
+        v = QVBoxLayout(self)
+        v.addWidget(QLabel("Downloads into:\n" + fdl.default_cache_dir()))
+        self._list = QListWidget()
+        self._list.itemDoubleClicked.connect(lambda _it: self._download())
+        for f in self._fonts:
+            item = QListWidgetItem(self._label(f))
+            item.setData(Qt.UserRole, f)
+            self._list.addItem(item)
+        if self._fonts:
+            self._list.setCurrentRow(0)
+        v.addWidget(self._list, 1)
+
+        btns = QHBoxLayout()
+        self._dl_btn = QPushButton("Download / Use selected")
+        self._dl_btn.clicked.connect(self._download)
+        self._dl_btn.setEnabled(bool(self._fonts))
+        cancel = QPushButton("Cancel"); cancel.clicked.connect(self.reject)
+        btns.addStretch(1); btns.addWidget(cancel); btns.addWidget(self._dl_btn)
+        v.addLayout(btns)
+
+    def _label(self, font) -> str:
+        mark = "  ✓ cached" if self._fdl.is_downloaded(font) else ""
+        return f"{font.name}  ({font.filename}){mark}"
+
+    def _download(self):
+        item = self._list.currentItem()
+        if item is None:
+            return
+        font = item.data(Qt.UserRole)
+        # Already cached → use it straight away, no network.
+        if self._fdl.is_downloaded(font):
+            self.result_path = self._fdl.local_path(font)
+            self.accept()
+            return
+        prog = QProgressDialog(f"Downloading {font.name}…", "Cancel", 0, 100, self)
+        prog.setWindowModality(Qt.WindowModal)
+        prog.setMinimumDuration(0)
+        prog.setValue(0)
+
+        def cb(done, total):
+            if total and total > 0:
+                prog.setValue(min(100, int(done * 100 / total)))
+            else:
+                prog.setValue(0)  # unknown size → keep it indeterminate-ish
+            QApplication.processEvents()
+
+        try:
+            path = self._fdl.download_font(font, progress_cb=cb)
+        except Exception as e:  # noqa: BLE001
+            prog.close()
+            QMessageBox.critical(self, "Download failed",
+                                 f"Could not download {font.name}:\n{e}")
+            return
+        prog.setValue(100)
+        prog.close()
+        item.setText(self._label(font))      # now shows ✓ cached
+        self.result_path = path
+        self.accept()
 
 
 def main(argv=None):
