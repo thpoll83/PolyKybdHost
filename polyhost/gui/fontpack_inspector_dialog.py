@@ -28,6 +28,7 @@ from PyQt5.QtGui import QImage, QPixmap, QIcon, QStandardItemModel, QStandardIte
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QListView,
     QTabWidget, QDoubleSpinBox, QComboBox, QCheckBox, QPushButton, QApplication,
+    QProgressDialog,
 )
 
 from polyhost.services import fontpack_reader as fpr
@@ -41,6 +42,26 @@ def _pil_l_to_pixmap(img) -> QPixmap:
         img = img.convert("L")
     data = img.tobytes()
     qimg = QImage(data, img.width, img.height, img.width, QImage.Format_Grayscale8)
+    return QPixmap.fromImage(qimg)
+
+
+# Amber tint for "peek" previews — clearly distinct from real (white) pack glyphs.
+PEEK_RGB = (255, 168, 0)
+
+
+def _pil_l_to_tinted_pixmap(img, rgb) -> QPixmap:
+    """PIL 'L' image -> RGB QPixmap tinted to `rgb` (lit pixels take the colour),
+    so peek previews read as a different colour from the real pack glyphs."""
+    from PIL import Image
+    if img.mode != "L":
+        img = img.convert("L")
+    r, g, b = rgb
+    chans = (img.point(lambda v: v * r // 255),
+             img.point(lambda v: v * g // 255),
+             img.point(lambda v: v * b // 255))
+    rgbimg = Image.merge("RGB", chans)
+    data = rgbimg.tobytes()
+    qimg = QImage(data, rgbimg.width, rgbimg.height, rgbimg.width * 3, QImage.Format_RGB888)
     return QPixmap.fromImage(qimg)
 
 
@@ -95,7 +116,9 @@ class _BundleTab(QWidget):
         self._label = label
         self._pack = pack
         self._mode = "glyph"
-        self._built_key = None         # (mode, scale, hide_empty) last built
+        self._built_key = None         # (mode, scale, hide_empty, peek) last built
+        self._settings_map = None      # lazy: global index -> render settings
+        self._last_peek_count = 0      # previews rendered in the last peek rebuild
         v = QVBoxLayout(self)
 
         if not isinstance(pack, fpr.Pack):
@@ -124,6 +147,12 @@ class _BundleTab(QWidget):
         self._hide_empty = QCheckBox("Hide empty")
         self._hide_empty.stateChanged.connect(self._rebuild)
         ctl.addWidget(self._hide_empty)
+        self._peek = QCheckBox("Peek empty (from source)")
+        self._peek.setToolTip("Render the empty slots from their source font (needs "
+                              "the font downloaded) as amber previews — candidates to "
+                              "build/take. Previews are not in the pack.")
+        self._peek.stateChanged.connect(self._rebuild)
+        ctl.addWidget(self._peek)
         ctl.addStretch(1)
         v.addLayout(ctl)
 
@@ -168,32 +197,89 @@ class _BundleTab(QWidget):
                 h = max(h, g["height"])
         return max(8, w * scale), max(8, h * scale)
 
+    def _settings(self):
+        if self._settings_map is None:
+            from polyhost.services import fontpack_extend as ext
+            self._settings_map = ext.load_render_settings()
+        return self._settings_map
+
+    def _peek_pixmap(self, font, cp, cw, ch, scale):
+        """Render the empty slot `cp` from its source font (per the shipped render
+        settings) as an amber preview pixmap, or None if no settings / the source
+        isn't downloaded / the source has no glyph there / fontgen is unavailable."""
+        opts = self._settings().get(str(font.global_index))
+        if not opts or not opts.get("source_file"):
+            return None
+        from polyhost.services import font_downloader as fdl
+        src = os.path.join(fdl.default_cache_dir(), opts["source_file"])
+        if not os.path.exists(src):
+            return None
+        try:
+            from polyhost.services import fontpack_extend as ext
+            pf = ext.peek_source_glyph(src, cp, opts, global_index=font.global_index)
+        except Exception:                       # noqa: BLE001 — one bad glyph != dead grid
+            return None
+        if pf is None:
+            return None
+        img = fprd.glyph_cell(pf, cp, cw, ch, scale=scale, mode=self._mode)
+        return _pil_l_to_tinted_pixmap(img, PEEK_RGB)
+
     def _rebuild(self, *_):
         if self._view is None:
             return
         scale = int(self._zoom.value())
         hide_empty = self._hide_empty.isChecked()
-        key = (self._mode, scale, hide_empty)
+        peek = self._peek.isChecked()
+        key = (self._mode, scale, hide_empty, peek)
         if key == self._built_key:
             return
         self._built_key = key
         self._model.clear()
         cw, ch = self._cell_dims(scale)
         self._view.setIconSize(QSize(cw, ch + 11))
+
+        # Peeking renders empties through FreeType — bound the cost / keep the UI
+        # responsive with a cancellable progress dialog.
+        prog = None
+        if peek:
+            n_empty = sum(1 for f in self._pack.fonts for g in f.glyphs
+                          if g["width"] == 0 or g["height"] == 0)
+            if n_empty:
+                prog = QProgressDialog("Rendering previews…", "Cancel", 0, n_empty, self)
+                prog.setWindowModality(Qt.WindowModal)
+                prog.setMinimumDuration(0)
+        peeked = done = 0
         for font in sorted(self._pack.fonts, key=lambda f: f.global_index):
             for cp in range(font.first, font.last + 1):
                 g = font.glyphs[cp - font.first]
                 empty = g["width"] == 0 or g["height"] == 0
                 if empty and hide_empty:
                     continue
-                img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
+                pm, is_preview = None, False
+                if empty and peek and (prog is None or not prog.wasCanceled()):
+                    pm = self._peek_pixmap(font, cp, cw, ch, scale)
+                    is_preview = pm is not None
+                    if pm is not None:
+                        peeked += 1
+                    done += 1
+                    if prog is not None:
+                        prog.setValue(done)
+                        QApplication.processEvents()
+                if pm is None:
+                    img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
+                    pm = _pil_l_to_pixmap(img)
                 it = QStandardItem()
-                it.setIcon(QIcon(_pil_l_to_pixmap(img)))
+                it.setIcon(QIcon(pm))
                 it.setEditable(False)
                 it.setData(font, _FONT_ROLE)
                 it.setData(cp, _CP_ROLE)
-                it.setToolTip(f"U+{cp:04X}" + ("  (empty — no glyph)" if empty else ""))
+                it.setToolTip(f"U+{cp:04X}" + ("  (preview from source — not in pack)"
+                                               if is_preview else
+                                               "  (empty — no glyph)" if empty else ""))
                 self._model.appendRow(it)
+        if prog is not None:
+            prog.close()
+        self._last_peek_count = peeked
 
     def cell_count(self) -> int:
         return self._model.rowCount() if self._view else 0

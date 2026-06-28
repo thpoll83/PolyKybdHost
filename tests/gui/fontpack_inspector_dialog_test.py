@@ -19,6 +19,23 @@ except Exception as e:  # pragma: no cover - no Qt platform available
     _IMPORT_ERR = e
 
 
+def _pack_with_empty():
+    """One 2-glyph font: A present (3x4), B empty — for exercising peek fallback."""
+    glyphs = struct.pack("<Hbbbbbx", 0, 3, 4, 5, -1, -7) + struct.pack("<Hbbbbbx", 0, 0, 0, 0, 0, 0)
+    bitmap = bytes([0x12, 0x34])
+    table_off = 32
+    glyph_off = table_off + 20
+    bitmap_off = (glyph_off + len(glyphs) + 3) & ~3
+    total = (bitmap_off + len(bitmap) + 3) & ~3
+    body = bytearray(total - 32)
+    body[table_off - 32:table_off - 32 + 20] = struct.pack("<IIIIhH", bitmap_off, glyph_off, 0x41, 0x42, 12, 0)
+    body[glyph_off - 32:glyph_off - 32 + len(glyphs)] = glyphs
+    body[bitmap_off - 32:bitmap_off - 32 + len(bitmap)] = bitmap
+    crc = binascii.crc32(bytes(body)) & 0xFFFFFFFF
+    header = struct.pack("<4sHHIIIIII", b"PlyF", 1, 0, 7, 1, table_off, total, crc, 0)
+    return fpr.decode_pack(header + bytes(body), name_hint="emptytest")
+
+
 def _tiny_pack():
     """One 2-glyph font, valid PlyF, decoded to a Pack for a deterministic tab."""
     # glyph A: 3x4 = 12 bits -> 2 bytes @0; glyph B: 6x8 = 48 bits -> 6 bytes @2
@@ -77,6 +94,23 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         idx = tab._model.index(0, 0)
         tab._on_double(idx)                               # simulate double-click on item 0
         self.assertEqual(got, [idx.data(fid._CP_ROLE)])
+
+    def test_peek_fallback_without_source(self):
+        # Peek with no shipped settings / no cached source must not crash and must
+        # render no previews — the empty cell stays a placeholder.
+        tab = fid._BundleTab("emptytest", _pack_with_empty())
+        self.addCleanup(tab.deleteLater)
+        tab.set_mode("glyph")
+        full = tab.cell_count()
+        tab._peek.setChecked(True)
+        self.assertEqual(tab.cell_count(), full)        # same cells, no crash
+        self.assertEqual(tab._last_peek_count, 0)       # nothing rendered from source
+
+    def test_peek_pixmap_none_without_settings(self):
+        tab = fid._BundleTab("emptytest", _pack_with_empty())
+        self.addCleanup(tab.deleteLater)
+        font = tab._pack.fonts[0]
+        self.assertIsNone(tab._peek_pixmap(font, 0x42, 20, 20, 2))   # no settings entry
 
     def test_error_source_does_not_crash(self):
         # a decode failure becomes a labelled tab, never a dead window

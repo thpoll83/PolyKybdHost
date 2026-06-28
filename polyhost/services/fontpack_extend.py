@@ -19,7 +19,58 @@ ALL_FONTS-ordering decision the caller (UI / fonts.yaml promotion) owns.
 """
 from __future__ import annotations
 
+import json
+import os
+
 from polyhost.services import fontpack_reader as fpr
+
+
+def load_render_settings(path: str = None) -> dict:
+    """The shipped ``global ALL_FONTS index -> render options`` map (built from
+    fonts.yaml by the firmware's generate_fonts.py, mirrored in
+    res/fontpack/fontpack_render_settings.json).  Returns the by_global_index
+    dict, or {} if the file is absent/unreadable."""
+    if path is None:
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                            "res", "fontpack", "fontpack_render_settings.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f).get("by_global_index", {})
+    except Exception:                       # noqa: BLE001
+        return {}
+
+
+def render_options_from_manifest(opts: dict):
+    """Build a fontgen.RenderOptions from a fontpack_render_settings.json record
+    (the inverse of what generate_fonts.py emitted)."""
+    from polyhost.services.fontgen import RenderOptions
+    from polyhost.services import fontgen_dither as fd
+    return RenderOptions(
+        size=int(opts.get("size", 20)),
+        render_mode=1 if opts.get("grayscale") else 0,
+        dither_mode=fd.dither_mode_from_name(opts.get("dither", "fs")),
+        normalize=bool(opts.get("normalize")),
+        invert=bool(opts.get("invert")),
+        edge_preserve=bool(opts.get("edge")),
+        outline=int(opts.get("outline") or 0),
+        height=int(opts.get("render_height") or 0),
+        yadvance=int(opts.get("yadvance") or 0),
+        max_width=int(opts.get("max_width") or 0),
+        weight=int(opts["weight"]) if opts.get("weight") else -1,
+        xshift=int(opts.get("xshift") or 0),
+        bits=int(opts.get("bits") or 1))
+
+
+def peek_source_glyph(source_path: str, cp: int, opts: dict, global_index: int = 0):
+    """Render a single codepoint from `source_path` using the manifest render
+    options `opts` — a *candidate* for an empty pack slot.  Returns a one-glyph
+    PackFont, or None when the source has no glyph there (zero-area)."""
+    pf = render_packfont(source_path, codepoint_range=(cp, cp),
+                         opts=render_options_from_manifest(opts), global_index=global_index)
+    g = pf.glyphs[0] if pf.glyphs else None
+    if not g or g["width"] == 0 or g["height"] == 0:
+        return None
+    return pf
 
 
 def render_packfont(source_path: str, *, codepoint_range=None, sequence: str = None,

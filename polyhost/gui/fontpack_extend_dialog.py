@@ -12,7 +12,6 @@ Reached from the inspector's "Extend…" button; standalone:
 """
 from __future__ import annotations
 
-import json
 import os
 import sys
 
@@ -53,13 +52,8 @@ def _render_settings() -> dict:
     degrades to {} so editing still works (just without prefilled options)."""
     global _RENDER_SETTINGS_CACHE
     if _RENDER_SETTINGS_CACHE is None:
-        path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                            "res", "fontpack", "fontpack_render_settings.json")
-        try:
-            with open(path, encoding="utf-8") as f:
-                _RENDER_SETTINGS_CACHE = json.load(f).get("by_global_index", {})
-        except Exception:                       # noqa: BLE001
-            _RENDER_SETTINGS_CACHE = {}
+        from polyhost.services import fontpack_extend as ext
+        _RENDER_SETTINGS_CACHE = ext.load_render_settings()
     return _RENDER_SETTINGS_CACHE
 
 

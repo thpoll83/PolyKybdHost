@@ -72,6 +72,29 @@ class ExtendRoundTripTest(unittest.TestCase):
             f1 = next(x for x in after.fonts if x.global_index == f0.global_index)
             self.assertEqual((f1.first, f1.last, f1.glyphs), (f0.first, f0.last, f0.glyphs))
 
+    def test_render_options_from_manifest(self):
+        ro = ext.render_options_from_manifest(
+            {"size": 18, "grayscale": True, "dither": "fs", "normalize": True,
+             "invert": True, "edge": True, "outline": 1, "render_height": 40,
+             "yadvance": 48, "max_width": 60, "weight": 500, "xshift": -12, "bits": 32})
+        self.assertEqual((ro.size, ro.render_mode, ro.outline, ro.height, ro.yadvance,
+                          ro.max_width, ro.weight, ro.xshift, ro.bits),
+                         (18, 1, 1, 40, 48, 60, 500, -12, 32))
+        self.assertTrue(ro.normalize and ro.invert and ro.edge_preserve)
+
+    def test_render_options_weight_and_bits_defaults(self):
+        ro = ext.render_options_from_manifest({"size": 14})
+        self.assertEqual(ro.weight, -1)          # absent weight -> unset
+        self.assertEqual(ro.bits, 1)             # absent bits -> 1-bit
+
+    def test_peek_source_glyph_present_vs_absent(self):
+        pf = ext.peek_source_glyph(_FONT, 0x41, {"size": 24})   # 'A' exists
+        self.assertIsNotNone(pf)
+        self.assertEqual(pf.first, 0x41)
+        self.assertGreater(pf.glyphs[0]["width"], 0)
+        # U+FDD0 is a permanent noncharacter — no font has a glyph for it
+        self.assertIsNone(ext.peek_source_glyph(_FONT, 0xFDD0, {"size": 24}))
+
     def test_splice_replace_keeps_count(self):
         before = fpr.decode_pack_file(_SYMBOL, "symbol")
         victim = before.fonts[0]
@@ -83,6 +106,21 @@ class ExtendRoundTripTest(unittest.TestCase):
         self.assertEqual(after.font_count, before.font_count)   # replaced, not added
         self.assertEqual(after.content_version, 42)
         self.assertTrue(after.crc_ok)
+
+
+class LoadRenderSettingsTest(unittest.TestCase):
+    """load_render_settings is pure-stdlib — runs even without the fontgen deps."""
+
+    def test_missing_path_returns_empty(self):
+        from polyhost.services import fontpack_extend as e
+        self.assertEqual(e.load_render_settings("/no/such/file.json"), {})
+
+    def test_shipped_loads(self):
+        from polyhost.services import fontpack_extend as e
+        m = e.load_render_settings()
+        if not m:
+            self.skipTest("no shipped render settings")
+        self.assertIn("source_file", next(iter(m.values())))
 
 
 if __name__ == "__main__":

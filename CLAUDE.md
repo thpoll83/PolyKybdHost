@@ -120,7 +120,11 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
   `fontgen*`): a tray-launchable / standalone window to view every bundle glyph as
   the keycap draws it and to build/splice new glyphs from a TTF/OTF (pure-Python
-  `fontconvert` parity). The extend dialog's **"Download Noto…"** button fetches the
+  `fontconvert` parity). The inspector's **"Peek empty (from source)"** toggle
+  renders the *empty* slots from their source font (via `fontpack_extend.peek_source_glyph`
+  + the shipped render settings, needs the source font downloaded) as **amber
+  previews** — candidates you can then double-click to edit/take; they are not in
+  the pack. The extend dialog's **"Download Noto…"** button fetches the
   Noto source fonts via `polyhost/services/font_downloader.py`, which reads the
   catalog from **`polyhost/res/fonts/noto-fonts.yaml`**. ⚠️ That YAML is the **single
   source of truth shared byte-identically** with the firmware's
