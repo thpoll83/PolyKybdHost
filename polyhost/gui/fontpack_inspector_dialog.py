@@ -23,12 +23,11 @@ from __future__ import annotations
 import os
 import sys
 
-from PyQt5.QtCore import Qt, QSize, pyqtSignal
+from PyQt5.QtCore import Qt, QSize, QTimer, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QListView,
     QTabWidget, QDoubleSpinBox, QComboBox, QCheckBox, QPushButton, QApplication,
-    QProgressDialog,
 )
 
 from polyhost.services import fontpack_reader as fpr
@@ -118,7 +117,10 @@ class _BundleTab(QWidget):
         self._mode = "glyph"
         self._built_key = None         # (mode, scale, hide_empty, peek) last built
         self._settings_map = None      # lazy: global index -> render settings
-        self._last_peek_count = 0      # previews rendered in the last peek rebuild
+        self._last_peek_count = 0      # previews rendered so far in the peek pass
+        self._peek_queue = []          # (item, font, cp) empties awaiting a preview
+        self._peek_gen = 0             # bumped on rebuild to cancel an in-flight pass
+        self._dims = (8, 8, 1)         # (cell_w, cell_h, scale) of the current build
         v = QVBoxLayout(self)
 
         if not isinstance(pack, fpr.Pack):
@@ -169,6 +171,10 @@ class _BundleTab(QWidget):
         self._view.setStyleSheet(_VIEW_QSS)
         self._view.doubleClicked.connect(self._on_double)
         v.addWidget(self._view, 1)
+
+        self._peek_timer = QTimer(self)
+        self._peek_timer.setSingleShot(True)
+        self._peek_timer.timeout.connect(self._peek_step)
 
     # ---- public API used by the dialog ----
     def set_mode(self, mode: str):
@@ -234,52 +240,63 @@ class _BundleTab(QWidget):
         if key == self._built_key:
             return
         self._built_key = key
+        # Cancel any in-flight peek pass (a new generation invalidates the old timer).
+        self._peek_gen += 1
+        self._peek_timer.stop()
+        self._peek_queue = []
+        self._last_peek_count = 0
         self._model.clear()
         cw, ch = self._cell_dims(scale)
+        self._dims = (cw, ch, scale)
         self._view.setIconSize(QSize(cw, ch + 11))
 
-        # Peeking renders empties through FreeType — bound the cost / keep the UI
-        # responsive with a cancellable progress dialog.
-        prog = None
-        if peek:
-            n_empty = sum(1 for f in self._pack.fonts for g in f.glyphs
-                          if g["width"] == 0 or g["height"] == 0)
-            if n_empty:
-                prog = QProgressDialog("Rendering previews…", "Cancel", 0, n_empty, self)
-                prog.setWindowModality(Qt.WindowModal)
-                prog.setMinimumDuration(0)
-        peeked = done = 0
+        # Build all cells up front (empties as placeholders — instant even for the
+        # ~1200-glyph emoji bundle), then fill peek previews incrementally so color
+        # rendering never blocks the UI.  See _peek_step.
         for font in sorted(self._pack.fonts, key=lambda f: f.global_index):
             for cp in range(font.first, font.last + 1):
                 g = font.glyphs[cp - font.first]
                 empty = g["width"] == 0 or g["height"] == 0
                 if empty and hide_empty:
                     continue
-                pm, is_preview = None, False
-                if empty and peek and (prog is None or not prog.wasCanceled()):
-                    pm = self._peek_pixmap(font, cp, cw, ch, scale)
-                    is_preview = pm is not None
-                    if pm is not None:
-                        peeked += 1
-                    done += 1
-                    if prog is not None:
-                        prog.setValue(done)
-                        QApplication.processEvents()
-                if pm is None:
-                    img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
-                    pm = _pil_l_to_pixmap(img)
+                img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
                 it = QStandardItem()
-                it.setIcon(QIcon(pm))
+                it.setIcon(QIcon(_pil_l_to_pixmap(img)))
                 it.setEditable(False)
                 it.setData(font, _FONT_ROLE)
                 it.setData(cp, _CP_ROLE)
-                it.setToolTip(f"U+{cp:04X}" + ("  (preview from source — not in pack)"
-                                               if is_preview else
-                                               "  (empty — no glyph)" if empty else ""))
+                it.setToolTip(f"U+{cp:04X}" + ("  (empty — no glyph)" if empty else ""))
                 self._model.appendRow(it)
-        if prog is not None:
-            prog.close()
-        self._last_peek_count = peeked
+                if empty and peek:
+                    self._peek_queue.append((it, font, cp))
+        if self._peek_queue:
+            self._peek_timer.start(0)
+
+    # Peek previews render a couple per event-loop tick so the (heavy, color) emoji
+    # rendering stays responsive and any rebuild cancels the rest via _peek_gen.
+    _PEEK_CHUNK = 2
+
+    def _peek_step(self):
+        gen = self._peek_gen
+        cw, ch, scale = self._dims
+        for _ in range(self._PEEK_CHUNK):
+            if not self._peek_queue:
+                return
+            it, font, cp = self._peek_queue.pop(0)
+            pm = self._peek_pixmap(font, cp, cw, ch, scale)
+            if gen != self._peek_gen:                 # a rebuild superseded us
+                return
+            if pm is not None:
+                it.setIcon(QIcon(pm))
+                it.setToolTip(f"U+{cp:04X}  (preview from source — not in pack)")
+                self._last_peek_count += 1
+        if self._peek_queue:
+            self._peek_timer.start(0)
+
+    def _drain_peek(self):
+        """Render all queued peek previews synchronously (for tests)."""
+        while self._peek_queue:
+            self._peek_step()
 
     def cell_count(self) -> int:
         return self._model.rowCount() if self._view else 0

@@ -2,12 +2,22 @@
 source.  Needs only PyQt5 (the dialog doesn't import host.py / pynput), so it runs
 under the offscreen Qt platform with no X server.
 """
+import glob
 import os
 import struct
 import binascii
 import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+try:
+    import numpy  # noqa: F401
+    import freetype  # noqa: F401
+    _FONTGEN = True
+except Exception:
+    _FONTGEN = False
+_FONT = next(iter(glob.glob("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+                  + glob.glob("/usr/share/fonts/**/*.ttf", recursive=True)), None)
 
 try:
     from PyQt5.QtWidgets import QApplication
@@ -103,6 +113,7 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         tab.set_mode("glyph")
         full = tab.cell_count()
         tab._peek.setChecked(True)
+        tab._drain_peek()                               # run the lazy pass synchronously
         self.assertEqual(tab.cell_count(), full)        # same cells, no crash
         self.assertEqual(tab._last_peek_count, 0)       # nothing rendered from source
 
@@ -111,6 +122,24 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.addCleanup(tab.deleteLater)
         font = tab._pack.fonts[0]
         self.assertIsNone(tab._peek_pixmap(font, 0x42, 20, 20, 2))   # no settings entry
+
+    @unittest.skipUnless(_FONTGEN and _FONT, "needs fontgen deps + a system TTF")
+    def test_peek_renders_preview_with_source(self):
+        from unittest.mock import patch
+        from polyhost.services import fontpack_extend as ext
+        from polyhost.services import font_downloader as fdl
+        tab = fid._BundleTab("emptytest", _pack_with_empty())
+        self.addCleanup(tab.deleteLater)
+        tab.set_mode("glyph")
+        gi = str(tab._pack.fonts[0].global_index)
+        # point the empty font's settings at the system font (cp 0x42 'B' exists there)
+        with patch.object(ext, "load_render_settings",
+                          return_value={gi: {"size": 24, "source_file": os.path.basename(_FONT)}}), \
+             patch.object(fdl, "default_cache_dir", return_value=os.path.dirname(_FONT)):
+            tab._settings_map = None                 # force reload via patched loader
+            tab._peek.setChecked(True)
+            tab._drain_peek()
+        self.assertGreaterEqual(tab._last_peek_count, 1)
 
     def test_error_source_does_not_crash(self):
         # a decode failure becomes a labelled tab, never a dead window
