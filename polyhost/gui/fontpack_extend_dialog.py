@@ -12,6 +12,7 @@ Reached from the inspector's "Extend…" button; standalone:
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
 
@@ -28,6 +29,24 @@ from polyhost.services import fontpack_reader as fpr
 from polyhost.gui.fontpack_inspector_dialog import _pil_l_to_pixmap, load_shipped_packs
 
 _DITHER = ["fs", "stucki", "bayer", "threshold", "random"]
+
+_RENDER_SETTINGS_CACHE = None
+
+
+def _render_settings() -> dict:
+    """Load the shipped global-index -> render-options map (built from the
+    firmware's fonts.yaml by generate_fonts.py).  Cached; missing/broken file
+    degrades to {} so editing still works (just without prefilled options)."""
+    global _RENDER_SETTINGS_CACHE
+    if _RENDER_SETTINGS_CACHE is None:
+        path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                            "res", "fontpack", "fontpack_render_settings.json")
+        try:
+            with open(path, encoding="utf-8") as f:
+                _RENDER_SETTINGS_CACHE = json.load(f).get("by_global_index", {})
+        except Exception:                       # noqa: BLE001
+            _RENDER_SETTINGS_CACHE = {}
+    return _RENDER_SETTINGS_CACHE
 
 
 class FontPackExtendDialog(QDialog):
@@ -143,12 +162,40 @@ class FontPackExtendDialog(QDialog):
         cp = p.get("first", 0)
         self._first.setText(f"0x{cp:04X}")
         self._last.setText(f"0x{p.get('last', cp):04X}")
+        applied = False
         if "global_index" in p:
-            self._gidx.setValue(p["global_index"])
-            self._edit_target = {"bundle_index": bi, "global_index": p["global_index"],
-                                 "cp": cp}
+            gi = p["global_index"]
+            self._gidx.setValue(gi)
+            self._edit_target = {"bundle_index": bi, "global_index": gi, "cp": cp}
+            applied = self._apply_saved_settings(gi)
+        hint = (" Original generation settings pre-filled." if applied else
+                " (no saved settings for this font — set options manually.)")
         self._status.setText(f"Editing U+{cp:04X} in '{p.get('bundle')}' — pick a source "
-                             "font + options, Build to peek, then Save/Flash to take it.")
+                             f"font, Build to peek, then Save/Flash to take it.{hint}")
+
+    def _apply_saved_settings(self, global_index: int) -> bool:
+        """Prefill the render controls from the settings the font was generated
+        with (shipped fontpack_render_settings.json, keyed by global index).  The
+        glyph's *source font* isn't bundled, so the user still picks the .ttf;
+        everything else (size, dither, flags, render size, yAdvance, …) is restored.
+        Returns True if a settings record was found."""
+        opts = _render_settings().get(str(global_index))
+        if not opts:
+            return False
+        if "size" in opts:
+            self._size.setValue(int(opts["size"]))
+        self._gray.setChecked(bool(opts.get("grayscale")))
+        if opts.get("dither") in _DITHER:
+            self._dither.setCurrentIndex(_DITHER.index(opts["dither"]))
+        self._norm.setChecked(bool(opts.get("normalize")))
+        self._inv.setChecked(bool(opts.get("invert")))
+        self._edge.setChecked(bool(opts.get("edge")))
+        self._outline.setValue(int(opts.get("outline") or 0))
+        self._rsize.setValue(int(opts.get("render_height") or 0))
+        self._yadv.setValue(int(opts.get("yadvance") or 0))
+        self._maxw.setValue(int(opts.get("max_width") or 0))
+        self._sync_mode()          # reflect the grayscale toggle (enables dither)
+        return True
 
     # ---- helpers ----
     @staticmethod

@@ -57,6 +57,29 @@ class ExtendDialogTest(unittest.TestCase):
         self.assertEqual(int(dlg._last.text(), 16), 0x2600)
         self.assertEqual(dlg._gidx.value(), 19)
 
+    def test_edit_prefills_saved_settings(self):
+        settings = fed._render_settings()
+        # an emoji-style record exercises every control (grayscale + invert + outline)
+        gi = next((k for k, v in settings.items()
+                   if v.get("grayscale") and v.get("invert") and v.get("outline")), None)
+        if gi is None:
+            self.skipTest("no shipped render settings")
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        self.assertTrue(dlg._apply_saved_settings(int(gi)))
+        v = settings[gi]
+        self.assertEqual(dlg._size.value(), int(v["size"]))
+        self.assertTrue(dlg._gray.isChecked())
+        self.assertTrue(dlg._inv.isChecked())
+        self.assertEqual(dlg._outline.value(), int(v["outline"]))
+        if "render_height" in v:
+            self.assertEqual(dlg._rsize.value(), int(v["render_height"]))
+
+    def test_apply_saved_settings_missing_index(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        self.assertFalse(dlg._apply_saved_settings(999999))   # unknown -> no prefill
+
     @unittest.skipUnless(os.path.exists(os.path.join(RES, "bundles.json")),
                          "shipped bundles required")
     def test_unknown_prefill_bundle_rejected(self):
