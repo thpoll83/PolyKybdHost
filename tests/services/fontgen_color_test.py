@@ -11,14 +11,20 @@ try:
     import numpy  # noqa: F401
     from PIL import Image  # noqa: F401
     import fontTools  # noqa: F401
-    from polyhost.services import fontgen_color as fc
+    import freetype  # noqa: F401  (tests resolve gids via freetype)
     _ERR = None
-except Exception as e:  # pragma: no cover
+except ImportError as e:  # pragma: no cover
     _ERR = e
+else:
+    from polyhost.services import fontgen_color as fc
 
 
 def _find_cemoji():
-    for c in (os.environ.get("NOTO_CEMOJI"), "/tmp/NotoColorEmoji.ttf"):
+    # Explicit opt-in only (no implicit /tmp probe; Bandit S108).
+    for c in (os.environ.get("NOTO_CEMOJI"),
+              os.path.join(os.path.dirname(__file__), "..", "..", "..", "qmk_firmware",
+                           "keyboards", "polykybd", "fonts", "Noto_CEmoji",
+                           "NotoColorEmoji-Regular.ttf")):
         if c and os.path.exists(c):
             return c
     return None

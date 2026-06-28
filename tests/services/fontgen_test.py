@@ -41,7 +41,9 @@ _FONTCONVERT = os.environ.get("FONTCONVERT_BIN") or shutil.which("fontconvert")
 
 
 def _find_cemoji():
-    cands = [os.environ.get("NOTO_CEMOJI"), "/tmp/NotoColorEmoji.ttf",
+    # Explicit opt-in (NOTO_CEMOJI) or the checked-in fixture path — no implicit
+    # /tmp probing (env-controlled file, trips Bandit S108).
+    cands = [os.environ.get("NOTO_CEMOJI"),
              os.path.join(os.path.dirname(__file__), "..", "..", "..", "qmk_firmware",
                           "keyboards", "polykybd", "fonts", "Noto_CEmoji",
                           "NotoColorEmoji-Regular.ttf")]
@@ -55,15 +57,15 @@ _CEMOJI = _find_cemoji()
 
 
 def _cemoji_renderable():
-    """NotoColorEmoji's CBDT glyphs are PNG-compressed; freetype-py's *bundled*
-    libfreetype is built without PNG and raises 'unimplemented feature'.  Detect
-    whether the active FreeType can decode a colour glyph so the test skips
-    (rather than errors) on a PNG-less build."""
-    if _ERR is not None or _CEMOJI is None:
+    """The colour parity tests compare against the C `fontconvert`; probe *that*
+    binary (not the Python renderer, which now decodes colour without a PNG-enabled
+    FreeType) so the parity class skips rather than fails when the C tool's FreeType
+    lacks PNG."""
+    if _ERR is not None or _CEMOJI is None or _FONTCONVERT is None:
         return False
     try:
-        fontgen.render_range(_CEMOJI, 0x1F600, 0x1F600,
-                             RenderOptions(size=20, render_mode=1, height=40, bits=32))
+        subprocess.run([_FONTCONVERT, "-f", _CEMOJI, "-s20", "-g", "-r40", "-b32",
+                        "0x1F600", "0x1F600"], capture_output=True, text=True, check=True)
         return True
     except Exception:
         return False

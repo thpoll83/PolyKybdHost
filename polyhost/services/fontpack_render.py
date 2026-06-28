@@ -15,6 +15,8 @@ disk.
 """
 from __future__ import annotations
 
+from itertools import islice
+
 from PIL import Image, ImageDraw, ImageFont
 
 # Visible OLED window + the firmware's keycap text origin (base/disp_array.{h,c},
@@ -27,13 +29,22 @@ BASELINE = 23
 BASE_YADV = 40
 
 
+def _glyph_for(font, cp: int):
+    """Bounds-checked glyph lookup — a cp below font.first would otherwise index
+    negatively and silently render the wrong glyph."""
+    if cp < font.first or cp > font.last:
+        raise ValueError(f"codepoint U+{cp:04X} outside font range "
+                         f"U+{font.first:04X}..U+{font.last:04X}")
+    return font.glyphs[cp - font.first]
+
+
 def glyph_to_image(font, cp: int, scale: int = 1, fg: int = 255, bg: int = 0):
     """Rasterise one glyph at native size (optionally nearest-scaled).
 
     Returns an ('L', (w*scale, h*scale)) image, or a 1×1 `bg` image for a
     zero-area glyph (e.g. space).  `font` is any object with .first/.glyphs/.bitmap.
     """
-    g = font.glyphs[cp - font.first]
+    g = _glyph_for(font, cp)
     w, h = g["width"], g["height"]
     if w <= 0 or h <= 0:
         return Image.new("L", (1, 1), bg)
@@ -68,7 +79,7 @@ def keycap_image(font, cp: int, base_yadv: int = BASE_YADV, scale: int = 1,
     exactly like on hardware, and anything past the 72×40 edge is clipped (the
     firmware's SET_PIXEL_CLIPPED backstop), not wrapped.
     """
-    g = font.glyphs[cp - font.first]
+    g = _glyph_for(font, cp)
     w, h = g["width"], g["height"]
     img = Image.new("L", (OLED_W, OLED_H), bg)
     px = img.load()
@@ -117,10 +128,15 @@ def contact_sheet(pack, cols: int = 16, scale: int = 2, pad: int = 6,
     the key.  `max_glyphs` (>0) caps the count (with a footer note) for huge bundles.
     """
     keycap = mode == "keycap"
-    glyphs = list(_iter_glyphs(pack))
-    capped = max_glyphs and len(glyphs) > max_glyphs
-    if capped:
+    # Apply the cap *during* iteration so a huge/corrupt range isn't fully
+    # materialised before truncation (+1 to detect that more existed).
+    if max_glyphs:
+        glyphs = list(islice(_iter_glyphs(pack), max_glyphs + 1))
+        capped = len(glyphs) > max_glyphs
         glyphs = glyphs[:max_glyphs]
+    else:
+        glyphs = list(_iter_glyphs(pack))
+        capped = False
     if not glyphs:
         return Image.new("L", (200, 40), 0)
 

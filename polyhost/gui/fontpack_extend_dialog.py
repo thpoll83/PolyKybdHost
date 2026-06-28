@@ -35,7 +35,10 @@ class FontPackExtendDialog(QDialog):
         self.resize(900, 640)
         self._flash_cb = flash_cb
         self._built = None          # (bundle_index, new PackFont)
-        self._packs = load_shipped_packs(res_dir)
+        # Only valid bundles are splice targets — load_shipped_packs may yield
+        # (label, Exception) placeholders for ones that failed to decode.
+        self._packs = [(label, p) for label, p in load_shipped_packs(res_dir)
+                       if isinstance(p, fpr.Pack)]
 
         root = QHBoxLayout(self)
         form = QFormLayout()
@@ -105,6 +108,9 @@ class FontPackExtendDialog(QDialog):
         root.addLayout(right, 1)
 
         self._default_index()
+        if not self._packs:
+            self._build_btn.setEnabled(False)
+            self._status.setText("No valid shipped bundles available to extend.")
 
     # ---- helpers ----
     @staticmethod
@@ -124,6 +130,12 @@ class FontPackExtendDialog(QDialog):
         pack = self._bundle.currentData()
         if isinstance(pack, fpr.Pack) and pack.fonts:
             self._gidx.setValue(max(f.global_index for f in pack.fonts) + 1)
+        # A previous build targeted the old bundle — invalidate it so Save/Flash
+        # can't splice the built font into a bundle the user has since switched to.
+        self._built = None
+        self._save_btn.setEnabled(False)
+        if self._flash_cb is not None:
+            self._flash_btn.setEnabled(False)
 
     def _browse(self):
         path, _ = QFileDialog.getOpenFileName(self, "Select font", "",
@@ -183,8 +195,8 @@ class FontPackExtendDialog(QDialog):
             self._flash_btn.setEnabled(True)
 
     def _spliced_bytes(self) -> bytes:
-        _, new = self._built
-        pack = self._packs[self._bundle.currentIndex()][1]
+        bundle_index, new = self._built     # the bundle chosen at Build time
+        pack = self._packs[bundle_index][1]
         fonts = fpr.splice_font(pack, new)
         return fpr.encode_pack(fonts, pack.content_version + 1)
 
@@ -206,9 +218,10 @@ class FontPackExtendDialog(QDialog):
     def _flash(self):
         if not self._built or self._flash_cb is None:
             return
-        bundle_index = self._bundle.currentIndex()
-        if QMessageBox.question(self, "Flash", f"Flash the modified "
-                                f"'{self._bundle.currentText()}' bundle to the keyboard?") \
+        bundle_index, _ = self._built          # the bundle chosen at Build time
+        label = self._packs[bundle_index][0]
+        if QMessageBox.question(self, "Flash",
+                                f"Flash the modified '{label}' bundle to the keyboard?") \
                 != QMessageBox.Yes:
             return
         try:

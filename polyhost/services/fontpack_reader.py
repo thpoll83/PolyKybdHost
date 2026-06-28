@@ -102,8 +102,15 @@ def decode_pack(data, name_hint: str = "") -> Pack:
      table_off, total, crc, _res) = struct.unpack_from(_HEADER_FMT, data, 0)
     if magic != MAGIC:
         raise PackDecodeError(f"bad magic {magic!r} (expected {MAGIC!r})")
+    if abi != ABI_VERSION:
+        raise PackDecodeError(f"unsupported ABI v{abi} (expected v{ABI_VERSION}); "
+                              "rebuild/reship the pack")
     if total != len(data):
         raise PackDecodeError(f"total_size {total} != file size {len(data)}")
+    table_end = table_off + count * FONT_REC_SIZE
+    if table_off < HEADER_SIZE or table_off % 4 or table_end > len(data):
+        raise PackDecodeError(f"font table [{table_off}:{table_end}] out of bounds "
+                              "or misaligned")
     crc_ok = (binascii.crc32(data[HEADER_SIZE:]) & 0xFFFFFFFF) == crc
 
     # Pass 1: read the font table (the bitmap_off values double as block boundaries).
@@ -167,6 +174,13 @@ def encode_pack(fonts, content_version: int = 0, abi_version: int = ABI_VERSION)
     decode_pack(encode_pack(p.fonts, p.content_version)) reproduces p, and for a
     pack decoded from disk, encode reproduces the original bytes exactly."""
     fonts = list(fonts)
+    for i, f in enumerate(fonts):
+        expected = f.last - f.first + 1
+        if expected <= 0 or len(f.glyphs) != expected:
+            raise ValueError(f"font {i}: glyph count {len(f.glyphs)} != range "
+                             f"0x{f.first:X}..0x{f.last:X} ({expected})")
+        if f.bitmap_content_len() > len(f.bitmap):
+            raise ValueError(f"font {i}: bitmap shorter than its glyph offsets require")
     n = len(fonts)
     table_off = HEADER_SIZE
     glyph_blocks, bitmap_blocks = [], []

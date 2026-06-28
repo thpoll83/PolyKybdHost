@@ -217,6 +217,12 @@ def render_range(font_path: str, first: int, last: int, opts: RenderOptions | No
     """
     import freetype
     opts = opts or RenderOptions()
+    if first > last:
+        raise ValueError(f"invalid range 0x{first:X}..0x{last:X} (first > last)")
+    emit_first, emit_last = first + opts.offset, last + opts.offset
+    if opts.bits != 32 and not (0 <= emit_first <= emit_last <= 0xFFFF):
+        raise ValueError(f"emitted codepoint 0x{emit_last:X} exceeds 0xFFFF in "
+                         "16-bit mode — pass bits=32 (mirrors the C tool's guard)")
     _set_tt_interpreter(_TT_V40 if opts.render_mode == 1 else _TT_V35)
     face = freetype.Face(font_path)
     _apply_weight(face, opts.weight)
@@ -246,8 +252,7 @@ def render_range(font_path: str, first: int, last: int, opts: RenderOptions | No
 
     yadv = _emit_yadvance(face, opts, glyphs)
     return fpr.PackFont(name=name or _font_stem(font_path), bitmap=bytes(bitmap),
-                        glyphs=glyphs, first=first + opts.offset,
-                        last=last + opts.offset, yAdvance=yadv)
+                        glyphs=glyphs, first=emit_first, last=emit_last, yAdvance=yadv)
 
 
 def _parse_groups(seq_str: str):
@@ -259,8 +264,11 @@ def _parse_groups(seq_str: str):
         for tok in part.replace("\t", " ").split():
             try:
                 cps.append(int(tok, 16))
-            except ValueError:
-                pass
+            except ValueError as exc:
+                # Fail fast on a typo rather than silently dropping a codepoint
+                # and flashing a partial font (the C tool drops it; we'd rather
+                # surface it to the dialog/CLI).
+                raise ValueError(f"invalid hex codepoint {tok!r} in sequence") from exc
         if cps:
             groups.append(cps)
     return groups

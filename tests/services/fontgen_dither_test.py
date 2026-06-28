@@ -8,10 +8,11 @@ import unittest
 
 try:
     import numpy as np
-    from polyhost.services import fontgen_dither as fd
     _ERR = None
-except Exception as e:  # pragma: no cover
+except ImportError as e:  # pragma: no cover
     _ERR = e
+else:
+    from polyhost.services import fontgen_dither as fd
 
 
 @unittest.skipIf(_ERR is not None, f"numpy unavailable: {_ERR}")

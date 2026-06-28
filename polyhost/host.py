@@ -656,6 +656,7 @@ class PolyHost(QApplication):
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
         self.log_dialog.setEnabled(True)
+        self.fontpack_inspector_action.setEnabled(True)   # inspects shipped bundles offline
         self.update_action.setEnabled(True)
         self.status.setEnabled(True)
         self.support.setEnabled(True)
