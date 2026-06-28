@@ -118,7 +118,7 @@ class _BundleTab(QWidget):
         self._zoom = QDoubleSpinBox()
         self._zoom.setRange(1.0, 8.0)
         self._zoom.setSingleStep(1.0)
-        self._zoom.setValue(3.0)
+        self._zoom.setValue(2.0)
         self._zoom.valueChanged.connect(self._rebuild)
         ctl.addWidget(self._zoom)
         self._hide_empty = QCheckBox("Hide empty")

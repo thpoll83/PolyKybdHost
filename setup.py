@@ -39,8 +39,9 @@ setup(name='PolyHost',
       author='thpoll',
       packages=find_packages(exclude=['tests', 'tests.*']),
       install_requires=requirements(),
-      # Optional: the font-pack *extend* path (build trial glyphs from TTF/OTF in
-      # pure Python, fontconvert-parity). Lazily imported — the read-only inspector
-      # and the rest of the host work without these.  pip install -e .[fontgen]
-      extras_require={"fontgen": ["freetype-py", "uharfbuzz", "fonttools"]},
+      # The font-pack *extend* path (build glyphs from TTF/OTF, fontconvert-parity)
+      # needs freetype-py/uharfbuzz/fonttools — now core deps (requirements.txt) so
+      # Build works out of the box.  The [fontgen] extra is kept as a no-op alias
+      # for back-compat with `pip install .[fontgen]`.
+      extras_require={"fontgen": []},
       entry_points={"console_scripts": ["polyctl = polyhost.cli.polyctl:main"]})

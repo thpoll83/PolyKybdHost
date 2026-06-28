@@ -2,10 +2,10 @@
 preview them as keycaps, and splice them into a bundle to save or flash.
 
 Ties fontgen (render) + fontpack_extend (splice/encode) to a form.  fontgen and
-its deps are imported lazily on Build, so the dialog opens without the optional
-[fontgen] extra (it just tells you to install it).  Flashing is an injected
-callback ``flash_cb(bundle_index:int, plyf_bytes:bytes)`` — None hides the Flash
-button, so the dialog is fully usable (and testable) with no device.
+its deps (freetype-py/uharfbuzz/fonttools — core deps, but imported lazily on
+Build so the dialog still opens and reports clearly if an env is missing them).
+Flashing is an injected callback ``flash_cb(bundle_index:int, plyf_bytes:bytes)``
+— None hides the Flash button, so the dialog is usable (and testable) with no device.
 
 Reached from the inspector's "Extend…" button; standalone:
 ``python -m polyhost.gui.fontpack_extend_dialog``.
@@ -29,6 +29,20 @@ from polyhost.services import fontpack_reader as fpr
 from polyhost.gui.fontpack_inspector_dialog import _pil_l_to_pixmap, load_shipped_packs
 
 _DITHER = ["fs", "stucki", "bayer", "threshold", "random"]
+
+def _missing_fontgen_deps() -> list:
+    """The font-generation modules not importable here (pip names), so Build can
+    show an actionable hint instead of a raw 'No module named freetype' if an env
+    somehow lacks them (they're core deps, normally always present)."""
+    missing = []
+    for mod, pip in (("freetype", "freetype-py"), ("uharfbuzz", "uharfbuzz"),
+                     ("fontTools", "fonttools"), ("numpy", "numpy"), ("PIL", "pillow")):
+        try:
+            __import__(mod)
+        except Exception:                       # noqa: BLE001
+            missing.append(pip)
+    return missing
+
 
 _RENDER_SETTINGS_CACHE = None
 
@@ -269,12 +283,21 @@ class FontPackExtendDialog(QDialog):
         if not src or not os.path.exists(src):
             QMessageBox.warning(self, "Build", "Pick an existing font file first.")
             return
+        missing = _missing_fontgen_deps()
+        if missing:
+            QMessageBox.warning(self, "Build",
+                                "Building glyphs needs these font-generation "
+                                "dependencies, which aren't installed in this "
+                                "environment:\n\n    pip install " + " ".join(missing) +
+                                "\n\n(They're normally pulled in by installing "
+                                "PolyKybdHost: pip install -e .)")
+            return
         try:
             from polyhost.services import fontpack_extend as ext
             from polyhost.services import fontpack_render as rd
         except Exception as e:  # noqa: BLE001
-            QMessageBox.warning(self, "Build", f"Font building needs the optional deps:\n"
-                                "  pip install -e .[fontgen]\n\n" f"({e})")
+            QMessageBox.warning(self, "Build", "Font building dependencies are missing "
+                                "or broken:\n  pip install -e .\n\n" f"({e})")
             return
         gidx = self._gidx.value()
         try:
@@ -384,16 +407,26 @@ class NotoDownloadDialog(QDialog):
         v.addWidget(self._list, 1)
 
         btns = QHBoxLayout()
+        self._all_btn = QPushButton("Download all")
+        self._all_btn.setToolTip("Fetch every Noto font in the list into the cache")
+        self._all_btn.clicked.connect(self._download_all)
+        self._all_btn.setEnabled(bool(self._fonts))
         self._dl_btn = QPushButton("Download / Use selected")
         self._dl_btn.clicked.connect(self._download)
         self._dl_btn.setEnabled(bool(self._fonts))
-        cancel = QPushButton("Cancel"); cancel.clicked.connect(self.reject)
-        btns.addStretch(1); btns.addWidget(cancel); btns.addWidget(self._dl_btn)
+        cancel = QPushButton("Close"); cancel.clicked.connect(self.reject)
+        btns.addWidget(self._all_btn); btns.addStretch(1)
+        btns.addWidget(cancel); btns.addWidget(self._dl_btn)
         v.addLayout(btns)
 
     def _label(self, font) -> str:
         mark = "  ✓ cached" if self._fdl.is_downloaded(font) else ""
         return f"{font.name}  ({font.filename}){mark}"
+
+    def _refresh_marks(self):
+        for i in range(self._list.count()):
+            it = self._list.item(i)
+            it.setText(self._label(it.data(Qt.UserRole)))
 
     def _download(self):
         item = self._list.currentItem()
@@ -405,11 +438,32 @@ class NotoDownloadDialog(QDialog):
             self.result_path = self._fdl.local_path(font)
             self.accept()
             return
+        paths, err = self._run_downloads([font])
+        if err:
+            QMessageBox.critical(self, "Download failed",
+                                 f"Could not download {font.name}:\n{err}")
+            return
+        if font.filename in paths:                # not cancelled
+            self.result_path = paths[font.filename]
+            self.accept()
 
-        # Run the transfer off the GUI thread so the dialog stays responsive and
-        # Cancel can actually abort it (the worker polls the cancel event).
+    def _download_all(self):
+        todo = [f for f in self._fonts if not self._fdl.is_downloaded(f)]
+        if not todo:
+            QMessageBox.information(self, "Download all", "All fonts are already cached.")
+            return
+        _, err = self._run_downloads(todo)
+        if err:
+            QMessageBox.critical(self, "Download all", f"Stopped on an error:\n{err}")
+            return
+        # stays open so the user can then pick one to use (marks now show ✓ cached)
+
+    def _run_downloads(self, fonts):
+        """Download `fonts` off the GUI thread behind a cancellable progress dialog.
+        Returns (paths_by_filename, error_or_None).  A cancel yields whatever
+        completed before it (and no error)."""
         cancel = threading.Event()
-        prog = QProgressDialog(f"Downloading {font.name}…", "Cancel", 0, 100, self)
+        prog = QProgressDialog("Downloading…", "Cancel", 0, 100, self)
         prog.setWindowModality(Qt.WindowModal)
         prog.setMinimumDuration(0)
         prog.setAutoClose(False)
@@ -417,64 +471,58 @@ class NotoDownloadDialog(QDialog):
         prog.setValue(0)
         prog.canceled.connect(cancel.set)
 
-        worker = _DownloadWorker(self._fdl, font, cancel, self)
-        result = {}
+        worker = _DownloadWorker(self._fdl, fonts, cancel, self)
+        state = {"paths": {}}
 
-        def on_progress(done, total):
+        def on_progress(done, total, name, idx, n):
+            prog.setLabelText(f"Downloading {name}  ({idx}/{n})…")
             prog.setValue(min(100, int(done * 100 / total)) if total > 0 else 0)
 
-        def on_ok(path):
-            result["path"] = path
+        def on_one(filename, path):     # direct connection → captured synchronously
+            state["paths"][filename] = path
 
         def on_fail(msg):
-            result["error"] = msg
+            state["error"] = msg
 
-        # progress drives a GUI widget → must run on the main thread (queued);
-        # ok/fail only stash into a dict → direct so the result is captured
-        # synchronously before the worker reports finished (no post-loop race).
         worker.progress.connect(on_progress)
-        worker.finished_ok.connect(on_ok, Qt.DirectConnection)
+        worker.one_done.connect(on_one, Qt.DirectConnection)
         worker.failed.connect(on_fail, Qt.DirectConnection)
         worker.start()
         while not worker.isFinished():
             QApplication.processEvents()
             worker.wait(50)
-        QApplication.processEvents()              # drain any last queued progress
+        QApplication.processEvents()
         prog.close()
-
-        if "error" in result:
-            QMessageBox.critical(self, "Download failed",
-                                 f"Could not download {font.name}:\n{result['error']}")
-            return
-        if "path" not in result:
-            return                                # cancelled — leave dialog open
-        item.setText(self._label(font))           # now shows ✓ cached
-        self.result_path = result["path"]
-        self.accept()
+        self._refresh_marks()
+        return state["paths"], state.get("error")
 
 
 class _DownloadWorker(QThread):
-    """Downloads one font off the GUI thread, reporting progress via signals.
-    Cancellation is cooperative: ``cancel_event`` is polled inside download_font."""
-    progress = pyqtSignal(int, int)     # done, total
-    finished_ok = pyqtSignal(str)       # local path
-    failed = pyqtSignal(str)            # error message
+    """Downloads a list of fonts off the GUI thread, reporting progress via
+    signals.  Cancellation is cooperative: ``cancel_event`` is polled inside
+    download_font, so Cancel aborts after the current chunk."""
+    progress = pyqtSignal(int, int, str, int, int)  # done, total, name, idx, count
+    one_done = pyqtSignal(str, str)                  # filename, local path
+    failed = pyqtSignal(str)                         # error message
 
-    def __init__(self, fdl, font, cancel_event, parent=None):
+    def __init__(self, fdl, fonts, cancel_event, parent=None):
         super().__init__(parent)
-        self._fdl, self._font, self._cancel = fdl, font, cancel_event
+        self._fdl, self._fonts, self._cancel = fdl, list(fonts), cancel_event
 
     def run(self):
-        try:
-            path = self._fdl.download_font(
-                self._font, cancel_event=self._cancel,
-                progress_cb=lambda d, t: self.progress.emit(d, t))
-        except self._fdl.DownloadCancelled:
-            return                                # cancelled → no signal, dialog stays
-        except Exception as e:  # noqa: BLE001
-            self.failed.emit(str(e))
-            return
-        self.finished_ok.emit(path)
+        n = len(self._fonts)
+        for i, font in enumerate(self._fonts, 1):
+            try:
+                path = self._fdl.download_font(
+                    font, cancel_event=self._cancel,
+                    progress_cb=lambda d, t, nm=font.name, ix=i: self.progress.emit(
+                        d, t, nm, ix, n))
+            except self._fdl.DownloadCancelled:
+                return                            # stop here; keep what completed
+            except Exception as e:  # noqa: BLE001
+                self.failed.emit(str(e))
+                return
+            self.one_done.emit(font.filename, path)
 
 
 def main(argv=None):
