@@ -42,5 +42,5 @@ setup(name='PolyHost',
       # Optional: the font-pack *extend* path (build trial glyphs from TTF/OTF in
       # pure Python, fontconvert-parity). Lazily imported — the read-only inspector
       # and the rest of the host work without these.  pip install -e .[fontgen]
-      extras_require={"fontgen": ["freetype-py", "uharfbuzz"]},
+      extras_require={"fontgen": ["freetype-py", "uharfbuzz", "fonttools"]},
       entry_points={"console_scripts": ["polyctl = polyhost.cli.polyctl:main"]})

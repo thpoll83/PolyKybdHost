@@ -16,15 +16,15 @@ tool (deterministic-dither paths) bit-for-bit when the FreeType version matches:
   * the pixel pipeline (mono passthrough / gray / BGRA dither + -N/-I/-E/-O) via
     fontgen_dither.
 
-⚠️ Colour-emoji (NotoColorEmoji) glyphs are PNG-compressed CBDT bitmaps, so they
-need a **PNG-enabled FreeType**.  freetype-py ships a *bundled* libfreetype built
-WITHOUT PNG → colour glyphs raise FreeType "unimplemented feature".  Mono/gray
-fonts work regardless; for colour emoji either install a freetype-py whose bundled
-lib has PNG, or make it load a system libfreetype with PNG (remove/symlink the
-bundled .so so freetype.raw falls back to ctypes.util.find_library('freetype')).
+Colour-emoji (NotoColorEmoji) glyphs are PNG-compressed CBDT bitmaps.  Rather than
+require a PNG-enabled FreeType (freetype-py's bundled lib lacks PNG), colour
+glyphs are decoded with fontTools + Pillow (fontgen_color) — byte-identical to
+FreeType, so the colour path works from pure wheels on every OS (no system
+FreeType, no Windows DLL).  Mono / gray / outline glyphs go through FreeType.
 
-freetype-py / uharfbuzz / numpy are imported lazily so the rest of the host (and
-the read-only inspector) keep working without them.  Both modes are implemented:
+freetype-py / uharfbuzz / numpy / fonttools are imported lazily so the rest of the
+host (and the read-only inspector) keep working without them.  Both modes are
+implemented:
 range mode (`render_range`) and HarfBuzz sequence mode (`render_sequence`, the
 flag / ZWJ-emoji path) — the latter byte-exact vs the C tool, including GSUB
 ligature shaping.  Composite (-C) is bitmap-exact (its multi-base xAdvance can
@@ -37,6 +37,7 @@ from dataclasses import dataclass, field
 
 from polyhost.services import fontpack_reader as fpr
 from polyhost.services import fontgen_dither as fd
+from polyhost.services.fontgen_color import ColorRaster
 
 DPI = 141
 _TT_V35 = 35
@@ -136,6 +137,18 @@ def _scale_metric(v: int, num: int, den: int) -> int:
     return int(r + (0.5 if r >= 0 else -0.5))
 
 
+def _raster_for_gid(face, gid: int, color: bool, cfont) -> ColorRaster:
+    """Uniform raster for a glyph id: the CBDT colour extractor when `cfont` is set
+    (PNG-free colour), else FreeType (mono/gray/outline, or colour when FT has PNG).
+    A colour gid absent from the strike → a 0-size raster (blank key), as the C tool."""
+    if cfont is not None:
+        r = cfont.glyph(gid)
+        if r is not None:
+            return r
+        return ColorRaster(0, 0, 0, 0, b"", 0, 0, 0)
+    return _raster_from_ft(_load_glyph_rendered(face, gid, color))
+
+
 def _load_glyph_rendered(face, gid: int, color: bool):
     """Load + render one glyph, mirroring extract_range_ft: load WITHOUT
     FT_LOAD_RENDER (which would try to re-render — and fail with 'unimplemented' —
@@ -155,30 +168,44 @@ def _load_glyph_rendered(face, gid: int, color: bool):
     return slot
 
 
-def _emit_loaded_glyph(slot, bitmap_offset: int, dopts, xshift: int):
-    """A glyph already loaded+rendered into `slot` → (GFXglyph dict, packed bytes).
-
-    Shared by range and sequence modes — mirrors the per-glyph body of
-    extract_range_ft / shape_render_group: metrics from the slot, render via the
-    dither pipeline, rescale metrics if a colour strike was shrunk, and apply -X
-    to non-empty glyphs (the C does this at emit time; identical outcome)."""
+def _raster_from_ft(slot) -> ColorRaster:
+    """A freetype glyph slot → the uniform raster (mono/gray/outline, or colour
+    when FreeType itself has PNG)."""
     bm = slot.bitmap
-    xadv = slot.advance.x >> 6
-    xoff = slot.bitmap_left
-    yoff = 1 - slot.bitmap_top
-    if bm.rows == 0 or bm.width == 0:
+    return ColorRaster(bm.pixel_mode, bm.width, bm.rows, bm.pitch, bytes(bm.buffer),
+                       slot.advance.x >> 6, slot.bitmap_left, slot.bitmap_top)
+
+
+def _emit_loaded_glyph(r: ColorRaster, bitmap_offset: int, dopts, xshift: int):
+    """A uniform raster (from FreeType or the CBDT colour extractor) → (GFXglyph
+    dict, packed bytes).  Mirrors the per-glyph body of extract_range_ft /
+    shape_render_group: metrics from the raster, render via the dither pipeline,
+    rescale metrics if a colour strike was shrunk, apply -X to non-empty glyphs."""
+    xadv, xoff, yoff = r.advance, r.left, 1 - r.top
+    if r.rows == 0 or r.width == 0:
         return dict(bitmapOffset=bitmap_offset, width=0, height=0,
                     xAdvance=xadv, xOffset=xoff, yOffset=yoff), b""
     packed, out_w, out_h = fd.render_bitmap_to_bits(
-        bm.pixel_mode, bm.width, bm.rows, bm.pitch, bytes(bm.buffer), dopts)
-    if (out_w, out_h) != (bm.width, bm.rows):
-        xadv = _scale_metric(xadv, out_w, bm.width)
-        xoff = _scale_metric(slot.bitmap_left, out_w, bm.width)
-        yoff = _scale_metric(1 - slot.bitmap_top, out_h, bm.rows)
+        r.pixel_mode, r.width, r.rows, r.pitch, r.buf, dopts)
+    if (out_w, out_h) != (r.width, r.rows):
+        xadv = _scale_metric(xadv, out_w, r.width)
+        xoff = _scale_metric(r.left, out_w, r.width)
+        yoff = _scale_metric(1 - r.top, out_h, r.rows)
     if out_w:
         xoff += xshift
     return dict(bitmapOffset=bitmap_offset, width=out_w, height=out_h,
                 xAdvance=xadv, xOffset=xoff, yOffset=yoff), packed
+
+
+def _open_color_font(font_path: str, opts: RenderOptions):
+    """Return a ColorBitmapFont if this is a CBDT colour-bitmap font in colour mode
+    (so its glyphs are decoded via fontTools+Pillow, no PNG-FreeType needed), else
+    None (outline/mono/gray go through FreeType)."""
+    if opts.render_mode != 1:
+        return None
+    from polyhost.services.fontgen_color import ColorBitmapFont
+    cf = ColorBitmapFont(font_path, opts.size)
+    return cf if cf.has_color else None
 
 
 def render_range(font_path: str, first: int, last: int, opts: RenderOptions | None = None,
@@ -196,6 +223,7 @@ def render_range(font_path: str, first: int, last: int, opts: RenderOptions | No
     _setup_face_size(face, opts)
 
     color = opts.render_mode == 1
+    cfont = _open_color_font(font_path, opts)    # CBDT colour → fontTools path
     dopts = opts._dither_opts()
 
     glyphs: list[dict] = []
@@ -211,8 +239,8 @@ def render_range(font_path: str, first: int, last: int, opts: RenderOptions | No
             # bitmap — e.g. space — keeps its real metrics below, as the C tool does.)
             glyphs.append(_empty_glyph(0))
             continue
-        slot = _load_glyph_rendered(face, gid, color)
-        rec, packed = _emit_loaded_glyph(slot, len(bitmap), dopts, opts.xshift)
+        r = _raster_for_gid(face, gid, color, cfont)
+        rec, packed = _emit_loaded_glyph(r, len(bitmap), dopts, opts.xshift)
         glyphs.append(rec)
         bitmap += packed
 
@@ -274,7 +302,8 @@ def render_sequence(font_path: str, sequence: str, opts: RenderOptions | None = 
     if opts.composite:
         glyphs, bitmap = _render_composite(face, hb, hb_font, opts, groups)
     else:
-        glyphs, bitmap = _render_shaped(face, hb, hb_font, opts, groups)
+        cfont = _open_color_font(font_path, opts)    # CBDT colour flags/emoji
+        glyphs, bitmap = _render_shaped(face, hb, hb_font, opts, groups, cfont)
 
     if not glyphs:
         raise ValueError(f"no glyphs rendered from sequence {sequence!r}")
@@ -288,7 +317,7 @@ def render_sequence(font_path: str, sequence: str, opts: RenderOptions | None = 
                         glyphs=glyphs, first=first, last=last, yAdvance=yadv)
 
 
-def _render_shaped(face, hb, hb_font, opts: RenderOptions, groups):
+def _render_shaped(face, hb, hb_font, opts: RenderOptions, groups, cfont=None):
     """Non-composite -S: one GFXglyph per shaped glyph id (font_render.c
     shape_render_group).  Used by language flags and ZWJ emoji."""
     color = opts.render_mode == 1
@@ -297,8 +326,8 @@ def _render_shaped(face, hb, hb_font, opts: RenderOptions, groups):
     for cps in groups:
         infos, _pos = _shape(hb, hb_font, cps)
         for info in infos:
-            slot = _load_glyph_rendered(face, info.codepoint, color)
-            rec, packed = _emit_loaded_glyph(slot, len(bitmap), dopts, opts.xshift)
+            r = _raster_for_gid(face, info.codepoint, color, cfont)
+            rec, packed = _emit_loaded_glyph(r, len(bitmap), dopts, opts.xshift)
             glyphs.append(rec)
             bitmap += packed
     return glyphs, bitmap
