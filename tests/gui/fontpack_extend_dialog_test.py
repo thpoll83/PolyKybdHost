@@ -75,6 +75,24 @@ class ExtendDialogTest(unittest.TestCase):
         if "render_height" in v:
             self.assertEqual(dlg._rsize.value(), int(v["render_height"]))
 
+    def test_edit_autofills_cached_source_font(self):
+        import tempfile
+        from unittest.mock import patch
+        from polyhost.services import font_downloader as fdl
+        settings = fed._render_settings()
+        gi = next((k for k, v in settings.items() if v.get("source_file")), None)
+        if gi is None:
+            self.skipTest("no shipped render settings with source_file")
+        sf = settings[gi]["source_file"]
+        tmp = tempfile.mkdtemp()
+        open(os.path.join(tmp, sf), "wb").close()       # pretend it's cached
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        with patch.object(fdl, "default_cache_dir", return_value=tmp):
+            opts = dlg._apply_saved_settings(int(gi))
+        self.assertIsNotNone(opts)
+        self.assertEqual(dlg._src.text(), os.path.join(tmp, sf))
+
     def test_apply_saved_settings_missing_index(self):
         dlg = fed.FontPackExtendDialog()
         self.addCleanup(dlg.deleteLater)

@@ -162,26 +162,35 @@ class FontPackExtendDialog(QDialog):
         cp = p.get("first", 0)
         self._first.setText(f"0x{cp:04X}")
         self._last.setText(f"0x{p.get('last', cp):04X}")
-        applied = False
+        opts = None
         if "global_index" in p:
             gi = p["global_index"]
             self._gidx.setValue(gi)
             self._edit_target = {"bundle_index": bi, "global_index": gi, "cp": cp}
-            applied = self._apply_saved_settings(gi)
-        hint = (" Original generation settings pre-filled." if applied else
-                " (no saved settings for this font — set options manually.)")
-        self._status.setText(f"Editing U+{cp:04X} in '{p.get('bundle')}' — pick a source "
-                             f"font, Build to peek, then Save/Flash to take it.{hint}")
+            opts = self._apply_saved_settings(gi)
+        if opts is None:
+            hint = " (no saved settings for this font — set options manually.)"
+        elif self._src.text().strip():
+            hint = (f" Pre-filled from '{opts.get('source_file', 'source')}' + its "
+                    "original settings.")
+        else:
+            sf = opts.get("source_file")
+            hint = (f" Original settings pre-filled; source font '{sf}' isn't cached — "
+                    "Download Noto… or Browse." if sf else
+                    " Original settings pre-filled; pick the source font.")
+        self._status.setText(f"Editing U+{cp:04X} in '{p.get('bundle')}' — Build to peek, "
+                             f"then Save/Flash to take it.{hint}")
 
-    def _apply_saved_settings(self, global_index: int) -> bool:
+    def _apply_saved_settings(self, global_index: int):
         """Prefill the render controls from the settings the font was generated
-        with (shipped fontpack_render_settings.json, keyed by global index).  The
-        glyph's *source font* isn't bundled, so the user still picks the .ttf;
-        everything else (size, dither, flags, render size, yAdvance, …) is restored.
-        Returns True if a settings record was found."""
+        with (shipped fontpack_render_settings.json, keyed by global index): size,
+        dither, flags, render size, yAdvance, …  Also auto-fills the source font
+        from the download cache when its file (``source_file``) is already present,
+        so an edit needs no manual font pick.  Returns the opts dict, or None when
+        there's no record for this index."""
         opts = _render_settings().get(str(global_index))
         if not opts:
-            return False
+            return None
         if "size" in opts:
             self._size.setValue(int(opts["size"]))
         self._gray.setChecked(bool(opts.get("grayscale")))
@@ -195,7 +204,13 @@ class FontPackExtendDialog(QDialog):
         self._yadv.setValue(int(opts.get("yadvance") or 0))
         self._maxw.setValue(int(opts.get("max_width") or 0))
         self._sync_mode()          # reflect the grayscale toggle (enables dither)
-        return True
+        sf = opts.get("source_file")
+        if sf and not self._src.text().strip():
+            from polyhost.services import font_downloader as fdl
+            cached = os.path.join(fdl.default_cache_dir(), sf)
+            if os.path.exists(cached):
+                self._src.setText(cached)
+        return opts
 
     # ---- helpers ----
     @staticmethod

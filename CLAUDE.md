@@ -133,9 +133,12 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   index → fonts.yaml options` map emitted by the firmware's `generate_fonts.py`
   (`RENDER_SETTINGS`) and shipped here. The `.plyf` carries only rendered bitmaps,
   not the fontconvert options, so this manifest is the only way to recover "the
-  settings this glyph was built with"; the *source TTF* still isn't bundled, so the
-  user re-picks it (or uses "Download Noto…"). Keep it in sync with the firmware
-  copy (`base/fonts/generated/fontpack_render_settings.json`).
+  settings this glyph was built with". Each record also carries `source_file` (the
+  basename of the source TTF, matching `noto-fonts.yaml`), so the edit dialog
+  **auto-fills the source font from the download cache** when it's present (else it
+  names the file and points at "Download Noto…"/Browse) — the TTF itself isn't
+  bundled. Keep it in sync with the firmware copy
+  (`base/fonts/generated/fontpack_render_settings.json`).
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
 - **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
