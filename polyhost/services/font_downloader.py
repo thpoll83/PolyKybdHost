@@ -18,6 +18,7 @@ Pure stdlib + PyYAML (already a host dependency); no Qt.  ``urllib`` honours
 from __future__ import annotations
 
 import os
+import tempfile
 import urllib.request
 from dataclasses import dataclass
 
@@ -95,7 +96,10 @@ def download_font(font: NotoFont, dest_dir: str | None = None,
     final = os.path.join(dest_dir, font.filename)
     if os.path.exists(final) and os.path.getsize(final) > 0:
         return final
-    tmp = final + ".part"
+    # Unique temp per attempt so two overlapping downloads of the same font can't
+    # clobber or delete each other's partial file.
+    fd, tmp = tempfile.mkstemp(prefix=font.filename + ".", suffix=".part", dir=dest_dir)
+    os.close(fd)
     req = urllib.request.Request(font.url, headers={"User-Agent": "PolyKybdHost"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -113,12 +117,19 @@ def download_font(font: NotoFont, dest_dir: str | None = None,
                     if progress_cb:
                         progress_cb(done, total)
     except BaseException:
-        # don't leave a half file behind on cancel/error
+        # don't leave a half file behind on cancel/error (only our own temp)
         if os.path.exists(tmp):
             try:
                 os.remove(tmp)
             except OSError:
                 pass
         raise
+    # A concurrent attempt may have finished first; if so, drop ours and use it.
+    if os.path.exists(final) and os.path.getsize(final) > 0:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        return final
     os.replace(tmp, final)
     return final

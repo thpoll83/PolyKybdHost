@@ -414,9 +414,12 @@ class NotoDownloadDialog(QDialog):
         self._dl_btn = QPushButton("Download / Use selected")
         self._dl_btn.clicked.connect(self._download)
         self._dl_btn.setEnabled(bool(self._fonts))
-        cancel = QPushButton("Close"); cancel.clicked.connect(self.reject)
-        btns.addWidget(self._all_btn); btns.addStretch(1)
-        btns.addWidget(cancel); btns.addWidget(self._dl_btn)
+        cancel = QPushButton("Close")
+        cancel.clicked.connect(self.reject)
+        btns.addWidget(self._all_btn)
+        btns.addStretch(1)
+        btns.addWidget(cancel)
+        btns.addWidget(self._dl_btn)
         v.addLayout(btns)
 
     def _label(self, font) -> str:
