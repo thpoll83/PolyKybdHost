@@ -234,7 +234,8 @@ class FontPackExtendDialog(QDialog):
 
 def main(argv=None):
     app = QApplication(argv if argv is not None else sys.argv)
-    FontPackExtendDialog().show()
+    dlg = FontPackExtendDialog()        # keep a reference — without it PyQt GCs the
+    dlg.show()                          # dialog and the window vanishes immediately
     return app.exec_()
 
 
