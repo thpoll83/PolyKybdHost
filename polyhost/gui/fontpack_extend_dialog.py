@@ -83,12 +83,13 @@ class FontPackExtendDialog(QDialog):
         self._src = QLineEdit()
         browse = QPushButton("Browse…")
         browse.clicked.connect(self._browse)
-        dl = QPushButton("Download Noto…")
+        dl = QPushButton("Font Browser")
         dl.setCheckable(True)
-        dl.setToolTip("Show/hide the Noto download panel (same list as the firmware's "
-                      "dl-fonts.sh); picking one fills the source field")
+        dl.setToolTip("Show/hide the font browser: download Noto source fonts (same "
+                      "list as the firmware's dl-fonts.sh) and assign one as the source")
         dl.toggled.connect(self._toggle_download_panel)
         self._dl_toggle = dl
+        self._panel_widened = False
         srow = QHBoxLayout()
         srow.addWidget(self._src, 1); srow.addWidget(browse); srow.addWidget(dl)
         sw = QWidget(); sw.setLayout(srow)
@@ -232,11 +233,13 @@ class FontPackExtendDialog(QDialog):
         self._xshift.setValue(int(opts.get("xshift") or 0))
         self._sync_mode()          # reflect the grayscale toggle (enables dither)
         sf = opts.get("source_file")
-        if sf and not self._src.text().strip():
-            from polyhost.services import font_downloader as fdl
-            cached = os.path.join(fdl.default_cache_dir(), sf)
-            if os.path.exists(cached):
-                self._src.setText(cached)
+        if sf:
+            self._dl_panel.select_filename(sf)       # default-select it in the browser
+            if not self._src.text().strip():
+                from polyhost.services import font_downloader as fdl
+                cached = os.path.join(fdl.default_cache_dir(), sf)
+                if os.path.exists(cached):
+                    self._src.setText(cached)
         return opts
 
     # ---- helpers ----
@@ -274,6 +277,14 @@ class FontPackExtendDialog(QDialog):
 
     def _toggle_download_panel(self, on: bool):
         self._dl_panel.setVisible(on)
+        # Grow/shrink the window so the panel doesn't squeeze the form/preview.
+        extra = 380
+        if on and not self._panel_widened:
+            self.resize(self.width() + extra, self.height())
+            self._panel_widened = True
+        elif not on and self._panel_widened:
+            self.resize(max(700, self.width() - extra), self.height())
+            self._panel_widened = False
 
     def _on_downloaded_font(self, path: str):
         if path:
@@ -440,6 +451,21 @@ class NotoDownloadPanel(QWidget):
     def _label(self, font) -> str:
         mark = "  ✓ cached" if self._fdl.is_downloaded(font) else ""
         return f"{font.name}  ({font.filename}){mark}"
+
+    def current_filename(self):
+        it = self._list.currentItem()
+        return it.data(Qt.UserRole).filename if it is not None else None
+
+    def select_filename(self, filename: str) -> bool:
+        """Highlight the catalog entry whose file is `filename` (the font a glyph
+        was generated with), so it's the default selection in the browser."""
+        for i in range(self._list.count()):
+            f = self._list.item(i).data(Qt.UserRole)
+            if f.filename == filename:
+                self._list.setCurrentRow(i)
+                self._list.scrollToItem(self._list.item(i))
+                return True
+        return False
 
     def _refresh_marks(self):
         for i in range(self._list.count()):

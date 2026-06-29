@@ -209,26 +209,42 @@ class _BundleTab(QWidget):
             self._settings_map = ext.load_render_settings()
         return self._settings_map
 
-    def _peek_pixmap(self, font, cp, cw, ch, scale):
-        """Render the empty slot `cp` from its source font (per the shipped render
-        settings) as an amber preview pixmap, or None if no settings / the source
-        isn't downloaded / the source has no glyph there / fontgen is unavailable."""
-        opts = self._settings().get(str(font.global_index))
-        if not opts or not opts.get("source_file"):
-            return None
+    def _peek_candidates(self, primary):
+        """`(opts, src_path, source_file)` for the slot's own font first, then the
+        other fonts in this bundle (deduped by source).  A bundle mixes source
+        fonts (e.g. symbols = NotoSansSymbols + Symbols2), so a slot empty in one
+        can be previewed from another in the same pack."""
         from polyhost.services import font_downloader as fdl
-        src = os.path.join(fdl.default_cache_dir(), opts["source_file"])
-        if not os.path.exists(src):
-            return None
-        try:
-            from polyhost.services import fontpack_extend as ext
-            pf = ext.peek_source_glyph(src, cp, opts, global_index=font.global_index)
-        except Exception:                       # noqa: BLE001 — one bad glyph != dead grid
-            return None
-        if pf is None:
-            return None
-        img = fprd.glyph_cell(pf, cp, cw, ch, scale=scale, mode=self._mode)
-        return _pil_l_to_tinted_pixmap(img, PEEK_RGB)
+        cache = fdl.default_cache_dir()
+        order = [primary] + [f for f in sorted(self._pack.fonts, key=lambda f: f.global_index)
+                             if f is not primary]
+        seen, out = set(), []
+        for f in order:
+            opts = self._settings().get(str(f.global_index))
+            if not opts or not opts.get("source_file"):
+                continue
+            src = os.path.join(cache, opts["source_file"])
+            if src in seen or not os.path.exists(src):
+                continue
+            seen.add(src)
+            out.append((opts, src, opts["source_file"]))
+        return out
+
+    def _peek_pixmap(self, font, cp, cw, ch, scale):
+        """Render empty slot `cp` from a source font as an amber preview, trying the
+        slot's own font then the other fonts in the bundle.  Returns
+        `(pixmap, source_file)` or None (no settings / source not downloaded / no
+        glyph in any source / fontgen unavailable)."""
+        from polyhost.services import fontpack_extend as ext
+        for opts, src, sf in self._peek_candidates(font):
+            try:
+                pf = ext.peek_source_glyph(src, cp, opts, global_index=font.global_index)
+            except Exception:                   # noqa: BLE001 — one bad glyph != dead grid
+                continue
+            if pf is not None:
+                img = fprd.glyph_cell(pf, cp, cw, ch, scale=scale, mode=self._mode)
+                return _pil_l_to_tinted_pixmap(img, PEEK_RGB), sf
+        return None
 
     def _rebuild(self, *_):
         if self._view is None:
@@ -283,12 +299,13 @@ class _BundleTab(QWidget):
             if not self._peek_queue:
                 return
             it, font, cp = self._peek_queue.pop(0)
-            pm = self._peek_pixmap(font, cp, cw, ch, scale)
+            res = self._peek_pixmap(font, cp, cw, ch, scale)
             if gen != self._peek_gen:                 # a rebuild superseded us
                 return
-            if pm is not None:
+            if res is not None:
+                pm, sf = res
                 it.setIcon(QIcon(pm))
-                it.setToolTip(f"U+{cp:04X}  (preview from source — not in pack)")
+                it.setToolTip(f"U+{cp:04X}  (preview from {sf} — not in pack)")
                 self._last_peek_count += 1
         if self._peek_queue:
             self._peek_timer.start(0)

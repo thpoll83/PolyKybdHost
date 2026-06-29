@@ -127,6 +127,21 @@ class ExtendDialogTest(unittest.TestCase):
 
     @unittest.skipUnless(os.path.exists(os.path.join(RES, "bundles.json")),
                          "shipped bundles required")
+    def test_prefill_selects_source_in_browser(self):
+        # editing a glyph should default-select its generation font in the browser
+        pack = fpr.decode_pack_file(os.path.join(RES, "symbol.plyf"), "symbol")
+        font = pack.fonts[0]
+        sf = fed._render_settings().get(str(font.global_index), {}).get("source_file")
+        if not sf:
+            self.skipTest("no source_file for this font")
+        dlg = fed.FontPackExtendDialog(
+            prefill={"bundle": "symbol", "first": font.first, "last": font.first,
+                     "global_index": font.global_index})
+        self.addCleanup(dlg.deleteLater)
+        self.assertEqual(dlg._dl_panel.current_filename(), sf)
+
+    @unittest.skipUnless(os.path.exists(os.path.join(RES, "bundles.json")),
+                         "shipped bundles required")
     def test_unknown_prefill_bundle_rejected(self):
         # an edit prefill for a bundle not in the source list must fail loudly
         # rather than silently retargeting another pack
