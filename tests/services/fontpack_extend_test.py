@@ -86,6 +86,10 @@ class ExtendRoundTripTest(unittest.TestCase):
         self.assertEqual((ro.gamma_val, ro.contrast, ro.exposure, ro.sharpness,
                           ro.saturation_boost), (1.5, 2.0, 0.5, 1.0, 0.3))
 
+    def test_render_options_preserves_explicit_zero(self):
+        ro = ext.render_options_from_manifest({"size": 14, "gamma": 0, "contrast": 0})
+        self.assertEqual((ro.gamma_val, ro.contrast), (0.0, 0.0))   # not folded to 1.0
+
     def test_render_options_defaults(self):
         ro = ext.render_options_from_manifest({"size": 14})
         self.assertEqual(ro.weight, -1)          # absent weight -> unset

@@ -46,6 +46,11 @@ def render_options_from_manifest(opts: dict):
     (the inverse of what generate_fonts.py emitted)."""
     from polyhost.services.fontgen import RenderOptions
     from polyhost.services import fontgen_dither as fd
+
+    def _float(key, default):       # keep an explicit 0 (don't fold it into default)
+        v = opts.get(key)
+        return default if v is None else float(v)
+
     return RenderOptions(
         size=int(opts.get("size", 20)),
         render_mode=1 if opts.get("grayscale") else 0,
@@ -59,11 +64,11 @@ def render_options_from_manifest(opts: dict):
         max_width=int(opts.get("max_width") or 0),
         weight=int(opts["weight"]) if opts.get("weight") else -1,
         xshift=int(opts.get("xshift") or 0),
-        gamma_val=float(opts.get("gamma") or 1.0),
-        contrast=float(opts.get("contrast") or 1.0),
-        exposure=float(opts.get("exposure") or 0.0),
-        sharpness=float(opts.get("sharpness") or 0.0),
-        saturation_boost=float(opts.get("saturation") or 0.0),
+        gamma_val=_float("gamma", 1.0),
+        contrast=_float("contrast", 1.0),
+        exposure=_float("exposure", 0.0),
+        sharpness=_float("sharpness", 0.0),
+        saturation_boost=_float("saturation", 0.0),
         bits=int(opts.get("bits") or 1))
 
 
