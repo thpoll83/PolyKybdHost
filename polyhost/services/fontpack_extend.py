@@ -61,6 +61,28 @@ def render_options_from_manifest(opts: dict):
         bits=int(opts.get("bits") or 1))
 
 
+_FACE_CACHE = {}
+
+
+def _cached_face(source_path: str):
+    face = _FACE_CACHE.get(source_path)
+    if face is None:
+        import freetype
+        face = freetype.Face(source_path)
+        _FACE_CACHE[source_path] = face
+    return face
+
+
+def source_has_glyph(source_path: str, cp: int) -> bool:
+    """Cheap check — a cached FreeType face, no render — for whether `source_path`
+    has a glyph for codepoint `cp`.  Lets peek try many candidate source fonts
+    (the whole pack) and only pay the render cost for the one that actually has it."""
+    try:
+        return _cached_face(source_path).get_char_index(cp) != 0
+    except Exception:                       # noqa: BLE001
+        return False
+
+
 def peek_source_glyph(source_path: str, cp: int, opts: dict, global_index: int = 0):
     """Render a single codepoint from `source_path` using the manifest render
     options `opts` — a *candidate* for an empty pack slot.  Returns a one-glyph

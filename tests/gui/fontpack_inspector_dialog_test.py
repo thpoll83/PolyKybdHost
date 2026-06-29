@@ -46,18 +46,6 @@ def _pack_with_empty():
     return fpr.decode_pack(header + bytes(body), name_hint="emptytest")
 
 
-def _two_font_pack():
-    """Two fonts: A (gidx 0) empty at 0x41; B (gidx 1) present at 0x100 — for
-    exercising peek falling back to another font's source in the same bundle."""
-    a = fpr.PackFont("A", b"", [dict(bitmapOffset=0, width=0, height=0,
-                                     xAdvance=0, xOffset=0, yOffset=0)],
-                     0x41, 0x41, 12, global_index=0)
-    b = fpr.PackFont("B", bytes([0xC0]), [dict(bitmapOffset=0, width=2, height=2,
-                                               xAdvance=3, xOffset=0, yOffset=-2)],
-                     0x100, 0x100, 12, global_index=1)
-    return fpr.decode_pack(fpr.encode_pack([a, b], 1), name_hint="multi")
-
-
 def _tiny_pack():
     """One 2-glyph font, valid PlyF, decoded to a Pack for a deterministic tab."""
     # glyph A: 3x4 = 12 bits -> 2 bytes @0; glyph B: 6x8 = 48 bits -> 6 bytes @2
@@ -154,24 +142,25 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.assertGreaterEqual(tab._last_peek_count, 1)
 
     @unittest.skipUnless(_FONTGEN and _FONT, "needs fontgen deps + a system TTF")
-    def test_peek_falls_back_to_other_bundle_font(self):
+    def test_peek_falls_back_to_other_pack_font(self):
         from unittest.mock import patch
         from polyhost.services import fontpack_extend as ext
         from polyhost.services import font_downloader as fdl
-        pack = _two_font_pack()
+        pack = _pack_with_empty()                       # one font, gidx 0, 0x42 empty
         tab = fid._BundleTab("multi", pack)
         self.addCleanup(tab.deleteLater)
         tab.set_mode("glyph")
-        # font A's own source is missing/uncached; B's source is the system font,
-        # which has 'A' (0x41) — so peeking A's empty 0x41 should come from B's source.
+        # The slot's own source is uncached; a source under a global index NOT in
+        # this bundle (gidx 99) is the system font, which has 'B' (0x42) — peek must
+        # reach it (whole-pack), not just this bundle.
         with patch.object(ext, "load_render_settings", return_value={
                 "0": {"size": 24, "source_file": "missing-font.ttf"},
-                "1": {"size": 24, "source_file": os.path.basename(_FONT)}}), \
+                "99": {"size": 24, "source_file": os.path.basename(_FONT)}}), \
              patch.object(fdl, "default_cache_dir", return_value=os.path.dirname(_FONT)):
             tab._settings_map = None
-            res = tab._peek_pixmap(pack.fonts[0], 0x41, 20, 20, 2)
+            res = tab._peek_pixmap(pack.fonts[0], 0x42, 20, 20, 2)
         self.assertIsNotNone(res)
-        self.assertEqual(res[1], os.path.basename(_FONT))   # rendered from B's source
+        self.assertEqual(res[1], os.path.basename(_FONT))   # rendered from gidx-99 source
 
     def test_error_source_does_not_crash(self):
         # a decode failure becomes a labelled tab, never a dead window

@@ -210,17 +210,22 @@ class _BundleTab(QWidget):
         return self._settings_map
 
     def _peek_candidates(self, primary):
-        """`(opts, src_path, source_file)` for the slot's own font first, then the
-        other fonts in this bundle (deduped by source).  A bundle mixes source
-        fonts (e.g. symbols = NotoSansSymbols + Symbols2), so a slot empty in one
-        can be previewed from another in the same pack."""
+        """`(opts, src_path, source_file)` source fonts to try for a slot, deduped
+        by source and ordered: the slot's own font, then the rest of this bundle,
+        then **every other source in the whole pack** (the merged ALL_FONTS).  A
+        glyph can live in a font from another bundle (e.g. a symbol gap filled by
+        plain NotoSansSymbols when this bundle only references Symbols2), so peek
+        must look pack-wide, not just in the current bundle."""
         from polyhost.services import font_downloader as fdl
         cache = fdl.default_cache_dir()
-        order = [primary] + [f for f in sorted(self._pack.fonts, key=lambda f: f.global_index)
-                             if f is not primary]
+        smap = self._settings()
+        bundle = [primary.global_index] + [f.global_index for f in
+                  sorted(self._pack.fonts, key=lambda f: f.global_index)
+                  if f is not primary]
+        rest = sorted(int(k) for k in smap if int(k) not in set(bundle))
         seen, out = set(), []
-        for f in order:
-            opts = self._settings().get(str(f.global_index))
+        for gi in bundle + rest:
+            opts = smap.get(str(gi))
             if not opts or not opts.get("source_file"):
                 continue
             src = os.path.join(cache, opts["source_file"])
@@ -232,11 +237,13 @@ class _BundleTab(QWidget):
 
     def _peek_pixmap(self, font, cp, cw, ch, scale):
         """Render empty slot `cp` from a source font as an amber preview, trying the
-        slot's own font then the other fonts in the bundle.  Returns
-        `(pixmap, source_file)` or None (no settings / source not downloaded / no
-        glyph in any source / fontgen unavailable)."""
+        slot's own font, then the bundle, then the whole pack.  A cheap cached-face
+        glyph check picks the right source before paying the render cost.  Returns
+        `(pixmap, source_file)` or None (no cached source has the glyph)."""
         from polyhost.services import fontpack_extend as ext
         for opts, src, sf in self._peek_candidates(font):
+            if not ext.source_has_glyph(src, cp):   # cheap precheck (cached face)
+                continue
             try:
                 pf = ext.peek_source_glyph(src, cp, opts, global_index=font.global_index)
             except Exception:                   # noqa: BLE001 — one bad glyph != dead grid
