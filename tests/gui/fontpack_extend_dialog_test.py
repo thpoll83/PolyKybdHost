@@ -219,34 +219,92 @@ class ExtendDialogTest(unittest.TestCase):
 
     @unittest.skipUnless(_FONTGEN and _FONT and _HAVE_BUNDLES,
                          "needs fontgen deps + a TTF + shipped bundles")
-    def test_build_splice_and_flash_callback(self):
+    def test_build_apply_and_flash_callback(self):
         got = {}
         dlg = fed.FontPackExtendDialog(flash_cb=lambda i, d: got.update(idx=i, data=d))
         self.addCleanup(dlg.deleteLater)
         dlg._src.setText(_FONT)
         dlg._first.setText("0x2190"); dlg._last.setText("0x2193"); dlg._size.setValue(24)
         dlg._bundle.setCurrentIndex(0); dlg._default_index()
+        target = dlg._bundle.currentData()
         gidx = dlg._gidx.value()
-        dlg._build()
 
+        dlg._build()                              # preview only — nothing applied yet
         self.assertIsNotNone(dlg._built)
         self.assertFalse(dlg._preview.pixmap().isNull())
-        self.assertTrue(dlg._save_btn.isEnabled())
+        self.assertTrue(dlg._apply_btn.isEnabled())
+        self.assertFalse(dlg._save_btn.isEnabled())
 
-        data = dlg._spliced_bytes()
+        dlg._apply()                              # commit into the working copy
+        self.assertIsNone(dlg._built)             # candidate consumed
+        self.assertFalse(dlg._apply_btn.isEnabled())
+        self.assertTrue(dlg._save_btn.isEnabled())
+        self.assertEqual(dlg._version.value(), target.content_version + 1)
+        self.assertEqual(dlg._pending_list.count(), 1)
+
+        data = dlg._working_bytes(0)
         pack = fpr.decode_pack(data)
         self.assertTrue(pack.crc_ok)
-        target = dlg._bundle.currentData()
         self.assertEqual(pack.font_count, target.font_count + 1)
+        self.assertEqual(pack.content_version, target.content_version + 1)
         self.assertTrue(any(f.global_index == gidx for f in pack.fonts))
 
-        # auto-confirm the flash dialog, then verify the callback fires
+        # auto-confirm the flash dialog, then verify the callback flashes the working copy
         from unittest.mock import patch
         with patch.object(fed.QMessageBox, "question",
                           return_value=fed.QMessageBox.Yes):
             dlg._flash()
         self.assertEqual(got["idx"], 0)
         self.assertEqual(got["data"], data)
+
+    @unittest.skipUnless(_FONTGEN and _FONT and _HAVE_BUNDLES,
+                         "needs fontgen deps + a TTF + shipped bundles")
+    def test_apply_accumulates_with_single_version_bump(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg._src.setText(_FONT)
+        dlg._bundle.setCurrentIndex(0); dlg._default_index()
+        target = dlg._bundle.currentData()
+        base_gidx = dlg._gidx.value()
+
+        dlg._first.setText("0x2190"); dlg._last.setText("0x2191"); dlg._size.setValue(24)
+        dlg._gidx.setValue(base_gidx); dlg._build(); dlg._apply()
+        dlg._first.setText("0x2192"); dlg._last.setText("0x2193")
+        dlg._gidx.setValue(base_gidx + 1); dlg._build(); dlg._apply()
+
+        self.assertEqual(dlg._pending_list.count(), 2)
+        self.assertEqual(dlg._version.value(), target.content_version + 1)   # one bump
+        pack = fpr.decode_pack(dlg._working_bytes(0))
+        self.assertEqual(pack.font_count, target.font_count + 2)             # both added
+        self.assertEqual(pack.content_version, target.content_version + 1)
+
+    @unittest.skipUnless(_HAVE_BUNDLES, "shipped bundles required")
+    def test_version_default_override_and_discard(self):
+        from unittest.mock import patch
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        bi = 0
+        base = dlg._packs[bi][1]
+        # simulate an applied edit (no fontgen needed for the meta/version/discard logic)
+        dlg._work[bi] = list(base.fonts)
+        dlg._pending[bi] = ["edit U+2600 (g1)"]
+        dlg._refresh_meta()
+        self.assertEqual(dlg._version.value(), base.content_version + 1)
+        self.assertTrue(dlg._save_btn.isEnabled())
+        self.assertEqual(dlg._pending_list.count(), 1)
+
+        dlg._version.setValue(123)                # user override sticks across refreshes
+        dlg._refresh_meta()
+        self.assertEqual(dlg._version.value(), 123)
+        self.assertFalse(dlg._auto_version)
+
+        with patch.object(fed.QMessageBox, "question", return_value=fed.QMessageBox.Yes):
+            dlg._discard()
+        self.assertNotIn(bi, dlg._pending)
+        self.assertNotIn(bi, dlg._work)
+        self.assertFalse(dlg._save_btn.isEnabled())
+        self.assertTrue(dlg._auto_version)        # re-armed
+        self.assertEqual(dlg._version.value(), base.content_version)   # back to base
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")

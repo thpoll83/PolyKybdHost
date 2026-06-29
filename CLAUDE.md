@@ -150,6 +150,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `eventFilter`/`_zoom`); the preview viewport is intentionally compact so the
   source-font browser below gets the space. **Auto update** (default on) re-renders
   the preview on any control change (debounced).
+  The extend dialog uses a **working-copy model** (`_work`/`_pending` keyed by bundle
+  index): *Build / Preview* only renders a candidate; **Apply to bundle** merges it
+  into an in-memory copy of the target bundle (edits accumulate, per-bundle, shown in
+  a "Pending edits" list + a metadata panel with working fonts/glyphs/size); **Save
+  .plyf… / Flash** write the whole working bundle **once** at an editable
+  **content_version** ("Save as version" spin, default current+1 — **one bump for all
+  accumulated edits**, not +1 per edit; it stops auto-defaulting once you override
+  it). **Discard edits** reverts the bundle to the loaded copy. Save/Flash gate on
+  having pending edits (not on a fresh Build), and `_working_bytes(bi)` =
+  `encode_pack(working_fonts, version)` is what's written/flashed. Switching the
+  target bundle keeps each bundle's pending edits (only the unapplied candidate is
+  cleared).
   When you **edit** a glyph, the dialog pre-fills the render controls (size,
   dither, normalize/invert/edge/outline, render size, yAdvance, …) from
   **`polyhost/res/fontpack/fontpack_render_settings.json`** — a `global ALL_FONTS

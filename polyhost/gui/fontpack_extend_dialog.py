@@ -69,9 +69,15 @@ class FontPackExtendDialog(QDialog):
         self.setWindowTitle("PolyKybd — Build / Extend Font Pack")
         self.resize(900, 640)
         self._flash_cb = flash_cb
-        self._built = None          # (bundle_index, new PackFont)
+        self._built = None          # (bundle_index, new PackFont) — last previewed candidate
         self._edit_target = None    # {bundle_index, global_index, cp} in edit mode
         self._scale = 3             # preview zoom (scroll wheel over the preview)
+        # Working copies: edits Apply into an in-memory copy of a bundle's fonts and
+        # accumulate; Save/Flash write the whole working bundle once (one version bump).
+        self._work = {}             # bundle_index -> working list[PackFont]
+        self._pending = {}          # bundle_index -> [change description strings]
+        self._auto_version = True   # auto-default "save as version" until user overrides
+        self._setting_version = False
         # Only valid bundles are splice targets — sources/load_shipped_packs may
         # yield (label, Exception) placeholders for ones that failed to decode.
         raw = sources if sources is not None else load_shipped_packs(res_dir)
@@ -147,21 +153,54 @@ class FontPackExtendDialog(QDialog):
         self._gidx = self._spin(0, 65535, 0)
         form.addRow("Global font index", self._gidx)
 
-        btns = QHBoxLayout()
+        # Row 1 — build a candidate from the source font, then commit it into the
+        # working copy.  Build only previews; Apply merges (stacks up edits).
+        brow = QHBoxLayout()
         self._build_btn = QPushButton("Build / Preview"); self._build_btn.clicked.connect(self._build)
-        self._save_btn = QPushButton("Save .plyf…"); self._save_btn.clicked.connect(self._save)
-        self._save_btn.setEnabled(False)
-        btns.addWidget(self._build_btn); btns.addWidget(self._save_btn)
-        if flash_cb is not None:
-            self._flash_btn = QPushButton("Flash to device"); self._flash_btn.clicked.connect(self._flash)
-            self._flash_btn.setEnabled(False)
-            btns.addWidget(self._flash_btn)
+        self._apply_btn = QPushButton("Apply to bundle")
+        self._apply_btn.setToolTip("Merge the previewed glyph(s) into the in-memory "
+                                   "working copy of the target bundle — accumulates; "
+                                   "nothing is written until you Save / Flash.")
+        self._apply_btn.clicked.connect(self._apply)
+        self._apply_btn.setEnabled(False)
         self._auto = QCheckBox("Auto update")
         self._auto.setChecked(True)
         self._auto.setToolTip("Re-render the preview automatically when an option changes")
-        btns.addWidget(self._auto)
-        btns.addStretch(1)
-        form.addRow(btns)
+        brow.addWidget(self._build_btn); brow.addWidget(self._apply_btn)
+        brow.addWidget(self._auto); brow.addStretch(1)
+        form.addRow(brow)
+
+        # Row 2 — write/flash the accumulated working bundle (one version bump for all
+        # the applied edits), or discard them.
+        orow = QHBoxLayout()
+        self._save_btn = QPushButton("Save .plyf…"); self._save_btn.clicked.connect(self._save)
+        self._save_btn.setEnabled(False)
+        orow.addWidget(self._save_btn)
+        if flash_cb is not None:
+            self._flash_btn = QPushButton("Flash to device"); self._flash_btn.clicked.connect(self._flash)
+            self._flash_btn.setEnabled(False)
+            orow.addWidget(self._flash_btn)
+        self._discard_btn = QPushButton("Discard edits")
+        self._discard_btn.setToolTip("Drop the working copy's pending edits for this "
+                                     "bundle (reverts to the shipped/loaded bundle)")
+        self._discard_btn.clicked.connect(self._discard)
+        self._discard_btn.setEnabled(False)
+        orow.addWidget(self._discard_btn); orow.addStretch(1)
+        form.addRow(orow)
+
+        # Metadata: what's in the working bundle and what version a save will write.
+        self._version = QSpinBox(); self._version.setRange(0, 65535)
+        self._version.setToolTip("content_version written to the .plyf / flashed. "
+                                 "Defaults to the bundle's current version + 1 so a "
+                                 "connected keyboard re-flashes it; override as needed.")
+        self._version.valueChanged.connect(self._on_version_edited)
+        form.addRow("Save as version", self._version)
+        self._meta = QLabel(); self._meta.setWordWrap(True)
+        self._meta.setStyleSheet("color:#9ad;")
+        form.addRow("Bundle", self._meta)
+        self._pending_list = QListWidget(); self._pending_list.setMaximumHeight(90)
+        self._pending_list.setToolTip("Edits applied to the working copy, in order")
+        form.addRow("Pending edits", self._pending_list)
 
         # Debounced auto-rebuild: coalesce rapid changes into one render.
         self._auto_timer = QTimer(self)
@@ -232,8 +271,8 @@ class FontPackExtendDialog(QDialog):
             hint = (f" Original settings pre-filled; source font '{sf}' isn't cached — "
                     "Download Noto… or Browse." if sf else
                     " Original settings pre-filled; pick the source font.")
-        self._status.setText(f"Editing U+{cp:04X} in '{p.get('bundle')}' — Build to peek, "
-                             f"then Save/Flash to take it.{hint}")
+        self._status.setText(f"Editing U+{cp:04X} in '{p.get('bundle')}' — Build to "
+                             f"preview, then Apply to add it to the working bundle.{hint}")
 
     def _apply_saved_settings(self, global_index: int):
         """Prefill the render controls from the settings the font was generated
@@ -302,14 +341,15 @@ class FontPackExtendDialog(QDialog):
         pack = self._bundle.currentData()
         if isinstance(pack, fpr.Pack) and pack.fonts:
             self._gidx.setValue(max(f.global_index for f in pack.fonts) + 1)
-        # A previous build targeted the old bundle — invalidate it so Save/Flash
-        # can't splice the built font into a bundle the user has since switched to.
-        # Switching bundles also leaves edit mode (becomes a normal whole-font add).
+        # A previous build targeted the old bundle — invalidate the candidate so it
+        # can't be applied to a bundle the user has since switched to.  Switching also
+        # leaves edit mode (becomes a normal whole-font add).  Working copies are kept
+        # per-bundle, so switching back to a bundle preserves its pending edits.
         self._built = None
         self._edit_target = None
-        self._save_btn.setEnabled(False)
-        if self._flash_cb is not None:
-            self._flash_btn.setEnabled(False)
+        self._apply_btn.setEnabled(False)
+        self._auto_version = True          # re-arm the version auto-default for this bundle
+        self._refresh_meta()
 
     def _browse(self):
         path, _ = QFileDialog.getOpenFileName(self, "Select font", "",
@@ -408,11 +448,9 @@ class FontPackExtendDialog(QDialog):
         self._built = (self._bundle.currentIndex(), new)
         self._render_preview()
         self._status.setText(f"Built {new.glyph_count} glyph(s), U+{new.first:04X}–"
-                             f"{new.last:04X}, global index {gidx}. Save or flash to the "
-                             f"'{self._bundle.currentText()}' bundle.")
-        self._save_btn.setEnabled(True)
-        if self._flash_cb is not None:
-            self._flash_btn.setEnabled(True)
+                             f"{new.last:04X}, global index {gidx}. Apply to add it to the "
+                             f"'{self._bundle.currentText()}' working bundle.")
+        self._apply_btn.setEnabled(True)
 
     def _render_preview(self):
         """(Re)draw the preview from the already-built pack at the current zoom —
@@ -451,51 +489,138 @@ class FontPackExtendDialog(QDialog):
             return True                             # consume: wheel zooms, not pans
         return super().eventFilter(obj, ev)
 
-    def _spliced_bytes(self) -> bytes:
-        bundle_index, new = self._built     # the bundle chosen at Build time
-        pack = self._packs[bundle_index][1]
-        et = self._edit_target
-        if et is not None:
-            # Edit/peek mode: insert the single built glyph into the existing font
-            # (keeping its siblings), rather than replacing the whole font.  If the
-            # edit target no longer resolves in the chosen bundle, fail loudly —
-            # silently degrading to a whole-font splice would corrupt the bundle.
-            existing = next((f for f in pack.fonts
-                             if f.global_index == et["global_index"]), None)
-            if existing is None or not existing.covers(et["cp"]) or not new.glyphs:
-                raise ValueError("Edit target no longer matches the selected bundle")
-            merged = fpr.replace_glyph(existing, et["cp"], new.glyphs[0], new.bitmap)
-            return fpr.encode_pack(fpr.splice_font(pack, merged),
-                                   pack.content_version + 1)
-        fonts = fpr.splice_font(pack, new)
-        return fpr.encode_pack(fonts, pack.content_version + 1)
+    # ---- working copy (accumulate edits, then save/flash once) ----
+    def _working(self, bi: int):
+        """The mutable working-copy font list for bundle `bi`.  Initialised as a
+        shallow copy of the loaded bundle's fonts on first edit; splice/replace return
+        *new* PackFonts, so the loaded pack is never mutated."""
+        if bi not in self._work:
+            self._work[bi] = list(self._packs[bi][1].fonts)
+        return self._work[bi]
 
-    def _save(self):
+    def _working_bytes(self, bi: int) -> bytes:
+        return fpr.encode_pack(self._working(bi), self._version.value())
+
+    def _set_version(self, v: int):
+        self._setting_version = True
+        self._version.setValue(v)
+        self._setting_version = False
+
+    def _on_version_edited(self, *_):
+        if not self._setting_version:          # a real user edit — stop auto-defaulting
+            self._auto_version = False
+
+    def _refresh_meta(self):
+        """Recompute the metadata panel (working font/glyph/size counts + pending list)
+        for the current target bundle and gate Save/Flash/Discard on having edits."""
+        bi = self._bundle.currentIndex()
+        if not (0 <= bi < len(self._packs)):
+            self._meta.setText("")
+            return
+        label, base = self._packs[bi]
+        fonts = self._work.get(bi, base.fonts)
+        pend = self._pending.get(bi, [])
+        if self._auto_version:                 # default save-as version (one bump for all edits)
+            self._set_version(base.content_version + (1 if pend else 0))
+        nonempty = sum(1 for f in fonts for g in f.glyphs if g["width"] and g["height"])
+        try:
+            size = len(fpr.encode_pack(fonts, self._version.value()))
+        except Exception:                      # noqa: BLE001
+            size = 0
+        self._meta.setText(
+            f"<b>{label}</b> — abi v{base.abi_version} · current content "
+            f"v{base.content_version}<br>working: {len(fonts)} fonts · {nonempty} glyphs "
+            f"· {size:,} B · {len(pend)} pending edit(s)")
+        self._pending_list.clear()
+        self._pending_list.addItems(pend)
+        has = bool(pend)
+        self._save_btn.setEnabled(has)
+        self._discard_btn.setEnabled(has)
+        if self._flash_cb is not None:
+            self._flash_btn.setEnabled(has)
+
+    def _apply(self):
+        """Merge the last-built candidate into the target bundle's working copy."""
         if not self._built:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Save font pack", "trial.plyf",
+        bi, new = self._built
+        fonts = self._working(bi)
+        et = self._edit_target
+        try:
+            if et is not None:
+                # Edit mode: splice the single built glyph into the existing font
+                # (keeping its siblings) rather than replacing the whole font.
+                existing = next((f for f in fonts
+                                 if f.global_index == et["global_index"]), None)
+                if existing is None or not existing.covers(et["cp"]) or not new.glyphs:
+                    raise ValueError("Edit target no longer matches the selected bundle")
+                merged = fpr.replace_glyph(existing, et["cp"], new.glyphs[0], new.bitmap)
+                self._work[bi] = fpr.splice_font(
+                    fpr.Pack(1, 0, len(fonts), 0, 0, True, fonts), merged)
+                desc = f"edit U+{et['cp']:04X} (g{et['global_index']})"
+            else:
+                self._work[bi] = fpr.splice_font(
+                    fpr.Pack(1, 0, len(fonts), 0, 0, True, fonts), new)
+                desc = (f"font g{new.global_index}: U+{new.first:04X}–U+{new.last:04X} "
+                        f"({new.glyph_count} slot(s))")
+        except Exception as e:  # noqa: BLE001
+            QMessageBox.critical(self, "Apply failed", str(e))
+            return
+        self._pending.setdefault(bi, []).append(desc)
+        self._built = None                     # consumed; build again to apply more
+        self._edit_target = None
+        self._apply_btn.setEnabled(False)
+        self._refresh_meta()
+        self._status.setText(f"Applied: {desc}.  {len(self._pending[bi])} pending edit(s) "
+                             f"in '{self._packs[bi][0]}'. Save .plyf… or Flash when done.")
+
+    def _discard(self):
+        bi = self._bundle.currentIndex()
+        if not self._pending.get(bi) and bi not in self._work:
+            return
+        if QMessageBox.question(self, "Discard edits",
+                                f"Discard all pending edits to '{self._packs[bi][0]}'?") \
+                != QMessageBox.Yes:
+            return
+        self._work.pop(bi, None)
+        self._pending.pop(bi, None)
+        self._auto_version = True
+        self._refresh_meta()
+        self._status.setText(f"Reverted '{self._packs[bi][0]}' to the loaded bundle.")
+
+    def _save(self):
+        bi = self._bundle.currentIndex()
+        if not self._pending.get(bi):
+            QMessageBox.information(self, "Save", "No pending edits — Build a glyph and "
+                                    "Apply it to the bundle first.")
+            return
+        label = self._packs[bi][0]
+        path, _ = QFileDialog.getSaveFileName(self, "Save font pack", f"{label}.plyf",
                                               "Font pack (*.plyf)")
         if not path:
             return
         try:
+            data = self._working_bytes(bi)
             with open(path, "wb") as f:
-                f.write(self._spliced_bytes())
+                f.write(data)
         except Exception as e:  # noqa: BLE001
             QMessageBox.critical(self, "Save failed", str(e))
             return
-        self._status.setText(f"Saved {path}")
+        self._status.setText(f"Saved {path} — content v{self._version.value()}, "
+                             f"{len(data):,} B.")
 
     def _flash(self):
-        if not self._built or self._flash_cb is None:
+        bi = self._bundle.currentIndex()
+        if not self._pending.get(bi) or self._flash_cb is None:
             return
-        bundle_index, _ = self._built          # the bundle chosen at Build time
-        label = self._packs[bundle_index][0]
+        label = self._packs[bi][0]
         if QMessageBox.question(self, "Flash",
-                                f"Flash the modified '{label}' bundle to the keyboard?") \
+                                f"Flash the modified '{label}' bundle (content "
+                                f"v{self._version.value()}) to the keyboard?") \
                 != QMessageBox.Yes:
             return
         try:
-            self._flash_cb(bundle_index, self._spliced_bytes())
+            self._flash_cb(bi, self._working_bytes(bi))
         except Exception as e:  # noqa: BLE001
             QMessageBox.critical(self, "Flash failed", str(e))
             return
