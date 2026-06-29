@@ -220,6 +220,27 @@ class FontPackInspectorDialogTest(unittest.TestCase):
             files = [c[2] for c in tab._peek_candidates(tab._pack.fonts[0], 0x41)]
         self.assertEqual(files, ["inrange.ttf", "low.ttf"])
 
+    def test_override_and_covered_representation(self):
+        # front-to-back precedence: a low-gidx font A shadows B's duplicate and
+        # fills B's empty slot.  Tab shows B.
+        def g(off, w, h):
+            return dict(bitmapOffset=off, width=w, height=h, xAdvance=w + 1,
+                        xOffset=0, yOffset=0)
+        empty = dict(bitmapOffset=0, width=0, height=0, xAdvance=0, xOffset=0, yOffset=0)
+        fontA = fpr.PackFont("A", b"\x80\x80", [g(0, 1, 1), empty, g(1, 1, 1)],
+                             0x41, 0x43, 12, global_index=2)
+        fontB = fpr.PackFont("B", b"\x80\x80", [g(0, 1, 1), g(1, 1, 1), empty],
+                             0x41, 0x43, 12, global_index=5)
+        packB = fpr.Pack(1, 0, 1, 0, 0, True, [fontB])
+        tab = fid._BundleTab("B", packB, all_fonts=[fontA, fontB])
+        self.addCleanup(tab.deleteLater)
+        tab.set_mode("glyph")
+        tips = {tab._model.item(i).data(fid._CP_ROLE): tab._model.item(i).toolTip()
+                for i in range(tab._model.rowCount())}
+        self.assertIn("overridden by", tips[0x41])     # B's 0x41 loses to A
+        self.assertNotIn("overridden", tips[0x42])     # B wins 0x42 (A empty there)
+        self.assertIn("drawn by", tips[0x43])          # B empty, A draws it
+
     def test_error_source_does_not_crash(self):
         # a decode failure becomes a labelled tab, never a dead window
         dlg = fid.FontPackInspectorDialog(sources=[("broken", ValueError("bad"))])

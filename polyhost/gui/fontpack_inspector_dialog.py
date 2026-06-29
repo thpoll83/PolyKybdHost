@@ -45,8 +45,13 @@ def _pil_l_to_pixmap(img) -> QPixmap:
     return QPixmap.fromImage(qimg)
 
 
-# Amber tint for "peek" previews — clearly distinct from real (white) pack glyphs.
+# Amber tint for "peek" previews (rendered from a *source* font, not in the pack).
 PEEK_RGB = (255, 168, 0)
+# Dim grey for a glyph that exists but is overridden by a higher-priority pack font
+# (front-to-back precedence — it never renders on the keyboard).
+SHADOW_RGB = (105, 105, 105)
+# Cyan for a slot that's empty in this font but *is* drawn by another pack font.
+COVERED_RGB = (90, 170, 255)
 
 
 def _pil_l_to_tinted_pixmap(img, rgb) -> QPixmap:
@@ -119,6 +124,7 @@ class _BundleTab(QWidget):
         # bundle's fonts when not supplied (standalone / tests).
         self._all_fonts = list(all_fonts) if all_fonts is not None else (
             list(pack.fonts) if isinstance(pack, fpr.Pack) else [])
+        self._winner_cache = None      # cp -> font that actually renders it (lowest gidx)
         self._mode = "glyph"
         self._built_key = None         # (mode, scale, hide_empty, peek) last built
         self._settings_map = None      # lazy: global index -> render settings
@@ -215,6 +221,25 @@ class _BundleTab(QWidget):
             self._settings_map = ext.load_render_settings()
         return self._settings_map
 
+    def _winners(self):
+        """cp -> the font that actually renders it: the lowest-global-index font
+        (across all bundles) with a non-empty glyph there (the firmware's
+        front-to-back precedence)."""
+        if self._winner_cache is None:
+            win = {}
+            for f in sorted(self._all_fonts, key=lambda f: f.global_index):
+                for cp in range(f.first, f.last + 1):
+                    g = f.glyphs[cp - f.first]
+                    if g["width"] and g["height"] and cp not in win:
+                        win[cp] = f
+            self._winner_cache = win
+        return self._winner_cache
+
+    def _winner_desc(self, font) -> str:
+        opts = self._settings().get(str(font.global_index))
+        sf = opts.get("source_file") if opts else None
+        return f"{sf} (g{font.global_index})" if sf else f"g{font.global_index}"
+
     @staticmethod
     def _is_color(opts) -> bool:
         return bool(opts.get("grayscale")) or int(opts.get("bits") or 1) == 32
@@ -296,24 +321,44 @@ class _BundleTab(QWidget):
         self._dims = (cw, ch, scale)
         self._view.setIconSize(QSize(cw, ch + 11))
 
-        # Build all cells up front (empties as placeholders — instant even for the
-        # ~1200-glyph emoji bundle), then fill peek previews incrementally so color
-        # rendering never blocks the UI.  See _peek_step.
+        # Build all cells up front (instant even for the ~1200-glyph emoji bundle),
+        # then fill source peek previews incrementally.  Front-to-back precedence:
+        # each cp is really drawn by the lowest-global-index font that has it, so we
+        # tag overridden glyphs and fill empty-but-covered slots from the winner.
+        winners = self._winners()
         for font in sorted(self._pack.fonts, key=lambda f: f.global_index):
             for cp in range(font.first, font.last + 1):
                 g = font.glyphs[cp - font.first]
                 empty = g["width"] == 0 or g["height"] == 0
                 if empty and hide_empty:
                     continue
-                img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
+                win = winners.get(cp)
+                tip = f"U+{cp:04X}"
+                if not empty and win is not None and win.global_index != font.global_index:
+                    # has a glyph but a higher-priority font wins → shadowed
+                    img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
+                    pm = _pil_l_to_tinted_pixmap(img, SHADOW_RGB)
+                    tip += f"  (overridden by {self._winner_desc(win)})"
+                elif not empty:
+                    img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
+                    pm = _pil_l_to_pixmap(img)
+                elif win is not None:
+                    # empty here, but another pack font draws it → show that, tinted
+                    img = fprd.glyph_cell(win, cp, cw, ch, scale=scale, mode=self._mode)
+                    pm = _pil_l_to_tinted_pixmap(img, COVERED_RGB)
+                    tip += f"  (drawn by {self._winner_desc(win)} — none in this font)"
+                else:
+                    img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
+                    pm = _pil_l_to_pixmap(img)
+                    tip += "  (empty — no glyph)"
                 it = QStandardItem()
-                it.setIcon(QIcon(_pil_l_to_pixmap(img)))
+                it.setIcon(QIcon(pm))
                 it.setEditable(False)
                 it.setData(font, _FONT_ROLE)
                 it.setData(cp, _CP_ROLE)
-                it.setToolTip(f"U+{cp:04X}" + ("  (empty — no glyph)" if empty else ""))
+                it.setToolTip(tip)
                 self._model.appendRow(it)
-                if empty and peek:
+                if empty and win is None and peek:   # only truly-uncovered slots peek
                     self._peek_queue.append((it, font, cp))
         if self._peek_queue:
             self._peek_timer.start(0)
