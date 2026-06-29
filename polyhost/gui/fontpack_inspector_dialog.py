@@ -577,7 +577,8 @@ class FontPackInspectorDialog(QDialog):
     def _on_edit(self, font, cp: int):
         bi = self._tabs.currentIndex()
         self._open_extend(prefill={"bundle": self._base_label(bi), "first": cp,
-                                   "last": cp, "global_index": font.global_index})
+                                   "last": cp, "global_index": font.global_index,
+                                   "font_first": font.first, "font_last": font.last})
 
     def _open_extend(self, prefill=None):
         from polyhost.gui.fontpack_extend_dialog import FontPackExtendDialog

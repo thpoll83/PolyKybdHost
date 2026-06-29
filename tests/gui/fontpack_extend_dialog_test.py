@@ -225,6 +225,48 @@ class ExtendDialogTest(unittest.TestCase):
                 prefill={"bundle": "does-not-exist", "first": 0x2600,
                          "last": 0x2600, "global_index": 1})
 
+    def test_lang_flags_record_loaded(self):
+        rec = fed._lang_flags()
+        if not rec:
+            self.skipTest("no shipped lang_flags.json")
+        self.assertEqual(rec.get("source_file"), "NotoColorEmoji-Regular.ttf")
+        groups = [g for g in rec["sequence"].split(",") if g.strip()]
+        self.assertEqual(len(groups), rec["count"])      # one group per flag
+
+    def test_flags_record_for_range(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        rec = fed._lang_flags()
+        if not rec:
+            self.skipTest("no shipped lang_flags.json")
+        base = int(rec["seq_first"])
+        self.assertIsNotNone(dlg._flags_record_for(base))            # first flag cp
+        self.assertIsNotNone(dlg._flags_record_for(base + rec["count"] - 1))  # last
+        self.assertIsNone(dlg._flags_record_for(base + rec["count"]))         # past end
+        self.assertIsNone(dlg._flags_record_for(0x41))               # not a flag cp
+
+    def test_flag_edit_prefills_sequence_mode(self):
+        rec = fed._lang_flags()
+        if not rec:
+            self.skipTest("no shipped lang_flags.json")
+        base = int(rec["seq_first"])
+        groups = [g.strip() for g in rec["sequence"].split(",") if g.strip()]
+        cp = base + 2                                    # third flag
+        dlg = fed.FontPackExtendDialog(
+            prefill={"bundle": "flags", "first": cp, "last": cp,
+                     "global_index": 144, "font_first": base, "font_last": base + rec["count"] - 1})
+        self.addCleanup(dlg.deleteLater)
+        self.assertEqual(dlg._mode.currentIndex(), 1)    # HarfBuzz sequence
+        self.assertEqual(dlg._seq.text(), groups[2])     # the per-flag regional pair
+        self.assertEqual(int(dlg._seq_first.text(), 16), cp)
+        # options came from lang_flags.json
+        self.assertEqual(dlg._size.value(), 20)
+        self.assertTrue(dlg._gray.isChecked())
+        self.assertEqual(dlg._rsize.value(), 54)
+        self.assertEqual(dlg._maxw.value(), 72)
+        self.assertEqual(dlg._outline.value(), 1)
+        self.assertEqual(dlg._dl_panel.current_filename(), "NotoColorEmoji-Regular.ttf")
+
     def test_with_slider_two_way_sync(self):
         from PyQt5.QtWidgets import QSlider
         spin = fed.FontPackExtendDialog._dspin(0.0, 2.0, 1.0, 0.05)
