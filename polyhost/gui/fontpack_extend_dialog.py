@@ -17,7 +17,7 @@ import sys
 
 import threading
 
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QSpinBox,
     QDoubleSpinBox, QComboBox, QCheckBox, QPushButton, QScrollArea, QFileDialog,
@@ -155,8 +155,18 @@ class FontPackExtendDialog(QDialog):
             self._flash_btn = QPushButton("Flash to device"); self._flash_btn.clicked.connect(self._flash)
             self._flash_btn.setEnabled(False)
             btns.addWidget(self._flash_btn)
+        self._auto = QCheckBox("Auto update")
+        self._auto.setChecked(True)
+        self._auto.setToolTip("Re-render the preview automatically when an option changes")
+        btns.addWidget(self._auto)
         btns.addStretch(1)
         form.addRow(btns)
+
+        # Debounced auto-rebuild: coalesce rapid changes into one render.
+        self._auto_timer = QTimer(self)
+        self._auto_timer.setSingleShot(True)
+        self._auto_timer.timeout.connect(self._auto_build)
+        self._wire_auto_update()
 
         right = QVBoxLayout()
         self._status = QLabel("Pick a font, set options, then Build / Preview.")
@@ -168,13 +178,14 @@ class FontPackExtendDialog(QDialog):
         scroll.setWidget(self._preview)
         scroll.setWidgetResizable(False)
         scroll.setStyleSheet("background:#000;")
-        right.addWidget(scroll, 2)
+        scroll.setMaximumHeight(260)        # compact preview; list gets the rest
+        right.addWidget(scroll, 1)
 
         # Font browser sits permanently under the preview (no modal, no toggle):
         # clicking a font assigns it as the source.
         self._dl_panel = NotoDownloadPanel(self)
         self._dl_panel.font_chosen.connect(self._on_downloaded_font)
-        right.addWidget(self._dl_panel, 1)
+        right.addWidget(self._dl_panel, 3)
         root.addLayout(right, 1)
 
         self._default_index()
@@ -322,27 +333,55 @@ class FontPackExtendDialog(QDialog):
             seq_first=int(self._seq_first.text(), 16) if self._seq.isEnabled() else 0,
             bits=32)
 
+    # ---- auto-update ----
+    def _wire_auto_update(self):
+        """Schedule a debounced rebuild whenever any render option changes."""
+        for w in (self._src, self._first, self._last, self._seq, self._seq_first):
+            w.textChanged.connect(self._schedule_auto)
+        for w in (self._mode, self._dither, self._bundle):
+            w.currentIndexChanged.connect(self._schedule_auto)
+        for w in (self._size, self._outline, self._rsize, self._yadv, self._maxw,
+                  self._weight, self._xshift, self._gamma, self._contrast,
+                  self._exposure, self._sharp, self._sat, self._gidx):
+            w.valueChanged.connect(self._schedule_auto)
+        for w in (self._gray, self._norm, self._inv, self._edge):
+            w.stateChanged.connect(self._schedule_auto)
+        self._auto.stateChanged.connect(self._schedule_auto)
+
+    def _schedule_auto(self, *_):
+        if self._auto.isChecked():
+            self._auto_timer.start(250)        # coalesce bursts of changes
+
+    def _auto_build(self):
+        src = self._src.text().strip()
+        if self._auto.isChecked() and src and os.path.exists(src):
+            self._build(auto=True)             # silent on errors (status only)
+
     # ---- actions ----
-    def _build(self):
+    def _build(self, *_a, auto=False):
+        def fail(title, msg):
+            if auto:
+                self._status.setText(msg)
+            else:
+                QMessageBox.warning(self, title, msg)
+
         src = self._src.text().strip()
         if not src or not os.path.exists(src):
-            QMessageBox.warning(self, "Build", "Pick an existing font file first.")
+            fail("Build", "Pick an existing font file first.")
             return
         missing = _missing_fontgen_deps()
         if missing:
-            QMessageBox.warning(self, "Build",
-                                "Building glyphs needs these font-generation "
-                                "dependencies, which aren't installed in this "
-                                "environment:\n\n    pip install " + " ".join(missing) +
-                                "\n\n(They're normally pulled in by installing "
-                                "PolyKybdHost: pip install -e .)")
+            fail("Build", "Building glyphs needs these font-generation dependencies, "
+                 "which aren't installed in this environment:\n\n    pip install "
+                 + " ".join(missing) + "\n\n(They're normally pulled in by installing "
+                 "PolyKybdHost: pip install -e .)")
             return
         try:
             from polyhost.services import fontpack_extend as ext
             from polyhost.services import fontpack_render as rd
         except Exception as e:  # noqa: BLE001
-            QMessageBox.warning(self, "Build", "Font building dependencies are missing "
-                                "or broken:\n  pip install -e .\n\n" f"({e})")
+            fail("Build", "Font building dependencies are missing or broken:\n"
+                 f"  pip install -e .\n\n({e})")
             return
         gidx = self._gidx.value()
         try:
@@ -355,7 +394,10 @@ class FontPackExtendDialog(QDialog):
                                           int(self._last.text(), 16)),
                     opts=self._options(), global_index=gidx)
         except Exception as e:  # noqa: BLE001
-            QMessageBox.critical(self, "Build failed", str(e))
+            if auto:
+                self._status.setText(f"(auto preview) {e}")
+            else:
+                QMessageBox.critical(self, "Build failed", str(e))
             return
         self._built = (self._bundle.currentIndex(), new)
         sheet = rd.contact_sheet(fpr.Pack(1, 0, 1, 0, 0, True, [new]), cols=12, scale=3,

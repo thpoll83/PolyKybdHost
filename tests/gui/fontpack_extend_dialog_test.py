@@ -128,6 +128,36 @@ class ExtendDialogTest(unittest.TestCase):
         self.assertEqual(dlg._weight.value(), 0)
         self.assertEqual(dlg._options().weight, -1)        # 0 in UI -> unset
 
+    def test_auto_update_schedules_only_when_enabled(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg._auto.setChecked(True)
+        dlg._auto_timer.stop()
+        dlg._size.setValue(dlg._size.value() + 1)      # change -> debounced schedule
+        self.assertTrue(dlg._auto_timer.isActive())
+        dlg._auto.setChecked(False)
+        dlg._auto_timer.stop()
+        dlg._size.setValue(dlg._size.value() + 1)
+        self.assertFalse(dlg._auto_timer.isActive())   # off -> no auto rebuild
+
+    def test_auto_build_noop_without_source(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg._auto.setChecked(True)
+        dlg._auto_build()                              # no source -> silently does nothing
+        self.assertIsNone(dlg._built)
+
+    @unittest.skipUnless(_FONTGEN and _FONT and _HAVE_BUNDLES,
+                         "needs fontgen deps + a TTF + shipped bundles")
+    def test_auto_build_renders_without_button(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg._src.setText(_FONT)
+        dlg._first.setText("0x41"); dlg._last.setText("0x42")
+        dlg._auto_build()                              # no Build click
+        self.assertIsNotNone(dlg._built)
+        self.assertFalse(dlg._preview.pixmap().isNull())
+
     def test_download_panel_sets_source(self):
         dlg = fed.FontPackExtendDialog()
         self.addCleanup(dlg.deleteLater)
