@@ -81,19 +81,17 @@ class FontPackExtendDialog(QDialog):
         root.addLayout(form, 0)
 
         self._src = QLineEdit()
+        self._src.setReadOnly(True)
+        self._src.setPlaceholderText("pick one from Source fonts below, or Browse…")
         browse = QPushButton("Browse…")
+        browse.setToolTip("Use a custom font not in the Noto list")
         browse.clicked.connect(self._browse)
-        dl = QPushButton("Font Browser")
-        dl.setCheckable(True)
-        dl.setToolTip("Show/hide the font browser: download Noto source fonts (same "
-                      "list as the firmware's dl-fonts.sh) and assign one as the source")
-        dl.toggled.connect(self._toggle_download_panel)
-        self._dl_toggle = dl
-        self._panel_widened = False
         srow = QHBoxLayout()
-        srow.addWidget(self._src, 1); srow.addWidget(browse); srow.addWidget(dl)
-        sw = QWidget(); sw.setLayout(srow)
-        form.addRow("Source font (.ttf/.otf)", sw)
+        srow.addWidget(self._src, 1)
+        srow.addWidget(browse)
+        sw = QWidget()
+        sw.setLayout(srow)
+        form.addRow("Source font", sw)
 
         self._mode = QComboBox(); self._mode.addItems(["Codepoint range", "HarfBuzz sequence"])
         self._mode.currentIndexChanged.connect(self._sync_mode)
@@ -153,18 +151,20 @@ class FontPackExtendDialog(QDialog):
         self._status = QLabel("Pick a font, set options, then Build / Preview.")
         self._status.setWordWrap(True)
         right.addWidget(self._status)
-        self._preview = QLabel(); self._preview.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        scroll = QScrollArea(); scroll.setWidget(self._preview); scroll.setWidgetResizable(False)
+        self._preview = QLabel()
+        self._preview.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        scroll = QScrollArea()
+        scroll.setWidget(self._preview)
+        scroll.setWidgetResizable(False)
         scroll.setStyleSheet("background:#000;")
-        right.addWidget(scroll, 1)
-        root.addLayout(right, 1)
+        right.addWidget(scroll, 2)
 
-        # Download UI as an attached side panel (hidden until toggled) rather than a
-        # stacked modal dialog — keeps everything in one window.
+        # Font browser sits permanently under the preview (no modal, no toggle):
+        # clicking a font assigns it as the source.
         self._dl_panel = NotoDownloadPanel(self)
         self._dl_panel.font_chosen.connect(self._on_downloaded_font)
-        self._dl_panel.setVisible(False)
-        root.addWidget(self._dl_panel, 0)
+        right.addWidget(self._dl_panel, 1)
+        root.addLayout(right, 1)
 
         self._default_index()
         if not self._packs:
@@ -275,17 +275,6 @@ class FontPackExtendDialog(QDialog):
         if path:
             self._src.setText(path)
 
-    def _toggle_download_panel(self, on: bool):
-        self._dl_panel.setVisible(on)
-        # Grow/shrink the window so the panel doesn't squeeze the form/preview.
-        extra = 380
-        if on and not self._panel_widened:
-            self.resize(self.width() + extra, self.height())
-            self._panel_widened = True
-        elif not on and self._panel_widened:
-            self.resize(max(700, self.width() - extra), self.height())
-            self._panel_widened = False
-
     def _on_downloaded_font(self, path: str):
         if path:
             self._src.setText(path)
@@ -341,7 +330,7 @@ class FontPackExtendDialog(QDialog):
             QMessageBox.critical(self, "Build failed", str(e))
             return
         self._built = (self._bundle.currentIndex(), new)
-        sheet = rd.contact_sheet(fpr.Pack(1, 0, 1, 0, 0, True, [new]), cols=12, scale=2,
+        sheet = rd.contact_sheet(fpr.Pack(1, 0, 1, 0, 0, True, [new]), cols=12, scale=3,
                                  mode="keycap", title=f"built · {new.glyph_count} glyphs")
         self._preview.setPixmap(_pil_l_to_pixmap(sheet))
         self._preview.resize(self._preview.pixmap().size())
@@ -405,14 +394,13 @@ class FontPackExtendDialog(QDialog):
 
 class NotoDownloadPanel(QWidget):
     """Embeddable Noto source-font picker/downloader (no modal).  Lists the shared
-    catalog (noto-fonts.yaml), marks cached fonts, downloads selected / all in the
-    background, and emits ``font_chosen(path)`` when a font is ready to use — so it
-    can sit as a side panel in the extend dialog instead of stacking a dialog."""
+    catalog (noto-fonts.yaml), marks cached fonts, and emits ``font_chosen(path)``
+    when a font is clicked (downloading it first if needed) — it lives permanently
+    under the extend dialog's preview so picking a source is a single click."""
     font_chosen = pyqtSignal(str)       # local path of the picked/downloaded font
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setMaximumWidth(360)
         from polyhost.services import font_downloader as fdl
         self._fdl = fdl
         try:
@@ -423,15 +411,16 @@ class NotoDownloadPanel(QWidget):
 
         v = QVBoxLayout(self)
         v.setContentsMargins(0, 0, 0, 0)
-        v.addWidget(QLabel("Download Noto source fonts\n→ " + fdl.default_cache_dir()))
+        v.addWidget(QLabel("Source fonts — click to use (✓ = downloaded; uncached "
+                           "downloads first)"))
         self._list = QListWidget()
-        self._list.itemDoubleClicked.connect(lambda _it: self._download())
+        # Click = use it (download first if needed) — no separate "Use" button.
+        self._list.itemClicked.connect(self._use_clicked)
+        self._list.itemDoubleClicked.connect(self._use_clicked)
         for f in self._fonts:
             item = QListWidgetItem(self._label(f))
             item.setData(Qt.UserRole, f)
             self._list.addItem(item)
-        if self._fonts:
-            self._list.setCurrentRow(0)
         v.addWidget(self._list, 1)
 
         btns = QHBoxLayout()
@@ -439,13 +428,8 @@ class NotoDownloadPanel(QWidget):
         self._all_btn.setToolTip("Fetch every Noto font in the list into the cache")
         self._all_btn.clicked.connect(self._download_all)
         self._all_btn.setEnabled(bool(self._fonts))
-        self._dl_btn = QPushButton("Use selected")
-        self._dl_btn.setToolTip("Download if needed, then use it as the source font")
-        self._dl_btn.clicked.connect(self._download)
-        self._dl_btn.setEnabled(bool(self._fonts))
-        btns.addWidget(self._all_btn)
         btns.addStretch(1)
-        btns.addWidget(self._dl_btn)
+        btns.addWidget(self._all_btn)
         v.addLayout(btns)
 
     def _label(self, font) -> str:
@@ -472,12 +456,11 @@ class NotoDownloadPanel(QWidget):
             it = self._list.item(i)
             it.setText(self._label(it.data(Qt.UserRole)))
 
-    def _download(self):
-        item = self._list.currentItem()
+    def _use_clicked(self, item):
+        """Use the clicked font: emit it if cached, else download then emit."""
         if item is None:
             return
         font = item.data(Qt.UserRole)
-        # Already cached → use it straight away, no network.
         if self._fdl.is_downloaded(font):
             self.font_chosen.emit(self._fdl.local_path(font))
             return
@@ -488,6 +471,10 @@ class NotoDownloadPanel(QWidget):
             return
         if font.filename in paths:                # not cancelled
             self.font_chosen.emit(paths[font.filename])
+
+    def _download(self):
+        """Use the current row (entry point for the standalone dialog / tests)."""
+        self._use_clicked(self._list.currentItem())
 
     def _download_all(self):
         todo = [f for f in self._fonts if not self._fdl.is_downloaded(f)]

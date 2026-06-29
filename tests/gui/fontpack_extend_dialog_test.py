@@ -116,12 +116,10 @@ class ExtendDialogTest(unittest.TestCase):
         self.assertEqual(dlg._weight.value(), 0)
         self.assertEqual(dlg._options().weight, -1)        # 0 in UI -> unset
 
-    def test_download_panel_toggles_and_sets_source(self):
+    def test_download_panel_sets_source(self):
         dlg = fed.FontPackExtendDialog()
         self.addCleanup(dlg.deleteLater)
-        self.assertFalse(dlg._dl_panel.isVisible())
-        dlg._toggle_download_panel(True)
-        self.assertTrue(dlg._dl_panel.isVisibleTo(dlg))
+        self.assertTrue(dlg._dl_panel.isVisibleTo(dlg))    # always under the preview
         dlg._dl_panel.font_chosen.emit("/tmp/some-font.ttf")
         self.assertEqual(dlg._src.text(), "/tmp/some-font.ttf")
 

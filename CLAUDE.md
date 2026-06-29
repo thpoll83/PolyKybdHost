@@ -124,9 +124,9 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   renders the *empty* slots from their source font (via `fontpack_extend.peek_source_glyph`
   + the shipped render settings, needs the source font downloaded) as **amber
   previews** — candidates you can then double-click to edit/take; they are not in
-  the pack. The extend dialog's **"Font Browser"** side panel (toggled inline,
-  not a modal) downloads/assigns the Noto source fonts via
-  `polyhost/services/font_downloader.py`, which reads the
+  the pack. The extend dialog's **Source fonts** browser (always under the
+  preview; click a font to use it, downloading first if needed) downloads/assigns
+  the Noto source fonts via `polyhost/services/font_downloader.py`, which reads the
   catalog from **`polyhost/res/fonts/noto-fonts.yaml`**. ⚠️ That YAML is the **single
   source of truth shared byte-identically** with the firmware's
   `qmk_firmware/keyboards/polykybd/fonts/noto-fonts.yaml` (which `dl-fonts.sh` reads)
