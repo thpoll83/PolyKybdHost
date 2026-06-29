@@ -332,6 +332,77 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.addCleanup(dlg.deleteLater)
         self.assertEqual(dlg._tabs.count(), 1)
 
+    def test_open_plyf_adds_tab(self):
+        # loading a saved .plyf adds a tab named after the file, and folds it into
+        # the Extend sources + the merged all_fonts (so it's investigable).
+        import tempfile
+        from unittest.mock import patch
+        from PyQt5.QtWidgets import QFileDialog, QMessageBox
+
+        def g(off, w, h):
+            return dict(bitmapOffset=off, width=w, height=h, xAdvance=w + 1,
+                        xOffset=0, yOffset=0)
+        font = fpr.PackFont("x", b"\x80", [g(0, 1, 1)], 0x41, 0x41, 12, global_index=200)
+        data = fpr.encode_pack([font], content_version=7)
+        path = os.path.join(tempfile.mkdtemp(), "my-symbols.plyf")
+        with open(path, "wb") as f:
+            f.write(data)
+
+        dlg = fid.FontPackInspectorDialog(sources=[("tiny", _tiny_pack())])
+        self.addCleanup(dlg.deleteLater)
+        before = dlg._tabs.count()
+        with patch.object(QFileDialog, "getOpenFileName", return_value=(path, "")), \
+             patch.object(QMessageBox, "information", return_value=None):
+            dlg._open_file()
+        self.assertEqual(dlg._tabs.count(), before + 1)
+        self.assertEqual(dlg._tabs.tabText(before), "my-symbols")   # named after the file
+        self.assertIn("my-symbols", [l for l, _ in dlg._sources])   # now an Extend source
+        self.assertTrue(any(f.global_index == 200 for f in dlg._all_fonts))
+
+    def test_open_plyf_from_empty_start(self):
+        # with no shipped bundles, the window still opens; Open populates it
+        import tempfile
+        from unittest.mock import patch
+        from PyQt5.QtWidgets import QFileDialog, QMessageBox
+
+        def g(off, w, h):
+            return dict(bitmapOffset=off, width=w, height=h, xAdvance=w + 1,
+                        xOffset=0, yOffset=0)
+        font = fpr.PackFont("x", b"\x80", [g(0, 1, 1)], 0x41, 0x41, 12, global_index=1)
+        path = os.path.join(tempfile.mkdtemp(), "saved.plyf")
+        with open(path, "wb") as f:
+            f.write(fpr.encode_pack([font], content_version=3))
+
+        dlg = fid.FontPackInspectorDialog(sources=[])
+        self.addCleanup(dlg.deleteLater)
+        self.assertEqual(dlg._tabs.count(), 0)
+        self.assertTrue(dlg._empty_note.isVisibleTo(dlg))
+        self.assertFalse(dlg._edit_btn.isEnabled())
+        with patch.object(QFileDialog, "getOpenFileName", return_value=(path, "")), \
+             patch.object(QMessageBox, "information", return_value=None):
+            dlg._open_file()
+        self.assertEqual(dlg._tabs.count(), 1)
+        self.assertTrue(dlg._edit_btn.isEnabled())
+        self.assertFalse(dlg._empty_note.isVisibleTo(dlg))
+
+    def test_open_plyf_bad_file_reports(self):
+        import tempfile
+        from unittest.mock import patch
+        from PyQt5.QtWidgets import QFileDialog, QMessageBox
+        path = os.path.join(tempfile.mkdtemp(), "junk.plyf")
+        with open(path, "wb") as f:
+            f.write(b"not a font pack")
+        dlg = fid.FontPackInspectorDialog(sources=[("tiny", _tiny_pack())])
+        self.addCleanup(dlg.deleteLater)
+        before = dlg._tabs.count()
+        seen = {}
+        with patch.object(QFileDialog, "getOpenFileName", return_value=(path, "")), \
+             patch.object(QMessageBox, "critical",
+                          side_effect=lambda *a, **k: seen.update(msg=a)):
+            dlg._open_file()
+        self.assertEqual(dlg._tabs.count(), before)      # no tab added on failure
+        self.assertIn("msg", seen)                        # error surfaced
+
     def test_shipped_bundles_load(self):
         srcs = fid.load_shipped_packs()
         if not srcs:

@@ -437,6 +437,11 @@ class FontPackInspectorDialog(QDialog):
         self._mode_combo.currentIndexChanged.connect(self._on_mode_changed)
         row.addWidget(self._mode_combo)
         row.addStretch(1)
+        self._open_btn = QPushButton("Open .plyf…")
+        self._open_btn.setToolTip("Load a .plyf font-pack file (e.g. one you saved "
+                                  "elsewhere) as a new tab to inspect")
+        self._open_btn.clicked.connect(self._open_file)
+        row.addWidget(self._open_btn)
         self._edit_btn = QPushButton("Edit…")
         self._edit_btn.setToolTip("Replace the selected glyph (double-clicking a glyph "
                                   "does the same)")
@@ -450,22 +455,62 @@ class FontPackInspectorDialog(QDialog):
         v.addLayout(row)
 
         # All fonts across every valid bundle — peek uses their ranges to prefer the
-        # source that actually owns a codepoint (the merged ALL_FONTS view).
-        all_fonts = [f for _l, p in sources if isinstance(p, fpr.Pack) for f in p.fonts]
+        # source that actually owns a codepoint (the merged ALL_FONTS view).  Kept on
+        # the instance so an Open'd bundle extends the same merged view.
+        self._all_fonts = [f for _l, p in sources if isinstance(p, fpr.Pack) for f in p.fonts]
 
         self._tabs = QTabWidget()
         for label, pack in sources:
-            tab = _BundleTab(label, pack, all_fonts=all_fonts)
-            tab.edit_requested.connect(self._on_edit)
-            self._tabs.addTab(tab, label)
+            self._tabs.addTab(self._make_tab(label, pack), label)
         self._tabs.currentChanged.connect(self._render_current)
-        if self._tabs.count() == 0:
-            v.addWidget(QLabel("No font-pack bundles found."))
-            self._mode_combo.setEnabled(False)
-            self._edit_btn.setEnabled(False)
-        else:
-            v.addWidget(self._tabs, 1)
+        # The tab widget is always shown (so Open .plyf… has somewhere to add a tab);
+        # the glyph-level controls just stay disabled until at least one bundle exists.
+        v.addWidget(self._tabs, 1)
+        self._empty_note = QLabel("No font-pack bundles found — use “Open .plyf…”.")
+        self._empty_note.setStyleSheet("color:#999; padding:6px;")
+        v.addWidget(self._empty_note)
+        self._sync_empty_state()
+        if self._tabs.count():
             self._render_current()
+
+    def _make_tab(self, label, pack):
+        tab = _BundleTab(label, pack, all_fonts=self._all_fonts)
+        tab.edit_requested.connect(self._on_edit)
+        return tab
+
+    def _sync_empty_state(self):
+        has = self._tabs.count() > 0
+        self._mode_combo.setEnabled(has)
+        self._edit_btn.setEnabled(has)
+        self._empty_note.setVisible(not has)
+
+    def _open_file(self):
+        from PyQt5.QtWidgets import QFileDialog, QMessageBox
+        path, _ = QFileDialog.getOpenFileName(self, "Open font pack", "",
+                                              "Font pack (*.plyf);;All files (*)")
+        if not path:
+            return
+        label = fpr._stem(path)
+        try:
+            pack = fpr.decode_pack_file(path, name_hint=label)
+        except Exception as e:                       # noqa: BLE001
+            QMessageBox.critical(self, "Open failed",
+                                 f"Could not decode '{path}':\n{e}")
+            return
+        # Extend the shared merged view + the Extend sources so peek/precedence and the
+        # extend dialog see the loaded bundle too.
+        self._all_fonts.extend(pack.fonts)
+        self._sources.append((label, pack))
+        idx = self._tabs.addTab(self._make_tab(label, pack), label)
+        self._sync_empty_state()
+        self._tabs.setCurrentIndex(idx)
+        crc = "ok" if pack.crc_ok else "BAD — file may be truncated/corrupt"
+        QMessageBox.information(self, "Opened",
+                                f"Loaded '{label}.plyf'\nabi v{pack.abi_version} · content "
+                                f"v{pack.content_version} · {pack.font_count} fonts · "
+                                f"{pack.codepoint_count()} glyphs · crc {crc}\n\n"
+                                "Note: a .plyf carries no bundle name — this tab is named "
+                                "after the file.")
 
     def _mode(self) -> str:
         return self._modes[self._mode_combo.currentIndex()][1]

@@ -120,7 +120,13 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
   `fontgen*`): a tray-launchable / standalone window to view every bundle glyph as
   the keycap draws it and to build/splice new glyphs from a TTF/OTF (pure-Python
-  `fontconvert` parity). The inspector honours **front-to-back precedence** (the
+  `fontconvert` parity). It loads the shipped bundles by default; **"Open .plyf…"**
+  adds any saved/exported `.plyf` as a new tab (folded into the merged ALL_FONTS view
+  + the Extend sources) so a file saved elsewhere can be re-inspected. ⚠️ **A `.plyf`
+  carries no bundle name** — the PlyF header has only abi/`content_version`/font_count
+  + per-font global ALL_FONTS index; the bundle id lives in `bundles.json`/the
+  filename, so an opened tab is named after the file (`decode_pack` synthesises font
+  names as `<filename_stem>#<gidx>`). The inspector honours **front-to-back precedence** (the
   firmware renders each codepoint from the lowest-global-index font that has it):
   a duplicate that loses is shown **dim grey** ("overridden by …"), and a slot
   empty in this font but drawn by another pack font is shown **cyan** ("drawn by
