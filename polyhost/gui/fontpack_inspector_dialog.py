@@ -211,25 +211,39 @@ class _BundleTab(QWidget):
             self._settings_map = ext.load_render_settings()
         return self._settings_map
 
+    @staticmethod
+    def _is_color(opts) -> bool:
+        return bool(opts.get("grayscale")) or int(opts.get("bits") or 1) == 32
+
     def _peek_candidates(self, primary):
         """`(opts, src_path, source_file)` source fonts to try for a slot, deduped
-        by source and ordered: the slot's own font, then the rest of this bundle,
-        then **every other source in the whole pack** (the merged ALL_FONTS).  A
+        by source.  Ordered by (tier, colour, global index): the slot's own font,
+        then the rest of this bundle, then **every other source in the pack**.  A
         glyph can live in a font from another bundle (e.g. a symbol gap filled by
         plain NotoSansSymbols when this bundle only references Symbols2), so peek
-        must look pack-wide, not just in the current bundle."""
+        looks pack-wide.  Within the cross-bundle tier, *monochrome* sources are
+        tried before colour ones — many symbols (e.g. U+2626 ☦) also exist in
+        NotoColorEmoji, and a clean outline beats a dithered colour emoji for a
+        monochrome slot.  The own/bundle tiers are unaffected, so an emoji bundle
+        still previews from its own colour fonts."""
         from polyhost.services import font_downloader as fdl
         cache = fdl.default_cache_dir()
         smap = self._settings()
-        bundle = [primary.global_index] + [f.global_index for f in
-                  sorted(self._pack.fonts, key=lambda f: f.global_index)
-                  if f is not primary]
-        rest = sorted(int(k) for k in smap if int(k) not in set(bundle))
-        seen, out = set(), []
-        for gi in bundle + rest:
-            opts = smap.get(str(gi))
+        bundle_ids = {f.global_index for f in self._pack.fonts}
+
+        def tier(gi):
+            return 0 if gi == primary.global_index else 1 if gi in bundle_ids else 2
+
+        rows = []
+        for k, opts in smap.items():
             if not opts or not opts.get("source_file"):
                 continue
+            gi = int(k)
+            rows.append((tier(gi), self._is_color(opts), gi, opts))
+        rows.sort(key=lambda r: (r[0], r[1], r[2]))
+
+        seen, out = set(), []
+        for _tier, _color, _gi, opts in rows:
             src = os.path.join(cache, opts["source_file"])
             if src in seen or not os.path.exists(src):
                 continue

@@ -162,6 +162,31 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.assertIsNotNone(res)
         self.assertEqual(res[1], os.path.basename(_FONT))   # rendered from gidx-99 source
 
+    def test_peek_candidates_defer_colour_sources(self):
+        # cross-bundle fallback should try monochrome sources before colour ones,
+        # so a symbol that also exists in NotoColorEmoji isn't rendered as a dithered
+        # colour emoji.  (No rendering — just ordering; needs only file existence.)
+        import tempfile
+        from unittest.mock import patch
+        from polyhost.services import fontpack_extend as ext
+        from polyhost.services import font_downloader as fdl
+        tmp = tempfile.mkdtemp()
+        for fn in ("mono-a.ttf", "mono-b.ttf", "color.ttf"):
+            open(os.path.join(tmp, fn), "wb").close()
+        smap = {
+            "0": {"source_file": "own-missing.ttf"},                 # own slot, uncached
+            "5": {"source_file": "color.ttf", "bits": 32, "grayscale": True},  # colour, low gidx
+            "9": {"source_file": "mono-b.ttf"},                      # mono, higher gidx
+            "3": {"source_file": "mono-a.ttf"},                      # mono, lower gidx
+        }
+        tab = fid._BundleTab("multi", _pack_with_empty())            # primary gidx 0, mono
+        self.addCleanup(tab.deleteLater)
+        with patch.object(ext, "load_render_settings", return_value=smap), \
+             patch.object(fdl, "default_cache_dir", return_value=tmp):
+            tab._settings_map = None
+            files = [c[2] for c in tab._peek_candidates(tab._pack.fonts[0])]
+        self.assertEqual(files, ["mono-a.ttf", "mono-b.ttf", "color.ttf"])
+
     def test_error_source_does_not_crash(self):
         # a decode failure becomes a labelled tab, never a dead window
         dlg = fid.FontPackInspectorDialog(sources=[("broken", ValueError("bad"))])
