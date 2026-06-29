@@ -139,6 +139,12 @@ class FontPackExtendDialog(QDialog):
         form.addRow("Sequence (hex cps; , = glyph)", self._seq)
         self._seq_first = QLineEdit("0xE000"); self._seq_first.setEnabled(False)
         form.addRow("Sequence base -F (hex)", self._seq_first)
+        self._composite = QCheckBox("Composite -C (combine group into one glyph)")
+        self._composite.setEnabled(False)
+        self._composite.setToolTip("Composite all codepoints of each sequence group "
+                                   "into a single glyph (mono) — used by the combining-"
+                                   "mark / matra fonts (base U+25CC + mark).")
+        form.addRow("", self._composite)
 
         self._size = self._spin(8, 200, 20); form.addRow("Size -s", self._size)
         # The four flag checkboxes in a 2x2 grid (was 4 separate rows).
@@ -318,6 +324,14 @@ class FontPackExtendDialog(QDialog):
         if 0 <= idx < len(groups):
             self._seq.setText(groups[idx])
         self._seq_first.setText(f"0x{cp:04X}")
+        # Composite (-C) when the record says so, else inferred: combining-mark/matra
+        # sequences composite a mark onto the dotted circle U+25CC (every group starts
+        # with it); regional-indicator flag groups don't, so they stay non-composite.
+        comp = opts.get("composite")
+        if comp is None:
+            comp = bool(groups) and all(g.split() and g.split()[0].upper() == "25CC"
+                                        for g in groups)
+        self._composite.setChecked(bool(comp))
 
     def _apply_saved_settings(self, global_index: int):
         """Prefill the render controls from the settings the font was generated with
@@ -412,7 +426,7 @@ class FontPackExtendDialog(QDialog):
 
     def _sync_mode(self, *_):
         seq = self._mode.currentIndex() == 1
-        for w in (self._seq, self._seq_first):
+        for w in (self._seq, self._seq_first, self._composite):
             w.setEnabled(seq)
         for w in (self._first, self._last):
             w.setEnabled(not seq)
@@ -455,6 +469,7 @@ class FontPackExtendDialog(QDialog):
             exposure=self._exposure.value(), sharpness=self._sharp.value(),
             saturation_boost=self._sat.value(),
             seq_first=int(self._seq_first.text(), 16) if self._seq.isEnabled() else 0,
+            composite=self._composite.isChecked() and self._seq.isEnabled(),
             bits=32)
 
     # ---- auto-update ----
@@ -468,7 +483,7 @@ class FontPackExtendDialog(QDialog):
                   self._weight, self._xshift, self._gamma, self._contrast,
                   self._exposure, self._sharp, self._sat, self._gidx):
             w.valueChanged.connect(self._schedule_auto)
-        for w in (self._gray, self._norm, self._inv, self._edge):
+        for w in (self._gray, self._norm, self._inv, self._edge, self._composite):
             w.stateChanged.connect(self._schedule_auto)
         self._auto.stateChanged.connect(self._schedule_auto)
 

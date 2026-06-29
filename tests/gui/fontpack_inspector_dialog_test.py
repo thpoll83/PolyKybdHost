@@ -111,21 +111,30 @@ class FontPackInspectorDialogTest(unittest.TestCase):
 
     def test_peek_fallback_without_source(self):
         # Peek with no shipped settings / no cached source must not crash and must
-        # render no previews — the empty cell stays a placeholder.
+        # render no previews — the empty cell stays a placeholder.  Isolate the font
+        # cache so a font cached on this machine can't satisfy the catalog fallback.
+        import tempfile
+        from unittest.mock import patch
+        from polyhost.services import font_downloader as fdl
         tab = fid._BundleTab("emptytest", _pack_with_empty())
         self.addCleanup(tab.deleteLater)
         tab.set_mode("glyph")
         full = tab.cell_count()
-        tab._peek.setChecked(True)
-        tab._drain_peek()                               # run the lazy pass synchronously
+        with patch.object(fdl, "default_cache_dir", return_value=tempfile.mkdtemp()):
+            tab._peek.setChecked(True)
+            tab._drain_peek()                           # run the lazy pass synchronously
         self.assertEqual(tab.cell_count(), full)        # same cells, no crash
         self.assertEqual(tab._last_peek_count, 0)       # nothing rendered from source
 
     def test_peek_pixmap_none_without_settings(self):
+        import tempfile
+        from unittest.mock import patch
+        from polyhost.services import font_downloader as fdl
         tab = fid._BundleTab("emptytest", _pack_with_empty())
         self.addCleanup(tab.deleteLater)
         font = tab._pack.fonts[0]
-        self.assertIsNone(tab._peek_pixmap(font, 0x42, 20, 20, 2))   # no settings entry
+        with patch.object(fdl, "default_cache_dir", return_value=tempfile.mkdtemp()):
+            self.assertIsNone(tab._peek_pixmap(font, 0x42, 20, 20, 2))   # no source cached
 
     @unittest.skipUnless(_FONTGEN and _FONT, "needs fontgen deps + a system TTF")
     def test_peek_renders_preview_with_source(self):

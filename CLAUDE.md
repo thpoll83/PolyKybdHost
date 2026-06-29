@@ -201,9 +201,22 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `lang_flags.json` is mirrored **byte-identically** with the firmware's
   `base/fonts/generated/lang_flags.json` (emitted by `gen-lang-fonts.sh`) — keep both
   in sync (`cmp`). Editing a flag needs **NotoColorEmoji** downloaded; if its cached
-  file is truncated (a bad download) FreeType fails to open it — re-download. (The
-  matra fonts are also sequence-mode but use fontconvert `-C` composite, which the
-  manifest doesn't yet record — editing those isn't byte-exact until it does.)
+  file is truncated (a bad download) FreeType fails to open it — re-download.
+  **Matra/combining-mark fonts** (Devanagari/Bengali/Telugu/Tamil/Thai/Vietnamese,
+  PUA 0xE100+) are sequence-mode **and** use fontconvert `-C` composite (each group
+  composites a mark onto the dotted circle U+25CC). The editor has a **Composite -C**
+  checkbox (enabled in sequence mode); `_setup_sequence_edit` ticks it from the
+  record's `composite` field if present, else **infers** it (every group starts with
+  `25CC` → composite; regional-indicator flag groups don't). The `fontpack_render_settings.json`
+  records don't carry `composite`/`seq_first` yet, so the inference is what makes
+  matras editable today (host builds them via fontgen's mono composite path); if the
+  manifest later emits those fields they're honoured over the inference.
+- **Source-font download validation** (`font_downloader.py`): a download is rejected
+  (`DownloadError`, no file cached) when it's short (Content-Length mismatch) or not a
+  complete sfnt (`_validate_sfnt` checks the table directory fits the file) — this is
+  the fix for a proxy-truncated NotoColorEmoji that FreeType then refused to open.
+  `is_downloaded()` re-validates, so an already-cached corrupt file reads as missing
+  and is re-fetched (overwritten); `download_font(force=True)` always re-downloads.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
 - **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.

@@ -265,7 +265,35 @@ class ExtendDialogTest(unittest.TestCase):
         self.assertEqual(dlg._rsize.value(), 54)
         self.assertEqual(dlg._maxw.value(), 72)
         self.assertEqual(dlg._outline.value(), 1)
+        self.assertFalse(dlg._composite.isChecked())     # flags are non-composite
         self.assertEqual(dlg._dl_panel.current_filename(), "NotoColorEmoji-Regular.ttf")
+
+    def test_setup_sequence_edit_infers_composite_for_matra(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        opts = {"sequence": "25CC 0901, 25CC 0902, 25CC 0903"}   # dotted-circle base
+        dlg._setup_sequence_edit(0xE101, 0xE100, opts)           # second group
+        self.assertEqual(dlg._mode.currentIndex(), 1)            # sequence mode
+        self.assertEqual(dlg._seq.text(), "25CC 0902")
+        self.assertEqual(int(dlg._seq_first.text(), 16), 0xE101)
+        self.assertTrue(dlg._composite.isChecked())              # inferred from U+25CC
+
+    def test_setup_sequence_edit_flag_not_composite(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        opts = {"sequence": "1F1FA 1F1F8, 1F1E9 1F1EA", "composite": False}
+        dlg._setup_sequence_edit(0xE000, 0xE000, opts)
+        self.assertEqual(dlg._seq.text(), "1F1FA 1F1F8")
+        self.assertFalse(dlg._composite.isChecked())
+
+    def test_options_composite_only_in_sequence_mode(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg._mode.setCurrentIndex(1); dlg._sync_mode()           # sequence
+        dlg._composite.setChecked(True)
+        self.assertTrue(dlg._options().composite)
+        dlg._mode.setCurrentIndex(0); dlg._sync_mode()           # range
+        self.assertFalse(dlg._options().composite)               # ignored outside sequence
 
     def test_with_slider_two_way_sync(self):
         from PyQt5.QtWidgets import QSlider
@@ -334,8 +362,12 @@ class NotoDownloadDialogTest(unittest.TestCase):
         from polyhost.services import font_downloader as fdl
         tmp = tempfile.mkdtemp()
         src = os.path.join(tmp, "remote.ttf")
+        import struct
+        body = b"PolyKybdTestFont" * 64
+        sfnt = (struct.pack(">4sHHHH", b"\x00\x01\x00\x00", 1, 16, 0, 0)
+                + struct.pack(">4sIII", b"glyf", 0, 28, len(body)) + body)
         with open(src, "wb") as f:
-            f.write(b"FONTDATA" * 500)
+            f.write(sfnt)                          # a structurally-valid sfnt
         font = fdl.NotoFont("Fake", pathlib.Path(src).as_uri(), "Fake-Regular.ttf")
         cache = os.path.join(tmp, "cache")
         with patch.object(fdl, "load_catalog", return_value=[font]), \
@@ -357,8 +389,11 @@ class NotoDownloadDialogTest(unittest.TestCase):
         cached = fonts[0]
         os.makedirs(os.path.join(tmp, "fonts"), exist_ok=True)
         path = os.path.join(tmp, "fonts", cached.filename)
-        with open(path, "wb") as f:
-            f.write(b"x")
+        import struct
+        body = b"PolyKybdTestFont" * 4
+        with open(path, "wb") as f:                # a structurally-valid sfnt (passes is_downloaded)
+            f.write(struct.pack(">4sHHHH", b"\x00\x01\x00\x00", 1, 16, 0, 0)
+                    + struct.pack(">4sIII", b"glyf", 0, 28, len(body)) + body)
         with patch.object(fdl, "default_cache_dir", return_value=os.path.join(tmp, "fonts")):
             dlg = fed.NotoDownloadDialog()
             self.addCleanup(dlg.deleteLater)

@@ -38,14 +38,26 @@ class CatalogTest(unittest.TestCase):
                          "noto-fonts.yaml drifted between host and firmware")
 
 
+def _sfnt(extra: bytes = b"") -> bytes:
+    """A minimal but structurally-valid sfnt (TrueType) blob: signature + a 1-entry
+    table directory whose table fits in the file.  Truncating it makes the table
+    run past EOF, which _validate_sfnt rejects."""
+    import struct
+    body = b"PolyKybdTestFont" + extra
+    head = struct.pack(">4sHHHH", b"\x00\x01\x00\x00", 1, 16, 0, 0)   # 12 bytes
+    offset = 12 + 16
+    entry = struct.pack(">4sIII", b"glyf", 0, offset, len(body))      # 16 bytes
+    return head + entry + body
+
+
 class DownloadTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.cache = os.path.join(self.tmp.name, "cache")
-        # a fake "remote" font file served over file://
+        # a fake but structurally-valid "remote" font served over file://
         src = os.path.join(self.tmp.name, "remote.ttf")
-        self.payload = b"FAKEFONT" * 1000
+        self.payload = _sfnt(b"x" * 4000)
         with open(src, "wb") as f:
             f.write(self.payload)
         self.font = fdl.NotoFont("Fake", pathlib.Path(src).as_uri(), "Fake-Regular.ttf")
@@ -68,6 +80,51 @@ class DownloadTest(unittest.TestCase):
         self.assertFalse(fdl.is_downloaded(self.font, self.cache))
         self.assertEqual(fdl.local_path(self.font, self.cache),
                          os.path.join(self.cache, "Fake-Regular.ttf"))
+
+    def test_validate_sfnt_rejects_truncation(self):
+        full = _sfnt(b"y" * 2000)
+        p = os.path.join(self.tmp.name, "full.ttf")
+        with open(p, "wb") as f:
+            f.write(full)
+        self.assertTrue(fdl._validate_sfnt(p))
+        with open(p, "wb") as f:
+            f.write(full[:len(full) - 500])         # drop the tail → table past EOF
+        self.assertFalse(fdl._validate_sfnt(p))
+        with open(p, "wb") as f:
+            f.write(b"<html>error</html>")          # not a font at all
+        self.assertFalse(fdl._validate_sfnt(p))
+
+    def test_rejects_non_font_download(self):
+        bad = os.path.join(self.tmp.name, "bad.ttf")
+        with open(bad, "wb") as f:
+            f.write(b"NOT A FONT" * 100)
+        font = fdl.NotoFont("Bad", pathlib.Path(bad).as_uri(), "Bad-Regular.ttf")
+        with self.assertRaises(fdl.DownloadError):
+            fdl.download_font(font, dest_dir=self.cache)
+        # nothing cached, no leftover .part
+        self.assertFalse(fdl.is_downloaded(font, self.cache))
+        self.assertFalse(os.path.exists(fdl.local_path(font, self.cache)))
+        self.assertEqual([p for p in os.listdir(self.cache) if p.endswith(".part")], [])
+
+    def test_corrupt_cache_is_redownloaded(self):
+        # a previously-cached truncated file must be treated as missing and re-fetched
+        os.makedirs(self.cache, exist_ok=True)
+        final = fdl.local_path(self.font, self.cache)
+        with open(final, "wb") as f:
+            f.write(self.payload[:20])              # truncated → invalid
+        self.assertFalse(fdl.is_downloaded(self.font, self.cache))
+        path = fdl.download_font(self.font, dest_dir=self.cache)   # overwrites the bad file
+        with open(path, "rb") as fh:
+            self.assertEqual(fh.read(), self.payload)
+        self.assertTrue(fdl.is_downloaded(self.font, self.cache))
+
+    def test_force_redownloads_valid_cache(self):
+        fdl.download_font(self.font, dest_dir=self.cache)
+        # marker file alongside to prove force re-runs the transfer (overwrites)
+        final = fdl.local_path(self.font, self.cache)
+        os.utime(final, (0, 0))                     # set mtime to epoch
+        fdl.download_font(self.font, dest_dir=self.cache, force=True)
+        self.assertNotEqual(os.path.getmtime(final), 0)   # rewritten
 
 
 if __name__ == "__main__":
