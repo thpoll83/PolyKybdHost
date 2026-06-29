@@ -259,19 +259,24 @@ class _BundleTab(QWidget):
         from polyhost.services import font_downloader as fdl
         cache = fdl.default_cache_dir()
         smap = self._settings()
+        by_gidx = {f.global_index: f for f in self._all_fonts}
         bundle_ids = {f.global_index for f in self._pack.fonts}
 
         def tier(gi):
             return 0 if gi == primary.global_index else 1 if gi in bundle_ids else 2
 
+        # Enumerate EVERY source in the manifest (not just bundle fonts) — some
+        # sources (e.g. NotoSansSymbols) are used only by resident fonts not present
+        # in any bundle, yet still fill pack gaps.  Use the bundle font's range for
+        # the in-range preference when we have it; otherwise treat as range-unknown.
         rows = []
-        for f in self._all_fonts:
-            opts = smap.get(str(f.global_index))
+        for k, opts in smap.items():
             if not opts or not opts.get("source_file"):
                 continue
-            in_range = f.first <= cp <= f.last
-            rows.append((tier(f.global_index), not in_range, self._is_color(opts),
-                         f.global_index, opts))
+            gi = int(k)
+            f = by_gidx.get(gi)
+            in_range = bool(f) and f.first <= cp <= f.last
+            rows.append((tier(gi), not in_range, self._is_color(opts), gi, opts))
         rows.sort(key=lambda r: (r[0], r[1], r[2], r[3]))
 
         seen, out = set(), []

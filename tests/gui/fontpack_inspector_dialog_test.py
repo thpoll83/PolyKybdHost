@@ -241,6 +241,26 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.assertNotIn("overridden", tips[0x42])     # B wins 0x42 (A empty there)
         self.assertIn("drawn by", tips[0x43])          # B empty, A draws it
 
+    def test_peek_candidates_include_resident_only_source(self):
+        # a source used only by a resident (non-bundle) font — present in the
+        # manifest but with no font object — must still be a peek candidate
+        # (regression: NotoSansSymbols fills symbol gaps but is resident-only).
+        import tempfile
+        from unittest.mock import patch
+        from polyhost.services import fontpack_extend as ext
+        from polyhost.services import font_downloader as fdl
+        tmp = tempfile.mkdtemp()
+        open(os.path.join(tmp, "resident.ttf"), "wb").close()
+        smap = {"0": {"source_file": "own-missing.ttf"},        # own slot, uncached
+                "1": {"source_file": "resident.ttf"}}           # resident-only, no font obj
+        tab = fid._BundleTab("b", _pack_with_empty())           # all_fonts = [gidx0] only
+        self.addCleanup(tab.deleteLater)
+        with patch.object(ext, "load_render_settings", return_value=smap), \
+             patch.object(fdl, "default_cache_dir", return_value=tmp):
+            tab._settings_map = None
+            files = [c[2] for c in tab._peek_candidates(tab._pack.fonts[0], 0x42)]
+        self.assertIn("resident.ttf", files)
+
     def test_error_source_does_not_crash(self):
         # a decode failure becomes a labelled tab, never a dead window
         dlg = fid.FontPackInspectorDialog(sources=[("broken", ValueError("bad"))])
