@@ -137,6 +137,14 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `qmk_firmware/keyboards/polykybd/fonts/noto-fonts.yaml` (which `dl-fonts.sh` reads)
   — keep both in sync (`cmp`). The host stores a *flat* cache keyed on
   `basename(dest)`; the firmware honours the nested `dest` path.
+  The extend dialog's preview shows each built keycap **next to the smooth,
+  undithered glyph straight from the source font** (`fontpack_render.preview_sheet`
+  → `reference_glyph_image`, always antialiased/colour regardless of the grayscale
+  toggle), so you can compare the dithered keycap output against what the font
+  actually draws while tuning. **Scroll-wheel over the preview zooms** it (1×–12×,
+  `eventFilter`/`_zoom`); the preview viewport is intentionally compact so the
+  source-font browser below gets the space. **Auto update** (default on) re-renders
+  the preview on any control change (debounced).
   When you **edit** a glyph, the dialog pre-fills the render controls (size,
   dither, normalize/invert/edge/outline, render size, yAdvance, …) from
   **`polyhost/res/fontpack/fontpack_render_settings.json`** — a `global ALL_FONTS

@@ -138,6 +138,119 @@ def glyph_cell(font, cp: int, cell_w: int, cell_h: int, scale: int = 2,
     return img
 
 
+def _raster_to_l(r):
+    """A fontgen ColorRaster (mono / 8-bit gray / premultiplied BGRA) → an ('L')
+    Pillow image — the smooth, undithered pixels FreeType produced."""
+    pm = r.pixel_mode
+    if pm == 7:                                     # FT_PIXEL_MODE_BGRA
+        import numpy as np
+        from polyhost.services import fontgen_dither as fd
+        g = fd.bgra_to_gray(r.buf, r.pitch, r.width, r.rows)    # float a·lum in [0,1]
+        arr = np.clip(g * 255.0, 0, 255).astype("uint8")
+        return Image.fromarray(arr, "L")
+    if pm == 2:                                     # FT_PIXEL_MODE_GRAY
+        import numpy as np
+        arr = np.frombuffer(r.buf, dtype=np.uint8)[:r.rows * r.pitch].reshape(r.rows, r.pitch)
+        return Image.fromarray(arr[:, :r.width].copy(), "L")
+    img = Image.new("L", (r.width, r.rows), 0)      # FT_PIXEL_MODE_MONO (or other)
+    px = img.load()
+    buf, n = r.buf, len(r.buf)
+    for y in range(r.rows):
+        row = y * r.pitch
+        for x in range(r.width):
+            bi = row + (x >> 3)
+            if bi < n and (buf[bi] & (0x80 >> (x & 7))):
+                px[x, y] = 255
+    return img
+
+
+def reference_glyph_image(font_path: str, cp: int, opts, fit_h: int | None = None):
+    """Render codepoint `cp` straight from the source font — smooth and undithered —
+    so the preview can show 'what the font actually draws' beside the dithered
+    keycap.  Always antialiased (or colour for an emoji font), independent of the
+    dialog's grayscale toggle, since this is the reference, not the keycap output.
+    Scaled to `fit_h` px tall (aspect preserved) when given.  None if the font has
+    no glyph there (or the build deps are unavailable)."""
+    try:
+        from dataclasses import replace
+        from polyhost.services import fontgen as fg
+        import freetype
+    except Exception:                               # noqa: BLE001
+        return None
+    ropts = replace(opts, render_mode=1)            # force smooth/colour render
+    fg._set_tt_interpreter(fg._TT_V40)
+    face = freetype.Face(font_path)
+    fg._apply_weight(face, ropts.weight)
+    fg._setup_face_size(face, ropts)
+    gid = face.get_char_index(cp)
+    if gid == 0:
+        return None
+    # Only bitmap-strike (CBDT) fonts need the fontTools colour reader; an outline
+    # font (num_fixed_sizes 0, incl. COLR/CPAL) renders through FreeType directly —
+    # skip opening fontTools for it (avoids a leaked file handle per glyph).
+    cfont = fg._open_color_font(font_path, ropts) if face.num_fixed_sizes > 0 else None
+    r = fg._raster_for_gid(face, gid, True, cfont)
+    if r.width == 0 or r.rows == 0:
+        return None
+    img = _raster_to_l(r)
+    if fit_h and img.height and img.height != fit_h:
+        neww = max(1, round(img.width * fit_h / img.height))
+        img = img.resize((neww, fit_h), Image.LANCZOS)
+    return img
+
+
+def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
+                  scale: int = 3, pad: int = 6, title: str = "",
+                  base_yadv: int = BASE_YADV):
+    """The build/extend dialog's preview: every glyph of `pack` as a 72x40 keycap,
+    with the *source-font* glyph (smooth, undithered) drawn beside it for comparison
+    when `source_path`/`opts` are supplied.  Degrades to keycap-only (no reference)
+    for a sequence-mode pack or a codepoint the source can't render."""
+    glyphs = list(_iter_glyphs(pack))
+    if not glyphs:
+        return Image.new("L", (200, 40), 0)
+    kc_w, kc_h = OLED_W * scale, OLED_H * scale
+    fnt = ImageFont.load_default()
+
+    want_ref = bool(source_path) and opts is not None
+    refs, ref_w = [], 0
+    for font, cp in glyphs:
+        ri = reference_glyph_image(source_path, cp, opts, fit_h=kc_h) if want_ref else None
+        refs.append(ri)
+        if ri is not None:
+            ref_w = max(ref_w, ri.width)
+    gap = pad if ref_w else 0
+    cell_w, cell_h = kc_w + gap + ref_w, kc_h
+    lab_h = 11
+    cw, ch = cell_w + pad, cell_h + lab_h + pad
+    rows = (len(glyphs) + cols - 1) // cols
+    head_h = 22
+    W = cols * cw + pad
+    H = head_h + rows * ch + pad
+    sheet = Image.new("L", (W, H), 0)
+    draw = ImageDraw.Draw(sheet)
+    head = title or f"{getattr(pack, 'font_count', '?')} fonts · {len(glyphs)} glyphs"
+    if ref_w:
+        head += "    (left: keycap · right: source font)"
+    draw.text((pad, 6), head, fill=255, font=fnt)
+
+    for i, (font, cp) in enumerate(glyphs):
+        r, c = divmod(i, cols)
+        x0 = pad + c * cw
+        y0 = head_h + r * ch
+        kc = keycap_image(font, cp, base_yadv=base_yadv, scale=scale, fg=255, bg=0)
+        sheet.paste(kc, (x0, y0))
+        draw.rectangle([x0, y0, x0 + kc_w - 1, y0 + kc_h - 1], outline=70)
+        ri = refs[i]
+        if ri is not None:
+            rx = x0 + kc_w + gap
+            ry = y0 + max(0, (kc_h - ri.height) // 2)
+            sheet.paste(ri, (rx, ry))
+            draw.rectangle([rx - 1, y0, rx + ref_w, y0 + kc_h - 1], outline=40)
+        draw.text((x0, y0 + cell_h + 1), f"{cp:04X}", fill=128, font=fnt)
+    return sheet
+
+
 def _iter_glyphs(pack):
     """Yield (font, codepoint) for every glyph in priority order, deduped by
     codepoint (the first font covering a cp wins — the firmware's front-to-back

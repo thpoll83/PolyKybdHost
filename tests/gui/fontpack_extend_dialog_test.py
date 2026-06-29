@@ -158,6 +158,33 @@ class ExtendDialogTest(unittest.TestCase):
         self.assertIsNotNone(dlg._built)
         self.assertFalse(dlg._preview.pixmap().isNull())
 
+    def test_zoom_noop_until_built(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        self.assertEqual(dlg._scale, 3)
+        self.assertFalse(dlg._zoom(1))             # nothing built -> no change
+        self.assertEqual(dlg._scale, 3)
+
+    @unittest.skipUnless(_FONTGEN and _FONT and _HAVE_BUNDLES,
+                         "needs fontgen deps + a TTF + shipped bundles")
+    def test_scroll_wheel_zoom_changes_scale(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg._src.setText(_FONT)
+        dlg._first.setText("0x41"); dlg._last.setText("0x41")
+        dlg._build()
+        self.assertEqual(dlg._scale, 3)
+        w0 = dlg._preview.pixmap().width()
+        self.assertTrue(dlg._zoom(1))              # wheel up -> zoom in
+        self.assertEqual(dlg._scale, 4)
+        self.assertGreater(dlg._preview.pixmap().width(), w0)
+        for _ in range(20):
+            dlg._zoom(-1)
+        self.assertEqual(dlg._scale, 1)            # clamps at 1
+        for _ in range(20):
+            dlg._zoom(1)
+        self.assertEqual(dlg._scale, 12)           # clamps at 12
+
     def test_download_panel_sets_source(self):
         dlg = fed.FontPackExtendDialog()
         self.addCleanup(dlg.deleteLater)

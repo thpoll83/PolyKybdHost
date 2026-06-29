@@ -17,7 +17,7 @@ import sys
 
 import threading
 
-from PyQt5.QtCore import Qt, QThread, QTimer, pyqtSignal
+from PyQt5.QtCore import Qt, QEvent, QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QSpinBox,
     QDoubleSpinBox, QComboBox, QCheckBox, QPushButton, QScrollArea, QFileDialog,
@@ -71,6 +71,7 @@ class FontPackExtendDialog(QDialog):
         self._flash_cb = flash_cb
         self._built = None          # (bundle_index, new PackFont)
         self._edit_target = None    # {bundle_index, global_index, cp} in edit mode
+        self._scale = 3             # preview zoom (scroll wheel over the preview)
         # Only valid bundles are splice targets — sources/load_shipped_packs may
         # yield (label, Exception) placeholders for ones that failed to decode.
         raw = sources if sources is not None else load_shipped_packs(res_dir)
@@ -174,11 +175,16 @@ class FontPackExtendDialog(QDialog):
         right.addWidget(self._status)
         self._preview = QLabel()
         self._preview.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self._preview.setToolTip("Scroll here to zoom the preview")
         scroll = QScrollArea()
         scroll.setWidget(self._preview)
         scroll.setWidgetResizable(False)
         scroll.setStyleSheet("background:#000;")
         scroll.setMaximumHeight(260)        # compact preview; list gets the rest
+        # Scroll wheel over the preview = zoom (instead of panning the small view).
+        self._scroll = scroll
+        scroll.viewport().installEventFilter(self)
+        self._preview.installEventFilter(self)
         right.addWidget(scroll, 1)
 
         # Font browser sits permanently under the preview (no modal, no toggle):
@@ -378,7 +384,7 @@ class FontPackExtendDialog(QDialog):
             return
         try:
             from polyhost.services import fontpack_extend as ext
-            from polyhost.services import fontpack_render as rd
+            from polyhost.services import fontpack_render as rd  # noqa: F401  (deps check)
         except Exception as e:  # noqa: BLE001
             fail("Build", "Font building dependencies are missing or broken:\n"
                  f"  pip install -e .\n\n({e})")
@@ -400,16 +406,50 @@ class FontPackExtendDialog(QDialog):
                 QMessageBox.critical(self, "Build failed", str(e))
             return
         self._built = (self._bundle.currentIndex(), new)
-        sheet = rd.contact_sheet(fpr.Pack(1, 0, 1, 0, 0, True, [new]), cols=12, scale=3,
-                                 mode="keycap", title=f"built · {new.glyph_count} glyphs")
-        self._preview.setPixmap(_pil_l_to_pixmap(sheet))
-        self._preview.resize(self._preview.pixmap().size())
+        self._render_preview()
         self._status.setText(f"Built {new.glyph_count} glyph(s), U+{new.first:04X}–"
                              f"{new.last:04X}, global index {gidx}. Save or flash to the "
                              f"'{self._bundle.currentText()}' bundle.")
         self._save_btn.setEnabled(True)
         if self._flash_cb is not None:
             self._flash_btn.setEnabled(True)
+
+    def _render_preview(self):
+        """(Re)draw the preview from the already-built pack at the current zoom —
+        keycap render + the source-font glyph beside it.  Cheap to call on zoom
+        (no re-render of the keycap glyph; the source reference re-rasterises)."""
+        if not self._built:
+            return
+        from polyhost.services import fontpack_render as rd
+        _bi, new = self._built
+        src = self._src.text().strip()
+        try:
+            opts = self._options()
+        except Exception:                           # noqa: BLE001
+            opts = None
+        sheet = rd.preview_sheet(fpr.Pack(1, 0, 1, 0, 0, True, [new]),
+                                 source_path=src or None, opts=opts,
+                                 cols=12, scale=self._scale,
+                                 title=f"built · {new.glyph_count} glyphs")
+        self._preview.setPixmap(_pil_l_to_pixmap(sheet))
+        self._preview.resize(self._preview.pixmap().size())
+
+    def _zoom(self, step: int) -> bool:
+        """Change the preview zoom by `step` (clamped 1..12) and re-render.  Returns
+        True if it changed something (so the wheel event is consumed)."""
+        ns = max(1, min(12, self._scale + step))
+        if ns == self._scale or self._built is None:
+            return False
+        self._scale = ns
+        self._render_preview()
+        self._status.setText(f"Zoom {self._scale}×  (scroll over the preview to change)")
+        return True
+
+    def eventFilter(self, obj, ev):
+        if ev.type() == QEvent.Wheel and self._built is not None:
+            self._zoom(1 if ev.angleDelta().y() > 0 else -1)
+            return True                             # consume: wheel zooms, not pans
+        return super().eventFilter(obj, ev)
 
     def _spliced_bytes(self) -> bytes:
         bundle_index, new = self._built     # the bundle chosen at Build time

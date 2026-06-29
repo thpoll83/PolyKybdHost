@@ -119,6 +119,40 @@ class ExtendRoundTripTest(unittest.TestCase):
         self.assertTrue(after.crc_ok)
 
 
+@unittest.skipIf(_ERR is not None, f"fontgen deps unavailable: {_ERR}")
+@unittest.skipUnless(_FONT, "no system font")
+class ReferenceRenderTest(unittest.TestCase):
+    """preview_sheet's source-font reference column (fontpack_render)."""
+
+    def setUp(self):
+        from polyhost.services import fontpack_render as rd
+        from polyhost.services.fontgen import RenderOptions
+        self.rd = rd
+        self.RO = RenderOptions
+
+    def test_reference_glyph_image_present_vs_absent(self):
+        img = self.rd.reference_glyph_image(_FONT, 0x41, self.RO(size=24))   # 'A'
+        self.assertIsNotNone(img)
+        self.assertGreater(img.width, 0)
+        self.assertGreater(img.getextrema()[1], 0)        # has lit pixels
+        # permanent noncharacter — no font has a glyph
+        self.assertIsNone(self.rd.reference_glyph_image(_FONT, 0xFDD0, self.RO(size=24)))
+
+    def test_reference_glyph_image_fits_height(self):
+        img = self.rd.reference_glyph_image(_FONT, 0x41, self.RO(size=24), fit_h=80)
+        self.assertEqual(img.height, 80)
+
+    def test_preview_sheet_widens_with_reference(self):
+        import polyhost.services.fontpack_reader as fpr
+        from polyhost.services import fontgen
+        new = fontgen.render_range(_FONT, 0x41, 0x43, self.RO(size=24))
+        pack = fpr.Pack(1, 0, 1, 0, 0, True, [new])
+        bare = self.rd.preview_sheet(pack, source_path=None, scale=3)
+        withref = self.rd.preview_sheet(pack, source_path=_FONT,
+                                        opts=self.RO(size=24), scale=3)
+        self.assertGreater(withref.width, bare.width)     # reference column widens cells
+
+
 class LoadRenderSettingsTest(unittest.TestCase):
     """load_render_settings is pure-stdlib — runs even without the fontgen deps."""
 
