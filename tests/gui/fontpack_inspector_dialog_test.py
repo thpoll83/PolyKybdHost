@@ -64,6 +64,10 @@ def _tiny_pack():
     return fpr.decode_pack(header + bytes(body), name_hint="tiny")
 
 
+def _g(off, w, h):
+    return dict(bitmapOffset=off, width=w, height=h, xAdvance=w + 1, xOffset=0, yOffset=0)
+
+
 @unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
 class FontPackInspectorDialogTest(unittest.TestCase):
 
@@ -423,6 +427,62 @@ class FontPackInspectorDialogTest(unittest.TestCase):
             dlg._open_file()
         self.assertEqual(dlg._tabs.count(), before)      # no tab added on failure
         self.assertIn("msg", seen)                        # error surfaced
+
+    def test_commit_edit_accumulates_and_marks_tab(self):
+        # an editor result (whole-font add) accumulates into the inspector working copy
+        base = fpr.PackFont("b", b"\x80", [_g(0, 1, 1)], 0x41, 0x41, 12, global_index=5)
+        pack = fpr.Pack(1, 3, 1, 0, 0, True, [base])
+        dlg = fid.FontPackInspectorDialog(sources=[("sym", pack)])
+        self.addCleanup(dlg.deleteLater)
+        self.assertFalse(dlg._saveas_btn.isEnabled())
+        newf = fpr.PackFont("n", b"\x80", [_g(0, 1, 1)], 0x2600, 0x2600, 12, global_index=9)
+        dlg._commit_edit("sym", newf, None)
+        self.assertEqual(len(dlg._pending[0]), 1)
+        self.assertEqual(len(dlg._work[0]), 2)                 # font added
+        self.assertTrue(dlg._saveas_btn.isEnabled())
+        self.assertTrue(dlg._tabs.tabText(0).startswith("●")) # pending marker
+
+    def test_commit_edit_replaces_glyph_in_edit_mode(self):
+        base = fpr.PackFont("b", b"\x80\x80", [_g(0, 1, 1), _g(1, 1, 1)],
+                            0x41, 0x42, 12, global_index=5)
+        pack = fpr.Pack(1, 0, 1, 0, 0, True, [base])
+        dlg = fid.FontPackInspectorDialog(sources=[("sym", pack)])
+        self.addCleanup(dlg.deleteLater)
+        newf = fpr.PackFont("n", b"\xC0", [_g(0, 2, 1)], 0x41, 0x41, 12, global_index=5)
+        dlg._commit_edit("sym", newf, {"global_index": 5, "cp": 0x41})
+        self.assertEqual(len(dlg._work[0]), 1)                 # replaced in place, not added
+        self.assertEqual(dlg._work[0][0].glyphs[0]["width"], 2)
+
+    def test_save_dialog_bytes_version_and_discard(self):
+        from unittest.mock import patch
+        from PyQt5.QtWidgets import QMessageBox
+        f = fpr.PackFont("n", b"\x80", [_g(0, 1, 1)], 0x41, 0x41, 12, global_index=9)
+        base = fpr.Pack(1, 4, 0, 0, 0, True, [])               # current content v4
+        dlg = fid.FontPackSaveDialog("sym", base, [f], ["edit U+0041 (g9)"])
+        self.addCleanup(dlg.deleteLater)
+        self.assertEqual(dlg._version.value(), 5)              # default base+1
+        pk = fpr.decode_pack(dlg._bytes())
+        self.assertTrue(pk.crc_ok)
+        self.assertEqual(pk.content_version, 5)
+        with patch.object(QMessageBox, "question", return_value=QMessageBox.Yes):
+            dlg._discard()
+        self.assertTrue(dlg.discarded)
+
+    def test_save_dialog_flash_callback(self):
+        from unittest.mock import patch
+        from PyQt5.QtWidgets import QMessageBox
+        f = fpr.PackFont("n", b"\x80", [_g(0, 1, 1)], 0x41, 0x41, 12, global_index=9)
+        base = fpr.Pack(1, 2, 0, 0, 0, True, [])
+        got = {}
+        dlg = fid.FontPackSaveDialog("sym", base, [f], ["x"],
+                                     flash_cb=lambda i, d: got.update(i=i, d=d),
+                                     bundle_index=3)
+        self.addCleanup(dlg.deleteLater)
+        with patch.object(QMessageBox, "question", return_value=QMessageBox.Yes), \
+             patch.object(QMessageBox, "information", return_value=None):
+            dlg._flash()
+        self.assertEqual(got["i"], 3)
+        self.assertEqual(got["d"], dlg._bytes())
 
     def test_shipped_bundles_load(self):
         srcs = fid.load_shipped_packs()

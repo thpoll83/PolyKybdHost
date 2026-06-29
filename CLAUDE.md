@@ -152,27 +152,33 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `qmk_firmware/keyboards/polykybd/fonts/noto-fonts.yaml` (which `dl-fonts.sh` reads)
   — keep both in sync (`cmp`). The host stores a *flat* cache keyed on
   `basename(dest)`; the firmware honours the nested `dest` path.
-  The extend dialog's preview shows each built keycap **next to the smooth,
-  undithered glyph straight from the source font** (`fontpack_render.preview_sheet`
-  → `reference_glyph_image`, always antialiased/colour regardless of the grayscale
-  toggle), so you can compare the dithered keycap output against what the font
-  actually draws while tuning. **Scroll-wheel over the preview zooms** it (1×–12×,
-  `eventFilter`/`_zoom`); the preview viewport is intentionally compact so the
-  source-font browser below gets the space. **Auto update** (default on) re-renders
-  the preview on any control change (debounced).
-  The extend dialog uses a **working-copy model** (`_work`/`_pending` keyed by bundle
-  index): *Build / Preview* only renders a candidate; **Apply to bundle** merges it
-  into an in-memory copy of the target bundle (edits accumulate, per-bundle, shown in
-  a "Pending edits" list + a metadata panel with working fonts/glyphs/size); **Save
-  .plyf… / Flash** write the whole working bundle **once** at an editable
-  **content_version** ("Save as version" spin, default current+1 — **one bump for all
-  accumulated edits**, not +1 per edit; it stops auto-defaulting once you override
-  it). **Discard edits** reverts the bundle to the loaded copy. Save/Flash gate on
-  having pending edits (not on a fresh Build), and `_working_bytes(bi)` =
-  `encode_pack(working_fonts, version)` is what's written/flashed. Switching the
-  target bundle keeps each bundle's pending edits (only the unapplied candidate is
-  cleared).
-  When you **edit** a glyph, the dialog pre-fills the render controls (size,
+  The extend dialog is a focused **glyph editor** (`FontPackExtendDialog`): it builds
+  **one** glyph/font from a source + options and previews it, with just **OK / Cancel**
+  — OK exposes the built glyph via `result_font`/`result_label`/`result_edit` (Cancel
+  discards); it neither accumulates nor saves. Its preview shows each built keycap
+  **next to the smooth, undithered glyph straight from the source font**
+  (`fontpack_render.preview_sheet` → `reference_glyph_image`, always antialiased/colour
+  regardless of the grayscale toggle), so you can compare the dithered keycap output
+  against what the font actually draws while tuning. **Scroll-wheel over the preview
+  zooms** it (1×–12×, `eventFilter`/`_zoom`); **Auto update** (default on) re-renders
+  on any control change (debounced). Layout niceties: each float control (gamma /
+  contrast / exposure / sharpen / saturation) has a **slider beside its spin box**
+  (`_with_slider`, synced over the spin's range); range **first–last share one row**;
+  the four flag checkboxes (grayscale/normalize/invert/edge) are a **2×2 grid**; the
+  source-font browser's **"Download all" sits on top** of the list (clear of OK/Cancel).
+  The **accumulate + save** side lives in the **inspector**, not the editor: the
+  inspector owns per-bundle in-memory **working copies** (`_work`/`_pending` keyed by
+  source index). Each editor OK calls `FontPackInspectorDialog._commit_edit` →
+  `replace_glyph` (edit mode) or `splice_font` (whole-font add) into that bundle's
+  working copy, appends a pending-edit description, and marks the tab with a "● "
+  prefix. The toolbar's **"Save as…"** opens `FontPackSaveDialog` for the current
+  bundle: metadata (abi / current content version / working fonts·glyphs·size), the
+  **pending-edits list**, an editable **content_version** spin (default current+1 —
+  **one bump for all accumulated edits**), and **Save .plyf… / Flash / Discard /
+  Close** (`encode_pack(working_fonts, version)` is what's written/flashed; Discard
+  drops that bundle's working copy). Flash is only offered when the inspector was
+  given a `flash_cb`.
+  When you **edit** a glyph, the editor pre-fills the render controls (size,
   dither, normalize/invert/edge/outline, render size, yAdvance, …) from
   **`polyhost/res/fontpack/fontpack_render_settings.json`** — a `global ALL_FONTS
   index → fonts.yaml options` map emitted by the firmware's `generate_fonts.py`

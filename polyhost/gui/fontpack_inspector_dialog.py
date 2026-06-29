@@ -443,12 +443,16 @@ class _BundleTab(QWidget):
 class FontPackInspectorDialog(QDialog):
     def __init__(self, sources=None, parent=None, flash_cb=None):
         """`sources`: list of (label, Pack) pairs; defaults to the shipped bundles.
-        `flash_cb(bundle_index, plyf_bytes)`: optional, enables the extend dialog's
-        Flash button (the tray passes a device-flash callback)."""
+        `flash_cb(bundle_index, plyf_bytes)`: optional, enables the Flash button in
+        the "Save as…" dialog (the tray passes a device-flash callback)."""
         super().__init__(parent)
         self.setWindowTitle("PolyKybd — Font Pack Inspector")
         self.resize(1100, 800)
         self._flash_cb = flash_cb
+        # In-memory working copies of edited bundles (keyed by source index): glyph
+        # edits from the editor accumulate here; the "Save as…" dialog writes them.
+        self._work = {}             # bi -> working list[PackFont]
+        self._pending = {}          # bi -> [change description strings]
         v = QVBoxLayout(self)
         if sources is None:
             sources = load_shipped_packs()
@@ -475,10 +479,16 @@ class FontPackInspectorDialog(QDialog):
         self._edit_btn.clicked.connect(self._edit_selected)
         row.addWidget(self._edit_btn)
         self._extend_btn = QPushButton("Extend…")
-        self._extend_btn.setToolTip("Build new glyphs from a font and splice them "
-                                    "into a bundle")
+        self._extend_btn.setToolTip("Build new glyphs from a font and add them to a "
+                                    "bundle (in memory)")
         self._extend_btn.clicked.connect(lambda: self._open_extend())
         row.addWidget(self._extend_btn)
+        self._saveas_btn = QPushButton("Save as…")
+        self._saveas_btn.setToolTip("Review the current bundle's pending edits and "
+                                    "save them to a .plyf (or flash) at a chosen version")
+        self._saveas_btn.clicked.connect(self._save_as)
+        self._saveas_btn.setEnabled(False)
+        row.addWidget(self._saveas_btn)
         v.addLayout(row)
 
         # All fonts across every valid bundle — peek uses their ranges to prefer the
@@ -560,16 +570,191 @@ class FontPackInspectorDialog(QDialog):
             return
         self._on_edit(*sel)
 
+    def _base_label(self, bi: int) -> str:
+        """The bundle's own label (the tab text may carry a '● ' pending marker)."""
+        return self._sources[bi][0]
+
     def _on_edit(self, font, cp: int):
-        label = self._tabs.tabText(self._tabs.currentIndex())
-        self._open_extend(prefill={"bundle": label, "first": cp, "last": cp,
-                                   "global_index": font.global_index})
+        bi = self._tabs.currentIndex()
+        self._open_extend(prefill={"bundle": self._base_label(bi), "first": cp,
+                                   "last": cp, "global_index": font.global_index})
 
     def _open_extend(self, prefill=None):
         from polyhost.gui.fontpack_extend_dialog import FontPackExtendDialog
-        dlg = FontPackExtendDialog(flash_cb=self._flash_cb, parent=self,
-                                   prefill=prefill, sources=self._sources)
+        dlg = FontPackExtendDialog(parent=self, prefill=prefill, sources=self._sources)
+        if dlg.exec_() == QDialog.Accepted and dlg.result_font is not None:
+            self._commit_edit(dlg.result_label, dlg.result_font, dlg.result_edit)
+
+    # ---- working copies (edits accumulate here; Save as… writes them) ----
+    def _working(self, bi: int):
+        """Working-copy font list for bundle `bi` (shallow copy of the loaded fonts on
+        first edit; splice/replace return new PackFonts, so the loaded pack is safe)."""
+        if bi not in self._work:
+            self._work[bi] = list(self._sources[bi][1].fonts)
+        return self._work[bi]
+
+    def _commit_edit(self, label: str, new, edit):
+        """Merge an editor result into the named bundle's working copy and record it."""
+        from PyQt5.QtWidgets import QMessageBox
+        bi = next((i for i, (l, p) in enumerate(self._sources)
+                   if l == label and isinstance(p, fpr.Pack)), None)
+        if bi is None:
+            QMessageBox.critical(self, "Edit", f"Unknown bundle {label!r}.")
+            return
+        fonts = self._working(bi)
+        try:
+            if edit:
+                existing = next((f for f in fonts
+                                 if f.global_index == edit["global_index"]), None)
+                if existing is None or not existing.covers(edit["cp"]) or not new.glyphs:
+                    raise ValueError("Edit target no longer matches the bundle")
+                merged = fpr.replace_glyph(existing, edit["cp"], new.glyphs[0], new.bitmap)
+                self._work[bi] = fpr.splice_font(
+                    fpr.Pack(1, 0, len(fonts), 0, 0, True, fonts), merged)
+                desc = f"edit U+{edit['cp']:04X} (g{edit['global_index']})"
+            else:
+                self._work[bi] = fpr.splice_font(
+                    fpr.Pack(1, 0, len(fonts), 0, 0, True, fonts), new)
+                desc = (f"font g{new.global_index}: U+{new.first:04X}–U+{new.last:04X} "
+                        f"({new.glyph_count} slot(s))")
+        except Exception as e:                       # noqa: BLE001
+            QMessageBox.critical(self, "Edit failed", str(e))
+            return
+        self._pending.setdefault(bi, []).append(desc)
+        self._mark_pending(bi)
+
+    def _mark_pending(self, bi: int):
+        """Reflect a bundle's pending-edit count in its tab title + the Save as button."""
+        label = self._base_label(bi)
+        n = len(self._pending.get(bi, []))
+        self._tabs.setTabText(bi, f"● {label}" if n else label)
+        self._saveas_btn.setEnabled(any(self._pending.values()))
+
+    def _save_as(self):
+        from PyQt5.QtWidgets import QMessageBox
+        bi = self._tabs.currentIndex()
+        if not (0 <= bi < len(self._sources)) or not isinstance(self._sources[bi][1], fpr.Pack):
+            return
+        label, base = self._sources[bi]
+        if not self._pending.get(bi):
+            QMessageBox.information(self, "Save as",
+                                    f"No pending edits in '{label}'. Double-click a glyph "
+                                    "(or Extend…) and confirm with OK first.")
+            return
+        dlg = FontPackSaveDialog(label, base, self._working(bi), self._pending[bi],
+                                 flash_cb=self._flash_cb, bundle_index=bi, parent=self)
         dlg.exec_()
+        if dlg.discarded:
+            self._work.pop(bi, None)
+            self._pending.pop(bi, None)
+            self._mark_pending(bi)
+
+
+class FontPackSaveDialog(QDialog):
+    """Review a bundle's in-memory working copy and write it: metadata, the pending
+    edit list, an editable save-as ``content_version`` (default current+1, one bump for
+    all edits), and Save .plyf… / Flash / Discard.  (This is the accumulate/save side
+    moved out of the glyph editor, which is now just OK/Cancel.)"""
+
+    def __init__(self, label, base_pack, working_fonts, pending, flash_cb=None,
+                 bundle_index=0, parent=None):
+        from PyQt5.QtWidgets import QFormLayout, QSpinBox, QListWidget
+        super().__init__(parent)
+        self.setWindowTitle(f"Save font pack — {label}")
+        self.resize(460, 440)
+        self._label, self._base = label, base_pack
+        self._fonts, self._flash_cb, self._bi = working_fonts, flash_cb, bundle_index
+        self.discarded = False
+
+        v = QVBoxLayout(self)
+        self._meta = QLabel(); self._meta.setWordWrap(True)
+        self._meta.setStyleSheet("color:#9ad;")
+        v.addWidget(self._meta)
+
+        form = QFormLayout()
+        self._version = QSpinBox(); self._version.setRange(0, 65535)
+        self._version.setValue(base_pack.content_version + 1)
+        self._version.setToolTip("content_version written/flashed. Default = current+1 "
+                                 "so a connected keyboard re-flashes it; one bump covers "
+                                 "all the edits.")
+        self._version.valueChanged.connect(self._refresh)
+        form.addRow("Save as version", self._version)
+        v.addLayout(form)
+
+        v.addWidget(QLabel("Pending edits:"))
+        lst = QListWidget(); lst.addItems(list(pending)); lst.setMaximumHeight(150)
+        v.addWidget(lst, 1)
+
+        row = QHBoxLayout()
+        save = QPushButton("Save .plyf…"); save.clicked.connect(self._save)
+        row.addWidget(save)
+        if flash_cb is not None:
+            fl = QPushButton("Flash to device"); fl.clicked.connect(self._flash)
+            row.addWidget(fl)
+        disc = QPushButton("Discard edits"); disc.clicked.connect(self._discard)
+        row.addWidget(disc)
+        row.addStretch(1)
+        close = QPushButton("Close"); close.clicked.connect(self.reject)
+        row.addWidget(close)
+        v.addLayout(row)
+        self._refresh()
+
+    def _bytes(self) -> bytes:
+        return fpr.encode_pack(self._fonts, self._version.value())
+
+    def _refresh(self, *_):
+        nonempty = sum(1 for f in self._fonts for g in f.glyphs
+                       if g["width"] and g["height"])
+        try:
+            size = len(self._bytes())
+        except Exception:                            # noqa: BLE001
+            size = 0
+        self._meta.setText(
+            f"<b>{self._label}</b> — abi v{self._base.abi_version} · current content "
+            f"v{self._base.content_version}<br>working: {len(self._fonts)} fonts · "
+            f"{nonempty} glyphs · {size:,} B → save as v{self._version.value()}")
+
+    def _save(self):
+        from PyQt5.QtWidgets import QFileDialog, QMessageBox
+        path, _ = QFileDialog.getSaveFileName(self, "Save font pack", f"{self._label}.plyf",
+                                              "Font pack (*.plyf)")
+        if not path:
+            return
+        try:
+            data = self._bytes()
+            with open(path, "wb") as f:
+                f.write(data)
+        except Exception as e:                       # noqa: BLE001
+            QMessageBox.critical(self, "Save failed", str(e))
+            return
+        QMessageBox.information(self, "Saved",
+                                f"Saved {path}\ncontent v{self._version.value()} · "
+                                f"{len(data):,} B")
+
+    def _flash(self):
+        from PyQt5.QtWidgets import QMessageBox
+        if self._flash_cb is None:
+            return
+        if QMessageBox.question(self, "Flash", f"Flash '{self._label}' (content v"
+                                f"{self._version.value()}) to the keyboard?") \
+                != QMessageBox.Yes:
+            return
+        try:
+            self._flash_cb(self._bi, self._bytes())
+        except Exception as e:                       # noqa: BLE001
+            QMessageBox.critical(self, "Flash failed", str(e))
+            return
+        QMessageBox.information(self, "Flash", "Flash started — watch the tray/log.")
+        self.accept()
+
+    def _discard(self):
+        from PyQt5.QtWidgets import QMessageBox
+        if QMessageBox.question(self, "Discard edits",
+                                f"Discard all pending edits to '{self._label}'?") \
+                != QMessageBox.Yes:
+            return
+        self.discarded = True
+        self.accept()
 
 
 def main(argv=None):
