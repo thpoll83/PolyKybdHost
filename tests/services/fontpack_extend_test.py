@@ -176,6 +176,20 @@ class LoadRenderSettingsTest(unittest.TestCase):
             self.skipTest("no shipped render settings")
         self.assertTrue(any("source_file" in v for v in m.values()))
 
+    def test_matra_records_carry_composite_and_seq_first(self):
+        # The combining-mark/matra fonts (sequence groups starting with the dotted
+        # circle U+25CC) must now advertise composite + seq_first explicitly, so the
+        # host editor uses the field instead of inferring it.
+        from polyhost.services import fontpack_extend as e
+        m = e.load_render_settings()
+        matra = [v for v in m.values()
+                 if str(v.get("sequence", "")).strip().startswith("25CC")]
+        if not matra:
+            self.skipTest("no matra records in shipped settings")
+        for v in matra:
+            self.assertIs(v.get("composite"), True)
+            self.assertIsInstance(v.get("seq_first"), int)
+
 
 if __name__ == "__main__":
     unittest.main()

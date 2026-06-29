@@ -206,11 +206,11 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   PUA 0xE100+) are sequence-mode **and** use fontconvert `-C` composite (each group
   composites a mark onto the dotted circle U+25CC). The editor has a **Composite -C**
   checkbox (enabled in sequence mode); `_setup_sequence_edit` ticks it from the
-  record's `composite` field if present, else **infers** it (every group starts with
-  `25CC` → composite; regional-indicator flag groups don't). The `fontpack_render_settings.json`
-  records don't carry `composite`/`seq_first` yet, so the inference is what makes
-  matras editable today (host builds them via fontgen's mono composite path); if the
-  manifest later emits those fields they're honoured over the inference.
+  record's `composite` field (the `fontpack_render_settings.json` matra records now
+  carry `composite: true` + `seq_first`, emitted by `generate_fonts.py` from the
+  `-C`/`-F` extra_args), falling back to **inferring** it (every group starts with
+  `25CC` → composite; regional-indicator flag groups don't) for older manifests.
+  Host builds matras via fontgen's mono composite path.
 - **Source-font download validation** (`font_downloader.py`): a download is rejected
   (`DownloadError`, no file cached) when it's short (Content-Length mismatch) or not a
   complete sfnt (`_validate_sfnt` checks the table directory fits the file) — this is
