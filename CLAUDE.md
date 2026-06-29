@@ -140,7 +140,11 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   symbol codepoint that also exists in NotoEmoji/NotoColorEmoji previews from the
   clean symbol font (NotoSansSymbols) rather than the emoji glyph — even if the
   emoji font is lower-gidx / in-range / in-bundle. For an emoji slot the deferral is
-  a no-op (the emoji source order stands). The extend dialog's **Source fonts** browser (always under the
+  a no-op (the emoji source order stands). Peek also offers, as a **last-resort
+  fallback, any downloaded catalog font that no bundle uses** (default render
+  options, `_BundleTab._catalog` from `noto-fonts.yaml`) — so adding a font to the
+  catalog (e.g. NotoSansMath) makes it usable in peek with **no code change**, even
+  though it's in no pack. The extend dialog's **Source fonts** browser (always under the
   preview; click a font to use it, downloading first if needed) downloads/assigns
   the Noto source fonts via `polyhost/services/font_downloader.py`, which reads the
   catalog from **`polyhost/res/fonts/noto-fonts.yaml`**. ⚠️ That YAML is the **single

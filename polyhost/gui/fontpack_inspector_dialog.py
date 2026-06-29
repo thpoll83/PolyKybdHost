@@ -128,6 +128,7 @@ class _BundleTab(QWidget):
         self._mode = "glyph"
         self._built_key = None         # (mode, scale, hide_empty, peek) last built
         self._settings_map = None      # lazy: global index -> render settings
+        self._catalog_files = None     # lazy: download-catalog basenames (peek fallback)
         self._last_peek_count = 0      # previews rendered so far in the peek pass
         self._peek_queue = deque()     # (item, font, cp) empties awaiting a preview
         self._peek_gen = 0             # bumped on rebuild to cancel an in-flight pass
@@ -221,6 +222,18 @@ class _BundleTab(QWidget):
             self._settings_map = ext.load_render_settings()
         return self._settings_map
 
+    def _catalog(self):
+        """Download-catalog font basenames (noto-fonts.yaml), so peek can also offer a
+        catalog font that no bundle uses (e.g. NotoSansMath) — adding such a font is
+        then just a one-line catalog entry, no code change."""
+        if self._catalog_files is None:
+            try:
+                from polyhost.services import font_downloader as fdl
+                self._catalog_files = [f.filename for f in fdl.load_catalog()]
+            except Exception:                       # noqa: BLE001
+                self._catalog_files = []
+        return self._catalog_files
+
     def _winners(self):
         """cp -> the font that actually renders it: the lowest-global-index font
         (across all bundles) with a non-empty glyph there (the firmware's
@@ -266,7 +279,12 @@ class _BundleTab(QWidget):
           what's used in that range, the merged ALL_FONTS view), by global index;
         * colour — within a group, monochrome sources before colour, so a symbol that
           also exists in NotoColorEmoji previews from a clean outline, not a dithered
-          colour emoji."""
+          colour emoji.
+
+        Finally, any *downloaded* font from the catalog (noto-fonts.yaml) that no
+        bundle uses is appended as a last-resort candidate (default render options) —
+        so a font added to the catalog (e.g. NotoSansMath) is usable in peek with no
+        code change, even though it's in no pack."""
         from polyhost.services import font_downloader as fdl
         cache = fdl.default_cache_dir()
         smap = self._settings()
@@ -300,6 +318,15 @@ class _BundleTab(QWidget):
                 continue
             seen.add(src)
             out.append((opts, src, opts["source_file"]))
+        # Catalog fallback: any downloaded catalog font not already covered by the
+        # manifest (default options, ranked last), so an unused-but-downloaded font is
+        # still a peek candidate where it has the glyph.
+        for fname in self._catalog():
+            src = os.path.join(cache, fname)
+            if src in seen or not os.path.exists(src):
+                continue
+            seen.add(src)
+            out.append(({"source_file": fname, "size": 20}, src, fname))
         return out
 
     def _peek_pixmap(self, font, cp, cw, ch, scale):

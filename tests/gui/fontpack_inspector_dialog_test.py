@@ -261,6 +261,27 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         # emoji (in-range, in-bundle) ahead of the symbol fallback — not deferred
         self.assertEqual(files, ["NotoColorEmoji-Regular.ttf", "NotoSansSymbols-Regular.ttf"])
 
+    def test_peek_candidates_include_catalog_fallback(self):
+        # a downloaded catalog font that no bundle uses (e.g. NotoSansMath) must still
+        # be a peek candidate (ranked last), so it's usable with no code change.
+        import tempfile
+        from unittest.mock import patch
+        from polyhost.services import fontpack_extend as ext
+        from polyhost.services import font_downloader as fdl
+        tmp = tempfile.mkdtemp()
+        open(os.path.join(tmp, "NotoSansMath-Regular.ttf"), "wb").close()
+        smap = {"0": {"source_file": "own-missing.ttf"}}     # own slot, uncached
+        math = fdl.NotoFont("Noto Sans Math", "file:///x", "NotoSansMath-Regular.ttf")
+        tab = fid._BundleTab("symbol", _pack_with_empty())
+        self.addCleanup(tab.deleteLater)
+        with patch.object(ext, "load_render_settings", return_value=smap), \
+             patch.object(fdl, "load_catalog", return_value=[math]), \
+             patch.object(fdl, "default_cache_dir", return_value=tmp):
+            tab._settings_map = None
+            tab._catalog_files = None
+            files = [c[2] for c in tab._peek_candidates(tab._pack.fonts[0], 0x2200)]
+        self.assertIn("NotoSansMath-Regular.ttf", files)     # offered though in no bundle
+
     def test_peek_candidates_prefer_in_range(self):
         # a source whose font range owns the cp beats a lower-gidx out-of-range one
         import tempfile
