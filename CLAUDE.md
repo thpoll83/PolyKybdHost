@@ -129,7 +129,12 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   renders the *empty* slots from their source font (via `fontpack_extend.peek_source_glyph`
   + the shipped render settings, needs the source font downloaded) as **amber
   previews** — candidates you can then double-click to edit/take; they are not in
-  the pack. The extend dialog's **Source fonts** browser (always under the
+  the pack. Peek **prefers a non-emoji (symbol/text) source over an emoji source**
+  when the slot's own font isn't itself emoji (`_peek_candidates` style key), so a
+  symbol codepoint that also exists in NotoEmoji/NotoColorEmoji previews from the
+  clean symbol font (NotoSansSymbols) rather than the emoji glyph — even if the
+  emoji font is lower-gidx / in-range / in-bundle. For an emoji slot the deferral is
+  a no-op (the emoji source order stands). The extend dialog's **Source fonts** browser (always under the
   preview; click a font to use it, downloading first if needed) downloads/assigns
   the Noto source fonts via `polyhost/services/font_downloader.py`, which reads the
   catalog from **`polyhost/res/fonts/noto-fonts.yaml`**. ⚠️ That YAML is the **single

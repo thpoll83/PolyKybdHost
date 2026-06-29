@@ -244,23 +244,35 @@ class _BundleTab(QWidget):
     def _is_color(opts) -> bool:
         return bool(opts.get("grayscale")) or int(opts.get("bits") or 1) == 32
 
+    @staticmethod
+    def _is_emoji(opts) -> bool:
+        """An emoji source (NotoColorEmoji / NotoEmoji) by file name — both the
+        colour and the b/w (NotoEmoji-Medium) variants count, since both render a
+        codepoint in the emoji style rather than as a clean symbol."""
+        return "emoji" in (opts.get("source_file") or "").lower()
+
     def _peek_candidates(self, primary, cp):
         """`(opts, src_path, source_file)` source fonts to try for slot `cp`, deduped
-        by source.  Ordered by (tier, range, colour, global index):
+        by source.  Ordered by (style, tier, range, colour, global index):
 
+        * style — when the slot's own font is *not* an emoji font, emoji sources rank
+          LAST, so a symbol that also lives in an emoji font (even the low-gidx b/w
+          NotoEmoji) previews from the clean symbol font, never the emoji.  For an
+          emoji slot this is a no-op (every candidate keeps its existing order);
         * tier — the slot's own font, then the rest of this bundle, then every other
           font in the pack (so an emoji bundle keeps previewing from its own colour
           fonts, but a symbol gap can still be filled from another bundle);
         * range — fonts whose codepoint range actually *owns* `cp` first (prefer
           what's used in that range, the merged ALL_FONTS view), by global index;
-        * colour — within a tier/range group, monochrome sources before colour, so a
-          symbol that also exists in NotoColorEmoji (e.g. U+2626 ☦) previews from a
-          clean outline rather than a dithered colour emoji."""
+        * colour — within a group, monochrome sources before colour, so a symbol that
+          also exists in NotoColorEmoji previews from a clean outline, not a dithered
+          colour emoji."""
         from polyhost.services import font_downloader as fdl
         cache = fdl.default_cache_dir()
         smap = self._settings()
         by_gidx = {f.global_index: f for f in self._all_fonts}
         bundle_ids = {f.global_index for f in self._pack.fonts}
+        primary_emoji = self._is_emoji(smap.get(str(primary.global_index)) or {})
 
         def tier(gi):
             return 0 if gi == primary.global_index else 1 if gi in bundle_ids else 2
@@ -276,8 +288,10 @@ class _BundleTab(QWidget):
             gi = int(k)
             f = by_gidx.get(gi)
             in_range = bool(f) and f.first <= cp <= f.last
-            rows.append((tier(gi), not in_range, self._is_color(opts), gi, opts))
-        rows.sort(key=lambda r: (r[0], r[1], r[2], r[3]))
+            # Defer emoji sources only when the slot's own font isn't itself emoji.
+            style = 1 if (self._is_emoji(opts) and not primary_emoji) else 0
+            rows.append((style, tier(gi), not in_range, self._is_color(opts), gi, opts))
+        rows.sort(key=lambda r: (r[0], r[1], r[2], r[3], r[4]))
 
         seen, out = set(), []
         for *_key, opts in rows:

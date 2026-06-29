@@ -196,6 +196,71 @@ class FontPackInspectorDialogTest(unittest.TestCase):
             files = [c[2] for c in tab._peek_candidates(tab._pack.fonts[0], 0x41)]
         self.assertEqual(files, ["mono-a.ttf", "mono-b.ttf", "color.ttf"])
 
+    def test_peek_candidates_defer_emoji_for_symbol_slot(self):
+        # a non-emoji (symbol) slot must prefer a symbol source over an emoji source —
+        # even a low-gidx, in-bundle, in-range b/w NotoEmoji.  (Field report: a symbol
+        # cp that also exists in NotoEmoji previewed as the emoji, not the symbol.)
+        import tempfile
+        from unittest.mock import patch
+        from polyhost.services import fontpack_extend as ext
+        from polyhost.services import font_downloader as fdl
+        tmp = tempfile.mkdtemp()
+        for fn in ("NotoEmoji-Medium.ttf", "NotoSansSymbols-Regular.ttf"):
+            open(os.path.join(tmp, fn), "wb").close()
+
+        def _f(gi, first, last):
+            return fpr.PackFont(f"f{gi}", b"", [dict(bitmapOffset=0, width=0, height=0,
+                                                     xAdvance=0, xOffset=0, yOffset=0)],
+                                first, last, 12, global_index=gi)
+        # own slot (symbol, gidx0) owns 0x41; a b/w emoji at low gidx2 is in this
+        # bundle AND in-range for 0x41; the symbol source is resident-only + out-of-range.
+        all_fonts = [_f(0, 0x41, 0x41), _f(2, 0x41, 0x41)]
+        smap = {
+            "0": {"source_file": "own-missing.ttf"},                 # own slot, uncached
+            "2": {"source_file": "NotoEmoji-Medium.ttf"},            # b/w emoji, low gidx, in-range
+            "7": {"source_file": "NotoSansSymbols-Regular.ttf"},     # symbol, resident-only
+        }
+        pack = fpr.Pack(1, 0, 1, 0, 0, True, [all_fonts[0], all_fonts[1]])
+        tab = fid._BundleTab("symbol", pack, all_fonts=all_fonts)
+        self.addCleanup(tab.deleteLater)
+        with patch.object(ext, "load_render_settings", return_value=smap), \
+             patch.object(fdl, "default_cache_dir", return_value=tmp):
+            tab._settings_map = None
+            files = [c[2] for c in tab._peek_candidates(pack.fonts[0], 0x41)]
+        # symbol source first, emoji last — despite the emoji's lower gidx / in-range
+        self.assertEqual(files, ["NotoSansSymbols-Regular.ttf", "NotoEmoji-Medium.ttf"])
+
+    def test_peek_candidates_keep_emoji_for_emoji_slot(self):
+        # for an emoji slot the deferral is a no-op: the in-range/lower-gidx order
+        # stands (own emoji font keeps previewing emoji, not a stray symbol source).
+        import tempfile
+        from unittest.mock import patch
+        from polyhost.services import fontpack_extend as ext
+        from polyhost.services import font_downloader as fdl
+        tmp = tempfile.mkdtemp()
+        for fn in ("NotoColorEmoji-Regular.ttf", "NotoSansSymbols-Regular.ttf"):
+            open(os.path.join(tmp, fn), "wb").close()
+
+        def _f(gi, first, last):
+            return fpr.PackFont(f"f{gi}", b"", [dict(bitmapOffset=0, width=0, height=0,
+                                                     xAdvance=0, xOffset=0, yOffset=0)],
+                                first, last, 12, global_index=gi)
+        all_fonts = [_f(0, 0x1F600, 0x1F600), _f(4, 0x1F600, 0x1F600)]
+        smap = {
+            "0": {"source_file": "NotoEmoji-own.ttf", "bits": 32, "grayscale": True},  # own emoji slot, uncached
+            "4": {"source_file": "NotoColorEmoji-Regular.ttf", "bits": 32, "grayscale": True},
+            "7": {"source_file": "NotoSansSymbols-Regular.ttf"},     # symbol, resident-only
+        }
+        pack = fpr.Pack(1, 0, 1, 0, 0, True, [all_fonts[0], all_fonts[1]])
+        tab = fid._BundleTab("emoji", pack, all_fonts=all_fonts)
+        self.addCleanup(tab.deleteLater)
+        with patch.object(ext, "load_render_settings", return_value=smap), \
+             patch.object(fdl, "default_cache_dir", return_value=tmp):
+            tab._settings_map = None
+            files = [c[2] for c in tab._peek_candidates(pack.fonts[0], 0x1F600)]
+        # emoji (in-range, in-bundle) ahead of the symbol fallback — not deferred
+        self.assertEqual(files, ["NotoColorEmoji-Regular.ttf", "NotoSansSymbols-Regular.ttf"])
+
     def test_peek_candidates_prefer_in_range(self):
         # a source whose font range owns the cp beats a lower-gidx out-of-range one
         import tempfile
