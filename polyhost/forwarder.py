@@ -417,9 +417,9 @@ class PolyForwarder(QApplication):
                         handle = win.getHandle()
                         self.send_to_host(handle, self.title, app_name)
                         if changed:
-                            self.log.info("Active App: '%s' %s %d", self.title, app_name, handle)
+                            self.log.info("Active App: '%s' %s %s", self.title, app_name, handle)
                         else:
-                            self.log.debug("Heartbeat: '%s' %s %d", self.title, app_name, handle)
+                            self.log.debug("Heartbeat: '%s' %s %s", self.title, app_name, handle)
                         self.heartbeat_msec = 0
             except Exception as e:
                 self.log.warning("Exception in window reporter: %s", e)

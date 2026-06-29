@@ -143,7 +143,7 @@ class OverlayHandler:
 
     def log_win(self, raw_app_name):
         """Log active window"""
-        self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %d", raw_app_name, self.win.title.encode('utf-8'), self.win.getHandle())
+        self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %s", raw_app_name, self.win.title.encode('utf-8'), self.win.getHandle())
 
     def handle_active_window(self, update_cycle_time_msec, accept_time_msec):
         """Decide the overlay action for the focused window and track the
