@@ -110,6 +110,18 @@ class ExtendDialogTest(unittest.TestCase):
         # the value round-trips into RenderOptions (-w)
         self.assertEqual(dlg._options().weight, int(settings[gi]["weight"]))
 
+    def test_tone_controls_flow_into_options(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg._gamma.setValue(1.5)
+        dlg._contrast.setValue(2.0)
+        dlg._exposure.setValue(0.5)
+        dlg._sharp.setValue(1.0)
+        dlg._sat.setValue(0.3)
+        ro = dlg._options()
+        self.assertEqual((ro.gamma_val, ro.contrast, ro.exposure, ro.sharpness,
+                          ro.saturation_boost), (1.5, 2.0, 0.5, 1.0, 0.3))
+
     def test_weight_zero_means_unset(self):
         dlg = fed.FontPackExtendDialog()
         self.addCleanup(dlg.deleteLater)

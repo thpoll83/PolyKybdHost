@@ -20,8 +20,8 @@ import threading
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QSpinBox,
-    QComboBox, QCheckBox, QPushButton, QScrollArea, QFileDialog, QMessageBox,
-    QApplication, QWidget, QListWidget, QListWidgetItem, QProgressDialog,
+    QDoubleSpinBox, QComboBox, QCheckBox, QPushButton, QScrollArea, QFileDialog,
+    QMessageBox, QApplication, QWidget, QListWidget, QListWidgetItem, QProgressDialog,
 )
 
 from polyhost.services import fontpack_reader as fpr
@@ -126,6 +126,17 @@ class FontPackExtendDialog(QDialog):
         self._xshift.setToolTip("Horizontal pixel shift of the rendered glyph (rarely "
                                 "needed; e.g. couple emoji use -12).")
         form.addRow("X shift -X", self._xshift)
+        # Grayscale/colour tone tuning (pre-dither), same knobs as fontconvert.
+        self._gamma = self._dspin(0.1, 5.0, 1.0, 0.05)
+        form.addRow("Gamma -G (1 = off)", self._gamma)
+        self._contrast = self._dspin(0.1, 5.0, 1.0, 0.05)
+        form.addRow("Contrast -c (1 = off)", self._contrast)
+        self._exposure = self._dspin(-5.0, 5.0, 0.0, 0.1)
+        form.addRow("Exposure -e (0 = off)", self._exposure)
+        self._sharp = self._dspin(0.0, 10.0, 0.0, 0.1)
+        form.addRow("Sharpen -U (0 = off)", self._sharp)
+        self._sat = self._dspin(0.0, 5.0, 0.0, 0.1)
+        form.addRow("Saturation -B (0 = off)", self._sat)
 
         self._bundle = QComboBox()
         for label, pack in self._packs:
@@ -231,6 +242,11 @@ class FontPackExtendDialog(QDialog):
         self._maxw.setValue(int(opts.get("max_width") or 0))
         self._weight.setValue(int(opts.get("weight") or 0))
         self._xshift.setValue(int(opts.get("xshift") or 0))
+        self._gamma.setValue(float(opts.get("gamma") or 1.0))
+        self._contrast.setValue(float(opts.get("contrast") or 1.0))
+        self._exposure.setValue(float(opts.get("exposure") or 0.0))
+        self._sharp.setValue(float(opts.get("sharpness") or 0.0))
+        self._sat.setValue(float(opts.get("saturation") or 0.0))
         self._sync_mode()          # reflect the grayscale toggle (enables dither)
         sf = opts.get("source_file")
         if sf:
@@ -246,6 +262,15 @@ class FontPackExtendDialog(QDialog):
     @staticmethod
     def _spin(lo, hi, val):
         s = QSpinBox(); s.setRange(lo, hi); s.setValue(val); return s
+
+    @staticmethod
+    def _dspin(lo, hi, val, step):
+        s = QDoubleSpinBox()
+        s.setRange(lo, hi)
+        s.setSingleStep(step)
+        s.setDecimals(2)
+        s.setValue(val)
+        return s
 
     def _sync_mode(self, *_):
         seq = self._mode.currentIndex() == 1
@@ -291,6 +316,9 @@ class FontPackExtendDialog(QDialog):
             max_width=self._maxw.value(),
             weight=self._weight.value() or -1,    # 0 in the UI = unset (-1)
             xshift=self._xshift.value(),
+            gamma_val=self._gamma.value(), contrast=self._contrast.value(),
+            exposure=self._exposure.value(), sharpness=self._sharp.value(),
+            saturation_boost=self._sat.value(),
             seq_first=int(self._seq_first.text(), 16) if self._seq.isEnabled() else 0,
             bits=32)
 
