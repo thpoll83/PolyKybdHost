@@ -111,10 +111,14 @@ class _BundleTab(QWidget):
     double-click come from the view."""
     edit_requested = pyqtSignal(object, int)   # (font, codepoint)
 
-    def __init__(self, label: str, pack, parent=None):
+    def __init__(self, label: str, pack, parent=None, all_fonts=None):
         super().__init__(parent)
         self._label = label
         self._pack = pack
+        # Every font across all bundles (for range-aware peek); fall back to this
+        # bundle's fonts when not supplied (standalone / tests).
+        self._all_fonts = list(all_fonts) if all_fonts is not None else (
+            list(pack.fonts) if isinstance(pack, fpr.Pack) else [])
         self._mode = "glyph"
         self._built_key = None         # (mode, scale, hide_empty, peek) last built
         self._settings_map = None      # lazy: global index -> render settings
@@ -215,17 +219,18 @@ class _BundleTab(QWidget):
     def _is_color(opts) -> bool:
         return bool(opts.get("grayscale")) or int(opts.get("bits") or 1) == 32
 
-    def _peek_candidates(self, primary):
-        """`(opts, src_path, source_file)` source fonts to try for a slot, deduped
-        by source.  Ordered by (tier, colour, global index): the slot's own font,
-        then the rest of this bundle, then **every other source in the pack**.  A
-        glyph can live in a font from another bundle (e.g. a symbol gap filled by
-        plain NotoSansSymbols when this bundle only references Symbols2), so peek
-        looks pack-wide.  Within the cross-bundle tier, *monochrome* sources are
-        tried before colour ones — many symbols (e.g. U+2626 ☦) also exist in
-        NotoColorEmoji, and a clean outline beats a dithered colour emoji for a
-        monochrome slot.  The own/bundle tiers are unaffected, so an emoji bundle
-        still previews from its own colour fonts."""
+    def _peek_candidates(self, primary, cp):
+        """`(opts, src_path, source_file)` source fonts to try for slot `cp`, deduped
+        by source.  Ordered by (tier, range, colour, global index):
+
+        * tier — the slot's own font, then the rest of this bundle, then every other
+          font in the pack (so an emoji bundle keeps previewing from its own colour
+          fonts, but a symbol gap can still be filled from another bundle);
+        * range — fonts whose codepoint range actually *owns* `cp` first (prefer
+          what's used in that range, the merged ALL_FONTS view), by global index;
+        * colour — within a tier/range group, monochrome sources before colour, so a
+          symbol that also exists in NotoColorEmoji (e.g. U+2626 ☦) previews from a
+          clean outline rather than a dithered colour emoji."""
         from polyhost.services import font_downloader as fdl
         cache = fdl.default_cache_dir()
         smap = self._settings()
@@ -235,15 +240,17 @@ class _BundleTab(QWidget):
             return 0 if gi == primary.global_index else 1 if gi in bundle_ids else 2
 
         rows = []
-        for k, opts in smap.items():
+        for f in self._all_fonts:
+            opts = smap.get(str(f.global_index))
             if not opts or not opts.get("source_file"):
                 continue
-            gi = int(k)
-            rows.append((tier(gi), self._is_color(opts), gi, opts))
-        rows.sort(key=lambda r: (r[0], r[1], r[2]))
+            in_range = f.first <= cp <= f.last
+            rows.append((tier(f.global_index), not in_range, self._is_color(opts),
+                         f.global_index, opts))
+        rows.sort(key=lambda r: (r[0], r[1], r[2], r[3]))
 
         seen, out = set(), []
-        for _tier, _color, _gi, opts in rows:
+        for *_key, opts in rows:
             src = os.path.join(cache, opts["source_file"])
             if src in seen or not os.path.exists(src):
                 continue
@@ -253,11 +260,11 @@ class _BundleTab(QWidget):
 
     def _peek_pixmap(self, font, cp, cw, ch, scale):
         """Render empty slot `cp` from a source font as an amber preview, trying the
-        slot's own font, then the bundle, then the whole pack.  A cheap cached-face
-        glyph check picks the right source before paying the render cost.  Returns
-        `(pixmap, source_file)` or None (no cached source has the glyph)."""
+        slot's own font, then the bundle, then the whole pack (range/colour ordered).
+        A cheap cached-face glyph check picks the right source before paying the
+        render cost.  Returns `(pixmap, source_file)` or None."""
         from polyhost.services import fontpack_extend as ext
-        for opts, src, sf in self._peek_candidates(font):
+        for opts, src, sf in self._peek_candidates(font, cp):
             if not ext.source_has_glyph(src, cp):   # cheap precheck (cached face)
                 continue
             try:
@@ -378,9 +385,13 @@ class FontPackInspectorDialog(QDialog):
         row.addWidget(self._extend_btn)
         v.addLayout(row)
 
+        # All fonts across every valid bundle — peek uses their ranges to prefer the
+        # source that actually owns a codepoint (the merged ALL_FONTS view).
+        all_fonts = [f for _l, p in sources if isinstance(p, fpr.Pack) for f in p.fonts]
+
         self._tabs = QTabWidget()
         for label, pack in sources:
-            tab = _BundleTab(label, pack)
+            tab = _BundleTab(label, pack, all_fonts=all_fonts)
             tab.edit_requested.connect(self._on_edit)
             self._tabs.addTab(tab, label)
         self._tabs.currentChanged.connect(self._render_current)

@@ -147,12 +147,13 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         from polyhost.services import fontpack_extend as ext
         from polyhost.services import font_downloader as fdl
         pack = _pack_with_empty()                       # one font, gidx 0, 0x42 empty
-        tab = fid._BundleTab("multi", pack)
+        # a font from another bundle (gidx 99) whose source has 'B' (0x42)
+        other = fpr.PackFont("X", b"", [dict(bitmapOffset=0, width=0, height=0,
+                                             xAdvance=0, xOffset=0, yOffset=0)],
+                             0x42, 0x42, 12, global_index=99)
+        tab = fid._BundleTab("multi", pack, all_fonts=[pack.fonts[0], other])
         self.addCleanup(tab.deleteLater)
         tab.set_mode("glyph")
-        # The slot's own source is uncached; a source under a global index NOT in
-        # this bundle (gidx 99) is the system font, which has 'B' (0x42) — peek must
-        # reach it (whole-pack), not just this bundle.
         with patch.object(ext, "load_render_settings", return_value={
                 "0": {"size": 24, "source_file": "missing-font.ttf"},
                 "99": {"size": 24, "source_file": os.path.basename(_FONT)}}), \
@@ -163,9 +164,9 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.assertEqual(res[1], os.path.basename(_FONT))   # rendered from gidx-99 source
 
     def test_peek_candidates_defer_colour_sources(self):
-        # cross-bundle fallback should try monochrome sources before colour ones,
-        # so a symbol that also exists in NotoColorEmoji isn't rendered as a dithered
-        # colour emoji.  (No rendering — just ordering; needs only file existence.)
+        # cross-bundle fallback (sources not in-range for the cp) should try
+        # monochrome before colour, so a symbol that also exists in NotoColorEmoji
+        # isn't previewed as a dithered colour emoji.  (Ordering only — file existence.)
         import tempfile
         from unittest.mock import patch
         from polyhost.services import fontpack_extend as ext
@@ -173,19 +174,51 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         tmp = tempfile.mkdtemp()
         for fn in ("mono-a.ttf", "mono-b.ttf", "color.ttf"):
             open(os.path.join(tmp, fn), "wb").close()
+
+        def _f(gi, first, last):
+            return fpr.PackFont(f"f{gi}", b"", [dict(bitmapOffset=0, width=0, height=0,
+                                                     xAdvance=0, xOffset=0, yOffset=0)],
+                                first, last, 12, global_index=gi)
+        # own slot owns 0x41; the others are elsewhere (not in-range for 0x41)
+        all_fonts = [_f(0, 0x41, 0x41), _f(3, 0x100, 0x100),
+                     _f(5, 0x101, 0x101), _f(9, 0x102, 0x102)]
         smap = {
             "0": {"source_file": "own-missing.ttf"},                 # own slot, uncached
             "5": {"source_file": "color.ttf", "bits": 32, "grayscale": True},  # colour, low gidx
             "9": {"source_file": "mono-b.ttf"},                      # mono, higher gidx
             "3": {"source_file": "mono-a.ttf"},                      # mono, lower gidx
         }
-        tab = fid._BundleTab("multi", _pack_with_empty())            # primary gidx 0, mono
+        tab = fid._BundleTab("multi", _pack_with_empty(), all_fonts=all_fonts)
         self.addCleanup(tab.deleteLater)
         with patch.object(ext, "load_render_settings", return_value=smap), \
              patch.object(fdl, "default_cache_dir", return_value=tmp):
             tab._settings_map = None
-            files = [c[2] for c in tab._peek_candidates(tab._pack.fonts[0])]
+            files = [c[2] for c in tab._peek_candidates(tab._pack.fonts[0], 0x41)]
         self.assertEqual(files, ["mono-a.ttf", "mono-b.ttf", "color.ttf"])
+
+    def test_peek_candidates_prefer_in_range(self):
+        # a source whose font range owns the cp beats a lower-gidx out-of-range one
+        import tempfile
+        from unittest.mock import patch
+        from polyhost.services import fontpack_extend as ext
+        from polyhost.services import font_downloader as fdl
+        tmp = tempfile.mkdtemp()
+        for fn in ("low.ttf", "inrange.ttf"):
+            open(os.path.join(tmp, fn), "wb").close()
+
+        def _f(gi, first, last):
+            return fpr.PackFont(f"f{gi}", b"", [dict(bitmapOffset=0, width=0, height=0,
+                                                     xAdvance=0, xOffset=0, yOffset=0)],
+                                first, last, 12, global_index=gi)
+        all_fonts = [_f(2, 0x100, 0x100), _f(8, 0x41, 0x41)]   # gidx8 owns 0x41
+        smap = {"2": {"source_file": "low.ttf"}, "8": {"source_file": "inrange.ttf"}}
+        tab = fid._BundleTab("multi", _pack_with_empty(), all_fonts=all_fonts)
+        self.addCleanup(tab.deleteLater)
+        with patch.object(ext, "load_render_settings", return_value=smap), \
+             patch.object(fdl, "default_cache_dir", return_value=tmp):
+            tab._settings_map = None
+            files = [c[2] for c in tab._peek_candidates(tab._pack.fonts[0], 0x41)]
+        self.assertEqual(files, ["inrange.ttf", "low.ttf"])
 
     def test_error_source_does_not_crash(self):
         # a decode failure becomes a labelled tab, never a dead window
