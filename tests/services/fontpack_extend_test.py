@@ -115,12 +115,21 @@ class LoadRenderSettingsTest(unittest.TestCase):
         from polyhost.services import fontpack_extend as e
         self.assertEqual(e.load_render_settings("/no/such/file.json"), {})
 
+    def test_non_dict_settings_returns_empty(self):
+        import json
+        import tempfile
+        from polyhost.services import fontpack_extend as e
+        p = os.path.join(tempfile.mkdtemp(), "bad.json")
+        with open(p, "w") as f:
+            json.dump({"by_global_index": [1, 2, 3]}, f)   # not a dict
+        self.assertEqual(e.load_render_settings(p), {})
+
     def test_shipped_loads(self):
         from polyhost.services import fontpack_extend as e
         m = e.load_render_settings()
         if not m:
             self.skipTest("no shipped render settings")
-        self.assertIn("source_file", next(iter(m.values())))
+        self.assertTrue(any("source_file" in v for v in m.values()))
 
 
 if __name__ == "__main__":

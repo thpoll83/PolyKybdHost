@@ -35,7 +35,8 @@ def load_render_settings(path: str = None) -> dict:
                             "res", "fontpack", "fontpack_render_settings.json")
     try:
         with open(path, encoding="utf-8") as f:
-            return json.load(f).get("by_global_index", {})
+            settings = json.load(f).get("by_global_index", {})
+        return settings if isinstance(settings, dict) else {}
     except Exception:                       # noqa: BLE001
         return {}
 

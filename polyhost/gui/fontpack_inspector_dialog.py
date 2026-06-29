@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import os
 import sys
+from collections import deque
 
 from PyQt5.QtCore import Qt, QSize, QTimer, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QStandardItemModel, QStandardItem
@@ -118,7 +119,7 @@ class _BundleTab(QWidget):
         self._built_key = None         # (mode, scale, hide_empty, peek) last built
         self._settings_map = None      # lazy: global index -> render settings
         self._last_peek_count = 0      # previews rendered so far in the peek pass
-        self._peek_queue = []          # (item, font, cp) empties awaiting a preview
+        self._peek_queue = deque()     # (item, font, cp) empties awaiting a preview
         self._peek_gen = 0             # bumped on rebuild to cancel an in-flight pass
         self._dims = (8, 8, 1)         # (cell_w, cell_h, scale) of the current build
         v = QVBoxLayout(self)
@@ -142,6 +143,7 @@ class _BundleTab(QWidget):
         ctl.addWidget(QLabel("Zoom"))
         self._zoom = QDoubleSpinBox()
         self._zoom.setRange(1.0, 8.0)
+        self._zoom.setDecimals(0)              # whole-number scale (int() in _rebuild)
         self._zoom.setSingleStep(1.0)
         self._zoom.setValue(2.0)
         self._zoom.valueChanged.connect(self._rebuild)
@@ -266,7 +268,7 @@ class _BundleTab(QWidget):
         # Cancel any in-flight peek pass (a new generation invalidates the old timer).
         self._peek_gen += 1
         self._peek_timer.stop()
-        self._peek_queue = []
+        self._peek_queue = deque()
         self._last_peek_count = 0
         self._model.clear()
         cw, ch = self._cell_dims(scale)
@@ -305,7 +307,7 @@ class _BundleTab(QWidget):
         for _ in range(self._PEEK_CHUNK):
             if not self._peek_queue:
                 return
-            it, font, cp = self._peek_queue.pop(0)
+            it, font, cp = self._peek_queue.popleft()
             res = self._peek_pixmap(font, cp, cw, ch, scale)
             if gen != self._peek_gen:                 # a rebuild superseded us
                 return
