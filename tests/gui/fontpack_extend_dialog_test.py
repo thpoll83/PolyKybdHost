@@ -181,17 +181,17 @@ class ExtendDialogTest(unittest.TestCase):
         dlg._src.setText(_FONT)
         dlg._first.setText("0x41"); dlg._last.setText("0x41")
         dlg._build()
-        self.assertEqual(dlg._scale, 3)
+        self.assertEqual(dlg._scale, 3.0)
         w0 = dlg._preview.pixmap().width()
-        self.assertTrue(dlg._zoom(1))              # wheel up -> zoom in
-        self.assertEqual(dlg._scale, 4)
+        self.assertTrue(dlg._zoom(0.5))            # wheel up -> +0.5
+        self.assertEqual(dlg._scale, 3.5)
         self.assertGreater(dlg._preview.pixmap().width(), w0)
-        for _ in range(20):
-            dlg._zoom(-1)
-        self.assertEqual(dlg._scale, 1)            # clamps at 1
-        for _ in range(20):
-            dlg._zoom(1)
-        self.assertEqual(dlg._scale, 12)           # clamps at 12
+        for _ in range(40):
+            dlg._zoom(-0.5)
+        self.assertEqual(dlg._scale, 0.5)          # clamps at 0.5
+        for _ in range(40):
+            dlg._zoom(0.5)
+        self.assertEqual(dlg._scale, 7.0)          # clamps at 7.0
 
     def test_download_panel_sets_source(self):
         dlg = fed.FontPackExtendDialog()
@@ -294,6 +294,26 @@ class ExtendDialogTest(unittest.TestCase):
         self.assertTrue(dlg._options().composite)
         dlg._mode.setCurrentIndex(0); dlg._sync_mode()           # range
         self.assertFalse(dlg._options().composite)               # ignored outside sequence
+
+    def test_reset_restores_opened_settings(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        base_size = dlg._size.value()
+        dlg._size.setValue(base_size + 13)
+        dlg._gamma.setValue(2.3); dlg._inv.setChecked(True)
+        dlg._reset()
+        self.assertEqual(dlg._size.value(), base_size)
+        self.assertEqual(dlg._gamma.value(), 1.0)
+        self.assertFalse(dlg._inv.isChecked())
+
+    def test_float_spins_uniform_width_and_step(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        floats = (dlg._gamma, dlg._contrast, dlg._exposure, dlg._sharp, dlg._sat)
+        widths = {s.width() for s in floats}
+        self.assertEqual(len(widths), 1)                 # all the same fixed width
+        for s in floats:
+            self.assertEqual(s.singleStep(), 0.1)        # 0.1 increment
 
     def test_with_slider_two_way_sync(self):
         from PyQt5.QtWidgets import QSlider

@@ -451,6 +451,24 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.assertTrue(dlg._saveas_btn.isEnabled())
         self.assertTrue(dlg._tabs.tabText(0).startswith("●")) # pending marker
 
+    def test_commit_edit_shows_in_tab_with_border(self):
+        # after an edit commits, the tab re-renders from the working copy and marks
+        # the edited cp as modified (border) — so the new version is visible
+        base = fpr.PackFont("b", b"\x80\x80", [_g(0, 1, 1), _g(1, 1, 1)],
+                            0x41, 0x42, 12, global_index=5)
+        pack = fpr.Pack(1, 0, 1, 0, 0, True, [base])
+        dlg = fid.FontPackInspectorDialog(sources=[("sym", pack)])
+        self.addCleanup(dlg.deleteLater)
+        tab = dlg._tabs.widget(0)
+        newf = fpr.PackFont("n", b"\xC0", [_g(0, 2, 1)], 0x41, 0x41, 12, global_index=5)
+        dlg._commit_edit("sym", newf, {"global_index": 5, "cp": 0x41})
+        self.assertIn(0x41, tab._modified)                      # edited cp marked
+        self.assertEqual(tab._pack.fonts[0].glyphs[0]["width"], 2)   # working copy shown
+        # the modified cell carries a tooltip note
+        tips = {tab._model.item(i).data(fid._CP_ROLE): tab._model.item(i).toolTip()
+                for i in range(tab._model.rowCount())}
+        self.assertIn("edited", tips[0x41])
+
     def test_commit_edit_replaces_glyph_in_edit_mode(self):
         base = fpr.PackFont("b", b"\x80\x80", [_g(0, 1, 1), _g(1, 1, 1)],
                             0x41, 0x42, 12, global_index=5)

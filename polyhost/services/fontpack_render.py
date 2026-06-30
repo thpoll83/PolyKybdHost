@@ -29,6 +29,11 @@ BASELINE = 23
 BASE_YADV = 40
 
 
+def _px(v: float, scale: float) -> int:
+    """Pixel size for a base dimension at a (possibly fractional) zoom."""
+    return max(1, int(round(v * scale)))
+
+
 def _glyph_for(font, cp: int):
     """Bounds-checked glyph lookup — a cp below font.first would otherwise index
     negatively and silently render the wrong glyph."""
@@ -65,11 +70,11 @@ def glyph_to_image(font, cp: int, scale: int = 1, fg: int = 255, bg: int = 0):
             cur = (cur << 1) & 0xFF
             bit += 1
     if scale != 1:
-        img = img.resize((w * scale, h * scale), Image.NEAREST)
+        img = img.resize((_px(w, scale), _px(h, scale)), Image.NEAREST)
     return img
 
 
-def keycap_image(font, cp: int, base_yadv: int = BASE_YADV, scale: int = 1,
+def keycap_image(font, cp: int, base_yadv: int = BASE_YADV, scale: float = 1,
                  fg: int = 255, bg: int = 0):
     """Composite one glyph into the 72x40 keycap window as the firmware draws it.
 
@@ -100,7 +105,7 @@ def keycap_image(font, cp: int, base_yadv: int = BASE_YADV, scale: int = 1,
             cur = (cur << 1) & 0xFF
             bit += 1
     if scale != 1:
-        img = img.resize((OLED_W * scale, OLED_H * scale), Image.NEAREST)
+        img = img.resize((_px(OLED_W, scale), _px(OLED_H, scale)), Image.NEAREST)
     return img
 
 
@@ -264,7 +269,7 @@ def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
     glyphs = list(_iter_glyphs(pack))
     if not glyphs:
         return Image.new("L", (200, 40), 0)
-    kc_w, kc_h = OLED_W * scale, OLED_H * scale
+    kc_w, kc_h = _px(OLED_W, scale), _px(OLED_H, scale)
     fnt = ImageFont.load_default()
 
     want_ref = bool(source_path) and opts is not None
@@ -354,10 +359,10 @@ def contact_sheet(pack, cols: int = 16, scale: int = 2, pad: int = 6,
         return Image.new("L", (200, 40), 0)
 
     if keycap:
-        cell_w, cell_h = OLED_W * scale, OLED_H * scale
+        cell_w, cell_h = _px(OLED_W, scale), _px(OLED_H, scale)
     else:
-        cell_w = max(max((f.glyphs[cp - f.first]["width"] for f, cp in glyphs)) * scale, 1)
-        cell_h = max(max((f.glyphs[cp - f.first]["height"] for f, cp in glyphs)) * scale, 1)
+        cell_w = _px(max(f.glyphs[cp - f.first]["width"] for f, cp in glyphs), scale)
+        cell_h = _px(max(f.glyphs[cp - f.first]["height"] for f, cp in glyphs), scale)
     fnt = ImageFont.load_default()
     lab_h = 11 if label else 0
     cw, ch = cell_w + pad, cell_h + lab_h + pad

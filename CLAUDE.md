@@ -130,7 +130,11 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   firmware renders each codepoint from the lowest-global-index font that has it):
   a duplicate that loses is shown **dim grey** ("overridden by …"), and a slot
   empty in this font but drawn by another pack font is shown **cyan** ("drawn by
-  …"), so shadowed/duplicate glyphs aren't mistaken for missing. The inspector's
+  …"), so shadowed/duplicate glyphs aren't mistaken for missing. A glyph **edited
+  this session** (the editor's OK committed it into the working copy) is re-rendered
+  in-place from that working copy and bordered **green** (`MODIFIED_RGB`,
+  `_BundleTab.apply_working`); "Save as… → Discard" reverts the tab to the loaded
+  bundle. The inspector's
   **"Peek empty (from source)"** toggle
   renders the *empty* slots from their source font (via `fontpack_extend.peek_source_glyph`
   + the shipped render settings, needs the source font downloaded) as **amber
@@ -164,12 +168,15 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   reference is **HarfBuzz-shaped from the sequence** (`reference_sequence_image`,
   composites the shaped group) rather than looked up by codepoint — otherwise no
   reference showed beside a flag. **Scroll-wheel over the preview
-  zooms** it (1×–12×, `eventFilter`/`_zoom`); **Auto update** (default on) re-renders
-  on any control change (debounced). Layout niceties: each float control (gamma /
-  contrast / exposure / sharpen / saturation) has a **slider beside its spin box**
-  (`_with_slider`, synced over the spin's range); range **first–last share one row**;
-  the four flag checkboxes (grayscale/normalize/invert/edge) are a **2×2 grid**; the
-  source-font browser's **"Download all" sits on top** of the list (clear of OK/Cancel).
+  zooms** it (0.5×–7.0× in 0.5 steps; the render functions take a fractional `scale`,
+  `fontpack_render._px` rounds to pixels). **Reset** restores the render options to
+  the values the dialog opened with (`_snapshot` taken after prefill). **Auto update**
+  (default on) re-renders on any control change (debounced). Layout niceties: each
+  float control (gamma / contrast / exposure / sharpen / saturation) is a **fixed-width
+  spin (0.1 step) with a slider beside it** (`_with_slider`, one notch = 0.1); range
+  **first–last share one row**; the four flag checkboxes (grayscale/normalize/invert/
+  edge) are a **2×2 grid**; the source-font browser's **"Download all" sits on top** of
+  the list (clear of OK/Cancel).
   The **accumulate + save** side lives in the **inspector**, not the editor: the
   inspector owns per-bundle in-memory **working copies** (`_work`/`_pending` keyed by
   source index). Each editor OK calls `FontPackInspectorDialog._commit_edit` →

@@ -52,6 +52,21 @@ PEEK_RGB = (255, 168, 0)
 SHADOW_RGB = (105, 105, 105)
 # Cyan for a slot that's empty in this font but *is* drawn by another pack font.
 COVERED_RGB = (90, 170, 255)
+# Green border for a glyph edited in this session (working copy, unsaved).
+MODIFIED_RGB = (70, 215, 110)
+
+
+def _border_pixmap(pm, rgb, width: int = 2):
+    """A copy of `pm` with a `width`px solid border in `rgb` — marks an edited cell."""
+    from PyQt5.QtGui import QPainter, QPen, QColor
+    out = QPixmap(pm)
+    p = QPainter(out)
+    pen = QPen(QColor(*rgb)); pen.setWidth(width)
+    p.setPen(pen)
+    off = (width + 1) // 2
+    p.drawRect(off, off, out.width() - 2 * off - 1, out.height() - 2 * off - 1)
+    p.end()
+    return out
 
 
 def _pil_l_to_tinted_pixmap(img, rgb) -> QPixmap:
@@ -125,6 +140,7 @@ class _BundleTab(QWidget):
         self._all_fonts = list(all_fonts) if all_fonts is not None else (
             list(pack.fonts) if isinstance(pack, fpr.Pack) else [])
         self._winner_cache = None      # cp -> font that actually renders it (lowest gidx)
+        self._modified = set()         # cps edited this session (drawn with a border)
         self._mode = "glyph"
         self._built_key = None         # (mode, scale, hide_empty, peek) last built
         self._settings_map = None      # lazy: global index -> render settings
@@ -192,6 +208,23 @@ class _BundleTab(QWidget):
     # ---- public API used by the dialog ----
     def set_mode(self, mode: str):
         self._mode = mode
+        self._rebuild()
+
+    def apply_working(self, fonts, modified):
+        """Swap in an edited working copy of this bundle's fonts and re-render, so the
+        new glyph(s) show in the grid; `modified` cps get a border.  Updates this
+        tab's merged-ALL_FONTS view too (by global index) so precedence stays right."""
+        if self._view is None:
+            return
+        by = {f.global_index: f for f in self._all_fonts}
+        for f in fonts:
+            by[f.global_index] = f
+        self._all_fonts = sorted(by.values(), key=lambda f: f.global_index)
+        self._pack = fpr.Pack(self._pack.abi_version, self._pack.content_version,
+                              len(fonts), 0, 0, True, list(fonts))
+        self._modified = set(modified)
+        self._winner_cache = None
+        self._built_key = None              # force a full rebuild
         self._rebuild()
 
     def selected(self):
@@ -397,6 +430,9 @@ class _BundleTab(QWidget):
                     img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
                     pm = _pil_l_to_pixmap(img)
                     tip += "  (empty — no glyph)"
+                if cp in self._modified:             # edited this session → bordered
+                    pm = _border_pixmap(pm, MODIFIED_RGB)
+                    tip += "  (edited — unsaved)"
                 it = QStandardItem()
                 it.setIcon(QIcon(pm))
                 it.setEditable(False)
@@ -453,6 +489,7 @@ class FontPackInspectorDialog(QDialog):
         # edits from the editor accumulate here; the "Save as…" dialog writes them.
         self._work = {}             # bi -> working list[PackFont]
         self._pending = {}          # bi -> [change description strings]
+        self._modified = {}         # bi -> set of edited cps (bordered in the grid)
         v = QVBoxLayout(self)
         if sources is None:
             sources = load_shipped_packs()
@@ -622,6 +659,17 @@ class FontPackInspectorDialog(QDialog):
             QMessageBox.critical(self, "Edit failed", str(e))
             return
         self._pending.setdefault(bi, []).append(desc)
+        # Mark which codepoints changed and re-render the tab from the working copy so
+        # the new glyph is visible (bordered) without re-opening the inspector.
+        if edit:
+            cps = {edit["cp"]}
+        else:
+            cps = {c for c in range(new.first, new.last + 1)
+                   if new.glyphs[c - new.first]["width"] and new.glyphs[c - new.first]["height"]}
+        self._modified.setdefault(bi, set()).update(cps)
+        tab = self._tabs.widget(bi)
+        if isinstance(tab, _BundleTab):
+            tab.apply_working(self._work[bi], self._modified[bi])
         self._mark_pending(bi)
 
     def _mark_pending(self, bi: int):
@@ -648,7 +696,11 @@ class FontPackInspectorDialog(QDialog):
         if dlg.discarded:
             self._work.pop(bi, None)
             self._pending.pop(bi, None)
+            self._modified.pop(bi, None)
             self._mark_pending(bi)
+            tab = self._tabs.widget(bi)             # revert the grid to the loaded bundle
+            if isinstance(tab, _BundleTab):
+                tab.apply_working(self._sources[bi][1].fonts, set())
 
 
 class FontPackSaveDialog(QDialog):

@@ -98,7 +98,7 @@ class FontPackExtendDialog(QDialog):
         self.resize(900, 640)
         self._built = None          # (bundle_index, new PackFont) — last previewed candidate
         self._edit_target = None    # {bundle_index, global_index, cp} in edit mode
-        self._scale = 3             # preview zoom (scroll wheel over the preview)
+        self._scale = 3.0           # preview zoom (scroll wheel over the preview, 0.5 steps)
         # Result of an OK accept, read by the caller (inspector) to merge the glyph:
         self.result_font = None     # the built PackFont
         self.result_label = None    # target bundle label
@@ -173,9 +173,9 @@ class FontPackExtendDialog(QDialog):
         form.addRow("X shift -X", self._xshift)
         # Grayscale/colour tone tuning (pre-dither), same knobs as fontconvert — each
         # number field gets a slider beside it over the same range.
-        self._gamma = self._dspin(0.1, 5.0, 1.0, 0.05)
+        self._gamma = self._dspin(0.1, 5.0, 1.0, 0.1)
         form.addRow("Gamma -G (1 = off)", self._with_slider(self._gamma))
-        self._contrast = self._dspin(0.1, 5.0, 1.0, 0.05)
+        self._contrast = self._dspin(0.1, 5.0, 1.0, 0.1)
         form.addRow("Contrast -c (1 = off)", self._with_slider(self._contrast))
         self._exposure = self._dspin(-5.0, 5.0, 0.0, 0.1)
         form.addRow("Exposure -e (0 = off)", self._with_slider(self._exposure))
@@ -196,10 +196,15 @@ class FontPackExtendDialog(QDialog):
         # re-renders on any change so a manual Build press is rarely needed.
         brow = QHBoxLayout()
         self._build_btn = QPushButton("Build / Preview"); self._build_btn.clicked.connect(self._build)
+        self._reset_btn = QPushButton("Reset")
+        self._reset_btn.setToolTip("Restore the render options to the settings this "
+                                   "dialog opened with (the glyph's defaults)")
+        self._reset_btn.clicked.connect(self._reset)
         self._auto = QCheckBox("Auto update")
         self._auto.setChecked(True)
         self._auto.setToolTip("Re-render the preview automatically when an option changes")
-        brow.addWidget(self._build_btn); brow.addWidget(self._auto); brow.addStretch(1)
+        brow.addWidget(self._build_btn); brow.addWidget(self._reset_btn)
+        brow.addWidget(self._auto); brow.addStretch(1)
         form.addRow(brow)
 
         # OK keeps the built glyph (the inspector merges it into its working copy);
@@ -253,6 +258,9 @@ class FontPackExtendDialog(QDialog):
             self._status.setText("No valid shipped bundles available to extend.")
         elif prefill:
             self._apply_prefill(prefill)
+        # Snapshot the option controls as opened (blank defaults, or an edit's
+        # prefilled settings) so Reset can return to them.
+        self._defaults = self._snapshot()
 
     def _apply_prefill(self, p: dict):
         """Pre-target a single glyph for editing: select its bundle, range = [cp, cp].
@@ -388,16 +396,19 @@ class FontPackExtendDialog(QDialog):
         s.setSingleStep(step)
         s.setDecimals(2)
         s.setValue(val)
+        s.setFixedWidth(72)            # all float inputs share one width
         return s
 
     @staticmethod
     def _with_slider(spin):
         """Wrap a QDoubleSpinBox with a horizontal slider beside it, kept in sync over
         the spin's range (slider int = value / singleStep).  Returns the container."""
-        step = spin.singleStep() or 0.01
+        step = spin.singleStep() or 0.1
         scale = round(1.0 / step)
         sl = QSlider(Qt.Horizontal)
         sl.setRange(round(spin.minimum() * scale), round(spin.maximum() * scale))
+        sl.setSingleStep(1)            # one slider notch == one spin step (0.1)
+        sl.setPageStep(1)
         sl.setValue(round(spin.value() * scale))
         guard = {"on": False}
 
@@ -423,6 +434,34 @@ class FontPackExtendDialog(QDialog):
         h.addWidget(spin)
         h.addWidget(sl, 1)
         return w
+
+    # ---- reset to the settings the dialog opened with ----
+    def _snapshot(self) -> dict:
+        return dict(size=self._size.value(), gray=self._gray.isChecked(),
+                    dither=self._dither.currentIndex(), norm=self._norm.isChecked(),
+                    inv=self._inv.isChecked(), edge=self._edge.isChecked(),
+                    outline=self._outline.value(), rsize=self._rsize.value(),
+                    yadv=self._yadv.value(), maxw=self._maxw.value(),
+                    weight=self._weight.value(), xshift=self._xshift.value(),
+                    gamma=self._gamma.value(), contrast=self._contrast.value(),
+                    exposure=self._exposure.value(), sharp=self._sharp.value(),
+                    sat=self._sat.value(), composite=self._composite.isChecked())
+
+    def _restore(self, s: dict):
+        self._size.setValue(s["size"]); self._gray.setChecked(s["gray"])
+        self._dither.setCurrentIndex(s["dither"]); self._norm.setChecked(s["norm"])
+        self._inv.setChecked(s["inv"]); self._edge.setChecked(s["edge"])
+        self._outline.setValue(s["outline"]); self._rsize.setValue(s["rsize"])
+        self._yadv.setValue(s["yadv"]); self._maxw.setValue(s["maxw"])
+        self._weight.setValue(s["weight"]); self._xshift.setValue(s["xshift"])
+        self._gamma.setValue(s["gamma"]); self._contrast.setValue(s["contrast"])
+        self._exposure.setValue(s["exposure"]); self._sharp.setValue(s["sharp"])
+        self._sat.setValue(s["sat"]); self._composite.setChecked(s["composite"])
+        self._sync_mode()
+
+    def _reset(self):
+        self._restore(self._defaults)
+        self._status.setText("Reset to the default render settings.")
 
     def _sync_mode(self, *_):
         seq = self._mode.currentIndex() == 1
@@ -566,20 +605,20 @@ class FontPackExtendDialog(QDialog):
         self._preview.setPixmap(_pil_l_to_pixmap(sheet))
         self._preview.resize(self._preview.pixmap().size())
 
-    def _zoom(self, step: int) -> bool:
-        """Change the preview zoom by `step` (clamped 1..12) and re-render.  Returns
+    def _zoom(self, step: float) -> bool:
+        """Change the preview zoom by `step` (clamped 0.5..7.0) and re-render.  Returns
         True if it changed something (so the wheel event is consumed)."""
-        ns = max(1, min(12, self._scale + step))
+        ns = round(max(0.5, min(7.0, self._scale + step)), 1)
         if ns == self._scale or self._built is None:
             return False
         self._scale = ns
         self._render_preview()
-        self._status.setText(f"Zoom {self._scale}×  (scroll over the preview to change)")
+        self._status.setText(f"Zoom {self._scale:g}×  (scroll over the preview to change)")
         return True
 
     def eventFilter(self, obj, ev):
         if ev.type() == QEvent.Wheel and self._built is not None:
-            self._zoom(1 if ev.angleDelta().y() > 0 else -1)
+            self._zoom(0.5 if ev.angleDelta().y() > 0 else -0.5)
             return True                             # consume: wheel zooms, not pans
         return super().eventFilter(obj, ev)
 
