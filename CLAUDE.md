@@ -134,7 +134,11 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   this session** (the editor's OK committed it into the working copy) is re-rendered
   in-place from that working copy and bordered **green** (`MODIFIED_RGB`,
   `_BundleTab.apply_working`); "Save as… → Discard" reverts the tab to the loaded
-  bundle. The inspector's
+  bundle. Edits **propagate across tabs**: `_commit_edit` rebuilds the merged
+  ALL_FONTS view (`_rebuild_all_fonts`) and `_propagate` pushes it to every tab
+  (`set_all_fonts`), so a cell in bundle B that's *covered by* (cyan) or *overridden
+  by* (grey) an edited font in bundle A re-renders from the new glyph — the visible
+  tab rebuilds immediately, the rest lazily on next show. The inspector's
   **"Peek empty (from source)"** toggle
   renders the *empty* slots from their source font (via `fontpack_extend.peek_source_glyph`
   + the shipped render settings, needs the source font downloaded) as **amber

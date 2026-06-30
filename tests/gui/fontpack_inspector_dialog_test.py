@@ -469,6 +469,23 @@ class FontPackInspectorDialogTest(unittest.TestCase):
                 for i in range(tab._model.rowCount())}
         self.assertIn("edited", tips[0x41])
 
+    def test_edit_propagates_to_other_tabs(self):
+        # bundle A draws U+0041; bundle B is empty there (so B's tab shows it cyan,
+        # "covered by A"). Editing A's glyph must update B's merged view so its
+        # covered cell reflects the new glyph — cross-tab propagation.
+        a = fpr.PackFont("a", b"\x80", [_g(0, 1, 1)], 0x41, 0x41, 12, global_index=5)
+        b = fpr.PackFont("b", b"\x00", [_g(0, 0, 0)], 0x41, 0x41, 12, global_index=9)
+        dlg = fid.FontPackInspectorDialog(sources=[("A", fpr.Pack(1, 0, 1, 0, 0, True, [a])),
+                                                   ("B", fpr.Pack(1, 0, 1, 0, 0, True, [b]))])
+        self.addCleanup(dlg.deleteLater)
+        tabB = dlg._tabs.widget(1)
+        self.assertEqual(tabB._winners().get(0x41).global_index, 5)   # A wins for B
+        newf = fpr.PackFont("a2", b"\xC0", [_g(0, 2, 1)], 0x41, 0x41, 12, global_index=5)
+        dlg._commit_edit("A", newf, {"global_index": 5, "cp": 0x41})
+        win = tabB._winners().get(0x41)                # B's merged view recomputed
+        self.assertEqual(win.global_index, 5)
+        self.assertEqual(win.glyphs[0]["width"], 2)    # the edited bitmap propagated to B
+
     def test_commit_edit_replaces_glyph_in_edit_mode(self):
         base = fpr.PackFont("b", b"\x80\x80", [_g(0, 1, 1), _g(1, 1, 1)],
                             0x41, 0x42, 12, global_index=5)

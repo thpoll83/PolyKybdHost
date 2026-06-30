@@ -210,16 +210,24 @@ class _BundleTab(QWidget):
         self._mode = mode
         self._rebuild()
 
-    def apply_working(self, fonts, modified):
-        """Swap in an edited working copy of this bundle's fonts and re-render, so the
-        new glyph(s) show in the grid; `modified` cps get a border.  Updates this
-        tab's merged-ALL_FONTS view too (by global index) so precedence stays right."""
+    def set_all_fonts(self, all_fonts, rebuild=False):
+        """Adopt an updated merged ALL_FONTS view (after an edit in *any* bundle) so
+        this tab's precedence — the overridden (grey) and covered (cyan) cells, which
+        render from the winning font — reflects it.  Rebuilds now if `rebuild`, else
+        lazily on next show (built_key cleared)."""
+        self._all_fonts = list(all_fonts)
+        self._winner_cache = None
+        self._built_key = None
+        if rebuild and self._view is not None:
+            self._rebuild()
+
+    def apply_working(self, fonts, modified, all_fonts=None):
+        """Swap in this bundle's edited working copy (so its new glyph(s) show, with
+        `modified` cps bordered), adopt the merged view, and re-render now."""
         if self._view is None:
             return
-        by = {f.global_index: f for f in self._all_fonts}
-        for f in fonts:
-            by[f.global_index] = f
-        self._all_fonts = sorted(by.values(), key=lambda f: f.global_index)
+        if all_fonts is not None:
+            self._all_fonts = list(all_fonts)
         self._pack = fpr.Pack(self._pack.abi_version, self._pack.content_version,
                               len(fonts), 0, 0, True, list(fonts))
         self._modified = set(modified)
@@ -667,10 +675,36 @@ class FontPackInspectorDialog(QDialog):
             cps = {c for c in range(new.first, new.last + 1)
                    if new.glyphs[c - new.first]["width"] and new.glyphs[c - new.first]["height"]}
         self._modified.setdefault(bi, set()).update(cps)
-        tab = self._tabs.widget(bi)
-        if isinstance(tab, _BundleTab):
-            tab.apply_working(self._work[bi], self._modified[bi])
+        self._rebuild_all_fonts()
+        self._propagate(bi)
         self._mark_pending(bi)
+
+    def _rebuild_all_fonts(self):
+        """Rebuild the merged ALL_FONTS view (by global index) honouring every
+        bundle's working copy, so cross-bundle precedence sees the edits."""
+        by = {}
+        for j, (_l, p) in enumerate(self._sources):
+            if not isinstance(p, fpr.Pack):
+                continue
+            for f in self._work.get(j, p.fonts):
+                by[f.global_index] = f
+        self._all_fonts = sorted(by.values(), key=lambda f: f.global_index)
+
+    def _propagate(self, bi):
+        """Push the merged view to every tab: the edited bundle re-renders its working
+        copy (bordering modified cps) now; the other tabs adopt the view so their
+        overridden/covered cells reflect the edit — the visible one rebuilds now, the
+        rest lazily when next shown."""
+        cur = self._tabs.currentIndex()
+        for i in range(self._tabs.count()):
+            t = self._tabs.widget(i)
+            if not isinstance(t, _BundleTab):
+                continue
+            if i == bi:
+                fonts = self._work.get(bi, self._sources[bi][1].fonts)
+                t.apply_working(fonts, self._modified.get(bi, set()), self._all_fonts)
+            else:
+                t.set_all_fonts(self._all_fonts, rebuild=(i == cur))
 
     def _mark_pending(self, bi: int):
         """Reflect a bundle's pending-edit count in its tab title + the Save as button."""
@@ -697,10 +731,9 @@ class FontPackInspectorDialog(QDialog):
             self._work.pop(bi, None)
             self._pending.pop(bi, None)
             self._modified.pop(bi, None)
+            self._rebuild_all_fonts()              # drop these edits from the merged view
+            self._propagate(bi)                    # reverts bi's grid + refreshes the rest
             self._mark_pending(bi)
-            tab = self._tabs.widget(bi)             # revert the grid to the loaded bundle
-            if isinstance(tab, _BundleTab):
-                tab.apply_working(self._sources[bi][1].fonts, set())
 
 
 class FontPackSaveDialog(QDialog):
