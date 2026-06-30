@@ -199,9 +199,64 @@ def reference_glyph_image(font_path: str, cp: int, opts, fit_h: int | None = Non
     return img
 
 
+def reference_sequence_image(font_path: str, group: str, opts, fit_h: int | None = None):
+    """Smooth reference for a *sequence-mode* glyph (a flag / ZWJ emoji / matra):
+    HarfBuzz-shape the codepoint `group` (e.g. ``"1F1FA 1F1F8"``) and composite the
+    shaped glyph(s) straight from the font — undithered, colour/antialiased — so the
+    preview can show the source glyph beside the dithered keycap even though the
+    glyph's pack codepoint is a synthetic PUA slot the font has no glyph for.  None
+    if nothing renders (or the build deps are unavailable)."""
+    try:
+        from dataclasses import replace
+        from polyhost.services import fontgen as fg
+        import freetype
+        import uharfbuzz as hb
+        import numpy as np
+    except Exception:                               # noqa: BLE001
+        return None
+    cps = [int(t, 16) for t in str(group).replace(",", " ").split() if t.strip()]
+    if not cps:
+        return None
+    ropts = replace(opts, render_mode=1)
+    fg._set_tt_interpreter(fg._TT_V40)
+    face = freetype.Face(font_path)
+    fg._apply_weight(face, ropts.weight)
+    fg._setup_face_size(face, ropts)
+    cfont = fg._open_color_font(font_path, ropts, face)
+    hb_font = hb.Font(hb.Face(hb.Blob.from_file_path(font_path)))
+    hb_font.scale = (int(face.size.x_ppem * 64), int(face.size.y_ppem * 64))
+    infos, pos = fg._shape(hb, hb_font, cps)
+    placed, penx, peny = [], 0.0, 0.0
+    for info, p in zip(infos, pos):
+        r = fg._raster_for_gid(face, info.codepoint, True, cfont)
+        if r.width and r.rows:
+            arr = np.asarray(_raster_to_l(r))
+            devL = round(penx + p.x_offset / 64.0) + r.left
+            devT = round(peny - p.y_offset / 64.0) - r.top
+            placed.append((arr, devL, devT))
+        penx += p.x_advance / 64.0
+        peny -= p.y_advance / 64.0
+    if not placed:
+        return None
+    minL = min(d for _, d, _ in placed)
+    minT = min(t for _, _, t in placed)
+    maxR = max(d + a.shape[1] for a, d, _ in placed)
+    maxB = max(t + a.shape[0] for a, _, t in placed)
+    canvas = np.zeros((max(1, maxB - minT), max(1, maxR - minL)), dtype=np.uint8)
+    for a, d, t in placed:
+        y0, x0 = t - minT, d - minL
+        sub = canvas[y0:y0 + a.shape[0], x0:x0 + a.shape[1]]
+        np.maximum(sub, a, out=sub)                 # lighten-composite the group
+    img = Image.fromarray(canvas, "L")
+    if fit_h and img.height and img.height != fit_h:
+        neww = max(1, round(img.width * fit_h / img.height))
+        img = img.resize((neww, fit_h), Image.LANCZOS)
+    return img
+
+
 def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
                   scale: int = 3, pad: int = 6, title: str = "",
-                  base_yadv: int = BASE_YADV):
+                  base_yadv: int = BASE_YADV, sequence: str = None):
     """The build/extend dialog's preview: every glyph of `pack` as a 72x40 keycap,
     with the *source-font* glyph (smooth, undithered) drawn beside it for comparison
     when `source_path`/`opts` are supplied.  Degrades to keycap-only (no reference)
@@ -213,9 +268,19 @@ def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
     fnt = ImageFont.load_default()
 
     want_ref = bool(source_path) and opts is not None
+    # Sequence-mode builds (flags/matras) have synthetic PUA codepoints the source
+    # font has no glyph for, so the reference is shaped from the sequence groups
+    # instead of looked up by codepoint (1:1 when the group/glyph counts match; else
+    # the whole sequence backs the first cell).
+    groups = [g.strip() for g in str(sequence).split(",") if g.strip()] if sequence else None
     refs, ref_w = [], 0
-    for font, cp in glyphs:
-        ri = reference_glyph_image(source_path, cp, opts, fit_h=kc_h) if want_ref else None
+    for i, (font, cp) in enumerate(glyphs):
+        ri = None
+        if want_ref and groups is not None:
+            grp = groups[i] if len(groups) == len(glyphs) else (sequence if i == 0 else None)
+            ri = reference_sequence_image(source_path, grp, opts, fit_h=kc_h) if grp else None
+        elif want_ref:
+            ri = reference_glyph_image(source_path, cp, opts, fit_h=kc_h)
         refs.append(ri)
         if ri is not None:
             ref_w = max(ref_w, ri.width)

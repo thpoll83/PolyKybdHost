@@ -159,7 +159,11 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   **next to the smooth, undithered glyph straight from the source font**
   (`fontpack_render.preview_sheet` → `reference_glyph_image`, always antialiased/colour
   regardless of the grayscale toggle), so you can compare the dithered keycap output
-  against what the font actually draws while tuning. **Scroll-wheel over the preview
+  against what the font actually draws while tuning. **Sequence-mode glyphs** (flags,
+  matras) have a synthetic PUA pack codepoint the source font has no glyph for, so the
+  reference is **HarfBuzz-shaped from the sequence** (`reference_sequence_image`,
+  composites the shaped group) rather than looked up by codepoint — otherwise no
+  reference showed beside a flag. **Scroll-wheel over the preview
   zooms** it (1×–12×, `eventFilter`/`_zoom`); **Auto update** (default on) re-renders
   on any control change (debounced). Layout niceties: each float control (gamma /
   contrast / exposure / sharpen / saturation) has a **slider beside its spin box**
@@ -201,7 +205,11 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `lang_flags.json` is mirrored **byte-identically** with the firmware's
   `base/fonts/generated/lang_flags.json` (emitted by `gen-lang-fonts.sh`) — keep both
   in sync (`cmp`). Editing a flag needs **NotoColorEmoji** downloaded; if its cached
-  file is truncated (a bad download) FreeType fails to open it — re-download.
+  file is truncated (a bad download) FreeType fails to open it — re-download. A CBDT
+  **colour-bitmap font (NotoColorEmoji) renders whether or not grayscale is checked**:
+  it has no outlines, so `fontgen._open_color_font` decodes it via fontTools for any
+  source with bitmap strikes (`num_fixed_sizes>0`), not only in `-g` mode — otherwise
+  a mono build hit FreeType's "unimplemented feature" on the PNG-based glyph.
   **Matra/combining-mark fonts** (Devanagari/Bengali/Telugu/Tamil/Thai/Vietnamese,
   PUA 0xE100+) are sequence-mode **and** use fontconvert `-C` composite (each group
   composites a mark onto the dotted circle U+25CC). The editor has a **Composite -C**

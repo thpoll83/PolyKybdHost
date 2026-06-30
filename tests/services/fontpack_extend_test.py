@@ -152,6 +152,40 @@ class ReferenceRenderTest(unittest.TestCase):
                                         opts=self.RO(size=24), scale=3)
         self.assertGreater(withref.width, bare.width)     # reference column widens cells
 
+    def test_reference_sequence_image(self):
+        # the reference for a sequence-mode glyph is HarfBuzz-shaped (a flag's pack
+        # codepoint isn't in the source font) — here "AB" from the system font
+        img = self.rd.reference_sequence_image(_FONT, "41 42", self.RO(size=24))
+        self.assertIsNotNone(img)
+        self.assertGreater(img.width, 0)
+        self.assertGreater(img.getextrema()[1], 0)       # has lit pixels
+        self.assertIsNone(self.rd.reference_sequence_image(_FONT, "", self.RO(size=24)))
+
+    def test_preview_sheet_sequence_reference(self):
+        import polyhost.services.fontpack_reader as fpr
+        from polyhost.services import fontgen
+        new = fontgen.render_sequence(_FONT, "41", self.RO(size=24))   # 1 group → 1 glyph
+        pack = fpr.Pack(1, 0, 1, 0, 0, True, [new])
+        bare = self.rd.preview_sheet(pack, source_path=None, scale=3)
+        withref = self.rd.preview_sheet(pack, source_path=_FONT, opts=self.RO(size=24),
+                                        scale=3, sequence="41")
+        self.assertGreater(withref.width, bare.width)     # sequence reference shown
+
+    def test_color_font_renders_in_mono_mode(self):
+        # a CBDT colour font (NotoColorEmoji) must render in mono (-g off) too, via
+        # the fontTools path — not raise FreeType 'unimplemented feature'
+        from polyhost.services import font_downloader as fdl
+        from polyhost.services import fontpack_extend as ext
+        ce = next((f for f in fdl.load_catalog() if "ColorEmoji" in f.filename), None)
+        if ce is None or not fdl.is_downloaded(ce):
+            self.skipTest("NotoColorEmoji not cached")
+        src = fdl.local_path(ce)
+        for rm in (0, 1):                                # mono and colour both work
+            pf = ext.render_packfont(src, codepoint_range=(0x1F600, 0x1F600),
+                                     opts=self.RO(size=20, render_mode=rm, bits=32),
+                                     global_index=9)
+            self.assertGreater(pf.glyphs[0]["width"], 0)
+
 
 class LoadRenderSettingsTest(unittest.TestCase):
     """load_render_settings is pure-stdlib — runs even without the fontgen deps."""

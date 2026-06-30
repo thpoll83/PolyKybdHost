@@ -558,9 +558,10 @@ class FontPackExtendDialog(QDialog):
             opts = self._options()
         except Exception:                           # noqa: BLE001
             opts = None
+        seq = self._seq.text().strip() if self._seq.isEnabled() else None
         sheet = rd.preview_sheet(fpr.Pack(1, 0, 1, 0, 0, True, [new]),
                                  source_path=src or None, opts=opts,
-                                 cols=12, scale=self._scale,
+                                 cols=12, scale=self._scale, sequence=seq,
                                  title=f"built · {new.glyph_count} glyphs")
         self._preview.setPixmap(_pil_l_to_pixmap(sheet))
         self._preview.resize(self._preview.pixmap().size())

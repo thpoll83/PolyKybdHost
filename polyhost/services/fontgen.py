@@ -197,11 +197,17 @@ def _emit_loaded_glyph(r: ColorRaster, bitmap_offset: int, dopts, xshift: int):
                 xAdvance=xadv, xOffset=xoff, yOffset=yoff), packed
 
 
-def _open_color_font(font_path: str, opts: RenderOptions):
-    """Return a ColorBitmapFont if this is a CBDT colour-bitmap font in colour mode
-    (so its glyphs are decoded via fontTools+Pillow, no PNG-FreeType needed), else
-    None (outline/mono/gray go through FreeType)."""
-    if opts.render_mode != 1:
+def _open_color_font(font_path: str, opts: RenderOptions, face=None):
+    """Return a ColorBitmapFont if this is a CBDT colour-bitmap font (NotoColorEmoji),
+    so its glyphs are decoded via fontTools+Pillow — FreeType can't render the
+    PNG-based colour bitmaps without a PNG build (it raises 'unimplemented feature').
+    This is independent of the ``-g`` toggle: a CBDT font has *no* outlines, so even
+    a 'mono' build must come from the colour bitmap (then dithered to 1-bit).  Outline
+    fonts (incl. mono emoji like NotoEmoji) return None → FreeType.
+
+    `face` (optional): skip opening fontTools for an outline font (num_fixed_sizes 0)
+    — only bitmap-strike fonts can be CBDT."""
+    if face is not None and face.num_fixed_sizes == 0:
         return None
     from polyhost.services.fontgen_color import ColorBitmapFont
     cf = ColorBitmapFont(font_path, opts.size)
@@ -229,7 +235,7 @@ def render_range(font_path: str, first: int, last: int, opts: RenderOptions | No
     _setup_face_size(face, opts)
 
     color = opts.render_mode == 1
-    cfont = _open_color_font(font_path, opts)    # CBDT colour → fontTools path
+    cfont = _open_color_font(font_path, opts, face)    # CBDT colour → fontTools path
     dopts = opts._dither_opts()
 
     glyphs: list[dict] = []
@@ -310,7 +316,7 @@ def render_sequence(font_path: str, sequence: str, opts: RenderOptions | None = 
     if opts.composite:
         glyphs, bitmap = _render_composite(face, hb, hb_font, opts, groups)
     else:
-        cfont = _open_color_font(font_path, opts)    # CBDT colour flags/emoji
+        cfont = _open_color_font(font_path, opts, face)    # CBDT colour flags/emoji
         glyphs, bitmap = _render_shaped(face, hb, hb_font, opts, groups, cfont)
 
     if not glyphs:
