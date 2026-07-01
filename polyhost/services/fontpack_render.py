@@ -134,8 +134,9 @@ def simulate_oled(img, scale: float = 1.0, glow: float = 0.55,
         cell on alternate rows, brick-laid) rather than a rigid square screen door,
         visible once each logical pixel is drawn >= 3 px (`scale`);
       * a light **diffusion** blur (`diffusion`) softens the pixel edges so cells
-        bleed into each other the way the real panel does, killing the too-crisp
-        square look.
+        bleed into each other — this is the **clear keycap cover over the panel**
+        acting as a diffuser/light-guide, not the OLED itself, and it's what kills
+        the too-crisp square look in photos.
 
     `scale` is the size in output pixels of one logical OLED pixel (i.e. the same
     zoom the keycap was rasterised at) — it sizes the bloom radius, the grid, the
@@ -185,7 +186,9 @@ def simulate_oled(img, scale: float = 1.0, glow: float = 0.55,
 
     out = np.clip(rgb * 255.0, 0, 255).astype(np.uint8)
     im = Image.fromarray(out, "RGB")
-    if diffusion > 0.0 and s >= 2:                      # soften the pixel edges
+    # The clear keycap cover over the panel diffuses the light — soften the pixel
+    # edges so cells bleed together (this bleed is the keycap, not the OLED).
+    if diffusion > 0.0 and s >= 2:
         im = im.filter(ImageFilter.GaussianBlur(max(0.4, scale * diffusion)))
     return im
 

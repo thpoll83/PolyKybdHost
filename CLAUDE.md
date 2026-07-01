@@ -190,8 +190,9 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   black** with a **bluer bloom** (Gaussian, screen-blended), **per-pixel brightness
   jitter** (seeded, so the lit area shimmers instead of reading flat), a **staggered
   ("zigzag") pixel grid** (seams brick-laid on alternate rows, once a logical pixel
-  is ≥3 px) and a light **diffusion** blur that lets pixels bleed together — all
-  calibrated from photos of the real keycaps;
+  is ≥3 px) and a light **diffusion** blur that lets pixels bleed together (this
+  bleed models the **clear keycap cover** diffusing the light, not the OLED panel
+  itself) — all calibrated from photos of the real keycaps;
   `preview_sheet(oled=)` runs **only the keycap** through it (the source-font reference
   + chrome stay natural for comparison) and returns RGB, so the preview pixmap path
   preserves colour (`_pil_to_pixmap`). **Reset** restores the render options to
