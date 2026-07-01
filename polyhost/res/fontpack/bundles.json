@@ -6,11 +6,11 @@
       "id": "symbol",
       "index": 0,
       "file": "symbol.plyf",
-      "content_version": 4,
-      "size": 32068,
+      "content_version": 5,
+      "size": 33980,
       "slot_offset": 4096,
       "slot_size": 98304,
-      "sha256": "e26251a0dc031cf3"
+      "sha256": "fc02a99aba42b43e"
     },
     {
       "id": "mideast",
@@ -46,11 +46,11 @@
       "id": "flags",
       "index": 4,
       "file": "flags.plyf",
-      "content_version": 3,
+      "content_version": 4,
       "size": 62932,
       "slot_offset": 430080,
       "slot_size": 131072,
-      "sha256": "25b11bb8b3305c5c"
+      "sha256": "f1520dd20eaad825"
     },
     {
       "id": "emoji",
