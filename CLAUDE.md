@@ -184,7 +184,14 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   composites the shaped group) rather than looked up by codepoint — otherwise no
   reference showed beside a flag. **Scroll-wheel over the preview
   zooms** it (0.5×–7.0× in 0.5 steps; the render functions take a fractional `scale`,
-  `fontpack_render._px` rounds to pixels). **Reset** restores the render options to
+  `fontpack_render._px` rounds to pixels). A **"Simulate OLED"** checkbox previews the
+  keycap as the physical per-key OLED shows it — `fontpack_render.simulate_oled`
+  (Qt-free, NumPy/PIL) maps the mono keycap to **pale-cyan emissive pixels on true
+  black** with a **bluer bloom** (Gaussian, screen-blended) and a faint **pixel grid**
+  (once a logical pixel is ≥3 px), calibrated from photos of the real keycaps;
+  `preview_sheet(oled=)` runs **only the keycap** through it (the source-font reference
+  + chrome stay natural for comparison) and returns RGB, so the preview pixmap path
+  preserves colour (`_pil_to_pixmap`). **Reset** restores the render options to
   the values the dialog opened with (`_snapshot` taken after prefill). **Auto update**
   (default on) re-renders on any control change (debounced). Layout niceties: each
   float control (gamma / contrast / exposure / sharpen / saturation) is a **fixed-width
