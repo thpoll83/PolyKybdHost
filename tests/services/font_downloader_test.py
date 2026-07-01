@@ -71,10 +71,11 @@ class DownloadTest(unittest.TestCase):
             self.assertEqual(fh.read(), self.payload)
         self.assertTrue(fdl.is_downloaded(self.font, self.cache))
         self.assertTrue(seen and seen[-1] == len(self.payload))
-        # second call skips (no .part left, returns same path)
+        # second call skips (returns same path); no temp .part files left behind
+        # (download_font uses a randomized *.part name, so scan the cache dir).
         again = fdl.download_font(self.font, dest_dir=self.cache)
         self.assertEqual(again, path)
-        self.assertFalse(os.path.exists(path + ".part"))
+        self.assertEqual([p for p in os.listdir(self.cache) if p.endswith(".part")], [])
 
     def test_not_downloaded_initially(self):
         self.assertFalse(fdl.is_downloaded(self.font, self.cache))

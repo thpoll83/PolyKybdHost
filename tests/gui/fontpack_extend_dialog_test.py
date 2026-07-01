@@ -166,6 +166,31 @@ class ExtendDialogTest(unittest.TestCase):
         self.assertIsNotNone(dlg._built)
         self.assertFalse(dlg._preview.pixmap().isNull())
 
+    def test_build_guarded_when_no_bundles(self):
+        # With no valid bundles the build path must short-circuit (not leave _built
+        # with an invalid index that _ok() would then crash on).
+        dlg = fed.FontPackExtendDialog(sources=[])
+        self.addCleanup(dlg.deleteLater)
+        self.assertEqual(dlg._packs, [])
+        self.assertFalse(dlg._build_btn.isEnabled())
+        dlg._src.setText(_FONT or __file__)          # a path that exists
+        dlg._build(auto=True)                        # must not raise / must not build
+        self.assertIsNone(dlg._built)
+        self.assertFalse(dlg._ok_btn.isEnabled())
+
+    @unittest.skipUnless(_FONTGEN and _FONT and _HAVE_BUNDLES,
+                         "needs fontgen deps + a TTF + shipped bundles")
+    def test_edit_mode_rejects_multi_glyph_build(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        # Pretend we're editing a single glyph, then widen to a multi-glyph range.
+        dlg._edit_target = {"bundle_index": 0, "global_index": 0, "cp": 0x41}
+        dlg._src.setText(_FONT)
+        dlg._first.setText("0x41"); dlg._last.setText("0x45")   # 5 glyphs
+        dlg._build(auto=True)
+        self.assertIsNone(dlg._built)                # rejected, not accepted
+        self.assertFalse(dlg._ok_btn.isEnabled())
+
     def test_preview_style_group_defaults_to_normal(self):
         dlg = fed.FontPackExtendDialog()
         self.addCleanup(dlg.deleteLater)

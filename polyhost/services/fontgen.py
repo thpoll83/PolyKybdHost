@@ -322,6 +322,8 @@ def render_sequence(font_path: str, sequence: str, opts: RenderOptions | None = 
     if not glyphs:
         raise ValueError(f"no glyphs rendered from sequence {sequence!r}")
     first = opts.seq_first
+    if first < 0:
+        raise ValueError(f"seq_first must be >= 0 (got {first})")
     last = first + len(glyphs) - 1
     if opts.bits != 32 and last > 0xFFFF:
         raise ValueError(f"sequence last codepoint 0x{last:X} exceeds 0xFFFF in "

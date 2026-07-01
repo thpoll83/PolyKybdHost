@@ -33,6 +33,28 @@ class DownloadError(Exception):
     silently becomes a trusted cache entry."""
 
 
+def _validate_sfnt_dir(f, dir_off: int, size: int) -> bool:
+    """Validate one sfnt table directory at `dir_off`: a plausible table count and
+    every entry's (offset+length) within the `size`-byte file.  Shared by the plain
+    TTF/OTF path and each member of a TTC collection."""
+    import struct
+    f.seek(dir_off)
+    hdr = f.read(12)
+    if len(hdr) < 12:
+        return False
+    num_tables = struct.unpack(">H", hdr[4:6])[0]
+    if num_tables == 0:
+        return False
+    directory = f.read(num_tables * 16)
+    if len(directory) < num_tables * 16:
+        return False
+    for i in range(num_tables):
+        off, length = struct.unpack(">II", directory[i * 16 + 8:i * 16 + 16])
+        if off + length > size:                  # a table runs past EOF → truncated
+            return False
+    return True
+
+
 def _validate_sfnt(path: str) -> bool:
     """Cheap structural check that `path` is a complete sfnt font (TTF/OTF/TTC):
     a known signature and every table-directory entry's (offset+length) within the
@@ -47,20 +69,19 @@ def _validate_sfnt(path: str) -> bool:
                 return False
             tag = head[:4]
             if tag == b"ttcf":
-                return True                          # collection: trust the header
+                # Collection: validate the offset table + every member font directory
+                # so a truncated .ttc is rejected (not blindly trusted).
+                num_fonts = struct.unpack(">I", head[8:12])[0]
+                if num_fonts == 0:
+                    return False
+                offsets_raw = f.read(num_fonts * 4)
+                if len(offsets_raw) < num_fonts * 4:
+                    return False
+                offsets = struct.unpack(f">{num_fonts}I", offsets_raw)
+                return all(_validate_sfnt_dir(f, off, size) for off in offsets)
             if tag not in (b"\x00\x01\x00\x00", b"OTTO", b"true", b"typ1"):
                 return False
-            num_tables = struct.unpack(">H", head[4:6])[0]
-            if num_tables == 0:
-                return False
-            directory = f.read(num_tables * 16)
-            if len(directory) < num_tables * 16:
-                return False
-            for i in range(num_tables):
-                off, length = struct.unpack(">II", directory[i * 16 + 8:i * 16 + 16])
-                if off + length > size:              # a table runs past EOF → truncated
-                    return False
-        return True
+            return _validate_sfnt_dir(f, 0, size)
     except Exception:                                # noqa: BLE001
         return False
 

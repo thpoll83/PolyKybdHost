@@ -562,6 +562,9 @@ class FontPackExtendDialog(QDialog):
             else:
                 QMessageBox.warning(self, title, msg)
 
+        if not self._packs:
+            fail("Build", "No valid shipped bundles available to extend.")
+            return
         src = self._src.text().strip()
         if not src or not os.path.exists(src):
             fail("Build", "Pick an existing font file first.")
@@ -596,9 +599,19 @@ class FontPackExtendDialog(QDialog):
             else:
                 QMessageBox.critical(self, "Build failed", str(e))
             return
+        # In edit mode the inspector replaces a single slot, so a multi-glyph build
+        # (a widened range / multiple sequence groups) would silently drop every
+        # glyph after the first.  Reject it instead of building an invalid edit.
+        if self._edit_target is not None and new.glyph_count > 1:
+            fail("Build", f"Editing a single glyph (U+{self._edit_target['cp']:04X}), "
+                 f"but this built {new.glyph_count} glyphs. Narrow the range / sequence "
+                 "to one glyph.")
+            self._built = None
+            self._ok_btn.setEnabled(False)
+            return
         self._built = (self._bundle.currentIndex(), new)
         self._render_preview()
-        self._status.setText(f"Built {new.glyph_count} glyph(s), U+{new.first:04X}–"
+        self._status.setText(f"Built {new.glyph_count} glyph(s), U+{new.first:04X}-"
                              f"{new.last:04X}, global index {gidx}. OK to keep it in the "
                              f"'{self._bundle.currentText()}' bundle, Cancel to discard.")
         self._ok_btn.setEnabled(True)

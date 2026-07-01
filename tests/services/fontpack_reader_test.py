@@ -63,7 +63,8 @@ class RoundTripTest(unittest.TestCase):
         data = _build_pack([
             {"first": 0x41, "last": 0x42, "yadv": 12, "gidx": 7,
              "glyphs": [(0, 3, 4, 5, -1, -7), (2, 6, 8, 9, 0, -3)],
-             "bitmap": bytes([0x12, 0x34, 0xFF, 0x00])},
+             # glyph 1 is 6x8 = 6 bytes at offset 2, so the block must be >= 8 bytes
+             "bitmap": bytes([0x12, 0x34, 0xFF, 0x00, 0xAA, 0x55, 0x0F, 0xF0])},
             {"first": 0x4E2D, "last": 0x4E2D, "yadv": 43, "gidx": 3,
              "glyphs": [(0, 2, 2, 4, 0, -2)],
              "bitmap": bytes([0b11000000, 0b01000000])},
@@ -175,6 +176,14 @@ class RoundTripTest(unittest.TestCase):
         self.assertEqual(pack.font_count, 0)
         self.assertEqual(pack.fonts, [])
         self.assertTrue(pack.crc_ok)
+
+    def test_glyph_bitmap_overrun_rejected(self):
+        # A glyph claims a 6x8 bitmap (6 bytes) at offset 4 but the block is 4 bytes.
+        with self.assertRaises(fr.PackDecodeError):
+            fr.decode_pack(_build_pack([
+                {"first": 0x41, "last": 0x41, "yadv": 8, "gidx": 1,
+                 "glyphs": [(4, 6, 8, 9, 0, 0)], "bitmap": bytes([0x00] * 4)},
+            ]))
 
 
 @unittest.skipUnless(os.path.isdir(RES) and os.path.exists(os.path.join(RES, "bundles.json")),

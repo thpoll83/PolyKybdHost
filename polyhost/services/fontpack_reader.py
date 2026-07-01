@@ -148,6 +148,18 @@ def decode_pack(data, name_hint: str = "") -> Pack:
         bstart, bstop = boff, bitmap_end(boff)
         if not (HEADER_SIZE <= bstart <= bstop <= len(data)):
             raise PackDecodeError(f"font {i}: bitmap block [{bstart}:{bstop}] out of bounds")
+        # Each non-empty glyph's packed bitmap (1bpp, byte-padded per glyph) must fit
+        # inside this font's block — else the renderer/replacer reads truncated data.
+        blen = bstop - bstart
+        for gi, g in enumerate(glyphs):
+            if g["width"] == 0 or g["height"] == 0:
+                continue
+            need = g["bitmapOffset"] + (g["width"] * g["height"] + 7) // 8
+            if need > blen:
+                raise PackDecodeError(
+                    f"font {i} glyph {gi}: bitmap slice runs past the font block "
+                    f"(offset {g['bitmapOffset']} + {(g['width'] * g['height'] + 7) // 8} "
+                    f"> block size {blen})")
         name = name_hint and f"{name_hint}#{gidx}" or f"font{i}#{gidx}"
         fonts.append(PackFont(name=name, bitmap=data[bstart:bstop], glyphs=glyphs,
                               first=first, last=last, yAdvance=yadv, global_index=gidx))

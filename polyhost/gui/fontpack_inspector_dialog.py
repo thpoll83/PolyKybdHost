@@ -782,8 +782,13 @@ class FontPackInspectorDialog(QDialog):
         return self._sources[bi][0]
 
     def _bundle_of(self, font) -> int | None:
-        """The source index of the bundle that owns `font` (by global index), so a
-        stack edit targets the overdrawn font's *own* bundle, not the current tab."""
+        """The source index of the bundle that owns `font`, so a stack edit targets
+        the overdrawn font's *own* bundle, not the current tab.  Prefer an exact
+        object-identity match (unambiguous even if two opened .plyf reuse the same
+        global_index set); fall back to global_index only if no instance matches."""
+        for i, (_l, p) in enumerate(self._sources):
+            if isinstance(p, fpr.Pack) and any(f is font for f in p.fonts):
+                return i
         for i, (_l, p) in enumerate(self._sources):
             if isinstance(p, fpr.Pack) and any(f.global_index == font.global_index
                                                for f in p.fonts):

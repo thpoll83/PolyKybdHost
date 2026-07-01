@@ -72,16 +72,23 @@ def render_options_from_manifest(opts: dict):
         bits=int(opts.get("bits") or 1))
 
 
-_FACE_CACHE = {}
+_FACE_CACHE = {}      # path -> (mtime, size, freetype.Face)
 
 
 def _cached_face(source_path: str):
-    face = _FACE_CACHE.get(source_path)
-    if face is None:
+    # Key on the file's (mtime, size) too: the download flow overwrites a bad Noto
+    # file in place, so a path alone would keep serving the stale face after a
+    # re-download.  A changed stamp reloads.
+    import os
+    st = os.stat(source_path)
+    stamp = (st.st_mtime_ns, st.st_size)
+    cached = _FACE_CACHE.get(source_path)
+    if cached is None or cached[:2] != stamp:
         import freetype
         face = freetype.Face(source_path)
-        _FACE_CACHE[source_path] = face
-    return face
+        _FACE_CACHE[source_path] = (*stamp, face)
+        return face
+    return cached[2]
 
 
 def source_has_glyph(source_path: str, cp: int) -> bool:

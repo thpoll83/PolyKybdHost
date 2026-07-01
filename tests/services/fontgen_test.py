@@ -18,12 +18,15 @@ import unittest
 try:
     import numpy  # noqa: F401
     import freetype  # noqa: F401
+except (ImportError, OSError) as e:  # pragma: no cover — missing native deps only
+    _ERR = e
+else:
+    # Import the modules under test outside the dep guard so a real bug in them
+    # (syntax error, etc.) surfaces as a failure, not a silent module-wide skip.
     from polyhost.services import fontgen
     from polyhost.services.fontgen import RenderOptions
     from polyhost.services import fontgen_dither as fd
     _ERR = None
-except Exception as e:  # pragma: no cover
-    _ERR = e
 
 
 def _find_font():
@@ -155,7 +158,7 @@ class CParityTest(unittest.TestCase):
 
     def _c(self, args):
         out = subprocess.run([_FONTCONVERT, "-f", _FONT, *args],
-                             capture_output=True, text=True, check=True)
+                             capture_output=True, text=True, check=True, timeout=60)
         return _parse_header(out.stdout)
 
     def _assert_parity(self, args, opts, first, last):
@@ -232,7 +235,7 @@ class ColorEmojiParityTest(unittest.TestCase):
 
     def _c(self, args):
         out = subprocess.run([_FONTCONVERT, "-f", _CEMOJI, *args],
-                             capture_output=True, text=True, check=True)
+                             capture_output=True, text=True, check=True, timeout=60)
         return _parse_header(out.stdout)
 
     def _parity_range(self, cargs, opts, first, last):
