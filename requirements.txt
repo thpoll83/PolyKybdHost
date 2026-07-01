@@ -8,6 +8,9 @@ pynput
 PyYAML
 platformdirs
 requests
+freetype-py
+uharfbuzz
+fonttools
 pyserial
 packaging
 jeepney; sys_platform == "linux"
