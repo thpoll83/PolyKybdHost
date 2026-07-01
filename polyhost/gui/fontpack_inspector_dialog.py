@@ -122,18 +122,20 @@ _WIN_PM_ROLE = int(Qt.UserRole) + 3    # the cell's normal (winner) pixmap
 _SHADOW_PM_ROLE = int(Qt.UserRole) + 4 # the overdrawn preview pixmap (shown on hover)
 
 
-def _stack_pixmap(pm, rgb=(210, 210, 210), width: int = 4):
-    """A thick solid border along the right + bottom edges of `pm` — a "stack" marker
-    meaning another glyph is overdrawn (hidden) beneath this codepoint."""
+def _stack_pixmap(pm, rgb=(210, 210, 210), width: int = 3, depth: int = 1, gap: int = 4):
+    """Solid right+bottom "stack" border on `pm`.  `depth` = how many glyphs are
+    overdrawn beneath: one L-shaped line per overdrawn glyph (capped at 3, offset
+    inward like stacked cards) so a 2-deep stack reads differently from a 1-deep one."""
     from PyQt5.QtGui import QPainter, QPen, QColor
     out = QPixmap(pm)
     p = QPainter(out)
     pen = QPen(QColor(*rgb)); pen.setWidth(width); pen.setCapStyle(Qt.FlatCap)
     p.setPen(pen)
     w, h = out.width(), out.height()
-    off = width // 2
-    p.drawLine(w - 1 - off, 0, w - 1 - off, h - 1)   # right edge
-    p.drawLine(0, h - 1 - off, w - 1, h - 1 - off)   # bottom edge
+    for i in range(max(1, min(depth, 3))):
+        off = width // 2 + i * gap
+        p.drawLine(w - 1 - off, 0, w - 1 - off, h - 1 - off)   # right edge
+        p.drawLine(0, h - 1 - off, w - 1 - off, h - 1 - off)   # bottom edge
     p.end()
     return out
 
@@ -161,7 +163,10 @@ class _BundleTab(QWidget):
         self._winner_cache = None      # cp -> font that actually renders it (lowest gidx)
         self._stack_cache = None       # cp -> [fonts drawing it, lowest gidx first]
         self._modified = set()         # cps edited this session (drawn with a border)
-        self._peek_row = None          # row whose slot is showing its overdrawn glyph
+        self._peek_row = None          # row whose slot is showing its overdrawn glyph(s)
+        self._peek_frames = None       # the overdrawn preview pixmaps being cycled
+        self._peek_idx = 0
+        self._range_rows = []          # rows highlighted as the selected font's range
         self._mode = "glyph"
         self._built_key = None         # (mode, scale, hide_empty, peek) last built
         self._settings_map = None      # lazy: global index -> render settings
@@ -225,11 +230,15 @@ class _BundleTab(QWidget):
         self._view.setMouseTracking(True)
         self._view.viewport().setMouseTracking(True)
         self._view.viewport().installEventFilter(self)
+        self._view.selectionModel().selectionChanged.connect(self._on_selection)
         v.addWidget(self._view, 1)
 
         self._peek_timer = QTimer(self)
         self._peek_timer.setSingleShot(True)
         self._peek_timer.timeout.connect(self._peek_step)
+        # Cycles the in-slot overdrawn preview when a codepoint has >1 overdrawn glyph.
+        self._cycle_timer = QTimer(self)
+        self._cycle_timer.timeout.connect(self._cycle_advance)
 
     # ---- public API used by the dialog ----
     def set_mode(self, mode: str):
@@ -290,8 +299,9 @@ class _BundleTab(QWidget):
         return pos.x() >= r.right() - corner and pos.y() >= r.bottom() - corner
 
     def _hover(self, pos):
-        """While the cursor is on a stacked cell's bottom-right stack corner, swap that
-        slot's image to the overdrawn (dim) glyph; restore it when the cursor leaves."""
+        """While the cursor is on a stacked cell's bottom-right stack corner, show the
+        overdrawn (dim) glyph in that slot — cycling through them when there is more
+        than one; restore the winner when the cursor leaves."""
         target = None
         if pos is not None:
             idx = self._view.indexAt(pos)
@@ -300,15 +310,56 @@ class _BundleTab(QWidget):
                 target = idx.row()
         if target == self._peek_row:
             return
-        if self._peek_row is not None:              # restore the previously-peeked slot
-            it = self._model.item(self._peek_row)
-            if it is not None and it.data(_WIN_PM_ROLE) is not None:
-                it.setIcon(QIcon(it.data(_WIN_PM_ROLE)))
+        self._restore_peek()                        # un-peek the previous slot
         self._peek_row = target
         if target is not None:
             it = self._model.item(target)
-            if it is not None and it.data(_SHADOW_PM_ROLE) is not None:
-                it.setIcon(QIcon(it.data(_SHADOW_PM_ROLE)))
+            frames = it.data(_SHADOW_PM_ROLE) if it is not None else None
+            if frames:
+                self._peek_frames, self._peek_idx = frames, 0
+                it.setIcon(QIcon(frames[0]))
+                if len(frames) > 1:                 # >1 overdrawn → cycle through them
+                    self._cycle_timer.start(850)
+
+    def _restore_peek(self):
+        self._cycle_timer.stop()
+        self._peek_frames = None
+        self._peek_idx = 0
+        if self._peek_row is not None:
+            it = self._model.item(self._peek_row)
+            if it is not None and it.data(_WIN_PM_ROLE) is not None:
+                it.setIcon(QIcon(it.data(_WIN_PM_ROLE)))
+
+    def _cycle_advance(self):
+        if self._peek_row is None or not self._peek_frames:
+            return
+        it = self._model.item(self._peek_row)
+        if it is None:
+            return
+        self._peek_idx = (self._peek_idx + 1) % len(self._peek_frames)
+        it.setIcon(QIcon(self._peek_frames[self._peek_idx]))
+
+    def _on_selection(self, *_):
+        """Highlight the whole range the selected glyph's font covers (front-to-back:
+        the cells this font is the winner for) — since the pack is organised in ranges."""
+        from PyQt5.QtGui import QBrush, QColor
+        for r in self._range_rows:                  # clear the previous range highlight
+            it = self._model.item(r)
+            if it is not None:
+                it.setBackground(QBrush())
+        self._range_rows = []
+        idx = self._view.currentIndex()
+        font = idx.data(_FONT_ROLE) if idx.isValid() else None
+        if font is None:
+            return
+        gi = font.global_index
+        brush = QBrush(QColor(28, 54, 74))          # subtle range tint (≠ selection green)
+        for r in range(self._model.rowCount()):
+            it = self._model.item(r)
+            f = it.data(_FONT_ROLE)
+            if f is not None and f.global_index == gi:
+                it.setBackground(brush)
+                self._range_rows.append(r)
 
     def _edit_at(self, idx, pos):
         """Emit edit for the winner, or for the overdrawn (stack) glyph when the click
@@ -483,7 +534,10 @@ class _BundleTab(QWidget):
         self._peek_queue = deque()
         self._last_peek_count = 0
         self._model.clear()
-        self._peek_row = None                        # nothing peeked after a rebuild
+        self._cycle_timer.stop()                     # nothing peeked/highlighted after rebuild
+        self._peek_row = None
+        self._peek_frames = None
+        self._range_rows = []
         cw, ch = self._cell_dims(scale)
         self._dims = (cw, ch, scale)
         self._view.setIconSize(QSize(cw, ch + 11))
@@ -507,7 +561,7 @@ class _BundleTab(QWidget):
                 continue
             shadow = stack[1] if len(stack) > 1 else None
             modified = cp in self._modified
-            spm = None                               # overdrawn preview (in-slot on hover)
+            frames = None                            # overdrawn previews (in-slot on hover)
             if winner is not None:
                 img = fprd.glyph_cell(winner, cp, cw, ch, scale=scale, mode=self._mode)
                 cross = winner.global_index not in this_ids
@@ -516,11 +570,15 @@ class _BundleTab(QWidget):
                 tip = (f"U+{cp:04X} — drawn by {self._winner_desc(winner)}"
                        + ("  (another bundle)" if cross else ""))
                 if shadow is not None:
-                    pm = _stack_pixmap(pm)
-                    simg = fprd.glyph_cell(shadow, cp, cw, ch, scale=scale, mode=self._mode)
-                    spm = _stack_pixmap(_pil_l_to_tinted_pixmap(simg, SHADOW_RGB))
-                    tip += (f"; {len(stack) - 1} overdrawn "
-                            "(hover the stack corner to see it, double-click there to edit)")
+                    n = len(stack) - 1
+                    pm = _stack_pixmap(pm, depth=n)
+                    frames = [_stack_pixmap(_pil_l_to_tinted_pixmap(
+                                  fprd.glyph_cell(s, cp, cw, ch, scale=scale, mode=self._mode),
+                                  SHADOW_RGB), depth=n)
+                              for s in stack[1:]]
+                    tip += (f"; {n} overdrawn: " + ", ".join(self._winner_desc(s)
+                                                             for s in stack[1:])
+                            + " (hover the stack corner to see, double-click there to edit)")
                 if modified:
                     tip += "  (edited — unsaved)"
             else:
@@ -537,9 +595,9 @@ class _BundleTab(QWidget):
             it.setData(prim, _FONT_ROLE)
             it.setData(cp, _CP_ROLE)
             it.setData(shadow, _SHADOW_ROLE)
-            if spm is not None:                      # store both frames for the hover swap
+            if frames:                               # store frames for the hover swap/cycle
                 it.setData(pm, _WIN_PM_ROLE)
-                it.setData(spm, _SHADOW_PM_ROLE)
+                it.setData(frames, _SHADOW_PM_ROLE)
             it.setToolTip(tip)
             self._model.appendRow(it)
             if empty and peek:                       # truly-uncovered slots peek

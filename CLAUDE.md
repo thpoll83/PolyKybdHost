@@ -131,11 +131,17 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   draws each cp from the lowest-global-index font with a glyph, `_BundleTab._stacks`):
   each cell renders the **winner** — **white** if this bundle draws it, **cyan** if
   it's borrowed from another bundle. When more than one font has the glyph, the
-  losers are **overdrawn**: a "**stack**" marker (doubled right+bottom border,
-  `_stack_pixmap`) flags it, hovering shows the hidden glyph(s) **dim** in a rich
-  tooltip, and **double-click edits the winner while the bottom-right stack corner
-  edits the overdrawn one** (`_edit_at`; `_on_edit`/`_bundle_of` target the clicked
-  font's *own* bundle, which may be a different tab). A glyph **edited
+  losers are **overdrawn**: a "**stack**" marker (solid right+bottom border whose
+  **depth = number of overdrawn glyphs**, `_stack_pixmap(depth=)`) flags it; hovering
+  the bottom-right stack corner shows the overdrawn glyph **in the slot** (dim),
+  **cycling** through them when there's more than one (`_hover`/`_cycle_advance`), and
+  **double-click there edits the first overdrawn** while a double-click elsewhere edits
+  the winner (`_edit_at`; `_on_edit`/`_bundle_of` target the clicked font's *own*
+  bundle, which may be a different tab). Overlapping `fonts.yaml` ranges from the same
+  source (e.g. a dedicated `_Light_` entry + broad `_EmjEffects_`/`_Emojis1_` all
+  covering U+1F4A1) are why a cp can have 2+ overdraws. **Selecting a glyph highlights
+  the whole range its font wins** (`_on_selection`, subtle tint), since the pack is
+  organised in ranges. A glyph **edited
   this session** (the editor's OK committed it into the working copy) is re-rendered
   in-place from that working copy and bordered **green** (`MODIFIED_RGB`,
   `_BundleTab.apply_working`); "Save as… → Discard" reverts the tab to the loaded

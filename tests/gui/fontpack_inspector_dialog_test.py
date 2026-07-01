@@ -138,6 +138,47 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         tab._hover(None)                                      # cursor left the grid
         self.assertIsNone(tab._peek_row)
 
+    def test_multiple_overdraws_depth_and_cycle(self):
+        # a cp drawn by 3 fonts → winner + 2 overdrawn: two hover frames, tooltip
+        # lists both, and the cycle advances through them.
+        def g(off, w, h):
+            return dict(bitmapOffset=off, width=w, height=h, xAdvance=w + 1,
+                        xOffset=0, yOffset=0)
+        a = fpr.PackFont("a", b"\x80", [g(0, 1, 1)], 0x41, 0x41, 12, global_index=2)
+        b = fpr.PackFont("b", b"\x80", [g(0, 1, 1)], 0x41, 0x41, 12, global_index=5)
+        c = fpr.PackFont("c", b"\x80", [g(0, 1, 1)], 0x41, 0x41, 12, global_index=9)
+        tab = fid._BundleTab("A", fpr.Pack(1, 0, 1, 0, 0, True, [a]), all_fonts=[a, b, c])
+        self.addCleanup(tab.deleteLater)
+        tab.set_mode("glyph")
+        it = tab._model.item(0)
+        self.assertEqual(it.data(fid._SHADOW_ROLE).global_index, 5)   # first overdrawn
+        frames = it.data(fid._SHADOW_PM_ROLE)
+        self.assertEqual(len(frames), 2)                              # two overdrawn glyphs
+        self.assertIn("2 overdrawn", it.toolTip())
+        tab._peek_row, tab._peek_frames, tab._peek_idx = 0, frames, 0
+        tab._cycle_advance(); self.assertEqual(tab._peek_idx, 1)
+        tab._cycle_advance(); self.assertEqual(tab._peek_idx, 0)      # wraps
+
+    def test_selection_highlights_font_range(self):
+        # selecting a glyph highlights the whole range its font wins (not other fonts')
+        def g(off, w, h):
+            return dict(bitmapOffset=off, width=w, height=h, xAdvance=w + 1,
+                        xOffset=0, yOffset=0)
+        a = fpr.PackFont("a", b"\x80\x80", [g(0, 1, 1), g(1, 1, 1)], 0x41, 0x42, 12, global_index=2)
+        b = fpr.PackFont("b", b"\x80", [g(0, 1, 1)], 0x43, 0x43, 12, global_index=5)
+        tab = fid._BundleTab("bundle", fpr.Pack(1, 0, 1, 0, 0, True, [a, b]), all_fonts=[a, b])
+        self.addCleanup(tab.deleteLater)
+        tab.set_mode("glyph")
+        row = {tab._model.item(r).data(fid._CP_ROLE): r for r in range(tab._model.rowCount())}
+        tab._view.setCurrentIndex(tab._model.index(row[0x41], 0))
+        tab._on_selection()
+        self.assertEqual({tab._model.item(r).data(fid._CP_ROLE) for r in tab._range_rows},
+                         {0x41, 0x42})               # font a's range, not 0x43
+        tab._view.setCurrentIndex(tab._model.index(row[0x43], 0))
+        tab._on_selection()
+        self.assertEqual({tab._model.item(r).data(fid._CP_ROLE) for r in tab._range_rows},
+                         {0x43})                      # previous highlight cleared
+
     def test_stack_corner_edits_overdrawn(self):
         # a stacked cell: clicking the centre edits the winner; the bottom-right
         # stack corner edits the overdrawn glyph.
