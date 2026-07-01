@@ -113,6 +113,31 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.assertEqual(got, [(idx.data(fid._FONT_ROLE).global_index,
                                 idx.data(fid._CP_ROLE))])
 
+    def test_hover_stack_corner_previews_overdrawn(self):
+        # hovering the stack corner swaps the slot to the overdrawn preview; moving
+        # off it restores the winner.
+        from PyQt5.QtCore import QPoint
+        def g(off, w, h):
+            return dict(bitmapOffset=off, width=w, height=h, xAdvance=w + 1,
+                        xOffset=0, yOffset=0)
+        a = fpr.PackFont("A", b"\x80", [g(0, 1, 1)], 0x41, 0x41, 12, global_index=2)
+        b = fpr.PackFont("B", b"\x80", [g(0, 1, 1)], 0x41, 0x41, 12, global_index=5)
+        tab = fid._BundleTab("B", fpr.Pack(1, 0, 1, 0, 0, True, [b]), all_fonts=[a, b])
+        self.addCleanup(tab.deleteLater)
+        tab.set_mode("glyph")
+        it = tab._model.item(0)
+        self.assertIsNotNone(it.data(fid._SHADOW_PM_ROLE))    # preview frame stored
+        self.assertIsNotNone(it.data(fid._WIN_PM_ROLE))
+        r = tab._view.visualRect(tab._model.index(0, 0))
+        tab._hover(QPoint(r.right() - 1, r.bottom() - 1))     # on the stack corner
+        self.assertEqual(tab._peek_row, 0)
+        tab._hover(r.center())                                # off the corner
+        self.assertIsNone(tab._peek_row)
+        tab._hover(QPoint(r.right() - 1, r.bottom() - 1))     # back on
+        self.assertEqual(tab._peek_row, 0)
+        tab._hover(None)                                      # cursor left the grid
+        self.assertIsNone(tab._peek_row)
+
     def test_stack_corner_edits_overdrawn(self):
         # a stacked cell: clicking the centre edits the winner; the bottom-right
         # stack corner edits the overdrawn glyph.

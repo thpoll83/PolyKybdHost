@@ -118,39 +118,24 @@ def load_shipped_packs(res_dir: str | None = None):
 _FONT_ROLE = int(Qt.UserRole)          # the winner font (what the keyboard draws)
 _CP_ROLE = int(Qt.UserRole) + 1
 _SHADOW_ROLE = int(Qt.UserRole) + 2    # the overdrawn font beneath (a stack), or None
+_WIN_PM_ROLE = int(Qt.UserRole) + 3    # the cell's normal (winner) pixmap
+_SHADOW_PM_ROLE = int(Qt.UserRole) + 4 # the overdrawn preview pixmap (shown on hover)
 
 
-def _stack_pixmap(pm, rgb=(190, 190, 190), offset: int = 3):
-    """Draw a *doubled* border along the right + bottom edges of `pm` — a "stack"
-    marker meaning another glyph is overdrawn (hidden) beneath this codepoint."""
+def _stack_pixmap(pm, rgb=(210, 210, 210), width: int = 4):
+    """A thick solid border along the right + bottom edges of `pm` — a "stack" marker
+    meaning another glyph is overdrawn (hidden) beneath this codepoint."""
     from PyQt5.QtGui import QPainter, QPen, QColor
     out = QPixmap(pm)
     p = QPainter(out)
-    pen = QPen(QColor(*rgb)); pen.setWidth(1)
+    pen = QPen(QColor(*rgb)); pen.setWidth(width); pen.setCapStyle(Qt.FlatCap)
     p.setPen(pen)
     w, h = out.width(), out.height()
-    for o in (0, offset):                           # two parallel lines = "stacked"
-        p.drawLine(w - 1 - o, o, w - 1 - o, h - 1)  # right edge
-        p.drawLine(o, h - 1 - o, w - 1, h - 1 - o)  # bottom edge
+    off = width // 2
+    p.drawLine(w - 1 - off, 0, w - 1 - off, h - 1)   # right edge
+    p.drawLine(0, h - 1 - off, w - 1, h - 1 - off)   # bottom edge
     p.end()
     return out
-
-
-def _l_to_data_uri(img, rgb) -> str:
-    """A tinted PNG data URI for an ('L') image — for embedding the overdrawn glyph
-    in a rich-text tooltip so hovering a stack shows the hidden (dim) glyph."""
-    import base64
-    import io
-    from PIL import Image
-    if img.mode != "L":
-        img = img.convert("L")
-    r, g, b = rgb
-    tinted = Image.merge("RGB", (img.point(lambda v: v * r // 255),
-                                 img.point(lambda v: v * g // 255),
-                                 img.point(lambda v: v * b // 255)))
-    buf = io.BytesIO()
-    tinted.save(buf, "PNG")
-    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
 _VIEW_QSS = ("QListView { background:#000; color:#bbb; }"
              " QListView::item:selected { background:#1d4f3f; }")
@@ -176,6 +161,7 @@ class _BundleTab(QWidget):
         self._winner_cache = None      # cp -> font that actually renders it (lowest gidx)
         self._stack_cache = None       # cp -> [fonts drawing it, lowest gidx first]
         self._modified = set()         # cps edited this session (drawn with a border)
+        self._peek_row = None          # row whose slot is showing its overdrawn glyph
         self._mode = "glyph"
         self._built_key = None         # (mode, scale, hide_empty, peek) last built
         self._settings_map = None      # lazy: global index -> render settings
@@ -233,8 +219,11 @@ class _BundleTab(QWidget):
         self._view.setSelectionMode(QListView.SingleSelection)
         self._view.setSpacing(6)
         self._view.setStyleSheet(_VIEW_QSS)
-        # Double-click edits: the winner normally, but the bottom-right "stack" corner
-        # edits the overdrawn glyph — needs the click position, so filter the event.
+        # Filter viewport mouse events for two position-aware behaviours on the
+        # bottom-right "stack" corner: hover shows the overdrawn glyph in the slot,
+        # double-click edits it (double-click elsewhere edits the winner).
+        self._view.setMouseTracking(True)
+        self._view.viewport().setMouseTracking(True)
         self._view.viewport().installEventFilter(self)
         v.addWidget(self._view, 1)
 
@@ -282,13 +271,44 @@ class _BundleTab(QWidget):
 
     # ---- internals ----
     def eventFilter(self, obj, ev):
-        if (ev.type() == QEvent.MouseButtonDblClick and self._view is not None
-                and obj is self._view.viewport()):
-            idx = self._view.indexAt(ev.pos())
-            if idx.isValid():
-                self._edit_at(idx, ev.pos())
-                return True                         # we handle the edit; don't also select
+        if self._view is not None and obj is self._view.viewport():
+            t = ev.type()
+            if t == QEvent.MouseButtonDblClick:
+                idx = self._view.indexAt(ev.pos())
+                if idx.isValid():
+                    self._edit_at(idx, ev.pos())
+                    return True                     # we handle the edit; don't also select
+            elif t == QEvent.MouseMove:
+                self._hover(ev.pos())
+            elif t == QEvent.Leave:
+                self._hover(None)                   # cursor left the grid → un-peek
         return super().eventFilter(obj, ev)
+
+    def _in_stack_corner(self, idx, pos) -> bool:
+        r = self._view.visualRect(idx)
+        corner = 0.4 * min(r.width(), r.height())
+        return pos.x() >= r.right() - corner and pos.y() >= r.bottom() - corner
+
+    def _hover(self, pos):
+        """While the cursor is on a stacked cell's bottom-right stack corner, swap that
+        slot's image to the overdrawn (dim) glyph; restore it when the cursor leaves."""
+        target = None
+        if pos is not None:
+            idx = self._view.indexAt(pos)
+            if (idx.isValid() and idx.data(_SHADOW_ROLE) is not None
+                    and self._in_stack_corner(idx, pos)):
+                target = idx.row()
+        if target == self._peek_row:
+            return
+        if self._peek_row is not None:              # restore the previously-peeked slot
+            it = self._model.item(self._peek_row)
+            if it is not None and it.data(_WIN_PM_ROLE) is not None:
+                it.setIcon(QIcon(it.data(_WIN_PM_ROLE)))
+        self._peek_row = target
+        if target is not None:
+            it = self._model.item(target)
+            if it is not None and it.data(_SHADOW_PM_ROLE) is not None:
+                it.setIcon(QIcon(it.data(_SHADOW_PM_ROLE)))
 
     def _edit_at(self, idx, pos):
         """Emit edit for the winner, or for the overdrawn (stack) glyph when the click
@@ -296,13 +316,8 @@ class _BundleTab(QWidget):
         winner = idx.data(_FONT_ROLE)
         if winner is None:
             return
-        font = winner
         shadow = idx.data(_SHADOW_ROLE)
-        if shadow is not None:
-            r = self._view.visualRect(idx)
-            corner = 0.4 * min(r.width(), r.height())
-            if pos.x() >= r.right() - corner and pos.y() >= r.bottom() - corner:
-                font = shadow                       # the stack corner → the hidden glyph
+        font = shadow if (shadow is not None and self._in_stack_corner(idx, pos)) else winner
         self.edit_requested.emit(font, idx.data(_CP_ROLE))
 
     def _cell_dims(self, scale: int):
@@ -468,6 +483,7 @@ class _BundleTab(QWidget):
         self._peek_queue = deque()
         self._last_peek_count = 0
         self._model.clear()
+        self._peek_row = None                        # nothing peeked after a rebuild
         cw, ch = self._cell_dims(scale)
         self._dims = (cw, ch, scale)
         self._view.setIconSize(QSize(cw, ch + 11))
@@ -491,19 +507,22 @@ class _BundleTab(QWidget):
                 continue
             shadow = stack[1] if len(stack) > 1 else None
             modified = cp in self._modified
+            spm = None                               # overdrawn preview (in-slot on hover)
             if winner is not None:
                 img = fprd.glyph_cell(winner, cp, cw, ch, scale=scale, mode=self._mode)
                 cross = winner.global_index not in this_ids
                 pm = _pil_l_to_tinted_pixmap(img, COVERED_RGB) if cross else _pil_l_to_pixmap(img)
                 prim = winner
+                tip = (f"U+{cp:04X} — drawn by {self._winner_desc(winner)}"
+                       + ("  (another bundle)" if cross else ""))
                 if shadow is not None:
                     pm = _stack_pixmap(pm)
-                    tip = self._stack_tooltip(cp, winner, stack[1:], cw, ch, scale,
-                                              cross, modified)
-                else:
-                    tip = (f"U+{cp:04X} — drawn by {self._winner_desc(winner)}"
-                           + ("  (another bundle)" if cross else "")
-                           + ("  (edited — unsaved)" if modified else ""))
+                    simg = fprd.glyph_cell(shadow, cp, cw, ch, scale=scale, mode=self._mode)
+                    spm = _stack_pixmap(_pil_l_to_tinted_pixmap(simg, SHADOW_RGB))
+                    tip += (f"; {len(stack) - 1} overdrawn "
+                            "(hover the stack corner to see it, double-click there to edit)")
+                if modified:
+                    tip += "  (edited — unsaved)"
             else:
                 prim = next((f for f in self._pack.fonts if f.covers(cp)), self._pack.fonts[0])
                 img = fprd.glyph_cell(prim, cp, cw, ch, scale=scale, mode=self._mode)
@@ -518,28 +537,15 @@ class _BundleTab(QWidget):
             it.setData(prim, _FONT_ROLE)
             it.setData(cp, _CP_ROLE)
             it.setData(shadow, _SHADOW_ROLE)
+            if spm is not None:                      # store both frames for the hover swap
+                it.setData(pm, _WIN_PM_ROLE)
+                it.setData(spm, _SHADOW_PM_ROLE)
             it.setToolTip(tip)
             self._model.appendRow(it)
             if empty and peek:                       # truly-uncovered slots peek
                 self._peek_queue.append((it, prim, cp))
         if self._peek_queue:
             self._peek_timer.start(0)
-
-    def _stack_tooltip(self, cp, winner, shadows, cw, ch, scale, cross, modified) -> str:
-        """Rich (HTML) tooltip for a stacked cell: the winner, then each overdrawn
-        glyph rendered dim so hovering the stack shows the hidden glyph(s)."""
-        rows = ""
-        for s in shadows:
-            img = fprd.glyph_cell(s, cp, cw, ch, scale=scale, mode=self._mode, label=False)
-            uri = _l_to_data_uri(img, SHADOW_RGB)
-            rows += (f"<tr><td><img src='{uri}'></td>"
-                     f"<td style='padding-left:6px;'>{self._winner_desc(s)}</td></tr>")
-        edited = "<br><span style='color:#4d7;'>edited — unsaved</span>" if modified else ""
-        return (f"<b>U+{cp:04X}</b><br>winner: {self._winner_desc(winner)}"
-                f"{' (another bundle)' if cross else ''}"
-                f"<br>overdrawn ({len(shadows)}):<table>{rows}</table>"
-                f"<i>double-click: edit winner · bottom-right corner: edit overdrawn</i>"
-                f"{edited}")
 
     # Peek previews render a couple per event-loop tick so the (heavy, color) emoji
     # rendering stays responsive and any rebuild cancels the rest via _peek_gen.
