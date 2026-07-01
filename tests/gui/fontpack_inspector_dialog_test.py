@@ -99,15 +99,39 @@ class FontPackInspectorDialogTest(unittest.TestCase):
     def test_double_click_edit_signal(self):
         # Test the tab's signal in isolation — going through the dialog would also
         # fire its real handler, which opens a *modal* extend dialog (exec_) and
-        # would block the test.
+        # would block the test.  A plain cell (no stack) edits the winner wherever
+        # clicked.
+        from PyQt5.QtCore import QPoint
         tab = fid._BundleTab("tiny", _tiny_pack())
         self.addCleanup(tab.deleteLater)
         tab.set_mode("glyph")
         got = []
-        tab.edit_requested.connect(lambda font, cp: got.append(cp))
+        tab.edit_requested.connect(lambda font, cp: got.append((font.global_index, cp)))
         idx = tab._model.index(0, 0)
-        tab._on_double(idx)                               # simulate double-click on item 0
-        self.assertEqual(got, [idx.data(fid._CP_ROLE)])
+        r = tab._view.visualRect(idx)
+        tab._edit_at(idx, r.center())                    # simulate double-click on item 0
+        self.assertEqual(got, [(idx.data(fid._FONT_ROLE).global_index,
+                                idx.data(fid._CP_ROLE))])
+
+    def test_stack_corner_edits_overdrawn(self):
+        # a stacked cell: clicking the centre edits the winner; the bottom-right
+        # stack corner edits the overdrawn glyph.
+        def g(off, w, h):
+            return dict(bitmapOffset=off, width=w, height=h, xAdvance=w + 1,
+                        xOffset=0, yOffset=0)
+        a = fpr.PackFont("A", b"\x80", [g(0, 1, 1)], 0x41, 0x41, 12, global_index=2)
+        b = fpr.PackFont("B", b"\x80", [g(0, 1, 1)], 0x41, 0x41, 12, global_index=5)
+        tab = fid._BundleTab("B", fpr.Pack(1, 0, 1, 0, 0, True, [b]), all_fonts=[a, b])
+        self.addCleanup(tab.deleteLater)
+        tab.set_mode("glyph")
+        got = []
+        tab.edit_requested.connect(lambda font, cp: got.append(font.global_index))
+        idx = tab._model.index(0, 0)                     # the 0x41 cell
+        r = tab._view.visualRect(idx)
+        from PyQt5.QtCore import QPoint
+        tab._edit_at(idx, r.center())                    # winner (A, g2)
+        tab._edit_at(idx, QPoint(r.right() - 1, r.bottom() - 1))   # stack corner (B, g5)
+        self.assertEqual(got, [2, 5])
 
     def test_peek_fallback_without_source(self):
         # Peek with no shipped settings / no cached source must not crash and must
@@ -319,9 +343,9 @@ class FontPackInspectorDialogTest(unittest.TestCase):
             files = [c[2] for c in tab._peek_candidates(tab._pack.fonts[0], 0x41)]
         self.assertEqual(files, ["inrange.ttf", "low.ttf"])
 
-    def test_override_and_covered_representation(self):
-        # front-to-back precedence: a low-gidx font A shadows B's duplicate and
-        # fills B's empty slot.  Tab shows B.
+    def test_stack_and_covered_representation(self):
+        # one cell per cp (deduped). 0x41: both A and B have it → winner A (lower gidx)
+        # with B overdrawn beneath (stack). 0x42: only B. 0x43: only A (another bundle).
         def g(off, w, h):
             return dict(bitmapOffset=off, width=w, height=h, xAdvance=w + 1,
                         xOffset=0, yOffset=0)
@@ -334,11 +358,21 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         tab = fid._BundleTab("B", packB, all_fonts=[fontA, fontB])
         self.addCleanup(tab.deleteLater)
         tab.set_mode("glyph")
-        tips = {tab._model.item(i).data(fid._CP_ROLE): tab._model.item(i).toolTip()
-                for i in range(tab._model.rowCount())}
-        self.assertIn("overridden by", tips[0x41])     # B's 0x41 loses to A
-        self.assertNotIn("overridden", tips[0x42])     # B wins 0x42 (A empty there)
-        self.assertIn("drawn by", tips[0x43])          # B empty, A draws it
+        items = {tab._model.item(i).data(fid._CP_ROLE): tab._model.item(i)
+                 for i in range(tab._model.rowCount())}
+        self.assertEqual(set(items), {0x41, 0x42, 0x43})            # deduped, continuous
+        # 0x41 — winner A, B overdrawn (stack corner edits B)
+        self.assertEqual(items[0x41].data(fid._FONT_ROLE).global_index, 2)
+        self.assertEqual(items[0x41].data(fid._SHADOW_ROLE).global_index, 5)
+        self.assertIn("overdrawn", items[0x41].toolTip())
+        # 0x42 — only B, no stack
+        self.assertEqual(items[0x42].data(fid._FONT_ROLE).global_index, 5)
+        self.assertIsNone(items[0x42].data(fid._SHADOW_ROLE))
+        self.assertNotIn("overdrawn", items[0x42].toolTip())
+        # 0x43 — only A, borrowed from another bundle, no stack
+        self.assertEqual(items[0x43].data(fid._FONT_ROLE).global_index, 2)
+        self.assertIsNone(items[0x43].data(fid._SHADOW_ROLE))
+        self.assertIn("another bundle", items[0x43].toolTip())
 
     def test_peek_candidates_include_resident_only_source(self):
         # a source used only by a resident (non-bundle) font — present in the

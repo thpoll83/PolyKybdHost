@@ -24,7 +24,7 @@ import os
 import sys
 from collections import deque
 
-from PyQt5.QtCore import Qt, QSize, QTimer, pyqtSignal
+from PyQt5.QtCore import Qt, QEvent, QSize, QTimer, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap, QIcon, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QListView,
@@ -115,8 +115,42 @@ def load_shipped_packs(res_dir: str | None = None):
     return out
 
 
-_FONT_ROLE = int(Qt.UserRole)
+_FONT_ROLE = int(Qt.UserRole)          # the winner font (what the keyboard draws)
 _CP_ROLE = int(Qt.UserRole) + 1
+_SHADOW_ROLE = int(Qt.UserRole) + 2    # the overdrawn font beneath (a stack), or None
+
+
+def _stack_pixmap(pm, rgb=(190, 190, 190), offset: int = 3):
+    """Draw a *doubled* border along the right + bottom edges of `pm` — a "stack"
+    marker meaning another glyph is overdrawn (hidden) beneath this codepoint."""
+    from PyQt5.QtGui import QPainter, QPen, QColor
+    out = QPixmap(pm)
+    p = QPainter(out)
+    pen = QPen(QColor(*rgb)); pen.setWidth(1)
+    p.setPen(pen)
+    w, h = out.width(), out.height()
+    for o in (0, offset):                           # two parallel lines = "stacked"
+        p.drawLine(w - 1 - o, o, w - 1 - o, h - 1)  # right edge
+        p.drawLine(o, h - 1 - o, w - 1, h - 1 - o)  # bottom edge
+    p.end()
+    return out
+
+
+def _l_to_data_uri(img, rgb) -> str:
+    """A tinted PNG data URI for an ('L') image — for embedding the overdrawn glyph
+    in a rich-text tooltip so hovering a stack shows the hidden (dim) glyph."""
+    import base64
+    import io
+    from PIL import Image
+    if img.mode != "L":
+        img = img.convert("L")
+    r, g, b = rgb
+    tinted = Image.merge("RGB", (img.point(lambda v: v * r // 255),
+                                 img.point(lambda v: v * g // 255),
+                                 img.point(lambda v: v * b // 255)))
+    buf = io.BytesIO()
+    tinted.save(buf, "PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
 _VIEW_QSS = ("QListView { background:#000; color:#bbb; }"
              " QListView::item:selected { background:#1d4f3f; }")
@@ -140,6 +174,7 @@ class _BundleTab(QWidget):
         self._all_fonts = list(all_fonts) if all_fonts is not None else (
             list(pack.fonts) if isinstance(pack, fpr.Pack) else [])
         self._winner_cache = None      # cp -> font that actually renders it (lowest gidx)
+        self._stack_cache = None       # cp -> [fonts drawing it, lowest gidx first]
         self._modified = set()         # cps edited this session (drawn with a border)
         self._mode = "glyph"
         self._built_key = None         # (mode, scale, hide_empty, peek) last built
@@ -198,7 +233,9 @@ class _BundleTab(QWidget):
         self._view.setSelectionMode(QListView.SingleSelection)
         self._view.setSpacing(6)
         self._view.setStyleSheet(_VIEW_QSS)
-        self._view.doubleClicked.connect(self._on_double)
+        # Double-click edits: the winner normally, but the bottom-right "stack" corner
+        # edits the overdrawn glyph — needs the click position, so filter the event.
+        self._view.viewport().installEventFilter(self)
         v.addWidget(self._view, 1)
 
         self._peek_timer = QTimer(self)
@@ -217,6 +254,7 @@ class _BundleTab(QWidget):
         lazily on next show (built_key cleared)."""
         self._all_fonts = list(all_fonts)
         self._winner_cache = None
+        self._stack_cache = None
         self._built_key = None
         if rebuild and self._view is not None:
             self._rebuild()
@@ -232,6 +270,7 @@ class _BundleTab(QWidget):
                               len(fonts), 0, 0, True, list(fonts))
         self._modified = set(modified)
         self._winner_cache = None
+        self._stack_cache = None
         self._built_key = None              # force a full rebuild
         self._rebuild()
 
@@ -242,10 +281,29 @@ class _BundleTab(QWidget):
         return None
 
     # ---- internals ----
-    def _on_double(self, index):
-        font = index.data(_FONT_ROLE)
-        if font is not None:
-            self.edit_requested.emit(font, index.data(_CP_ROLE))
+    def eventFilter(self, obj, ev):
+        if (ev.type() == QEvent.MouseButtonDblClick and self._view is not None
+                and obj is self._view.viewport()):
+            idx = self._view.indexAt(ev.pos())
+            if idx.isValid():
+                self._edit_at(idx, ev.pos())
+                return True                         # we handle the edit; don't also select
+        return super().eventFilter(obj, ev)
+
+    def _edit_at(self, idx, pos):
+        """Emit edit for the winner, or for the overdrawn (stack) glyph when the click
+        lands in the bottom-right stack corner of a stacked cell."""
+        winner = idx.data(_FONT_ROLE)
+        if winner is None:
+            return
+        font = winner
+        shadow = idx.data(_SHADOW_ROLE)
+        if shadow is not None:
+            r = self._view.visualRect(idx)
+            corner = 0.4 * min(r.width(), r.height())
+            if pos.x() >= r.right() - corner and pos.y() >= r.bottom() - corner:
+                font = shadow                       # the stack corner → the hidden glyph
+        self.edit_requested.emit(font, idx.data(_CP_ROLE))
 
     def _cell_dims(self, scale: int):
         if self._mode == "keycap":
@@ -275,18 +333,24 @@ class _BundleTab(QWidget):
                 self._catalog_files = []
         return self._catalog_files
 
-    def _winners(self):
-        """cp -> the font that actually renders it: the lowest-global-index font
-        (across all bundles) with a non-empty glyph there (the firmware's
-        front-to-back precedence)."""
-        if self._winner_cache is None:
-            win = {}
+    def _stacks(self):
+        """cp -> the front-to-back stack of fonts that draw it: every font (across all
+        bundles) with a non-empty glyph there, lowest global index first.  stack[0] is
+        the winner (what the keyboard draws); stack[1:] are overdrawn (hidden)."""
+        if self._stack_cache is None:
+            st = {}
             for f in sorted(self._all_fonts, key=lambda f: f.global_index):
                 for cp in range(f.first, f.last + 1):
                     g = f.glyphs[cp - f.first]
-                    if g["width"] and g["height"] and cp not in win:
-                        win[cp] = f
-            self._winner_cache = win
+                    if g["width"] and g["height"]:
+                        st.setdefault(cp, []).append(f)
+            self._stack_cache = st
+        return self._stack_cache
+
+    def _winners(self):
+        """cp -> the font that actually renders it (stack[0])."""
+        if self._winner_cache is None:
+            self._winner_cache = {cp: s[0] for cp, s in self._stacks().items()}
         return self._winner_cache
 
     def _winner_desc(self, font) -> str:
@@ -408,50 +472,74 @@ class _BundleTab(QWidget):
         self._dims = (cw, ch, scale)
         self._view.setIconSize(QSize(cw, ch + 11))
 
-        # Build all cells up front (instant even for the ~1200-glyph emoji bundle),
-        # then fill source peek previews incrementally.  Front-to-back precedence:
-        # each cp is really drawn by the lowest-global-index font that has it, so we
-        # tag overridden glyphs and fill empty-but-covered slots from the winner.
-        winners = self._winners()
-        for font in sorted(self._pack.fonts, key=lambda f: f.global_index):
-            for cp in range(font.first, font.last + 1):
-                g = font.glyphs[cp - font.first]
-                empty = g["width"] == 0 or g["height"] == 0
-                if empty and hide_empty:
-                    continue
-                win = winners.get(cp)
-                tip = f"U+{cp:04X}"
-                if not empty and win is not None and win.global_index != font.global_index:
-                    # has a glyph but a higher-priority font wins → shadowed
-                    img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
-                    pm = _pil_l_to_tinted_pixmap(img, SHADOW_RGB)
-                    tip += f"  (overridden by {self._winner_desc(win)})"
-                elif not empty:
-                    img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
-                    pm = _pil_l_to_pixmap(img)
-                elif win is not None:
-                    # empty here, but another pack font draws it → show that, tinted
-                    img = fprd.glyph_cell(win, cp, cw, ch, scale=scale, mode=self._mode)
-                    pm = _pil_l_to_tinted_pixmap(img, COVERED_RGB)
-                    tip += f"  (drawn by {self._winner_desc(win)} — none in this font)"
+        # ONE cell per codepoint (a continuous, deduped range).  Each cp shows the
+        # winner (front-to-back precedence: lowest-global-index font with a glyph) —
+        # white if this bundle draws it, cyan if borrowed from another bundle.  When
+        # more than one font has the glyph, a "stack" (doubled right/bottom border)
+        # marks the overdrawn one(s); double-click edits the winner, the stack corner
+        # edits the one beneath.
+        stacks = self._stacks()
+        this_ids = {f.global_index for f in self._pack.fonts}
+        cps = set()
+        for f in self._pack.fonts:
+            cps.update(range(f.first, f.last + 1))
+        for cp in sorted(cps):
+            stack = stacks.get(cp, [])
+            winner = stack[0] if stack else None
+            empty = winner is None
+            if empty and hide_empty:
+                continue
+            shadow = stack[1] if len(stack) > 1 else None
+            modified = cp in self._modified
+            if winner is not None:
+                img = fprd.glyph_cell(winner, cp, cw, ch, scale=scale, mode=self._mode)
+                cross = winner.global_index not in this_ids
+                pm = _pil_l_to_tinted_pixmap(img, COVERED_RGB) if cross else _pil_l_to_pixmap(img)
+                prim = winner
+                if shadow is not None:
+                    pm = _stack_pixmap(pm)
+                    tip = self._stack_tooltip(cp, winner, stack[1:], cw, ch, scale,
+                                              cross, modified)
                 else:
-                    img = fprd.glyph_cell(font, cp, cw, ch, scale=scale, mode=self._mode)
-                    pm = _pil_l_to_pixmap(img)
-                    tip += "  (empty — no glyph)"
-                if cp in self._modified:             # edited this session → bordered
-                    pm = _border_pixmap(pm, MODIFIED_RGB)
-                    tip += "  (edited — unsaved)"
-                it = QStandardItem()
-                it.setIcon(QIcon(pm))
-                it.setEditable(False)
-                it.setData(font, _FONT_ROLE)
-                it.setData(cp, _CP_ROLE)
-                it.setToolTip(tip)
-                self._model.appendRow(it)
-                if empty and win is None and peek:   # only truly-uncovered slots peek
-                    self._peek_queue.append((it, font, cp))
+                    tip = (f"U+{cp:04X} — drawn by {self._winner_desc(winner)}"
+                           + ("  (another bundle)" if cross else "")
+                           + ("  (edited — unsaved)" if modified else ""))
+            else:
+                prim = next((f for f in self._pack.fonts if f.covers(cp)), self._pack.fonts[0])
+                img = fprd.glyph_cell(prim, cp, cw, ch, scale=scale, mode=self._mode)
+                pm = _pil_l_to_pixmap(img)
+                tip = f"U+{cp:04X}  (empty — no glyph)" + \
+                      ("  (edited — unsaved)" if modified else "")
+            if modified:
+                pm = _border_pixmap(pm, MODIFIED_RGB)
+            it = QStandardItem()
+            it.setIcon(QIcon(pm))
+            it.setEditable(False)
+            it.setData(prim, _FONT_ROLE)
+            it.setData(cp, _CP_ROLE)
+            it.setData(shadow, _SHADOW_ROLE)
+            it.setToolTip(tip)
+            self._model.appendRow(it)
+            if empty and peek:                       # truly-uncovered slots peek
+                self._peek_queue.append((it, prim, cp))
         if self._peek_queue:
             self._peek_timer.start(0)
+
+    def _stack_tooltip(self, cp, winner, shadows, cw, ch, scale, cross, modified) -> str:
+        """Rich (HTML) tooltip for a stacked cell: the winner, then each overdrawn
+        glyph rendered dim so hovering the stack shows the hidden glyph(s)."""
+        rows = ""
+        for s in shadows:
+            img = fprd.glyph_cell(s, cp, cw, ch, scale=scale, mode=self._mode, label=False)
+            uri = _l_to_data_uri(img, SHADOW_RGB)
+            rows += (f"<tr><td><img src='{uri}'></td>"
+                     f"<td style='padding-left:6px;'>{self._winner_desc(s)}</td></tr>")
+        edited = "<br><span style='color:#4d7;'>edited — unsaved</span>" if modified else ""
+        return (f"<b>U+{cp:04X}</b><br>winner: {self._winner_desc(winner)}"
+                f"{' (another bundle)' if cross else ''}"
+                f"<br>overdrawn ({len(shadows)}):<table>{rows}</table>"
+                f"<i>double-click: edit winner · bottom-right corner: edit overdrawn</i>"
+                f"{edited}")
 
     # Peek previews render a couple per event-loop tick so the (heavy, color) emoji
     # rendering stays responsive and any rebuild cancels the rest via _peek_gen.
@@ -619,8 +707,19 @@ class FontPackInspectorDialog(QDialog):
         """The bundle's own label (the tab text may carry a '● ' pending marker)."""
         return self._sources[bi][0]
 
+    def _bundle_of(self, font) -> int | None:
+        """The source index of the bundle that owns `font` (by global index), so a
+        stack edit targets the overdrawn font's *own* bundle, not the current tab."""
+        for i, (_l, p) in enumerate(self._sources):
+            if isinstance(p, fpr.Pack) and any(f.global_index == font.global_index
+                                               for f in p.fonts):
+                return i
+        return None
+
     def _on_edit(self, font, cp: int):
-        bi = self._tabs.currentIndex()
+        bi = self._bundle_of(font)
+        if bi is None:
+            bi = self._tabs.currentIndex()
         self._open_extend(prefill={"bundle": self._base_label(bi), "first": cp,
                                    "last": cp, "global_index": font.global_index,
                                    "font_first": font.first, "font_last": font.last})

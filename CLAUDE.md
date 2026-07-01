@@ -126,18 +126,23 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   carries no bundle name** — the PlyF header has only abi/`content_version`/font_count
   + per-font global ALL_FONTS index; the bundle id lives in `bundles.json`/the
   filename, so an opened tab is named after the file (`decode_pack` synthesises font
-  names as `<filename_stem>#<gidx>`). The inspector honours **front-to-back precedence** (the
-  firmware renders each codepoint from the lowest-global-index font that has it):
-  a duplicate that loses is shown **dim grey** ("overridden by …"), and a slot
-  empty in this font but drawn by another pack font is shown **cyan** ("drawn by
-  …"), so shadowed/duplicate glyphs aren't mistaken for missing. A glyph **edited
+  names as `<filename_stem>#<gidx>`). The grid shows **one cell per codepoint** (a
+  deduped, continuous range) honouring **front-to-back precedence** (the firmware
+  draws each cp from the lowest-global-index font with a glyph, `_BundleTab._stacks`):
+  each cell renders the **winner** — **white** if this bundle draws it, **cyan** if
+  it's borrowed from another bundle. When more than one font has the glyph, the
+  losers are **overdrawn**: a "**stack**" marker (doubled right+bottom border,
+  `_stack_pixmap`) flags it, hovering shows the hidden glyph(s) **dim** in a rich
+  tooltip, and **double-click edits the winner while the bottom-right stack corner
+  edits the overdrawn one** (`_edit_at`; `_on_edit`/`_bundle_of` target the clicked
+  font's *own* bundle, which may be a different tab). A glyph **edited
   this session** (the editor's OK committed it into the working copy) is re-rendered
   in-place from that working copy and bordered **green** (`MODIFIED_RGB`,
   `_BundleTab.apply_working`); "Save as… → Discard" reverts the tab to the loaded
   bundle. Edits **propagate across tabs**: `_commit_edit` rebuilds the merged
   ALL_FONTS view (`_rebuild_all_fonts`) and `_propagate` pushes it to every tab
-  (`set_all_fonts`), so a cell in bundle B that's *covered by* (cyan) or *overridden
-  by* (grey) an edited font in bundle A re-renders from the new glyph — the visible
+  (`set_all_fonts`), so a cell in bundle B whose winner or overdrawn (stack) glyph
+  lives in the edited bundle A re-renders from the new glyph — the visible
   tab rebuilds immediately, the rest lazily on next show. The inspector's
   **"Peek empty (from source)"** toggle
   renders the *empty* slots from their source font (via `fontpack_extend.peek_source_glyph`
