@@ -21,7 +21,7 @@ SECTIONS = [
         ("Win+I", "Settings",             [0xA2], 5, False),
         ("Win+K", "Cast",                 [0xA3], 5, False),
         ("Win+L", "Lock",                 [0x1F512], 4, False),
-        ("Win+M", "Minimize all",         [0x1F5D7], 5, False),
+        ("Win+M", "Minimize all",         [0x1F5D5], 6, False),
         ("Win+P", "Display / project",    [0x1F5B5], 4, False),
         ("Win+R", "Run dialog",           [0x9A, 0x9B], 5, True),
         ("Win+S", "Search",               [0x2630], 3, False),
@@ -51,7 +51,7 @@ SECTIONS = [
         ("Win+Ctrl+F",     "Search network",[0x9D], 5, False),
     ]),
     ("Win + Ctrl + Shift  /  Win + Alt  /  Win + Shift", [
-        ("Win+Ctrl+Shift+B", "Restart graphics", [0x2620], 5, False),
+        ("Win+Ctrl+Shift+B", "Restart graphics", [0xA5], 5, False),
         ("Win+Alt+R",        "Screen recording", [0x1F4F9], 3, False),
         ("Win+Shift+S",      "Snipping Tool",    [0x1F4F8], 3, False),
     ]),
