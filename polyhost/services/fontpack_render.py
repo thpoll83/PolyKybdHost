@@ -119,7 +119,7 @@ HALO_TINT = (0.80, 0.90, 1.00)
 
 def simulate_oled(img, scale: float = 1.0, glow: float = 0.55,
                   jitter: float = 0.16, diffusion: float = 0.28,
-                  stagger: bool = True, seed: int = 1):
+                  stagger: bool = True, brightness: float = 1.0, seed: int = 1):
     """Turn a monochrome ('L') keycap image into an RGB *real-OLED* preview.
 
     Reproduces the look of the physical 72x40 per-key OLEDs:
@@ -195,6 +195,12 @@ def simulate_oled(img, scale: float = 1.0, glow: float = 0.55,
     # edges so cells bleed together (this bleed is the keycap, not the OLED).
     if diffusion > 0.0 and s >= 2:
         im = im.filter(ImageFilter.GaussianBlur(max(0.4, scale * diffusion)))
+    # Brightness gain, applied AFTER the diffusion blur so it lifts the strokes the
+    # blur dimmed (thin strokes lose the most peak to the spread) — the keycap style
+    # passes a higher value to compensate for exactly that.
+    if brightness != 1.0:
+        arr = np.asarray(im, np.float32) * brightness
+        im = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB")
     return im
 
 
@@ -417,9 +423,9 @@ def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
         kc = keycap_image(font, cp, base_yadv=base_yadv, scale=scale, fg=255, bg=0)
         if style == "oled":                             # raw crisp pixels, no cover
             kc = simulate_oled(kc, scale=scale, jitter=0.0, diffusion=0.0,
-                               stagger=False)
+                               stagger=False, brightness=1.18)
         elif style == "keycap":                         # through the clear cover
-            kc = simulate_oled(kc, scale=scale)
+            kc = simulate_oled(kc, scale=scale, brightness=1.5)
         sheet.paste(kc, (x0, y0))
         draw.rectangle([x0, y0, x0 + kc_w - 1, y0 + kc_h - 1], outline=c_kcborder)
         ri = refs[i]

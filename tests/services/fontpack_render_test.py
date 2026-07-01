@@ -194,6 +194,21 @@ class SimulateOledTest(unittest.TestCase):
         crisp = np.asarray(rd.simulate_oled(up, scale=s, glow=0.0, diffusion=0.0))[:, :, 2]
         self.assertGreater(len(np.unique(soft)), len(np.unique(crisp)))
 
+    def test_brightness_gain_lifts_output(self):
+        # brightness > 1 makes lit pixels brighter (applied after the diffusion blur
+        # so it compensates the dimming a stroke loses to the spread).
+        import numpy as np
+        from PIL import Image
+        img = Image.new("L", (rd.OLED_W, rd.OLED_H), 0)
+        for y in range(14, 26):
+            for x in range(28, 44):
+                img.putpixel((x, y), 255)
+        s = 6
+        up = img.resize((rd.OLED_W * s, rd.OLED_H * s), Image.NEAREST)
+        base = np.asarray(rd.simulate_oled(up, scale=s, brightness=1.0)).astype(float)
+        bright = np.asarray(rd.simulate_oled(up, scale=s, brightness=1.5)).astype(float)
+        self.assertGreater(bright.sum(), base.sum())
+
     def test_jitter_is_deterministic(self):
         # Same input + seed -> identical render (no flicker on re-render / zoom).
         from PIL import Image
