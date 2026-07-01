@@ -6,11 +6,11 @@
       "id": "symbol",
       "index": 0,
       "file": "symbol.plyf",
-      "content_version": 5,
-      "size": 33608,
+      "content_version": 6,
+      "size": 33792,
       "slot_offset": 4096,
       "slot_size": 98304,
-      "sha256": "56ac47eea2e7703e"
+      "sha256": "b6a6ab0d4e988a3d"
     },
     {
       "id": "mideast",
@@ -50,7 +50,7 @@
       "size": 62932,
       "slot_offset": 430080,
       "slot_size": 131072,
-      "sha256": "b48b878add4034b6"
+      "sha256": "f1520dd20eaad825"
     },
     {
       "id": "emoji",
