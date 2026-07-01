@@ -425,7 +425,9 @@ def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
             kc = simulate_oled(kc, scale=scale, jitter=0.0, diffusion=0.0,
                                stagger=False, brightness=1.18)
         elif style == "keycap":                         # through the clear cover
-            kc = simulate_oled(kc, scale=scale, brightness=1.5)
+            # brightness matched to OLED (not higher) so the gain doesn't clamp the
+            # lit pixels to flat white; stronger jitter keeps the shimmer visible.
+            kc = simulate_oled(kc, scale=scale, jitter=0.22, brightness=1.25)
         sheet.paste(kc, (x0, y0))
         draw.rectangle([x0, y0, x0 + kc_w - 1, y0 + kc_h - 1], outline=c_kcborder)
         ri = refs[i]
