@@ -207,18 +207,34 @@ class SimulateOledTest(unittest.TestCase):
 
 class PreviewSheetOledTest(unittest.TestCase):
     def _pack(self):
-        f = _font(0x41, 0x41, 12,
-                  [dict(bitmapOffset=0, width=3, height=4, xAdvance=5, xOffset=0, yOffset=-4)],
-                  [0xFF, 0xF0])
+        # yAdvance == BASE_YADV and yOffset ~ -4 so the 8x8 block lands inside the
+        # 72x40 window (else keycap_image clips it and every style is blank).
+        f = _font(0x41, 0x41, rd.BASE_YADV,
+                  [dict(bitmapOffset=0, width=8, height=8, xAdvance=10, xOffset=0, yOffset=-4)],
+                  [0xFF] * 8)
         return _pack([f])
 
-    def test_oled_sheet_is_rgb(self):
-        img = rd.preview_sheet(self._pack(), cols=4, scale=3, oled=True)
-        self.assertEqual(img.mode, "RGB")
+    def test_oled_style_sheet_is_rgb(self):
+        self.assertEqual(rd.preview_sheet(self._pack(), cols=4, scale=3,
+                                          style="oled").mode, "RGB")
+        self.assertEqual(rd.preview_sheet(self._pack(), cols=4, scale=3,
+                                          style="keycap").mode, "RGB")
 
-    def test_default_sheet_is_grayscale(self):
-        img = rd.preview_sheet(self._pack(), cols=4, scale=3)
+    def test_normal_style_sheet_is_grayscale(self):
+        img = rd.preview_sheet(self._pack(), cols=4, scale=3)     # default normal
         self.assertEqual(img.mode, "L")
+        self.assertEqual(rd.preview_sheet(self._pack(), cols=4, scale=3,
+                                          style="normal").mode, "L")
+
+    def test_oled_and_keycap_styles_differ(self):
+        # The two OLED styles render the keycap differently (crisp vs diffused/
+        # jittered), so their sheets are not identical.  (The crisp-vs-diffused
+        # detail is covered at the simulate_oled level.)
+        import numpy as np
+        p = self._pack()
+        oled = np.asarray(rd.preview_sheet(p, cols=4, scale=6, style="oled"))
+        keycap = np.asarray(rd.preview_sheet(p, cols=4, scale=6, style="keycap"))
+        self.assertTrue((oled != keycap).any())
 
 
 class GlyphCellTest(unittest.TestCase):

@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QLabel, QLineEdit,
     QSpinBox, QDoubleSpinBox, QComboBox, QCheckBox, QPushButton, QScrollArea, QSlider,
     QFileDialog, QMessageBox, QApplication, QWidget, QListWidget, QListWidgetItem,
-    QProgressDialog,
+    QProgressDialog, QButtonGroup, QRadioButton,
 )
 
 from polyhost.services import fontpack_reader as fpr
@@ -203,14 +203,27 @@ class FontPackExtendDialog(QDialog):
         self._auto = QCheckBox("Auto update")
         self._auto.setChecked(True)
         self._auto.setToolTip("Re-render the preview automatically when an option changes")
-        self._oled = QCheckBox("Simulate OLED")
-        self._oled.setToolTip("Preview the keycap as the physical OLED shows it — "
-                              "pale-cyan emissive pixels with bloom on true black, "
-                              "matching the real keycaps (the source-font glyph beside "
-                              "it stays natural for comparison)")
-        self._oled.toggled.connect(self._render_preview)
+        # Preview style: Normal (plain bitmap) · OLED (raw emissive pixels) · Keycap
+        # (as seen through the clear keycap cover — diffused).
+        self._style_group = QButtonGroup(self)
+        self._rb_normal = QRadioButton("Normal")
+        self._rb_oled = QRadioButton("OLED")
+        self._rb_keycap = QRadioButton("Keycap")
+        self._rb_normal.setToolTip("Plain white-on-black bitmap (what the font renders)")
+        self._rb_oled.setToolTip("The raw OLED look: cool-white pixels + bloom + a crisp "
+                                 "pixel grid on true black")
+        self._rb_keycap.setToolTip("As seen through the clear keycap cover: adds per-pixel "
+                                   "brightness shimmer, a staggered grid and a diffusion blur")
+        self._rb_normal.setChecked(True)
+        for i, rb in enumerate((self._rb_normal, self._rb_oled, self._rb_keycap)):
+            self._style_group.addButton(rb, i)
+            rb.toggled.connect(self._on_style_changed)
         brow.addWidget(self._build_btn); brow.addWidget(self._reset_btn)
-        brow.addWidget(self._auto); brow.addWidget(self._oled); brow.addStretch(1)
+        brow.addWidget(self._auto)
+        brow.addStretch(1)
+        brow.addWidget(QLabel("Preview:"))
+        brow.addWidget(self._rb_normal); brow.addWidget(self._rb_oled)
+        brow.addWidget(self._rb_keycap)
         form.addRow(brow)
 
         # OK keeps the built glyph (the inspector merges it into its working copy);
@@ -608,9 +621,22 @@ class FontPackExtendDialog(QDialog):
                                  source_path=src or None, opts=opts,
                                  cols=12, scale=self._scale, sequence=seq,
                                  title=f"built · {new.glyph_count} glyphs",
-                                 oled=self._oled.isChecked())
+                                 style=self._preview_style())
         self._preview.setPixmap(_pil_to_pixmap(sheet))
         self._preview.resize(self._preview.pixmap().size())
+
+    def _preview_style(self) -> str:
+        """The selected preview style: 'normal' | 'oled' | 'keycap'."""
+        if self._rb_oled.isChecked():
+            return "oled"
+        if self._rb_keycap.isChecked():
+            return "keycap"
+        return "normal"
+
+    def _on_style_changed(self, checked: bool):
+        # Radios fire twice (old off, new on); only re-render on the new selection.
+        if checked:
+            self._render_preview()
 
     def _zoom(self, step: float) -> bool:
         """Change the preview zoom by `step` (clamped 0.5..7.0) and re-render.  Returns

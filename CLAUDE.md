@@ -184,15 +184,17 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   composites the shaped group) rather than looked up by codepoint — otherwise no
   reference showed beside a flag. **Scroll-wheel over the preview
   zooms** it (0.5×–7.0× in 0.5 steps; the render functions take a fractional `scale`,
-  `fontpack_render._px` rounds to pixels). A **"Simulate OLED"** checkbox previews the
-  keycap as the physical per-key OLED shows it — `fontpack_render.simulate_oled`
-  (Qt-free, NumPy/PIL) maps the mono keycap to **pale-cyan emissive pixels on true
-  black** with a **bluer bloom** (Gaussian, screen-blended), **per-pixel brightness
-  jitter** (seeded, so the lit area shimmers instead of reading flat), a **staggered
-  ("zigzag") pixel grid** (seams brick-laid on alternate rows, once a logical pixel
-  is ≥3 px) and a light **diffusion** blur that lets pixels bleed together (this
-  bleed models the **clear keycap cover** diffusing the light, not the OLED panel
-  itself) — all calibrated from photos of the real keycaps;
+  `fontpack_render._px` rounds to pixels). A **Preview** radio group (Normal · OLED ·
+  Keycap, `_preview_style`) shows the keycap the way the physical per-key OLED renders
+  it via `fontpack_render.simulate_oled` (Qt-free, NumPy/PIL) + `preview_sheet(style=)`
+  (only the keycap is post-processed; the source reference + chrome stay natural):
+  lit pixels are a **cool white** (`OLED_TINT` — a hint of blue; the strong cyan in
+  photos is a camera artifact, not what the eye sees) on true black with a slightly
+  bluer **bloom**. The two OLED styles are presets over `simulate_oled`'s knobs —
+  **OLED** = the raw pixels (crisp square grid, jitter/diffusion off) and **Keycap** =
+  as seen through the clear keycap cover (adds **per-pixel brightness jitter** — seeded
+  so the lit area shimmers without flicker — a **staggered grid** and a **diffusion**
+  blur that lets pixels bleed, modelling the cover's light-guide, not the panel);
   `preview_sheet(oled=)` runs **only the keycap** through it (the source-font reference
   + chrome stay natural for comparison) and returns RGB, so the preview pixmap path
   preserves colour (`_pil_to_pixmap`). **Reset** restores the render options to

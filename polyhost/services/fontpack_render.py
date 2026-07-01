@@ -109,34 +109,39 @@ def keycap_image(font, cp: int, base_yadv: int = BASE_YADV, scale: float = 1,
     return img
 
 
-# Real-keycap OLED look, measured off photographed PolyKybd keycaps: the panels
-# emit a pale cyan-white, not pure white, and lit pixels bloom into a soft bluish
-# halo on true black.  (Tint = colour of a fully-lit pixel; HALO_TINT is the bluer
-# tint of the surrounding glow.)
-OLED_TINT = (170, 225, 255)
-HALO_TINT = (0.55, 0.80, 1.00)
+# Real-keycap OLED look.  To the eye the panels read as a cool white (the strong
+# cyan in photos is a camera-sensor artifact), so `OLED_TINT` is a near-white with
+# just a hint of blue; the bloom halo (`HALO_TINT`) stays a touch bluer for a subtle
+# cool glow.  (Tint = colour of a fully-lit pixel.)
+OLED_TINT = (224, 238, 255)
+HALO_TINT = (0.80, 0.90, 1.00)
 
 
 def simulate_oled(img, scale: float = 1.0, glow: float = 0.55,
-                  jitter: float = 0.16, diffusion: float = 0.28, seed: int = 1):
+                  jitter: float = 0.16, diffusion: float = 0.28,
+                  stagger: bool = True, seed: int = 1):
     """Turn a monochrome ('L') keycap image into an RGB *real-OLED* preview.
 
-    Reproduces the look of the physical 72x40 per-key OLEDs from photos of the
-    actual keycaps:
-      * lit pixels emit a pale cyan-white light (`OLED_TINT`) on true black —
-        the panels are not pure-white;
-      * a soft additive bloom (Gaussian, screen-blended, bluer than the core)
-        haloes lit pixels, the glow the real displays throw;
+    Reproduces the look of the physical 72x40 per-key OLEDs:
+      * lit pixels emit a **cool white** (`OLED_TINT`, a hint of blue) on true
+        black — to the eye the panels read as white; the strong cyan in photos is
+        a camera-sensor artifact;
+      * a soft additive bloom (Gaussian, screen-blended, slightly bluer than the
+        core) haloes lit pixels, the glow the real displays throw;
       * each logical OLED pixel sits at a slightly **different brightness**
         (`jitter`, a per-pixel random dim), so the lit area shimmers instead of
         reading as one flat block;
-      * the pixel grid is **staggered** ("zigzag" — the seam columns shift half a
-        cell on alternate rows, brick-laid) rather than a rigid square screen door,
-        visible once each logical pixel is drawn >= 3 px (`scale`);
+      * a pixel grid ("screen door"), optionally **staggered** (`stagger` —
+        brick-laid, seam columns shifting half a cell on alternate rows), visible
+        once each logical pixel is drawn >= 3 px (`scale`);
       * a light **diffusion** blur (`diffusion`) softens the pixel edges so cells
         bleed into each other — this is the **clear keycap cover over the panel**
         acting as a diffuser/light-guide, not the OLED itself, and it's what kills
-        the too-crisp square look in photos.
+        the too-crisp square look.
+
+    The two preview styles are just presets over these knobs (see `preview_sheet`):
+    a crisp **"oled"** (jitter/diffusion off, square grid — the raw pixel look) and
+    a **"keycap"** (jitter + diffusion + staggered grid — through the cover).
 
     `scale` is the size in output pixels of one logical OLED pixel (i.e. the same
     zoom the keycap was rasterised at) — it sizes the bloom radius, the grid, the
@@ -176,9 +181,9 @@ def simulate_oled(img, scale: float = 1.0, glow: float = 0.55,
         halo = blur[..., None] * np.asarray(HALO_TINT, np.float32)[None, None, :] * glow
         rgb = 1.0 - (1.0 - rgb) * (1.0 - halo)          # screen blend
 
-    if s >= 3:                                          # staggered pixel grid
+    if s >= 3:                                          # visible pixel grid
         yy, xx = np.mgrid[0:h, 0:w]
-        xoff = ((yy // s) % 2) * (s // 2)               # brick-lay alternate rows
+        xoff = ((yy // s) % 2) * (s // 2) if stagger else 0   # brick-lay alt rows
         keep_x = ((xx + xoff) % s) != (s - 1)
         keep_y = (yy % s) != (s - 1)
         seam = 0.70 + 0.30 * (keep_x & keep_y).astype(np.float32)
@@ -346,16 +351,21 @@ def reference_sequence_image(font_path: str, group: str, opts, fit_h: int | None
 def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
                   scale: int = 3, pad: int = 6, title: str = "",
                   base_yadv: int = BASE_YADV, sequence: str = None,
-                  oled: bool = False):
+                  style: str = "normal"):
     """The build/extend dialog's preview: every glyph of `pack` as a 72x40 keycap,
     with the *source-font* glyph (smooth, undithered) drawn beside it for comparison
     when `source_path`/`opts` are supplied.  Degrades to keycap-only (no reference)
     for a sequence-mode pack or a codepoint the source can't render.
 
-    With `oled=True` the keycap is post-processed through `simulate_oled` (pale-cyan
-    emissive pixels + bloom on true black, the real-keycap look) and the sheet is
-    RGB; the source reference and the chrome (labels/frames) stay natural so you can
-    compare the OLED render against what the font actually draws."""
+    `style` selects how the keycap is rendered:
+      * ``"normal"`` — plain white-on-black bitmap (an 'L' sheet);
+      * ``"oled"``   — the raw emissive pixel look: cool-white pixels + bloom + a
+        crisp square pixel grid (`simulate_oled`, jitter/diffusion off);
+      * ``"keycap"`` — as seen through the clear keycap cover: adds per-pixel
+        brightness jitter, a staggered grid and a diffusion blur.
+    For the two OLED styles the sheet is RGB and only the keycap is post-processed —
+    the source reference and the chrome (labels/frames) stay natural for comparison."""
+    oled = style in ("oled", "keycap")
     glyphs = list(_iter_glyphs(pack))
     if not glyphs:
         return Image.new("L", (200, 40), 0)
@@ -405,7 +415,10 @@ def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
         x0 = pad + c * cw
         y0 = head_h + r * ch
         kc = keycap_image(font, cp, base_yadv=base_yadv, scale=scale, fg=255, bg=0)
-        if oled:
+        if style == "oled":                             # raw crisp pixels, no cover
+            kc = simulate_oled(kc, scale=scale, jitter=0.0, diffusion=0.0,
+                               stagger=False)
+        elif style == "keycap":                         # through the clear cover
             kc = simulate_oled(kc, scale=scale)
         sheet.paste(kc, (x0, y0))
         draw.rectangle([x0, y0, x0 + kc_w - 1, y0 + kc_h - 1], outline=c_kcborder)

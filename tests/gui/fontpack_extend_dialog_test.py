@@ -166,23 +166,32 @@ class ExtendDialogTest(unittest.TestCase):
         self.assertIsNotNone(dlg._built)
         self.assertFalse(dlg._preview.pixmap().isNull())
 
-    def test_oled_checkbox_present_and_off_by_default(self):
+    def test_preview_style_group_defaults_to_normal(self):
         dlg = fed.FontPackExtendDialog()
         self.addCleanup(dlg.deleteLater)
-        self.assertFalse(dlg._oled.isChecked())
+        self.assertTrue(dlg._rb_normal.isChecked())
+        self.assertEqual(dlg._preview_style(), "normal")
+
+    def test_preview_style_reports_selection(self):
+        dlg = fed.FontPackExtendDialog()
+        self.addCleanup(dlg.deleteLater)
+        dlg._rb_oled.setChecked(True)
+        self.assertEqual(dlg._preview_style(), "oled")
+        dlg._rb_keycap.setChecked(True)
+        self.assertEqual(dlg._preview_style(), "keycap")
 
     @unittest.skipUnless(_FONTGEN and _FONT, "needs fontgen deps + a TTF")
-    def test_oled_toggle_rerenders_preview(self):
+    def test_style_switch_rerenders_preview(self):
         dlg = fed.FontPackExtendDialog()
         self.addCleanup(dlg.deleteLater)
         dlg._src.setText(_FONT)
         dlg._first.setText("0x41"); dlg._last.setText("0x41")
         dlg._build()
         self.assertFalse(dlg._preview.pixmap().isNull())
-        # Toggling Simulate OLED re-renders (the toggled signal is wired to
-        # _render_preview) and the preview stays a valid pixmap.
-        dlg._oled.setChecked(True)
-        self.assertTrue(dlg._oled.isChecked())
+        # Selecting a style re-renders (the toggled signal is wired to
+        # _on_style_changed) and the preview stays a valid pixmap.
+        dlg._rb_keycap.setChecked(True)
+        self.assertEqual(dlg._preview_style(), "keycap")
         self.assertFalse(dlg._preview.pixmap().isNull())
 
     def test_zoom_noop_until_built(self):
