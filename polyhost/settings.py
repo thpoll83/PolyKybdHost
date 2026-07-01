@@ -4,6 +4,39 @@ import os
 import yaml
 from platformdirs import user_config_dir
 
+
+# Per-environment device-side damping presets for the daylight brightness.
+# The daylight pipeline produces a full-swing "curve" value in the device's
+# 2..50 range (night -> 2, clear-sky noon -> 50). Each environment then damps
+# that swing toward a `baseline` device value:
+#
+#     device = baseline + k * (curve - baseline)
+#
+# k = 1.0 lets the full curve through (the behaviour before environments
+# existed); smaller k flattens the daylight swing toward `baseline` for desks
+# further from a window. k stays > 0 in every preset so the value still dips
+# when it gets dark — users want *less* light at night, not a flat constant.
+# Tuple is (key, dropdown label, baseline, k); list order is the dropdown order.
+BRIGHTNESS_ENVIRONMENTS = [
+    ("window",      "By a window (full daylight swing)",  2.0, 1.00),
+    ("near_window", "Near a window",                      8.0, 0.75),
+    ("bright_room", "Bright room",                       18.0, 0.50),
+    ("office",      "Large office, distant windows",     26.0, 0.32),
+    ("windowless",  "Windowless / artificial light",     28.0, 0.22),
+]
+# key -> (baseline, k) for the runtime lookup in PolyCore / the diagnostics.
+BRIGHTNESS_ENVIRONMENT_PARAMS = {k: (b, g) for k, _, b, g in BRIGHTNESS_ENVIRONMENTS}
+DEFAULT_BRIGHTNESS_ENVIRONMENT = "window"
+
+
+def brightness_environment_params(key):
+    """(baseline, k) for an environment key, defaulting to the no-damping
+    'window' preset for an unknown/missing key so a bad config can never break
+    the daylight pipeline."""
+    return BRIGHTNESS_ENVIRONMENT_PARAMS.get(
+        key, BRIGHTNESS_ENVIRONMENT_PARAMS[DEFAULT_BRIGHTNESS_ENVIRONMENT])
+
+
 class PolySettings:
     """ Stores program specific settings """
     def __init__(self):
@@ -23,6 +56,11 @@ class PolySettings:
         self.defaults = {
             "unicode_send_composition_mode": True,
             "brightness_set_daylight_dependent": True,
+            # Where the keyboard sits relative to natural light. Picks a damping
+            # preset (see BRIGHTNESS_ENVIRONMENTS) that flattens the daylight
+            # swing toward an indoor baseline the further you are from a window;
+            # "window" = the full, undamped swing (legacy behaviour).
+            "brightness_environment": DEFAULT_BRIGHTNESS_ENVIRONMENT,
             "brightness_allow_online_irradiance_request": True,
             "brightness_allow_online_location_lookup": True,
             # Maps solar irradiance (W/m^2) to keycap brightness via

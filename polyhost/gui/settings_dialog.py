@@ -4,11 +4,27 @@ from collections import defaultdict
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import (
     QDialog, QFormLayout, QDialogButtonBox,
-    QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QSizePolicy,
+    QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QComboBox, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QSizePolicy,
     QScrollArea
 )
 
 from polyhost.gui.get_icon import get_icon
+from polyhost.settings import BRIGHTNESS_ENVIRONMENTS
+
+# Settings that should render as a fixed-choice dropdown instead of the generic
+# type-based editor. Maps the setting key to a list of (stored value, label).
+ENUM_SETTINGS = {
+    "brightness_environment": [(k, label) for k, label, _b, _g in BRIGHTNESS_ENVIRONMENTS],
+}
+
+
+def create_combo(value, choices):
+    combo = QComboBox()
+    for stored, label in choices:
+        combo.addItem(label, stored)
+    idx = combo.findData(value)
+    combo.setCurrentIndex(idx if idx >= 0 else 0)
+    return combo
 
 
 def create_editor(value):
@@ -86,7 +102,10 @@ class SettingsDialog(QDialog):
                 parts = cap.split(" ",1)
                 label = QLabel(parts[1])
                 label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-                widget = create_editor(value)
+                if full_key in ENUM_SETTINGS:
+                    widget = create_combo(value, ENUM_SETTINGS[full_key])
+                else:
+                    widget = create_editor(value)
 
                 field_container = QWidget()
                 field_layout = QHBoxLayout()
@@ -114,7 +133,9 @@ class SettingsDialog(QDialog):
     def get_updated_settings(self):
         updated = dict(self._all_settings)
         for key, widget in self.edit_widgets.items():
-            if isinstance(widget, QCheckBox):
+            if isinstance(widget, QComboBox):
+                updated[key] = widget.currentData()
+            elif isinstance(widget, QCheckBox):
                 updated[key] = widget.isChecked()
             elif isinstance(widget, QSpinBox):
                 updated[key] = widget.value()
