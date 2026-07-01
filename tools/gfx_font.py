@@ -122,6 +122,14 @@ class GfxGlyphRenderer:
     def _font_for(self, cp: int):
         for f in self.fonts:
             if f.first <= cp <= f.last:
+                g = f.glyphs[cp - f.first]
+                # Skip non-contiguous-range padding (a blank gap glyph): the
+                # firmware's kdisp_gfx_glyph_font does the same and falls through
+                # to a later font that actually provides this codepoint (e.g. the
+                # dedicated WinSwitch font for U+1F5BD, which the wider Util range
+                # would otherwise shadow).
+                if g['width'] == 0 and g['height'] == 0 and g['xAdvance'] == 0:
+                    continue
                 return f
         return None
 
