@@ -69,6 +69,16 @@ def _border_pixmap(pm, rgb, width: int = 2):
     return out
 
 
+def _pil_to_pixmap(img) -> QPixmap:
+    """PIL image -> QPixmap, preserving RGB (for the OLED-simulated preview) and
+    falling back to the Grayscale8 path for 'L' images."""
+    if img.mode == "RGB":
+        data = img.tobytes()
+        qimg = QImage(data, img.width, img.height, img.width * 3, QImage.Format_RGB888)
+        return QPixmap.fromImage(qimg)
+    return _pil_l_to_pixmap(img)
+
+
 def _pil_l_to_tinted_pixmap(img, rgb) -> QPixmap:
     """PIL 'L' image -> RGB QPixmap tinted to `rgb` (lit pixels take the colour),
     so peek previews read as a different colour from the real pack glyphs."""

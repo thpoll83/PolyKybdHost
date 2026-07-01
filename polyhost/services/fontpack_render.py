@@ -109,6 +109,59 @@ def keycap_image(font, cp: int, base_yadv: int = BASE_YADV, scale: float = 1,
     return img
 
 
+# Real-keycap OLED look, measured off photographed PolyKybd keycaps: the panels
+# emit a pale cyan-white, not pure white, and lit pixels bloom into a soft bluish
+# halo on true black.  (Tint = colour of a fully-lit pixel; HALO_TINT is the bluer
+# tint of the surrounding glow.)
+OLED_TINT = (170, 225, 255)
+HALO_TINT = (0.55, 0.80, 1.00)
+
+
+def simulate_oled(img, scale: float = 1.0, glow: float = 0.55):
+    """Turn a monochrome ('L') keycap image into an RGB *real-OLED* preview.
+
+    Reproduces the look of the physical 72x40 per-key OLEDs from photos of the
+    actual keycaps:
+      * lit pixels emit a pale cyan-white light (`OLED_TINT`) on true black —
+        the panels are not pure-white;
+      * a soft additive bloom (Gaussian, screen-blended, bluer than the core)
+        haloes lit pixels, the glow the real displays throw;
+      * a faint dark pixel grid ("screen door") once each logical OLED pixel is
+        drawn >= 3 px (`scale`), so at zoom every pixel reads as a distinct dot.
+
+    `scale` is the size in output pixels of one logical OLED pixel (i.e. the same
+    zoom the keycap was rasterised at) — it sizes the bloom radius and the grid.
+    Pure PIL/NumPy, no Qt; safe to unit-test.
+    """
+    import numpy as np
+    from PIL import ImageFilter
+
+    if img.mode != "L":
+        img = img.convert("L")
+    lum = np.asarray(img, dtype=np.float32) / 255.0
+    h, w = lum.shape
+    tint = np.asarray(OLED_TINT, dtype=np.float32) / 255.0
+    # Slight gamma so mid-bright dither survives and the glyph body reads as lit.
+    rgb = np.power(lum, 0.85)[..., None] * tint[None, None, :]
+
+    if glow > 0.0:
+        radius = max(1.0, scale * 0.8)
+        blur = np.asarray(img.filter(ImageFilter.GaussianBlur(radius)),
+                          dtype=np.float32) / 255.0
+        halo = blur[..., None] * np.asarray(HALO_TINT, np.float32)[None, None, :] * glow
+        rgb = 1.0 - (1.0 - rgb) * (1.0 - halo)          # screen blend
+
+    s = int(round(scale))
+    if s >= 3:                                          # visible pixel grid
+        keep_y = (np.arange(h) % s) != (s - 1)
+        keep_x = (np.arange(w) % s) != (s - 1)
+        seam = 0.70 + 0.30 * (keep_y[:, None] & keep_x[None, :]).astype(np.float32)
+        rgb *= seam[..., None]
+
+    out = np.clip(rgb * 255.0, 0, 255).astype(np.uint8)
+    return Image.fromarray(out, "RGB")
+
+
 def glyph_cell(font, cp: int, cell_w: int, cell_h: int, scale: int = 2,
                mode: str = "glyph", base_yadv: int = BASE_YADV, label: bool = True):
     """Render one labelled cell for the flow view: the glyph (or 72x40 keycap)
@@ -261,11 +314,17 @@ def reference_sequence_image(font_path: str, group: str, opts, fit_h: int | None
 
 def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
                   scale: int = 3, pad: int = 6, title: str = "",
-                  base_yadv: int = BASE_YADV, sequence: str = None):
+                  base_yadv: int = BASE_YADV, sequence: str = None,
+                  oled: bool = False):
     """The build/extend dialog's preview: every glyph of `pack` as a 72x40 keycap,
     with the *source-font* glyph (smooth, undithered) drawn beside it for comparison
     when `source_path`/`opts` are supplied.  Degrades to keycap-only (no reference)
-    for a sequence-mode pack or a codepoint the source can't render."""
+    for a sequence-mode pack or a codepoint the source can't render.
+
+    With `oled=True` the keycap is post-processed through `simulate_oled` (pale-cyan
+    emissive pixels + bloom on true black, the real-keycap look) and the sheet is
+    RGB; the source reference and the chrome (labels/frames) stay natural so you can
+    compare the OLED render against what the font actually draws."""
     glyphs = list(_iter_glyphs(pack))
     if not glyphs:
         return Image.new("L", (200, 40), 0)
@@ -297,27 +356,35 @@ def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
     head_h = 22
     W = cols * cw + pad
     H = head_h + rows * ch + pad
-    sheet = Image.new("L", (W, H), 0)
+    # OLED mode paints on true black in RGB; the chrome (header/labels/frames) uses
+    # neutral greys so it doesn't read as part of the emissive keycap.
+    c_head = (205, 205, 205) if oled else 255
+    c_lab = (120, 120, 120) if oled else 128
+    c_kcborder = (70, 90, 105) if oled else 70
+    c_refborder = (45, 45, 45) if oled else 40
+    sheet = Image.new("RGB" if oled else "L", (W, H), 0)
     draw = ImageDraw.Draw(sheet)
     head = title or f"{getattr(pack, 'font_count', '?')} fonts · {len(glyphs)} glyphs"
     if ref_w:
         head += "    (left: keycap · right: source font)"
-    draw.text((pad, 6), head, fill=255, font=fnt)
+    draw.text((pad, 6), head, fill=c_head, font=fnt)
 
     for i, (font, cp) in enumerate(glyphs):
         r, c = divmod(i, cols)
         x0 = pad + c * cw
         y0 = head_h + r * ch
         kc = keycap_image(font, cp, base_yadv=base_yadv, scale=scale, fg=255, bg=0)
+        if oled:
+            kc = simulate_oled(kc, scale=scale)
         sheet.paste(kc, (x0, y0))
-        draw.rectangle([x0, y0, x0 + kc_w - 1, y0 + kc_h - 1], outline=70)
+        draw.rectangle([x0, y0, x0 + kc_w - 1, y0 + kc_h - 1], outline=c_kcborder)
         ri = refs[i]
         if ri is not None:
             rx = x0 + kc_w + gap
             ry = y0 + max(0, (kc_h - ri.height) // 2)
-            sheet.paste(ri, (rx, ry))
-            draw.rectangle([rx - 1, y0, rx + ref_w, y0 + kc_h - 1], outline=40)
-        draw.text((x0, y0 + cell_h + 1), f"{cp:04X}", fill=128, font=fnt)
+            sheet.paste(ri.convert(sheet.mode) if ri.mode != sheet.mode else ri, (rx, ry))
+            draw.rectangle([rx - 1, y0, rx + ref_w, y0 + kc_h - 1], outline=c_refborder)
+        draw.text((x0, y0 + cell_h + 1), f"{cp:04X}", fill=c_lab, font=fnt)
     return sheet
 
 

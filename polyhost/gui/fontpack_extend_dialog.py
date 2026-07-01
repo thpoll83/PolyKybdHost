@@ -31,7 +31,7 @@ from PyQt5.QtWidgets import (
 )
 
 from polyhost.services import fontpack_reader as fpr
-from polyhost.gui.fontpack_inspector_dialog import _pil_l_to_pixmap, load_shipped_packs
+from polyhost.gui.fontpack_inspector_dialog import _pil_to_pixmap, load_shipped_packs
 
 _DITHER = ["fs", "stucki", "bayer", "threshold", "random"]
 
@@ -203,8 +203,14 @@ class FontPackExtendDialog(QDialog):
         self._auto = QCheckBox("Auto update")
         self._auto.setChecked(True)
         self._auto.setToolTip("Re-render the preview automatically when an option changes")
+        self._oled = QCheckBox("Simulate OLED")
+        self._oled.setToolTip("Preview the keycap as the physical OLED shows it — "
+                              "pale-cyan emissive pixels with bloom on true black, "
+                              "matching the real keycaps (the source-font glyph beside "
+                              "it stays natural for comparison)")
+        self._oled.toggled.connect(self._render_preview)
         brow.addWidget(self._build_btn); brow.addWidget(self._reset_btn)
-        brow.addWidget(self._auto); brow.addStretch(1)
+        brow.addWidget(self._auto); brow.addWidget(self._oled); brow.addStretch(1)
         form.addRow(brow)
 
         # OK keeps the built glyph (the inspector merges it into its working copy);
@@ -601,8 +607,9 @@ class FontPackExtendDialog(QDialog):
         sheet = rd.preview_sheet(fpr.Pack(1, 0, 1, 0, 0, True, [new]),
                                  source_path=src or None, opts=opts,
                                  cols=12, scale=self._scale, sequence=seq,
-                                 title=f"built · {new.glyph_count} glyphs")
-        self._preview.setPixmap(_pil_l_to_pixmap(sheet))
+                                 title=f"built · {new.glyph_count} glyphs",
+                                 oled=self._oled.isChecked())
+        self._preview.setPixmap(_pil_to_pixmap(sheet))
         self._preview.resize(self._preview.pixmap().size())
 
     def _zoom(self, step: float) -> bool:

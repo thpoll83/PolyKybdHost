@@ -107,6 +107,69 @@ class ContactSheetTest(unittest.TestCase):
         self.assertEqual(img.size, (200, 40))
 
 
+class SimulateOledTest(unittest.TestCase):
+    def _keycap(self):
+        # A 72x40 'L' keycap with a lit block near the centre and black elsewhere.
+        from PIL import Image
+        img = Image.new("L", (rd.OLED_W, rd.OLED_H), 0)
+        for y in range(16, 24):
+            for x in range(30, 42):
+                img.putpixel((x, y), 255)
+        return img
+
+    def test_returns_rgb_same_size(self):
+        out = rd.simulate_oled(self._keycap(), scale=1)
+        self.assertEqual(out.mode, "RGB")
+        self.assertEqual(out.size, (rd.OLED_W, rd.OLED_H))
+
+    def test_black_stays_true_black(self):
+        # A far corner is unlit and far from the bloom -> pure black.
+        out = rd.simulate_oled(self._keycap(), scale=1, glow=0.0)
+        self.assertEqual(out.getpixel((0, 0)), (0, 0, 0))
+
+    def test_lit_pixel_is_pale_cyan(self):
+        out = rd.simulate_oled(self._keycap(), scale=1, glow=0.0)
+        r, g, b = out.getpixel((35, 20))
+        # blue >= green > red — the measured pale-cyan tint, never pure white.
+        self.assertGreater(b, g)
+        self.assertGreater(g, r)
+        self.assertLess(r, 255)
+
+    def test_glow_brightens_neighbourhood(self):
+        # A pixel just outside the lit block is black without glow, lit with it.
+        kc = self._keycap()
+        near = (44, 20)                       # 2px right of the lit block edge
+        self.assertEqual(rd.simulate_oled(kc, scale=1, glow=0.0).getpixel(near), (0, 0, 0))
+        self.assertGreater(sum(rd.simulate_oled(kc, scale=3, glow=0.6).getpixel(near)), 0)
+
+    def test_pixel_grid_darkens_seams_at_zoom(self):
+        # At scale>=3 the seam column (every s-th pixel) is dimmer than the cell body.
+        from PIL import Image
+        img = Image.new("L", (rd.OLED_W, rd.OLED_H), 255)   # fully lit
+        s = 6
+        up = img.resize((rd.OLED_W * s, rd.OLED_H * s), Image.NEAREST)
+        out = rd.simulate_oled(up, scale=s, glow=0.0)
+        body = sum(out.getpixel((10, 10)))                   # inside a cell
+        seam = sum(out.getpixel((s - 1, 10)))                # seam column
+        self.assertLess(seam, body)
+
+
+class PreviewSheetOledTest(unittest.TestCase):
+    def _pack(self):
+        f = _font(0x41, 0x41, 12,
+                  [dict(bitmapOffset=0, width=3, height=4, xAdvance=5, xOffset=0, yOffset=-4)],
+                  [0xFF, 0xF0])
+        return _pack([f])
+
+    def test_oled_sheet_is_rgb(self):
+        img = rd.preview_sheet(self._pack(), cols=4, scale=3, oled=True)
+        self.assertEqual(img.mode, "RGB")
+
+    def test_default_sheet_is_grayscale(self):
+        img = rd.preview_sheet(self._pack(), cols=4, scale=3)
+        self.assertEqual(img.mode, "L")
+
+
 class GlyphCellTest(unittest.TestCase):
     def _font(self):
         # 0x41 present (2x2 lit), 0x42 empty (w=0)
