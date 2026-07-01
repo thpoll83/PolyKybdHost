@@ -117,7 +117,8 @@ OLED_TINT = (170, 225, 255)
 HALO_TINT = (0.55, 0.80, 1.00)
 
 
-def simulate_oled(img, scale: float = 1.0, glow: float = 0.55):
+def simulate_oled(img, scale: float = 1.0, glow: float = 0.55,
+                  jitter: float = 0.16, diffusion: float = 0.28, seed: int = 1):
     """Turn a monochrome ('L') keycap image into an RGB *real-OLED* preview.
 
     Reproduces the look of the physical 72x40 per-key OLEDs from photos of the
@@ -126,11 +127,20 @@ def simulate_oled(img, scale: float = 1.0, glow: float = 0.55):
         the panels are not pure-white;
       * a soft additive bloom (Gaussian, screen-blended, bluer than the core)
         haloes lit pixels, the glow the real displays throw;
-      * a faint dark pixel grid ("screen door") once each logical OLED pixel is
-        drawn >= 3 px (`scale`), so at zoom every pixel reads as a distinct dot.
+      * each logical OLED pixel sits at a slightly **different brightness**
+        (`jitter`, a per-pixel random dim), so the lit area shimmers instead of
+        reading as one flat block;
+      * the pixel grid is **staggered** ("zigzag" — the seam columns shift half a
+        cell on alternate rows, brick-laid) rather than a rigid square screen door,
+        visible once each logical pixel is drawn >= 3 px (`scale`);
+      * a light **diffusion** blur (`diffusion`) softens the pixel edges so cells
+        bleed into each other the way the real panel does, killing the too-crisp
+        square look.
 
     `scale` is the size in output pixels of one logical OLED pixel (i.e. the same
-    zoom the keycap was rasterised at) — it sizes the bloom radius and the grid.
+    zoom the keycap was rasterised at) — it sizes the bloom radius, the grid, the
+    per-pixel jitter cell and the diffusion.  The jitter is seeded (`seed`) so a
+    given keycap renders identically each time (no flicker on zoom/re-render).
     Pure PIL/NumPy, no Qt; safe to unit-test.
     """
     import numpy as np
@@ -141,8 +151,22 @@ def simulate_oled(img, scale: float = 1.0, glow: float = 0.55):
     lum = np.asarray(img, dtype=np.float32) / 255.0
     h, w = lum.shape
     tint = np.asarray(OLED_TINT, dtype=np.float32) / 255.0
+    s = int(round(scale))
+
+    # Per-pixel brightness variation: one random dim per *logical* OLED pixel
+    # (block of s x s output px), so neighbouring lit pixels differ slightly like
+    # the real panel's dither shimmer.  Seeded -> stable across re-renders.
+    if jitter > 0.0 and s >= 2:
+        lh, lw = (h + s - 1) // s, (w + s - 1) // s
+        rng = np.random.default_rng(seed)
+        cell = 1.0 - rng.random((lh, lw), dtype=np.float32) * jitter    # (1-jitter, 1]
+        varmap = np.kron(cell, np.ones((s, s), np.float32))[:h, :w]
+    else:
+        varmap = 1.0
+
     # Slight gamma so mid-bright dither survives and the glyph body reads as lit.
-    rgb = np.power(lum, 0.85)[..., None] * tint[None, None, :]
+    lit = np.power(lum, 0.85) * varmap
+    rgb = lit[..., None] * tint[None, None, :]
 
     if glow > 0.0:
         radius = max(1.0, scale * 0.8)
@@ -151,15 +175,19 @@ def simulate_oled(img, scale: float = 1.0, glow: float = 0.55):
         halo = blur[..., None] * np.asarray(HALO_TINT, np.float32)[None, None, :] * glow
         rgb = 1.0 - (1.0 - rgb) * (1.0 - halo)          # screen blend
 
-    s = int(round(scale))
-    if s >= 3:                                          # visible pixel grid
-        keep_y = (np.arange(h) % s) != (s - 1)
-        keep_x = (np.arange(w) % s) != (s - 1)
-        seam = 0.70 + 0.30 * (keep_y[:, None] & keep_x[None, :]).astype(np.float32)
+    if s >= 3:                                          # staggered pixel grid
+        yy, xx = np.mgrid[0:h, 0:w]
+        xoff = ((yy // s) % 2) * (s // 2)               # brick-lay alternate rows
+        keep_x = ((xx + xoff) % s) != (s - 1)
+        keep_y = (yy % s) != (s - 1)
+        seam = 0.70 + 0.30 * (keep_x & keep_y).astype(np.float32)
         rgb *= seam[..., None]
 
     out = np.clip(rgb * 255.0, 0, 255).astype(np.uint8)
-    return Image.fromarray(out, "RGB")
+    im = Image.fromarray(out, "RGB")
+    if diffusion > 0.0 and s >= 2:                      # soften the pixel edges
+        im = im.filter(ImageFilter.GaussianBlur(max(0.4, scale * diffusion)))
+    return im
 
 
 def glyph_cell(font, cp: int, cell_w: int, cell_h: int, scale: int = 2,

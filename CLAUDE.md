@@ -187,8 +187,11 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `fontpack_render._px` rounds to pixels). A **"Simulate OLED"** checkbox previews the
   keycap as the physical per-key OLED shows it — `fontpack_render.simulate_oled`
   (Qt-free, NumPy/PIL) maps the mono keycap to **pale-cyan emissive pixels on true
-  black** with a **bluer bloom** (Gaussian, screen-blended) and a faint **pixel grid**
-  (once a logical pixel is ≥3 px), calibrated from photos of the real keycaps;
+  black** with a **bluer bloom** (Gaussian, screen-blended), **per-pixel brightness
+  jitter** (seeded, so the lit area shimmers instead of reading flat), a **staggered
+  ("zigzag") pixel grid** (seams brick-laid on alternate rows, once a logical pixel
+  is ≥3 px) and a light **diffusion** blur that lets pixels bleed together — all
+  calibrated from photos of the real keycaps;
   `preview_sheet(oled=)` runs **only the keycap** through it (the source-font reference
   + chrome stay natural for comparison) and returns RGB, so the preview pixmap path
   preserves colour (`_pil_to_pixmap`). **Reset** restores the render options to

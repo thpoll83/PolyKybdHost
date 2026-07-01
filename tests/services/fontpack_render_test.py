@@ -142,16 +142,67 @@ class SimulateOledTest(unittest.TestCase):
         self.assertEqual(rd.simulate_oled(kc, scale=1, glow=0.0).getpixel(near), (0, 0, 0))
         self.assertGreater(sum(rd.simulate_oled(kc, scale=3, glow=0.6).getpixel(near)), 0)
 
-    def test_pixel_grid_darkens_seams_at_zoom(self):
-        # At scale>=3 the seam column (every s-th pixel) is dimmer than the cell body.
+    def test_pixel_grid_textures_a_flat_fill(self):
+        # A fully-lit keycap at zoom must NOT read as one flat colour: the staggered
+        # grid + per-pixel jitter give it structure (multiple brightness levels).
+        import numpy as np
         from PIL import Image
         img = Image.new("L", (rd.OLED_W, rd.OLED_H), 255)   # fully lit
         s = 6
         up = img.resize((rd.OLED_W * s, rd.OLED_H * s), Image.NEAREST)
-        out = rd.simulate_oled(up, scale=s, glow=0.0)
-        body = sum(out.getpixel((10, 10)))                   # inside a cell
-        seam = sum(out.getpixel((s - 1, 10)))                # seam column
-        self.assertLess(seam, body)
+        out = np.asarray(rd.simulate_oled(up, scale=s, glow=0.0))
+        # Structured, not flat: real variance, and not saturated white everywhere.
+        self.assertGreater(out.std(), 2.0)
+        self.assertLess(out.mean(), 255.0)
+
+    def test_per_pixel_jitter_varies_brightness(self):
+        # Sample the interior centre of each logical OLED cell (away from the grid
+        # seams): with jitter those centres differ cell-to-cell; without, every
+        # cell interior is identical.
+        import numpy as np
+        from PIL import Image
+        img = Image.new("L", (rd.OLED_W, rd.OLED_H), 255)
+        s = 5
+        up = img.resize((rd.OLED_W * s, rd.OLED_H * s), Image.NEAREST)
+
+        def centres(arr):
+            # local (1,1) inside each s-cell — never a grid seam (seams sit at
+            # local x in {2, s-1} across the brick stagger, y at s-1).
+            ys = np.arange(rd.OLED_H) * s + 1
+            xs = np.arange(rd.OLED_W) * s + 1
+            return arr[np.ix_(ys, xs)][..., 2]             # blue in each cell
+
+        jit = centres(np.asarray(rd.simulate_oled(up, scale=s, glow=0.0,
+                                                  diffusion=0.0, jitter=0.16)))
+        flat = centres(np.asarray(rd.simulate_oled(up, scale=s, glow=0.0,
+                                                   diffusion=0.0, jitter=0.0)))
+        self.assertEqual(flat.std(), 0.0)                   # every cell identical
+        self.assertGreater(jit.std(), 0.0)                  # cells vary
+
+    def test_diffusion_softens_edges(self):
+        # Diffusion blurs the hard pixel edge, so a lit/black boundary becomes a
+        # gradient (more distinct intermediate values than the crisp version).
+        import numpy as np
+        from PIL import Image
+        img = Image.new("L", (rd.OLED_W, rd.OLED_H), 0)
+        for y in range(rd.OLED_H):
+            for x in range(0, rd.OLED_W // 2):
+                img.putpixel((x, y), 255)
+        s = 6
+        up = img.resize((rd.OLED_W * s, rd.OLED_H * s), Image.NEAREST)
+        soft = np.asarray(rd.simulate_oled(up, scale=s, glow=0.0, diffusion=0.4))[:, :, 2]
+        crisp = np.asarray(rd.simulate_oled(up, scale=s, glow=0.0, diffusion=0.0))[:, :, 2]
+        self.assertGreater(len(np.unique(soft)), len(np.unique(crisp)))
+
+    def test_jitter_is_deterministic(self):
+        # Same input + seed -> identical render (no flicker on re-render / zoom).
+        from PIL import Image
+        img = Image.new("L", (rd.OLED_W, rd.OLED_H), 200)
+        s = 4
+        up = img.resize((rd.OLED_W * s, rd.OLED_H * s), Image.NEAREST)
+        a = rd.simulate_oled(up, scale=s).tobytes()
+        b = rd.simulate_oled(up, scale=s).tobytes()
+        self.assertEqual(a, b)
 
 
 class PreviewSheetOledTest(unittest.TestCase):
