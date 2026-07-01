@@ -5,12 +5,16 @@ firmware fonts, faithful approximations: the Explorer folder pixmap (from the
 overlay icon PNG), the 🖧 networked-computers glyph (from the Noto source TTF),
 and the magnifier-with-sign composites. Produces two contact sheets:
 proposed_v2.png and alternatives_v2.png. Run from the PolyKybdHost repo root."""
-import os, sys
+import os, sys, tempfile
 sys.path.insert(0, os.path.dirname(__file__))
 from gfx_font import GfxGlyphRenderer, OLED_W, OLED_H, BUFFER_X
 from PIL import Image, ImageDraw, ImageFont
 
-FW = "/home/user/qmk_firmware/keyboards/polykybd"
+# qmk_firmware is a sibling of PolyKybdHost in the standard checkout layout;
+# override with $POLYKYBD_FW / write outputs under $POLYKYBD_OUT if elsewhere.
+FW = os.environ.get("POLYKYBD_FW", os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "../../qmk_firmware/keyboards/polykybd")))
+OUT = os.environ.get("POLYKYBD_OUT", tempfile.gettempdir())
 R = GfxGlyphRenderer(FW + "/base/fonts")
 SP = 0x20
 SYM2 = FW + "/fonts/Noto_Sans_Symbols_2/NotoSansSymbols2-Regular.ttf"
@@ -135,7 +139,7 @@ proposed = [
     ("Win+Plus",       "🔍 with + in lens",      cell_mag("+")),
     ("Win+Minus",      "🔍 with − in lens",      cell_mag("-")),
 ]
-sheet(proposed, "/tmp/claude-0/-home-user/b1c7a410-51de-5f9e-b52a-703d37ab2f61/scratchpad/proposed_v2.png",
+sheet(proposed, os.path.join(OUT, "proposed_v2.png"),
       title="PROPOSED revisions (Explorer/🖧/magnifier are approximations of glyphs to be generated)")
 
 # ---- alternatives for the open items ---------------------------------------
@@ -154,5 +158,5 @@ alts = [
     ("Win+B  B",    "🔊 speaker (tray)",       cell_glyphs([0x1F50A])[0]),
     ("Win+B  C",    "▲ up (corner)",          cell_glyphs([0x81])[0]),
 ]
-sheet(alts, "/tmp/claude-0/-home-user/b1c7a410-51de-5f9e-b52a-703d37ab2f61/scratchpad/alternatives_v2.png",
+sheet(alts, os.path.join(OUT, "alternatives_v2.png"),
       title="ALTERNATIVES — pick one each for Win+Home, Win+;, Win+Shift+S, Win+B")

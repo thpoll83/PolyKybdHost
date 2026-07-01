@@ -3,11 +3,14 @@
 draws, rendered faithfully from the generated GFX headers (exact glyphs, exact
 leading spaces, and the Win+R rounded frame). Grouped by modifier chord.
 Run from the PolyKybdHost repo root."""
-import os, sys
+import os, sys, tempfile
 sys.path.insert(0, os.path.dirname(__file__))
 from gfx_font import GfxGlyphRenderer, OLED_W, OLED_H, BUFFER_X
 from PIL import Image, ImageDraw, ImageFont
-R = GfxGlyphRenderer("/home/user/qmk_firmware/keyboards/polykybd/base/fonts")
+FONTDIR = os.environ.get("POLYKYBD_FONTS", os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "../../qmk_firmware/keyboards/polykybd/base/fonts")))
+OUT = os.environ.get("POLYKYBD_OUT", tempfile.gettempdir())
+R = GfxGlyphRenderer(FONTDIR)
 SP = 0x20
 
 # section title -> list of (label, action, [codepoints], leading-spaces, frame?)
@@ -104,7 +107,7 @@ for title, items in SECTIONS:
     rows = (len(items)+cols-1)//cols
     y += rows*rowh + pad
 
-out = "/tmp/claude-0/-home-user/b1c7a410-51de-5f9e-b52a-703d37ab2f61/scratchpad/win_hints_overview.png"
+out = os.path.join(OUT, "win_hints_overview.png")
 sheet.save(out)
 n = sum(len(it) for _, it in SECTIONS)
 print(f"wrote {out} {sheet.size}  ({n} hints)")

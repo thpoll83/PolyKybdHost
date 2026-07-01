@@ -14,10 +14,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__)))  # tools/
 from gfx_font import GfxGlyphRenderer, OLED_W, OLED_H, BUFFER_X  # noqa: E402
 from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
-FONTDIR = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                       "../../qmk_firmware/keyboards/polykybd/base/fonts"))
-if not os.path.isdir(FONTDIR):
-    FONTDIR = "/home/user/qmk_firmware/keyboards/polykybd/base/fonts"
+FONTDIR = os.environ.get("POLYKYBD_FONTS", os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "../../qmk_firmware/keyboards/polykybd/base/fonts")))
 R = GfxGlyphRenderer(FONTDIR)
 SP = 0x20
 
@@ -68,7 +66,9 @@ def render_cell(cps):
             best = (img, nsp, (mn, mx))
         if fallback is None or mx < fallback[2][1]:
             fallback = (img, nsp, (mn, mx))
-    return best or fallback
+    # Degenerate case: every candidate rendered empty (e.g. a hint that resolves
+    # only to gap glyphs) -> return a blank cell with a neutral box, don't crash.
+    return best or fallback or (Image.new("L", (OLED_W, OLED_H), 0), 0, (0, 0))
 
 
 def add_frame(img, box):

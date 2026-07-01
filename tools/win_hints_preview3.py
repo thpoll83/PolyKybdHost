@@ -3,11 +3,14 @@
 new resident glyphs were injected into gfx_icons.h), so this renders exactly what
 the firmware draws, including the Win+R frame at its new (3px-lower) position.
 Run from the PolyKybdHost repo root."""
-import os, sys
+import os, sys, tempfile
 sys.path.insert(0, os.path.dirname(__file__))
 from gfx_font import GfxGlyphRenderer, OLED_W, OLED_H, BUFFER_X
 from PIL import Image, ImageDraw, ImageFont
-R = GfxGlyphRenderer("/home/user/qmk_firmware/keyboards/polykybd/base/fonts")
+FONTDIR = os.environ.get("POLYKYBD_FONTS", os.path.abspath(os.path.join(
+    os.path.dirname(__file__), "../../qmk_firmware/keyboards/polykybd/base/fonts")))
+OUT = os.environ.get("POLYKYBD_OUT", tempfile.gettempdir())
+R = GfxGlyphRenderer(FONTDIR)
 SP = 0x20
 
 
@@ -62,5 +65,5 @@ for i, (label, action, im) in enumerate(items):
     dr.rectangle([ox, oy, ox+cw-1, oy+ch-1], outline=(80, 80, 80))
     dr.text((ox+2, oy+ch+1), label, fill=(255, 230, 120), font=f)
     dr.text((ox+2, oy+ch+16), action, fill=(170, 170, 170), font=sub)
-out = "/tmp/claude-0/-home-user/b1c7a410-51de-5f9e-b52a-703d37ab2f61/scratchpad/win_hints_v3.png"
+out = os.path.join(OUT, "win_hints_v3.png")
 sh.save(out); print("wrote", out, sh.size)
