@@ -34,6 +34,8 @@ from polyhost.device.hid_fw_up import (
     CMD_FW_UP_CHUNK,
     CMD_FW_UP_COMMIT,
     CMD_FW_UP_APPLY,
+    CMD_FW_UP_SIGNATURE,
+    FW_SIG_LEN,
     FW_UP_CHUNK_SIZE,
     FW_UP_VERSION_LEN,
     FW_UP_MAX_SIZE,
@@ -1075,6 +1077,97 @@ class TestApplyStagedFirmware(unittest.TestCase):
         hid = _make_hid([(True, _ack_reply(CMD_FW_UP_APPLY))], reconnect=True)
         ok, _ = apply_staged_firmware(hid)   # no callback — must not raise
         self.assertTrue(ok)
+
+
+# ---------------------------------------------------------------------------
+# flash_firmware — FW-2 image signature (CMD_FW_UP_SIGNATURE)
+# ---------------------------------------------------------------------------
+
+def _flash_hid_signed(fw: bytes):
+    """Mock HID ACKing BEGIN + N*CHUNK + 2*SIGNATURE + COMMIT."""
+    n = _chunks(fw)
+    return _make_hid(
+        [(True, _ack_reply(CMD_FW_UP_BEGIN))] +
+        [(True, _ack_reply(CMD_FW_UP_CHUNK))] * n +
+        [(True, _ack_reply(CMD_FW_UP_SIGNATURE))] * 2 +
+        [(True, _ack_reply(CMD_FW_UP_COMMIT))]
+    )
+
+
+def _sig_packets(hid):
+    """The CMD_FW_UP_SIGNATURE packets sent to a mock hid, in order."""
+    return [c.args[0] for c in hid.send_and_read.call_args_list
+            if len(c.args[0]) >= 2 and c.args[0][1] == CMD_FW_UP_SIGNATURE]
+
+
+class TestFlashFirmwareSignature(unittest.TestCase):
+
+    def test_signature_sent_in_two_parts_when_sidecar_present(self):
+        fw = _make_polykybd_fw()
+        path = _write_bin(fw)
+        sig = bytes(range(64))
+        with open(path + '.sig', 'wb') as f:
+            f.write(sig)
+        try:
+            hid = _flash_hid_signed(fw)
+            ok, _ = flash_firmware(hid, path)
+            self.assertTrue(ok)
+            pkts = _sig_packets(hid)
+            self.assertEqual(len(pkts), 2)               # one report per 32-byte half
+            self.assertEqual(pkts[0][2], 0)              # part 0
+            self.assertEqual(bytes(pkts[0][3:35]), sig[:32])
+            self.assertEqual(pkts[1][2], 1)              # part 1
+            self.assertEqual(bytes(pkts[1][3:35]), sig[32:])
+        finally:
+            os.remove(path + '.sig')
+            os.remove(path)
+
+    def test_no_signature_sent_without_sidecar(self):
+        fw = _make_polykybd_fw()
+        path = _write_bin(fw)
+        try:
+            hid = _flash_hid(fw)   # no SIGNATURE entries in the side-effect list
+            ok, _ = flash_firmware(hid, path)
+            self.assertTrue(ok)
+            self.assertEqual(_sig_packets(hid), [])
+        finally:
+            os.remove(path)
+
+    def test_wrong_length_sidecar_is_ignored(self):
+        fw = _make_polykybd_fw()
+        path = _write_bin(fw)
+        with open(path + '.sig', 'wb') as f:
+            f.write(b'\x01' * 10)   # not 64 bytes
+        try:
+            hid = _flash_hid(fw)   # no SIGNATURE entries — none should be sent
+            ok, _ = flash_firmware(hid, path)
+            self.assertTrue(ok)
+            self.assertEqual(_sig_packets(hid), [])
+        finally:
+            os.remove(path + '.sig')
+            os.remove(path)
+
+    def test_signature_nack_is_not_fatal(self):
+        # Older firmware NACKs the unknown signature command; the flash must still
+        # succeed (best-effort, warn-only).
+        fw = _make_polykybd_fw()
+        path = _write_bin(fw)
+        with open(path + '.sig', 'wb') as f:
+            f.write(bytes(64))
+        try:
+            n = _chunks(fw)
+            hid = _make_hid(
+                [(True, _ack_reply(CMD_FW_UP_BEGIN))] +
+                [(True, _ack_reply(CMD_FW_UP_CHUNK))] * n +
+                [(True, _nack_reply(CMD_FW_UP_SIGNATURE))] * 2 +
+                [(True, _ack_reply(CMD_FW_UP_COMMIT))]
+            )
+            ok, _ = flash_firmware(hid, path)
+            self.assertTrue(ok)
+            self.assertEqual(len(_sig_packets(hid)), 2)
+        finally:
+            os.remove(path + '.sig')
+            os.remove(path)
 
 
 if __name__ == '__main__':
