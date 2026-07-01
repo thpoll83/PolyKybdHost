@@ -209,6 +209,17 @@ class SimulateOledTest(unittest.TestCase):
         bright = np.asarray(rd.simulate_oled(up, scale=s, brightness=1.5)).astype(float)
         self.assertGreater(bright.sum(), base.sum())
 
+    def test_diffusion_varies_across_the_keycap(self):
+        # The blur amount is modulated by a seeded low-frequency mask, so different
+        # seeds give a different soft/sharp distribution (non-uniform diffusion).
+        from PIL import Image
+        img = Image.new("L", (rd.OLED_W, rd.OLED_H), 255)   # uniform fill
+        s = 8
+        up = img.resize((rd.OLED_W * s, rd.OLED_H * s), Image.NEAREST)
+        a = rd.simulate_oled(up, scale=s, seed=1).tobytes()
+        b = rd.simulate_oled(up, scale=s, seed=2).tobytes()
+        self.assertNotEqual(a, b)
+
     def test_jitter_is_deterministic(self):
         # Same input + seed -> identical render (no flicker on re-render / zoom).
         from PIL import Image

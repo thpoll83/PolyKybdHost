@@ -192,9 +192,22 @@ def simulate_oled(img, scale: float = 1.0, glow: float = 0.55,
     out = np.clip(rgb * 255.0, 0, 255).astype(np.uint8)
     im = Image.fromarray(out, "RGB")
     # The clear keycap cover over the panel diffuses the light — soften the pixel
-    # edges so cells bleed together (this bleed is the keycap, not the OLED).
+    # edges so cells bleed together (this bleed is the keycap, not the OLED).  The
+    # cover isn't perfectly even, so the blur *amount* varies across the keycap: mix
+    # a lighter and a heavier blur through a smooth, seeded low-frequency mask, so
+    # some patches read sharper and others softer instead of one uniform smear.
     if diffusion > 0.0 and s >= 2:
-        im = im.filter(ImageFilter.GaussianBlur(max(0.4, scale * diffusion)))
+        base_r = max(0.4, scale * diffusion)
+        lo = np.asarray(im.filter(ImageFilter.GaussianBlur(base_r * 0.6)), np.float32)
+        hi = np.asarray(im.filter(ImageFilter.GaussianBlur(base_r * 1.7)), np.float32)
+        rng = np.random.default_rng(seed + 7)
+        ch, cw = max(2, h // (s * 3)), max(2, w // (s * 3))   # coarse noise cells
+        noise = (rng.random((ch, cw), dtype=np.float32) * 255.0).astype(np.uint8)
+        mask = Image.fromarray(noise, "L").resize((w, h), Image.BILINEAR)
+        mask = mask.filter(ImageFilter.GaussianBlur(max(1.0, s * 1.5)))   # smooth blobs
+        m = (np.asarray(mask, np.float32) / 255.0)[..., None]
+        blended = lo * (1.0 - m) + hi * m
+        im = Image.fromarray(np.clip(blended, 0, 255).astype(np.uint8), "RGB")
     # Brightness gain, applied AFTER the diffusion blur so it lifts the strokes the
     # blur dimmed (thin strokes lose the most peak to the spread) — the keycap style
     # passes a higher value to compensate for exactly that.

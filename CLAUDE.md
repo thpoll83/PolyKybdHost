@@ -194,7 +194,9 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   **OLED** = the raw pixels (crisp square grid, jitter/diffusion off) and **Keycap** =
   as seen through the clear keycap cover (adds **per-pixel brightness jitter** — seeded
   so the lit area shimmers without flicker — a **staggered grid** and a **diffusion**
-  blur that lets pixels bleed, modelling the cover's light-guide, not the panel). A
+  blur that lets pixels bleed, modelling the cover's light-guide, not the panel; the
+  blur amount is **spatially varied** by a smooth seeded mask — a lighter/heavier blur
+  mixed per region so it isn't one uniform smear). A
   post-blur **brightness** gain lifts both styles (higher for Keycap, since the
   diffusion spreads/dims thin strokes);
   `preview_sheet(oled=)` runs **only the keycap** through it (the source-font reference
