@@ -88,6 +88,18 @@ class FontPackInspectorDialogTest(unittest.TestCase):
         self.assertEqual(tab._built_key[0], "keycap")
         self.assertEqual(tab.cell_count(), n_cells)       # same glyphs, re-rendered
 
+    def test_oled_view_modes_present_and_render(self):
+        dlg = fid.FontPackInspectorDialog(sources=[("tiny", _tiny_pack())])
+        self.addCleanup(dlg.deleteLater)
+        tab = dlg._tabs.currentWidget()
+        modes = [m for _t, m in dlg._modes]
+        self.assertIn("oled", modes)
+        self.assertIn("keycap_cover", modes)
+        for m in ("oled", "keycap_cover"):
+            dlg._mode_combo.setCurrentIndex(modes.index(m))
+            self.assertEqual(tab._built_key[0], m)        # re-rendered without error
+            self.assertGreater(tab.cell_count(), 0)
+
     def test_hide_empty_reduces_cells(self):
         dlg = fid.FontPackInspectorDialog(sources=[("tiny", _tiny_pack())])
         self.addCleanup(dlg.deleteLater)

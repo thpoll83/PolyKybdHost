@@ -263,6 +263,60 @@ class PreviewSheetOledTest(unittest.TestCase):
         self.assertTrue((oled != keycap).any())
 
 
+class BaseYadvForTest(unittest.TestCase):
+    def _font(self, yadv):
+        return _font(0xE000, 0xE000, yadv,
+                     [dict(bitmapOffset=0, width=1, height=1, xAdvance=1, xOffset=0, yOffset=0)],
+                     [0x80])
+
+    def test_flag_band_uses_own_yadvance(self):
+        f = self._font(54)
+        # A flag (PUA 0xE000 band) is drawn via a single-font array (adjustment 0),
+        # so its own yAdvance is the reference — not IconsFont's 40.
+        self.assertEqual(rd.base_yadv_for(f, 0xE000), 54)
+        self.assertEqual(rd.base_yadv_for(f, 0xE0FF), 54)
+
+    def test_non_flag_keeps_default(self):
+        f = self._font(48)
+        self.assertEqual(rd.base_yadv_for(f, 0x1F600), rd.BASE_YADV)   # emoji: keep shift
+        self.assertEqual(rd.base_yadv_for(f, 0xE100), rd.BASE_YADV)    # matra band: default
+
+    def test_flag_bottom_not_clipped(self):
+        # A tall flag (h > 40) placed with base_yadv=40 clips its bottom off the 40px
+        # window; with the flag's own yAdvance it sits so the bottom is visible.
+        import numpy as np
+        f = _font(0xE000, 0xE000, 54,
+                  [dict(bitmapOffset=0, width=8, height=54, xAdvance=8, xOffset=0, yOffset=-42)],
+                  [0xFF] * 54)   # every row lit
+        shifted = np.asarray(rd.keycap_image(f, 0xE000, base_yadv=40))
+        fixed = np.asarray(rd.keycap_image(f, 0xE000, base_yadv=rd.base_yadv_for(f, 0xE000)))
+        # the fixed placement has a lit last visible row further up (bottom not jammed
+        # against / clipped at the window edge) — its lit rows end before row 39.
+        shifted_rows = [y for y in range(40) if shifted[y].max() > 0]
+        fixed_rows = [y for y in range(40) if fixed[y].max() > 0]
+        self.assertEqual(shifted_rows[-1], 39)          # buggy: runs to the very edge
+        self.assertLess(fixed_rows[-1], 39)             # fixed: bottom sits inside
+
+
+class GlyphCellOledModeTest(unittest.TestCase):
+    def _font(self):
+        return _font(0x41, 0x41, rd.BASE_YADV,
+                     [dict(bitmapOffset=0, width=8, height=8, xAdvance=10, xOffset=0, yOffset=-4)],
+                     [0xFF] * 8)
+
+    def test_oled_modes_return_rgb(self):
+        f = self._font()
+        for mode in ("oled", "keycap_cover"):
+            img = rd.glyph_cell(f, 0x41, 72 * 3, 40 * 3, scale=3, mode=mode)
+            self.assertEqual(img.mode, "RGB", mode)
+
+    def test_plain_modes_return_l(self):
+        f = self._font()
+        for mode in ("glyph", "keycap"):
+            img = rd.glyph_cell(f, 0x41, 72 * 3, 40 * 3, scale=3, mode=mode)
+            self.assertEqual(img.mode, "L", mode)
+
+
 class GlyphCellTest(unittest.TestCase):
     def _font(self):
         # 0x41 present (2x2 lit), 0x42 empty (w=0)

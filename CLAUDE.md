@@ -126,7 +126,13 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   carries no bundle name** — the PlyF header has only abi/`content_version`/font_count
   + per-font global ALL_FONTS index; the bundle id lives in `bundles.json`/the
   filename, so an opened tab is named after the file (`decode_pack` synthesises font
-  names as `<filename_stem>#<gidx>`). The grid shows **one cell per codepoint** (a
+  names as `<filename_stem>#<gidx>`). The **View** selector offers four modes
+  (`_BundleTab._mode`): **Glyph** (native size), **Keycap** (plain 72×40 white-on-
+  black), and — matching the extend dialog — **Keycap OLED** (raw pixels) and
+  **Keycap through cover** (diffused), both routed through `fontpack_render.glyph_cell`
+  → `simulate_oled` (which returns an **RGB** cell; `_BundleTab._pm` keeps RGB via
+  `_pil_to_pixmap` and only applies the semantic tints below to the plain 'L' modes).
+  The grid shows **one cell per codepoint** (a
   deduped, continuous range) honouring **front-to-back precedence** (the firmware
   draws each cp from the lowest-global-index font with a glyph, `_BundleTab._stacks`):
   each cell renders the **winner** — **white** if this bundle draws it, **cyan** if
@@ -201,7 +207,14 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   diffusion spreads/dims thin strokes);
   `preview_sheet(oled=)` runs **only the keycap** through it (the source-font reference
   + chrome stay natural for comparison) and returns RGB, so the preview pixmap path
-  preserves colour (`_pil_to_pixmap`). **Reset** restores the render options to
+  preserves colour (`_pil_to_pixmap`). **Flag keycaps** (the PUA 0xE000 band) are
+  drawn on hardware through a **single-font array** (baseline adjustment 0), so the
+  keycap render uses the **flag's own yAdvance** as the baseline reference
+  (`fontpack_render.base_yadv_for`), NOT the `(yAdvance − IconsFont 40)` shift the
+  in-pack g_all_fonts glyphs get — without this a tall flag (yAdvance 54) was shifted
+  +14 px down and its bottom rows clipped off the 40 px keycap (the "flag preview cut
+  off at the bottom" bug). Emoji (yAdvance 48, drawn via g_all_fonts) keep the shift,
+  so the fix is gated to the flag band only. **Reset** restores the render options to
   the values the dialog opened with (`_snapshot` taken after prefill). **Auto update**
   (default on) re-renders on any control change (debounced). Layout niceties: each
   float control (gamma / contrast / exposure / sharpen / saturation) is a **fixed-width

@@ -34,6 +34,23 @@ def _px(v: float, scale: float) -> int:
     return max(1, int(round(v * scale)))
 
 
+# The language-layer flags occupy this PUA band (FLAG_CP_BASE 0xE000 + LANG index).
+# The firmware draws them through a *single-font array*, so their baseline adjustment
+# is 0 (fonts[0] is the flag's own font) — NOT the (yAdvance - IconsFont) shift the
+# in-pack g_all_fonts glyphs get.  (Matras/combining marks start at 0xE100 and ARE
+# drawn via g_all_fonts, so they keep the normal shift.)
+FLAG_CP_FIRST, FLAG_CP_LAST = 0xE000, 0xE0FF
+
+
+def base_yadv_for(font, cp: int, default: int = BASE_YADV) -> int:
+    """The baseline reference `keycap_image` should use for `cp`, matching how the
+    firmware actually draws it: a flag's own yAdvance (single-font array, adjustment
+    0) for the flag band, else `default` (IconsFont, the g_all_fonts reference).
+    Without this a tall flag (yAdvance 54) is shifted +14 px down and its bottom
+    rows clip off the 40 px keycap — the "flag preview cut off at the bottom" bug."""
+    return font.yAdvance if FLAG_CP_FIRST <= cp <= FLAG_CP_LAST else default
+
+
 def _glyph_for(font, cp: int):
     """Bounds-checked glyph lookup — a cp below font.first would otherwise index
     negatively and silently render the wrong glyph."""
@@ -223,9 +240,14 @@ def glyph_cell(font, cp: int, cell_w: int, cell_h: int, scale: int = 2,
     centred in a `cell_w x cell_h` box plus its codepoint label.  An *empty* entry
     (width 0 — a codepoint with no glyph in the source font, common in the bundles'
     contiguous ranges) is drawn as a dim dashed placeholder so it's clearly
-    distinguishable from a black glyph."""
+    distinguishable from a black glyph.
+
+    ``mode``: ``"glyph"`` (native glyph) · ``"keycap"`` (plain 72x40 keycap) ·
+    ``"oled"`` / ``"keycap_cover"`` (the 72x40 keycap run through `simulate_oled` —
+    raw pixels vs through the clear cover); the OLED modes return an **RGB** cell."""
     g = _glyph_for(font, cp)
     lab_h = 11 if label else 0
+    oled = mode in ("oled", "keycap_cover")
     img = Image.new("L", (cell_w, cell_h + lab_h), 0)
     draw = ImageDraw.Draw(img)
     fnt = ImageFont.load_default()
@@ -242,8 +264,26 @@ def glyph_cell(font, cp: int, cell_w: int, cell_h: int, scale: int = 2,
         if label:
             draw.text((2, cell_h + 1), f"{cp:04X}", fill=80, font=fnt)
         return img
-    cimg = (keycap_image(font, cp, base_yadv=base_yadv, scale=scale)
-            if mode == "keycap" else glyph_to_image(font, cp, scale=scale))
+    if mode == "keycap" or oled:
+        cimg = keycap_image(font, cp, base_yadv=base_yadv_for(font, cp, base_yadv),
+                            scale=scale)
+    else:
+        cimg = glyph_to_image(font, cp, scale=scale)
+    if oled:
+        # Post-process the keycap the way the physical OLED shows it, then composite
+        # the RGB result into an RGB cell (label stays a neutral grey).
+        if mode == "oled":                              # raw crisp pixels
+            cimg = simulate_oled(cimg, scale=scale, jitter=0.0, diffusion=0.0,
+                                 stagger=False, brightness=1.18)
+        else:                                           # through the clear cover
+            cimg = simulate_oled(cimg, scale=scale, jitter=0.22, brightness=1.25)
+        out = Image.new("RGB", (cell_w, cell_h + lab_h), (0, 0, 0))
+        out.paste(cimg, (max(0, (cell_w - cimg.width) // 2),
+                         max(0, (cell_h - cimg.height) // 2)))
+        if label:
+            ImageDraw.Draw(out).text((2, cell_h + 1), f"{cp:04X}", fill=(130, 130, 130),
+                                     font=fnt)
+        return out
     img.paste(cimg, (max(0, (cell_w - cimg.width) // 2),
                      max(0, (cell_h - cimg.height) // 2)))
     if label:
@@ -433,7 +473,8 @@ def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
         r, c = divmod(i, cols)
         x0 = pad + c * cw
         y0 = head_h + r * ch
-        kc = keycap_image(font, cp, base_yadv=base_yadv, scale=scale, fg=255, bg=0)
+        kc = keycap_image(font, cp, base_yadv=base_yadv_for(font, cp, base_yadv),
+                          scale=scale, fg=255, bg=0)
         if style == "oled":                             # raw crisp pixels, no cover
             kc = simulate_oled(kc, scale=scale, jitter=0.0, diffusion=0.0,
                                stagger=False, brightness=1.18)

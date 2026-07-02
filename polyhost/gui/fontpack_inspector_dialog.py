@@ -381,8 +381,19 @@ class _BundleTab(QWidget):
         font = shadow if (shadow is not None and self._in_stack_corner(idx, pos)) else winner
         self.edit_requested.emit(font, idx.data(_CP_ROLE))
 
+    @staticmethod
+    def _pm(img, tint=None):
+        """Cell image -> QPixmap.  An OLED-simulated cell is already RGB (keep its
+        colour); otherwise apply the semantic `tint` (borrowed/shadow/peek) or the
+        plain grayscale path."""
+        if img.mode == "RGB":                       # OLED / keycap-cover mode
+            return _pil_to_pixmap(img)
+        if tint is not None:
+            return _pil_l_to_tinted_pixmap(img, tint)
+        return _pil_l_to_pixmap(img)
+
     def _cell_dims(self, scale: int):
-        if self._mode == "keycap":
+        if self._mode in ("keycap", "oled", "keycap_cover"):
             return fprd.OLED_W * scale, fprd.OLED_H * scale
         w = h = 1
         for f in self._pack.fonts:
@@ -525,7 +536,7 @@ class _BundleTab(QWidget):
                 continue
             if pf is not None:
                 img = fprd.glyph_cell(pf, cp, cw, ch, scale=scale, mode=self._mode)
-                return _pil_l_to_tinted_pixmap(img, PEEK_RGB), sf
+                return self._pm(img, PEEK_RGB), sf
         return None
 
     def _rebuild(self, *_):
@@ -575,14 +586,14 @@ class _BundleTab(QWidget):
             if winner is not None:
                 img = fprd.glyph_cell(winner, cp, cw, ch, scale=scale, mode=self._mode)
                 cross = winner.global_index not in this_ids
-                pm = _pil_l_to_tinted_pixmap(img, COVERED_RGB) if cross else _pil_l_to_pixmap(img)
+                pm = self._pm(img, COVERED_RGB if cross else None)
                 prim = winner
                 tip = (f"U+{cp:04X} — drawn by {self._winner_desc(winner)}"
                        + ("  (another bundle)" if cross else ""))
                 if shadow is not None:
                     n = len(stack) - 1
                     pm = _stack_pixmap(pm, depth=n)
-                    frames = [_stack_pixmap(_pil_l_to_tinted_pixmap(
+                    frames = [_stack_pixmap(self._pm(
                                   fprd.glyph_cell(s, cp, cw, ch, scale=scale, mode=self._mode),
                                   SHADOW_RGB), depth=n)
                               for s in stack[1:]]
@@ -594,7 +605,7 @@ class _BundleTab(QWidget):
             else:
                 prim = next((f for f in self._pack.fonts if f.covers(cp)), self._pack.fonts[0])
                 img = fprd.glyph_cell(prim, cp, cw, ch, scale=scale, mode=self._mode)
-                pm = _pil_l_to_pixmap(img)
+                pm = self._pm(img)
                 tip = f"U+{cp:04X}  (empty — no glyph)" + \
                       ("  (edited — unsaved)" if modified else "")
             if modified:
@@ -666,7 +677,9 @@ class FontPackInspectorDialog(QDialog):
         self._sources = sources         # keep the exact inspected bundles for Extend
 
         self._modes = [("Glyph grid (native size)", "glyph"),
-                       ("Keycap preview (72×40)", "keycap")]
+                       ("Keycap preview (72×40)", "keycap"),
+                       ("Keycap OLED (raw pixels)", "oled"),
+                       ("Keycap through cover", "keycap_cover")]
         row = QHBoxLayout()
         row.addWidget(QLabel("View"))
         self._mode_combo = QComboBox()
