@@ -54,6 +54,13 @@ class TestGlyphScriptCommand(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("protocol too old", msg)
 
+    def test_get_glyph_script_too_old_firmware(self):
+        keeb, _ = make_keeb(replies=[])
+        keeb.protocol_version = 8
+        ok, value = keeb.get_glyph_script()
+        self.assertFalse(ok)
+        self.assertEqual(value, 0)
+
     def test_get_glyph_script_nack(self):
         keeb, _ = make_keeb(replies=[nack(30)])
         keeb.protocol_version = 9
