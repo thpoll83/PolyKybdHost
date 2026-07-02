@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import (
     QStyle,
     QVBoxLayout, )
 
-from polyhost.device.command_ids import IdleStyle
+from polyhost.device.command_ids import IdleStyle, GlyphScript
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.log_viewer import LogViewerDialog
@@ -398,6 +398,26 @@ class PolyHost(QApplication):
             self.idle_style_menu.addAction(act)
         # noinspection PyUnresolvedReferences
         self.idle_style_menu.aboutToShow.connect(self.refresh_idle_style_menu)
+
+        # Glyph-script override (firmware v9+). Same device-coupled pattern as the
+        # idle style: drives the device through core.get/set_glyph_script, works in
+        # both in-process and client mode, greyed with the rest while disconnected.
+        # "Standard" restores the normal language legends; other entries override the
+        # letter/digit legends with an alternative script (from the fantasy bundle).
+        self.glyph_script_menu = self.menu.addMenu(get_icon("language.svg"), "Glyph Script")
+        glyph_group = QActionGroup(self)
+        glyph_group.setExclusive(True)
+        self.glyph_standard_action = QAction("Standard (normal legends)", parent=self, checkable=True)
+        self.glyph_standard_action.setData(GlyphScript.STANDARD.value)
+        self.glyph_tengwar_action = QAction("Tengwar (fantasy)", parent=self, checkable=True)
+        self.glyph_tengwar_action.setData(GlyphScript.TENGWAR.value)
+        for act in (self.glyph_standard_action, self.glyph_tengwar_action):
+            glyph_group.addAction(act)
+            # noinspection PyUnresolvedReferences
+            act.triggered.connect(self.change_glyph_script)
+            self.glyph_script_menu.addAction(act)
+        # noinspection PyUnresolvedReferences
+        self.glyph_script_menu.aboutToShow.connect(self.refresh_glyph_script_menu)
 
         self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
@@ -989,7 +1009,10 @@ class PolyHost(QApplication):
         # Client mode edits the DAEMON's settings over RPC (the local file may
         # be shared when co-located, but the daemon holds the live copy).
         current = self.core.settings_list() if self.client_mode else self.poly_settings.get_all()
-        dlg.setup(current, self.debug_mode)
+        # Offer the glyph-script reset button when a device is present (works over
+        # RPC in client mode too); it force-restores the normal language legends.
+        reset_cb = self.reset_glyph_script_to_standard if self.device_present else None
+        dlg.setup(current, self.debug_mode, reset_glyph_script=reset_cb)
         if dlg.exec_() == QDialog.Accepted:
             updated = dlg.get_updated_settings()
             if self.client_mode:
@@ -1158,6 +1181,33 @@ class PolyHost(QApplication):
             # checkmark to the device's actual style so the menu doesn't lie.
             self.report_device_result("Error", f"Could not set idle style: {msg}")
             self.refresh_idle_style_menu()
+
+    def refresh_glyph_script_menu(self):
+        # Read the active glyph script from the device and tick the matching entry;
+        # on failure (old firmware / disconnected) leave all unchecked.
+        ok, value = self.core.get_glyph_script()
+        self.glyph_standard_action.setChecked(bool(ok) and value == GlyphScript.STANDARD.value)
+        self.glyph_tengwar_action.setChecked(bool(ok) and value == GlyphScript.TENGWAR.value)
+
+    def change_glyph_script(self):
+        value = self.sender().data()
+        ok, msg = self.core.set_glyph_script(value)
+        if ok:
+            self.log.info("Glyph script set to %s.", GlyphScript(value).name.lower())
+        else:
+            # Firmware too old (needs v9+) or device busy — log and re-sync the
+            # checkmark to the device's actual script so the menu doesn't lie.
+            self.report_device_result("Error", f"Could not set glyph script: {msg}")
+            self.refresh_glyph_script_menu()
+
+    def reset_glyph_script_to_standard(self):
+        """Force the glyph script back to Standard (used by the settings-dialog
+        'Reset script to Standard' button)."""
+        ok, msg = self.core.set_glyph_script(GlyphScript.STANDARD.value)
+        if ok:
+            self.log.info("Glyph script reset to standard.")
+        else:
+            self.report_device_result("Error", f"Could not reset glyph script: {msg}")
 
     def read_overlay_mapping_file(self, file):
         if not file:

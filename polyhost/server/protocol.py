@@ -57,6 +57,8 @@ M_BRIGHTNESS_SET = "brightness.set"    # {"value": 0..50} -> (ok, payload)
 M_IDLE_SET = "idle.set"                # {"idle": bool} -> (ok, payload)
 M_IDLE_STYLE_SET = "idle.style.set"    # {"value": 0|1} -> (ok, payload)  (0=pulse, 1=jitter)
 M_IDLE_STYLE_GET = "idle.style.get"    # {} -> (ok, value)
+M_GLYPH_SCRIPT_SET = "glyph.script.set"  # {"value": 0|1|...} -> (ok, payload)  (0=standard, 1=tengwar)
+M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
 M_OVERLAY_SEND = "overlay.send"        # {"files": [name, ...]} -> {"queued": bool}
 M_OVERLAY_ENABLE = "overlay.enable"    # {} -> (ok, payload)
 M_OVERLAY_DISABLE = "overlay.disable"  # {} -> (ok, payload)
