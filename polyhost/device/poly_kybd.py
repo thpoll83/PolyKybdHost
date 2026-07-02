@@ -12,7 +12,7 @@ from polyhost.input.unicode_input import InputMethod
 from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import pack_dict_10_bit
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
-from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType
+from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType, GlyphScript
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block
 from polyhost.device.im_converter import ImageConverter
@@ -31,6 +31,9 @@ IDLE_STYLE_MIN_PROTOCOL = 4
 
 # Minimum firmware PROTOCOL_VERSION for the active host-OS get/set command (cmd 29).
 OS_MIN_PROTOCOL = 7
+
+# Minimum firmware PROTOCOL_VERSION for the glyph-script get/set command (cmd 30).
+GLYPH_SCRIPT_MIN_PROTOCOL = 9
 
 from polyhost.util.dict_util import split_dict
 
@@ -334,6 +337,41 @@ class PolyKybd:
         try:
             result, reply = self.hid.send_and_read_validate(
                 compose_cmd(Cmd.IDLE_STYLE, 0xFF), 100, expect(Cmd.IDLE_STYLE))
+            if result and len(reply) > 3 and reply[2:3] == b'.':
+                return True, reply[3]
+        except Exception:
+            pass
+        return False, 0
+
+    def _glyph_script_supported(self) -> bool:
+        if self.protocol_version is None:
+            self.query_version_info()
+        return (self.protocol_version is not None
+                and self.protocol_version >= GLYPH_SCRIPT_MIN_PROTOCOL)
+
+    def set_glyph_script(self, script: GlyphScript | int) -> tuple[bool, Any]:
+        """Select the glyph-script override (cmd 30, protocol v9+).
+
+        STANDARD (0) restores the normal language legends; other values override the
+        letter/digit legends with an alternative script (e.g. Tengwar). The firmware
+        persists it to EEPROM (flushed at the next suspend/store), so it survives
+        reboots; the glyphs come from the "fantasy" font-pack bundle."""
+        value = script.value if isinstance(script, GlyphScript) else int(script)
+        if not self._glyph_script_supported():
+            return False, (
+                f"Firmware protocol too old for glyph-script control "
+                f"(need v{GLYPH_SCRIPT_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        self.log.info("Setting glyph script to %d...", value)
+        return self.hid.send_and_read_validate(
+            compose_cmd(Cmd.GLYPH_SCRIPT, value), 100, expect(Cmd.GLYPH_SCRIPT))
+
+    def get_glyph_script(self) -> tuple[bool, int]:
+        """Read the current glyph script (raw enum value, 0=standard, 1=tengwar)."""
+        if not self._glyph_script_supported():
+            return False, 0
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.GLYPH_SCRIPT, 0xFF), 100, expect(Cmd.GLYPH_SCRIPT))
             if result and len(reply) > 3 and reply[2:3] == b'.':
                 return True, reply[3]
         except Exception:
