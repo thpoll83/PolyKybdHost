@@ -29,6 +29,23 @@ from PyQt5.QtWidgets import (
 
 from polyhost.device.command_ids import IdleStyle, GlyphScript
 from polyhost.gui.get_icon import get_icon
+
+# Tray labels for the Glyph Script submenu. Generic names (no franchise
+# branding — trademark caveat on the fictional scripts); the fonts themselves
+# are OK to embed. Keys cover every GlyphScript so the menu builds from the enum.
+GLYPH_SCRIPT_LABELS = {
+    GlyphScript.STANDARD: "Standard (normal legends)",
+    GlyphScript.TENGWAR:  "Tengwar (fantasy)",
+    GlyphScript.RUNES:    "Elder Futhark runes",
+    GlyphScript.AUREBESH: "Aurebesh (sci-fi)",
+    GlyphScript.SGA:      "Standard Galactic",
+    GlyphScript.CIRTH:    "Cirth / Angerthas",
+    GlyphScript.IBMVGA:   "IBM VGA / CP437",
+    GlyphScript.C64:      "Commodore 64",
+    GlyphScript.AMIGA:    "Amiga Topaz",
+    GlyphScript.APL:      "APL",
+    GlyphScript.BRAILLE:  "Braille",
+}
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
@@ -407,15 +424,19 @@ class PolyHost(QApplication):
         self.glyph_script_menu = self.menu.addMenu(get_icon("language.svg"), "Glyph Script")
         glyph_group = QActionGroup(self)
         glyph_group.setExclusive(True)
-        self.glyph_standard_action = QAction("Standard (normal legends)", parent=self, checkable=True)
-        self.glyph_standard_action.setData(GlyphScript.STANDARD.value)
-        self.glyph_tengwar_action = QAction("Tengwar (fantasy)", parent=self, checkable=True)
-        self.glyph_tengwar_action.setData(GlyphScript.TENGWAR.value)
-        for act in (self.glyph_standard_action, self.glyph_tengwar_action):
+        # One radio entry per GlyphScript (labels in GLYPH_SCRIPT_LABELS). Built
+        # from the enum so new scripts appear automatically.
+        self.glyph_actions = {}
+        for script in GlyphScript:
+            act = QAction(GLYPH_SCRIPT_LABELS[script], parent=self, checkable=True)
+            act.setData(script.value)
             glyph_group.addAction(act)
             # noinspection PyUnresolvedReferences
             act.triggered.connect(self.change_glyph_script)
             self.glyph_script_menu.addAction(act)
+            self.glyph_actions[script.value] = act
+            if script is GlyphScript.STANDARD:
+                self.glyph_script_menu.addSeparator()
         # noinspection PyUnresolvedReferences
         self.glyph_script_menu.aboutToShow.connect(self.refresh_glyph_script_menu)
 
@@ -1186,8 +1207,8 @@ class PolyHost(QApplication):
         # Read the active glyph script from the device and tick the matching entry;
         # on failure (old firmware / disconnected) leave all unchecked.
         ok, value = self.core.get_glyph_script()
-        self.glyph_standard_action.setChecked(bool(ok) and value == GlyphScript.STANDARD.value)
-        self.glyph_tengwar_action.setChecked(bool(ok) and value == GlyphScript.TENGWAR.value)
+        for sval, act in self.glyph_actions.items():
+            act.setChecked(bool(ok) and value == sval)
 
     def change_glyph_script(self):
         value = self.sender().data()

@@ -17,6 +17,18 @@ class TestGlyphScriptEncoding(unittest.TestCase):
         self.assertEqual(GlyphScript.STANDARD.value, 0)
         self.assertEqual(GlyphScript.TENGWAR.value, 1)
 
+    def test_glyph_script_expansion_values(self):
+        # Must stay byte-identical to the firmware enum poly_glyph_script (v10).
+        self.assertEqual(GlyphScript.RUNES.value, 2)
+        self.assertEqual(GlyphScript.AUREBESH.value, 3)
+        self.assertEqual(GlyphScript.SGA.value, 4)
+        self.assertEqual(GlyphScript.CIRTH.value, 5)
+        self.assertEqual(GlyphScript.IBMVGA.value, 6)
+        self.assertEqual(GlyphScript.C64.value, 7)
+        self.assertEqual(GlyphScript.AMIGA.value, 8)
+        self.assertEqual(GlyphScript.APL.value, 9)
+        self.assertEqual(GlyphScript.BRAILLE.value, 10)
+
     def test_compose_set_tengwar(self):
         result = compose_cmd(Cmd.GLYPH_SCRIPT, GlyphScript.TENGWAR.value)
         self.assertEqual(result, bytearray([POLY, 30, 1]))
