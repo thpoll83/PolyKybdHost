@@ -19,6 +19,7 @@ import argparse
 import json
 import sys
 
+from polyhost.device.command_ids import GlyphScript  # stdlib-only (Enum), no Qt
 from polyhost.server import protocol
 
 
@@ -173,8 +174,9 @@ def _cmd_idle_style(client, args):
     return 0
 
 
-_GLYPH_SCRIPT_NAMES = {0: "standard", 1: "tengwar"}
-_GLYPH_SCRIPT_VALUES = {v: k for k, v in _GLYPH_SCRIPT_NAMES.items()}
+# Derived from the shared GlyphScript enum so new scripts appear automatically.
+_GLYPH_SCRIPT_VALUES = {s.name.lower(): s.value for s in GlyphScript}
+_GLYPH_SCRIPT_NAMES = {v: k for k, v in _GLYPH_SCRIPT_VALUES.items()}
 
 
 def _cmd_glyph_script(client, args):
@@ -491,9 +493,9 @@ def build_parser():
     p_glyph_script = sub.add_parser(
         "glyph-script", help="get or set the glyph-script override (firmware v9+)")
     p_glyph_script.add_argument(
-        "script", nargs="?", choices=["standard", "tengwar"], default=None,
+        "script", nargs="?", choices=sorted(_GLYPH_SCRIPT_VALUES), default=None,
         help="omit to print the current script; 'standard' = normal legends, "
-             "'tengwar' = fantasy override (needs the fantasy font-pack bundle)")
+             "any other = fantasy/retro override (needs the fantasy font-pack bundle)")
     p_glyph_script.set_defaults(func=_cmd_glyph_script)
 
     p_ov = sub.add_parser("overlay", help="overlay control")
