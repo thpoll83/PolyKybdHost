@@ -277,16 +277,29 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   the fix for a proxy-truncated NotoColorEmoji that FreeType then refused to open.
   `is_downloaded()` re-validates, so an already-cached corrupt file reads as missing
   and is re-fetched (overwritten); `download_font(force=True)` always re-downloads.
-- **Glyph-script override (protocol 9+)**: HID cmd 30 (`GLYPH_SCRIPT`) selects a
-  glyph-script *override* of the keycap language legends — `GlyphScript.STANDARD` (0,
-  normal) or e.g. `TENGWAR` (1, from the `fantasy` font-pack bundle). Wired exactly
-  like idle-style (cmd 28): `PolyKybd.get/set_glyph_script` + `GLYPH_SCRIPT_MIN_PROTOCOL=9`,
-  `PolyCore.get/set_glyph_script`, `M_GLYPH_SCRIPT_GET/SET`, `RemoteCore`, and
-  `polyctl glyph-script [standard|tengwar]`. GUI: the tray **"Glyph Script"** submenu
-  (radio) **plus** a **"Reset glyph script to Standard"** button in the settings dialog
-  (`SettingsDialog.setup(reset_glyph_script=…)`, shown only when a device is present).
-  Firmware persists the choice; the Tengwar glyphs need the `fantasy` bundle flashed
-  (auto on connect). Remember the `__protocol__` 8→9 lockstep bump (this feature is why).
+- **Glyph-script override (protocol 9+; expanded set at v10)**: HID cmd 30
+  (`GLYPH_SCRIPT`) selects a glyph-script *override* of the keycap language legends —
+  `GlyphScript.STANDARD` (0, normal) or one of the fantasy/retro scripts from the
+  `fantasy` font-pack bundle. The `GlyphScript` enum (`command_ids.py`) is append-only
+  and byte-identical to the firmware `poly_glyph_script`: `TENGWAR=1`, then the v10
+  expansion `RUNES=2, AUREBESH=3, SGA=4, CIRTH=5, IBMVGA=6, C64=7, AMIGA=8, APL=9,
+  BRAILLE=10`. Wired like idle-style (cmd 28): `PolyKybd.get/set_glyph_script` +
+  `GLYPH_SCRIPT_MIN_PROTOCOL=9`, `PolyCore.get/set_glyph_script`, `M_GLYPH_SCRIPT_GET/SET`,
+  `RemoteCore`, and `polyctl glyph-script [standard|tengwar|runes|…|braille]` (choices
+  derived from the enum). GUI: the tray **"Glyph Script"** submenu (radio, built from
+  the enum via `GLYPH_SCRIPT_LABELS` in `host.py`) **plus** a **"Reset glyph script to
+  Standard"** button in the settings dialog (`SettingsDialog.setup(reset_glyph_script=…)`,
+  shown only when a device is present). Firmware persists the choice; the glyphs need
+  the `fantasy` bundle flashed (auto on connect; regrown to `content_version 2` for the
+  expansion — reshipped `polyhost/res/fontpack/fantasy.plyf` + `bundles.json`).
+  **Open-ended index (v10+):** the firmware accepts ANY glyph-script byte `0..0xFE` and
+  renders the normal legend for one it can't draw, so the host may offer more scripts
+  than a given keyboard has (they silently degrade) and **adding a new script needs NO
+  `__protocol__` bump** — just a new `GlyphScript` value + `GLYPH_SCRIPT_LABELS` entry +
+  the shipped font. The `__protocol__` 9→10 bump happened once, to establish that
+  open-ended contract (pre-v10 firmware NACKed unknown indices); don't bump it again for
+  more scripts. The exact-match connect gate still pins host↔firmware to the same
+  protocol, within which the script set is free to grow.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
 - **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.

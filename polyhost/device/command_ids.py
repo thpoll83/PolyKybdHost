@@ -93,7 +93,18 @@ class GlyphScript(Enum):
     STANDARD renders the normal language legends; any other value overrides the
     language-layer letter/digit legends with an alternative script (leaving overlays
     and OS-hints untouched). Values are append-only and shared on the wire with the
-    firmware — never reorder. TENGWAR ships in the "fantasy" font-pack bundle.
+    firmware — never reorder. Every non-STANDARD script ships in the "fantasy"
+    font-pack bundle (auto-flashed on connect).
     """
     STANDARD = 0
     TENGWAR = 1
+    # 2026-07 expansion (firmware protocol v10). Order matches poly_glyph_script.
+    RUNES = 2
+    AUREBESH = 3
+    SGA = 4
+    CIRTH = 5
+    IBMVGA = 6
+    C64 = 7
+    AMIGA = 8
+    APL = 9
+    BRAILLE = 10
