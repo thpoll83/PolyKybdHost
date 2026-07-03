@@ -282,20 +282,32 @@ class BaseYadvForTest(unittest.TestCase):
         self.assertEqual(rd.base_yadv_for(f, 0xE100), rd.BASE_YADV)    # matra band: default
 
     def test_flag_bottom_not_clipped(self):
-        # A tall flag (h > 40) placed with base_yadv=40 clips its bottom off the 40px
+        # A tall flag (h > OLED_H) placed with base_yadv=40 clips its bottom off the
         # window; with the flag's own yAdvance it sits so the bottom is visible.
         import numpy as np
-        f = _font(0xE000, 0xE000, 54,
-                  [dict(bitmapOffset=0, width=8, height=54, xAdvance=8, xOffset=0, yOffset=-42)],
-                  [0xFF] * 54)   # every row lit
+        g = dict(bitmapOffset=0, width=8, height=54, xAdvance=8, xOffset=0, yOffset=-42)
+        f = _font(0xE000, 0xE000, 54, [g], [0xFF] * 54)   # every row lit
+
+        def glyph_bottom(base_yadv):
+            # Window row of the glyph's LAST row, using keycap_image's own placement
+            # geometry — derived, not hardcoded, so a BASELINE tweak can't stale it.
+            y_base = rd.BASELINE + (f.yAdvance - base_yadv)
+            return y_base + g["yOffset"] + (g["height"] - 1)
+
+        # Buggy (base_yadv=40): the glyph's bottom lands past the window edge → clipped.
+        self.assertGreaterEqual(glyph_bottom(40), rd.OLED_H)
+        # Fixed (flag's own yAdvance): the glyph's bottom lands inside the window.
+        fixed_by = rd.base_yadv_for(f, 0xE000)
+        self.assertLess(glyph_bottom(fixed_by), rd.OLED_H)
+
+        # And the rendered result agrees: the fixed render's last lit row sits inside
+        # (not jammed at OLED_H-1 the way the clipped, buggy render is).
         shifted = np.asarray(rd.keycap_image(f, 0xE000, base_yadv=40))
-        fixed = np.asarray(rd.keycap_image(f, 0xE000, base_yadv=rd.base_yadv_for(f, 0xE000)))
-        # the fixed placement has a lit last visible row further up (bottom not jammed
-        # against / clipped at the window edge) — its lit rows end before row 39.
-        shifted_rows = [y for y in range(40) if shifted[y].max() > 0]
-        fixed_rows = [y for y in range(40) if fixed[y].max() > 0]
-        self.assertEqual(shifted_rows[-1], 39)          # buggy: runs to the very edge
-        self.assertLess(fixed_rows[-1], 39)             # fixed: bottom sits inside
+        fixed = np.asarray(rd.keycap_image(f, 0xE000, base_yadv=fixed_by))
+        shifted_last = max(y for y in range(rd.OLED_H) if shifted[y].max() > 0)
+        fixed_last = max(y for y in range(rd.OLED_H) if fixed[y].max() > 0)
+        self.assertEqual(shifted_last, rd.OLED_H - 1)   # buggy: runs to the very edge
+        self.assertEqual(fixed_last, glyph_bottom(fixed_by))   # fixed: exactly its bottom
 
 
 class GlyphCellOledModeTest(unittest.TestCase):
