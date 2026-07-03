@@ -733,8 +733,13 @@ class PolyKybd:
         msg_cnt = 0
         max_msgs = self.device_settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
         for msg_num in range(0, max_msgs):
+            # Protocol 11: modifier (low nibble, 0..8) and segment index (high
+            # nibble, 0..5) share one header byte, so the 4-byte header leaves a
+            # full 60-byte segment fitting the 64-byte report. Pre-v11 sent them
+            # as two separate bytes, which pushed the last data byte past the
+            # report (see the firmware v11 note).
             cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode,
-                              modifier.value, msg_num)
+                              (msg_num << 4) | modifier.value)
             from_idx = msg_num * self.device_settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
             to_idx = from_idx + self.device_settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
             data = overlay.all_bytes[from_idx:to_idx]

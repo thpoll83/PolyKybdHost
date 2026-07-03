@@ -467,8 +467,10 @@ class TestOverlaySendPaths(unittest.TestCase, LockCheckMixin):
         count = keeb.send_overlay_for_keycode(0x29, Modifier.NO_MOD, {0x29: overlay})
         self.assertEqual(count, 2)
         payloads = device.payloads()
-        self.assertEqual(payloads[0][:5], bytes([POLY, 10, 0x29, 0, 0]))   # msg_num 0
-        self.assertEqual(payloads[1][:5], bytes([POLY, 10, 0x29, 0, 5]))   # last msg_num
+        # Protocol 11: header is [POLY, 10, keycode, (segment<<4)|modifier].
+        # NO_MOD -> low nibble 0; segment in the high nibble.
+        self.assertEqual(payloads[0][:4], bytes([POLY, 10, 0x29, 0x00]))   # msg_num 0
+        self.assertEqual(payloads[1][:4], bytes([POLY, 10, 0x29, 0x50]))   # last msg_num 5
         self.assert_lock_free(keeb)
 
     def test_plain_overlay_without_skip_sends_all_reports(self):
