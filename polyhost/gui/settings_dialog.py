@@ -5,7 +5,7 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import (
     QDialog, QFormLayout, QDialogButtonBox,
     QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QSizePolicy,
-    QScrollArea
+    QScrollArea, QPushButton
 )
 
 from polyhost.gui.get_icon import get_icon
@@ -47,8 +47,9 @@ class SettingsDialog(QDialog):
     def sizeHint(self):
         return QSize(640, 480)
 
-    def setup(self, settings_dict, debug_mode=0):
+    def setup(self, settings_dict, debug_mode=0, reset_glyph_script=None):
         self._all_settings = dict(settings_dict)
+        self._reset_glyph_script = reset_glyph_script
         self.setWindowIcon(get_icon("pcolor.png"))
 
         # Outer layout
@@ -104,6 +105,16 @@ class SettingsDialog(QDialog):
         scroll_layout.addStretch()  # force groups to fill width
         scroll.setWidget(scroll_contents)
         main_layout.addWidget(scroll)
+
+        # Glyph-script reset — a direct device action (fires immediately, not tied
+        # to OK/Cancel). Only shown when a callback is provided (device present /
+        # firmware v9+). Puts the keycaps back to the normal language legends.
+        if self._reset_glyph_script is not None:
+            reset_btn = QPushButton("Reset glyph script to Standard")
+            reset_btn.setToolTip("Turn off any fantasy/alternative script override "
+                                 "and show the normal language legends again.")
+            reset_btn.clicked.connect(self._reset_glyph_script)
+            main_layout.addWidget(reset_btn, alignment=Qt.AlignCenter)
 
         # Add buttons
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)

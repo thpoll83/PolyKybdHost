@@ -918,6 +918,18 @@ class PolyCore:
         return self._device_call(
             "idle_style_get", lambda c: self.keeb.get_idle_style())
 
+    def set_glyph_script(self, value):
+        try:
+            v = int(value)
+        except (TypeError, ValueError):
+            return False, f"Invalid glyph script: {value!r}"
+        return self._device_call(
+            "glyph_script_set", lambda c, v=v: self.keeb.set_glyph_script(v))
+
+    def get_glyph_script(self):
+        return self._device_call(
+            "glyph_script_get", lambda c: self.keeb.get_glyph_script())
+
     def enable_overlays(self):
         return self._device_call("enable_overlays", lambda c: self.keeb.enable_overlays())
 

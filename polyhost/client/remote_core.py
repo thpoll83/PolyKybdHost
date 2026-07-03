@@ -333,6 +333,12 @@ class RemoteCore:
     def get_idle_style(self):
         return self._device(p.M_IDLE_STYLE_GET)
 
+    def set_glyph_script(self, value):
+        return self._device(p.M_GLYPH_SCRIPT_SET, {"value": value})
+
+    def get_glyph_script(self):
+        return self._device(p.M_GLYPH_SCRIPT_GET)
+
     # -- overlays -----------------------------------------------------------
     def send_overlay_data(self, files):
         try:

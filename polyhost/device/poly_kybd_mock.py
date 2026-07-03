@@ -212,6 +212,16 @@ class PolyKybdMock:
         self._log_call("get_idle_style")
         return True, getattr(self, "_idle_style", 0)
 
+    def set_glyph_script(self, script) -> tuple[bool, str]:
+        value = getattr(script, "value", script)
+        self._log_call("set_glyph_script", value)
+        self._glyph_script = int(value)
+        return True, ""
+
+    def get_glyph_script(self) -> tuple[bool, int]:
+        self._log_call("get_glyph_script")
+        return True, getattr(self, "_glyph_script", 0)
+
     def set_unicode_mode(self, mode: InputMethod) -> tuple[bool, str]:
         self._log_call("set_unicode_mode", mode)
         self._unicode_mode = mode

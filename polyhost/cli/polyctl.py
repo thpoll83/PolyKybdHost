@@ -173,6 +173,21 @@ def _cmd_idle_style(client, args):
     return 0
 
 
+_GLYPH_SCRIPT_NAMES = {0: "standard", 1: "tengwar"}
+_GLYPH_SCRIPT_VALUES = {v: k for k, v in _GLYPH_SCRIPT_NAMES.items()}
+
+
+def _cmd_glyph_script(client, args):
+    if args.script is None:
+        value = client.call(protocol.M_GLYPH_SCRIPT_GET, {})
+        print(f"glyph script: {_GLYPH_SCRIPT_NAMES.get(value, value)} ({value})")
+    else:
+        value = _GLYPH_SCRIPT_VALUES[args.script]
+        client.call(protocol.M_GLYPH_SCRIPT_SET, {"value": value})
+        print(f"glyph script set to {args.script} ({value})")
+    return 0
+
+
 def _cmd_overlay(client, args):
     if args.overlay_action == "send":
         client.call(protocol.M_OVERLAY_SEND, {"files": list(args.files)})
@@ -472,6 +487,14 @@ def build_parser():
         "style", nargs="?", choices=["pulse", "jitter"], default=None,
         help="omit to print the current style; 'pulse' = legacy, 'jitter' = move the legend")
     p_idle_style.set_defaults(func=_cmd_idle_style)
+
+    p_glyph_script = sub.add_parser(
+        "glyph-script", help="get or set the glyph-script override (firmware v9+)")
+    p_glyph_script.add_argument(
+        "script", nargs="?", choices=["standard", "tengwar"], default=None,
+        help="omit to print the current script; 'standard' = normal legends, "
+             "'tengwar' = fantasy override (needs the fantasy font-pack bundle)")
+    p_glyph_script.set_defaults(func=_cmd_glyph_script)
 
     p_ov = sub.add_parser("overlay", help="overlay control")
     ov_sub = p_ov.add_subparsers(dest="overlay_action", required=True)

@@ -51,6 +51,7 @@ class Cmd(Enum):
     GET_LANG_LIST_PACKED = 27
     IDLE_STYLE = 28  # get/set idle (anti-burn-in) display style (protocol v4+)
     SET_OS = 29  # get/set the active host-OS identity (protocol v7+)
+    GLYPH_SCRIPT = 30  # get/set glyph-script override (standard / fantasy, protocol v9+)
 
 
 class OsType(Enum):
@@ -84,3 +85,15 @@ class IdleStyle(Enum):
     """
     PULSE = 0
     JITTER = 1
+
+
+class GlyphScript(Enum):
+    """Glyph-script override — mirrors the firmware's poly_glyph_script.
+
+    STANDARD renders the normal language legends; any other value overrides the
+    language-layer letter/digit legends with an alternative script (leaving overlays
+    and OS-hints untouched). Values are append-only and shared on the wire with the
+    firmware — never reorder. TENGWAR ships in the "fantasy" font-pack bundle.
+    """
+    STANDARD = 0
+    TENGWAR = 1
