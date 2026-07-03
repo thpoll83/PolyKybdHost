@@ -66,11 +66,11 @@
       "id": "fantasy",
       "index": 6,
       "file": "fantasy.plyf",
-      "content_version": 5,
-      "size": 23508,
+      "content_version": 3,
+      "size": 23720,
       "slot_offset": 1347584,
       "slot_size": 749568,
-      "sha256": "0da5780b8a678f6a"
+      "sha256": "6361b1c4a443c726"
     }
   ]
 }
