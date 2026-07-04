@@ -25,6 +25,14 @@ FONTPACK_CHUNK_SIZE = 56            # payload bytes/chunk (+4-byte offset = 60);
 FONTPACK_MAX_SIZE   = 0x200000      # 2 MB cap; the whole bundle window. Per-bundle, the
                                     # firmware rejects a pack larger than its fixed slot.
 
+# Pseudo bundle id selecting the DOOMWAD target — the doom easter egg's WHX game
+# data slot at the top of the resource region (firmware FONTPACK_BUNDLE_DOOMWAD /
+# FW_TARGET_DOOMWAD). Same BEGIN/CHUNK/COMMIT transport, different fixed slot;
+# COMMIT validates the "IWHX" magic instead of reloading fonts.
+DOOMWAD_BUNDLE_ID = 0x7F
+DOOMWAD_MAGIC     = b"IWHX"
+DOOMWAD_MAX_SIZE  = 0x200000        # the 2 MB WHX slot (flash 0x600000..0x7FFFFF)
+
 # Pack format (base/fontpack.h). The host only needs to parse/validate the header.
 FONTPACK_MAGIC        = b"PlyF"
 FONTPACK_ABI_VERSION  = 1            # must match FONTPACK_ABI_VERSION in the firmware
@@ -158,87 +166,61 @@ def decide_stale_bundles(device_versions: dict, shipped: list) -> list:
     return out
 
 
-def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = None,
-                   bundle_id: int = 0) -> tuple[bool, str]:
-    """Full HID font-pack flash flow: BEGIN -> N*CHUNK -> COMMIT (no reboot).
+def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
+    """Shared BEGIN -> N*CHUNK -> COMMIT stream to one resource slot (both halves).
 
-    Args:
-        hid:          HidHelper instance.
-        pack_path:    Path to the .plyf font-pack image.
-        progress_cb:  Optional callable(percent: int, message: str).
-        cancel_flag:  Optional single-element list; set cancel_flag[0] = True to abort.
-        bundle_id:    Which bundle slot to flash (index in res/fontpack/bundles.json;
-                      firmware resolves it to a fixed flash slot). 0 by default.
-
-    Returns:
-        (True, success_msg) or (False, error_msg).
+    `what` flavours the progress text ("font pack" / "game data"). Returns
+    (ok, error_msg, commit_reply) — on success error_msg is "" and commit_reply
+    is the raw COMMIT reply (the fontpack caller parses content_version out of it).
     """
-    def report(pct, msg):
-        if progress_cb:
-            progress_cb(pct, msg)
-
-    def cancelled():
-        return cancel_flag is not None and cancel_flag[0]
-
-    with open(pack_path, 'rb') as f:
-        pack_bytes = f.read()
-
-    valid, reason = validate_fontpack(pack_bytes)
-    if not valid:
-        return False, reason
-
     pack_size = len(pack_bytes)
-    pack_crc  = binascii.crc32(pack_bytes) & 0xFFFFFFFF   # whole-pack transport CRC (firmware fw_staging verifies this)
-    _, info   = parse_fontpack_header(pack_bytes)
-
+    pack_crc  = binascii.crc32(pack_bytes) & 0xFFFFFFFF   # whole-image transport CRC (firmware fw_staging verifies this)
     total_chunks = (pack_size + FONTPACK_CHUNK_SIZE - 1) // FONTPACK_CHUNK_SIZE
-    report(0, f"Sending FONTPACK_BEGIN — {pack_size // 1024} KB, "
-              f"content v{info['content_version']}, {info['font_count']} fonts…")
 
     # -- FONTPACK_BEGIN -- (same poll protocol as firmware update: '.'/'~'/'!'/no-reply)
     hid.drain_replies()
     pkt = bytearray([HID_POLYKYBD, CMD_FONTPACK_BEGIN]) + struct.pack('<IIB', pack_size, pack_crc, bundle_id)
     deadline    = time.monotonic() + 90
-    timeout_ms  = 15000   # generous for first send (master erases the pack region)
+    timeout_ms  = 15000   # generous for first send (master erases the slot region)
     begin_ready = False
     erase_start = time.monotonic()
-    # The staging erase (2–4 MB flash region, NOT the running firmware) takes
-    # ~10–15 s; the firmware reports no fine-grained progress, so creep the bar
-    # 1→2 % and show elapsed seconds instead of sitting frozen at a single 1 %.
+    # The slot erase reports no fine-grained progress, so creep the bar 1->2 %
+    # and show elapsed seconds instead of sitting frozen at a single 1 %.
     def _erasing(msg):
         elapsed = int(time.monotonic() - erase_start)
-        report(1, f"{msg} — {elapsed}s elapsed (≈10–15 s)…")
+        report(1, f"{msg} — {elapsed}s elapsed…")
 
     while not begin_ready:
         if cancelled():
             _abort_cleanup(hid)
-            return False, "Flash cancelled by user."
+            return False, "Flash cancelled by user.", None
         if time.monotonic() > deadline:
             _abort_cleanup(hid)
-            return False, ("FONTPACK_BEGIN timed out — keyboard did not finish erasing "
-                           "within 90 s.  Check the USB cable and try again.")
+            return False, (f"BEGIN timed out — keyboard did not finish erasing the {what} "
+                           "region within 90 s.  Check the USB cable and try again."), None
 
         ok, reply = hid.send_and_read(pkt, timeout=timeout_ms)
         timeout_ms = 5000
 
         if not ok or len(reply) < 3:
-            _erasing("Erasing font-pack staging area — keyboard will reconnect when done")
+            _erasing(f"Erasing the {what} region — keyboard will reconnect when done")
             if not hid.wait_for_reconnect(timeout_s=30):
-                return False, ("FONTPACK_BEGIN failed — keyboard did not reconnect "
-                               "within 30 s.  Check the USB cable and try again.")
+                return False, ("BEGIN failed — keyboard did not reconnect "
+                               "within 30 s.  Check the USB cable and try again."), None
             hid.drain_replies()
         elif reply[2] == ord('.'):
             begin_ready = True
         elif reply[2] == ord('~'):
-            _erasing("Erasing font-pack staging area (both halves)")
+            _erasing(f"Erasing the {what} region (both halves)")
             time.sleep(0.3)
         else:
             _abort_cleanup(hid)
             hid.close_interface()
             return False, (
-                "FONTPACK_BEGIN failed — the slave half could not be prepared.\n"
-                "Ensure both keyboard halves are connected and powered on, then try again."
-            )
+                f"BEGIN failed — the keyboard rejected the {what} transfer.\n"
+                "Ensure both keyboard halves are connected and powered on (and the "
+                "firmware supports this transfer), then try again."
+            ), None
 
     report(2, f"Region erased. Sending {total_chunks} chunks…")
 
@@ -253,7 +235,7 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
         if cancelled():
             _abort_cleanup(hid)
             hid.close_interface()
-            return False, "Flash cancelled by user."
+            return False, "Flash cancelled by user.", None
 
         offset    = i * FONTPACK_CHUNK_SIZE
         raw_chunk = pack_bytes[offset:offset + FONTPACK_CHUNK_SIZE]
@@ -290,23 +272,61 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
             _abort_cleanup(hid)
             hid.close_interface()
             return False, (
-                f"FONTPACK_CHUNK failed at offset {offset} after {_CHUNK_ATTEMPTS} attempts — {reason}.\n"
+                f"CHUNK failed at offset {offset} after {_CHUNK_ATTEMPTS} attempts — {reason}.\n"
                 "Ensure both keyboard halves are connected and running the same firmware, "
                 "then try again — the flash resumes from scratch and is safe to repeat."
-            )
+            ), None
         pause = min(0.05 * (2 ** (attempts - 1)), 1.0)
         report(2 + int(96 * (i + 1) / total_chunks),
                f"Chunk {i + 1}/{total_chunks} — retry {attempts}/{_CHUNK_ATTEMPTS - 1} "
                f"(waiting {int(pause * 1000)} ms)…")
         time.sleep(pause)
 
-    # -- FONTPACK_COMMIT -- verifies the staged CRC, re-loads fonts in place (no reboot).
-    report(98, "Verifying the font pack (CRC32) and loading…")
+    # -- FONTPACK_COMMIT -- verifies the staged CRC and finalizes the slot in place.
+    report(98, f"Verifying the {what} (CRC32)…")
     pkt = bytearray([HID_POLYKYBD, CMD_FONTPACK_COMMIT])
     ok, reply = hid.send_and_read(pkt, timeout=8000)
     if not ok or len(reply) < 3 or reply[2] != ord('.'):
         hid.close_interface()
-        return False, "FONTPACK_COMMIT failed — CRC mismatch or pack rejected on keyboard. Try again."
+        return False, f"COMMIT failed — CRC mismatch or the {what} was rejected on the keyboard. Try again.", None
+    return True, "", reply
+
+
+def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = None,
+                   bundle_id: int = 0) -> tuple[bool, str]:
+    """Full HID font-pack flash flow: BEGIN -> N*CHUNK -> COMMIT (no reboot).
+
+    Args:
+        hid:          HidHelper instance.
+        pack_path:    Path to the .plyf font-pack image.
+        progress_cb:  Optional callable(percent: int, message: str).
+        cancel_flag:  Optional single-element list; set cancel_flag[0] = True to abort.
+        bundle_id:    Which bundle slot to flash (index in res/fontpack/bundles.json;
+                      firmware resolves it to a fixed flash slot). 0 by default.
+
+    Returns:
+        (True, success_msg) or (False, error_msg).
+    """
+    def report(pct, msg):
+        if progress_cb:
+            progress_cb(pct, msg)
+
+    def cancelled():
+        return cancel_flag is not None and cancel_flag[0]
+
+    with open(pack_path, 'rb') as f:
+        pack_bytes = f.read()
+
+    valid, reason = validate_fontpack(pack_bytes)
+    if not valid:
+        return False, reason
+    _, info = parse_fontpack_header(pack_bytes)
+
+    report(0, f"Sending FONTPACK_BEGIN — {len(pack_bytes) // 1024} KB, "
+              f"content v{info['content_version']}, {info['font_count']} fonts…")
+    ok, err, reply = _stream_slot(hid, pack_bytes, bundle_id, "font pack", report, cancelled)
+    if not ok:
+        return False, err
 
     cver = struct.unpack_from('<H', bytes(reply), 3)[0] if len(reply) >= 5 else info['content_version']
     report(100, f"Done. Font pack v{cver} loaded on both halves.")
@@ -314,3 +334,48 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
         f"Font pack flashed and loaded successfully (content v{cver}, {info['font_count']} fonts).\n\n"
         "Both halves reloaded the new glyphs immediately — no reboot needed."
     )
+
+
+def validate_doomwad(whx_bytes) -> tuple[bool, str]:
+    """(ok, '') when whx_bytes looks like WHX game data that fits the slot."""
+    data = bytes(whx_bytes)
+    if len(data) < 8:
+        return False, "Game-data file is too small to be a WHX image."
+    if data[:4] != DOOMWAD_MAGIC:
+        return False, f"Bad magic {data[:4]!r} (expected {DOOMWAD_MAGIC!r}); not a WHX game-data image."
+    if len(data) > DOOMWAD_MAX_SIZE:
+        return False, f"Game data too large: {len(data)} bytes (max {DOOMWAD_MAX_SIZE // 1024} KB)."
+    return True, ""
+
+
+def flash_doomwad(hid, whx_path: str, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
+    """Install the doom easter egg's WHX game data to BOTH halves over HID.
+
+    Rides the font-pack BEGIN/CHUNK/COMMIT transport with the DOOMWAD pseudo
+    bundle id — the firmware routes it to the WHX slot at the top of the
+    resource region (the engine's TINY_WAD_ADDR) and the split bridge writes
+    the slave's copy in the same pass, so no BOOTSEL access is needed on
+    either half. The data survives firmware updates (different flash region).
+    """
+    def report(pct, msg):
+        if progress_cb:
+            progress_cb(pct, msg)
+
+    def cancelled():
+        return cancel_flag is not None and cancel_flag[0]
+
+    with open(whx_path, 'rb') as f:
+        whx_bytes = f.read()
+
+    valid, reason = validate_doomwad(whx_bytes)
+    if not valid:
+        return False, reason
+
+    report(0, f"Sending game data — {len(whx_bytes) // 1024} KB…")
+    ok, err, _reply = _stream_slot(hid, whx_bytes, DOOMWAD_BUNDLE_ID, "game data", report, cancelled)
+    if not ok:
+        return False, err
+
+    report(100, "Done. Game data installed on both halves.")
+    return True, ("Game data installed on both halves (it survives firmware updates).\n\n"
+                  "You know the magic word.")

@@ -1099,6 +1099,42 @@ class PolyCore:
         self.worker.submit("fontpack_flash", _job)
         return True, {"queued": True}
 
+    def install_doomwad(self, path):
+        """Install the doom easter egg's WHX game data (both halves) as a worker job.
+
+        Rides the font-pack transport with the DOOMWAD pseudo bundle — the firmware
+        routes it to the WHX slot at the top of the resource region and bridges the
+        slave's copy in the same pass. Same event stream as a font-pack flash
+        (``fontpack_flash_progress``/``fontpack_flash_done``), so ``polyctl`` and the
+        tray progress surfaces work unchanged. Old firmware without the DOOMWAD
+        target NACKs the BEGIN — reported as a plain error, nothing bricks."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot flash."
+        try:
+            with open(path, "rb") as f:
+                whx_bytes = f.read()
+        except OSError as e:
+            return False, f"Cannot read game-data file: {e}"
+        ok, msg = hid_fontpack.validate_doomwad(whx_bytes)
+        if not ok:
+            return False, msg
+
+        def _job(cancel):
+            cancel_flag = [False]
+
+            def _progress(pct, m):
+                if cancel.is_set():
+                    cancel_flag[0] = True
+                self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+
+            fok, fmsg = hid_fontpack.flash_doomwad(
+                self.keeb.hid, path, progress_cb=_progress, cancel_flag=cancel_flag)
+            self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg})
+
+        # No coalesce_key: a flash must never be superseded by a later job.
+        self.worker.submit("doomwad_install", _job)
+        return True, {"queued": True}
+
     def flash_fontpack_bundle(self, bundle):
         """Flash one shipped bundle (by id, e.g. ``"emoji"``, or its slot index) to
         its slot — forced, even if the keyboard is already up to date. Resolves the

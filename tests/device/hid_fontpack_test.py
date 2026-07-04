@@ -581,5 +581,36 @@ class TestDecideStaleBundles(unittest.TestCase):
         self.assertEqual(decide_stale_bundles({0: 9, 5: 9}, self._SHIPPED), [])
 
 
+class TestValidateDoomwad(unittest.TestCase):
+    """WHX game-data validation for the doom easter egg install (DOOMWAD target)."""
+
+    def test_valid_whx_accepted(self):
+        from polyhost.device.hid_fontpack import validate_doomwad
+        ok, msg = validate_doomwad(b"IWHX" + b"\x00" * 100)
+        self.assertTrue(ok, msg)
+
+    def test_bad_magic_rejected(self):
+        from polyhost.device.hid_fontpack import validate_doomwad
+        ok, msg = validate_doomwad(b"IWAD" + b"\x00" * 100)   # a plain WAD is not a WHX
+        self.assertFalse(ok)
+        self.assertIn("magic", msg)
+
+    def test_too_small_rejected(self):
+        from polyhost.device.hid_fontpack import validate_doomwad
+        ok, _ = validate_doomwad(b"IWH")
+        self.assertFalse(ok)
+
+    def test_too_large_rejected(self):
+        from polyhost.device.hid_fontpack import validate_doomwad, DOOMWAD_MAX_SIZE
+        ok, msg = validate_doomwad(b"IWHX" + b"\x00" * DOOMWAD_MAX_SIZE)
+        self.assertFalse(ok)
+        self.assertIn("large", msg)
+
+    def test_doomwad_bundle_id_matches_firmware(self):
+        # FONTPACK_BUNDLE_DOOMWAD in qmk base/fw_staging.h — keep in lockstep.
+        from polyhost.device.hid_fontpack import DOOMWAD_BUNDLE_ID
+        self.assertEqual(DOOMWAD_BUNDLE_ID, 0x7F)
+
+
 if __name__ == '__main__':
     unittest.main()
