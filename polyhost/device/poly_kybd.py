@@ -130,7 +130,12 @@ class PolyKybd:
                 self.console_buffer += last_line.decode().strip('\x00')
                 last_line = self.hid.get_console_output()
         except Exception as e:
-            return str(e)
+            # Never RETURN the exception text — it would be published as if the
+            # KEYBOARD had printed it. hidapi's hid_error() on Windows is
+            # famously "Success" for a failed read, so a device that is busy /
+            # rebooting (e.g. mid firmware flash) flooded the log with one bare
+            # "Success" line per 250 ms console poll (field 2026-07-04).
+            self.log.debug("console read failed: %s", e)
 
         if flush_and_return:
             console_out = self.console_buffer
