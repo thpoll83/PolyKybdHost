@@ -1135,6 +1135,41 @@ class PolyCore:
         self.worker.submit("doomwad_install", _job)
         return True, {"queued": True}
 
+    def install_doompack(self, path):
+        """Install the doom easter egg's executable engine pack (.plyd, both
+        halves — the slave's lockstep drone runs the same engine) as a worker
+        job. The DoomPack half of the shipping-shape split (qmk repo,
+        doom/PACK_DESIGN.md): same transport, events and error model as
+        :meth:`install_doomwad`, with the DOOMPACK pseudo bundle routing it
+        to the engine-pack slot. Old firmware without the target NACKs the
+        BEGIN — plain error, nothing bricks."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot flash."
+        try:
+            with open(path, "rb") as f:
+                pack_bytes = f.read()
+        except OSError as e:
+            return False, f"Cannot read engine-pack file: {e}"
+        ok, msg = hid_fontpack.validate_doompack(pack_bytes)
+        if not ok:
+            return False, msg
+
+        def _job(cancel):
+            cancel_flag = [False]
+
+            def _progress(pct, m):
+                if cancel.is_set():
+                    cancel_flag[0] = True
+                self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+
+            fok, fmsg = hid_fontpack.flash_doompack(
+                self.keeb.hid, path, progress_cb=_progress, cancel_flag=cancel_flag)
+            self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg})
+
+        # No coalesce_key: a flash must never be superseded by a later job.
+        self.worker.submit("doompack_install", _job)
+        return True, {"queued": True}
+
     def flash_fontpack_bundle(self, bundle):
         """Flash one shipped bundle (by id, e.g. ``"emoji"``, or its slot index) to
         its slot — forced, even if the keyboard is already up to date. Resolves the

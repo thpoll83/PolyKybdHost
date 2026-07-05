@@ -25,13 +25,19 @@ FONTPACK_CHUNK_SIZE = 56            # payload bytes/chunk (+4-byte offset = 60);
 FONTPACK_MAX_SIZE   = 0x200000      # 2 MB cap; the whole bundle window. Per-bundle, the
                                     # firmware rejects a pack larger than its fixed slot.
 
-# Pseudo bundle id selecting the DOOMWAD target — the doom easter egg's WHX game
-# data slot at the top of the resource region (firmware FONTPACK_BUNDLE_DOOMWAD /
-# FW_TARGET_DOOMWAD). Same BEGIN/CHUNK/COMMIT transport, different fixed slot;
-# COMMIT validates the "IWHX" magic instead of reloading fonts.
-DOOMWAD_BUNDLE_ID = 0x7F
-DOOMWAD_MAGIC     = b"IWHX"
-DOOMWAD_MAX_SIZE  = 0x200000        # the 2 MB WHX slot (flash 0x600000..0x7FFFFF)
+# Pseudo bundle ids selecting the doom targets — the easter egg's WHX game
+# data and the executable engine pack, both in the upper resource region
+# (firmware FONTPACK_BUNDLE_DOOMWAD/_DOOMPACK, FW_TARGET_DOOMWAD/_DOOMPACK;
+# layout in qmk base/fw_staging.h, design in doom/PACK_DESIGN.md). Same
+# BEGIN/CHUNK/COMMIT transport, different fixed slots; COMMIT validates the
+# magic instead of reloading fonts.
+DOOMWAD_BUNDLE_ID  = 0x7F
+DOOMWAD_MAGIC      = b"IWHX"
+DOOMWAD_MAX_SIZE   = 0x1C0000       # the 1.75 MB WHX slot (flash 0x600000..0x7BFFFF;
+                                    # shrunk from 2 MB when the pack slot was carved)
+DOOMPACK_BUNDLE_ID = 0x7E
+DOOMPACK_MAGIC     = b"PlyX"
+DOOMPACK_MAX_SIZE  = 0x40000        # the 256 KB engine-pack slot (flash 0x7C0000..0x7FFFFF)
 
 # Pack format (base/fontpack.h). The host only needs to parse/validate the header.
 FONTPACK_MAGIC        = b"PlyF"
@@ -379,3 +385,52 @@ def flash_doomwad(hid, whx_path: str, progress_cb=None, cancel_flag: list = None
     report(100, "Done. Game data installed on both halves.")
     return True, ("Game data installed on both halves (it survives firmware updates).\n\n"
                   "You know the magic word.")
+
+
+def validate_doompack(pack_bytes) -> tuple[bool, str]:
+    """(ok, '') when pack_bytes looks like a PlyX engine pack that fits the slot.
+
+    Only the magic and slot fit are checked here — the firmware's loader does
+    the full ABI/CRC/RAM-pairing validation at game entry (a stale pack is
+    refused there and the egg falls back to the fire demo)."""
+    data = bytes(pack_bytes)
+    if len(data) < 64:
+        return False, "Engine-pack file is too small to be a PlyX image."
+    if data[:4] != DOOMPACK_MAGIC:
+        return False, f"Bad magic {data[:4]!r} (expected {DOOMPACK_MAGIC!r}); not a PlyX engine pack."
+    if len(data) > DOOMPACK_MAX_SIZE:
+        return False, f"Engine pack too large: {len(data)} bytes (max {DOOMPACK_MAX_SIZE // 1024} KB)."
+    return True, ""
+
+
+def flash_doompack(hid, plyd_path: str, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
+    """Install the doom easter egg's executable engine pack (.plyd) to BOTH
+    halves over HID — the slave's lockstep drone runs the same engine.
+
+    Same transport as :func:`flash_doomwad`, DOOMPACK pseudo bundle. ⚠️ The
+    pack is RAM-paired with the exact firmware build it was produced with
+    (doom/pack/build_pack.sh); a mismatched pack is harmless — the firmware
+    loader refuses it at game entry — but the egg then runs the fire demo
+    until a matching pack is flashed."""
+    def report(pct, msg):
+        if progress_cb:
+            progress_cb(pct, msg)
+
+    def cancelled():
+        return cancel_flag is not None and cancel_flag[0]
+
+    with open(plyd_path, 'rb') as f:
+        pack_bytes = f.read()
+
+    valid, reason = validate_doompack(pack_bytes)
+    if not valid:
+        return False, reason
+
+    report(0, f"Sending engine pack — {len(pack_bytes) // 1024} KB…")
+    ok, err, _reply = _stream_slot(hid, pack_bytes, DOOMPACK_BUNDLE_ID, "engine pack", report, cancelled)
+    if not ok:
+        return False, err
+
+    report(100, "Done. Engine pack installed on both halves.")
+    return True, ("Engine pack installed on both halves (it survives firmware updates,\n"
+                  "but must match the firmware build it was made for).")
