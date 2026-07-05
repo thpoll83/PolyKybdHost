@@ -54,7 +54,7 @@ class OverlayHandler:
     """Reads the overlay mapping file and provides information which overlay
     should be displayed depending on the program context."""
 
-    def __init__(self, mapping, url_provider=None):
+    def __init__(self, mapping, url_provider=None, enable_legacy_relay=False):
         self.log = logging.getLogger("PolyHost")
         log_env_info(self.log)
         self.last_update_msec = 0
@@ -76,7 +76,7 @@ class OverlayHandler:
         # effect (see handle_active_window).
         self.overlays_enabled = False
         self.mapping = self.annotate(mapping.items())
-        self.remote_handler = RemoteHandler(self.mapping)
+        self.remote_handler = RemoteHandler(self.mapping, enable_legacy_relay=enable_legacy_relay)
 
     def annotate(self, entries, return_copy=True):
         """Annotate the provided mapping (from yaml) so that it can
