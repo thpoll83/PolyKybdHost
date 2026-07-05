@@ -181,6 +181,35 @@ class HidHelper:
             return bytearray()
         return self.remote_console.read(self.settings.HID_CONSOLE_REPORT_SIZE, timeout=0)
 
+    def console_acquired(self):
+        return self.remote_console is not None
+
+    def reopen_console(self) -> bool:
+        """(Re-)open only the console interface.
+
+        After a firmware apply the device re-enumerates; the reconnect path
+        rebuilds the whole HidHelper, but in the come-back-up race the console
+        interface can be missing from that enumeration while raw HID already
+        works — remote_console then silently stayed None until a replug
+        (field 2026-07-05: "no console log after flashing/apply"). Returns
+        True when a console handle is open afterwards."""
+        if self.remote_console is not None:
+            try:
+                self.remote_console.close()
+            except Exception:
+                pass
+            self.remote_console = None
+        device_interfaces = hid.enumerate(self.settings.VID, self.settings.PID)
+        console_hid_interfaces = [j for j in device_interfaces
+                                  if j['usage_page'] == self.settings.HID_CONSOLE_USAGE_PAGE
+                                  and j['usage'] == self.settings.HID_CONSOLE_USAGE]
+        if console_hid_interfaces:
+            try:
+                self.remote_console = hid.Device(path=console_hid_interfaces[0]['path'])
+            except Exception:
+                self.remote_console = None
+        return self.remote_console is not None
+
     def interface_acquired(self):
         return self.interface is not None
 
