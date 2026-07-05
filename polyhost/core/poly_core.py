@@ -383,7 +383,8 @@ class PolyCore:
                           else None)
             self.overlay_handler = OverlayHandler(
                 self.mapping, url_provider=url_lookup,
-                enable_legacy_relay=bool(self.settings_get("dev_legacy_plaintext_relay")))
+                enable_legacy_relay=bool(self.settings_get("dev_legacy_plaintext_relay")),
+                rpc_relay_enabled=bool(self.settings_get("window_report_network_enabled")))
         except Exception as e:
             # Headless / no display: pywinctl cannot load. Window-driven
             # overlay switching stays off; explicit sends still work.

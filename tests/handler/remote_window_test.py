@@ -59,6 +59,25 @@ class TestReportWindow(unittest.TestCase):
             RemoteHandler(mapping, enable_legacy_relay=True)
             thread_cls.assert_called_once()
 
+    def test_relay_disabled_warns_only_when_no_rpc_path(self):
+        # Remote entries + plaintext relay off + RPC path off -> warn once (actionable).
+        mapping = {"app": {"remote": True, "flags": [False] * 6}}
+        rh = RemoteHandler(mapping)
+        rh._warned_relay_disabled = False
+        with mock.patch.object(rh.log, "warning") as warn:
+            rh.listen_to_forwarder()
+            warn.assert_called_once()
+
+    def test_relay_disabled_but_rpc_on_does_not_warn(self):
+        # RPC path already delivers reports -> the "relay disabled" warning is a
+        # false alarm and must be suppressed.
+        mapping = {"app": {"remote": True, "flags": [False] * 6}}
+        rh = RemoteHandler(mapping, rpc_relay_enabled=True)
+        rh._warned_relay_disabled = False
+        with mock.patch.object(rh.log, "warning") as warn:
+            rh.listen_to_forwarder()
+            warn.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
