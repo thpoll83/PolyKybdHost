@@ -44,6 +44,21 @@ class TestReportWindow(unittest.TestCase):
         rh.report_window(0, "", "")                  # must not raise (debug_detailed)
         self.assertEqual(rh.connections["_latest"], "_report")
 
+    def test_legacy_relay_off_by_default_does_not_bind(self):
+        # A mapping WITH a remote entry, but the unauthenticated relay defaults off:
+        # listen_to_forwarder (run in __init__) must not start the listener thread.
+        mapping = {"app": {"remote": True, "flags": [False] * 6}}
+        with mock.patch("polyhost.handler.remote_window.threading.Thread") as thread_cls:
+            rh = RemoteHandler(mapping)              # enable_legacy_relay defaults False
+            thread_cls.assert_not_called()
+            self.assertIsNone(rh.forwarder)
+
+    def test_legacy_relay_opt_in_starts_listener(self):
+        mapping = {"app": {"remote": True, "flags": [False] * 6}}
+        with mock.patch("polyhost.handler.remote_window.threading.Thread") as thread_cls:
+            RemoteHandler(mapping, enable_legacy_relay=True)
+            thread_cls.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

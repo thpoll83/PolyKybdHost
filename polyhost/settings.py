@@ -53,6 +53,14 @@ class PolySettings:
             "dev_mock_overlay_mru_cache_enabled": True,
             "dev_run_window_detection_if_not_connected_to_poly_kybd": False,
             "dev_win_native_set_language": False,
+            # Legacy cross-machine window relay (remote_window.receive_from_forwarder,
+            # plaintext TCP port 50162). It is UNAUTHENTICATED and binds all
+            # interfaces, so it is OFF by default and superseded by the authenticated
+            # window.report path (`window_report_network_enabled` + a forwarder run
+            # with --report-rpc). Enable this only if you rely on the old plaintext
+            # forwarder and understand the exposure. `dev_`-prefixed, so it is hidden
+            # in the settings dialog unless debug mode is on.
+            "dev_legacy_plaintext_relay": False,
             # macOS: auto-switch the system input language to match the keyboard
             # on (re)connect. Off by default because it runs `languagesetup` via
             # osascript "with administrator privileges" — a password prompt on

@@ -59,7 +59,7 @@ def receive_from_forwarder(log, on_report, stop_event):
 
 
 class RemoteHandler:
-    def __init__(self, mapping):
+    def __init__(self, mapping, enable_legacy_relay=False):
         self.log = logging.getLogger("PolyHost")
         self.forwarder = None
         self.stop_event = threading.Event()
@@ -71,6 +71,13 @@ class RemoteHandler:
         self.last_entry = None
         self.connections = {}
         self.mapping = mapping
+        # The legacy plaintext relay (receive_from_forwarder, TCP_PORT) is
+        # unauthenticated and binds all interfaces, so it is OFF by default and
+        # only started when the `dev_legacy_plaintext_relay` setting opts in.
+        # The authenticated replacement is the window.report control-socket path
+        # (`window_report_network_enabled` + a forwarder run with --report-rpc).
+        self._enable_legacy_relay = enable_legacy_relay
+        self._warned_relay_disabled = False
         # Latest OS reported by the forwarder (an OsType value int), or None when
         # the forwarder does not forward its OS. Read by PolyCore's window tick.
         self.forwarded_os = None
@@ -81,6 +88,20 @@ class RemoteHandler:
 
     def listen_to_forwarder(self):
         if not self._has_remote_entries():
+            return
+        if not self._enable_legacy_relay:
+            # Remote entries are mapped but the unauthenticated relay is disabled.
+            # Warn once so a forwarder user knows why nothing arrives and how to
+            # proceed, rather than failing silently.
+            if not self._warned_relay_disabled:
+                self._warned_relay_disabled = True
+                self.log.warning(
+                    "Remote overlay entries are configured but the legacy plaintext "
+                    "window relay (TCP %d) is disabled. It is unauthenticated and "
+                    "off by default. Enable 'dev_legacy_plaintext_relay' (debug "
+                    "settings) to use it, or prefer the authenticated path: set "
+                    "'window_report_network_enabled' and run the forwarder with "
+                    "--report-rpc.", TCP_PORT)
             return
         if self.forwarder and self.forwarder.is_alive():
             return
