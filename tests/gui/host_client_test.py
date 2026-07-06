@@ -44,6 +44,7 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("SMOKE OK", proc.stdout)
         self.assertIn("CORE_TYPE PolyCore", proc.stdout)
         self.assertIn("DAEMON_QUIT_ACTION absent", proc.stdout)
+        self.assertIn("ABOUT_OK True", proc.stdout)
 
     def test_client_mode_connects_and_renders(self):
         proc = _run_smoke("client")
@@ -79,6 +80,18 @@ def _smoke_default():
         assert app.keeb is not None and app.worker is not None and app.cmdMenu is not None
         # In-process Quit already stops everything; no separate daemon-quit entry.
         print("DAEMON_QUIT_ACTION", "absent" if app.exit_with_daemon is None else "present")
+        # About dialog: builds (without the modal exec_ blocking), shows the host
+        # version, and links to homepage + all three repos.
+        from PyQt5.QtWidgets import QLabel, QDialogButtonBox
+        from polyhost._version import __version__ as _ver
+        about = app._build_about_dialog()
+        blob = " ".join(l.text() for l in about.findChildren(QLabel))
+        has_links = all(u in blob for u in (
+            "polykybd.org", "github.com/thpoll83/PolyKybdHost",
+            "github.com/thpoll83/qmk_firmware", "github.com/thpoll83/PolyKybd"))
+        has_ok = about.findChild(QDialogButtonBox).button(QDialogButtonBox.Ok) is not None
+        print("ABOUT_OK", (_ver in blob) and has_links and has_ok)
+        about.deleteLater()
         app.quit_app()
     print("SMOKE OK")
 

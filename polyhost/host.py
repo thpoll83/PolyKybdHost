@@ -57,7 +57,7 @@ from polyhost.input.macos_helper import MacOSInputHelper
 from polyhost.input.win_helper import WindowsInputHelper
 from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER, LANG_REGION_OVERRIDE
 from polyhost.services.unicode_cache import UnicodeCache
-from polyhost._version import __version__
+from polyhost._version import __version__, __protocol__
 
 from polyhost.services.updater import (
     UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app,
@@ -68,6 +68,12 @@ from polyhost.gui.worker_bridge import WorkerBridge
 from polyhost.server.control_server import ControlServer
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
+
+# Project links surfaced in the About dialog.
+POLYKYBD_HOMEPAGE_URL = "https://polykybd.org"
+POLYHOST_REPO_URL     = "https://github.com/thpoll83/PolyKybdHost"
+FIRMWARE_REPO_URL     = "https://github.com/thpoll83/qmk_firmware"
+HARDWARE_REPO_URL     = "https://github.com/thpoll83/PolyKybd"
 
 UPDATE_CYCLE_MSEC = 250
 RECONNECT_CYCLE_MSEC = 1000
@@ -349,7 +355,7 @@ class PolyHost(QApplication):
         self.support.triggered.connect(self.open_support)
         self.about = QAction(get_icon("home.svg"), "About", parent=self)
         # noinspection PyUnresolvedReferences
-        self.about.triggered.connect(self.open_about)
+        self.about.triggered.connect(self.show_about_dialog)
 
         self.settings_dialog = QAction(get_icon("settings.svg"), "Settings...", parent=self)
         # noinspection PyUnresolvedReferences
@@ -1126,9 +1132,77 @@ class PolyHost(QApplication):
     def open_support():
         webbrowser.open("https://discord.gg/gW8JescH7M", new=0, autoraise=True)
 
-    @staticmethod
-    def open_about():
-        webbrowser.open("https://ko-fi.com/polykb", new=0, autoraise=True)
+    def _build_about_dialog(self) -> QDialog:
+        """Construct the About dialog (host name/version + project links + OK).
+
+        Split from :meth:`show_about_dialog` so it can be built and inspected in
+        a test without the modal ``exec_()`` blocking. Works in client mode too —
+        it only shows info about this host program, no device access."""
+        from PyQt5.QtCore import qVersion
+
+        dlg = QDialog(None)
+        dlg.setWindowTitle("About PolyKybdHost")
+        dlg.setWindowIcon(get_icon("pcolor.png"))
+
+        outer = QVBoxLayout(dlg)
+        outer.setContentsMargins(20, 18, 20, 14)
+        outer.setSpacing(12)
+
+        # Header: app logo + name / version / build info.
+        header = QHBoxLayout()
+        header.setSpacing(14)
+        logo = QLabel()
+        logo.setPixmap(get_icon("pcolor.png").pixmap(64, 64))
+        logo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        header.addWidget(logo, 0, Qt.AlignTop)
+
+        title_lbl = QLabel(
+            f"<div style='font-size:15pt; font-weight:bold;'>PolyKybdHost</div>"
+            f"<div style='margin-top:3px;'>Version {__version__}"
+            f" &nbsp;·&nbsp; HID protocol P{__protocol__}</div>"
+            f"<div style='color:gray; margin-top:3px;'>"
+            f"Python {platform.python_version()} · Qt {qVersion()} · {platform.system()}</div>")
+        title_lbl.setTextFormat(Qt.RichText)
+        title_lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        header.addWidget(title_lbl, 1)
+        outer.addLayout(header)
+
+        desc = QLabel(
+            "Host software for the PolyKybd split keyboard with per-keycap "
+            "OLED displays — tracks the active window and pushes overlays, "
+            "language and keymap updates to the keyboard.")
+        desc.setWordWrap(True)
+        outer.addWidget(desc)
+
+        # Project links — open in the system browser on click.
+        links = QLabel(
+            "<div style='line-height:160%;'>"
+            f"🌐 <a href='{POLYKYBD_HOMEPAGE_URL}'>polykybd.org — Homepage</a><br>"
+            f"💻 <a href='{POLYHOST_REPO_URL}'>Host software (PolyKybdHost)</a><br>"
+            f"⌨️ <a href='{FIRMWARE_REPO_URL}'>Firmware (qmk_firmware)</a><br>"
+            f"🔧 <a href='{HARDWARE_REPO_URL}'>Hardware (PolyKybd)</a>"
+            "</div>")
+        links.setTextFormat(Qt.RichText)
+        links.setOpenExternalLinks(True)
+        links.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        outer.addWidget(links)
+
+        btn_box = QDialogButtonBox(QDialogButtonBox.Ok)
+        btn_box.accepted.connect(dlg.accept)
+        ok_btn = btn_box.button(QDialogButtonBox.Ok)
+        if ok_btn is not None:
+            ok_btn.setDefault(True)
+            ok_btn.setFocus()
+        outer.addWidget(btn_box, 0, Qt.AlignRight)
+
+        dlg.setMinimumWidth(360)
+        return dlg
+
+    def show_about_dialog(self):
+        """Show the modal About dialog, snapped near the tray icon."""
+        dlg = self._build_about_dialog()
+        QTimer.singleShot(0, lambda: position_near_tray(dlg, self.tray))
+        dlg.exec_()
 
     def send_shortcuts(self):
         file_name = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
