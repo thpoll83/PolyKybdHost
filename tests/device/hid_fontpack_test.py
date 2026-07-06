@@ -611,6 +611,18 @@ class TestValidateDoomwad(unittest.TestCase):
         from polyhost.device.hid_fontpack import DOOMWAD_BUNDLE_ID
         self.assertEqual(DOOMWAD_BUNDLE_ID, 0x7F)
 
+    def test_flash_helpers_accept_bytes(self):
+        # install_* passes the already-read (and validated) bytes straight
+        # through, so the file is read once — invalid bytes must be rejected
+        # before any HID traffic (hid=None would explode otherwise).
+        from polyhost.device.hid_fontpack import flash_doomwad, flash_doompack
+        ok, msg = flash_doomwad(None, b"IWAD" + b"\x00" * 100)
+        self.assertFalse(ok)
+        self.assertIn("magic", msg)
+        ok, msg = flash_doompack(None, b"NOPE" + b"\x00" * 100)
+        self.assertFalse(ok)
+        self.assertIn("magic", msg)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -199,15 +199,18 @@ class HidHelper:
             except Exception:
                 pass
             self.remote_console = None
-        device_interfaces = hid.enumerate(self.settings.VID, self.settings.PID)
-        console_hid_interfaces = [j for j in device_interfaces
-                                  if j['usage_page'] == self.settings.HID_CONSOLE_USAGE_PAGE
-                                  and j['usage'] == self.settings.HID_CONSOLE_USAGE]
-        if console_hid_interfaces:
-            try:
+        # One guard around the whole enumerate+open sequence: hid.enumerate
+        # itself can raise on USB churn/permission errors, and this runs from
+        # the background self-heal path where an escaped exception is noise.
+        try:
+            device_interfaces = hid.enumerate(self.settings.VID, self.settings.PID)
+            console_hid_interfaces = [j for j in device_interfaces
+                                      if j['usage_page'] == self.settings.HID_CONSOLE_USAGE_PAGE
+                                      and j['usage'] == self.settings.HID_CONSOLE_USAGE]
+            if console_hid_interfaces:
                 self.remote_console = hid.Device(path=console_hid_interfaces[0]['path'])
-            except Exception:
-                self.remote_console = None
+        except Exception:
+            self.remote_console = None
         return self.remote_console is not None
 
     def interface_acquired(self):

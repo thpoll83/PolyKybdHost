@@ -1128,7 +1128,7 @@ class PolyCore:
                 self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
 
             fok, fmsg = hid_fontpack.flash_doomwad(
-                self.keeb.hid, path, progress_cb=_progress, cancel_flag=cancel_flag)
+                self.keeb.hid, whx_bytes, progress_cb=_progress, cancel_flag=cancel_flag)
             self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg})
 
         # No coalesce_key: a flash must never be superseded by a later job.
@@ -1163,7 +1163,7 @@ class PolyCore:
                 self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
 
             fok, fmsg = hid_fontpack.flash_doompack(
-                self.keeb.hid, path, progress_cb=_progress, cancel_flag=cancel_flag)
+                self.keeb.hid, pack_bytes, progress_cb=_progress, cancel_flag=cancel_flag)
             self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg})
 
         # No coalesce_key: a flash must never be superseded by a later job.

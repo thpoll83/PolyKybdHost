@@ -35,6 +35,12 @@ OS_MIN_PROTOCOL = 7
 # Minimum firmware PROTOCOL_VERSION for the glyph-script get/set command (cmd 30).
 GLYPH_SCRIPT_MIN_PROTOCOL = 9
 
+# Console self-heal (see get_console_output): reopen the console interface after
+# this many consecutive failed reads (~5 s at the 250 ms poll), throttled to at
+# most one reopen attempt per interval.
+CONSOLE_FAIL_REOPEN_THRESHOLD = 20
+CONSOLE_REOPEN_MIN_INTERVAL_S = 5.0
+
 from polyhost.util.dict_util import split_dict
 
 
@@ -146,7 +152,7 @@ class PolyKybd:
             # "Success" line per 250 ms console poll (field 2026-07-04).
             self.log.debug("console read failed: %s", e)
             self._console_fail_count += 1
-            if self._console_fail_count >= 20:  # ~5 s of failures at 250 ms
+            if self._console_fail_count >= CONSOLE_FAIL_REOPEN_THRESHOLD:
                 self._console_fail_count = 0
                 self._maybe_reopen_console()
 
@@ -159,7 +165,7 @@ class PolyKybd:
     def _maybe_reopen_console(self):
         """Throttled console-interface reopen (see get_console_output)."""
         now = time.monotonic()
-        if now - self._console_reopen_at < 5.0:
+        if now - self._console_reopen_at < CONSOLE_REOPEN_MIN_INTERVAL_S:
             return
         self._console_reopen_at = now
         if self.hid and self.hid.reopen_console():

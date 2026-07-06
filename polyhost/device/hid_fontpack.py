@@ -354,7 +354,7 @@ def validate_doomwad(whx_bytes) -> tuple[bool, str]:
     return True, ""
 
 
-def flash_doomwad(hid, whx_path: str, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
+def flash_doomwad(hid, whx: str | bytes, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
     """Install the doom easter egg's WHX game data to BOTH halves over HID.
 
     Rides the font-pack BEGIN/CHUNK/COMMIT transport with the DOOMWAD pseudo
@@ -362,6 +362,9 @@ def flash_doomwad(hid, whx_path: str, progress_cb=None, cancel_flag: list = None
     resource region (the engine's TINY_WAD_ADDR) and the split bridge writes
     the slave's copy in the same pass, so no BOOTSEL access is needed on
     either half. The data survives firmware updates (different flash region).
+
+    `whx` is the raw image bytes, or a path for convenience — callers that
+    already validated the contents pass bytes, so the file is read once.
     """
     def report(pct, msg):
         if progress_cb:
@@ -370,8 +373,11 @@ def flash_doomwad(hid, whx_path: str, progress_cb=None, cancel_flag: list = None
     def cancelled():
         return cancel_flag is not None and cancel_flag[0]
 
-    with open(whx_path, 'rb') as f:
-        whx_bytes = f.read()
+    if isinstance(whx, (bytes, bytearray)):
+        whx_bytes = bytes(whx)
+    else:
+        with open(whx, 'rb') as f:
+            whx_bytes = f.read()
 
     valid, reason = validate_doomwad(whx_bytes)
     if not valid:
@@ -403,7 +409,7 @@ def validate_doompack(pack_bytes) -> tuple[bool, str]:
     return True, ""
 
 
-def flash_doompack(hid, plyx_path: str, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
+def flash_doompack(hid, plyx: str | bytes, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
     """Install the doom easter egg's executable engine pack (.plyx) to BOTH
     halves over HID — the slave's lockstep drone runs the same engine.
 
@@ -411,7 +417,10 @@ def flash_doompack(hid, plyx_path: str, progress_cb=None, cancel_flag: list = No
     pack is RAM-paired with the exact firmware build it was produced with
     (doom/pack/build_pack.sh); a mismatched pack is harmless — the firmware
     loader refuses it at game entry — but the egg then runs the fire demo
-    until a matching pack is flashed."""
+    until a matching pack is flashed.
+
+    `plyx` is the raw pack bytes, or a path for convenience — callers that
+    already validated the contents pass bytes, so the file is read once."""
     def report(pct, msg):
         if progress_cb:
             progress_cb(pct, msg)
@@ -419,8 +428,11 @@ def flash_doompack(hid, plyx_path: str, progress_cb=None, cancel_flag: list = No
     def cancelled():
         return cancel_flag is not None and cancel_flag[0]
 
-    with open(plyx_path, 'rb') as f:
-        pack_bytes = f.read()
+    if isinstance(plyx, (bytes, bytearray)):
+        pack_bytes = bytes(plyx)
+    else:
+        with open(plyx, 'rb') as f:
+            pack_bytes = f.read()
 
     valid, reason = validate_doompack(pack_bytes)
     if not valid:
