@@ -58,6 +58,7 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("LANG_MENU_BUILT True", proc.stdout)
         self.assertIn("LAYOUT_OK layers=9", proc.stdout)
         self.assertIn("DAEMON_QUIT_ACTION present", proc.stdout)
+        self.assertIn("UPDATE_ROUTED_TO_DAEMON True", proc.stdout)
         self.assertIn("SERVER_RUNNING True", proc.stdout)
 
 
@@ -122,6 +123,10 @@ def _smoke_client():
         def settings_list(self):
             return {"brightness": 25}
 
+        def install_update(self):
+            self.install_update_called = True
+            return (True, {"queued": True, "version": "9.9.9"})
+
     addr = os.path.join(tempfile.mkdtemp(), "ctl.sock")
     key = protocol.load_or_create_authkey()
     lg = logging.getLogger("smoke")
@@ -161,6 +166,22 @@ def _smoke_client():
             app.layout_dialog.close()
             # Client mode offers an explicit "stop the daemon too" entry.
             print("DAEMON_QUIT_ACTION", "present" if app.exit_with_daemon is not None else "absent")
+            # A self-update in client mode must be driven through the daemon over
+            # RPC (so the daemon re-execs onto the new protocol), NOT via a local
+            # in-GUI UpdateInstaller thread. Drive _run_update_installer directly
+            # (a real install would end in restart_app/os.execv, which we avoid by
+            # not emitting the terminal update_finished_ok event here).
+            core.install_update_called = False
+            rel = type("Rel", (), {"version": "9.9.9", "published_at": ""})()
+            app._run_update_installer(rel)
+            for _ in range(20):
+                app.processEvents()
+                time.sleep(0.02)
+            print("UPDATE_ROUTED_TO_DAEMON",
+                  getattr(core, "install_update_called", False) and app._update_installer is None)
+            if app._update_progress is not None:
+                app._update_progress.close()
+                app._update_progress = None
             app.quit_app()
         print("SERVER_RUNNING", srv._running)
     finally:
