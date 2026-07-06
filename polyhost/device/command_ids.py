@@ -82,9 +82,13 @@ class IdleStyle(Enum):
 
     PULSE is the legacy contrast-only breathing; JITTER additionally relocates the
     key legend by a small random offset each pulse cycle so the lit pixels migrate.
+    DOOM runs the doom easter egg's attract demo as a screensaver instead of the
+    pulse (dismissed by the first key press); firmware without the doom build (or
+    older than the feature) falls back to / NACKs it — surfaced as a plain error.
     """
     PULSE = 0
     JITTER = 1
+    DOOM = 2
 
 
 class GlyphScript(Enum):

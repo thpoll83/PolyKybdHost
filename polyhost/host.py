@@ -408,7 +408,11 @@ class PolyHost(QApplication):
         self.idle_pulse_action.setData(IdleStyle.PULSE.value)
         self.idle_jitter_action = QAction("Jitter (move legend)", parent=self, checkable=True)
         self.idle_jitter_action.setData(IdleStyle.JITTER.value)
-        for act in (self.idle_pulse_action, self.idle_jitter_action):
+        # Attract-demo screensaver: needs doom-enabled firmware — an unsupported
+        # keyboard NACKs the set, surfaced by change_idle_style's error path.
+        self.idle_doom_action = QAction("Doom (attract demo)", parent=self, checkable=True)
+        self.idle_doom_action.setData(IdleStyle.DOOM.value)
+        for act in (self.idle_pulse_action, self.idle_jitter_action, self.idle_doom_action):
             idle_group.addAction(act)
             # noinspection PyUnresolvedReferences
             act.triggered.connect(self.change_idle_style)
@@ -1191,6 +1195,7 @@ class PolyHost(QApplication):
         ok, value = self.core.get_idle_style()
         self.idle_pulse_action.setChecked(bool(ok) and value == IdleStyle.PULSE.value)
         self.idle_jitter_action.setChecked(bool(ok) and value == IdleStyle.JITTER.value)
+        self.idle_doom_action.setChecked(bool(ok) and value == IdleStyle.DOOM.value)
 
     def change_idle_style(self):
         value = self.sender().data()

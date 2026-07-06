@@ -159,7 +159,7 @@ def _cmd_idle(client, args):
     return 0
 
 
-_IDLE_STYLE_NAMES = {0: "pulse", 1: "jitter"}
+_IDLE_STYLE_NAMES = {0: "pulse", 1: "jitter", 2: "doom"}
 _IDLE_STYLE_VALUES = {v: k for k, v in _IDLE_STYLE_NAMES.items()}
 
 
@@ -501,8 +501,9 @@ def build_parser():
     p_idle_style = sub.add_parser(
         "idle-style", help="get or set the idle anti-burn-in style (firmware v4+)")
     p_idle_style.add_argument(
-        "style", nargs="?", choices=["pulse", "jitter"], default=None,
-        help="omit to print the current style; 'pulse' = legacy, 'jitter' = move the legend")
+        "style", nargs="?", choices=["pulse", "jitter", "doom"], default=None,
+        help="omit to print the current style; 'pulse' = legacy, 'jitter' = move the "
+             "legend, 'doom' = attract-demo screensaver (doom-enabled firmware)")
     p_idle_style.set_defaults(func=_cmd_idle_style)
 
     p_glyph_script = sub.add_parser(
