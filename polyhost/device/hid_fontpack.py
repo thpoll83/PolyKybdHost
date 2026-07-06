@@ -403,8 +403,8 @@ def validate_doompack(pack_bytes) -> tuple[bool, str]:
     return True, ""
 
 
-def flash_doompack(hid, plyd_path: str, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
-    """Install the doom easter egg's executable engine pack (.plyd) to BOTH
+def flash_doompack(hid, plyx_path: str, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
+    """Install the doom easter egg's executable engine pack (.plyx) to BOTH
     halves over HID — the slave's lockstep drone runs the same engine.
 
     Same transport as :func:`flash_doomwad`, DOOMPACK pseudo bundle. ⚠️ The
@@ -419,7 +419,7 @@ def flash_doompack(hid, plyd_path: str, progress_cb=None, cancel_flag: list = No
     def cancelled():
         return cancel_flag is not None and cancel_flag[0]
 
-    with open(plyd_path, 'rb') as f:
+    with open(plyx_path, 'rb') as f:
         pack_bytes = f.read()
 
     valid, reason = validate_doompack(pack_bytes)

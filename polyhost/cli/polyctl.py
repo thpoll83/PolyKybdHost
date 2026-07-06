@@ -575,8 +575,8 @@ def build_parser():
     p_doom_pack = doom_sub.add_parser(
         "install-pack",
         help="install the executable engine pack to both halves (DoomPack firmware "
-             "flavour; the .plyd must match the firmware build — see doom/PACK_DESIGN.md)")
-    p_doom_pack.add_argument("file", help="path to the doom_pack_vN.plyd engine pack")
+             "flavour; the .plyx must match the firmware build — see doom/PACK_DESIGN.md)")
+    p_doom_pack.add_argument("file", help="path to the doom_pack_vN.plyx engine pack")
     p_doom.set_defaults(func=_cmd_doom)
 
     p_upd = sub.add_parser("update", help="host self-update")

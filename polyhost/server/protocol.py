@@ -97,7 +97,7 @@ M_FONTPACK_BUNDLES = "fontpack.bundles"  # {} -> {"shipped": bool, "bundles": [{
 M_DOOM_INSTALL = "doom.install"        # {"path": str} -> {"queued": bool}; installs the easter egg's
                                        #   WHX game data (streams fontpack_flash_* events)
 M_DOOM_INSTALL_PACK = "doom.install_pack"  # {"path": str} -> {"queued": bool}; installs the easter
-                                       #   egg's executable engine pack (.plyd, same event stream)
+                                       #   egg's executable engine pack (.plyx, same event stream)
 M_HOST_SHUTDOWN = "host.shutdown"      # {} -> {"shutting_down": True}
 # Inject an external active-window report into remote window tracking (H4c).
 # {"handle": str|int, "name": str, "title": str} -> (ok, payload). Same data the

@@ -1136,7 +1136,7 @@ class PolyCore:
         return True, {"queued": True}
 
     def install_doompack(self, path):
-        """Install the doom easter egg's executable engine pack (.plyd, both
+        """Install the doom easter egg's executable engine pack (.plyx, both
         halves — the slave's lockstep drone runs the same engine) as a worker
         job. The DoomPack half of the shipping-shape split (qmk repo,
         doom/PACK_DESIGN.md): same transport, events and error model as
