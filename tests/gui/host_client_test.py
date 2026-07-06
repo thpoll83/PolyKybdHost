@@ -95,8 +95,16 @@ def _smoke_default():
         # Status block renders either "No keyboard connected" or a "Connected
         # keyboard" line depending on whether HID enumeration finds a device.
         has_status = "eyboard" in blob
-        has_ok = about.findChild(QDialogButtonBox).button(QDialogButtonBox.Ok) is not None
-        print("ABOUT_OK", (_ver in blob) and has_links and has_status and has_ok)
+        # Environment metrics: uptime + config/log paths.
+        has_env = ("Uptime" in blob) and ("Config" in blob) and ("Logs" in blob)
+        bb = about.findChild(QDialogButtonBox)
+        has_ok = bb.button(QDialogButtonBox.Ok) is not None
+        has_copy = any(b.text().startswith("Copy diagnostics") for b in bb.buttons())
+        # Diagnostics text (clipboard payload) carries the version + a Config line.
+        diag = app._diagnostics_text(app._gather_about_info())
+        has_diag = (_ver in diag) and ("Config:" in diag)
+        print("ABOUT_OK", (_ver in blob) and has_links and has_status
+              and has_env and has_ok and has_copy and has_diag)
         about.deleteLater()
         app.quit_app()
     print("SMOKE OK")

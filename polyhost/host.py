@@ -209,6 +209,8 @@ class PolyHost(QApplication):
     def __init__(self, log_level, debug_mode, ignore_version=False,
                  client_mode=False, endpoint=None, connect_retry=False):
         super().__init__(sys.argv)
+        # Wall-clock start, for the About dialog's uptime line.
+        self._start_time = time.monotonic()
         # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
         from polyhost.util.macos_ui import hide_dock_icon
         hide_dock_icon()
@@ -1125,13 +1127,131 @@ class PolyHost(QApplication):
             subprocess.Popen(["xdg-open", out_dir])
         QMessageBox.information(None, "Mock Dump", f"Saved {len(store)} bitmaps to:\n{out_dir}")
 
+    def _format_uptime(self) -> str:
+        """Human-readable time since this process started (for the About dialog)."""
+        secs = max(0, int(time.monotonic() - self._start_time))
+        d, rem = divmod(secs, 86400)
+        h, rem = divmod(rem, 3600)
+        m, s = divmod(rem, 60)
+        if d:
+            return f"{d}d {h}h {m}m"
+        if h:
+            return f"{h}h {m}m"
+        if m:
+            return f"{m}m {s}s"
+        return f"{s}s"
+
+    def _gather_about_info(self) -> dict:
+        """Collect everything the About dialog + diagnostics text show, in one
+        place. Reads only cached status (no device I/O; works in client mode over
+        RPC too) and never raises — a failed read just yields blanks/defaults."""
+        import platformdirs
+        from PyQt5.QtCore import qVersion
+        try:
+            st = self.core.get_status() or {}
+        except Exception:  # noqa: BLE001 — a status read must never break About
+            st = {}
+        try:
+            n_lang = len(self.core.list_languages() or [])
+        except Exception:  # noqa: BLE001
+            n_lang = 0
+        n_maps = len(getattr(self.core, "mapping", {}) or {})
+        return {
+            "version": __version__,
+            "host_protocol": __protocol__,
+            "mode": "daemon client" if self.client_mode else "standalone",
+            "python": platform.python_version(),
+            "qt": qVersion(),
+            "os": f"{platform.system()} {platform.release()}".strip(),
+            "uptime": self._format_uptime(),
+            "present": bool(st.get("device_present")),
+            "connected": bool(st.get("connected")),
+            "paused": bool(st.get("paused")),
+            "name": st.get("name") or "PolyKybd",
+            "fw": st.get("fw_version") or "?",
+            "hw": st.get("hw_version") or "?",
+            "lang": st.get("current_lang") or "?",
+            "n_lang": n_lang,
+            "kb_proto": st.get("protocol"),
+            "n_maps": n_maps,
+            "config_dir": platformdirs.user_config_dir("PolyHost"),
+            "log_dir": os.getcwd(),
+        }
+
+    @staticmethod
+    def _about_state_word(info: dict) -> str:
+        if info["paused"]:
+            return "paused"
+        if info["connected"]:
+            return "connected"
+        return "present — not connected (protocol/version)"
+
+    def _about_status_html(self, info: dict) -> str:
+        """Keyboard-status block: name, firmware + its protocol (flagged when it
+        mismatches the host), hardware, language count, and connection state.
+        Degrades to 'No keyboard connected' when nothing is present."""
+        if not info["present"]:
+            return ("<b>Keyboard</b><br>"
+                    "<span style='color:gray;'>No keyboard connected.</span>")
+        kb_proto = info["kb_proto"]
+        proto_txt = f"P{kb_proto}" if kb_proto is not None else "P?"
+        if kb_proto is not None and kb_proto != info["host_protocol"]:
+            proto_txt += " <span style='color:#c0392b;'>⚠ mismatch</span>"
+        lang_line = info["lang"] + (
+            f" · {info['n_lang']} languages loaded" if info["n_lang"] else "")
+        rows = [
+            f"<b>Connected keyboard:</b> {info['name']} "
+            f"<span style='color:gray;'>({self._about_state_word(info)})</span>",
+            f"<b>Firmware:</b> {info['fw']} &nbsp;·&nbsp; protocol {proto_txt}",
+            f"<b>Hardware:</b> {info['hw']}",
+            f"<b>Language:</b> {lang_line}",
+        ]
+        return "<div style='line-height:150%;'>" + "<br>".join(rows) + "</div>"
+
+    def _about_env_html(self, info: dict) -> str:
+        """Host environment block: uptime, overlay-mapping count (when known),
+        and the config + log-file locations (handy for support)."""
+        rows = [f"<b>Uptime:</b> {info['uptime']}"]
+        if info["n_maps"]:
+            rows.append(f"<b>Overlay mappings:</b> {info['n_maps']} apps")
+        rows.append(f"<b>Config:</b> {info['config_dir']}")
+        rows.append(f"<b>Logs:</b> {info['log_dir']}")
+        return ("<div style='line-height:150%; color:gray;'>"
+                + "<br>".join(rows) + "</div>")
+
+    def _diagnostics_text(self, info: dict) -> str:
+        """Plain-text version of the About info, for the clipboard button."""
+        lines = [
+            f"PolyKybdHost {info['version']} (HID protocol P{info['host_protocol']})",
+            f"Mode: {info['mode']}  |  Uptime: {info['uptime']}",
+            f"Python {info['python']} · Qt {info['qt']} · {info['os']}",
+        ]
+        if info["present"]:
+            kb_proto = info["kb_proto"]
+            proto = f"P{kb_proto}" if kb_proto is not None else "P?"
+            if kb_proto is not None and kb_proto != info["host_protocol"]:
+                proto += " (MISMATCH)"
+            lines += [
+                f"Keyboard: {info['name']} ({self._about_state_word(info)})",
+                f"  Firmware {info['fw']} · protocol {proto}",
+                f"  Hardware {info['hw']} · Language {info['lang']}"
+                + (f" ({info['n_lang']} loaded)" if info["n_lang"] else ""),
+            ]
+        else:
+            lines.append("Keyboard: not connected")
+        if info["n_maps"]:
+            lines.append(f"Overlay mappings: {info['n_maps']} apps")
+        lines += [f"Config: {info['config_dir']}", f"Logs: {info['log_dir']}"]
+        return "\n".join(lines)
+
     def _build_about_dialog(self) -> QDialog:
-        """Construct the About dialog (host name/version + project links + OK).
+        """Construct the About dialog (host + keyboard info, project links, and
+        Copy-diagnostics / OK buttons).
 
         Split from :meth:`show_about_dialog` so it can be built and inspected in
         a test without the modal ``exec_()`` blocking. Works in client mode too —
         it only shows info about this host program, no device access."""
-        from PyQt5.QtCore import qVersion
+        info = self._gather_about_info()
 
         dlg = QDialog(None)
         dlg.setWindowTitle("About PolyKybdHost")
@@ -1149,14 +1269,13 @@ class PolyHost(QApplication):
         logo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         header.addWidget(logo, 0, Qt.AlignTop)
 
-        mode = "daemon client" if self.client_mode else "standalone"
         title_lbl = QLabel(
             f"<div style='font-size:15pt; font-weight:bold;'>PolyKybdHost</div>"
-            f"<div style='margin-top:3px;'>Version {__version__}"
-            f" &nbsp;·&nbsp; HID protocol P{__protocol__}</div>"
+            f"<div style='margin-top:3px;'>Version {info['version']}"
+            f" &nbsp;·&nbsp; HID protocol P{info['host_protocol']}</div>"
             f"<div style='color:gray; margin-top:3px;'>"
-            f"Python {platform.python_version()} · Qt {qVersion()} · "
-            f"{platform.system()} · {mode}</div>")
+            f"Python {info['python']} · Qt {info['qt']} · "
+            f"{platform.system()} · {info['mode']}</div>")
         title_lbl.setTextFormat(Qt.RichText)
         title_lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         header.addWidget(title_lbl, 1)
@@ -1169,16 +1288,22 @@ class PolyHost(QApplication):
         desc.setWordWrap(True)
         outer.addWidget(desc)
 
-        # Connected-keyboard metrics — a cached, no-I/O status snapshot (works in
-        # client mode over RPC too). Shows the keyboard's own protocol next to the
-        # host's above, so a "Protocol mismatch" is diagnosable right here.
-        status = QLabel(self._about_status_html())
+        # Connected-keyboard metrics — cached snapshot; the keyboard's own protocol
+        # sits next to the host's above, so a mismatch is diagnosable right here.
+        status = QLabel(self._about_status_html(info))
         status.setTextFormat(Qt.RichText)
         status.setWordWrap(True)
         status.setStyleSheet(
             "QLabel { background: rgba(127,127,127,0.12); border-radius: 6px;"
             " padding: 8px 10px; }")
         outer.addWidget(status)
+
+        # Host environment (uptime / overlay mappings / config + log paths).
+        env = QLabel(self._about_env_html(info))
+        env.setTextFormat(Qt.RichText)
+        env.setWordWrap(True)
+        env.setTextInteractionFlags(Qt.TextSelectableByMouse)  # copy the paths
+        outer.addWidget(env)
 
         # Project links — open in the system browser on click. Shown scheme-less
         # (github.com/… , polykybd.org) but href carries the full https URL.
@@ -1199,51 +1324,25 @@ class PolyHost(QApplication):
         links.setTextInteractionFlags(Qt.TextBrowserInteraction)
         outer.addWidget(links)
 
+        # Buttons: Copy diagnostics (left, ActionRole — doesn't close) + OK.
         btn_box = QDialogButtonBox(QDialogButtonBox.Ok)
+        copy_btn = btn_box.addButton("Copy diagnostics", QDialogButtonBox.ActionRole)
+
+        def _copy_diag():
+            self.clipboard().setText(self._diagnostics_text(self._gather_about_info()))
+            copy_btn.setText("Copied ✓")
+            QTimer.singleShot(1500, lambda: copy_btn.setText("Copy diagnostics"))
+        copy_btn.clicked.connect(_copy_diag)
+
         btn_box.accepted.connect(dlg.accept)
         ok_btn = btn_box.button(QDialogButtonBox.Ok)
         if ok_btn is not None:
             ok_btn.setDefault(True)
             ok_btn.setFocus()
-        outer.addWidget(btn_box, 0, Qt.AlignRight)
+        outer.addWidget(btn_box)
 
-        dlg.setMinimumWidth(360)
+        dlg.setMinimumWidth(380)
         return dlg
-
-    def _about_status_html(self) -> str:
-        """Keyboard-status block for the About dialog: name, firmware + its
-        protocol (flagged when it mismatches the host), hardware, and language
-        count. Reads the cached status snapshot (no device I/O); degrades to
-        'No keyboard connected' when nothing is present or the read fails."""
-        try:
-            st = self.core.get_status() or {}
-        except Exception:  # noqa: BLE001 — a status read must never break About
-            st = {}
-        try:
-            n_lang = len(self.core.list_languages() or [])
-        except Exception:  # noqa: BLE001
-            n_lang = 0
-
-        if not st.get("device_present"):
-            return ("<b>Keyboard</b><br>"
-                    "<span style='color:gray;'>No keyboard connected.</span>")
-
-        name = st.get("name") or "PolyKybd"
-        fw = st.get("fw_version") or "?"
-        hw = st.get("hw_version") or "?"
-        lang = st.get("current_lang") or "?"
-        kb_proto = st.get("protocol")
-        proto_txt = f"P{kb_proto}" if kb_proto is not None else "P?"
-        if kb_proto is not None and kb_proto != __protocol__:
-            proto_txt += " <span style='color:#c0392b;'>⚠ mismatch</span>"
-        lang_line = f"{lang}" + (f" · {n_lang} languages loaded" if n_lang else "")
-        rows = [
-            f"<b>Connected keyboard:</b> {name}",
-            f"<b>Firmware:</b> {fw} &nbsp;·&nbsp; protocol {proto_txt}",
-            f"<b>Hardware:</b> {hw}",
-            f"<b>Language:</b> {lang_line}",
-        ]
-        return "<div style='line-height:150%;'>" + "<br>".join(rows) + "</div>"
 
     def show_about_dialog(self):
         """Show the modal About dialog, snapped near the tray icon."""
