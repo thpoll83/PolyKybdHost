@@ -71,7 +71,9 @@ class TestHeadlessHost(unittest.TestCase):
 
     def test_run_loop_exits_on_request_stop(self):
         # Drive the real run() wait-loop on a thread and confirm request_stop
-        # makes it return (and tear down) promptly.
+        # makes it return (and tear down) promptly. Guards against a slow-quit
+        # regression — e.g. the remote-window listener's accept() timeout, which
+        # `close()` waits out on the join (see remote_window.RECV_ACCEPT_TIMEOUT).
         import threading
         from polyhost.headless import HeadlessHost
         host = HeadlessHost(_quiet())
@@ -181,7 +183,7 @@ class TestRunHeadlessLogging(unittest.TestCase):
         tmp = tempfile.mkdtemp(prefix="poly_dlog_")
 
         class _StubHost:
-            def __init__(self, log, ignore_version=False):
+            def __init__(self, log, ignore_version=False, allow_key_injection=False):
                 log.info("stub daemon up")
 
             def run(self):
