@@ -17,7 +17,7 @@ class TestIdleStyleEncoding(unittest.TestCase):
         # Lockstep with the firmware's poly_idle_style (state.h) — append-only.
         self.assertEqual(IdleStyle.PULSE.value, 0)
         self.assertEqual(IdleStyle.JITTER.value, 1)
-        self.assertEqual(IdleStyle.DOOM.value, 2)
+        self.assertEqual(IdleStyle.IDDQD.value, 2)
 
     def test_compose_set_jitter(self):
         result = compose_cmd(Cmd.IDLE_STYLE, IdleStyle.JITTER.value)

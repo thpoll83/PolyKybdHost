@@ -504,7 +504,7 @@ def build_parser():
     p_idle_style.add_argument(
         "style", nargs="?", choices=list(_IDLE_STYLE_VALUES.keys()), default=None,
         help="omit to print the current style; 'pulse' = legacy, 'jitter' = move the "
-             "legend, 'doom' = attract-demo screensaver (doom-enabled firmware)")
+             "legend, 'iddqd' = attract-demo screensaver (doom-enabled firmware)")
     p_idle_style.set_defaults(func=_cmd_idle_style)
 
     p_glyph_script = sub.add_parser(
