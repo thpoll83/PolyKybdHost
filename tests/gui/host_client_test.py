@@ -90,7 +90,8 @@ def _smoke_default():
         about = app._build_about_dialog()
         blob = " ".join(l.text() for l in about.findChildren(QLabel))
         has_links = all(u in blob for u in (
-            "polykybd.org", "discord.gg", "github.com/thpoll83/PolyKybdHost",
+            "polykybd.org", "ko-fi.com/polykb", "Blog", "Discord", "discord.gg",
+            "github.com/thpoll83/PolyKybdHost",
             "github.com/thpoll83/qmk_firmware", "github.com/thpoll83/PolyKybd"))
         # Status block renders either "No keyboard connected" or a "Connected
         # keyboard" line depending on whether HID enumeration finds a device.

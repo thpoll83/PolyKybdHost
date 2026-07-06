@@ -70,6 +70,7 @@ IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
 # Project links surfaced in the About dialog.
 POLYKYBD_HOMEPAGE_URL = "https://polykybd.org"
+KOFI_BLOG_URL         = "https://ko-fi.com/polykb"
 SUPPORT_URL           = "https://discord.gg/gW8JescH7M"
 POLYHOST_REPO_URL     = "https://github.com/thpoll83/PolyKybdHost"
 FIRMWARE_REPO_URL     = "https://github.com/thpoll83/qmk_firmware"
@@ -1306,15 +1307,18 @@ class PolyHost(QApplication):
         outer.addWidget(env)
 
         # Project links — open in the system browser on click. Shown scheme-less
-        # (github.com/… , polykybd.org) but href carries the full https URL.
-        def _link(url, emoji):
+        # (github.com/… , polykybd.org) but href carries the full https URL. Links
+        # whose URL doesn't say what they are (Blog, Discord) get a short label.
+        def _link(url, emoji, label=None):
             shown = url.split("://", 1)[-1]
-            return f"{emoji} <a href='{url}'>{shown}</a>"
+            text = f"{label} — {shown}" if label else shown
+            return f"{emoji} <a href='{url}'>{text}</a>"
 
         links = QLabel(
             "<div style='line-height:170%;'>"
             + _link(POLYKYBD_HOMEPAGE_URL, "🌐") + "<br>"
-            + _link(SUPPORT_URL, "💬") + "<br>"
+            + _link(KOFI_BLOG_URL, "📝", "Blog") + "<br>"
+            + _link(SUPPORT_URL, "💬", "Discord") + "<br>"
             + _link(POLYHOST_REPO_URL, "💻") + "<br>"
             + _link(FIRMWARE_REPO_URL, "⌨️") + "<br>"
             + _link(HARDWARE_REPO_URL, "🔧")
