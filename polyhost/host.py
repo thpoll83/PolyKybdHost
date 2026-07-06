@@ -1335,7 +1335,14 @@ class PolyHost(QApplication):
         def _copy_diag():
             self.clipboard().setText(self._diagnostics_text(self._gather_about_info()))
             copy_btn.setText("Copied ✓")
-            QTimer.singleShot(1500, lambda: copy_btn.setText("Copy diagnostics"))
+            # Reset the label after a moment. Parent the timer to the button so
+            # it's destroyed with the dialog — a bare QTimer.singleShot could
+            # otherwise fire into a deleted widget if the dialog is closed within
+            # the delay (RuntimeError on the dead Qt object).
+            reset = QTimer(copy_btn)
+            reset.setSingleShot(True)
+            reset.timeout.connect(lambda: copy_btn.setText("Copy diagnostics"))
+            reset.start(1500)
         copy_btn.clicked.connect(_copy_diag)
 
         btn_box.accepted.connect(dlg.accept)

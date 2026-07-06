@@ -61,6 +61,7 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("LAYOUT_OK layers=9", proc.stdout)
         self.assertIn("DAEMON_QUIT_ACTION present", proc.stdout)
         self.assertIn("UPDATE_ROUTED_TO_DAEMON True", proc.stdout)
+        self.assertIn("CLIENT_ABOUT_OK True", proc.stdout)
         self.assertIn("SERVER_RUNNING True", proc.stdout)
 
 
@@ -210,6 +211,22 @@ def _smoke_client():
             if app._update_progress is not None:
                 app._update_progress.close()
                 app._update_progress = None
+            # About dialog over the RemoteCore path (client mode): builds and
+            # renders the daemon's status snapshot (get_status/list_languages via
+            # RPC), the links, and the Copy-diagnostics button — the standalone
+            # smoke covers the in-process core; this covers the client core.
+            from PyQt5.QtWidgets import QLabel as _QLabel, QDialogButtonBox as _QBB
+            about = app._build_about_dialog()
+            cblob = " ".join(l.text() for l in about.findChildren(_QLabel))
+            c_links = all(u in cblob for u in (
+                "polykybd.org", "discord.gg", "github.com/thpoll83/PolyKybdHost"))
+            c_bb = about.findChild(_QBB)
+            c_copy = any(b.text().startswith("Copy diagnostics") for b in c_bb.buttons())
+            c_diag = "Config:" in app._diagnostics_text(app._gather_about_info())
+            print("CLIENT_ABOUT_OK",
+                  (__version__ in cblob) and c_links and ("eyboard" in cblob)
+                  and c_copy and c_diag)
+            about.deleteLater()
             app.quit_app()
         print("SERVER_RUNNING", srv._running)
     finally:
