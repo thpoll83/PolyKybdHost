@@ -1,9 +1,12 @@
+import logging
 import pathlib
 import threading
 import platform
 import os
 import time
 from typing import Any
+
+log = logging.getLogger('PolyHost')
 if platform.system() == 'Windows':
     import ctypes
     ctypes.CDLL(os.path.dirname(os.path.realpath(__file__)) + '\\win-hidapi-0-15\\hidapi.dll')
@@ -196,8 +199,8 @@ class HidHelper:
         if self.remote_console is not None:
             try:
                 self.remote_console.close()
-            except Exception:
-                pass
+            except Exception as e:
+                log.debug("Closing the stale console handle failed: %s", e)
             self.remote_console = None
         # One guard around the whole enumerate+open sequence: hid.enumerate
         # itself can raise on USB churn/permission errors, and this runs from
@@ -209,7 +212,8 @@ class HidHelper:
                                       and j['usage'] == self.settings.HID_CONSOLE_USAGE]
             if console_hid_interfaces:
                 self.remote_console = hid.Device(path=console_hid_interfaces[0]['path'])
-        except Exception:
+        except Exception as e:
+            log.debug("Console reopen failed (enumerate/open): %s", e)
             self.remote_console = None
         return self.remote_console is not None
 

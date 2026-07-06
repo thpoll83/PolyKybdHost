@@ -624,5 +624,36 @@ class TestValidateDoomwad(unittest.TestCase):
         self.assertIn("magic", msg)
 
 
+class TestValidateDoompack(unittest.TestCase):
+    """PlyX engine-pack validation for the doom easter egg install (DOOMPACK target)."""
+
+    def test_valid_plyx_accepted(self):
+        from polyhost.device.hid_fontpack import validate_doompack
+        ok, msg = validate_doompack(b"PlyX" + b"\x00" * 100)
+        self.assertTrue(ok, msg)
+
+    def test_bad_magic_rejected(self):
+        from polyhost.device.hid_fontpack import validate_doompack
+        ok, msg = validate_doompack(b"PlyF" + b"\x00" * 100)   # a font pack is not an engine pack
+        self.assertFalse(ok)
+        self.assertIn("magic", msg)
+
+    def test_too_small_rejected(self):
+        from polyhost.device.hid_fontpack import validate_doompack
+        ok, _ = validate_doompack(b"PlyX" + b"\x00" * 10)   # below the 64-byte header
+        self.assertFalse(ok)
+
+    def test_too_large_rejected(self):
+        from polyhost.device.hid_fontpack import validate_doompack, DOOMPACK_MAX_SIZE
+        ok, msg = validate_doompack(b"PlyX" + b"\x00" * DOOMPACK_MAX_SIZE)
+        self.assertFalse(ok)
+        self.assertIn("large", msg)
+
+    def test_doompack_bundle_id_matches_firmware(self):
+        # FONTPACK_BUNDLE_DOOMPACK in qmk base/fw_staging.h — keep in lockstep.
+        from polyhost.device.hid_fontpack import DOOMPACK_BUNDLE_ID
+        self.assertEqual(DOOMPACK_BUNDLE_ID, 0x7E)
+
+
 if __name__ == '__main__':
     unittest.main()
