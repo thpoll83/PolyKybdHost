@@ -298,7 +298,9 @@ class FwFlashUpdateTest(unittest.TestCase):
         rc, out, _ = run_streaming(["fontpack", "flash", "fonts.plyf"],
                                    protocol.M_FONTPACK_FLASH, {"queued": True}, events)
         self.assertEqual(rc, 0)
-        self.assertIn("flash complete", out)
+        # Per-bundle op prints "flashing bundle <id>: complete — <msg>".
+        self.assertIn("complete", out)
+        self.assertIn("loaded v7", out)
 
     def test_fontpack_flash_failure_returns_nonzero(self):
         events = [("fontpack_flash_done", {"ok": False, "msg": "crc mismatch"})]

@@ -1407,6 +1407,23 @@ class PolyHost(QApplication):
             f"Downloading v{release.version}…", "PolyKybdHost Update",
             tray_icon=self.tray)
 
+        if self.client_mode:
+            # Daemon-by-default (H4b): the daemon owns the device AND the
+            # protocol gate (its loaded `_version.__protocol__`), so it must be
+            # the process that overwrites the files and re-execs. A GUI-side
+            # install would refresh only this client — the daemon would keep
+            # running the pre-update code and stay on the OLD protocol, so it
+            # would go on rejecting the keyboard with "Protocol mismatch, please
+            # update" until manually restarted (the field-reported bug). Drive
+            # the daemon's installer over RPC instead; its update_* events stream
+            # back through RemoteCore to the same _on_job_done handlers, and the
+            # daemon re-execs itself on completion (see _on_update_done). The
+            # `release` is re-resolved daemon-side, so it isn't passed here.
+            ok, payload = self.core.install_update()
+            if not ok:
+                self._on_update_failed(str(payload))
+            return
+
         b = self.bridge
         self._update_installer = UpdateInstaller(
             release,
@@ -1432,9 +1449,63 @@ class PolyHost(QApplication):
         if self._update_progress is not None:
             self._update_progress.close()
             self._update_progress = None
+        if self.client_mode:
+            # The daemon applied the update in-process and re-execs itself
+            # (headless.py `_on_update_event`), so it comes up on the new code
+            # and the new protocol. This GUI just has to reconnect — but wait
+            # for the daemon to actually go down and rebind first: restarting now
+            # would re-attach to the still-live OLD daemon (leaving the daemon on
+            # the old protocol — the bug), and racing its re-exec risks spawning
+            # a second daemon. See _await_daemon_restart_then_relaunch.
+            self.log.info("Update applied by the daemon; waiting for it to restart…")
+            self._await_daemon_restart_then_relaunch()
+            return
         self.log.info("Update applied, restarting...")
         self.quit_app()
         restart_app()
+
+    def _await_daemon_restart_then_relaunch(self):
+        """Client mode: after a daemon-driven self-update, the daemon re-execs
+        itself. Poll the control endpoint until it has gone down (old daemon
+        tearing down) and come back LIVE (new daemon bound on the updated code),
+        then relaunch this GUI so it reconnects to the fresh daemon and runs the
+        new GUI code too. Requiring the observed down→up transition is what stops
+        us re-attaching to the still-up old daemon; polling until LIVE is what
+        stops the relaunch from race-spawning a competing daemon."""
+        from polyhost.server import instance as inst
+        address = getattr(self.core, "_address", None)
+        authkey = getattr(self.core, "_authkey", None)
+        interval_ms = 400
+        state = {"saw_down": False, "elapsed_ms": 0}
+
+        def _relaunch(reason):
+            self.log.info("Relaunching GUI to reconnect to the core daemon (%s).", reason)
+            self.quit_app()
+            restart_app()
+
+        def poll():
+            if self.is_closing:
+                return
+            try:
+                outcome = inst.probe_existing(address, authkey, timeout=0.3)
+            except Exception:  # noqa: BLE001 — a probe error means "not reachable"
+                outcome = inst.STALE
+            if not state["saw_down"]:
+                if outcome != inst.LIVE:
+                    state["saw_down"] = True
+            elif outcome == inst.LIVE:
+                _relaunch("daemon back up on the new version")
+                return
+            state["elapsed_ms"] += interval_ms
+            if state["elapsed_ms"] >= 30000:
+                # Never observed the clean transition (daemon slow, or it never
+                # dropped). Relaunch anyway — main_app will spawn a daemon if
+                # none is live, so we still end up on the new code.
+                _relaunch("timed out waiting for the daemon restart")
+                return
+            QTimer.singleShot(interval_ms, poll)
+
+        QTimer.singleShot(interval_ms, poll)
 
     def _on_relay_needed(self, relay_path: str):
         """Windows: some files (e.g. hidapi.dll) were locked by the running process.
@@ -1442,6 +1513,19 @@ class PolyHost(QApplication):
         A relay script was written that will copy them once we exit and release
         the handles, then relaunch the app.  All non-DLL files were already copied.
         """
+        if self.client_mode:
+            # The daemon ran the installer, so the daemon owns this relay — its
+            # own headless `_on_update_event` spawns the relay script, which
+            # copies the daemon's locked files after it exits and relaunches the
+            # daemon. This GUI must NOT spawn the relay too; it only needs to
+            # reconnect once the daemon is back, exactly like the clean path.
+            self.log.info("Daemon staged a locked-file relay (%s); "
+                          "waiting for it to restart.", relay_path)
+            if self._update_progress is not None:
+                self._update_progress.close()
+                self._update_progress = None
+            self._await_daemon_restart_then_relaunch()
+            return
         self.log.info("Relay restart needed for locked files: %s", relay_path)
         if self._update_progress is not None:
             self._update_progress.setLabelText("Restarting to complete update…")
@@ -1783,13 +1867,20 @@ class PolyHost(QApplication):
             if self._update_check_error is not None:
                 self._update_check_error(result)
         elif name == "update_progress":
-            self._on_update_progress(*result)
+            # Local UpdateInstaller emits a (pct, msg) tuple; the daemon's core
+            # event (client mode) carries a {"pct","msg"} dict — accept both.
+            if isinstance(result, dict):
+                self._on_update_progress(result.get("pct", -1), result.get("msg", ""))
+            else:
+                self._on_update_progress(*result)
         elif name == "update_finished_ok":
             self._on_update_done()
         elif name == "update_relay_needed":
-            self._on_relay_needed(result)
+            path = result.get("relay_path") if isinstance(result, dict) else result
+            self._on_relay_needed(path)
         elif name == "update_failed":
-            self._on_update_failed(result)
+            msg = result.get("msg") if isinstance(result, dict) else result
+            self._on_update_failed(msg)
         elif name == "fw_download_progress":
             self._on_fw_download_progress(*result)
         elif name == "fw_download_done":
