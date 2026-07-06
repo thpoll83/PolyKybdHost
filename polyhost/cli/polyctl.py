@@ -19,7 +19,7 @@ import argparse
 import json
 import sys
 
-from polyhost.device.command_ids import GlyphScript  # stdlib-only (Enum), no Qt
+from polyhost.device.command_ids import GlyphScript, IdleStyle  # stdlib-only (Enum), no Qt
 from polyhost.server import protocol
 
 
@@ -159,7 +159,8 @@ def _cmd_idle(client, args):
     return 0
 
 
-_IDLE_STYLE_NAMES = {0: "pulse", 1: "jitter", 2: "doom"}
+# Derived from the shared IdleStyle enum so new styles appear automatically.
+_IDLE_STYLE_NAMES = {s.value: s.name.lower() for s in IdleStyle}
 _IDLE_STYLE_VALUES = {v: k for k, v in _IDLE_STYLE_NAMES.items()}
 
 
@@ -501,7 +502,7 @@ def build_parser():
     p_idle_style = sub.add_parser(
         "idle-style", help="get or set the idle anti-burn-in style (firmware v4+)")
     p_idle_style.add_argument(
-        "style", nargs="?", choices=["pulse", "jitter", "doom"], default=None,
+        "style", nargs="?", choices=list(_IDLE_STYLE_VALUES.keys()), default=None,
         help="omit to print the current style; 'pulse' = legacy, 'jitter' = move the "
              "legend, 'doom' = attract-demo screensaver (doom-enabled firmware)")
     p_idle_style.set_defaults(func=_cmd_idle_style)
