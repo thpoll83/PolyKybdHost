@@ -308,6 +308,21 @@ def _write_empty_pack() -> str:
     return path
 
 
+def _cmd_doom(client, args):
+    """`doom install <whx>` — flash the easter egg's WHX game data to BOTH
+    halves over HID (rides the font-pack transport; survives firmware updates)."""
+    import os
+    if getattr(args, "doom_action", None) == "install":
+        path = os.path.abspath(args.file)
+        return _stream_fontpack_op(client, protocol.M_DOOM_INSTALL, {"path": path},
+                                   f"installing game data {path}")
+    if getattr(args, "doom_action", None) == "install-pack":
+        path = os.path.abspath(args.file)
+        return _stream_fontpack_op(client, protocol.M_DOOM_INSTALL_PACK, {"path": path},
+                                   f"installing engine pack {path}")
+    return 2
+
+
 def _cmd_fontpack(client, args):
     action = getattr(args, "fontpack_action", None)
 
@@ -553,6 +568,18 @@ def build_parser():
     p_fp_wipe.add_argument("bundle", nargs="?",
                            help="bundle id/index to wipe; omit to wipe every slot")
     p_fp.set_defaults(func=_cmd_fontpack)
+
+    p_doom = sub.add_parser("doom", help="doom easter egg operations")
+    doom_sub = p_doom.add_subparsers(dest="doom_action", required=True)
+    p_doom_inst = doom_sub.add_parser(
+        "install", help="install the WHX game data to both halves (streams progress; no reboot)")
+    p_doom_inst.add_argument("file", help="path to the doom1.whx game-data image")
+    p_doom_pack = doom_sub.add_parser(
+        "install-pack",
+        help="install the executable engine pack to both halves (DoomPack firmware "
+             "flavour; the .plyx must match the firmware build — see doom/PACK_DESIGN.md)")
+    p_doom_pack.add_argument("file", help="path to the doom_pack_vN.plyx engine pack")
+    p_doom.set_defaults(func=_cmd_doom)
 
     p_upd = sub.add_parser("update", help="host self-update")
     upd_sub = p_upd.add_subparsers(dest="update_action", required=True)

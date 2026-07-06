@@ -35,6 +35,12 @@ OS_MIN_PROTOCOL = 7
 # Minimum firmware PROTOCOL_VERSION for the glyph-script get/set command (cmd 30).
 GLYPH_SCRIPT_MIN_PROTOCOL = 9
 
+# Console self-heal (see get_console_output): reopen the console interface after
+# this many consecutive failed reads (~5 s at the 250 ms poll), throttled to at
+# most one reopen attempt per interval.
+CONSOLE_FAIL_REOPEN_THRESHOLD = 20
+CONSOLE_REOPEN_MIN_INTERVAL_S = 5.0
+
 from polyhost.util.dict_util import split_dict
 
 
@@ -46,6 +52,8 @@ class PolyKybd:
     def __init__(self, settings: DeviceSettings, poly_settings: PolySettings):
         self.log = logging.getLogger('PolyHost')
         self.console_buffer = ""
+        self._console_fail_count = 0
+        self._console_reopen_at = 0.0
         self.all_languages = list()
         self.current_lang = None
         self.hid = None
@@ -125,18 +133,43 @@ class PolyKybd:
 
     def get_console_output(self, flush_and_return=True) -> str | None:
         try:
+            if self.hid and not self.hid.console_acquired():
+                # The reconnect rebuild can race the device's re-enumeration
+                # (post firmware apply) and come up with raw HID working but
+                # no console interface listed yet — self-heal instead of
+                # staying silent until a replug (field 2026-07-05).
+                self._maybe_reopen_console()
             last_line = self.hid.get_console_output()
             while len(last_line) > 0:
                 self.console_buffer += last_line.decode().strip('\x00')
                 last_line = self.hid.get_console_output()
+            self._console_fail_count = 0
         except Exception as e:
-            return str(e)
+            # Never RETURN the exception text — it would be published as if the
+            # KEYBOARD had printed it. hidapi's hid_error() on Windows is
+            # famously "Success" for a failed read, so a device that is busy /
+            # rebooting (e.g. mid firmware flash) flooded the log with one bare
+            # "Success" line per 250 ms console poll (field 2026-07-04).
+            self.log.debug("console read failed: %s", e)
+            self._console_fail_count += 1
+            if self._console_fail_count >= CONSOLE_FAIL_REOPEN_THRESHOLD:
+                self._console_fail_count = 0
+                self._maybe_reopen_console()
 
         if flush_and_return:
             console_out = self.console_buffer
             self.console_buffer = ""
             return console_out
         return None
+
+    def _maybe_reopen_console(self):
+        """Throttled console-interface reopen (see get_console_output)."""
+        now = time.monotonic()
+        if now - self._console_reopen_at < CONSOLE_REOPEN_MIN_INTERVAL_S:
+            return
+        self._console_reopen_at = now
+        if self.hid and self.hid.reopen_console():
+            self.log.info("HID console (re)attached")
 
     def query_id(self) -> tuple[bool, str]:
         try:
