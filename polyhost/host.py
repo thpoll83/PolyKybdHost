@@ -6,7 +6,6 @@ import subprocess
 import sys
 import threading
 import time
-import webbrowser
 
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QPalette, QColor
@@ -71,6 +70,7 @@ IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
 # Project links surfaced in the About dialog.
 POLYKYBD_HOMEPAGE_URL = "https://polykybd.org"
+SUPPORT_URL           = "https://discord.gg/gW8JescH7M"
 POLYHOST_REPO_URL     = "https://github.com/thpoll83/PolyKybdHost"
 FIRMWARE_REPO_URL     = "https://github.com/thpoll83/qmk_firmware"
 HARDWARE_REPO_URL     = "https://github.com/thpoll83/PolyKybd"
@@ -350,9 +350,8 @@ class PolyHost(QApplication):
                                             "Quit && stop background daemon", parent=self)
             # noinspection PyUnresolvedReferences
             self.exit_with_daemon.triggered.connect(self.quit_app_and_daemon)
-        self.support = QAction(get_icon("support.svg"), "Get Support", parent=self)
-        # noinspection PyUnresolvedReferences
-        self.support.triggered.connect(self.open_support)
+        # "Get Support" is no longer a separate menu item — its Discord link now
+        # lives in the About dialog (keeps the tray menu shorter).
         self.about = QAction(get_icon("home.svg"), "About", parent=self)
         # noinspection PyUnresolvedReferences
         self.about.triggered.connect(self.show_about_dialog)
@@ -502,7 +501,6 @@ class PolyHost(QApplication):
                 dump_action.triggered.connect(self.dump_mock_bitmaps)
                 debug_menu.addAction(dump_action)
 
-        self.menu.addAction(self.support)
         self.menu.addAction(self.about)
         self.menu.addAction(self.exit)
         if self.exit_with_daemon is not None:
@@ -704,7 +702,6 @@ class PolyHost(QApplication):
         self.log_dialog.setEnabled(True)
         self.update_action.setEnabled(True)
         self.status.setEnabled(True)
-        self.support.setEnabled(True)
         self.about.setEnabled(True)
         self.exit.setEnabled(True)
         if self.exit_with_daemon is not None:
@@ -1128,10 +1125,6 @@ class PolyHost(QApplication):
             subprocess.Popen(["xdg-open", out_dir])
         QMessageBox.information(None, "Mock Dump", f"Saved {len(store)} bitmaps to:\n{out_dir}")
 
-    @staticmethod
-    def open_support():
-        webbrowser.open("https://discord.gg/gW8JescH7M", new=0, autoraise=True)
-
     def _build_about_dialog(self) -> QDialog:
         """Construct the About dialog (host name/version + project links + OK).
 
@@ -1156,12 +1149,14 @@ class PolyHost(QApplication):
         logo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         header.addWidget(logo, 0, Qt.AlignTop)
 
+        mode = "daemon client" if self.client_mode else "standalone"
         title_lbl = QLabel(
             f"<div style='font-size:15pt; font-weight:bold;'>PolyKybdHost</div>"
             f"<div style='margin-top:3px;'>Version {__version__}"
             f" &nbsp;·&nbsp; HID protocol P{__protocol__}</div>"
             f"<div style='color:gray; margin-top:3px;'>"
-            f"Python {platform.python_version()} · Qt {qVersion()} · {platform.system()}</div>")
+            f"Python {platform.python_version()} · Qt {qVersion()} · "
+            f"{platform.system()} · {mode}</div>")
         title_lbl.setTextFormat(Qt.RichText)
         title_lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         header.addWidget(title_lbl, 1)
@@ -1174,14 +1169,31 @@ class PolyHost(QApplication):
         desc.setWordWrap(True)
         outer.addWidget(desc)
 
-        # Project links — open in the system browser on click.
+        # Connected-keyboard metrics — a cached, no-I/O status snapshot (works in
+        # client mode over RPC too). Shows the keyboard's own protocol next to the
+        # host's above, so a "Protocol mismatch" is diagnosable right here.
+        status = QLabel(self._about_status_html())
+        status.setTextFormat(Qt.RichText)
+        status.setWordWrap(True)
+        status.setStyleSheet(
+            "QLabel { background: rgba(127,127,127,0.12); border-radius: 6px;"
+            " padding: 8px 10px; }")
+        outer.addWidget(status)
+
+        # Project links — open in the system browser on click. Shown scheme-less
+        # (github.com/… , polykybd.org) but href carries the full https URL.
+        def _link(url, emoji):
+            shown = url.split("://", 1)[-1]
+            return f"{emoji} <a href='{url}'>{shown}</a>"
+
         links = QLabel(
-            "<div style='line-height:160%;'>"
-            f"🌐 <a href='{POLYKYBD_HOMEPAGE_URL}'>polykybd.org — Homepage</a><br>"
-            f"💻 <a href='{POLYHOST_REPO_URL}'>Host software (PolyKybdHost)</a><br>"
-            f"⌨️ <a href='{FIRMWARE_REPO_URL}'>Firmware (qmk_firmware)</a><br>"
-            f"🔧 <a href='{HARDWARE_REPO_URL}'>Hardware (PolyKybd)</a>"
-            "</div>")
+            "<div style='line-height:170%;'>"
+            + _link(POLYKYBD_HOMEPAGE_URL, "🌐") + "<br>"
+            + _link(SUPPORT_URL, "💬") + "<br>"
+            + _link(POLYHOST_REPO_URL, "💻") + "<br>"
+            + _link(FIRMWARE_REPO_URL, "⌨️") + "<br>"
+            + _link(HARDWARE_REPO_URL, "🔧")
+            + "</div>")
         links.setTextFormat(Qt.RichText)
         links.setOpenExternalLinks(True)
         links.setTextInteractionFlags(Qt.TextBrowserInteraction)
@@ -1197,6 +1209,41 @@ class PolyHost(QApplication):
 
         dlg.setMinimumWidth(360)
         return dlg
+
+    def _about_status_html(self) -> str:
+        """Keyboard-status block for the About dialog: name, firmware + its
+        protocol (flagged when it mismatches the host), hardware, and language
+        count. Reads the cached status snapshot (no device I/O); degrades to
+        'No keyboard connected' when nothing is present or the read fails."""
+        try:
+            st = self.core.get_status() or {}
+        except Exception:  # noqa: BLE001 — a status read must never break About
+            st = {}
+        try:
+            n_lang = len(self.core.list_languages() or [])
+        except Exception:  # noqa: BLE001
+            n_lang = 0
+
+        if not st.get("device_present"):
+            return ("<b>Keyboard</b><br>"
+                    "<span style='color:gray;'>No keyboard connected.</span>")
+
+        name = st.get("name") or "PolyKybd"
+        fw = st.get("fw_version") or "?"
+        hw = st.get("hw_version") or "?"
+        lang = st.get("current_lang") or "?"
+        kb_proto = st.get("protocol")
+        proto_txt = f"P{kb_proto}" if kb_proto is not None else "P?"
+        if kb_proto is not None and kb_proto != __protocol__:
+            proto_txt += " <span style='color:#c0392b;'>⚠ mismatch</span>"
+        lang_line = f"{lang}" + (f" · {n_lang} languages loaded" if n_lang else "")
+        rows = [
+            f"<b>Connected keyboard:</b> {name}",
+            f"<b>Firmware:</b> {fw} &nbsp;·&nbsp; protocol {proto_txt}",
+            f"<b>Hardware:</b> {hw}",
+            f"<b>Language:</b> {lang_line}",
+        ]
+        return "<div style='line-height:150%;'>" + "<br>".join(rows) + "</div>"
 
     def show_about_dialog(self):
         """Show the modal About dialog, snapped near the tray icon."""
