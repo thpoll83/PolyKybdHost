@@ -17,11 +17,24 @@ jobs:
         with:
           persist-credentials: false
 
+      # Crafted release notes (optional): one file per tag on the unprotected
+      # `release-notes` branch — release-notes/<TAG>.md, first line "# <title>",
+      # the rest the body. Files are keyed by tag, so they are never overwritten
+      # or deleted — the branch is an accumulating changelog archive. A missing
+      # file just falls back to --generate-notes. Prepared by the
+      # `polykybd-github-release` skill.
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          gh release create "$TAG_NAME" \
-            --generate-notes \
-            --title "PolyKybdHost $TAG_NAME"
+          if gh api "repos/${{ github.repository }}/contents/${TAG_NAME}.md?ref=release-notes" \
+               --jq '.content' 2>/dev/null | base64 -d > _notes.md && [ -s _notes.md ]; then
+            TITLE=$(head -n1 _notes.md | sed 's/^#\s*//')
+            tail -n +2 _notes.md | sed '/./,$!d' > _body.md
+            echo "Using crafted notes for $TAG_NAME (title: $TITLE)."
+            gh release create "$TAG_NAME" --title "$TITLE" --notes-file _body.md
+          else
+            echo "No crafted notes on the release-notes branch for $TAG_NAME — auto-generating."
+            gh release create "$TAG_NAME" --generate-notes --title "PolyKybdHost $TAG_NAME"
+          fi
