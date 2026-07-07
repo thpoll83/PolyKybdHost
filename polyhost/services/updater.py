@@ -117,6 +117,10 @@ class NotWritableError(RuntimeError):
     """Raised when the install directory cannot be modified (e.g. system site-packages)."""
 
 
+class _DownloadCancelled(Exception):
+    """Internal: the user aborted a firmware download via its cancel flag."""
+
+
 def get_install_root() -> Path:
     """Return the directory we'd overwrite (parent of the `polyhost` package)."""
     root = Path(polyhost.__file__).resolve().parent.parent
@@ -772,11 +776,18 @@ class FwUpDownloader(threading.Thread):
     """
 
     def __init__(self, release: FwUpReleaseInfo, *,
-                 on_progress=None, on_finished=None):
+                 on_progress=None, on_finished=None, cancel_flag: list = None):
         super().__init__(daemon=True)
         self.release = release
         self._on_progress = on_progress
         self._on_finished = on_finished
+        # Optional single-element list; set cancel_flag[0] = True to abort. The
+        # download only writes to a temp file — nothing reaches the keyboard —
+        # so aborting mid-download is always safe.
+        self._cancel_flag = cancel_flag
+
+    def _cancelled(self) -> bool:
+        return self._cancel_flag is not None and self._cancel_flag[0]
 
     def run(self):
         tmp_path = None
@@ -796,6 +807,8 @@ class FwUpDownloader(threading.Thread):
                     total = int(r.headers.get("Content-Length") or 0)
                     written = 0
                     for chunk in r.iter_content(DOWNLOAD_CHUNK):
+                        if self._cancelled():
+                            raise _DownloadCancelled()
                         if not chunk:
                             continue
                         tmp.write(chunk)
@@ -805,6 +818,13 @@ class FwUpDownloader(threading.Thread):
                             _fire(self._on_progress, pct, f"Downloading firmware… {written // 1024} / {total // 1024} KB")
                         else:
                             _fire(self._on_progress, 0, f"Downloading firmware… {written // 1024} KB")
+        except _DownloadCancelled:
+            # Expected user abort — clean up the partial file quietly (no traceback).
+            if tmp_path and os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+            log.info("Firmware download cancelled by user.")
+            _fire(self._on_finished, False, "Download cancelled.", "")
+            return
         except Exception as e:  # noqa: BLE001
             log.exception("Firmware download failed")
             if tmp_path and os.path.exists(tmp_path):

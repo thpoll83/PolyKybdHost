@@ -854,6 +854,38 @@ class TestFwUpDownloader(unittest.TestCase):
             self.assertIn("nope", err)
             self.assertFalse(bin_path.exists(), "partial download must be unlinked")
 
+    def test_cancel_aborts_and_unlinks(self):
+        # Cancel flag set before the first chunk: the download aborts, the
+        # partial temp file is removed, and it finishes not-ok (not an error
+        # traceback path — it's a clean cancel).
+        rec = _Recorder()
+        rel = updater.FwUpReleaseInfo("PolyKybd-fw-v0.9.0", "0.9.0",
+                                      "https://example.com/fw.bin", "", "html", "")
+        cancel = [True]
+        dl = updater.FwUpDownloader(
+            rel,
+            on_progress=rec.make("progress"),
+            on_finished=rec.make("finished"),
+            cancel_flag=cancel,
+        )
+        with tempfile.TemporaryDirectory() as td:
+            ctx = self._stream_response([b"abc", b"def"], total=6)
+            bin_path = Path(td) / "fw.bin"
+            raw = open(bin_path, "wb")
+            fh = _NamedFile(raw, str(bin_path))
+            with mock.patch.object(updater.requests, "get", return_value=ctx), \
+                 mock.patch.object(updater.tempfile, "NamedTemporaryFile") as mock_ntf:
+                mock_ntf.return_value.__enter__.return_value = fh
+                try:
+                    dl.run()
+                finally:
+                    raw.close()
+            ok, err, path = rec.args_for("finished")[0]
+            self.assertFalse(ok)
+            self.assertEqual(path, "")
+            self.assertIn("cancel", err.lower())
+            self.assertFalse(bin_path.exists(), "cancelled download must be unlinked")
+
 
 if __name__ == "__main__":
     unittest.main()

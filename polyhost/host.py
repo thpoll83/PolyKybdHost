@@ -183,13 +183,20 @@ def _msgbox(icon, title: str, text: str,
         return QMessageBox.Cancel
 
 
-def _progress_dlg(label: str, title: str, tray_icon=None) -> QProgressDialog:
+def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None) -> QProgressDialog:
     dlg = QProgressDialog(label, None, 0, 100, None)
     dlg.setWindowTitle(title)
     dlg.setWindowFlag(Qt.WindowStaysOnTopHint, True)
     dlg.setMinimumDuration(0)
     dlg.setAutoClose(False)
-    dlg.setCancelButton(None)
+    if on_cancel is not None:
+        # Keep the dialog on screen after Cancel is pressed (showing "Cancelling…")
+        # until the worker actually stops and the caller closes it.
+        dlg.setAutoReset(False)
+        dlg.setCancelButtonText("Cancel")
+        dlg.canceled.connect(on_cancel)
+    else:
+        dlg.setCancelButton(None)
     dlg.setValue(0)
     dlg.setFixedSize(_UPD_DLG_W, _UPD_DLG_H)
     lbl = dlg.findChild(QLabel)
@@ -486,6 +493,9 @@ class PolyHost(QApplication):
         self._pending_fw_release = None
         self._fw_up_downloader = None
         self._fw_up_progress = None
+        # Mutable one-element cancel flag shared with the firmware-download thread
+        # (set True to abort the GitHub .bin download); None while no download runs.
+        self._fw_download_cancel = None
         self._await_manual_fw_prompt = False
         # Set in client mode to the downloaded temp .bin that the daemon flashes
         # asynchronously — cleaned up on the terminal flash event (_on_flash_done).
@@ -1891,28 +1901,64 @@ class PolyHost(QApplication):
             return
 
         self.firmware_update_action.setEnabled(False)
+        self._fw_download_cancel = [False]
         self._fw_up_progress = _progress_dlg(
             f"Downloading firmware v{release.version}…", "Firmware Update",
-            tray_icon=self.tray)
+            tray_icon=self.tray, on_cancel=self._on_fw_download_cancel)
 
         b = self.bridge
         self._fw_up_downloader = FwUpDownloader(
             release,
             on_progress=lambda pct, msg: b.job_done.emit("fw_download_progress", (pct, msg)),
             on_finished=lambda ok, err, path: b.job_done.emit("fw_download_done", (ok, err, path)),
+            cancel_flag=self._fw_download_cancel,
         )
         self._fw_up_downloader.start()
 
+    def _on_fw_download_cancel(self):
+        """User pressed Cancel while the .bin was downloading from GitHub.
+
+        Nothing has been sent to the keyboard at this stage, so cancelling is
+        always safe. Flag the download thread — it aborts on the next chunk and
+        fires fw_download_done, where _on_fw_download_done resets the UI."""
+        if self._fw_download_cancel is not None:
+            self._fw_download_cancel[0] = True
+        if self._fw_up_progress is not None:
+            self._fw_up_progress.setLabelText("Cancelling…")
+
     def _on_fw_download_progress(self, percent: int, message: str):
         if self._fw_up_progress is None:
+            return
+        # Don't overwrite the "Cancelling…" label with late download progress.
+        if self._fw_download_cancel is not None and self._fw_download_cancel[0]:
             return
         self._fw_up_progress.setLabelText(message)
         self._fw_up_progress.setValue(percent)
 
     def _on_fw_download_done(self, ok: bool, error: str, bin_path: str):
+        cancelled = bool(self._fw_download_cancel and self._fw_download_cancel[0])
+        self._fw_download_cancel = None
         if self._fw_up_progress is not None:
             self._fw_up_progress.close()
             self._fw_up_progress = None
+
+        if cancelled:
+            # Discard any partial temp file and return to the pre-download state.
+            # Nothing reached the keyboard, so no device cleanup is needed.
+            if bin_path and os.path.exists(bin_path):
+                try:
+                    os.unlink(bin_path)
+                except OSError:
+                    pass
+            self.log.info("Firmware download cancelled by user.")
+            if self._pending_fw_release is not None:
+                self.firmware_update_action.setText(
+                    f"Update firmware to v{self._pending_fw_release.version}…")
+                self.firmware_update_action.setVisible(True)
+                self.firmware_update_action.setEnabled(self._fw_actions_allowed())
+            else:
+                self._reset_fw_update_action()
+            return
 
         if not ok:
             self.firmware_update_action.setEnabled(True)
