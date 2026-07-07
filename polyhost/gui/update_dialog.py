@@ -72,6 +72,7 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
         heading = f"What's new — {release_name}"
     hdr_lbl = QLabel(heading)
     hdr_lbl.setStyleSheet("font-weight: bold;")
+    hdr_lbl.setWordWrap(True)  # long release titles must wrap, not clip
     outer.addWidget(hdr_lbl)
 
     # Scrollable, read-only notes. Prefer rendered markdown (Qt >= 5.14),
