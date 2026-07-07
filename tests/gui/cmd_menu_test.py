@@ -36,9 +36,13 @@ class TestUpdateEnabled(unittest.TestCase):
     def test_fw_actions_collected(self):
         cm, _menu = _build()
         texts = [a.text() for a in cm._fw_actions]
-        self.assertEqual(len(texts), 4)
+        # The font-pack ops (submenu action + Sync + Wipe) ride the same
+        # protocol-independent HID staging transport as the firmware flash, so
+        # they belong in _fw_actions too (usable during a protocol mismatch).
+        self.assertEqual(len(texts), 7)
         for expected in ("Flash + Apply", "Flash Firmware only",
-                         "Apply Staged Firmware", "Activate Bootloader"):
+                         "Apply Staged Firmware", "Font Pack",
+                         "Sync", "Wipe", "Activate Bootloader"):
             self.assertTrue(any(expected in t for t in texts), expected)
 
     def test_protocol_mismatch_keeps_fw_actions_enabled(self):

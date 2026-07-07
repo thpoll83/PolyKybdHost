@@ -18,7 +18,10 @@ class DeviceSettings:
     
     _number_of_keys = 74  # 72 + rotary encoder click)
 
-    _overlay_command_bytes_plain_per_report = 3
+    # keycode + packed(modifier<<0 | segment<<4) — protocol 11 packs modifier and
+    # segment into one byte (was 3: keycode + modifier + segment) so a 60-byte
+    # segment fits the report.
+    _overlay_command_bytes_plain_per_report = 2
     _overlay_command_bytes_compressed_once = 2 # 1 byte for the keycode and 1 for the modifier
     _overlay_command_bytes_roi_once = 5 # 1 for keycode, 4 for modifier|top|bottom|left|right|compressed
 

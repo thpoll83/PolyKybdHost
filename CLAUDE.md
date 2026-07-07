@@ -102,6 +102,24 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
 ## Key notes
 
 - **Bump `__protocol__` (`polyhost/_version.py`) in lockstep with the firmware PROTOCOL_VERSION** — the reconnect gate (`polyhost/core/decisions.py`) connects **only on an exact match** (`kb_proto == host_protocol`); any mismatch shows *"Protocol mismatch, please update"* and refuses to connect, so the keyboard never reaches the features that bump motivated. **This has been forgotten twice** (host stayed at P3 while firmware features advanced to P4 *idle-style* and P5 *brightness host-auto*, leaving current keyboards rejected). Rule of thumb: whenever you add a firmware-protocol feature threshold (e.g. `IDLE_STYLE_MIN_PROTOCOL`, `_BRIGHTNESS_FLAGS_PROTOCOL` — the `>= N` runtime feature gates), the firmware protocol has advanced to **N**, so `__protocol__` must be set to **N** in the same change. The feature `>= N` gates are layered checks *on top of* the exact-match connect gate — they only ever fire once `__protocol__` already equals the device's protocol.
+- **GUI self-update must be applied by the DAEMON, not the client (daemon-by-default).**
+  In daemon mode the tray GUI is a `--connect` client and a separate `--headless`
+  daemon owns `PolyCore` — and therefore the **protocol gate** (its loaded
+  `_version.__protocol__`). So the tray's "Check for updates → install" routes the
+  install through the daemon over RPC (`RemoteCore.install_update` → `M_UPDATE_INSTALL`
+  → `PolyCore.install_update`), letting the daemon overwrite the files and **re-exec
+  itself** (`headless.py` `_on_update_event`). It must **not** run `UpdateInstaller`
+  in the GUI process: that refreshed only the client while the daemon kept running the
+  pre-update code, so the daemon stayed on the OLD `__protocol__` and went on rejecting
+  the keyboard with *"Protocol mismatch, please update"* until manually restarted
+  (field 2026-07). After the daemon re-execs, `PolyHost._on_update_done` (client mode)
+  waits for the control endpoint to go **down → back LIVE** (`_await_daemon_restart_then_relaunch`)
+  before relaunching the GUI — relaunching immediately would re-attach to the still-up
+  **old** daemon (the bug) or race the re-exec and spawn a second daemon. The daemon's
+  `update_*` **core events are dicts** (`{"pct","msg"}` / `{"relay_path"}` / `{"msg"}`)
+  while the legacy in-GUI `UpdateInstaller` emits tuples/strings — `_on_job_done`
+  normalizes both. The `polyctl update install` path already restarted the daemon
+  correctly; only the tray menu path was broken.
 - **Font-pack bundles (protocol 6+)**: the external-flash font pack ships as **N
   per-family bundles** (`polyhost/res/fontpack/<id>.plyf` + `bundles.json`), not one
   blob. `query_id()` parses the per-bundle `content_version` block the firmware
@@ -301,7 +319,9 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   more scripts. The exact-match connect gate still pins host↔firmware to the same
   protocol, within which the script set is free to grow.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
-- **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
+- **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
+  - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
+  - **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
 - **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
 - **No CI**: no GitHub Actions workflows exist in this repo.

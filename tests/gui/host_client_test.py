@@ -44,6 +44,8 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("SMOKE OK", proc.stdout)
         self.assertIn("CORE_TYPE PolyCore", proc.stdout)
         self.assertIn("DAEMON_QUIT_ACTION absent", proc.stdout)
+        self.assertIn("SUPPORT_ACTION absent", proc.stdout)
+        self.assertIn("ABOUT_OK True", proc.stdout)
 
     def test_client_mode_connects_and_renders(self):
         proc = _run_smoke("client")
@@ -58,6 +60,8 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("LANG_MENU_BUILT True", proc.stdout)
         self.assertIn("LAYOUT_OK layers=9", proc.stdout)
         self.assertIn("DAEMON_QUIT_ACTION present", proc.stdout)
+        self.assertIn("UPDATE_ROUTED_TO_DAEMON True", proc.stdout)
+        self.assertIn("CLIENT_ABOUT_OK True", proc.stdout)
         self.assertIn("SERVER_RUNNING True", proc.stdout)
 
 
@@ -78,6 +82,32 @@ def _smoke_default():
         assert app.keeb is not None and app.worker is not None and app.cmdMenu is not None
         # In-process Quit already stops everything; no separate daemon-quit entry.
         print("DAEMON_QUIT_ACTION", "absent" if app.exit_with_daemon is None else "present")
+        # "Get Support" was folded into the About dialog — no separate menu item.
+        print("SUPPORT_ACTION", "absent" if not hasattr(app, "support") else "present")
+        # About dialog: builds (without the modal exec_ blocking), shows the host
+        # version, and links to homepage + support + all three repos.
+        from PyQt5.QtWidgets import QLabel, QDialogButtonBox
+        from polyhost._version import __version__ as _ver
+        about = app._build_about_dialog()
+        blob = " ".join(l.text() for l in about.findChildren(QLabel))
+        has_links = all(u in blob for u in (
+            "polykybd.org", "ko-fi.com/polykb", "Blog", "Discord", "discord.gg",
+            "github.com/thpoll83/PolyKybdHost",
+            "github.com/thpoll83/qmk_firmware", "github.com/thpoll83/PolyKybd"))
+        # Status block renders either "No keyboard connected" or a "Connected
+        # keyboard" line depending on whether HID enumeration finds a device.
+        has_status = "eyboard" in blob
+        # Environment metrics: uptime + config/log paths.
+        has_env = ("Uptime" in blob) and ("Config" in blob) and ("Logs" in blob)
+        bb = about.findChild(QDialogButtonBox)
+        has_ok = bb.button(QDialogButtonBox.Ok) is not None
+        has_copy = any(b.text().startswith("Copy diagnostics") for b in bb.buttons())
+        # Diagnostics text (clipboard payload) carries the version + a Config line.
+        diag = app._diagnostics_text(app._gather_about_info())
+        has_diag = (_ver in diag) and ("Config:" in diag)
+        print("ABOUT_OK", (_ver in blob) and has_links and has_status
+              and has_env and has_ok and has_copy and has_diag)
+        about.deleteLater()
         app.quit_app()
     print("SMOKE OK")
 
@@ -122,6 +152,10 @@ def _smoke_client():
         def settings_list(self):
             return {"brightness": 25}
 
+        def install_update(self):
+            self.install_update_called = True
+            return (True, {"queued": True, "version": "9.9.9"})
+
     addr = os.path.join(tempfile.mkdtemp(), "ctl.sock")
     key = protocol.load_or_create_authkey()
     lg = logging.getLogger("smoke")
@@ -161,6 +195,38 @@ def _smoke_client():
             app.layout_dialog.close()
             # Client mode offers an explicit "stop the daemon too" entry.
             print("DAEMON_QUIT_ACTION", "present" if app.exit_with_daemon is not None else "absent")
+            # A self-update in client mode must be driven through the daemon over
+            # RPC (so the daemon re-execs onto the new protocol), NOT via a local
+            # in-GUI UpdateInstaller thread. Drive _run_update_installer directly
+            # (a real install would end in restart_app/os.execv, which we avoid by
+            # not emitting the terminal update_finished_ok event here).
+            core.install_update_called = False
+            rel = type("Rel", (), {"version": "9.9.9", "published_at": ""})()
+            app._run_update_installer(rel)
+            for _ in range(20):
+                app.processEvents()
+                time.sleep(0.02)
+            print("UPDATE_ROUTED_TO_DAEMON",
+                  getattr(core, "install_update_called", False) and app._update_installer is None)
+            if app._update_progress is not None:
+                app._update_progress.close()
+                app._update_progress = None
+            # About dialog over the RemoteCore path (client mode): builds and
+            # renders the daemon's status snapshot (get_status/list_languages via
+            # RPC), the links, and the Copy-diagnostics button — the standalone
+            # smoke covers the in-process core; this covers the client core.
+            from PyQt5.QtWidgets import QLabel as _QLabel, QDialogButtonBox as _QBB
+            about = app._build_about_dialog()
+            cblob = " ".join(l.text() for l in about.findChildren(_QLabel))
+            c_links = all(u in cblob for u in (
+                "polykybd.org", "discord.gg", "github.com/thpoll83/PolyKybdHost"))
+            c_bb = about.findChild(_QBB)
+            c_copy = any(b.text().startswith("Copy diagnostics") for b in c_bb.buttons())
+            c_diag = "Config:" in app._diagnostics_text(app._gather_about_info())
+            print("CLIENT_ABOUT_OK",
+                  (__version__ in cblob) and c_links and ("eyboard" in cblob)
+                  and c_copy and c_diag)
+            about.deleteLater()
             app.quit_app()
         print("SERVER_RUNNING", srv._running)
     finally:

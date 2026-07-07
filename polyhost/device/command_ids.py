@@ -82,9 +82,15 @@ class IdleStyle(Enum):
 
     PULSE is the legacy contrast-only breathing; JITTER additionally relocates the
     key legend by a small random offset each pulse cycle so the lit pixels migrate.
+    IDDQD runs the doom easter egg's attract demo as a screensaver instead of the
+    pulse (dismissed by the first key press); firmware without the doom build (or
+    older than the feature) falls back to / NACKs it — surfaced as a plain error.
+    (Named for the cheat code, matching the tray/CLI label; the firmware calls the
+    same value IDLE_STYLE_DOOM internally — the wire value 2 is what's shared.)
     """
     PULSE = 0
     JITTER = 1
+    IDDQD = 2
 
 
 class GlyphScript(Enum):

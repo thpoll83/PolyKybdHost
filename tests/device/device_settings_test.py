@@ -54,7 +54,7 @@ class TestDeviceSettings(unittest.TestCase):
         self.assertEqual(self.s.HID_CONSOLE_USAGE, 0x74)
 
     def test_overlay_command_byte_counts(self):
-        self.assertEqual(self.s.OVERLAY_CMD_BYTES_PER_PLAIN_REPORT, 3)
+        self.assertEqual(self.s.OVERLAY_CMD_BYTES_PER_PLAIN_REPORT, 2)
         self.assertEqual(self.s.OVERLAY_CMD_BYTES_COMPRESSED_ONCE, 2)
         self.assertEqual(self.s.OVERLAY_CMD_BYTES_ROI_ONCE, 5)
 

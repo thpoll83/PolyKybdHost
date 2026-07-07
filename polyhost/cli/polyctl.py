@@ -19,7 +19,7 @@ import argparse
 import json
 import sys
 
-from polyhost.device.command_ids import GlyphScript  # stdlib-only (Enum), no Qt
+from polyhost.device.command_ids import GlyphScript, IdleStyle  # stdlib-only (Enum), no Qt
 from polyhost.server import protocol
 
 
@@ -159,7 +159,8 @@ def _cmd_idle(client, args):
     return 0
 
 
-_IDLE_STYLE_NAMES = {0: "pulse", 1: "jitter"}
+# Derived from the shared IdleStyle enum so new styles appear automatically.
+_IDLE_STYLE_NAMES = {s.value: s.name.lower() for s in IdleStyle}
 _IDLE_STYLE_VALUES = {v: k for k, v in _IDLE_STYLE_NAMES.items()}
 
 
@@ -306,6 +307,21 @@ def _write_empty_pack() -> str:
     with os.fdopen(fd, "wb") as f:
         f.write(build_empty_pack())
     return path
+
+
+def _cmd_doom(client, args):
+    """`doom install <whx>` — flash the easter egg's WHX game data to BOTH
+    halves over HID (rides the font-pack transport; survives firmware updates)."""
+    import os
+    if getattr(args, "doom_action", None) == "install":
+        path = os.path.abspath(args.file)
+        return _stream_fontpack_op(client, protocol.M_DOOM_INSTALL, {"path": path},
+                                   f"installing game data {path}")
+    if getattr(args, "doom_action", None) == "install-pack":
+        path = os.path.abspath(args.file)
+        return _stream_fontpack_op(client, protocol.M_DOOM_INSTALL_PACK, {"path": path},
+                                   f"installing engine pack {path}")
+    return 2
 
 
 def _cmd_fontpack(client, args):
@@ -486,8 +502,9 @@ def build_parser():
     p_idle_style = sub.add_parser(
         "idle-style", help="get or set the idle anti-burn-in style (firmware v4+)")
     p_idle_style.add_argument(
-        "style", nargs="?", choices=["pulse", "jitter"], default=None,
-        help="omit to print the current style; 'pulse' = legacy, 'jitter' = move the legend")
+        "style", nargs="?", choices=list(_IDLE_STYLE_VALUES.keys()), default=None,
+        help="omit to print the current style; 'pulse' = legacy, 'jitter' = move the "
+             "legend, 'iddqd' = attract-demo screensaver (doom-enabled firmware)")
     p_idle_style.set_defaults(func=_cmd_idle_style)
 
     p_glyph_script = sub.add_parser(
@@ -553,6 +570,18 @@ def build_parser():
     p_fp_wipe.add_argument("bundle", nargs="?",
                            help="bundle id/index to wipe; omit to wipe every slot")
     p_fp.set_defaults(func=_cmd_fontpack)
+
+    p_doom = sub.add_parser("doom", help="doom easter egg operations")
+    doom_sub = p_doom.add_subparsers(dest="doom_action", required=True)
+    p_doom_inst = doom_sub.add_parser(
+        "install", help="install the WHX game data to both halves (streams progress; no reboot)")
+    p_doom_inst.add_argument("file", help="path to the doom1.whx game-data image")
+    p_doom_pack = doom_sub.add_parser(
+        "install-pack",
+        help="install the executable engine pack to both halves (DoomPack firmware "
+             "flavour; the .plyx must match the firmware build — see doom/PACK_DESIGN.md)")
+    p_doom_pack.add_argument("file", help="path to the doom_pack_vN.plyx engine pack")
+    p_doom.set_defaults(func=_cmd_doom)
 
     p_upd = sub.add_parser("update", help="host self-update")
     upd_sub = p_upd.add_subparsers(dest="update_action", required=True)

@@ -7,6 +7,12 @@ from polyhost.handler.common import Flags, find_matching_entry
 
 TCP_PORT = 50162
 BUFFER_SIZE = 1024
+# How long the listener's accept() blocks before re-checking stop_event. This is
+# purely the shutdown-responsiveness knob (accept still returns immediately when a
+# forwarder connects) — `RemoteHandler.close()` joins this thread, so a large value
+# stalls every daemon/GUI quit by that long while accept() waits out its timeout.
+# Kept short so a quit is prompt; the idle re-check cost is one syscall/second.
+RECV_ACCEPT_TIMEOUT = 1.0
 
 
 # Needs to be started as thread
@@ -28,7 +34,7 @@ def receive_from_forwarder(log, on_report, stop_event):
         return
 
     sock.listen(5)
-    sock.settimeout(10.0)
+    sock.settimeout(RECV_ACCEPT_TIMEOUT)
     log.info("Remote listener started on port %d", TCP_PORT)
 
     while not stop_event.is_set():

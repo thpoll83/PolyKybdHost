@@ -55,7 +55,7 @@ M_LANG_LIST = "lang.list"              # {} -> [code, ...]
 M_LANG_SET = "lang.set"                # {"lang": "deDE"} -> (ok, payload)
 M_BRIGHTNESS_SET = "brightness.set"    # {"value": 0..50} -> (ok, payload)
 M_IDLE_SET = "idle.set"                # {"idle": bool} -> (ok, payload)
-M_IDLE_STYLE_SET = "idle.style.set"    # {"value": 0|1} -> (ok, payload)  (0=pulse, 1=jitter)
+M_IDLE_STYLE_SET = "idle.style.set"    # {"value": 0|1|2} -> (ok, payload)  (0=pulse, 1=jitter, 2=iddqd attract demo)
 M_IDLE_STYLE_GET = "idle.style.get"    # {} -> (ok, value)
 M_GLYPH_SCRIPT_SET = "glyph.script.set"  # {"value": 0|1|...} -> (ok, payload)  (0=standard, 1=tengwar)
 M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
@@ -94,6 +94,10 @@ M_FONTPACK_SYNC = "fontpack.sync"      # {} -> {"queued": bool}; flashes all sta
 M_FONTPACK_WIPE = "fontpack.wipe"      # {} -> {"queued": bool}; empties all bundle slots
 M_FONTPACK_BUNDLES = "fontpack.bundles"  # {} -> {"shipped": bool, "bundles": [{id,index,device_version,
                                          #        shipped_version,stale}]} (per-bundle device vs shipped)
+M_DOOM_INSTALL = "doom.install"        # {"path": str} -> {"queued": bool}; installs the easter egg's
+                                       #   WHX game data (streams fontpack_flash_* events)
+M_DOOM_INSTALL_PACK = "doom.install_pack"  # {"path": str} -> {"queued": bool}; installs the easter
+                                       #   egg's executable engine pack (.plyx, same event stream)
 M_HOST_SHUTDOWN = "host.shutdown"      # {} -> {"shutting_down": True}
 # Inject an external active-window report into remote window tracking (H4c).
 # {"handle": str|int, "name": str, "title": str} -> (ok, payload). Same data the
