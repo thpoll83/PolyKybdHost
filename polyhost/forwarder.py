@@ -305,12 +305,12 @@ class PolyForwarder(QApplication):
     def _on_update_available(self, release):
         from polyhost.gui.update_dialog import confirm_update
         self.update_action.setText("Check for updates...")
-        message = (f"Version {release.version} is available.\n\n"
-                   "Download, install, and restart the forwarder now?")
+        message = f"Version {release.version} is available."
         if not confirm_update("Update PolyKybdHost", message,
                               notes=getattr(release, "notes", ""),
                               html_url=getattr(release, "html_url", ""),
-                              release_name=getattr(release, "name", "")):
+                              release_name=getattr(release, "name", ""),
+                              question="Download, install, and restart the forwarder now?"):
             return
         self._run_update_installer(release)
 

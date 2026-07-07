@@ -1622,12 +1622,12 @@ class PolyHost(QApplication):
     def _prompt_and_install(self, release):
         date_str = _fmt_release_date(release.published_at)
         info = f"Released: {date_str}\n" if date_str else ""
-        message = (f"Version {release.version} is available.\n{info}\n"
-                   "Download, install, and restart now?")
+        message = f"Version {release.version} is available.\n{info}"
         if not confirm_update("Update PolyKybdHost", message,
                               notes=getattr(release, "notes", ""),
                               html_url=getattr(release, "html_url", ""),
-                              release_name=getattr(release, "name", "")):
+                              release_name=getattr(release, "name", ""),
+                              question="Download, install, and restart now?"):
             return
         self._run_update_installer(release)
 
@@ -1877,12 +1877,12 @@ class PolyHost(QApplication):
         date_str = _fmt_release_date(release.published_at)
         info = f"Released: {date_str}\n" if date_str else ""
         message = (f"Firmware {release.version} is available.\n{info}\n"
-                   "Both halves update over HID and reboot automatically.\n\n"
-                   "Download and flash now?")
+                   "Both halves update over HID and reboot automatically.")
         if not confirm_update("Update PolyKybd Firmware", message,
                               notes=getattr(release, "notes", ""),
                               html_url=getattr(release, "html_url", ""),
-                              release_name=getattr(release, "name", "")):
+                              release_name=getattr(release, "name", ""),
+                              question="Download and flash now?"):
             return
         self._run_fw_up_downloader(release)
 

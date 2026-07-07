@@ -20,25 +20,30 @@ from PyQt5.QtWidgets import (
 
 
 def confirm_update(title: str, message: str, notes: str = "", html_url: str = "",
-                   release_name: str = "") -> bool:
+                   release_name: str = "", question: str = "") -> bool:
     """Ask the user to confirm an update, showing release notes when available.
 
-    ``message`` is the short lead paragraph (version, date, the action question) —
-    it is shown verbatim above the notes so callers keep full control of the
-    wording. ``notes`` is the release-notes markdown; when empty this degrades to
-    a compact yes/no box. ``html_url`` (when set) adds a "full release notes" link.
-    ``release_name`` is the GitHub release title, shown as a heading over the notes
-    when it adds information beyond the version.
+    ``message`` is the short lead paragraph (version, date, any caveats) shown
+    above the notes. ``question`` is the call to action ("Download and flash
+    now?") — it is placed right above the Yes/No buttons so the decision sits
+    next to the buttons rather than scrolled away above the notes. ``notes`` is
+    the release-notes markdown; when empty this degrades to a compact yes/no box.
+    ``html_url`` (when set) adds a "full release notes" link. ``release_name`` is
+    the GitHub release title, shown as a heading over the notes when it adds
+    information beyond the version.
 
     Returns True if the user accepts (Yes), False otherwise. Must run on the Qt
     main thread.
     """
     notes = (notes or "").strip()
+    question = (question or "").strip()
     if not notes:
-        # Nothing extra to show — keep the classic compact confirmation.
+        # Nothing extra to show — keep the classic compact confirmation. The
+        # question rejoins the message so the one-line box still asks it.
         from PyQt5.QtWidgets import QMessageBox
+        text = f"{message}\n\n{question}" if question else message
         return QMessageBox.question(
-            None, title, message,
+            None, title, text,
             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
 
     dlg = QDialog(None)
@@ -91,6 +96,13 @@ def confirm_update(title: str, message: str, notes: str = "", html_url: str = ""
         link.setOpenExternalLinks(True)
         link.setTextInteractionFlags(Qt.TextBrowserInteraction)
         outer.addWidget(link)
+
+    # The call to action sits right above the buttons, so the decision is next
+    # to Yes/No rather than scrolled off the top above the notes.
+    if question:
+        q_lbl = QLabel(question)
+        q_lbl.setWordWrap(True)
+        outer.addWidget(q_lbl)
 
     btn_box = QDialogButtonBox(QDialogButtonBox.Yes | QDialogButtonBox.No)
     btn_box.accepted.connect(dlg.accept)
