@@ -1,9 +1,15 @@
 name: Release
 
 on:
+  # A bare `v*` tag push is normally suppressed because release tags land on the
+  # auto-bump "[skip ci]" commit — so in practice releases are created by
+  # publishing in the GitHub UI, which fires `release: published`. Both are
+  # handled below.
   push:
     tags:
       - 'v*'
+  release:
+    types: [published]
 
 permissions:
   contents: write
@@ -23,18 +29,36 @@ jobs:
       # or deleted — the branch is an accumulating changelog archive. A missing
       # file just falls back to --generate-notes. Prepared by the
       # `polykybd-github-release` skill.
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ github.event.release.tag_name || github.ref_name }}
         run: |
           if gh api "repos/${{ github.repository }}/contents/${TAG_NAME}.md?ref=release-notes" \
                --jq '.content' 2>/dev/null | base64 -d > _notes.md && [ -s _notes.md ]; then
             TITLE=$(head -n1 _notes.md | sed 's/^#\s*//')
             tail -n +2 _notes.md | sed '/./,$!d' > _body.md
-            echo "Using crafted notes for $TAG_NAME (title: $TITLE)."
-            gh release create "$TAG_NAME" --title "$TITLE" --notes-file _body.md
+            HAVE_NOTES=1
           else
-            echo "No crafted notes on the release-notes branch for $TAG_NAME — auto-generating."
-            gh release create "$TAG_NAME" --generate-notes --title "PolyKybdHost $TAG_NAME"
+            HAVE_NOTES=0
+          fi
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            # Exists — the normal path (published in the UI). Apply crafted notes
+            # from the branch if present so an empty UI-published release gets
+            # filled in; otherwise leave whatever the user entered.
+            if [ "$HAVE_NOTES" = "1" ]; then
+              echo "Release $TAG_NAME exists — applying crafted notes (title: $TITLE)."
+              gh release edit "$TAG_NAME" --title "$TITLE" --notes-file _body.md
+            else
+              echo "Release $TAG_NAME exists — no crafted notes on the branch, leaving as-is."
+            fi
+          else
+            # Tag push on a non-[skip ci] commit — create it.
+            if [ "$HAVE_NOTES" = "1" ]; then
+              echo "Creating release $TAG_NAME with crafted notes (title: $TITLE)."
+              gh release create "$TAG_NAME" --title "$TITLE" --notes-file _body.md
+            else
+              echo "Creating release $TAG_NAME with auto-generated notes."
+              gh release create "$TAG_NAME" --generate-notes --title "PolyKybdHost $TAG_NAME"
+            fi
           fi
