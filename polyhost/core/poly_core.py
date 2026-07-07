@@ -1367,7 +1367,8 @@ class PolyCore:
             return False, f"{type(e).__name__}: {e}"
         if rel is None:
             return True, {"available": False, "version": __version__}
-        return True, {"available": True, "version": rel.version, "url": rel.html_url}
+        return True, {"available": True, "version": rel.version, "url": rel.html_url,
+                      "name": getattr(rel, "name", ""), "notes": getattr(rel, "notes", "")}
 
     def install_update(self):
         """Find the latest host release and apply it in the background.

@@ -134,6 +134,42 @@ class TestCheckLatest(unittest.TestCase):
              mock.patch.object(updater.requests, "get", return_value=_make_response(304)):
             self.assertIsNone(updater.check_latest())
 
+    def test_parses_release_name_and_notes(self):
+        # The release title (name) and notes (API body) flow through to the
+        # confirmation dialog — parse and surface them.
+        payload = _release_json("v0.8.0")
+        payload["name"] = "PolyKybdHost 0.8.0"
+        payload["body"] = "## Fixes\n- fixed a thing"
+        with mock.patch.object(updater, "__version__", "0.7.2"), \
+             mock.patch.object(updater.requests, "get",
+                               return_value=_make_response(200, payload)):
+            release = updater.check_latest()
+        self.assertEqual(release.name, "PolyKybdHost 0.8.0")
+        self.assertEqual(release.notes, "## Fixes\n- fixed a thing")
+
+    def test_missing_name_and_body_default_to_empty(self):
+        # Releases without a title/body must not blow up; notes/name become "".
+        with mock.patch.object(updater, "__version__", "0.7.2"), \
+             mock.patch.object(updater.requests, "get",
+                               return_value=_make_response(200, _release_json("v0.8.0"))):
+            release = updater.check_latest()
+        self.assertEqual(release.name, "")
+        self.assertEqual(release.notes, "")
+
+    def test_notes_survive_304_from_cache(self):
+        # A 304 must reconstruct name/notes from the cache, not KeyError on the
+        # older cache shape that lacks them.
+        self.mock_load.return_value = {"host": {
+            "etag": '"abc"', "tag": "v1.2.3", "version": "1.2.3",
+            "tarball_url": "https://example.com/t", "html_url": "", "published_at": "",
+            "name": "PolyKybdHost 1.2.3", "notes": "cached notes",
+        }}
+        with mock.patch.object(updater, "__version__", "0.0.1"), \
+             mock.patch.object(updater.requests, "get", return_value=_make_response(304)):
+            release = updater.check_latest()
+        self.assertEqual(release.name, "PolyKybdHost 1.2.3")
+        self.assertEqual(release.notes, "cached notes")
+
 
 def _redirect_response(location):
     resp = mock.Mock()
@@ -331,6 +367,16 @@ class TestCheckFwLatest(unittest.TestCase):
         with mock.patch.object(updater.requests, "get",
                                return_value=self._resp(200, _fw_release_json("PolyKybd-fw-v0.8.1"))):
             self.assertIsNone(updater.check_fw_latest("0.8.1"))
+
+    def test_parses_firmware_name_and_notes(self):
+        payload = _fw_release_json("PolyKybd-fw-v0.8.3")
+        payload["name"] = "PolyKybd Firmware 0.8.3"
+        payload["body"] = "New idle-jitter style"
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(200, payload)):
+            release = updater.check_fw_latest("0.8.1")
+        self.assertEqual(release.name, "PolyKybd Firmware 0.8.3")
+        self.assertEqual(release.notes, "New idle-jitter style")
 
     def test_newer_without_bin_returns_none(self):
         # A newer release that has no .bin asset cannot be flashed over HID.
@@ -807,6 +853,38 @@ class TestFwUpDownloader(unittest.TestCase):
             self.assertEqual(path, "")
             self.assertIn("nope", err)
             self.assertFalse(bin_path.exists(), "partial download must be unlinked")
+
+    def test_cancel_aborts_and_unlinks(self):
+        # Cancel flag set before the first chunk: the download aborts, the
+        # partial temp file is removed, and it finishes not-ok (not an error
+        # traceback path — it's a clean cancel).
+        rec = _Recorder()
+        rel = updater.FwUpReleaseInfo("PolyKybd-fw-v0.9.0", "0.9.0",
+                                      "https://example.com/fw.bin", "", "html", "")
+        cancel = [True]
+        dl = updater.FwUpDownloader(
+            rel,
+            on_progress=rec.make("progress"),
+            on_finished=rec.make("finished"),
+            cancel_flag=cancel,
+        )
+        with tempfile.TemporaryDirectory() as td:
+            ctx = self._stream_response([b"abc", b"def"], total=6)
+            bin_path = Path(td) / "fw.bin"
+            raw = open(bin_path, "wb")
+            fh = _NamedFile(raw, str(bin_path))
+            with mock.patch.object(updater.requests, "get", return_value=ctx), \
+                 mock.patch.object(updater.tempfile, "NamedTemporaryFile") as mock_ntf:
+                mock_ntf.return_value.__enter__.return_value = fh
+                try:
+                    dl.run()
+                finally:
+                    raw.close()
+            ok, err, path = rec.args_for("finished")[0]
+            self.assertFalse(ok)
+            self.assertEqual(path, "")
+            self.assertIn("cancel", err.lower())
+            self.assertFalse(bin_path.exists(), "cancelled download must be unlinked")
 
 
 if __name__ == "__main__":

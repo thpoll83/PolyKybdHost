@@ -96,8 +96,14 @@ EXCLUDES = (
 )
 
 
-ReleaseInfo   = namedtuple("ReleaseInfo",   ["tag", "version", "tarball_url", "html_url", "published_at"])
-FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "uf2_url", "html_url", "published_at"])
+# ``name`` (GitHub release title) and ``notes`` (the release-notes markdown, i.e.
+# the API ``body``) carry the human-readable "what's in this update" text through
+# to the confirmation dialogs. They default to "" so the web-fallback paths (which
+# can't cheaply fetch the body) and existing positional constructions still work.
+ReleaseInfo   = namedtuple("ReleaseInfo",   ["tag", "version", "tarball_url", "html_url", "published_at", "name", "notes"],
+                           defaults=("", ""))
+FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "uf2_url", "html_url", "published_at", "name", "notes"],
+                             defaults=("", ""))
 
 
 class UpdateCheckError(RuntimeError):
@@ -109,6 +115,10 @@ class UpdateCheckError(RuntimeError):
 
 class NotWritableError(RuntimeError):
     """Raised when the install directory cannot be modified (e.g. system site-packages)."""
+
+
+class _DownloadCancelled(Exception):
+    """Internal: the user aborted a firmware download via its cancel flag."""
 
 
 def get_install_root() -> Path:
@@ -279,6 +289,8 @@ def check_latest() -> Optional[ReleaseInfo]:
                     tarball_url=host["tarball_url"],
                     html_url=host.get("html_url", ""),
                     published_at=host.get("published_at", ""),
+                    name=host.get("name", ""),
+                    notes=host.get("notes", ""),
                 )
         except (KeyError, InvalidVersion) as e:
             log.warning("Corrupt ETag cache for host update — discarding: %s", e)
@@ -302,6 +314,8 @@ def check_latest() -> Optional[ReleaseInfo]:
         tarball_url = data["tarball_url"]
         html_url = data.get("html_url", "")
         published_at = data.get("published_at", "")
+        rel_name = data.get("name", "") or ""
+        notes = data.get("body", "") or ""
     except (ValueError, KeyError) as e:
         raise UpdateCheckError(f"Malformed GitHub response: {e}") from e
 
@@ -319,6 +333,8 @@ def check_latest() -> Optional[ReleaseInfo]:
         "tarball_url": tarball_url,
         "html_url": html_url,
         "published_at": published_at,
+        "name": rel_name,
+        "notes": notes,
     }
     _save_etag_cache(cache)
 
@@ -328,7 +344,8 @@ def check_latest() -> Optional[ReleaseInfo]:
 
     log.info("Update check: new version available: %s -> %s", __version__, latest)
     return ReleaseInfo(tag=tag, version=str(latest), tarball_url=tarball_url,
-                       html_url=html_url, published_at=published_at)
+                       html_url=html_url, published_at=published_at,
+                       name=rel_name, notes=notes)
 
 
 def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
@@ -369,6 +386,8 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
                     uf2_url=fw.get("uf2_url", ""),
                     html_url=fw.get("html_url", ""),
                     published_at=fw.get("published_at", ""),
+                    name=fw.get("name", ""),
+                    notes=fw.get("notes", ""),
                 )
         except (KeyError, InvalidVersion) as e:
             log.warning("Corrupt ETag cache for firmware update — discarding: %s", e)
@@ -390,6 +409,8 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
         html_url = data.get("html_url", "")
         assets = data.get("assets", [])
         published_at = data.get("published_at", "")
+        rel_name = data.get("name", "") or ""
+        notes = data.get("body", "") or ""
     except (ValueError, KeyError) as e:
         raise UpdateCheckError(f"Malformed GitHub response: {e}") from e
 
@@ -412,6 +433,8 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
         "uf2_url": uf2_url or "",
         "html_url": html_url,
         "published_at": published_at,
+        "name": rel_name,
+        "notes": notes,
     }
     _save_etag_cache(cache)
 
@@ -425,7 +448,8 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
 
     log.info("Firmware update check: new version available: %s -> %s", current_version, latest)
     return FwUpReleaseInfo(tag=tag, version=str(latest), bin_url=bin_url,
-                           uf2_url=uf2_url or "", html_url=html_url, published_at=published_at)
+                           uf2_url=uf2_url or "", html_url=html_url, published_at=published_at,
+                           name=rel_name, notes=notes)
 
 
 def _safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
@@ -752,11 +776,18 @@ class FwUpDownloader(threading.Thread):
     """
 
     def __init__(self, release: FwUpReleaseInfo, *,
-                 on_progress=None, on_finished=None):
+                 on_progress=None, on_finished=None, cancel_flag: list = None):
         super().__init__(daemon=True)
         self.release = release
         self._on_progress = on_progress
         self._on_finished = on_finished
+        # Optional single-element list; set cancel_flag[0] = True to abort. The
+        # download only writes to a temp file — nothing reaches the keyboard —
+        # so aborting mid-download is always safe.
+        self._cancel_flag = cancel_flag
+
+    def _cancelled(self) -> bool:
+        return self._cancel_flag is not None and self._cancel_flag[0]
 
     def run(self):
         tmp_path = None
@@ -776,6 +807,8 @@ class FwUpDownloader(threading.Thread):
                     total = int(r.headers.get("Content-Length") or 0)
                     written = 0
                     for chunk in r.iter_content(DOWNLOAD_CHUNK):
+                        if self._cancelled():
+                            raise _DownloadCancelled()
                         if not chunk:
                             continue
                         tmp.write(chunk)
@@ -785,6 +818,13 @@ class FwUpDownloader(threading.Thread):
                             _fire(self._on_progress, pct, f"Downloading firmware… {written // 1024} / {total // 1024} KB")
                         else:
                             _fire(self._on_progress, 0, f"Downloading firmware… {written // 1024} KB")
+        except _DownloadCancelled:
+            # Expected user abort — clean up the partial file quietly (no traceback).
+            if tmp_path and os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+            log.info("Firmware download cancelled by user.")
+            _fire(self._on_finished, False, "Download cancelled.", "")
+            return
         except Exception as e:  # noqa: BLE001
             log.exception("Firmware download failed")
             if tmp_path and os.path.exists(tmp_path):
