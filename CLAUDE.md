@@ -163,7 +163,8 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   - **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
 - **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
-- **No CI**: no GitHub Actions workflows exist in this repo.
+- **No *test* CI**: no workflow runs the unit tests. (The repo *does* have two
+  workflows — `bump-version.yml` + `release.yml`; see **Releases** below.)
 - **GUI tests need a display**: `tests/gui/host_client_test.py` constructs the real `PolyHost` (default + `--connect` client mode) in a subprocess (one `QApplication`/process; `pynput` needs X) with Qt forced to `offscreen`. They **skip unless `DISPLAY` is set** — run them under a virtual X server: `xvfb-run -a .venv/bin/python -m unittest tests.gui.host_client_test`. `host.py` can't even be *imported* without an X server (pynput at module load), so plain `unittest discover` skips them. Installing `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too (pywinctl/pymonctl `sys.exit(1)` without it).
 - **Single-key keymap write**: the firmware supports `ID_DYNAMIC_KEYMAP_SET_KEYCODE` (0x05) — payload is `[layer, row, col, keycode_hi, keycode_lo]`. No need to write a full layer; `PolyKybd.set_dynamic_keycode()` wraps this.
 - **Firmware update survives protocol mismatches**: `PolyHost.device_present` tracks "a device answers protocol-independent queries (GET_ID/GET_LANG)" separately from `connected` (protocol/version compatible). The flash/apply/bootloader actions and the release-update flow gate on `_fw_actions_allowed()` (present, not paused) — NOT on `connected` — so a keyboard on a mismatched protocol can always be updated (`CommandsSubMenu.update_enabled` re-enables exactly those items when the rest of the menu is greyed out). The HID flash protocol (`hid_fw_up`) is dispatched independently of `PROTOCOL_VERSION` in the firmware. Don't re-gate any firmware-update path on `self.connected`.
@@ -172,4 +173,31 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   - **Linux**: `.desktop` autostart entry; **macOS**: `launchd` plist.
   - `get_autostart_status()` reports which mechanism is in place (printed at startup); `remove_autostart()` tears all of them down. `--portable` removes any existing entry rather than just skipping registration.
 - **Layout dialog** (`polyhost/gui/layout_dialog/`): fully implemented — layer switching re-renders all key labels from the cached buffer; clicking a key then selecting from the browser writes immediately to the device via `set_dynamic_keycode()` and keeps the local buffer in sync. `RenderableKey` carries `matrix_index` for row/col derivation.
+
+## Releases
+
+Host releases are **GitHub Releases** (tag `vX.Y.Z`; version in `polyhost/_version.py`),
+created by **publishing** — *not* by pushing a tag. Use the `polykybd-github-release`
+skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
+
+- **A pushed tag does NOT create a release.** Release tags land on the auto-bump
+  `chore: … [skip ci]` commit (`bump-version.yml`), and `[skip ci]` suppresses the
+  tag-push trigger — so `release.yml` runs on **`release: published`** (this workflow had
+  in fact *never* run; host releases were always hand-created in the UI). No build assets
+  (pure Python).
+- **`scripts/publish_release.py`** — one OS-independent command (stdlib only, byte-identical
+  to the qmk copy; it auto-detects the repo). It publishes the **newest prepared `<TAG>.md`
+  on the `release-notes` branch** — the source of truth for what's ready, because the tree
+  version drifts *ahead* (every PR merge auto-bumps it). `--dry-run`/`--tag`. It forces
+  `encoding="utf-8"` on git output — on Windows the default cp1252 codec crashes on the
+  emoji notes.
+- **Crafted notes** live one-file-per-tag on the `release-notes` branch (`<TAG>.md`, first
+  line `# <title>`, rest = body); `release.yml` applies them on `release: published` via
+  `gh release edit`.
+- **Version bump is label-driven**: the merged PR's `bump:major`/`bump:minor`/
+  `bump:protocol` label (else patch) drives `bump-version.yml`. Bump `__protocol__` in
+  lockstep with the firmware (see the connect-gate note above).
+- ⚠️ **From Claude Code on the web you can neither push tags (git proxy 403 on
+  `refs/tags/*`) nor create a release (no `gh`, no create-release MCP tool)** — stage the
+  notes on the branch and hand the user `python scripts/publish_release.py`.
 
