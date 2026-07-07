@@ -28,6 +28,7 @@ from PyQt5.QtWidgets import (
 
 from polyhost.device.command_ids import IdleStyle, GlyphScript
 from polyhost.gui.get_icon import get_icon
+from polyhost.gui.update_dialog import confirm_update
 
 # Tray labels for the Glyph Script submenu. Generic names (no franchise
 # branding — trademark caveat on the fictional scripts); the fonts themselves
@@ -1621,10 +1622,12 @@ class PolyHost(QApplication):
     def _prompt_and_install(self, release):
         date_str = _fmt_release_date(release.published_at)
         info = f"Released: {date_str}\n" if date_str else ""
-        if _msgbox(QMessageBox.Question, "Update PolyKybdHost",
-                   f"Version {release.version} is available.\n{info}\n"
-                   "Download, install, and restart now?",
-                   QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) != QMessageBox.Yes:
+        message = (f"Version {release.version} is available.\n{info}\n"
+                   "Download, install, and restart now?")
+        if not confirm_update("Update PolyKybdHost", message,
+                              notes=getattr(release, "notes", ""),
+                              html_url=getattr(release, "html_url", ""),
+                              release_name=getattr(release, "name", "")):
             return
         self._run_update_installer(release)
 
@@ -1873,11 +1876,13 @@ class PolyHost(QApplication):
             return
         date_str = _fmt_release_date(release.published_at)
         info = f"Released: {date_str}\n" if date_str else ""
-        if _msgbox(QMessageBox.Question, "Update PolyKybd Firmware",
-                   f"Firmware {release.version} is available.\n{info}\n"
+        message = (f"Firmware {release.version} is available.\n{info}\n"
                    "Both halves update over HID and reboot automatically.\n\n"
-                   "Download and flash now?",
-                   QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) != QMessageBox.Yes:
+                   "Download and flash now?")
+        if not confirm_update("Update PolyKybd Firmware", message,
+                              notes=getattr(release, "notes", ""),
+                              html_url=getattr(release, "html_url", ""),
+                              release_name=getattr(release, "name", "")):
             return
         self._run_fw_up_downloader(release)
 

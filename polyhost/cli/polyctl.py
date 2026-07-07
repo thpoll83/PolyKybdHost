@@ -399,6 +399,13 @@ def _cmd_update(client, args):
         res = client.call(protocol.M_UPDATE_CHECK) or {}
         if res.get("available"):
             print(f"update available: {res.get('version')}  {res.get('url', '')}".rstrip())
+            if res.get("name"):
+                print(f"  {res['name']}")
+            notes = (res.get("notes") or "").strip()
+            if notes:
+                print("\nRelease notes:")
+                for line in notes.splitlines():
+                    print(f"  {line}")
         else:
             print(f"up to date (host {res.get('version')})")
         return 0
