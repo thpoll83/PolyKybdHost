@@ -11,6 +11,13 @@ class TestDeviceSettings(unittest.TestCase):
         self.assertEqual(self.s.VID, 0x2021)
         self.assertEqual(self.s.PID, 0x2007)
 
+    def test_known_pids_cover_both_variants(self):
+        # Enumeration matches on this allow-list, not the single PID: Split72
+        # (0x2007) and Split42 (0x2008) must both be recognized.
+        self.assertIn(0x2007, self.s.KNOWN_PIDS)  # Split72
+        self.assertIn(0x2008, self.s.KNOWN_PIDS)  # Split42
+        self.assertIn(self.s.PID, self.s.KNOWN_PIDS)
+
     def test_matrix_dimensions(self):
         self.assertEqual(self.s.MATRIX_ROWS, 10)
         self.assertEqual(self.s.MATRIX_COLUMNS, 8)

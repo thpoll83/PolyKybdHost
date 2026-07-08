@@ -10,7 +10,7 @@ class SerialHelper:
         ports = serial.tools.list_ports.comports()
         for port in ports:
             if port.vid is not None and port.pid is not None:
-                if port.vid == self.settings.VID and port.pid == self.settings.PID:
+                if port.vid == self.settings.VID and port.pid in self.settings.KNOWN_PIDS:
                     return port.device
         return None
 

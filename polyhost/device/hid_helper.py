@@ -154,7 +154,8 @@ class HidHelper:
         self.settings = settings
         self.lock = threading.Lock()
 
-        device_interfaces = hid.enumerate(self.settings.VID, self.settings.PID)
+        device_interfaces = [i for i in hid.enumerate(self.settings.VID, 0)
+                             if i['product_id'] in self.settings.KNOWN_PIDS]
         raw_hid_interfaces = [i for i in device_interfaces if i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE and i['usage'] == self.settings.HID_RAW_USAGE]
 
         if len(raw_hid_interfaces) != 0:
@@ -206,7 +207,8 @@ class HidHelper:
         # itself can raise on USB churn/permission errors, and this runs from
         # the background self-heal path where an escaped exception is noise.
         try:
-            device_interfaces = hid.enumerate(self.settings.VID, self.settings.PID)
+            device_interfaces = [i for i in hid.enumerate(self.settings.VID, 0)
+                                  if i['product_id'] in self.settings.KNOWN_PIDS]
             console_hid_interfaces = [j for j in device_interfaces
                                       if j['usage_page'] == self.settings.HID_CONSOLE_USAGE_PAGE
                                       and j['usage'] == self.settings.HID_CONSOLE_USAGE]
@@ -398,7 +400,8 @@ class HidHelper:
 
         deadline = time.monotonic() + timeout_s
         while time.monotonic() < deadline:
-            interfaces = hid.enumerate(self.settings.VID, self.settings.PID)
+            interfaces = [i for i in hid.enumerate(self.settings.VID, 0)
+                          if i['product_id'] in self.settings.KNOWN_PIDS]
             raw = [i for i in interfaces
                    if i['usage_page'] == self.settings.HID_RAW_USAGE_PAGE
                    and i['usage'] == self.settings.HID_RAW_USAGE]
