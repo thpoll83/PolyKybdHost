@@ -249,6 +249,15 @@ class TestSimpleCommandPayloads(unittest.TestCase, LockCheckMixin):
     def test_brightness_clipped_to_min_0(self):
         self.assertEqual(self._payload('set_brightness', -5)[2], 0)
 
+    def test_brightness_no_device_returns_failure_not_crash(self):
+        # The daylight periodic can fire while disconnected (hid is None);
+        # set_brightness must fail gracefully instead of raising AttributeError.
+        keeb = PolyKybd(DeviceSettings(), StubPolySettings())
+        keeb.hid = None
+        ok, reply = keeb.set_brightness(24, 0x1)
+        self.assertFalse(ok)
+        self.assertEqual(reply, "No Interface")
+
 
 class TestSendOnlyCommands(unittest.TestCase, LockCheckMixin):
     """Bootloader / handedness reset the device immediately: send, no ACK wait."""

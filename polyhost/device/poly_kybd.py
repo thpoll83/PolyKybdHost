@@ -303,6 +303,10 @@ class PolyKybd:
         # flags (protocol >= 5, firmware base/com.h): bit0 VOLATILE (daylight,
         # not persisted), bit1 AUTO_ON, bit2 AUTO_OFF. flags=0 is the legacy
         # persisted set; pre-v5 firmware ignores the extra byte.
+        if self.hid is None:
+            # No open device (e.g. the daylight periodic firing while
+            # disconnected). Fail like the send path instead of AttributeError.
+            return False, "No Interface"
         self.log.info("Setting Display Brightness to %d (flags 0x%x)...", brightness, flags)
         return self.hid.send_and_read_validate(
             compose_cmd(Cmd.SET_BRIGHTNESS, max(0, min(50, int(brightness))), flags & 0xFF))
