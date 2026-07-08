@@ -1,1 +1,7 @@
+# PolyKybd raw-HID access (non-root). One line per known product ID — keep in
+# sync with DeviceSettings.KNOWN_PIDS. After editing, reinstall + reload:
+#   sudo cp polyhost/device/99-hid.rules /etc/udev/rules.d/99-hid.rules
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+# then replug the keyboard.
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2021", ATTRS{idProduct}=="2007", MODE="0666"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2021", ATTRS{idProduct}=="2008", MODE="0666"
