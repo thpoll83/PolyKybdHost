@@ -86,7 +86,7 @@ class IdleStyle(Enum):
     pulse (dismissed by the first key press); firmware without the doom build (or
     older than the feature) falls back to / NACKs it — surfaced as a plain error.
     (Named for the cheat code, matching the tray/CLI label; the firmware calls the
-    same value IDLE_STYLE_DOOM internally — the wire value 2 is what's shared.)
+    same value IDLE_STYLE_IDDQD internally — the wire value 2 is what's shared.)
     """
     PULSE = 0
     JITTER = 1
