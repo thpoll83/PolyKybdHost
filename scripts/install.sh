@@ -179,7 +179,13 @@ case "$(uname -s)" in
             echo "!! Could not detect a package manager - install hidapi (libhidapi-hidraw0) yourself."
         fi
         echo ">> Installing udev rule for non-root HID access"
-        sudo cp polyhost/device/99-hid.rules /etc/udev/rules.d/99-hid.rules
+        # Written inline so the installer is self-contained. Keep the PID lines
+        # in sync with polyhost/device/99-hid.rules and DeviceSettings.KNOWN_PIDS
+        # (0x2007 = Split72, 0x2008 = Split42) — one line per known variant.
+        sudo tee /etc/udev/rules.d/99-hid.rules >/dev/null <<'UDEV_RULE'
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2021", ATTRS{idProduct}=="2007", MODE="0666"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2021", ATTRS{idProduct}=="2008", MODE="0666"
+UDEV_RULE
         sudo udevadm control --reload-rules && sudo udevadm trigger
         echo ">> Replug the keyboard so the new udev rule takes effect."
         ;;
