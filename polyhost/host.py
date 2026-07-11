@@ -376,6 +376,10 @@ class PolyHost(QApplication):
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
+        self.fontpack_inspector_action = QAction(get_icon("overlays.svg"), "Inspect Font Packs...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.fontpack_inspector_action.triggered.connect(self.open_fontpack_inspector)
+
         self.current_lang = None
         self.keeb_lang_menu = None
         self.debug_lang_menu = None
@@ -504,6 +508,9 @@ class PolyHost(QApplication):
         if debug_mode > 0:
             debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
             self.debug_lang_menu = debug_menu.addMenu(get_icon("language.svg"), "Change System Input Language")
+            # Font-pack inspector: offline tool (no device needed), so it's
+            # available in both modes — kept behind the debug flag.
+            debug_menu.addAction(self.fontpack_inspector_action)
             if not self.client_mode:
                 # MRU inspector + mock dump read the in-process device_mgr.
                 mru_action = QAction(get_icon("overlays.svg"), "Inspect MRU Cache...", parent=self)
@@ -714,6 +721,7 @@ class PolyHost(QApplication):
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
         self.log_dialog.setEnabled(True)
+        self.fontpack_inspector_action.setEnabled(True)   # inspects shipped bundles offline
         self.update_action.setEnabled(True)
         self.status.setEnabled(True)
         self.about.setEnabled(True)
@@ -1089,6 +1097,13 @@ class PolyHost(QApplication):
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
+
+    def open_fontpack_inspector(self):
+        from polyhost.gui.fontpack_inspector_dialog import FontPackInspectorDialog
+        # Inspects the bundles shipped with the host (no device needed), so it
+        # works in normal, client and disconnected states alike.
+        dlg = FontPackInspectorDialog(parent=None)
+        dlg.exec_()
 
     def open_mru_inspector(self):
         from polyhost.gui.mru_inspector_dialog import MRUInspectorDialog
