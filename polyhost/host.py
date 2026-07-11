@@ -458,7 +458,6 @@ class PolyHost(QApplication):
 
         self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
-        self.menu.addAction(self.fontpack_inspector_action)
 
         self.update_action = QAction(get_icon("sync.svg"), "Check for updates...", parent=self)
         # noinspection PyUnresolvedReferences
@@ -498,6 +497,9 @@ class PolyHost(QApplication):
         if debug_mode > 0:
             debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
             self.debug_lang_menu = debug_menu.addMenu(get_icon("language.svg"), "Change System Input Language")
+            # Font-pack inspector: offline tool (no device needed), so it's
+            # available in both modes — kept behind the debug flag.
+            debug_menu.addAction(self.fontpack_inspector_action)
             if not self.client_mode:
                 # MRU inspector + mock dump read the in-process device_mgr.
                 mru_action = QAction(get_icon("overlays.svg"), "Inspect MRU Cache...", parent=self)

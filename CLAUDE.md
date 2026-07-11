@@ -136,9 +136,13 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   CLAUDE.md "Font pack" section.
 - **Font-pack inspect/extend tools** (`polyhost/gui/fontpack_inspector_dialog.py` +
   `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
-  `fontgen*`): a tray-launchable / standalone window to view every bundle glyph as
+  `fontgen*`): a standalone window to view every bundle glyph as
   the keycap draws it and to build/splice new glyphs from a TTF/OTF (pure-Python
-  `fontconvert` parity). It loads the shipped bundles by default; **"Open .plyf…"**
+  `fontconvert` parity). Launched from the tray's **Debugging** submenu (the
+  "Inspect Font Packs…" entry), so it is **only shown when the app runs with
+  `--debug` ≥ 1** (`debug_mode > 0` in `host.py`) — it's a developer/power-user
+  tool, hidden from the default menu. Unlike the other Debugging entries it works
+  in both in-process and client mode (offline, no device needed). It loads the shipped bundles by default; **"Open .plyf…"**
   adds any saved/exported `.plyf` as a new tab (folded into the merged ALL_FONTS view
   + the Extend sources) so a file saved elsewhere can be re-inspected. ⚠️ **A `.plyf`
   carries no bundle name** — the PlyF header has only abi/`content_version`/font_count
