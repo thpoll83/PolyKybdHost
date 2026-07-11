@@ -126,6 +126,9 @@ def render_packfont(source_path: str, *, codepoint_range=None, sequence: str = N
         pf = fontgen.render_sequence(source_path, sequence, opts, name=name)
     else:
         first, last = codepoint_range
+        if first > last:
+            raise ValueError(
+                f"codepoint_range must satisfy first <= last (got {first:#x} > {last:#x})")
         pf = fontgen.render_range(source_path, first, last, opts, name=name)
     pf.global_index = global_index
     return pf
