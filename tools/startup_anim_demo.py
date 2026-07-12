@@ -112,53 +112,98 @@ class ImgRenderer(KleRenderer):
         return rgb
 
 
+def hash2(x, y):
+    """Static white-noise threshold in [0,1) from a per-pixel hash. Maximally
+    *irregular* (no grid, no diagonal banding like Bayer/IGN) yet a pure function
+    of board position, so it doesn't crawl between frames -- the plasma value
+    animating across this fixed field is what makes the texture shimmer."""
+    v = np.sin(x * 12.9898 + y * 78.233) * 43758.5453
+    return v - np.floor(v)
+
+
 class Effect:
+    """Sparks stream left->right (each with a fading trail), then converge into
+    the splash letters. State is procedural (a pure function of time)."""
+
     def __init__(self, geom, targets, board_wh, mode="boot", seed=1234):
         self.geom = geom
         self.mode = mode
         self.W, self.H = board_wh
         rng = np.random.default_rng(seed)
-        n = 240 if mode == "boot" else 90
+        n = 700 if mode == "boot" else 300
         self.n = n
+        self.p0 = rng.uniform(0.0, 1.0, n).astype(np.float32)        # flow phase
+        self.speed = rng.uniform(0.9, 1.9, n).astype(np.float32)     # L->R flow rate
+        self.lane = (rng.uniform(-0.05, 1.05, n) * self.H).astype(np.float32)
+        self.bob = rng.uniform(6, 30, n).astype(np.float32)          # vertical wander
+        self.bw = rng.uniform(1.2, 3.6, n).astype(np.float32)
+        self.ph = rng.uniform(0, 6.283, n).astype(np.float32)
+        self.tw = rng.uniform(3.0, 6.5, n).astype(np.float32)        # twinkle rate
+        self.margin = 0.12 * self.W
         if targets and mode == "boot":
             homes = [(geom[mp]["cx"], geom[mp]["cy"]) for mp in targets if mp in geom]
-            self.home = np.array([homes[rng.integers(len(homes))] for _ in range(n)], np.float32)
+            self.target = np.array([homes[rng.integers(len(homes))] for _ in range(n)], np.float32)
         else:
-            self.home = np.stack([rng.uniform(0, self.W, n), rng.uniform(0, self.H, n)], 1).astype(np.float32)
-        self.phase = rng.uniform(0, 2 * np.pi, n).astype(np.float32)
-        self.spin = (rng.uniform(0.6, 1.6, n) * rng.choice([-1, 1], n)).astype(np.float32)
-        self.rad = rng.uniform(0.35, 1.0, n).astype(np.float32)
-        self.tw = rng.uniform(2.0, 5.0, n).astype(np.float32)
-        self.drx = (rng.uniform(0.3, 1.1, n) * rng.choice([-1, 1], n)).astype(np.float32)
-        self.dry = (rng.uniform(0.3, 1.1, n) * rng.choice([-1, 1], n)).astype(np.float32)
+            self.target = np.stack([np.zeros(n), self.lane], 1).astype(np.float32)
 
-    def converge(self, tt):
-        return smooth(0.30, 0.62, tt) if self.mode == "boot" else 0.0
+    def _converge(self, tt):
+        return smooth(0.42, 0.72, tt) if self.mode == "boot" else 0.0
 
-    def particles(self, tt):
-        c = self.converge(tt)
-        R0 = 0.16 * min(self.W, self.H)
-        radius = self.rad * R0 * (1.0 - c)
-        ang = self.phase + tt * 6.283 * self.spin
-        drift = (1.0 - c) * 0.10 * min(self.W, self.H)
-        dx = np.cos(ang) * radius + np.sin(tt * 6.283 * self.drx + self.phase) * drift
-        dy = np.sin(ang) * radius + np.cos(tt * 6.283 * self.dry + self.phase) * drift
-        pos = self.home + np.stack([dx, dy], 1)
-        twk = 0.5 + 0.5 * np.sin(tt * 6.283 * self.tw + self.phase)
+    def positions(self, tt):
+        xnorm = np.mod(self.p0 + tt * self.speed, 1.0)              # left->right flow
+        x = -self.margin + xnorm * (self.W + 2 * self.margin)
+        y = self.lane + self.bob * np.sin(tt * 6.283 * self.bw + self.ph)
+        stream = np.stack([x, y], 1)
         if self.mode == "boot":
-            env = (0.6 + 0.4 * twk) * (1.0 - smooth(0.72, 1.0, tt) * 0.8)
-            env += smooth(0.55, 0.66, tt) * (1 - smooth(0.66, 0.8, tt)) * 0.8 * twk
+            c = self._converge(tt)
+            return stream * (1 - c) + self.target * c
+        return stream
+
+    def _env(self, tt):
+        twk = 0.55 + 0.45 * np.sin(tt * 6.283 * self.tw + self.ph)
+        if self.mode == "boot":
+            e = (0.7 + 0.3 * twk) * (1 - smooth(0.80, 1.0, tt) * 0.9)      # fade after letters
+            e += smooth(0.62, 0.72, tt) * (1 - smooth(0.72, 0.9, tt)) * 0.7 * twk  # arrival burst
         else:
-            env = 0.35 + 0.35 * twk
-        return pos, np.clip(env, 0, 1.4).astype(np.float32)
+            e = 0.5 + 0.4 * twk
+        return np.clip(e, 0, 1.5).astype(np.float32)
+
+    def trail_cloud(self, tt, T=26, dt=0.0006):
+        """All spark points incl. trails. Sampling each spark's own path in many
+        small sub-steps back in time makes a *continuous* comet streak (the
+        sub-steps are <1 board pixel apart), fading with age so the head is bright
+        and the tail dissolves. During converge the path curves toward the letter,
+        so the streak curves too."""
+        xs, ys, bs = [], [], []
+        env = self._env(tt)
+        for j in range(T):
+            pos = self.positions(max(tt - j * dt, 0.0))
+            w = (1 - j / T) ** 1.3
+            xs.append(pos[:, 0]); ys.append(pos[:, 1]); bs.append(env * w)
+        return np.concatenate(xs), np.concatenate(ys), np.concatenate(bs)
 
     def plasma(self, gx, gy, tt):
         t = tt * 6.283
         cx, cy = self.W * 0.5, self.H * 0.5
         r = np.sqrt((gx - cx) ** 2 + (gy - cy) ** 2)
-        v = (np.sin(gx * 0.020 + t) + np.sin(gy * 0.028 - t * 0.8) +
-             np.sin((gx + gy) * 0.017 + t * 0.6) + np.sin(r * 0.024 - t * 1.3))
+        v = (np.sin(gx * 0.010 + t) + np.sin(gy * 0.014 - t * 0.8) +
+             np.sin((gx + gy) * 0.008 + t * 0.6) + np.sin(r * 0.012 - t * 1.3))
         return 0.5 + 0.125 * v
+
+
+_STAMP = np.array([[0.15, 0.55, 0.15], [0.55, 1.0, 0.55], [0.15, 0.55, 0.15]], np.float32)
+
+
+def splat_sparks(W, H, xs, ys, bs):
+    """Rasterize all spark/trail points into one board-sized intensity buffer, so
+    per-key sampling is O(pixels) instead of O(pixels*particles)."""
+    Z = np.zeros((H, W), np.float32)
+    xi = np.round(xs).astype(int)
+    yi = np.round(ys).astype(int)
+    ok = (xi >= 1) & (xi < W - 1) & (yi >= 1) & (yi < H - 1) & (bs > 0.02)
+    for x, y, b in zip(xi[ok], yi[ok], bs[ok]):
+        Z[y - 1:y + 2, x - 1:x + 2] += b * _STAMP
+    return Z
 
 
 def glyph_masks(targets):
@@ -178,40 +223,41 @@ LX = np.arange(OLED_W)[None, :]
 LY = np.arange(OLED_H)[:, None]
 
 
-def panel_for(mp, g, eff, masks, pos, pb, tt, pgain, letter_on):
+def panel_for(mp, g, eff, masks, Z, tt, pgain, letter_on):
     # board coords of every native pixel of this key (rotation included)
     gx = g["cx"] + (LX - OLED_W / 2) * g["ux"] + (LY - OLED_H / 2) * g["vx"]
     gy = g["cy"] + (LX - OLED_W / 2) * g["uy"] + (LY - OLED_H / 2) * g["vy"]
-    lit = (eff.plasma(gx, gy, tt) * pgain > BAY).astype(np.float32) * 0.5
-    # sparkles: nearby particles
-    sel = ((pos[:, 0] > g["cx"] - 40) & (pos[:, 0] < g["cx"] + 40) &
-           (pos[:, 1] > g["cy"] - 40) & (pos[:, 1] < g["cy"] + 40))
-    if np.any(sel):
-        d2 = ((gx[..., None] - pos[sel, 0]) ** 2 + (gy[..., None] - pos[sel, 1]) ** 2)
-        spark = (np.exp(-d2 / (2 * 1.3 ** 2)) * pb[sel]).sum(-1)
-        lit = np.maximum(lit, np.clip(spark, 0, 1))
-    # letter dither-dissolve reveal, left->right by board x
+    gxr = np.round(gx)
+    gyr = np.round(gy)
+    # background plasma, sparse + irregular white-noise dither (not the griddy Bayer)
+    final = (eff.plasma(gx, gy, tt) * pgain) > hash2(gxr, gyr)
+    # sparks + trails: sample the global spark buffer at this key's board pixels
+    xi = np.clip(gxr.astype(int), 0, Z.shape[1] - 1)
+    yi = np.clip(gyr.astype(int), 0, Z.shape[0] - 1)
+    final = final | (Z[yi, xi] > 0.24)
+    # letters dissolve in, left->right, with an offset noise field
     if mp in masks and letter_on > 0:
         xn = np.clip(g["cx"] / eff.W, 0, 1)
-        rf = np.clip(letter_on * 1.6 - xn * 0.5, 0, 1)
-        lit = np.maximum(lit, (masks[mp] & (BAY < rf)).astype(np.float32))
-    return Image.fromarray((np.clip(lit, 0, 1) * 255).astype(np.uint8), "L").convert("1")
+        rf = np.clip(letter_on * 1.7 - xn * 0.45, 0, 1)
+        final = final | (masks[mp] & (hash2(gxr + 101, gyr + 57) < rf))
+    return Image.fromarray((final.astype(np.uint8) * 255), "L").convert("1")
 
 
 def build_frames(r, geom, eff, targets, masks, n):
     frames = []
     for f in range(n):
         tt = f / n
-        pos, pb = eff.particles(tt)
+        xs, ys, bs = eff.trail_cloud(tt)
+        Z = splat_sparks(r.cw, r.ch, xs, ys, bs)
         if eff.mode == "boot":
-            pgain = 0.10 + 0.16 * smooth(0.0, 0.5, tt)
-            letter_on = smooth(0.50, 0.62, tt)
+            pgain = 0.03 + 0.035 * smooth(0.0, 0.5, tt)
+            letter_on = smooth(0.50, 0.66, tt)
         else:
-            pgain, letter_on = 0.22, 0.0
+            pgain, letter_on = 0.09, 0.0
         contents = {}
         for mp, g in geom.items():
             c = KeyContent()
-            c.oled = panel_for(mp, g, eff, masks, pos, pb, tt, pgain, letter_on)
+            c.oled = panel_for(mp, g, eff, masks, Z, tt, pgain, letter_on)
             contents[mp] = c
         frames.append(contents)
         if (f + 1) % 16 == 0:
