@@ -339,6 +339,9 @@ class RemoteCore:
     def get_glyph_script(self):
         return self._device(p.M_GLYPH_SCRIPT_GET)
 
+    def replay_startup_anim(self):
+        return self._device(p.M_REPLAY_ANIM)
+
     # -- overlays -----------------------------------------------------------
     def send_overlay_data(self, files):
         try:

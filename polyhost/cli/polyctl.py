@@ -191,6 +191,12 @@ def _cmd_glyph_script(client, args):
     return 0
 
 
+def _cmd_replay_anim(client, args):
+    client.call(protocol.M_REPLAY_ANIM, {})
+    print("replaying startup animation")
+    return 0
+
+
 def _cmd_overlay(client, args):
     if args.overlay_action == "send":
         client.call(protocol.M_OVERLAY_SEND, {"files": list(args.files)})
@@ -521,6 +527,10 @@ def build_parser():
         help="omit to print the current script; 'standard' = normal legends, "
              "any other = fantasy/retro override (needs the fantasy font-pack bundle)")
     p_glyph_script.set_defaults(func=_cmd_glyph_script)
+
+    sub.add_parser(
+        "replay-anim", help="replay the one-time startup (Eden) animation on the keycaps"
+    ).set_defaults(func=_cmd_replay_anim)
 
     p_ov = sub.add_parser("overlay", help="overlay control")
     ov_sub = p_ov.add_subparsers(dest="overlay_action", required=True)

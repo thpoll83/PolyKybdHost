@@ -52,6 +52,7 @@ class Cmd(Enum):
     IDLE_STYLE = 28  # get/set idle (anti-burn-in) display style (protocol v4+)
     SET_OS = 29  # get/set the active host-OS identity (protocol v7+)
     GLYPH_SCRIPT = 30  # get/set glyph-script override (standard / fantasy, protocol v9+)
+    REPLAY_ANIM = 31  # replay the one-time startup ("Eden") animation on demand
 
 
 class OsType(Enum):

@@ -1062,7 +1062,8 @@ class PolyHost(QApplication):
         # Offer the glyph-script reset button when a device is present (works over
         # RPC in client mode too); it force-restores the normal language legends.
         reset_cb = self.reset_glyph_script_to_standard if self.device_present else None
-        dlg.setup(current, self.debug_mode, reset_glyph_script=reset_cb)
+        eden_cb = self.replay_eden_animation if self.device_present else None
+        dlg.setup(current, self.debug_mode, reset_glyph_script=reset_cb, replay_eden=eden_cb)
         if dlg.exec_() == QDialog.Accepted:
             updated = dlg.get_updated_settings()
             if self.client_mode:
@@ -1491,6 +1492,15 @@ class PolyHost(QApplication):
             self.log.info("Glyph script reset to standard.")
         else:
             self.report_device_result("Error", f"Could not reset glyph script: {msg}")
+
+    def replay_eden_animation(self):
+        """Replay the one-time startup ("Eden") animation on the keycaps (used by
+        the settings-dialog 'Reset Eden' button)."""
+        ok, msg = self.core.replay_startup_anim()
+        if ok:
+            self.log.info("Replaying startup animation.")
+        else:
+            self.report_device_result("Error", f"Could not replay startup animation: {msg}")
 
     def read_overlay_mapping_file(self, file):
         if not file:
