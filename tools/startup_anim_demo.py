@@ -40,6 +40,7 @@ FONT = "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
 
 # 4x4 ordered Bayer matrix, normalized to (0,1) -- the same one the firmware
 # blitter (doom_blit.c) uses; ordered dither is stable frame-to-frame on mono.
+TAU = 2.0 * np.pi     # exact, so integer-rate idle motions loop with no seam
 BAYER4 = np.array([[0, 8, 2, 10], [12, 4, 14, 6],
                    [3, 11, 1, 9], [15, 7, 13, 5]], np.float32) / 16.0
 BAY = np.tile(BAYER4, (OLED_H // 4 + 1, OLED_W // 4 + 1))[:OLED_H, :OLED_W]
@@ -132,13 +133,26 @@ class Effect:
         rng = np.random.default_rng(seed)
         n = 700 if mode == "boot" else 300
         self.n = n
+        # Idle must be a SEAMLESS LOOP, so every motion has to be periodic over
+        # tt in [0,1): integer flow/wander/twinkle rates and integer global speeds
+        # mean state(tt=1) == state(tt=0). Boot plays once, so it stays continuous.
+        self.loop = (mode != "boot")
         self.p0 = rng.uniform(0.0, 1.0, n).astype(np.float32)        # flow phase
-        self.speed = rng.uniform(0.9, 1.9, n).astype(np.float32)     # L->R flow rate
         self.lane = (rng.uniform(-0.05, 1.05, n) * self.H).astype(np.float32)
-        self.bob = rng.uniform(6, 30, n).astype(np.float32)          # vertical wander
-        self.bw = rng.uniform(1.2, 3.6, n).astype(np.float32)
-        self.ph = rng.uniform(0, 6.283, n).astype(np.float32)
-        self.tw = rng.uniform(3.0, 6.5, n).astype(np.float32)        # twinkle rate
+        self.bob = rng.uniform(6, 30, n).astype(np.float32)          # vertical wander amp
+        self.ph = rng.uniform(0, TAU, n).astype(np.float32)
+        if self.loop:
+            self.speed = rng.integers(1, 4, n).astype(np.float32)    # {1,2,3} cycles/loop
+            self.bw = rng.integers(1, 4, n).astype(np.float32)
+            self.tw = rng.integers(2, 6, n).astype(np.float32)
+            self.bg_speed = 2.0
+            self.ring_speed = 1.0
+        else:
+            self.speed = rng.uniform(0.9, 1.9, n).astype(np.float32)  # L->R flow rate
+            self.bw = rng.uniform(1.2, 3.6, n).astype(np.float32)
+            self.tw = rng.uniform(3.0, 6.5, n).astype(np.float32)     # twinkle rate
+            self.bg_speed = 1.7          # background plasma flow rate (faster now)
+            self.ring_speed = 0.55       # radial ripple expansion rate (3rd layer)
         self.margin = 0.12 * self.W
         if targets and mode == "boot":
             homes = [(geom[mp]["cx"], geom[mp]["cy"]) for mp in targets if mp in geom]
@@ -152,7 +166,7 @@ class Effect:
     def positions(self, tt):
         xnorm = np.mod(self.p0 + tt * self.speed, 1.0)              # left->right flow
         x = -self.margin + xnorm * (self.W + 2 * self.margin)
-        y = self.lane + self.bob * np.sin(tt * 6.283 * self.bw + self.ph)
+        y = self.lane + self.bob * np.sin(tt * TAU * self.bw + self.ph)
         stream = np.stack([x, y], 1)
         if self.mode == "boot":
             c = self._converge(tt)
@@ -160,7 +174,7 @@ class Effect:
         return stream
 
     def _env(self, tt):
-        twk = 0.55 + 0.45 * np.sin(tt * 6.283 * self.tw + self.ph)
+        twk = 0.55 + 0.45 * np.sin(tt * TAU * self.tw + self.ph)
         if self.mode == "boot":
             e = (0.7 + 0.3 * twk) * (1 - smooth(0.80, 1.0, tt) * 0.9)      # fade after letters
             e += smooth(0.62, 0.72, tt) * (1 - smooth(0.72, 0.9, tt)) * 0.7 * twk  # arrival burst
@@ -177,18 +191,31 @@ class Effect:
         xs, ys, bs = [], [], []
         env = self._env(tt)
         for j in range(T):
-            pos = self.positions(max(tt - j * dt, 0.0))
+            st = tt - j * dt
+            if not self.loop:
+                st = max(st, 0.0)      # boot: no history before the intro starts
+            pos = self.positions(st)   # idle: periodic funcs handle st<0 (seamless)
             w = (1 - j / T) ** 1.3
             xs.append(pos[:, 0]); ys.append(pos[:, 1]); bs.append(env * w)
         return np.concatenate(xs), np.concatenate(ys), np.concatenate(bs)
 
     def plasma(self, gx, gy, tt):
-        t = tt * 6.283
+        # NOTE: for a seamless idle loop bg_speed and the per-term time multipliers
+        # must be integers, so the phase advances a whole number of turns per loop.
+        t = tt * TAU * self.bg_speed
         cx, cy = self.W * 0.5, self.H * 0.5
         r = np.sqrt((gx - cx) ** 2 + (gy - cy) ** 2)
-        v = (np.sin(gx * 0.010 + t) + np.sin(gy * 0.014 - t * 0.8) +
-             np.sin((gx + gy) * 0.008 + t * 0.6) + np.sin(r * 0.012 - t * 1.3))
+        v = (np.sin(gx * 0.010 + t) + np.sin(gy * 0.014 - t) +
+             np.sin((gx + gy) * 0.008 + t) + np.sin(r * 0.012 - t))
         return 0.5 + 0.125 * v
+
+    def rings(self, gx, gy, tt):
+        """Third layer: concentric ripples expanding outward from center -- a
+        radial motion distinct from the flowing plasma and the horizontal sparks.
+        ring_speed is integer in idle mode so the ripple phase loops cleanly."""
+        cx, cy = self.W * 0.5, self.H * 0.42
+        r = np.sqrt((gx - cx) ** 2 + (gy - cy) ** 2)
+        return 0.5 + 0.5 * np.sin(r * 0.011 - tt * TAU * self.ring_speed)
 
 
 _STAMP = np.array([[0.15, 0.55, 0.15], [0.55, 1.0, 0.55], [0.15, 0.55, 0.15]], np.float32)
@@ -223,15 +250,18 @@ LX = np.arange(OLED_W)[None, :]
 LY = np.arange(OLED_H)[:, None]
 
 
-def panel_for(mp, g, eff, masks, Z, tt, pgain, letter_on):
+def panel_for(mp, g, eff, masks, Z, tt, pgain, letter_on, ring_gain):
     # board coords of every native pixel of this key (rotation included)
     gx = g["cx"] + (LX - OLED_W / 2) * g["ux"] + (LY - OLED_H / 2) * g["vx"]
     gy = g["cy"] + (LX - OLED_W / 2) * g["uy"] + (LY - OLED_H / 2) * g["vy"]
     gxr = np.round(gx)
     gyr = np.round(gy)
-    # background plasma, sparse + irregular white-noise dither (not the griddy Bayer)
+    # layer 1: background plasma, sparse + irregular white-noise dither
     final = (eff.plasma(gx, gy, tt) * pgain) > hash2(gxr, gyr)
-    # sparks + trails: sample the global spark buffer at this key's board pixels
+    # layer 3: expanding radial ripples (rv**5 -> thin ring crests), own noise field
+    rv = eff.rings(gx, gy, tt)
+    final = final | ((rv ** 5) * ring_gain > hash2(gxr + 301, gyr + 211))
+    # layer 2: sparks + trails -- sample the global spark buffer at this key
     xi = np.clip(gxr.astype(int), 0, Z.shape[1] - 1)
     yi = np.clip(gyr.astype(int), 0, Z.shape[0] - 1)
     final = final | (Z[yi, xi] > 0.24)
@@ -252,12 +282,13 @@ def build_frames(r, geom, eff, targets, masks, n):
         if eff.mode == "boot":
             pgain = 0.03 + 0.035 * smooth(0.0, 0.5, tt)
             letter_on = smooth(0.50, 0.66, tt)
+            ring_gain = 0.9 * (1 - 0.7 * smooth(0.72, 1.0, tt))   # fade as letters settle
         else:
-            pgain, letter_on = 0.09, 0.0
+            pgain, letter_on, ring_gain = 0.09, 0.0, 0.9
         contents = {}
         for mp, g in geom.items():
             c = KeyContent()
-            c.oled = panel_for(mp, g, eff, masks, Z, tt, pgain, letter_on)
+            c.oled = panel_for(mp, g, eff, masks, Z, tt, pgain, letter_on, ring_gain)
             contents[mp] = c
         frames.append(contents)
         if (f + 1) % 16 == 0:
