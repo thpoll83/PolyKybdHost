@@ -30,7 +30,7 @@ import os
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from kle_render import KleRenderer, KeyContent, OLED_W, OLED_H
+from kle_render import KleRenderer, KeyContent, Theme, OLED_W, OLED_H
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
@@ -224,16 +224,20 @@ def main():
     ap.add_argument("--mode", choices=["boot", "idle"], default="boot")
     ap.add_argument("--kle", default=DEFAULT_KLE)
     ap.add_argument("--out", default=os.path.join(HERE, "out", "startup_anim.gif"))
-    ap.add_argument("--unit", type=int, default=72)
-    ap.add_argument("--gap", type=int, default=48)
-    ap.add_argument("--frames", type=int, default=84)
-    ap.add_argument("--fps", type=int, default=22)
-    ap.add_argument("--scale", type=float, default=0.5)
-    ap.add_argument("--hold", type=int, default=14)
+    ap.add_argument("--unit", type=int, default=160,
+                    help="px per key unit; larger => each OLED pixel is bigger/crisper")
+    ap.add_argument("--gap", type=int, default=100)
+    ap.add_argument("--frames", type=int, default=72)
+    ap.add_argument("--fps", type=int, default=20)
+    ap.add_argument("--scale", type=float, default=1.0,
+                    help="post-render zoom; keep 1.0 so NEAREST OLED pixels stay crisp")
+    ap.add_argument("--hold", type=int, default=12)
     args = ap.parse_args()
 
+    # Pure-white lit pixel on a near-black OLED (was a cool white).
+    theme = Theme(oled_on=(255, 255, 255), oled_bg=(6, 7, 10), oled_dim_bg=(10, 10, 12))
     r = ImgRenderer(json.load(open(args.kle, encoding="utf-8")),
-                    unit=args.unit, exclude=ENCODERS, bezel=True)
+                    unit=args.unit, exclude=ENCODERS, bezel=True, theme=theme)
     r.compact_halves(lambda mp: 'L' if int(mp.split(',')[0]) < 5 else 'R', gap_px=args.gap)
     geom = key_board_geom(r)
     targets = splash_targets() if args.mode == "boot" else {}
