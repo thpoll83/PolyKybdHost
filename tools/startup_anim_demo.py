@@ -297,7 +297,7 @@ def build_idle(r, geom, eff, n):
         for mp, g in geom.items():
             c = KeyContent()
             c.oled = panel_for(mp, g, eff, masks={}, Z=Z, tt=tt,
-                               pgain=0.09, letter_on=0.0, ring_gain=0.35)
+                               pgain=0.09, letter_on=0.0, ring_gain=0.18)
             contents[mp] = c
         frames.append(contents)
     return frames
