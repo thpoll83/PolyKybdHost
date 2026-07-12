@@ -219,12 +219,12 @@ class Effect:
         with an angular wobble and a slowly drifting center so the rings are not
         perfectly symmetric and vary over time. All time rates are integer in idle
         mode so the ripple loops seamlessly."""
-        cx = self.W * (0.5 + 0.06 * np.sin(tt * TAU * self.ring_drift))
-        cy = self.H * (0.42 + 0.05 * np.cos(tt * TAU * self.ring_drift))
+        cx = self.W * (0.5 + 0.03 * np.sin(tt * TAU * self.ring_drift))
+        cy = self.H * (0.42 + 0.025 * np.cos(tt * TAU * self.ring_drift))
         dx, dy = gx - cx, gy - cy
-        r = np.sqrt((dx / 1.7) ** 2 + (dy * 1.15) ** 2)      # horizontal oval
+        r = np.sqrt((dx / 1.6) ** 2 + (dy * 1.1) ** 2)       # gentle horizontal oval
         th = np.arctan2(dy, dx)
-        r = r * (1.0 + 0.18 * np.sin(3.0 * th + tt * TAU * self.ring_wob))  # wobble
+        r = r * (1.0 + 0.06 * np.sin(2.0 * th + tt * TAU * self.ring_wob))  # subtle wobble
         return 0.5 + 0.5 * np.sin(r * 0.016 - tt * TAU * self.ring_speed)
 
 
