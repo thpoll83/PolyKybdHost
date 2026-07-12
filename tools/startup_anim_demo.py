@@ -176,8 +176,8 @@ class Effect:
     def _env(self, tt):
         twk = 0.55 + 0.45 * np.sin(tt * TAU * self.tw + self.ph)
         if self.mode == "boot":
-            e = (0.7 + 0.3 * twk) * (1 - smooth(0.80, 1.0, tt) * 0.9)      # fade after letters
-            e += smooth(0.62, 0.72, tt) * (1 - smooth(0.72, 0.9, tt)) * 0.7 * twk  # arrival burst
+            e = (0.7 + 0.3 * twk) * (1 - smooth(0.70, 0.95, tt))          # fully fade before tutorial
+            e += smooth(0.60, 0.70, tt) * (1 - smooth(0.70, 0.88, tt)) * 0.7 * twk  # arrival burst
         else:
             e = 0.5 + 0.4 * twk
         return np.clip(e, 0, 1.5).astype(np.float32)
@@ -258,9 +258,9 @@ def panel_for(mp, g, eff, masks, Z, tt, pgain, letter_on, ring_gain):
     gyr = np.round(gy)
     # layer 1: background plasma, sparse + irregular white-noise dither
     final = (eff.plasma(gx, gy, tt) * pgain) > hash2(gxr, gyr)
-    # layer 3: expanding radial ripples (rv**5 -> thin ring crests), own noise field
+    # layer 3: expanding radial ripples (rv**6 -> thin, dim ring crests)
     rv = eff.rings(gx, gy, tt)
-    final = final | ((rv ** 5) * ring_gain > hash2(gxr + 301, gyr + 211))
+    final = final | ((rv ** 6) * ring_gain > hash2(gxr + 301, gyr + 211))
     # layer 2: sparks + trails -- sample the global spark buffer at this key
     xi = np.clip(gxr.astype(int), 0, Z.shape[1] - 1)
     yi = np.clip(gyr.astype(int), 0, Z.shape[0] - 1)
@@ -273,26 +273,142 @@ def panel_for(mp, g, eff, masks, Z, tt, pgain, letter_on, ring_gain):
     return Image.fromarray((final.astype(np.uint8) * 255), "L").convert("1")
 
 
-def build_frames(r, geom, eff, targets, masks, n):
+def build_idle(r, geom, eff, n):
+    """Seamless idle loop: sparks + faint plasma + dim ripples, no letters."""
     frames = []
     for f in range(n):
         tt = f / n
         xs, ys, bs = eff.trail_cloud(tt)
         Z = splat_sparks(r.cw, r.ch, xs, ys, bs)
-        if eff.mode == "boot":
-            pgain = 0.03 + 0.035 * smooth(0.0, 0.5, tt)
-            letter_on = smooth(0.50, 0.66, tt)
-            ring_gain = 0.9 * (1 - 0.7 * smooth(0.72, 1.0, tt))   # fade as letters settle
-        else:
-            pgain, letter_on, ring_gain = 0.09, 0.0, 0.9
+        contents = {}
+        for mp, g in geom.items():
+            c = KeyContent()
+            c.oled = panel_for(mp, g, eff, masks={}, Z=Z, tt=tt,
+                               pgain=0.09, letter_on=0.0, ring_gain=0.5)
+            contents[mp] = c
+        frames.append(contents)
+    return frames
+
+
+# ---------------------------------------------------------------------------
+# Tutorial: after the logo forms, the boot animation crossfades through a few
+# "pages" that welcome the user and point out the layers and important keys.
+# ---------------------------------------------------------------------------
+_MASKC = {}
+_MDRAW = ImageDraw.Draw(Image.new("L", (OLED_W, OLED_H)))
+
+
+def text_mask(text, border=False):
+    """Rasterize a short word to a 72x40 boolean mask, auto-sized to fit, with an
+    optional thin frame so a labelled tutorial key stands out."""
+    key = (text, border)
+    if key in _MASKC:
+        return _MASKC[key]
+    size = 30
+    while size >= 8:
+        f = ImageFont.truetype(FONT, size)
+        bb = _MDRAW.textbbox((0, 0), text, font=f)
+        w, h = bb[2] - bb[0], bb[3] - bb[1]
+        if w <= 64 and h <= 30:
+            break
+        size -= 2
+    img = Image.new("L", (OLED_W, OLED_H), 0)
+    d = ImageDraw.Draw(img)
+    d.text(((OLED_W - w) / 2 - bb[0], (OLED_H - h) / 2 - bb[1]), text, fill=255, font=f)
+    m = np.asarray(img) > 127
+    if border:
+        b = np.zeros((OLED_H, OLED_W), bool)
+        b[1, 3:-3] = b[-2, 3:-3] = True
+        b[3:-3, 2] = b[3:-3, -3] = True
+        m = m | b
+    _MASKC[key] = m
+    return m
+
+
+def tutorial_pages(logo_masks):
+    """Ordered list of pages; each maps a key (matrix 'r,c') to a 72x40 mask.
+    Page 0 is the logo itself, so the crossfade starts from the formed splash."""
+    def pg(spec):
+        return {_disp_mp(*k): text_mask(t, border=True) for k, t in spec.items()}
+    welcome = pg({
+        (True, 1, 2): "HELLO",
+        (True, 2, 1): "WELCOME", (True, 2, 2): "TO", (True, 2, 3): "YOUR", (True, 2, 4): "NEW",
+        (False, 1, 3): "POLY", (False, 1, 4): "KYBD",
+        (False, 2, 3): "72", (False, 2, 4): "!",
+    })
+    layers = pg({
+        (True, 1, 1): "3", (True, 1, 2): "LAYERS",
+        (True, 2, 1): "BASE", (True, 2, 2): "LANG", (True, 2, 3): "EMOJI", (True, 2, 4): "SYM",
+        (False, 1, 3): "HOLD", (False, 1, 4): "FN",
+        (False, 2, 3): "TO", (False, 2, 4): "SWAP",
+    })
+    keys = pg({
+        (True, 1, 2): "KEYS",
+        (True, 2, 1): "MENU", (True, 2, 2): "LANG", (True, 2, 3): "LIGHT", (True, 2, 4): "STORE",
+        (False, 1, 3): "LAYER", (False, 1, 4): "EMOJI",
+        (False, 2, 3): "TAP", (False, 2, 4): "GO",
+    })
+    return [logo_masks, welcome, layers, keys]
+
+
+def tut_frame(r, geom, eff, pageA, pageB, x, bg_gain, tclock):
+    """One tutorial frame: faint background plasma + a dither-dissolve crossfade
+    from pageA (fading out where noise>x) to pageB (fading in where noise<x)."""
+    contents = {}
+    for mp, g in geom.items():
+        gx = g["cx"] + (LX - OLED_W / 2) * g["ux"] + (LY - OLED_H / 2) * g["vx"]
+        gy = g["cy"] + (LX - OLED_W / 2) * g["uy"] + (LY - OLED_H / 2) * g["vy"]
+        gxr, gyr = np.round(gx), np.round(gy)
+        noise = hash2(gxr, gyr)
+        final = (eff.plasma(gx, gy, tclock) * bg_gain) > noise
+        ma = pageA.get(mp)
+        if ma is not None:
+            final = final | (ma & (noise >= x))
+        if pageB is not None:
+            mb = pageB.get(mp)
+            if mb is not None:
+                final = final | (mb & (noise < x))
+        c = KeyContent()
+        c.oled = Image.fromarray((final.astype(np.uint8) * 255), "L").convert("1")
+        contents[mp] = c
+    return contents
+
+
+def build_boot(r, geom, eff, masks):
+    """Intro (sparks -> converge -> letters, ripples fading) then a smooth
+    crossfade into the welcome/layers/keys tutorial pages."""
+    frames = []
+    N_INTRO = 46
+    for i in range(N_INTRO):
+        tt = i / (N_INTRO - 1)                         # 0..1 inclusive: ends fully formed
+        pgain = 0.03 + 0.02 * smooth(0.0, 0.5, tt)     # settle to the tutorial bg gain
+        letter_on = smooth(0.50, 0.72, tt)
+        ring_gain = 0.45 * (1 - smooth(0.45, 0.75, tt))  # dimmer + fully faded before tutorial
+        xs, ys, bs = eff.trail_cloud(tt)
+        Z = splat_sparks(r.cw, r.ch, xs, ys, bs)
         contents = {}
         for mp, g in geom.items():
             c = KeyContent()
             c.oled = panel_for(mp, g, eff, masks, Z, tt, pgain, letter_on, ring_gain)
             contents[mp] = c
         frames.append(contents)
-        if (f + 1) % 16 == 0:
-            print(f"  frame {f+1}/{n}")
+
+    # tutorial: continue the plasma clock so the background flows on unbroken
+    bg_gain = 0.05
+    dtc = 1.0 / (N_INTRO - 1)
+    tclock = 1.0
+    pages = tutorial_pages(masks)
+    holds = [5, 18, 22, 22]        # per-page dwell (logo short: already on screen)
+    XF = 9
+    for pi, page in enumerate(pages):
+        for _ in range(holds[pi]):
+            frames.append(tut_frame(r, geom, eff, page, None, 0.0, bg_gain, tclock))
+            tclock += dtc
+        if pi + 1 < len(pages):
+            for k in range(1, XF + 1):
+                frames.append(tut_frame(r, geom, eff, page, pages[pi + 1], k / XF, bg_gain, tclock))
+                tclock += dtc
+    print(f"  boot: {len(frames)} frames ({N_INTRO} intro + tutorial)")
     return frames
 
 
@@ -323,16 +439,16 @@ def main():
     eff = Effect(geom, targets, (r.cw, r.ch), mode=args.mode)
     print(f"board {r.cw}x{r.ch}px  keys={len(geom)}  letters={len(targets)}  mode={args.mode}")
 
-    n = args.frames
-    frames = build_frames(r, geom, eff, targets, masks, n)
     if args.mode == "boot":
-        frames += [frames[-1]] * args.hold
+        frames = build_boot(r, geom, eff, masks)
+    else:
+        frames = build_idle(r, geom, eff, args.frames)
     dur = [int(1000 / args.fps)] * len(frames)
     if args.mode == "boot":
-        dur[-1] = 900
+        dur[-1] = 1600           # linger on the final tutorial page before the loop
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     r.save_gif(frames, args.out, dur, loop=0, scale=args.scale)
-    print("wrote", args.out)
+    print("wrote", args.out, f"({len(frames)} frames)")
 
 
 if __name__ == "__main__":
