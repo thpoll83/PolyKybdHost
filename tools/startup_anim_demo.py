@@ -222,9 +222,9 @@ class Effect:
         cx = self.W * (0.5 + 0.03 * np.sin(tt * TAU * self.ring_drift))
         cy = self.H * (0.42 + 0.025 * np.cos(tt * TAU * self.ring_drift))
         dx, dy = gx - cx, gy - cy
-        r = np.sqrt((dx / 1.6) ** 2 + (dy * 1.1) ** 2)       # gentle horizontal oval
+        r = np.sqrt((dx / 1.25) ** 2 + dy ** 2)              # gentle, rounder oval
         th = np.arctan2(dy, dx)
-        r = r * (1.0 + 0.06 * np.sin(2.0 * th + tt * TAU * self.ring_wob))  # subtle wobble
+        r = r * (1.0 + 0.03 * np.sin(2.0 * th + tt * TAU * self.ring_wob))  # very subtle wobble
         return 0.5 + 0.5 * np.sin(r * 0.016 - tt * TAU * self.ring_speed)
 
 
@@ -325,7 +325,7 @@ def build_boot(r, geom, eff, masks):
 
     # settled logo (no sparks / no ripples), hold, then dissolve to black
     Zzero = np.zeros((r.ch, r.cw), np.float32)
-    HOLD, FADE, BLACK = 12, 16, 6
+    HOLD, FADE, BLACK = 22, 22, 6      # linger longer; slower dissolve (matches fw 1.5s hold / 1.4s fade)
 
     def logo_frame(fade):
         contents = {}
@@ -457,7 +457,7 @@ def main():
                     help="px per key unit; larger => each OLED pixel is bigger/crisper")
     ap.add_argument("--gap", type=int, default=100)
     ap.add_argument("--frames", type=int, default=72)
-    ap.add_argument("--fps", type=int, default=20)
+    ap.add_argument("--fps", type=int, default=16)
     ap.add_argument("--scale", type=float, default=1.0,
                     help="post-render zoom; keep 1.0 so NEAREST OLED pixels stay crisp")
     ap.add_argument("--hold", type=int, default=12)
