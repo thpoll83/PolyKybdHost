@@ -64,8 +64,9 @@ class FwSim:
         self.TOTAL = self.INTRO + self.HOLD + self.FADE
         self.PGAIN = d["SA_PGAIN"]
         self.NSPARK = d["SA_NSPARK"]; self.TRAIL_MAX = d["SA_TRAIL_MAX"]
-        self.RFREQ = d["SA_RING_FREQ"]
-        self.RANUM = d["SA_RING_ANUM"]; self.RADEN = d["SA_RING_ADEN"]
+        self.RFREQ = d["SA_RING_FREQ"]; self.RASPECT = d["SA_RING_ASPECT"]
+        self.NMASK = d["SA_NOISE_MASK"]                     # 63 → 64px tile
+        self.NSHIFT = (self.NMASK + 1).bit_length() - 1    # 6 for a 64-wide row
         self.BW = d["SA_BOARD_W"]; self.BH = d["SA_BOARD_H"]
         self.SIN = np.array(_int_list(h, "SA_SIN"), np.int64)
         self.NOISE = np.array(_int_list(h, "SA_NOISE"), np.int64)
@@ -87,8 +88,8 @@ class FwSim:
     def _sin(self, t):                       # sa_sin(uint8 t)
         return self.SIN[t & 0xFF]
 
-    def _noise(self, x, y):                  # sa_noise: NOISE[((y&31)<<5)|(x&31)]
-        return self.NOISE[((y & 31) << 5) | (x & 31)]
+    def _noise(self, x, y):                  # sa_noise: NOISE[((y&M)<<S)|(x&M)]
+        return self.NOISE[((y & self.NMASK) << self.NSHIFT) | (x & self.NMASK)]
 
     @staticmethod
     def _dist(a, b):                          # sa_dist: octagonal (mx*123 + mn*51) >> 7
@@ -100,7 +101,7 @@ class FwSim:
         a = self._sin(((gx * 3) >> 2) + tp)      # (uint8)((gx*3)>>2) + tp, then sa_sin
         b = self._sin((gy & 0xFF) - tp)
         c = self._sin(((gx + gy) >> 1) + tp)
-        return (a + b + c) // 3                  # uint8
+        return ((a + b + c) * 85) >> 8           # /3 as *85>>8 (no divide)
 
     @staticmethod
     def _hash8(v):                           # sa_hash8(uint32) -> uint8 (scalar)
@@ -175,13 +176,13 @@ class FwSim:
         pv = self._plasma(gx, gy, T["tp"])
         bit = (((pv * T["pgain"]) >> 8) > self._noise(gx, gy))   # plasma haze, fades via pgain
         if T["ring"]:
-            ax = np.trunc((gx - self.cxr) * self.RANUM / self.RADEN).astype(np.int64)
+            ax = ((gx - self.cxr) * self.RASPECT) >> 8            # *0.9, no divide
             ay = gy - self.cyr
             rr = self._dist(ax, ay).astype(np.int64)
             rr = rr + ((self._sin((gx + 2 * gy) & 0xFF) - 128) >> 3)   # irregular radius wobble
             rv = self._sin((((rr * self.RFREQ) >> 8) - T["tprg"]) & 0xFF)
-            crest = np.where(rv > 210, rv - 210, 0)               # only the peak → THIN rings
-            dens = (crest * T["ring"]) >> 8                        # ~18% in the thin band, fades
+            crest = np.where(rv > 215, rv - 215, 0)               # only the very peak → dissolved
+            dens = (crest * T["ring"]) >> 9                        # ~8% — barely there
             ring_hit = self._noise(gx + 50, gy + 30) < dens
             bit = bit | ring_hit
 

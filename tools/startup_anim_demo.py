@@ -450,14 +450,14 @@ def emit_firmware_geom(r, geom, path):
         lines.append("    " + ", ".join(str(v) for v in sintab[i:i + 16]) + ",")
     lines.append("};")
     lines.append("")
-    # 32x32 white-noise tile so the firmware dither is a table lookup (index by
-    # x&31,y&31) instead of a per-pixel hash — the hot-loop speedup. Repeats every
-    # 32 px, imperceptible for a noise dither.
+    # 64x64 white-noise tile so the firmware dither is a table lookup (index by
+    # x&63,y&63) instead of a per-pixel hash — the hot-loop speedup. The 64 px tile
+    # (was 32) makes the repetition much less visible (more "randomized").
     rngn = np.random.default_rng(7)
-    noise = rngn.integers(0, 256, 32 * 32).tolist()
-    lines.append("#define SA_NOISE_MASK 31")
-    lines.append("static const uint8_t SA_NOISE[32 * 32] = {")
-    for i in range(0, 32 * 32, 16):
+    noise = rngn.integers(0, 256, 64 * 64).tolist()
+    lines.append("#define SA_NOISE_MASK 63")
+    lines.append("static const uint8_t SA_NOISE[64 * 64] = {")
+    for i in range(0, 64 * 64, 16):
         lines.append("    " + ", ".join(str(v) for v in noise[i:i + 16]) + ",")
     lines.append("};")
     lines.append("")
