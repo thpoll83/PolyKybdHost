@@ -63,7 +63,7 @@ class FwSim:
         self.TOTAL = self.INTRO + self.HOLD + self.FADE
         self.PGAIN = d["SA_PGAIN"]
         self.NSPARK = d["SA_NSPARK"]; self.TRAIL = d["SA_TRAIL"]; self.TRAILSTEP = d["SA_TRAILSTEP"]
-        self.RFREQ = d["SA_RING_FREQ"]; self.RBAND = d["SA_RING_BAND"]
+        self.RFREQ = d["SA_RING_FREQ"]
         self.RANUM = d["SA_RING_ANUM"]; self.RADEN = d["SA_RING_ADEN"]
         self.BW = d["SA_BOARD_W"]; self.BH = d["SA_BOARD_H"]
         self.SIN = np.array(_int_list(h, "SA_SIN"), np.int64)
@@ -183,8 +183,10 @@ class FwSim:
             ax = np.trunc((gx - self.cxr) * self.RANUM / self.RADEN).astype(np.int64)
             ay = gy - self.cyr
             rr = self._dist(ax, ay)          # true isqrt (round rings near centre)
-            phase = (((rr * self.RFREQ) >> 8) - T["tprg"]) & 0xFF
-            ring_hit = (phase < self.RBAND) & (self._noise(gx + 50, gy + 30) < T["ring"])
+            rv = self._sin((((rr * self.RFREQ) >> 8) - T["tprg"]) & 0xFF)
+            crest = np.where(rv > 128, rv - 128, 0)                # upper half → rings (≤~50%)
+            dens = (crest * T["ring"]) >> 8                        # fade with envelope
+            ring_hit = self._noise(gx + 50, gy + 30) < dens
             bit = bit | ring_hit
 
         if T["sparks"]:
