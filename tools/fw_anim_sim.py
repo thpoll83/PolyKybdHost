@@ -67,7 +67,9 @@ class FwSim:
         self.d = d
         self.INTRO = d["SA_INTRO_MS"]; self.HOLD = d["SA_HOLD_MS"]; self.FADE = d["SA_FADE_MS"]
         self.BG_FADE = d["SA_BG_FADE_MS"]; self.BG_FADE_START = d["SA_BG_FADE_START_MS"]
-        self.LINE_CLEAR = d["SA_LINE_CLEAR_MS"]
+        # scanline glitch fires 1 s after the background has fully faded (SA_LINE_CLEAR_AT_MS
+        # is a macro expression, so compute it from its parts here)
+        self.LINE_CLEAR_AT = self.BG_FADE_START + self.BG_FADE + d["SA_LINE_CLEAR_DELAY_MS"]
         self.BLACK = d["SA_BLACK_MS"]
         self.TOTAL = self.INTRO + self.HOLD + self.FADE + self.BLACK
         self.PGAIN = d["SA_PGAIN"]
@@ -222,7 +224,7 @@ class FwSim:
 
         # Scanline glitch: after the letters hold SA_LINE_CLEAR_MS, wipe every 2nd line
         # (instant, re-applied each frame so it persists). Mirrors the firmware.
-        if el >= self.INTRO + self.LINE_CLEAR:
+        if el >= self.LINE_CLEAR_AT:
             bit = bit.copy()
             bit[1::2, :] = False
 
