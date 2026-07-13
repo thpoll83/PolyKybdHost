@@ -33,10 +33,16 @@ SCREEN_W, SCREEN_H = 72, 40
 
 
 def _defines(text):
-    """All ``#define NAME <int>`` pairs in a C source string."""
+    """All ``#define NAME <int>`` pairs in a C source string, plus simple alias
+    defines (``#define NAME OTHER`` where OTHER is an already-defined int — e.g.
+    ``#define SA_BG_FADE_START_MS SA_INTRO_MS``)."""
     out = {}
     for m in re.finditer(r"#define\s+(\w+)\s+(-?\d+)\b", text):
         out[m.group(1)] = int(m.group(2))
+    for m in re.finditer(r"#define\s+(\w+)\s+(\w+)\s*(?://.*)?$", text, re.M):
+        name, val = m.group(1), m.group(2)
+        if name not in out and val in out:
+            out[name] = out[val]
     return out
 
 
@@ -60,7 +66,7 @@ class FwSim:
         d.update(_defines(h))          # geom header defines (BOARD_W/H, NOISE_MASK, …)
         self.d = d
         self.INTRO = d["SA_INTRO_MS"]; self.HOLD = d["SA_HOLD_MS"]; self.FADE = d["SA_FADE_MS"]
-        self.BG_FADE = d["SA_BG_FADE_MS"]; self.LETTER_HOLD = d["SA_LETTER_HOLD_MS"]
+        self.BG_FADE = d["SA_BG_FADE_MS"]; self.BG_FADE_START = d["SA_BG_FADE_START_MS"]
         self.BLACK = d["SA_BLACK_MS"]
         self.TOTAL = self.INTRO + self.HOLD + self.FADE + self.BLACK
         self.PGAIN = d["SA_PGAIN"]
@@ -70,7 +76,10 @@ class FwSim:
         self.NSHIFT = (self.NMASK + 1).bit_length() - 1    # 6 for a 64-wide row
         self.BW = d["SA_BOARD_W"]; self.BH = d["SA_BOARD_H"]
         self.SIN = np.array(_int_list(h, "SA_SIN"), np.int64)
-        self.NOISE = np.array(_int_list(h, "SA_NOISE"), np.int64)
+        # The noise tile is NOT in the header — the firmware fills it in RAM at boot from
+        # sa_hash8 (s_noise[i] = sa_hash8(i)); mirror that here so the preview matches.
+        nlen = (self.NMASK + 1) * (self.NMASK + 1)
+        self.NOISE = np.array([self._hash8(i) for i in range(nlen)], np.int64)
         geomL = _int_list(h, "SA_GEOM_LEFT"); geomR = _int_list(h, "SA_GEOM_RIGHT")
         self.GEOM = {"L": np.array(geomL, np.int64).reshape(-1, 4),
                      "R": np.array(geomR, np.int64).reshape(-1, 4)}   # rows: cx,cy,ang,valid
@@ -141,13 +150,12 @@ class FwSim:
         lii = (tt - 130) * 255 // 35          # letters dither IN over tt 130..165 (reverse dissolve)
         letter_in = 0 if lii < 0 else (255 if lii > 255 else lii)
         bg_fade = 0; letter_fade = 0
-        if el >= self.INTRO + self.HOLD:
-            fel = el - self.INTRO - self.HOLD
-            b = (fel * 256) // self.BG_FADE
+        if el >= self.BG_FADE_START:          # background dots dissolve early (top of hold) + slow
+            b = ((el - self.BG_FADE_START) * 256) // self.BG_FADE
             bg_fade = 255 if b > 255 else b
-            if fel >= self.LETTER_HOLD:
-                lf = ((fel - self.LETTER_HOLD) * 256) // (self.FADE - self.LETTER_HOLD)
-                letter_fade = 255 if lf > 255 else lf
+        if el >= self.INTRO + self.HOLD:       # letters dissolve over the full (slow) fade phase
+            lf = ((el - self.INTRO - self.HOLD) * 256) // self.FADE
+            letter_fade = 255 if lf > 255 else lf
         pgain = (self.PGAIN * (255 - bg_fade)) // 255
         return dict(tt=tt, tp=tp, tprg=tprg, cv=cv, ring=ring, letters=letters,
                     sparks=sparks, spark_fade=spark_fade, letter_in=letter_in,
