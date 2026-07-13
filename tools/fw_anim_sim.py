@@ -274,7 +274,8 @@ class FwSim:
                 sy = sy + (((int(tcy) - sy) * cv) >> 8)
             sxs.append(sx); sys.append(sy)
             thicks.append(2 if (hv & 1) else 1)
-            tlens.append(8 + (hv >> 4))
+            base_tlen = 8 + (hv >> 4)
+            tlens.append(base_tlen + 28 if self.idle else base_tlen)   # idle: long ghost trails
         pts = (np.array(sxs, np.int64), np.array(sys, np.int64),
                np.array(thicks, np.int64), np.array(tlens, np.int64))
         self._spark_cache[el] = pts
@@ -284,7 +285,7 @@ class FwSim:
         sx, sy, thick, tlen = self._spark_points(el)
         if sx.size == 0:
             return
-        LM = self.TRAIL_MAX
+        LM = 60 if self.idle else self.TRAIL_MAX   # idle: draw the long ghost trails (firmware caps at tlen)
         ddx = sx - cx
         ddy = sy - cy
         on = (ddx > -(40 + LM)) & (ddx < 40 + LM) & (ddy > -40) & (ddy < 40)
