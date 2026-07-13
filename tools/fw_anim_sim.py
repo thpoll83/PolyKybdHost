@@ -67,6 +67,7 @@ class FwSim:
         self.d = d
         self.INTRO = d["SA_INTRO_MS"]; self.HOLD = d["SA_HOLD_MS"]; self.FADE = d["SA_FADE_MS"]
         self.BG_FADE = d["SA_BG_FADE_MS"]; self.BG_FADE_START = d["SA_BG_FADE_START_MS"]
+        self.LINE_CLEAR = d["SA_LINE_CLEAR_MS"]
         self.BLACK = d["SA_BLACK_MS"]
         self.TOTAL = self.INTRO + self.HOLD + self.FADE + self.BLACK
         self.PGAIN = d["SA_PGAIN"]
@@ -137,7 +138,7 @@ class FwSim:
         tt = (el * 256) // self.INTRO if el < self.INTRO else 255
         tp = (el >> 4) & 0xFF
         tprg = (el >> 5) & 0xFF
-        cvi = (tt - 90) * 255 // 75
+        cvi = (tt - 55) * 255 // 75           # converge earlier (tt 55..130): gather into letter zones before they appear
         cv = 0 if cvi < 0 else (255 if cvi > 255 else cvi)
         ring = 255 - cv
         letters = tt >= 130
@@ -218,6 +219,12 @@ class FwSim:
                     nx = self.lx + idx * 13
                     ny = self.ly + idx * 7
                     bit = bit & (self._noise(nx, ny) < T["letter_in"])
+
+        # Scanline glitch: after the letters hold SA_LINE_CLEAR_MS, wipe every 2nd line
+        # (instant, re-applied each frame so it persists). Mirrors the firmware.
+        if el >= self.INTRO + self.LINE_CLEAR:
+            bit = bit.copy()
+            bit[1::2, :] = False
 
         if T["letter_fade"]:   # dissolve the letters (only lit pixels left by now)
             nx = self.lx + idx * 13
