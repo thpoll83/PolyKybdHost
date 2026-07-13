@@ -8,6 +8,7 @@ the HID worker-thread / command-queue refactoring.
 Invariant asserted throughout: after any PolyKybd call returns, the HID lock
 must be free — a held lock here means a leaked lock in production.
 """
+import types
 import unittest
 from unittest import mock
 from unittest.mock import MagicMock
@@ -257,6 +258,18 @@ class TestSimpleCommandPayloads(unittest.TestCase, LockCheckMixin):
         ok, reply = keeb.set_brightness(24, 0x1)
         self.assertFalse(ok)
         self.assertEqual(reply, "No Interface")
+
+    def test_brightness_no_interface_returns_str_not_bytearray(self):
+        # Second disconnected state: HidHelper present but no open raw interface.
+        # Must short-circuit with the same str "No Interface" — not fall through
+        # to send_and_read_validate(), which returns a bytearray "No Interface"
+        # (inconsistent result type + not JSON-serializable for the event payload).
+        keeb = PolyKybd(DeviceSettings(), StubPolySettings())
+        keeb.hid = types.SimpleNamespace(interface=None)
+        ok, reply = keeb.set_brightness(24, 0x1)
+        self.assertFalse(ok)
+        self.assertEqual(reply, "No Interface")
+        self.assertIsInstance(reply, str)
 
 
 class TestSendOnlyCommands(unittest.TestCase, LockCheckMixin):
