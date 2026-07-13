@@ -63,7 +63,7 @@ class FwSim:
         self.BG_FADE = d["SA_BG_FADE_MS"]; self.LETTER_HOLD = d["SA_LETTER_HOLD_MS"]
         self.TOTAL = self.INTRO + self.HOLD + self.FADE
         self.PGAIN = d["SA_PGAIN"]
-        self.NSPARK = d["SA_NSPARK"]; self.TRAIL_LEN = d["SA_TRAIL_LEN"]
+        self.NSPARK = d["SA_NSPARK"]; self.TRAIL_MAX = d["SA_TRAIL_MAX"]
         self.RFREQ = d["SA_RING_FREQ"]
         self.RANUM = d["SA_RING_ANUM"]; self.RADEN = d["SA_RING_ADEN"]
         self.BW = d["SA_BOARD_W"]; self.BH = d["SA_BOARD_H"]
@@ -209,16 +209,17 @@ class FwSim:
         cv = T["cv"]; spark_fade = T["spark_fade"]
         margin = self.BW // 8
         BW = self.BW
-        sxs, sys = [], []
+        sxs, sys, thicks, tlens = [], [], [], []
         for s in range(self.NSPARK):
             if self._hash8(s * 3 + 7) < spark_fade:   # staggered death: winks out one by one
                 continue
             p0 = self._hash8(s * 2 + 1)
-            spd = 1 + (self._hash8(s * 7 + 3) & 3)
+            spd = 1 + (self._hash8(s * 7 + 3) & 7)    # speed 1..8
             lane = (self._hash8(s * 5 + 9) * self.BH) >> 8
             bw = 1 + (self._hash8(s * 11 + 2) & 3)
             ph = self._hash8(s * 13 + 5)
             bob = 6 + (self._hash8(s * 17) & 31)
+            hv = self._hash8(s * 23 + 4)              # per-spark look variety
             tcx, tcy, _ = self.TARGETS[s % len(self.TARGETS)]
             xn = (p0 + ((el >> 4) * spd & 0xFF)) & 0xFF
             sx = -margin + ((xn * (BW + 2 * margin)) >> 8)
@@ -227,37 +228,48 @@ class FwSim:
                 sx = sx + (((int(tcx) - sx) * cv) >> 8)
                 sy = sy + (((int(tcy) - sy) * cv) >> 8)
             sxs.append(sx); sys.append(sy)
-        pts = (np.array(sxs, np.int64), np.array(sys, np.int64))
+            thicks.append(2 if (hv & 1) else 1)
+            tlens.append(8 + (hv >> 4))
+        pts = (np.array(sxs, np.int64), np.array(sys, np.int64),
+               np.array(thicks, np.int64), np.array(tlens, np.int64))
         self._spark_cache[el] = pts
         return pts
 
     def _place_sparks(self, bit, cx, cy, rot, cosv, sinv, el):
-        sx, sy = self._spark_points(el)
+        sx, sy, thick, tlen = self._spark_points(el)
         if sx.size == 0:
             return
-        L = self.TRAIL_LEN
+        LM = self.TRAIL_MAX
         ddx = sx - cx
         ddy = sy - cy
-        on = (ddx > -(40 + L)) & (ddx < 40 + L) & (ddy > -40) & (ddy < 40)
+        on = (ddx > -(40 + LM)) & (ddx < 40 + LM) & (ddy > -40) & (ddy < 40)
         if not on.any():
             return
-        ddx, ddy = ddx[on], ddy[on]
+        ddx, ddy, thick, tlen = ddx[on], ddy[on], thick[on], tlen[on]
         if rot:
             hx = 36 + ((ddx * cosv + ddy * sinv) >> 7)
             hy = 20 + ((-ddx * sinv + ddy * cosv) >> 7)
         else:
             hx = 36 + ddx
             hy = 20 + ddy
+        th = thick == 2
         self._plot(bit, hx, hy)                        # bold 2×2 head
         self._plot(bit, hx + 1, hy)
         self._plot(bit, hx, hy + 1)
         self._plot(bit, hx + 1, hy + 1)
-        for k in range(1, L):                          # solid neck, then a fading tail
+        self._plot(bit, hx[th], hy[th] - 1)            # taller/brighter head for thick comets
+        self._plot(bit, hx[th] + 1, hy[th] - 1)
+        for k in range(1, LM):                         # solid neck, then a fading tail
+            live = tlen > k                            # only comets whose trail reaches k
+            if not live.any():
+                continue
             if k <= 5:
-                self._plot(bit, hx - k, hy)
+                draw = live
             else:
-                m = self._noise(hx - k + 30, hy + 12) < ((255 - k * (230 // L)) & 0xFF)
-                self._plot(bit, (hx - k)[m], hy[m])
+                draw = live & (self._noise(hx - k + 30, hy + 12) < ((255 - k * (230 // tlen)) & 0xFF))
+            self._plot(bit, (hx - k)[draw], hy[draw])
+            th2 = draw & th
+            self._plot(bit, (hx - k)[th2], hy[th2] + 1)   # 2 px tall trail
 
     @staticmethod
     def _plot(bit, px, py):
