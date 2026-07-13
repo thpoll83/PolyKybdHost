@@ -303,6 +303,32 @@ def build_idle(r, geom, eff, n):
     return frames
 
 
+def build_boot_fw(r, geom, fps):
+    """Faithful boot preview driven by the firmware port (fw_anim_sim.FwSim) — every
+    keycap's 72x40 is what startup_anim.c actually renders. Placement/rotation is the
+    KLE renderer's (matching the physical panel rotation)."""
+    from fw_anim_sim import FwSim, mp_to_half_idx
+    sim = FwSim()
+    half_idx = mp_to_half_idx()
+    step = int(round(1000 / fps))
+    times = list(range(0, sim.TOTAL, step)) + [sim.TOTAL - 1]
+    frames = []
+    for el in times:
+        contents = {}
+        for mp, g in geom.items():
+            hi = half_idx.get(mp)
+            c = KeyContent()
+            if hi is not None:
+                half, idx = hi
+                bmp = sim.panel(half, idx, el)
+                if bmp is not None:
+                    c.oled = Image.fromarray((bmp.astype(np.uint8) * 255), "L").convert("1")
+            contents[mp] = c
+        frames.append(contents)
+    print(f"  boot (firmware port): {len(frames)} frames, total {sim.TOTAL} ms @ {fps} fps")
+    return frames
+
+
 def build_boot(r, geom, eff, masks):
     """Intro (sparks -> converge -> letters, ripples fading), a brief hold on the
     formed logo, then a dither-dissolve of EVERYTHING to black -- leaving an empty
@@ -461,6 +487,9 @@ def main():
     ap.add_argument("--scale", type=float, default=1.0,
                     help="post-render zoom; keep 1.0 so NEAREST OLED pixels stay crisp")
     ap.add_argument("--hold", type=int, default=12)
+    ap.add_argument("--engine", choices=["firmware", "legacy"], default="firmware",
+                    help="boot: 'firmware' = faithful port of startup_anim.c (fw_anim_sim); "
+                         "'legacy' = the numpy design mock")
     args = ap.parse_args()
 
     # Pure-white lit pixel on a near-black OLED (was a cool white).
@@ -478,7 +507,9 @@ def main():
     eff = Effect(geom, targets, (r.cw, r.ch), mode=args.mode)
     print(f"board {r.cw}x{r.ch}px  keys={len(geom)}  letters={len(targets)}  mode={args.mode}")
 
-    if args.mode == "boot":
+    if args.mode == "boot" and args.engine == "firmware":
+        frames = build_boot_fw(r, geom, args.fps)
+    elif args.mode == "boot":
         frames = build_boot(r, geom, eff, masks)
     else:
         frames = build_idle(r, geom, eff, args.frames)
