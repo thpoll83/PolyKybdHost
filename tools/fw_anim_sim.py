@@ -131,14 +131,14 @@ class FwSim:
         tt = (el * 256) // self.INTRO if el < self.INTRO else 255
         tp = (el >> 4) & 0xFF
         tprg = (el >> 5) & 0xFF
-        cvi = (tt - 110) * 255 // 75
+        cvi = (tt - 90) * 255 // 75
         cv = 0 if cvi < 0 else (255 if cvi > 255 else cvi)
         ring = 255 - cv
-        letters = tt >= 150
+        letters = tt >= 130
         sparks = el < self.INTRO
-        sfi = (tt - 150) * 255 // 105
+        sfi = (tt - 130) * 255 // 125
         spark_fade = 0 if sfi < 0 else (255 if sfi > 255 else sfi)
-        lii = (tt - 150) * 255 // 35          # letters dither IN over tt 150..185 (reverse dissolve)
+        lii = (tt - 130) * 255 // 35          # letters dither IN over tt 130..165 (reverse dissolve)
         letter_in = 0 if lii < 0 else (255 if lii > 255 else lii)
         bg_fade = 0; letter_fade = 0
         if el >= self.INTRO + self.HOLD:
