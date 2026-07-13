@@ -60,9 +60,10 @@ class FwSim:
         d.update(_defines(h))          # geom header defines (BOARD_W/H, NOISE_MASK, …)
         self.d = d
         self.INTRO = d["SA_INTRO_MS"]; self.HOLD = d["SA_HOLD_MS"]; self.FADE = d["SA_FADE_MS"]
+        self.BG_FADE = d["SA_BG_FADE_MS"]; self.LETTER_HOLD = d["SA_LETTER_HOLD_MS"]
         self.TOTAL = self.INTRO + self.HOLD + self.FADE
         self.PGAIN = d["SA_PGAIN"]
-        self.NSPARK = d["SA_NSPARK"]; self.TRAIL = d["SA_TRAIL"]; self.TRAILSTEP = d["SA_TRAILSTEP"]
+        self.NSPARK = d["SA_NSPARK"]; self.TRAIL_LEN = d["SA_TRAIL_LEN"]
         self.RFREQ = d["SA_RING_FREQ"]
         self.RANUM = d["SA_RING_ANUM"]; self.RADEN = d["SA_RING_ADEN"]
         self.BW = d["SA_BOARD_W"]; self.BH = d["SA_BOARD_H"]
@@ -121,12 +122,18 @@ class FwSim:
         sparks = el < self.INTRO
         sfi = (tt - 150) * 255 // 105
         spark_fade = 0 if sfi < 0 else (255 if sfi > 255 else sfi)
-        fade = 0
+        bg_fade = 0; letter_fade = 0
         if el >= self.INTRO + self.HOLD:
-            f = ((el - self.INTRO - self.HOLD) * 256) // self.FADE
-            fade = 255 if f > 255 else f
-        return dict(tt=tt, tp=tp, tprg=tprg, cv=cv, ring=ring,
-                    letters=letters, sparks=sparks, spark_fade=spark_fade, fade=fade)
+            fel = el - self.INTRO - self.HOLD
+            b = (fel * 256) // self.BG_FADE
+            bg_fade = 255 if b > 255 else b
+            if fel >= self.LETTER_HOLD:
+                lf = ((fel - self.LETTER_HOLD) * 256) // (self.FADE - self.LETTER_HOLD)
+                letter_fade = 255 if lf > 255 else lf
+        pgain = (self.PGAIN * (255 - bg_fade)) // 255
+        return dict(tt=tt, tp=tp, tprg=tprg, cv=cv, ring=ring, letters=letters,
+                    sparks=sparks, spark_fade=spark_fade,
+                    bg_fade=bg_fade, letter_fade=letter_fade, pgain=pgain)
 
     def _letter_bmp(self, cp):
         """Rasterize a splash codepoint the way FreeSansBold24pt7b does on the
@@ -166,7 +173,7 @@ class FwSim:
         gx = gx.astype(np.int64); gy = gy.astype(np.int64)
 
         pv = self._plasma(gx, gy, T["tp"])
-        bit = ((pv >> 4) > self._noise(gx, gy))
+        bit = (((pv * T["pgain"]) >> 8) > self._noise(gx, gy))   # plasma haze, fades via pgain
         if T["ring"]:
             ax = np.trunc((gx - self.cxr) * self.RANUM / self.RADEN).astype(np.int64)
             ay = gy - self.cyr
@@ -186,25 +193,23 @@ class FwSim:
             if cp:
                 bit = bit | self._letter_bmp(cp)
 
-        if T["fade"]:
-            # sa_noise(lx+idx*13, ly+idx*7) < fade  -> clear
+        if T["letter_fade"]:   # dissolve the letters (only lit pixels left by now)
             nx = self.lx + idx * 13
             ny = self.ly + idx * 7
-            keep = self._noise(nx, ny) >= T["fade"]
+            keep = self._noise(nx, ny) >= T["letter_fade"]
             bit = bit & keep
         return bit
 
     def _spark_points(self, el):
-        """All (sx, sy, is_head) spark/trail board positions for this frame — key
-        independent, so compute once per el and cache. Exact port of sa_sparks minus
-        the per-key placement."""
+        """Comet HEAD board positions for this frame (one per live spark) — key
+        independent, so compute once per el and cache. Mirrors sa_build_sparks."""
         if el in self._spark_cache:
             return self._spark_cache[el]
         T = self._timeline(el)
         cv = T["cv"]; spark_fade = T["spark_fade"]
         margin = self.BW // 8
         BW = self.BW
-        sxs, sys, heads = [], [], []
+        sxs, sys = [], []
         for s in range(self.NSPARK):
             if self._hash8(s * 3 + 7) < spark_fade:   # staggered death: winks out one by one
                 continue
@@ -215,40 +220,44 @@ class FwSim:
             ph = self._hash8(s * 13 + 5)
             bob = 6 + (self._hash8(s * 17) & 31)
             tcx, tcy, _ = self.TARGETS[s % len(self.TARGETS)]
-            for j in range(self.TRAIL):
-                if self._hash8(s * 31 + j) > ((255 - j * (200 // self.TRAIL)) & 0xFF):
-                    continue
-                xn = (p0 + ((el >> 4) * spd & 0xFF) - j * self.TRAILSTEP) & 0xFF
-                sx = -margin + ((xn * (BW + 2 * margin)) >> 8)
-                sy = lane + (((int(self._sin(((el >> 5) * bw + ph) & 0xFF)) - 128) * bob) >> 7)
-                if cv:
-                    sx = sx + (((int(tcx) - sx) * cv) >> 8)
-                    sy = sy + (((int(tcy) - sy) * cv) >> 8)
-                sxs.append(sx); sys.append(sy); heads.append(j == 0)
-        pts = (np.array(sxs, np.int64), np.array(sys, np.int64), np.array(heads, bool))
+            xn = (p0 + ((el >> 4) * spd & 0xFF)) & 0xFF
+            sx = -margin + ((xn * (BW + 2 * margin)) >> 8)
+            sy = lane + (((int(self._sin(((el >> 5) * bw + ph) & 0xFF)) - 128) * bob) >> 7)
+            if cv:
+                sx = sx + (((int(tcx) - sx) * cv) >> 8)
+                sy = sy + (((int(tcy) - sy) * cv) >> 8)
+            sxs.append(sx); sys.append(sy)
+        pts = (np.array(sxs, np.int64), np.array(sys, np.int64))
         self._spark_cache[el] = pts
         return pts
 
     def _place_sparks(self, bit, cx, cy, rot, cosv, sinv, el):
-        sx, sy, head = self._spark_points(el)
+        sx, sy = self._spark_points(el)
         if sx.size == 0:
             return
+        L = self.TRAIL_LEN
         ddx = sx - cx
         ddy = sy - cy
-        on = (ddx > -40) & (ddx < 40) & (ddy > -40) & (ddy < 40)
+        on = (ddx > -(40 + L)) & (ddx < 40 + L) & (ddy > -40) & (ddy < 40)
         if not on.any():
             return
-        ddx, ddy, head = ddx[on], ddy[on], head[on]
+        ddx, ddy = ddx[on], ddy[on]
         if rot:
-            px = 36 + ((ddx * cosv + ddy * sinv) >> 7)
-            py = 20 + ((-ddx * sinv + ddy * cosv) >> 7)
+            hx = 36 + ((ddx * cosv + ddy * sinv) >> 7)
+            hy = 20 + ((-ddx * sinv + ddy * cosv) >> 7)
         else:
-            px = 36 + ddx
-            py = 20 + ddy
-        self._plot(bit, px, py)
-        self._plot(bit, px[head] + 1, py[head])       # bold 2×2 comet head
-        self._plot(bit, px[head], py[head] + 1)
-        self._plot(bit, px[head] + 1, py[head] + 1)
+            hx = 36 + ddx
+            hy = 20 + ddy
+        self._plot(bit, hx, hy)                        # bold 2×2 head
+        self._plot(bit, hx + 1, hy)
+        self._plot(bit, hx, hy + 1)
+        self._plot(bit, hx + 1, hy + 1)
+        for k in range(1, L):                          # solid neck, then a fading tail
+            if k <= 5:
+                self._plot(bit, hx - k, hy)
+            else:
+                m = self._noise(hx - k + 30, hy + 12) < ((255 - k * (230 // L)) & 0xFF)
+                self._plot(bit, (hx - k)[m], hy[m])
 
     @staticmethod
     def _plot(bit, px, py):
