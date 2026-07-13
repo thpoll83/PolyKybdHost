@@ -782,6 +782,11 @@ class PolyCore:
         update only (never AUTO_ON): if the user has taken manual control on the
         keyboard the firmware ignores it, so a background tick can't override a
         deliberate choice. Engaging auto is a deliberate act (see _engage)."""
+        # Skip while disconnected: there is no keyboard to set, and the compute
+        # step does live network lookups (irradiance/location) that would run
+        # for nothing on the 10-min tick.
+        if not self.connected:
+            return
         if self.poly_settings.get("brightness_set_daylight_dependent"):
             val = self._compute_daylight_value()
             flags = self._BR_FLAG_VOLATILE if self._brightness_flags_supported() else 0

@@ -6,6 +6,12 @@ class DeviceSettings:
     """All settings that are defined by the keyboard, not by software"""
     _vid = 0x2021
     _pid = 0x2007
+    # Known PolyKybd product IDs we support. The USB PID identifies the variant
+    # (0x2007 = Split72, 0x2008 = Split42); the raw-HID usage page only picks the
+    # 64-byte raw interface apart from the other HID interfaces, it does NOT
+    # identify the device — so enumeration matches on this explicit allow-list.
+    # Add a line here for each new variant.
+    _known_pids = (0x2007, 0x2008)
 
     _hid_report_size_in_bytes = 64
     _hid_console_report_size_in_bytes = 64
@@ -59,8 +65,13 @@ class DeviceSettings:
 
     @property
     def PID(self):
-        """Product ID"""
+        """Product ID (primary variant; use KNOWN_PIDS for enumeration matching)"""
         return self._pid
+
+    @property
+    def KNOWN_PIDS(self):
+        """All PolyKybd product IDs the host recognizes (variant allow-list)"""
+        return self._known_pids
 
     @property
     def MATRIX_ROWS(self):

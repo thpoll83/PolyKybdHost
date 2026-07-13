@@ -303,6 +303,15 @@ class PolyKybd:
         # flags (protocol >= 5, firmware base/com.h): bit0 VOLATILE (daylight,
         # not persisted), bit1 AUTO_ON, bit2 AUTO_OFF. flags=0 is the legacy
         # persisted set; pre-v5 firmware ignores the extra byte.
+        if self.hid is None or self.hid.interface is None:
+            # No open device (e.g. the daylight periodic firing while
+            # disconnected). Fail like the send path instead of AttributeError.
+            # Covers both disconnected states with one consistent str result:
+            # self.hid is None (no helper at all) and self.hid.interface is None
+            # (helper present but no raw interface — send_and_read_validate would
+            # otherwise return a bytearray "No Interface", inconsistent + not
+            # JSON-serializable for the core event payload).
+            return False, "No Interface"
         self.log.info("Setting Display Brightness to %d (flags 0x%x)...", brightness, flags)
         return self.hid.send_and_read_validate(
             compose_cmd(Cmd.SET_BRIGHTNESS, max(0, min(50, int(brightness))), flags & 0xFF))
