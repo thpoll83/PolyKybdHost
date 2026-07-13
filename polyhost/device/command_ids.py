@@ -88,10 +88,14 @@ class IdleStyle(Enum):
     older than the feature) falls back to / NACKs it — surfaced as a plain error.
     (Named for the cheat code, matching the tray/CLI label; the firmware calls the
     same value IDLE_STYLE_IDDQD internally — the wire value 2 is what's shared.)
+    EDEN loops the "Eden" boot animation as a screensaver (split72 only), dismissed
+    by the first key press; on split42 the animation is a no-op and it behaves like
+    PULSE.
     """
     PULSE = 0
     JITTER = 1
     IDDQD = 2
+    EDEN = 3
 
 
 class GlyphScript(Enum):

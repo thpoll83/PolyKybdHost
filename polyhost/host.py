@@ -432,7 +432,12 @@ class PolyHost(QApplication):
         # keyboard NACKs the set, surfaced by change_idle_style's error path.
         self.idle_iddqd_action = QAction("IDDQD (attract demo)", parent=self, checkable=True)
         self.idle_iddqd_action.setData(IdleStyle.IDDQD.value)
-        for act in (self.idle_pulse_action, self.idle_jitter_action, self.idle_iddqd_action):
+        # Eden screensaver: loops the boot animation (split72 only; a no-op that
+        # behaves like Pulse on split42).
+        self.idle_eden_action = QAction("Eden (boot animation)", parent=self, checkable=True)
+        self.idle_eden_action.setData(IdleStyle.EDEN.value)
+        for act in (self.idle_pulse_action, self.idle_jitter_action, self.idle_iddqd_action,
+                    self.idle_eden_action):
             idle_group.addAction(act)
             # noinspection PyUnresolvedReferences
             act.triggered.connect(self.change_idle_style)
@@ -1454,6 +1459,7 @@ class PolyHost(QApplication):
         self.idle_pulse_action.setChecked(bool(ok) and value == IdleStyle.PULSE.value)
         self.idle_jitter_action.setChecked(bool(ok) and value == IdleStyle.JITTER.value)
         self.idle_iddqd_action.setChecked(bool(ok) and value == IdleStyle.IDDQD.value)
+        self.idle_eden_action.setChecked(bool(ok) and value == IdleStyle.EDEN.value)
 
     def change_idle_style(self):
         value = self.sender().data()
