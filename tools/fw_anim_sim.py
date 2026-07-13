@@ -90,24 +90,10 @@ class FwSim:
         return self.NOISE[((y & 31) << 5) | (x & 31)]
 
     @staticmethod
-    def _isqrt(v):
-        """Vectorized bit-exact port of the C sa_isqrt (b seeded at 1<<20). Starting
-        every element at 4^10 and running 11 fixed iterations gives the same floor(sqrt)
-        as the C reduce-first loop — the leading b>v iterations are no-ops."""
-        v = v.astype(np.int64).copy()
-        r = np.zeros_like(v)
-        b = np.full_like(v, 1 << 20)
-        for _ in range(11):                  # 4^10 .. 4^0
-            t = r + b
-            r = r >> 1
-            ge = v >= t
-            v = np.where(ge, v - t, v)
-            r = np.where(ge, r + b, r)
-            b = b >> 2
-        return r
-
-    def _dist(self, a, b):                    # sa_dist = isqrt(a*a + b*b)
-        return self._isqrt(a * a + b * b)
+    def _dist(a, b):                          # sa_dist: octagonal (mx*123 + mn*51) >> 7
+        a = np.abs(a); b = np.abs(b)
+        mx = np.maximum(a, b); mn = np.minimum(a, b)
+        return (mx * 123 + mn * 51) >> 7
 
     def _plasma(self, gx, gy, tp):           # sa_plasma
         a = self._sin(((gx * 3) >> 2) + tp)      # (uint8)((gx*3)>>2) + tp, then sa_sin
@@ -132,13 +118,15 @@ class FwSim:
         cv = 0 if cvi < 0 else (255 if cvi > 255 else cvi)
         ring = 255 - cv
         letters = tt >= 150
-        sparks = (el < self.INTRO) and (tt < 220)
+        sparks = el < self.INTRO
+        sfi = (tt - 150) * 255 // 105
+        spark_fade = 0 if sfi < 0 else (255 if sfi > 255 else sfi)
         fade = 0
         if el >= self.INTRO + self.HOLD:
             f = ((el - self.INTRO - self.HOLD) * 256) // self.FADE
             fade = 255 if f > 255 else f
         return dict(tt=tt, tp=tp, tprg=tprg, cv=cv, ring=ring,
-                    letters=letters, sparks=sparks, fade=fade)
+                    letters=letters, sparks=sparks, spark_fade=spark_fade, fade=fade)
 
     def _letter_bmp(self, cp):
         """Rasterize a splash codepoint the way FreeSansBold24pt7b does on the
@@ -182,10 +170,11 @@ class FwSim:
         if T["ring"]:
             ax = np.trunc((gx - self.cxr) * self.RANUM / self.RADEN).astype(np.int64)
             ay = gy - self.cyr
-            rr = self._dist(ax, ay)          # true isqrt (round rings near centre)
+            rr = self._dist(ax, ay).astype(np.int64)
+            rr = rr + ((self._sin((gx + 2 * gy) & 0xFF) - 128) >> 3)   # irregular radius wobble
             rv = self._sin((((rr * self.RFREQ) >> 8) - T["tprg"]) & 0xFF)
-            crest = np.where(rv > 128, rv - 128, 0)                # upper half → rings (≤~50%)
-            dens = (crest * T["ring"]) >> 8                        # fade with envelope
+            crest = np.where(rv > 210, rv - 210, 0)               # only the peak → THIN rings
+            dens = (crest * T["ring"]) >> 8                        # ~18% in the thin band, fades
             ring_hit = self._noise(gx + 50, gy + 30) < dens
             bit = bit | ring_hit
 
@@ -211,11 +200,14 @@ class FwSim:
         the per-key placement."""
         if el in self._spark_cache:
             return self._spark_cache[el]
-        cv = self._timeline(el)["cv"]
+        T = self._timeline(el)
+        cv = T["cv"]; spark_fade = T["spark_fade"]
         margin = self.BW // 8
         BW = self.BW
         sxs, sys, heads = [], [], []
         for s in range(self.NSPARK):
+            if self._hash8(s * 3 + 7) < spark_fade:   # staggered death: winks out one by one
+                continue
             p0 = self._hash8(s * 2 + 1)
             spd = 1 + (self._hash8(s * 7 + 3) & 3)
             lane = (self._hash8(s * 5 + 9) * self.BH) >> 8
@@ -254,7 +246,9 @@ class FwSim:
             px = 36 + ddx
             py = 20 + ddy
         self._plot(bit, px, py)
-        self._plot(bit, px[head] + 1, py[head])   # brighter head
+        self._plot(bit, px[head] + 1, py[head])       # bold 2×2 comet head
+        self._plot(bit, px[head], py[head] + 1)
+        self._plot(bit, px[head] + 1, py[head] + 1)
 
     @staticmethod
     def _plot(bit, px, py):
