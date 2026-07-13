@@ -76,10 +76,7 @@ class FwSim:
         self.NSHIFT = (self.NMASK + 1).bit_length() - 1    # 6 for a 64-wide row
         self.BW = d["SA_BOARD_W"]; self.BH = d["SA_BOARD_H"]
         self.SIN = np.array(_int_list(h, "SA_SIN"), np.int64)
-        # The noise tile is NOT in the header — the firmware fills it in RAM at boot from
-        # sa_hash8 (s_noise[i] = sa_hash8(i)); mirror that here so the preview matches.
-        nlen = (self.NMASK + 1) * (self.NMASK + 1)
-        self.NOISE = np.array([self._hash8(i) for i in range(nlen)], np.int64)
+        self.NOISE = np.array(_int_list(h, "SA_NOISE"), np.int64)
         geomL = _int_list(h, "SA_GEOM_LEFT"); geomR = _int_list(h, "SA_GEOM_RIGHT")
         self.GEOM = {"L": np.array(geomL, np.int64).reshape(-1, 4),
                      "R": np.array(geomR, np.int64).reshape(-1, 4)}   # rows: cx,cy,ang,valid

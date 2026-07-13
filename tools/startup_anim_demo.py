@@ -450,12 +450,17 @@ def emit_firmware_geom(r, geom, path):
         lines.append("    " + ", ".join(str(v) for v in sintab[i:i + 16]) + ",")
     lines.append("};")
     lines.append("")
-    # 64x64 white-noise dither tile, indexed by (x&63,y&63) — a table lookup instead of
-    # a per-pixel hash (the hot-loop speedup); the 64 px tile keeps repetition invisible.
-    # The table is NOT emitted here: the firmware fills it into RAM at boot from sa_hash8
-    # (s_noise[i] = sa_hash8(i)), so it costs ZERO flash (was 4 KB of .rodata). The hash
-    # is verified white noise (uniform, ~0 adjacent correlation). fw_anim_sim mirrors it.
+    # 64x64 white-noise tile so the firmware dither is a table lookup (index by
+    # x&63,y&63) instead of a per-pixel hash — the hot-loop speedup. The 64 px tile
+    # (was 32) makes the repetition much less visible (more "randomized"). Kept as a
+    # const in FLASH (not RAM): flash is abundant here, SRAM is nearly full.
+    rngn = np.random.default_rng(7)
+    noise = rngn.integers(0, 256, 64 * 64).tolist()
     lines.append("#define SA_NOISE_MASK 63")
+    lines.append("static const uint8_t SA_NOISE[64 * 64] = {")
+    for i in range(0, 64 * 64, 16):
+        lines.append("    " + ", ".join(str(v) for v in noise[i:i + 16]) + ",")
+    lines.append("};")
     lines.append("")
     lines.append("typedef struct { int16_t cx, cy; uint32_t cp; } sa_target_t;")
     lines.append(f"#define SA_NUM_TARGETS {len(targets)}")
