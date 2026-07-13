@@ -138,6 +138,8 @@ class FwSim:
         sparks = el < self.INTRO
         sfi = (tt - 150) * 255 // 105
         spark_fade = 0 if sfi < 0 else (255 if sfi > 255 else sfi)
+        lii = (tt - 150) * 255 // 35          # letters dither IN over tt 150..185 (reverse dissolve)
+        letter_in = 0 if lii < 0 else (255 if lii > 255 else lii)
         bg_fade = 0; letter_fade = 0
         if el >= self.INTRO + self.HOLD:
             fel = el - self.INTRO - self.HOLD
@@ -148,7 +150,7 @@ class FwSim:
                 letter_fade = 255 if lf > 255 else lf
         pgain = (self.PGAIN * (255 - bg_fade)) // 255
         return dict(tt=tt, tp=tp, tprg=tprg, cv=cv, ring=ring, letters=letters,
-                    sparks=sparks, spark_fade=spark_fade,
+                    sparks=sparks, spark_fade=spark_fade, letter_in=letter_in,
                     bg_fade=bg_fade, letter_fade=letter_fade, pgain=pgain)
 
     def _letter_bmp(self, cp):
@@ -207,6 +209,10 @@ class FwSim:
             cp = self.LETTER[half][idx]
             if cp:
                 bit = bit | self._letter_bmp(cp)
+                if T["letter_in"] < 255:   # dither the letters IN (reverse of the end dissolve)
+                    nx = self.lx + idx * 13
+                    ny = self.ly + idx * 7
+                    bit = bit & (self._noise(nx, ny) < T["letter_in"])
 
         if T["letter_fade"]:   # dissolve the letters (only lit pixels left by now)
             nx = self.lx + idx * 13
