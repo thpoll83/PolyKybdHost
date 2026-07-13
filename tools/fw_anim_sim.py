@@ -61,7 +61,8 @@ class FwSim:
         self.d = d
         self.INTRO = d["SA_INTRO_MS"]; self.HOLD = d["SA_HOLD_MS"]; self.FADE = d["SA_FADE_MS"]
         self.BG_FADE = d["SA_BG_FADE_MS"]; self.LETTER_HOLD = d["SA_LETTER_HOLD_MS"]
-        self.TOTAL = self.INTRO + self.HOLD + self.FADE
+        self.BLACK = d["SA_BLACK_MS"]
+        self.TOTAL = self.INTRO + self.HOLD + self.FADE + self.BLACK
         self.PGAIN = d["SA_PGAIN"]
         self.NSPARK = d["SA_NSPARK"]; self.TRAIL_MAX = d["SA_TRAIL_MAX"]
         self.RFREQ = d["SA_RING_FREQ"]; self.RASPECT = d["SA_RING_ASPECT"]
@@ -102,6 +103,20 @@ class FwSim:
         b = self._sin((gy & 0xFF) - tp)
         c = self._sin(((gx + gy) >> 1) + tp)
         return ((a + b + c) * 85) >> 8           # /3 as *85>>8 (no divide)
+
+    def _bg(self, gx, gy, T):                    # sa_bg: combined plasma+ring density (0..255)
+        pv = self._plasma(gx, gy, T["tp"])
+        dens = (pv * T["pgain"]) >> 8            # faint plasma haze
+        if T["ring"]:
+            ax = ((gx - self.cxr) * self.RASPECT) >> 8
+            ay = gy - self.cyr
+            rr = self._dist(ax, ay).astype(np.int64)
+            rr = rr + ((self._sin((gx + 2 * gy) & 0xFF) - 128) >> 3)   # irregular radius wobble
+            rv = self._sin((((rr * self.RFREQ) >> 8) - T["tprg"]) & 0xFF)
+            crest = np.where(rv > 215, rv - 215, 0)
+            rdens = (crest * T["ring"]) >> 9
+            dens = np.maximum(dens, rdens)
+        return dens
 
     @staticmethod
     def _hash8(v):                           # sa_hash8(uint32) -> uint8 (scalar)
@@ -159,6 +174,8 @@ class FwSim:
         if not valid:
             return None
         T = self._timeline(el)
+        if el >= self.INTRO + self.HOLD + self.FADE:   # black tail — all keycaps black
+            return np.zeros((SCREEN_H, SCREEN_W), bool)
         rot = ang != 0
         cosv = int(self._sin((ang + 64) & 0xFF)) - 128
         sinv = int(self._sin(ang)) - 128
@@ -173,18 +190,15 @@ class FwSim:
             gy = cy + dy * np.ones_like(dx)
         gx = gx.astype(np.int64); gy = gy.astype(np.int64)
 
-        pv = self._plasma(gx, gy, T["tp"])
-        bit = (((pv * T["pgain"]) >> 8) > self._noise(gx, gy))   # plasma haze, fades via pgain
-        if T["ring"]:
-            ax = ((gx - self.cxr) * self.RASPECT) >> 8            # *0.9, no divide
-            ay = gy - self.cyr
-            rr = self._dist(ax, ay).astype(np.int64)
-            rr = rr + ((self._sin((gx + 2 * gy) & 0xFF) - 128) >> 3)   # irregular radius wobble
-            rv = self._sin((((rr * self.RFREQ) >> 8) - T["tprg"]) & 0xFF)
-            crest = np.where(rv > 215, rv - 215, 0)               # only the very peak → dissolved
-            dens = (crest * T["ring"]) >> 9                        # ~8% — barely there
-            ring_hit = self._noise(gx + 50, gy + 30) < dens
-            bit = bit | ring_hit
+        # Background density (plasma haze + dissolved ring), 2x2-coarsened for non-rotated
+        # keys (matches the firmware sa_bg + s_brow reuse); per-pixel noise keeps the dither.
+        if rot:
+            bgv = self._bg(gx, gy, T)
+        else:
+            gxc = cx + ((self.lx & ~1) - 36)         # sample sa_bg at the 2x2 block top-left
+            gyc = cy + ((self.ly & ~1) - 20)
+            bgv = self._bg(gxc.astype(np.int64), gyc.astype(np.int64), T)
+        bit = bgv > self._noise(gx, gy)
 
         if T["sparks"]:
             self._place_sparks(bit, cx, cy, rot, cosv, sinv, el)
