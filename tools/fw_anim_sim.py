@@ -93,6 +93,11 @@ class FwSim:
         self.lx = np.arange(SCREEN_W, dtype=np.int64)[None, :]
         self._letter_cache = {}
         self._spark_cache = {}
+        # When True, panel()/_timeline() render the IDLE screensaver look instead of
+        # the boot sequence: the intro's opening comet field held open forever — cv
+        # forced 0 (no converge), no letters, no bg/letter fade, no scanline, no black
+        # tail. Mirrors sa_render_idle_frame() in startup_anim.c. `el` just advances.
+        self.idle = False
 
     # ---- exact integer helpers -------------------------------------------
     def _sin(self, t):                       # sa_sin(uint8 t)
@@ -137,9 +142,14 @@ class FwSim:
 
     # ---- timeline (mirrors sa_render_frame head) -------------------------
     def _timeline(self, el):
-        tt = (el * 256) // self.INTRO if el < self.INTRO else 255
         tp = (el >> 4) & 0xFF
         tprg = (el >> 5) & 0xFF
+        if self.idle:
+            # Idle screensaver: perpetual comet field (sa_render_idle_frame).
+            return dict(tt=0, tp=tp, tprg=tprg, cv=0, ring=255, letters=False,
+                        sparks=True, spark_fade=0, letter_in=255,
+                        bg_fade=0, letter_fade=0, pgain=self.PGAIN)
+        tt = (el * 256) // self.INTRO if el < self.INTRO else 255
         cvi = (tt - 55) * 255 // 75           # converge earlier (tt 55..130): gather into letter zones before they appear
         cv = 0 if cvi < 0 else (255 if cvi > 255 else cvi)
         ring = 255 - cv
@@ -184,7 +194,7 @@ class FwSim:
         if not valid:
             return None
         T = self._timeline(el)
-        if el >= self.INTRO + self.HOLD + self.FADE:   # black tail — all keycaps black
+        if not self.idle and el >= self.INTRO + self.HOLD + self.FADE:   # black tail — all keycaps black
             return np.zeros((SCREEN_H, SCREEN_W), bool)
         rot = ang != 0
         cosv = int(self._sin((ang + 64) & 0xFF)) - 128
@@ -224,7 +234,7 @@ class FwSim:
 
         # Scanline glitch: after the letters hold SA_LINE_CLEAR_MS, wipe every 2nd line
         # (instant, re-applied each frame so it persists). Mirrors the firmware.
-        if el >= self.LINE_CLEAR_AT:
+        if not self.idle and el >= self.LINE_CLEAR_AT:
             bit = bit.copy()
             bit[1::2, :] = False
 

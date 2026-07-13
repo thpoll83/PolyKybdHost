@@ -329,6 +329,34 @@ def build_boot_fw(r, geom, fps):
     return frames
 
 
+def build_idle_fw(r, geom, fps, frames_n):
+    """Faithful IDLE screensaver preview driven by the firmware port
+    (fw_anim_sim.FwSim with .idle=True → sa_render_idle_frame): the perpetual comet
+    field the keycaps loop while idle in IDLE_STYLE_EDEN. `frames_n` frames of real
+    time so the GIF loops seamlessly."""
+    from fw_anim_sim import FwSim, mp_to_half_idx
+    sim = FwSim()
+    sim.idle = True
+    half_idx = mp_to_half_idx()
+    step = int(round(1000 / fps))
+    times = [i * step for i in range(frames_n)]
+    frames = []
+    for el in times:
+        contents = {}
+        for mp, g in geom.items():
+            hi = half_idx.get(mp)
+            c = KeyContent()
+            if hi is not None:
+                half, idx = hi
+                bmp = sim.panel(half, idx, el)
+                if bmp is not None:
+                    c.oled = Image.fromarray((bmp.astype(np.uint8) * 255), "L").convert("1")
+            contents[mp] = c
+        frames.append(contents)
+    print(f"  idle (firmware port): {len(frames)} frames @ {fps} fps")
+    return frames
+
+
 def build_boot(r, geom, eff, masks):
     """Intro (sparks -> converge -> letters, ripples fading), a brief hold on the
     formed logo, then a dither-dissolve of EVERYTHING to black -- leaving an empty
@@ -512,6 +540,8 @@ def main():
         frames = build_boot_fw(r, geom, args.fps)
     elif args.mode == "boot":
         frames = build_boot(r, geom, eff, masks)
+    elif args.engine == "firmware":
+        frames = build_idle_fw(r, geom, args.fps, args.frames)
     else:
         frames = build_idle(r, geom, eff, args.frames)
     dur = [int(1000 / args.fps)] * len(frames)
