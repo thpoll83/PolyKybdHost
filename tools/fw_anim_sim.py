@@ -127,7 +127,8 @@ class FwSim:
             rr = self._dist(ax, ay).astype(np.int64)
             rr = rr + ((self._sin((gx + 2 * gy) & 0xFF) - 128) >> 3)   # irregular radius wobble
             rv = self._sin((((rr * self.RFREQ) >> 8) - T["tprg"]) & 0xFF)
-            crest = np.where(rv > 215, rv - 215, 0)
+            thr = 200 if self.idle else 215   # idle: thicker/denser rings
+            crest = np.where(rv > thr, rv - thr, 0)
             rdens = (crest * T["ring"]) >> 9
             dens = np.maximum(dens, rdens)
         return dens
