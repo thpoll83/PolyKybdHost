@@ -258,17 +258,20 @@ class FwSim:
         for s in range(self.NSPARK):
             if self._hash8(s * 3 + 7) < spark_fade:   # staggered death: winks out one by one
                 continue
+            if self.idle and self._hash8(s * 19 + 11) < 77:   # idle thins the field (~30% fewer)
+                continue
             p0 = self._hash8(s * 2 + 1)
-            spd = 1 + (self._hash8(s * 7 + 3) & 7)    # speed 1..8
+            spd = 1 + (self._hash8(s * 7 + 3) & (15 if self.idle else 7))   # idle: wider 1..16 spread
             lane = (self._hash8(s * 5 + 9) * self.BH) >> 8
             bw = 1 + (self._hash8(s * 11 + 2) & 3)
             ph = self._hash8(s * 13 + 5)
             bob = 6 + (self._hash8(s * 17) & 31)
             hv = self._hash8(s * 23 + 4)              # per-spark look variety
             tcx, tcy, _ = self.TARGETS[s % len(self.TARGETS)]
-            xn = (p0 + ((el >> 4) * spd & 0xFF)) & 0xFF
+            tsh = 6 if self.idle else 4              # idle comets crawl (2 extra el-shift bits)
+            xn = (p0 + ((el >> tsh) * spd & 0xFF)) & 0xFF
             sx = -margin + ((xn * (BW + 2 * margin)) >> 8)
-            sy = lane + (((int(self._sin(((el >> 5) * bw + ph) & 0xFF)) - 128) * bob) >> 7)
+            sy = lane + (((int(self._sin(((el >> (tsh + 1)) * bw + ph) & 0xFF)) - 128) * bob) >> 7)
             if cv:
                 sx = sx + (((int(tcx) - sx) * cv) >> 8)
                 sy = sy + (((int(tcy) - sy) * cv) >> 8)
