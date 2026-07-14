@@ -434,7 +434,7 @@ class PolyHost(QApplication):
         self.idle_iddqd_action.setData(IdleStyle.IDDQD.value)
         # Eden screensaver: loops the boot animation (split72 only; a no-op that
         # behaves like Pulse on split42).
-        self.idle_eden_action = QAction("Eden (boot animation)", parent=self, checkable=True)
+        self.idle_eden_action = QAction("Eden", parent=self, checkable=True)
         self.idle_eden_action.setData(IdleStyle.EDEN.value)
         for act in (self.idle_pulse_action, self.idle_jitter_action, self.idle_iddqd_action,
                     self.idle_eden_action):
