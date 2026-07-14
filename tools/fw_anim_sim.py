@@ -145,12 +145,10 @@ class FwSim:
         tp = (el >> 4) & 0xFF
         tprg = (el >> 5) & 0xFF
         if self.idle:
-            # Idle screensaver: INVERTED — a mostly-lit glowing field (dense plasma,
-            # SA_IDLE_PGAIN=120) that the comets + legend erase (dark). See panel()
-            # for the SA_IDLE_FIELD_BIAS lit test and _place_sparks for the erase.
+            # Idle screensaver: perpetual comet field (sa_render_idle_frame).
             return dict(tt=0, tp=tp, tprg=tprg, cv=0, ring=255, letters=False,
                         sparks=True, spark_fade=0, letter_in=255,
-                        bg_fade=0, letter_fade=0, pgain=120)
+                        bg_fade=0, letter_fade=0, pgain=self.PGAIN)
         tt = (el * 256) // self.INTRO if el < self.INTRO else 255
         cvi = (tt - 55) * 255 // 75           # converge earlier (tt 55..130): gather into letter zones before they appear
         cv = 0 if cvi < 0 else (255 if cvi > 255 else cvi)
@@ -220,10 +218,7 @@ class FwSim:
             gxc = cx + ((self.lx & ~1) - 36)         # sample sa_bg at the 2x2 block top-left
             gyc = cy + ((self.ly & ~1) - 20)
             bgv = self._bg(gxc.astype(np.int64), gyc.astype(np.int64), T)
-        if self.idle:   # mostly-lit glowing field (SA_IDLE_FIELD_BIAS=150)
-            bit = (bgv.astype(np.int64) + 150) > self._noise(gx, gy)
-        else:
-            bit = bgv > self._noise(gx, gy)
+        bit = bgv > self._noise(gx, gy)
 
         if T["sparks"]:
             self._place_sparks(bit, cx, cy, rot, cosv, sinv, el)
@@ -307,13 +302,12 @@ class FwSim:
             hx = 36 + ddx
             hy = 20 + ddy
         th = thick == 2
-        v = not self.idle          # idle: comets ERASE (dark on the lit field); boot: LIT
-        self._plot(bit, hx, hy, v)                        # bold 2×2 head
-        self._plot(bit, hx + 1, hy, v)
-        self._plot(bit, hx, hy + 1, v)
-        self._plot(bit, hx + 1, hy + 1, v)
-        self._plot(bit, hx[th], hy[th] - 1, v)            # taller/brighter head for thick comets
-        self._plot(bit, hx[th] + 1, hy[th] - 1, v)
+        self._plot(bit, hx, hy)                        # bold 2×2 head
+        self._plot(bit, hx + 1, hy)
+        self._plot(bit, hx, hy + 1)
+        self._plot(bit, hx + 1, hy + 1)
+        self._plot(bit, hx[th], hy[th] - 1)            # taller/brighter head for thick comets
+        self._plot(bit, hx[th] + 1, hy[th] - 1)
         for k in range(1, LM):                         # solid neck, then a fading tail
             live = tlen > k                            # only comets whose trail reaches k
             if not live.any():
@@ -322,14 +316,14 @@ class FwSim:
                 draw = live
             else:
                 draw = live & (self._noise(hx - k + 30, hy + 12) < ((255 - k * (230 // tlen)) & 0xFF))
-            self._plot(bit, (hx - k)[draw], hy[draw], v)
+            self._plot(bit, (hx - k)[draw], hy[draw])
             th2 = draw & th
-            self._plot(bit, (hx - k)[th2], hy[th2] + 1, v)   # 2 px tall trail
+            self._plot(bit, (hx - k)[th2], hy[th2] + 1)   # 2 px tall trail
 
     @staticmethod
-    def _plot(bit, px, py, val=True):
+    def _plot(bit, px, py):
         ok = (px >= 0) & (px < SCREEN_W) & (py >= 0) & (py < SCREEN_H)
-        bit[py[ok], px[ok]] = val
+        bit[py[ok], px[ok]] = True
 
 
 # disp_idx (0..39) = disp_row*8 + disp_col; mp mapping mirrors _disp_mp in the demo.
