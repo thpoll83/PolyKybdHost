@@ -258,7 +258,7 @@ class FwSim:
         for s in range(self.NSPARK):
             if self._hash8(s * 3 + 7) < spark_fade:   # staggered death: winks out one by one
                 continue
-            if self.idle and self._hash8(s * 19 + 11) < 77:   # idle thins the field (~30% fewer)
+            if self.idle and self._hash8(s * 19 + 11) < 160:   # idle thins the field (~37% kept)
                 continue
             p0 = self._hash8(s * 2 + 1)
             spd = 1 + (self._hash8(s * 7 + 3) & (15 if self.idle else 7))   # idle: wider 1..16 spread
