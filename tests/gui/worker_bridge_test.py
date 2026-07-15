@@ -47,16 +47,43 @@ class DecideReconnectApplyTest(unittest.TestCase):
         self.assertIn("P6", d["text"])
         self.assertIn("some features need a firmware update", d["text"])
 
-    def test_newer_protocol_connects_with_host_update_hint(self):
-        # A firmware NEWER than the host also connects (the host uses the
-        # commands/formats it knows); we just hint the user to update the app.
+    def test_newer_protocol_undecided_defaults_to_safe_and_prompts(self):
+        # A firmware NEWER than the host, no policy chosen yet: connect but in
+        # restricted safe mode, and flag that the UI should prompt.
         d = decide_reconnect_apply(_snap(kb_proto=9), HOST_PROTO, HOST_VERSION, False)
+        self.assertTrue(d["connected"])          # stays connected (no churn)
+        self.assertFalse(d["compatible"])        # but no operational post-connect
+        self.assertFalse(d["do_post_connect"])
+        self.assertTrue(d["safe_mode"])
+        self.assertTrue(d["newer_fw_pending"])
+        self.assertEqual(d["icon"], "sync_problem.svg")
+        self.assertIn("safe mode", d["text"])
+
+    def test_newer_protocol_safe_policy_restricts_without_prompt(self):
+        d = decide_reconnect_apply(_snap(kb_proto=9), HOST_PROTO, HOST_VERSION, False,
+                                   newer_fw_policy="safe")
+        self.assertTrue(d["connected"])
+        self.assertFalse(d["compatible"])
+        self.assertTrue(d["safe_mode"])
+        self.assertFalse(d["newer_fw_pending"])  # decided -> no prompt
+
+    def test_newer_protocol_ignore_policy_connects_fully(self):
+        d = decide_reconnect_apply(_snap(kb_proto=9), HOST_PROTO, HOST_VERSION, False,
+                                   newer_fw_policy="ignore")
         self.assertTrue(d["connected"])
         self.assertTrue(d["compatible"])
         self.assertTrue(d["do_post_connect"])
-        self.assertEqual(d["icon"], "sync_problem.svg")
-        self.assertIn("P9", d["text"])
+        self.assertFalse(d["safe_mode"])
+        self.assertFalse(d["newer_fw_pending"])
         self.assertIn("update the host app", d["text"])
+
+    def test_newer_protocol_ignore_version_overrides_safe_default(self):
+        # --ignore-version means "connect fully" and wins over the safe default.
+        d = decide_reconnect_apply(_snap(kb_proto=9), HOST_PROTO, HOST_VERSION, True)
+        self.assertTrue(d["connected"])
+        self.assertTrue(d["compatible"])
+        self.assertFalse(d["safe_mode"])
+        self.assertFalse(d["newer_fw_pending"])
 
     def test_below_floor_refuses(self):
         # Below the minimum supported protocol the host cannot even enumerate

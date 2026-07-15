@@ -232,6 +232,11 @@ class RemoteCore:
         return bool(self._get("paused", False))
 
     @property
+    def safe_mode(self):
+        """Newer-firmware restricted mode, cached from the daemon's status."""
+        return bool(self._get("safe_mode", False))
+
+    @property
     def last_applied_connected(self):
         return bool(self._get("connected", False))
 
@@ -326,6 +331,9 @@ class RemoteCore:
 
     def set_idle(self, idle):
         return self._device(p.M_IDLE_SET, {"idle": idle})
+
+    def set_newer_firmware_policy(self, choice):
+        return self._device(p.M_SET_NEWER_FW_POLICY, {"choice": choice})
 
     def set_idle_style(self, value):
         return self._device(p.M_IDLE_STYLE_SET, {"value": value})

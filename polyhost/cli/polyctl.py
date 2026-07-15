@@ -186,6 +186,12 @@ def _cmd_idle_style(client, args):
     return 0
 
 
+def _cmd_newer_policy(client, args):
+    client.call(protocol.M_SET_NEWER_FW_POLICY, {"choice": args.choice})
+    print(f"newer-firmware policy set to {args.choice}")
+    return 0
+
+
 # Derived from the shared GlyphScript enum so new scripts appear automatically.
 _GLYPH_SCRIPT_VALUES = {s.name.lower(): s.value for s in GlyphScript}
 _GLYPH_SCRIPT_NAMES = {v: k for k, v in _GLYPH_SCRIPT_VALUES.items()}
@@ -532,6 +538,13 @@ def build_parser():
         help="omit to print the current script; 'standard' = normal legends, "
              "any other = fantasy/retro override (needs the fantasy font-pack bundle)")
     p_glyph_script.set_defaults(func=_cmd_glyph_script)
+
+    p_newer = sub.add_parser(
+        "newer-policy",
+        help="how to handle a keyboard whose firmware is newer than this host "
+             "(ignore = connect fully, safe = restricted to update+debug)")
+    p_newer.add_argument("choice", choices=["ignore", "safe"])
+    p_newer.set_defaults(func=_cmd_newer_policy)
 
     p_ov = sub.add_parser("overlay", help="overlay control")
     ov_sub = p_ov.add_subparsers(dest="overlay_action", required=True)

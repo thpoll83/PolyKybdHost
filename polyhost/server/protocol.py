@@ -73,6 +73,7 @@ M_FW_FLASH = "fw.flash"                # {"path": str, "apply": bool} -> {"queue
 M_UPDATE_CHECK = "update.check"        # {} -> {"available": bool, "version": str, "url": str}
 M_UPDATE_INSTALL = "update.install"    # {} -> {"queued": bool, "version": str} (streams update_* events)
 M_PAUSE_SET = "pause.set"              # {"paused": bool} -> {"paused": bool}
+M_SET_NEWER_FW_POLICY = "fw.newer_policy.set"  # {"choice": "ignore"|"safe"} -> {"choice": str}
 M_MRU_SAVE = "mru.save"                # {} -> {"queued": True}
 M_SETTINGS_GET = "settings.get"        # {"key": str} -> value
 M_SETTINGS_LIST = "settings.list"      # {} -> {key: value, ...} (all settings)

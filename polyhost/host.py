@@ -224,6 +224,14 @@ class PolyHost(QApplication):
         # from the reconnect/status payload so feature submenus can be gated by the
         # device's protocol, not just by connectivity. See self.supports().
         self._capabilities = {}
+        # Newer-firmware dialog bookkeeping (see _maybe_prompt_newer_firmware):
+        # remember which protocol we've already prompted for so the ~1 s reconnect
+        # probe can't re-raise the modal, and guard against stacking it.
+        self._newer_fw_prompt_open = False
+        self._newer_fw_prompted_proto = None
+        # The Debugging submenu (created only with --debug), kept reachable so it
+        # stays enabled in newer-firmware safe mode. None when debug is off.
+        self._debug_menu = None
         # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
         from polyhost.util.macos_ui import hide_dock_icon
         hide_dock_icon()
@@ -511,6 +519,7 @@ class PolyHost(QApplication):
 
         if debug_mode > 0:
             debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
+            self._debug_menu = debug_menu
             self.debug_lang_menu = debug_menu.addMenu(get_icon("language.svg"), "Change System Input Language")
             # Font-pack inspector: offline tool (no device needed), so it's
             # available in both modes — kept behind the debug flag.
@@ -662,6 +671,12 @@ class PolyHost(QApplication):
         self.core.device_present = value
 
     @property
+    def safe_mode(self):
+        """Newer-firmware restricted mode (core is the source of truth; RemoteCore
+        mirrors it from the daemon's status)."""
+        return getattr(self.core, "safe_mode", False)
+
+    @property
     def paused(self):
         return self.core.paused
 
@@ -722,8 +737,41 @@ class PolyHost(QApplication):
         than only erroring on click. Works identically in-process and client mode."""
         return bool(self._capabilities.get(feature))
 
+    def _maybe_prompt_newer_firmware(self, pending, proto, name, fw):
+        """Raise the newer-firmware dialog when the core reports an undecided
+        newer-firmware state (``newer_fw_pending``). Shown once per protocol per
+        session — the guard stops the ~1 s reconnect probe re-raising it, and a
+        different (newly flashed) protocol re-prompts. Driven off the status payload
+        so it works in-process and in --connect client mode alike."""
+        if (not pending or proto is None
+                or self._newer_fw_prompt_open
+                or self._newer_fw_prompted_proto == proto):
+            return
+        self._newer_fw_prompted_proto = proto
+        self._newer_fw_prompt_open = True
+        try:
+            from polyhost.gui.newer_firmware_dialog import confirm_newer_firmware
+            choice = confirm_newer_firmware(__protocol__, proto, name, fw)
+        finally:
+            self._newer_fw_prompt_open = False
+        if choice == "update":
+            # Look for a host-app update that matches the firmware; if none is
+            # found (or the check errors), fall back to safe mode. force=True so a
+            # throttled auto-check doesn't swallow our callbacks.
+            started = self._start_update_check(
+                on_no_update=lambda: self.core.set_newer_firmware_policy("safe"),
+                on_check_error=lambda _msg=None: self.core.set_newer_firmware_policy("safe"),
+                force=True)
+            if not started:
+                self.core.set_newer_firmware_policy("safe")
+        else:
+            # "ignore" -> connect fully; "safe" (or dismissed) -> stay restricted.
+            self.core.set_newer_firmware_policy(choice if choice == "ignore" else "safe")
+
     def managed_connection_status(self):
-        enabled = self.connected and not self.paused
+        # Newer-firmware safe mode: connected but operationally restricted — only
+        # the firmware-update mechanism + debugging stay live, like a mismatch.
+        enabled = self.connected and not self.paused and not self.safe_mode
         fw_enabled = self._fw_actions_allowed()
         for action in self.menu.actions():
             action.setEnabled(enabled)
@@ -737,6 +785,11 @@ class PolyHost(QApplication):
         # (the blanket loop above already set them to `enabled`).
         self.idle_style_menu.menuAction().setEnabled(enabled and self.supports("idle_style"))
         self.glyph_script_menu.menuAction().setEnabled(enabled and self.supports("glyph_script"))
+        # In safe mode the operational menu above is greyed, but debugging stays
+        # available (its offline entries — e.g. the font-pack inspector — work with
+        # no device); firmware update is already re-enabled via fw_enabled below.
+        if self._debug_menu is not None:
+            self._debug_menu.menuAction().setEnabled(self.safe_mode or enabled)
         # Available in both modes (driven via core methods).
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
@@ -787,10 +840,18 @@ class PolyHost(QApplication):
             return
         # Refresh the cached per-feature capabilities from the (now-populated)
         # device protocol so the feature-submenu gating below reflects this probe.
-        self._capabilities = self.core.keeb.capabilities()
+        # Use the core's reported view so safe mode masks them to all-False, same
+        # as a --connect client sees.
+        self._capabilities = self.core._reported_capabilities()
         connected_now = applied["connected_now"]
         response = applied["lang"]
         decision = applied["decision"]
+        # Prompt for a newer-firmware choice off the same decision the core made
+        # (mirrors the client path, which reads it from the status payload).
+        if decision is not None:
+            self._maybe_prompt_newer_firmware(
+                decision.get("newer_fw_pending"), snapshot.get("kb_proto"),
+                snapshot.get("name") or "", snapshot.get("kb_version") or "")
 
         if decision is not None:
             if decision["icon"] is not None:
@@ -894,6 +955,15 @@ class PolyHost(QApplication):
 
         self.managed_connection_status()
         self.icon_manager.update()
+
+        # Newer-firmware prompt: the daemon flags an undecided newer-firmware
+        # state in the status; the snapshot backfills fields a steady-state event
+        # omits (and covers a late-attaching client).
+        snap = self.core.status_snapshot()
+        self._maybe_prompt_newer_firmware(
+            payload.get("newer_fw_pending", snap.get("newer_fw_pending")),
+            payload.get("protocol", snap.get("protocol")),
+            snap.get("name") or "", snap.get("fw_version") or "")
 
         if connected and lang and self.current_lang != lang:
             self.icon_manager.set_thinking()

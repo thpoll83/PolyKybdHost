@@ -108,7 +108,8 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   too old… please update the keyboard firmware"*). Within range it connects regardless of
   match: `== __protocol__` is the fully-supported case (`sync.svg`), a **lower** device
   protocol connects with *"— some features need a firmware update"* (`sync_problem.svg`),
-  and a **higher** one connects with *"— update the host app for full support"*. Each
+  and a **higher** one (newer firmware than the host) **prompts** — see the newer-firmware
+  note below. Each
   feature is then gated individually by **`FEATURE_MIN_PROTOCOL`** (`device/poly_kybd.py`)
   via the pure `protocol_supports(protocol, feature)` + `PolyKybd.supports()/capabilities()`;
   the GUI (`host.py` `self.supports()`, fed by the `capabilities` dict on `status_changed`/
@@ -124,11 +125,32 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `>= OVERLAY_PACKED_HEADER_MIN_PROTOCOL (11)` sends the packed 4-byte header, below it the
   pre-v11 5-byte `[id, cmd, keycode, modifier, segment]` form — so overlays work on an older
   keyboard too. Compressed/ROI headers never changed. For a device **newer** than the host
-  we send our newest-known (packed) form and accept that a *future* breaking change to an
-  existing command is unknown to us (the newer-firmware trade-off — the host still connects).
+  (only reachable via the "ignore" newer-firmware choice) we send our newest-known (packed)
+  form and accept that a *future* breaking change to an existing command is unknown to us.
   If you add another wire-format-breaking change to an existing command, add a
   `FEATURE_MIN_PROTOCOL` entry + an encode-branch here; a *new* command just needs a
   `supports()` gate.
+- **Newer firmware than the host PROMPTS the user (session policy, default safe).** When
+  `kb_proto > __protocol__`, blindly trusting a newer firmware for wire-format-sensitive
+  commands is risky, so instead of silently connecting the host asks (dialog
+  `polyhost/gui/newer_firmware_dialog.py`, three choices): **Safe mode** (connect but
+  restrict to the stable set — firmware-update + Debugging; the default and the
+  dismiss/close outcome), **Check for updates** (run the host-app update check via the
+  `_on_update_clicked` idiom with `force=True`; install if a matching release is found, else
+  fall back to safe), or **Connect anyway** (full connect, newest-known formats). The choice
+  is a **session-only** core policy `PolyCore._newer_fw_policy` (like `ignore_version`; keyed
+  to the protocol it was chosen for so a re-flash re-asks) set via
+  `set_newer_firmware_policy(choice)` → `M_SET_NEWER_FW_POLICY` (RemoteCore mirror) →
+  drops `last_applied_connected` so the next probe re-applies. Safe mode is
+  `decide_reconnect_apply`'s newer branch: `connected=True` (so the probe doesn't churn) but
+  `compatible=False`/`safe_mode=True`, `tick_window_tracking` skips overlay/OS traffic while
+  `safe_mode`, and the status carries `safe_mode` + `newer_fw_pending` (with capabilities
+  reported all-False, so feature menus grey out). The GUI drives the dialog off that status
+  seam in **both** in-process (`_apply_reconnect_result`) and `--connect` client
+  (`_render_remote_status`) paths — `_maybe_prompt_newer_firmware`, once per protocol per
+  session. `--ignore-version` still forces a full connect (wins over the safe default). A
+  headless daemon with no GUI defaults to safe; drive it with `polyctl newer-policy
+  [ignore|safe]`.
 - **Still bump `__protocol__` (`polyhost/_version.py`) in lockstep with the firmware
   PROTOCOL_VERSION.** It now defines the host's *newest-known* protocol (the fully-supported
   "match" and the newest wire format the host emits), **not** a hard connect gate. Rule of

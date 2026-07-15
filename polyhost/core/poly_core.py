@@ -100,6 +100,14 @@ class PolyCore:
         self.connected = False
         self.device_present = False
         self.paused = False
+        # Newer-firmware policy (session-only, like ignore_version): when the
+        # keyboard's protocol is NEWER than this host, the user chooses in a dialog
+        # whether to connect fully ("ignore") or run restricted ("safe"). None =
+        # undecided (defaults to safe + prompts). Remembered for the session, keyed
+        # to the protocol it was chosen for so a re-flash re-asks.
+        self.safe_mode = False
+        self._newer_fw_policy = None
+        self._newer_fw_policy_proto = None
         # Worker-side reconnect bookkeeping. `last_applied_connected` is the
         # host's last APPLIED state: the worker reads it, the applying client
         # writes it (a bool read/write is atomic under the GIL).
@@ -226,6 +234,23 @@ class PolyCore:
             self.worker.suspend()
         else:
             self.worker.resume()
+
+    def set_newer_firmware_policy(self, choice):
+        """Record the session choice for a keyboard whose firmware protocol is
+        NEWER than this host: "ignore" (connect fully) or "safe" (restricted).
+
+        Thread-agnostic (no Qt / no device I/O) — called in-process on the Qt main
+        thread or, in daemon mode, on a control-server thread over RPC. Forces a
+        prompt re-apply by dropping ``last_applied_connected`` so the next ~1 s
+        reconnect probe re-runs the decision tree with the new policy (a bool write,
+        atomic under the GIL; mirrors set_paused)."""
+        if choice not in ("ignore", "safe"):
+            return False, f"Unknown newer-firmware policy: {choice!r}"
+        self._newer_fw_policy = choice
+        self._newer_fw_policy_proto = self.keeb.get_protocol_version()
+        self.last_applied_connected = False
+        self.log.info("Newer-firmware policy set to '%s'.", choice)
+        return True, {"choice": choice}
 
     def start_window_tracking(self, interval_s=UPDATE_CYCLE_MSEC / 1000.0):
         """Run the active-window tick on a core-owned daemon thread.
@@ -385,7 +410,9 @@ class PolyCore:
         handler = self.overlay_handler
         if handler is None:
             return
-        if self.connected:
+        # safe_mode (newer firmware, user chose restricted): connected but no
+        # operational overlay/OS traffic — only firmware-update + debugging.
+        if self.connected and not self.safe_mode:
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
             if cmd in (OverlayCommand.DISABLE, OverlayCommand.ENABLE):
                 self.submit_overlay_cmd(cmd)
@@ -641,10 +668,19 @@ class PolyCore:
         }
 
         if snapshot["state_changed"]:
+            # Forget a remembered newer-firmware choice if the device's protocol
+            # changed (e.g. after a firmware flash) so the user is asked again for
+            # the new firmware rather than silently reusing the old decision.
+            if (self._newer_fw_policy_proto is not None
+                    and snapshot.get("kb_proto") != self._newer_fw_policy_proto):
+                self._newer_fw_policy = None
+                self._newer_fw_policy_proto = None
             decision = decide_reconnect_apply(
                 snapshot, __protocol__, __version__, self.ignore_version,
-                min_supported=MIN_SUPPORTED_PROTOCOL)
+                min_supported=MIN_SUPPORTED_PROTOCOL,
+                newer_fw_policy=self._newer_fw_policy)
             applied["decision"] = decision
+            self.safe_mode = decision.get("safe_mode", False)
 
             # Mirror the original warning logs.
             if not snapshot["version_ok"] and self.ignore_version:
@@ -749,9 +785,24 @@ class PolyCore:
             # client can gate feature menus the same way the in-process app does
             # (the steady-state event, unlike status.get, otherwise omits them).
             "protocol": self.keeb.get_protocol_version(),
-            "capabilities": self.keeb.capabilities(),
+            "capabilities": self._reported_capabilities(),
+            # Newer-firmware safe mode + whether the user still needs to be
+            # prompted (drives the client's newer-firmware dialog off the status
+            # seam — no separate event needed, and a late-attaching client sees it).
+            "safe_mode": self.safe_mode,
+            "newer_fw_pending": bool(
+                (applied["decision"] or {}).get("newer_fw_pending")),
         })
         return applied
+
+    def _reported_capabilities(self):
+        """Per-feature capabilities as reported to clients. In safe mode every
+        gated feature reads False so the UI (feature submenus, glyph-reset button,
+        `polyctl status`) disables them with no extra mode-specific code."""
+        caps = self.keeb.capabilities()
+        if self.safe_mode:
+            return {k: False for k in caps}
+        return caps
 
     def _console_periodic(self, cancel):
         """Worker periodic (250 ms): read serial + console; publish."""
@@ -886,7 +937,11 @@ class PolyCore:
             "name": self.keeb.get_name(),
             "fw_version": self.keeb.get_sw_version(),
             "protocol": self.keeb.get_protocol_version(),
-            "capabilities": self.keeb.capabilities(),
+            "capabilities": self._reported_capabilities(),
+            "safe_mode": self.safe_mode,
+            # Undecided newer-firmware state: safe mode with no policy chosen yet.
+            # Lets a late-attaching client (status.get) still raise the dialog.
+            "newer_fw_pending": self.safe_mode and self._newer_fw_policy is None,
             "hw_version": self.keeb.get_hw_version(),
             "current_lang": self.keeb.get_current_lang(),
             "host_version": __version__,

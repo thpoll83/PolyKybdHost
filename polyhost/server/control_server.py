@@ -329,6 +329,8 @@ class ControlServer:
             p.M_DOOM_INSTALL: lambda conn, params: _unwrap(c.install_doomwad(params["path"])),
             p.M_DOOM_INSTALL_PACK: lambda conn, params: _unwrap(c.install_doompack(params["path"])),
             p.M_PAUSE_SET: self._cmd_pause_set,
+            p.M_SET_NEWER_FW_POLICY: lambda conn, params: _unwrap(
+                c.set_newer_firmware_policy(params["choice"])),
             p.M_MRU_SAVE: self._cmd_mru_save,
             p.M_SETTINGS_GET: lambda conn, params: c.settings_get(params["key"]),
             p.M_SETTINGS_LIST: lambda conn, params: c.settings_list(),

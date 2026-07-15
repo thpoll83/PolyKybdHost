@@ -18,6 +18,7 @@ def make_core(*, connected=True, handler=True, run_when_disconnected=False):
     core = PolyCore.__new__(PolyCore)
     core.log = logging.getLogger("test.polycore.overlay")
     core.connected = connected
+    core.safe_mode = False
     core._observers = []
     core._observers_lock = threading.Lock()
     core.worker = MagicMock()
@@ -83,6 +84,13 @@ class TestTickWindowTracking(unittest.TestCase):
 
     def test_disconnected_skips_query_unless_dev_flag(self):
         core = make_core(connected=False, run_when_disconnected=False)
+        core.tick_window_tracking()
+        core.overlay_handler.handle_active_window.assert_not_called()
+
+    def test_safe_mode_skips_overlay_tracking(self):
+        # Newer-firmware safe mode: connected but no operational overlay/OS traffic.
+        core = make_core(connected=True)
+        core.safe_mode = True
         core.tick_window_tracking()
         core.overlay_handler.handle_active_window.assert_not_called()
 
