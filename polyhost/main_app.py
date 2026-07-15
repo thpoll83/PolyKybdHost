@@ -322,7 +322,19 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
             raise
 
     slog.info("Handoff complete; entering the Qt event loop.")
-    sys.exit(app.exec_())
+    rc = app.exec_()
+    # A self-update that lands mid-session asks for a re-exec into the freshly
+    # installed version. Do it here — after the event loop has fully unwound —
+    # rather than calling os.execv from inside a Qt slot with the tray/timer
+    # still live (the forwarder used to, and a transient execv failure then
+    # left it dead with no relaunch). This mirrors the headless daemon, which
+    # re-execs only after its run loop ends. `restart_app()` re-execs (or, on
+    # failure, spawns a detached child) and never returns.
+    if getattr(app, "wants_restart", False):
+        from polyhost.services.updater import restart_app
+        del app  # let the QApplication release its X/tray/D-Bus resources first
+        restart_app()
+    sys.exit(rc)
 
 
 def _spawned_daemon_flags(args):
