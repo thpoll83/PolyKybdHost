@@ -220,6 +220,10 @@ class PolyHost(QApplication):
         super().__init__(sys.argv)
         # Wall-clock start, for the About dialog's uptime line.
         self._start_time = time.monotonic()
+        # Per-feature support of the connected firmware (feature -> bool), cached
+        # from the reconnect/status payload so feature submenus can be gated by the
+        # device's protocol, not just by connectivity. See self.supports().
+        self._capabilities = {}
         # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
         from polyhost.util.macos_ui import hide_dock_icon
         hide_dock_icon()
@@ -708,6 +712,16 @@ class PolyHost(QApplication):
         only needs a present device, not a compatible one."""
         return (self.connected or self.device_present) and not self.paused
 
+    def supports(self, feature):
+        """Whether the connected firmware's protocol supports ``feature``.
+
+        Reads the capabilities cached from the reconnect/status payload
+        (``poly_kybd.FEATURE_MIN_PROTOCOL`` names). Used to gate feature submenus
+        by the device's protocol now that a protocol-mismatched keyboard still
+        connects — a feature its firmware is too old for is hidden/disabled rather
+        than only erroring on click. Works identically in-process and client mode."""
+        return bool(self._capabilities.get(feature))
+
     def managed_connection_status(self):
         enabled = self.connected and not self.paused
         fw_enabled = self._fw_actions_allowed()
@@ -717,6 +731,12 @@ class PolyHost(QApplication):
         # above just disabled its parent action on a mismatch). Both modes.
         self.cmdMenu.update_enabled(enabled, fw_enabled)
         self.firmware_update_action.setEnabled(fw_enabled)
+        # Feature submenus gate on the DEVICE's protocol, not just connectivity:
+        # a protocol-mismatched keyboard now connects, so disable the submenus
+        # whose firmware support is missing instead of letting them error on click
+        # (the blanket loop above already set them to `enabled`).
+        self.idle_style_menu.menuAction().setEnabled(enabled and self.supports("idle_style"))
+        self.glyph_script_menu.menuAction().setEnabled(enabled and self.supports("glyph_script"))
         # Available in both modes (driven via core methods).
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
@@ -765,6 +785,9 @@ class PolyHost(QApplication):
         applied = self.core.apply_reconnect(snapshot)
         if applied is None:
             return
+        # Refresh the cached per-feature capabilities from the (now-populated)
+        # device protocol so the feature-submenu gating below reflects this probe.
+        self._capabilities = self.core.keeb.capabilities()
         connected_now = applied["connected_now"]
         response = applied["lang"]
         decision = applied["decision"]
@@ -847,6 +870,14 @@ class PolyHost(QApplication):
         first connected render rather than only on state_changed."""
         if self.paused or not isinstance(payload, dict):
             return
+        # Cache the daemon-reported per-feature capabilities for menu gating; the
+        # daemon carries them on every status_changed (a state-change event may be
+        # missed by a late-attaching client, so fall back to the status snapshot).
+        caps = payload.get("capabilities")
+        if caps is None:
+            caps = self.core.status_snapshot().get("capabilities")
+        if caps is not None:
+            self._capabilities = caps
         connected = bool(payload.get("connected"))
         self.status.setIcon(get_icon(payload.get("icon") or
                                      ("sync.svg" if connected else "sync_disabled.svg")))
@@ -1059,9 +1090,11 @@ class PolyHost(QApplication):
         # Client mode edits the DAEMON's settings over RPC (the local file may
         # be shared when co-located, but the daemon holds the live copy).
         current = self.core.settings_list() if self.client_mode else self.poly_settings.get_all()
-        # Offer the glyph-script reset button when a device is present (works over
-        # RPC in client mode too); it force-restores the normal language legends.
-        reset_cb = self.reset_glyph_script_to_standard if self.device_present else None
+        # Offer the glyph-script reset button when the connected firmware supports
+        # glyph scripts (v9+; works over RPC in client mode too); it force-restores
+        # the normal language legends. Gated on the capability, not mere presence,
+        # so a keyboard too old for cmd 30 doesn't show a button that only errors.
+        reset_cb = self.reset_glyph_script_to_standard if self.supports("glyph_script") else None
         dlg.setup(current, self.debug_mode, reset_glyph_script=reset_cb)
         if dlg.exec_() == QDialog.Accepted:
             updated = dlg.get_updated_settings()

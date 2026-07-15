@@ -133,14 +133,29 @@ class TestApplyReconnect(unittest.TestCase):
         self.assertTrue(applied["do_overlay_reset"])
         core.keeb.reset_overlays_and_usage.assert_called_once()
 
-    def test_protocol_mismatch_keeps_presence_for_flashing(self):
+    def test_below_floor_protocol_keeps_presence_for_flashing(self):
+        # Firmware BELOW the supported floor is still refused (host can't even
+        # enumerate languages), but presence is kept so it can be flashed.
         core = make_core()
-        applied = core.apply_reconnect(connect_snapshot(kb_proto=__protocol__ + 1))
+        applied = core.apply_reconnect(connect_snapshot(kb_proto=1))
         self.assertFalse(core.connected)
         self.assertTrue(core.device_present)      # GET_ID answered → flashable
         self.assertFalse(applied["decision"]["do_post_connect"])
         self.assertFalse(applied["do_overlay_reset"])
         core.overlay_handler.force_resend.assert_not_called()
+
+    def test_within_range_mismatch_connects_and_runs_post_connect(self):
+        # A protocol mismatch that is at/above the floor (older OR newer than the
+        # host) now CONNECTS and runs the post-connect work; individual features
+        # self-gate by protocol from there.
+        for kb_proto in (__protocol__ - 1, __protocol__ + 1):
+            with self.subTest(kb_proto=kb_proto):
+                core = make_core()
+                applied = core.apply_reconnect(connect_snapshot(kb_proto=kb_proto))
+                self.assertTrue(core.connected)
+                self.assertTrue(core.device_present)
+                self.assertTrue(applied["decision"]["do_post_connect"])
+                core.overlay_handler.force_resend.assert_called_once()
 
     def test_disconnect_clears_state_without_version_queries(self):
         core = make_core(connected=True)

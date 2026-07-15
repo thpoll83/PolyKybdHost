@@ -29,12 +29,23 @@ def decide_probe_publish(connected_now, last_applied_connected, fail_streak,
     return True, streak
 
 
-def decide_reconnect_apply(snapshot, host_protocol, host_version, ignore_version):
+def decide_reconnect_apply(snapshot, host_protocol, host_version, ignore_version,
+                           min_supported=2):
     """Pure decision tree for the reconnect compatibility check.
 
-    Mirrors the original ``PolyHost.reconnect`` logic byte-for-byte in
-    behaviour. Takes a worker-produced ``snapshot`` dict (no device/UI access)
-    plus the host's expected protocol/version and the ``--ignore-version`` flag.
+    The host connects across a **range** of firmware protocols and gates
+    individual features by their minimum protocol (see
+    ``polyhost.device.poly_kybd.FEATURE_MIN_PROTOCOL``), instead of refusing the
+    whole connection on any protocol mismatch. A device is connected when its
+    protocol is at least ``min_supported`` (the floor below which the host can't
+    even enumerate languages); an exact match is the fully-supported case, a
+    lower protocol connects with a "some features need a firmware update" hint,
+    and a higher protocol connects with an "update the host app" hint (the host
+    then only uses the commands/formats it knows — see the overlay encode-branch).
+
+    Takes a worker-produced ``snapshot`` dict (no device/UI access) plus the
+    host's expected protocol/version, the ``--ignore-version`` flag, and the
+    ``min_supported`` protocol floor.
 
     Returns a dict describing the UI decision:
         connected (bool)        — final connected state
@@ -77,16 +88,26 @@ def decide_reconnect_apply(snapshot, host_protocol, host_version, ignore_version
     compatible = False
 
     if kb_proto is not None:
-        if kb_proto == host_protocol:
-            compatible = True
-            out["icon"] = "sync.svg"
-            out["text"] = f"PolyKybd {name} {hw_version} (FW {kb_version}, P{kb_proto})"
-        else:
+        if kb_proto < min_supported:
+            # Too old for the host to speak to at all (can't enumerate languages).
             out["icon"] = "sync_disabled.svg"
             out["text"] = (
-                f"Protocol mismatch: host P{host_protocol}, firmware P{kb_proto}. "
-                f"Please update.")
+                f"Firmware too old (P{kb_proto}); host needs P{min_supported}+. "
+                f"Please update the keyboard firmware.")
             connected = False
+        else:
+            # Within the supported range -> connect and feature-gate individually.
+            compatible = True
+            base = f"PolyKybd {name} {hw_version} (FW {kb_version}, P{kb_proto})"
+            if kb_proto == host_protocol:
+                out["icon"] = "sync.svg"
+                out["text"] = base
+            elif kb_proto < host_protocol:
+                out["icon"] = "sync_problem.svg"
+                out["text"] = base + " — some features need a firmware update"
+            else:  # kb_proto > host_protocol
+                out["icon"] = "sync_problem.svg"
+                out["text"] = base + " — update the host app for full support"
     else:
         expected = host_version
         if kb_version and kb_version.startswith(expected[:3]):

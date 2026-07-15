@@ -131,7 +131,18 @@ def _print_result(result):
 
 def _cmd_status(client, args):
     result = client.call(protocol.M_STATUS_GET)
+    caps = result.pop("capabilities", None) if isinstance(result, dict) else None
     _print_result(result)
+    # Render per-feature support on its own lines rather than as a raw dict. The
+    # host connects across a range of firmware protocols and gates each feature by
+    # its minimum protocol, so this shows exactly which features this keyboard's
+    # firmware is too old (or too new) for.
+    if isinstance(caps, dict) and caps:
+        supported = sorted(f for f, ok in caps.items() if ok)
+        unsupported = sorted(f for f, ok in caps.items() if not ok)
+        print(f"capabilities: {', '.join(supported) or '(none)'}")
+        if unsupported:
+            print(f"unsupported (update firmware): {', '.join(unsupported)}")
     return 0
 
 

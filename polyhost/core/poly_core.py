@@ -30,6 +30,7 @@ from polyhost._version import __version__, __protocol__
 # 'Logger' object has no attribute 'debug_detailed'. log_util is Qt-free.
 import polyhost.util.log_util  # noqa: F401
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
+from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device import hid_fw_up
@@ -641,7 +642,8 @@ class PolyCore:
 
         if snapshot["state_changed"]:
             decision = decide_reconnect_apply(
-                snapshot, __protocol__, __version__, self.ignore_version)
+                snapshot, __protocol__, __version__, self.ignore_version,
+                min_supported=MIN_SUPPORTED_PROTOCOL)
             applied["decision"] = decision
 
             # Mirror the original warning logs.
@@ -690,7 +692,11 @@ class PolyCore:
                 self.refresh_daylight_brightness()
                 # Auto-flash the bundled font pack if the keyboard's is missing
                 # or older (queued on the worker; self-terminating — see below).
-                self._maybe_auto_flash_fontpack()
+                # Gated on the font-pack capability (v6+ reports bundle versions in
+                # GET_ID): older firmware can't tell us what it has, so we must not
+                # blindly mass-flash it now that we connect across protocols.
+                if self.keeb.supports("fontpack"):
+                    self._maybe_auto_flash_fontpack()
 
         # The applying client owns the applied-connection state the worker reads.
         self.last_applied_connected = self.connected
@@ -739,6 +745,11 @@ class PolyCore:
             "text": (applied["decision"] or {}).get("text"),
             "icon": (applied["decision"] or {}).get("icon"),
             "lang": snapshot["lang"],
+            # Carry the device protocol + per-feature capabilities so a --connect
+            # client can gate feature menus the same way the in-process app does
+            # (the steady-state event, unlike status.get, otherwise omits them).
+            "protocol": self.keeb.get_protocol_version(),
+            "capabilities": self.keeb.capabilities(),
         })
         return applied
 
@@ -875,6 +886,7 @@ class PolyCore:
             "name": self.keeb.get_name(),
             "fw_version": self.keeb.get_sw_version(),
             "protocol": self.keeb.get_protocol_version(),
+            "capabilities": self.keeb.capabilities(),
             "hw_version": self.keeb.get_hw_version(),
             "current_lang": self.keeb.get_current_lang(),
             "host_version": __version__,

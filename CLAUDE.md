@@ -101,7 +101,43 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
 
 ## Key notes
 
-- **Bump `__protocol__` (`polyhost/_version.py`) in lockstep with the firmware PROTOCOL_VERSION** — the reconnect gate (`polyhost/core/decisions.py`) connects **only on an exact match** (`kb_proto == host_protocol`); any mismatch shows *"Protocol mismatch, please update"* and refuses to connect, so the keyboard never reaches the features that bump motivated. **This has been forgotten twice** (host stayed at P3 while firmware features advanced to P4 *idle-style* and P5 *brightness host-auto*, leaving current keyboards rejected). Rule of thumb: whenever you add a firmware-protocol feature threshold (e.g. `IDLE_STYLE_MIN_PROTOCOL`, `_BRIGHTNESS_FLAGS_PROTOCOL` — the `>= N` runtime feature gates), the firmware protocol has advanced to **N**, so `__protocol__` must be set to **N** in the same change. The feature `>= N` gates are layered checks *on top of* the exact-match connect gate — they only ever fire once `__protocol__` already equals the device's protocol.
+- **Version handling is RANGE-connect + per-feature gating (not exact-match).** The
+  reconnect gate (`polyhost/core/decisions.py` `decide_reconnect_apply`) connects to any
+  firmware whose protocol is **≥ `MIN_SUPPORTED_PROTOCOL`** (= 2, the packed-lang-list
+  floor — below it the host can't even enumerate languages, so it refuses with *"Firmware
+  too old… please update the keyboard firmware"*). Within range it connects regardless of
+  match: `== __protocol__` is the fully-supported case (`sync.svg`), a **lower** device
+  protocol connects with *"— some features need a firmware update"* (`sync_problem.svg`),
+  and a **higher** one connects with *"— update the host app for full support"*. Each
+  feature is then gated individually by **`FEATURE_MIN_PROTOCOL`** (`device/poly_kybd.py`)
+  via the pure `protocol_supports(protocol, feature)` + `PolyKybd.supports()/capabilities()`;
+  the GUI (`host.py` `self.supports()`, fed by the `capabilities` dict on `status_changed`/
+  `status.get`) disables the Idle-Style / Glyph-Script submenus a keyboard is too old for,
+  the CLI's `set_*` still returns the device-layer "too old" error, and `polyctl status`
+  lists supported/unsupported features. This replaced the old exact-match gate that greyed
+  out the **whole** menu on any mismatch (which had "been forgotten twice", leaving current
+  keyboards rejected).
+- **Wire-format-divergent commands are ENCODED for the device's protocol, not blocked.**
+  The only core command whose wire format ever changed is the **plain-overlay upload**
+  (P11 packed the modifier+segment into one header byte). `send_overlay_for_keycode`
+  (`device/poly_kybd.py`) branches on `self.protocol_version`:
+  `>= OVERLAY_PACKED_HEADER_MIN_PROTOCOL (11)` sends the packed 4-byte header, below it the
+  pre-v11 5-byte `[id, cmd, keycode, modifier, segment]` form — so overlays work on an older
+  keyboard too. Compressed/ROI headers never changed. For a device **newer** than the host
+  we send our newest-known (packed) form and accept that a *future* breaking change to an
+  existing command is unknown to us (the newer-firmware trade-off — the host still connects).
+  If you add another wire-format-breaking change to an existing command, add a
+  `FEATURE_MIN_PROTOCOL` entry + an encode-branch here; a *new* command just needs a
+  `supports()` gate.
+- **Still bump `__protocol__` (`polyhost/_version.py`) in lockstep with the firmware
+  PROTOCOL_VERSION.** It now defines the host's *newest-known* protocol (the fully-supported
+  "match" and the newest wire format the host emits), **not** a hard connect gate. Rule of
+  thumb unchanged: when you add a firmware-protocol feature threshold (e.g.
+  `IDLE_STYLE_MIN_PROTOCOL`, `GLYPH_SCRIPT_MIN_PROTOCOL`, `OVERLAY_PACKED_HEADER_MIN_PROTOCOL`),
+  the firmware protocol advanced to **N**, so set `__protocol__` to **N** and add the feature
+  to `FEATURE_MIN_PROTOCOL` in the same change. Forgetting it now only downgrades the status
+  to "update the host app" and disables that one feature (the keyboard still connects), rather
+  than rejecting the keyboard outright.
 - **GUI self-update must be applied by the DAEMON, not the client (daemon-by-default).**
   In daemon mode the tray GUI is a `--connect` client and a separate `--headless`
   daemon owns `PolyCore` — and therefore the **protocol gate** (its loaded
@@ -110,8 +146,10 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   → `PolyCore.install_update`), letting the daemon overwrite the files and **re-exec
   itself** (`headless.py` `_on_update_event`). It must **not** run `UpdateInstaller`
   in the GUI process: that refreshed only the client while the daemon kept running the
-  pre-update code, so the daemon stayed on the OLD `__protocol__` and went on rejecting
-  the keyboard with *"Protocol mismatch, please update"* until manually restarted
+  pre-update code, so the daemon stayed on the OLD `__protocol__` and its `FEATURE_MIN_PROTOCOL`
+  table (historically it *rejected* the keyboard with *"Protocol mismatch, please update"*;
+  under the range-connect model it instead keeps the keyboard on the old capability set —
+  newer features disabled, status stuck on "update the host app") until manually restarted
   (field 2026-07). After the daemon re-execs, `PolyHost._on_update_done` (client mode)
   waits for the control endpoint to go **down → back LIVE** (`_await_daemon_restart_then_relaunch`)
   before relaunching the GUI — relaunching immediately would re-attach to the still-up
@@ -320,8 +358,10 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `__protocol__` bump** — just a new `GlyphScript` value + `GLYPH_SCRIPT_LABELS` entry +
   the shipped font. The `__protocol__` 9→10 bump happened once, to establish that
   open-ended contract (pre-v10 firmware NACKed unknown indices); don't bump it again for
-  more scripts. The exact-match connect gate still pins host↔firmware to the same
-  protocol, within which the script set is free to grow.
+  more scripts. `GLYPH_SCRIPT_MIN_PROTOCOL=9` is a `FEATURE_MIN_PROTOCOL` entry (see the
+  range-connect note above), so the Glyph-Script menu is disabled on a pre-v9 keyboard but
+  the rest of the app still connects; within a glyph-script-capable device the script set is
+  free to grow.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.

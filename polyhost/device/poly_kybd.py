@@ -29,11 +29,55 @@ PACKED_LANG_LIST_MIN_PROTOCOL = 2
 # Minimum firmware PROTOCOL_VERSION for the idle-style get/set command (cmd 28).
 IDLE_STYLE_MIN_PROTOCOL = 4
 
+# Minimum firmware PROTOCOL_VERSION for the SET_BRIGHTNESS flags byte (cmd 13:
+# volatile / host-auto). Older firmware ignores the flags byte. Mirrors
+# poly_core._BRIGHTNESS_FLAGS_PROTOCOL.
+BRIGHTNESS_FLAGS_MIN_PROTOCOL = 5
+
+# Minimum firmware PROTOCOL_VERSION for the per-bundle font-pack version block in
+# the GET_ID reply (cmd 6) — the host reads it to auto-flash stale bundles.
+FONTPACK_MIN_PROTOCOL = 6
+
 # Minimum firmware PROTOCOL_VERSION for the active host-OS get/set command (cmd 29).
 OS_MIN_PROTOCOL = 7
 
 # Minimum firmware PROTOCOL_VERSION for the glyph-script get/set command (cmd 30).
 GLYPH_SCRIPT_MIN_PROTOCOL = 9
+
+# Minimum firmware PROTOCOL_VERSION for the packed plain-overlay header (cmd 0x0A:
+# modifier and segment share one byte, (segment << 4) | modifier). Pre-v11 firmware
+# expects them as two separate header bytes — see send_overlay_for_keycode.
+OVERLAY_PACKED_HEADER_MIN_PROTOCOL = 11
+
+# Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
+# single source of truth for per-feature gating: the host connects across a range
+# of protocols (see polyhost/core/decisions.decide_reconnect_apply) and disables
+# only the individual features the firmware is too old for, instead of blocking the
+# whole connection on a protocol mismatch.
+FEATURE_MIN_PROTOCOL = {
+    "packed_lang_list": PACKED_LANG_LIST_MIN_PROTOCOL,
+    "idle_style": IDLE_STYLE_MIN_PROTOCOL,
+    "brightness_flags": BRIGHTNESS_FLAGS_MIN_PROTOCOL,
+    "fontpack": FONTPACK_MIN_PROTOCOL,
+    "os": OS_MIN_PROTOCOL,
+    "glyph_script": GLYPH_SCRIPT_MIN_PROTOCOL,
+    "overlay_packed_header": OVERLAY_PACKED_HEADER_MIN_PROTOCOL,
+}
+
+# The lowest firmware protocol the host can talk to at all: below this it cannot
+# even enumerate the language list (no ASCII fallback), so connecting is pointless.
+# The connect gate refuses anything lower and tells the user to update the firmware.
+MIN_SUPPORTED_PROTOCOL = PACKED_LANG_LIST_MIN_PROTOCOL
+
+
+def protocol_supports(protocol: int | None, feature: str) -> bool:
+    """Pure feature gate: does a device advertising ``protocol`` support ``feature``?
+
+    ``protocol`` may be ``None`` (very old firmware without a P token) — treated as
+    0, i.e. supports nothing gated here. Shared by :class:`PolyKybd` and the GUI
+    client so the feature/min-protocol table lives in exactly one place.
+    """
+    return (protocol or 0) >= FEATURE_MIN_PROTOCOL[feature]
 
 # Console self-heal (see get_console_output): reopen the console interface after
 # this many consecutive failed reads (~5 s at the 250 ms poll), throttled to at
@@ -237,6 +281,28 @@ class PolyKybd:
         """Return the protocol version reported by the firmware, or None for old firmware."""
         return self.protocol_version
 
+    def supports(self, feature: str) -> bool:
+        """Does the connected firmware's protocol support ``feature``?
+
+        Names come from FEATURE_MIN_PROTOCOL. Lazily populates protocol_version
+        (via query_version_info) when it hasn't been read yet, mirroring the
+        per-feature _X_supported helpers below.
+        """
+        if self.protocol_version is None:
+            self.query_version_info()
+        return protocol_supports(self.protocol_version, feature)
+
+    def capabilities(self) -> dict:
+        """Map every known feature -> whether the connected firmware supports it.
+
+        Used to gate the GUI/CLI surfaces (and carried in the status payload so a
+        --connect client renders the same gating as the in-process app). Reads the
+        CACHED protocol only — no device I/O — so it is safe to call from the
+        no-I/O status snapshot (get_status); the probe populates protocol_version
+        before this is read on a fresh connect."""
+        return {f: protocol_supports(self.protocol_version, f)
+                for f in FEATURE_MIN_PROTOCOL}
+
     def reset_overlay_mapping(self) -> tuple[bool, Any]:
         self.log.info("Reset Overlay Mapping...")
         return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_ON, 0x80))
@@ -353,10 +419,7 @@ class PolyKybd:
         return self.hid.send_and_read_validate(compose_cmd(Cmd.IDLE_STATE, 1 if idle else 0))
 
     def _idle_style_supported(self) -> bool:
-        if self.protocol_version is None:
-            self.query_version_info()
-        return (self.protocol_version is not None
-                and self.protocol_version >= IDLE_STYLE_MIN_PROTOCOL)
+        return self.supports("idle_style")
 
     def set_idle_style(self, style: IdleStyle | int) -> tuple[bool, Any]:
         """Select the idle (anti-burn-in) display style (cmd 28, protocol v4+).
@@ -386,10 +449,7 @@ class PolyKybd:
         return False, 0
 
     def _glyph_script_supported(self) -> bool:
-        if self.protocol_version is None:
-            self.query_version_info()
-        return (self.protocol_version is not None
-                and self.protocol_version >= GLYPH_SCRIPT_MIN_PROTOCOL)
+        return self.supports("glyph_script")
 
     def set_glyph_script(self, script: GlyphScript | int) -> tuple[bool, Any]:
         """Select the glyph-script override (cmd 30, protocol v9+).
@@ -421,10 +481,7 @@ class PolyKybd:
         return False, 0
 
     def _os_supported(self) -> bool:
-        if self.protocol_version is None:
-            self.query_version_info()
-        return (self.protocol_version is not None
-                and self.protocol_version >= OS_MIN_PROTOCOL)
+        return self.supports("os")
 
     def set_os(self, os: OsType | int, pin: bool = False) -> tuple[bool, Any]:
         """Set the active host-OS identity (cmd 29, protocol v7+).
@@ -775,13 +832,24 @@ class PolyKybd:
         msg_cnt = 0
         max_msgs = self.device_settings.OVERLAY_PLAIN_DATA_REPORT_COUNT
         for msg_num in range(0, max_msgs):
-            # Protocol 11: modifier (low nibble, 0..8) and segment index (high
-            # nibble, 0..5) share one header byte, so the 4-byte header leaves a
-            # full 60-byte segment fitting the 64-byte report. Pre-v11 sent them
-            # as two separate bytes, which pushed the last data byte past the
-            # report (see the firmware v11 note).
-            cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode,
-                              (msg_num << 4) | modifier.value)
+            # The plain-overlay header is version-dependent (the one core command
+            # whose wire format changed), so we encode it for the DEVICE's protocol
+            # rather than always sending the newest form — this is what lets the
+            # host connect to a keyboard on an older protocol without corrupting
+            # overlays. Protocol 11+: modifier (low nibble, 0..8) and segment index
+            # (high nibble, 0..5) share one header byte, so the 4-byte header leaves
+            # a full 60-byte segment fitting the 64-byte report. Pre-v11: modifier
+            # and segment are two separate header bytes (the last data byte then
+            # overran the report — see the firmware v11 note; reproduced faithfully
+            # here for genuinely old firmware). For a protocol NEWER than we know we
+            # send our newest (packed) form, accepting that a future breaking change
+            # to this command is unknown to us (the newer-firmware trade-off).
+            if (self.protocol_version or 0) >= OVERLAY_PACKED_HEADER_MIN_PROTOCOL:
+                cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode,
+                                  (msg_num << 4) | modifier.value)
+            else:
+                cmd = compose_cmd(Cmd.SEND_OVERLAY, keycode,
+                                  modifier.value, msg_num)
             from_idx = msg_num * self.device_settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
             to_idx = from_idx + self.device_settings.OVERLAY_PLAIN_DATA_BYTES_PER_REPORT
             data = overlay.all_bytes[from_idx:to_idx]
