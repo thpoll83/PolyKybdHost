@@ -60,7 +60,7 @@ from polyhost.services.unicode_cache import UnicodeCache
 from polyhost._version import __version__, __protocol__
 
 from polyhost.services.updater import (
-    UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app,
+    UpdateChecker, UpdateInstaller, FwUpDownloader,
     get_last_check_time, set_last_check_time)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.dialog_util import position_near_tray
@@ -338,6 +338,9 @@ class PolyHost(QApplication):
 
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False
+        # Set when a self-update lands: main_app re-execs after exec_() returns
+        # (clean, fully-unwound loop) instead of os.execv from inside a slot.
+        self.wants_restart = False
         self.debug_mode = debug_mode
 
         # Create the menu
@@ -1720,8 +1723,11 @@ class PolyHost(QApplication):
             self._await_daemon_restart_then_relaunch()
             return
         self.log.info("Update applied, restarting...")
+        # Re-exec after the event loop unwinds (main_app checks wants_restart),
+        # not with os.execv from inside this slot while the tray/worker are
+        # still live — same clean-restart pattern as the forwarder + daemon.
+        self.wants_restart = True
         self.quit_app()
-        restart_app()
 
     def _await_daemon_restart_then_relaunch(self):
         """Client mode: after a daemon-driven self-update, the daemon re-execs
@@ -1739,8 +1745,8 @@ class PolyHost(QApplication):
 
         def _relaunch(reason):
             self.log.info("Relaunching GUI to reconnect to the core daemon (%s).", reason)
+            self.wants_restart = True
             self.quit_app()
-            restart_app()
 
         def poll():
             if self.is_closing:
