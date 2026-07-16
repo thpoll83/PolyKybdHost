@@ -44,10 +44,12 @@ SCRIPTS = ["Tengwar", "Elder Futhark Runes", "Aurebesh", "Standard Galactic",
 
 def letter_or_digit(kc: str):
     """Return ('a'..'z') / ('0'..'9') for an alpha/number keycode, else None."""
-    if kc.startswith("KC_") and len(kc) == 4 and kc[3].isalpha():
-        return kc[3].lower()
-    if kc in {f"KC_{d}" for d in "1234567890"}:
-        return kc[3]
+    if kc.startswith("KC_") and len(kc) == 4:
+        ch = kc[3]
+        if ch.isalpha():
+            return ch.lower()
+        if ch.isdigit():
+            return ch
     return None
 
 
