@@ -67,7 +67,15 @@ def script_glyph_image(font, ch: str):
     cp = font.first + idx
     if not (font.first <= cp <= font.last):
         return None
-    return FR.keycap_image(font, cp, scale=1, fg=255, bg=0)
+    # The firmware draws a glyph-script override CENTERED in both axes from the
+    # glyph's pixel bbox (poly_keymap.c render_key), NOT at the fixed y=23 Latin
+    # baseline. The script fonts are ~30 px tall, so a baseline draw pushes a tall
+    # glyph's top above 0 and clips it (Amiga/C64/APL ran ~10 px off the top). Match
+    # the firmware: centre the raw glyph bitmap in the 72x40 window.
+    g = FR.glyph_to_image(font, cp, scale=1, fg=255, bg=0)
+    canvas = Image.new("L", (FR.OLED_W, FR.OLED_H), 0)
+    canvas.paste(g, ((FR.OLED_W - g.width) // 2, (FR.OLED_H - g.height) // 2))
+    return canvas
 
 
 def script_frame(base_frame, matrix_kc, font):
