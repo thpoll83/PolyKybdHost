@@ -90,6 +90,17 @@ def normalize_kc(tok: str) -> str:
     return KC_ALIAS.get(tok, tok)
 
 
+def _is_escaped(text: str, pos: int) -> bool:
+    """True if text[pos] is escaped by an ODD run of preceding backslashes, so a
+    literal ending in an escaped backslash (e.g. "\\\\") isn't read as still-open."""
+    n = 0
+    pos -= 1
+    while pos >= 0 and text[pos] == '\\':
+        n += 1
+        pos -= 1
+    return n % 2 == 1
+
+
 def _split_ternary(expr: str):
     """Split ``cond ? A : B`` at the TOP level, respecting parentheses, quoted
     literals and NESTED ternaries (a branch may itself be ``x ? y : z``). Returns
@@ -99,7 +110,7 @@ def _split_ternary(expr: str):
     depth = inq = 0
     qpos = -1
     for i, ch in enumerate(expr):
-        if ch == '"' and (i == 0 or expr[i - 1] != '\\'):
+        if ch == '"' and not _is_escaped(expr, i):
             inq = not inq
         elif not inq:
             if ch == '(':
@@ -114,7 +125,7 @@ def _split_ternary(expr: str):
     cond, rest = expr[:qpos], expr[qpos + 1:]
     depth = inq = tern = 0
     for i, ch in enumerate(rest):
-        if ch == '"' and (i == 0 or rest[i - 1] != '\\'):
+        if ch == '"' and not _is_escaped(rest, i):
             inq = not inq
         elif not inq:
             if ch == '(':
@@ -139,7 +150,7 @@ def _peel_parens(expr: str) -> str:
     while len(expr) >= 2 and expr[0] == '(' and expr[-1] == ')':
         depth, inq, wraps = 0, False, True
         for i, ch in enumerate(expr):
-            if ch == '"' and (i == 0 or expr[i - 1] != '\\'):
+            if ch == '"' and not _is_escaped(expr, i):
                 inq = not inq
             elif not inq and ch == '(':
                 depth += 1

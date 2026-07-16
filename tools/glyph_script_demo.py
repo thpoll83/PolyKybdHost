@@ -105,6 +105,8 @@ def main():
     ap.add_argument('--first-hold', type=int, default=2200)
     ap.add_argument('--still', action='store_true')
     args = ap.parse_args()
+    if args.scale <= 0:
+        ap.error("--scale must be greater than zero")
 
     op.OVERSHOOT = 0
     exclude = {m.strip() for m in args.exclude.split(';') if m.strip()}
@@ -115,7 +117,7 @@ def main():
 
     matrices = parse_layout_matrix(os.path.join(pk, 'split72', 'keyboard.json'))
     kcs = parse_base_layer_keycodes(os.path.join(pk, 'split72', 'keymaps', 'default', 'keymap.c'))
-    matrix_kc = dict(zip(matrices, kcs))
+    matrix_kc = dict(zip(matrices, kcs, strict=True))
     static_map = parse_static_text_map(os.path.join(pk, 'keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     # kc_os_gui_icon() is an OS-dependent function, not a named glyph — resolve the
@@ -134,7 +136,7 @@ def main():
     renderer.compact_halves(lambda mp: 'L' if int(mp.split(',')[0]) < 5 else 'R', gap_px=args.gap)
 
     base_frame = build_frame(L, R, matrix_kc, args.lang, static_map)
-    steps = [("Standard", None)] + [(name, font) for name, font in zip(SCRIPTS, pack.fonts)]
+    steps = [("Standard", None)] + [(name, font) for name, font in zip(SCRIPTS, pack.fonts, strict=True)]
 
     try:
         cap_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
@@ -165,7 +167,8 @@ def main():
     if args.still:
         png = os.path.splitext(args.out)[0] + '_still.png'
         os.makedirs(os.path.dirname(os.path.abspath(png)), exist_ok=True)
-        imgs[0].save(png); print(f"  wrote {png}")
+        imgs[0].save(png)
+        print(f"  wrote {png}")
 
     pal = imgs[0].quantize(colors=128, method=Image.MEDIANCUT)
     pimgs = [im.quantize(palette=pal, dither=Image.NONE) for im in imgs]
