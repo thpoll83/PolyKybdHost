@@ -52,6 +52,7 @@ class Cmd(Enum):
     IDLE_STYLE = 28  # get/set idle (anti-burn-in) display style (protocol v4+)
     SET_OS = 29  # get/set the active host-OS identity (protocol v7+)
     GLYPH_SCRIPT = 30  # get/set glyph-script override (standard / fantasy, protocol v9+)
+    REPLAY_ANIM = 31  # replay the one-time startup ("Eden") animation on demand
 
 
 class OsType(Enum):
@@ -87,10 +88,14 @@ class IdleStyle(Enum):
     older than the feature) falls back to / NACKs it — surfaced as a plain error.
     (Named for the cheat code, matching the tray/CLI label; the firmware calls the
     same value IDLE_STYLE_IDDQD internally — the wire value 2 is what's shared.)
+    EDEN loops the "Eden" boot animation as a screensaver (split72 only), dismissed
+    by the first key press; on split42 the animation is a no-op and it behaves like
+    PULSE.
     """
     PULSE = 0
     JITTER = 1
     IDDQD = 2
+    EDEN = 3
 
 
 class GlyphScript(Enum):

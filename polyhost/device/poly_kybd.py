@@ -420,6 +420,16 @@ class PolyKybd:
             pass
         return False, 0
 
+    def replay_startup_anim(self) -> tuple[bool, Any]:
+        """Replay the one-time startup ("Eden") animation on demand (cmd 31).
+
+        The firmware plays it once on first boot; this re-triggers it without a
+        power cycle. The master starts it locally and syncs a nonce so the slave
+        half replays too."""
+        self.log.info("Replaying startup animation...")
+        return self.hid.send_and_read_validate(
+            compose_cmd(Cmd.REPLAY_ANIM), 100, expect(Cmd.REPLAY_ANIM))
+
     def _os_supported(self) -> bool:
         if self.protocol_version is None:
             self.query_version_info()
