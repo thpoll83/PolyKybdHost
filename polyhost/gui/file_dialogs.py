@@ -37,8 +37,12 @@ def _is_kde():
     return bool(os.environ.get("KDE_FULL_SESSION"))
 
 
-def _use_native():
-    """Whether to let Qt use the OS-native dialog (see module docstring)."""
+def use_native():
+    """Whether to let Qt use the OS-native dialog (see module docstring).
+
+    Public so other pickers (e.g. ``cmd_menu._get_open_file_explicit``) share
+    the exact same per-desktop policy.
+    """
     if sys.platform in ('win32', 'darwin'):
         return True
     return _is_kde()
@@ -46,7 +50,7 @@ def _use_native():
 
 def _dialog_options():
     """No native flag when native is wanted; DontUseNativeDialog otherwise."""
-    if _use_native():
+    if use_native():
         return QFileDialog.Options()
     return QFileDialog.DontUseNativeDialog
 

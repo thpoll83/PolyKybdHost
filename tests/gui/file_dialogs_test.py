@@ -16,7 +16,7 @@ class FileDialogPolicyTest(unittest.TestCase):
         with patch.object(fd, "sys") as m_sys, \
              patch.dict(fd.os.environ, environ, clear=True):
             m_sys.platform = platform
-            return fd._use_native(), fd._dialog_options()
+            return fd.use_native(), fd._dialog_options()
 
     def test_windows_native(self):
         native, opts = self._opts({}, "win32")
