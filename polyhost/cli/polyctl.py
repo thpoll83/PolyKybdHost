@@ -131,7 +131,18 @@ def _print_result(result):
 
 def _cmd_status(client, args):
     result = client.call(protocol.M_STATUS_GET)
+    caps = result.pop("capabilities", None) if isinstance(result, dict) else None
     _print_result(result)
+    # Render per-feature support on its own lines rather than as a raw dict. The
+    # host connects across a range of firmware protocols and gates each feature by
+    # its minimum protocol, so this shows exactly which features this keyboard's
+    # firmware is too old (or too new) for.
+    if isinstance(caps, dict) and caps:
+        supported = sorted(f for f, ok in caps.items() if ok)
+        unsupported = sorted(f for f, ok in caps.items() if not ok)
+        print(f"capabilities: {', '.join(supported) or '(none)'}")
+        if unsupported:
+            print(f"unsupported (update firmware): {', '.join(unsupported)}")
     return 0
 
 
@@ -172,6 +183,12 @@ def _cmd_idle_style(client, args):
         value = _IDLE_STYLE_VALUES[args.style]
         client.call(protocol.M_IDLE_STYLE_SET, {"value": value})
         print(f"idle style set to {args.style} ({value})")
+    return 0
+
+
+def _cmd_newer_policy(client, args):
+    client.call(protocol.M_SET_NEWER_FW_POLICY, {"choice": args.choice})
+    print(f"newer-firmware policy set to {args.choice}")
     return 0
 
 
@@ -527,6 +544,13 @@ def build_parser():
         help="omit to print the current script; 'standard' = normal legends, "
              "any other = fantasy/retro override (needs the fantasy font-pack bundle)")
     p_glyph_script.set_defaults(func=_cmd_glyph_script)
+
+    p_newer = sub.add_parser(
+        "newer-policy",
+        help="how to handle a keyboard whose firmware is newer than this host "
+             "(ignore = connect fully, safe = restricted to update+debug)")
+    p_newer.add_argument("choice", choices=["ignore", "safe"])
+    p_newer.set_defaults(func=_cmd_newer_policy)
 
     sub.add_parser(
         "replay-anim", help="replay the one-time startup (Eden) animation on the keycaps"

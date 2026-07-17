@@ -5,7 +5,9 @@ it can be exercised without a QApplication.
 """
 import unittest
 
-from polyhost.gui.worker_bridge import decide_reconnect_apply, decide_probe_publish
+# Import the Qt-free decision logic from its canonical home so these pure-logic
+# tests run without PyQt5 (worker_bridge re-exports them for compatibility).
+from polyhost.core.decisions import decide_reconnect_apply, decide_probe_publish
 
 HOST_PROTO = 7
 HOST_VERSION = "1.2.3"
@@ -34,17 +36,70 @@ class DecideReconnectApplyTest(unittest.TestCase):
         self.assertIn("FW 1.2.3", d["text"])
         self.assertIn("P7", d["text"])
 
-    def test_protocol_mismatch_disconnects(self):
+    def test_older_protocol_connects_with_update_hint(self):
+        # A firmware older than the host (but at/above the floor) now CONNECTS and
+        # feature-gates individually, instead of being rejected outright.
         d = decide_reconnect_apply(_snap(kb_proto=6), HOST_PROTO, HOST_VERSION, False)
+        self.assertTrue(d["connected"])
+        self.assertTrue(d["compatible"])
+        self.assertTrue(d["do_post_connect"])
+        self.assertEqual(d["icon"], "sync_problem.svg")
+        self.assertIn("P6", d["text"])
+        self.assertIn("some features need a firmware update", d["text"])
+
+    def test_newer_protocol_undecided_defaults_to_safe_and_prompts(self):
+        # A firmware NEWER than the host, no policy chosen yet: connect but in
+        # restricted safe mode, and flag that the UI should prompt.
+        d = decide_reconnect_apply(_snap(kb_proto=9), HOST_PROTO, HOST_VERSION, False)
+        self.assertTrue(d["connected"])          # stays connected (no churn)
+        self.assertFalse(d["compatible"])        # but no operational post-connect
+        self.assertFalse(d["do_post_connect"])
+        self.assertTrue(d["safe_mode"])
+        self.assertTrue(d["newer_fw_pending"])
+        self.assertEqual(d["icon"], "sync_problem.svg")
+        self.assertIn("safe mode", d["text"])
+
+    def test_newer_protocol_safe_policy_restricts_without_prompt(self):
+        d = decide_reconnect_apply(_snap(kb_proto=9), HOST_PROTO, HOST_VERSION, False,
+                                   newer_fw_policy="safe")
+        self.assertTrue(d["connected"])
+        self.assertFalse(d["compatible"])
+        self.assertTrue(d["safe_mode"])
+        self.assertFalse(d["newer_fw_pending"])  # decided -> no prompt
+
+    def test_newer_protocol_ignore_policy_connects_fully(self):
+        d = decide_reconnect_apply(_snap(kb_proto=9), HOST_PROTO, HOST_VERSION, False,
+                                   newer_fw_policy="ignore")
+        self.assertTrue(d["connected"])
+        self.assertTrue(d["compatible"])
+        self.assertTrue(d["do_post_connect"])
+        self.assertFalse(d["safe_mode"])
+        self.assertFalse(d["newer_fw_pending"])
+        self.assertIn("update the host app", d["text"])
+
+    def test_newer_protocol_ignore_version_overrides_safe_default(self):
+        # --ignore-version means "connect fully" and wins over the safe default.
+        d = decide_reconnect_apply(_snap(kb_proto=9), HOST_PROTO, HOST_VERSION, True)
+        self.assertTrue(d["connected"])
+        self.assertTrue(d["compatible"])
+        self.assertFalse(d["safe_mode"])
+        self.assertFalse(d["newer_fw_pending"])
+
+    def test_below_floor_refuses(self):
+        # Below the minimum supported protocol the host cannot even enumerate
+        # languages, so it refuses and tells the user to update the firmware.
+        d = decide_reconnect_apply(_snap(kb_proto=1), HOST_PROTO, HOST_VERSION, False,
+                                   min_supported=2)
         self.assertFalse(d["connected"])
         self.assertFalse(d["compatible"])
         self.assertEqual(d["icon"], "sync_disabled.svg")
-        self.assertIn("Protocol mismatch", d["text"])
-        self.assertIn("host P7", d["text"])
-        self.assertIn("firmware P6", d["text"])
+        self.assertIn("too old", d["text"])
+        self.assertIn("P1", d["text"])
 
-    def test_protocol_mismatch_bypassed_by_ignore_version(self):
-        d = decide_reconnect_apply(_snap(kb_proto=6), HOST_PROTO, HOST_VERSION, True)
+    def test_below_floor_bypassed_by_ignore_version(self):
+        # --ignore-version still forces a connect even below the floor.
+        d = decide_reconnect_apply(_snap(kb_proto=1), HOST_PROTO, HOST_VERSION, True,
+                                   min_supported=2)
         self.assertTrue(d["connected"])
         self.assertTrue(d["compatible"])
         self.assertEqual(d["icon"], "sync_problem.svg")

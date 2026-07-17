@@ -98,6 +98,23 @@ class PolyctlTest(unittest.TestCase):
         self.assertEqual(params, {"lang": "deDE"})
         self.assertIn("language set to deDE", out)
 
+    def test_newer_policy_sends_choice(self):
+        rc, out, err, server = run_main(
+            ["newer-policy", "ignore"],
+            {protocol.M_SET_NEWER_FW_POLICY: {"choice": "ignore"}})
+        self.assertEqual(rc, 0)
+        self.assertEqual(dict(server.received)[protocol.M_SET_NEWER_FW_POLICY],
+                         {"choice": "ignore"})
+        self.assertIn("newer-firmware policy set to ignore", out)
+
+    def test_status_shows_safe_mode_and_capabilities(self):
+        status = {"connected": True, "safe_mode": True, "newer_fw_pending": True,
+                  "capabilities": {"idle_style": False, "glyph_script": False}}
+        rc, out, err, _ = run_main(["status"], {protocol.M_STATUS_GET: status})
+        self.assertEqual(rc, 0)
+        self.assertIn("safe_mode: True", out)
+        self.assertIn("unsupported (update firmware): glyph_script, idle_style", out)
+
     def test_error_response_returns_nonzero_and_prints_message(self):
         rc, out, err, _ = run_main(
             ["lang", "set", "xxYY"],

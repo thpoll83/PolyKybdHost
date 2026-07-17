@@ -25,6 +25,9 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core.connected = connected
     core.device_present = connected
     core.last_applied_connected = connected
+    core.safe_mode = False
+    core._newer_fw_policy = None
+    core._newer_fw_policy_proto = None
     core.kb_sw_version = None
     core.needs_overlay_reset = False
     core._probe_fail_streak = 0
@@ -39,6 +42,9 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core.device_mgr = MagicMock()
     core.overlay_handler = MagicMock()
     core.keeb = MagicMock()
+    # Real dict so _reported_capabilities can mask it to all-False in safe mode.
+    core.keeb.capabilities.return_value = {
+        "idle_style": True, "glyph_script": True, "os": True}
     # apply_reconnect re-asserts the host brightness mode on connect via
     # refresh_daylight_brightness(), which reads core.sunlight (set in the real
     # __init__ this bare core skips).
@@ -133,14 +139,67 @@ class TestApplyReconnect(unittest.TestCase):
         self.assertTrue(applied["do_overlay_reset"])
         core.keeb.reset_overlays_and_usage.assert_called_once()
 
-    def test_protocol_mismatch_keeps_presence_for_flashing(self):
+    def test_below_floor_protocol_keeps_presence_for_flashing(self):
+        # Firmware BELOW the supported floor is still refused (host can't even
+        # enumerate languages), but presence is kept so it can be flashed.
         core = make_core()
-        applied = core.apply_reconnect(connect_snapshot(kb_proto=__protocol__ + 1))
+        applied = core.apply_reconnect(connect_snapshot(kb_proto=1))
         self.assertFalse(core.connected)
         self.assertTrue(core.device_present)      # GET_ID answered → flashable
         self.assertFalse(applied["decision"]["do_post_connect"])
         self.assertFalse(applied["do_overlay_reset"])
         core.overlay_handler.force_resend.assert_not_called()
+
+    def test_older_within_range_connects_and_runs_post_connect(self):
+        # An OLDER (but at/above the floor) protocol connects and runs the
+        # post-connect work; individual features self-gate by protocol.
+        core = make_core()
+        applied = core.apply_reconnect(connect_snapshot(kb_proto=__protocol__ - 1))
+        self.assertTrue(core.connected)
+        self.assertTrue(applied["decision"]["do_post_connect"])
+        self.assertFalse(core.safe_mode)
+        core.overlay_handler.force_resend.assert_called_once()
+
+    def test_newer_undecided_enters_safe_mode_and_flags_pending(self):
+        # NEWER firmware, no policy chosen: connected but restricted safe mode,
+        # no post-connect, and the status flags newer_fw_pending for the dialog.
+        core = make_core()
+        events = []
+        core.subscribe(lambda n, p: events.append((n, p)))
+        applied = core.apply_reconnect(connect_snapshot(kb_proto=__protocol__ + 1))
+        self.assertTrue(core.connected)
+        self.assertTrue(core.safe_mode)
+        self.assertFalse(applied["decision"]["do_post_connect"])
+        core.overlay_handler.force_resend.assert_not_called()
+        st = events[-1][1]
+        self.assertTrue(st["safe_mode"])
+        self.assertTrue(st["newer_fw_pending"])
+        # Capabilities are reported all-False in safe mode.
+        self.assertTrue(all(v is False for v in st["capabilities"].values()))
+
+    def test_newer_ignore_policy_connects_fully(self):
+        core = make_core()
+        core.keeb.get_protocol_version.return_value = __protocol__ + 1
+        ok, _ = core.set_newer_firmware_policy("ignore")
+        self.assertTrue(ok)
+        self.assertFalse(core.last_applied_connected)  # forced re-apply
+        applied = core.apply_reconnect(connect_snapshot(kb_proto=__protocol__ + 1))
+        self.assertTrue(core.connected)
+        self.assertFalse(core.safe_mode)
+        self.assertTrue(applied["decision"]["do_post_connect"])
+        core.overlay_handler.force_resend.assert_called_once()
+
+    def test_policy_reset_when_protocol_changes(self):
+        # A remembered choice for one protocol is forgotten if the device reports a
+        # different protocol (e.g. after a firmware flash) -> prompt again.
+        core = make_core()
+        core.keeb.get_protocol_version.return_value = __protocol__ + 1
+        core.set_newer_firmware_policy("ignore")
+        # Device now reports a different (still newer) protocol.
+        applied = core.apply_reconnect(connect_snapshot(kb_proto=__protocol__ + 2))
+        self.assertIsNone(core._newer_fw_policy)
+        self.assertTrue(core.safe_mode)
+        self.assertTrue(applied["decision"]["newer_fw_pending"])
 
     def test_disconnect_clears_state_without_version_queries(self):
         core = make_core(connected=True)

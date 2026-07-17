@@ -220,6 +220,18 @@ class PolyHost(QApplication):
         super().__init__(sys.argv)
         # Wall-clock start, for the About dialog's uptime line.
         self._start_time = time.monotonic()
+        # Per-feature support of the connected firmware (feature -> bool), cached
+        # from the reconnect/status payload so feature submenus can be gated by the
+        # device's protocol, not just by connectivity. See self.supports().
+        self._capabilities = {}
+        # Newer-firmware dialog bookkeeping (see _maybe_prompt_newer_firmware):
+        # remember which protocol we've already prompted for so the ~1 s reconnect
+        # probe can't re-raise the modal, and guard against stacking it.
+        self._newer_fw_prompt_open = False
+        self._newer_fw_prompted_proto = None
+        # The Debugging submenu (created only with --debug), kept reachable so it
+        # stays enabled in newer-firmware safe mode. None when debug is off.
+        self._debug_menu = None
         # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
         from polyhost.util.macos_ui import hide_dock_icon
         hide_dock_icon()
@@ -515,6 +527,7 @@ class PolyHost(QApplication):
 
         if debug_mode > 0:
             debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
+            self._debug_menu = debug_menu
             self.debug_lang_menu = debug_menu.addMenu(get_icon("language.svg"), "Change System Input Language")
             # Font-pack inspector: offline tool (no device needed), so it's
             # available in both modes — kept behind the debug flag.
@@ -666,6 +679,12 @@ class PolyHost(QApplication):
         self.core.device_present = value
 
     @property
+    def safe_mode(self):
+        """Newer-firmware restricted mode (core is the source of truth; RemoteCore
+        mirrors it from the daemon's status)."""
+        return getattr(self.core, "safe_mode", False)
+
+    @property
     def paused(self):
         return self.core.paused
 
@@ -716,8 +735,51 @@ class PolyHost(QApplication):
         only needs a present device, not a compatible one."""
         return (self.connected or self.device_present) and not self.paused
 
+    def supports(self, feature):
+        """Whether the connected firmware's protocol supports ``feature``.
+
+        Reads the capabilities cached from the reconnect/status payload
+        (``poly_kybd.FEATURE_MIN_PROTOCOL`` names). Used to gate feature submenus
+        by the device's protocol now that a protocol-mismatched keyboard still
+        connects — a feature its firmware is too old for is hidden/disabled rather
+        than only erroring on click. Works identically in-process and client mode."""
+        return bool(self._capabilities.get(feature))
+
+    def _maybe_prompt_newer_firmware(self, pending, proto, name, fw):
+        """Raise the newer-firmware dialog when the core reports an undecided
+        newer-firmware state (``newer_fw_pending``). Shown once per protocol per
+        session — the guard stops the ~1 s reconnect probe re-raising it, and a
+        different (newly flashed) protocol re-prompts. Driven off the status payload
+        so it works in-process and in --connect client mode alike."""
+        if (not pending or proto is None
+                or self._newer_fw_prompt_open
+                or self._newer_fw_prompted_proto == proto):
+            return
+        self._newer_fw_prompted_proto = proto
+        self._newer_fw_prompt_open = True
+        try:
+            from polyhost.gui.newer_firmware_dialog import confirm_newer_firmware
+            choice = confirm_newer_firmware(__protocol__, proto, name, fw)
+        finally:
+            self._newer_fw_prompt_open = False
+        if choice == "update":
+            # Look for a host-app update that matches the firmware; if none is
+            # found (or the check errors), fall back to safe mode. force=True so a
+            # throttled auto-check doesn't swallow our callbacks.
+            started = self._start_update_check(
+                on_no_update=lambda: self.core.set_newer_firmware_policy("safe"),
+                on_check_error=lambda _msg=None: self.core.set_newer_firmware_policy("safe"),
+                force=True)
+            if not started:
+                self.core.set_newer_firmware_policy("safe")
+        else:
+            # "ignore" -> connect fully; "safe" (or dismissed) -> stay restricted.
+            self.core.set_newer_firmware_policy(choice if choice == "ignore" else "safe")
+
     def managed_connection_status(self):
-        enabled = self.connected and not self.paused
+        # Newer-firmware safe mode: connected but operationally restricted — only
+        # the firmware-update mechanism + debugging stay live, like a mismatch.
+        enabled = self.connected and not self.paused and not self.safe_mode
         fw_enabled = self._fw_actions_allowed()
         for action in self.menu.actions():
             action.setEnabled(enabled)
@@ -725,6 +787,17 @@ class PolyHost(QApplication):
         # above just disabled its parent action on a mismatch). Both modes.
         self.cmdMenu.update_enabled(enabled, fw_enabled)
         self.firmware_update_action.setEnabled(fw_enabled)
+        # Feature submenus gate on the DEVICE's protocol, not just connectivity:
+        # a protocol-mismatched keyboard now connects, so disable the submenus
+        # whose firmware support is missing instead of letting them error on click
+        # (the blanket loop above already set them to `enabled`).
+        self.idle_style_menu.menuAction().setEnabled(enabled and self.supports("idle_style"))
+        self.glyph_script_menu.menuAction().setEnabled(enabled and self.supports("glyph_script"))
+        # In safe mode the operational menu above is greyed, but debugging stays
+        # available (its offline entries — e.g. the font-pack inspector — work with
+        # no device); firmware update is already re-enabled via fw_enabled below.
+        if self._debug_menu is not None:
+            self._debug_menu.menuAction().setEnabled(self.safe_mode or enabled)
         # Available in both modes (driven via core methods).
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
@@ -773,9 +846,20 @@ class PolyHost(QApplication):
         applied = self.core.apply_reconnect(snapshot)
         if applied is None:
             return
+        # Refresh the cached per-feature capabilities from the (now-populated)
+        # device protocol so the feature-submenu gating below reflects this probe.
+        # Use the core's reported view so safe mode masks them to all-False, same
+        # as a --connect client sees.
+        self._capabilities = self.core._reported_capabilities()
         connected_now = applied["connected_now"]
         response = applied["lang"]
         decision = applied["decision"]
+        # Prompt for a newer-firmware choice off the same decision the core made
+        # (mirrors the client path, which reads it from the status payload).
+        if decision is not None:
+            self._maybe_prompt_newer_firmware(
+                decision.get("newer_fw_pending"), snapshot.get("kb_proto"),
+                snapshot.get("name") or "", snapshot.get("kb_version") or "")
 
         if decision is not None:
             if decision["icon"] is not None:
@@ -855,6 +939,14 @@ class PolyHost(QApplication):
         first connected render rather than only on state_changed."""
         if self.paused or not isinstance(payload, dict):
             return
+        # Cache the daemon-reported per-feature capabilities for menu gating; the
+        # daemon carries them on every status_changed (a state-change event may be
+        # missed by a late-attaching client, so fall back to the status snapshot).
+        caps = payload.get("capabilities")
+        if caps is None:
+            caps = self.core.status_snapshot().get("capabilities")
+        if caps is not None:
+            self._capabilities = caps
         connected = bool(payload.get("connected"))
         self.status.setIcon(get_icon(payload.get("icon") or
                                      ("sync.svg" if connected else "sync_disabled.svg")))
@@ -871,6 +963,15 @@ class PolyHost(QApplication):
 
         self.managed_connection_status()
         self.icon_manager.update()
+
+        # Newer-firmware prompt: the daemon flags an undecided newer-firmware
+        # state in the status; the snapshot backfills fields a steady-state event
+        # omits (and covers a late-attaching client).
+        snap = self.core.status_snapshot()
+        self._maybe_prompt_newer_firmware(
+            payload.get("newer_fw_pending", snap.get("newer_fw_pending")),
+            payload.get("protocol", snap.get("protocol")),
+            snap.get("name") or "", snap.get("fw_version") or "")
 
         if connected and lang and self.current_lang != lang:
             self.icon_manager.set_thinking()
@@ -1067,9 +1168,11 @@ class PolyHost(QApplication):
         # Client mode edits the DAEMON's settings over RPC (the local file may
         # be shared when co-located, but the daemon holds the live copy).
         current = self.core.settings_list() if self.client_mode else self.poly_settings.get_all()
-        # Offer the glyph-script reset button when a device is present (works over
-        # RPC in client mode too); it force-restores the normal language legends.
-        reset_cb = self.reset_glyph_script_to_standard if self.device_present else None
+        # Offer the glyph-script reset button when the connected firmware supports
+        # glyph scripts (v9+; works over RPC in client mode too); it force-restores
+        # the normal language legends. Gated on the capability, not mere presence,
+        # so a keyboard too old for cmd 30 doesn't show a button that only errors.
+        reset_cb = self.reset_glyph_script_to_standard if self.supports("glyph_script") else None
         eden_cb = self.replay_eden_animation if self.device_present else None
         dlg.setup(current, self.debug_mode, reset_glyph_script=reset_cb, replay_eden=eden_cb)
         if dlg.exec_() == QDialog.Accepted:

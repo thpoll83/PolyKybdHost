@@ -20,6 +20,7 @@ from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_data import OverlayData
 from polyhost.device.poly_kybd import PolyKybd
+from polyhost._version import __protocol__
 from polyhost.input.unicode_input import InputMethod
 
 from tests.device.fake_hid import FakeHidDevice, make_hid_helper, pad, ack, nack
@@ -46,6 +47,10 @@ def make_keeb(replies=None, auto_ack=False, settings=None):
     keeb = PolyKybd(DeviceSettings(), settings or StubPolySettings())
     device = FakeHidDevice(replies=replies, auto_ack=auto_ack)
     keeb.hid = make_hid_helper(device)
+    # Represent a current-firmware device so protocol-gated paths (e.g. the v11
+    # packed plain-overlay header) take their modern branch. Version-parse tests
+    # call query_version_info(), which overwrites this from the GET_ID reply.
+    keeb.protocol_version = __protocol__
     return keeb, device
 
 
