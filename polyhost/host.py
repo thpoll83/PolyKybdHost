@@ -1500,9 +1500,8 @@ class PolyHost(QApplication):
         dlg.exec_()
 
     def send_shortcuts(self):
-        file_name = get_open_file_name(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
-        if file_name[0]:
-            path = file_name[0]
+        path, _ = get_open_file_name(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
+        if path:
 
             def _job(cancel):
                 for entry in self.device_mgr.all_entries:
@@ -1616,8 +1615,8 @@ class PolyHost(QApplication):
 
     def read_overlay_mapping_file(self, file):
         if not file:
-            file = get_open_file_name(None, 'Open file', '', "PolyKybd overlay mapping (*.poly.yaml)")
-        if len(file) > 0:
+            file, _ = get_open_file_name(None, 'Open file', '', "PolyKybd overlay mapping (*.poly.yaml)")
+        if file:
             self.core.load_overlay_mapping(file)
 
     def save_overlay_mapping_file(self, filename="overlay-mapping.poly.yaml"):
