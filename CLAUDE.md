@@ -118,6 +118,19 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   lists supported/unsupported features. This replaced the old exact-match gate that greyed
   out the **whole** menu on any mismatch (which had "been forgotten twice", leaving current
   keyboards rejected).
+- **Every new device-facing command MUST be version-gated — no exceptions.** When you add a
+  HID command that the firmware only understands from protocol **N**: add a
+  `FEATURE_MIN_PROTOCOL` entry (`device/poly_kybd.py`); guard the `PolyKybd` setter with
+  `self.supports("<feature>")` (return the "firmware too old" error when unsupported) and the
+  getter likewise; gate the GUI menu in `host.py` `managed_connection_status` via
+  `self.supports(...)`; surface it in `polyctl`; and bump `__protocol__` + the firmware
+  `PROTOCOL_VERSION` to **N** in the same change. If the command *changes an existing
+  command's wire format*, ALSO add an encode-branch on `self.protocol_version` (see the
+  plain-overlay upload below). An **ungated** command silently connects then NACKs at
+  runtime on an older keyboard instead of cleanly disabling — the exact failure the
+  range-connect model exists to prevent, and the kind of gate that "has been forgotten
+  twice". The capability tests in `tests/device/poly_kybd_capabilities_test.py` are the
+  pattern to extend.
 - **Wire-format-divergent commands are ENCODED for the device's protocol, not blocked.**
   The only core command whose wire format ever changed is the **plain-overlay upload**
   (P11 packed the modifier+segment into one header byte). `send_overlay_for_keycode`
@@ -388,6 +401,14 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
   - **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
+  - **To run the WHOLE suite** (not just `tests.device.*` — do this after any change touching
+    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5`
+    (pip) **and** `xvfb x11-xserver-utils` (apt), run under `xvfb-run -a .venv/bin/python -m
+    unittest discover -s ./tests -p "*_test.py"`. Without those deps `services/updater`,
+    `sunlight_helper`, `langcode_flag`, `win_helper_parse`, and the `host_client`
+    GUI-subprocess tests **ERROR and masquerade as failures** — they are missing-dependency
+    env failures, not regressions (confirm by `git stash` + re-running on the pristine tree).
+    A fully green run prints `OK (skipped=N)` with the env-gated tests skipped, not errored.
 - **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
 - **No *test* CI**: no workflow runs the unit tests. (The repo *does* have two
