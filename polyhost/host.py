@@ -60,7 +60,7 @@ from polyhost.services.unicode_cache import UnicodeCache
 from polyhost._version import __version__, __protocol__
 
 from polyhost.services.updater import (
-    UpdateChecker, UpdateInstaller, FwUpDownloader, restart_app,
+    UpdateChecker, UpdateInstaller, FwUpDownloader,
     get_last_check_time, set_last_check_time)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.dialog_util import position_near_tray
@@ -350,6 +350,9 @@ class PolyHost(QApplication):
 
         self.setQuitOnLastWindowClosed(False)
         self.is_closing = False
+        # Set when a self-update lands: main_app re-execs after exec_() returns
+        # (clean, fully-unwound loop) instead of os.execv from inside a slot.
+        self.wants_restart = False
         self.debug_mode = debug_mode
 
         # Create the menu
@@ -444,7 +447,12 @@ class PolyHost(QApplication):
         # keyboard NACKs the set, surfaced by change_idle_style's error path.
         self.idle_iddqd_action = QAction("IDDQD (attract demo)", parent=self, checkable=True)
         self.idle_iddqd_action.setData(IdleStyle.IDDQD.value)
-        for act in (self.idle_pulse_action, self.idle_jitter_action, self.idle_iddqd_action):
+        # Eden screensaver: loops the boot animation (split72 only; a no-op that
+        # behaves like Pulse on split42).
+        self.idle_eden_action = QAction("Eden", parent=self, checkable=True)
+        self.idle_eden_action.setData(IdleStyle.EDEN.value)
+        for act in (self.idle_pulse_action, self.idle_jitter_action, self.idle_iddqd_action,
+                    self.idle_eden_action):
             idle_group.addAction(act)
             # noinspection PyUnresolvedReferences
             act.triggered.connect(self.change_idle_style)
@@ -1165,7 +1173,8 @@ class PolyHost(QApplication):
         # the normal language legends. Gated on the capability, not mere presence,
         # so a keyboard too old for cmd 30 doesn't show a button that only errors.
         reset_cb = self.reset_glyph_script_to_standard if self.supports("glyph_script") else None
-        dlg.setup(current, self.debug_mode, reset_glyph_script=reset_cb)
+        eden_cb = self.replay_eden_animation if self.device_present else None
+        dlg.setup(current, self.debug_mode, reset_glyph_script=reset_cb, replay_eden=eden_cb)
         if dlg.exec_() == QDialog.Accepted:
             updated = dlg.get_updated_settings()
             if self.client_mode:
@@ -1556,6 +1565,7 @@ class PolyHost(QApplication):
         self.idle_pulse_action.setChecked(bool(ok) and value == IdleStyle.PULSE.value)
         self.idle_jitter_action.setChecked(bool(ok) and value == IdleStyle.JITTER.value)
         self.idle_iddqd_action.setChecked(bool(ok) and value == IdleStyle.IDDQD.value)
+        self.idle_eden_action.setChecked(bool(ok) and value == IdleStyle.EDEN.value)
 
     def change_idle_style(self):
         value = self.sender().data()
@@ -1594,6 +1604,15 @@ class PolyHost(QApplication):
             self.log.info("Glyph script reset to standard.")
         else:
             self.report_device_result("Error", f"Could not reset glyph script: {msg}")
+
+    def replay_eden_animation(self):
+        """Replay the one-time startup ("Eden") animation on the keycaps (used by
+        the settings-dialog 'Reset Eden' button)."""
+        ok, msg = self.core.replay_startup_anim()
+        if ok:
+            self.log.info("Replaying startup animation.")
+        else:
+            self.report_device_result("Error", f"Could not replay startup animation: {msg}")
 
     def read_overlay_mapping_file(self, file):
         if not file:
@@ -1823,8 +1842,11 @@ class PolyHost(QApplication):
             self._await_daemon_restart_then_relaunch()
             return
         self.log.info("Update applied, restarting...")
+        # Re-exec after the event loop unwinds (main_app checks wants_restart),
+        # not with os.execv from inside this slot while the tray/worker are
+        # still live — same clean-restart pattern as the forwarder + daemon.
+        self.wants_restart = True
         self.quit_app()
-        restart_app()
 
     def _await_daemon_restart_then_relaunch(self):
         """Client mode: after a daemon-driven self-update, the daemon re-execs
@@ -1842,8 +1864,8 @@ class PolyHost(QApplication):
 
         def _relaunch(reason):
             self.log.info("Relaunching GUI to reconnect to the core daemon (%s).", reason)
+            self.wants_restart = True
             self.quit_app()
-            restart_app()
 
         def poll():
             if self.is_closing:

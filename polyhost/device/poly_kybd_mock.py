@@ -222,6 +222,10 @@ class PolyKybdMock:
         self._log_call("get_glyph_script")
         return True, getattr(self, "_glyph_script", 0)
 
+    def replay_startup_anim(self) -> tuple[bool, str]:
+        self._log_call("replay_startup_anim")
+        return True, ""
+
     def set_unicode_mode(self, mode: InputMethod) -> tuple[bool, str]:
         self._log_call("set_unicode_mode", mode)
         self._unicode_mode = mode

@@ -124,6 +124,11 @@ class PolyForwarder(QApplication):
         self.win = None
         self.prev_win = None
         self.is_closing = False
+        # Set when a self-update lands: main_app re-execs into the new version
+        # *after* exec_() returns (from a clean, fully-unwound event loop),
+        # mirroring how the headless daemon restarts — rather than calling
+        # os.execv from inside a live Qt slot with the tray/timer still up.
+        self.wants_restart = False
         self.title = None
         self.last_update_msec = 0
 
@@ -359,13 +364,15 @@ class PolyForwarder(QApplication):
             self._update_progress.setValue(percent)
 
     def _on_update_done(self):
-        from polyhost.services.updater import restart_app
         if self._update_progress is not None:
             self._update_progress.close()
             self._update_progress = None
         self.log.info("Update applied, restarting forwarder...")
+        # Re-exec from a clean state after the event loop exits (see
+        # `wants_restart` and main_app), not with os.execv from inside this
+        # slot while the tray/timer are still live — exactly like the daemon.
+        self.wants_restart = True
         self.quit_app()
-        restart_app()
 
     def _on_relay_needed(self, relay_path):
         if self._update_progress is not None:
@@ -393,6 +400,12 @@ class PolyForwarder(QApplication):
         if self._report_client is not None:
             self._report_client.close()
             self._report_client = None
+        # Tear the tray icon down before the loop exits so a re-exec (update
+        # restart) doesn't leave a stale icon behind / a doubled tray.
+        try:
+            self.tray.hide()
+        except Exception:  # noqa: BLE001 — tray teardown must never block quit
+            pass
         self.quit()
 
     def active_window_reporter(self):

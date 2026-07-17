@@ -208,6 +208,12 @@ def _cmd_glyph_script(client, args):
     return 0
 
 
+def _cmd_replay_anim(client, args):
+    client.call(protocol.M_REPLAY_ANIM, {})
+    print("replaying startup animation")
+    return 0
+
+
 def _cmd_overlay(client, args):
     if args.overlay_action == "send":
         client.call(protocol.M_OVERLAY_SEND, {"files": list(args.files)})
@@ -545,6 +551,10 @@ def build_parser():
              "(ignore = connect fully, safe = restricted to update+debug)")
     p_newer.add_argument("choice", choices=["ignore", "safe"])
     p_newer.set_defaults(func=_cmd_newer_policy)
+
+    sub.add_parser(
+        "replay-anim", help="replay the one-time startup (Eden) animation on the keycaps"
+    ).set_defaults(func=_cmd_replay_anim)
 
     p_ov = sub.add_parser("overlay", help="overlay control")
     ov_sub = p_ov.add_subparsers(dest="overlay_action", required=True)

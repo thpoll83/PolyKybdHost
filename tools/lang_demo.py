@@ -90,22 +90,87 @@ def normalize_kc(tok: str) -> str:
     return KC_ALIAS.get(tok, tok)
 
 
+def _is_escaped(text: str, pos: int) -> bool:
+    """True if text[pos] is escaped by an ODD run of preceding backslashes, so a
+    literal ending in an escaped backslash (e.g. "\\\\") isn't read as still-open."""
+    n = 0
+    pos -= 1
+    while pos >= 0 and text[pos] == '\\':
+        n += 1
+        pos -= 1
+    return n % 2 == 1
+
+
 def _split_ternary(expr: str):
-    """Split `cond ? A : B` at the top level (the ' : ' separator never appears
-    inside the U"..."/macro branches we care about). Returns (cond, A, B) or None."""
-    if ' ? ' not in expr:
+    """Split ``cond ? A : B`` at the TOP level, respecting parentheses, quoted
+    literals and NESTED ternaries (a branch may itself be ``x ? y : z``). Returns
+    (cond, A, B) or None. A naive first-'':''/'?' split mis-parses a nested
+    ternary (e.g. KC_LEFT_ALT's ``… ? (apple ? "Cmd" : "Alt") : (apple ? … : …)``)
+    and leaves a stray trailing '')'' on the chosen leaf."""
+    depth = inq = 0
+    qpos = -1
+    for i, ch in enumerate(expr):
+        if ch == '"' and not _is_escaped(expr, i):
+            inq = not inq
+        elif not inq:
+            if ch == '(':
+                depth += 1
+            elif ch == ')':
+                depth -= 1
+            elif ch == '?' and depth == 0:
+                qpos = i
+                break
+    if qpos < 0:
         return None
-    cond, rest = expr.split(' ? ', 1)
-    if ' : ' not in rest:
-        return None
-    a, b = rest.split(' : ', 1)
-    return cond.strip(), a.strip(), b.strip()
+    cond, rest = expr[:qpos], expr[qpos + 1:]
+    depth = inq = tern = 0
+    for i, ch in enumerate(rest):
+        if ch == '"' and not _is_escaped(rest, i):
+            inq = not inq
+        elif not inq:
+            if ch == '(':
+                depth += 1
+            elif ch == ')':
+                depth -= 1
+            elif depth == 0 and ch == '?':
+                tern += 1
+            elif depth == 0 and ch == ':':
+                if tern == 0:
+                    return cond.strip(), rest[:i].strip(), rest[i + 1:].strip()
+                tern -= 1
+    return None
+
+
+def _peel_parens(expr: str) -> str:
+    """Strip a single fully-wrapping ``(...)`` group (respecting quoted literals),
+    so a branch like ``(kc_os_is_apple() ? A : B)`` loses its wrapper. Without this
+    the chosen leaf keeps a stray trailing ``)`` (e.g. ``TECHNICAL_CONTROL)``) and
+    is rendered as raw text instead of resolving to the named glyph."""
+    expr = expr.strip()
+    while len(expr) >= 2 and expr[0] == '(' and expr[-1] == ')':
+        depth, inq, wraps = 0, False, True
+        for i, ch in enumerate(expr):
+            if ch == '"' and not _is_escaped(expr, i):
+                inq = not inq
+            elif not inq and ch == '(':
+                depth += 1
+            elif not inq and ch == ')':
+                depth -= 1
+                if depth == 0 and i != len(expr) - 1:
+                    wraps = False
+                    break
+        if wraps and depth == 0:
+            expr = expr[1:-1].strip()
+        else:
+            break
+    return expr
 
 
 def _pick_default_branch(expr: str) -> str:
     """Resolve keycode_helper.c's conditional returns for the *resting* keycap:
     state_flags = 0 (so MORE_TEXT / MODS_AS_TEXT off → the icon branch, not text),
     num_lock / caps_lock off. Picks the branch a freshly-booted key would draw."""
+    expr = _peel_parens(expr)
     t = _split_ternary(expr)
     if t is None:
         return expr.strip()

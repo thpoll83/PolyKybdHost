@@ -1002,6 +1002,10 @@ class PolyCore:
         return self._device_call(
             "glyph_script_get", lambda c: self.keeb.get_glyph_script())
 
+    def replay_startup_anim(self):
+        return self._device_call(
+            "replay_startup_anim", lambda c: self.keeb.replay_startup_anim())
+
     def enable_overlays(self):
         return self._device_call("enable_overlays", lambda c: self.keeb.enable_overlays())
 

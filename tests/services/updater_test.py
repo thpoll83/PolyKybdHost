@@ -635,6 +635,48 @@ class _Recorder:
         return [args for n, args in self.calls if n == name]
 
 
+class TestRestartApp(unittest.TestCase):
+    """restart_app() re-execs the app, and must always bring it back.
+
+    On POSIX it prefers os.execv, but a transient execv failure (e.g. ETXTBSY
+    right after pip rewrote the package) must fall back to a subprocess relaunch
+    + exit — otherwise a caller that already asked the app to quit would die
+    with no restart ("not starting up again after the update").
+    """
+
+    def test_execv_used_on_posix(self):
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+             mock.patch.object(updater.os, "execv") as execv, \
+             mock.patch.object(updater.subprocess, "Popen") as popen:
+            updater.restart_app()
+        execv.assert_called_once()
+        popen.assert_not_called()
+
+    def test_execv_failure_falls_back_to_subprocess(self):
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+             mock.patch.object(updater.os, "execv",
+                               side_effect=OSError(26, "Text file busy")), \
+             mock.patch.object(updater.subprocess, "Popen") as popen, \
+             mock.patch.object(updater.sys, "exit",
+                               side_effect=SystemExit) as sys_exit:
+            with self.assertRaises(SystemExit):
+                updater.restart_app()
+        popen.assert_called_once()
+        sys_exit.assert_called_once_with(0)
+
+    def test_windows_uses_subprocess(self):
+        with mock.patch.object(updater.sys, "platform", "win32"), \
+             mock.patch.object(updater.os, "execv") as execv, \
+             mock.patch.object(updater.subprocess, "Popen") as popen, \
+             mock.patch.object(updater.sys, "exit",
+                               side_effect=SystemExit) as sys_exit:
+            with self.assertRaises(SystemExit):
+                updater.restart_app()
+        execv.assert_not_called()
+        popen.assert_called_once()
+        sys_exit.assert_called_once_with(0)
+
+
 class TestUpdateChecker(unittest.TestCase):
     """The threaded checker maps check_latest/check_fw_latest results to callbacks.
 

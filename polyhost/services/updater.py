@@ -614,14 +614,27 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
 
 
 def restart_app() -> None:
-    """Re-exec the app. Uses subprocess+exit on Windows (execv argv issues)."""
+    """Re-exec the app. Uses subprocess+exit on Windows (execv argv issues).
+
+    On POSIX we prefer ``os.execv`` (replaces the process in place), but it can
+    fail transiently — e.g. ``ETXTBSY`` right after ``pip install -e .`` rewrote
+    the package files, or under resource pressure. Because callers invoke this
+    *after* they have already asked the app to quit, a raised ``execv`` would
+    otherwise leave the app dead with no relaunch ("not starting up again after
+    the update"). So fall back to spawning a detached child + exiting, which
+    always brings the app back.
+    """
     args = [sys.executable, "-m", "polyhost", *sys.argv[1:]]
     log.info("Restarting: %s", args)
     if sys.platform == "win32":
         subprocess.Popen(args, close_fds=False)
         sys.exit(0)
-    else:
+    try:
         os.execv(sys.executable, args)
+    except OSError as e:
+        log.warning("os.execv failed (%s); falling back to a subprocess relaunch.", e)
+        subprocess.Popen(args, close_fds=False)
+        sys.exit(0)
 
 
 def _fire(cb, *args):
