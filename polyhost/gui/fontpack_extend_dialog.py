@@ -26,7 +26,7 @@ from PyQt5.QtCore import Qt, QEvent, QThread, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QLabel, QLineEdit,
     QSpinBox, QDoubleSpinBox, QComboBox, QCheckBox, QPushButton, QScrollArea, QSlider,
-    QFileDialog, QMessageBox, QApplication, QWidget, QListWidget, QListWidgetItem,
+    QMessageBox, QApplication, QWidget, QListWidget, QListWidgetItem,
     QProgressDialog, QButtonGroup, QRadioButton,
 )
 
@@ -502,8 +502,9 @@ class FontPackExtendDialog(QDialog):
         self._ok_btn.setEnabled(False)
 
     def _browse(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Select font", "",
-                                              "Fonts (*.ttf *.otf);;All files (*)")
+        from polyhost.gui.file_dialogs import get_open_file_name
+        path, _ = get_open_file_name(self, "Select font", "",
+                                     "Fonts (*.ttf *.otf);;All files (*)")
         if path:
             self._src.setText(path)
 

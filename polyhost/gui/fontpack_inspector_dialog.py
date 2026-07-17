@@ -742,9 +742,10 @@ class FontPackInspectorDialog(QDialog):
         self._empty_note.setVisible(not has)
 
     def _open_file(self):
-        from PyQt5.QtWidgets import QFileDialog, QMessageBox
-        path, _ = QFileDialog.getOpenFileName(self, "Open font pack", "",
-                                              "Font pack (*.plyf);;All files (*)")
+        from PyQt5.QtWidgets import QMessageBox
+        from polyhost.gui.file_dialogs import get_open_file_name
+        path, _ = get_open_file_name(self, "Open font pack", "",
+                                     "Font pack (*.plyf);;All files (*)")
         if not path:
             return
         label = fpr._stem(path)
@@ -992,9 +993,10 @@ class FontPackSaveDialog(QDialog):
             f"{nonempty} glyphs · {size:,} B → save as v{self._version.value()}")
 
     def _save(self):
-        from PyQt5.QtWidgets import QFileDialog, QMessageBox
-        path, _ = QFileDialog.getSaveFileName(self, "Save font pack", f"{self._label}.plyf",
-                                              "Font pack (*.plyf)")
+        from PyQt5.QtWidgets import QMessageBox
+        from polyhost.gui.file_dialogs import get_save_file_name
+        path, _ = get_save_file_name(self, "Save font pack", f"{self._label}.plyf",
+                                     "Font pack (*.plyf)")
         if not path:
             return
         try:

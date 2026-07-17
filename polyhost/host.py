@@ -20,13 +20,13 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMessageBox,
-    QFileDialog,
     QProgressDialog,
     QSizePolicy,
     QStyle,
     QVBoxLayout, )
 
 from polyhost.device.command_ids import IdleStyle, GlyphScript
+from polyhost.gui.file_dialogs import get_open_file_name
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.update_dialog import confirm_update
 
@@ -1006,7 +1006,7 @@ class PolyHost(QApplication):
         flash it over RPC. The path must be readable by the daemon — works when
         the GUI and daemon share a filesystem (co-located / same machine).
         Progress arrives as fw_flash_*/fw_apply_* events (see _on_flash_*)."""
-        path, _ = QFileDialog.getOpenFileName(
+        path, _ = get_open_file_name(
             None, "Select firmware .bin", "", "Firmware image (*.bin)")
         if not path:
             return
@@ -1500,7 +1500,7 @@ class PolyHost(QApplication):
         dlg.exec_()
 
     def send_shortcuts(self):
-        file_name = QFileDialog.getOpenFileName(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
+        file_name = get_open_file_name(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
         if file_name[0]:
             path = file_name[0]
 
@@ -1616,7 +1616,7 @@ class PolyHost(QApplication):
 
     def read_overlay_mapping_file(self, file):
         if not file:
-            file = QFileDialog.getOpenFileName(None, 'Open file', '', "PolyKybd overlay mapping (*.poly.yaml)")
+            file = get_open_file_name(None, 'Open file', '', "PolyKybd overlay mapping (*.poly.yaml)")
         if len(file) > 0:
             self.core.load_overlay_mapping(file)
 

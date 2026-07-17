@@ -1,5 +1,4 @@
 import logging
-import sys
 from contextlib import contextmanager
 
 from PyQt5.QtWidgets import (
@@ -8,6 +7,7 @@ from PyQt5.QtWidgets import (
 
 from polyhost.device.keys import KeyCode, keycode_to_mapping_idx
 from polyhost.device.hid_fw_up import get_fw_version, validate_rp2040_firmware, validate_polykybd_firmware, apply_staged_firmware
+from polyhost.gui import file_dialogs
 from polyhost.gui.get_icon import get_icon
 
 
@@ -31,12 +31,13 @@ def _get_open_file_explicit(caption: str, name_filter: str) -> str:
     Open (never accepts on a single click).  Returns the chosen path, or '' if
     cancelled.
 
-    On Windows and macOS the OS-native picker is used directly.  On Linux the
-    Qt dialog is used instead, with single-click activation disabled — needed
-    because KDE Plasma's default "activate on single click" setting would
-    otherwise accept the dialog the moment the user clicks a file.
+    The native-vs-Qt choice follows the shared per-desktop policy in
+    ``file_dialogs`` (native on Windows/macOS/KDE, Qt's own dialog on other
+    Linux desktops).  Only the non-native Qt widget dialog needs the
+    single-click-activation fix below — the native KDE/portal dialog handles
+    single-click on its own — so it is applied only in that branch.
     """
-    if sys.platform in ('win32', 'darwin'):
+    if file_dialogs.use_native():
         path, _ = QFileDialog.getOpenFileName(None, caption, "", name_filter)
         return path
 
