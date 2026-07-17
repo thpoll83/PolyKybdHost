@@ -271,6 +271,11 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # Important for XWayland icon matching
     if sys.platform.startswith('linux'):
         QApplication.setDesktopFileName('PolyHost')
+        # On KDE, route native file dialogs through xdg-desktop-portal so the
+        # picker is the modern Plasma dialog (our pip Qt has no KDE plugin).
+        # Must run before the QApplication instance below reads the env.
+        from polyhost.gui import file_dialogs
+        file_dialogs.maybe_set_portal_platformtheme()
 
     if args.host or args.host_file:
         from polyhost.forwarder import PolyForwarder

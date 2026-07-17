@@ -5,11 +5,14 @@ on Linux "native" is not one dialog — it is whatever the Qt platform-theme
 plugin provides, and its quality varies by desktop:
 
 - **Windows / macOS** — native, the expected platform look.
-- **Linux KDE / Plasma** — native, which (with ``plasma-integration``) is the
-  modern KFileWidget / xdg-desktop-portal dialog: places panel, previews, and
-  it respects the user's KDE settings. Much nicer than Qt's built-in dialog.
-  If ``plasma-integration`` is absent Qt falls back to its own widget dialog
-  anyway, so requesting native here is safe.
+- **Linux KDE / Plasma** — native, so the file picker is the modern Plasma
+  dialog (places panel, previews, respects KDE settings). ⚠️ We run a **pip /
+  venv PyQt5**, whose bundled Qt ships **no** KDE ``plasma-integration`` plugin,
+  so a plain "native" dialog would fall back to Qt's old widget dialog even on
+  KDE. The bundled Qt *does* ship the **xdg-desktop-portal** plugin, and KDE
+  runs ``xdg-desktop-portal-kde``, so ``maybe_set_portal_platformtheme()``
+  (called once at GUI startup) points Qt at that theme — which is what actually
+  produces the Plasma picker here.
 - **Other Linux (GNOME, …)** — NOT native: there "native" is the GTK dialog,
   which looks foreign in this PyQt5 app. Use Qt's own widget dialog instead
   for a consistent look.
@@ -55,17 +58,86 @@ def _dialog_options():
     return QFileDialog.DontUseNativeDialog
 
 
+def downloads_dir():
+    """The user's Downloads folder — the most likely place for a .bin / overlay
+    / .plyf — falling back to the home directory when it can't be resolved."""
+    try:
+        import platformdirs
+        d = platformdirs.user_downloads_dir()
+        if d and os.path.isdir(d):
+            return d
+    except Exception:
+        pass
+    home = os.path.expanduser("~")
+    cand = os.path.join(home, "Downloads")
+    return cand if os.path.isdir(cand) else home
+
+
+def _default_directory(directory):
+    """Start pickers in Downloads when the caller gave no location.
+
+    - ``""`` → the Downloads folder.
+    - a bare suggested filename (no directory part, e.g. ``"pack.plyf"``) →
+      that name inside Downloads (used by save dialogs).
+    - anything with a directory component / absolute path → left untouched.
+    """
+    if not directory:
+        return downloads_dir()
+    if not os.path.dirname(directory):
+        return os.path.join(downloads_dir(), directory)
+    return directory
+
+
 def get_open_file_name(parent, caption, directory="", name_filter=""):
     """Drop-in for ``QFileDialog.getOpenFileName`` that uses the native dialog on
-    Windows/macOS/KDE and the Qt dialog elsewhere. Returns the
-    ``(path, selected_filter)`` tuple, same as Qt."""
+    Windows/macOS/KDE and the Qt dialog elsewhere, defaulting to the Downloads
+    folder. Returns the ``(path, selected_filter)`` tuple, same as Qt."""
     return QFileDialog.getOpenFileName(
-        parent, caption, directory, name_filter, options=_dialog_options())
+        parent, caption, _default_directory(directory), name_filter,
+        options=_dialog_options())
 
 
 def get_save_file_name(parent, caption, directory="", name_filter=""):
     """Drop-in for ``QFileDialog.getSaveFileName`` that uses the native dialog on
-    Windows/macOS/KDE and the Qt dialog elsewhere. Returns the
-    ``(path, selected_filter)`` tuple, same as Qt."""
+    Windows/macOS/KDE and the Qt dialog elsewhere, defaulting to the Downloads
+    folder. Returns the ``(path, selected_filter)`` tuple, same as Qt."""
     return QFileDialog.getSaveFileName(
-        parent, caption, directory, name_filter, options=_dialog_options())
+        parent, caption, _default_directory(directory), name_filter,
+        options=_dialog_options())
+
+
+def _portal_theme_available():
+    """True if this Qt build ships the xdg-desktop-portal platform-theme plugin."""
+    try:
+        import glob
+        from PyQt5.QtCore import QLibraryInfo
+        plugins = QLibraryInfo.location(QLibraryInfo.PluginsPath)
+    except Exception:
+        return False
+    return bool(glob.glob(os.path.join(plugins, "platformthemes", "*xdgdesktopportal*")))
+
+
+def maybe_set_portal_platformtheme():
+    """On KDE, route Qt's native dialogs through xdg-desktop-portal so the file
+    picker is the modern Plasma dialog. Returns True if it set the theme.
+
+    Our pip/venv PyQt5 ships no KDE ``plasma-integration`` plugin, so a plain
+    "native" dialog falls back to Qt's old widget dialog even on KDE. The
+    bundled Qt *does* ship the xdg-desktop-portal plugin, and KDE runs
+    ``xdg-desktop-portal-kde``, so pointing Qt at that theme yields the native
+    Plasma picker. **Must be called before the QApplication is constructed.**
+
+    No-op unless: on Linux KDE, ``QT_QPA_PLATFORMTHEME`` unset, and the portal
+    platform-theme plugin is present — so it never overrides a user/session
+    setting and never names a theme this Qt can't load.
+    """
+    if sys.platform in ('win32', 'darwin'):
+        return False
+    if os.environ.get('QT_QPA_PLATFORMTHEME'):
+        return False
+    if not _is_kde():
+        return False
+    if not _portal_theme_available():
+        return False
+    os.environ['QT_QPA_PLATFORMTHEME'] = 'xdgdesktopportal'
+    return True
