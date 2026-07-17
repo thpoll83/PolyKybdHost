@@ -88,6 +88,26 @@ class PolySettings:
             # Optional explicit path to the font pack .plyf to flash. Empty =
             # use the pack shipped in polyhost/res/fontpack/ (if any).
             "fontpack_path": "",
+            # Browser website detection: when True, for a focused browser the
+            # host resolves the active tab's URL so overlays can key off the
+            # website (a `url` / `urls-contains` mapping entry) instead of the
+            # unreliable window title. Two sources feed it — the browser
+            # extension (browser-extension/) via the loopback receiver below,
+            # and, on macOS, an AppleScript fallback (no install). Off → matching
+            # is app-name + title only, exactly as before.
+            "browser_url_detection": True,
+            # Run the loopback HTTP receiver the browser extension POSTs reports
+            # to. Bound to 127.0.0.1 ONLY (unreachable off-machine) and reaches
+            # no device control, so it defaults on. Clear it to rely solely on
+            # the macOS AppleScript fallback (or to disable the port entirely).
+            "browser_report_local_enabled": True,
+            # Loopback port for the browser-report receiver. Must match the
+            # extension's configured port (its options page).
+            "browser_report_port": 50164,
+            # Optional shared token: when non-empty a report must present the same
+            # token (set it in the extension options too). Defence-in-depth
+            # against other local processes; empty = accept any loopback report.
+            "browser_report_token": "",
         }
         self._legacy_key_renames = {
             "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",

@@ -3,16 +3,18 @@
 Pulled out of OverlayHandler so the local and remote paths share one matcher,
 and so the recursion is unit-testable without a display (active_window imports
 pywinctl). Entries here are built in the *annotated* shape annotate() produces:
-a `flags` list [overlay, remote, title, starts_with, ends_with, contains] plus
-the matching sub-maps.
+a `flags` list [overlay, remote, title, starts_with, ends_with, contains, url,
+urls_contains] plus the matching sub-maps.
 """
 import unittest
 
 from polyhost.handler.common import find_matching_entry
 
 
-def entry(overlay=True, remote=False, title=None, sw=None, ew=None, contains=None):
-    e = {"flags": [overlay, remote, title is not None, bool(sw), bool(ew), bool(contains)]}
+def entry(overlay=True, remote=False, title=None, sw=None, ew=None, contains=None,
+          url=None, urls_contains=None):
+    e = {"flags": [overlay, remote, title is not None, bool(sw), bool(ew),
+                   bool(contains), url is not None, bool(urls_contains)]}
     if overlay:
         e["overlay"] = "ov"
     if remote:
@@ -25,6 +27,10 @@ def entry(overlay=True, remote=False, title=None, sw=None, ew=None, contains=Non
         e["titles-endswith"] = ew
     if contains:
         e["titles-contains"] = contains
+    if url is not None:
+        e["url"] = url
+    if urls_contains:
+        e["urls-contains"] = urls_contains
     return e
 
 
@@ -70,6 +76,47 @@ class TestFindMatchingEntry(unittest.TestCase):
         import re as _re
         with self.assertRaises(_re.error):
             find_matching_entry("x", entry(title="("))
+
+
+class TestUrlMatching(unittest.TestCase):
+    def test_urls_contains_recurses_when_url_present(self):
+        leaf = entry()
+        e = entry(urls_contains={"mail.google.com": leaf})
+        self.assertIs(
+            find_matching_entry("Inbox", e, url="https://mail.google.com/u/0"), leaf)
+
+    def test_urls_contains_falls_through_to_default_when_no_url(self):
+        # A browser entry with a default overlay + urls-contains must still match
+        # (its default) when no URL is known — urls-contains is not a hard gate.
+        leaf = entry()
+        e = entry(urls_contains={"mail.google.com": leaf})
+        self.assertIs(find_matching_entry("Some title", e, url=None), e)
+
+    def test_urls_contains_falls_through_when_url_hits_no_subkey(self):
+        leaf = entry()
+        e = entry(urls_contains={"mail.google.com": leaf})
+        self.assertIs(find_matching_entry("t", e, url="https://example.com"), e)
+
+    def test_url_wins_over_title_submap(self):
+        # urls-contains is checked before titles-contains: the URL is the
+        # stronger signal for which web-app is focused.
+        by_url = entry()
+        by_title = entry()
+        e = entry(urls_contains={"jira": by_url}, contains={"Board": by_title})
+        got = find_matching_entry("My Board", e, url="https://x.atlassian.net/jira")
+        self.assertIs(got, by_url)
+
+    def test_hard_url_regex_constraint_blocks_without_url(self):
+        e = entry(url=r"github\.com")
+        self.assertIsNone(find_matching_entry("anything", e, url=None))
+        self.assertIs(find_matching_entry("t", e, url="https://github.com/x"), e)
+        self.assertIsNone(find_matching_entry("t", e, url="https://gitlab.com/x"))
+
+    def test_url_ignored_by_default_when_arg_omitted(self):
+        # Callers that never pass url (the remote path) behave exactly as before.
+        leaf = entry()
+        e = entry(urls_contains={"mail.google.com": leaf})
+        self.assertIs(find_matching_entry("anything", e), e)
 
 
 if __name__ == "__main__":

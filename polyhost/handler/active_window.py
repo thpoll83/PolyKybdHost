@@ -5,7 +5,7 @@ import re
 
 from polyhost.handler.common import (
     OverlayCommand, Flags, find_matching_entry,
-    TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, FLAGS,
+    TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, URL, URL_HAS, FLAGS,
 )
 from polyhost.handler.remote_window import RemoteHandler
 
@@ -53,7 +53,7 @@ class OverlayHandler:
     """Reads the overlay mapping file and provides information which overlay
     should be displayed depending on the program context."""
 
-    def __init__(self, mapping):
+    def __init__(self, mapping, url_provider=None):
         self.log = logging.getLogger("PolyHost")
         log_env_info(self.log)
         self.last_update_msec = 0
@@ -61,6 +61,13 @@ class OverlayHandler:
         self.win = None
         self.title = None
         self.handle = None
+        # url_provider(app_name) -> Optional[str]: the URL of the focused window
+        # when it is a browser reporting its active tab, else None. Injected by
+        # PolyCore (BrowserUrlProvider.current_url); None disables URL matching
+        # (behaviour identical to before this feature). current_url holds the
+        # value used for the most recent match, for logging.
+        self.url_provider = url_provider
+        self.current_url = None
         self.current_entry = None
         self.last_entry = None
         # Tracks whether overlays are currently enabled on the device, so a
@@ -89,6 +96,8 @@ class OverlayHandler:
             has_starts_with = TITLE_SW in entry.keys() and entry[TITLE_SW]
             has_ends_with = TITLE_EW in entry.keys() and entry[TITLE_EW]
             has_contains = TITLE_HAS in entry.keys() and entry[TITLE_HAS]
+            has_url = URL in entry.keys()
+            has_urls_contains = URL_HAS in entry.keys() and entry[URL_HAS]
 
             entry[FLAGS] = [
                 has_overlay,
@@ -97,6 +106,8 @@ class OverlayHandler:
                 has_starts_with,
                 has_ends_with,
                 has_contains,
+                has_url,
+                has_urls_contains,
             ]
             if has_starts_with:
                 self.annotate(entry[TITLE_SW].items(), False)
@@ -104,6 +115,8 @@ class OverlayHandler:
                 self.annotate(entry[TITLE_EW].items(), False)
             if has_contains:
                 self.annotate(entry[TITLE_HAS].items(), False)
+            if has_urls_contains:
+                self.annotate(entry[URL_HAS].items(), False)
 
             if return_copy:
                 keys = keys.split(",")
@@ -124,7 +137,7 @@ class OverlayHandler:
         # current/last-entry bookkeeping. A re-enter of the same matched entry
         # is ENABLE (overlays already mapped); a different one is a full OFF_ON.
         try:
-            matched = find_matching_entry(self.title, entry)
+            matched = find_matching_entry(self.title, entry, self.current_url)
         except re.error as e:
             self.log.warning(
                 "Cannot match entry '%s': %s, because '%s'@%d with '%s'",
@@ -199,6 +212,17 @@ class OverlayHandler:
                                 app_name = raw_app_name.split(".",-1)[0].lower()
                             else:
                                 app_name = raw_app_name.lower()
+                            # For a browser, resolve the focused tab's URL so the
+                            # matcher can key overlays off the website (see
+                            # handler/browser_url.py). None for non-browsers or
+                            # when no reporter is available — matching then falls
+                            # back to app-name + title exactly as before.
+                            self.current_url = (
+                                self.url_provider(app_name) if self.url_provider else None
+                            )
+                            if self.current_url:
+                                self.log.debug_detailed(
+                                    "Browser URL for %s: %s", app_name, self.current_url)
                             # self.log.debug("App lookup: raw='%s' normalized='%s' in_mapping=%s", raw_app_name, app_name, app_name in self.mapping)
                             if app_name in self.mapping.keys():
                                 found, cmd = self.try_to_match_window(
@@ -250,6 +274,20 @@ class OverlayHandler:
         elif self.remote_handler.has_overlay():
             return self.remote_handler.get_overlay_data()
         return None
+
+    def invalidate_window_cache(self):
+        """Force the next poll to re-evaluate the focused window even if the OS
+        reports no window/title change.
+
+        A browser SPA can navigate to a new site (a new URL) without changing its
+        window title, so the pywinctl-driven change detection would miss it. When
+        a fresh browser URL report arrives for the active browser, PolyCore calls
+        this so the next ``handle_active_window`` re-matches with the new URL and
+        swaps overlays. Cheap: just drops the cached title so ``local_win_changed``
+        trips next tick — the accept-time debounce is untouched (the window has
+        already been focused, so the re-match fires promptly)."""
+        self.title = None
+        self.handle = None
 
     def force_resend(self):
         """Reset window tracking so the next cycle triggers a fresh OFF_ON resend."""

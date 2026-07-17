@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>PolyKybd Website Reporter — Options</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 34rem; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.2rem; }
+    label { display: block; margin: 1rem 0 0.25rem; font-weight: 600; }
+    input { width: 100%; padding: 0.4rem; box-sizing: border-box; }
+    .row { display: flex; gap: 0.5rem; align-items: center; margin-top: 1.5rem; }
+    button { padding: 0.5rem 1rem; cursor: pointer; }
+    #status { margin-left: 0.5rem; }
+    .hint { color: #666; font-size: 0.85rem; margin-top: 0.25rem; }
+    .ok { color: #187a18; } .err { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>PolyKybd Website Reporter</h1>
+  <p>Sends the active tab's URL to PolyKybdHost on this machine (loopback only) so
+     the keyboard can show website-specific overlays.</p>
+
+  <label for="port">Host port</label>
+  <input id="port" type="number" min="1" max="65535" />
+  <div class="hint">Must match PolyKybdHost's <code>browser_report_port</code> setting (default 50164).</div>
+
+  <label for="token">Shared token (optional)</label>
+  <input id="token" type="text" placeholder="leave empty unless you set browser_report_token" />
+  <div class="hint">Only needed if you set <code>browser_report_token</code> in PolyKybdHost.</div>
+
+  <div class="row">
+    <button id="save">Save</button>
+    <button id="test">Test connection</button>
+    <span id="status"></span>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
