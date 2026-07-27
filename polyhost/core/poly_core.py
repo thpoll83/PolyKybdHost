@@ -169,8 +169,16 @@ class PolyCore:
         # sends still work.
         self.mapping = {}
         self.overlay_handler = None
+        # Focused-browser active-tab URL, so overlays can key off the website
+        # (browser web-apps defeat window-title matching). Fed by the browser
+        # extension via the loopback report server below, and/or the macOS
+        # AppleScript fallback consulted inside current_url.
+        from polyhost.handler.browser_url import BrowserUrlProvider
+        self.browser_url_provider = BrowserUrlProvider()
+        self.browser_report_server = None
         self.load_overlay_mapping(str(_RES_DIR / "overlay-mapping.poly.yaml"))
         self._create_overlay_handler()
+        self._start_browser_report_server()
 
         self.sunlight = Sunlight(
             self.poly_settings.get("brightness_allow_online_location_lookup"),
@@ -321,6 +329,9 @@ class PolyCore:
         if self._sleep_listener is not None:
             self._sleep_listener.close()
         self.worker.stop()
+        if self.browser_report_server is not None:
+            self.browser_report_server.stop()
+            self.browser_report_server = None
         if self.overlay_handler is not None:
             self.overlay_handler.close()
 
@@ -363,7 +374,13 @@ class PolyCore:
     def _create_overlay_handler(self):
         try:
             from polyhost.handler.active_window import OverlayHandler
-            self.overlay_handler = OverlayHandler(self.mapping)
+            # url_provider lets the matcher key overlays off the focused
+            # browser's website; None-safe (returns None for non-browsers / when
+            # no reporter is present, so matching is unchanged without it).
+            url_lookup = (self.browser_url_provider.current_url
+                          if self.poly_settings.get("browser_url_detection")
+                          else None)
+            self.overlay_handler = OverlayHandler(self.mapping, url_provider=url_lookup)
         except Exception as e:
             # Headless / no display: pywinctl cannot load. Window-driven
             # overlay switching stays off; explicit sends still work.
@@ -371,6 +388,37 @@ class PolyCore:
             self.log.warning("Window tracking unavailable (%s: %s) — "
                              "active-window overlay switching disabled.",
                              type(e).__name__, e)
+
+    def _start_browser_report_server(self):
+        """Start the loopback HTTP receiver the browser extension POSTs to.
+
+        Off when ``browser_url_detection`` or ``browser_report_local_enabled`` is
+        cleared (the macOS AppleScript fallback still works via current_url), and
+        a best-effort start — a bind failure (port in use) just logs and leaves
+        the feature on the AppleScript path only, never blocking startup."""
+        if not (self.poly_settings.get("browser_url_detection")
+                and self.poly_settings.get("browser_report_local_enabled")):
+            return
+        try:
+            from polyhost.server.browser_report_server import BrowserReportServer
+            self.browser_report_server = BrowserReportServer(
+                self._on_browser_report, self.log,
+                port=int(self.poly_settings.get("browser_report_port")),
+                token=str(self.poly_settings.get("browser_report_token") or ""))
+            self.browser_report_server.start()
+        except Exception as e:  # noqa: BLE001 — feature is optional, never fatal
+            self.browser_report_server = None
+            self.log.warning("Browser-report listener unavailable (%s: %s) — "
+                             "browser-URL overlays rely on the macOS fallback only.",
+                             type(e).__name__, e)
+
+    def _on_browser_report(self, browser=None, url=None, title=None, focused=True):
+        """Ingest one extension report; on an actual URL change, nudge window
+        tracking so an SPA route change (no title change) still swaps overlays."""
+        changed = self.browser_url_provider.update(
+            browser=browser, url=url, title=title, focused=focused)
+        if changed and self.overlay_handler is not None:
+            self.overlay_handler.invalidate_window_cache()
 
     # ------------------------------------------------------------------
     # Overlay jobs (HID worker)

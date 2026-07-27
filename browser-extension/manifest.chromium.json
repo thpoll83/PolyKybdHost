@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "PolyKybd Website Reporter",
+  "version": "1.0.0",
+  "description": "Reports the active browser tab's URL to PolyKybdHost so it can show website-specific keycap overlays.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": ["tabs", "storage"],
+  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "background": { "service_worker": "background.js" },
+  "options_ui": { "page": "options.html", "open_in_tab": true }
+}
