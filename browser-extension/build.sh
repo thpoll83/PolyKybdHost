@@ -20,6 +20,7 @@ build() {
   rm -rf "${out}"
   mkdir -p "${out}"
   cp "${SHARED[@]}" "${out}/"
+  cp -r icons "${out}/"
   cp "${manifest}" "${out}/manifest.json"
   echo "built ${out}"
 }
