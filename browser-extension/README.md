@@ -73,6 +73,15 @@ one-time *"PolyHost wants to control <Browser>"* consent prompt — allow it.
 **Firefox on macOS has no AppleScript URL support**, so Firefox users still need
 this extension.
 
+## Publishing to the stores
+
+For real end-user distribution (one-click install + auto-updates), the extension
+goes to the **Chrome Web Store** (covers all Chromium browsers) and **Firefox
+AMO**. Listing copy, privacy policy, the promo tile, and a step-by-step
+submission checklist live in [`store/`](store/) (`SUBMISSION.md`). Sideloading
+the `dist/` build (above) is for development and testers only — Chrome disables
+non-store extensions on the stable channel, and Firefox requires AMO signing.
+
 ## Notes / limitations
 
 - **Firefox** uses MV3 event pages (`background.scripts`); **Chromium** uses an
