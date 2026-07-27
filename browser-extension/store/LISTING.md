@@ -54,8 +54,9 @@ sync with `manifest.*.json` (name/version) and `../README.md`.
 
 ## Data usage disclosure (Chrome "Data practices")
 
-- Collects: **Website content → limited to the active tab's URL and title**
-  (arguably "web activity"). Declare this category honestly.
+- Collects: **Web browsing activity → limited to the active tab's URL and title**
+  (no page content is accessed). Chrome and Mozilla both classify domains/URLs as
+  web browsing activity, so declare this category, not "website content".
 - Does the extension **transmit** the data? Only to **localhost (127.0.0.1)** —
   it does **not** send data to the developer or any third party or off the
   device.

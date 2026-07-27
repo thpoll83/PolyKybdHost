@@ -25,13 +25,13 @@
   <div class="hint">Must match PolyKybdHost's <code>browser_report_port</code> setting (default 50164).</div>
 
   <label for="token">Shared token (optional)</label>
-  <input id="token" type="text" placeholder="leave empty unless you set browser_report_token" />
+  <input id="token" type="password" placeholder="leave empty unless you set browser_report_token" />
   <div class="hint">Only needed if you set <code>browser_report_token</code> in PolyKybdHost.</div>
 
   <div class="row">
     <button id="save">Save</button>
     <button id="test">Test connection</button>
-    <span id="status"></span>
+    <span id="status" role="status" aria-live="polite"></span>
   </div>
 
   <script src="options.js"></script>

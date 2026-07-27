@@ -74,6 +74,29 @@ class TestBrowserUrlProvider(unittest.TestCase):
         self.assertEqual(p.current_url("Google Chrome"), "https://ext")
         self.assertEqual(called, [])  # fallback not consulted
 
+    def test_report_gated_by_browser(self):
+        # A fresh Chrome report must NOT satisfy a Firefox lookup...
+        self.p.update(browser="chrome", url="https://ext", focused=True)
+        self.assertIsNone(self.p.current_url("firefox"))
+        # ...but the same brand under any OS naming still matches.
+        self.assertEqual(self.p.current_url("google-chrome"), "https://ext")
+        self.assertEqual(self.p.current_url("Google Chrome"), "https://ext")
+
+    def test_cross_browser_report_falls_back_to_macos(self):
+        called = []
+        p = BrowserUrlProvider(clock=self.clock,
+                               macos_lookup=lambda app: called.append(app) or "fallback")
+        p.update(browser="chrome", url="https://ext", focused=True)
+        # Focused app is Safari, cached report is Chrome -> gate rejects the
+        # report and the macOS fallback is consulted instead.
+        self.assertEqual(p.current_url("Safari"), "fallback")
+        self.assertEqual(called, ["Safari"])
+
+    def test_report_without_browser_stays_permissive(self):
+        # An older extension may omit `browser`; don't gate then (unchanged behaviour).
+        self.p.update(browser=None, url="https://ext", focused=True)
+        self.assertEqual(self.p.current_url("firefox"), "https://ext")
+
     def test_macos_lookup_exception_is_swallowed(self):
         def boom(app):
             raise RuntimeError("nope")

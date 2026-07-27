@@ -5,7 +5,8 @@ Reproducible: run from anywhere (paths resolve relative to this file) to
 regenerate icons/icon-{16,32,48,128}.png from the app's own grayscale brand
 icon (polyhost/res/icons/pgray.png) — no badge, just the resized mark.
 
-Needs Pillow:  PolyKybdHost/.venv/bin/python browser-extension/generate_icons.py
+Needs Pillow. From the repository root:
+  .venv/bin/python browser-extension/generate_icons.py
 """
 import pathlib
 

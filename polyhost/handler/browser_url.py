@@ -37,6 +37,37 @@ _BROWSER_SUBSTRINGS = (
 )
 _BROWSER_EXACT = ("arc",)
 
+
+def _canonical_browser(name):
+    """Collapse an OS app-name or an extension ``browser`` token to one brand
+    key (``chrome``/``firefox``/``edge``/…), or ``None`` if unrecognised.
+
+    Distinctive brands are checked before the generic ``chrome``/``chromium``
+    base so a Chromium-derived browser (Brave/Edge/Opera/Vivaldi) maps to its own
+    brand rather than ``chrome``."""
+    if not isinstance(name, str):
+        return None
+    n = name.strip().lower()
+    if not n:
+        return None
+    if "firefox" in n:
+        return "firefox"
+    if "brave" in n:
+        return "brave"
+    if "vivaldi" in n:
+        return "vivaldi"
+    if "opera" in n or "opr" in n:
+        return "opera"
+    if "edg" in n:  # msedge, microsoft edge, microsoft-edge, edge
+        return "edge"
+    if "safari" in n:
+        return "safari"
+    if n == "arc":
+        return "arc"
+    if "chrome" in n or "chromium" in n:
+        return "chrome"
+    return None
+
 # How long an extension report stays usable. The extension pushes on every tab
 # switch / focus change, so a fresh report is always at hand while a browser is
 # in use; past this the report is considered stale and the macOS fallback (or
@@ -106,19 +137,36 @@ class BrowserUrlProvider:
     # Lookup (from OverlayHandler)
     # ------------------------------------------------------------------
 
+    def _report_matches_app(self, app_name):
+        """Whether the stored report came from the same browser as ``app_name``.
+
+        Guards against cross-browser leakage: a fresh Chrome report must not be
+        returned while Firefox/Brave is the focused app (the extension reports
+        each browser separately). If the report has no recognisable ``browser``
+        (an older extension), stay permissive so behaviour is unchanged."""
+        r = self._report
+        if not r:
+            return False
+        rep = _canonical_browser(r.get("browser"))
+        if rep is None:
+            return True  # unknown/absent brand — don't gate
+        return rep == _canonical_browser(app_name)
+
     def current_url(self, app_name):
         """URL of the focused window's active tab, or ``None``.
 
-        Returns a URL only when ``app_name`` is a browser: a fresh, focused
-        extension report wins; otherwise the macOS AppleScript fallback is
-        tried (a no-op off macOS / for Firefox). ``None`` for any non-browser
-        app, so a browser URL can never leak onto a native app's overlay."""
+        Returns a URL only when ``app_name`` is a browser AND a fresh, focused
+        extension report from *that same browser* is available; otherwise the
+        macOS AppleScript fallback is tried (a no-op off macOS / for Firefox).
+        ``None`` for any non-browser app, so a browser URL can never leak onto a
+        native app's overlay, and a report from a *different* browser can never
+        pin the wrong URL onto the focused one."""
         if not is_browser_app(app_name):
             return None
         url = self._effective_url()
-        if url:
+        if url and self._report_matches_app(app_name):
             return url
-        # No fresh extension report — try the zero-install macOS path.
+        # No fresh matching extension report — try the zero-install macOS path.
         try:
             return self._macos_lookup(app_name)
         except Exception:

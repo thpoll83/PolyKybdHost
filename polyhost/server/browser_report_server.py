@@ -17,9 +17,15 @@ Security posture — deliberately minimal surface:
 * Holds **no reference to PolyCore** — only an injected ``on_report`` callback —
   so, like the window-report server, it can never reach device control / flash /
   bootloader.
+* **No cross-origin ``POST /report``**: CORS is granted only for the ``/ping``
+  health check, and ``/report`` requires an ``application/json`` body — a
+  combination that forces a preflight the report path never answers, so a
+  third-party web page cannot POST a spoofed report even with the receiver on
+  and no token. The extension has ``host_permissions`` and is exempt from CORS.
 * Optional shared ``token``: if set, a report must present the same token
-  (constant-time compared). Off by default (a local process could at worst pick
-  which overlay shows); set it for defence-in-depth against other local apps.
+  (constant-time compared). Off by default (a local *process* could at worst
+  pick which overlay shows); set it for defence-in-depth against other local
+  apps.
 
 Endpoints: ``POST /report`` (the report), ``GET /ping`` (health probe the
 extension uses to detect a running host). Bodies are size-capped; malformed
@@ -38,19 +44,24 @@ class _Handler(BaseHTTPRequestHandler):
     # server carries: on_report, token, log (set on the ThreadingHTTPServer).
     protocol_version = "HTTP/1.1"
 
-    # --- CORS: extensions with host_permissions don't need it, but the options
-    # page's test fetch might; harmless to always allow a loopback caller. ---
+    # --- CORS is granted ONLY for the /ping health check the options page calls
+    # cross-origin. /report deliberately gets NO CORS grant: a web page can only
+    # skip a preflight with a "simple" request, and combined with the
+    # application/json requirement in do_POST that forces a preflight /report
+    # never answers — so no third-party page can POST a spoofed report. The
+    # extension itself has host_permissions and is exempt from CORS entirely. ---
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
-    def _json(self, code, payload):
+    def _json(self, code, payload, *, cors=False):
         body = json.dumps(payload).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
-        self._cors()
+        if cors:
+            self._cors()
         self.end_headers()
         try:
             self.wfile.write(body)
@@ -58,20 +69,32 @@ class _Handler(BaseHTTPRequestHandler):
             pass
 
     def do_OPTIONS(self):  # noqa: N802 — stdlib handler naming
-        self.send_response(204)
-        self._cors()
+        # Honour a preflight only for /ping; /report gets no CORS grant.
+        if self.path.split("?", 1)[0] == "/ping":
+            self.send_response(204)
+            self._cors()
+        else:
+            self.send_response(404)
         self.send_header("Content-Length", "0")
         self.end_headers()
 
     def do_GET(self):  # noqa: N802
         if self.path.split("?", 1)[0] == "/ping":
-            self._json(200, {"ok": True, "app": "PolyKybdHost"})
+            self._json(200, {"ok": True, "app": "PolyKybdHost"}, cors=True)
         else:
             self._json(404, {"ok": False, "error": "not found"})
 
     def do_POST(self):  # noqa: N802
         if self.path.split("?", 1)[0] != "/report":
             self._json(404, {"ok": False, "error": "not found"})
+            return
+        # Require application/json. A cross-origin page can avoid a CORS preflight
+        # only with a "simple" content type (text/plain / form encoding);
+        # requiring application/json forces a preflight, which /report does not
+        # grant — closing the browser-based spoofing vector without a token.
+        ctype = (self.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
+        if ctype != "application/json":
+            self._json(415, {"ok": False, "error": "unsupported media type"})
             return
         try:
             length = int(self.headers.get("Content-Length") or 0)

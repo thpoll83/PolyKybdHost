@@ -64,6 +64,30 @@ class TestBrowserReportServer(unittest.TestCase):
         self.assertEqual(cm.exception.code, 400)
         self.assertEqual(self.reports, [])
 
+    def test_non_json_content_type_rejected(self):
+        # A "simple" content type (no CORS preflight) must not be accepted on
+        # /report — closes the cross-origin web-page spoofing vector.
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/report", method="POST",
+            data=b'{"browser": "chrome", "url": "https://x"}',
+            headers={"Content-Type": "text/plain"})
+        with self.assertRaises(urllib.error.HTTPError) as cm:
+            urllib.request.urlopen(req, timeout=2)
+        self.assertEqual(cm.exception.code, 415)
+        self.assertEqual(self.reports, [])
+
+    def test_report_has_no_cors_grant_but_ping_does(self):
+        # /ping is CORS-enabled (the options page tests it cross-origin)...
+        with urllib.request.urlopen(f"http://127.0.0.1:{self.port}/ping", timeout=2) as r:
+            self.assertEqual(r.headers.get("Access-Control-Allow-Origin"), "*")
+        # ...but /report must never emit a wildcard CORS grant.
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{self.port}/report", method="POST",
+            data=json.dumps({"browser": "chrome", "url": "https://x"}).encode("utf-8"),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=2) as r:
+            self.assertIsNone(r.headers.get("Access-Control-Allow-Origin"))
+
     def test_unknown_path_404(self):
         req = urllib.request.Request(
             f"http://127.0.0.1:{self.port}/other", method="POST", data=b"{}")
@@ -90,7 +114,7 @@ class TestBrowserReportToken(unittest.TestCase):
         self.assertEqual(self.reports, [])
 
     def test_correct_token_accepted(self):
-        status, body = _post(self.port, {
+        status, _body = _post(self.port, {
             "browser": "chrome", "url": "https://x", "token": "s3cret"})
         self.assertEqual(status, 200)
         self.assertEqual(len(self.reports), 1)

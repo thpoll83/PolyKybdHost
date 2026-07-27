@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 import re
+from urllib.parse import urlsplit
 
 from polyhost.handler.common import (
     OverlayCommand, Flags, find_matching_entry,
@@ -221,8 +222,14 @@ class OverlayHandler:
                                 self.url_provider(app_name) if self.url_provider else None
                             )
                             if self.current_url:
+                                # Log only the origin (scheme+host): the full URL
+                                # can carry PII in the path/query (account ids,
+                                # ticket numbers). Matching still uses the full
+                                # self.current_url.
+                                origin = urlsplit(self.current_url)
                                 self.log.debug_detailed(
-                                    "Browser URL for %s: %s", app_name, self.current_url)
+                                    "Browser URL for %s: %s://%s", app_name,
+                                    origin.scheme, origin.netloc)
                             # self.log.debug("App lookup: raw='%s' normalized='%s' in_mapping=%s", raw_app_name, app_name, app_name in self.mapping)
                             if app_name in self.mapping.keys():
                                 found, cmd = self.try_to_match_window(

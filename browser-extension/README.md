@@ -18,9 +18,9 @@ report to **loopback only** (`http://127.0.0.1:<port>/report`):
 { "browser": "chrome", "url": "https://mail.google.com/…", "title": "Inbox", "focused": true }
 ```
 
-- Only `tab.url` / `tab.title` (what you see in the address bar) and whether this
-  browser window is focused. **No page content is read**, and nothing leaves the
-  machine — 127.0.0.1 is not reachable from the network.
+- Only the active tab's URL and page title (`tab.url` / `tab.title`), plus
+  whether this browser window is focused. **No page content is read**, and
+  nothing leaves the machine — 127.0.0.1 is not reachable from the network.
 - On blur (you switch to another app) it sends `focused: false` with no URL, so
   the host stops attributing a website to the browser.
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Generate the Chrome Web Store small promo tile (440x280) from the brand mark.
 
-Reproducible: PolyKybdHost/.venv/bin/python browser-extension/store/make_promo.py
+Reproducible, from the repository root (uses the project venv, not system Python):
+  .venv/bin/python browser-extension/store/make_promo.py
 Screenshots of the extension in use must still be captured on a real machine
 (see SUBMISSION.md) — those can't be generated headless.
 """

@@ -18,18 +18,34 @@ const api = globalThis.browser ?? globalThis.chrome;
 
 const DEFAULTS = { port: 50164, token: "" };
 let config = { ...DEFAULTS };
+let configLoaded = false;
 
-// Dedupe: skip a report identical to the last one we sent (tabs.onUpdated fires
-// several times per navigation — loading/complete/title — for the same URL).
-let lastSent = "";
+// The latest state we WANT the host to hold, and the key of the last state we
+// actually DELIVERED (a 200 from the receiver). The delivered key includes the
+// receiver config (port|token), so changing the port/token re-sends, and it is
+// only advanced on success — a failed send (wrong default port before config
+// loaded, or host down) never suppresses the correct retry.
+let desired = null;      // { url, title, focused }
+let deliveredKey = "";
+
+function configKey() {
+  return `${config.port}|${config.token || ""}`;
+}
+
+function stateKey(s) {
+  return `${configKey()}|${s.focused ? `1|${s.url || ""}` : "0"}`;
+}
 
 function loadConfig() {
+  const done = (items) => {
+    config = { ...DEFAULTS, ...(items || {}) };
+    configLoaded = true;
+    flush();  // re-deliver the latest desired state against the (new) config
+  };
   try {
-    api.storage.local.get(DEFAULTS, (items) => {
-      config = { ...DEFAULTS, ...(items || {}) };
-    });
+    api.storage.local.get(DEFAULTS, done);
   } catch (e) {
-    config = { ...DEFAULTS };
+    done(null);
   }
 }
 loadConfig();
@@ -52,26 +68,38 @@ function endpoint() {
   return `http://127.0.0.1:${config.port}/report`;
 }
 
-// Post one report. focused=false is sent on blur (url/title omitted) so the host
-// stops attributing a URL to this browser when another app takes focus.
-function send(url, title, focused) {
-  const key = focused ? `1|${url || ""}` : "0";
-  if (key === lastSent) return;
-  lastSent = key;
+// Deliver the latest desired state to the receiver, unless that exact state was
+// already delivered to this exact receiver config. Called on every event and
+// whenever the config (re)loads. focused=false is sent on blur (url/title
+// omitted) so the host stops attributing a URL to this browser.
+function flush() {
+  if (!configLoaded || !desired) return;
+  const key = stateKey(desired);
+  if (key === deliveredKey) return;  // already delivered this state here
 
+  const s = desired;
   const body = JSON.stringify({
     browser: BROWSER,
-    url: focused ? (url || null) : null,
-    title: focused ? (title || null) : null,
-    focused: !!focused,
+    url: s.focused ? (s.url || null) : null,
+    title: s.focused ? (s.title || null) : null,
+    focused: !!s.focused,
     token: config.token || undefined,
   });
-  // Fire-and-forget; the host may not be running — swallow the network error.
   fetch(endpoint(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body,
-  }).catch(() => { /* host not running / port closed — ignore */ });
+  }).then((r) => {
+    // Only mark delivered on a real success — a failure leaves deliveredKey
+    // as-is so the next event (or config reload) retries this state.
+    if (r && r.ok) deliveredKey = key;
+  }).catch(() => { /* host not running / port closed — retry on next event */ });
+}
+
+// Record the desired state and attempt delivery.
+function send(url, title, focused) {
+  desired = { url, title, focused: !!focused };
+  flush();
 }
 
 // Report the active tab of the (focused) current window.
@@ -94,10 +122,17 @@ api.tabs.onActivated.addListener(() => reportActiveTab());
 // Navigation / title change / load complete in a tab. Only the active tab
 // matters; changeInfo tells us it's worth re-reporting.
 api.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (!tab || !tab.active) return;
-  if (changeInfo.url || changeInfo.title || changeInfo.status === "complete") {
-    send(tab.url, tab.title, true);
-  }
+  if (!tab || !tab.active) return;  // active WITHIN its window, not necessarily foreground
+  if (!(changeInfo.url || changeInfo.title || changeInfo.status === "complete")) return;
+  // tab.active only means active in its own window; a navigation in an
+  // unfocused browser window must NOT replace the foreground window's URL. Only
+  // report when this tab's window is the focused one.
+  try {
+    api.windows.get(tab.windowId, (win) => {
+      if (api.runtime.lastError) return;
+      if (win && win.focused) send(tab.url, tab.title, true);
+    });
+  } catch (e) { /* ignore */ }
 });
 
 // Window focus changed (alt-tab between browser windows, or away from the

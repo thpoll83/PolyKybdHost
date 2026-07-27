@@ -7,9 +7,11 @@ browsers) and Firefox AMO (Firefox). Build artifacts come from
 ## Prerequisites (once)
 
 - **Own the identity long-term.** Publish under the PolyKybd / PolyTasten
-  account you want to keep — the Chrome Web Store derives the extension **ID**
-  from the account's key on first upload, and it can't be moved later. The
-  Firefox ID is already pinned in the manifest: `website-reporter@polykybd`.
+  account you want to keep. The Chrome Web Store derives the extension **ID**
+  from its signing/public key (not an account key); a published item *can* be
+  transferred between developer accounts later, but keeping one long-term account
+  avoids the hassle. The Firefox ID is already pinned in the manifest:
+  `website-reporter@polykybd`.
 - **Host the privacy policy.** Put `PRIVACY.md` at a public URL (polykybd-docs
   page or the repo raw file) — both stores require the link.
 - **Bump the version** in *both* `../manifest.chromium.json` and

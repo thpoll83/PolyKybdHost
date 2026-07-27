@@ -29,6 +29,10 @@ build chromium manifest.chromium.json
 build firefox  manifest.firefox.json
 
 # Optional zips (Firefox AMO / Chrome Web Store uploads) when `zip` is present.
+# Remove any prior archives first — `zip` UPDATES in place, so a file deleted
+# from the extension would otherwise linger in the zip across rebuilds.
+rm -f dist/polykybd-website-reporter-chromium.zip \
+      dist/polykybd-website-reporter-firefox.zip
 if command -v zip >/dev/null 2>&1; then
   ( cd dist/chromium && zip -qr ../polykybd-website-reporter-chromium.zip . )
   ( cd dist/firefox  && zip -qr ../polykybd-website-reporter-firefox.zip . )

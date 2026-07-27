@@ -24,7 +24,9 @@ document.getElementById("save").addEventListener("click", () => {
     setStatus("Invalid port", false);
     return;
   }
-  api.storage.local.set({ port, token: tokenEl.value.trim() }, () => {
+  // Store the token exactly as entered — the receiver compares it byte-for-byte,
+  // so trimming would break a token with intentional surrounding whitespace.
+  api.storage.local.set({ port, token: tokenEl.value }, () => {
     setStatus("Saved", true);
   });
 });
