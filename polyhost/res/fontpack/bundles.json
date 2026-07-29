@@ -16,31 +16,31 @@
       "id": "mideast",
       "index": 1,
       "file": "mideast.plyf",
-      "content_version": 1,
-      "size": 35404,
+      "content_version": 2,
+      "size": 35036,
       "slot_offset": 102400,
       "slot_size": 98304,
-      "sha256": "4d7c762d92ef3dec"
+      "sha256": "4541cb05ab26707a"
     },
     {
       "id": "syllabic",
       "index": 2,
       "file": "syllabic.plyf",
-      "content_version": 1,
-      "size": 46644,
+      "content_version": 2,
+      "size": 45732,
       "slot_offset": 200704,
       "slot_size": 98304,
-      "sha256": "ebfbf3fef33cc8ea"
+      "sha256": "cf990f55ce2c9ab4"
     },
     {
       "id": "asia",
       "index": 3,
       "file": "asia.plyf",
-      "content_version": 1,
-      "size": 62380,
+      "content_version": 2,
+      "size": 63020,
       "slot_offset": 299008,
       "slot_size": 131072,
-      "sha256": "fa436bc0ccc78d59"
+      "sha256": "c85c72749ad9de93"
     },
     {
       "id": "flags",
@@ -66,11 +66,11 @@
       "id": "fantasy",
       "index": 6,
       "file": "fantasy.plyf",
-      "content_version": 3,
-      "size": 23720,
+      "content_version": 4,
+      "size": 23660,
       "slot_offset": 1347584,
       "slot_size": 749568,
-      "sha256": "6361b1c4a443c726"
+      "sha256": "b0dddaeecc66ecc0"
     }
   ]
 }
