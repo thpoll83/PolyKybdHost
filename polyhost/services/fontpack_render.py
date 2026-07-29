@@ -330,7 +330,12 @@ def reference_glyph_image(font_path: str, cp: int, opts, fit_h: int | None = Non
         import freetype
     except Exception:                               # noqa: BLE001
         return None
-    ropts = replace(opts, render_mode=1)            # force smooth/colour render
+    # Force a smooth/colour render.  NOTE: hinting is deliberately NOT applied here
+    # (_raster_for_gid defaults to native) — this image is the "what the font
+    # actually draws" reference, and grid-fitting is a 1-bit rasterisation choice
+    # that belongs to the keycap output beside it, not to the reference.  The
+    # keycap half of the preview does go through opts.hinting via render_packfont.
+    ropts = replace(opts, render_mode=1)
     fg._set_tt_interpreter(fg._TT_V40)
     face = freetype.Face(font_path)
     fg._apply_weight(face, ropts.weight)
@@ -370,7 +375,7 @@ def reference_sequence_image(font_path: str, group: str, opts, fit_h: int | None
     cps = [int(t, 16) for t in str(group).replace(",", " ").split() if t.strip()]
     if not cps:
         return None
-    ropts = replace(opts, render_mode=1)
+    ropts = replace(opts, render_mode=1)   # unhinted reference, as in reference_glyph_image
     fg._set_tt_interpreter(fg._TT_V40)
     face = freetype.Face(font_path)
     fg._apply_weight(face, ropts.weight)

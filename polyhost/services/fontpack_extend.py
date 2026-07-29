@@ -53,6 +53,12 @@ def render_options_from_manifest(opts: dict):
 
     return RenderOptions(
         size=int(opts.get("size", 20)),
+        # -p / -H. Without these a glyph rebuilt here is rendered ungridfitted while
+        # the pack it is spliced into was generated with the autohinter, so it would
+        # silently not match. The firmware sets hinting: auto on every category
+        # except emoji/emoji_fig (see qmk fonts/fonts.yaml).
+        pixel_size=int(opts.get("pixel_size") or 0),
+        hinting=str(opts.get("hinting") or "native"),
         render_mode=1 if opts.get("grayscale") else 0,
         dither_mode=fd.dither_mode_from_name(opts.get("dither", "fs")),
         normalize=bool(opts.get("normalize")),

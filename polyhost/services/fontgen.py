@@ -48,6 +48,8 @@ _TT_V40 = 40
 class RenderOptions:
     """Mirror of fontconvert's FontSettings (the generation-relevant subset)."""
     size: int = 12            # -s
+    pixel_size: int = 0       # -p  (em size in PIXELS; 0 = use -s points-at-141-DPI)
+    hinting: str = "native"   # -H  native | auto | none
     height: int = 0           # -r  (render-size limit + yAdvance source)
     yadvance: int = 0         # -Y  (override emitted yAdvance; 0 = use -r/native)
     xshift: int = 0           # -X
@@ -93,7 +95,7 @@ def _setup_face_size(face, opts: RenderOptions):
     """Port of font_render.c setup_face_size."""
     import freetype
     if face.num_fixed_sizes > 0:
-        target_px = (opts.size * DPI + 36) // 72
+        target_px = opts.pixel_size or (opts.size * DPI + 36) // 72
         best, best_diff = 0, 1 << 30
         for i in range(face.num_fixed_sizes):
             sz = face.available_sizes[i]
@@ -102,7 +104,10 @@ def _setup_face_size(face, opts: RenderOptions):
                 best_diff, best = diff, i
         face.select_size(best)
         return True
-    face.set_char_size(opts.size << 6, 0, DPI, 0)
+    if opts.pixel_size:
+        face.set_pixel_sizes(0, opts.pixel_size)
+    else:
+        face.set_char_size(opts.size << 6, 0, DPI, 0)
     return False
 
 
@@ -137,7 +142,7 @@ def _scale_metric(v: int, num: int, den: int) -> int:
     return int(r + (0.5 if r >= 0 else -0.5))
 
 
-def _raster_for_gid(face, gid: int, color: bool, cfont) -> ColorRaster:
+def _raster_for_gid(face, gid: int, color: bool, cfont, hinting: str = "native") -> ColorRaster:
     """Uniform raster for a glyph id: the CBDT colour extractor when `cfont` is set
     (PNG-free colour), else FreeType (mono/gray/outline, or colour when FT has PNG).
     A colour gid absent from the strike → a 0-size raster (blank key), as the C tool."""
@@ -146,10 +151,29 @@ def _raster_for_gid(face, gid: int, color: bool, cfont) -> ColorRaster:
         if r is not None:
             return r
         return ColorRaster(0, 0, 0, 0, b"", 0, 0, 0)
-    return _raster_from_ft(_load_glyph_rendered(face, gid, color))
+    return _raster_from_ft(_load_glyph_rendered(face, gid, color, hinting))
 
 
-def _load_glyph_rendered(face, gid: int, color: bool):
+def _hint_flag(hinting: str) -> int:
+    """Port of fontconvert's -H (glyph_load_flags in font_render.c).
+
+    `native` adds nothing — FreeType uses whatever the face provides, which for a
+    font with no bytecode (NotoSans and most variable fonts: maxSizeOfInstructions
+    == 0, no fpgm, a stub prep) means NO grid-fitting at all, because FreeType will
+    not fall back to its own autohinter when the face has even that stub prep.
+    `auto` forces the autohinter, which is what the firmware's grid-fitted
+    categories are generated with — without mirroring it here a glyph rebuilt in
+    the extend/edit dialog comes out ungridfitted and no longer matches the pack.
+    """
+    import freetype
+    if hinting == "auto":
+        return freetype.FT_LOAD_FORCE_AUTOHINT
+    if hinting == "none":
+        return freetype.FT_LOAD_NO_HINTING
+    return 0
+
+
+def _load_glyph_rendered(face, gid: int, color: bool, hinting: str = "native"):
     """Load + render one glyph, mirroring extract_range_ft: load WITHOUT
     FT_LOAD_RENDER (which would try to re-render — and fail with 'unimplemented' —
     an embedded colour bitmap), then FT_Render_Glyph only for outline glyphs.
@@ -157,6 +181,7 @@ def _load_glyph_rendered(face, gid: int, color: bool):
     import freetype
     flags = (freetype.FT_LOAD_TARGET_NORMAL | freetype.FT_LOAD_COLOR
              if color else freetype.FT_LOAD_TARGET_MONO)
+    flags |= _hint_flag(hinting)
     face.load_glyph(gid, flags)
     slot = face.glyph
     if slot.format != freetype.FT_GLYPH_FORMAT_BITMAP:
@@ -251,7 +276,7 @@ def render_range(font_path: str, first: int, last: int, opts: RenderOptions | No
             # bitmap — e.g. space — keeps its real metrics below, as the C tool does.)
             glyphs.append(_empty_glyph(0))
             continue
-        r = _raster_for_gid(face, gid, color, cfont)
+        r = _raster_for_gid(face, gid, color, cfont, opts.hinting)
         rec, packed = _emit_loaded_glyph(r, len(bitmap), dopts, opts.xshift)
         glyphs.append(rec)
         bitmap += packed
@@ -342,7 +367,7 @@ def _render_shaped(face, hb, hb_font, opts: RenderOptions, groups, cfont=None):
     for cps in groups:
         infos, _pos = _shape(hb, hb_font, cps)
         for info in infos:
-            r = _raster_for_gid(face, info.codepoint, color, cfont)
+            r = _raster_for_gid(face, info.codepoint, color, cfont, opts.hinting)
             rec, packed = _emit_loaded_glyph(r, len(bitmap), dopts, opts.xshift)
             glyphs.append(rec)
             bitmap += packed
@@ -360,7 +385,7 @@ def _render_composite(face, hb, hb_font, opts: RenderOptions, groups):
         placed = []   # (bits_2d as set of (x,y), w, h, devL, devT)
         penx = peny = 0.0
         for info, p in zip(infos, pos):
-            _load_glyph_rendered(face, info.codepoint, False)   # mono, into face.glyph
+            _load_glyph_rendered(face, info.codepoint, False, opts.hinting)  # mono, into face.glyph
             bm = face.glyph.bitmap
             w, h = bm.width, bm.rows
             gx = penx + p.x_offset / 64.0
