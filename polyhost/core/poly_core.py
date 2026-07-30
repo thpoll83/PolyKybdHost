@@ -575,13 +575,22 @@ class PolyCore:
         for entry in self.device_mgr.all_entries:
             if cancel.is_set():
                 return
-            if cmd == OverlayCommand.DISABLE:
-                res = entry.device.disable_overlays()
-            elif cmd == OverlayCommand.ENABLE:
-                res = entry.device.enable_overlays()
-            else:
-                continue
-            if not (res is None or res[0]):
+            # A device call can RAISE (e.g. an HID write on a disconnected
+            # handle), not just return (False, …). Treat a raise as a failed
+            # result and keep going so every entry is attempted and the re-arm
+            # below still runs — otherwise the exception would escape the job
+            # before note_overlay_state() and the retry would be suppressed.
+            try:
+                if cmd == OverlayCommand.DISABLE:
+                    res = entry.device.disable_overlays()
+                elif cmd == OverlayCommand.ENABLE:
+                    res = entry.device.enable_overlays()
+                else:
+                    continue
+                if not (res is None or res[0]):
+                    ok = False
+            except Exception as e:
+                self.log.warning("Overlay %s failed: %s", cmd, e)
                 ok = False
         if not ok and self.overlay_handler is not None:
             # Revert to the pre-command state (failed DISABLE -> "enabled",
