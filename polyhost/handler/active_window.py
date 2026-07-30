@@ -161,7 +161,7 @@ class OverlayHandler:
 
     def handle_active_window(self, update_cycle_time_msec, accept_time_msec):
         """Decide the overlay action for the focused window and track the
-        resulting device state, suppressing redundant re-enables.
+        resulting device state, suppressing redundant re-enables AND re-disables.
 
         When the same app stays focused and only the window *title* changes,
         the matcher returns ENABLE, but overlays are already on and nothing was
@@ -169,9 +169,25 @@ class OverlayHandler:
         keycap refresh on the keyboard for no visible change. We downgrade that
         to NONE. A genuine re-enable (overlays were turned off since, e.g. after
         an unmapped window) still goes through because overlays_enabled is then
-        False."""
+        False.
+
+        The DISABLE direction is symmetric and matters just as much: a focused
+        window with NO overlays whose title keeps changing (e.g. a terminal
+        running a CLI that animates a spinner in its title bar) resolves to
+        DISABLE on every poll, each one a wasted bridge-sync + full re-render.
+        Once overlays are off, further DISABLEs are downgraded to NONE too."""
         data, cmd = self._decide_active_window(update_cycle_time_msec, accept_time_msec)
         if cmd == OverlayCommand.ENABLE and self.overlays_enabled:
+            return None, OverlayCommand.NONE
+        # Symmetric to the ENABLE case above: a DISABLE while overlays are ALREADY
+        # off costs the same wasted slave bridge-sync + full keycap refresh for no
+        # visible change. This fires EVERY poll when the focused window's TITLE keeps
+        # changing while the app has no overlays — e.g. a terminal whose CLI animates
+        # a spinner in the title bar (observed over the forwarder: an AI-agent CLI
+        # ticking a braille spinner ~1/s → one full 72-keycap re-render per second).
+        # The handle is unchanged, only the title, so it reads as a window change and
+        # resolves to DISABLE repeatedly. Downgrade the redundant ones to NONE.
+        if cmd == OverlayCommand.DISABLE and not self.overlays_enabled:
             return None, OverlayCommand.NONE
         if cmd in (OverlayCommand.ENABLE, OverlayCommand.OFF_ON):
             self.overlays_enabled = True
