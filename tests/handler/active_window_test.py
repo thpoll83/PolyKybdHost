@@ -5,7 +5,9 @@ resent) to NONE so the keyboard isn't asked to redo a blocking slave
 bridge-sync + full refresh on every window-title change, and symmetrically
 downgrades a DISABLE while overlays are already off (a no-overlay window
 whose title keeps ticking, e.g. a terminal spinner). Genuine transitions
-(a real enable after a disable, or vice-versa) still go through.
+(a real enable after a disable, or vice-versa) still go through, and a
+device call that fails is re-armed by PolyCore via note_overlay_state so
+the redundant-command guard doesn't swallow the retry.
 
 active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
@@ -76,6 +78,36 @@ class TestReEnableSuppression(unittest.TestCase):
         self.assertFalse(h.overlays_enabled)
         # Back to a mapped app after an unmapped window: re-enable must fire.
         h._decide_active_window = lambda *a: (None, OverlayCommand.ENABLE)
+        self.assertEqual(h.handle_active_window(0, 0)[1], OverlayCommand.ENABLE)
+        self.assertTrue(h.overlays_enabled)
+
+    def test_failed_disable_rearm_retries(self):
+        h = self._handler()
+        # Overlays on, then a real DISABLE (on->off) fires and marks off.
+        h._decide_active_window = lambda *a: (["x.png"], OverlayCommand.OFF_ON)
+        h.handle_active_window(0, 0)
+        h._decide_active_window = lambda *a: (None, OverlayCommand.DISABLE)
+        self.assertEqual(h.handle_active_window(0, 0)[1], OverlayCommand.DISABLE)
+        self.assertFalse(h.overlays_enabled)
+        # PolyCore's overlay job saw the device DISABLE fail and re-armed the
+        # handler back to the pre-command state. The next poll's DISABLE must
+        # NOT be suppressed — it retries until the device confirms.
+        h.note_overlay_state(True)
+        self.assertEqual(h.handle_active_window(0, 0)[1], OverlayCommand.DISABLE)
+        self.assertFalse(h.overlays_enabled)
+
+    def test_failed_enable_rearm_retries(self):
+        h = self._handler()
+        # A real ENABLE (off->on) fires and marks on.
+        h._decide_active_window = lambda *a: (["x.png"], OverlayCommand.OFF_ON)
+        h.handle_active_window(0, 0)
+        h._decide_active_window = lambda *a: (None, OverlayCommand.DISABLE)
+        h.handle_active_window(0, 0)
+        h._decide_active_window = lambda *a: (None, OverlayCommand.ENABLE)
+        self.assertEqual(h.handle_active_window(0, 0)[1], OverlayCommand.ENABLE)
+        self.assertTrue(h.overlays_enabled)
+        # Device ENABLE failed -> re-armed to "disabled"; next ENABLE retries.
+        h.note_overlay_state(False)
         self.assertEqual(h.handle_active_window(0, 0)[1], OverlayCommand.ENABLE)
         self.assertTrue(h.overlays_enabled)
 

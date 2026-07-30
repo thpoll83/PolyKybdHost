@@ -159,35 +159,34 @@ class OverlayHandler:
         """Log active window"""
         self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %d", raw_app_name, self.win.title.encode('utf-8'), self.win.getHandle())
 
+    def _is_redundant_overlay_cmd(self, cmd):
+        """True when ``cmd`` asks for the overlay state the device is already in
+        (ENABLE while on, or DISABLE while off) — a no-op the caller should drop
+        rather than pay a blocking slave bridge-sync + full 72-keycap refresh for
+        no visible change. The DISABLE side fires every poll for an unmapped
+        window whose *title* keeps ticking (e.g. a terminal CLI animating a
+        spinner in its title bar); the ENABLE side for a same-app title change."""
+        return ((cmd == OverlayCommand.ENABLE and self.overlays_enabled)
+                or (cmd == OverlayCommand.DISABLE and not self.overlays_enabled))
+
+    def note_overlay_state(self, enabled):
+        """Set the tracked device overlay state. PolyCore calls this after it
+        runs the enable/disable on the device so that a FAILED command re-arms
+        the redundant-command guard — reverting to the pre-command state so the
+        next poll retries instead of ``_is_redundant_overlay_cmd`` swallowing it
+        (a failed DISABLE must not leave overlays showing with the host believing
+        they are off, and vice-versa)."""
+        self.overlays_enabled = enabled
+
     def handle_active_window(self, update_cycle_time_msec, accept_time_msec):
         """Decide the overlay action for the focused window and track the
-        resulting device state, suppressing redundant re-enables AND re-disables.
-
-        When the same app stays focused and only the window *title* changes,
-        the matcher returns ENABLE, but overlays are already on and nothing was
-        resent — re-enabling just costs a blocking slave bridge-sync + full
-        keycap refresh on the keyboard for no visible change. We downgrade that
-        to NONE. A genuine re-enable (overlays were turned off since, e.g. after
-        an unmapped window) still goes through because overlays_enabled is then
-        False.
-
-        The DISABLE direction is symmetric and matters just as much: a focused
-        window with NO overlays whose title keeps changing (e.g. a terminal
-        running a CLI that animates a spinner in its title bar) resolves to
-        DISABLE on every poll, each one a wasted bridge-sync + full re-render.
-        Once overlays are off, further DISABLEs are downgraded to NONE too."""
+        resulting device overlay state, suppressing a redundant re-ENABLE or
+        re-DISABLE (see ``_is_redundant_overlay_cmd``). Only a genuine
+        transition is forwarded; the state is advanced optimistically here and
+        re-armed by ``PolyCore._overlay_cmd_job`` (``note_overlay_state``) if the
+        device call fails, so a failed command is retried rather than dropped."""
         data, cmd = self._decide_active_window(update_cycle_time_msec, accept_time_msec)
-        if cmd == OverlayCommand.ENABLE and self.overlays_enabled:
-            return None, OverlayCommand.NONE
-        # Symmetric to the ENABLE case above: a DISABLE while overlays are ALREADY
-        # off costs the same wasted slave bridge-sync + full keycap refresh for no
-        # visible change. This fires EVERY poll when the focused window's TITLE keeps
-        # changing while the app has no overlays — e.g. a terminal whose CLI animates
-        # a spinner in the title bar (observed over the forwarder: an AI-agent CLI
-        # ticking a braille spinner ~1/s → one full 72-keycap re-render per second).
-        # The handle is unchanged, only the title, so it reads as a window change and
-        # resolves to DISABLE repeatedly. Downgrade the redundant ones to NONE.
-        if cmd == OverlayCommand.DISABLE and not self.overlays_enabled:
+        if self._is_redundant_overlay_cmd(cmd):
             return None, OverlayCommand.NONE
         if cmd in (OverlayCommand.ENABLE, OverlayCommand.OFF_ON):
             self.overlays_enabled = True

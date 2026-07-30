@@ -563,14 +563,30 @@ class PolyCore:
         self._last_overlay_activity = time.monotonic()
 
     def _overlay_cmd_job(self, cmd, cancel):
-        """Worker-thread enable/disable of overlays on every device entry."""
+        """Worker-thread enable/disable of overlays on every device entry.
+
+        On a confirmed device-call FAILURE, re-arm the window handler (revert
+        its optimistic overlays_enabled) so the next poll re-issues the command
+        instead of the handler's redundant-command guard suppressing the retry —
+        a failed DISABLE must not leave the keyboard showing overlays while the
+        host believes they are off (and vice-versa). Success advances the state
+        the handler already set, so nothing to do."""
+        ok = True
         for entry in self.device_mgr.all_entries:
             if cancel.is_set():
                 return
             if cmd == OverlayCommand.DISABLE:
-                entry.device.disable_overlays()
+                res = entry.device.disable_overlays()
             elif cmd == OverlayCommand.ENABLE:
-                entry.device.enable_overlays()
+                res = entry.device.enable_overlays()
+            else:
+                continue
+            if not (res is None or res[0]):
+                ok = False
+        if not ok and self.overlay_handler is not None:
+            # Revert to the pre-command state (failed DISABLE -> "enabled",
+            # failed ENABLE -> "disabled") so the next tick retries.
+            self.overlay_handler.note_overlay_state(cmd == OverlayCommand.DISABLE)
         # enable/disable force-syncs state to the slave too — same deaf window.
         self._last_overlay_activity = time.monotonic()
 
