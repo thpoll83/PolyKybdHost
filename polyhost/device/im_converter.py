@@ -89,9 +89,15 @@ class ImageConverter:
 
             self.log.debug("Loaded %s: %dx%d", filename, self.w, self.h)
 
-        #not supported for now
-        if Modifier.GUI_KEY in self.image:
-            self.image.pop(Modifier.GUI_KEY)
+        # GUI overlays used to be dropped here ("not supported for now") even though
+        # the .combo.mods. alpha channel carries them, the firmware addresses variant
+        # 8 (adjust_overlay_idx_to_mod -> idx + NUM_OVERLAYS*8) and overlay_map[] has
+        # always had entries for it — so they simply never reached the keyboard. They
+        # are sent now. Cost is nil: every shipped template's GUI content is the one
+        # Esc app-marker cell, byte-identical to its other variants, so the cache
+        # dedups it onto a single pool slot. This also stopped being optional when the
+        # firmware's identity mapping went away: without it, Esc would blank under GUI
+        # rather than falling through to the no-modifier image.
 
         return True
 

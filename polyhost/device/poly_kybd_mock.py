@@ -10,6 +10,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.util.dict_util import split_by_n_chars
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier
+from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_sim import OverlayFirmwareSim, display_flat_idx
 from polyhost.input.unicode_input import InputMethod
 
@@ -326,48 +327,14 @@ class PolyKybdMock:
         return True, f"{counter} overlays sent {all_keys}."
 
     def send_overlays(self, filenames: list, cancel=None) -> bool:
+        """Parity with PolyKybd.send_overlays — a no-reuse send is an MRU send
+        with a throwaway cache. There is no separate direct path any more."""
         self._log_call("send_overlays", filenames)
-        if cancel is not None and cancel.is_set():
-            return False
-        overlay_counter = 0
-        hid_msg_counter = 0
-        key_counter = 0
-        enabled = False
-
-        for filename in filenames:
-            self.log.info("Send Overlay '%s'...", filename)
-            converter = ImageConverter(self.device_settings)
-            if not converter.open(filename):
-                self.log.warning("Unable to read %s", filename)
-                return False
-
-            for modifier in Modifier:
-                overlay_map = converter.extract_overlays(modifier)
-                if overlay_map:
-                    self.log.info("Sending overlays for modifier %s.", modifier)
-                    if not enabled and modifier == Modifier.NO_MOD:
-                        if KeyCode.KC_ESCAPE.value in overlay_map.keys():
-                            hid_msg_counter += self.send_smallest_overlay(
-                                KeyCode.KC_ESCAPE.value, modifier, overlay_map)
-                            overlay_map.pop(KeyCode.KC_ESCAPE.value)
-                            self.enable_overlays()
-                            enabled = True
-
-                    for keycode in overlay_map:
-                        hid_msg_counter += self.send_smallest_overlay(keycode, modifier, overlay_map)
-                        key_counter += 1
-
-                    all_keys = ", ".join(f"{key:#02x}" for key in overlay_map.keys())
-                    self.log.info(f"Overlays for keycodes {all_keys} have been sent.")
-                    overlay_counter += 1
-
-                    time.sleep(0.2)
-
-        self.log.info(f"{overlay_counter} overlays with {key_counter} keys sent ({hid_msg_counter} hid messages).")
-        if not enabled:
-            self.enable_overlays()
-        self._sent_overlays.extend(filenames)
-        return True
+        ok = self.send_overlays_mru(
+            filenames, OverlayMRUCache(self.device_settings.OVERLAY_MAPPING_CAPACITY), cancel)
+        if ok:
+            self._sent_overlays.extend(filenames)
+        return ok
 
     def send_overlays_mru(self, filenames: list, cache, cancel=None) -> bool:
         if cancel is not None and cancel.is_set():

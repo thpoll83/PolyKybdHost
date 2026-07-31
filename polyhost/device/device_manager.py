@@ -25,7 +25,12 @@ class DeviceManager:
         self.device_settings = settings
 
     def add(self, device: Any, name: str, *, is_primary: bool = False) -> None:
-        self._entries.append(DeviceEntry(device=device, name=name, is_primary=is_primary))
+        # The cache is created up front, not lazily on the first reconnect: overlay
+        # sends are MRU-only now (the firmware has no identity mapping to fall back
+        # on), so an entry without a cache could not send overlays at all.
+        self._entries.append(DeviceEntry(
+            device=device, name=name, is_primary=is_primary,
+            cache=OverlayMRUCache(self.device_settings.OVERLAY_MAPPING_CAPACITY)))
 
     @property
     def primary(self) -> DeviceEntry | None:

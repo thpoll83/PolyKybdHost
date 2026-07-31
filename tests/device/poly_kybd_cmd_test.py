@@ -579,7 +579,17 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
         return converter
 
     @mock.patch("polyhost.device.poly_kybd.ImageConverter")
-    def test_esc_sent_first_then_enable_then_rest(self, MockConverter):
+    def test_overlays_enabled_once_after_all_images(self, MockConverter):
+        # The old direct path sent ESC first and enabled overlays immediately, so
+        # the app marker appeared before the rest of the batch. That relied on the
+        # firmware's identity mapping making an uploaded image instantly
+        # addressable. With mapping mandatory, an image is only addressable once
+        # send_overlay_mapping() lands, so the MRU path uploads everything, sends
+        # the mapping, then enables exactly once.
+        # Not restored deliberately: ESC-first was a latency workaround from when
+        # overlay transfer was slow. MRU (only changed images move) plus the
+        # dirty-window/ROI send work made the whole batch fast enough that the
+        # early-feedback trick is no longer worth a partial-mapping round trip.
         esc, key_a = KeyCode.KC_ESCAPE.value, KeyCode.KC_A.value
         MockConverter.return_value = self._converter(
             {key_a: _overlay("rect"), esc: _overlay("dot")})
@@ -589,13 +599,14 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
         payloads = device.payloads()
         enable_idx = next(i for i, p in enumerate(payloads)
                           if p[:3] == bytes([POLY, 11, 0x01]))
-        esc_idx = next(i for i, p in enumerate(payloads)
-                       if p[1] in (10, 16, 18) and p[2] == esc)
-        a_idx = next(i for i, p in enumerate(payloads)
-                     if p[1] in (10, 16, 18) and p[2] == key_a)
-        # ESC image first, then overlays enabled, then the remaining keys
-        self.assertLess(esc_idx, enable_idx)
-        self.assertLess(enable_idx, a_idx)
+        # MRU uploads in MIRROR mode, so the upload's "keycode" byte carries the
+        # POOL SLOT, not the keycode — images can no longer be located by keycode.
+        img_idx = [i for i, p in enumerate(payloads) if p[1] in (10, 16, 18)]
+        map_idx = next(i for i, p in enumerate(payloads) if p[1] == 21)
+        self.assertEqual(len(img_idx), 2, "both images uploaded")
+        # Images, then the mapping that makes them addressable, then one enable.
+        self.assertLess(max(img_idx), map_idx)
+        self.assertLess(map_idx, enable_idx)
         self.assertEqual(sum(1 for p in payloads if p[:3] == bytes([POLY, 11, 0x01])), 1)
         self.assert_lock_free(keeb)
 

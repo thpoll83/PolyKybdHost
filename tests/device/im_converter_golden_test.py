@@ -82,8 +82,9 @@ def _reference_open(converter, filename):
             np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
             dtype=bool)
 
-    if Modifier.GUI_KEY in converter.image:
-        converter.image.pop(Modifier.GUI_KEY)
+    # NOTE: the production converter used to pop GUI_KEY here ("not supported for
+    # now"). It no longer does — GUI overlays are sent — so this frozen reference
+    # drops the pop too, keeping the rest of the pipeline pinned byte-for-byte.
 
     return True
 
