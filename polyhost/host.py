@@ -465,7 +465,7 @@ class PolyHost(QApplication):
         # both in-process and client mode, greyed with the rest while disconnected.
         # "Standard" restores the normal language legends; other entries override the
         # letter/digit legends with an alternative script (from the fantasy bundle).
-        self.glyph_script_menu = self.menu.addMenu(get_icon("abc.svg"), "Glyph Script")
+        self.glyph_script_menu = self.menu.addMenu(get_icon("text_fields.svg"), "Glyph Script")
         glyph_group = QActionGroup(self)
         glyph_group.setExclusive(True)
         # One radio entry per GlyphScript (labels in GLYPH_SCRIPT_LABELS). Built
