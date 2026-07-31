@@ -372,13 +372,13 @@ class PolyHost(QApplication):
         # meaningful as a client; in-process Quit already stops everything.
         self.exit_with_daemon = None
         if client_mode:
-            self.exit_with_daemon = QAction(get_icon("power.svg"),
+            self.exit_with_daemon = QAction(get_icon("power_off.svg"),
                                             "Quit && stop background daemon", parent=self)
             # noinspection PyUnresolvedReferences
             self.exit_with_daemon.triggered.connect(self.quit_app_and_daemon)
         # "Get Support" is no longer a separate menu item — its Discord link now
         # lives in the About dialog (keeps the tray menu shorter).
-        self.about = QAction(get_icon("home.svg"), "About", parent=self)
+        self.about = QAction(get_icon("info.svg"), "About", parent=self)
         # noinspection PyUnresolvedReferences
         self.about.triggered.connect(self.show_about_dialog)
 
@@ -391,7 +391,7 @@ class PolyHost(QApplication):
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
-        self.fontpack_inspector_action = QAction(get_icon("overlays.svg"), "Inspect Font Packs...", parent=self)
+        self.fontpack_inspector_action = QAction(get_icon("frame_inspect.svg"), "Inspect Font Packs...", parent=self)
         # noinspection PyUnresolvedReferences
         self.fontpack_inspector_action.triggered.connect(self.open_fontpack_inspector)
 
@@ -436,7 +436,7 @@ class PolyHost(QApplication):
         # device through core.get/set_idle_style (worker run_sync in-process, RPC
         # in client mode), so it works in both modes; the blanket enable/disable
         # in managed_connection_status greys the whole submenu while disconnected.
-        self.idle_style_menu = self.menu.addMenu(get_icon("backlight_high.svg"), "Idle Anti-Burn-In")
+        self.idle_style_menu = self.menu.addMenu(get_icon("bedtime.svg"), "Idle Anti-Burn-In")
         idle_group = QActionGroup(self)
         idle_group.setExclusive(True)
         self.idle_pulse_action = QAction("Pulse (legacy)", parent=self, checkable=True)
@@ -465,7 +465,7 @@ class PolyHost(QApplication):
         # both in-process and client mode, greyed with the rest while disconnected.
         # "Standard" restores the normal language legends; other entries override the
         # letter/digit legends with an alternative script (from the fantasy bundle).
-        self.glyph_script_menu = self.menu.addMenu(get_icon("language.svg"), "Glyph Script")
+        self.glyph_script_menu = self.menu.addMenu(get_icon("text_fields.svg"), "Glyph Script")
         glyph_group = QActionGroup(self)
         glyph_group.setExclusive(True)
         # One radio entry per GlyphScript (labels in GLYPH_SCRIPT_LABELS). Built
@@ -487,7 +487,7 @@ class PolyHost(QApplication):
         self.menu.addAction(self.settings_dialog)
         self.menu.addAction(self.log_dialog)
 
-        self.update_action = QAction(get_icon("sync.svg"), "Check for updates...", parent=self)
+        self.update_action = QAction(get_icon("browser_updated.svg"), "Check for updates...", parent=self)
         # noinspection PyUnresolvedReferences
         self.update_action.triggered.connect(self._on_update_clicked)
         self.menu.addAction(self.update_action)
@@ -510,7 +510,7 @@ class PolyHost(QApplication):
         # flash is handed to the daemon over the fw.flash RPC — the temp .bin is
         # on the same machine, so the daemon can read it (see _on_fw_download_done).
         # Available in both modes as of the daemon-default regression fix.
-        self.firmware_update_action = QAction(get_icon("keyboard.svg"), "Check for firmware update…", parent=self)
+        self.firmware_update_action = QAction(get_icon("memory.svg"), "Check for firmware update…", parent=self)
         # noinspection PyUnresolvedReferences
         self.firmware_update_action.triggered.connect(self._on_fw_up_clicked)
         self.menu.addAction(self.firmware_update_action)
@@ -526,19 +526,19 @@ class PolyHost(QApplication):
         self._pending_fw_tmp_path = None
 
         if debug_mode > 0:
-            debug_menu = self.menu.addMenu(get_icon("info.svg"), "Debugging")
+            debug_menu = self.menu.addMenu(get_icon("bug_report.svg"), "Debugging")
             self._debug_menu = debug_menu
-            self.debug_lang_menu = debug_menu.addMenu(get_icon("language.svg"), "Change System Input Language")
+            self.debug_lang_menu = debug_menu.addMenu(get_icon("translate.svg"), "Change System Input Language")
             # Font-pack inspector: offline tool (no device needed), so it's
             # available in both modes — kept behind the debug flag.
             debug_menu.addAction(self.fontpack_inspector_action)
             if not self.client_mode:
                 # MRU inspector + mock dump read the in-process device_mgr.
-                mru_action = QAction(get_icon("overlays.svg"), "Inspect MRU Cache...", parent=self)
+                mru_action = QAction(get_icon("history.svg"), "Inspect MRU Cache...", parent=self)
                 # noinspection PyUnresolvedReferences
                 mru_action.triggered.connect(self.open_mru_inspector)
                 debug_menu.addAction(mru_action)
-                dump_action = QAction(get_icon("overlays.svg"), "Dump Mock Bitmaps...", parent=self)
+                dump_action = QAction(get_icon("image.svg"), "Dump Mock Bitmaps...", parent=self)
                 # noinspection PyUnresolvedReferences
                 dump_action.triggered.connect(self.dump_mock_bitmaps)
                 debug_menu.addAction(dump_action)

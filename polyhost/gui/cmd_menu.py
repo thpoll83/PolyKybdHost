@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import (
     QAction, QFileDialog, QMessageBox, QAbstractItemView, QProxyStyle, QStyle,
 )
 
-from polyhost.device.keys import KeyCode, keycode_to_mapping_idx
 from polyhost.device.hid_fw_up import get_fw_version, validate_rp2040_firmware, validate_polykybd_firmware, apply_staged_firmware
 from polyhost.gui import file_dialogs
 from polyhost.gui.get_icon import get_icon
@@ -81,46 +80,46 @@ class CommandsSubMenu:
         self.parent.report_device_result("Error", err_msg_fn(msg), ok)
 
     def build_menu(self, parent_menu):
-        cmd_menu = parent_menu.addMenu(get_icon("settings.svg"), "All PolyKybd Commands")
+        cmd_menu = parent_menu.addMenu(get_icon("list_alt.svg"), "All PolyKybd Commands")
         self._cmd_menu = cmd_menu
         # Firmware flash/apply/bootloader actions stay enabled on a
         # protocol/version mismatch (see PolyHost._fw_actions_allowed) —
         # update_enabled() re-enables exactly these when the rest is greyed out.
         self._fw_actions = []
 
-        action = QAction(get_icon("toggle_off.svg"), "Stop Idle", parent=self.parent)
+        action = QAction(get_icon("bedtime_off.svg"), "Stop Idle", parent=self.parent)
         action.setData(False)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.change_idle)
         cmd_menu.addAction(action)
 
-        action = QAction(get_icon("toggle_on.svg"), "Start Idle", parent=self.parent)
+        action = QAction(get_icon("bedtime.svg"), "Start Idle", parent=self.parent)
         action.setData(True)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.change_idle)
         cmd_menu.addAction(action)
 
-        action = QAction(get_icon("keyboard.svg"), "Reset Dynamic Keymap", parent=self.parent)
+        action = QAction(get_icon("device_reset.svg"), "Reset Dynamic Keymap", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.reset_dynamic_keymap)
         cmd_menu.addAction(action)
 
-        action = QAction(get_icon("delete.svg"), "Reset Overlays Buffers", parent=self.parent)
+        action = QAction(get_icon("layers_clear.svg"), "Reset Overlays Buffers", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.reset_overlays)
         cmd_menu.addAction(action)
 
-        action = QAction(get_icon("delete.svg"), "Reset Overlays Mapping", parent=self.parent)
+        action = QAction(get_icon("link_off.svg"), "Reset Overlays Mapping", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.reset_overlay_mapping)
         cmd_menu.addAction(action)
 
-        action = QAction(get_icon("toggle_off.svg"), "Clear Overlays Usage", parent=self.parent)
+        action = QAction(get_icon("deselect.svg"), "Clear Overlays Usage", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.reset_overlay_usage)
         cmd_menu.addAction(action)
 
-        action = QAction(get_icon("toggle_on.svg"), "Set All Overlays Mapping", parent=self.parent)
+        action = QAction(get_icon("select_all.svg"), "Set All Overlays Mapping", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.set_all_overlay_usage)
         cmd_menu.addAction(action)
@@ -135,12 +134,12 @@ class CommandsSubMenu:
         action.triggered.connect(self.disable_overlays)
         cmd_menu.addAction(action)
 
-        action = QAction("Load command file...", parent=self.parent)
+        action = QAction(get_icon("file_open.svg"), "Load command file...", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.load_commands)
         cmd_menu.addAction(action)
 
-        bri_menu = cmd_menu.addMenu("Change Brightness")
+        bri_menu = cmd_menu.addMenu(get_icon("settings_brightness.svg"), "Change Brightness")
         action = QAction(get_icon("backlight_high_off.svg"), "Off", parent=self.parent)
         action.setData(0)
         # noinspection PyUnresolvedReferences
@@ -159,7 +158,7 @@ class CommandsSubMenu:
         action.triggered.connect(self.set_brightness)
         bri_menu.addAction(action)
 
-        action = QAction(get_icon("backlight_high.svg"), "100%", parent=self.parent)
+        action = QAction(get_icon("backlight_high_fill.svg"), "100%", parent=self.parent)
         action.setData(50)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.set_brightness)
@@ -167,19 +166,19 @@ class CommandsSubMenu:
 
         cmd_menu.addSeparator()
 
-        action = QAction(get_icon("keyboard_input.svg"), "Flash + Apply Firmware (.bin)…", parent=self.parent)
+        action = QAction(get_icon("deployed_code_update.svg"), "Flash + Apply Firmware (.bin)…", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(lambda: self.open_hid_fw_up_dialog(apply_after=True))
         cmd_menu.addAction(action)
         self._fw_actions.append(action)
 
-        action = QAction(get_icon("keyboard_input.svg"), "Flash Firmware only (.bin, stage)…", parent=self.parent)
+        action = QAction(get_icon("deployed_code.svg"), "Flash Firmware only (.bin, stage)…", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(lambda: self.open_hid_fw_up_dialog(apply_after=False))
         cmd_menu.addAction(action)
         self._fw_actions.append(action)
 
-        action = QAction(get_icon("keyboard_input.svg"), "Apply Staged Firmware (both halves)…", parent=self.parent)
+        action = QAction(get_icon("arrow_circle_down.svg"), "Apply Staged Firmware (both halves)…", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.apply_staged_firmware_action)
         cmd_menu.addAction(action)
@@ -189,10 +188,11 @@ class CommandsSubMenu:
         # independent), so these follow fw_enabled — usable even on a protocol
         # mismatch. The submenu's own action goes in _fw_actions too, else
         # update_enabled() would grey the whole submenu out when only fw is enabled.
-        fp_menu = cmd_menu.addMenu(get_icon("settings.svg"), "Font Pack")
+        fp_menu = cmd_menu.addMenu(get_icon("font_download.svg"), "Font Pack")
         self._fw_actions.append(fp_menu.menuAction())
 
-        action = QAction("Sync (flash missing/updated bundles)", parent=self.parent)
+        action = QAction(get_icon("sync_alt.svg"), "Sync (flash missing/updated bundles)",
+                         parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.sync_fontpack)
         fp_menu.addAction(action)
@@ -204,27 +204,24 @@ class CommandsSubMenu:
         fp_menu.addAction(action)
         self._fw_actions.append(action)
 
-        action = QAction("Test mapping...", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.mapping_test)
-        cmd_menu.addAction(action)
-
         cmd_menu.addSeparator()
 
-        action = QAction(get_icon("power.svg"), "Activate Bootloader", parent=self.parent)
+        action = QAction(get_icon("usb.svg"), "Activate Bootloader", parent=self.parent)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.activate_bootloader)
         cmd_menu.addAction(action)
         self._fw_actions.append(action)
 
-        hand_menu = cmd_menu.addMenu(get_icon("keyboard.svg"), "Fix Left/Right Side")
-        action = QAction("Connected half is LEFT (other is RIGHT)", parent=self.parent)
+        hand_menu = cmd_menu.addMenu(get_icon("flip.svg"), "Fix Left/Right Side")
+        action = QAction(get_icon("splitscreen_left.svg"),
+                         "Connected half is LEFT (other is RIGHT)", parent=self.parent)
         action.setData(True)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.set_handedness)
         hand_menu.addAction(action)
 
-        action = QAction("Connected half is RIGHT (other is LEFT)", parent=self.parent)
+        action = QAction(get_icon("splitscreen_right.svg"),
+                         "Connected half is RIGHT (other is LEFT)", parent=self.parent)
         action.setData(False)
         # noinspection PyUnresolvedReferences
         action.triggered.connect(self.set_handedness)
@@ -303,60 +300,6 @@ class CommandsSubMenu:
         idle = self.parent.sender().data()
         self._report(self._core.set_idle(idle),
                      lambda m: f"Failed to change idle mode: '{m}'")
-
-    def mapping_test(self):
-        from_to = {}
-        from_key = keycode_to_mapping_idx(KeyCode.KC_Q)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_A)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-        from_key = keycode_to_mapping_idx(KeyCode.KC_A)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_Q)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-        from_key = keycode_to_mapping_idx(KeyCode.KC_S)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_W)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-        from_key = keycode_to_mapping_idx(KeyCode.KC_W)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_S)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-        from_key = keycode_to_mapping_idx(KeyCode.KC_E)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_D)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-        from_key = keycode_to_mapping_idx(KeyCode.KC_D)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_E)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-        from_key = keycode_to_mapping_idx(KeyCode.KC_U)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_J)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-        from_key = keycode_to_mapping_idx(KeyCode.KC_J)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_U)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-        from_key = keycode_to_mapping_idx(KeyCode.KC_I)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_K)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-        from_key = keycode_to_mapping_idx(KeyCode.KC_K)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_I)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-        from_key = keycode_to_mapping_idx(KeyCode.KC_O)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_L)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-        from_key = keycode_to_mapping_idx(KeyCode.KC_L)
-        to_key = keycode_to_mapping_idx(KeyCode.KC_O)
-        from_to[from_key] = to_key
-        from_to[to_key] = from_key
-
-        self._report(self._core.send_overlay_mapping(from_to),
-                     lambda m: f"Failed sending test mapping: '{m}'")
 
     def sync_fontpack(self):
         """Flash any font-pack bundles the keyboard is missing/behind on (the same
