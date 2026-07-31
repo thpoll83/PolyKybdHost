@@ -42,10 +42,10 @@ code:
   overlay: [vscode_template.mods.png, vscode_template.combo.mods.png]
   title: .* Visual Studio Code
 java:
-  overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
+  overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
 clion,clion64,jetbrains_client,jetbrains-pycharm,jetbrains-pycharm-ce,idea:
-  overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png]
+  overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
 devenv:
   overlay: [visualstudio_template.mods.png, visualstudio_template.combo.mods.png]
 lockapp:

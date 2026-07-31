@@ -63,6 +63,11 @@ def _reference_open(converter, filename):
             key_r = Modifier.CTRL_SHIFT
             key_g = Modifier.CTRL_ALT
             key_b = Modifier.ALT_SHIFT
+        elif ".extra.mods." in filename:
+            # Third file kind. Only R is assigned; G/B/A are reserved. Tested
+            # BEFORE the plain form because ".extra.mods." contains ".mods.".
+            key_r = Modifier.CTRL_ALT_SHIFT
+            key_a = key_g = key_b = None
         else:
             key_a = Modifier.NO_MOD
             key_r = Modifier.CTRL
@@ -71,14 +76,16 @@ def _reference_open(converter, filename):
         if not has_alpha:
             [b, g, r] = np.dsplit(im, im.shape[-1])
             converter.image[key_r] = np.array(r, dtype=bool)
-            converter.image[key_g] = np.array(g, dtype=bool)
-            converter.image[key_b] = np.array(b, dtype=bool)
+            if key_g is not None:
+                converter.image[key_g] = np.array(g, dtype=bool)
+            if key_b is not None:
+                converter.image[key_b] = np.array(b, dtype=bool)
         else:
             [b, g, r, a] = np.dsplit(im, im.shape[-1])
-            converter.image[key_a] = np.array(a, dtype=bool)
             converter.image[key_r] = np.array(r, dtype=bool)
-            converter.image[key_g] = np.array(g, dtype=bool)
-            converter.image[key_b] = np.array(b, dtype=bool)
+            for key, plane in ((key_a, a), (key_g, g), (key_b, b)):
+                if key is not None:
+                    converter.image[key] = np.array(plane, dtype=bool)
     else:
         converter.image[Modifier.NO_MOD] = np.array(
             np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
