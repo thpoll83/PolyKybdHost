@@ -105,6 +105,14 @@ ReleaseInfo   = namedtuple("ReleaseInfo",   ["tag", "version", "tarball_url", "h
 FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "uf2_url", "html_url", "published_at", "name", "notes"],
                              defaults=("", ""))
 
+# A firmware release that IS newer than the keyboard but carries no flashable
+# .bin asset — normally because its release build failed and never uploaded one
+# (v0.9.82, 2026-07-31). It is deliberately NOT a FwUpReleaseInfo: there is
+# nothing to flash, so it must never reach the flash prompt. It exists so the UI
+# can say "0.9.82 exists but has no downloadable firmware" instead of the flatly
+# wrong "you are running the latest firmware".
+FwUpBlocked = namedtuple("FwUpBlocked", ["tag", "version", "html_url", "reason"])
+
 
 class UpdateCheckError(RuntimeError):
     """Raised when the GitHub releases API is unreachable or returns an unexpected response.
@@ -246,8 +254,10 @@ def _check_fw_latest_via_web(current: Version) -> Optional[FwUpReleaseInfo]:
     assets = _release_assets_via_web(FW_REPO, tag)
     bin_url = assets.get("bin")
     if not bin_url:
-        log.info("Firmware update check (web): release %s has no .bin asset link", tag)
-        return None
+        log.warning("Firmware update check (web): release %s is newer but has no .bin asset link", tag)
+        return FwUpBlocked(tag=tag, version=str(latest),
+                           html_url=f"https://github.com/{FW_REPO}/releases/tag/{tag}",
+                           reason="no_bin_asset")
     log.info("Firmware update check (web fallback): new version available: %s -> %s",
              current, latest)
     return FwUpReleaseInfo(
@@ -353,7 +363,10 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
 
     Uses ETag caching — 304 Not Modified responses don't count against the rate limit.
     Raises UpdateCheckError on network/API failure.
-    Returns None for "up to date" or "release has no .bin asset".
+    Returns None when up to date, and **FwUpBlocked** when a strictly newer release
+    exists but ships no flashable .bin (a failed release build). Callers must check
+    ``isinstance(result, FwUpReleaseInfo)`` before treating it as flashable —
+    FwUpBlocked is truthy but must never reach the flash prompt.
     """
     try:
         current = Version(current_version.lstrip("vV"))
@@ -376,7 +389,16 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
     if resp.status_code == 304:
         try:
             cached_ver = fw.get("version")
-            if cached_ver and Version(cached_ver) > current and fw.get("bin_url"):
+            if cached_ver and Version(cached_ver) > current:
+                # The cache stores bin_url="" for an asset-less release, and the
+                # ETag means every REPEAT check lands here — so the blocked case
+                # has to be reported from this branch too, not just the 200 one.
+                if not fw.get("bin_url"):
+                    log.warning("Firmware update check (cached): release %s is newer "
+                                "but has no .bin asset", fw.get("tag", cached_ver))
+                    return FwUpBlocked(tag=fw.get("tag", ""), version=cached_ver,
+                                       html_url=fw.get("html_url", ""),
+                                       reason="no_bin_asset")
                 log.info("Firmware update check (cached): new version available: %s -> %s",
                          current_version, cached_ver)
                 return FwUpReleaseInfo(
@@ -443,8 +465,9 @@ def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
         return None
 
     if not bin_url:
-        log.warning("Firmware update check: release %s has no .bin asset — skipping", tag)
-        return None
+        log.warning("Firmware update check: release %s is newer but has no .bin asset", tag)
+        return FwUpBlocked(tag=tag, version=str(latest), html_url=html_url,
+                           reason="no_bin_asset")
 
     log.info("Firmware update check: new version available: %s -> %s", current_version, latest)
     return FwUpReleaseInfo(tag=tag, version=str(latest), bin_url=bin_url,
@@ -657,7 +680,9 @@ class UpdateChecker(threading.Thread):
     - ``on_update_available(ReleaseInfo)`` — newer host release found
     - ``on_fw_up_available(FwUpReleaseInfo)`` — newer firmware release found
     - ``on_host_no_update()`` — host check found no newer release
-    - ``on_fw_no_update()`` — firmware check found no newer release
+    - ``on_fw_no_update(blocked)`` — no flashable firmware update. ``blocked`` is
+      None when the keyboard is genuinely current, or a ``FwUpBlocked`` when a
+      newer release exists but has no .bin to flash.
     - ``on_error(str)`` — host/firmware check failed (network/API)
     """
 
@@ -703,10 +728,13 @@ class UpdateChecker(threading.Thread):
                 log.exception("Firmware update check crashed")
                 _fire(self._on_error, str(e))
 
-            if fw_release:
+            # Only a real FwUpReleaseInfo is flashable. FwUpBlocked ("newer, but
+            # no .bin") is truthy, so dispatch on the type, not on truthiness —
+            # it rides the no-update callback as an explanatory payload.
+            if isinstance(fw_release, FwUpReleaseInfo):
                 _fire(self._on_fw_up_available, fw_release)
             else:
-                _fire(self._on_fw_no_update)
+                _fire(self._on_fw_no_update, fw_release)
 
 
 class UpdateInstaller(threading.Thread):
