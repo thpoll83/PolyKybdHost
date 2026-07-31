@@ -424,7 +424,7 @@ def _render_composite(face, hb, hb_font, opts: RenderOptions, groups):
                            xAdvance=total_adv,
                            xOffset=minL + (opts.xshift if CW else 0),
                            yOffset=1 + minT))
-        bitmap += bytes(bits.buf)
+        bitmap += fd._row_to_col(bits, CW, CH)   # column-native (OLED page), ABI 2
     return glyphs, bitmap
 
 

@@ -26,7 +26,16 @@ import struct
 from dataclasses import dataclass, field
 
 MAGIC = b"PlyF"
-ABI_VERSION = 1
+ABI_VERSION = 2   # v2: glyph bitmaps are COLUMN-NATIVE (OLED page format)
+
+
+def _glyph_len(w: int, h: int) -> int:
+    """Per-glyph packed bitmap length. ABI 2 stores glyphs COLUMN-NATIVE (OLED page
+    format): w columns of cb=(h+7)//8 page-bytes each = w*cb, NOT the Adafruit
+    row-major (w*h+7)//8. See the firmware fonts/gfxfont.h note."""
+    return w * ((h + 7) // 8)
+
+
 HEADER_SIZE = 32
 FONT_REC_SIZE = 20
 GLYPH_REC_SIZE = 8
@@ -65,7 +74,7 @@ class PackFont:
         end = 0
         for g in self.glyphs:
             if g["width"] and g["height"]:
-                end = max(end, g["bitmapOffset"] + (g["width"] * g["height"] + 7) // 8)
+                end = max(end, g["bitmapOffset"] + _glyph_len(g["width"], g["height"]))
         return end
 
 
@@ -154,11 +163,11 @@ def decode_pack(data, name_hint: str = "") -> Pack:
         for gi, g in enumerate(glyphs):
             if g["width"] == 0 or g["height"] == 0:
                 continue
-            need = g["bitmapOffset"] + (g["width"] * g["height"] + 7) // 8
+            need = g["bitmapOffset"] + _glyph_len(g["width"], g["height"])
             if need > blen:
                 raise PackDecodeError(
                     f"font {i} glyph {gi}: bitmap slice runs past the font block "
-                    f"(offset {g['bitmapOffset']} + {(g['width'] * g['height'] + 7) // 8} "
+                    f"(offset {g['bitmapOffset']} + {_glyph_len(g['width'], g['height'])} "
                     f"> block size {blen})")
         name = name_hint and f"{name_hint}#{gidx}" or f"font{i}#{gidx}"
         fonts.append(PackFont(name=name, bitmap=data[bstart:bstop], glyphs=glyphs,
@@ -252,7 +261,7 @@ def replace_glyph(font: PackFont, cp: int, glyph: dict, glyph_bitmap: bytes) -> 
         w, h = g["width"], g["height"]
         g["bitmapOffset"] = len(blob)
         if w and h:
-            nbytes = (w * h + 7) // 8
+            nbytes = _glyph_len(w, h)
             if i == idx:
                 src = glyph_bitmap[:nbytes]
             else:

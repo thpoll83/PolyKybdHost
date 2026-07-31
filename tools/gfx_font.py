@@ -142,18 +142,16 @@ class GfxGlyphRenderer:
                 return x_cursor
         g = f.glyphs[cp - f.first]
         y = BASELINE + (f.yAdvance - self.base_yadv)
-        bo, bit, bits = g['bitmapOffset'], 0, 0
-        for yy in range(g['height']):
-            for xx in range(g['width']):
-                if (bit & 7) == 0:
-                    bits = f.bitmap[bo]; bo += 1
-                if bits & 0x80:
+        bo = g['bitmapOffset']
+        cb = (g['height'] + 7) >> 3   # column-native (OLED page) bytes per column
+        for xx in range(g['width']):
+            col = bo + xx * cb
+            for yy in range(g['height']):
+                if f.bitmap[col + (yy >> 3)] & (1 << (yy & 7)):
                     vx = x_cursor + g['xOffset'] + xx - BUFFER_X
                     vy = y + g['yOffset'] + yy
                     if 0 <= vx < OLED_W and 0 <= vy < OLED_H:
                         px[vx, vy] = 255
-                bits = (bits << 1) & 0xFF
-                bit += 1
         return x_cursor + g['xAdvance']
 
     def render(self, ch: str, scale: float = 1.0) -> Image.Image:

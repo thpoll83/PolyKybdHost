@@ -41,7 +41,7 @@ DOOMPACK_MAX_SIZE  = 0x40000        # the 256 KB engine-pack slot (flash 0x7C000
 
 # Pack format (base/fontpack.h). The host only needs to parse/validate the header.
 FONTPACK_MAGIC        = b"PlyF"
-FONTPACK_ABI_VERSION  = 1            # must match FONTPACK_ABI_VERSION in the firmware
+FONTPACK_ABI_VERSION  = 2            # must match FONTPACK_ABI_VERSION in the firmware (v2 = column-native glyphs)
 _HEADER_FMT           = "<4sHHIIIIII"  # magic, abi, flags, content_version, font_count, font_table_off, total_size, crc32, reserved
 _HEADER_SIZE          = struct.calcsize(_HEADER_FMT)   # 32
 

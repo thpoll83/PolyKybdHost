@@ -6,71 +6,71 @@
       "id": "symbol",
       "index": 0,
       "file": "symbol.plyf",
-      "content_version": 7,
-      "size": 33924,
+      "content_version": 8,
+      "size": 37200,
       "slot_offset": 4096,
       "slot_size": 98304,
-      "sha256": "7448122ebf5297d8"
+      "sha256": "1e5d24db3b135c1e"
     },
     {
       "id": "mideast",
       "index": 1,
       "file": "mideast.plyf",
-      "content_version": 2,
-      "size": 35036,
+      "content_version": 3,
+      "size": 38632,
       "slot_offset": 102400,
       "slot_size": 98304,
-      "sha256": "4541cb05ab26707a"
+      "sha256": "7374e84befcd853e"
     },
     {
       "id": "syllabic",
       "index": 2,
       "file": "syllabic.plyf",
-      "content_version": 2,
-      "size": 45732,
+      "content_version": 3,
+      "size": 50464,
       "slot_offset": 200704,
       "slot_size": 98304,
-      "sha256": "cf990f55ce2c9ab4"
+      "sha256": "c7cdf2489000703a"
     },
     {
       "id": "asia",
       "index": 3,
       "file": "asia.plyf",
-      "content_version": 2,
-      "size": 63020,
+      "content_version": 3,
+      "size": 70044,
       "slot_offset": 299008,
       "slot_size": 131072,
-      "sha256": "c85c72749ad9de93"
+      "sha256": "6b86ae8f8b757ea4"
     },
     {
       "id": "flags",
       "index": 4,
       "file": "flags.plyf",
-      "content_version": 4,
-      "size": 62932,
+      "content_version": 5,
+      "size": 65172,
       "slot_offset": 430080,
       "slot_size": 131072,
-      "sha256": "f1520dd20eaad825"
+      "sha256": "9e55e2ccc7ec431e"
     },
     {
       "id": "emoji",
       "index": 5,
       "file": "emoji.plyf",
-      "content_version": 2,
-      "size": 214344,
+      "content_version": 3,
+      "size": 220628,
       "slot_offset": 561152,
       "slot_size": 786432,
-      "sha256": "13dbeb4ec17e53a2"
+      "sha256": "a1e5b08121798484"
     },
     {
       "id": "fantasy",
       "index": 6,
       "file": "fantasy.plyf",
-      "content_version": 4,
-      "size": 23660,
+      "content_version": 5,
+      "size": 26624,
       "slot_offset": 1347584,
       "slot_size": 749568,
-      "sha256": "b0dddaeecc66ecc0"
+      "sha256": "39ed6aafdc8a1868"
     }
   ]
 }

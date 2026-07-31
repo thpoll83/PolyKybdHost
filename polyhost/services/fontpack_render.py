@@ -74,18 +74,17 @@ def glyph_to_image(font, cp: int, scale: int = 1, fg: int = 255, bg: int = 0):
     px = img.load()
     bmp = font.bitmap
     n = len(bmp)
-    bo, bit, cur = g["bitmapOffset"], 0, 0
-    for yy in range(h):
-        for xx in range(w):
-            if (bit & 7) == 0:
-                # Guard against a truncated/corrupt pack — an inspector must
-                # render what it can rather than crash on bad device data.
-                cur = bmp[bo] if 0 <= bo < n else 0
-                bo += 1
-            if cur & 0x80:
+    bo = g["bitmapOffset"]
+    cb = (h + 7) >> 3   # column-native (OLED page) bytes per column; byte = 8 vertical px
+    for xx in range(w):
+        col = bo + xx * cb
+        for yy in range(h):
+            b = col + (yy >> 3)
+            # Guard against a truncated/corrupt pack — an inspector must render
+            # what it can rather than crash on bad device data.
+            byte = bmp[b] if 0 <= b < n else 0
+            if byte & (1 << (yy & 7)):
                 px[xx, yy] = fg
-            cur = (cur << 1) & 0xFF
-            bit += 1
     if scale != 1:
         img = img.resize((_px(w, scale), _px(h, scale)), Image.NEAREST)
     return img
@@ -108,19 +107,18 @@ def keycap_image(font, cp: int, base_yadv: int = BASE_YADV, scale: float = 1,
     y_base = BASELINE + (font.yAdvance - base_yadv)
     x_left = (OLED_W - w) // 2          # centre the visible box; xOffset cancels
     bmp, n = font.bitmap, len(font.bitmap)
-    bo, bit, cur = g["bitmapOffset"], 0, 0
-    for yy in range(h):
-        for xx in range(w):
-            if (bit & 7) == 0:
-                cur = bmp[bo] if 0 <= bo < n else 0
-                bo += 1
-            if cur & 0x80:
+    bo = g["bitmapOffset"]
+    cb = (h + 7) >> 3   # column-native (OLED page) bytes per column
+    for xx in range(w):
+        col = bo + xx * cb
+        for yy in range(h):
+            b = col + (yy >> 3)
+            byte = bmp[b] if 0 <= b < n else 0
+            if byte & (1 << (yy & 7)):
                 vx = x_left + xx
                 vy = y_base + g["yOffset"] + yy
                 if 0 <= vx < OLED_W and 0 <= vy < OLED_H:
                     px[vx, vy] = fg
-            cur = (cur << 1) & 0xFF
-            bit += 1
     if scale != 1:
         img = img.resize((_px(OLED_W, scale), _px(OLED_H, scale)), Image.NEAREST)
     return img

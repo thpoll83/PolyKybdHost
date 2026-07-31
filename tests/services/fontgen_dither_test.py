@@ -55,21 +55,27 @@ class DitherUnitTest(unittest.TestCase):
         lit = sum(b.get(i) for i in range(64))
         self.assertTrue(24 <= lit <= 40, lit)
 
+    @staticmethod
+    def _col_pixel(packed, w, h, x, y):
+        # decode a column-native (OLED page, ABI 2) glyph bitmap: cb=(h+7)>>3
+        # page-bytes per column, byte x*cb+(y>>3), bit 1<<(y&7) (LSB = top).
+        cb = (h + 7) >> 3
+        return (packed[x * cb + (y >> 3)] >> (y & 7)) & 1
+
     def test_mono_passthrough(self):
         # one mono row 0b10100000 width 3 -> bits 1,0,1
         buf = bytes([0b10100000])
         packed, w, h = fd.render_bitmap_to_bits(1, 3, 1, 1, buf, fd.DitherOpts())
         self.assertEqual((w, h), (3, 1))
-        bits = fd._Bits(3); bits.buf[:] = packed
-        self.assertEqual([bits.get(i) for i in range(3)], [1, 0, 1])
+        self.assertEqual([self._col_pixel(packed, w, h, x, 0) for x in range(3)], [1, 0, 1])
 
     def test_morphological_outline_single_pixel(self):
         # centre pixel lit in 3x3 mono, -O1 -> all 9 lit (8 neighbours added)
         buf = bytes([0b00000000, 0b01000000, 0b00000000])  # (1,1) set, pitch 1
         opts = fd.DitherOpts(outline=1)
         packed, w, h = fd.render_bitmap_to_bits(1, 3, 3, 1, buf, opts)
-        bits = fd._Bits(9); bits.buf[:] = packed
-        self.assertEqual(sum(bits.get(i) for i in range(9)), 9)
+        self.assertEqual(sum(self._col_pixel(packed, w, h, x, y)
+                             for y in range(3) for x in range(3)), 9)
 
     def test_fit_dimensions(self):
         self.assertEqual(fd.fit_dimensions(80, 80, 0, 40), (40, 40))

@@ -414,4 +414,21 @@ def render_bitmap_to_bits(pixel_mode: int, width: int, rows: int, pitch: int,
         elif o.outline > 0:
             _morphological_outline(bits, out_w, out_h, o.outline)
 
-    return bytes(bits.buf), out_w, out_h
+    # The dither/edge/outline pipeline works in row-major MSB-first bits (its
+    # neighbour lookups index bit = y*w+x). The on-disk .plyf glyph format (ABI 2)
+    # is column-native (OLED page) — 1 byte = 8 vertical pixels, cb=(h+7)>>3 page
+    # bytes per column, byte col*cb+(yy>>3), bit 1<<(yy&7) (LSB = top of page).
+    # Transpose here, at the single emit choke point.
+    return _row_to_col(bits, out_w, out_h), out_w, out_h
+
+
+def _row_to_col(bits: "_Bits", w: int, h: int) -> bytes:
+    """Row-major MSB-first packed bits (bit=y*w+x) → column-native (OLED page) bytes:
+    cb=(h+7)>>3 page-bytes per column, out[x*cb + (y>>3)] bit (1<<(y&7)), LSB = top."""
+    cb = (h + 7) >> 3
+    out = bytearray(w * cb)
+    for y in range(h):
+        for x in range(w):
+            if bits.get(y * w + x):
+                out[x * cb + (y >> 3)] |= 1 << (y & 7)
+    return bytes(out)

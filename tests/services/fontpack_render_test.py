@@ -16,7 +16,7 @@ def _font(first, last, yadv, glyphs, bitmap):
 
 
 def _pack(fonts):
-    return fpr.Pack(abi_version=1, content_version=0, font_count=len(fonts),
+    return fpr.Pack(abi_version=2, content_version=0, font_count=len(fonts),
                     total_size=0, crc32=0, crc_ok=True, fonts=list(fonts))
 
 
@@ -27,7 +27,7 @@ class GlyphImageTest(unittest.TestCase):
                   yadv=8,
                   glyphs=[dict(bitmapOffset=0, width=4, height=2,
                                xAdvance=5, xOffset=0, yOffset=0)],
-                  bitmap=[0xF0, 0x00])
+                  bitmap=[0x01, 0x01, 0x01, 0x01])  # column-native: 4 cols, row0 lit
         img = rd.glyph_to_image(f, 0x41)
         self.assertEqual(img.size, (4, 2))
         px = img.load()
@@ -49,7 +49,7 @@ class KeycapImageTest(unittest.TestCase):
         f = _font(0x41, 0x41, 40,
                   [dict(bitmapOffset=0, width=2, height=2,
                         xAdvance=3, xOffset=0, yOffset=-2)],
-                  [0xF0])   # both rows lit (2x2 -> 4 bits)
+                  [0x03, 0x03])   # column-native: 2 cols, both rows lit
         img = rd.keycap_image(f, 0x41)
         self.assertEqual(img.size, (rd.OLED_W, rd.OLED_H))
         px = img.load()
@@ -62,8 +62,8 @@ class KeycapImageTest(unittest.TestCase):
     def test_baseline_shift_with_tall_font(self):
         # yAdvance 54 (flag-like) shifts the glyph down vs the 40 base
         glyph = [dict(bitmapOffset=0, width=2, height=2, xAdvance=3, xOffset=0, yOffset=0)]
-        low = rd.keycap_image(_font(0x41, 0x41, 40, glyph, [0xF0]), 0x41)
-        high = rd.keycap_image(_font(0x41, 0x41, 54, glyph, [0xF0]), 0x41)
+        low = rd.keycap_image(_font(0x41, 0x41, 40, glyph, [0x03, 0x03]), 0x41)
+        high = rd.keycap_image(_font(0x41, 0x41, 54, glyph, [0x03, 0x03]), 0x41)
 
         def top_lit(img):
             px = img.load()
