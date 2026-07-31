@@ -852,6 +852,26 @@ class PolyKybd:
 
         display_to_pool: dict[int, int] = {}
 
+        # Decode EVERY file before touching the device. prepare_for_mru_send()
+        # resets the firmware's mapping + usage bits, so issuing it first meant an
+        # unreadable file blanked the keycaps and then returned False, leaving the
+        # keyboard with no overlays until the next program switch. Validating up
+        # front makes a bad request a no-op on the device.
+        converters = []
+        for filename in filenames:
+            self.log.info("Send Overlay MRU '%s'...", filename)
+            converter = ImageConverter(self.device_settings)
+            if not converter.open(filename):
+                self.log.warning("Unable to read %s", filename)
+                return False
+            converters.append(converter)
+
+        # Cancellation is also checked here, before the first write, so a
+        # superseded send costs the device nothing at all.
+        if cancel is not None and cancel.is_set():
+            self.log.debug_detailed("send_overlays_mru cancelled before prepare")
+            return False
+
         ok, msg = self.prepare_for_mru_send()
         if not ok:
             # Without the mirror+reset the firmware may still hold the previous
@@ -867,13 +887,7 @@ class PolyKybd:
         # allocated via get_or_allocate for images that WERE sent stay in the
         # cache; only the mapping commit is skipped.
         with cache.batch():
-            for filename in filenames:
-                self.log.info("Send Overlay MRU '%s'...", filename)
-                converter = ImageConverter(self.device_settings)
-                if not converter.open(filename):
-                    self.log.warning("Unable to read %s", filename)
-                    return False
-
+            for converter in converters:
                 for modifier in Modifier:
                     overlay_map = converter.extract_overlays(modifier)
                     if not overlay_map:

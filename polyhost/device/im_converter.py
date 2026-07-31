@@ -59,29 +59,36 @@ class ImageConverter:
             return False
 
         if ".mods." in filename:
+            # Channel -> modifier variant. ⚠️ ".combo.mods." and ".extra.mods." both
+            # CONTAIN ".mods.", so they must be tested before the plain form.
             if ".combo.mods." in filename:
-                key_a = Modifier.GUI_KEY
-                key_r = Modifier.CTRL_SHIFT
-                key_g = Modifier.CTRL_ALT
-                key_b = Modifier.ALT_SHIFT
+                # Pairs, plus GUI in alpha.
+                key_a, key_r = Modifier.GUI_KEY, Modifier.CTRL_SHIFT
+                key_g, key_b = Modifier.CTRL_ALT, Modifier.ALT_SHIFT
+            elif ".extra.mods." in filename:
+                # Third tier: what is left after the singles and the pairs. Only R
+                # is assigned today (CTRL_ALT_SHIFT, variant 7). G/B/A are RESERVED
+                # for the GUI pairs the firmware earmarks (GUI+CTRL / GUI+ALT /
+                # GUI+SHIFT -> variants 9/10/11, config.h NUM_VARIATIONS_WITH_MAP).
+                # CTRL_ALT_SHIFT lives in R rather than A on purpose: a 3-channel
+                # PNG drops alpha entirely below, which would silently lose it.
+                key_r = Modifier.CTRL_ALT_SHIFT
+                key_a = key_g = key_b = None
             else:
-                key_a = Modifier.NO_MOD
-                key_r = Modifier.CTRL
-                key_g = Modifier.ALT
-                key_b = Modifier.SHIFT
+                # Singles, plus the unmodified layer in alpha.
+                key_a, key_r = Modifier.NO_MOD, Modifier.CTRL
+                key_g, key_b = Modifier.ALT, Modifier.SHIFT
             if not has_alpha:
                 [b, g, r] = np.dsplit(im, im.shape[-1])
-                self.image[key_r] = np.array(r, dtype=bool)
-                self.image[key_g] = np.array(g, dtype=bool)
-                self.image[key_b] = np.array(b, dtype=bool)
+                channels = ((key_r, r), (key_g, g), (key_b, b))
                 self.log.debug_detailed("Loaded 3 channels from %s: %dx%d", filename, self.w, self.h)
             else:
                 [b, g, r, a] = np.dsplit(im, im.shape[-1])
-                self.image[key_a] = np.array(a, dtype=bool)
-                self.image[key_r] = np.array(r, dtype=bool)
-                self.image[key_g] = np.array(g, dtype=bool)
-                self.image[key_b] = np.array(b, dtype=bool)
+                channels = ((key_a, a), (key_r, r), (key_g, g), (key_b, b))
                 self.log.debug_detailed("Loaded 4 channels from %s: %dx%d", filename, self.w, self.h)
+            for key, plane in channels:
+                if key is not None:            # reserved channel — nothing maps to it yet
+                    self.image[key] = np.array(plane, dtype=bool)
         else:
             # convert the image to b/w
             self.image[Modifier.NO_MOD] = np.array(np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),

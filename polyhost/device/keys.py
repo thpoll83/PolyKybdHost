@@ -9,7 +9,7 @@ class Modifier(Enum):
     ALT = 4
     CTRL_ALT = 5
     ALT_SHIFT = 6
-    # CTRL_ALT_SHIFT = 7 #not supported for now
+    CTRL_ALT_SHIFT = 7   # carried by the R channel of '*.extra.mods.png'
     GUI_KEY = 8
 
 
