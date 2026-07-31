@@ -154,7 +154,7 @@ class PolyForwarder(QApplication):
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
-        self.update_action = QAction(get_icon("sync.svg"), "Check for updates...", parent=self)
+        self.update_action = QAction(get_icon("browser_updated.svg"), "Check for updates...", parent=self)
         # noinspection PyUnresolvedReferences
         self.update_action.triggered.connect(self._on_update_clicked)
 

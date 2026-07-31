@@ -391,7 +391,7 @@ class PolyHost(QApplication):
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
-        self.fontpack_inspector_action = QAction(get_icon("font_download.svg"), "Inspect Font Packs...", parent=self)
+        self.fontpack_inspector_action = QAction(get_icon("frame_inspect.svg"), "Inspect Font Packs...", parent=self)
         # noinspection PyUnresolvedReferences
         self.fontpack_inspector_action.triggered.connect(self.open_fontpack_inspector)
 
