@@ -145,7 +145,7 @@ class PolyForwarder(QApplication):
         self.support = QAction(get_icon("support.svg"), "Get Support", parent=self)
         # noinspection PyUnresolvedReferences
         self.support.triggered.connect(self.open_support)
-        self.about = QAction(get_icon("home.svg"), "About", parent=self)
+        self.about = QAction(get_icon("info.svg"), "About", parent=self)
         # noinspection PyUnresolvedReferences
         self.about.triggered.connect(self.open_about)
 
