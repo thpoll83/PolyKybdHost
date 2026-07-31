@@ -397,6 +397,35 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   range-connect note above), so the Glyph-Script menu is disabled on a pre-v9 keyboard but
   the rest of the app still connects; within a glyph-script-capable device the script set is
   free to grow.
+- **Tray/menu icons (`polyhost/res/icons/`) are Material Symbols at optical size
+  48 — fetch the `_48px` cut, never `_24px`.** The optical-size axis changes the
+  **geometry**, not just the header: the same symbol at opsz24 is drawn with
+  heavier strokes for a smaller render target. Measured on a 48px canvas, an
+  opsz24 file carries **~25% more ink on average (max +43%)** than its opsz48
+  twin, so a mixed-opsz set renders visibly uneven — the new icons look bolder
+  than the untouched ones sitting next to them in the same menu. This cost a
+  full re-fetch of 28 files (2026-07).
+  - Source: `https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/<name>/materialsymbolsoutlined/<name>_48px.svg`
+    (filled variant: `<name>_fill1_48px.svg` — that's how brightness 100% differs
+    from 50%). Emit as a single `<path>` under
+    `<svg height="48px" viewBox="0 -960 960 960" width="48px" fill="#RRGGBB">`,
+    one fill on the `<svg>` element, tinted from the palette documented in
+    `gui/get_icon.py`.
+  - ⚠️ **A wrong/missing filename fails SILENTLY**: `QIcon()` on a nonexistent
+    path returns an **empty** icon — nothing raises at import or at runtime, the
+    menu entry just renders without one. Icon names are plain string literals at
+    ~50 `get_icon()` call sites, so **`tests/gui/icon_assets_test.py`** asserts
+    every name resolves, that no shipped `.svg` is unreferenced (11 orphans had
+    accumulated), and that the opsz48/single-fill format holds. It is Qt-free, so
+    it runs in the normal suite rather than only under xvfb.
+  - **Judge a candidate glyph by rendering and measuring it, not by its name.**
+    Rasterise to a fixed canvas (`cairosvg` + PIL) and compare **ink coverage**
+    and **glyph bounding height** against the set (baseline ≈19% ink, ≈34px tall
+    on 48px). That is what caught both the opsz mismatch above and `abc` being
+    only 12px tall — half the next smallest icon — which eyeballing the render
+    had missed. The measurement also overruled three name-based picks: the
+    `brightness_*` family is not a coherent ramp (the `backlight_*` family is),
+    and `bedtime`/`bedtime_off` beat a sun for idle start/stop.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
@@ -414,6 +443,10 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
 - **No *test* CI**: no workflow runs the unit tests. (The repo *does* have two
   workflows — `bump-version.yml` + `release.yml`; see **Releases** below.)
 - **GUI tests need a display**: `tests/gui/host_client_test.py` constructs the real `PolyHost` (default + `--connect` client mode) in a subprocess (one `QApplication`/process; `pynput` needs X) with Qt forced to `offscreen`. They **skip unless `DISPLAY` is set** — run them under a virtual X server: `xvfb-run -a .venv/bin/python -m unittest tests.gui.host_client_test`. `host.py` can't even be *imported* without an X server (pynput at module load), so plain `unittest discover` skips them. Installing `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too (pywinctl/pymonctl `sys.exit(1)` without it).
+  - ⚠️ **Do not chain two `xvfb-run -a` invocations in one shell command** — the
+    second one hangs (observed ~10 min at 0.7% CPU / 4 s CPU time, on a suite
+    that had run green in 27 s moments earlier; both were auto-picking a display).
+    Run them as separate commands.
 - **Single-key keymap write**: the firmware supports `ID_DYNAMIC_KEYMAP_SET_KEYCODE` (0x05) — payload is `[layer, row, col, keycode_hi, keycode_lo]`. No need to write a full layer; `PolyKybd.set_dynamic_keycode()` wraps this.
 - **Firmware update survives protocol mismatches**: `PolyHost.device_present` tracks "a device answers protocol-independent queries (GET_ID/GET_LANG)" separately from `connected` (protocol/version compatible). The flash/apply/bootloader actions and the release-update flow gate on `_fw_actions_allowed()` (present, not paused) — NOT on `connected` — so a keyboard on a mismatched protocol can always be updated (`CommandsSubMenu.update_enabled` re-enables exactly those items when the rest of the menu is greyed out). The HID flash protocol (`hid_fw_up`) is dispatched independently of `PROTOCOL_VERSION` in the firmware. Don't re-gate any firmware-update path on `self.connected`.
 - **Autostart** (`polyhost/services/add_to_startup.py`): `setup_autostart_for_app()` registers the app to start at login (called from `main_app.py` unless `--portable`).
