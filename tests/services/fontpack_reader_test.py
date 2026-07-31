@@ -129,12 +129,12 @@ class RoundTripTest(unittest.TestCase):
         pack = fr.decode_pack(_build_pack([
             {"first": 0x41, "last": 0x42, "yadv": 8, "gidx": 3,
              "glyphs": [(0, 2, 2, 3, 0, -2), (0, 0, 0, 0, 0, 0)],
-             "bitmap": bytes([0xF0])},
+             "bitmap": bytes([0x01, 0x01])},  # column-native 2x2, row0 lit
         ]))
         font = pack.fonts[0]
         a_before = dict(font.glyphs[0])
         newg = dict(bitmapOffset=0, width=2, height=2, xAdvance=3, xOffset=0, yOffset=-2)
-        merged = fr.replace_glyph(font, 0x42, newg, bytes([0xC0]))
+        merged = fr.replace_glyph(font, 0x42, newg, bytes([0x03, 0x03]))
         self.assertEqual(merged.first, 0x41)
         self.assertEqual(merged.last, 0x42)
         self.assertEqual(merged.global_index, 3)

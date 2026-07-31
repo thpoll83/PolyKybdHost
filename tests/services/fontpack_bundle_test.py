@@ -11,7 +11,7 @@ from unittest.mock import patch
 from polyhost.services import fontpack_bundle as fb
 
 
-def _make_pack(content_version=7, abi=1, body=b'\xAB' * 64) -> bytes:
+def _make_pack(content_version=7, abi=2, body=b'\xAB' * 64) -> bytes:
     total = 32 + len(body)
     crc = binascii.crc32(body) & 0xFFFFFFFF
     hdr = struct.pack("<4sHHIIIIII", b"PlyF", abi, 0, content_version, 3, 32, total, crc, 0)
@@ -24,10 +24,10 @@ def _make_pack(content_version=7, abi=1, body=b'\xAB' * 64) -> bytes:
 
 class TestDecideAutoFlash(unittest.TestCase):
 
-    def _bundled(self, ver=7, abi=1):
+    def _bundled(self, ver=7, abi=2):
         return {"abi_version": abi, "content_version": ver, "font_count": 3}
 
-    def _device(self, present=True, ver=5, abi=1):
+    def _device(self, present=True, ver=5, abi=2):
         return {"present": present, "abi": abi, "content_version": ver, "font_count": 3}
 
     def test_older_keyboard_flashes(self):

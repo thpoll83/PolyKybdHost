@@ -208,11 +208,12 @@ class Renderer:
             if not (f.first <= ch <= f.last): continue
             g = f.glyphs[ch - f.first]
             gy = yc + (f.yAdvance - self.base_yadv)
-            bo, bit, bits = g['bitmapOffset'], 0, 0
-            for yy in range(g['height']):
-                for xx in range(g['width']):
-                    if (bit & 7) == 0: bits = f.bitmap[bo]; bo += 1
-                    if bits & 0x80:
+            bo = g['bitmapOffset']
+            cb = (g['height'] + 7) >> 3   # column-native (OLED page) bytes per column
+            for xx in range(g['width']):
+                col = bo + xx * cb
+                for yy in range(g['height']):
+                    if f.bitmap[col + (yy >> 3)] & (1 << (yy & 7)):
                         vx = xc + g['xOffset'] + xx - BUFFER_X
                         vy = gy + g['yOffset'] + yy
                         # keep up to OVERSHOOT px outside the viewport so clipped glyph
@@ -220,7 +221,6 @@ class Renderer:
                         # receives viewport coords; it owns the OVERSHOOT offset + target.
                         if -OVERSHOOT <= vx < OLED_W + OVERSHOOT and -OVERSHOOT <= vy < OLED_H + OVERSHOOT:
                             setpix(vx, vy)
-                    bits = (bits << 1) & 0xFF; bit += 1
             xc += g['xAdvance']
 
 
