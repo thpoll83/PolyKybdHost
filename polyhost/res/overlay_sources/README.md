@@ -10,7 +10,18 @@ of the cell carries a different **modifier variant** of that key:
 | File | R | G | B | A |
 |---|---|---|---|---|
 | `*.mods.png` | Ctrl | Alt | Shift | (no mod) |
-| `*.combo.mods.png` | Ctrl+Shift | Ctrl+Alt | Alt+Shift | GUI *(dropped by firmware)* |
+| `*.combo.mods.png` | Ctrl+Shift | Ctrl+Alt | Alt+Shift | GUI |
+| `*.extra.mods.png` | Ctrl+Alt+Shift | *reserved* | *reserved* | *reserved* |
+
+All nine modifier variants are supported. GUI overlays used to be parsed and then
+discarded by the host and never reached a keyboard — they are sent now. The
+`extra` file is the third tier (what is left after the singles and the pairs);
+its G/B/A channels are reserved for the GUI pairs (GUI+Ctrl / GUI+Alt /
+GUI+Shift) that the firmware earmarks as variants 9/10/11.
+
+Variants that share artwork cost **one** pool slot, not one each — the host
+dedups byte-identical images before uploading — so repeating a key's icon across
+several variants is cheap.
 
 ## Workflow
 

@@ -8,6 +8,22 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
 
 - **Docstring coverage: ignore CodeRabbit's "Docstring Coverage … threshold 80%" pre-merge check.** That 80% target is a CodeRabbit default, **not** a project policy — the check is non-blocking and we deliberately do not chase it. Do **not** add docstrings to existing functions just to satisfy it (out-of-scope churn). Document new code where a docstring genuinely helps a reader, and no more.
 
+- **Verify an AI reviewer's finding against the code before acting on it — several
+  arrive confidently wrong.** Of 7 CodeRabbit findings on one PR (2026-08-01), 3
+  were false and **two were refuted by their own evidence**: a "PACK_VERSION 3
+  needs a matching host change" (the host never parses the PlyX version — it
+  checks magic + slot fit and defers the ABI/RAM contract to the firmware loader
+  by design); a "the unpacker is not defined" whose own analysis script had
+  returned 159 bytes of output, i.e. it reasoned without the code (the decoder
+  was 90 lines above in the same file); and an `int8_t` "signed-overflow UB" that
+  the StackOverflow answer it quoted explicitly contradicts (a sub-`int` operand
+  promotes to `int`, so the narrowing back is *implementation-defined*, not UB —
+  though a real non-termination hazard did lurk nearby, so the fix was taken for
+  a different stated reason). **The rule is verify, not dismiss:** the same review
+  round produced one genuinely valuable finding (a bulk repair loop running inline
+  in `raw_hid_receive()`, worth seconds of blocked main loop) that was adopted.
+  Reply to the false ones with the evidence so they are not re-raised.
+
 ## Branching (all PolyKybd repos)
 
 - **Give every branch a name that hints at its content.** When creating a branch, append a short, descriptive slug describing the change (e.g. `claude/fix-firmware-update-menu-daemon-mode`, not just the auto-generated `claude/<random-scientist>-<id>`). The random scientist/id suffix from Claude Code on the web is auto-assigned server-side and can't always be overridden mid-session, but whenever a branch name is chosen by us, make it self-explanatory so the branch list reads as a changelog.

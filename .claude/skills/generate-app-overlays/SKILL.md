@@ -304,6 +304,14 @@ mascot ESC logo was added.)
   rate-limited). Retry transient 403s with backoff.
 - The `source:` key (and any unknown key) in a binding is ignored by the
   generator — use it for per-icon provenance.
+- ⚠️ **The shared icon set (`polyhost/res/overlay_sources/icons/`) is
+  white-on-transparent, so it needs `alpha` (or `auto`) — forcing `luma` on it
+  renders a SILENTLY EMPTY cell.** `luma` composites over white and lights the
+  *dark* linework; white artwork on transparent has none, so every glyph comes out
+  at **0 lit pixels** — no error, no warning, just blank keycaps in the layer you
+  just built (hit while adding the jetbrains `.extra.mods.` layer, 2026-08-01).
+  When a generated layer looks empty, **count lit pixels per cell** before
+  re-sourcing the icons — it is nearly always the mode, not the artwork.
 
 ## Done when
 

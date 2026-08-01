@@ -378,12 +378,33 @@ class TestCheckFwLatest(unittest.TestCase):
         self.assertEqual(release.name, "PolyKybd Firmware 0.8.3")
         self.assertEqual(release.notes, "New idle-jitter style")
 
-    def test_newer_without_bin_returns_none(self):
-        # A newer release that has no .bin asset cannot be flashed over HID.
+    def test_newer_without_bin_returns_blocked(self):
+        # A newer release that has no .bin asset cannot be flashed over HID, but
+        # it must NOT read as "up to date" — that hid the failed v0.9.82 release
+        # build behind "You are running the latest firmware".
         with mock.patch.object(updater.requests, "get",
                                return_value=self._resp(
                                    200, _fw_release_json("PolyKybd-fw-v0.9.0", with_bin=False))):
-            self.assertIsNone(updater.check_fw_latest("0.8.1"))
+            result = updater.check_fw_latest("0.8.1")
+        self.assertIsInstance(result, updater.FwUpBlocked)
+        # Not flashable: the flash prompt gates on FwUpReleaseInfo, not truthiness.
+        self.assertNotIsInstance(result, updater.FwUpReleaseInfo)
+        self.assertEqual(result.version, "0.9.0")
+        self.assertEqual(result.tag, "PolyKybd-fw-v0.9.0")
+        self.assertEqual(result.reason, "no_bin_asset")
+
+    def test_cached_newer_without_bin_returns_blocked(self):
+        # The ETag cache means every REPEAT check hits the 304 path, so the
+        # blocked case has to be reported from there too.
+        self.mock_load.return_value = {"fw": {
+            "etag": '"abc"', "tag": "PolyKybd-fw-v0.9.0", "version": "0.9.0",
+            "bin_url": "", "uf2_url": "", "html_url": "https://example/rel",
+        }}
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(304, None)):
+            result = updater.check_fw_latest("0.8.1")
+        self.assertIsInstance(result, updater.FwUpBlocked)
+        self.assertEqual(result.version, "0.9.0")
 
     def test_returns_cached_release_on_304(self):
         self.mock_load.return_value = {"fw": {
@@ -744,6 +765,20 @@ class TestUpdateChecker(unittest.TestCase):
              mock.patch.object(updater, "check_fw_latest", return_value=None):
             self._run(rec, current_fw_version="0.8.0")
         self.assertEqual(rec.names, ["host_no_update", "fw_no_update"])
+        # Genuinely up to date -> no explanatory payload.
+        self.assertEqual(rec.args_for("fw_no_update"), [(None,)])
+
+    def test_firmware_blocked_release_rides_no_update_with_payload(self):
+        # FwUpBlocked is TRUTHY, so a truthiness dispatch would route it to
+        # fw_up_available and offer a flash with no .bin to download.
+        rec = _Recorder()
+        blocked = updater.FwUpBlocked("PolyKybd-fw-v0.9.82", "0.9.82", "https://example/rel",
+                                      "no_bin_asset")
+        with mock.patch.object(updater, "check_latest", return_value=None), \
+             mock.patch.object(updater, "check_fw_latest", return_value=blocked):
+            self._run(rec, current_fw_version="0.9.75")
+        self.assertEqual(rec.names, ["host_no_update", "fw_no_update"])
+        self.assertEqual(rec.args_for("fw_no_update"), [(blocked,)])
 
     def test_none_callbacks_are_skipped(self):
         # A checker with no callbacks wired up must not raise.

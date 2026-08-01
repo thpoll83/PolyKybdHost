@@ -702,91 +702,33 @@ class PolyKybd:
         return True, "Mapping sent"
 
     def send_overlays(self, filenames: list, cancel: threading.Event | None = None) -> bool:
-        overlay_counter = 0
-        hid_msg_counter = 0
-        hid_msg_counter_old = 0
-        enabled = False
+        """Send an overlay set with no reuse from previous sends.
 
-        MAX_MSG_BEFORE_DELAY = self.poly_settings.get("max_hid_message_before_delay")
-        DELAY_TIME_AFTER_MAX_MSG = self.poly_settings.get("delay_time_after_max_hid_messages")
+        Kept for the manual paths (the tray's "send shortcuts" file picker and the
+        ``overlay send`` debug command); the window-tracking pipeline goes straight
+        to :meth:`send_overlays_mru` with the device's persistent cache.
 
-        # Cancellation is checked between keycodes (never mid-keycap), so a
-        # superseded send aborts promptly while leaving every keycap atomic on
-        # the device. On abort we return False without enable_overlays() — the
-        # superseding send repaints everything anyway.
+        This is now a thin wrapper over the MRU send with a THROWAWAY cache, which
+        is exactly the old semantic ("nothing is reused"). It can no longer be a
+        separate direct-upload path: firmware routes both reads and writes through
+        overlay_map[], whose identity default now covers only the first
+        NUM_OVERLAY_SLOTS (600) of the 810 flat (slot, variant) indices — so a send
+        that does not program the mapping would fold every high modifier variant
+        onto pool slot 0.
+        """
+        # Validate before delegating so a cancelled or unreadable request touches
+        # the device zero times, as this entry point always has. send_overlays_mru
+        # issues prepare_for_mru_send() (mirror + mapping/usage reset) up front, so
+        # without this a bad filename would clear the keyboard's current mapping and
+        # leave the keycaps blank before failing.
         if cancel is not None and cancel.is_set():
             return False
-
-        all_keys = ""
-        num_keys = 0
         for filename in filenames:
-            self.log.info("Send Overlay '%s'...", filename)
-            delta = time.perf_counter()
-            converter = ImageConverter(self.device_settings)
-            if self.log.isEnabledFor(logging.DEBUG):
-                delta = time.perf_counter() - delta
-                self.log.debug("Converted in '%f' msec", delta*1000)
-            if not converter.open(filename):
+            if not ImageConverter(self.device_settings).open(filename):
                 self.log.warning("Unable to read %s", filename)
                 return False
-
-            for modifier in Modifier:
-                overlay_map = converter.extract_overlays(modifier)
-                # it is okay if there is no overlay for a modifier
-                if overlay_map:
-                    self.log.debug_detailed(
-                        "Sending overlays for modifier %s.", modifier)
-                    all_keys += f"\n(Mod: {modifier}/{modifier.value} {overlay_map.keys()})"
-                    num_keys += len(overlay_map)
-
-                    # Send ESC first
-                    if not enabled and modifier == Modifier.NO_MOD:
-                        if KeyCode.KC_ESCAPE.value in overlay_map.keys():
-                            sent = self.send_smallest_overlay(
-                                KeyCode.KC_ESCAPE.value, modifier, overlay_map)
-                            if sent < 0:
-                                return False
-                            hid_msg_counter += sent
-                            overlay_map.pop(KeyCode.KC_ESCAPE.value)
-                            self.enable_overlays()
-                            enabled = True
-                            self.log.debug_detailed("Sending ESC first")
-
-                    for keycode in overlay_map:
-                        if cancel is not None and cancel.is_set():
-                            self.log.debug_detailed("send_overlays cancelled")
-                            return False
-                        sent = self.send_smallest_overlay(
-                            keycode, modifier, overlay_map)
-                        if sent < 0:
-                            return False
-                        hid_msg_counter += sent
-
-                    self.log.debug_detailed(
-                        "Overlays for keycodes %s have been sent", overlay_map.keys())
-                    overlay_counter += 1
-                    self.get_console_output(False)
-
-                    if hid_msg_counter_old < hid_msg_counter-MAX_MSG_BEFORE_DELAY:
-                        hid_msg_counter_old = hid_msg_counter
-                        if cancel is not None:
-                            if cancel.wait(DELAY_TIME_AFTER_MAX_MSG):
-                                self.log.debug_detailed("send_overlays cancelled during rate-limit pause")
-                                return False
-                        else:
-                            time.sleep(DELAY_TIME_AFTER_MAX_MSG)
-                        self.log.debug_detailed("Waiting before sending more overlays")
-
-        self.log.info("%d overlays sent, %d hid messages for %d keys:%s",
-                      overlay_counter, hid_msg_counter, num_keys, all_keys)
-        # Re-check right before the commit: the token can flip after the last
-        # keycap upload, and enabling then would flash a superseded render.
-        if cancel is not None and cancel.is_set():
-            self.log.debug_detailed("send_overlays cancelled before enable")
-            return False
-        if not enabled:
-            self.enable_overlays()
-        return True
+        return self.send_overlays_mru(
+            filenames, OverlayMRUCache(self.device_settings.OVERLAY_MAPPING_CAPACITY), cancel)
 
     def send_smallest_overlay(self, keycode: int, modifier: Modifier, mapping: dict) -> int:
         """Returns the number of HID messages sent, or -1 on a send failure."""
@@ -911,6 +853,26 @@ class PolyKybd:
 
         display_to_pool: dict[int, int] = {}
 
+        # Decode EVERY file before touching the device. prepare_for_mru_send()
+        # resets the firmware's mapping + usage bits, so issuing it first meant an
+        # unreadable file blanked the keycaps and then returned False, leaving the
+        # keyboard with no overlays until the next program switch. Validating up
+        # front makes a bad request a no-op on the device.
+        converters = []
+        for filename in filenames:
+            self.log.info("Send Overlay MRU '%s'...", filename)
+            converter = ImageConverter(self.device_settings)
+            if not converter.open(filename):
+                self.log.warning("Unable to read %s", filename)
+                return False
+            converters.append(converter)
+
+        # Cancellation is also checked here, before the first write, so a
+        # superseded send costs the device nothing at all.
+        if cancel is not None and cancel.is_set():
+            self.log.debug_detailed("send_overlays_mru cancelled before prepare")
+            return False
+
         ok, msg = self.prepare_for_mru_send()
         if not ok:
             # Without the mirror+reset the firmware may still hold the previous
@@ -926,13 +888,7 @@ class PolyKybd:
         # allocated via get_or_allocate for images that WERE sent stay in the
         # cache; only the mapping commit is skipped.
         with cache.batch():
-            for filename in filenames:
-                self.log.info("Send Overlay MRU '%s'...", filename)
-                converter = ImageConverter(self.device_settings)
-                if not converter.open(filename):
-                    self.log.warning("Unable to read %s", filename)
-                    return False
-
+            for converter in converters:
                 for modifier in Modifier:
                     overlay_map = converter.extract_overlays(modifier)
                     if not overlay_map:

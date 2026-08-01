@@ -48,9 +48,7 @@ class PolySettings:
             "max_hid_message_before_delay": 15,
             "delay_time_after_max_hid_messages": 0.3,
             "hid_reconnect_retries": 5,
-            "overlay_mru_cache_enabled": False,
             "dev_mock_enabled": False,
-            "dev_mock_overlay_mru_cache_enabled": True,
             "dev_run_window_detection_if_not_connected_to_poly_kybd": False,
             "dev_win_native_set_language": False,
             # macOS: auto-switch the system input language to match the keyboard
@@ -111,8 +109,6 @@ class PolySettings:
         }
         self._legacy_key_renames = {
             "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",
-            "overlay_lru_cache_enabled": "overlay_mru_cache_enabled",
-            "dev_mock_overlay_lru_cache_enabled": "dev_mock_overlay_mru_cache_enabled",
         }
 
         # Load settings

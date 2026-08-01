@@ -537,20 +537,16 @@ class PolyCore:
         inside this job so ordering is preserved, and the cancel event is
         forwarded through."""
         try:
-            mru_enabled = self.poly_settings.get("overlay_mru_cache_enabled")
-            mock_mru_enabled = self.poly_settings.get("dev_mock_overlay_mru_cache_enabled")
+            # MRU is the only overlay path. The old direct path never programmed
+            # overlay_map[] — it relied on the firmware's identity mapping, which
+            # now covers only the first NUM_OVERLAY_SLOTS (600) of the 810 flat
+            # (slot, variant) indices, so the high modifier variants would all
+            # fold onto pool slot 0. Mapping is therefore mandatory, and the
+            # per-device toggles that used to select between the two are gone.
             for entry in self.device_mgr.all_entries:
                 if cancel.is_set():
                     return
-                use_mru = entry.cache is not None and (
-                    (entry.is_primary and mru_enabled) or
-                    (not entry.is_primary and mock_mru_enabled)
-                )
-                if use_mru:
-                    entry.device.send_overlays_mru(files, entry.cache, cancel)
-                else:
-                    entry.device.reset_overlays_and_usage()
-                    entry.device.send_overlays(files, cancel)
+                entry.device.send_overlays_mru(files, entry.cache, cancel)
         except Exception as e:
             msg = f"Failed to send overlays '{files}': {e}"
             self.log.warning(msg)

@@ -5,8 +5,9 @@ The PolyKybd overlay PNG format is a 10x9 grid of 72x40 px keycap overlays
 (720x360 total). Each colour channel of an RGBA PNG carries one *modifier
 variation* of the key in that cell (see polyhost/res/overlay_specification.md):
 
-    primary  "*.mods.png"        R=Ctrl   G=Alt      B=Shift     A=(no mod)
-    combo    "*.combo.mods.png"  R=Ctrl+Shift G=Ctrl+Alt B=Alt+Shift A=GUI(dropped)
+    primary  "*.mods.png"        R=Ctrl       G=Alt      B=Shift     A=(no mod)
+    combo    "*.combo.mods.png"  R=Ctrl+Shift G=Ctrl+Alt B=Alt+Shift A=GUI
+    extra    "*.extra.mods.png"  R=Ctrl+Alt+Shift        G/B/A reserved (GUI pairs)
 
 This script takes a small per-application *binding file* (YAML) that lists each
 shortcut as (key, modifiers, icon) and does the tedious, fully-mechanical part:
@@ -52,6 +53,9 @@ CH = {"R": 0, "G": 1, "B": 2, "A": 3}
 PRIMARY_CH = {Modifier.NO_MOD: "A", Modifier.CTRL: "R", Modifier.ALT: "G", Modifier.SHIFT: "B"}
 COMBO_CH = {Modifier.CTRL_SHIFT: "R", Modifier.CTRL_ALT: "G", Modifier.ALT_SHIFT: "B",
             Modifier.GUI_KEY: "A"}
+# Third tier. G/B/A are reserved for the GUI pairs (GUI+Ctrl/Alt/Shift) the firmware
+# earmarks as variants 9/10/11; nothing maps to them until those enum values exist.
+EXTRA_CH = {Modifier.CTRL_ALT_SHIFT: "R"}
 
 MOD_BIT = {"CTRL": 1, "CONTROL": 1, "CTL": 1,
            "SHIFT": 2, "SFT": 2,
@@ -139,7 +143,8 @@ def resolve_modifier(mods: list[str]) -> Modifier:
     except ValueError:
         raise ValueError(
             f"modifier combination {mods} (bits={bits}) is not representable "
-            f"(Ctrl+Alt+Shift and most GUI combos are unsupported by the firmware)")
+            f"(GUI only combines with nothing — GUI+Ctrl/Alt/Shift are reserved "
+            f"but not yet assigned a channel)")
 
 
 def cell_for(kc: KeyCode) -> tuple[int, int]:
@@ -296,7 +301,8 @@ def generate(spec: dict, base_dir: Path) -> dict:
 
     primary = np.zeros((IMG_H, IMG_W, 4), dtype=np.uint8)
     combo = np.zeros((IMG_H, IMG_W, 4), dtype=np.uint8)
-    used_primary = used_combo = False
+    extra = np.zeros((IMG_H, IMG_W, 4), dtype=np.uint8)
+    used_primary = used_combo = used_extra = False
     warnings: list[str] = []
     placed: list[dict] = []
 
@@ -312,11 +318,12 @@ def generate(spec: dict, base_dir: Path) -> dict:
             arr, ch_name = primary, PRIMARY_CH[mod]
             used_primary = True
         elif mod in COMBO_CH:
-            if mod is Modifier.GUI_KEY:
-                warnings.append(f"skipped {b['key']}+GUI: GUI overlays are dropped by the firmware")
-                continue
+            # GUI is no longer skipped: the host stopped discarding variant 8.
             arr, ch_name = combo, COMBO_CH[mod]
             used_combo = True
+        elif mod in EXTRA_CH:
+            arr, ch_name = extra, EXTRA_CH[mod]
+            used_extra = True
         else:
             warnings.append(f"skipped {b}: modifier {mod.name} has no channel")
             continue
@@ -365,18 +372,19 @@ def generate(spec: dict, base_dir: Path) -> dict:
                                     preg, spec.get("program_icon_mode", mode))
                 row, col = cell_for(pkc)
                 y0, x0 = row * SLOT_H, col * SLOT_W
-                for arr in (primary, combo):
+                for arr in (primary, combo, extra):
                     for ax in range(4):              # all channels = all layers
                         block = arr[y0:y0 + SLOT_H, x0:x0 + SLOT_W, ax]
                         block[pmask] = 255
-                used_primary = used_combo = True
-                placed.append({"key": pkc.name, "mod": "ALL", "ch": "RGBA(x2)",
+                used_primary = used_combo = used_extra = True
+                placed.append({"key": pkc.name, "mod": "ALL", "ch": "RGBA(x3)",
                                "cell": (row, col), "src": prog, "label": "program icon"})
             except ValueError as e:
                 warnings.append(f"program_icon: {e}")
 
     return {"primary": primary if used_primary else None,
             "combo": combo if used_combo else None,
+            "extra": extra if used_extra else None,
             "placed": placed, "warnings": warnings}
 
 
@@ -460,6 +468,8 @@ def mapping_stanza(spec: dict, out_dir_label: str) -> str:
         files.append(f"{spec['output']}.mods.png")
     if spec.get("_has_combo"):
         files.append(f"{spec['output']}.combo.mods.png")
+    if spec.get("_has_extra"):
+        files.append(f"{spec['output']}.extra.mods.png")
     overlay = files[0] if len(files) == 1 else "[" + ", ".join(files) + "]"
     title = spec.get("title")
     lines = [f"{','.join(names)}:", f"  overlay: {overlay}"]
@@ -486,6 +496,7 @@ def main() -> int:
 
     spec["_has_primary"] = result["primary"] is not None
     spec["_has_combo"] = result["combo"] is not None
+    spec["_has_extra"] = result["extra"] is not None
 
     print(f"Placed {len(result['placed'])} overlays for {spec.get('app', '?')}:")
     for p in result["placed"]:
@@ -501,6 +512,9 @@ def main() -> int:
         if result["combo"] is not None:
             save_png(result["combo"], args.out_dir / f"{spec['output']}.combo.mods.png")
             print(f"Wrote {args.out_dir / (spec['output'] + '.combo.mods.png')}")
+        if result["extra"] is not None:
+            save_png(result["extra"], args.out_dir / f"{spec['output']}.extra.mods.png")
+            print(f"Wrote {args.out_dir / (spec['output'] + '.extra.mods.png')}")
 
     if args.preview:
         for p in write_preview(result, args.preview):

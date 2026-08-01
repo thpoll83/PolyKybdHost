@@ -1723,11 +1723,15 @@ class PolyHost(QApplication):
             if on_no_update is not None:
                 on_no_update()
 
-        def _fw_no_update():
-            self.log.debug("No firmware update available")
+        def _fw_no_update(blocked=None):
+            if blocked is not None:
+                self.log.warning("Firmware %s is newer but has no flashable .bin",
+                                 getattr(blocked, "version", "?"))
+            else:
+                self.log.debug("No firmware update available")
             if self._await_manual_fw_prompt:
                 self._await_manual_fw_prompt = False
-                self._on_manual_no_fw_update()
+                self._on_manual_no_fw_update(blocked)
 
         self._update_check_error = _on_error
         self._update_host_no_update = _host_no_update
@@ -1739,7 +1743,7 @@ class PolyHost(QApplication):
             on_update_available=lambda r: b.job_done.emit("update_available", r),
             on_fw_up_available=lambda r: b.job_done.emit("fw_up_available", r),
             on_host_no_update=lambda: b.job_done.emit("update_host_no_update", None),
-            on_fw_no_update=lambda: b.job_done.emit("update_fw_no_update", None),
+            on_fw_no_update=lambda blocked=None: b.job_done.emit("update_fw_no_update", blocked),
             on_error=lambda msg: b.job_done.emit("update_check_error", msg),
         )
         self._update_checker.start()
@@ -2038,11 +2042,23 @@ class PolyHost(QApplication):
             self.firmware_update_action.setEnabled(False)
             self._await_manual_fw_prompt = True
 
-    def _on_manual_no_fw_update(self):
+    def _on_manual_no_fw_update(self, blocked=None):
         self._await_manual_fw_prompt = False
         self.firmware_update_action.setText("Check for firmware update…")
         self.firmware_update_action.setEnabled(self._fw_actions_allowed())
         fw_version = self.kb_sw_version if self._fw_actions_allowed() else "unknown"
+        if blocked is not None:
+            # A newer release exists but its build never produced a .bin, so
+            # there is nothing to flash. Saying "you are running the latest
+            # firmware" here is simply false and hides a broken release.
+            _msgbox(QMessageBox.Warning, "PolyKybd Firmware",
+                    f"Firmware v{blocked.version} has been released, but it does not "
+                    f"include a downloadable firmware file, so it cannot be installed "
+                    f"yet.\n\nYour keyboard is on v{fw_version}. This usually means the "
+                    f"release build failed — the release page will get its firmware "
+                    f"once that is fixed."
+                    + (f"\n\n{blocked.html_url}" if blocked.html_url else ""))
+            return
         _msgbox(QMessageBox.Information, "PolyKybd Firmware",
                 f"You are running the latest firmware (v{fw_version}).")
 
@@ -2439,7 +2455,7 @@ class PolyHost(QApplication):
                 self._update_host_no_update()
         elif name == "update_fw_no_update":
             if self._update_fw_no_update is not None:
-                self._update_fw_no_update()
+                self._update_fw_no_update(result)
         elif name == "update_check_error":
             if self._update_check_error is not None:
                 self._update_check_error(result)

@@ -31,8 +31,10 @@ except Exception as e:  # pragma: no cover - no Qt platform available
 
 def _pack_with_empty():
     """One 2-glyph font: A present (3x4), B empty — for exercising peek fallback."""
+    # ABI 2 is COLUMN-NATIVE: a glyph is w * ceil(h/8) whole bytes, not ceil(w*h/8)
+    # row-major bits. Glyph A 3x4 -> 3*1 = 3 bytes @0; glyph B is the empty one.
     glyphs = struct.pack("<Hbbbbbx", 0, 3, 4, 5, -1, -7) + struct.pack("<Hbbbbbx", 0, 0, 0, 0, 0, 0)
-    bitmap = bytes([0x12, 0x34])
+    bitmap = bytes([0x12, 0x34, 0x56])
     table_off = 32
     glyph_off = table_off + 20
     bitmap_off = (glyph_off + len(glyphs) + 3) & ~3
@@ -42,15 +44,16 @@ def _pack_with_empty():
     body[glyph_off - 32:glyph_off - 32 + len(glyphs)] = glyphs
     body[bitmap_off - 32:bitmap_off - 32 + len(bitmap)] = bitmap
     crc = binascii.crc32(bytes(body)) & 0xFFFFFFFF
-    header = struct.pack("<4sHHIIIIII", b"PlyF", 1, 0, 7, 1, table_off, total, crc, 0)
+    header = struct.pack("<4sHHIIIIII", b"PlyF", fpr.ABI_VERSION, 0, 7, 1, table_off, total, crc, 0)
     return fpr.decode_pack(header + bytes(body), name_hint="emptytest")
 
 
 def _tiny_pack():
     """One 2-glyph font, valid PlyF, decoded to a Pack for a deterministic tab."""
-    # glyph A: 3x4 = 12 bits -> 2 bytes @0; glyph B: 6x8 = 48 bits -> 6 bytes @2
-    glyphs = struct.pack("<Hbbbbbx", 0, 3, 4, 5, -1, -7) + struct.pack("<Hbbbbbx", 2, 6, 8, 9, 0, -3)
-    bitmap = bytes([0x12, 0x34, 0xFF, 0x00, 0xAA, 0x55, 0x0F, 0xF0])
+    # ABI 2 is COLUMN-NATIVE: a glyph is w * ceil(h/8) whole bytes.
+    # glyph A: 3x4 -> 3*1 = 3 bytes @0; glyph B: 6x8 -> 6*1 = 6 bytes @3.
+    glyphs = struct.pack("<Hbbbbbx", 0, 3, 4, 5, -1, -7) + struct.pack("<Hbbbbbx", 3, 6, 8, 9, 0, -3)
+    bitmap = bytes([0x12, 0x34, 0x56, 0xFF, 0x00, 0xAA, 0x55, 0x0F, 0xF0])
     table_off = 32
     glyph_off = table_off + 20
     bitmap_off = (glyph_off + len(glyphs) + 3) & ~3
@@ -60,7 +63,7 @@ def _tiny_pack():
     body[glyph_off - 32:glyph_off - 32 + len(glyphs)] = glyphs
     body[bitmap_off - 32:bitmap_off - 32 + len(bitmap)] = bitmap
     crc = binascii.crc32(bytes(body)) & 0xFFFFFFFF
-    header = struct.pack("<4sHHIIIIII", b"PlyF", 1, 0, 7, 1, table_off, total, crc, 0)
+    header = struct.pack("<4sHHIIIIII", b"PlyF", fpr.ABI_VERSION, 0, 7, 1, table_off, total, crc, 0)
     return fpr.decode_pack(header + bytes(body), name_hint="tiny")
 
 

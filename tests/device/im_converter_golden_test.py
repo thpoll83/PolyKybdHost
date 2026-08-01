@@ -14,13 +14,15 @@ QApplication is not required for QImage decoding. The suite convention is to set
 
 import glob
 import os
+import shutil
+import tempfile
 import unittest
 
 import numpy as np
 
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import Modifier
+from polyhost.device.keys import KeyCode, Modifier
 # Installs logging.Logger.debug_detailed used by ImageConverter.
 from polyhost.util import log_util  # noqa: F401
 
@@ -61,6 +63,11 @@ def _reference_open(converter, filename):
             key_r = Modifier.CTRL_SHIFT
             key_g = Modifier.CTRL_ALT
             key_b = Modifier.ALT_SHIFT
+        elif ".extra.mods." in filename:
+            # Third file kind. Only R is assigned; G/B/A are reserved. Tested
+            # BEFORE the plain form because ".extra.mods." contains ".mods.".
+            key_r = Modifier.CTRL_ALT_SHIFT
+            key_a = key_g = key_b = None
         else:
             key_a = Modifier.NO_MOD
             key_r = Modifier.CTRL
@@ -69,21 +76,24 @@ def _reference_open(converter, filename):
         if not has_alpha:
             [b, g, r] = np.dsplit(im, im.shape[-1])
             converter.image[key_r] = np.array(r, dtype=bool)
-            converter.image[key_g] = np.array(g, dtype=bool)
-            converter.image[key_b] = np.array(b, dtype=bool)
+            if key_g is not None:
+                converter.image[key_g] = np.array(g, dtype=bool)
+            if key_b is not None:
+                converter.image[key_b] = np.array(b, dtype=bool)
         else:
             [b, g, r, a] = np.dsplit(im, im.shape[-1])
-            converter.image[key_a] = np.array(a, dtype=bool)
             converter.image[key_r] = np.array(r, dtype=bool)
-            converter.image[key_g] = np.array(g, dtype=bool)
-            converter.image[key_b] = np.array(b, dtype=bool)
+            for key, plane in ((key_a, a), (key_g, g), (key_b, b)):
+                if key is not None:
+                    converter.image[key] = np.array(plane, dtype=bool)
     else:
         converter.image[Modifier.NO_MOD] = np.array(
             np.dot(im[..., :3], [0.2989 / 255, 0.5870 / 255, 0.1140 / 255]),
             dtype=bool)
 
-    if Modifier.GUI_KEY in converter.image:
-        converter.image.pop(Modifier.GUI_KEY)
+    # NOTE: the production converter used to pop GUI_KEY here ("not supported for
+    # now"). It no longer does — GUI overlays are sent — so this frozen reference
+    # drops the pop too, keeping the rest of the pipeline pinned byte-for-byte.
 
     return True
 
@@ -176,3 +186,53 @@ class TestImConverterGolden(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestExtraModsChannels(unittest.TestCase):
+    """The third file kind ('*.extra.mods.png') and the un-dropped GUI channel."""
+
+    def setUp(self):
+        self.settings = DeviceSettings()
+        self.tmp = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _write(self, name):
+        """720x360 RGBA with a distinct lit cell per channel, so a mis-mapped
+        channel shows up as the wrong modifier rather than merely 'something'."""
+        from PIL import Image
+        a = np.zeros((360, 720, 4), dtype=np.uint8)
+        for ch in range(4):                       # cell (0, ch) lit in channel ch
+            a[0:40, ch * 72:(ch + 1) * 72, ch] = 255
+        path = os.path.join(self.tmp, name)
+        Image.fromarray(a, "RGBA").save(path)
+        return path
+
+    def test_extra_maps_r_to_ctrl_alt_shift_and_reserves_the_rest(self):
+        conv = ImageConverter(self.settings)
+        self.assertTrue(conv.open(self._write("x.extra.mods.png")))
+        # Only R is assigned; G/B/A are reserved for the future GUI pairs.
+        self.assertEqual(list(conv.image.keys()), [Modifier.CTRL_ALT_SHIFT])
+        ov = conv.extract_overlays(Modifier.CTRL_ALT_SHIFT)
+        self.assertEqual(list(ov.keys()), [KeyCode.KC_A.value])
+
+    def test_extra_is_matched_before_the_plain_form(self):
+        # '.extra.mods.' CONTAINS '.mods.', so a naive branch order would decode
+        # it as the singles file and silently mislabel every channel.
+        conv = ImageConverter(self.settings)
+        conv.open(self._write("x.extra.mods.png"))
+        for wrong in (Modifier.NO_MOD, Modifier.CTRL, Modifier.ALT, Modifier.SHIFT):
+            self.assertNotIn(wrong, conv.image)
+
+    def test_gui_channel_is_kept_for_combo_files(self):
+        conv = ImageConverter(self.settings)
+        self.assertTrue(conv.open(self._write("x.combo.mods.png")))
+        self.assertIn(Modifier.GUI_KEY, conv.image)   # was popped before
+
+    def test_plain_file_still_maps_the_singles(self):
+        conv = ImageConverter(self.settings)
+        self.assertTrue(conv.open(self._write("x.mods.png")))
+        self.assertEqual(sorted(m.value for m in conv.image),
+                         sorted(m.value for m in (Modifier.NO_MOD, Modifier.CTRL,
+                                                  Modifier.ALT, Modifier.SHIFT)))

@@ -47,9 +47,14 @@ class DeviceSettings:
     _overlay_mapping_indices_per_report = _max_payload_bytes_per_report * 8 // 10
 
     _overlay_mapping_slots = 90                # firmware NUM_OVERLAYS constant
-    _overlay_mapping_modifier_variants = 7     # variants 0-6; variant 7 is reserved, 8 (GUI) handled via mapping
-    _overlay_mapping_source_variants = 9       # including CTRL+ALT+SHIFT and GUI
-    _overlay_mapping_pool_capacity = _overlay_mapping_slots * _overlay_mapping_modifier_variants
+    _overlay_mapping_source_variants = 9       # ALL variants: 0-6 plus CTRL_ALT_SHIFT(7) and GUI(8)
+    # firmware NUM_OVERLAY_SLOTS — the physical pool of distinct keycap images.
+    # DECOUPLED from slots x variants: overlay mapping is mandatory, so each of the
+    # 810 (slot, variant) pairs points at any pool slot and variants sharing artwork
+    # share one slot. Sized from measurement (heaviest shipped app = 62 distinct
+    # images after dedup, median 31), floored by the firmware's DOOM arena at 584.
+    # ⚠️ Keep in lockstep with qmk_firmware keyboards/polykybd/config.h.
+    _overlay_mapping_pool_capacity = 600
     _overlay_mapping_usage_count = _overlay_mapping_slots * _overlay_mapping_source_variants
 
     _hid_raw_usage_page         = 0xFF61

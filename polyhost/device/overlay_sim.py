@@ -50,8 +50,13 @@ class OverlayFirmwareSim:
     """
     Simulates the firmware's overlay store, usage bit-array, and mapping table.
 
-    Write path (fill_overlay.c): no mapping lookup — images always land at their
-    direct pool address (display_flat_idx(pool_kc, pool_mod)).
+    Write path (fill_overlay.c): images land at display_flat_idx(pool_kc, pool_mod).
+    ⚠️ The firmware does NOT skip the mapping lookup here — it runs the same
+    adjust_overlay_idx_to_mod + get_overlay_mapping the display path does. Writing
+    to the direct address is equivalent only because reset_overlay_mapping() leaves
+    the table as the identity, and the host always resets it before an upload
+    (prepare_for_mru_send) and only ever addresses slots below the pool capacity.
+    Break either of those and images land in whatever slot the table points at.
 
     Display path (copy_overlay_to_buffer): compute display_idx, check is_overlay_used
     on display_idx, apply overlay_map to get pool_slot, return stored bitmap.
