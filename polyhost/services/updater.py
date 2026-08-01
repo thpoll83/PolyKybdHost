@@ -17,7 +17,7 @@ import tempfile
 import threading
 from collections import namedtuple
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import platformdirs
 import requests
@@ -112,6 +112,11 @@ FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "u
 # can say "0.9.82 exists but has no downloadable firmware" instead of the flatly
 # wrong "you are running the latest firmware".
 FwUpBlocked = namedtuple("FwUpBlocked", ["tag", "version", "html_url", "reason"])
+
+# What a firmware check can hand back. Callers MUST NOT assume a non-None result
+# is flashable — dispatch on the type (isinstance), as UpdateChecker.run does:
+# only FwUpReleaseInfo carries a bin_url.
+FwUpCheckResult = Union[FwUpReleaseInfo, FwUpBlocked]
 
 
 class UpdateCheckError(RuntimeError):
@@ -235,7 +240,7 @@ def _check_latest_via_web() -> Optional[ReleaseInfo]:
         published_at="")
 
 
-def _check_fw_latest_via_web(current: Version) -> Optional[FwUpReleaseInfo]:
+def _check_fw_latest_via_web(current: Version) -> Optional[FwUpCheckResult]:
     """Firmware-update check using only github.com (no rate-limited API).
 
     Gets the tag via the redirect, then the .bin/.uf2 URLs from the
@@ -358,7 +363,7 @@ def check_latest() -> Optional[ReleaseInfo]:
                        name=rel_name, notes=notes)
 
 
-def check_fw_latest(current_version: str) -> Optional[FwUpReleaseInfo]:
+def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
     """Return FwUpReleaseInfo if the latest firmware release is strictly newer; else None.
 
     Uses ETag caching — 304 Not Modified responses don't count against the rate limit.

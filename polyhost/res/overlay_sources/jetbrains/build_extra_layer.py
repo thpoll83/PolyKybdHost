@@ -17,7 +17,10 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-REPO = Path("/home/user/PolyKybdHost")
+# polyhost/res/overlay_sources/jetbrains/<this file> -> four levels up is the repo
+# root. Derived rather than hard-coded so the script runs from any checkout (it
+# imports the generator from scripts/ and writes the PNG back into the tree).
+REPO = Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "scripts"))
 import generate_app_overlays as G  # noqa: E402
