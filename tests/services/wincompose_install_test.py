@@ -59,6 +59,43 @@ class FindInstallerTest(unittest.TestCase):
         self.assertTrue(info.url.endswith("WinCompose-Setup-0.9.16.exe"))
 
 
+class DownloaderLookupTest(unittest.TestCase):
+    """With info=None the thread resolves the installer itself, so the caller
+    (the Qt main thread) never blocks on the two HTTP requests."""
+
+    def _run(self, find_result):
+        finished = []
+        dl = wc.InstallerDownloader(
+            on_finished=lambda ok, err, path: finished.append((ok, err, path)))
+        with mock.patch.object(wc, "find_installer", **find_result):
+            dl.run()          # run inline — we're testing the body, not threading
+        return finished
+
+    def test_no_release_reports_the_no_installer_sentinel(self):
+        self.assertEqual(self._run({"return_value": None}),
+                         [(False, wc.NO_INSTALLER, "")])
+
+    def test_lookup_exception_is_also_no_installer(self):
+        """A network failure must land in the browser fallback, not a traceback."""
+        self.assertEqual(self._run({"side_effect": OSError("no route to host")}),
+                         [(False, wc.NO_INSTALLER, "")])
+
+    def test_cancel_during_lookup_reports_cancelled(self):
+        cancel = [False]
+        finished = []
+
+        def _find():
+            cancel[0] = True   # user hit Cancel while the lookup was in flight
+            return wc.InstallerInfo("v1", f"{BASE}/A-Setup.exe", "A-Setup.exe")
+
+        dl = wc.InstallerDownloader(
+            on_finished=lambda ok, err, path: finished.append((ok, err, path)),
+            cancel_flag=cancel)
+        with mock.patch.object(wc, "find_installer", side_effect=_find):
+            dl.run()
+        self.assertEqual(finished, [(False, "Download cancelled.", "")])
+
+
 class LaunchInstallerTest(unittest.TestCase):
     def test_refuses_off_windows(self):
         with mock.patch.object(wc.sys, "platform", "linux"):

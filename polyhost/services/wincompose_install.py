@@ -38,6 +38,12 @@ RELEASES_URL = f"https://github.com/{WINCOMPOSE_REPO}/releases/latest"
 
 DOWNLOAD_CHUNK = 64 * 1024
 
+# Sentinel returned as the `error` of on_finished when no installer could be
+# resolved (no release published, or the lookup failed). Distinct from a real
+# download error because the caller's response differs: fall back to opening the
+# releases page rather than reporting a failure.
+NO_INSTALLER = "no-installer"
+
 # The Inno Setup installer is named "WinCompose-Setup-<version>.exe"
 # (src/installer/installer.iss OutputBaseFilename). Match loosely — any .exe
 # whose name carries "setup" — so a rename doesn't silently break the flow, and
@@ -111,16 +117,22 @@ def open_releases_page() -> None:
 
 
 class InstallerDownloader(threading.Thread):
-    """Download the WinCompose installer to a temp .exe.
+    """Resolve (if needed) and download the WinCompose installer to a temp .exe.
 
     Mirrors :class:`polyhost.services.updater.FwUpDownloader` — callbacks fire on
     this thread:
 
     - ``on_progress(int, str)`` — percent (0 when the size is unknown) + message
-    - ``on_finished(bool, str, str)`` — (ok, error_or_empty, path_or_empty)
+    - ``on_finished(bool, str, str)`` — (ok, error_or_empty, path_or_empty);
+      ``error == NO_INSTALLER`` means nothing was found to download.
+
+    ``info`` may be None, in which case :func:`find_installer` runs **here**
+    rather than on the caller's thread — it makes two HTTP requests, so on a slow
+    or unreachable network doing it inline would freeze the tray for up to two
+    request timeouts.
     """
 
-    def __init__(self, info: InstallerInfo, *,
+    def __init__(self, info: Optional[InstallerInfo] = None, *,
                  on_progress=None, on_finished=None, cancel_flag: list = None):
         super().__init__(daemon=True)
         self.info = info
@@ -144,6 +156,19 @@ class InstallerDownloader(threading.Thread):
 
     def run(self):
         tmp_path = None
+        if self.info is None:
+            self._fire(self._on_progress, 0, "Looking for the latest release…")
+            try:
+                self.info = find_installer()
+            except Exception as e:  # noqa: BLE001 — treated as "nothing to download"
+                log.warning("WinCompose installer lookup failed: %s", e)
+                self.info = None
+            if self._cancelled():
+                self._fire(self._on_finished, False, "Download cancelled.", "")
+                return
+            if self.info is None:
+                self._fire(self._on_finished, False, NO_INSTALLER, "")
+                return
         try:
             with tempfile.NamedTemporaryFile(
                 prefix="wincompose-setup-", suffix=".exe", delete=False

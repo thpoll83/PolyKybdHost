@@ -2257,29 +2257,16 @@ class PolyHost(QApplication):
             return
 
         self.wincompose_action.setEnabled(False)
-        try:
-            info = wincompose_install.find_installer()
-        except Exception as e:  # noqa: BLE001 — never let a lookup kill the tray
-            self.log.warning("WinCompose installer lookup failed: %s", e)
-            info = None
-        if info is None:
-            self.wincompose_action.setEnabled(True)
-            self.log.info("No WinCompose installer asset found — opening the releases page.")
-            _msgbox(QMessageBox.Information, "Install WinCompose",
-                    "No ready-made installer was found for download.\n\n"
-                    "The releases page will open in your browser — download and run "
-                    "the setup from there.")
-            wincompose_install.open_releases_page()
-            return
-
         self._wincompose_cancel = [False]
         self._wincompose_progress = _progress_dlg(
-            f"Downloading WinCompose {info.tag}…", "Install WinCompose",
+            "Looking for the latest WinCompose release…", "Install WinCompose",
             tray_icon=self.tray, on_cancel=self._on_wincompose_cancel)
 
+        # The release lookup makes two HTTP requests, so it runs on the download
+        # thread too (info=None) — inline it would freeze the tray for up to two
+        # request timeouts on a slow or unreachable network.
         b = self.bridge
         self._wincompose_downloader = wincompose_install.InstallerDownloader(
-            info,
             on_progress=lambda pct, msg: b.job_done.emit("wincompose_download_progress",
                                                          (pct, msg)),
             on_finished=lambda ok, err, path: b.job_done.emit("wincompose_download_done",
@@ -2313,6 +2300,17 @@ class PolyHost(QApplication):
             self._wincompose_progress = None
         if self.wincompose_action is not None:
             self.wincompose_action.setEnabled(True)
+
+        if error == wincompose_install.NO_INSTALLER:
+            # No release published yet (or the lookup failed) — point the user at
+            # the releases page rather than reporting a failure.
+            self.log.info("No WinCompose installer asset found — opening the releases page.")
+            _msgbox(QMessageBox.Information, "Install WinCompose",
+                    "No ready-made installer was found for download.\n\n"
+                    "The releases page will open in your browser — download and run "
+                    "the setup from there.")
+            wincompose_install.open_releases_page()
+            return
 
         if cancelled or not ok:
             if not cancelled:
