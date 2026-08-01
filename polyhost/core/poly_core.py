@@ -537,9 +537,10 @@ class PolyCore:
         forwarded through."""
         try:
             # MRU is the only overlay path. The old direct path never programmed
-            # overlay_map[] — it relied on the firmware installing an identity
-            # mapping, which no longer exists now that the pool is decoupled from
-            # the (slot, variant) grid. Mapping is therefore mandatory, and the
+            # overlay_map[] — it relied on the firmware's identity mapping, which
+            # now covers only the first NUM_OVERLAY_SLOTS (600) of the 810 flat
+            # (slot, variant) indices, so the high modifier variants would all
+            # fold onto pool slot 0. Mapping is therefore mandatory, and the
             # per-device toggles that used to select between the two are gone.
             for entry in self.device_mgr.all_entries:
                 if cancel.is_set():

@@ -711,9 +711,10 @@ class PolyKybd:
         This is now a thin wrapper over the MRU send with a THROWAWAY cache, which
         is exactly the old semantic ("nothing is reused"). It can no longer be a
         separate direct-upload path: firmware routes both reads and writes through
-        overlay_map[], and the identity mapping it used to install is gone now that
-        the pool is decoupled from the (slot, variant) grid — so a send that does
-        not program the mapping would put every image in pool slot 0.
+        overlay_map[], whose identity default now covers only the first
+        NUM_OVERLAY_SLOTS (600) of the 810 flat (slot, variant) indices — so a send
+        that does not program the mapping would fold every high modifier variant
+        onto pool slot 0.
         """
         # Validate before delegating so a cancelled or unreadable request touches
         # the device zero times, as this entry point always has. send_overlays_mru

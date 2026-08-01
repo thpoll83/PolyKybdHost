@@ -102,9 +102,7 @@ class ImageConverter:
         # always had entries for it — so they simply never reached the keyboard. They
         # are sent now. Cost is nil: every shipped template's GUI content is the one
         # Esc app-marker cell, byte-identical to its other variants, so the cache
-        # dedups it onto a single pool slot. This also stopped being optional when the
-        # firmware's identity mapping went away: without it, Esc would blank under GUI
-        # rather than falling through to the no-modifier image.
+        # dedups it onto a single pool slot.
 
         return True
 
