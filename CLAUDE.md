@@ -24,6 +24,19 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   in `raw_hid_receive()`, worth seconds of blocked main loop) that was adopted.
   Reply to the false ones with the evidence so they are not re-raised.
 
+- **A bot comment is not a review — check whether one actually ran before treating
+  a PR as reviewed.** PR #127 (2026-08-01) collected four bot comments and **none
+  was a review**: CodeRabbit was rate-limited across both pushes (a `> [!WARNING]
+  Review limit reached … next review in 43 minutes` comment, re-queued and still
+  unavailable at merge time), Sourcery had hit its weekly diff-character limit so
+  it posted only its descriptive *Reviewer's Guide*, and Qodo only ever posts a
+  *PR Summary*. All three render as long, confident-looking comments with
+  walkthroughs and file tables, so the PR read as well-reviewed and merged with
+  zero findings raised against it. Tells: CodeRabbit's rate-limit notice (and the
+  "Reviews paused" one — see the same section in `qmk_firmware/CLAUDE.md`), and
+  the absence of any *Actionable comments posted: N* line. When it matters, wait
+  for the window or comment `@coderabbitai review`.
+
 ## Branching (all PolyKybd repos)
 
 - **Give every branch a name that hints at its content.** When creating a branch, append a short, descriptive slug describing the change (e.g. `claude/fix-firmware-update-menu-daemon-mode`, not just the auto-generated `claude/<random-scientist>-<id>`). The random scientist/id suffix from Claude Code on the web is auto-assigned server-side and can't always be overridden mid-session, but whenever a branch name is chosen by us, make it self-explanatory so the branch list reads as a changelog.
@@ -111,6 +124,19 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
 
 - `HidWorker` (`polyhost/device/hid_worker.py`) owns the device. Periodic tasks on the worker: reconnect probe (1 s), console/serial reads (250 ms), daylight brightness incl. its network lookups (10 min).
 - UI code enqueues jobs (`worker.submit`); overlay sends use `coalesce_key="overlay"` so rapid app switches supersede/cancel stale transfers instead of replaying them. Dialogs use `worker.run_sync` (short bounded block; raises `RuntimeError` while suspended). Firmware flash/apply wraps the dialog in `worker.exclusive()`; tray pause maps to `suspend()`/`resume()`, and `exclusive()` restores the prior suspend state on exit.
+- **The no-blocking-the-main-thread rule covers NETWORK I/O too, not just device
+  I/O.** Every GitHub call the GUI makes runs on its own thread — `UpdateChecker`,
+  `UpdateInstaller`, `FwUpDownloader`, `wincompose_install.InstallerDownloader` —
+  and a menu handler must only start one and open a progress dialog, never call
+  into `requests` itself. It is easy to miss because these calls *look* cheap next
+  to a flash: `wincompose_install.find_installer()` is two requests (the
+  latest-tag HEAD + the `expanded_assets` GET) at `HTTP_TIMEOUT` 5 s each, so
+  inline in the click handler it froze the tray for ~10 s on an unreachable
+  network (caught in review of its own PR, 2026-08). Where a thread needs to
+  *resolve* something before its real work, give it a `None` input it resolves in
+  `run()` (that downloader takes `info=None`) rather than resolving first on the
+  caller's thread; report "nothing to do" through the finished callback with a
+  sentinel (`NO_INSTALLER`) so the caller can branch without a second code path.
 - `PolyCore` periodics/jobs publish results as core events (`emit(name, payload)`); the Qt client's observer (`PolyHost._on_core_event`) forwards them into `WorkerBridge.job_done` (`polyhost/gui/worker_bridge.py`), a queued Qt signal dispatched in `PolyHost._on_job_done`. **Worker-/core-side code must never touch Qt objects** — go through the event seam. `decide_reconnect_apply` lives in `polyhost/core/decisions.py` (re-exported from `worker_bridge`), unit-tested in `tests/gui/worker_bridge_test.py`.
 - Reconnect is split three ways: `PolyCore._reconnect_probe` (worker, device I/O → plain snapshot dict; pops the firmware fresh-boot marker on every successful probe), `PolyCore.apply_reconnect` (operational half — state, decision tree, post-connect jobs, cache resets; emits `status_changed`; tested in `tests/core/poly_core_apply_test.py`), and `PolyHost._apply_reconnect_result` (Qt rendering: status entry, language menu, OS-language switch). `active_window_reporter` keeps the pywinctl poll on the main thread but delegates the switching decision to `PolyCore.tick_window_tracking`.
 - **The probe is debounced** (`decide_probe_publish`, 3 strikes): the keyboard goes deaf for hundreds of ms after a large overlay transfer while it syncs images to the slave half over UART, so a single failed probe must NOT flap the connection state — that resets the MRU cache, wipes the overlays, and forces a resend that keeps the keyboard busy for the next probe (self-sustaining wipe-and-resend oscillation, seen in the field 2026-06-10). For the same reason the probe drains stale late replies first, never queries version/languages when the lang probe already failed (a stale GET_ID reply can fake a fresh connect), and `query_id`/`GET_LANG` use generous read timeouts (250/150 ms — fine on the worker, forbidden back when this ran on the UI thread).
