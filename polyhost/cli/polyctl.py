@@ -208,6 +208,17 @@ def _cmd_glyph_script(client, args):
     return 0
 
 
+def _cmd_unicode_mode(client, args):
+    """Re-detect the host's unicode input method and re-push it to the keyboard.
+
+    The mode is normally sent once per connect, so installing (or quitting)
+    WinCompose on Windows otherwise takes effect only after a replug."""
+    result = client.call(protocol.M_UNICODE_MODE_REFRESH, {})
+    mode = (result or {}).get("mode", "?")
+    print(f"unicode mode re-applied: {mode}")
+    return 0
+
+
 def _cmd_replay_anim(client, args):
     client.call(protocol.M_REPLAY_ANIM, {})
     print("replaying startup animation")
@@ -256,6 +267,13 @@ def _cmd_commands(client, args):
     return 0
 
 
+def _flash_kind_label(payload):
+    """The noun for a fontpack_flash_* payload ('font pack' / 'game data' /
+    'engine pack'). Imported lazily so this module stays Qt-free and cheap."""
+    from polyhost.core.events import flash_kind_label   # stdlib-only constants module
+    return flash_kind_label(payload)
+
+
 def _fmt_progress(label, payload):
     pct = (payload or {}).get("pct")
     msg = (payload or {}).get("msg", "")
@@ -300,14 +318,18 @@ def _cmd_fw(client, args):
 
 
 def _stream_fontpack_op(client, method, params, verb):
-    """Issue a fontpack RPC and stream its fontpack_flash_* events. Returns exit code."""
+    """Issue a fontpack RPC and stream its fontpack_flash_* events. Returns exit code.
+
+    The doom easter egg's game data (.whx) and engine pack (.plyx) ride the same
+    transport and therefore the same events, so the progress label comes from the
+    payload's "kind" — printing a hardcoded "fontpack" mislabelled those installs."""
     # Subscribe BEFORE issuing the op so no progress event is missed.
     client.subscribe_events()
     client.call(method, params)
     print(f"{verb}…")
     for name, payload in client.events():
         if name == "fontpack_flash_progress":
-            print(_fmt_progress("fontpack", payload))
+            print(_fmt_progress(_flash_kind_label(payload), payload))
         elif name == "fontpack_flash_done":
             ok = (payload or {}).get("ok")
             m = (payload or {}).get("msg")
@@ -544,6 +566,14 @@ def build_parser():
         help="omit to print the current script; 'standard' = normal legends, "
              "any other = fantasy/retro override (needs the fantasy font-pack bundle)")
     p_glyph_script.set_defaults(func=_cmd_glyph_script)
+
+    p_unicode = sub.add_parser(
+        "unicode-mode",
+        help="re-detect the host unicode input method (WinCompose vs native) and "
+             "push it to the keyboard — otherwise only sent on connect")
+    p_unicode.add_argument("unicode_action", nargs="?", choices=["refresh"],
+                           default="refresh", help="refresh (the default)")
+    p_unicode.set_defaults(func=_cmd_unicode_mode)
 
     p_newer = sub.add_parser(
         "newer-policy",

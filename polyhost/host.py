@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import (
     QStyle,
     QVBoxLayout, )
 
+from polyhost.core.events import flash_kind_label
 from polyhost.device.command_ids import IdleStyle, GlyphScript
 from polyhost.gui.file_dialogs import get_open_file_name
 from polyhost.gui.get_icon import get_icon
@@ -55,6 +56,8 @@ from polyhost.input.linux_gnome_helper import LinuxGnomeInputHelper
 from polyhost.input.linux_kde_helper import LinuxPlasmaHelper
 from polyhost.input.macos_helper import MacOSInputHelper
 from polyhost.input.win_helper import WindowsInputHelper
+from polyhost.input.unicode_input import wincompose_running
+from polyhost.services import wincompose_install
 from polyhost.services.lang_regions import LANG_REGION, LANG_REGION_ORDER, LANG_REGION_OVERRIDE
 from polyhost.services.unicode_cache import UnicodeCache
 from polyhost._version import __version__, __protocol__
@@ -524,6 +527,28 @@ class PolyHost(QApplication):
         # Set in client mode to the downloaded temp .bin that the daemon flashes
         # asynchronously — cleaned up on the terminal flash event (_on_flash_done).
         self._pending_fw_tmp_path = None
+
+        # WinCompose is what gives the keyboard full unicode output on Windows
+        # (see polyhost/input/unicode_input.py). Offer to install our build when
+        # it isn't running — hidden on every other OS and once it IS running.
+        # Network + a local installer only, so it works in client mode too.
+        self.wincompose_action = None
+        self._wincompose_downloader = None
+        self._wincompose_progress = None
+        self._wincompose_cancel = None
+        self._wincompose_was_running = None
+        if platform.system() == "Windows":
+            self.wincompose_action = QAction(get_icon("arrow_circle_down.svg"),
+                                             "Install WinCompose…", parent=self)
+            # noinspection PyUnresolvedReferences
+            self.wincompose_action.triggered.connect(self._on_install_wincompose_clicked)
+            self.wincompose_action.setVisible(False)   # until the first probe
+            self.menu.addAction(self.wincompose_action)
+            # Re-probe each time the tray menu opens: the entry must disappear
+            # once WinCompose is installed and running (and reappear if it is
+            # quit), without polling in the background.
+            # noinspection PyUnresolvedReferences
+            self.menu.aboutToShow.connect(self._refresh_wincompose_action)
 
         if debug_mode > 0:
             debug_menu = self.menu.addMenu(get_icon("bug_report.svg"), "Debugging")
@@ -1945,25 +1970,30 @@ class PolyHost(QApplication):
     def _on_fontpack_progress(self, result):
         """Surface a font-pack transfer in the tray. The keyboard can't service
         keys while flashing, so a quiet first-connect transfer would otherwise be
-        invisible — announce it once, then keep a live percentage in the tooltip."""
+        invisible — announce it once, then keep a live percentage in the tooltip.
+
+        The doom easter egg's game data / engine pack ride the same transport and
+        events, so the wording comes from the payload's "kind"."""
         result = result or {}
+        noun = flash_kind_label(result)
         if not getattr(self, "_fontpack_flashing", False):
             self._fontpack_flashing = True
             self.show_balloon("PolyKybd",
-                              "Updating keyboard fonts — please wait, do not unplug…", 5000)
+                              f"Updating keyboard {noun} — please wait, do not unplug…", 5000)
         pct = result.get("pct")
         if pct is not None:
-            self.tray.setToolTip(f"PolyKybd — updating fonts ({pct}%)")
+            self.tray.setToolTip(f"PolyKybd — updating {noun} ({pct}%)")
 
     def _on_fontpack_done(self, result):
         result = result or {}
+        noun = flash_kind_label(result)
         self._fontpack_flashing = False
         self.tray.setToolTip("")
         if result.get("ok"):
-            self.show_balloon("PolyKybd", "Keyboard fonts are up to date.", 4000)
+            self.show_balloon("PolyKybd", f"Keyboard {noun} is up to date.", 4000)
         else:
             self.tray.showMessage("PolyKybd",
-                                  f"Font update failed: {result.get('msg', '')}",
+                                  f"{noun.capitalize()} update failed: {result.get('msg', '')}",
                                   QSystemTrayIcon.Warning, 6000)
 
     def _on_balloon_clicked(self):
@@ -2179,6 +2209,130 @@ class PolyHost(QApplication):
         except OSError as e:  # noqa: BLE001 — best effort temp cleanup
             self.log.warning("Could not remove temp firmware file %s: %s", path, e)
 
+    # ------------------------------------------------------------------
+    # WinCompose install (Windows)
+    # ------------------------------------------------------------------
+
+    def _refresh_wincompose_action(self):
+        """Show 'Install WinCompose…' exactly while WinCompose is NOT running.
+
+        Runs on every tray-menu open (a user action, so the ~50 ms TASKLIST is
+        fine and always current — no background polling). When WinCompose has
+        appeared since the last look, re-push the unicode input mode: the core
+        only sends it on connect, so a fresh install would otherwise not reach
+        the keyboard until the next replug."""
+        if self.wincompose_action is None:
+            return
+        running = wincompose_running()
+        self.wincompose_action.setVisible(not running)
+        # Don't re-apply on the first probe (startup already pushed the mode on
+        # connect) — only on a False → True transition observed by this GUI.
+        if running and self._wincompose_was_running is False:
+            self.log.info("WinCompose is now running — re-applying the unicode input mode.")
+            try:
+                ok, payload = self.core.refresh_unicode_mode()
+            except Exception as e:  # noqa: BLE001 — no keyboard / daemon not up yet
+                ok, payload = False, e
+            if not ok:
+                self.log.warning("Could not re-apply the unicode input mode: %s", payload)
+        self._wincompose_was_running = running
+
+    def _on_install_wincompose_clicked(self):
+        """Explain what WinCompose is, then download + start its installer.
+
+        Falls back to opening the releases page when no installer asset can be
+        resolved (no release published yet, or a network/lookup failure), so the
+        entry always leads somewhere useful."""
+        if self._wincompose_downloader is not None and self._wincompose_downloader.is_alive():
+            return
+        if _msgbox(QMessageBox.Question, "Install WinCompose",
+                   "WinCompose lets your PolyKybd type any unicode character on "
+                   "Windows — emoji, accents and the language layers all go through "
+                   "it. Without it the keyboard falls back to the far more limited "
+                   "native Windows input.\n\n"
+                   "PolyKybd's build of WinCompose will be downloaded from GitHub and "
+                   "its installer started (Windows will ask you to confirm).",
+                   buttons=QMessageBox.Yes | QMessageBox.Cancel,
+                   default=QMessageBox.Yes) != QMessageBox.Yes:
+            return
+
+        self.wincompose_action.setEnabled(False)
+        try:
+            info = wincompose_install.find_installer()
+        except Exception as e:  # noqa: BLE001 — never let a lookup kill the tray
+            self.log.warning("WinCompose installer lookup failed: %s", e)
+            info = None
+        if info is None:
+            self.wincompose_action.setEnabled(True)
+            self.log.info("No WinCompose installer asset found — opening the releases page.")
+            _msgbox(QMessageBox.Information, "Install WinCompose",
+                    "No ready-made installer was found for download.\n\n"
+                    "The releases page will open in your browser — download and run "
+                    "the setup from there.")
+            wincompose_install.open_releases_page()
+            return
+
+        self._wincompose_cancel = [False]
+        self._wincompose_progress = _progress_dlg(
+            f"Downloading WinCompose {info.tag}…", "Install WinCompose",
+            tray_icon=self.tray, on_cancel=self._on_wincompose_cancel)
+
+        b = self.bridge
+        self._wincompose_downloader = wincompose_install.InstallerDownloader(
+            info,
+            on_progress=lambda pct, msg: b.job_done.emit("wincompose_download_progress",
+                                                         (pct, msg)),
+            on_finished=lambda ok, err, path: b.job_done.emit("wincompose_download_done",
+                                                              (ok, err, path)),
+            cancel_flag=self._wincompose_cancel,
+        )
+        self._wincompose_downloader.start()
+
+    def _on_wincompose_cancel(self):
+        """User pressed Cancel while the installer downloaded. Only a temp file
+        has been written and nothing has been executed, so this is always safe."""
+        if self._wincompose_cancel is not None:
+            self._wincompose_cancel[0] = True
+        if self._wincompose_progress is not None:
+            self._wincompose_progress.setLabelText("Cancelling…")
+
+    def _on_wincompose_download_progress(self, percent: int, message: str):
+        if self._wincompose_progress is None:
+            return
+        # Don't overwrite "Cancelling…" with late progress from the download thread.
+        if self._wincompose_cancel is not None and self._wincompose_cancel[0]:
+            return
+        self._wincompose_progress.setLabelText(message)
+        self._wincompose_progress.setValue(percent)
+
+    def _on_wincompose_download_done(self, ok: bool, error: str, path: str):
+        cancelled = bool(self._wincompose_cancel and self._wincompose_cancel[0])
+        self._wincompose_cancel = None
+        if self._wincompose_progress is not None:
+            self._wincompose_progress.close()
+            self._wincompose_progress = None
+        if self.wincompose_action is not None:
+            self.wincompose_action.setEnabled(True)
+
+        if cancelled or not ok:
+            if not cancelled:
+                _msgbox(QMessageBox.Warning, "Install WinCompose",
+                        f"The download failed:\n\n{error}")
+            return
+
+        started, err = wincompose_install.launch_installer(path)
+        if not started:
+            _msgbox(QMessageBox.Warning, "Install WinCompose",
+                    f"The installer could not be started:\n\n{err}\n\nIt was saved to:\n{path}")
+            return
+        # The installer runs detached (UAC), so we can't wait for it. The next
+        # tray-menu open re-probes: the entry disappears and the unicode mode is
+        # re-applied once WinCompose is actually running (_refresh_wincompose_action).
+        self.show_balloon(
+            "PolyKybd",
+            "The WinCompose installer has started. Once it finishes and WinCompose "
+            "is running, PolyKybd will switch to it automatically.", 8000)
+
     def quit_app_and_daemon(self):
         """Client mode: ask the core daemon (which owns the device) to exit too,
         then quit this GUI. Plain Quit leaves the daemon running so the keyboard
@@ -2246,6 +2400,10 @@ class PolyHost(QApplication):
             self._on_fontpack_progress(result)
         elif name == "fontpack_flash_done":
             self._on_fontpack_done(result)
+        elif name == "wincompose_download_progress":
+            self._on_wincompose_download_progress(*result)
+        elif name == "wincompose_download_done":
+            self._on_wincompose_download_done(*result)
         elif name == "host_shutdown":
             # A control client (polyctl shutdown) asked the app to quit; the
             # request arrived on a server thread and was hopped here.

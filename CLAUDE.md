@@ -426,6 +426,32 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     had missed. The measurement also overruled three name-based picks: the
     `brightness_*` family is not a coherent ramp (the `backlight_*` family is),
     and `bedtime`/`bedtime_off` beat a sun for idle start/stop.
+- **The font-pack flash events carry a `kind` — label UIs from it, not the event name.**
+  The doom easter egg's game data (`.whx`) and executable engine pack (`.plyx`) ride the
+  **font-pack transport**, so `PolyCore.install_doomwad`/`install_doompack` emit the same
+  `fontpack_flash_progress`/`fontpack_flash_done` events as a real bundle flash. Both
+  payloads now carry `"kind"` (`fontpack`/`doomwad`/`doompack`, `polyhost/core/events.py`
+  `FLASH_KIND_*` + `flash_kind_label()`), and `polyctl` + the tray render their wording from
+  it — a hardcoded "fontpack"/"updating keyboard fonts" reported a `.plyx` install as a font
+  pack (field 2026-08). A missing `kind` means font pack (older cores), so the fallback is
+  the previous wording.
+- **WinCompose install from the tray (Windows)**: WinCompose is what gives the keyboard real
+  unicode output on Windows (`polyhost/input/unicode_input.py` — `wincompose_running()` picks
+  `InputMethod.WinCompose` over the far more limited native path), so a fresh Windows box has
+  the host but no WinCompose. The tray shows **"Install WinCompose…"** exactly while it is
+  *not* running (`host.py` `_refresh_wincompose_action`, re-probed on `menu.aboutToShow` — no
+  background polling), downloading our fork's installer via `services/wincompose_install.py`
+  (Qt-free; reuses the updater's **web**, non-API release lookup so it doesn't share
+  api.github.com's 60/hour anonymous limit) and starting it with `os.startfile` so Windows
+  raises the normal UAC prompt. **No release is published on `thpoll83/wincompose` yet** —
+  `find_installer()` returns None then, and the menu falls back to opening the releases page,
+  so the entry is useful before and after the first release. Because the unicode mode is only
+  pushed on *connect*, a fresh install would otherwise not reach the keyboard until a replug:
+  the same menu-open probe fires `PolyCore.refresh_unicode_mode()` on a not-running→running
+  transition (`M_UNICODE_MODE_REFRESH` → `RemoteCore` mirror → `polyctl unicode-mode`).
+  `process_exists()` runs TASKLIST with **`CREATE_NO_WINDOW`** (else a console flashes under
+  the `pythonw`/`.vbs` autostart chain) and **never raises** — it sits on the post-connect
+  path, where an exception would abort the whole connect flow over a cosmetic detection.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.

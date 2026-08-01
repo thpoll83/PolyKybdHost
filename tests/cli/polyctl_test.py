@@ -319,6 +319,45 @@ class FwFlashUpdateTest(unittest.TestCase):
         self.assertIn("complete", out)
         self.assertIn("loaded v7", out)
 
+    def test_fontpack_progress_label_says_font_pack(self):
+        events = [("fontpack_flash_progress",
+                   {"pct": 50, "msg": "sending", "kind": "fontpack"}),
+                  ("fontpack_flash_done", {"ok": True, "msg": "loaded v7", "kind": "fontpack"})]
+        rc, out, _ = run_streaming(["fontpack", "flash", "fonts.plyf"],
+                                   protocol.M_FONTPACK_FLASH, {"queued": True}, events)
+        self.assertEqual(rc, 0)
+        self.assertIn("font pack [ 50%]", out)
+
+    def test_doompack_progress_is_not_labelled_fontpack(self):
+        """A .plyx engine pack rides the font-pack transport (and its events), but
+        must not be reported as a font pack — the label comes from "kind"."""
+        events = [("fontpack_flash_progress",
+                   {"pct": 50, "msg": "sending", "kind": "doompack"}),
+                  ("fontpack_flash_done", {"ok": True, "msg": "installed", "kind": "doompack"})]
+        rc, out, _ = run_streaming(["doom", "install-pack", "doom_pack_v1.plyx"],
+                                   protocol.M_DOOM_INSTALL_PACK, {"queued": True}, events)
+        self.assertEqual(rc, 0)
+        self.assertIn("engine pack [ 50%]", out)
+        self.assertNotIn("fontpack", out)
+
+    def test_doomwad_progress_says_game_data(self):
+        events = [("fontpack_flash_progress",
+                   {"pct": 10, "msg": "sending", "kind": "doomwad"}),
+                  ("fontpack_flash_done", {"ok": True, "msg": "installed", "kind": "doomwad"})]
+        rc, out, _ = run_streaming(["doom", "install", "doom1.whx"],
+                                   protocol.M_DOOM_INSTALL, {"queued": True}, events)
+        self.assertEqual(rc, 0)
+        self.assertIn("game data [ 10%]", out)
+
+    def test_progress_without_kind_defaults_to_font_pack(self):
+        """Older cores emit no "kind" — the label must stay the previous default."""
+        events = [("fontpack_flash_progress", {"pct": 5, "msg": "sending"}),
+                  ("fontpack_flash_done", {"ok": True, "msg": "loaded"})]
+        rc, out, _ = run_streaming(["fontpack", "flash", "fonts.plyf"],
+                                   protocol.M_FONTPACK_FLASH, {"queued": True}, events)
+        self.assertEqual(rc, 0)
+        self.assertIn("font pack [  5%]", out)
+
     def test_fontpack_flash_failure_returns_nonzero(self):
         events = [("fontpack_flash_done", {"ok": False, "msg": "crc mismatch"})]
         rc, _, err = run_streaming(["fontpack", "flash", "fonts.plyf"],

@@ -341,6 +341,14 @@ class RemoteCore:
     def get_idle_style(self):
         return self._device(p.M_IDLE_STYLE_GET)
 
+    def refresh_unicode_mode(self):
+        """Ask the daemon to re-detect + re-push the unicode input mode.
+
+        Runs in the DAEMON, deliberately: it owns the device, and in daemon mode
+        it sits on the same machine as the keyboard, so its WinCompose detection
+        is the one that matters."""
+        return self._device(p.M_UNICODE_MODE_REFRESH)
+
     def set_glyph_script(self, value):
         return self._device(p.M_GLYPH_SCRIPT_SET, {"value": value})
 

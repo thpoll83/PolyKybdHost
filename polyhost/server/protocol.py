@@ -60,6 +60,10 @@ M_IDLE_STYLE_GET = "idle.style.get"    # {} -> (ok, value)
 M_GLYPH_SCRIPT_SET = "glyph.script.set"  # {"value": 0|1|...} -> (ok, payload)  (0=standard, 1=tengwar)
 M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
 M_REPLAY_ANIM = "anim.replay"            # {} -> (ok, payload)  replay the startup ("Eden") animation
+# Re-detect the host unicode input method (WinCompose vs native) and push it to the
+# keyboard. Normally sent once per connect; needed when WinCompose is installed or
+# quit mid-session. {} -> (ok, {"mode": "WinCompose"|"Windows"|...})
+M_UNICODE_MODE_REFRESH = "unicode.mode.refresh"
 M_OVERLAY_SEND = "overlay.send"        # {"files": [name, ...]} -> {"queued": bool}
 M_OVERLAY_ENABLE = "overlay.enable"    # {} -> (ok, payload)
 M_OVERLAY_DISABLE = "overlay.disable"  # {} -> (ok, payload)
