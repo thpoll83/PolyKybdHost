@@ -29,6 +29,7 @@ from polyhost._version import __version__, __protocol__
 # import; the headless process and bare tests would otherwise hit
 # 'Logger' object has no attribute 'debug_detailed'. log_util is Qt-free.
 import polyhost.util.log_util  # noqa: F401
+from polyhost.core import events
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
 from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL
 from polyhost.device.device_manager import DeviceManager
@@ -1063,6 +1064,26 @@ class PolyCore:
         return self._device_call(
             "idle_style_get", lambda c: self.keeb.get_idle_style())
 
+    def refresh_unicode_mode(self):
+        """Re-detect the host's unicode input method and push it to the keyboard.
+
+        The mode is otherwise pushed only in the post-connect flow, but it can
+        change mid-session — installing (or quitting) WinCompose on Windows flips
+        it between ``WinCompose`` and ``Windows``. Without this the keyboard keeps
+        emitting the previous mode's sequences until the next replug, so the tray
+        calls it when it notices WinCompose appear. Honours the
+        ``unicode_send_composition_mode`` setting, like the connect path does."""
+        if not self.poly_settings.get("unicode_send_composition_mode"):
+            return False, "Sending the unicode composition mode is disabled in the settings."
+        from polyhost.input.unicode_input import get_input_method
+        mode = get_input_method()
+        self.log.info("Re-applying unicode mode %s", mode)
+        ok, payload = self._device_call(
+            "set_unicode_mode", lambda c, m=mode: self.keeb.set_unicode_mode(m))
+        if not ok:
+            return False, payload
+        return True, {"mode": mode.name}
+
     def set_glyph_script(self, value):
         try:
             v = int(value)
@@ -1237,12 +1258,14 @@ class PolyCore:
             def _progress(pct, m):
                 if cancel.is_set():
                     cancel_flag[0] = True      # relay supersede/suspend to hid_fontpack
-                self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+                self.emit("fontpack_flash_progress",
+                          {"pct": pct, "msg": m, "kind": events.FLASH_KIND_FONTPACK})
 
             fok, fmsg = hid_fontpack.flash_fontpack(
                 self.keeb.hid, path, progress_cb=_progress, cancel_flag=cancel_flag,
                 bundle_id=bundle_id)
-            self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg})
+            self.emit("fontpack_flash_done",
+                      {"ok": bool(fok), "msg": fmsg, "kind": events.FLASH_KIND_FONTPACK})
 
         # No coalesce_key: a flash must never be superseded by a later job.
         self.worker.submit("fontpack_flash", _job)
@@ -1274,11 +1297,13 @@ class PolyCore:
             def _progress(pct, m):
                 if cancel.is_set():
                     cancel_flag[0] = True
-                self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+                self.emit("fontpack_flash_progress",
+                          {"pct": pct, "msg": m, "kind": events.FLASH_KIND_DOOMWAD})
 
             fok, fmsg = hid_fontpack.flash_doomwad(
                 self.keeb.hid, whx_bytes, progress_cb=_progress, cancel_flag=cancel_flag)
-            self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg})
+            self.emit("fontpack_flash_done",
+                      {"ok": bool(fok), "msg": fmsg, "kind": events.FLASH_KIND_DOOMWAD})
 
         # No coalesce_key: a flash must never be superseded by a later job.
         self.worker.submit("doomwad_install", _job)
@@ -1309,11 +1334,13 @@ class PolyCore:
             def _progress(pct, m):
                 if cancel.is_set():
                     cancel_flag[0] = True
-                self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+                self.emit("fontpack_flash_progress",
+                          {"pct": pct, "msg": m, "kind": events.FLASH_KIND_DOOMPACK})
 
             fok, fmsg = hid_fontpack.flash_doompack(
                 self.keeb.hid, pack_bytes, progress_cb=_progress, cancel_flag=cancel_flag)
-            self.emit("fontpack_flash_done", {"ok": bool(fok), "msg": fmsg})
+            self.emit("fontpack_flash_done",
+                      {"ok": bool(fok), "msg": fmsg, "kind": events.FLASH_KIND_DOOMPACK})
 
         # No coalesce_key: a flash must never be superseded by a later job.
         self.worker.submit("doompack_install", _job)
@@ -1378,7 +1405,8 @@ class PolyCore:
         def _progress(pct, m):
             if cancel.is_set():
                 cancel_flag[0] = True
-            self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+            self.emit("fontpack_flash_progress",
+                      {"pct": pct, "msg": m, "kind": events.FLASH_KIND_FONTPACK})
 
         fd, path = tempfile.mkstemp(suffix=".plyf", prefix="polykybd_wipe_")
         try:
@@ -1393,12 +1421,14 @@ class PolyCore:
                     cancel_flag=cancel_flag, bundle_id=b["index"])
                 if not fok:
                     self.emit("fontpack_flash_done",
-                              {"ok": False, "msg": f"Wipe bundle {b['id']}: {fmsg}"})
+                              {"ok": False, "msg": f"Wipe bundle {b['id']}: {fmsg}",
+                               "kind": events.FLASH_KIND_FONTPACK})
                     return
                 if cancel_flag[0]:
                     return
             self.emit("fontpack_flash_done",
-                      {"ok": True, "msg": f"Wiped {n} font-pack slot(s)."})
+                      {"ok": True, "msg": f"Wiped {n} font-pack slot(s).",
+                       "kind": events.FLASH_KIND_FONTPACK})
         finally:
             self._fontpack_flash_in_progress = False
             try:
@@ -1476,7 +1506,8 @@ class PolyCore:
         def _progress(pct, m):
             if cancel.is_set():
                 cancel_flag[0] = True
-            self.emit("fontpack_flash_progress", {"pct": pct, "msg": m})
+            self.emit("fontpack_flash_progress",
+                      {"pct": pct, "msg": m, "kind": events.FLASH_KIND_FONTPACK})
 
         try:
             n = len(stale)
@@ -1491,14 +1522,17 @@ class PolyCore:
                 if not fok:
                     self.log.warning("Font pack auto-flash failed for bundle %s: %s", b["id"], fmsg)
                     self.emit("fontpack_flash_done",
-                              {"ok": False, "msg": f"Bundle {b['id']}: {fmsg}", "auto": True})
+                              {"ok": False, "msg": f"Bundle {b['id']}: {fmsg}", "auto": True,
+                               "kind": events.FLASH_KIND_FONTPACK})
                     return
                 if cancel_flag[0]:
                     self.log.info("Font pack auto-flash cancelled after bundle %s.", b["id"])
                     return
             msg = f"Flashed {n} font-pack bundle(s): {', '.join(b['id'] for b in stale)}."
             self.log.info("Font pack auto-flash complete: %s", msg)
-            self.emit("fontpack_flash_done", {"ok": True, "msg": msg, "auto": True})
+            self.emit("fontpack_flash_done",
+                      {"ok": True, "msg": msg, "auto": True,
+                       "kind": events.FLASH_KIND_FONTPACK})
         finally:
             self._fontpack_flash_in_progress = False
 

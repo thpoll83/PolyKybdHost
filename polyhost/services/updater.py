@@ -178,12 +178,20 @@ def _latest_tag_via_web(repo: str) -> Optional[str]:
     return unquote(match.group(1))
 
 
-def _release_assets_via_web(repo: str, tag: str) -> dict:
-    """Asset download URLs for a release WITHOUT the API.
+def parse_asset_urls(html: str) -> list:
+    """Every release-asset download URL in an expanded_assets HTML fragment.
+
+    Pure (no I/O) so it is unit-testable; :func:`release_asset_urls` fetches."""
+    return ["https://github.com" + href
+            for href in re.findall(r'href="(/[^"]+/releases/download/[^"]+)"', html)]
+
+
+def release_asset_urls(repo: str, tag: str) -> list:
+    """Release-asset download URLs WITHOUT the API.
 
     Parses the ``releases/expanded_assets/<tag>`` HTML fragment that the GitHub
-    web UI lazy-loads — also github.com (not rate-limited). Returns a dict with
-    'bin'/'uf2' keys for whichever assets are present (empty on failure)."""
+    web UI lazy-loads — also github.com, so not subject to api.github.com's
+    anonymous rate limit. Returns [] on any failure."""
     url = f"https://github.com/{repo}/releases/expanded_assets/{tag}"
     try:
         resp = requests.get(url, timeout=HTTP_TIMEOUT,
@@ -191,13 +199,18 @@ def _release_assets_via_web(repo: str, tag: str) -> dict:
         resp.raise_for_status()
     except requests.RequestException as e:
         log.debug("Web asset lookup failed for %s %s: %s", repo, tag, e)
-        return {}
+        return []
+    return parse_asset_urls(resp.text)
+
+
+def _release_assets_via_web(repo: str, tag: str) -> dict:
+    """Firmware asset URLs for a release WITHOUT the API — a dict with 'bin'/'uf2'
+    keys for whichever assets are present (empty on failure)."""
     assets = {}
-    for href in re.findall(r'href="(/[^"]+/releases/download/[^"]+)"', resp.text):
-        full = "https://github.com" + href
-        if href.endswith(".bin"):
+    for full in release_asset_urls(repo, tag):
+        if full.endswith(".bin"):
             assets.setdefault("bin", full)
-        elif href.endswith(".uf2"):
+        elif full.endswith(".uf2"):
             assets.setdefault("uf2", full)
     return assets
 

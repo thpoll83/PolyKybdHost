@@ -44,8 +44,30 @@ FW_FLASH_PROGRESS = "fw_flash_progress"  # {"pct": int (-1 = indeterminate), "ms
 FW_FLASH_DONE = "fw_flash_done"          # {"ok": bool, "msg": str}
 FW_APPLY_PROGRESS = "fw_apply_progress"  # {"pct": int, "msg": str}
 FW_APPLY_DONE = "fw_apply_done"          # {"ok": bool, "msg": str}
-FONTPACK_FLASH_PROGRESS = "fontpack_flash_progress"  # {"pct": int (-1 = indeterminate), "msg": str}
-FONTPACK_FLASH_DONE = "fontpack_flash_done"          # {"ok": bool, "msg": str}
+# The font-pack transport is also what carries the doom easter egg's game data
+# (.whx) and executable engine pack (.plyx), so these two events are emitted by
+# three different payloads. "kind" says which — FLASH_KIND_* below; absent means
+# a font pack (older cores). UIs MUST label from "kind", not from the event name,
+# or a .plyx install reads as "updating fonts" (field 2026-08).
+FONTPACK_FLASH_PROGRESS = "fontpack_flash_progress"  # {"pct": int (-1 = indeterminate), "msg": str, "kind": str}
+FONTPACK_FLASH_DONE = "fontpack_flash_done"          # {"ok": bool, "msg": str, "kind": str}
+
+FLASH_KIND_FONTPACK = "fontpack"    # a .plyf font-pack bundle
+FLASH_KIND_DOOMWAD = "doomwad"      # the easter egg's .whx game data
+FLASH_KIND_DOOMPACK = "doompack"    # the easter egg's .plyx engine pack
+
+# Human-readable nouns for each kind, for progress labels and notifications.
+FLASH_KIND_LABELS = {
+    FLASH_KIND_FONTPACK: "font pack",
+    FLASH_KIND_DOOMWAD:  "game data",
+    FLASH_KIND_DOOMPACK: "engine pack",
+}
+
+
+def flash_kind_label(payload) -> str:
+    """The noun for a fontpack_flash_* payload's "kind" ('font pack' when absent)."""
+    kind = (payload or {}).get("kind") or FLASH_KIND_FONTPACK
+    return FLASH_KIND_LABELS.get(kind, kind)
 
 # Updater events. NOTE: two producers with DIFFERENT payload shapes:
 #   * The Qt GUI's in-process installer (host.py) emits the original in-process
