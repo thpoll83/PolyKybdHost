@@ -2,6 +2,18 @@ from enum import Enum
 
 
 class Modifier(Enum):
+    """Overlay modifier variant.
+
+    The value IS the L/R-folded QMK modifier bitmask — bit0 Ctrl, bit1 Shift,
+    bit2 Alt, bit3 GUI — which is exactly what the firmware's
+    overlay_mod_variant() computes, so all 16 combinations are addressable and
+    the numbering is self-describing.
+
+    ⚠️ Before protocol v12 the firmware short-circuited any GUI+x chord onto
+    GUI_KEY (8), so a Mac Cmd+Shift+P drew the *bare Cmd* overlay. Variants
+    9..15 therefore only exist on a v12+ keyboard — see
+    LEGACY_MAX_MODIFIER_VALUE.
+    """
     NO_MOD = 0
     CTRL = 1
     SHIFT = 2
@@ -11,6 +23,20 @@ class Modifier(Enum):
     ALT_SHIFT = 6
     CTRL_ALT_SHIFT = 7   # carried by the R channel of '*.extra.mods.png'
     GUI_KEY = 8
+    GUI_CTRL = 9            # '*.extra.mods.png' A
+    GUI_SHIFT = 10          # '*.extra.mods.png' G
+    GUI_CTRL_SHIFT = 11     # '*.gui.mods.png'   R
+    GUI_ALT = 12            # '*.extra.mods.png' B
+    GUI_CTRL_ALT = 13       # '*.gui.mods.png'   B
+    GUI_ALT_SHIFT = 14      # '*.gui.mods.png'   G
+    GUI_CTRL_ALT_SHIFT = 15 # '*.gui.mods.png'   A
+
+
+# Highest variant a pre-v12 keyboard can address. It folds every GUI+x chord
+# onto GUI_KEY and its flat (slot, variant) index space stops at 90*9, so a
+# higher variant would address a position it has no room for. Both the MRU
+# upload and the mapping send drop anything above this on an older device.
+LEGACY_MAX_MODIFIER_VALUE = Modifier.GUI_KEY.value
 
 
 def keycode_to_mapping_idx(key_enum):

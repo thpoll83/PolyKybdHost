@@ -43,11 +43,20 @@ class DeviceSettings:
     # 360 bytes / 24 bytes = 15 reports for max 32 bytes or 360 bytes / 60 bytes = 6 reports for max 64 bytes
     _overlay_plain_data_report_count = int(_overlay_plain_data_bytes_total / _overlay_plain_data_bytes_per_report)
 
-    # the mapping indices are 10 bits wide
+    # SEND_OVERLAY_MAPPING (cmd 21) is fixed at 10-bit values.
     _overlay_mapping_indices_per_report = _max_payload_bytes_per_report * 8 // 10
 
+    # SEND_OVERLAY_MAPPING_W (cmd 33, protocol v12+) spends one extra header byte
+    # on the width, so it carries one fewer data byte. At 10 bits that still gives
+    # 24 pairs/report, i.e. the width byte is free in the common case.
+    _overlay_mapping_w_header_bytes = 3        # report id + command + width
+    _overlay_mapping_w_data_bytes = _hid_report_size_in_bytes - _overlay_mapping_w_header_bytes
+
     _overlay_mapping_slots = 90                # firmware NUM_OVERLAYS constant
-    _overlay_mapping_source_variants = 9       # ALL variants: 0-6 plus CTRL_ALT_SHIFT(7) and GUI(8)
+    # ALL 16 modifier variants: the variant IS the folded modifier bitmask, so
+    # GUI combines with Ctrl/Shift/Alt (protocol v12+). Was 9 while every GUI+x
+    # chord collapsed onto the bare-GUI variant 8.
+    _overlay_mapping_source_variants = 16
     # firmware NUM_OVERLAY_SLOTS — the physical pool of distinct keycap images.
     # DECOUPLED from slots x variants: overlay mapping is mandatory, so each of the
     # 810 (slot, variant) pairs points at any pool slot and variants sharing artwork
@@ -140,6 +149,16 @@ class DeviceSettings:
     @property
     def OVERLAY_MAPPING_INDICES_PER_REPORT(self):
         return self._overlay_mapping_indices_per_report
+
+    @property
+    def OVERLAY_MAPPING_SLOTS(self):
+        """Keycode slots per modifier variant (firmware NUM_OVERLAYS)."""
+        return self._overlay_mapping_slots
+
+    @property
+    def OVERLAY_MAPPING_W_DATA_BYTES(self):
+        """Packed-stream bytes in a SEND_OVERLAY_MAPPING_W report."""
+        return self._overlay_mapping_w_data_bytes
 
     @property
     def OVERLAY_MAPPING_CAPACITY(self):

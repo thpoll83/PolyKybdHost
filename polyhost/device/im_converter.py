@@ -59,21 +59,35 @@ class ImageConverter:
             return False
 
         if ".mods." in filename:
-            # Channel -> modifier variant. ⚠️ ".combo.mods." and ".extra.mods." both
-            # CONTAIN ".mods.", so they must be tested before the plain form.
+            # Channel -> modifier variant. ⚠️ ".combo.mods.", ".gui.mods." and
+            # ".extra.mods." all CONTAIN ".mods.", so they must be tested before
+            # the plain form.
             if ".combo.mods." in filename:
                 # Pairs, plus GUI in alpha.
                 key_a, key_r = Modifier.GUI_KEY, Modifier.CTRL_SHIFT
                 key_g, key_b = Modifier.CTRL_ALT, Modifier.ALT_SHIFT
+            elif ".gui.mods." in filename:
+                # Fourth tier (protocol v12+): the three-and-four-modifier GUI
+                # chords that did not fit the extra tier. Rare enough that most
+                # templates will never ship this file at all.
+                key_r, key_g = Modifier.GUI_CTRL_SHIFT, Modifier.GUI_ALT_SHIFT
+                key_b, key_a = Modifier.GUI_CTRL_ALT, Modifier.GUI_CTRL_ALT_SHIFT
             elif ".extra.mods." in filename:
-                # Third tier: what is left after the singles and the pairs. Only R
-                # is assigned today (CTRL_ALT_SHIFT, variant 7). G/B/A are RESERVED
-                # for the GUI pairs the firmware earmarks (GUI+CTRL / GUI+ALT /
-                # GUI+SHIFT -> variants 9/10/11, config.h NUM_VARIATIONS_WITH_MAP).
-                # CTRL_ALT_SHIFT lives in R rather than A on purpose: a 3-channel
-                # PNG drops alpha entirely below, which would silently lose it.
-                key_r = Modifier.CTRL_ALT_SHIFT
-                key_a = key_g = key_b = None
+                # Third tier: what is left after the singles and the pairs. R has
+                # always been CTRL_ALT_SHIFT (variant 7); G/B/A were reserved for
+                # the GUI pairs and are now assigned, since protocol v12 lets GUI
+                # combine with the other modifiers (before it, every GUI+x chord
+                # collapsed onto the bare-GUI variant 8).
+                # ⚠️ Channel choice is deliberate, on two counts:
+                #   - A 3-channel PNG drops alpha entirely below, so the LEAST
+                #     important variant goes in A — CTRL_ALT_SHIFT stays in R for
+                #     that reason and GUI_CTRL takes A.
+                #   - The old comment here said the reserved trio was "GUI+CTRL /
+                #     GUI+ALT / GUI+SHIFT -> variants 9/10/11". That numbering was
+                #     wrong: the variant IS the modifier bitmask, so GUI+SHIFT is
+                #     10 and GUI+ALT is 12 (11 is GUI+CTRL+SHIFT).
+                key_r, key_g = Modifier.CTRL_ALT_SHIFT, Modifier.GUI_SHIFT
+                key_b, key_a = Modifier.GUI_ALT, Modifier.GUI_CTRL
             else:
                 # Singles, plus the unmodified layer in alpha.
                 key_a, key_r = Modifier.NO_MOD, Modifier.CTRL

@@ -53,6 +53,11 @@ class Cmd(Enum):
     SET_OS = 29  # get/set the active host-OS identity (protocol v7+)
     GLYPH_SCRIPT = 30  # get/set glyph-script override (standard / fantasy, protocol v9+)
     REPLAY_ANIM = 31  # replay the one-time startup ("Eden") animation on demand
+    # Overlay mapping with a host-chosen value width (protocol v12+). Same
+    # packed from/to stream as SEND_OVERLAY_MAPPING, but data[2] carries the
+    # bit width, so each group of pairs travels at the narrowest width it
+    # fits in (8 bits = 30 pairs/report, 9 = 27, 10 = 24, 11 = 22).
+    SEND_OVERLAY_MAPPING_W = 33
 
 
 class OsType(Enum):

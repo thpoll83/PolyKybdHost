@@ -17,7 +17,7 @@ from polyhost.device.poly_kybd import (
 )
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.command_ids import HidId, Cmd
-from polyhost.device.keys import Modifier
+from polyhost.device.keys import Modifier, LEGACY_MAX_MODIFIER_VALUE
 from polyhost.settings import PolySettings
 
 
@@ -126,3 +126,27 @@ class TestOverlayHeaderEncoding(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestGuiComboModifierGate(unittest.TestCase):
+    """GUI combines with the other modifiers only from protocol 12.
+
+    Below that the firmware folds every GUI+x chord onto the bare-GUI variant and
+    its flat (slot, variant) index space stops at 90*9, so the host must neither
+    upload images for those variants nor send mappings that address them.
+    """
+
+    def test_feature_threshold(self):
+        self.assertEqual(FEATURE_MIN_PROTOCOL["gui_combo_modifiers"], 12)
+        self.assertFalse(protocol_supports(11, "gui_combo_modifiers"))
+        self.assertTrue(protocol_supports(12, "gui_combo_modifiers"))
+
+    def test_modifier_value_is_the_folded_bitmask(self):
+        """The variant IS the modifier bitmask — bit0 Ctrl, 1 Shift, 2 Alt, 3 GUI."""
+        self.assertEqual(Modifier.GUI_KEY.value, 0b1000)
+        self.assertEqual(Modifier.GUI_SHIFT.value, 0b1010)
+        self.assertEqual(Modifier.GUI_CTRL_ALT_SHIFT.value, 0b1111)
+        self.assertEqual([m.value for m in Modifier], list(range(16)))
+
+    def test_legacy_ceiling_is_the_bare_gui_variant(self):
+        self.assertEqual(LEGACY_MAX_MODIFIER_VALUE, Modifier.GUI_KEY.value)
