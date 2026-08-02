@@ -226,18 +226,27 @@ class TestExtraModsChannels(unittest.TestCase):
         self.assertTrue(conv.open(self._write("x.extra.mods.png")))
         # R stays CTRL_ALT_SHIFT; G/B/A were reserved for the GUI pairs and are
         # assigned now that protocol v12 lets GUI combine with other modifiers.
-        self.assertEqual(set(conv.image.keys()),
-                         {Modifier.CTRL_ALT_SHIFT, Modifier.GUI_SHIFT,
-                          Modifier.GUI_ALT, Modifier.GUI_CTRL})
-        ov = conv.extract_overlays(Modifier.CTRL_ALT_SHIFT)
-        self.assertEqual(list(ov.keys()), [KeyCode.KC_A.value])
+        # The fixture lights a DIFFERENT cell per channel, so assert the exact
+        # placement — a set comparison would pass even if two channels were
+        # swapped, which would silently draw the wrong chord's artwork.
+        for modifier, cell in ((Modifier.CTRL_ALT_SHIFT, 0),   # R
+                               (Modifier.GUI_SHIFT, 1),        # G
+                               (Modifier.GUI_ALT, 2),          # B
+                               (Modifier.GUI_CTRL, 3)):        # A
+            with self.subTest(modifier=modifier):
+                self.assertEqual(list(conv.extract_overlays(modifier)),
+                                 [KeyCode.KC_A.value + cell])
 
     def test_gui_tier_maps_the_three_and_four_modifier_chords(self):
         conv = ImageConverter(self.settings)
         self.assertTrue(conv.open(self._write("x.gui.mods.png")))
-        self.assertEqual(set(conv.image.keys()),
-                         {Modifier.GUI_CTRL_SHIFT, Modifier.GUI_ALT_SHIFT,
-                          Modifier.GUI_CTRL_ALT, Modifier.GUI_CTRL_ALT_SHIFT})
+        for modifier, cell in ((Modifier.GUI_CTRL_SHIFT, 0),      # R
+                               (Modifier.GUI_ALT_SHIFT, 1),       # G
+                               (Modifier.GUI_CTRL_ALT, 2),        # B
+                               (Modifier.GUI_CTRL_ALT_SHIFT, 3)): # A
+            with self.subTest(modifier=modifier):
+                self.assertEqual(list(conv.extract_overlays(modifier)),
+                                 [KeyCode.KC_A.value + cell])
 
     def test_gui_tier_is_matched_before_the_plain_form(self):
         # '.gui.mods.' CONTAINS '.mods.' — same trap as the extra tier.

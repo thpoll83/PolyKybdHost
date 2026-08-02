@@ -413,9 +413,26 @@ class TestDynamicKeymap(unittest.TestCase, LockCheckMixin):
 
 class TestSendOverlayMapping(unittest.TestCase, LockCheckMixin):
 
+    @staticmethod
+    def _decode_sized(payloads):
+        """Reconstruct the mapping the keyboard would apply from cmd-33 reports.
+
+        Padding repeats the last pair, so duplicates collapse onto the same key
+        and the union across reports is exactly the mapping that was sent — which
+        is what makes this a round-trip assertion rather than a shape check.
+        """
+        from polyhost.device.bit_packing import unpack_bytes_to_dict, pairs_per_report
+        decoded = {}
+        for p in payloads:
+            width = p[2]
+            data = p[3:]
+            decoded.update(unpack_bytes_to_dict(data, pairs_per_report(len(data), width), width))
+        return decoded
+
     def test_single_chunk_uses_sized_command_and_fills_the_report(self):
         keeb, device = make_keeb(auto_ack=True)
-        ok, msg = keeb.send_overlay_mapping({1: 100, 2: 200})
+        mapping = {1: 100, 2: 200}
+        ok, _ = keeb.send_overlay_mapping(mapping)
         self.assertTrue(ok)
         self.assertEqual(len(device.writes), 1)
         payload = device.payloads()[0]
@@ -423,6 +440,9 @@ class TestSendOverlayMapping(unittest.TestCase, LockCheckMixin):
         # values here fit 8 bits, so that is the width picked.
         self.assertEqual(payload[:3], bytes([POLY, 33, 8]))
         self.assertEqual(len(payload), 64)
+        # Decode the packed bytes back: metadata alone would not catch a pair
+        # that got dropped, truncated or mis-packed.
+        self.assertEqual(self._decode_sized(device.payloads()), mapping)
         self.assert_lock_free(keeb)
 
     def test_width_is_the_narrowest_the_pairs_fit_in(self):
@@ -437,10 +457,12 @@ class TestSendOverlayMapping(unittest.TestCase, LockCheckMixin):
         keeb, device = make_keeb(auto_ack=True)
         # 8-bit carries 30 pairs/report, so 31 low-index pairs need two.
         mapping = {i: i + 100 for i in range(31)}
-        ok, msg = keeb.send_overlay_mapping(mapping)
+        ok, _ = keeb.send_overlay_mapping(mapping)
         self.assertTrue(ok)
         self.assertEqual(len(device.writes), 2)
         self.assertTrue(all(p[:3] == bytes([POLY, 33, 8]) for p in device.payloads()))
+        # Nothing may be lost at the split boundary.
+        self.assertEqual(self._decode_sized(device.payloads()), mapping)
         self.assert_lock_free(keeb)
 
     def test_pairs_are_grouped_by_required_width(self):
@@ -454,6 +476,8 @@ class TestSendOverlayMapping(unittest.TestCase, LockCheckMixin):
         widths = [p[2] for p in device.payloads()]
         self.assertIn(11, widths)
         self.assertIn(8, widths)
+        # Every pair survives the partitioning, at whichever width it rode.
+        self.assertEqual(self._decode_sized(device.payloads()), mapping)
 
     def test_legacy_firmware_gets_cmd_21_without_gui_combo_pairs(self):
         keeb, device = make_keeb(auto_ack=True)
@@ -640,11 +664,15 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
         # MRU uploads in MIRROR mode, so the upload's "keycode" byte carries the
         # POOL SLOT, not the keycode — images can no longer be located by keycode.
         img_idx = [i for i, p in enumerate(payloads) if p[1] in (10, 16, 18)]
-        map_idx = next(i for i, p in enumerate(payloads) if p[1] in (21, 33))
+        map_idx = [i for i, p in enumerate(payloads) if p[1] in (21, 33)]
+        self.assertTrue(map_idx, "a mapping report must be sent")
         self.assertEqual(len(img_idx), 2, "both images uploaded")
         # Images, then the mapping that makes them addressable, then one enable.
-        self.assertLess(max(img_idx), map_idx)
-        self.assertLess(map_idx, enable_idx)
+        # A v12 send can emit SEVERAL mapping reports (one per width group), so
+        # gate on the LAST one — checking only the first would pass even if a
+        # later mapping landed after the enable.
+        self.assertLess(max(img_idx), min(map_idx))
+        self.assertLess(max(map_idx), enable_idx)
         self.assertEqual(sum(1 for p in payloads if p[:3] == bytes([POLY, 11, 0x01])), 1)
         self.assert_lock_free(keeb)
 

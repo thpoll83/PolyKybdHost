@@ -109,7 +109,18 @@ def plan_mapping_reports(mapping: dict[int, int], data_bytes: int,
     """
     buckets: dict[int, list[tuple[int, int]]] = {}
     for f, t in mapping.items():
-        buckets.setdefault(min(pair_width(f, t), max_width), []).append((f, t))
+        width = pair_width(f, t)
+        if width > max_width:
+            # Clamping here would be silent corruption: pack_values masks with
+            # `v & mask`, so an over-wide index would go out on the wire
+            # truncated, with no error anywhere. 11 bits covers the current
+            # geometry (90 slots x 16 variants, 600-slot pool) with room to
+            # spare, so this can only fire if that capacity grows — in which
+            # case it should fail loudly rather than mis-address a keycap.
+            raise ValueError(
+                f"overlay mapping pair ({f}, {t}) needs {width} bits, "
+                f"which exceeds max_width={max_width}")
+        buckets.setdefault(width, []).append((f, t))
 
     reports: list[tuple[int, list[tuple[int, int]]]] = []
     for width in sorted(buckets, reverse=True):
