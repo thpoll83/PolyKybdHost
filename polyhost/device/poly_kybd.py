@@ -10,13 +10,14 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.serial_helper import SerialHelper
 from polyhost.input.unicode_input import InputMethod
 from polyhost.settings import PolySettings
-from polyhost.device.bit_packing import pack_dict_10_bit
+from polyhost.device.bit_packing import (pack_report, pairs_per_report,
+                                         plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
 from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType, GlyphScript
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import KeyCode, Modifier
+from polyhost.device.keys import KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.services import iso_lang_country
 
@@ -48,6 +49,12 @@ GLYPH_SCRIPT_MIN_PROTOCOL = 9
 # modifier and segment share one byte, (segment << 4) | modifier). Pre-v11 firmware
 # expects them as two separate header bytes — see send_overlay_for_keycode.
 OVERLAY_PACKED_HEADER_MIN_PROTOCOL = 11
+# GUI (Cmd) combines with the other modifiers for overlays, so the modifier
+# variant is the full 4-bit modifier bitmask (0..15) instead of 0..8. Below this
+# the firmware folds every GUI+x chord onto the bare-GUI variant and its flat
+# index space stops at 90*9, so the host must not emit a higher variant — and
+# SEND_OVERLAY_MAPPING_W (the width-carrying mapping command) does not exist.
+GUI_COMBO_MODIFIERS_MIN_PROTOCOL = 12
 
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
@@ -62,6 +69,7 @@ FEATURE_MIN_PROTOCOL = {
     "os": OS_MIN_PROTOCOL,
     "glyph_script": GLYPH_SCRIPT_MIN_PROTOCOL,
     "overlay_packed_header": OVERLAY_PACKED_HEADER_MIN_PROTOCOL,
+    "gui_combo_modifiers": GUI_COMBO_MODIFIERS_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -85,7 +93,6 @@ def protocol_supports(protocol: int | None, feature: str) -> bool:
 CONSOLE_FAIL_REOPEN_THRESHOLD = 20
 CONSOLE_REOPEN_MIN_INTERVAL_S = 5.0
 
-from polyhost.util.dict_util import split_dict
 
 
 class PolyKybd:
@@ -671,28 +678,67 @@ class PolyKybd:
         return True, lang
 
     def send_overlay_mapping(self, from_to: dict) -> tuple[bool, str]:
-        chunk_size = int(self.device_settings.OVERLAY_MAPPING_INDICES_PER_REPORT / 2)
-        split_per_msg = split_dict(from_to, chunk_size)
+        """Program the display-position -> pool-slot table on the keyboard.
 
-        cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING)
+        Protocol v12+ uses SEND_OVERLAY_MAPPING_W (cmd 33), which carries the
+        value width per report. Mapping pairs are order-independent, so they are
+        partitioned by the width they NEED — max(bits(from), bits(to)) — and each
+        group travels at its own width: 8 bits = 30 pairs/report, 9 = 27,
+        10 = 24, 11 = 22. Variants 0..10 all fit in 10 bits, so the common case
+        keeps the dense form and only the high GUI combos pay for 11.
+
+        Older firmware gets the fixed-10-bit SEND_OVERLAY_MAPPING (cmd 21) it has
+        always understood, with the GUI-combo positions dropped (it cannot
+        address them at all — see GUI_COMBO_MODIFIERS_MIN_PROTOCOL).
+        """
+        if self.supports("gui_combo_modifiers"):
+            return self._send_overlay_mapping_sized(from_to)
+        return self._send_overlay_mapping_legacy(from_to)
+
+    def _send_overlay_mapping_sized(self, from_to: dict) -> tuple[bool, str]:
+        data_bytes = self.device_settings.OVERLAY_MAPPING_W_DATA_BYTES
+        reports = plan_mapping_reports(from_to, data_bytes)
         num_msgs = 0
-        for dict_part in split_per_msg:
-            # Pad to chunk_size so every HID message carries exactly chunk_size pairs.
-            # The firmware ignores pairs where from >= OVERLAY_MAP_IDX_CNT (810),
-            # preventing zero-padded bytes in the buffer from overwriting mapping[0].
-            padded = dict(dict_part)
-            noop_key = 810
-            while len(padded) < chunk_size:
-                padded[noop_key] = 810
-                noop_key += 1
-            msg = cmd + pack_dict_10_bit(padded)
-            result, msg = self.hid.send_multiple(msg)
+        for width, pairs in reports:
+            cmd = compose_cmd(Cmd.SEND_OVERLAY_MAPPING_W, width)
+            msg = cmd + pack_report(pairs, data_bytes, width)
+            result, err = self.hid.send_multiple(msg)
             num_msgs += 1
             if not result:
-                return False, f"Error sending overlay mapping: {msg}"
-            self.log.debug("send_overlay_mapping: Sent %s", dict_part)
+                return False, f"Error sending overlay mapping: {err}"
+            self.log.debug("send_overlay_mapping: sent %d pairs at %d bits",
+                           len(pairs), width)
 
-        self.log.info("send_overlay_mapping: Sent %d mapping messages", num_msgs)
+        self.log.info("send_overlay_mapping: Sent %d mapping messages (%d pairs)",
+                      num_msgs, len(from_to))
+        return True, "Mapping sent"
+
+    def _send_overlay_mapping_legacy(self, from_to: dict) -> tuple[bool, str]:
+        """Fixed-10-bit SEND_OVERLAY_MAPPING (cmd 21) for pre-v12 firmware."""
+        data_bytes = self.device_settings.MAX_PAYLOAD_BYTES_PER_REPORT
+        chunk_size = pairs_per_report(data_bytes, 10)
+        # A pre-v12 keyboard's flat index space stops at 90*9, so any position for
+        # a GUI-combo variant is unaddressable there. The images for those variants
+        # were already skipped by send_overlays_mru; drop their mappings to match.
+        legacy_limit = self.device_settings.OVERLAY_MAPPING_SLOTS * (LEGACY_MAX_MODIFIER_VALUE + 1)
+        pairs = [(f, t) for f, t in from_to.items() if f < legacy_limit]
+        dropped = len(from_to) - len(pairs)
+        if dropped:
+            self.log.debug("send_overlay_mapping: dropped %d GUI-combo pairs "
+                           "(keyboard protocol %s predates them)", dropped, self.protocol_version)
+
+        num_msgs = 0
+        for start in range(0, len(pairs), chunk_size):
+            chunk = pairs[start:start + chunk_size]
+            msg = compose_cmd(Cmd.SEND_OVERLAY_MAPPING) + pack_report(chunk, data_bytes, 10)
+            result, err = self.hid.send_multiple(msg)
+            num_msgs += 1
+            if not result:
+                return False, f"Error sending overlay mapping: {err}"
+            self.log.debug("send_overlay_mapping: Sent %s", chunk)
+
+        self.log.info("send_overlay_mapping: Sent %d mapping messages (%d pairs, legacy 10-bit)",
+                      num_msgs, len(pairs))
         # SEND_OVERLAY_MAPPING (cmd 21) is silent since protocol v3 — like the
         # other bulk overlay commands there is no per-chunk ACK, so nothing to
         # read or drain here. (The old per-chunk ACK arrived only after the
@@ -887,9 +933,16 @@ class PolyKybd:
         # safe, because the superseding send immediately follows. Slots already
         # allocated via get_or_allocate for images that WERE sent stay in the
         # cache; only the mapping commit is skipped.
+        gui_combos = self.supports("gui_combo_modifiers")
         with cache.batch():
             for converter in converters:
                 for modifier in Modifier:
+                    # A pre-v12 keyboard folds any GUI+x onto the bare-GUI
+                    # variant and has no flat index space above 90*9, so an
+                    # image staged for one of those variants could never be
+                    # addressed. Skip them rather than upload into nowhere.
+                    if not gui_combos and modifier.value > LEGACY_MAX_MODIFIER_VALUE:
+                        continue
                     overlay_map = converter.extract_overlays(modifier)
                     if not overlay_map:
                         continue

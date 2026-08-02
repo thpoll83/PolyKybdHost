@@ -413,23 +413,85 @@ class TestDynamicKeymap(unittest.TestCase, LockCheckMixin):
 
 class TestSendOverlayMapping(unittest.TestCase, LockCheckMixin):
 
-    def test_single_chunk_padded_with_noop_keys(self):
+    @staticmethod
+    def _decode_sized(payloads):
+        """Reconstruct the mapping the keyboard would apply from cmd-33 reports.
+
+        Padding repeats the last pair, so duplicates collapse onto the same key
+        and the union across reports is exactly the mapping that was sent — which
+        is what makes this a round-trip assertion rather than a shape check.
+        """
+        from polyhost.device.bit_packing import unpack_bytes_to_dict, pairs_per_report
+        decoded = {}
+        for p in payloads:
+            width = p[2]
+            data = p[3:]
+            decoded.update(unpack_bytes_to_dict(data, pairs_per_report(len(data), width), width))
+        return decoded
+
+    def test_single_chunk_uses_sized_command_and_fills_the_report(self):
         keeb, device = make_keeb(auto_ack=True)
-        ok, msg = keeb.send_overlay_mapping({1: 100, 2: 200})
+        mapping = {1: 100, 2: 200}
+        ok, _ = keeb.send_overlay_mapping(mapping)
         self.assertTrue(ok)
         self.assertEqual(len(device.writes), 1)
         payload = device.payloads()[0]
-        self.assertEqual(payload[:2], bytes([POLY, 21]))
-        # 24 pairs x 2 x 10 bit = 60 packed bytes after the 2 command bytes
+        # v12+ uses SEND_OVERLAY_MAPPING_W (33) with the width in data[2]. Both
+        # values here fit 8 bits, so that is the width picked.
+        self.assertEqual(payload[:3], bytes([POLY, 33, 8]))
         self.assertEqual(len(payload), 64)
+        # Decode the packed bytes back: metadata alone would not catch a pair
+        # that got dropped, truncated or mis-packed.
+        self.assertEqual(self._decode_sized(device.payloads()), mapping)
         self.assert_lock_free(keeb)
 
-    def test_more_pairs_than_chunk_size_split_into_two_messages(self):
+    def test_width_is_the_narrowest_the_pairs_fit_in(self):
+        for hi, expected in ((200, 8), (400, 9), (900, 10), (1400, 11)):
+            with self.subTest(hi=hi):
+                keeb, device = make_keeb(auto_ack=True)
+                ok, _ = keeb.send_overlay_mapping({hi: 1})
+                self.assertTrue(ok)
+                self.assertEqual(device.payloads()[0][:3], bytes([POLY, 33, expected]))
+
+    def test_more_pairs_than_one_report_split_into_two_messages(self):
         keeb, device = make_keeb(auto_ack=True)
-        mapping = {i: i + 100 for i in range(25)}   # chunk size is 24 pairs
-        ok, msg = keeb.send_overlay_mapping(mapping)
+        # 8-bit carries 30 pairs/report, so 31 low-index pairs need two.
+        mapping = {i: i + 100 for i in range(31)}
+        ok, _ = keeb.send_overlay_mapping(mapping)
         self.assertTrue(ok)
         self.assertEqual(len(device.writes), 2)
+        self.assertTrue(all(p[:3] == bytes([POLY, 33, 8]) for p in device.payloads()))
+        # Nothing may be lost at the split boundary.
+        self.assertEqual(self._decode_sized(device.payloads()), mapping)
+        self.assert_lock_free(keeb)
+
+    def test_pairs_are_grouped_by_required_width(self):
+        keeb, device = make_keeb(auto_ack=True)
+        # One pair needs 11 bits; the rest fit in 8. They must not all be
+        # forced up to 11 — that is the whole point of partitioning by width.
+        mapping = {i: i for i in range(40)}
+        mapping[1400] = 5
+        ok, _ = keeb.send_overlay_mapping(mapping)
+        self.assertTrue(ok)
+        widths = [p[2] for p in device.payloads()]
+        self.assertIn(11, widths)
+        self.assertIn(8, widths)
+        # Every pair survives the partitioning, at whichever width it rode.
+        self.assertEqual(self._decode_sized(device.payloads()), mapping)
+
+    def test_legacy_firmware_gets_cmd_21_without_gui_combo_pairs(self):
+        keeb, device = make_keeb(auto_ack=True)
+        keeb.protocol_version = 11
+        # 810 is the first GUI-combo position (variant 9, slot 0) — a pre-v12
+        # keyboard has no room for it, so it must be dropped, not sent.
+        ok, _ = keeb.send_overlay_mapping({1: 100, 810: 200})
+        self.assertTrue(ok)
+        payload = device.payloads()[0]
+        self.assertEqual(payload[:2], bytes([POLY, 21]))
+        from polyhost.device.bit_packing import unpack_bytes_to_dict
+        decoded = unpack_bytes_to_dict(payload[2:], 24, 10)
+        self.assertIn(1, decoded)
+        self.assertNotIn(810, decoded)
         self.assert_lock_free(keeb)
 
     def test_write_failure_aborts_and_frees_lock(self):
@@ -602,11 +664,15 @@ class TestSendOverlays(unittest.TestCase, LockCheckMixin):
         # MRU uploads in MIRROR mode, so the upload's "keycode" byte carries the
         # POOL SLOT, not the keycode — images can no longer be located by keycode.
         img_idx = [i for i, p in enumerate(payloads) if p[1] in (10, 16, 18)]
-        map_idx = next(i for i, p in enumerate(payloads) if p[1] == 21)
+        map_idx = [i for i, p in enumerate(payloads) if p[1] in (21, 33)]
+        self.assertTrue(map_idx, "a mapping report must be sent")
         self.assertEqual(len(img_idx), 2, "both images uploaded")
         # Images, then the mapping that makes them addressable, then one enable.
-        self.assertLess(max(img_idx), map_idx)
-        self.assertLess(map_idx, enable_idx)
+        # A v12 send can emit SEVERAL mapping reports (one per width group), so
+        # gate on the LAST one — checking only the first would pass even if a
+        # later mapping landed after the enable.
+        self.assertLess(max(img_idx), min(map_idx))
+        self.assertLess(max(map_idx), enable_idx)
         self.assertEqual(sum(1 for p in payloads if p[:3] == bytes([POLY, 11, 0x01])), 1)
         self.assert_lock_free(keeb)
 

@@ -1,81 +1,180 @@
+"""Packing helpers for the overlay-mapping HID reports.
+
+A mapping report is a flat LSB-first bit stream of equal-width values, read by
+the firmware as alternating ``from, to, from, to, …``. ``from`` is a display
+position (a flat *(keycode slot, modifier variant)* index) and ``to`` is a pool
+slot, so the width a given pair NEEDS is ``max(bits(from), bits(to))``.
+
+Two commands carry that stream:
+
+* ``SEND_OVERLAY_MAPPING`` (cmd 21) — fixed 10 bits, the only form a pre-v12
+  keyboard understands.
+* ``SEND_OVERLAY_MAPPING_W`` (cmd 33, protocol v12+) — the width travels in the
+  report, so the host can send each group of pairs at the narrowest width it
+  fits in.
+
+Mapping pairs are **order-independent** (each is a standalone assignment), which
+is what lets :func:`plan_mapping_reports` partition them by required width
+rather than by index order. Variants 0..10 all fit in 10 bits, so the common
+case keeps the dense 10-bit form and only the high GUI combos pay for 11.
+"""
+
 import math
+
+# Mirrors the firmware's OVERLAY_MAP_WIDTH_MIN/MAX (config.h).
+WIDTH_MIN = 8
+WIDTH_MAX = 16
+
+
+def min_width(value: int) -> int:
+    """Narrowest supported width that can carry ``value``."""
+    return max(WIDTH_MIN, value.bit_length())
+
+
+def pair_width(from_idx: int, to_idx: int) -> int:
+    """Narrowest supported width that can carry both halves of one pair."""
+    return max(min_width(from_idx), min_width(to_idx))
+
+
+def values_per_report(data_bytes: int, width: int) -> int:
+    """Values a ``data_bytes`` stream holds at ``width`` bits.
+
+    ⚠️ This is the ONE definition the host and firmware must agree on. There is
+    no count field in the report: the sender fills every value (padding by
+    repeating the last pair), so a disagreement would leave trailing values the
+    firmware decodes as real mappings.
+    """
+    return data_bytes * 8 // width
+
+
+def pairs_per_report(data_bytes: int, width: int) -> int:
+    return values_per_report(data_bytes, width) // 2
+
+
+def pack_values(values: list[int], data_bytes: int, width: int) -> bytearray:
+    """Pack ``values`` LSB-first at ``width`` bits into ``data_bytes`` bytes.
+
+    Mirrors the firmware's pack_map_value()/set_packed_overlay_mapping() pair
+    (fill_overlay.c) — value *i* occupies bits ``[i*width, i*width+width-1]``,
+    little-endian. Values beyond what the stream holds are dropped by the
+    caller, not here.
+    """
+    buf = bytearray(data_bytes)
+    mask = (1 << width) - 1
+    for idx, v in enumerate(values):
+        start = idx * width
+        b, s = divmod(start, 8)
+        shifted = (v & mask) << s
+        buf[b] |= shifted & 0xFF
+        # Second and third byte only when the value really extends there, so a
+        # narrow width at the tail of the buffer can't index past it.
+        if s + width > 8:
+            buf[b + 1] |= (shifted >> 8) & 0xFF
+        if s + width > 16:
+            buf[b + 2] |= (shifted >> 16) & 0xFF
+    return buf
+
+
+def pack_report(pairs: list[tuple[int, int]], data_bytes: int, width: int) -> bytearray:
+    """One report's worth of pairs, padded to fill every value slot.
+
+    Padding REPEATS THE LAST PAIR rather than using an out-of-range sentinel:
+    re-applying a mapping is idempotent on the firmware side, so a duplicate is
+    a semantic no-op and no reserved value is needed. That matters because a
+    sentinel would have to exceed the flat index count (1440) and cannot be
+    expressed at the narrower widths at all. Leaving slots zero is NOT an
+    option — the firmware would read them as the real pair ``0 -> 0``.
+    """
+    if not pairs:
+        return bytearray(data_bytes)
+    slots = pairs_per_report(data_bytes, width)
+    used = pairs[:slots]
+    padded = used + [used[-1]] * (slots - len(used))
+    values: list[int] = []
+    for f, t in padded:
+        values.append(f)
+        values.append(t)
+    return pack_values(values, data_bytes, width)
+
+
+def plan_mapping_reports(mapping: dict[int, int], data_bytes: int,
+                         max_width: int = 11) -> list[tuple[int, list[tuple[int, int]]]]:
+    """Group ``mapping`` into ``(width, pairs)`` reports, narrowest width first.
+
+    Greedy, widest-first: a pair needing 11 bits cannot travel in a 10-bit
+    report, but any narrow pair can ride in a wide one — so the partially-filled
+    last report at each width is topped up from the narrower buckets (widest
+    narrower first). That report is being sent anyway, so those pairs ride free
+    and the narrower buckets keep their denser reports.
+    """
+    buckets: dict[int, list[tuple[int, int]]] = {}
+    for f, t in mapping.items():
+        width = pair_width(f, t)
+        if width > max_width:
+            # Clamping here would be silent corruption: pack_values masks with
+            # `v & mask`, so an over-wide index would go out on the wire
+            # truncated, with no error anywhere. 11 bits covers the current
+            # geometry (90 slots x 16 variants, 600-slot pool) with room to
+            # spare, so this can only fire if that capacity grows — in which
+            # case it should fail loudly rather than mis-address a keycap.
+            raise ValueError(
+                f"overlay mapping pair ({f}, {t}) needs {width} bits, "
+                f"which exceeds max_width={max_width}")
+        buckets.setdefault(width, []).append((f, t))
+
+    reports: list[tuple[int, list[tuple[int, int]]]] = []
+    for width in sorted(buckets, reverse=True):
+        bucket = buckets.pop(width, [])
+        if not bucket:
+            continue
+        cap = pairs_per_report(data_bytes, width)
+        while len(bucket) > cap:
+            reports.append((width, bucket[:cap]))
+            bucket = bucket[cap:]
+        # Top the remainder up from narrower buckets — free capacity in a report
+        # we are already paying for.
+        for narrower in sorted((w for w in buckets if w < width), reverse=True):
+            while len(bucket) < cap and buckets[narrower]:
+                bucket.append(buckets[narrower].pop())
+            if not buckets[narrower]:
+                del buckets[narrower]
+            if len(bucket) == cap:
+                break
+        reports.append((width, bucket))
+    return reports
 
 
 def pack_dict_10_bit(data_dict: dict[int, int]) -> bytearray:
+    """Legacy fixed-10-bit packing for SEND_OVERLAY_MAPPING (cmd 21).
+
+    Kept for the pre-v12 path, which is the only form an older keyboard
+    understands. Byte-compatible with what the firmware's fixed-width decoder
+    reads; the caller pads to a whole report.
     """
-    Packs a dictionary of integers into a compact bytearray with no wasted bits.
-
-    This function treats the output as a continuous stream of bits. It concatenates
-    the 10-bit representation of each key and value into a single large integer,
-    which is then converted to bytes. This is highly space-efficient, with at
-    most 7 bits of padding at the very end of the bytearray.
-
-    Args:
-        data_dict: A dictionary where keys and values are integers.
-                   Values exceeding 10 bits (0-1023) will be truncated.
-
-    Returns:
-        A bytearray containing the tightly packed key-value pairs.
-    """
-    if not data_dict:
-        return bytearray()
-
-    packed_int = 0
-    num_pairs = len(data_dict)
-
-    # Mask to get the 10 least significant bits (2^10 - 1)
-    mask = 0x3FF
-
-    # Concatenate all key-value pairs into one large integer
+    values: list[int] = []
     for key, value in data_dict.items():
-        # Shift the existing bits to make room for the new 20-bit pair
-        packed_int <<= 20
-        # Combine the 10-bit key and 10-bit value
-        pair_as_20_bits = ((value & mask) << 10) | (key & mask)
-        # Add the new pair to the large integer
-        packed_int |= pair_as_20_bits
-
-    # Calculate the number of bytes required to store all the bits
-    total_bits = num_pairs * 20
-    num_bytes = math.ceil(total_bits / 8)
-
-    # Convert the large integer to a bytearray
-    return bytearray(packed_int.to_bytes(num_bytes, 'little'))
+        values.append(key)
+        values.append(value)
+    num_bytes = math.ceil(len(values) * 10 / 8)
+    return pack_values(values, num_bytes, 10)
 
 
-def unpack_bytes_to_dict(packed_data: bytes, num_pairs: int) -> dict[int, int]:
-    """
-    Unpacks a bytearray created by pack_dict_10_bit back into a dictionary.
-
-    Args:
-        packed_data: A bytearray of tightly packed 10-bit key-value pairs.
-        num_pairs: The number of key-value pairs that were packed.
-
-    Returns:
-        The reconstructed dictionary.
-    """
+def unpack_bytes_to_dict(packed_data: bytes, num_pairs: int, width: int = 10) -> dict[int, int]:
+    """Inverse of :func:`pack_values` read as pairs — used by the tests/mock."""
     if not packed_data or num_pairs == 0:
         return {}
-
-    # Convert the entire bytearray back to a single integer
-    packed_int = int.from_bytes(packed_data, 'little')
-
-    unpacked_dict = {}
-
-    # Masks to extract the 10-bit key and value from a 20-bit chunk
-    key_mask = 0x3FF  # Extracts the last 10 bits
-    value_mask = 0xFFC00  # Extracts the first 10 bits
-
-    # Extract each 20-bit pair from the right (LSB side)
-    for _ in range(num_pairs):
-        pair_as_20_bits = packed_int & 0xFFFFF  # Get the last 20 bits
-
-        value = (pair_as_20_bits & value_mask) >> 10
-        key = pair_as_20_bits & key_mask
-
-        unpacked_dict[key] = value
-
-        # Shift the integer to the right to process the next pair
-        packed_int >>= 20
-
-    return unpacked_dict
+    mask = (1 << width) - 1
+    out: dict[int, int] = {}
+    for pair in range(num_pairs):
+        vals = []
+        for half in range(2):
+            start = (pair * 2 + half) * width
+            b, s = divmod(start, 8)
+            acc = packed_data[b]
+            if s + width > 8:
+                acc |= packed_data[b + 1] << 8
+            if s + width > 16:
+                acc |= packed_data[b + 2] << 16
+            vals.append((acc >> s) & mask)
+        out[vals[0]] = vals[1]
+    return out

@@ -63,11 +63,23 @@ def _reference_open(converter, filename):
             key_r = Modifier.CTRL_SHIFT
             key_g = Modifier.CTRL_ALT
             key_b = Modifier.ALT_SHIFT
+        elif ".gui.mods." in filename:
+            # Fourth file kind (protocol v12+). Tested BEFORE the plain form
+            # because ".gui.mods." contains ".mods.".
+            key_r = Modifier.GUI_CTRL_SHIFT
+            key_g = Modifier.GUI_ALT_SHIFT
+            key_b = Modifier.GUI_CTRL_ALT
+            key_a = Modifier.GUI_CTRL_ALT_SHIFT
         elif ".extra.mods." in filename:
-            # Third file kind. Only R is assigned; G/B/A are reserved. Tested
-            # BEFORE the plain form because ".extra.mods." contains ".mods.".
+            # Third file kind. R has always been CTRL_ALT_SHIFT; G/B/A were
+            # reserved and are assigned since v12 let GUI combine with the other
+            # modifiers. Tested BEFORE the plain form (".extra.mods." contains
+            # ".mods."), and the least important variant sits in A because a
+            # 3-channel PNG drops alpha entirely.
             key_r = Modifier.CTRL_ALT_SHIFT
-            key_a = key_g = key_b = None
+            key_g = Modifier.GUI_SHIFT
+            key_b = Modifier.GUI_ALT
+            key_a = Modifier.GUI_CTRL
         else:
             key_a = Modifier.NO_MOD
             key_r = Modifier.CTRL
@@ -209,13 +221,39 @@ class TestExtraModsChannels(unittest.TestCase):
         Image.fromarray(a, "RGBA").save(path)
         return path
 
-    def test_extra_maps_r_to_ctrl_alt_shift_and_reserves_the_rest(self):
+    def test_extra_maps_all_four_channels(self):
         conv = ImageConverter(self.settings)
         self.assertTrue(conv.open(self._write("x.extra.mods.png")))
-        # Only R is assigned; G/B/A are reserved for the future GUI pairs.
-        self.assertEqual(list(conv.image.keys()), [Modifier.CTRL_ALT_SHIFT])
-        ov = conv.extract_overlays(Modifier.CTRL_ALT_SHIFT)
-        self.assertEqual(list(ov.keys()), [KeyCode.KC_A.value])
+        # R stays CTRL_ALT_SHIFT; G/B/A were reserved for the GUI pairs and are
+        # assigned now that protocol v12 lets GUI combine with other modifiers.
+        # The fixture lights a DIFFERENT cell per channel, so assert the exact
+        # placement — a set comparison would pass even if two channels were
+        # swapped, which would silently draw the wrong chord's artwork.
+        for modifier, cell in ((Modifier.CTRL_ALT_SHIFT, 0),   # R
+                               (Modifier.GUI_SHIFT, 1),        # G
+                               (Modifier.GUI_ALT, 2),          # B
+                               (Modifier.GUI_CTRL, 3)):        # A
+            with self.subTest(modifier=modifier):
+                self.assertEqual(list(conv.extract_overlays(modifier)),
+                                 [KeyCode.KC_A.value + cell])
+
+    def test_gui_tier_maps_the_three_and_four_modifier_chords(self):
+        conv = ImageConverter(self.settings)
+        self.assertTrue(conv.open(self._write("x.gui.mods.png")))
+        for modifier, cell in ((Modifier.GUI_CTRL_SHIFT, 0),      # R
+                               (Modifier.GUI_ALT_SHIFT, 1),       # G
+                               (Modifier.GUI_CTRL_ALT, 2),        # B
+                               (Modifier.GUI_CTRL_ALT_SHIFT, 3)): # A
+            with self.subTest(modifier=modifier):
+                self.assertEqual(list(conv.extract_overlays(modifier)),
+                                 [KeyCode.KC_A.value + cell])
+
+    def test_gui_tier_is_matched_before_the_plain_form(self):
+        # '.gui.mods.' CONTAINS '.mods.' — same trap as the extra tier.
+        conv = ImageConverter(self.settings)
+        conv.open(self._write("x.gui.mods.png"))
+        for wrong in (Modifier.NO_MOD, Modifier.CTRL, Modifier.ALT, Modifier.SHIFT):
+            self.assertNotIn(wrong, conv.image)
 
     def test_extra_is_matched_before_the_plain_form(self):
         # '.extra.mods.' CONTAINS '.mods.', so a naive branch order would decode

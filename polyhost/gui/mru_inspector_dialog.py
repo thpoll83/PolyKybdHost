@@ -15,8 +15,11 @@ from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache, _slot_to_keycode
 
 
-_MODIFIER_NAMES = ["NO", "CTRL", "SHIFT", "CTRL+SHIFT", "ALT", "CTRL+ALT", "ALT+SHIFT"]
-_NUM_MODIFIER_VARIANTS = 7
+# Column headings for the display-position grid: index == Modifier value, which
+# is the folded modifier bitmask (bit0 Ctrl, bit1 Shift, bit2 Alt, bit3 GUI).
+_MODIFIER_NAMES = [m.name.replace("_", "+").replace("NO+MOD", "NO").replace("GUI+KEY", "GUI")
+                   for m in Modifier]
+_NUM_MODIFIER_VARIANTS = len(_MODIFIER_NAMES)
 _NUM_KEYCODE_SLOTS = 90
 _IMG_SCALE = 2
 _IMG_W = 72 * _IMG_SCALE
