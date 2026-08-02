@@ -1,4 +1,5 @@
 import binascii
+import os
 import struct
 import time
 
@@ -8,6 +9,9 @@ CMD_FW_UP_BEGIN       = 0x40
 CMD_FW_UP_CHUNK       = 0x41
 CMD_FW_UP_COMMIT      = 0x42
 CMD_FW_UP_APPLY       = 0x44
+CMD_FW_UP_SIGNATURE   = 0x45   # FW-2: 64-byte Ed25519 image signature, sent in 2 parts before COMMIT
+
+FW_SIG_LEN = 64
 
 FW_UP_CHUNK_SIZE  = 56
 FW_UP_VERSION_LEN = 16
@@ -339,11 +343,41 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
                f"(waiting {int(pause * 1000)} ms)…")
         time.sleep(pause)
 
+    # -- FW_UP_SIGNATURE (FW-2) --
+    # If a detached signature sits next to the .bin (<bin>.sig, 64 raw Ed25519
+    # bytes), send it before COMMIT so the firmware can verify image authenticity
+    # against its embedded public key. Sent in two 32-byte parts (64 bytes don't
+    # fit one HID report). Best-effort: firmware without signing support NACKs the
+    # unknown command and flashes unsigned, so a NACK here is not fatal.
+    sig_path = bin_path + ".sig"
+    if os.path.exists(sig_path):
+        sig = None
+        try:
+            with open(sig_path, 'rb') as f:
+                sig = f.read()
+        except OSError as e:
+            # Distinguish a real I/O failure (permissions, FS error) from a
+            # missing/short signature so the operator isn't told "got 0 bytes".
+            report(97, f"Could not read {os.path.basename(sig_path)}: {e} — flashing unsigned.")
+        if sig is not None:
+            half = FW_SIG_LEN // 2   # one 32-byte HID report per half of the 64-byte sig
+            if len(sig) == FW_SIG_LEN:
+                report(97, "Sending image signature…")
+                for part in (0, 1):
+                    pkt = (bytearray([HID_POLYKYBD, CMD_FW_UP_SIGNATURE, part])
+                           + sig[part * half:part * half + half])
+                    hid.send_and_read(pkt, timeout=2000)  # NACK on older firmware is fine
+            else:
+                report(97, f"Ignoring {os.path.basename(sig_path)} — "
+                           f"expected {FW_SIG_LEN} bytes, got {len(sig)}.")
+
     # -- FW_UP_COMMIT --
     # COMMIT verifies the running CRC32 the keyboard accumulated while it staged
     # the image; it does NOT apply/activate the image or reboot.  The new firmware
     # is stored and CRC-checked in the staging region but the keyboard keeps
     # running its current firmware — activation is a separate, future step.
+    # (FW-2: the firmware also verifies the Ed25519 signature here — currently
+    # warn-only, so an unsigned/old image still commits.)
     report(98, "Verifying the staged image (CRC32)…")
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_COMMIT])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
