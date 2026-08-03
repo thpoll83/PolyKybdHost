@@ -515,6 +515,21 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     second one hangs (observed ~10 min at 0.7% CPU / 4 s CPU time, on a suite
     that had run green in 27 s moments earlier; both were auto-picking a display).
     Run them as separate commands.
+- **Use `scripts/run_tests.py` when a run might hang — it has a stall watchdog.**
+  The suite is **~25 s** (~27 s under xvfb, where the 11 GUI-subprocess tests run
+  instead of skipping). Twice on 2026-08-03 it instead wedged past a 200 s
+  timeout with **no output at all** — and a bare `timeout` kill discards exactly
+  the information you need. The runner arms
+  `faulthandler.dump_traceback_later(..., exit=True)`, so a stall prints every
+  thread's stack and fails the command:
+  `python scripts/run_tests.py [--timeout 180] [-s tests/device]`.
+  ⚠️ The stall was **not reproducible** in 20+ subsequent runs (plain, verbose,
+  under xvfb, two suites concurrently, and kill-mid-run-then-rerun). Ruled out:
+  orphaned processes, stale control sockets (the server tests use per-run
+  tempdirs), and the `RemoteCore` event-pump thread parked in `recv_bytes` (it is
+  `daemon=True`, so it cannot hold interpreter exit). Treat a hang as unexplained
+  environment flakiness, re-run once via the watchdog, and **paste the dump** —
+  that is the only artifact that will identify it.
 - **Single-key keymap write**: the firmware supports `ID_DYNAMIC_KEYMAP_SET_KEYCODE` (0x05) — payload is `[layer, row, col, keycode_hi, keycode_lo]`. No need to write a full layer; `PolyKybd.set_dynamic_keycode()` wraps this.
 - **Firmware update survives protocol mismatches**: `PolyHost.device_present` tracks "a device answers protocol-independent queries (GET_ID/GET_LANG)" separately from `connected` (protocol/version compatible). The flash/apply/bootloader actions and the release-update flow gate on `_fw_actions_allowed()` (present, not paused) — NOT on `connected` — so a keyboard on a mismatched protocol can always be updated (`CommandsSubMenu.update_enabled` re-enables exactly those items when the rest of the menu is greyed out). The HID flash protocol (`hid_fw_up`) is dispatched independently of `PROTOCOL_VERSION` in the firmware. Don't re-gate any firmware-update path on `self.connected`.
 - **Autostart** (`polyhost/services/add_to_startup.py`): `setup_autostart_for_app()` registers the app to start at login (called from `main_app.py` unless `--portable`).

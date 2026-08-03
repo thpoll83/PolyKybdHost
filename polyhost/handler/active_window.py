@@ -5,7 +5,7 @@ import re
 from urllib.parse import urlsplit
 
 from polyhost.handler.common import (
-    OverlayCommand, Flags, find_matching_entry,
+    OverlayCommand, Flags, find_matching_entry, OS,
     TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, URL, URL_HAS, FLAGS,
 )
 from polyhost.handler.remote_window import RemoteHandler
@@ -102,6 +102,7 @@ class OverlayHandler:
             has_contains = TITLE_HAS in entry.keys() and entry[TITLE_HAS]
             has_url = URL in entry.keys()
             has_urls_contains = URL_HAS in entry.keys() and entry[URL_HAS]
+            has_os = OS in entry.keys() and entry[OS]
 
             entry[FLAGS] = [
                 has_overlay,
@@ -112,6 +113,7 @@ class OverlayHandler:
                 has_contains,
                 has_url,
                 has_urls_contains,
+                has_os,
             ]
             if has_starts_with:
                 self.annotate(entry[TITLE_SW].items(), False)
@@ -121,6 +123,8 @@ class OverlayHandler:
                 self.annotate(entry[TITLE_HAS].items(), False)
             if has_urls_contains:
                 self.annotate(entry[URL_HAS].items(), False)
+            if has_os:
+                self.annotate(entry[OS].items(), False)
 
             if return_copy:
                 keys = keys.split(",")
@@ -135,13 +139,33 @@ class OverlayHandler:
         self.title = title
         self.handle = handle
 
+    def _active_os(self):
+        """OS of the machine running the focused app, for the mapping's `os` branch.
+
+        Mirrors PolyCore._track_active_os: a forwarded window's shortcuts belong to
+        the FORWARDER's platform, not to whichever machine the keyboard is plugged
+        into — so a Mac forwarding to a Windows host must still get Mac artwork.
+        Falls back to the local OS when nothing is forwarded (or the forwarder
+        reported UNKNOWN/none)."""
+        rh = getattr(self, "remote_handler", None)
+        if rh is not None and self.is_remote_mapping_entry():
+            forwarded = getattr(rh, "forwarded_os", None)
+            if forwarded:
+                return forwarded
+        try:
+            from polyhost.input.unicode_input import get_host_os
+            return get_host_os()
+        except Exception:            # never let OS detection break window matching
+            return None
+
     def try_to_match_window(self, name, entry):
         # The recursion lives in common.find_matching_entry (shared with the
         # remote path); here we add the ENABLE-vs-OFF_ON decision and the
         # current/last-entry bookkeeping. A re-enter of the same matched entry
         # is ENABLE (overlays already mapped); a different one is a full OFF_ON.
         try:
-            matched = find_matching_entry(self.title, entry, self.current_url)
+            matched = find_matching_entry(self.title, entry, self.current_url,
+                                          self._active_os())
         except re.error as e:
             self.log.warning(
                 "Cannot match entry '%s': %s, because '%s'@%d with '%s'",

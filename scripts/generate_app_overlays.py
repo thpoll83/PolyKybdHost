@@ -5,9 +5,10 @@ The PolyKybd overlay PNG format is a 10x9 grid of 72x40 px keycap overlays
 (720x360 total). Each colour channel of an RGBA PNG carries one *modifier
 variation* of the key in that cell (see polyhost/res/overlay_specification.md):
 
-    primary  "*.mods.png"        R=Ctrl       G=Alt      B=Shift     A=(no mod)
-    combo    "*.combo.mods.png"  R=Ctrl+Shift G=Ctrl+Alt B=Alt+Shift A=GUI
-    extra    "*.extra.mods.png"  R=Ctrl+Alt+Shift        G/B/A reserved (GUI pairs)
+    primary  "*.mods.png"        R=Ctrl           G=Alt          B=Shift        A=(no mod)
+    combo    "*.combo.mods.png"  R=Ctrl+Shift     G=Ctrl+Alt     B=Alt+Shift    A=GUI
+    extra    "*.extra.mods.png"  R=Ctrl+Alt+Shift G=GUI+Shift    B=GUI+Alt      A=GUI+Ctrl
+    gui      "*.gui.mods.png"    R=GUI+Ctrl+Shift G=GUI+Alt+Shft B=GUI+Ctrl+Alt A=GUI+Ctrl+Alt+Shift
 
 This script takes a small per-application *binding file* (YAML) that lists each
 shortcut as (key, modifiers, icon) and does the tedious, fully-mechanical part:
@@ -53,9 +54,17 @@ CH = {"R": 0, "G": 1, "B": 2, "A": 3}
 PRIMARY_CH = {Modifier.NO_MOD: "A", Modifier.CTRL: "R", Modifier.ALT: "G", Modifier.SHIFT: "B"}
 COMBO_CH = {Modifier.CTRL_SHIFT: "R", Modifier.CTRL_ALT: "G", Modifier.ALT_SHIFT: "B",
             Modifier.GUI_KEY: "A"}
-# Third tier. G/B/A are reserved for the GUI pairs (GUI+Ctrl/Alt/Shift) the firmware
-# earmarks as variants 9/10/11; nothing maps to them until those enum values exist.
-EXTRA_CH = {Modifier.CTRL_ALT_SHIFT: "R"}
+# Third and fourth tiers (protocol v12+). Before v12 the firmware folded every
+# GUI+x chord onto the bare-GUI variant, so extra's G/B/A sat reserved and empty;
+# the variant is now just the L/R-folded modifier bitmask, giving all 16.
+# ⚠️ Channel assignment MUST mirror polyhost/device/im_converter.py exactly -- the
+# loader reads these positions by name, so a mismatch here silently addresses the
+# wrong variant rather than failing. In particular the least-important variant of
+# each tier goes in A, because a 3-channel PNG drops alpha entirely.
+EXTRA_CH = {Modifier.CTRL_ALT_SHIFT: "R", Modifier.GUI_SHIFT: "G",
+            Modifier.GUI_ALT: "B", Modifier.GUI_CTRL: "A"}
+GUI_CH = {Modifier.GUI_CTRL_SHIFT: "R", Modifier.GUI_ALT_SHIFT: "G",
+          Modifier.GUI_CTRL_ALT: "B", Modifier.GUI_CTRL_ALT_SHIFT: "A"}
 
 MOD_BIT = {"CTRL": 1, "CONTROL": 1, "CTL": 1,
            "SHIFT": 2, "SFT": 2,
@@ -142,9 +151,7 @@ def resolve_modifier(mods: list[str]) -> Modifier:
         return Modifier(bits)
     except ValueError:
         raise ValueError(
-            f"modifier combination {mods} (bits={bits}) is not representable "
-            f"(GUI only combines with nothing — GUI+Ctrl/Alt/Shift are reserved "
-            f"but not yet assigned a channel)")
+            f"modifier combination {mods} (bits={bits}) is not representable")
 
 
 def cell_for(kc: KeyCode) -> tuple[int, int]:
@@ -302,7 +309,8 @@ def generate(spec: dict, base_dir: Path) -> dict:
     primary = np.zeros((IMG_H, IMG_W, 4), dtype=np.uint8)
     combo = np.zeros((IMG_H, IMG_W, 4), dtype=np.uint8)
     extra = np.zeros((IMG_H, IMG_W, 4), dtype=np.uint8)
-    used_primary = used_combo = used_extra = False
+    gui = np.zeros((IMG_H, IMG_W, 4), dtype=np.uint8)
+    used_primary = used_combo = used_extra = used_gui = False
     warnings: list[str] = []
     placed: list[dict] = []
 
@@ -324,6 +332,9 @@ def generate(spec: dict, base_dir: Path) -> dict:
         elif mod in EXTRA_CH:
             arr, ch_name = extra, EXTRA_CH[mod]
             used_extra = True
+        elif mod in GUI_CH:
+            arr, ch_name = gui, GUI_CH[mod]
+            used_gui = True
         else:
             warnings.append(f"skipped {b}: modifier {mod.name} has no channel")
             continue
@@ -372,11 +383,17 @@ def generate(spec: dict, base_dir: Path) -> dict:
                                     preg, spec.get("program_icon_mode", mode))
                 row, col = cell_for(pkc)
                 y0, x0 = row * SLOT_H, col * SLOT_W
-                for arr in (primary, combo, extra):
+                for arr in (primary, combo, extra, gui):
                     for ax in range(4):              # all channels = all layers
                         block = arr[y0:y0 + SLOT_H, x0:x0 + SLOT_W, ax]
                         block[pmask] = 255
-                used_primary = used_combo = used_extra = True
+                # The program mark alone must NOT bring a layer into existence:
+                # `extra` is the Ctrl+Alt+Shift tier and most apps have no binding
+                # there, so marking it used shipped a third PNG whose only content
+                # was the ESC mark (and printed a mapping stanza listing it). Only
+                # the primary layer is unconditionally real -- it always carries
+                # the mark and the app's no-mod/Ctrl/Shift bindings.
+                used_primary = True
                 placed.append({"key": pkc.name, "mod": "ALL", "ch": "RGBA(x3)",
                                "cell": (row, col), "src": prog, "label": "program icon"})
             except ValueError as e:
@@ -385,6 +402,7 @@ def generate(spec: dict, base_dir: Path) -> dict:
     return {"primary": primary if used_primary else None,
             "combo": combo if used_combo else None,
             "extra": extra if used_extra else None,
+            "gui": gui if used_gui else None,
             "placed": placed, "warnings": warnings}
 
 
@@ -399,7 +417,11 @@ def save_png(rgba: np.ndarray, path: Path) -> None:
 # --------------------------------------------------------------------------- #
 _MOD_SHORT = {"NO_MOD": "", "CTRL": "Ctrl", "SHIFT": "Shift", "CTRL_SHIFT": "Ctrl+Shift",
               "ALT": "Alt", "CTRL_ALT": "Ctrl+Alt", "ALT_SHIFT": "Alt+Shift",
-              "GUI_KEY": "Gui", "ALL": ""}
+              "CTRL_ALT_SHIFT": "Ctrl+Alt+Shift", "GUI_KEY": "Gui",
+              "GUI_CTRL": "Gui+Ctrl", "GUI_SHIFT": "Gui+Shift", "GUI_ALT": "Gui+Alt",
+              "GUI_CTRL_SHIFT": "Gui+Ctrl+Shift", "GUI_ALT_SHIFT": "Gui+Alt+Shift",
+              "GUI_CTRL_ALT": "Gui+Ctrl+Alt", "GUI_CTRL_ALT_SHIFT": "Gui+Ctrl+Alt+Shift",
+              "ALL": ""}
 
 
 def _plane_for(result: dict, mod_name: str):
@@ -413,6 +435,15 @@ def _plane_for(result: dict, mod_name: str):
         return result["primary"], CH[PRIMARY_CH[mod]]
     if mod in COMBO_CH:
         return result["combo"], CH[COMBO_CH[mod]]
+    # The third and fourth tiers were missing here, so every binding on them was
+    # silently dropped from the review sheet -- `write_preview` just skips a
+    # (None, None). That predates the GUI combos (CTRL_ALT_SHIFT was already
+    # invisible); it only became obvious once a whole set was authored on these
+    # tiers. Keep this table exhaustive over PRIMARY/COMBO/EXTRA/GUI_CH.
+    if mod in EXTRA_CH:
+        return result["extra"], CH[EXTRA_CH[mod]]
+    if mod in GUI_CH:
+        return result["gui"], CH[GUI_CH[mod]]
     return None, None
 
 
@@ -470,6 +501,8 @@ def mapping_stanza(spec: dict, out_dir_label: str) -> str:
         files.append(f"{spec['output']}.combo.mods.png")
     if spec.get("_has_extra"):
         files.append(f"{spec['output']}.extra.mods.png")
+    if spec.get("_has_gui"):
+        files.append(f"{spec['output']}.gui.mods.png")
     overlay = files[0] if len(files) == 1 else "[" + ", ".join(files) + "]"
     title = spec.get("title")
     lines = [f"{','.join(names)}:", f"  overlay: {overlay}"]
@@ -497,6 +530,7 @@ def main() -> int:
     spec["_has_primary"] = result["primary"] is not None
     spec["_has_combo"] = result["combo"] is not None
     spec["_has_extra"] = result["extra"] is not None
+    spec["_has_gui"] = result["gui"] is not None
 
     print(f"Placed {len(result['placed'])} overlays for {spec.get('app', '?')}:")
     for p in result["placed"]:
@@ -515,6 +549,9 @@ def main() -> int:
         if result["extra"] is not None:
             save_png(result["extra"], args.out_dir / f"{spec['output']}.extra.mods.png")
             print(f"Wrote {args.out_dir / (spec['output'] + '.extra.mods.png')}")
+        if result["gui"] is not None:
+            save_png(result["gui"], args.out_dir / f"{spec['output']}.gui.mods.png")
+            print(f"Wrote {args.out_dir / (spec['output'] + '.gui.mods.png')}")
 
     if args.preview:
         for p in write_preview(result, args.preview):

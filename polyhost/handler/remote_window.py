@@ -151,7 +151,10 @@ class RemoteHandler:
         if self.name not in self.mapping:
             return False
         try:
-            matched = find_matching_entry(self.title, self.mapping[self.name])
+            # The forwarder's OS, not ours: the remote app's keymap is a property
+            # of the machine it runs on.
+            matched = find_matching_entry(self.title, self.mapping[self.name],
+                                          None, getattr(self, "forwarded_os", None))
         except re.error as e:
             self.log.warning(
                 "Cannot match entry '%s': %s, because '%s'@%d with '%s'",

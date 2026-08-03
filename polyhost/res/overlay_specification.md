@@ -18,7 +18,7 @@ Overlay specification so that generated png images can be used with the PolyKybd
 | `*.combo.mods.png` (combo) | CTRL_SHIFT | CTRL_ALT | ALT_SHIFT | GUI_KEY |
 | `*.png` (no `.mods.`) | — | — | — | grayscale → NO_MOD |
 
-Each PNG carries up to 4 modifier variations. CTRL_ALT_SHIFT is not supported (see `Modifier` in `polyhost/device/keys.py`); GUI_KEY is loaded but currently dropped before rendering.
+Each PNG carries up to 4 modifier variations. Since protocol 12 **all sixteen** variants are addressable (see `Modifier` in `polyhost/device/keys.py`), across four files: the two below plus `*.extra.mods.png` (R=CTRL_ALT_SHIFT, G=GUI_SHIFT, B=GUI_ALT, A=GUI_CTRL) and `*.gui.mods.png` (R=GUI_CTRL_SHIFT, G=GUI_ALT_SHIFT, B=GUI_CTRL_ALT, A=GUI_CTRL_ALT_SHIFT). GUI_KEY is loaded and sent (it used to be dropped before rendering).
 
 ## Slot → keycode mapping
 

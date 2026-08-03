@@ -142,7 +142,8 @@ python -m polyhost --host IP_ADDR_OF_HOST   # or a hostname
 ```
 
 On the computer with the PolyKybd connected, run without parameters and name
-the remote in `overlay-mapping.poly.yaml`:
+the remote in `overlay-mapping.poly.yaml` (every key that file understands is
+documented in [`polyhost/res/overlay-mapping.md`](polyhost/res/overlay-mapping.md)):
 
 ```yaml
 nxplayer:
