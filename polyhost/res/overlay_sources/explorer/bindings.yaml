@@ -59,3 +59,48 @@ bindings:
 
   # --- Ctrl+Shift -> R channel of combo ---
   - { key: N, mods: [CTRL, SHIFT], icon: newfolder.png, label: "New folder", source: "ms-fluent/Folder Add (MIT)" }
+
+  # ---------------------------------------------------------------------------
+  # Win-key (GUI) combos — protocol 12.  These are Windows *shell* shortcuts
+  # rather than Explorer commands, but they are the ones actually reached for
+  # while a file window has focus, and they are what fills the GUI tiers:
+  #   GUI              -> A channel of *.combo.mods.png
+  #   GUI+Shift        -> G channel of *.extra.mods.png
+  #   GUI+Alt          -> B channel of *.extra.mods.png
+  #   GUI+Ctrl         -> A channel of *.extra.mods.png
+  #   GUI+Ctrl+Shift   -> R channel of *.gui.mods.png
+  # Ctrl+Alt+Shift (R of extra) and the remaining three gui-tier channels are
+  # left empty on purpose: Windows defines no standard shortcut for them, and
+  # inventing one would put a lie on a keycap.
+  # ---------------------------------------------------------------------------
+
+  # --- GUI (bare Win) -> A channel of combo ---
+  - { key: E,   mods: [GUI], icon: winexplorer.png, label: "File Explorer",  source: "ms-fluent/Folder Open (MIT)" }
+  - { key: D,   mods: [GUI], icon: showdesktop.png, label: "Show desktop",   source: "ms-fluent/Desktop (MIT)" }
+  - { key: L,   mods: [GUI], icon: lock.png,        label: Lock,             source: "ms-fluent/Lock Closed (MIT)" }
+  - { key: R,   mods: [GUI], icon: run.png,         label: Run,              source: "ms-fluent/Window Dev Tools (MIT)" }
+  - { key: I,   mods: [GUI], icon: settings.png,    label: Settings,         source: "ms-fluent/Settings (MIT)" }
+  - { key: V,   mods: [GUI], icon: clipboard.png,   label: "Clipboard history", source: "ms-fluent/Clipboard (MIT)" }
+  - { key: X,   mods: [GUI], icon: quicklink.png,   label: "Quick Link menu", source: "ms-fluent/Apps List (MIT)" }
+  - { key: S,   mods: [GUI], icon: find.png,        label: Search,           source: "ms-fluent/Search (MIT)" }
+  - { key: P,   mods: [GUI], icon: project.png,     label: Project,          source: "ms-fluent/Projection Screen (MIT)" }
+  - { key: TAB, mods: [GUI], icon: taskview.png,    label: "Task view",      source: "ms-fluent/Window Multiple (MIT)" }
+
+  # --- GUI+Shift -> G channel of extra ---
+  - { key: S,     mods: [GUI, SHIFT], icon: snip.png,       label: "Snip screen",     source: "ms-fluent/Screenshot (MIT)" }
+  - { key: M,     mods: [GUI, SHIFT], icon: restorewin.png, label: "Restore windows", source: "ms-fluent/Arrow Maximize (MIT)" }
+  - { key: LEFT,  mods: [GUI, SHIFT], icon: moveleft.png,   label: "Window -> left display",  source: "ms-fluent/Panel Left (MIT)" }
+  - { key: RIGHT, mods: [GUI, SHIFT], icon: moveright.png,  label: "Window -> right display", source: "ms-fluent/Panel Right (MIT)" }
+
+  # --- GUI+Alt -> B channel of extra (Xbox Game Bar; needs it installed) ---
+  - { key: R,             mods: [GUI, ALT], icon: record.png,      label: Record,       source: "ms-fluent/Record (MIT)" }
+  - { key: PRINT_SCREEN,  mods: [GUI, ALT], icon: gamecapture.png, label: "Screenshot", source: "ms-fluent/Camera (MIT)" }
+
+  # --- GUI+Ctrl -> A channel of extra (virtual desktops) ---
+  - { key: D,     mods: [GUI, CTRL], icon: desktopnew.png,  label: "New desktop",      source: "ms-fluent/Tab Add (MIT)" }
+  - { key: F4,    mods: [GUI, CTRL], icon: close.png,       label: "Close desktop",    source: "ms-fluent/Dismiss (MIT)" }
+  - { key: LEFT,  mods: [GUI, CTRL], icon: desktopprev.png, label: "Previous desktop", source: "ms-fluent/Chevron Left (MIT)" }
+  - { key: RIGHT, mods: [GUI, CTRL], icon: desktopnext.png, label: "Next desktop",     source: "ms-fluent/Chevron Right (MIT)" }
+
+  # --- GUI+Ctrl+Shift -> R channel of gui ---
+  - { key: B, mods: [GUI, CTRL, SHIFT], icon: gfxreset.png, label: "Reset graphics driver", source: "ms-fluent/Desktop Sync (MIT)" }

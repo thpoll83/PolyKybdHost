@@ -66,7 +66,9 @@ slack:
 notepad++:
   overlay: [notepadpp_template.mods.png, notepadpp_template.combo.mods.png]
 explorer:
-  overlay: [explorer_template.mods.png, explorer_template.combo.mods.png]
+  # All four tiers: the Win-key (GUI) combos live in the combo/extra/gui files.
+  overlay: [explorer_template.mods.png, explorer_template.combo.mods.png,
+            explorer_template.extra.mods.png, explorer_template.gui.mods.png]
 winword:
   overlay: [word_template.mods.png, word_template.combo.mods.png]
 excel:

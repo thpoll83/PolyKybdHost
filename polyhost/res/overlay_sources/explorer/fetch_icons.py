@@ -5,14 +5,16 @@ By default all glyphs are Microsoft Fluent UI System Icons (MIT) — the open tw
 of Win11's Segoe Fluent, license-clean (host is GPL-3.0-or-later). For *pixel-exact*
 Windows 11 glyphs, drop the proprietary `SegoeIcons.ttf`
 (C:\\Windows\\Fonts\\SegoeIcons.ttf) into this folder (it is git-ignored, not
-redistributed) and re-run: the script then renders every action from the real
-font at its documented codepoint, overriding the Fluent SVGs.
+redistributed) and re-run: every action Segoe documents a codepoint for is then
+rendered from the real font, and the rest (the Win-key shell shortcuts, which
+SEGOE has no map for) still come from Fluent.
 
     pip install cairosvg
     python polyhost/res/overlay_sources/explorer/fetch_icons.py
 """
 from __future__ import annotations
 
+import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -61,22 +63,60 @@ MS_ICONS = {
     # program icon (ESC marker) — a plain folder; swap for the real Explorer logo
     # by committing icons/explorer.png (it will then be left as-is).
     "explorer": "Folder/SVG/ic_fluent_folder_24_regular.svg",
+
+    # --- Win-key (GUI) combos, protocol 12 ----------------------------------
+    # These are Windows *shell* shortcuts, not Explorer commands, but they are
+    # exactly the ones a user reaches for while a file window has focus, and
+    # they are what populates the combo/extra/gui overlay tiers.
+    "winexplorer": "Folder Open/SVG/ic_fluent_folder_open_24_regular.svg",
+    "showdesktop": "Desktop/SVG/ic_fluent_desktop_24_regular.svg",
+    "lock": "Lock Closed/SVG/ic_fluent_lock_closed_24_regular.svg",
+    "run": "Window Dev Tools/SVG/ic_fluent_window_dev_tools_24_regular.svg",
+    "settings": "Settings/SVG/ic_fluent_settings_24_regular.svg",
+    "clipboard": "Clipboard/SVG/ic_fluent_clipboard_24_regular.svg",
+    "quicklink": "Apps List/SVG/ic_fluent_apps_list_24_regular.svg",
+    "taskview": "Window Multiple/SVG/ic_fluent_window_multiple_24_regular.svg",
+    "project": "Projection Screen/SVG/ic_fluent_projection_screen_24_regular.svg",
+    "snip": "Screenshot/SVG/ic_fluent_screenshot_24_regular.svg",
+    "moveleft": "Panel Left/SVG/ic_fluent_panel_left_24_regular.svg",
+    "moveright": "Panel Right/SVG/ic_fluent_panel_right_24_regular.svg",
+    "restorewin": "Arrow Maximize/SVG/ic_fluent_arrow_maximize_24_regular.svg",
+    "record": "Record/SVG/ic_fluent_record_24_regular.svg",
+    "gamecapture": "Camera/SVG/ic_fluent_camera_24_regular.svg",
+    "desktopnew": "Tab Add/SVG/ic_fluent_tab_add_24_regular.svg",
+    "desktopprev": "Chevron Left/SVG/ic_fluent_chevron_left_24_regular.svg",
+    "desktopnext": "Chevron Right/SVG/ic_fluent_chevron_right_24_regular.svg",
+    "gfxreset": "Desktop Sync/SVG/ic_fluent_desktop_sync_24_regular.svg",
 }
 
 
-def _get(url: str) -> bytes:
-    return urllib.request.urlopen(
-        urllib.request.Request(url, headers={"User-Agent": "polykybd"}), timeout=30).read()
+def _get(url: str, attempts: int = 5) -> bytes:
+    """Fetch with backoff — raw.githubusercontent drops connections under the
+    session's egress proxy often enough that a single-shot fetch fails a whole
+    run partway through, leaving a half-written icons/ dir."""
+    for i in range(attempts):
+        try:
+            return urllib.request.urlopen(
+                urllib.request.Request(url, headers={"User-Agent": "polykybd"}),
+                timeout=30).read()
+        except Exception:
+            if i == attempts - 1:
+                raise
+            time.sleep(2 ** i)
+    raise AssertionError("unreachable")
 
 
-def _render_segoe(out: Path, ttf: Path) -> int:
-    """Render every action's glyph from the real Segoe Fluent Icons font.
+def _render_segoe(out: Path, ttf: Path) -> set:
+    """Render every action Segoe HAS a documented codepoint for, from the real font.
 
     Black glyph centred on white (so the generator's `mode: luma` lights it).
     The committed program icon (explorer.png) is left alone if present.
+    Returns the set of action names written, so the caller can fill the rest from
+    Fluent — SEGOE covers the Explorer commands but not the Win-key shell
+    shortcuts, and a partial Segoe run must not leave those icons missing.
     """
     font = ImageFont.truetype(str(ttf), int(RENDER_PX * 0.82))
-    n = 0
+    done = set()
     for action, cp in SEGOE.items():
         if action == "explorer" and (out / "explorer.png").exists():
             print("  explorer.png  <- committed asset (left as-is)")
@@ -89,34 +129,31 @@ def _render_segoe(out: Path, ttf: Path) -> int:
                 (RENDER_PX - (bb[3] - bb[1])) / 2 - bb[1]), ch, font=font, fill=(0, 0, 0, 255))
         img.save(out / f"{action}.png")
         print(f"  {action}.png  <- segoe U+{cp:04X}")
-        n += 1
-    return n
+        done.add(action)
+    return done
 
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
 
+    # Don't clobber a committed hand-made program icon if one was dropped in.
+    skip = {"explorer"} if (out / "explorer.png").exists() else set()
+
     ttf = Path(__file__).resolve().parent / SEGOE_TTF
     if ttf.exists():
         print(f"Using genuine Segoe Fluent Icons font: {ttf.name}")
-        n = _render_segoe(out, ttf)
-        print(f"Wrote {n} icons (Segoe) to {out}")
-        return 0
-
-    # Don't clobber a committed hand-made program icon if one was dropped in.
-    skip = {"explorer"} if (out / "explorer.png").exists() else set()
+        skip |= _render_segoe(out, ttf)
     for fname, asset in MS_ICONS.items():
         if fname in skip:
-            print(f"  {fname}.png  <- committed asset (left as-is)")
             continue
         enc = "/".join(urllib.parse.quote(s) for s in asset.split("/"))
         png = cairosvg.svg2png(bytestring=_get(MS.format(enc)),
                                output_width=RENDER_PX, output_height=RENDER_PX)
         (out / f"{fname}.png").write_bytes(png)
         print(f"  {fname}.png  <- ms-fluent/{asset.split('/')[0]}")
-    print(f"Wrote {len(MS_ICONS) - len(skip)} icons to {out} "
-          f"(drop {SEGOE_TTF} here for genuine Win11 glyphs)")
+    print(f"Wrote {len(set(MS_ICONS) - skip)} Fluent icons to {out} "
+          f"(drop {SEGOE_TTF} here for genuine Win11 glyphs on the Explorer commands)")
     return 0
 
 
