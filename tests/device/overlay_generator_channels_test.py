@@ -39,6 +39,10 @@ from polyhost.util import log_util  # noqa: F401
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 GENERATOR = REPO_ROOT / "scripts" / "generate_app_overlays.py"
+# The generator renders 16 tiny stamps into 4 PNGs — well under a second in
+# practice. Bounded so a wedged subprocess fails the test instead of hanging the
+# whole suite with no output (see scripts/run_tests.py).
+GENERATOR_TIMEOUT = 120
 
 # (modifier, binding-file `mods:` list). All 16 representable variants.
 VARIANTS = [
@@ -78,7 +82,7 @@ class OverlayGeneratorChannelTest(unittest.TestCase):
 
         lines = ["app: rt", "match: [rt]", "output: rt_template",
                  "icon_dir: icons", "mode: alpha", "bindings:"]
-        for (mod, mods), key in zip(VARIANTS, KEYS):
+        for (mod, mods), key in zip(VARIANTS, KEYS, strict=True):
             lines.append(f"  - {{ key: {key}, mods: {mods}, "
                          f"icon: {key}.png, label: {mod.name} }}")
         (tmp / "b.yaml").write_text("\n".join(lines) + "\n")
@@ -86,7 +90,8 @@ class OverlayGeneratorChannelTest(unittest.TestCase):
         cls.out = tmp / "out"
         cls.proc = subprocess.run(
             [sys.executable, str(GENERATOR), str(tmp / "b.yaml"), "--out-dir", str(cls.out)],
-            capture_output=True, text=True, cwd=str(REPO_ROOT))
+            capture_output=True, text=True, cwd=str(REPO_ROOT),
+            timeout=GENERATOR_TIMEOUT)
 
     @classmethod
     def tearDownClass(cls):
@@ -114,7 +119,7 @@ class OverlayGeneratorChannelTest(unittest.TestCase):
                 if overlays:
                     found.setdefault(mod, set()).update(overlays)
 
-        for (mod, _), key in zip(VARIANTS, KEYS):
+        for (mod, _), key in zip(VARIANTS, KEYS, strict=True):
             expected = KeyCode[f"KC_{key}"].value
             self.assertEqual(
                 found.get(mod, set()), {expected},

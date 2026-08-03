@@ -8,7 +8,7 @@ variation* of the key in that cell (see polyhost/res/overlay_specification.md):
     primary  "*.mods.png"        R=Ctrl           G=Alt          B=Shift        A=(no mod)
     combo    "*.combo.mods.png"  R=Ctrl+Shift     G=Ctrl+Alt     B=Alt+Shift    A=GUI
     extra    "*.extra.mods.png"  R=Ctrl+Alt+Shift G=GUI+Shift    B=GUI+Alt      A=GUI+Ctrl
-    gui      "*.gui.mods.png"    R=GUI+Ctrl+Shift G=GUI+Alt+Shft B=GUI+Ctrl+Alt A=GUI+Ctrl+Alt+Shift
+    gui      "*.gui.mods.png"    R=GUI+Ctrl+Shift G=GUI+Alt+Shift B=GUI+Ctrl+Alt A=GUI+Ctrl+Alt+Shift
 
 This script takes a small per-application *binding file* (YAML) that lists each
 shortcut as (key, modifiers, icon) and does the tedious, fully-mechanical part:
@@ -149,9 +149,9 @@ def resolve_modifier(mods: list[str]) -> Modifier:
         bits |= MOD_BIT[key]
     try:
         return Modifier(bits)
-    except ValueError:
+    except ValueError as e:
         raise ValueError(
-            f"modifier combination {mods} (bits={bits}) is not representable")
+            f"modifier combination {mods} (bits={bits}) is not representable") from e
 
 
 def cell_for(kc: KeyCode) -> tuple[int, int]:

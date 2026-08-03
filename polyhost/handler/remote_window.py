@@ -91,6 +91,11 @@ class RemoteHandler:
         # Latest OS reported by the forwarder (an OsType value int), or None when
         # the forwarder does not forward its OS. Read by PolyCore's window tick.
         self.forwarded_os = None
+        # The forwarded_os value the cached match was computed with. Part of the
+        # change detection in remote_changed(): the same window reported first
+        # without an OS and then with one must re-run the matcher, or the `os:`
+        # sub-map branch would never be taken for it.
+        self._matched_os = None
         self.listen_to_forwarder()
 
     def _has_remote_entries(self):
@@ -179,14 +184,21 @@ class RemoteHandler:
 
         data = self.connections[ip]
 
+        # The reported OS is part of the identity: `os:` sub-maps make the matched
+        # entry a function of it, so a forwarder that reports the same window first
+        # without an OS and then with one (or that changes OS) must re-match.
+        os_changed = self._matched_os != self.forwarded_os
+
         if (
             data
             and len(data) > 2
-            and (self.handle != data["handle"] or self.title != data["title"])
+            and (self.handle != data["handle"] or self.title != data["title"]
+                 or os_changed)
         ):
             self.handle = data["handle"]
             self.title = data["title"]
             self.name = data["name"].split(".")[0].lower()
+            self._matched_os = self.forwarded_os
             self.log.info(
                 'Remote App Changed: "%s", Title: "%s"  Handle: %s',
                 data["name"],
@@ -198,8 +210,9 @@ class RemoteHandler:
                 self.current_entry = None
             return True
         self.log.debug_detailed(
-            "remote_changed: no change (ip=%s stored_handle=%s->%s stored_title=%s->%s)",
+            "remote_changed: no change (ip=%s stored_handle=%s->%s stored_title=%s->%s os=%s)",
             ip, self.handle, data.get("handle"), self.title, data.get("title"),
+            self.forwarded_os,
         )
         return False
 
@@ -216,6 +229,7 @@ class RemoteHandler:
         self.handle = None
         self.title = None
         self.last_entry = None
+        self._matched_os = None
 
     def close(self):
         self.stop_event.set()

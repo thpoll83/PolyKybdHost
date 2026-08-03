@@ -16,9 +16,13 @@ Overlay specification so that generated png images can be used with the PolyKybd
 |---|---|---|---|---|
 | `*.mods.png` (primary) | CTRL | ALT | SHIFT | NO_MOD |
 | `*.combo.mods.png` (combo) | CTRL_SHIFT | CTRL_ALT | ALT_SHIFT | GUI_KEY |
+| `*.extra.mods.png` (extra) | CTRL_ALT_SHIFT | GUI_SHIFT | GUI_ALT | GUI_CTRL |
+| `*.gui.mods.png` (gui) | GUI_CTRL_SHIFT | GUI_ALT_SHIFT | GUI_CTRL_ALT | GUI_CTRL_ALT_SHIFT |
 | `*.png` (no `.mods.`) | — | — | — | grayscale → NO_MOD |
 
-Each PNG carries up to 4 modifier variations. Since protocol 12 **all sixteen** variants are addressable (see `Modifier` in `polyhost/device/keys.py`), across four files: the two below plus `*.extra.mods.png` (R=CTRL_ALT_SHIFT, G=GUI_SHIFT, B=GUI_ALT, A=GUI_CTRL) and `*.gui.mods.png` (R=GUI_CTRL_SHIFT, G=GUI_ALT_SHIFT, B=GUI_CTRL_ALT, A=GUI_CTRL_ALT_SHIFT). GUI_KEY is loaded and sent (it used to be dropped before rendering).
+Each PNG carries up to 4 modifier variations. Since protocol 12 **all sixteen** variants are addressable (see `Modifier` in `polyhost/device/keys.py`) across the four `*.mods.png` tiers above. GUI_KEY is loaded and sent (it used to be dropped before rendering).
+
+An application needs only the tiers it actually binds — most ship just the primary tier, or primary + combo. The tier order is deliberate: the least-used variant of each tier sits in **A**, because a PNG saved without an alpha channel silently loses that variant.
 
 ## Slot → keycode mapping
 
