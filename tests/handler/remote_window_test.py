@@ -9,6 +9,7 @@ import unittest
 from unittest import mock
 
 import polyhost.util.log_util  # noqa: F401 — installs Logger.debug_detailed
+from polyhost.device.command_ids import OsType
 from polyhost.handler.remote_window import RemoteHandler
 
 
@@ -43,6 +44,30 @@ class TestReportWindow(unittest.TestCase):
         rh = self._handler(_annotated())
         rh.report_window(0, "", "")                  # must not raise (debug_detailed)
         self.assertEqual(rh.connections["_latest"], "_report")
+
+    def test_os_change_on_the_same_window_re_matches(self):
+        # A forwarder may report a window before it knows its OS (or an older
+        # forwarder that never sends one may be replaced by a newer one). Since
+        # the matched entry is a function of the OS, a changed OS on an otherwise
+        # identical window has to re-run the matcher — handle/title alone are not
+        # the whole identity.
+        mapping = {"subl": {"overlay": "sublime",
+                            "os": {"macos": {"overlay": "sublime_mac",
+                                             "flags": [True] + [False] * 8}},
+                            # flags[8] = HAS_OS
+                            "flags": [True] + [False] * 7 + [True]}}
+        rh = self._handler(mapping)
+        rh.report_window(7, "subl", "main.py")
+        self.assertTrue(rh.remote_changed({}))
+        self.assertEqual(rh.get_overlay_data(), "sublime")   # no OS -> default art
+
+        rh.report_window(7, "subl", "main.py", os=OsType.MACOS.value)
+        self.assertTrue(rh.remote_changed({}), "OS change must count as a change")
+        self.assertEqual(rh.get_overlay_data(), "sublime_mac")
+
+        # Same window, same OS -> no further change.
+        rh.report_window(7, "subl", "main.py", os=OsType.MACOS.value)
+        self.assertFalse(rh.remote_changed({}))
 
     def test_legacy_relay_off_by_default_does_not_bind(self):
         # A mapping WITH a remote entry, but the unauthenticated relay defaults off:

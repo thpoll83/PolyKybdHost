@@ -11,13 +11,25 @@ of the cell carries a different **modifier variant** of that key:
 |---|---|---|---|---|
 | `*.mods.png` | Ctrl | Alt | Shift | (no mod) |
 | `*.combo.mods.png` | Ctrl+Shift | Ctrl+Alt | Alt+Shift | GUI |
-| `*.extra.mods.png` | Ctrl+Alt+Shift | *reserved* | *reserved* | *reserved* |
+| `*.extra.mods.png` | Ctrl+Alt+Shift | GUI+Shift | GUI+Alt | GUI+Ctrl |
+| `*.gui.mods.png` | GUI+Ctrl+Shift | GUI+Alt+Shift | GUI+Ctrl+Alt | GUI+Ctrl+Alt+Shift |
 
-All nine modifier variants are supported. GUI overlays used to be parsed and then
-discarded by the host and never reached a keyboard — they are sent now. The
-`extra` file is the third tier (what is left after the singles and the pairs);
-its G/B/A channels are reserved for the GUI pairs (GUI+Ctrl / GUI+Alt /
-GUI+Shift) that the firmware earmarks as variants 9/10/11.
+All **sixteen** modifier variants are supported (protocol 12+). Before v12 the
+firmware folded every GUI+x chord onto the bare-GUI variant — so `Cmd+Shift+P`
+did not fall back to nothing, it actively drew the plain `Cmd` overlay — and the
+extra tier's G/B/A sat reserved and empty. The variant is now simply the
+L/R-folded modifier bitmask (bit0 Ctrl, bit1 Shift, bit2 Alt, bit3 GUI), which
+is what gives all sixteen for free.
+
+⚠️ The channel order inside the `extra` and `gui` tiers is deliberate, not
+alphabetical: a 3-channel PNG drops alpha entirely, so the **least important**
+variant of each tier goes in A. Authoring (`scripts/generate_app_overlays.py`)
+and loading (`polyhost/device/im_converter.py`) keep separate tables, and a
+mismatch fails **silently** — valid PNG, valid read, artwork on the wrong
+variant. `tests/device/overlay_generator_channels_test.py` round-trips all
+sixteen to keep them honest.
+
+Only ship the tiers you actually draw for; most apps never need the fourth.
 
 Variants that share artwork cost **one** pool slot, not one each — the host
 dedups byte-identical images before uploading — so repeating a key's icon across

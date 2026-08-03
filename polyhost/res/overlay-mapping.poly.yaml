@@ -1,10 +1,21 @@
+# Which overlay set the keyboard loads for the focused window.
+#
+# FULL KEY REFERENCE: polyhost/res/overlay-mapping.md
+#   app names (exact, lowercased, .exe stripped on Windows) · overlay · remote ·
+#   title / titles-startswith / titles-endswith / titles-contains ·
+#   url / urls-contains · os  — plus the matching order and the gotchas.
+#
 chrome,google-chrome,chromium,brave,brave-browser,msedge,microsoft-edge,vivaldi,opera,arc:
   overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
   # urls-contains matches on the focused tab's URL (needs the browser extension
   # or, on macOS, the AppleScript fallback — see settings `browser_url_detection`
   # and browser-extension/README.md). A URL identifies a web-app far more
-  # reliably than its window title, so these win over titles-contains below;
-  # both are kept, so the title match still works when no URL is available.
+  # reliably than its window title, so these win over titles-contains below.
+  # ⚠️ The titles-contains block below does NOT currently run: the matcher only
+  # word-splits the title when an entry also declares titles-startswith or
+  # titles-endswith (see overlay-mapping.md). It is kept as-is rather than
+  # silently changing browser behaviour; switch it to titles-endswith, or fix
+  # the word-split condition, to make the no-URL fallback real.
   urls-contains:
     miro.com:
       overlay: miro_template.mods.png

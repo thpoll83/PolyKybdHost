@@ -4,17 +4,20 @@ Pulled out of OverlayHandler so the local and remote paths share one matcher,
 and so the recursion is unit-testable without a display (active_window imports
 pywinctl). Entries here are built in the *annotated* shape annotate() produces:
 a `flags` list [overlay, remote, title, starts_with, ends_with, contains, url,
-urls_contains] plus the matching sub-maps.
+urls_contains, os] plus the matching sub-maps.
 """
 import unittest
 
-from polyhost.handler.common import find_matching_entry
+from polyhost.device.command_ids import OsType
+from polyhost.handler.common import find_matching_entry, normalize_os, os_match_keys
 
 
 def entry(overlay=True, remote=False, title=None, sw=None, ew=None, contains=None,
-          url=None, urls_contains=None):
+          url=None, urls_contains=None, os_map=None):
     e = {"flags": [overlay, remote, title is not None, bool(sw), bool(ew),
-                   bool(contains), url is not None, bool(urls_contains)]}
+                   bool(contains), url is not None, bool(urls_contains), bool(os_map)]}
+    if os_map:
+        e["os"] = os_map
     if overlay:
         e["overlay"] = "ov"
     if remote:
@@ -121,3 +124,115 @@ class TestUrlMatching(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestOsBranch(unittest.TestCase):
+    """The `os:` sub-map — an app's keymap is a property of its platform.
+
+    Sublime binds Cmd on macOS and Ctrl on Windows, so one app name needs two
+    overlay sets. Guards the fallback direction in particular: an unknown OS must
+    land on the DEFAULT artwork, never match a branch by accident.
+    """
+
+    def _entry(self):
+        mac = entry()
+        mac["overlay"] = "mac"
+        return entry(os_map={"macos": mac})
+
+    def test_matching_os_selects_the_branch(self):
+        e = self._entry()
+        self.assertEqual(find_matching_entry("t", e, None, OsType.MACOS)["overlay"], "mac")
+
+    def test_other_os_falls_back_to_the_default_overlay(self):
+        e = self._entry()
+        for os_v in (OsType.WINDOWS, OsType.LINUX, OsType.LINUX_KDE, OsType.ANDROID):
+            self.assertEqual(find_matching_entry("t", e, None, os_v)["overlay"], "ov", os_v)
+
+    def test_unknown_or_absent_os_falls_back(self):
+        """UNKNOWN(0)/None must not match any branch — default artwork wins."""
+        e = self._entry()
+        for os_v in (None, OsType.UNKNOWN, 0, "", "plan9"):
+            self.assertEqual(find_matching_entry("t", e, None, os_v)["overlay"], "ov", repr(os_v))
+
+    def test_entry_without_an_os_map_is_unaffected(self):
+        e = entry()
+        self.assertIs(find_matching_entry("t", e, None, OsType.MACOS), e)
+
+    def test_os_branch_may_nest_further_constraints(self):
+        """An OS branch recurses, so it can carry title/url gates of its own."""
+        # `title` is matched against the WHOLE title, not the leading word.
+        leaf = entry(title=r".*\.py\s.*")
+        leaf["overlay"] = "mac-py"
+        mac = entry(ew={"Editor": leaf})
+        mac["overlay"] = "mac"
+        e = entry(os_map={"macos": mac})
+        self.assertEqual(
+            find_matching_entry("main.py Editor", e, None, OsType.MACOS)["overlay"], "mac-py")
+        # title gate misses -> the OS branch's own overlay, not the global default
+        self.assertEqual(
+            find_matching_entry("notes.txt Editor", e, None, OsType.MACOS)["overlay"], "mac")
+
+
+class TestNormalizeOs(unittest.TestCase):
+    def test_accepts_ostype_wire_int_and_names(self):
+        for value in (OsType.MACOS, 2, "macos", "Mac", " darwin ", "OSX"):
+            self.assertEqual(normalize_os(value), "macos", repr(value))
+        self.assertEqual(normalize_os("win"), "windows")
+
+    def test_linux_desktop_environments_stay_distinct(self):
+        """A `gnome:` branch must not also fire on KDE — they really do differ."""
+        self.assertEqual(normalize_os(OsType.LINUX), "linux")
+        for value in (OsType.LINUX_GNOME, "gnome", "linux-gnome"):
+            self.assertEqual(normalize_os(value), "linux_gnome", repr(value))
+        for value in (OsType.LINUX_KDE, "kde", "plasma"):
+            self.assertEqual(normalize_os(value), "linux_kde", repr(value))
+
+    def test_unknown_is_none(self):
+        for value in (None, OsType.UNKNOWN, 0, 99, "plan9", True):
+            self.assertIsNone(normalize_os(value), repr(value))
+
+    def test_mobile_os_types_are_not_matchable(self):
+        """Android/iOS can never reach the matcher, so they resolve to nothing."""
+        for value in (OsType.ANDROID, OsType.IOS, "android", "ios"):
+            self.assertIsNone(normalize_os(value), repr(value))
+
+
+class TestOsMatchKeys(unittest.TestCase):
+    def test_plain_platforms_have_no_fallback(self):
+        self.assertEqual(os_match_keys(OsType.WINDOWS), ["windows"])
+        self.assertEqual(os_match_keys(OsType.MACOS), ["macos"])
+        self.assertEqual(os_match_keys(OsType.LINUX), ["linux"])
+
+    def test_desktop_environments_fall_back_to_linux(self):
+        self.assertEqual(os_match_keys(OsType.LINUX_GNOME), ["linux_gnome", "linux"])
+        self.assertEqual(os_match_keys(OsType.LINUX_KDE), ["linux_kde", "linux"])
+
+    def test_unknown_matches_nothing(self):
+        for value in (None, OsType.UNKNOWN, OsType.ANDROID, "plan9"):
+            self.assertEqual(os_match_keys(value), [], repr(value))
+
+
+class TestOsBranchDesktopEnvironments(unittest.TestCase):
+    """GNOME/KDE specificity, in both directions."""
+
+    def _entry(self, *keys):
+        os_map = {}
+        for k in keys:
+            sub = entry()
+            sub["overlay"] = k
+            os_map[k] = sub
+        return entry(os_map=os_map)
+
+    def test_specific_de_branch_wins_over_linux(self):
+        e = self._entry("linux", "gnome")
+        self.assertEqual(
+            find_matching_entry("t", e, None, OsType.LINUX_GNOME)["overlay"], "gnome")
+
+    def test_gnome_branch_does_not_fire_on_kde(self):
+        e = self._entry("gnome")
+        self.assertEqual(find_matching_entry("t", e, None, OsType.LINUX_KDE)["overlay"], "ov")
+
+    def test_linux_branch_still_catches_every_desktop(self):
+        e = self._entry("linux")
+        for os_v in (OsType.LINUX, OsType.LINUX_GNOME, OsType.LINUX_KDE):
+            self.assertEqual(find_matching_entry("t", e, None, os_v)["overlay"], "linux", os_v)
