@@ -1,0 +1,96 @@
+# Sublime Text (macOS) shortcut overlays for PolyKybd.
+#
+# The macOS counterpart of ../sublime/bindings.yaml. Same app, same actions,
+# SAME ICON FOLDER (icon_dir points back at ../sublime/icons) — only the chords
+# differ, so there is no second copy of the artwork.
+#
+# This is the first set to use the GUI-combo tiers unlocked by protocol 12
+# (PolyKybdHost#131 / #134): Cmd lands on the `combo` A channel, Cmd+Shift on
+# `extra` G, Cmd+Alt on `extra` B, Cmd+Ctrl on `extra` A, and Cmd+Alt+Shift on
+# the fourth `gui` tier. Before v12 every Cmd+x chord collapsed onto the bare-Cmd
+# variant, so Cmd+Shift+P actively drew the plain Cmd overlay.
+#
+# Selected by the `os: macos` branch of the sublime_text mapping entry — the
+# Windows/Linux set stays the default, so this file costs Windows users nothing.
+#
+# Shortcuts: Sublime's macOS keymap (docs.sublimetext.io). See SOURCES.md.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/sublime/fetch_icons.py     # shared icons
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/sublime_mac/bindings.yaml --preview /tmp/sublime_mac_preview
+app: sublime_text_mac
+match: [sublime_text]
+output: sublime_mac_template
+icon_dir: ../sublime/icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: sublime.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [42, 34]
+program_icon_margin: 0
+
+bindings:
+  # --- Cmd (GUI) -> the `combo` file's A channel ---
+  - { key: P, mods: [GUI], icon: gotoanything.png, label: "Goto Anything",  source: "ms-fluent/Document Search (MIT)" }
+  - { key: R, mods: [GUI], icon: gotosymbol.png,   label: "Goto symbol",    source: "ms-fluent/Code (MIT)" }
+  - { key: F, mods: [GUI], icon: find.png,         label: Find,             source: "ms-fluent/Search (MIT)" }
+  - { key: X, mods: [GUI], icon: cutline.png,      label: "Cut line",       source: "ms-fluent/Cut (MIT)" }
+  - { key: L, mods: [GUI], icon: selectline.png,   label: "Select line",    source: "custom/editor_glyphs", mode: alpha }
+  - { key: D, mods: [GUI], icon: multicursor.png,  label: "Select next occurrence", source: "custom/editor_glyphs", mode: alpha }
+  - { key: "]", mods: [GUI], icon: indent.png,     label: Indent,           source: "ms-fluent/Text Indent Increase (MIT)" }
+  - { key: "[", mods: [GUI], icon: unindent.png,   label: Un-indent,        source: "ms-fluent/Text Indent Decrease (MIT)" }
+  - { key: "/", mods: [GUI], icon: comment.png,    label: "Toggle comment", source: "ms-fluent/Comment (MIT)" }
+  - { key: J, mods: [GUI], icon: joinlines.png,    label: "Join lines",     source: "ms-fluent/Text Wrap Off (MIT)" }
+  - { key: Y, mods: [GUI], icon: redo.png,         label: Redo,             source: "ms-fluent/Arrow Redo (MIT)" }
+  - { key: U, mods: [GUI], icon: softundo.png,     label: "Soft undo",      source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: ENTER, mods: [GUI], icon: insertafter.png, label: "Insert line after", source: "ms-fluent/Arrow Enter (MIT)" }
+  - { key: F2, mods: [GUI], icon: bookmark.png,    label: "Toggle bookmark", source: "ms-fluent/Bookmark (MIT)" }
+  - { key: W, mods: [GUI], icon: closetab.png,     label: "Close tab",      source: "ms-fluent/Dismiss (MIT)" }
+  - { key: B, mods: [GUI], icon: build.png,        label: Build,            source: "ms-fluent/Play (MIT)" }
+
+  # --- Cmd+Shift -> the `extra` file's G channel (the case reported in #131) ---
+  - { key: P, mods: [GUI, SHIFT], icon: commandpalette.png,    label: "Command palette",   source: "ms-fluent/Apps List Detail (MIT)" }
+  - { key: D, mods: [GUI, SHIFT], icon: duplicate.png,         label: "Duplicate line",    source: "ms-fluent/Row Triple (MIT)" }
+  - { key: F, mods: [GUI, SHIFT], icon: findinfiles.png,       label: "Find in files",     source: "ms-fluent/Folder Open (MIT)" }
+  - { key: R, mods: [GUI, SHIFT], icon: gotosymbolproject.png, label: "Goto symbol in project", source: "ms-fluent/Folder Search (MIT)" }
+  - { key: T, mods: [GUI, SHIFT], icon: reopentab.png,         label: "Reopen closed tab", source: "ms-fluent/Tab Desktop (MIT)" }
+  - { key: V, mods: [GUI, SHIFT], icon: pasteindent.png,       label: "Paste with indent", source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: ENTER, mods: [GUI, SHIFT], icon: insertbefore.png,  label: "Insert line before", source: "ms-fluent/Arrow Enter (MIT)" }
+  - { key: "[", mods: [GUI, SHIFT], icon: cycletableft.png,    label: "Cycle tab left",    source: "ms-fluent/Chevron Left (MIT)" }
+  - { key: "]", mods: [GUI, SHIFT], icon: cycletabright.png,   label: "Cycle tab right",   source: "ms-fluent/Chevron Right (MIT)" }
+
+  # --- Cmd+Option -> the `extra` file's B channel ---
+  - { key: "/", mods: [GUI, ALT], icon: blockcomment.png, label: "Block comment", source: "ms-fluent/Comment Multiple (MIT)" }
+  - { key: F, mods: [GUI, ALT], icon: replace.png,        label: Replace,         source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: "[", mods: [GUI, ALT], icon: fold.png,         label: Fold,            source: "ms-fluent/Text Collapse (MIT)" }
+  - { key: "]", mods: [GUI, ALT], icon: unfold.png,       label: Unfold,          source: "ms-fluent/Text Expand (MIT)" }
+
+  # --- Cmd+Ctrl -> the `extra` file's A channel ---
+  - { key: UP,   mods: [GUI, CTRL], icon: swapup.png,        label: "Swap line up",   source: "ms-fluent/Arrow Sort Up (MIT)" }
+  - { key: DOWN, mods: [GUI, CTRL], icon: swapdown.png,      label: "Swap line down", source: "ms-fluent/Arrow Sort Down (MIT)" }
+  - { key: G,    mods: [GUI, CTRL], icon: selectalloccur.png, label: "Select all occurrences", source: "ms-fluent/Select All On (MIT)" }
+
+  # --- bare Ctrl. On macOS Sublime keeps a handful of chords on Ctrl rather than
+  # Cmd -- these are NOT the Windows bindings moved over, they really are Ctrl here.
+  - { key: M, mods: [CTRL], icon: matchbracket.png, label: "Jump to matching bracket", source: "ms-fluent/Braces (MIT)" }
+  - { key: G, mods: [CTRL], icon: gotoline.png,     label: "Goto line",      source: "ms-fluent/Text Number Format (MIT)" }
+  - { key: SPACE, mods: [CTRL], icon: autocomplete.png, label: Autocomplete, source: "ms-fluent/Text Grammar Wand (MIT)" }
+
+  # --- Ctrl+Shift (also genuinely Ctrl on macOS) ---
+  - { key: M,    mods: [CTRL, SHIFT], icon: selectbrackets.png, label: "Select inside brackets", source: "ms-fluent/Braces (MIT)" }
+  - { key: UP,   mods: [CTRL, SHIFT], icon: cursorabove.png,    label: "Add cursor above", source: "custom/editor_glyphs", mode: alpha }
+  - { key: DOWN, mods: [CTRL, SHIFT], icon: cursorbelow.png,    label: "Add cursor below", source: "custom/editor_glyphs", mode: alpha }
+
+  # --- Cmd+Option+Shift -> the fourth `gui` tier, G channel.
+  # The second case from #131; nothing could address this variant before v12.
+  - { key: P, mods: [GUI, ALT, SHIFT], icon: syntaxinfo.png, label: "Syntax context info", source: "ms-fluent/Info (MIT)" }
+
+  # --- no modifier ---
+  - { key: F2, mods: [], icon: bookmark.png, label: "Next bookmark", source: "ms-fluent/Bookmark (MIT)" }
