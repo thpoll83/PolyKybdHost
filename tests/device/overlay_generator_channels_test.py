@@ -127,5 +127,38 @@ class OverlayGeneratorChannelTest(unittest.TestCase):
                 f"the generator's channel table and im_converter.py disagree")
 
 
+class TestResolveKey(unittest.TestCase):
+    """A bare binding-file token resolves iff the key really has a grid cell.
+
+    `PRINT_SCREEN` has one (slot 66) but was rejected with "no overlay cell"
+    purely because it is not in the alias table — a misleading error that reads
+    as a format limitation rather than a spelling one.
+    """
+
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("_gen", GENERATOR)
+        self.gen = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.gen)
+
+    def test_bare_token_resolves_via_kc_prefix(self):
+        self.assertEqual(self.gen.resolve_key("PRINT_SCREEN"), KeyCode.KC_PRINT_SCREEN)
+
+    def test_explicit_kc_name_still_resolves(self):
+        self.assertEqual(self.gen.resolve_key("KC_PRINT_SCREEN"), KeyCode.KC_PRINT_SCREEN)
+
+    def test_alias_still_wins(self):
+        self.assertEqual(self.gen.resolve_key("DELETE"), self.gen.KEY_ALIASES["DELETE"])
+
+    def test_key_outside_the_grid_reports_no_cell(self):
+        # KC_KP_1 is a real keycode with no overlay cell (keypad is skipped).
+        with self.assertRaisesRegex(ValueError, "no overlay cell"):
+            self.gen.resolve_key("KP_1")
+
+    def test_unknown_token_reports_unknown(self):
+        with self.assertRaisesRegex(ValueError, "unknown key"):
+            self.gen.resolve_key("NOT_A_KEY")
+
+
 if __name__ == "__main__":
     unittest.main()
