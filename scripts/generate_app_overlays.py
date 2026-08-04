@@ -122,15 +122,18 @@ def resolve_key(token: str) -> KeyCode:
     up = t.upper()
     if up in KEY_ALIASES:
         return KEY_ALIASES[up]
-    if up.startswith("KC_"):
-        try:
-            kc = KeyCode[up]
-        except KeyError:
-            raise ValueError(f"unknown key {token!r}")
+    # A bare token is tried as KC_<TOKEN> too, so `PRINT_SCREEN` works like the
+    # aliased `DELETE`/`ENTER` rather than reporting "no overlay cell" for a key
+    # that has one — the alias table only covers the common spellings.
+    name = up if up.startswith("KC_") else f"KC_{up}"
+    if name in KeyCode.__members__:
+        kc = KeyCode[name]
         # only the mapped 90 keys carry a cell
-        if up in {k.name for k in KEY_ALIASES.values()} or _has_cell(kc):
+        if name in {k.name for k in KEY_ALIASES.values()} or _has_cell(kc):
             return kc
-    raise ValueError(f"key {token!r} has no overlay cell (not one of the 90 grid keys)")
+        raise ValueError(
+            f"key {token!r} has no overlay cell (not one of the 90 grid keys)")
+    raise ValueError(f"unknown key {token!r}")
 
 
 def _has_cell(kc: KeyCode) -> bool:
