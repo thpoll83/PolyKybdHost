@@ -678,6 +678,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     nowhere. It is the last step of an update — a silent failure there reads as "the
     app never came back" with no evidence at all.
   - `get_autostart_status()` reports which mechanism is in place (printed at startup); `remove_autostart()` tears all of them down. `--portable` removes any existing entry rather than just skipping registration.
+  - ⚠️ **The Windows task is named `PolyHost` (`APP_NAME`), NOT `PolyKybdHost`** — so
+    `Get-ScheduledTask -TaskName PolyKybdHost*` returns nothing on a perfectly healthy
+    install and reads as "autostart is gone" (field, 2026-08-05). The check is
+    `Get-ScheduledTask -TaskName PolyHost` / `schtasks /query /tn PolyHost`
+    (`windows_task_exists`), with `Get-ScheduledTaskInfo -TaskName PolyHost` for
+    `LastRunTime`/`LastTaskResult`. Same name for the Startup-folder `.lnk` and the
+    Start-menu launcher.
+  - `_install_windows_autostart` **verifies the task by querying it back** before
+    reporting `"scheduled task (at logon)"`; that string is what the startup log
+    prints, and a PowerShell exit code only says `Register-ScheduledTask` didn't
+    raise. A "registered" task that isn't queryable now falls back to the
+    Startup-folder shortcut instead of leaving no autostart at all.
 - **Layout dialog** (`polyhost/gui/layout_dialog/`): fully implemented — layer switching re-renders all key labels from the cached buffer; clicking a key then selecting from the browser writes immediately to the device via `set_dynamic_keycode()` and keeps the local buffer in sync. `RenderableKey` carries `matrix_index` for row/col derivation.
 
 ## Releases

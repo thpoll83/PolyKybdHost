@@ -52,8 +52,28 @@ class WindowsAutostartFallbackTest(unittest.TestCase):
             method = add_to_startup._install_windows_autostart("pythonw.exe", "-m polyhost", "C:\\repo", None)
         self.assertEqual(method, "none")
 
+    def test_falls_back_when_registered_task_does_not_exist(self):
+        """A PowerShell exit code is not proof the task is there.
+
+        The returned string lands in the startup log, where it reads as evidence
+        the logon task exists — so it must be a queried fact. If the task can't
+        be found, install the Startup-folder shortcut rather than reporting an
+        autostart that would never fire.
+        """
+        with mock.patch.object(add_to_startup, "register_windows_logon_task", return_value=True), \
+             mock.patch.object(add_to_startup, "windows_task_exists", return_value=False), \
+             mock.patch.object(add_to_startup, "create_windows_shortcut_powershell") as mk_lnk, \
+             mock.patch.object(add_to_startup, "_windows_startup_lnk") as startup, \
+             mock.patch.object(add_to_startup, "_windows_startmenu_lnk"):
+            startup.return_value.exists.return_value = False
+            method = add_to_startup._install_windows_autostart("pythonw.exe", "-m polyhost", "C:\\repo", None)
+
+        self.assertIn("fallback", method.lower())
+        self.assertEqual(mk_lnk.call_count, 2)   # Start-menu + Startup fallback
+
     def test_uses_task_and_removes_stale_shortcut_on_success(self):
         with mock.patch.object(add_to_startup, "register_windows_logon_task", return_value=True), \
+             mock.patch.object(add_to_startup, "windows_task_exists", return_value=True), \
              mock.patch.object(add_to_startup, "create_windows_shortcut_powershell") as mk_lnk, \
              mock.patch.object(add_to_startup, "_windows_startup_lnk") as startup, \
              mock.patch.object(add_to_startup, "_windows_startmenu_lnk"):

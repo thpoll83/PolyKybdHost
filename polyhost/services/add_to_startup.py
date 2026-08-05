@@ -316,10 +316,19 @@ def _install_windows_autostart(execute, win_args, working_dir, icon_path):
     create_windows_shortcut_powershell(run_exec, startmenu_lnk, working_dir, icon_path, run_args)
 
     if register_windows_logon_task(run_exec, run_args, working_dir):
-        # Remove any stale Startup-folder shortcut to avoid a double launch.
-        if startup_lnk.exists():
-            startup_lnk.unlink()
-        return "scheduled task (at logon)"
+        # Trust, but VERIFY. The returned string is what the startup log prints
+        # ("Autostart registration: scheduled task (at logon)"), and readers take
+        # that as proof a task exists — but a PowerShell exit code only says
+        # Register-ScheduledTask did not raise. Query the task back before
+        # claiming it, so an unregistered-but-"successful" task falls through to
+        # the Startup-folder shortcut instead of leaving no autostart at all.
+        if windows_task_exists():
+            # Remove any stale Startup-folder shortcut to avoid a double launch.
+            if startup_lnk.exists():
+                startup_lnk.unlink()
+            return "scheduled task (at logon)"
+        print(f"Scheduled task '{APP_NAME}' reported success but does not exist; "
+              "falling back to the Startup folder.")
 
     # Fallback: Startup-folder shortcut (needs no special rights).
     if create_windows_shortcut_powershell(run_exec, startup_lnk, working_dir, icon_path, run_args):
