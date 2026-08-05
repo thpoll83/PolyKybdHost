@@ -894,7 +894,10 @@ def restart_app() -> None:
         os.execv(args[0], args)
     except OSError as e:
         log.warning("os.execv failed (%s); falling back to a subprocess relaunch.", e)
-        subprocess.Popen(args, close_fds=False)
+        # `args` is built above from our own resolved interpreter, the literal
+        # "-m polyhost" and this process's own argv, and is passed as a list with
+        # no shell — there is no shell for anything to be injected into.
+        subprocess.Popen(args, close_fds=False)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         sys.exit(0)
 
 
