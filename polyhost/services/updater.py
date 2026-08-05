@@ -25,6 +25,10 @@ from packaging.version import InvalidVersion, Version
 
 import polyhost
 from polyhost._version import __version__
+# The one place the 64-byte Ed25519 signature length is defined. hid_fw_up is
+# stdlib-only (no hid, no Qt), so importing it here costs nothing and keeps the
+# downloader's length check from drifting out of step with the sender's.
+from polyhost.device.hid_fw_up import FW_SIG_LEN
 
 log = logging.getLogger(__name__)
 
@@ -102,8 +106,14 @@ EXCLUDES = (
 # can't cheaply fetch the body) and existing positional constructions still work.
 ReleaseInfo   = namedtuple("ReleaseInfo",   ["tag", "version", "tarball_url", "html_url", "published_at", "name", "notes"],
                            defaults=("", ""))
-FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "uf2_url", "html_url", "published_at", "name", "notes"],
-                             defaults=("", ""))
+# ``sig_url`` is the detached Ed25519 signature (``<bin>.sig``) the release
+# workflow uploads beside the image. It is LAST + defaulted so existing
+# positional constructions keep working, but it is not optional in practice:
+# without it FwUpDownloader hands hid_fw_up an image with no signature beside
+# it, the enforcing firmware treats a release build as an unsigned one, and the
+# menu flow stalls on the physical A/ACCEPT prompt.
+FwUpReleaseInfo = namedtuple("FwUpReleaseInfo", ["tag", "version", "bin_url", "uf2_url", "html_url", "published_at", "name", "notes", "sig_url"],
+                             defaults=("", "", ""))
 
 # A firmware release that IS newer than the keyboard but carries no flashable
 # .bin asset — normally because its release build failed and never uploaded one
@@ -217,11 +227,17 @@ def release_asset_urls(repo: str, tag: str) -> list:
 
 
 def _release_assets_via_web(repo: str, tag: str) -> dict:
-    """Firmware asset URLs for a release WITHOUT the API — a dict with 'bin'/'uf2'
-    keys for whichever assets are present (empty on failure)."""
+    """Firmware asset URLs for a release WITHOUT the API — a dict with
+    'bin'/'uf2'/'sig' keys for whichever assets are present (empty on failure).
+
+    ⚠️ Test ``.bin.sig`` BEFORE ``.bin``: a signature is only ever recognised by
+    its full suffix, and reversing the order would still work today only because
+    ``"x.bin.sig".endswith(".bin")`` is False — an accident, not a guarantee."""
     assets = {}
     for full in release_asset_urls(repo, tag):
-        if full.endswith(".bin"):
+        if full.endswith(".bin.sig"):
+            assets.setdefault("sig", full)
+        elif full.endswith(".bin"):
             assets.setdefault("bin", full)
         elif full.endswith(".uf2"):
             assets.setdefault("uf2", full)
@@ -280,7 +296,8 @@ def _check_fw_latest_via_web(current: Version) -> Optional[FwUpCheckResult]:
              current, latest)
     return FwUpReleaseInfo(
         tag=tag, version=str(latest), bin_url=bin_url, uf2_url=assets.get("uf2", ""),
-        html_url=f"https://github.com/{FW_REPO}/releases/tag/{tag}", published_at="")
+        html_url=f"https://github.com/{FW_REPO}/releases/tag/{tag}", published_at="",
+        sig_url=assets.get("sig", ""))
 
 
 def check_latest() -> Optional[ReleaseInfo]:
@@ -428,6 +445,11 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
                     published_at=fw.get("published_at", ""),
                     name=fw.get("name", ""),
                     notes=fw.get("notes", ""),
+                    # .get, not [] — a cache written before signatures were
+                    # plumbed through has no sig_url, and the ETag means every
+                    # repeat check lands in THIS branch, so a KeyError here
+                    # would strand the user on the stale entry indefinitely.
+                    sig_url=fw.get("sig_url", ""),
                 )
         except (KeyError, InvalidVersion) as e:
             log.warning("Corrupt ETag cache for firmware update — discarding: %s", e)
@@ -462,6 +484,7 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
 
     bin_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".bin")), None)
     uf2_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".uf2")), None)
+    sig_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".bin.sig")), None)
 
     # Cache ETag and asset URLs regardless of whether an update is available,
     # so future checks can use conditional requests.
@@ -471,6 +494,7 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
         "version": str(latest),
         "bin_url": bin_url or "",
         "uf2_url": uf2_url or "",
+        "sig_url": sig_url or "",
         "html_url": html_url,
         "published_at": published_at,
         "name": rel_name,
@@ -490,7 +514,7 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
     log.info("Firmware update check: new version available: %s -> %s", current_version, latest)
     return FwUpReleaseInfo(tag=tag, version=str(latest), bin_url=bin_url,
                            uf2_url=uf2_url or "", html_url=html_url, published_at=published_at,
-                           name=rel_name, notes=notes)
+                           name=rel_name, notes=notes, sig_url=sig_url or "")
 
 
 def _safe_extract(tar: tarfile.TarFile, dest: Path) -> None:
@@ -825,6 +849,25 @@ class UpdateInstaller(threading.Thread):
             _fire(self._on_failed, str(e))
 
 
+def discard_fw_download(bin_path: str) -> None:
+    """Remove a downloaded firmware image AND its detached signature.
+
+    The two are one deliverable — ``hid_fw_up`` finds the signature only by
+    sitting beside the image — so every path that discards the .bin (cancel,
+    failure, post-flash cleanup) has to take the .sig with it. A leftover
+    ``<bin>.sig`` in the temp dir is harmless on its own, but the pairing is
+    easy to half-implement, hence one helper rather than three call sites.
+    Best-effort: never raises."""
+    if not bin_path:
+        return
+    for path in (bin_path, bin_path + ".sig"):
+        try:
+            if os.path.exists(path):
+                os.unlink(path)
+        except OSError as e:  # noqa: BLE001 — best-effort temp cleanup
+            log.warning("Could not remove temp firmware file %s: %s", path, e)
+
+
 class FwUpDownloader(threading.Thread):
     """Download a firmware .bin from a GitHub release asset URL to a temp file.
 
@@ -832,6 +875,15 @@ class FwUpDownloader(threading.Thread):
 
     - ``on_progress(int, str)`` — percent + message
     - ``on_finished(bool, str, str)`` — (ok, error_or_empty, bin_path_or_empty)
+
+    ⚠️ **The detached signature is part of the download, not an extra.**
+    ``hid_fw_up`` looks for the signature at ``<bin>.sig`` *beside the image*,
+    so fetching only the .bin makes an officially signed release indistinguishable
+    from a self-built one: the enforcing firmware raises the physical A/ACCEPT
+    prompt, and the tray flow — which never asks the user to touch the keyboard —
+    simply stops (field, 2026-08-05). Hence the sig lands at ``tmp_path + ".sig"``,
+    and a release that advertises a ``sig_url`` we then fail to fetch is a **failed
+    download**, not a silent downgrade to unsigned.
     """
 
     def __init__(self, release: FwUpReleaseInfo, *,
@@ -847,6 +899,23 @@ class FwUpDownloader(threading.Thread):
 
     def _cancelled(self) -> bool:
         return self._cancel_flag is not None and self._cancel_flag[0]
+
+    def _fetch_signature(self, sig_url: str, sig_path: str):
+        """Download the 64-byte detached signature to ``sig_path``.
+
+        Small enough to buy outright — no streaming, no progress percentage."""
+        with requests.get(
+            sig_url, headers={"User-Agent": USER_AGENT}, timeout=HTTP_TIMEOUT * 2
+        ) as r:
+            r.raise_for_status()
+            data = r.content
+        if len(data) != FW_SIG_LEN:
+            # A 404 page or a truncated proxy read would otherwise be written out
+            # as a "signature" and rejected far later, by the keyboard.
+            raise ValueError(
+                f"signature is {len(data)} bytes, expected {FW_SIG_LEN}")
+        with open(sig_path, "wb") as f:
+            f.write(data)
 
     def run(self):
         tmp_path = None
@@ -879,15 +948,44 @@ class FwUpDownloader(threading.Thread):
                             _fire(self._on_progress, 0, f"Downloading firmware… {written // 1024} KB")
         except _DownloadCancelled:
             # Expected user abort — clean up the partial file quietly (no traceback).
-            if tmp_path and os.path.exists(tmp_path):
-                os.unlink(tmp_path)
+            discard_fw_download(tmp_path)
             log.info("Firmware download cancelled by user.")
             _fire(self._on_finished, False, "Download cancelled.", "")
             return
         except Exception as e:  # noqa: BLE001
             log.exception("Firmware download failed")
-            if tmp_path and os.path.exists(tmp_path):
-                os.unlink(tmp_path)
+            discard_fw_download(tmp_path)
             _fire(self._on_finished, False, str(e), "")
             return
+
+        # The detached signature, fetched to <bin>.sig where hid_fw_up expects it.
+        if self._cancelled():
+            # Cancel pressed as the image finished: honour it here rather than
+            # letting the (unabortable, single-GET) signature fetch run first.
+            discard_fw_download(tmp_path)
+            log.info("Firmware download cancelled by user.")
+            _fire(self._on_finished, False, "Download cancelled.", "")
+            return
+
+        sig_url = getattr(self.release, "sig_url", "")
+        if sig_url:
+            _fire(self._on_progress, 100, "Downloading signature…")
+            try:
+                self._fetch_signature(sig_url, tmp_path + ".sig")
+            except Exception as e:  # noqa: BLE001
+                log.exception("Firmware signature download failed")
+                discard_fw_download(tmp_path)
+                _fire(self._on_finished, False,
+                      f"The image downloaded, but its signature did not ({e}).\n\n"
+                      "Flashing without it would make the keyboard treat this "
+                      "release as an unsigned build and ask you to confirm on the "
+                      "keys, so the update was stopped instead.", "")
+                return
+        else:
+            # No .sig on the release: an unsigned build (CI without the signing
+            # secret). Flashing proceeds — the keyboard will ask for the physical
+            # A/ACCEPT confirmation — but say so, because the difference is
+            # otherwise invisible until the keycaps change.
+            log.warning("Firmware release %s advertises no .bin.sig — the keyboard "
+                        "will ask for on-key confirmation.", self.release.tag)
         _fire(self._on_finished, True, "", tmp_path)

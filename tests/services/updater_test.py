@@ -236,6 +236,7 @@ class TestWebFallback(unittest.TestCase):
 
     def test_fw_403_falls_back_to_web_assets(self):
         html = ('<a href="/thpoll83/qmk_firmware/releases/download/PolyKybd-fw-v0.9.0/poly.bin">'
+                '<a href="/thpoll83/qmk_firmware/releases/download/PolyKybd-fw-v0.9.0/poly.bin.sig">'
                 '<a href="/thpoll83/qmk_firmware/releases/download/PolyKybd-fw-v0.9.0/poly.uf2">')
         asset_resp = _make_response(200)
         asset_resp.text = html
@@ -249,6 +250,8 @@ class TestWebFallback(unittest.TestCase):
         self.assertEqual(fw.version, "0.9.0")
         self.assertTrue(fw.bin_url.endswith("/poly.bin"))
         self.assertTrue(fw.uf2_url.endswith("/poly.uf2"))
+        # The scraper must classify .bin.sig as the signature, not as the image.
+        self.assertTrue(fw.sig_url.endswith("/poly.bin.sig"))
 
 
 class TestLastCheckTime(unittest.TestCase):
@@ -317,7 +320,8 @@ class TestVersionFromTag(unittest.TestCase):
                          "1.0.0-beta.1")
 
 
-def _fw_release_json(tag="PolyKybd-fw-v0.8.3", with_bin=True, with_uf2=True):
+def _fw_release_json(tag="PolyKybd-fw-v0.8.3", with_bin=True, with_uf2=True,
+                     with_sig=True):
     assets = []
     if with_bin:
         assets.append({"name": "polykybd_split72_default.bin",
@@ -325,6 +329,9 @@ def _fw_release_json(tag="PolyKybd-fw-v0.8.3", with_bin=True, with_uf2=True):
     if with_uf2:
         assets.append({"name": "polykybd_split72_default.uf2",
                        "browser_download_url": "https://example.com/fw.uf2"})
+    if with_sig:
+        assets.append({"name": "polykybd_split72_default.bin.sig",
+                       "browser_download_url": "https://example.com/fw.bin.sig"})
     return {
         "tag_name": tag,
         "assets": assets,
@@ -362,6 +369,23 @@ class TestCheckFwLatest(unittest.TestCase):
         self.assertEqual(release.tag, "PolyKybd-fw-v0.8.3")
         self.assertEqual(release.bin_url, "https://example.com/fw.bin")
         self.assertEqual(release.uf2_url, "https://example.com/fw.uf2")
+
+    def test_picks_up_the_detached_signature(self):
+        # The .bin.sig must be discovered here or the downloader has nothing to
+        # fetch, and an enforcing keyboard treats the release as self-built.
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(200, _fw_release_json("PolyKybd-fw-v0.8.3"))):
+            release = updater.check_fw_latest("0.8.1")
+        self.assertEqual(release.sig_url, "https://example.com/fw.bin.sig")
+        # ...and .bin.sig must not be mistaken for the image itself.
+        self.assertEqual(release.bin_url, "https://example.com/fw.bin")
+
+    def test_release_without_signature_has_empty_sig_url(self):
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(
+                                   200, _fw_release_json("PolyKybd-fw-v0.8.3", with_sig=False))):
+            release = updater.check_fw_latest("0.8.1")
+        self.assertEqual(release.sig_url, "")
 
     def test_up_to_date_returns_none(self):
         with mock.patch.object(updater.requests, "get",
@@ -411,6 +435,7 @@ class TestCheckFwLatest(unittest.TestCase):
             "etag": '"abc"', "tag": "PolyKybd-fw-v0.9.0", "version": "0.9.0",
             "bin_url": "https://example.com/fw.bin",
             "uf2_url": "https://example.com/fw.uf2",
+            "sig_url": "https://example.com/fw.bin.sig",
             "html_url": "https://example.com/fw-release", "published_at": "",
         }}
         with mock.patch.object(updater.requests, "get", return_value=self._resp(304)):
@@ -418,6 +443,21 @@ class TestCheckFwLatest(unittest.TestCase):
         self.assertIsNotNone(release)
         self.assertEqual(release.version, "0.9.0")
         self.assertEqual(release.bin_url, "https://example.com/fw.bin")
+        self.assertEqual(release.sig_url, "https://example.com/fw.bin.sig")
+
+    def test_pre_signature_cache_entry_survives_304(self):
+        # An ETag cache written before sig_url existed has no such key, and the
+        # ETag means every repeat check lands in the 304 branch — a KeyError
+        # there would strand the user on the stale entry for good.
+        self.mock_load.return_value = {"fw": {
+            "etag": '"abc"', "tag": "PolyKybd-fw-v0.9.0", "version": "0.9.0",
+            "bin_url": "https://example.com/fw.bin", "uf2_url": "",
+            "html_url": "https://example.com/fw-release", "published_at": "",
+        }}
+        with mock.patch.object(updater.requests, "get", return_value=self._resp(304)):
+            release = updater.check_fw_latest("0.8.1")
+        self.assertIsNotNone(release)
+        self.assertEqual(release.sig_url, "")
 
     def test_raises_on_rate_limit(self):
         # 403 falls back to the github.com web path; raises only if that's down too.
@@ -962,6 +1002,119 @@ class TestFwUpDownloader(unittest.TestCase):
             self.assertEqual(path, "")
             self.assertIn("cancel", err.lower())
             self.assertFalse(bin_path.exists(), "cancelled download must be unlinked")
+
+    # -- detached signature -------------------------------------------------
+    # hid_fw_up finds the signature only at <bin>.sig, so "downloaded the
+    # firmware" means both files or neither. Fetching just the .bin made an
+    # official release look self-built to enforcing firmware and stalled the
+    # tray update on the keyboard's physical A/ACCEPT prompt (field 2026-08-05).
+
+    def _run_with_sig(self, td, sig_response, sig_url="https://example.com/fw.bin.sig"):
+        """Drive a full download whose image succeeds; return (recorder, bin_path).
+
+        ``sig_response`` is whatever the signature GET should do — a mock
+        response context or an exception to raise."""
+        rec = _Recorder()
+        rel = updater.FwUpReleaseInfo("PolyKybd-fw-v0.9.0", "0.9.0",
+                                      "https://example.com/fw.bin", "", "html", "",
+                                      "", "", sig_url)
+        dl = updater.FwUpDownloader(rel, on_progress=rec.make("progress"),
+                                    on_finished=rec.make("finished"))
+        bin_ctx = self._stream_response([b"abc", b"def"], total=6)
+        bin_path = Path(td) / "fw.bin"
+        raw = open(bin_path, "wb")
+        fh = _NamedFile(raw, str(bin_path))
+
+        # requests.get is called twice: image (streamed) then signature.
+        calls = []
+
+        def fake_get(url, **kw):
+            calls.append(url)
+            if url.endswith(".sig"):
+                if isinstance(sig_response, Exception):
+                    raise sig_response
+                return sig_response
+            return bin_ctx
+
+        with mock.patch.object(updater.requests, "get", side_effect=fake_get), \
+             mock.patch.object(updater.tempfile, "NamedTemporaryFile") as mock_ntf:
+            mock_ntf.return_value.__enter__.return_value = fh
+            try:
+                dl.run()
+            finally:
+                raw.close()
+        return rec, bin_path, calls
+
+    @staticmethod
+    def _sig_response(content):
+        ctx = mock.MagicMock()
+        resp = ctx.__enter__.return_value
+        resp.content = content
+        resp.raise_for_status.return_value = None
+        return ctx
+
+    def test_signature_downloaded_beside_the_bin(self):
+        with tempfile.TemporaryDirectory() as td:
+            rec, bin_path, calls = self._run_with_sig(
+                td, self._sig_response(b"\x5a" * 64))
+            sig_path = Path(str(bin_path) + ".sig")
+            self.assertTrue(sig_path.exists(),
+                            "signature must land at <bin>.sig, where hid_fw_up looks")
+            self.assertEqual(sig_path.read_bytes(), b"\x5a" * 64)
+        self.assertEqual(rec.args_for("finished"), [(True, "", str(bin_path))])
+        self.assertEqual(len(calls), 2)
+
+    def test_signature_failure_fails_the_whole_download(self):
+        # Silently flashing the unsigned image instead would hand the user a
+        # keyboard waiting for a keypress they were never told about.
+        with tempfile.TemporaryDirectory() as td:
+            rec, bin_path, _ = self._run_with_sig(
+                td, requests.ConnectionError("nope"))
+            ok, err, path = rec.args_for("finished")[0]
+            self.assertFalse(ok)
+            self.assertEqual(path, "")
+            self.assertIn("nope", err)
+            self.assertFalse(bin_path.exists(), "the .bin must go with the failed .sig")
+
+    def test_wrong_length_signature_rejected(self):
+        # A 404 page or truncated read must not be written out as a "signature".
+        with tempfile.TemporaryDirectory() as td:
+            rec, bin_path, _ = self._run_with_sig(
+                td, self._sig_response(b"<!DOCTYPE html>"))
+            ok, err, _path = rec.args_for("finished")[0]
+            self.assertFalse(ok)
+            self.assertIn("15 bytes", err)
+            self.assertFalse(Path(str(bin_path) + ".sig").exists())
+            self.assertFalse(bin_path.exists())
+
+    def test_release_without_sig_url_still_flashes(self):
+        # An unsigned build (CI without the signing secret) is still flashable —
+        # the keyboard just asks for the on-key confirmation.
+        with tempfile.TemporaryDirectory() as td:
+            rec, bin_path, calls = self._run_with_sig(
+                td, self._sig_response(b""), sig_url="")
+            self.assertEqual(rec.args_for("finished"), [(True, "", str(bin_path))])
+            self.assertEqual(calls, ["https://example.com/fw.bin"],
+                             "no sig_url means no second request")
+            self.assertFalse(Path(str(bin_path) + ".sig").exists())
+
+
+class TestDiscardFwDownload(unittest.TestCase):
+
+    def test_removes_bin_and_sig(self):
+        with tempfile.TemporaryDirectory() as td:
+            b = Path(td) / "fw.bin"
+            s = Path(td) / "fw.bin.sig"
+            b.write_bytes(b"x")
+            s.write_bytes(b"y")
+            updater.discard_fw_download(str(b))
+            self.assertFalse(b.exists())
+            self.assertFalse(s.exists(), "the .sig must not outlive its .bin")
+
+    def test_tolerates_missing_files_and_empty_path(self):
+        with tempfile.TemporaryDirectory() as td:
+            updater.discard_fw_download(str(Path(td) / "gone.bin"))  # no .sig either
+            updater.discard_fw_download("")
 
 
 if __name__ == "__main__":

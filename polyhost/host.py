@@ -63,7 +63,7 @@ from polyhost.services.unicode_cache import UnicodeCache
 from polyhost._version import __version__, __protocol__
 
 from polyhost.services.updater import (
-    UpdateChecker, UpdateInstaller, FwUpDownloader,
+    UpdateChecker, UpdateInstaller, FwUpDownloader, discard_fw_download,
     get_last_check_time, set_last_check_time)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.dialog_util import position_near_tray
@@ -2287,13 +2287,10 @@ class PolyHost(QApplication):
             self._fw_up_progress = None
 
         if cancelled:
-            # Discard any partial temp file and return to the pre-download state.
-            # Nothing reached the keyboard, so no device cleanup is needed.
-            if bin_path and os.path.exists(bin_path):
-                try:
-                    os.unlink(bin_path)
-                except OSError:
-                    pass
+            # Discard any partial temp file (and its .sig) and return to the
+            # pre-download state. Nothing reached the keyboard, so no device
+            # cleanup is needed.
+            discard_fw_download(bin_path)
             self.log.info("Firmware download cancelled by user.")
             if self._pending_fw_release is not None:
                 self.firmware_update_action.setText(
@@ -2353,8 +2350,7 @@ class PolyHost(QApplication):
                                    tray_icon=self.tray)
                 dlg.exec_()
             finally:
-                if os.path.exists(bin_path):
-                    os.unlink(bin_path)
+                discard_fw_download(bin_path)
 
         self._pending_fw_release = None
         self._reset_fw_update_action()
@@ -2370,19 +2366,14 @@ class PolyHost(QApplication):
         self.firmware_update_action.setEnabled(self._fw_actions_allowed())
 
     def _cleanup_fw_release_tmp(self):
-        """Remove the temp .bin downloaded for the client-mode GitHub update
-        flow. No-op when there's nothing pending (the manual client flash uses
-        the user's own file, so it never sets _pending_fw_tmp_path)."""
+        """Remove the temp .bin (and its .sig) downloaded for the client-mode
+        GitHub update flow. No-op when there's nothing pending (the manual client
+        flash uses the user's own file, so it never sets _pending_fw_tmp_path)."""
         path = self._pending_fw_tmp_path
         if not path:
             return
         self._pending_fw_tmp_path = None
-        import os
-        try:
-            if os.path.exists(path):
-                os.unlink(path)
-        except OSError as e:  # noqa: BLE001 — best effort temp cleanup
-            self.log.warning("Could not remove temp firmware file %s: %s", path, e)
+        discard_fw_download(path)
 
     # ------------------------------------------------------------------
     # WinCompose install (Windows)
