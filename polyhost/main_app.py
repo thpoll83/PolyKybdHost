@@ -10,6 +10,28 @@ import time
 from polyhost.services.add_to_startup import setup_autostart_for_app, remove_autostart, get_autostart_status
 
 
+def resolve_dev(dev, debug_legacy, setting):
+    """Resolve ``--dev`` / the deprecated ``--debug`` / the ``developer_mode``
+    setting into ``(verbosity, developer, source)``.
+
+    ``dev``/``debug_legacy`` are the parsed flag values (``None`` = flag absent),
+    ``setting`` the persisted ``developer_mode`` bool.
+
+    The flag carries BOTH meanings (developer surface + log verbosity) and wins
+    over the setting **in both directions**, so ``--dev 0`` forces developer mode
+    off for one run — that is why "flag absent" must stay distinguishable from
+    ``--dev 0`` (hence ``default=None``). With no flag the log level stays INFO:
+    the setting is about the developer *surface*, not about log volume.
+
+    Pure — unit-tested in tests/main_app_test.py.
+    """
+    level = dev if dev is not None else debug_legacy
+    if level is None:
+        return 0, bool(setting), "setting"
+    source = "--dev" if dev is not None else "--debug (deprecated)"
+    return level, level > 0, source
+
+
 def _setup_startup_logging(debug=0):
     """Configure a persistent diagnostic log for the **pre-GUI launch phase**.
 
@@ -65,7 +87,15 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
                     description='Communication with your PolyKybd')
     parser.add_argument('--portable', default=False, action='store_true',
                         help='Do not add an autorun entry to your system')
-    parser.add_argument('--debug', type=int, default=0, choices=[0, 1, 2], help='Set debug level: 0 (no debug), 1 (basic debug), 2 (detailed debug)')
+    parser.add_argument('--dev', nargs='?', type=int, const=1, default=None, choices=[0, 1, 2],
+                        help='Developer mode + log verbosity: 0 (off), 1 (basic, the default when '
+                             'the flag is given bare), 2 (detailed). Reveals the Developer submenu '
+                             'and the dev_ settings, and turns on debug logging. Overrides the '
+                             'developer_mode setting in BOTH directions (--dev 0 forces it off).')
+    # Deprecated alias for --dev, kept so existing shortcuts / autostart entries /
+    # scripts keep working. Same 0/1/2 shape; resolved together in resolve_dev().
+    parser.add_argument('--debug', dest='debug_legacy', type=int, default=None, choices=[0, 1, 2],
+                        help=argparse.SUPPRESS)
     parser.add_argument('--ignore-version', default=False, action='store_true',
                         help='Skip firmware version/protocol compatibility check (use as a last resort if the keyboard cannot connect due to a version mismatch)')
     parser.add_argument('--headless', default=False, action='store_true',
@@ -100,8 +130,17 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
                              "omitted, this machine's local key is used (same-machine only).")
     args=parser.parse_args()
 
+    # Developer mode + log verbosity (see resolve_dev): the flag overrides the
+    # persisted developer_mode setting in both directions; with no flag the
+    # setting decides the developer surface and logging stays at INFO. Read via
+    # the file-only helper — PolySettings() would create/rewrite the config and
+    # dump every key before we even know the launch path.
+    from polyhost.settings import read_setting  # Qt-free
+    verbosity, developer, dev_source = resolve_dev(
+        args.dev, args.debug_legacy, read_setting("developer_mode", False))
+
     # Pillow logs every PNG chunk at DEBUG ("STREAM b'IDAT' …", "Importing
-    # PngImagePlugin"); under --debug that floods the host log (and interleaves
+    # PngImagePlugin"); under --dev that floods the host log (and interleaves
     # with our lines) since overlay decode moved to Pillow. Cap the PIL logger
     # so our DEBUG output stays readable. Harmless when not debugging.
     logging.getLogger("PIL").setLevel(logging.INFO)
@@ -110,10 +149,13 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # print() is a silent no-op). Captures the daemon decision, autostart, and
     # single-instance handling that otherwise leave no trace when a launch fails.
     import platform as _platform
-    slog = _setup_startup_logging(args.debug)
+    slog = _setup_startup_logging(verbosity)
     from polyhost._version import __version__ as _ver  # Qt-free
     slog.info("PolyKybdHost %s launching | platform=%s %s | interpreter=%s | argv=%s",
               _ver, _platform.system(), _platform.release(), sys.executable, sys.argv[1:])
+    slog.info("Developer mode=%s (source=%s), log verbosity=%d", developer, dev_source, verbosity)
+    if args.debug_legacy is not None:
+        slog.warning("--debug is deprecated; use --dev %d instead.", args.debug_legacy)
     # Pre-logging timing: how long the dependency bootstrap and the imports
     # before this point took. If both are small, the rest of the "desktop ->
     # tray" gap is Windows firing the logon task + cold-starting the interpreter
@@ -186,7 +228,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
                 print("Starting the PolyKybdHost core daemon...")
                 client_mode, endpoint, daemon_handled_instance = True, None, True
                 defer_connect = True
-                pending_daemon_spawn = _spawned_daemon_flags(args)
+                pending_daemon_spawn = _spawned_daemon_flags(args, verbosity)
 
     # Autostart: a portable run removes any existing entry; an explicit --connect
     # client and the GUI-spawned daemon (--no-autostart) leave autostart alone;
@@ -254,16 +296,16 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         print("Executing PolyHost (headless)...")
         from polyhost.headless import run_headless
         from polyhost.util.log_util import DEBUG_DETAILED  # Qt-free
-        # Mirror the GUI's level mapping: --debug 2 drops to DEBUG_DETAILED so the
+        # Mirror the GUI's level mapping: --dev 2 drops to DEBUG_DETAILED so the
         # daemon surfaces debug_detailed lines (e.g. window-report receipts);
-        # --debug 1 = DEBUG, no flag = INFO.
-        if args.debug > 1:
+        # --dev 1 = DEBUG, no flag = INFO.
+        if verbosity > 1:
             hl_level = DEBUG_DETAILED
-        elif args.debug > 0:
+        elif verbosity > 0:
             hl_level = logging.DEBUG
         else:
             hl_level = logging.INFO
-        run_headless(hl_level, ignore_version=args.ignore_version)
+        run_headless(hl_level, ignore_version=args.ignore_version, developer=developer)
         sys.exit(0)
 
     # GUI / forwarder paths: import Qt lazily, only here.
@@ -282,7 +324,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         addr = args.host or f"IP set in {args.host_file}"
         slog.info("Launch path: forwarder -> %s", addr)
         print(f"Executing Forwarder. Sending to {addr}.")
-        app = PolyForwarder(logging.DEBUG if args.debug>0 else logging.INFO, args.host, args.host_file,
+        app = PolyForwarder(logging.DEBUG if verbosity>0 else logging.INFO, args.host, args.host_file,
                             report_rpc=args.report_rpc, report_port=args.report_port,
                             report_authkey_file=args.report_authkey_file)
     else:
@@ -315,7 +357,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
             slog.info("Launch path: GUI owning the device in-process.")
             print("Executing PolyHost...")
         try:
-            app = PolyHost(logging.DEBUG if args.debug>0 else logging.INFO, args.debug,
+            app = PolyHost(logging.DEBUG if verbosity>0 else logging.INFO, verbosity, developer,
                            ignore_version=args.ignore_version,
                            client_mode=client_mode, endpoint=endpoint,
                            connect_retry=defer_connect)
@@ -342,15 +384,20 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     sys.exit(rc)
 
 
-def _spawned_daemon_flags(args):
+def _spawned_daemon_flags(args, verbosity=0):
     """Flags to pass to a GUI-spawned headless daemon.
 
-    Propagates the operational flags (--debug / --ignore-version) and adds
+    Propagates the operational flags (--dev / --ignore-version) and adds
     --no-autostart so the daemon never registers or removes the GUI's autostart
-    entry (the GUI owns the autostart lifecycle in daemon mode)."""
+    entry (the GUI owns the autostart lifecycle in daemon mode).
+
+    ``verbosity`` is the RESOLVED level (see resolve_dev), so a launch via the
+    deprecated ``--debug`` still reaches the daemon as ``--dev``. Only the level
+    travels: with no flag the daemon reads the developer_mode setting itself,
+    the same file this process read."""
     flags = ["--no-autostart"]
-    if args.debug:
-        flags += ["--debug", str(args.debug)]
+    if verbosity:
+        flags += ["--dev", str(verbosity)]
     if args.ignore_version:
         flags.append("--ignore-version")
     return flags

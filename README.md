@@ -123,7 +123,9 @@ python -m polyhost                 # normal mode (tray GUI); daemon-by-default:
 python -m polyhost --no-daemon     # legacy in-process GUI (owns the device
                                    #   directly; use for development)
 python -m polyhost --daemon        # force daemon-by-default regardless of setting
-python -m polyhost --debug 1       # debug logging
+python -m polyhost --dev           # developer mode + debug logging
+python -m polyhost --dev 2         # developer mode + detailed debug logging
+python -m polyhost --dev 0         # force developer mode OFF for this run
 python -m polyhost --portable      # skip autostart registration
 python -m polyhost --headless      # no GUI / no Qt — drive it with polyctl (see below)
 ```

@@ -218,7 +218,7 @@ def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None) -> QPr
 
 
 class PolyHost(QApplication):
-    def __init__(self, log_level, debug_mode, ignore_version=False,
+    def __init__(self, log_level, verbosity=0, developer=False, ignore_version=False,
                  client_mode=False, endpoint=None, connect_retry=False):
         super().__init__(sys.argv)
         # Wall-clock start, for the About dialog's uptime line.
@@ -232,14 +232,18 @@ class PolyHost(QApplication):
         # probe can't re-raise the modal, and guard against stacking it.
         self._newer_fw_prompt_open = False
         self._newer_fw_prompted_proto = None
-        # The Debugging submenu (created only with --debug), kept reachable so it
-        # stays enabled in newer-firmware safe mode. None when debug is off.
+        # The Developer submenu (created only in developer mode), kept reachable
+        # so it stays enabled in newer-firmware safe mode. None when off.
         self._debug_menu = None
         # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
         from polyhost.util.macos_ui import hide_dock_icon
         hide_dock_icon()
-        fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
-        level = DEBUG_DETAILED if debug_mode>1 else log_level
+        # `verbosity` is the log level knob (--dev N); `developer` is the feature
+        # surface (the --dev flag, else the persisted developer_mode setting) —
+        # the two are deliberately separate, so the settings toggle can reveal the
+        # developer tools without also turning the log to DEBUG.
+        fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if verbosity>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
+        level = DEBUG_DETAILED if verbosity>1 else log_level
 
         file_handler = RotatingFileHandler(
             filename="host_log.txt",
@@ -340,7 +344,7 @@ class PolyHost(QApplication):
             from polyhost.core.poly_core import PolyCore
             self.core = PolyCore(log=self.log, ignore_version=ignore_version,
                                  start_worker=False,
-                                 allow_key_injection=debug_mode > 0)
+                                 allow_key_injection=developer)
             self.keeb = self.core.keeb
             self.worker = self.core.worker
             self.device_mgr = self.core.device_mgr
@@ -356,7 +360,7 @@ class PolyHost(QApplication):
         # Set when a self-update lands: main_app re-execs after exec_() returns
         # (clean, fully-unwound loop) instead of os.execv from inside a slot.
         self.wants_restart = False
-        self.debug_mode = debug_mode
+        self.developer_mode = developer
 
         # Create the menu
         self.log.debug("Building menu...")
@@ -550,7 +554,7 @@ class PolyHost(QApplication):
             # noinspection PyUnresolvedReferences
             self.menu.aboutToShow.connect(self._refresh_wincompose_action)
 
-        if debug_mode > 0:
+        if developer:
             debug_menu = self.menu.addMenu(get_icon("bug_report.svg"), "Debugging")
             self._debug_menu = debug_menu
             self.debug_lang_menu = debug_menu.addMenu(get_icon("translate.svg"), "Change System Input Language")
@@ -600,7 +604,7 @@ class PolyHost(QApplication):
         # needed once a keyboard connects (OS-language sync), not to show the
         # tray. Probe it on a background thread and apply the result on the Qt
         # main thread via the bridge, so the tray appears immediately.
-        threading.Thread(target=self._probe_input_language, args=(debug_mode > 0,),
+        threading.Thread(target=self._probe_input_language, args=(developer,),
                          name="input-language-probe", daemon=True).start()
 
         self.managed_connection_status()
@@ -1199,7 +1203,7 @@ class PolyHost(QApplication):
         # so a keyboard too old for cmd 30 doesn't show a button that only errors.
         reset_cb = self.reset_glyph_script_to_standard if self.supports("glyph_script") else None
         eden_cb = self.replay_eden_animation if self.device_present else None
-        dlg.setup(current, self.debug_mode, reset_glyph_script=reset_cb, replay_eden=eden_cb)
+        dlg.setup(current, self.developer_mode, reset_glyph_script=reset_cb, replay_eden=eden_cb)
         if dlg.exec_() == QDialog.Accepted:
             updated = dlg.get_updated_settings()
             if self.client_mode:
@@ -1792,7 +1796,7 @@ class PolyHost(QApplication):
         self.update_action.setText("Check for updates...")
         _msgbox(QMessageBox.Warning, "PolyKybdHost Update",
                 f"Could not check for updates:\n\n{msg}\n\n"
-                "Run with --debug 1 for details.")
+                "Run with --dev 1 for details.")
 
     def _prompt_and_install(self, release):
         date_str = _fmt_release_date(release.published_at)

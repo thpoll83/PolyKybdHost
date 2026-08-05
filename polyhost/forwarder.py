@@ -329,7 +329,7 @@ class PolyForwarder(QApplication):
         self.update_action.setText("Check for updates...")
         QMessageBox.warning(
             None, "PolyKybdHost Update",
-            f"Could not check for updates:\n\n{msg}\n\nRun with --debug 1 for details.")
+            f"Could not check for updates:\n\n{msg}\n\nRun with --dev 1 for details.")
 
     def _run_update_installer(self, release):
         from polyhost.services.updater import UpdateInstaller

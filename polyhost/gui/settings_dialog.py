@@ -47,7 +47,7 @@ class SettingsDialog(QDialog):
     def sizeHint(self):
         return QSize(640, 480)
 
-    def setup(self, settings_dict, debug_mode=0, reset_glyph_script=None, replay_eden=None):
+    def setup(self, settings_dict, developer_mode=False, reset_glyph_script=None, replay_eden=None):
         self._all_settings = dict(settings_dict)
         self._reset_glyph_script = reset_glyph_script
         self._replay_eden = replay_eden
@@ -67,7 +67,7 @@ class SettingsDialog(QDialog):
 
         grouped_settings = defaultdict(dict)
         for full_key, value in settings_dict.items():
-            if full_key.startswith("dev_") and debug_mode == 0:
+            if full_key.startswith("dev_") and not developer_mode:
                 continue
             if "_" in full_key:
                 group, _ = full_key.split("_", 1)

@@ -85,7 +85,8 @@ class PolyCore:
         # SECURITY: the `press`/`release` script commands inject real keystrokes
         # on the keyboard (firmware HID cmd 14 -> the keyboard types into the
         # host's focused app). That is a demo/dev capability, so it is honoured
-        # only when the owning process was started in debug mode (--debug). The
+        # only when the owning process runs in developer mode (--dev, or the
+        # persisted developer_mode setting). The
         # firmware also NACKs cmd 14 unless DB_TOGG is on; this is the host half.
         self.allow_key_injection = allow_key_injection
         # When True (headless, no GUI to render), the reconnect periodic
@@ -1144,7 +1145,7 @@ class PolyCore:
             if dropped:
                 self.log.warning(
                     "Ignoring %d key-injection command(s) (press/release): host "
-                    "not started in debug mode (--debug).", dropped)
+                    "not running in developer mode (--dev).", dropped)
 
         def _job(cancel):
             for entry in self.device_mgr.all_entries:

@@ -69,5 +69,53 @@ class StartupLoggingTest(unittest.TestCase):
         self.assertEqual(len(slog2.handlers), n)
 
 
+class ResolveDevTest(unittest.TestCase):
+    """--dev / the deprecated --debug / the developer_mode setting."""
+
+    def test_no_flag_follows_the_setting_and_stays_at_info(self):
+        # The setting governs the developer SURFACE only — log volume stays put,
+        # so a user who ticks the box in Settings doesn't also get a DEBUG log.
+        self.assertEqual(main_app.resolve_dev(None, None, True), (0, True, "setting"))
+        self.assertEqual(main_app.resolve_dev(None, None, False), (0, False, "setting"))
+
+    def test_flag_turns_developer_on_and_carries_the_verbosity(self):
+        self.assertEqual(main_app.resolve_dev(1, None, False), (1, True, "--dev"))
+        self.assertEqual(main_app.resolve_dev(2, None, False), (2, True, "--dev"))
+
+    def test_dev_zero_forces_developer_off_over_an_enabled_setting(self):
+        # The whole reason "flag absent" (None) must stay distinguishable from
+        # --dev 0: this is how you reproduce a plain-mode report on a dev box.
+        self.assertEqual(main_app.resolve_dev(0, None, True), (0, False, "--dev"))
+
+    def test_legacy_debug_flag_still_works(self):
+        level, developer, source = main_app.resolve_dev(None, 2, False)
+        self.assertEqual((level, developer), (2, True))
+        self.assertIn("deprecated", source)
+
+    def test_dev_wins_over_legacy_debug(self):
+        self.assertEqual(main_app.resolve_dev(0, 2, False), (0, False, "--dev"))
+
+
+class SpawnedDaemonFlagsTest(unittest.TestCase):
+    """The GUI-spawned daemon inherits the RESOLVED verbosity, as --dev."""
+
+    class _Args:
+        def __init__(self, ignore_version=False):
+            self.ignore_version = ignore_version
+
+    def test_no_verbosity_passes_no_dev_flag(self):
+        # The daemon reads developer_mode from the same settings file itself.
+        self.assertEqual(main_app._spawned_daemon_flags(self._Args(), 0),
+                         ["--no-autostart"])
+
+    def test_verbosity_travels_as_dev_even_from_a_legacy_debug_launch(self):
+        self.assertEqual(main_app._spawned_daemon_flags(self._Args(), 2),
+                         ["--no-autostart", "--dev", "2"])
+
+    def test_ignore_version_still_propagates(self):
+        self.assertEqual(main_app._spawned_daemon_flags(self._Args(True), 1),
+                         ["--no-autostart", "--dev", "1", "--ignore-version"])
+
+
 if __name__ == "__main__":
     unittest.main()
