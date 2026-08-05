@@ -93,7 +93,7 @@ class PolySettings:
             # window.report path (`window_report_network_enabled` + a forwarder run
             # with --report-rpc). Enable this only if you rely on the old plaintext
             # forwarder and understand the exposure. `dev_`-prefixed, so it is hidden
-            # in the settings dialog unless debug mode is on.
+            # in the settings dialog unless developer mode is on.
             "dev_legacy_plaintext_relay": False,
             # macOS: auto-switch the system input language to match the keyboard
             # on (re)connect. Off by default because it runs `languagesetup` via

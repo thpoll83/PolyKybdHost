@@ -7,7 +7,7 @@ from polyhost.services import add_to_startup
 
 class WinQuoteArgsTest(unittest.TestCase):
     def test_plain_args_unquoted(self):
-        self.assertEqual(add_to_startup._win_quote_args(["--debug", "1"]), "--debug 1")
+        self.assertEqual(add_to_startup._win_quote_args(["--dev", "1"]), "--dev 1")
 
     def test_empty_list(self):
         self.assertEqual(add_to_startup._win_quote_args([]), "")
@@ -116,8 +116,8 @@ class HiddenInvocationTest(unittest.TestCase):
         self.assertEqual(args, '"C:\\x\\start_polyhost_hidden.vbs"')
 
     def test_exe_passed_through(self):
-        result = add_to_startup._windows_hidden_invocation(r"C:\x\PolyHost.exe", "--debug 1")
-        self.assertEqual(result, (r"C:\x\PolyHost.exe", "--debug 1"))
+        result = add_to_startup._windows_hidden_invocation(r"C:\x\PolyHost.exe", "--dev 1")
+        self.assertEqual(result, (r"C:\x\PolyHost.exe", "--dev 1"))
 
     def test_vbs_content_is_hidden_launch(self):
         import tempfile
