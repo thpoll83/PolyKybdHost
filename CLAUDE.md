@@ -124,6 +124,26 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
 
 - `HidWorker` (`polyhost/device/hid_worker.py`) owns the device. Periodic tasks on the worker: reconnect probe (1 s), console/serial reads (250 ms), daylight brightness incl. its network lookups (10 min).
 - UI code enqueues jobs (`worker.submit`); overlay sends use `coalesce_key="overlay"` so rapid app switches supersede/cancel stale transfers instead of replaying them. Dialogs use `worker.run_sync` (short bounded block; raises `RuntimeError` while suspended). Firmware flash/apply wraps the dialog in `worker.exclusive()`; tray pause maps to `suspend()`/`resume()`, and `exclusive()` restores the prior suspend state on exit.
+- ⚠️ **Nothing the firmware prints during a flash is observable from the host** — and
+  this is not a logging-level problem, so don't go hunting for a switch. `exclusive()`
+  calls `suspend()`, which sets the cancel flag on **every** periodic including the
+  250 ms console read, and QMK *drops* console output that no one drains. So the
+  window from BEGIN to the post-apply reconnect is a blind spot in the host log,
+  which is exactly where the FW-2 verdict lands: `FW_UP: image signature
+  OK|INVALID|UNSIGNED`, printed at COMMIT. Two rounds were spent concluding "it
+  printed nothing" from a log that structurally could not contain it (2026-08-04);
+  the tell is a gap in the firmware console timestamps spanning the flash. Use
+  **`tools/poly_console.py`** in a second terminal — it reads the console HID
+  interface directly (separate from the raw-HID channel the flash uses, so they
+  coexist) with only `hid`, and survives the reboot. `qmk console` is *not* a
+  substitute on Windows: the QMK CLI refuses to run outside an MSYS2 MinGW64 shell.
+- **The host is also silent when a firmware `.sig` is simply absent.** `hid_fw_up`
+  reports "Sending image signature…" at 97% when it finds `<bin>.sig` beside the
+  image, and reports a problem when the file exists but is unreadable or the wrong
+  length — but says **nothing at all** in the common case where it isn't there. An
+  unsigned flash is therefore indistinguishable from a signed one in the log, except
+  by the *absence* of a line. That distinction stops being cosmetic the moment
+  `FW_REQUIRE_SIGNATURE` is enabled on the firmware side.
 - **The no-blocking-the-main-thread rule covers NETWORK I/O too, not just device
   I/O.** Every GitHub call the GUI makes runs on its own thread — `UpdateChecker`,
   `UpdateInstaller`, `FwUpDownloader`, `wincompose_install.InstallerDownloader` —
