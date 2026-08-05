@@ -137,6 +137,12 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   interface directly (separate from the raw-HID channel the flash uses, so they
   coexist) with only `hid`, and survives the reboot. `qmk console` is *not* a
   substitute on Windows: the QMK CLI refuses to run outside an MSYS2 MinGW64 shell.
+- **`FW_UP_COMMIT` has THREE status bytes** — `.` accepted, `S` refused because the
+  image is not validly signed, `!` staged-CRC mismatch. `S` was added (qmk, 2026-08-05)
+  because the firmware's signature check sits *behind* the CRC result inside
+  `fw_staging_finalize()`, so both refusals arrived as `!` and every consumer reported
+  "CRC mismatch" for an image whose CRC was perfect — including the HIL rig, which sent
+  a real investigation the wrong way. Don't collapse them back into one test.
 - **The host is also silent when a firmware `.sig` is simply absent.** `hid_fw_up`
   reports "Sending image signature…" at 97% when it finds `<bin>.sig` beside the
   image, and reports a problem when the file exists but is unreadable or the wrong

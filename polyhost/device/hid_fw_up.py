@@ -11,6 +11,12 @@ CMD_FW_UP_COMMIT      = 0x42
 CMD_FW_UP_APPLY       = 0x44
 CMD_FW_UP_SIGNATURE   = 0x45   # FW-2: 64-byte Ed25519 image signature, sent in 2 parts before COMMIT
 
+# FW_UP_COMMIT status bytes. 'S' is distinct from '!' on purpose: the firmware's
+# signature check sits behind the CRC result, so both refusals used to arrive as
+# '!' and the user was told "CRC mismatch" when the image was simply unsigned.
+COMMIT_ACK             = ord('.')
+COMMIT_REFUSED_UNSIGNED = ord('S')
+
 FW_SIG_LEN = 64
 
 FW_UP_CHUNK_SIZE  = 56
@@ -377,11 +383,21 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     # is stored and CRC-checked in the staging region but the keyboard keeps
     # running its current firmware — activation is a separate, future step.
     # (FW-2: the firmware also verifies the Ed25519 signature here — currently
-    # warn-only, so an unsigned/old image still commits.)
+    # FW-2: the firmware also verifies the Ed25519 signature here.
     report(98, "Verifying the staged image (CRC32)…")
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_COMMIT])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
-    if not ok or len(reply) < 3 or reply[2] != ord('.'):
+    if ok and len(reply) >= 3 and reply[2] == COMMIT_REFUSED_UNSIGNED:
+        hid.close_interface()
+        return False, (
+            "The keyboard refused this firmware: it is not validly signed.\n\n"
+            "Released firmware ships a matching '.sig' file — download it next to "
+            "the .bin and flash again.\n\n"
+            "To flash a build you compiled yourself, press the 'allow unsigned "
+            "firmware' key on the keyboard (settings layer) and start the flash "
+            "again within two minutes."
+        )
+    if not ok or len(reply) < 3 or reply[2] != COMMIT_ACK:
         hid.close_interface()
         return False, "FW_UP_COMMIT failed — CRC mismatch on keyboard. Try again."
 
