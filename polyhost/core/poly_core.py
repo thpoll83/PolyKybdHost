@@ -969,6 +969,10 @@ class PolyCore:
             bool(self.poly_settings.get("brightness_allow_online_location_lookup")))
         self.worker.submit("brightness_now", self._engage_brightness,
                            coalesce_key="brightness_now")
+        # (ok, payload) like every other command-API method, so the control
+        # socket and the in-process caller see the same shape. It is a submit,
+        # not a run_sync, so "queued" is all there is to report.
+        return True, "queued"
 
     # ------------------------------------------------------------------
     # Command API — the surface clients (CLI / RPC / GUI) drive (H2).

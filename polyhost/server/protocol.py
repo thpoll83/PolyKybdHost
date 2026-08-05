@@ -54,6 +54,10 @@ M_STATUS_GET = "status.get"            # {} -> status dict (PolyCore.get_status)
 M_LANG_LIST = "lang.list"              # {} -> [code, ...]
 M_LANG_SET = "lang.set"                # {"lang": "deDE"} -> (ok, payload)
 M_BRIGHTNESS_SET = "brightness.set"    # {"value": 0..50} -> (ok, payload)
+# Deliberate re-assert of the host brightness mode (daylight on -> AUTO_ON +
+# current value, off -> AUTO_OFF). This is the way BACK from a manual preset:
+# the firmware drops auto mode on any manual set and never re-engages on its own.
+M_DAYLIGHT_REFRESH = "brightness.daylight_refresh"   # {} -> (ok, payload)
 M_IDLE_SET = "idle.set"                # {"idle": bool} -> (ok, payload)
 M_IDLE_STYLE_SET = "idle.style.set"    # {"value": 0|1|2} -> (ok, payload)  (0=pulse, 1=jitter, 2=iddqd attract demo)
 M_IDLE_STYLE_GET = "idle.style.get"    # {} -> (ok, value)

@@ -83,9 +83,9 @@ class CommandsSubMenu:
         # ride the protocol-independent staging transport (see update_enabled).
         self._device_actions = []
         self._fw_actions = []
-        # Menu actions of the two roots, gated as a whole in update_enabled.
+        # Menu action of the Maintenance root, gated as a whole in update_enabled.
         self._maintenance_action = None
-        self._developer_actions = []
+        self._auto_brightness_action = None
 
     @property
     def _core(self):
@@ -116,10 +116,9 @@ class CommandsSubMenu:
     def build_brightness_menu(self, parent_menu):
         """Keycap brightness presets - top level, it is the most-used control.
 
-        Deliberately NO "auto" entry: the keyboard owns that decision (its own
-        light sensor / the host's daylight periodic drive it). These are manual
-        overrides, which the firmware honours until auto is re-engaged - see
-        PolyHost's "Back to automatic" entry, which is the way out.
+        Deliberately no "auto" RADIO: the keyboard owns that decision (its own
+        light sensor and the host's daylight periodic drive it). These presets
+        are manual overrides; the trailing entry is the way back out of one.
         """
         menu = parent_menu.addMenu(get_icon("settings_brightness.svg"), "Brightness")
         for icon, label, value in (("backlight_high_off.svg", "Off", 0),
@@ -127,8 +126,46 @@ class CommandsSubMenu:
                                    ("backlight_high.svg", "50%", 25),
                                    ("backlight_high_fill.svg", "100%", 50)):
             menu.addAction(self._act(icon, label, self.set_brightness, data=value, device=True))
+        menu.addSeparator()
+        # The firmware drops auto mode on ANY manual set and never re-engages by
+        # itself, so without this the presets above are a one-way door until a
+        # replug. Wording/tooltip are set on open from the live setting.
+        self._auto_brightness_action = self._act(
+            "brightness_auto.svg", "Back to automatic", self.back_to_automatic_brightness, device=True)
+        menu.addAction(self._auto_brightness_action)
+        # noinspection PyUnresolvedReferences
+        menu.aboutToShow.connect(self._refresh_auto_brightness_action)
         self._device_actions.append(menu.menuAction())
         return menu
+
+    def _refresh_auto_brightness_action(self):
+        """Explain what "automatic" will actually do, from the live setting.
+
+        With daylight-dependent brightness ON this re-engages auto mode (the
+        host's daylight value, and the keyboard's own light sensor resumes with
+        it). With it OFF the host tells the keyboard to leave auto mode, which
+        just restores its stored manual level — still the way to clear a preset,
+        but not "automatic", so don't claim it is.
+        """
+        action = self._auto_brightness_action
+        try:
+            daylight = bool(self._core.settings_get("brightness_set_daylight_dependent"))
+        except Exception as exc:   # noqa: BLE001 — a tooltip must never break the menu
+            self.log.debug("Could not read the daylight setting: %s", exc)
+            action.setToolTip("Re-apply the host's automatic brightness.")
+            return
+        if daylight:
+            action.setText("Back to automatic")
+            action.setToolTip("Re-engage automatic (daylight) brightness — the manual "
+                              "preset above is dropped.")
+        else:
+            action.setText("Clear manual override")
+            action.setToolTip("Daylight-dependent brightness is off in Settings, so this "
+                              "only returns the keyboard to its own stored brightness.")
+
+    def back_to_automatic_brightness(self):
+        self._report(self._core.refresh_daylight_brightness(),
+                     lambda m: f"Failed to re-apply automatic brightness: '{m}'")
 
     def build_maintenance_menu(self, parent_menu):
         """Rare but legitimate user-facing repair actions.
@@ -190,7 +227,18 @@ class CommandsSubMenu:
                                       self.change_idle, data=False, device=True))
         self._device_actions.append(idle_menu.menuAction())
 
+        km_menu = dev_menu.addMenu(get_icon("keyboard.svg"), "Keymap")
+        km_menu.addAction(self._act("list_alt.svg", "Layer count",
+                                    self.show_layer_count, device=True))
+        km_menu.addAction(self._act("list_alt.svg", "Default layer",
+                                    self.show_default_layer, device=True))
+        km_menu.addAction(self._act("file_open.svg", "Dump keymap buffer to the log",
+                                    self.dump_keymap_buffer, device=True))
+        self._device_actions.append(km_menu.menuAction())
+
         fp_menu = dev_menu.addMenu(get_icon("font_download.svg"), "Font Pack")
+        fp_menu.addAction(self._act("list_alt.svg", "Per-bundle status…",
+                                    self.show_fontpack_status, firmware=True))
         fp_menu.addAction(self._act("sync_alt.svg", "Sync (flash missing/updated bundles)",
                                     self.sync_fontpack, firmware=True))
         fp_menu.addAction(self._act("delete.svg", "Wipe (empty all bundles)",
@@ -332,6 +380,47 @@ class CommandsSubMenu:
             return
         self._report(self._core.wipe_fontpack(),
                      lambda m: f"Failed to wipe font pack: '{m}'")
+
+    def show_layer_count(self):
+        ok, value = self._core.keymap_layer_count()
+        self._info("Keymap", f"Layers: {value}" if ok else f"Could not read the layer count: {value}")
+
+    def show_default_layer(self):
+        ok, value = self._core.keymap_default_layer()
+        self._info("Keymap", f"Default layer: {value}" if ok
+                   else f"Could not read the default layer: {value}")
+
+    def dump_keymap_buffer(self):
+        """Write the raw keymap buffer to the host log — it is far too big for a
+        dialog, and the log is what gets attached to a bug report anyway."""
+        ok, buf = self._core.keymap_buffer()
+        if not ok:
+            self._info("Keymap", f"Could not read the keymap buffer: {buf}")
+            return
+        data = bytes(buf) if not isinstance(buf, str) else buf.encode()
+        self.log.info("Keymap buffer (%d bytes):\n%s", len(data), data.hex(" ", 2))
+        self._info("Keymap", f"Keymap buffer ({len(data)} bytes) written to the log.")
+
+    def show_fontpack_status(self):
+        """Per-bundle device-vs-shipped versions (what Sync would actually do)."""
+        ok, info = self._core.fontpack_bundle_status()
+        if not ok:
+            self._info("Font Pack", f"Could not read the font-pack status: {info}")
+            return
+        if not info.get("shipped"):
+            self._info("Font Pack", "This host ships no font-pack bundles.")
+            return
+        rows = "".join(
+            "<tr><td>{id}</td><td align=right>{device_version}</td>"
+            "<td align=right>{shipped_version}</td><td>{stale}</td></tr>".format(
+                stale="stale" if b["stale"] else "ok", **b)
+            for b in info["bundles"])
+        self._info("Font Pack",
+                   "<table cellpadding=4><tr><th align=left>bundle</th><th>device</th>"
+                   f"<th>shipped</th><th></th></tr>{rows}</table>")
+
+    def _info(self, title, text):
+        QMessageBox.information(None, title, text)
 
     def load_commands(self):
         file_name = _get_open_file_explicit('Open file', "PolyKybd commands (*.poly.cmd)")

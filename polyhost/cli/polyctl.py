@@ -158,6 +158,16 @@ def _cmd_lang(client, args):
 
 
 def _cmd_brightness(client, args):
+    if args.auto:
+        # Deliberate re-assert of the host's automatic brightness. This is the
+        # way BACK from a manual level: the firmware leaves auto mode on any
+        # manual set and never re-engages on its own.
+        client.call(protocol.M_DAYLIGHT_REFRESH)
+        print("automatic (daylight) brightness re-applied")
+        return 0
+    if args.value is None:
+        print("error: give a brightness value (0..50) or --auto", file=sys.stderr)
+        return 2
     client.call(protocol.M_BRIGHTNESS_SET, {"value": args.value})
     print(f"brightness set to {args.value}")
     return 0
@@ -544,7 +554,10 @@ def build_parser():
     p_lang.set_defaults(func=_cmd_lang)
 
     p_bri = sub.add_parser("brightness", help="set keycap brightness")
-    p_bri.add_argument("value", type=int, help="brightness value (0..50)")
+    p_bri.add_argument("value", type=int, nargs="?", help="brightness value (0..50)")
+    p_bri.add_argument("--auto", action="store_true",
+                       help="re-apply automatic (daylight) brightness instead of a "
+                            "fixed value — the way back from a manual level")
     p_bri.set_defaults(func=_cmd_brightness)
 
     p_idle = sub.add_parser("idle", help="enable or disable idle")

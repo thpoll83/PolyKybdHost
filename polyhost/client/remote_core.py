@@ -349,6 +349,11 @@ class RemoteCore:
         is the one that matters."""
         return self._device(p.M_UNICODE_MODE_REFRESH)
 
+    def refresh_daylight_brightness(self):
+        """Re-assert the daemon's automatic brightness (the way back from a
+        manual preset — the firmware drops auto mode on any manual set)."""
+        return self._device(p.M_DAYLIGHT_REFRESH)
+
     def set_glyph_script(self, value):
         return self._device(p.M_GLYPH_SCRIPT_SET, {"value": value})
 
@@ -445,6 +450,12 @@ class RemoteCore:
 
     def wipe_fontpack(self):
         return self._device(p.M_FONTPACK_WIPE)
+
+    def fontpack_bundle_status(self):
+        """Per-bundle device-vs-shipped versions. No device I/O on the daemon
+        side either (it compares the cached GET_ID block against the shipped
+        manifest), so this is cheap enough for a menu's aboutToShow."""
+        return self._device(p.M_FONTPACK_BUNDLES)
 
     # -- lifecycle / settings ----------------------------------------------
     def set_paused(self, paused):

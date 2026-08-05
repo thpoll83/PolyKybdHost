@@ -521,6 +521,44 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `process_exists()` runs TASKLIST with **`CREATE_NO_WINDOW`** (else a console flashes under
   the `pythonw`/`.vbs` autostart chain) and **never raises** — it sits on the post-connect
   path, where an exception would abort the whole connect flow over a cosmetic detection.
+- **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
+  that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
+  PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal
+  user. Now: status · Pause · [Language] · Brightness · Idle Display · Keycap Script ·
+  Configure Keymap · Updates · Maintenance · Settings · Help & About · Quit, with
+  **Developer** slotted in before Settings when developer mode is on. The invariant is
+  that turning developer mode on **does not rearrange anything** (asserted by
+  `tests/gui/host_client_test.py` `test_developer_mode_only_adds_a_submenu`), so muscle
+  memory survives the toggle. `CommandsSubMenu` (`gui/cmd_menu.py`) builds Brightness +
+  Maintenance + the Developer submenus and gates them off **explicit action lists**
+  (`_device_actions` follow `connected`, `_fw_actions` follow `fw_enabled`) — it can no
+  longer walk one menu's actions, since they live under different parents. ⚠️
+  `managed_connection_status` still blanket-disables every top-level action first, so a
+  **new group parent must be re-enabled explicitly there** or its whole submenu goes
+  unreachable on a disconnect (that is why Updates / Help & About / Pause are listed).
+  Two rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
+  entry (only while `safe_mode`) and Install WinCompose (only while it isn't running).
+  The language menu is built lazily and inserts itself at `self._lang_anchor`
+  (Brightness), not at index 1.
+- **A menu row that can answer its own question should — the font-pack row is the
+  pattern.** `PolyCore.fontpack_bundle_status()` is a **local** comparison (the cached
+  `GET_ID` version block vs the shipped `bundles.json`, no device I/O on either side of
+  the RPC), so the Updates row relabels itself on `aboutToShow` — *"Keyboard fonts: up
+  to date"* (disabled) or *"Update keyboard fonts (N)…"* with the stale bundle ids in
+  its tooltip — instead of hiding the answer behind a status dialog. Same idea in
+  Brightness: *"Back to automatic"* renames itself to *"Clear manual override"* when
+  `brightness_set_daylight_dependent` is off, because that is what it would actually do.
+  Keep such refreshes to reads that are genuinely free; an `aboutToShow` that touches
+  the device would stall the menu.
+- **"Back to automatic" exists because the firmware's auto mode is a ONE-WAY DOOR from
+  the host's side.** Any manual `set_brightness` drops the keyboard out of auto mode
+  (its own LTR-559 sensor then backs off too) and nothing re-engages it until the host
+  deliberately re-asserts — so the tray's brightness presets used to strand the keyboard
+  in manual until a replug. The entry calls `PolyCore.refresh_daylight_brightness()`
+  (daylight on → `VOLATILE|AUTO_ON` + the current value; off → `AUTO_OFF`, i.e. back to
+  the keyboard's stored manual level), which is now `M_DAYLIGHT_REFRESH` + a `RemoteCore`
+  mirror + `polyctl brightness --auto`. It returns `(True, "queued")` like every other
+  command-API method — it is a `submit`, not a `run_sync`.
 - **Developer mode (`--dev`) is SEPARATE from log verbosity — and it is a persisted
   setting, not just a flag.** `--debug N` used to conflate three things: the log level,
   the developer/diagnostic UI surface, and `allow_key_injection`. It is now split:

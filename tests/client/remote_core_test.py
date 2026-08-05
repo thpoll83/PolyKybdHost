@@ -73,6 +73,18 @@ class FakeCore:
         self.calls.append(("send_overlay_mapping", mapping))
         return (True, "mapped")
 
+    def refresh_daylight_brightness(self):
+        self.calls.append(("refresh_daylight_brightness",))
+        return (True, "queued")
+
+    def fontpack_bundle_status(self):
+        self.calls.append(("fontpack_bundle_status",))
+        return (True, {"shipped": True, "bundles": [
+            {"id": "symbol", "index": 0, "device_version": 4,
+             "shipped_version": 5, "stale": True},
+            {"id": "emoji", "index": 5, "device_version": 1,
+             "shipped_version": 1, "stale": False}]})
+
 
 def _addr():
     return os.path.join(tempfile.mkdtemp(prefix="polyrc_"), "ctl.sock")
@@ -151,6 +163,23 @@ class TestRemoteCore(unittest.TestCase):
         self.assertTrue(ok)
         # Keys cross JSON as strings; the daemon-side core coerces them back.
         self.assertIn(("send_overlay_mapping", {"4": 5}), self.core.calls)
+
+    def test_back_to_automatic_brightness_reaches_the_daemon(self):
+        """The tray's way out of a manual preset. It MUST run in the daemon: the
+        daemon owns the device and the daylight setting it decides from."""
+        ok, payload = self.rc.refresh_daylight_brightness()
+        self.assertTrue(ok)
+        self.assertEqual(payload, "queued")
+        self.assertIn(("refresh_daylight_brightness",), self.core.calls)
+
+    def test_fontpack_bundle_status_mirrored(self):
+        """Feeds the self-labelling "Keyboard fonts" row in the Updates menu —
+        without this mirror the client GUI could not tell stale from current."""
+        ok, info = self.rc.fontpack_bundle_status()
+        self.assertTrue(ok)
+        self.assertTrue(info["shipped"])
+        self.assertEqual([b["id"] for b in info["bundles"] if b["stale"]], ["symbol"])
+        self.assertIn(("fontpack_bundle_status",), self.core.calls)
 
     def test_request_host_shutdown_acks(self):
         # The "Quit & stop daemon" menu entry drives this: the control server

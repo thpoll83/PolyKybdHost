@@ -73,6 +73,8 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertNotIn("Developer", top)
         # About + the log file moved into Help & About and are still reachable.
         self.assertIn("ABOUT_UNDER Help && About True True", proc.stdout)
+        # The newer-firmware row must not clutter the normal menu.
+        self.assertIn("NEWER_FW_ROW False", proc.stdout)
 
     def test_developer_mode_only_adds_a_submenu(self):
         """Developer mode must ADD, never rearrange — muscle memory has to survive
@@ -104,6 +106,9 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("UPDATE_ROUTED_TO_DAEMON True", proc.stdout)
         self.assertIn("CLIENT_ABOUT_OK True", proc.stdout)
         self.assertIn("SERVER_RUNNING True", proc.stdout)
+        # One stale bundle -> the row says so and offers the flash, rather than
+        # a bare "Sync" whose effect you cannot know before clicking it.
+        self.assertIn("FONT_ROW Update keyboard fonts (1)", proc.stdout)
 
 
 # ---------------------------------------------------------------------------
@@ -111,8 +116,14 @@ class TestPolyHostModes(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 def _toplevel(app):
-    """The tray's top-level rows as a '|'-joined string (separators dropped)."""
-    return "|".join(a.text() for a in app.menu.actions() if not a.isSeparator())
+    """The tray's top-level rows as a '|'-joined string.
+
+    Separators and HIDDEN actions are dropped: this is what the user actually
+    sees, and the contextual rows (newer-firmware, WinCompose) exist in the menu
+    from construction but only surface when they apply.
+    """
+    return "|".join(a.text() for a in app.menu.actions()
+                    if not a.isSeparator() and a.isVisible())
 
 
 def _smoke_default():
@@ -155,6 +166,8 @@ def _smoke_default():
               and has_env and has_ok and has_copy and has_diag)
         about.deleteLater()
         print("TOPLEVEL", _toplevel(app))
+        # Contextual row: built, but invisible until the core reports safe mode.
+        print("NEWER_FW_ROW", app.newer_fw_action.isVisible())
         about_parent = app.help_menu.title()
         print("ABOUT_UNDER", about_parent,
               app.about in app.help_menu.actions(), app.log_dialog in app.help_menu.actions())
@@ -205,6 +218,13 @@ def _smoke_client():
         def install_update(self):
             self.install_update_called = True
             return (True, {"queued": True, "version": "9.9.9"})
+
+        def fontpack_bundle_status(self):
+            return (True, {"shipped": True, "bundles": [
+                {"id": "symbol", "index": 0, "device_version": 4,
+                 "shipped_version": 5, "stale": True},
+                {"id": "emoji", "index": 5, "device_version": 1,
+                 "shipped_version": 1, "stale": False}]})
 
     addr = os.path.join(tempfile.mkdtemp(), "ctl.sock")
     key = protocol.load_or_create_authkey()
@@ -277,6 +297,10 @@ def _smoke_client():
                   (__version__ in cblob) and c_links and ("eyboard" in cblob)
                   and c_copy and c_diag)
             about.deleteLater()
+            # The Updates menu labels the font row from the daemon's per-bundle
+            # comparison (over the RPC mirror) instead of hiding it in a dialog.
+            app._refresh_fontpack_action()
+            print("FONT_ROW", app.fontpack_update_action.text())
             app.quit_app()
         print("SERVER_RUNNING", srv._running)
     finally:
