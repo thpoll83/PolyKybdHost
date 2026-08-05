@@ -142,6 +142,44 @@ def validate_polykybd_firmware(fw_bytes: (bytes, bytearray)) -> tuple[bool, str]
     )
 
 
+def check_signature_file(bin_path: str) -> tuple[bool, str]:
+    """What sits next to ``bin_path`` signature-wise, as (signed, advisory).
+
+    Called at *selection* time so the answer arrives before a 446 KB transfer and
+    before the keyboard goes modal, not after. Until this existed the host said
+    nothing at all in the common "no .sig beside the .bin" case, so an unsigned
+    flash was indistinguishable from a signed one right up to the moment the
+    keycaps turned into a dialog.
+
+    ⚠️ This is a CONVENIENCE, never a security control — it only looks at whether
+    the file is there and the right length; the host cannot decide what the
+    keyboard will accept, and a host is exactly the thing signing does not trust.
+    The verdict that counts is the firmware's, at COMMIT.
+    """
+    sig_path = bin_path + ".sig"
+    if not os.path.exists(sig_path):
+        return False, (
+            "No signature file was found next to this image "
+            f"({os.path.basename(sig_path)}).\n\n"
+            "The keyboard will ask you to confirm it physically: every keycap goes "
+            "dark except a big A (accept) on the left half and R (reject) on the "
+            "right. That is expected for a firmware you built yourself.\n\n"
+            "If you meant to flash a release, download its '.sig' file into the "
+            "same folder as the '.bin' first."
+        )
+    try:
+        size = os.path.getsize(sig_path)
+    except OSError as e:
+        return False, f"Cannot read {os.path.basename(sig_path)}: {e}"
+    if size != FW_SIG_LEN:
+        return False, (
+            f"{os.path.basename(sig_path)} is {size} bytes, but a signature is "
+            f"exactly {FW_SIG_LEN}. It will be ignored and the keyboard will ask "
+            "you to confirm the image physically."
+        )
+    return True, ""
+
+
 def get_fw_version(hid) -> tuple[bool, dict]:
     """Query firmware version, binary size and CRC32 from the keyboard (cmd 0x43).
 
@@ -371,6 +409,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     # fit one HID report). Best-effort: firmware without signing support NACKs the
     # unknown command and flashes unsigned, so a NACK here is not fatal.
     sig_path = bin_path + ".sig"
+    sig_sent = False
     if os.path.exists(sig_path):
         sig = None
         try:
@@ -388,6 +427,7 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
                     pkt = (bytearray([HID_POLYKYBD, CMD_FW_UP_SIGNATURE, part])
                            + sig[part * half:part * half + half])
                     hid.send_and_read(pkt, timeout=2000)  # NACK on older firmware is fine
+                sig_sent = True
             else:
                 report(97, f"Ignoring {os.path.basename(sig_path)} — "
                            f"expected {FW_SIG_LEN} bytes, got {len(sig)}.")
@@ -427,8 +467,24 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
 
     if ok and len(reply) >= 3 and reply[2] == COMMIT_REFUSED_UNSIGNED:
         hid.close_interface()
+        # One status byte, two very different causes — but the host knows which,
+        # because it knows whether it sent a signature. The firmware only offers
+        # the physical confirmation for an image with NO signature; one whose
+        # signature is present and fails to verify is refused outright, and saying
+        # "press A to accept" there would be actively wrong advice.
+        if sig_sent:
+            return False, (
+                "The keyboard refused this firmware: the signature does not match "
+                "the image.\n\n"
+                f"{os.path.basename(sig_path)} is not a valid signature for this "
+                ".bin. Either the two files come from different builds, or one of "
+                "them is damaged — re-download both from the same release.\n\n"
+                "There is deliberately no way to confirm past this on the keyboard: "
+                "a signature that fails to verify means the file is not what it "
+                "claims to be."
+            )
         return False, (
-            "The keyboard refused this firmware: it is not validly signed.\n\n"
+            "The keyboard refused this firmware: it is not signed.\n\n"
             "Released firmware ships a matching '.sig' file — download it next to "
             "the .bin and flash again.\n\n"
             "To flash a build you compiled yourself, flash again and press the "
