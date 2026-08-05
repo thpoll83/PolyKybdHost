@@ -1158,7 +1158,7 @@ class PolyCore:
     def execute_commands(self, lines):
         """Queue a (cancel-aware) command script across every device entry.
 
-        Unless key injection is allowed (host started in debug mode), the
+        Unless key injection is allowed (host in developer mode), the
         ``press``/``release`` commands are stripped here so a command file (or
         the ``commands.execute`` control RPC) can never drive arbitrary
         keystrokes on a production host.

@@ -34,8 +34,8 @@ class TestBuildArgv(unittest.TestCase):
         self.assertEqual(argv[1:], ["-m", "polyhost", "--headless"])
 
     def test_extra_args_appended(self):
-        argv = dl.build_daemon_argv(["--no-autostart", "--debug", "1"])
-        self.assertEqual(argv[-3:], ["--no-autostart", "--debug", "1"])
+        argv = dl.build_daemon_argv(["--no-autostart", "--dev", "1"])
+        self.assertEqual(argv[-3:], ["--no-autostart", "--dev", "1"])
 
 
 class TestSpawn(unittest.TestCase):
