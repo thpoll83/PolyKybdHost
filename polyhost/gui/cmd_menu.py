@@ -5,7 +5,9 @@ from PyQt5.QtWidgets import (
     QAction, QFileDialog, QMessageBox, QAbstractItemView, QProxyStyle, QStyle,
 )
 
-from polyhost.device.hid_fw_up import get_fw_version, validate_rp2040_firmware, validate_polykybd_firmware, apply_staged_firmware
+from polyhost.device.hid_fw_up import (get_fw_version, validate_rp2040_firmware,
+                                       validate_polykybd_firmware, apply_staged_firmware,
+                                       check_signature_file)
 from polyhost.gui import file_dialogs
 from polyhost.gui.get_icon import get_icon
 
@@ -385,6 +387,15 @@ class CommandsSubMenu:
         if not valid:
             QMessageBox.critical(None, "Wrong Keyboard", reason)
             return
+
+        # FW-2 advisory, at SELECTION time — before a 446 KB transfer and before
+        # the keyboard goes modal asking for a physical confirmation the user was
+        # never told to expect. Informational only: the host cannot decide what the
+        # keyboard accepts (and is exactly the thing signing does not trust), so
+        # this never blocks the flash.
+        signed, advisory = check_signature_file(bin_path)
+        if not signed:
+            QMessageBox.information(None, "Unsigned Firmware", advisory)
 
         # The confirmation text + title depend on whether we also activate the
         # image right after staging (single-step "flash + apply").

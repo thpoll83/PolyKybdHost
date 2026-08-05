@@ -137,12 +137,33 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   interface directly (separate from the raw-HID channel the flash uses, so they
   coexist) with only `hid`, and survives the reboot. `qmk console` is *not* a
   substitute on Windows: the QMK CLI refuses to run outside an MSYS2 MinGW64 shell.
-- **`FW_UP_COMMIT` has THREE status bytes** — `.` accepted, `S` refused because the
-  image is not validly signed, `!` staged-CRC mismatch. `S` was added (qmk, 2026-08-05)
-  because the firmware's signature check sits *behind* the CRC result inside
-  `fw_staging_finalize()`, so both refusals arrived as `!` and every consumer reported
-  "CRC mismatch" for an image whose CRC was perfect — including the HIL rig, which sent
-  a real investigation the wrong way. Don't collapse them back into one test.
+- **`FW_UP_COMMIT` has FOUR status bytes** — `.` accepted, `?` awaiting the physical
+  ACCEPT/REJECT on the keyboard, `S` refused because the image is not validly signed,
+  `!` staged-CRC mismatch. `S` was split out (qmk, 2026-08-05) because the firmware's
+  signature check sits *behind* the CRC result inside `fw_staging_finalize()`, so both
+  refusals arrived as `!` and every consumer reported "CRC mismatch" for an image whose
+  CRC was perfect — including the HIL rig, which sent a real investigation the wrong
+  way. Don't collapse them back into one test.
+  - **`?` means "re-poll me", not "failed".** Under `FW_REQUIRE_SIGNATURE` an unsigned
+    image is not refused outright: the keyboard turns its keycaps into an A/ACCEPT ·
+    R/REJECT dialog and waits up to 60 s for a keypress. `hid_fw_up.flash_firmware`
+    re-sends COMMIT every second (`CONFIRM_POLL_TIMEOUT_S` 75, deliberately past the
+    firmware's own window so the host never gives up first) until the byte changes.
+    Staging state is untouched between polls, so re-running COMMIT is free — and the
+    firmware skips re-bridging to the slave while a prompt is up, or each poll would
+    re-erase the slave's 4 KB staging header sector.
+  - ⚠️ **A host that predates `?` cannot flash an unsigned image at all** — it falls
+    through to the generic failure branch and the progress dialog simply stops, still
+    holding `worker.exclusive()`. That has a second-order effect worth recognising:
+    **`polyctl fw version` is CACHED, not a live query** (`PolyCore.get_fw_version()` →
+    `keeb.get_sw_version()`, the string parsed at the last GET_ID), and while the worker
+    is suspended nothing re-probes — so it keeps reporting the *pre-flash* version and
+    reads as "the new firmware never installed". Trust what the keycaps are doing over
+    that number; confirm with a fresh connect (close the dialog / restart the host).
+  - **The host may CANCEL the prompt but never accept it** — a COMMIT carrying `'x'`
+    in `data[2]` withdraws it (`_abort_cleanup` sends that form). Cancelling can only
+    ever deny, so it is safe over the very channel signing defends; accepting stays a
+    keypress. Don't add a host-side "allow unsigned" checkbox.
 - **The host is also silent when a firmware `.sig` is simply absent.** `hid_fw_up`
   reports "Sending image signature…" at 97% when it finds `<bin>.sig` beside the
   image, and reports a problem when the file exists but is unreadable or the wrong

@@ -307,7 +307,7 @@ class ControlServer:
             p.M_KEYMAP_SET: lambda conn, params: _unwrap(c.keymap_set(
                 params["layer"], params["row"], params["col"], params["keycode"])),
             p.M_COMMANDS_EXECUTE: self._cmd_commands_execute,
-            p.M_FW_VERSION: lambda conn, params: c.get_fw_version(),
+            p.M_FW_VERSION: lambda conn, params: _unwrap(c.get_fw_version()),
             p.M_FW_FLASH: lambda conn, params: _unwrap(c.flash_firmware(
                 params["path"], params.get("apply", False))),
             p.M_UPDATE_CHECK: lambda conn, params: _unwrap(c.check_update()),
