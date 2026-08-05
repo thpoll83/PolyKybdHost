@@ -591,6 +591,17 @@ Host releases are **GitHub Releases** (tag `vX.Y.Z`; version in `polyhost/_versi
 created by **publishing** — *not* by pushing a tag. Use the `polykybd-github-release`
 skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 
+- ⚠️ **The host and firmware version numbers were deliberately aligned at 0.11.0
+  (2026-08-05) — and they are NOT kept in lockstep after that.** The two are
+  independent lines, each bumped by `bump-version.yml` from the labels on its own
+  merged PRs, so a host-only or firmware-only change immediately re-separates them.
+  That drift is expected and is **not** a bug to "fix": the thing that genuinely
+  must move together is `__protocol__` / `PROTOCOL_VERSION` (see the connect-gate
+  note above), which is a different number entirely. Re-aligning the display
+  versions is a cosmetic choice to make at a release, by landing a `bump:minor` PR
+  that does **not** itself edit `_version.py` — the workflow bumps *after* merge, so
+  an edited version file would be bumped on top of.
+
 - **A pushed tag does NOT create a release.** Release tags land on the auto-bump
   `chore: … [skip ci]` commit (`bump-version.yml`), and `[skip ci]` suppresses the
   tag-push trigger — so `release.yml` runs on **`release: published`** (this workflow had
