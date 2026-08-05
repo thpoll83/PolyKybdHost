@@ -152,6 +152,14 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     Staging state is untouched between polls, so re-running COMMIT is free — and the
     firmware skips re-bridging to the slave while a prompt is up, or each poll would
     re-erase the slave's 4 KB staging header sector.
+  - ⚠️ **A host that predates `?` cannot flash an unsigned image at all** — it falls
+    through to the generic failure branch and the progress dialog simply stops, still
+    holding `worker.exclusive()`. That has a second-order effect worth recognising:
+    **`polyctl fw version` is CACHED, not a live query** (`PolyCore.get_fw_version()` →
+    `keeb.get_sw_version()`, the string parsed at the last GET_ID), and while the worker
+    is suspended nothing re-probes — so it keeps reporting the *pre-flash* version and
+    reads as "the new firmware never installed". Trust what the keycaps are doing over
+    that number; confirm with a fresh connect (close the dialog / restart the host).
   - **The host may CANCEL the prompt but never accept it** — a COMMIT carrying `'x'`
     in `data[2]` withdraws it (`_abort_cleanup` sends that form). Cancelling can only
     ever deny, so it is safe over the very channel signing defends; accepting stays a
