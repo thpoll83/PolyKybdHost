@@ -14,8 +14,18 @@ CMD_FW_UP_SIGNATURE   = 0x45   # FW-2: 64-byte Ed25519 image signature, sent in 
 # FW_UP_COMMIT status bytes. 'S' is distinct from '!' on purpose: the firmware's
 # signature check sits behind the CRC result, so both refusals used to arrive as
 # '!' and the user was told "CRC mismatch" when the image was simply unsigned.
-COMMIT_ACK             = ord('.')
+# '?' means the keyboard has put an ACCEPT/REJECT prompt on its keycaps and is
+# waiting for a physical keypress — re-poll COMMIT until it resolves.
+COMMIT_ACK              = ord('.')
 COMMIT_REFUSED_UNSIGNED = ord('S')
+COMMIT_AWAITING_CONFIRM = ord('?')
+
+# How long to keep re-polling COMMIT while the keyboard shows the prompt. The
+# firmware's own window is FW_CONFIRM_WINDOW_MS (60 s) after which it answers 'S'
+# by itself; the extra margin only covers the poll cadence, so the host never gives
+# up on a decision the keyboard is still willing to accept.
+CONFIRM_POLL_TIMEOUT_S = 75.0
+CONFIRM_POLL_INTERVAL_S = 1.0
 
 FW_SIG_LEN = 64
 
@@ -161,9 +171,14 @@ def _abort_cleanup(hid) -> None:
     COMMIT doubles as the abort signal.  The expected '!' (CRC mismatch) reply
     is ignored; the partially-staged image is never marked valid (the staging
     header is only stamped on a CRC match).
+
+    The 'x' marker additionally cancels a pending unsigned-image confirmation, so
+    an abort takes the ACCEPT/REJECT prompt off the keycaps instead of leaving the
+    board modal for the rest of its 60 s window.  Cancelling is safe to drive over
+    HID because it can only ever DENY — accepting stays a physical act.
     """
     try:
-        pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_COMMIT])
+        pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_COMMIT, ord('x')])
         hid.send_and_read(pkt, timeout=5000)
     except Exception:   # noqa: BLE001 — cleanup must never mask the original error
         pass
@@ -387,15 +402,37 @@ def flash_firmware(hid, bin_path: str, progress_cb=None, cancel_flag: list = Non
     report(98, "Verifying the staged image (CRC32)…")
     pkt = bytearray([HID_POLYKYBD, CMD_FW_UP_COMMIT])
     ok, reply = hid.send_and_read(pkt, timeout=5000)
+
+    # FW-2: an unsigned or badly signed image is not refused outright — the
+    # keyboard turns its keycaps into an ACCEPT/REJECT prompt and waits for a
+    # physical keypress. Re-poll COMMIT until it resolves; the staged image and
+    # its CRC are untouched between polls, so this is free on the keyboard side.
+    if ok and len(reply) >= 3 and reply[2] == COMMIT_AWAITING_CONFIRM:
+        report(98, "This firmware is not signed. Confirm on the KEYBOARD: press "
+                   "the highlighted A (accept) or R (reject) key.")
+        deadline = time.monotonic() + CONFIRM_POLL_TIMEOUT_S
+        while time.monotonic() < deadline:
+            time.sleep(CONFIRM_POLL_INTERVAL_S)
+            ok, reply = hid.send_and_read(pkt, timeout=5000)
+            if not ok or len(reply) < 3 or reply[2] != COMMIT_AWAITING_CONFIRM:
+                break
+        else:
+            hid.close_interface()
+            return False, (
+                "Timed out waiting for confirmation on the keyboard.\n\n"
+                "The keyboard asks for a physical ACCEPT/REJECT because this image "
+                "is not validly signed. Start the flash again and press the "
+                "highlighted A key on the left half within a minute."
+            )
+
     if ok and len(reply) >= 3 and reply[2] == COMMIT_REFUSED_UNSIGNED:
         hid.close_interface()
         return False, (
             "The keyboard refused this firmware: it is not validly signed.\n\n"
             "Released firmware ships a matching '.sig' file — download it next to "
             "the .bin and flash again.\n\n"
-            "To flash a build you compiled yourself, press the 'allow unsigned "
-            "firmware' key on the keyboard (settings layer) and start the flash "
-            "again within two minutes."
+            "To flash a build you compiled yourself, flash again and press the "
+            "highlighted A (accept) key on the keyboard when it asks."
         )
     if not ok or len(reply) < 3 or reply[2] != COMMIT_ACK:
         hid.close_interface()
