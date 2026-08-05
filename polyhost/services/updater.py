@@ -582,6 +582,7 @@ def _run_pip(args: list, label: str, line_cb=None) -> None:
 # on the platforms where the attributes simply don't exist.
 WIN_DETACHED_PROCESS = getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
 WIN_CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+WIN_CREATE_BREAKAWAY_FROM_JOB = getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0x01000000)
 
 
 def detached_creationflags() -> int:
@@ -682,7 +683,14 @@ for src, dst in {pairs!r}:
                 note(f"failed to copy {{src}} -> {{dst}}: {{e}}")
 
 note("relaunching " + " ".join({restart_args!r}))
-subprocess.Popen({restart_args!r}, **{popen_kwargs!r})
+try:
+    # Break out of any job object we inherited (a VS Code debug session tears
+    # its whole job down); a job that forbids it fails with ERROR_ACCESS_DENIED,
+    # so fall back to the plain detached spawn. Mirrors updater.spawn_detached.
+    subprocess.Popen({restart_args!r}, **dict({popen_kwargs!r},
+                     creationflags={creationflags!r} | {breakaway!r}))
+except OSError:
+    subprocess.Popen({restart_args!r}, **{popen_kwargs!r})
 shutil.rmtree({tmp_dir!r}, ignore_errors=True)
 """
 
@@ -702,6 +710,8 @@ def _write_relay_script(locked: list, tmp_dir: Path) -> Path:
             pairs=locked,
             restart_args=restart_args,
             popen_kwargs=detached_popen_kwargs(),
+            creationflags=detached_creationflags(),
+            breakaway=WIN_CREATE_BREAKAWAY_FROM_JOB if sys.platform == "win32" else 0,
             # Where main_app's _setup_startup_logging writes (cwd-relative), so
             # the relay's lines land beside the launch trace they explain.
             log_path=str(Path("startup_log.txt").resolve()),
@@ -747,6 +757,32 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
     if requirements.is_file():
         _run_pip(["install", "-r", str(requirements)], "install -r requirements.txt", line_cb)
     return locked
+
+
+def spawn_detached(argv):
+    """Spawn ``argv`` so it survives this process going away. Returns the Popen.
+
+    On top of :func:`detached_popen_kwargs` this *first* tries
+    ``CREATE_BREAKAWAY_FROM_JOB``, because detaching the console is not enough
+    when the parent lives inside a **job object** — a VS Code debug session, and
+    some terminals, launch that way and tear the whole job down when the session
+    ends, taking a plain child with it no matter how it was created. Job
+    membership is inherited; breaking away is the only way out.
+
+    A job that forbids breakaway fails the spawn with ``ERROR_ACCESS_DENIED``
+    (WinError 5), so fall back to the plain detached spawn rather than not
+    starting the app at all — the ordinary autostart/tray case is in no job and
+    is unaffected either way (the flag is ignored outside a job).
+    """
+    kwargs = detached_popen_kwargs()
+    if sys.platform == "win32":
+        try:
+            return subprocess.Popen(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+                argv, **{**kwargs,
+                         "creationflags": kwargs["creationflags"] | WIN_CREATE_BREAKAWAY_FROM_JOB})
+        except OSError as e:
+            log.debug("Job breakaway refused (%s); spawning detached without it.", e)
+    return subprocess.Popen(argv, **kwargs)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
 
 
 Preflight = namedtuple("Preflight", ["name", "ok", "blocking", "detail"])
@@ -828,7 +864,7 @@ def restart_app() -> None:
     args = [relaunch_executable(), "-m", "polyhost", *sys.argv[1:]]
     log.info("Restarting: %s", args)
     if sys.platform == "win32":
-        subprocess.Popen(args, **detached_popen_kwargs())
+        spawn_detached(args)
         sys.exit(0)
     try:
         os.execv(args[0], args)

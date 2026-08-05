@@ -5,9 +5,61 @@ import shlex
 import subprocess
 from pathlib import Path
 
+from platformdirs import user_config_dir
+
 # Name used for the autostart entry across all mechanisms (scheduled task,
 # Startup-folder shortcut, .desktop file, launchd plist).
 APP_NAME = "PolyHost"
+
+# Generated launcher scripts, by platform. Written by this module, referenced by
+# the registered autostart entry — never checked in.
+_LAUNCHER_NAMES = ("start_polyhost.bat", "start_polyhost_hidden.vbs",
+                   "start_polyhost.sh")
+
+
+def launcher_dir():
+    """Directory holding the generated launcher scripts.
+
+    Deliberately **NOT the checkout**. The launchers used to live in
+    ``polyhost/`` under a ``.gitignore`` entry, so a ``git clean -xdf`` deleted
+    the exact file the registered logon task points at — leaving a task that
+    still reads ``State: Ready`` with ``LastTaskResult: 0`` and silently starts
+    nothing at the next logon (field, 2026-08-05). Nothing detects it either:
+    the only process that could report the breakage regenerates the file on its
+    way up, so the broken window is precisely "cleaned, and not started since".
+
+    The scripts carry absolute paths to the venv and the repo root, so their own
+    location is functionally irrelevant — put them beside ``settings.yaml``,
+    where only we manage them.
+    """
+    d = Path(user_config_dir(APP_NAME))
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _legacy_launcher_paths(script_path=None):
+    """The pre-``launcher_dir()`` in-checkout launcher locations.
+
+    ``script_path`` is ``main_app.__file__``; without one, fall back to this
+    module's own package dir — the same directory in every real install."""
+    parent = (Path(script_path).resolve().parent if script_path
+              else Path(__file__).resolve().parent.parent)
+    return [parent / name for name in _LAUNCHER_NAMES]
+
+
+def _remove_legacy_launchers(script_path):
+    """Delete in-checkout launchers left by an older version.
+
+    Only called once the new entry is registered and pointing at
+    :func:`launcher_dir`, so this can never remove a launcher still in use.
+    """
+    for old in _legacy_launcher_paths(script_path):
+        try:
+            if old.exists():
+                old.unlink()
+                print(f"Removed legacy launcher: {old}")
+        except OSError as e:
+            print(f"Could not remove legacy launcher {old}: {e}")
 
 def is_frozen():
     """Detect if running in PyInstaller bundle or similar."""
@@ -204,7 +256,7 @@ def create_windows_bat_wrapper(venv_path, script_path, args="", wrapper_path=Non
     venv_path = Path(venv_path)
     script_path = Path(script_path)
     if wrapper_path is None:
-        wrapper_path = script_path.parent / "start_polyhost.bat"
+        wrapper_path = launcher_dir() / "start_polyhost.bat"
 
     activate_bat = venv_path / "Scripts" / "activate.bat"
 
@@ -292,7 +344,7 @@ def _windows_launch_target(script_path, args):
     launcher = python_exe.with_name("pythonw.exe")
     if not launcher.exists():
         launcher = python_exe
-    wrapper = script_path.parent / "start_polyhost.bat"
+    wrapper = launcher_dir() / "start_polyhost.bat"
     content = f'@echo off\ncd "{repo_root}"\n"{launcher}" -m polyhost {win_args}\n'
     wrapper.write_text(content, encoding="utf-8")
     print(f"Windows simple wrapper created at: {wrapper}")
@@ -361,7 +413,7 @@ def create_unix_shell_wrapper(venv_path, script_path, args="", wrapper_path=None
     venv_path = Path(venv_path)
     script_path = Path(script_path)
     if wrapper_path is None:
-        wrapper_path = script_path.parent / "start_polyhost.sh"
+        wrapper_path = launcher_dir() / "start_polyhost.sh"
 
     activate_sh = venv_path / "bin" / "activate"
 
@@ -519,6 +571,16 @@ def remove_autostart(app_name=APP_NAME):
             plist.unlink()
             print(f"Removed launchd plist: {plist}")
 
+    # The generated launchers are ours alone (nothing else references them once
+    # the entry above is gone), in both the current and the legacy location.
+    for script in [launcher_dir() / n for n in _LAUNCHER_NAMES] + _legacy_launcher_paths():
+        try:
+            if script.exists():
+                script.unlink()
+                print(f"Removed launcher: {script}")
+        except OSError as e:
+            print(f"Could not remove launcher {script}: {e}")
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -542,6 +604,12 @@ def setup_autostart_for_app(script_path, args):
         if is_frozen():
             print(f"Detected PyInstaller bundle: {execute} {win_args}")
         method = _install_windows_autostart(execute, win_args, working_dir, icon_path)
+        if method != "none":
+            # Now that the entry points at launcher_dir(), the in-checkout copies
+            # an older version left behind are dead weight a `git clean` would
+            # have deleted anyway — and leaving them invites re-registering the
+            # fragile path later.
+            _remove_legacy_launchers(script_path)
         print(f"Autostart in place: {method}")
         return method
 
@@ -558,7 +626,7 @@ def setup_autostart_for_app(script_path, args):
         # Run the package as a module from the repo root (`-m polyhost`, not
         # the script by path — the latter breaks `polyhost.*` imports).
         python_exe = Path(sys.executable).resolve()
-        execute_this = script_path.parent / "start_polyhost.sh"
+        execute_this = launcher_dir() / "start_polyhost.sh"
         content = (f'#!/bin/bash\ncd "{script_path.parent.parent}"\n'
                    f'"{python_exe}" -m polyhost {joined_args}\n')
         if _write_executable_if_changed(execute_this, content):
@@ -566,5 +634,7 @@ def setup_autostart_for_app(script_path, args):
 
     add_to_startup(execute_this, APP_NAME, icon_path)
     status = get_autostart_status()
+    if status != "none":
+        _remove_legacy_launchers(script_path)
     print(f"Autostart in place: {status}")
     return status

@@ -812,6 +812,43 @@ class TestInstallerPreflight(unittest.TestCase):
         self.assertTrue(any("autostart entry" in a[1] for a in rec.args_for("progress")))
 
 
+class TestSpawnDetached(unittest.TestCase):
+    """Detaching the console is not enough inside a job object.
+
+    A VS Code debug session (and some terminals) launch the app into a job and
+    tear the whole job down when the session ends, taking any child with it.
+    Breaking away is the only escape — but a job may forbid it, and then the
+    spawn must still happen rather than the app never coming back.
+    """
+
+    def test_tries_job_breakaway_first_on_windows(self):
+        with mock.patch.object(updater.sys, "platform", "win32"), \
+             mock.patch.object(updater.subprocess, "Popen") as popen:
+            updater.spawn_detached(["python.exe", "-m", "polyhost"])
+        popen.assert_called_once()
+        self.assertTrue(popen.call_args.kwargs["creationflags"]
+                        & updater.WIN_CREATE_BREAKAWAY_FROM_JOB)
+
+    def test_falls_back_when_the_job_forbids_breakaway(self):
+        # CreateProcess fails with ERROR_ACCESS_DENIED when the job has no
+        # JOB_OBJECT_LIMIT_BREAKAWAY_OK — spawn without the flag instead.
+        with mock.patch.object(updater.sys, "platform", "win32"), \
+             mock.patch.object(updater.subprocess, "Popen",
+                               side_effect=[OSError(5, "Access is denied"), "proc"]) as popen:
+            self.assertEqual(updater.spawn_detached(["python.exe"]), "proc")
+        self.assertEqual(popen.call_count, 2)
+        retry_flags = popen.call_args_list[1].kwargs["creationflags"]
+        self.assertFalse(retry_flags & updater.WIN_CREATE_BREAKAWAY_FROM_JOB)
+        self.assertTrue(retry_flags & updater.WIN_DETACHED_PROCESS)
+
+    def test_posix_spawns_once_without_creationflags(self):
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+             mock.patch.object(updater.subprocess, "Popen") as popen:
+            updater.spawn_detached(["python3", "-m", "polyhost"])
+        popen.assert_called_once()
+        self.assertNotIn("creationflags", popen.call_args.kwargs)
+
+
 class TestRelaunchExecutable(unittest.TestCase):
     """The relaunch interpreter, which a restart otherwise inherits forever.
 

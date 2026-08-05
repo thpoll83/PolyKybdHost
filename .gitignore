@@ -166,6 +166,10 @@ polykybd_console.*
 
 polyhost/device/rle_test
 polyhost/device/rle_native
+# Legacy launcher location. The generated launchers now live in the user config
+# dir (add_to_startup.launcher_dir()) precisely so `git clean -xdf` can't delete
+# the file the registered autostart entry points at; kept so a leftover from an
+# older version doesn't show up as untracked before the next launch removes it.
 polyhost/start_polyhost.*
 
 profile.*
