@@ -1127,8 +1127,28 @@ class PolyCore:
             lambda c: self.keeb.set_dynamic_keycode(int(layer), int(row), int(col), int(keycode)))
 
     def get_fw_version(self):
-        """Parsed firmware version string (cached; no device I/O)."""
-        return self.keeb.get_sw_version()
+        """Firmware version read LIVE from the keyboard (HID cmd 0x43).
+
+        ⚠️ This deliberately does device I/O rather than returning the cached
+        ``keeb.get_sw_version()`` string parsed at the last GET_ID. The whole
+        reason to ask is to find out what is *running right now* — typically
+        straight after a flash — and a cache cannot answer that: the reconnect
+        probe is suspended for the duration of a flash (``worker.exclusive()``),
+        so the cached value is pinned to the state before it. It reported the
+        pre-flash version after a firmware update had demonstrably installed, and
+        was believed (field, 2026-08-05).
+
+        Failing loudly is part of the fix: while the worker is suspended
+        ``_device_call`` returns the "suspended" error instead of a stale string,
+        which is the honest answer to "what is on the keyboard" mid-flash.
+        """
+        ok, payload = self._device_call(
+            "fw_version", lambda c: hid_fw_up.get_fw_version(self.keeb.hid))
+        if not ok:
+            return False, payload
+        if not payload:
+            return False, "The keyboard did not answer the firmware-version query."
+        return True, payload
 
     def execute_commands(self, lines):
         """Queue a (cancel-aware) command script across every device entry.

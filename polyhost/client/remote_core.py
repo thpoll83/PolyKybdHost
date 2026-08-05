@@ -398,10 +398,17 @@ class RemoteCore:
             return False
 
     def get_fw_version(self):
+        """Mirror of PolyCore.get_fw_version — a LIVE query, so it can fail.
+
+        The fallback is the cached GET_ID string, and it is labelled as such: the
+        point of asking is to learn what is running right now, and silently
+        substituting a cache for that is what made the pre-flash version look
+        authoritative once (field, 2026-08-05)."""
         try:
-            return self._rpc_call(p.M_FW_VERSION)
-        except RpcError:
-            return self.kb_sw_version
+            return True, self._rpc_call(p.M_FW_VERSION)
+        except RpcError as e:
+            return False, (f"{e} (last known from the connect handshake: "
+                           f"{self.kb_sw_version or 'unknown'})")
 
     def flash_firmware(self, path, apply=False):
         return self._device(p.M_FW_FLASH, {"path": path, "apply": bool(apply)})

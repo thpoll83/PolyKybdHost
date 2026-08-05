@@ -312,8 +312,18 @@ def _cmd_fw(client, args):
                 return 1
         print("error: connection closed before flash completed", file=sys.stderr)
         return 1
-    # default: version
-    print(client.call(protocol.M_FW_VERSION))
+    # default: version — a LIVE read off the keyboard (HID cmd 0x43), not the
+    # cached connect-handshake string, so it is usable as evidence right after a
+    # flash. Size + CRC come back in the same reply; print them, since "is this
+    # the image I just sent?" is the actual question being asked.
+    res = client.call(protocol.M_FW_VERSION) or {}
+    if isinstance(res, dict):
+        print(res.get("version", "?"))
+        size, crc = res.get("fw_size"), res.get("fw_crc")
+        if size is not None and crc is not None:
+            print(f"  image {size} bytes, crc32 0x{crc:08x}")
+    else:                                   # older daemon: bare version string
+        print(res)
     return 0
 
 
