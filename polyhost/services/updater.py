@@ -749,6 +749,66 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
     return locked
 
 
+Preflight = namedtuple("Preflight", ["name", "ok", "blocking", "detail"])
+
+
+def preflight() -> list:
+    """Check — BEFORE anything is downloaded or overwritten — that an update can
+    apply *and* that the app can come back afterwards.
+
+    The second half is the one that bites: an update that copies perfectly and
+    then fails to relaunch looks exactly like "the app never came back", and by
+    then the tree is already rewritten. So this also reports the things the
+    *restart* depends on (the relaunch interpreter, the autostart entry), not
+    only the things the *copy* depends on.
+
+    Returns a list of :class:`Preflight` findings. ``blocking`` marks the ones
+    that make the update impossible (nothing has changed yet, so the caller can
+    still abort cleanly); the rest are warnings worth showing the user.
+    """
+    findings = []
+
+    try:
+        findings.append(Preflight("install dir", True, True, f"writable: {get_install_root()}"))
+    except NotWritableError as e:
+        findings.append(Preflight("install dir", False, True, f"not writable: {e}"))
+    except Exception as e:  # noqa: BLE001 — report, never raise out of a check
+        findings.append(Preflight("install dir", False, True, f"{type(e).__name__}: {e}"))
+
+    # The download + extract land here before a single install file is touched.
+    tmp = tempfile.gettempdir()
+    tmp_ok = os.access(tmp, os.W_OK)
+    findings.append(Preflight("temp dir", tmp_ok, True,
+                              tmp if tmp_ok else f"not writable: {tmp}"))
+
+    exe = Path(relaunch_executable())
+    if not exe.exists():
+        findings.append(Preflight("relaunch interpreter", False, False, f"missing: {exe}"))
+    elif sys.platform == "win32" and exe.name.lower() != "pythonw.exe":
+        # Not fatal, but the restart then owns a console window — and closing
+        # that window kills the app right after it came back.
+        findings.append(Preflight("relaunch interpreter", False, False,
+                                  f"{exe} (no pythonw.exe beside it — the restarted "
+                                  f"app will own a console window)"))
+    else:
+        findings.append(Preflight("relaunch interpreter", True, False, str(exe)))
+
+    try:
+        from polyhost.services.add_to_startup import get_autostart_status
+        status = get_autostart_status()
+        findings.append(Preflight("autostart entry", status != "none", False, status))
+    except Exception as e:  # noqa: BLE001
+        findings.append(Preflight("autostart entry", False, False,
+                                  f"could not read: {type(e).__name__}: {e}"))
+
+    return findings
+
+
+def preflight_blockers(findings) -> list:
+    """The findings that make an update impossible (as opposed to a warning)."""
+    return [f for f in findings if not f.ok and f.blocking]
+
+
 def restart_app() -> None:
     """Re-exec the app. Uses subprocess+exit on Windows (execv argv issues).
 
@@ -883,6 +943,24 @@ class UpdateInstaller(threading.Thread):
         self._on_failed = on_failed
 
     def run(self):
+        # Preflight FIRST: nothing has been downloaded or overwritten yet, so a
+        # blocker here aborts with the install tree untouched. Every entry is
+        # logged; warnings also go out as progress lines so they show up in the
+        # tray dialog and in `polyctl update install`, not only in the log.
+        findings = preflight()
+        for f in findings:
+            (log.info if f.ok else (log.error if f.blocking else log.warning))(
+                "Update preflight — %s: %s", f.name, f.detail)
+        blockers = preflight_blockers(findings)
+        if blockers:
+            _fire(self._on_failed,
+                  "Preflight failed: "
+                  + "; ".join(f"{f.name}: {f.detail}" for f in blockers))
+            return
+        for f in findings:
+            if not f.ok:
+                _fire(self._on_progress, -1, f"Warning — {f.name}: {f.detail}")
+
         try:
             install_root = get_install_root()
         except NotWritableError as e:

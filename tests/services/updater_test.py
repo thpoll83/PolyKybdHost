@@ -721,6 +721,97 @@ class TestRestartApp(unittest.TestCase):
         self.assertNotIn("creationflags", updater.detached_popen_kwargs())
 
 
+class TestPreflight(unittest.TestCase):
+    """What must hold BEFORE an update is applied.
+
+    Half of it is about the copy (writable install/temp dirs), half about the
+    *restart* — an update that copies perfectly and then can't relaunch is
+    indistinguishable from "the app never came back", and by then the tree has
+    already been rewritten.
+    """
+
+    def _finding(self, findings, name):
+        return next(f for f in findings if f.name == name)
+
+    def test_not_writable_install_dir_is_blocking(self):
+        with mock.patch.object(updater, "get_install_root",
+                               side_effect=updater.NotWritableError("/install")):
+            findings = updater.preflight()
+        f = self._finding(findings, "install dir")
+        self.assertFalse(f.ok)
+        self.assertTrue(f.blocking)
+        self.assertEqual([b.name for b in updater.preflight_blockers(findings)],
+                         ["install dir"])
+
+    def test_missing_autostart_is_a_warning_not_a_blocker(self):
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch("polyhost.services.add_to_startup.get_autostart_status",
+                        return_value="none"):
+            findings = updater.preflight()
+        f = self._finding(findings, "autostart entry")
+        self.assertFalse(f.ok)
+        self.assertFalse(f.blocking)
+        self.assertEqual(updater.preflight_blockers(findings), [])
+
+    def test_console_owning_interpreter_is_flagged_on_windows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            exe = Path(tmp) / "python.exe"      # no pythonw.exe beside it
+            exe.write_text("")
+            with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+                 mock.patch.object(updater.sys, "platform", "win32"), \
+                 mock.patch.object(updater.sys, "executable", str(exe)):
+                findings = updater.preflight()
+        f = self._finding(findings, "relaunch interpreter")
+        self.assertFalse(f.ok)
+        self.assertFalse(f.blocking)
+        self.assertIn("console", f.detail)
+
+    def test_autostart_read_failure_does_not_raise(self):
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch("polyhost.services.add_to_startup.get_autostart_status",
+                        side_effect=OSError("schtasks missing")):
+            findings = updater.preflight()
+        f = self._finding(findings, "autostart entry")
+        self.assertFalse(f.ok)
+        self.assertFalse(f.blocking)
+
+
+class TestInstallerPreflight(unittest.TestCase):
+    """The installer runs preflight before the first byte is downloaded."""
+
+    def _make(self, rec):
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        return updater.UpdateInstaller(
+            rel,
+            on_progress=rec.make("progress"), on_finished_ok=rec.make("finished_ok"),
+            on_relay_needed=rec.make("relay_needed"), on_failed=rec.make("failed"))
+
+    def test_blocker_aborts_before_downloading_anything(self):
+        rec = _Recorder()
+        blocked = [updater.Preflight("install dir", False, True, "not writable: /install")]
+        with mock.patch.object(updater, "preflight", return_value=blocked), \
+             mock.patch.object(updater, "download_and_extract") as dl, \
+             mock.patch.object(updater, "apply_update") as apply_:
+            self._make(rec).run()
+        dl.assert_not_called()      # nothing downloaded…
+        apply_.assert_not_called()  # …and nothing overwritten
+        self.assertEqual(rec.names, ["failed"])
+        self.assertIn("/install", rec.args_for("failed")[0][0])
+
+    def test_warning_is_surfaced_but_does_not_stop_the_update(self):
+        rec = _Recorder()
+        warned = [updater.Preflight("autostart entry", False, False, "none")]
+        with mock.patch.object(updater, "preflight", return_value=warned), \
+             mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater, "download_and_extract", return_value=Path("/extracted")), \
+             mock.patch.object(updater, "apply_update", return_value=[]), \
+             mock.patch.object(updater.shutil, "rmtree"), \
+             mock.patch.object(updater.tempfile, "mkdtemp", return_value="/tmp/x"):
+            self._make(rec).run()
+        self.assertIn("finished_ok", rec.names)
+        self.assertTrue(any("autostart entry" in a[1] for a in rec.args_for("progress")))
+
+
 class TestRelaunchExecutable(unittest.TestCase):
     """The relaunch interpreter, which a restart otherwise inherits forever.
 

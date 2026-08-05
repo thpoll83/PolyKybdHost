@@ -677,6 +677,15 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     DEVNULL, so its old `print(..., file=sys.stderr)` on a failed DLL copy went
     nowhere. It is the last step of an update — a silent failure there reads as "the
     app never came back" with no evidence at all.
+  - **`updater.preflight()` runs at the top of `UpdateInstaller.run()`** — the one
+    choke point the tray, the daemon (`PolyCore.install_update`) and `polyctl update
+    install` all pass through. It checks the *copy* (install dir + temp dir writable,
+    both `blocking`) **and the restart** (the relaunch interpreter, the autostart
+    entry, both warnings): an update that copies perfectly and then can't relaunch is
+    indistinguishable from "the app never came back", except that by then the tree is
+    already rewritten. A blocker aborts **before the download**, so nothing has
+    changed; warnings are logged *and* emitted as `update_progress` lines so they
+    reach the tray dialog and the CLI, not just the log.
   - `get_autostart_status()` reports which mechanism is in place (printed at startup); `remove_autostart()` tears all of them down. `--portable` removes any existing entry rather than just skipping registration.
   - ⚠️ **The Windows task is named `PolyHost` (`APP_NAME`), NOT `PolyKybdHost`** — so
     `Get-ScheduledTask -TaskName PolyKybdHost*` returns nothing on a perfectly healthy
