@@ -533,6 +533,17 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   it — a hardcoded "fontpack"/"updating keyboard fonts" reported a `.plyx` install as a font
   pack (field 2026-08). A missing `kind` means font pack (older cores), so the fallback is
   the previous wording.
+  - ⚠️ **`install_doompack` sends UNSIGNED EXECUTABLE CODE, and nothing on either side
+    checks a signature for it.** The `.sig` handling in `hid_fw_up` covers the *firmware*
+    image only; the font-pack transport has no equivalent, and the firmware's
+    `fw_staging_check_signature()` is reached only on the `FW_TARGET_FIRMWARE` target. The
+    keyboard then *branches into* a `.plyx` it validated with a CRC32 (no MPU on the M0+),
+    so anything that can talk raw HID can flash a crafted pack, select `IDLE_STYLE_IDDQD`
+    over cmd 28, and get code execution on the next idle. Do **not** describe the keyboard
+    as "signed firmware, so a malicious flash is covered" — it is not. Tracked as **FW-9**
+    (open, high) in `polykybd-ctnd/docs/SECURITY_AUDIT.md`; the fix is firmware-side
+    (verify the pack at load time), so there is nothing for the host to do beyond not
+    over-claiming.
 - **WinCompose install from the tray (Windows)**: WinCompose is what gives the keyboard real
   unicode output on Windows (`polyhost/input/unicode_input.py` — `wincompose_running()` picks
   `InputMethod.WinCompose` over the far more limited native path), so a fresh Windows box has

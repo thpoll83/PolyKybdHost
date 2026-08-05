@@ -24,7 +24,7 @@
             "request": "launch",
             "module": "polyhost",
             "console": "integratedTerminal",
-            "args": ["--debug", "1"],
+            "args": ["--dev", "1"],
         },
         {
             "name": "Debug PolyForwarder to localhost",
