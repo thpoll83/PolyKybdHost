@@ -244,6 +244,16 @@ the repo's initial commit instead, which costs nothing and leaves the content id
    `GITHUB_TOKEN` or `gh auth token`. Tell the user to run it in each repo after you've
    staged the notes. ⚠️ **Merging the notes/tooling PR bumps the version past the prepared
    one** — that's expected; the script still publishes the prepared tag from the branch.
+   - ⚠️ **But if a PR merges between staging and publishing, re-read the staged NOTES,
+     not just the tag.** The drift above is benign when nothing else changed. It is not
+     when the merged PR changed the story: a firmware release was staged as
+     `PolyKybd-fw-v0.10.0.md` saying *"the released `.bin` here is the stock 125 MHz
+     build"*, then a `bump:minor` PR made 200 MHz the default and moved the tree to
+     0.11.0 — leaving prose that was flatly wrong for a tag that would never ship
+     (2026-08-05). Restage under the new tag and fix any cross-references (the host
+     notes named the firmware version too). `prepared_tags()` sorts by version *tuple*,
+     so the superseded file is never auto-picked — but it stays on the branch, so
+     **never `--tag` a prepared-but-superseded version.**
    - **Alternatives** (if they prefer): the GitHub UI — Draft a new release → pick the tag →
      leave the body **empty** → Publish; CI's `release: published` run then fills the
      crafted title+notes from the branch (`gh release edit`) and, for firmware, attaches

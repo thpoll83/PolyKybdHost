@@ -154,12 +154,20 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     re-erase the slave's 4 KB staging header sector.
   - ⚠️ **A host that predates `?` cannot flash an unsigned image at all** — it falls
     through to the generic failure branch and the progress dialog simply stops, still
-    holding `worker.exclusive()`. That has a second-order effect worth recognising:
-    **`polyctl fw version` is CACHED, not a live query** (`PolyCore.get_fw_version()` →
-    `keeb.get_sw_version()`, the string parsed at the last GET_ID), and while the worker
-    is suspended nothing re-probes — so it keeps reporting the *pre-flash* version and
-    reads as "the new firmware never installed". Trust what the keycaps are doing over
-    that number; confirm with a fresh connect (close the dialog / restart the host).
+    holding `worker.exclusive()`. Ship the host release before (or with) an enforcing
+    firmware release: the firmware cannot detect an old host, so ordering and the
+    "download the `.sig` too" wording in the notes are the only mitigations.
+  - **`polyctl fw version` is a LIVE query (HID cmd 0x43) — it used to be a cache, and
+    the cache lied.** `PolyCore.get_fw_version()` returned `keeb.get_sw_version()`, the
+    string parsed at the last GET_ID. That is the one command whose whole purpose is
+    "what is running right now", and it is asked exactly when a cache cannot answer:
+    straight after a flash, while `worker.exclusive()` has the reconnect probe suspended
+    so nothing re-probes. It reported the *pre-flash* version after an update had
+    demonstrably installed — the keycaps were already drawing a prompt only the new
+    firmware can render — and it was believed (field, 2026-08-05). It now does device
+    I/O through `_device_call`, returns `(ok, {version, fw_size, fw_crc})`, and **fails
+    loudly** ("suspended") mid-flash rather than handing back a stale string. Don't
+    "optimise" it back to the cached value; the failure is the feature.
   - **The host may CANCEL the prompt but never accept it** — a COMMIT carrying `'x'`
     in `data[2]` withdraws it (`_abort_cleanup` sends that form). Cancelling can only
     ever deny, so it is safe over the very channel signing defends; accepting stays a
