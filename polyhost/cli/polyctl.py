@@ -159,11 +159,16 @@ def _cmd_lang(client, args):
 
 def _cmd_brightness(client, args):
     if args.auto:
+        if args.value is not None:
+            print("error: give a brightness value OR --auto, not both", file=sys.stderr)
+            return 2
         # Deliberate re-assert of the host's automatic brightness. This is the
         # way BACK from a manual level: the firmware leaves auto mode on any
-        # manual set and never re-engages on its own.
+        # manual set and never re-engages on its own. The core SUBMITS this to
+        # its worker rather than running it inline, so all we can honestly
+        # report is that it was queued.
         client.call(protocol.M_DAYLIGHT_REFRESH)
-        print("automatic (daylight) brightness re-applied")
+        print("automatic (daylight) brightness queued")
         return 0
     if args.value is None:
         print("error: give a brightness value (0..50) or --auto", file=sys.stderr)

@@ -11,6 +11,7 @@ tests cover both roots.
 Needs a QApplication (offscreen) because the enable state lives on QActions.
 """
 import unittest
+from unittest import mock
 
 from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QApplication, QMenu
@@ -50,7 +51,7 @@ class TestUpdateEnabled(unittest.TestCase):
 
     def test_maintenance_holds_only_the_user_facing_repair_actions(self):
         """The diagnostic/bulk half must NOT leak back into the normal menu."""
-        cm, menu = _build()
+        cm, _menu = _build()
         maintenance = cm._maintenance_action.menu()
         texts = [a.text() for a in maintenance.actions() if not a.isSeparator()]
         self.assertEqual(texts, ["Fix Left/Right Side", "Reset overlays",
@@ -88,13 +89,55 @@ class TestUpdateEnabled(unittest.TestCase):
         # (a mismatched keyboard can be flashed, not dimmed).
         cm, menu = _build()
         cm.update_enabled(False, True)
-        brightness = [a for a in menu.actions() if a.text() == "Brightness"][0]
+        brightness = next(a for a in menu.actions() if a.text() == "Brightness")
         self.assertFalse(brightness.isEnabled())
 
     def test_normal_mode_builds_no_developer_actions(self):
-        cm, menu = _build(developer=False)
+        _cm, menu = _build(developer=False)
         texts = [a.text() for a in menu.actions() if not a.isSeparator()]
         self.assertEqual(texts, ["Brightness", "Maintenance"])
+
+
+class TestFontpackStatusTable(unittest.TestCase):
+    """The Developer -> Font Pack -> per-bundle status table.
+
+    It is pure string formatting over the core's payload, and it CRASHED on
+    every open (`str.format() got multiple values for keyword argument 'stale'`)
+    because the template took an explicit stale= alongside **bundle, which
+    already carries a `stale` key. Nothing rendered it in a test, so nothing
+    caught it — hence this one.
+    """
+
+    PAYLOAD = (True, {"shipped": True, "bundles": [
+        {"id": "symbol", "index": 0, "device_version": 4,
+         "shipped_version": 5, "stale": True},
+        {"id": "emoji", "index": 5, "device_version": 1,
+         "shipped_version": 1, "stale": False}]})
+
+    def _render(self, payload):
+        cm, _menu = _build()
+        cm.parent.core = mock.Mock(**{"fontpack_bundle_status.return_value": payload})
+        with mock.patch.object(CommandsSubMenu, "_info") as info:
+            cm.show_fontpack_status()
+        info.assert_called_once()
+        return info.call_args[0][1]
+
+    def test_renders_every_bundle_with_its_state(self):
+        html = self._render(self.PAYLOAD)
+        self.assertIn("symbol", html)
+        self.assertIn("emoji", html)
+        # Device vs shipped, and the derived word for each row.
+        self.assertIn(">4<", html)
+        self.assertIn(">5<", html)
+        self.assertIn(">stale<", html)
+        self.assertIn(">ok<", html)
+
+    def test_no_shipped_bundles_says_so(self):
+        self.assertIn("no font-pack bundles",
+                      self._render((True, {"shipped": False, "bundles": []})))
+
+    def test_read_failure_is_reported_not_raised(self):
+        self.assertIn("no device", self._render((False, "no device")))
 
 
 if __name__ == '__main__':

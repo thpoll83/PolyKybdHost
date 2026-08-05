@@ -392,11 +392,17 @@ def _spawned_daemon_flags(args, verbosity=0):
     entry (the GUI owns the autostart lifecycle in daemon mode).
 
     ``verbosity`` is the RESOLVED level (see resolve_dev), so a launch via the
-    deprecated ``--debug`` still reaches the daemon as ``--dev``. Only the level
-    travels: with no flag the daemon reads the developer_mode setting itself,
-    the same file this process read."""
+    deprecated ``--debug`` still reaches the daemon as ``--dev``.
+
+    ⚠️ The flag travels whenever it was GIVEN, including ``--dev 0`` — the
+    daemon re-resolves developer mode from its own argv, so omitting a falsey
+    level would let it fall back to the persisted ``developer_mode`` setting and
+    re-enable developer behaviour (notably ``allow_key_injection``, which lives
+    in the core) against an explicit "off" for this run. With no flag at all we
+    deliberately pass nothing, so the daemon reads the same setting file we did.
+    """
     flags = ["--no-autostart"]
-    if verbosity:
+    if args.dev is not None or args.debug_legacy is not None:
         flags += ["--dev", str(verbosity)]
     if args.ignore_version:
         flags.append("--ignore-version")

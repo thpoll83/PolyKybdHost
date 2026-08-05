@@ -97,24 +97,48 @@ class ResolveDevTest(unittest.TestCase):
 
 
 class SpawnedDaemonFlagsTest(unittest.TestCase):
-    """The GUI-spawned daemon inherits the RESOLVED verbosity, as --dev."""
+    """What a GUI-spawned daemon inherits.
+
+    The daemon re-resolves developer mode from its own argv, so the flag has to
+    travel whenever it was GIVEN — including `--dev 0`. Dropping a falsey level
+    would let the daemon fall back to the persisted developer_mode setting and
+    re-enable developer behaviour (allow_key_injection lives in the core) after
+    the user explicitly forced it off for this run.
+    """
 
     class _Args:
-        def __init__(self, ignore_version=False):
+        def __init__(self, dev=None, debug_legacy=None, ignore_version=False):
+            self.dev = dev
+            self.debug_legacy = debug_legacy
             self.ignore_version = ignore_version
 
-    def test_no_verbosity_passes_no_dev_flag(self):
+    def test_no_flag_passes_no_dev_flag(self):
         # The daemon reads developer_mode from the same settings file itself.
         self.assertEqual(main_app._spawned_daemon_flags(self._Args(), 0),
                          ["--no-autostart"])
 
-    def test_verbosity_travels_as_dev_even_from_a_legacy_debug_launch(self):
-        self.assertEqual(main_app._spawned_daemon_flags(self._Args(), 2),
+    def test_verbosity_travels_as_dev(self):
+        self.assertEqual(main_app._spawned_daemon_flags(self._Args(dev=2), 2),
                          ["--no-autostart", "--dev", "2"])
 
+    def test_legacy_debug_launch_reaches_the_daemon_as_dev(self):
+        self.assertEqual(main_app._spawned_daemon_flags(self._Args(debug_legacy=2), 2),
+                         ["--no-autostart", "--dev", "2"])
+
+    def test_explicit_dev_zero_still_travels(self):
+        # The regression this guards: --dev 0 + developer_mode=true in settings
+        # must NOT give the daemon developer mode.
+        self.assertEqual(main_app._spawned_daemon_flags(self._Args(dev=0), 0),
+                         ["--no-autostart", "--dev", "0"])
+
+    def test_explicit_debug_zero_still_travels(self):
+        self.assertEqual(main_app._spawned_daemon_flags(self._Args(debug_legacy=0), 0),
+                         ["--no-autostart", "--dev", "0"])
+
     def test_ignore_version_still_propagates(self):
-        self.assertEqual(main_app._spawned_daemon_flags(self._Args(True), 1),
-                         ["--no-autostart", "--dev", "1", "--ignore-version"])
+        self.assertEqual(
+            main_app._spawned_daemon_flags(self._Args(dev=1, ignore_version=True), 1),
+            ["--no-autostart", "--dev", "1", "--ignore-version"])
 
 
 if __name__ == "__main__":

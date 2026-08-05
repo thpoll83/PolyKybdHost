@@ -979,12 +979,16 @@ class PolyHost(QApplication):
         # (the blanket loop above already set them to `enabled`).
         self.idle_style_menu.menuAction().setEnabled(enabled and self.supports("idle_style"))
         self.glyph_script_menu.menuAction().setEnabled(enabled and self.supports("glyph_script"))
-        # In safe mode the operational menu above is greyed, but the Developer
-        # submenu stays available (its offline entries — e.g. the font-pack
-        # inspector — work with no device); firmware update is already re-enabled
-        # via fw_enabled below.
+        # The Developer parent stays enabled UNCONDITIONALLY: several of its
+        # entries are offline tools (the font-pack inspector inspects the shipped
+        # bundles with no device at all, the mock-bitmap dump writes files), and a
+        # disabled parent makes the whole submenu unreachable — so a disconnected
+        # keyboard used to hide the very tools you reach for when it won't connect.
+        # The device-coupled children are gated individually by
+        # cmdMenu.update_enabled, so nothing inside becomes clickable that
+        # shouldn't be.
         if self._developer_menu is not None:
-            self._developer_menu.menuAction().setEnabled(self.safe_mode or enabled)
+            self._developer_menu.menuAction().setEnabled(True)
         # Available in both modes (driven via core methods).
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)

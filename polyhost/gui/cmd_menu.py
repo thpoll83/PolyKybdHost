@@ -410,10 +410,13 @@ class CommandsSubMenu:
         if not info.get("shipped"):
             self._info("Font Pack", "This host ships no font-pack bundles.")
             return
+        # NB: `state=` is deliberately a DIFFERENT name from the payload's own
+        # `stale` key — passing both an explicit stale= and **b (which carries
+        # stale) is a TypeError, which crashed this dialog on every open.
         rows = "".join(
             "<tr><td>{id}</td><td align=right>{device_version}</td>"
-            "<td align=right>{shipped_version}</td><td>{stale}</td></tr>".format(
-                stale="stale" if b["stale"] else "ok", **b)
+            "<td align=right>{shipped_version}</td><td>{state}</td></tr>".format(
+                state="stale" if b["stale"] else "ok", **b)
             for b in info["bundles"])
         self._info("Font Pack",
                    "<table cellpadding=4><tr><th align=left>bundle</th><th>device</th>"
