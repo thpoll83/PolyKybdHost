@@ -78,3 +78,22 @@ r.save_gif([frame], "out.gif", durations=800)
   a faithful *approximation*, not pixel-identical. Needs `dl-demo-fonts.sh`.
 
 `out/` and `assets/fonts/` are generated and git-ignored.
+
+## `render_tray_menu.py`
+
+Renders the tray menu (and each submenu) to PNGs for the documentation, from the
+**real** `QMenu` the app builds — same labels, icons, order and separators — so a
+docs screenshot can be regenerated from the code instead of re-taken by hand.
+
+```sh
+xvfb-run -a env QT_QPA_PLATFORM=offscreen \
+    .venv/bin/python tools/render_tray_menu.py --out-dir /tmp/menus
+```
+
+It runs the GUI in `--connect` client mode against a small fake core reporting a
+connected Split72, because a menu rendered with no keyboard attached is entirely
+greyed out. `--mode normal|developer|both` (default both).
+
+The X display is only for **pynput** (imported by `host.py`, and it refuses to
+load without an X connection); Qt itself renders offscreen, so the `xcb` platform
+plugin and its system libraries are not needed.
