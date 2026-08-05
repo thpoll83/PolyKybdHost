@@ -413,7 +413,16 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
     fw = cache.get("fw", {})
 
     headers = {"User-Agent": USER_AGENT, "Accept": "application/vnd.github+json"}
-    if etag := fw.get("etag"):
+    # ⚠️ Only revalidate a cache entry this version of the code could have
+    # written. An entry from before sig_url existed has no signature URL, and a
+    # 304 answers from the cache — so on an ALREADY-PUBLISHED release (whose
+    # ETag never changes) the host would keep downloading the .bin alone and the
+    # keyboard would keep asking for the physical A/ACCEPT confirmation, even
+    # after the user updated to a host that knows how to fetch the .sig. The
+    # entry would only heal when the next firmware release changed the ETag.
+    # Presence of the KEY is the schema marker — its value is legitimately ""
+    # for a release that genuinely ships no signature.
+    if (etag := fw.get("etag")) and "sig_url" in fw:
         headers["If-None-Match"] = etag
 
     try:
