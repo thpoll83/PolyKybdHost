@@ -34,6 +34,14 @@ def _run_smoke(mode):
                           capture_output=True, text=True, env=env, timeout=120)
 
 
+def _grab(stdout, key):
+    """The value of a `KEY value` line printed by a smoke subprocess."""
+    for line in stdout.splitlines():
+        if line.startswith(key + " "):
+            return line[len(key) + 1:]
+    raise AssertionError(f"{key} not printed by the smoke run:\n{stdout}")
+
+
 @unittest.skipUnless(os.environ.get("DISPLAY"),
                      "GUI harness needs an X display — run under xvfb-run")
 class TestPolyHostModes(unittest.TestCase):
@@ -46,6 +54,39 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("DAEMON_QUIT_ACTION absent", proc.stdout)
         self.assertIn("SUPPORT_ACTION absent", proc.stdout)
         self.assertIn("ABOUT_OK True", proc.stdout)
+
+    def test_normal_menu_is_the_simplified_structure(self):
+        """The default tray shows only what normal operation needs: no Developer
+        submenu, and none of the diagnostic entries that used to sit one click
+        deep in "All PolyKybd Commands"."""
+        proc = _run_smoke("default")
+        self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
+        top = _grab(proc.stdout, "TOPLEVEL")
+        self.assertEqual(
+            top.split("|"),
+            ["Waiting for PolyKybd...", "Pause", "Brightness", "Idle Display",
+             "Keycap Script", "Configure Keymap", "Updates", "Maintenance",
+             "Settings...", "Help && About", "Quit"])
+        # The flat command dump is gone, and so is the demo overlay sender.
+        self.assertNotIn("All PolyKybd Commands", top)
+        self.assertNotIn("Send Shortcut Overlay", top)
+        self.assertNotIn("Developer", top)
+        # About + the log file moved into Help & About and are still reachable.
+        self.assertIn("ABOUT_UNDER Help && About True True", proc.stdout)
+
+    def test_developer_mode_only_adds_a_submenu(self):
+        """Developer mode must ADD, never rearrange — muscle memory has to survive
+        the toggle, so the normal rows stay identical and in the same order."""
+        normal = _grab(_run_smoke("default").stdout, "TOPLEVEL").split("|")
+        proc = _run_smoke("developer")
+        self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
+        dev_top = _grab(proc.stdout, "TOPLEVEL").split("|")
+        self.assertIn("Developer", dev_top)
+        self.assertEqual([r for r in dev_top if r != "Developer"], normal)
+        # And it carries the diagnostic half that left the normal menu.
+        subs = _grab(proc.stdout, "DEV_SUBMENUS").split("|")
+        for expected in ("Overlays", "Font Pack", "Firmware", "Idle"):
+            self.assertIn(expected, subs)
 
     def test_client_mode_connects_and_renders(self):
         proc = _run_smoke("client")
@@ -68,6 +109,11 @@ class TestPolyHostModes(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Subprocess entrypoints (each gets a fresh QApplication + isolated sockets)
 # ---------------------------------------------------------------------------
+
+def _toplevel(app):
+    """The tray's top-level rows as a '|'-joined string (separators dropped)."""
+    return "|".join(a.text() for a in app.menu.actions() if not a.isSeparator())
+
 
 def _smoke_default():
     import logging
@@ -108,6 +154,10 @@ def _smoke_default():
         print("ABOUT_OK", (_ver in blob) and has_links and has_status
               and has_env and has_ok and has_copy and has_diag)
         about.deleteLater()
+        print("TOPLEVEL", _toplevel(app))
+        about_parent = app.help_menu.title()
+        print("ABOUT_UNDER", about_parent,
+              app.about in app.help_menu.actions(), app.log_dialog in app.help_menu.actions())
         app.quit_app()
     print("SMOKE OK")
 
@@ -234,5 +284,23 @@ def _smoke_client():
     print("SMOKE OK")
 
 
+def _smoke_developer():
+    """Developer mode: the same menu PLUS the Developer submenu — nothing moves."""
+    import logging
+    from unittest import mock
+    with mock.patch("polyhost.input.linux_gnome_helper.LinuxGnomeInputHelper") as H:
+        inst = H.return_value
+        inst.get_languages.return_value = []
+        inst.get_current_language.return_value = (False, "n/a")
+        from polyhost.host import PolyHost
+        app = PolyHost(logging.CRITICAL, 0, True)
+        print("TOPLEVEL", _toplevel(app))
+        dev = app._developer_menu
+        print("DEV_SUBMENUS", "|".join(a.text() for a in dev.actions() if not a.isSeparator()))
+        app.quit_app()
+    print("SMOKE OK")
+
+
 if __name__ == "__main__":
-    {"default": _smoke_default, "client": _smoke_client}[sys.argv[1]]()
+    {"default": _smoke_default, "client": _smoke_client,
+     "developer": _smoke_developer}[sys.argv[1]]()
