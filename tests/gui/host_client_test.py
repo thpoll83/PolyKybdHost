@@ -34,6 +34,14 @@ def _run_smoke(mode):
                           capture_output=True, text=True, env=env, timeout=120)
 
 
+def _grab(stdout, key):
+    """The value of a `KEY value` line printed by a smoke subprocess."""
+    for line in stdout.splitlines():
+        if line.startswith(key + " "):
+            return line[len(key) + 1:]
+    raise AssertionError(f"{key} not printed by the smoke run:\n{stdout}")
+
+
 @unittest.skipUnless(os.environ.get("DISPLAY"),
                      "GUI harness needs an X display — run under xvfb-run")
 class TestPolyHostModes(unittest.TestCase):
@@ -46,6 +54,41 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("DAEMON_QUIT_ACTION absent", proc.stdout)
         self.assertIn("SUPPORT_ACTION absent", proc.stdout)
         self.assertIn("ABOUT_OK True", proc.stdout)
+
+    def test_normal_menu_is_the_simplified_structure(self):
+        """The default tray shows only what normal operation needs: no Developer
+        submenu, and none of the diagnostic entries that used to sit one click
+        deep in "All PolyKybd Commands"."""
+        proc = _run_smoke("default")
+        self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
+        top = _grab(proc.stdout, "TOPLEVEL")
+        self.assertEqual(
+            top.split("|"),
+            ["Waiting for PolyKybd...", "Pause", "Brightness", "Idle Display",
+             "Keycap Script", "Configure Keymap", "Updates", "Maintenance",
+             "Settings...", "Help && About", "Quit"])
+        # The flat command dump is gone, and so is the demo overlay sender.
+        self.assertNotIn("All PolyKybd Commands", top)
+        self.assertNotIn("Send Shortcut Overlay", top)
+        self.assertNotIn("Developer", top)
+        # About + the log file moved into Help & About and are still reachable.
+        self.assertIn("ABOUT_UNDER Help && About True True", proc.stdout)
+        # The newer-firmware row must not clutter the normal menu.
+        self.assertIn("NEWER_FW_ROW False", proc.stdout)
+
+    def test_developer_mode_only_adds_a_submenu(self):
+        """Developer mode must ADD, never rearrange — muscle memory has to survive
+        the toggle, so the normal rows stay identical and in the same order."""
+        normal = _grab(_run_smoke("default").stdout, "TOPLEVEL").split("|")
+        proc = _run_smoke("developer")
+        self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
+        dev_top = _grab(proc.stdout, "TOPLEVEL").split("|")
+        self.assertIn("Developer", dev_top)
+        self.assertEqual([r for r in dev_top if r != "Developer"], normal)
+        # And it carries the diagnostic half that left the normal menu.
+        subs = _grab(proc.stdout, "DEV_SUBMENUS").split("|")
+        for expected in ("Overlays", "Font Pack", "Firmware", "Idle"):
+            self.assertIn(expected, subs)
 
     def test_client_mode_connects_and_renders(self):
         proc = _run_smoke("client")
@@ -63,11 +106,25 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertIn("UPDATE_ROUTED_TO_DAEMON True", proc.stdout)
         self.assertIn("CLIENT_ABOUT_OK True", proc.stdout)
         self.assertIn("SERVER_RUNNING True", proc.stdout)
+        # One stale bundle -> the row says so and offers the flash, rather than
+        # a bare "Sync" whose effect you cannot know before clicking it.
+        self.assertIn("FONT_ROW Update keyboard fonts (1)", proc.stdout)
 
 
 # ---------------------------------------------------------------------------
 # Subprocess entrypoints (each gets a fresh QApplication + isolated sockets)
 # ---------------------------------------------------------------------------
+
+def _toplevel(app):
+    """The tray's top-level rows as a '|'-joined string.
+
+    Separators and HIDDEN actions are dropped: this is what the user actually
+    sees, and the contextual rows (newer-firmware, WinCompose) exist in the menu
+    from construction but only surface when they apply.
+    """
+    return "|".join(a.text() for a in app.menu.actions()
+                    if not a.isSeparator() and a.isVisible())
+
 
 def _smoke_default():
     import logging
@@ -108,6 +165,12 @@ def _smoke_default():
         print("ABOUT_OK", (_ver in blob) and has_links and has_status
               and has_env and has_ok and has_copy and has_diag)
         about.deleteLater()
+        print("TOPLEVEL", _toplevel(app))
+        # Contextual row: built, but invisible until the core reports safe mode.
+        print("NEWER_FW_ROW", app.newer_fw_action.isVisible())
+        about_parent = app.help_menu.title()
+        print("ABOUT_UNDER", about_parent,
+              app.about in app.help_menu.actions(), app.log_dialog in app.help_menu.actions())
         app.quit_app()
     print("SMOKE OK")
 
@@ -155,6 +218,13 @@ def _smoke_client():
         def install_update(self):
             self.install_update_called = True
             return (True, {"queued": True, "version": "9.9.9"})
+
+        def fontpack_bundle_status(self):
+            return (True, {"shipped": True, "bundles": [
+                {"id": "symbol", "index": 0, "device_version": 4,
+                 "shipped_version": 5, "stale": True},
+                {"id": "emoji", "index": 5, "device_version": 1,
+                 "shipped_version": 1, "stale": False}]})
 
     addr = os.path.join(tempfile.mkdtemp(), "ctl.sock")
     key = protocol.load_or_create_authkey()
@@ -227,6 +297,10 @@ def _smoke_client():
                   (__version__ in cblob) and c_links and ("eyboard" in cblob)
                   and c_copy and c_diag)
             about.deleteLater()
+            # The Updates menu labels the font row from the daemon's per-bundle
+            # comparison (over the RPC mirror) instead of hiding it in a dialog.
+            app._refresh_fontpack_action()
+            print("FONT_ROW", app.fontpack_update_action.text())
             app.quit_app()
         print("SERVER_RUNNING", srv._running)
     finally:
@@ -234,5 +308,23 @@ def _smoke_client():
     print("SMOKE OK")
 
 
+def _smoke_developer():
+    """Developer mode: the same menu PLUS the Developer submenu — nothing moves."""
+    import logging
+    from unittest import mock
+    with mock.patch("polyhost.input.linux_gnome_helper.LinuxGnomeInputHelper") as H:
+        inst = H.return_value
+        inst.get_languages.return_value = []
+        inst.get_current_language.return_value = (False, "n/a")
+        from polyhost.host import PolyHost
+        app = PolyHost(logging.CRITICAL, 0, True)
+        print("TOPLEVEL", _toplevel(app))
+        dev = app._developer_menu
+        print("DEV_SUBMENUS", "|".join(a.text() for a in dev.actions() if not a.isSeparator()))
+        app.quit_app()
+    print("SMOKE OK")
+
+
 if __name__ == "__main__":
-    {"default": _smoke_default, "client": _smoke_client}[sys.argv[1]]()
+    {"default": _smoke_default, "client": _smoke_client,
+     "developer": _smoke_developer}[sys.argv[1]]()

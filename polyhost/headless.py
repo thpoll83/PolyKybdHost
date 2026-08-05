@@ -156,7 +156,7 @@ class HeadlessHost:
         updater.restart_app()
 
 
-def run_headless(log_level=logging.INFO, ignore_version=False):
+def run_headless(log_level=logging.INFO, ignore_version=False, developer=None):
     """Entry point for ``--headless`` (see polyhost/main_app.py).
 
     Logs to a rotating ``daemon_log.txt`` **and** to the stream. The file
@@ -208,8 +208,13 @@ def run_headless(log_level=logging.INFO, ignore_version=False):
         _os.getenv("DISPLAY", "n/a"),
         _os.getenv("WAYLAND_DISPLAY", "n/a"),
     )
-    # --debug maps to DEBUG / DEBUG_DETAILED (both <= DEBUG); no flag -> INFO.
-    # Only a debug-mode daemon may honour press/release key-injection commands.
+    # Only a DEVELOPER-mode daemon may honour press/release key-injection
+    # commands. `developer` is resolved by main_app (--dev flag, else the
+    # developer_mode setting); None means "caller didn't say", in which case fall
+    # back to the log level as before (--dev 1/2 both map to <= DEBUG).
+    if developer is None:
+        developer = log_level <= logging.DEBUG
+    log.info("Developer mode: %s", developer)
     host = HeadlessHost(log, ignore_version=ignore_version,
-                        allow_key_injection=log_level <= logging.DEBUG)
+                        allow_key_injection=developer)
     host.run()

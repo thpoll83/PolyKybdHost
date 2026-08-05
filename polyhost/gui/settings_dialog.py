@@ -47,10 +47,9 @@ class SettingsDialog(QDialog):
     def sizeHint(self):
         return QSize(640, 480)
 
-    def setup(self, settings_dict, debug_mode=0, reset_glyph_script=None, replay_eden=None):
+    def setup(self, settings_dict, developer_mode=False, reset_glyph_script=None):
         self._all_settings = dict(settings_dict)
         self._reset_glyph_script = reset_glyph_script
-        self._replay_eden = replay_eden
         self.setWindowIcon(get_icon("pcolor.png"))
 
         # Outer layout
@@ -67,7 +66,7 @@ class SettingsDialog(QDialog):
 
         grouped_settings = defaultdict(dict)
         for full_key, value in settings_dict.items():
-            if full_key.startswith("dev_") and debug_mode == 0:
+            if full_key.startswith("dev_") and not developer_mode:
                 continue
             if "_" in full_key:
                 group, _ = full_key.split("_", 1)
@@ -117,14 +116,9 @@ class SettingsDialog(QDialog):
             reset_btn.clicked.connect(self._reset_glyph_script)
             main_layout.addWidget(reset_btn, alignment=Qt.AlignCenter)
 
-        # Replay the one-time startup ("Eden") animation. Direct device action
-        # (fires immediately). Only shown when a callback is provided (device
-        # present). Two-line label as requested.
-        if self._replay_eden is not None:
-            eden_btn = QPushButton("Reset\nEden")
-            eden_btn.setToolTip("Replay the one-time startup animation on the keycaps.")
-            eden_btn.clicked.connect(self._replay_eden)
-            main_layout.addWidget(eden_btn, alignment=Qt.AlignCenter)
+        # The startup ("Eden") animation replay used to sit here as a button. It
+        # is a one-off demo action, not a setting — it now lives only in
+        # `polyctl replay-anim`.
 
         # Add buttons
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)

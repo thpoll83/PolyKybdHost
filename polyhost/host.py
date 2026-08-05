@@ -218,7 +218,7 @@ def _progress_dlg(label: str, title: str, tray_icon=None, on_cancel=None) -> QPr
 
 
 class PolyHost(QApplication):
-    def __init__(self, log_level, debug_mode, ignore_version=False,
+    def __init__(self, log_level, verbosity=0, developer=False, ignore_version=False,
                  client_mode=False, endpoint=None, connect_retry=False):
         super().__init__(sys.argv)
         # Wall-clock start, for the About dialog's uptime line.
@@ -232,14 +232,18 @@ class PolyHost(QApplication):
         # probe can't re-raise the modal, and guard against stacking it.
         self._newer_fw_prompt_open = False
         self._newer_fw_prompted_proto = None
-        # The Debugging submenu (created only with --debug), kept reachable so it
-        # stays enabled in newer-firmware safe mode. None when debug is off.
-        self._debug_menu = None
+        # The Developer submenu (created only in developer mode), kept reachable
+        # so it stays enabled in newer-firmware safe mode. None when off.
+        self._developer_menu = None
         # Tray-only app: keep it out of the macOS Dock (no-op elsewhere).
         from polyhost.util.macos_ui import hide_dock_icon
         hide_dock_icon()
-        fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if debug_mode>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
-        level = DEBUG_DETAILED if debug_mode>1 else log_level
+        # `verbosity` is the log level knob (--dev N); `developer` is the feature
+        # surface (the --dev flag, else the persisted developer_mode setting) —
+        # the two are deliberately separate, so the settings toggle can reveal the
+        # developer tools without also turning the log to DEBUG.
+        fmt = "[%(asctime)s] %(levelname)-7s {%(filename)s:%(lineno)d} %(message)s" if verbosity>0 else "[%(asctime)s] %(levelname)-7s %(message)s"
+        level = DEBUG_DETAILED if verbosity>1 else log_level
 
         file_handler = RotatingFileHandler(
             filename="host_log.txt",
@@ -340,7 +344,7 @@ class PolyHost(QApplication):
             from polyhost.core.poly_core import PolyCore
             self.core = PolyCore(log=self.log, ignore_version=ignore_version,
                                  start_worker=False,
-                                 allow_key_injection=debug_mode > 0)
+                                 allow_key_injection=developer)
             self.keeb = self.core.keeb
             self.worker = self.core.worker
             self.device_mgr = self.core.device_mgr
@@ -356,7 +360,7 @@ class PolyHost(QApplication):
         # Set when a self-update lands: main_app re-execs after exec_() returns
         # (clean, fully-unwound loop) instead of os.execv from inside a slot.
         self.wants_restart = False
-        self.debug_mode = debug_mode
+        self.developer_mode = developer
 
         # Create the menu
         self.log.debug("Building menu...")
@@ -405,6 +409,27 @@ class PolyHost(QApplication):
         self.unicode_cache = UnicodeCache()
         #self.reconnect()
         self.menu.addAction(self.status)
+        # Pause used to be reachable ONLY by clicking the status line, advertised
+        # by a tooltip nobody reads. Explicit entry; the status click still works.
+        self.pause_action = QAction(get_icon("pause_circle.svg"), "Pause", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.pause_action.triggered.connect(self.pause)
+        self.menu.addAction(self.pause_action)
+        # Newer firmware than this host: the choice is a session policy taken in a
+        # modal that fires once per protocol. Without a way back, a user who picked
+        # (or dismissed into) safe mode was stuck with it until a restart. This
+        # entry re-opens the same dialog and is VISIBLE ONLY while safe mode is on,
+        # so it costs nothing in the normal menu.
+        self.newer_fw_action = QAction(get_icon("sync_problem.svg"),
+                                       "Firmware newer than this app \u2014 safe mode\u2026",
+                                       parent=self)
+        self.newer_fw_action.setToolTip("Choose how to handle a keyboard whose firmware "
+                                        "is newer than this host app.")
+        # noinspection PyUnresolvedReferences
+        self.newer_fw_action.triggered.connect(self._on_newer_fw_action)
+        self.newer_fw_action.setVisible(False)
+        self.menu.addAction(self.newer_fw_action)
+        self.menu.addSeparator()
         # No synchronous language enumeration here: self.connected is still
         # False at this point (only the reconnect decision tree may set it —
         # that's where the protocol/version gate lives), so the first worker
@@ -412,34 +437,29 @@ class PolyHost(QApplication):
         # connect flow anyway: enumerate_lang + add_supported_lang + unicode
         # mode + cache reset. Enumerating here as well just did all of that
         # twice within the first second (double menu build seen in the field
-        # 2026-06-13). The language menu is inserted right after the status
-        # action whenever it is created, so arriving ~1 s late costs nothing.
+        # 2026-06-13). The language menu inserts itself at the top of the
+        # device group when it is created, so arriving ~1 s late costs nothing.
 
-        # The commands submenu now routes every action through the core
-        # (worker job in-process, RPC in client mode), so it works in both
-        # modes (H4a-2c). Send-Shortcut still reads the in-process device_mgr,
-        # so it stays in-process only.
+        # Device commands live in two places now: the small set a normal user
+        # needs (Maintenance, below) and the diagnostic/bulk rest under Developer.
+        # Both are built by CommandsSubMenu, which routes every action through the
+        # core (worker job in-process, RPC in client mode) so they work in both
+        # modes (H4a-2c).
         self.cmdMenu = CommandsSubMenu(self)
-        self.cmdMenu.build_menu(self.menu)
-        if not self.client_mode:
-            # TODO: enable/disable depending on MRU usage
-            action = QAction(get_icon("overlays.svg"), "Send Shortcut Overlay...", parent=self)
-            # noinspection PyUnresolvedReferences
-            action.triggered.connect(self.send_shortcuts)
-            self.menu.addAction(action)
-        # The layout editor and settings dialog are device-independent of the
-        # in-process worker — they drive the device through core.keymap_* /
-        # settings.* (RPC in client mode), so both work in either mode (H4a-2).
-        self.layout_editor = QAction(get_icon("keyboard.svg"), "Configure Keymap", parent=self)
-        # noinspection PyUnresolvedReferences
-        self.layout_editor.triggered.connect(self.open_layout_editor)
-        self.menu.addAction(self.layout_editor)
 
-        # Idle anti-burn-in style (firmware v4+). Device-coupled: it drives the
-        # device through core.get/set_idle_style (worker run_sync in-process, RPC
-        # in client mode), so it works in both modes; the blanket enable/disable
-        # in managed_connection_status greys the whole submenu while disconnected.
-        self.idle_style_menu = self.menu.addMenu(get_icon("bedtime.svg"), "Idle Anti-Burn-In")
+        # Brightness: promoted out of the old "All PolyKybd Commands" list — it is
+        # the most-used device control and sat three levels deep.
+        self.brightness_menu = self.cmdMenu.build_brightness_menu(self.menu)
+        # The language menu is built lazily (see add_supported_lang) and inserts
+        # itself before this anchor, so it lands at the top of the device group
+        # rather than wherever the menu happened to end.
+        self._lang_anchor = self.brightness_menu.menuAction()
+
+        # Idle display style (firmware v4+). Device-coupled: it drives the device
+        # through core.get/set_idle_style (worker run_sync in-process, RPC in
+        # client mode), so it works in both modes; managed_connection_status greys
+        # the whole submenu out while disconnected or on too-old firmware.
+        self.idle_style_menu = self.menu.addMenu(get_icon("bedtime.svg"), "Idle Display")
         idle_group = QActionGroup(self)
         idle_group.setExclusive(True)
         self.idle_pulse_action = QAction("Pulse (legacy)", parent=self, checkable=True)
@@ -464,11 +484,11 @@ class PolyHost(QApplication):
         self.idle_style_menu.aboutToShow.connect(self.refresh_idle_style_menu)
 
         # Glyph-script override (firmware v9+). Same device-coupled pattern as the
-        # idle style: drives the device through core.get/set_glyph_script, works in
-        # both in-process and client mode, greyed with the rest while disconnected.
-        # "Standard" restores the normal language legends; other entries override the
+        # idle style. Named "Keycap Script" in the menu: "glyph script" is our
+        # internal vocabulary, what the user sees is the letters on their keycaps.
+        # "Standard" restores the normal language legends; the others override the
         # letter/digit legends with an alternative script (from the fantasy bundle).
-        self.glyph_script_menu = self.menu.addMenu(get_icon("text_fields.svg"), "Glyph Script")
+        self.glyph_script_menu = self.menu.addMenu(get_icon("text_fields.svg"), "Keycap Script")
         glyph_group = QActionGroup(self)
         glyph_group.setExclusive(True)
         # One radio entry per GlyphScript (labels in GLYPH_SCRIPT_LABELS). Built
@@ -487,13 +507,23 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.glyph_script_menu.aboutToShow.connect(self.refresh_glyph_script_menu)
 
-        self.menu.addAction(self.settings_dialog)
-        self.menu.addAction(self.log_dialog)
+        # The layout editor is device-independent of the in-process worker — it
+        # drives the device through core.keymap_* (RPC in client mode), so it
+        # works in either mode (H4a-2).
+        self.layout_editor = QAction(get_icon("keyboard.svg"), "Configure Keymap", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.layout_editor.triggered.connect(self.open_layout_editor)
+        self.menu.addAction(self.layout_editor)
 
-        self.update_action = QAction(get_icon("browser_updated.svg"), "Check for updates...", parent=self)
+        self.menu.addSeparator()
+
+        # --- Updates: every "get something newer" path in one place -------------
+        self.updates_menu = self.menu.addMenu(get_icon("update.svg"), "Updates")
+
+        self.update_action = QAction(get_icon("browser_updated.svg"), "Check for host update...", parent=self)
         # noinspection PyUnresolvedReferences
         self.update_action.triggered.connect(self._on_update_clicked)
-        self.menu.addAction(self.update_action)
+        self.updates_menu.addAction(self.update_action)
         self._pending_release = None
         self._update_checker = None
         self._update_check_last = None   # wall-clock ts of last AUTOMATIC check this session
@@ -507,16 +537,29 @@ class PolyHost(QApplication):
         self._update_host_no_update = None
         self._update_fw_no_update = None
 
+
         # The keyboard-firmware release flow checks GitHub for a newer release,
         # downloads the .bin, then flashes it. In CLIENT mode the GUI has no
         # local HID, so the download still happens here (network only) but the
         # flash is handed to the daemon over the fw.flash RPC — the temp .bin is
         # on the same machine, so the daemon can read it (see _on_fw_download_done).
         # Available in both modes as of the daemon-default regression fix.
-        self.firmware_update_action = QAction(get_icon("memory.svg"), "Check for firmware update…", parent=self)
+        self.firmware_update_action = QAction(get_icon("memory.svg"),
+                                              "Check for keyboard firmware update\u2026", parent=self)
         # noinspection PyUnresolvedReferences
         self.firmware_update_action.triggered.connect(self._on_fw_up_clicked)
-        self.menu.addAction(self.firmware_update_action)
+        self.updates_menu.addAction(self.firmware_update_action)
+
+        # Keyboard fonts. The comparison is LOCAL (cached GET_ID block vs the
+        # shipped manifest, no device I/O), so the entry can label itself with the
+        # answer on open instead of hiding it behind a status dialog nobody opens.
+        self.fontpack_update_action = QAction(get_icon("font_download.svg"),
+                                              "Keyboard fonts", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.fontpack_update_action.triggered.connect(self._on_sync_fontpack_clicked)
+        self.updates_menu.addAction(self.fontpack_update_action)
+        # noinspection PyUnresolvedReferences
+        self.updates_menu.aboutToShow.connect(self._refresh_fontpack_action)
         self._pending_fw_release = None
         self._fw_up_downloader = None
         self._fw_up_progress = None
@@ -539,23 +582,27 @@ class PolyHost(QApplication):
         self._wincompose_was_running = None
         if platform.system() == "Windows":
             self.wincompose_action = QAction(get_icon("arrow_circle_down.svg"),
-                                             "Install WinCompose…", parent=self)
+                                             "Install WinCompose\u2026", parent=self)
             # noinspection PyUnresolvedReferences
             self.wincompose_action.triggered.connect(self._on_install_wincompose_clicked)
             self.wincompose_action.setVisible(False)   # until the first probe
-            self.menu.addAction(self.wincompose_action)
+            self.updates_menu.addAction(self.wincompose_action)
             # Re-probe each time the tray menu opens: the entry must disappear
             # once WinCompose is installed and running (and reappear if it is
             # quit), without polling in the background.
             # noinspection PyUnresolvedReferences
             self.menu.aboutToShow.connect(self._refresh_wincompose_action)
 
-        if debug_mode > 0:
-            debug_menu = self.menu.addMenu(get_icon("bug_report.svg"), "Debugging")
-            self._debug_menu = debug_menu
+        # --- Maintenance: the rare-but-legitimate repair actions ---------------
+        self.cmdMenu.build_maintenance_menu(self.menu)
+
+        # --- Developer: everything diagnostic / bulk, off by default -----------
+        if developer:
+            debug_menu = self.menu.addMenu(get_icon("bug_report.svg"), "Developer")
+            self._developer_menu = debug_menu
             self.debug_lang_menu = debug_menu.addMenu(get_icon("translate.svg"), "Change System Input Language")
             # Font-pack inspector: offline tool (no device needed), so it's
-            # available in both modes — kept behind the debug flag.
+            # available in both modes — kept behind developer mode.
             debug_menu.addAction(self.fontpack_inspector_action)
             if not self.client_mode:
                 # MRU inspector + mock dump read the in-process device_mgr.
@@ -567,8 +614,39 @@ class PolyHost(QApplication):
                 # noinspection PyUnresolvedReferences
                 dump_action.triggered.connect(self.dump_mock_bitmaps)
                 debug_menu.addAction(dump_action)
+            # Re-run the two things the app normally does by itself, for when the
+            # environment changed under it (a fresh WinCompose install; an MRU
+            # cache you want on disk before pulling the plug).
+            unicode_action = QAction(get_icon("translate.svg"),
+                                     "Refresh unicode input mode", parent=self)
+            # noinspection PyUnresolvedReferences
+            unicode_action.triggered.connect(self._refresh_unicode_mode_clicked)
+            debug_menu.addAction(unicode_action)
+            mru_save_action = QAction(get_icon("history.svg"), "Save MRU cache now", parent=self)
+            # noinspection PyUnresolvedReferences
+            mru_save_action.triggered.connect(self._save_mru_clicked)
+            debug_menu.addAction(mru_save_action)
 
-        self.menu.addAction(self.about)
+            debug_menu.addSeparator()
+            # The device-command half that no normal user should meet: overlay
+            # resets, idle start/stop, font-pack wipe, staged-firmware handling.
+            self.cmdMenu.build_developer_menus(debug_menu)
+
+        self.menu.addSeparator()
+        self.menu.addAction(self.settings_dialog)
+
+        # --- Help & About: the read-only, always-available corner --------------
+        self.help_menu = self.menu.addMenu(get_icon("help.svg"), "Help && About")
+        self.help_menu.addAction(self.about)
+        self.help_menu.addAction(self.log_dialog)
+        # settings.yaml + overlay-mapping.poly.yaml live in a platformdirs path
+        # nobody can guess; editing a mapping meant reading it out of About first.
+        self.open_config_action = QAction(get_icon("file_open.svg"),
+                                          "Open config folder", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.open_config_action.triggered.connect(self._open_config_folder)
+        self.help_menu.addAction(self.open_config_action)
+
         self.menu.addAction(self.exit)
         if self.exit_with_daemon is not None:
             self.menu.addAction(self.exit_with_daemon)
@@ -600,7 +678,7 @@ class PolyHost(QApplication):
         # needed once a keyboard connects (OS-language sync), not to show the
         # tray. Probe it on a background thread and apply the result on the Qt
         # main thread via the bridge, so the tray appears immediately.
-        threading.Thread(target=self._probe_input_language, args=(debug_mode > 0,),
+        threading.Thread(target=self._probe_input_language, args=(developer,),
                          name="input-language-probe", daemon=True).start()
 
         self.managed_connection_status()
@@ -801,6 +879,89 @@ class PolyHost(QApplication):
             # "ignore" -> connect fully; "safe" (or dismissed) -> stay restricted.
             self.core.set_newer_firmware_policy(choice if choice == "ignore" else "safe")
 
+    def _on_newer_fw_action(self):
+        """Re-open the newer-firmware choice from the tray (see the menu entry).
+
+        Clears the once-per-protocol guard first so the shared prompt path runs
+        again, and drives it off the CURRENT status rather than a remembered
+        payload — the user may have re-flashed since the modal first appeared.
+        """
+        st = {}
+        try:
+            st = self.core.get_status() or {}
+        except Exception as exc:  # noqa: BLE001 — never let a status read kill the menu
+            self.log.warning("Could not read status for the newer-firmware prompt: %s", exc)
+        proto = st.get("protocol")
+        if proto is None:
+            self.log.info("Newer-firmware prompt: no keyboard protocol known, ignoring.")
+            return
+        self._newer_fw_prompted_proto = None
+        self._maybe_prompt_newer_firmware(True, proto,
+                                          st.get("name") or "PolyKybd",
+                                          st.get("fw_version") or "?")
+
+    def _refresh_fontpack_action(self):
+        """Label the font entry with the actual answer, on menu open.
+
+        `fontpack_bundle_status` compares the cached GET_ID version block against
+        the shipped manifest — no device I/O either side of the RPC — so this is
+        cheap enough to run every time the Updates menu opens. Hidden when there
+        is nothing to say (no device, no shipped bundles, or an older core with
+        no such call) rather than showing a dead row.
+        """
+        action = self.fontpack_update_action
+        getter = getattr(self.core, "fontpack_bundle_status", None)
+        if getter is None or not self.device_present:
+            action.setVisible(False)
+            return
+        try:
+            ok, info = getter()
+        except Exception as exc:  # noqa: BLE001
+            self.log.debug("Font-pack status unavailable: %s", exc)
+            action.setVisible(False)
+            return
+        if not ok or not isinstance(info, dict) or not info.get("shipped"):
+            action.setVisible(False)
+            return
+        stale = [b for b in info.get("bundles", []) if b.get("stale")]
+        action.setVisible(True)
+        if stale:
+            action.setText(f"Update keyboard fonts ({len(stale)})\u2026")
+            action.setToolTip("Flash the font bundles the keyboard is missing or behind on: "
+                              + ", ".join(b["id"] for b in stale))
+            action.setEnabled(self._fw_actions_allowed())
+        else:
+            action.setText("Keyboard fonts: up to date")
+            action.setToolTip("Every shipped font bundle is already on the keyboard.")
+            action.setEnabled(False)
+
+    def _on_sync_fontpack_clicked(self):
+        self.cmdMenu.sync_fontpack()
+
+    def _refresh_unicode_mode_clicked(self):
+        ok, msg = self.core.refresh_unicode_mode()
+        if ok:
+            self.log.info("Unicode input mode refreshed: %s", msg)
+        else:
+            self.report_device_result("Error", f"Could not refresh the unicode mode: {msg}")
+
+    def _save_mru_clicked(self):
+        self.core.save_mru()
+        self.log.info("MRU cache saved.")
+
+    def _open_config_folder(self):
+        """Open the config directory (settings.yaml + overlay-mapping.poly.yaml)
+        in the desktop's file manager."""
+        import platformdirs
+        from PyQt5.QtGui import QDesktopServices
+        from PyQt5.QtCore import QUrl
+        path = platformdirs.user_config_dir("PolyHost")
+        self.log.info("Opening config folder %s", path)
+        if not QDesktopServices.openUrl(QUrl.fromLocalFile(path)):
+            # No file manager (headless-ish desktop, missing xdg-open): the path
+            # itself is the useful part, so show it instead of failing silently.
+            _msgbox(QMessageBox.Information, "Config folder", path)
+
     def managed_connection_status(self):
         # Newer-firmware safe mode: connected but operationally restricted — only
         # the firmware-update mechanism + debugging stay live, like a mismatch.
@@ -818,17 +979,35 @@ class PolyHost(QApplication):
         # (the blanket loop above already set them to `enabled`).
         self.idle_style_menu.menuAction().setEnabled(enabled and self.supports("idle_style"))
         self.glyph_script_menu.menuAction().setEnabled(enabled and self.supports("glyph_script"))
-        # In safe mode the operational menu above is greyed, but debugging stays
-        # available (its offline entries — e.g. the font-pack inspector — work with
-        # no device); firmware update is already re-enabled via fw_enabled below.
-        if self._debug_menu is not None:
-            self._debug_menu.menuAction().setEnabled(self.safe_mode or enabled)
+        # The Developer parent stays enabled UNCONDITIONALLY: several of its
+        # entries are offline tools (the font-pack inspector inspects the shipped
+        # bundles with no device at all, the mock-bitmap dump writes files), and a
+        # disabled parent makes the whole submenu unreachable — so a disconnected
+        # keyboard used to hide the very tools you reach for when it won't connect.
+        # The device-coupled children are gated individually by
+        # cmdMenu.update_enabled, so nothing inside becomes clickable that
+        # shouldn't be.
+        if self._developer_menu is not None:
+            self._developer_menu.menuAction().setEnabled(True)
         # Available in both modes (driven via core methods).
         self.layout_editor.setEnabled(True)
         self.settings_dialog.setEnabled(True)
         self.log_dialog.setEnabled(True)
         self.fontpack_inspector_action.setEnabled(True)   # inspects shipped bundles offline
         self.update_action.setEnabled(True)
+        # Group parents the blanket loop above just greyed out. A disabled parent
+        # makes its whole submenu unreachable, so anything that must survive a
+        # disconnect has to be re-enabled here even though its children are gated
+        # individually: Updates (host update works with no keyboard at all, the
+        # firmware entry re-gates itself on fw_enabled) and Help & About (About /
+        # the log file are read-only and always valid).
+        self.updates_menu.menuAction().setEnabled(True)
+        self.help_menu.menuAction().setEnabled(True)
+        self.pause_action.setEnabled(True)
+        # Only meaningful while the core is actually holding the keyboard at
+        # arm's length; it disappears again once the situation is resolved.
+        self.newer_fw_action.setVisible(bool(self.safe_mode))
+        self.newer_fw_action.setEnabled(True)
         self.status.setEnabled(True)
         self.about.setEnabled(True)
         self.exit.setEnabled(True)
@@ -852,8 +1031,12 @@ class PolyHost(QApplication):
         if self.paused:
             self.status.setText("Reconnect")
             self.status.setToolTip("")
+            self.pause_action.setText("Resume")
+            self.pause_action.setIcon(get_icon("play_circle.svg"))
         else:
             self.status.setToolTip("Press to pause connection")
+            self.pause_action.setText("Pause")
+            self.pause_action.setIcon(get_icon("pause_circle.svg"))
         self.managed_connection_status()
 
     # ------------------------------------------------------------------
@@ -1125,15 +1308,15 @@ class PolyHost(QApplication):
         if lang_list is not None and current_lang is not None:
             title = f"Selected Language: {current_lang[:2]} {self.langcode_to_flag(current_lang[2:])}"
             if self.keeb_lang_menu is None:
-                # Place the language menu right under the first entry (the status
-                # action) instead of appending it last. It may be created lazily
-                # once the firmware version is known, by which point the rest of
-                # the menu already exists, so insert rather than add.
+                # Place the language menu at the head of the device group (just
+                # above Brightness) instead of appending it last. It is created
+                # lazily once the firmware answers, by which point the rest of the
+                # menu already exists, so insert at the anchor rather than add.
                 self.keeb_lang_menu = QMenu(title)
                 self.keeb_lang_menu.menuAction().setIcon(get_icon("language.svg"))
-                actions = menu.actions()
-                if len(actions) > 1:
-                    menu.insertMenu(actions[1], self.keeb_lang_menu)
+                anchor = getattr(self, "_lang_anchor", None)
+                if anchor is not None:
+                    menu.insertMenu(anchor, self.keeb_lang_menu)
                 else:
                     menu.addMenu(self.keeb_lang_menu)
             else:
@@ -1198,8 +1381,7 @@ class PolyHost(QApplication):
         # the normal language legends. Gated on the capability, not mere presence,
         # so a keyboard too old for cmd 30 doesn't show a button that only errors.
         reset_cb = self.reset_glyph_script_to_standard if self.supports("glyph_script") else None
-        eden_cb = self.replay_eden_animation if self.device_present else None
-        dlg.setup(current, self.debug_mode, reset_glyph_script=reset_cb, replay_eden=eden_cb)
+        dlg.setup(current, self.developer_mode, reset_glyph_script=reset_cb)
         if dlg.exec_() == QDialog.Accepted:
             updated = dlg.get_updated_settings()
             if self.client_mode:
@@ -1524,20 +1706,6 @@ class PolyHost(QApplication):
         QTimer.singleShot(0, lambda: position_near_tray(dlg, self.tray))
         dlg.exec_()
 
-    def send_shortcuts(self):
-        path, _ = get_open_file_name(None, 'Open file', '', "Image files (*.jpg *.gif *.png *.bmp *.jpeg)")
-        if path:
-
-            def _job(cancel):
-                for entry in self.device_mgr.all_entries:
-                    if cancel.is_set():
-                        return
-                    entry.device.send_overlays([path], cancel)
-
-            self.worker.submit("send_shortcuts", _job)
-        else:
-            self.log.info("No file selected. Operation canceled.")
-
     def change_system_language(self):
         self.icon_manager.set_thinking()
         
@@ -1628,15 +1796,6 @@ class PolyHost(QApplication):
             self.log.info("Glyph script reset to standard.")
         else:
             self.report_device_result("Error", f"Could not reset glyph script: {msg}")
-
-    def replay_eden_animation(self):
-        """Replay the one-time startup ("Eden") animation on the keycaps (used by
-        the settings-dialog 'Reset Eden' button)."""
-        ok, msg = self.core.replay_startup_anim()
-        if ok:
-            self.log.info("Replaying startup animation.")
-        else:
-            self.report_device_result("Error", f"Could not replay startup animation: {msg}")
 
     def read_overlay_mapping_file(self, file):
         if not file:
@@ -1792,7 +1951,7 @@ class PolyHost(QApplication):
         self.update_action.setText("Check for updates...")
         _msgbox(QMessageBox.Warning, "PolyKybdHost Update",
                 f"Could not check for updates:\n\n{msg}\n\n"
-                "Run with --debug 1 for details.")
+                "Run with --dev 1 for details.")
 
     def _prompt_and_install(self, release):
         date_str = _fmt_release_date(release.published_at)

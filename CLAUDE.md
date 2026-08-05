@@ -47,8 +47,9 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
 ### Run the application
 ```bash
 python -m polyhost                        # standard
-python -m polyhost --debug 1              # basic debug logging
-python -m polyhost --debug 2              # verbose debug logging
+python -m polyhost --dev                  # developer mode + basic debug logging
+python -m polyhost --dev 2                # developer mode + detailed debug logging
+python -m polyhost --dev 0                # force developer mode off for this run
 python -m polyhost --host <IP>            # forward to remote host
 python -m polyhost --portable             # no autostart registration
 ```
@@ -80,9 +81,9 @@ pip install -e .
 - `polyhost/core/poly_core.py` — `PolyCore`: the **Qt-free operational core** (headless-core plan H1). Owns the device stack (`PolyKybd`, `DeviceManager`, `HidWorker` + periodics), the reconnect probe + `apply_reconnect` decision/state, overlay send/cmd jobs, the window-tracking tick (`tick_window_tracking`), overlay mapping, `Sunlight`, MRU persistence and the sleep listener. Communicates results **only** through observer callbacks — `subscribe(cb)` / `emit(name, payload)` with JSON-serializable payloads (names/contracts in `polyhost/core/events.py`). Must stay importable without PyQt5 and without a display (pywinctl is lazy-imported; window tracking degrades to off). Guarded by `tests/core/import_guard_test.py`.
 - `polyhost/core/decisions.py` — Qt-free `decide_probe_publish` / `decide_reconnect_apply` (re-exported from `gui/worker_bridge.py` for compatibility).
 - `polyhost/host.py` — `PolyHost(QApplication)`: Normal-mode **Qt client**. Owns `PolyCore`, the tray icon, menus and dialogs; subscribes to core events and marshals them onto the Qt main thread via `WorkerBridge.job_done` (the event names match `_on_job_done`'s dispatch). Connection state (`connected`/`device_present`/`paused`/`last_applied_connected`/`kb_sw_version`/`mapping`) are **properties over the core** — the core is the single source of truth. The active-window QTimer stays on the main thread (pywinctl/macOS constraint) and just calls `core.tick_window_tracking()`.
-- `polyhost/server/` — **control socket** (headless-core H2). `protocol.py`: stdlib `multiprocessing.connection` transport (UDS / Windows named pipe + authkey), UTF-8 JSON framing, JSON-RPC message shapes, the `hello` version gate, platformdirs endpoint+authkey (0600), and the canonical `M_*` method-name constants. `control_server.py`: `ControlServer` — accept loop + per-connection reader threads, a method registry dispatching to `PolyCore` (core `(ok,payload)` failures → JSON-RPC `ERR_DEVICE`), and core-event fan-out to subscribed clients. `instance.py`: the socket doubles as the single-instance lock. `PolyHost` embeds a `ControlServer` (M1); the CLI/headless server reuse it. `window_report_server.py`/`window_report_client.py` (H4d): a **separate, opt-in** `AF_INET` listener (`WindowReportServer`, port `WINDOW_REPORT_PORT=50163`) that serves **only** `window.report` — same `hello`+authkey gating, but a **separate authkey** (`window_report_authkey_path()`) and **no `PolyCore` reference** (only an injected `report_window` callback), so the network surface can never reach device control/flash/bootloader. `HeadlessHost` starts it only when `window_report_network_enabled` is set (default False); the forwarder pushes to it with `--report-rpc`. The legacy plaintext TCP relay (port 50162, `remote_window.receive_from_forwarder`) is **unauthenticated and binds all interfaces**, so it is now **off by default** — `RemoteHandler.listen_to_forwarder()` only binds it when the `dev_legacy_plaintext_relay` setting opts in (threaded `PolyCore.settings_get` → `OverlayHandler` → `RemoteHandler`); with remote entries mapped but the relay disabled it warns **once** pointing to the authenticated path (suppressed when `window_report_network_enabled` is already on, since reports then arrive over RPC — both transports funnel through the same `RemoteHandler.report_window` → `remote_changed`/`_match_remote`, so remote-entry matching is transport-agnostic). The `dev_` prefix hides the setting in the settings dialog unless debug mode is on (`settings_dialog.py` skips `dev_*` keys when `debug_mode == 0`). The `window.report` control-socket path (authkey-gated) supersedes it.
+- `polyhost/server/` — **control socket** (headless-core H2). `protocol.py`: stdlib `multiprocessing.connection` transport (UDS / Windows named pipe + authkey), UTF-8 JSON framing, JSON-RPC message shapes, the `hello` version gate, platformdirs endpoint+authkey (0600), and the canonical `M_*` method-name constants. `control_server.py`: `ControlServer` — accept loop + per-connection reader threads, a method registry dispatching to `PolyCore` (core `(ok,payload)` failures → JSON-RPC `ERR_DEVICE`), and core-event fan-out to subscribed clients. `instance.py`: the socket doubles as the single-instance lock. `PolyHost` embeds a `ControlServer` (M1); the CLI/headless server reuse it. `window_report_server.py`/`window_report_client.py` (H4d): a **separate, opt-in** `AF_INET` listener (`WindowReportServer`, port `WINDOW_REPORT_PORT=50163`) that serves **only** `window.report` — same `hello`+authkey gating, but a **separate authkey** (`window_report_authkey_path()`) and **no `PolyCore` reference** (only an injected `report_window` callback), so the network surface can never reach device control/flash/bootloader. `HeadlessHost` starts it only when `window_report_network_enabled` is set (default False); the forwarder pushes to it with `--report-rpc`. The legacy plaintext TCP relay (port 50162, `remote_window.receive_from_forwarder`) is **unauthenticated and binds all interfaces**, so it is now **off by default** — `RemoteHandler.listen_to_forwarder()` only binds it when the `dev_legacy_plaintext_relay` setting opts in (threaded `PolyCore.settings_get` → `OverlayHandler` → `RemoteHandler`); with remote entries mapped but the relay disabled it warns **once** pointing to the authenticated path (suppressed when `window_report_network_enabled` is already on, since reports then arrive over RPC — both transports funnel through the same `RemoteHandler.report_window` → `remote_changed`/`_match_remote`, so remote-entry matching is transport-agnostic). The `dev_` prefix hides the setting in the settings dialog unless developer mode is on (`settings_dialog.py` skips `dev_*` keys when `developer_mode` is False). The `window.report` control-socket path (authkey-gated) supersedes it.
 - `polyhost/cli/polyctl.py` — **`polyctl`** console-script (stdlib-only, never imports Qt): `status`, `lang list|set`, `brightness`, `idle`, **`idle-style [pulse|jitter]`** (get/set the idle anti-burn-in style over HID cmd 28 — `M_IDLE_STYLE_GET/SET` → `PolyCore.get/set_idle_style` → `PolyKybd`, firmware v4+), `overlay …`, `keymap …`, `commands`, `fw version`, **`fw flash <bin> [--apply]`**, `pause|resume`, `mru save`, `settings get|set`, **`update check|install`**, **`window report`**, `watch`, `shutdown`. Long ops (`fw flash`, `update install`) subscribe to events and stream progress to a terminal event — `RpcClient` exposes `subscribe_events()`/`events()` (the latter ends on `EOFError`/`OSError`); `watch()` builds on them. Talks the `protocol.py` wire format to the control socket.
-- `polyhost/headless.py` — **`--headless`** (M2, H3): `HeadlessHost` runs `PolyCore` + `ControlServer` + the core-owned window tick with **zero Qt import** in the process (`main_app` imports Qt/`PolyHost` lazily, only in the GUI branch — guarded by `tests/headless/headless_entry_test.py` and the import guard). The core auto-applies its own reconnect snapshots headless (`PolyCore(apply_reconnect_in_core=True)`). On a `polyctl update install`, the core only applies+emits; `HeadlessHost` re-execs (or hands off to the Windows relay) on `update_finished_ok`/`update_relay_needed`. Drive it with `polyctl`. Two headless gotchas fixed the hard way: the core-owned window-tick thread must **`pythoncom.CoInitialize()` on Windows** (pywinctl uses COM; a fresh thread without it fails every poll with "Invalid syntax"); and `poly_core` imports `polyhost.util.log_util` so `Logger.debug_detailed` (used by the device code) exists in the headless process too (the GUI got it via `host.py`). The daemon writes `daemon_log.txt`; `main_app` maps `--debug 2` → `DEBUG_DETAILED` for headless too (mirroring the GUI), so the daemon's `debug_detailed` lines — e.g. window-report receipts (`report_window` / `receive_from_forwarder`, level 8) — are only visible at `--debug 2`, not `--debug 1` (DEBUG=10). The tray GUI's log viewer adds a **"Daemon Log"** tab when `daemon_log.txt` exists (so daemon-mode reconnect/overlay/window activity is visible from the GUI side).
+- `polyhost/headless.py` — **`--headless`** (M2, H3): `HeadlessHost` runs `PolyCore` + `ControlServer` + the core-owned window tick with **zero Qt import** in the process (`main_app` imports Qt/`PolyHost` lazily, only in the GUI branch — guarded by `tests/headless/headless_entry_test.py` and the import guard). The core auto-applies its own reconnect snapshots headless (`PolyCore(apply_reconnect_in_core=True)`). On a `polyctl update install`, the core only applies+emits; `HeadlessHost` re-execs (or hands off to the Windows relay) on `update_finished_ok`/`update_relay_needed`. Drive it with `polyctl`. Two headless gotchas fixed the hard way: the core-owned window-tick thread must **`pythoncom.CoInitialize()` on Windows** (pywinctl uses COM; a fresh thread without it fails every poll with "Invalid syntax"); and `poly_core` imports `polyhost.util.log_util` so `Logger.debug_detailed` (used by the device code) exists in the headless process too (the GUI got it via `host.py`). The daemon writes `daemon_log.txt`; `main_app` maps `--dev 2` → `DEBUG_DETAILED` for headless too (mirroring the GUI), so the daemon's `debug_detailed` lines — e.g. window-report receipts (`report_window` / `receive_from_forwarder`, level 8) — are only visible at `--dev 2`, not `--dev 1` (DEBUG=10). The tray GUI's log viewer adds a **"Daemon Log"** tab when `daemon_log.txt` exists (so daemon-mode reconnect/overlay/window activity is visible from the GUI side).
 - `polyhost/client/remote_core.py` — **`RemoteCore`** (H4a): the GUI-as-socket-client adapter. `python -m polyhost --connect[=ENDPOINT]` runs the tray GUI as a pure client of a core in another process — `RemoteCore` mirrors the subset of the `PolyCore` API `host.py` consumes, over the control socket (two connections: one for request/response, one for the event subscription), and re-emits server events to the same `subscribe`/`emit` seam. State is cached from `status.get` + `status_changed`. `PolyHost(client_mode=, endpoint=)` builds it instead of a `PolyCore`, renders from `status_changed` (not `apply_reconnect`), does the **client-side** OS-language switch, and guards every device-coupled menu (cmd menu / layout editor / keyboard-firmware release / MRU debug); the settings dialog + a co-located "Flash firmware .bin…" (over the `fw.flash` RPC) work in client mode. Quitting the client closes its sockets only — the daemon keeps running.
 - `polyhost/forwarder.py` — `PolyForwarder`: Forwarder mode; no device access, only TCP window reporting
 
@@ -302,7 +303,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   the keycap draws it and to build/splice new glyphs from a TTF/OTF (pure-Python
   `fontconvert` parity). Launched from the tray's **Debugging** submenu (the
   "Inspect Font Packs…" entry), so it is **only shown when the app runs with
-  `--debug` ≥ 1** (`debug_mode > 0` in `host.py`) — it's a developer/power-user
+  developer mode** (`developer` in `host.py`) — it's a developer/power-user
   tool, hidden from the default menu. Unlike the other Debugging entries it works
   in both in-process and client mode (offline, no device needed). It loads the shipped bundles by default; **"Open .plyf…"**
   adds any saved/exported `.plyf` as a new tab (folded into the merged ALL_FONTS view
@@ -541,6 +542,63 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `process_exists()` runs TASKLIST with **`CREATE_NO_WINDOW`** (else a console flashes under
   the `pythonw`/`.vbs` autostart chain) and **never raises** — it sits on the post-connect
   path, where an exception would abort the whole connect flow over a cosmetic detection.
+- **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
+  that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
+  PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal
+  user. Now: status · Pause · [Language] · Brightness · Idle Display · Keycap Script ·
+  Configure Keymap · Updates · Maintenance · Settings · Help & About · Quit, with
+  **Developer** slotted in before Settings when developer mode is on. The invariant is
+  that turning developer mode on **does not rearrange anything** (asserted by
+  `tests/gui/host_client_test.py` `test_developer_mode_only_adds_a_submenu`), so muscle
+  memory survives the toggle. `CommandsSubMenu` (`gui/cmd_menu.py`) builds Brightness +
+  Maintenance + the Developer submenus and gates them off **explicit action lists**
+  (`_device_actions` follow `connected`, `_fw_actions` follow `fw_enabled`) — it can no
+  longer walk one menu's actions, since they live under different parents. ⚠️
+  `managed_connection_status` still blanket-disables every top-level action first, so a
+  **new group parent must be re-enabled explicitly there** or its whole submenu goes
+  unreachable on a disconnect (that is why Updates / Help & About / Pause are listed).
+  Two rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
+  entry (only while `safe_mode`) and Install WinCompose (only while it isn't running).
+  The language menu is built lazily and inserts itself at `self._lang_anchor`
+  (Brightness), not at index 1.
+- **A menu row that can answer its own question should — the font-pack row is the
+  pattern.** `PolyCore.fontpack_bundle_status()` is a **local** comparison (the cached
+  `GET_ID` version block vs the shipped `bundles.json`, no device I/O on either side of
+  the RPC), so the Updates row relabels itself on `aboutToShow` — *"Keyboard fonts: up
+  to date"* (disabled) or *"Update keyboard fonts (N)…"* with the stale bundle ids in
+  its tooltip — instead of hiding the answer behind a status dialog. Same idea in
+  Brightness: *"Back to automatic"* renames itself to *"Clear manual override"* when
+  `brightness_set_daylight_dependent` is off, because that is what it would actually do.
+  Keep such refreshes to reads that are genuinely free; an `aboutToShow` that touches
+  the device would stall the menu.
+- **"Back to automatic" exists because the firmware's auto mode is a ONE-WAY DOOR from
+  the host's side.** Any manual `set_brightness` drops the keyboard out of auto mode
+  (its own LTR-559 sensor then backs off too) and nothing re-engages it until the host
+  deliberately re-asserts — so the tray's brightness presets used to strand the keyboard
+  in manual until a replug. The entry calls `PolyCore.refresh_daylight_brightness()`
+  (daylight on → `VOLATILE|AUTO_ON` + the current value; off → `AUTO_OFF`, i.e. back to
+  the keyboard's stored manual level), which is now `M_DAYLIGHT_REFRESH` + a `RemoteCore`
+  mirror + `polyctl brightness --auto`. It returns `(True, "queued")` like every other
+  command-API method — it is a `submit`, not a `run_sync`.
+- **Developer mode (`--dev`) is SEPARATE from log verbosity — and it is a persisted
+  setting, not just a flag.** `--debug N` used to conflate three things: the log level,
+  the developer/diagnostic UI surface, and `allow_key_injection`. It is now split:
+  **`--dev [0|1|2]`** (bare = 1) carries the level *and* turns developer mode on, while
+  the **`developer_mode`** setting (default False) governs the surface alone. `main_app.resolve_dev`
+  is the one pure decision point (unit-tested): flag absent → the setting decides and
+  logging stays INFO; flag present → it wins **in both directions**, so `--dev 0` forces
+  developer mode off over an enabled setting (hence `default=None` — "flag absent" must
+  stay distinguishable from `--dev 0`). The setting exists because under daemon-by-default
+  the tray GUI is launched by autostart **with no flags**, so a flag-only gate made every
+  developer tool unreachable unless you started the app by hand. `--debug N` survives as a
+  hidden deprecated alias (existing shortcuts / autostart entries) that logs a warning.
+  `PolyHost(log_level, verbosity, developer, …)`, `run_headless(..., developer=)` and
+  `SettingsDialog.setup(..., developer_mode=)` all take the two independently; the
+  GUI-spawned daemon inherits only the **resolved level** as `--dev N` (`_spawned_daemon_flags`)
+  and reads `developer_mode` from the same settings file itself. Read it at startup with
+  `settings.read_setting("developer_mode", False)` — the file-only helper — **not**
+  `PolySettings()`, which creates/rewrites the config and log-dumps every key before the
+  launch path is even known.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.

@@ -64,9 +64,30 @@ def _get_open_file_explicit(caption: str, name_filter: str) -> str:
 
 
 class CommandsSubMenu:
+    """Builds the device-command menus and owns their handlers.
+
+    Since the tray restructure these live in TWO places instead of one flat "All
+    PolyKybd Commands" list: the small set a normal user legitimately needs goes
+    into the top-level **Maintenance** menu, and the diagnostic/bulk rest goes
+    under **Developer** (only built in developer mode). The handlers are shared,
+    so this class builds both.
+
+    Enabling is driven off explicit action lists rather than by walking a menu:
+    the two menus have different parents and mixed gating (protocol-dependent
+    actions follow `connected`, firmware/flash actions follow `fw_enabled` so a
+    protocol-mismatched keyboard can still be updated).
+    """
+
     def __init__(self, parent):
         self.parent = parent
         self.log = logging.getLogger('PolyHost')
+        # Actions that need a protocol-compatible connection, and actions that
+        # ride the protocol-independent staging transport (see update_enabled).
+        self._device_actions = []
+        self._fw_actions = []
+        # Menu action of the Maintenance root, gated as a whole in update_enabled.
+        self._maintenance_action = None
+        self._auto_brightness_action = None
 
     @property
     def _core(self):
@@ -81,165 +102,179 @@ class CommandsSubMenu:
         ok, msg = result
         self.parent.report_device_result("Error", err_msg_fn(msg), ok)
 
-    def build_menu(self, parent_menu):
-        cmd_menu = parent_menu.addMenu(get_icon("list_alt.svg"), "All PolyKybd Commands")
-        self._cmd_menu = cmd_menu
-        # Firmware flash/apply/bootloader actions stay enabled on a
-        # protocol/version mismatch (see PolyHost._fw_actions_allowed) —
-        # update_enabled() re-enables exactly these when the rest is greyed out.
-        self._fw_actions = []
-
-        action = QAction(get_icon("bedtime_off.svg"), "Stop Idle", parent=self.parent)
-        action.setData(False)
+    def _act(self, icon, text, slot, data=None, device=False, firmware=False):
+        """Create an action, wire it, and register it for enable-gating."""
+        action = QAction(get_icon(icon), text, parent=self.parent)
+        if data is not None:
+            action.setData(data)
         # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.change_idle)
-        cmd_menu.addAction(action)
+        action.triggered.connect(slot)
+        if device:
+            self._device_actions.append(action)
+        if firmware:
+            self._fw_actions.append(action)
+        return action
 
-        action = QAction(get_icon("bedtime.svg"), "Start Idle", parent=self.parent)
-        action.setData(True)
+    def build_brightness_menu(self, parent_menu):
+        """Keycap brightness presets - top level, it is the most-used control.
+
+        Deliberately no "auto" RADIO: the keyboard owns that decision (its own
+        light sensor and the host's daylight periodic drive it). These presets
+        are manual overrides; the trailing entry is the way back out of one.
+        """
+        menu = parent_menu.addMenu(get_icon("settings_brightness.svg"), "Brightness")
+        for icon, label, value in (("backlight_high_off.svg", "Off", 0),
+                                   ("backlight_low.svg", "1%", 2),
+                                   ("backlight_high.svg", "50%", 25),
+                                   ("backlight_high_fill.svg", "100%", 50)):
+            menu.addAction(self._act(icon, label, self.set_brightness, data=value, device=True))
+        menu.addSeparator()
+        # The firmware drops auto mode on ANY manual set and never re-engages by
+        # itself, so without this the presets above are a one-way door until a
+        # replug. Wording/tooltip are set on open from the live setting.
+        self._auto_brightness_action = self._act(
+            "brightness_auto.svg", "Back to automatic", self.back_to_automatic_brightness, device=True)
+        menu.addAction(self._auto_brightness_action)
         # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.change_idle)
-        cmd_menu.addAction(action)
+        menu.aboutToShow.connect(self._refresh_auto_brightness_action)
+        self._device_actions.append(menu.menuAction())
+        return menu
 
-        action = QAction(get_icon("device_reset.svg"), "Reset Dynamic Keymap", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.reset_dynamic_keymap)
-        cmd_menu.addAction(action)
+    def _refresh_auto_brightness_action(self):
+        """Explain what "automatic" will actually do, from the live setting.
 
-        action = QAction(get_icon("layers_clear.svg"), "Reset Overlays Buffers", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.reset_overlays)
-        cmd_menu.addAction(action)
+        With daylight-dependent brightness ON this re-engages auto mode (the
+        host's daylight value, and the keyboard's own light sensor resumes with
+        it). With it OFF the host tells the keyboard to leave auto mode, which
+        just restores its stored manual level — still the way to clear a preset,
+        but not "automatic", so don't claim it is.
+        """
+        action = self._auto_brightness_action
+        try:
+            daylight = bool(self._core.settings_get("brightness_set_daylight_dependent"))
+        except Exception as exc:   # noqa: BLE001 — a tooltip must never break the menu
+            self.log.debug("Could not read the daylight setting: %s", exc)
+            action.setToolTip("Re-apply the host's automatic brightness.")
+            return
+        if daylight:
+            action.setText("Back to automatic")
+            action.setToolTip("Re-engage automatic (daylight) brightness — the manual "
+                              "preset above is dropped.")
+        else:
+            action.setText("Clear manual override")
+            action.setToolTip("Daylight-dependent brightness is off in Settings, so this "
+                              "only returns the keyboard to its own stored brightness.")
 
-        action = QAction(get_icon("link_off.svg"), "Reset Overlays Mapping", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.reset_overlay_mapping)
-        cmd_menu.addAction(action)
+    def back_to_automatic_brightness(self):
+        self._report(self._core.refresh_daylight_brightness(),
+                     lambda m: f"Failed to re-apply automatic brightness: '{m}'")
 
-        action = QAction(get_icon("deselect.svg"), "Clear Overlays Usage", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.reset_overlay_usage)
-        cmd_menu.addAction(action)
+    def build_maintenance_menu(self, parent_menu):
+        """Rare but legitimate user-facing repair actions.
 
-        action = QAction(get_icon("select_all.svg"), "Set All Overlays Mapping", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.set_all_overlay_usage)
-        cmd_menu.addAction(action)
+        What earns a place here: fixing a keyboard that is in a wrong state
+        (handedness, stale overlays, a keymap edited into a corner) plus the
+        manual firmware paths. Everything diagnostic or bulk lives under
+        Developer instead.
+        """
+        menu = parent_menu.addMenu(get_icon("build.svg"), "Maintenance")
+        self._maintenance_action = menu.menuAction()
 
-        action = QAction(get_icon("toggle_on.svg"), "Enable Shortcut Overlays", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.enable_overlays)
-        cmd_menu.addAction(action)
+        hand_menu = menu.addMenu(get_icon("flip.svg"), "Fix Left/Right Side")
+        hand_menu.addAction(self._act("splitscreen_left.svg",
+                                      "Connected half is LEFT (other is RIGHT)",
+                                      self.set_handedness, data=True, device=True))
+        hand_menu.addAction(self._act("splitscreen_right.svg",
+                                      "Connected half is RIGHT (other is LEFT)",
+                                      self.set_handedness, data=False, device=True))
+        self._device_actions.append(hand_menu.menuAction())
 
-        action = QAction(get_icon("toggle_off.svg"), "Disable Shortcut Overlays", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.disable_overlays)
-        cmd_menu.addAction(action)
+        menu.addAction(self._act("layers_clear.svg", "Reset overlays",
+                                 self.reset_overlays, device=True))
+        menu.addAction(self._act("device_reset.svg", "Reset keymap to default\u2026",
+                                 self.reset_dynamic_keymap_confirmed, device=True))
 
-        action = QAction(get_icon("file_open.svg"), "Load command file...", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.load_commands)
-        cmd_menu.addAction(action)
+        menu.addSeparator()
+        # Firmware: protocol-independent staging transport, so these follow
+        # fw_enabled and stay usable on a protocol mismatch.
+        menu.addAction(self._act("deployed_code_update.svg", "Flash firmware file (.bin)\u2026",
+                                 lambda: self.open_hid_fw_up_dialog(apply_after=True),
+                                 firmware=True))
+        menu.addAction(self._act("usb.svg", "Activate bootloader\u2026",
+                                 self.activate_bootloader, firmware=True))
+        return menu
 
-        bri_menu = cmd_menu.addMenu(get_icon("settings_brightness.svg"), "Change Brightness")
-        action = QAction(get_icon("backlight_high_off.svg"), "Off", parent=self.parent)
-        action.setData(0)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.set_brightness)
-        bri_menu.addAction(action)
+    def build_developer_menus(self, dev_menu):
+        """The diagnostic / bulk half, under the Developer submenu."""
+        ov_menu = dev_menu.addMenu(get_icon("overlays.svg"), "Overlays")
+        ov_menu.addAction(self._act("toggle_on.svg", "Enable shortcut overlays",
+                                    self.enable_overlays, device=True))
+        ov_menu.addAction(self._act("toggle_off.svg", "Disable shortcut overlays",
+                                    self.disable_overlays, device=True))
+        ov_menu.addSeparator()
+        ov_menu.addAction(self._act("layers_clear.svg", "Reset overlay buffers",
+                                    self.reset_overlays, device=True))
+        ov_menu.addAction(self._act("link_off.svg", "Reset overlay mapping",
+                                    self.reset_overlay_mapping, device=True))
+        ov_menu.addAction(self._act("deselect.svg", "Clear overlay usage",
+                                    self.reset_overlay_usage, device=True))
+        ov_menu.addAction(self._act("select_all.svg", "Set all overlay mapping",
+                                    self.set_all_overlay_usage, device=True))
+        self._device_actions.append(ov_menu.menuAction())
 
-        action = QAction(get_icon("backlight_low.svg"), "1%", parent=self.parent)
-        action.setData(2)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.set_brightness)
-        bri_menu.addAction(action)
+        idle_menu = dev_menu.addMenu(get_icon("bedtime.svg"), "Idle")
+        idle_menu.addAction(self._act("bedtime.svg", "Start idle now",
+                                      self.change_idle, data=True, device=True))
+        idle_menu.addAction(self._act("bedtime_off.svg", "Stop idle",
+                                      self.change_idle, data=False, device=True))
+        self._device_actions.append(idle_menu.menuAction())
 
-        action = QAction(get_icon("backlight_high.svg"), "50%", parent=self.parent)
-        action.setData(25)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.set_brightness)
-        bri_menu.addAction(action)
+        km_menu = dev_menu.addMenu(get_icon("keyboard.svg"), "Keymap")
+        km_menu.addAction(self._act("list_alt.svg", "Layer count",
+                                    self.show_layer_count, device=True))
+        km_menu.addAction(self._act("list_alt.svg", "Default layer",
+                                    self.show_default_layer, device=True))
+        km_menu.addAction(self._act("file_open.svg", "Dump keymap buffer to the log",
+                                    self.dump_keymap_buffer, device=True))
+        self._device_actions.append(km_menu.menuAction())
 
-        action = QAction(get_icon("backlight_high_fill.svg"), "100%", parent=self.parent)
-        action.setData(50)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.set_brightness)
-        bri_menu.addAction(action)
-
-        cmd_menu.addSeparator()
-
-        action = QAction(get_icon("deployed_code_update.svg"), "Flash + Apply Firmware (.bin)…", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(lambda: self.open_hid_fw_up_dialog(apply_after=True))
-        cmd_menu.addAction(action)
-        self._fw_actions.append(action)
-
-        action = QAction(get_icon("deployed_code.svg"), "Flash Firmware only (.bin, stage)…", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(lambda: self.open_hid_fw_up_dialog(apply_after=False))
-        cmd_menu.addAction(action)
-        self._fw_actions.append(action)
-
-        action = QAction(get_icon("arrow_circle_down.svg"), "Apply Staged Firmware (both halves)…", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.apply_staged_firmware_action)
-        cmd_menu.addAction(action)
-        self._fw_actions.append(action)
-
-        # Font pack: same HID staging transport as the firmware flash (protocol-
-        # independent), so these follow fw_enabled — usable even on a protocol
-        # mismatch. The submenu's own action goes in _fw_actions too, else
-        # update_enabled() would grey the whole submenu out when only fw is enabled.
-        fp_menu = cmd_menu.addMenu(get_icon("font_download.svg"), "Font Pack")
+        fp_menu = dev_menu.addMenu(get_icon("font_download.svg"), "Font Pack")
+        fp_menu.addAction(self._act("list_alt.svg", "Per-bundle status…",
+                                    self.show_fontpack_status, firmware=True))
+        fp_menu.addAction(self._act("sync_alt.svg", "Sync (flash missing/updated bundles)",
+                                    self.sync_fontpack, firmware=True))
+        fp_menu.addAction(self._act("delete.svg", "Wipe (empty all bundles)",
+                                    self.wipe_fontpack, firmware=True))
+        # The submenu's own action must be in _fw_actions too, else it stays grey
+        # when only the firmware half is enabled and its items are unreachable.
         self._fw_actions.append(fp_menu.menuAction())
 
-        action = QAction(get_icon("sync_alt.svg"), "Sync (flash missing/updated bundles)",
-                         parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.sync_fontpack)
-        fp_menu.addAction(action)
-        self._fw_actions.append(action)
+        fw_menu = dev_menu.addMenu(get_icon("memory.svg"), "Firmware")
+        fw_menu.addAction(self._act("deployed_code.svg", "Flash only (.bin, stage)\u2026",
+                                    lambda: self.open_hid_fw_up_dialog(apply_after=False),
+                                    firmware=True))
+        fw_menu.addAction(self._act("arrow_circle_down.svg", "Apply staged firmware\u2026",
+                                    self.apply_staged_firmware_action, firmware=True))
+        self._fw_actions.append(fw_menu.menuAction())
 
-        action = QAction(get_icon("delete.svg"), "Wipe (empty all bundles)", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.wipe_fontpack)
-        fp_menu.addAction(action)
-        self._fw_actions.append(action)
-
-        cmd_menu.addSeparator()
-
-        action = QAction(get_icon("usb.svg"), "Activate Bootloader", parent=self.parent)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.activate_bootloader)
-        cmd_menu.addAction(action)
-        self._fw_actions.append(action)
-
-        hand_menu = cmd_menu.addMenu(get_icon("flip.svg"), "Fix Left/Right Side")
-        action = QAction(get_icon("splitscreen_left.svg"),
-                         "Connected half is LEFT (other is RIGHT)", parent=self.parent)
-        action.setData(True)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.set_handedness)
-        hand_menu.addAction(action)
-
-        action = QAction(get_icon("splitscreen_right.svg"),
-                         "Connected half is RIGHT (other is LEFT)", parent=self.parent)
-        action.setData(False)
-        # noinspection PyUnresolvedReferences
-        action.triggered.connect(self.set_handedness)
-        hand_menu.addAction(action)
+        dev_menu.addSeparator()
+        dev_menu.addAction(self._act("file_open.svg", "Run command file (.poly.cmd)\u2026",
+                                     self.load_commands, device=True))
 
     def update_enabled(self, connected, fw_enabled):
         """Protocol-dependent commands follow ``connected``; the firmware
-        flash/apply/bootloader actions follow ``fw_enabled`` so a keyboard
-        with a mismatched protocol can still be updated. The submenu's own
-        parent action must be enabled for the firmware items to be reachable.
+        flash/apply/bootloader actions follow ``fw_enabled`` so a keyboard with a
+        mismatched protocol can still be updated (see PolyHost._fw_actions_allowed).
+
+        A parent menu action must be enabled for its items to be reachable, so
+        Maintenance opens whenever EITHER half is live.
         """
-        self._cmd_menu.menuAction().setEnabled(connected or fw_enabled)
-        for action in self._cmd_menu.actions():
+        for action in self._device_actions:
             action.setEnabled(connected)
         for action in self._fw_actions:
             action.setEnabled(fw_enabled)
+        if self._maintenance_action is not None:
+            self._maintenance_action.setEnabled(connected or fw_enabled)
 
     def activate_bootloader(self):
         self._report(self._core.activate_bootloader(),
@@ -268,6 +303,26 @@ class CommandsSubMenu:
     def reset_dynamic_keymap(self):
         self._report(self._core.reset_dynamic_keymap(),
                      lambda m: f"Failed resetting dynamic keymap: {m}")
+
+    def reset_dynamic_keymap_confirmed(self):
+        """Maintenance entry point: same reset, but it asks first.
+
+        In the old flat command list this sat among a dozen sibling resets and
+        fired straight away; on the top-level Maintenance menu it is one slip
+        away from every user's remapped keymap, so it confirms.
+        """
+        confirm_msg = (
+            "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>"
+            "Every key you remapped (here or in VIA) goes back to the layout the "
+            "firmware ships with. This cannot be undone.<br><br>Continue?"
+        )
+        reply = QMessageBox.question(
+            None, "Reset Keymap", confirm_msg,
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            self.log.info("Reset dynamic keymap: user cancelled at confirmation.")
+            return
+        self.reset_dynamic_keymap()
 
     def reset_overlay_mapping(self):
         self._report(self._core.reset_overlay_mapping(),
@@ -327,6 +382,50 @@ class CommandsSubMenu:
             return
         self._report(self._core.wipe_fontpack(),
                      lambda m: f"Failed to wipe font pack: '{m}'")
+
+    def show_layer_count(self):
+        ok, value = self._core.keymap_layer_count()
+        self._info("Keymap", f"Layers: {value}" if ok else f"Could not read the layer count: {value}")
+
+    def show_default_layer(self):
+        ok, value = self._core.keymap_default_layer()
+        self._info("Keymap", f"Default layer: {value}" if ok
+                   else f"Could not read the default layer: {value}")
+
+    def dump_keymap_buffer(self):
+        """Write the raw keymap buffer to the host log — it is far too big for a
+        dialog, and the log is what gets attached to a bug report anyway."""
+        ok, buf = self._core.keymap_buffer()
+        if not ok:
+            self._info("Keymap", f"Could not read the keymap buffer: {buf}")
+            return
+        data = bytes(buf) if not isinstance(buf, str) else buf.encode()
+        self.log.info("Keymap buffer (%d bytes):\n%s", len(data), data.hex(" ", 2))
+        self._info("Keymap", f"Keymap buffer ({len(data)} bytes) written to the log.")
+
+    def show_fontpack_status(self):
+        """Per-bundle device-vs-shipped versions (what Sync would actually do)."""
+        ok, info = self._core.fontpack_bundle_status()
+        if not ok:
+            self._info("Font Pack", f"Could not read the font-pack status: {info}")
+            return
+        if not info.get("shipped"):
+            self._info("Font Pack", "This host ships no font-pack bundles.")
+            return
+        # NB: `state=` is deliberately a DIFFERENT name from the payload's own
+        # `stale` key — passing both an explicit stale= and **b (which carries
+        # stale) is a TypeError, which crashed this dialog on every open.
+        rows = "".join(
+            "<tr><td>{id}</td><td align=right>{device_version}</td>"
+            "<td align=right>{shipped_version}</td><td>{state}</td></tr>".format(
+                state="stale" if b["stale"] else "ok", **b)
+            for b in info["bundles"])
+        self._info("Font Pack",
+                   "<table cellpadding=4><tr><th align=left>bundle</th><th>device</th>"
+                   f"<th>shipped</th><th></th></tr>{rows}</table>")
+
+    def _info(self, title, text):
+        QMessageBox.information(None, title, text)
 
     def load_commands(self):
         file_name = _get_open_file_explicit('Open file', "PolyKybd commands (*.poly.cmd)")

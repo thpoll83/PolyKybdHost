@@ -4,13 +4,41 @@ import os
 import yaml
 from platformdirs import user_config_dir
 
+APP_NAME = "PolyHost"
+CONFIG_FILENAME = "settings.yaml"
+
+
+def settings_path():
+    """Path of the persisted settings file (no side effects)."""
+    return os.path.join(user_config_dir(APP_NAME), CONFIG_FILENAME)
+
+
+def read_setting(name, default=None):
+    """Read ONE persisted setting straight from the YAML file.
+
+    Deliberately does not construct :class:`PolySettings` — that creates the
+    config dir, merges + re-saves the defaults and logs the whole settings dump,
+    which is far too much for a single early-startup lookup (main_app needs
+    ``developer_mode`` before it knows which launch path it is even taking).
+    Returns ``default`` for a missing file / key or an unreadable file.
+    """
+    try:
+        with open(settings_path(), encoding='utf-8') as f:
+            data = yaml.safe_load(f) or {}
+    except (OSError, yaml.YAMLError):
+        return default
+    if not isinstance(data, dict):
+        return default
+    return data.get(name, default)
+
+
 class PolySettings:
     """ Stores program specific settings """
     def __init__(self):
         self.collection = None
         self.log = logging.getLogger('PolyHost')
-        self.APP_NAME = "PolyHost"
-        self.CONFIG_FILENAME = "settings.yaml"
+        self.APP_NAME = APP_NAME
+        self.CONFIG_FILENAME = CONFIG_FILENAME
 
         # Get the user-specific config directory
         directory = user_config_dir(self.APP_NAME)
@@ -48,6 +76,14 @@ class PolySettings:
             "max_hid_message_before_delay": 15,
             "delay_time_after_max_hid_messages": 0.3,
             "hid_reconnect_retries": 5,
+            # Developer mode: reveals the tray's Developer submenu and the
+            # `dev_`-prefixed settings below, and allows key injection. Formerly
+            # implied by `--debug`; it is a persisted setting because under
+            # daemon-by-default the tray GUI is launched by autostart with no
+            # flags, so there was no way to reach the developer tools without
+            # starting the app by hand. `--dev N` overrides it for one run (in
+            # both directions — `--dev 0` forces it off).
+            "developer_mode": False,
             "dev_mock_enabled": False,
             "dev_run_window_detection_if_not_connected_to_poly_kybd": False,
             "dev_win_native_set_language": False,
