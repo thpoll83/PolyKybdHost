@@ -64,6 +64,7 @@ from polyhost._version import __version__, __protocol__
 
 from polyhost.services.updater import (
     UpdateChecker, UpdateInstaller, FwUpDownloader,
+    detached_popen_kwargs, relaunch_executable,
     get_last_check_time, set_last_check_time)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.dialog_util import position_near_tray
@@ -2101,12 +2102,10 @@ class PolyHost(QApplication):
         if self._update_progress is not None:
             self._update_progress.setLabelText("Restarting to complete update…")
             self._update_progress.setValue(100)
-        popen_kwargs: dict = {"close_fds": False}
-        if sys.platform == "win32":
-            popen_kwargs["creationflags"] = (
-                subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-            )
-        subprocess.Popen([sys.executable, relay_path], **popen_kwargs)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        # Detached + windowless (updater.detached_popen_kwargs): the relay must
+        # outlive this process and must not hand the restarted app a console.
+        subprocess.Popen([relaunch_executable(), relay_path],  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+                         **detached_popen_kwargs())
         # Brief pause so the user sees the "Restarting" label before the window vanishes.
         QTimer.singleShot(1200, self.quit)
 

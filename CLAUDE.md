@@ -648,6 +648,35 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
 - **Autostart** (`polyhost/services/add_to_startup.py`): `setup_autostart_for_app()` registers the app to start at login (called from `main_app.py` unless `--portable`).
   - **Windows**: prefers a per-user, **non-elevated logon scheduled task** (`RunLevel Limited` / `LogonType Interactive`, via PowerShell `Register-ScheduledTask`) — needs no admin/UAC and starts earlier than the Startup folder, which Explorer throttles. The task launches the **proven venv-activating `.bat` wrapper** (`create_windows_bat_wrapper`); do **not** swap this for a direct `pythonw -m polyhost` call — running the venv interpreter without activation drops the `Scripts` dir from `PATH` and the app dies silently (regressed once, see git history). The `.bat` is run **windowless** through `wscript.exe` + a hidden-launch `.vbs` (`create_windows_hidden_vbs`, window style 0) so no console flashes. Falls back to a Startup-folder shortcut if task creation is refused (locked-down Task Scheduler). Gotchas learned the hard way: `New-ScheduledTaskAction -Argument ''` is rejected — only pass `-Argument` when non-empty; and f-strings with backslashes in the expression part break on Python < 3.12.
   - **Linux**: `.desktop` autostart entry; **macOS**: `launchd` plist.
+  - ⚠️ **Every relaunch in the update chain must be spawned DETACHED — on Windows a
+    plain `Popen` is how the app "doesn't start up again after the update".** Three
+    sites relaunch after a self-update: `updater.restart_app()`, the generated
+    locked-file relay script (`_write_relay_script`), and the daemon's relay spawn
+    (`headless._restart_if_requested`) — all three used a bare
+    `Popen(..., close_fds=False)` (fixed 2026-08-05; the GUI's own relay spawn and
+    `daemon_launch.spawn_headless_daemon` were already correct). Without
+    `DETACHED_PROCESS` Windows does one of two things, both fatal: it hands the child
+    the **exiting parent's console** (closing that window sends CTRL_CLOSE and kills
+    the freshly restarted app — the same "console opens, closing it drops the
+    connection" failure `create_windows_bat_wrapper` avoids with `pythonw`), or —
+    when the parent has *no* console, which the detached daemon does not — it
+    allocates a **brand-new console window** for the child. In daemon mode that is
+    the whole chain: daemon → relay (new console) → restarted daemon (inherits it),
+    while the GUI's own relaunch inherits the old GUI's console. One closed window
+    then takes down the daemon *and* the tray, and `probe_existing` reads `stale` at
+    the next launch. Use `updater.detached_popen_kwargs()` /
+    `detached_creationflags()` (`DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP`, stdio
+    on DEVNULL) for anything that must outlive the process spawning it.
+  - **A relaunch inherits `sys.executable` forever, so it must be normalised to
+    `pythonw.exe`** (`updater.relaunch_executable()`): one session started from a
+    terminal (`python -m polyhost`) used to make *every* subsequent post-update
+    restart console-owning, long after the autostart `.bat` (which correctly calls
+    `pythonw`) was out of the picture. The 2026-08-05 field log shows exactly that —
+    `Restarting: ['…\\Scripts\\python.exe', '-m', 'polyhost', …]`.
+  - **The relay script logs to `startup_log.txt`**: it runs detached with stdio on
+    DEVNULL, so its old `print(..., file=sys.stderr)` on a failed DLL copy went
+    nowhere. It is the last step of an update — a silent failure there reads as "the
+    app never came back" with no evidence at all.
   - `get_autostart_status()` reports which mechanism is in place (printed at startup); `remove_autostart()` tears all of them down. `--portable` removes any existing entry rather than just skipping registration.
 - **Layout dialog** (`polyhost/gui/layout_dialog/`): fully implemented — layer switching re-renders all key labels from the cached buffer; clicking a key then selecting from the browser writes immediately to the device via `set_dynamic_keycode()` and keeps the local buffer in sync. `RenderableKey` carries `matrix_index` for row/col derivation.
 

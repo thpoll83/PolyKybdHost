@@ -1,4 +1,5 @@
 import io
+import shutil
 import sys
 import tarfile
 import tempfile
@@ -696,6 +697,80 @@ class TestRestartApp(unittest.TestCase):
         execv.assert_not_called()
         popen.assert_called_once()
         sys_exit.assert_called_once_with(0)
+
+    def test_windows_relaunch_is_detached(self):
+        """The restarted app must not stay in the exiting parent's console.
+
+        Without DETACHED_PROCESS the child inherits that console (closing the
+        window kills the freshly restarted app) or — when the parent is itself
+        detached, as the daemon is — gets a brand new console window allocated
+        for it. Both were seen after a Windows self-update.
+        """
+        with mock.patch.object(updater.sys, "platform", "win32"), \
+             mock.patch.object(updater.subprocess, "Popen") as popen, \
+             mock.patch.object(updater.sys, "exit", side_effect=SystemExit):
+            with self.assertRaises(SystemExit):
+                updater.restart_app()
+        flags = popen.call_args.kwargs["creationflags"]
+        self.assertTrue(flags & updater.WIN_DETACHED_PROCESS)
+        self.assertTrue(flags & updater.WIN_CREATE_NEW_PROCESS_GROUP)
+
+    def test_posix_relaunch_passes_no_creationflags(self):
+        """subprocess rejects a non-zero creationflags outside Windows."""
+        self.assertEqual(updater.detached_creationflags(), 0)
+        self.assertNotIn("creationflags", updater.detached_popen_kwargs())
+
+
+class TestRelaunchExecutable(unittest.TestCase):
+    """The relaunch interpreter, which a restart otherwise inherits forever.
+
+    On Windows the tray GUI and the daemon must never own a console, so a
+    relaunch swaps python.exe for the pythonw.exe beside it — the same reason
+    the autostart .bat wrapper calls pythonw.
+    """
+
+    def test_windows_prefers_pythonw(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            scripts = Path(tmp)
+            (scripts / "python.exe").write_text("")
+            (scripts / "pythonw.exe").write_text("")
+            with mock.patch.object(updater.sys, "platform", "win32"):
+                chosen = updater.relaunch_executable(str(scripts / "python.exe"))
+        self.assertEqual(Path(chosen).name, "pythonw.exe")
+
+    def test_windows_falls_back_when_pythonw_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            exe = Path(tmp) / "python.exe"
+            exe.write_text("")
+            with mock.patch.object(updater.sys, "platform", "win32"):
+                chosen = updater.relaunch_executable(str(exe))
+        self.assertEqual(Path(chosen).name, "python.exe")
+
+    def test_posix_keeps_the_current_interpreter(self):
+        with mock.patch.object(updater.sys, "platform", "linux"):
+            self.assertEqual(updater.relaunch_executable("/usr/bin/python3"),
+                             "/usr/bin/python3")
+
+
+class TestRelayScript(unittest.TestCase):
+    """The Windows locked-file relay script is generated source — it must parse,
+    and its relaunch must be detached like every other one in the chain."""
+
+    def _write(self, platform):
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, True)
+        with mock.patch.object(updater.sys, "platform", platform):
+            return updater._write_relay_script([("a.dll", "b.dll")], tmp).read_text()
+
+    def test_script_is_valid_python(self):
+        compile(self._write("win32"), "relay.py", "exec")
+
+    def test_relaunch_is_detached(self):
+        source = self._write("win32")
+        flags = updater.WIN_DETACHED_PROCESS | updater.WIN_CREATE_NEW_PROCESS_GROUP
+        self.assertIn(f"'creationflags': {flags}", source)
+        self.assertIn("-m", source)
+        self.assertIn("polyhost", source)
 
 
 class TestUpdateChecker(unittest.TestCase):

@@ -117,6 +117,26 @@ class TestHeadlessHost(unittest.TestCase):
         self.assertTrue(host._restart_after_stop)
         self.assertEqual(host._relay_path, "/tmp/relay.py")
 
+    def test_relay_is_spawned_detached(self):
+        """The daemon runs with no console of its own, so a plain Popen makes
+        Windows allocate a NEW console window for the relay — which the daemon it
+        restarts then inherits and dies with when that window is closed."""
+        import subprocess
+        from unittest import mock
+        from polyhost.headless import HeadlessHost
+        from polyhost.services import updater
+        host = HeadlessHost(_quiet())
+        self.addCleanup(host.stop)
+        host._restart_after_stop = True
+        host._relay_path = "/tmp/relay.py"
+        with mock.patch.object(updater.sys, "platform", "win32"), \
+             mock.patch.object(subprocess, "Popen") as popen:
+            host._restart_if_requested()
+        popen.assert_called_once()
+        flags = popen.call_args.kwargs["creationflags"]
+        self.assertTrue(flags & updater.WIN_DETACHED_PROCESS)
+        self.assertTrue(flags & updater.WIN_CREATE_NEW_PROCESS_GROUP)
+
 
 class TestWindowReportWiring(unittest.TestCase):
     """The network window-report listener (H4d) is opt-in: HeadlessHost starts

@@ -148,10 +148,14 @@ class HeadlessHost:
         from polyhost.services import updater
         if self._relay_path:
             import subprocess
-            import sys
             # The relay waits for this process to exit, copies the locked files,
             # then relaunches — so we just spawn it and let run() return.
-            subprocess.Popen([sys.executable, self._relay_path], close_fds=False)
+            # Detached: this daemon itself normally runs with no console, and a
+            # plain Popen would make Windows allocate a *new console window* for
+            # the relay — which the restarted daemon then inherits and dies with
+            # when someone closes it (see updater.detached_creationflags).
+            subprocess.Popen([updater.relaunch_executable(), self._relay_path],
+                             **updater.detached_popen_kwargs())
             return
         updater.restart_app()
 

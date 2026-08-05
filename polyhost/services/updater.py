@@ -577,6 +577,77 @@ def _run_pip(args: list, label: str, line_cb=None) -> None:
         raise RuntimeError(f"pip {label} after update failed to run: {e}") from e
 
 
+# Win32 process-creation flags. Taken from `subprocess` where it defines them
+# (Windows) and spelled out otherwise, so the values stay correct — and testable —
+# on the platforms where the attributes simply don't exist.
+WIN_DETACHED_PROCESS = getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
+WIN_CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+
+
+def detached_creationflags() -> int:
+    """Windows creationflags for spawning a process that must OUTLIVE us.
+
+    Every relaunch in the update chain (relay script, restarted GUI, restarted
+    daemon) is spawned by a process that is about to exit, so the child must not
+    stay bound to the parent's console or process group:
+
+    - **DETACHED_PROCESS** — the child gets *no* console. Without it Windows
+      either hands the child the dying parent's console (closing that window then
+      sends CTRL_CLOSE and kills the freshly restarted app — the documented
+      "console opens, closing it drops the connection" failure the autostart
+      ``.bat`` wrapper avoids by using ``pythonw``) or, when the parent has no
+      console of its own (the detached daemon), allocates a **brand new console
+      window** for it. That is how a post-update daemon ended up owning a stray
+      console window it then died with.
+    - **CREATE_NEW_PROCESS_GROUP** — a Ctrl+C/Ctrl+Break in the old console
+      cannot reach the new process.
+
+    0 on non-Windows (``subprocess`` rejects a non-zero value there).
+    Same pair :func:`polyhost.server.daemon_launch.spawn_headless_daemon` and the
+    GUI's own relay spawn use.
+    """
+    if sys.platform != "win32":
+        return 0
+    return WIN_DETACHED_PROCESS | WIN_CREATE_NEW_PROCESS_GROUP
+
+
+def detached_popen_kwargs() -> dict:
+    """``subprocess.Popen`` kwargs for a relaunch that must outlive this process.
+
+    stdio goes to DEVNULL: a DETACHED_PROCESS child has no console, so inheriting
+    the parent's (soon-invalid) handles buys nothing. The app logs to its own
+    files either way.
+    """
+    kwargs = {
+        "close_fds": False,
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
+    flags = detached_creationflags()
+    if flags:
+        kwargs["creationflags"] = flags
+    return kwargs
+
+
+def relaunch_executable(executable: Optional[str] = None) -> str:
+    """The interpreter to relaunch the app with.
+
+    On Windows prefer ``pythonw.exe`` next to the running interpreter: neither
+    the tray GUI nor the daemon may own a console (see
+    :func:`detached_creationflags`), and a restart inherits ``sys.executable`` —
+    so a session that happened to start under ``python.exe`` would otherwise hand
+    the console down to every future restart. Falls back to the current
+    interpreter when there is no ``pythonw.exe`` beside it.
+    """
+    exe = Path(executable or sys.executable)
+    if sys.platform == "win32" and exe.name.lower() == "python.exe":
+        windowless = exe.with_name("pythonw.exe")
+        if windowless.exists():
+            return str(windowless)
+    return str(exe)
+
+
 # On Windows the running process holds native DLLs (e.g. hidapi.dll) open,
 # so shutil.copy2 fails with WinError 32 when trying to overwrite them.
 # apply_update() collects those files and returns them; UpdateInstaller
@@ -585,6 +656,19 @@ def _run_pip(args: list, label: str, line_cb=None) -> None:
 # remaining files, relaunches, and cleans up.
 _RELAY_SCRIPT_TEMPLATE = """\
 import shutil, subprocess, sys, time
+
+
+def note(msg):
+    # The relay runs detached with stdio on DEVNULL, so stderr goes nowhere —
+    # leave the trace on disk next to the app's own startup log instead. This is
+    # the last step of an update; a silent failure here reads as "the app never
+    # came back" with nothing to go on.
+    try:
+        with open({log_path!r}, "a", encoding="utf-8") as fh:
+            fh.write(f"[polyhost relay] {{msg}}\\n")
+    except Exception:
+        pass
+
 
 for src, dst in {pairs!r}:
     for attempt in range(4):
@@ -595,21 +679,32 @@ for src, dst in {pairs!r}:
             if attempt < 3:
                 time.sleep(2)
             else:
-                print(f"polyhost relay: {{e}}", file=sys.stderr)
+                note(f"failed to copy {{src}} -> {{dst}}: {{e}}")
 
-subprocess.Popen({restart_args!r}, close_fds=False)
+note("relaunching " + " ".join({restart_args!r}))
+subprocess.Popen({restart_args!r}, **{popen_kwargs!r})
 shutil.rmtree({tmp_dir!r}, ignore_errors=True)
 """
 
 
 def _write_relay_script(locked: list, tmp_dir: Path) -> Path:
-    """Write a detached relay script that copies locked files after app exit."""
-    restart_args = [sys.executable, "-m", "polyhost", *sys.argv[1:]]
+    """Write a detached relay script that copies locked files after app exit.
+
+    The relaunch it performs is the *last* step of a Windows update, so it uses
+    the same detached/windowless spawn as :func:`restart_app` — the relay itself
+    exits immediately afterwards, and a non-detached child would be left holding
+    the relay's console (see :func:`detached_creationflags`).
+    """
+    restart_args = [relaunch_executable(), "-m", "polyhost", *sys.argv[1:]]
     script = tmp_dir / "_polyhost_relay.py"
     script.write_text(
         _RELAY_SCRIPT_TEMPLATE.format(
             pairs=locked,
             restart_args=restart_args,
+            popen_kwargs=detached_popen_kwargs(),
+            # Where main_app's _setup_startup_logging writes (cwd-relative), so
+            # the relay's lines land beside the launch trace they explain.
+            log_path=str(Path("startup_log.txt").resolve()),
             tmp_dir=str(tmp_dir),
         ),
         encoding="utf-8",
@@ -664,14 +759,19 @@ def restart_app() -> None:
     otherwise leave the app dead with no relaunch ("not starting up again after
     the update"). So fall back to spawning a detached child + exiting, which
     always brings the app back.
+
+    On Windows the relaunch is **detached and windowless** (see
+    :func:`detached_creationflags` / :func:`relaunch_executable`): a child left
+    in the exiting parent's console is killed with that console, which is the
+    other way the app fails to come back after an update.
     """
-    args = [sys.executable, "-m", "polyhost", *sys.argv[1:]]
+    args = [relaunch_executable(), "-m", "polyhost", *sys.argv[1:]]
     log.info("Restarting: %s", args)
     if sys.platform == "win32":
-        subprocess.Popen(args, close_fds=False)
+        subprocess.Popen(args, **detached_popen_kwargs())
         sys.exit(0)
     try:
-        os.execv(sys.executable, args)
+        os.execv(args[0], args)
     except OSError as e:
         log.warning("os.execv failed (%s); falling back to a subprocess relaunch.", e)
         subprocess.Popen(args, close_fds=False)
