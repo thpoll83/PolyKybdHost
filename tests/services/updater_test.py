@@ -756,9 +756,15 @@ class TestRestartApp(unittest.TestCase):
         self.assertTrue(flags & updater.WIN_CREATE_NEW_PROCESS_GROUP)
 
     def test_posix_relaunch_passes_no_creationflags(self):
-        """subprocess rejects a non-zero creationflags outside Windows."""
-        self.assertEqual(updater.detached_creationflags(), 0)
-        self.assertNotIn("creationflags", updater.detached_popen_kwargs())
+        """subprocess rejects a non-zero creationflags outside Windows.
+
+        Patch the platform rather than relying on the host's: this repo is
+        developed on Windows, where the unpatched call returns the Windows flags
+        and the assertion below would fail for the wrong reason.
+        """
+        with mock.patch.object(updater.sys, "platform", "linux"):
+            self.assertEqual(updater.detached_creationflags(), 0)
+            self.assertNotIn("creationflags", updater.detached_popen_kwargs())
 
 
 class TestPreflight(unittest.TestCase):
@@ -837,6 +843,39 @@ class TestInstallerPreflight(unittest.TestCase):
         apply_.assert_not_called()  # …and nothing overwritten
         self.assertEqual(rec.names, ["failed"])
         self.assertIn("/install", rec.args_for("failed")[0][0])
+
+    def test_temp_dir_creation_failure_reports_instead_of_dying(self):
+        """mkdtemp() runs outside the download's try block.
+
+        Preflight probes the temp dir but cannot reserve it, so this can still
+        fail — and an unguarded raise ends the installer thread silently, with
+        the tray's progress dialog left up forever waiting for a terminal event.
+        """
+        rec = _Recorder()
+        with mock.patch.object(updater, "preflight", return_value=[]), \
+             mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater.tempfile, "mkdtemp",
+                               side_effect=OSError("No space left on device")), \
+             mock.patch.object(updater, "download_and_extract") as dl:
+            self._make(rec).run()
+        dl.assert_not_called()
+        self.assertEqual(rec.names, ["failed"])
+        self.assertIn("No space left on device", rec.args_for("failed")[0][0])
+
+    def test_temp_dir_probe_creates_and_removes_a_directory(self):
+        """The temp-dir check must be a real creation, not os.access().
+
+        os.access() reflects only the read-only attribute on Windows (not ACLs),
+        so it passes where the installer's own mkdtemp() then fails.
+        """
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater.tempfile, "mkdtemp",
+                               side_effect=OSError("denied")) as mkdtemp:
+            findings = updater.preflight()
+        mkdtemp.assert_called_once()
+        tmp = next(f for f in findings if f.name == "temp dir")
+        self.assertFalse(tmp.ok)
+        self.assertTrue(tmp.blocking)
 
     def test_warning_is_surfaced_but_does_not_stop_the_update(self):
         rec = _Recorder()

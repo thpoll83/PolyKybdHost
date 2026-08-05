@@ -836,10 +836,16 @@ def preflight() -> list:
         findings.append(Preflight("install dir", False, True, f"{type(e).__name__}: {e}"))
 
     # The download + extract land here before a single install file is touched.
+    # Probe by actually creating a directory rather than asking os.access(): on
+    # Windows that reflects only the read-only attribute, not ACLs — and quota
+    # or policy can fail the real mkdtemp() the installer does moments later.
     tmp = tempfile.gettempdir()
-    tmp_ok = os.access(tmp, os.W_OK)
-    findings.append(Preflight("temp dir", tmp_ok, True,
-                              tmp if tmp_ok else f"not writable: {tmp}"))
+    try:
+        probe = tempfile.mkdtemp(prefix="polyhost-preflight-")
+        shutil.rmtree(probe, ignore_errors=True)
+        findings.append(Preflight("temp dir", True, True, tmp))
+    except OSError as e:
+        findings.append(Preflight("temp dir", False, True, f"not usable: {tmp} ({e})"))
 
     exe = Path(relaunch_executable())
     if not exe.exists():
@@ -1031,8 +1037,16 @@ class UpdateInstaller(threading.Thread):
             return
 
         # Use mkdtemp (not TemporaryDirectory context manager) so that on Windows
-        # we can leave the directory alive for the relay script to consume.
-        tmp_dir = Path(tempfile.mkdtemp(prefix="polyhost-update-"))
+        # we can leave the directory alive for the relay script to consume. It
+        # needs its own guard: preflight probes the temp dir but cannot reserve
+        # it, and a raise out here would end the installer thread without ever
+        # firing on_failed — leaving the tray's progress dialog up forever.
+        try:
+            tmp_dir = Path(tempfile.mkdtemp(prefix="polyhost-update-"))
+        except OSError as e:
+            log.exception("Could not create the update temp dir")
+            _fire(self._on_failed, f"Could not create a temp directory for the update: {e}")
+            return
         try:
             _fire(self._on_progress, 0, "Starting download...")
             extracted = download_and_extract(
