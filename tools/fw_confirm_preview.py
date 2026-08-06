@@ -148,7 +148,7 @@ def main():
     ap.add_argument("--out", default="/tmp/fw_confirm_preview.png")
     ap.add_argument("--unit", type=int, default=0,
                     help="pixels per key unit (default: derived from --px)")
-    ap.add_argument("--px", type=int, default=2, choices=sorted(UNIT_FOR_PX),
+    ap.add_argument("--px", type=int, default=1, choices=sorted(UNIT_FOR_PX),
                     help="output pixels per logical OLED pixel; picks a --unit that "
                          "keeps the keycap grid whole")
     ap.add_argument("--flat", action="store_true",
