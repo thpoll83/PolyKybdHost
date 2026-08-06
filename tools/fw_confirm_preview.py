@@ -27,7 +27,7 @@ import json
 import os
 import sys
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
@@ -47,6 +47,23 @@ REJECT_MP = f"{FW_CONFIRM_ROW + RIGHT_ROW_OFFSET},{FW_CONFIRM_COL}"
 # Sentinels handed to KleRenderer as "glyphs"; the shim below returns the
 # pre-composed keycap for each instead of looking anything up in a font.
 CH_ACCEPT, CH_REJECT = "\x01", "\x02"
+
+# --- status OLED, at its real place and size -------------------------------
+# Measured off the PCBs (poly_kybd_split72_{left,right}.kicad_pcb): a unique
+# 24.84 x 14.04 mm Eco2.User rectangle, mirrored between the halves, sitting at
+# each half's top INNER corner. 24.84/128 == 14.04/64 == 0.194 mm/px, i.e. square
+# pixels — which is what identifies it as the active area rather than the module
+# outline. Converted to key units against the socket grid (19.05 mm/U, anchored
+# on the second column and the top row, since the outermost column's gap differs
+# slightly between the KLE artwork and the board).
+# The surrounding bezel is the plate's 27 x 26 mm module opening
+# (poly_kybd_split72_plate_*.kicad_pcb; the plate is drawn mirrored relative to
+# the board, which is why its cutout looks like it sits on the outer edge).
+OLED_ACTIVE_U = {"L": (7.817, 0.360, 9.121, 1.097),
+                 "R": (11.879, 0.360, 13.183, 1.097)}
+MODULE_MM = (27.0, 26.0)      # plate cutout
+ACTIVE_TOP_INSET_MM = 2.51    # active-area top below the module top
+MM_PER_U = 19.05
 
 
 def render_confirm_keycap(accept: bool, S) -> Image.Image:
@@ -108,6 +125,15 @@ class _PromptGlyphs:
         return self._cap.get(ch) or Image.new("L", (SCREEN_W, SCREEN_H), 0)
 
 
+def module_rect_bounds(active):
+    """Module (bezel) rect in key units around an active-area rect."""
+    x0, y0, x1, y1 = active
+    mw, mh = MODULE_MM[0] / MM_PER_U, MODULE_MM[1] / MM_PER_U
+    cx = (x0 + x1) / 2
+    top = y0 - ACTIVE_TOP_INSET_MM / MM_PER_U
+    return (cx - mw / 2, top, cx + mw / 2, top + mh)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -120,6 +146,11 @@ def main():
     ap.add_argument("--exclude", default="3,7;8,0", help="matrix positions with no display")
     ap.add_argument("--oled-scale", type=int, default=3, help="status-OLED pixel scale")
     ap.add_argument("--no-bezel", action="store_true")
+    ap.add_argument("--status-oled", action="store_true",
+                    help="draw the status OLEDs at their real PCB position and size")
+    ap.add_argument("--oled-gap", type=float, default=0.30,
+                    help="clearance between the two OLED modules, in key units "
+                         "(--status-oled only; the halves are moved apart to make room)")
     args = ap.parse_args()
 
     sys.path.insert(0, HERE)
@@ -132,8 +163,28 @@ def main():
     renderer = KleRenderer(json.load(open(args.kle, encoding="utf-8")),
                            unit=args.unit, glyphs=glyphs, bezel=not args.no_bezel,
                            margin=args.margin, dither=False,
-                           exclude={m.strip() for m in args.exclude.split(";") if m.strip()})
-    renderer.compact_halves(lambda mp: "L" if int(mp.split(",")[0]) < 5 else "R", gap_px=args.gap)
+                           exclude={m.strip() for m in args.exclude.split(";") if m.strip()},
+                           panels=[module_rect_bounds(OLED_ACTIVE_U[s_]) for s_ in ("L", "R")]
+                                  if args.status_oled else None)
+    active = dict(OLED_ACTIVE_U)
+    if args.status_oled:
+        # The OLEDs live in the inner gap, so the halves are spaced by what the
+        # two modules need rather than by the key gap: slide the right half (and
+        # its panel rects, which are not part of the key map) until the modules
+        # clear each other by --oled-gap.
+        ml, mr = module_rect_bounds(active["L"]), module_rect_bounds(active["R"])
+        delta = (mr[0] - ml[2]) - args.oled_gap
+        if delta > 0:
+            for mp, p_ in renderer.km.items():
+                if int(mp.split(",")[0]) >= 5:
+                    p_["x"] -= delta
+                    p_["rx"] -= delta
+            x0, y0, x1, y1 = active["R"]
+            active["R"] = (x0 - delta, y0, x1 - delta, y1)
+            renderer.panels = [module_rect_bounds(active[s_]) for s_ in ("L", "R")]
+            renderer._geom()
+    else:
+        renderer.compact_halves(lambda mp: "L" if int(mp.split(",")[0]) < 5 else "R", gap_px=args.gap)
 
     # The board IS the dialog: every other key is swallowed and dark.
     contents = {mp: KeyContent(blank=True) for mp in renderer.km}
@@ -148,36 +199,17 @@ def main():
     panels = [S.render_plain(S.build_fw_confirm_panel(side, small), sc=args.oled_scale)
               for side in ("L", "R")]
 
-    # Pair each panel with an enlarged view of ITS key: at board scale a single
-    # 72x40 keycap is too small to read, and the whole point is what those two
-    # keys show.
-    def chip(img):
-        sc = args.oled_scale
-        rgb = Image.new("RGB", (SCREEN_W * sc, SCREEN_H * sc), S.OFF)
-        px, out_px = img.load(), rgb.load()
-        for y in range(SCREEN_H):
-            for x in range(SCREEN_W):
-                if px[x, y]:
-                    for dy in range(sc):
-                        for dx in range(sc):
-                            out_px[x * sc + dx, y * sc + dy] = S.ON
-        return rgb
-
-    caps = [chip(glyphs._cap[ch]) for ch in (CH_ACCEPT, CH_REJECT)]
-
-    pad, gap = 18, 16
-    pw, ph = panels[0].size
-    cw, ch_ = caps[0].size
-    band = max(ph, ch_) + pad
-    group_w = cw + gap + pw
-    out = Image.new("RGB", (max(kb.width, group_w * 2 + 3 * pad), kb.height + band), theme.bg)
-    kb_x = (out.width - kb.width) // 2
-
-    for i, (cap, panel) in enumerate(zip(caps, panels)):
-        gx = (out.width // 4 if i == 0 else out.width * 3 // 4) - group_w // 2
-        out.paste(cap, (gx, pad // 2 + (band - pad - ch_) // 2))
-        out.paste(panel, (gx + cw + gap, pad // 2 + (band - pad - ph) // 2))
-    out.paste(kb, (kb_x, band))
+    # Bezel: the module opening, with the active area inset at its real offset.
+    module_rect = module_rect_bounds
+    out = kb
+    if args.status_oled:
+        d = ImageDraw.Draw(out)
+        for side, panel in zip(("L", "R"), panels):
+            mx0, my0, mx1, my1 = renderer.panel_box_px(module_rect(active[side]))
+            d.rounded_rectangle([mx0, my0, mx1, my1], radius=max(2, (mx1 - mx0) // 18),
+                                fill=(16, 16, 18), outline=(58, 58, 62), width=2)
+            ax0, ay0, ax1, ay1 = renderer.panel_box_px(active[side])
+            out.paste(panel.resize((max(1, ax1 - ax0), max(1, ay1 - ay0)), Image.NEAREST), (ax0, ay0))
 
     out.save(args.out)
     print(f"wrote {args.out}  ({out.width}x{out.height})")

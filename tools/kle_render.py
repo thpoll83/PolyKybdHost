@@ -190,7 +190,12 @@ class KleRenderer:
     def __init__(self, kle_json: list, unit: int = 72, key_pad: int = 3,
                  theme: Theme | None = None, glyphs: GlyphRenderer | None = None,
                  bezel: bool = True, dither: bool = True, margin: int = 24,
-                 exclude: set[str] | None = None):
+                 exclude: set[str] | None = None,
+                 panels: list[tuple[float, float, float, float]] | None = None):
+        # ``panels``: optional extra rectangles in KEY UNITS (x0, y0, x1, y1) that
+        # are not keys — e.g. the status OLEDs, whose real position and size come
+        # from the PCB. They only widen the canvas here; render_frame() draws them.
+        # Left as None the renderer behaves exactly as before.
         self.rows, self.cols, self.km = parse_kle(kle_json)
         self.unit = unit
         self.key_pad = key_pad
@@ -200,6 +205,7 @@ class KleRenderer:
         self.dither = dither
         self.margin = margin
         self.exclude = set(exclude or ())   # matrix positions with no display (e.g. encoder)
+        self.panels = list(panels or ())
         self._geom()
         self._bezel_tile = self._make_bezel_tile() if bezel else None
 
@@ -252,6 +258,9 @@ class KleRenderer:
                 continue
             for (x, y) in self._corners_px(p):
                 xs.append(x); ys.append(y)
+        for (x0, y0, x1, y1) in getattr(self, 'panels', ()):
+            xs += [x0 * self.unit, x1 * self.unit]
+            ys += [y0 * self.unit, y1 * self.unit]
         m = self.margin
         self.ox = min(xs) - m
         self.oy = min(ys) - m
@@ -347,7 +356,14 @@ class KleRenderer:
         return tile
 
     # -- frames --------------------------------------------------------------
-    def render_frame(self, contents: dict[str, KeyContent]) -> Image.Image:
+    def panel_box_px(self, rect: tuple[float, float, float, float]) -> tuple[int, int, int, int]:
+        """Key-unit rect -> image pixel box, in this frame's coordinates."""
+        x0, y0, x1, y1 = rect
+        return (int(round(x0 * self.unit - self.ox)), int(round(y0 * self.unit - self.oy)),
+                int(round(x1 * self.unit - self.ox)), int(round(y1 * self.unit - self.oy)))
+
+    def render_frame(self, contents: dict[str, KeyContent],
+                     panel_images: list[Image.Image] | None = None) -> Image.Image:
         img = Image.new('RGB', (self.cw, self.ch), self.theme.bg)
         for mp, p in self.km.items():
             if mp in self.exclude:
@@ -363,6 +379,9 @@ class KleRenderer:
                 x = int(round(p['x'] * self.unit - self.ox))
                 y = int(round(p['y'] * self.unit - self.oy))
                 img.paste(tile, (x, y), tile)
+        for rect, panel in zip(self.panels, panel_images or ()):
+            x0, y0, x1, y1 = self.panel_box_px(rect)
+            img.paste(panel.resize((max(1, x1 - x0), max(1, y1 - y0)), Image.NEAREST), (x0, y0))
         return img
 
     def save_gif(self, frames: Iterable[dict[str, KeyContent]], path: str,
