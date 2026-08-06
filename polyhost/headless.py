@@ -37,7 +37,8 @@ class HeadlessHost:
         self._relay_path = None
         self.core = PolyCore(log=log, ignore_version=ignore_version,
                              start_worker=False, apply_reconnect_in_core=True,
-                             allow_key_injection=allow_key_injection)
+                             allow_key_injection=allow_key_injection,
+                             telemetry_mode="daemon")
         # React to a core-driven self-update (`polyctl update install`): the
         # core only applies + emits; the host owns the restart.
         self.core.subscribe(self._on_update_event)
@@ -83,6 +84,7 @@ class HeadlessHost:
 
     def start(self):
         self.core.worker.start()
+        self.core.start_telemetry()
         # Core-owned active-window tracking (no-op without a display).
         self.core.start_window_tracking()
         self.control_server.start()

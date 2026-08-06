@@ -116,6 +116,14 @@ M_HOST_SHUTDOWN = "host.shutdown"      # {} -> {"shutting_down": True}
 # existing remote path.
 M_WINDOW_REPORT = "window.report"
 
+# Anonymous usage census (polyhost/services/telemetry.py). Status/preview are
+# reads; enabling is just the settings key, exposed separately so `polyctl
+# telemetry` reads as one feature rather than three settings pokes.
+M_TELEMETRY_STATUS = "telemetry.status"    # {} -> {"enabled","endpoint","install_id",...}
+M_TELEMETRY_PREVIEW = "telemetry.preview"  # {} -> the exact payload that would be sent
+M_TELEMETRY_SET = "telemetry.set"          # {"enabled": bool} -> (ok, payload)
+M_TELEMETRY_SEND = "telemetry.send"        # {} -> (ok, msg); ignores the daily throttle
+
 # ---------------------------------------------------------------------------
 # Endpoint location + authkey (filesystem-permission gated, local only)
 # ---------------------------------------------------------------------------

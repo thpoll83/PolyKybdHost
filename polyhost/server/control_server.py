@@ -339,6 +339,11 @@ class ControlServer:
             p.M_SETTINGS_LIST: lambda conn, params: c.settings_list(),
             p.M_SETTINGS_SET: lambda conn, params: _unwrap(c.settings_set(
                 params["key"], params["value"])),
+            p.M_TELEMETRY_STATUS: lambda conn, params: c.telemetry_status(),
+            p.M_TELEMETRY_PREVIEW: lambda conn, params: c.telemetry_preview(),
+            p.M_TELEMETRY_SET: lambda conn, params: _unwrap(
+                c.telemetry_set_enabled(params["enabled"])),
+            p.M_TELEMETRY_SEND: lambda conn, params: _unwrap(c.telemetry_send_now()),
             p.M_WINDOW_REPORT: lambda conn, params: _unwrap(c.report_window(
                 params["handle"], params["name"], params.get("title", ""))),
             p.M_HOST_SHUTDOWN: self._cmd_host_shutdown,

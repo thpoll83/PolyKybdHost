@@ -18,6 +18,7 @@ Wire protocol (see ``polyhost/server/protocol.py``):
 import argparse
 import json
 import sys
+import time
 
 from polyhost.device.command_ids import GlyphScript, IdleStyle  # stdlib-only (Enum), no Qt
 from polyhost.server import protocol
@@ -533,6 +534,40 @@ def _cmd_settings(client, args):
     return 0
 
 
+def _cmd_telemetry(client, args):
+    action = args.telemetry_action or "status"
+    if action == "status":
+        st = client.call(protocol.M_TELEMETRY_STATUS) or {}
+        last = st.get("last_sent") or 0
+        print(f"enabled:     {st.get('enabled')}")
+        print(f"endpoint:    {st.get('endpoint') or '(none — nothing is sent)'}")
+        print(f"install id:  {st.get('install_id')}")
+        print(f"mode:        {st.get('mode')}  schema: {st.get('schema')}")
+        print(f"last ping:   {_fmt_time(last)}  ({st.get('last_result') or 'never'})")
+        if st.get("enabled") and st.get("endpoint"):
+            print(f"next due in: {int(st.get('next_due_in_s') or 0)}s")
+        pending = st.get("pending_counters") or {}
+        if any(pending.values()):
+            print("pending:     " + ", ".join(
+                f"{k}={v}" for k, v in sorted(pending.items()) if v))
+    elif action == "preview":
+        # The point of this command is that a user can read the exact bytes
+        # before deciding to leave telemetry on, so print it verbatim.
+        print(json.dumps(client.call(protocol.M_TELEMETRY_PREVIEW), indent=2))
+    elif action in ("enable", "disable"):
+        client.call(protocol.M_TELEMETRY_SET, {"enabled": action == "enable"})
+        print(f"telemetry {action}d")
+    elif action == "send":
+        _print_result(client.call(protocol.M_TELEMETRY_SEND))
+    return 0
+
+
+def _fmt_time(ts):
+    if not ts:
+        return "never"
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(ts)))
+
+
 def _cmd_watch(client, args):
     for name, payload in client.watch():
         print(f"{name}: {json.dumps(payload)}")
@@ -696,6 +731,17 @@ def build_parser():
     mru_sub = p_mru.add_subparsers(dest="mru_action", required=True)
     mru_sub.add_parser("save", help="persist the MRU cache now")
     p_mru.set_defaults(func=_cmd_mru)
+
+    p_tel = sub.add_parser(
+        "telemetry",
+        help="anonymous usage census: see exactly what is sent, or turn it off")
+    p_tel.add_argument(
+        "telemetry_action", nargs="?",
+        choices=["status", "preview", "enable", "disable", "send"],
+        default="status",
+        help="status (default) | preview the exact payload | enable | disable | "
+             "send now (ignores the once-a-day throttle)")
+    p_tel.set_defaults(func=_cmd_telemetry)
 
     p_set = sub.add_parser("settings", help="get or set a settings key")
     set_sub = p_set.add_subparsers(dest="settings_action", required=True)

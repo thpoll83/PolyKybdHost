@@ -1,0 +1,18 @@
+name = "polyhost-telemetry"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# Created with:
+#   wrangler d1 create polyhost-telemetry
+# then paste the printed database_id below.
+[[d1_databases]]
+binding = "DB"
+database_name = "polyhost-telemetry"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# Deliberately absent:
+#  - no KV / Durable Object rate limiter: the UNIQUE(install_id, day) index makes
+#    a repeat ping a no-op insert, and a WAF rate-limiting rule (see README)
+#    covers the flood case more cheaply than anything we could write here;
+#  - no secrets: the endpoint is unauthenticated by design, because any
+#    credential shipped in an open-source client is a public credential.

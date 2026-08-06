@@ -49,6 +49,8 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     # refresh_daylight_brightness(), which reads core.sunlight (set in the real
     # __init__ this bare core skips).
     core.sunlight = MagicMock()
+    # apply_reconnect counts connects/flaps for the usage census.
+    core.telemetry = MagicMock()
     return core
 
 

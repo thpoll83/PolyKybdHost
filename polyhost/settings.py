@@ -7,6 +7,14 @@ from platformdirs import user_config_dir
 APP_NAME = "PolyHost"
 CONFIG_FILENAME = "settings.yaml"
 
+# Telemetry ingest URL. DELIBERATELY EMPTY until the collector is deployed and
+# its hostname is one we own: an empty endpoint means the reporter never sends,
+# so shipping this inert is safe, whereas shipping a URL for a domain we have
+# not registered would invite someone else to register it and receive the pings.
+# Set it here (one line, in the release that turns telemetry on) or per-install
+# with `polyctl settings set telemetry_endpoint https://…/v1/ping`.
+TELEMETRY_ENDPOINT = ""
+
 
 def settings_path():
     """Path of the persisted settings file (no side effects)."""
@@ -150,6 +158,23 @@ class PolySettings:
             # token (set it in the extension options too). Defence-in-depth
             # against other local processes; empty = accept any loopback report.
             "browser_report_token": "",
+            # Anonymous usage census (polyhost/services/telemetry.py): one small
+            # JSON POST per install per day carrying the host + firmware version,
+            # OS, and a few event counters — never window titles, app names or
+            # location. ON by default, with the first-run notice in the tray GUI
+            # and this switch to turn it off; see docs/telemetry.md for the exact
+            # payload. `polyctl telemetry preview` prints what would be sent.
+            "telemetry_enabled": True,
+            # Where the ping goes. Kept a setting so a self-hoster can repoint it
+            # (or blank it, which disables sending as surely as the flag above).
+            "telemetry_endpoint": TELEMETRY_ENDPOINT,
+            # Random per-install id (uuid4, generated on first ping, no machine
+            # fingerprint) so a ping can be counted once per day. Delete it to
+            # become a new install; it is stored here rather than hidden in a
+            # cache file precisely so it is visible and erasable.
+            "telemetry_install_id": "",
+            # Set once the GUI has shown the one-time "we collect this" notice.
+            "telemetry_notice_shown": False,
         }
         self._legacy_key_renames = {
             "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",

@@ -24,6 +24,8 @@ def make_core(*, connected=True, device_present=True, paused=False):
     core._observers_lock = threading.Lock()
     core.worker = mock.MagicMock()
     core.keeb = mock.MagicMock()
+    # flash_firmware / flash_fontpack / install_update bump census counters.
+    core.telemetry = mock.MagicMock()
     return core
 
 

@@ -39,6 +39,7 @@ from polyhost.device import hid_fontpack
 from polyhost.device.hid_worker import HidWorker
 from polyhost.device.poly_kybd import PolyKybd
 from polyhost.handler.common import OverlayCommand
+from polyhost.services import telemetry as telemetry_svc
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
@@ -79,7 +80,8 @@ class PolyCore:
     """Operational facade: commands in, events out. No Qt, no widgets."""
 
     def __init__(self, log, ignore_version=False, start_worker=True,
-                 apply_reconnect_in_core=False, allow_key_injection=False):
+                 apply_reconnect_in_core=False, allow_key_injection=False,
+                 telemetry_mode="in-process"):
         self.log = log
         self.ignore_version = ignore_version
         # SECURITY: the `press`/`release` script commands inject real keystrokes
@@ -207,8 +209,17 @@ class PolyCore:
         self._tick_stop = threading.Event()
         self._tick_lock = threading.Lock()
 
+        # Anonymous usage census. Created unconditionally (so `polyctl telemetry
+        # status/preview` answers even when it is off) but only *started* by
+        # start_telemetry(), which the owning host calls alongside worker.start()
+        # — so the many short-lived PolyCore instances in the test suite never
+        # spawn a thread.
+        self.telemetry = self._create_telemetry(telemetry_mode)
+        self.telemetry.note("sessions")
+        self._log_telemetry_notice()
         if start_worker:
             self.worker.start()
+            self.start_telemetry()
 
     # ------------------------------------------------------------------
     # Observer plumbing
@@ -330,6 +341,7 @@ class PolyCore:
             self.log.debug("MRU save request failed: %s: %s", type(e).__name__, e)
         if self._sleep_listener is not None:
             self._sleep_listener.close()
+        self.telemetry.stop()
         self.worker.stop()
         if self.browser_report_server is not None:
             self.browser_report_server.stop()
@@ -770,6 +782,13 @@ class PolyCore:
                                  decision["ignore_bypass_msg"])
 
             self.connected = decision["connected"]
+            # Census counters: a fresh connect vs losing one already-connected
+            # keyboard. The flap count is the one number that would actually
+            # tell us a tester's link is unhealthy without asking them.
+            if connected_now:
+                self.telemetry.note("connects")
+            else:
+                self.telemetry.note("reconnect_flaps")
             if snapshot["version_ok"] or self.ignore_version:
                 self.kb_sw_version = snapshot["kb_sw_version"]
 
@@ -1200,6 +1219,74 @@ class PolyCore:
         return True, key
 
     # ------------------------------------------------------------------
+    # Telemetry (anonymous usage census)
+    # ------------------------------------------------------------------
+
+    def _create_telemetry(self, mode):
+        """Build the reporter, minting + persisting the install id on first use.
+
+        The id is generated here rather than at first ping so that
+        `polyctl telemetry status` can show the user exactly what identifies
+        their install before anything is ever sent."""
+        install_id = self.poly_settings.get("telemetry_install_id")
+        if not install_id:
+            install_id = telemetry_svc.new_install_id()
+            try:
+                self.settings_set("telemetry_install_id", install_id)
+            except Exception:  # a read-only config must not break startup
+                self.log.debug("Could not persist telemetry install id",
+                               exc_info=True)
+        return telemetry_svc.TelemetryReporter(
+            self.log, install_id,
+            snapshot_fn=self._telemetry_snapshot,
+            enabled_fn=lambda: bool(self.poly_settings.get("telemetry_enabled")),
+            endpoint_fn=lambda: self.poly_settings.get("telemetry_endpoint") or "",
+            mode=mode)
+
+    def _telemetry_snapshot(self):
+        """(status, fontpack versions) — both read from cache, no device I/O,
+        so the reporter thread can call this without touching the worker."""
+        return self.get_status(), dict(self.keeb.fontpack_bundle_versions or {})
+
+    def _log_telemetry_notice(self):
+        """One INFO line per start saying what the telemetry state is.
+
+        Deliberately NOT gated on a "already told them" flag: a headless daemon
+        has no dialog to show, and a line in the log every start is the honest
+        way for an always-on background process to keep disclosing this. The
+        GUI's one-time dialog is the user-facing half."""
+        if self.poly_settings.get("telemetry_enabled") and \
+                self.poly_settings.get("telemetry_endpoint"):
+            self.log.info(
+                "Telemetry: ON — one anonymous ping/day (host+firmware version, "
+                "OS, event counts; no window titles, app names or location). "
+                "Turn off in Settings or `polyctl telemetry disable`; see what "
+                "would be sent with `polyctl telemetry preview`.")
+        else:
+            self.log.info("Telemetry: off.")
+
+    def start_telemetry(self):
+        """Start the census thread. Call it wherever ``worker.start()`` is
+        called (the hosts construct the core with ``start_worker=False`` and
+        start it themselves once their own wiring is in place)."""
+        self.telemetry.start()
+
+    def telemetry_status(self):
+        return self.telemetry.status()
+
+    def telemetry_preview(self):
+        return self.telemetry.preview()
+
+    def telemetry_set_enabled(self, enabled):
+        return self.settings_set("telemetry_enabled", bool(enabled))
+
+    def telemetry_send_now(self):
+        """Force a ping now (ignores the daily throttle). Used by
+        `polyctl telemetry send` to verify an endpoint works."""
+        ok, msg = self.telemetry.maybe_send(force=True)
+        return bool(ok), msg
+
+    # ------------------------------------------------------------------
     # Firmware flash + host self-update (headless / polyctl)
     # ------------------------------------------------------------------
 
@@ -1233,6 +1320,10 @@ class PolyCore:
         ok, msg = hid_fw_up.validate_polykybd_firmware(fw_bytes)
         if not ok:
             return False, f"Not a PolyKybd firmware: {msg}"
+        # Counts the ATTEMPT, not the outcome — whether it worked is already
+        # visible in the next ping's fw_version, and an attempt that never
+        # produces a new version is exactly the case worth seeing.
+        self.telemetry.note("fw_flashes")
 
         def _job(cancel):
             cancel_flag = [False]
@@ -1275,6 +1366,7 @@ class PolyCore:
         ok, msg = hid_fontpack.validate_fontpack(pack_bytes)
         if not ok:
             return False, msg
+        self.telemetry.note("fontpack_flashes")
 
         def _job(cancel):
             cancel_flag = [False]
@@ -1602,6 +1694,7 @@ class PolyCore:
             on_relay_needed=lambda p: self.emit("update_relay_needed", {"relay_path": p}),
             on_failed=lambda m: self.emit("update_failed", {"msg": m}))
         inst.start()
+        self.telemetry.note("update_installs")
         return True, {"queued": True, "version": rel.version}
 
     # ------------------------------------------------------------------
