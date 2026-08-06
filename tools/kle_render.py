@@ -94,6 +94,10 @@ class KeyContent:
     invert: bool = False          # invert the OLED (dark glyph on lit bg) — the kdisp_invert
                                   # press-feedback flash the firmware does on key-down
     scale: float = 1.0            # glyph size within the OLED (e.g. 0.5 for small page arrows)
+    image: 'Image.Image | None' = None   # pre-rendered RGB for this key's OLED, used
+                                  # as-is (no dither/colourise). For callers that
+                                  # already produce a finished panel — e.g. the
+                                  # simulate_oled look. None keeps the normal path.
 
 
 @dataclass
@@ -280,8 +284,10 @@ class KleRenderer:
     def _oled_buffer(self, c: KeyContent) -> Image.Image | None:
         """Build the 72x40 monochrome OLED image (RGB) for a key, or None."""
         if c.dim or (c.glyph is None and c.label is None and not c.frame
-                     and not c.blank and not c.invert):
+                     and not c.blank and not c.invert and c.image is None):
             return None
+        if c.image is not None:
+            return c.image
         buf = Image.new('L', (OLED_W, OLED_H), 0)
         if c.glyph and self.glyphs is not None:
             buf = self.glyphs.render(c.glyph, c.scale).copy()

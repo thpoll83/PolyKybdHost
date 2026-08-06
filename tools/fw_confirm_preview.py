@@ -65,6 +65,12 @@ MODULE_MM = (27.0, 26.0)      # plate cutout
 ACTIVE_TOP_INSET_MM = 2.51    # active-area top below the module top
 MM_PER_U = 19.05
 
+# Unit sizes at which a keycap OLED lands on a WHOLE number of output pixels per
+# logical pixel. kle_render derives the display rect from the key height
+# (disp_w = unit - 7 - 2*(unit//16)), so only these hit 72*k exactly; anything
+# else resamples 72x40 by a fraction and the pixel grid goes visibly uneven.
+UNIT_FOR_PX = {1: 89, 2: 171, 3: 253}
+
 
 def render_confirm_keycap(accept: bool, S) -> Image.Image:
     """Mirror of render_fw_confirm_key() — returns a 72x40 'L' image.
@@ -140,7 +146,13 @@ def main():
     ap.add_argument("--qmk", default=os.path.join(os.path.dirname(HOST_REPO), "qmk_firmware"))
     ap.add_argument("--kle", default=os.path.join(HOST_REPO, "polyhost", "res", "polykybd-split72.json"))
     ap.add_argument("--out", default="/tmp/fw_confirm_preview.png")
-    ap.add_argument("--unit", type=int, default=72, help="pixels per key unit")
+    ap.add_argument("--unit", type=int, default=0,
+                    help="pixels per key unit (default: derived from --px)")
+    ap.add_argument("--px", type=int, default=2, choices=sorted(UNIT_FOR_PX),
+                    help="output pixels per logical OLED pixel; picks a --unit that "
+                         "keeps the keycap grid whole")
+    ap.add_argument("--flat", action="store_true",
+                    help="plain white-on-black keycaps instead of the OLED simulation")
     ap.add_argument("--gap", type=int, default=10, help="gap between the halves, px")
     ap.add_argument("--margin", type=int, default=5)
     ap.add_argument("--exclude", default="3,7;8,0", help="matrix positions with no display")
@@ -152,14 +164,25 @@ def main():
                     help="clearance between the two OLED modules, in key units "
                          "(--status-oled only; the halves are moved apart to make room)")
     args = ap.parse_args()
+    if not args.unit:
+        args.unit = UNIT_FOR_PX[args.px]
 
     sys.path.insert(0, HERE)
+    sys.path.insert(0, HOST_REPO)
     sys.path.insert(0, os.path.join(args.qmk, "keyboards", "polykybd", "tools"))
     import status_oled_preview as S           # noqa: E402  (path set above)
+    from polyhost.services.fontpack_render import simulate_oled   # noqa: E402
     from kle_render import KleRenderer, KeyContent, Theme   # noqa: E402
 
     theme = Theme()
     glyphs = _PromptGlyphs(S)
+
+    def as_oled(img, k):
+        """72x40 'L' -> the real per-key OLED look at k output px per pixel."""
+        big = img.resize((img.width * k, img.height * k), Image.NEAREST)
+        if args.flat:
+            return big.convert("RGB")
+        return simulate_oled(big, scale=k)
     renderer = KleRenderer(json.load(open(args.kle, encoding="utf-8")),
                            unit=args.unit, glyphs=glyphs, bezel=not args.no_bezel,
                            margin=args.margin, dither=False,
@@ -191,13 +214,23 @@ def main():
     for mp, ch in ((ACCEPT_MP, CH_ACCEPT), (REJECT_MP, CH_REJECT)):
         if mp not in renderer.km:
             raise SystemExit(f"prompt key {mp} is not in the KLE — check FW_CONFIRM_ROW/COL")
-        contents[mp] = KeyContent(glyph=ch)
+        contents[mp] = KeyContent(image=as_oled(glyphs._cap[ch], args.px))
     kb = renderer.render_frame(contents)
 
     # Status OLEDs, one per half, each naming its own key.
     _d, small, _i, _t, _g = S.load_fonts()
-    panels = [S.render_plain(S.build_fw_confirm_panel(side, small), sc=args.oled_scale)
-              for side in ("L", "R")]
+    PANEL_SS = 4          # supersample, then LANCZOS down to the real box
+    panels = []
+    for side in ("L", "R"):
+        pts = S.build_fw_confirm_panel(side, small)
+        buf = Image.new("L", (S.P_W * PANEL_SS, S.P_H * PANEL_SS), 0)
+        px_ = buf.load()
+        for (x, y) in pts:
+            if 0 <= x < S.P_W and 0 <= y < S.P_H:
+                for dy in range(PANEL_SS):
+                    for dx in range(PANEL_SS):
+                        px_[x * PANEL_SS + dx, y * PANEL_SS + dy] = 255
+        panels.append(buf)
 
     # Bezel: the module opening, with the active area inset at its real offset.
     module_rect = module_rect_bounds
@@ -211,7 +244,13 @@ def main():
             d.rounded_rectangle([mx0, my0, mx1, my1], radius=max(2, (mx1 - mx0) // 18),
                                 fill=theme.key_bg, outline=theme.key_outline, width=2)
             ax0, ay0, ax1, ay1 = renderer.panel_box_px(active[side])
-            out.paste(panel.resize((max(1, ax1 - ax0), max(1, ay1 - ay0)), Image.NEAREST), (ax0, ay0))
+            aw, ah = max(1, ax1 - ax0), max(1, ay1 - ay0)
+            # The status OLED's size is fixed by the PCB, so it can't land on a
+            # whole pixel multiple — downsample from the supersampled buffer
+            # instead of magnifying a small one.
+            lit = panel.resize((aw, ah), Image.LANCZOS)
+            shown = lit.convert("RGB") if args.flat else simulate_oled(lit, scale=max(1, aw // S.P_W))
+            out.paste(shown, (ax0, ay0))
 
     out.save(args.out)
     print(f"wrote {args.out}  ({out.width}x{out.height})")
