@@ -11,13 +11,15 @@ hostname we actually own.
 
 ## Deploy
 
-```bash
-npm install -g wrangler          # or npx wrangler
-wrangler login
+**[`SETUP.md`](SETUP.md) is the full walkthrough** — local dry-run first, the
+binding-name trap, the rate-limit rule, backups and a troubleshooting table. The
+short version:
 
-wrangler d1 create polyhost-telemetry          # paste database_id into wrangler.toml
-wrangler d1 execute polyhost-telemetry --remote --file=./schema.sql
-wrangler deploy
+```bash
+npx wrangler@latest login
+npx wrangler d1 create polyhost-telemetry      # paste database_id into wrangler.toml
+npx wrangler d1 execute polyhost-telemetry --remote --file=./schema.sql
+npx wrangler deploy
 ```
 
 Then point the client at it — either per install:
