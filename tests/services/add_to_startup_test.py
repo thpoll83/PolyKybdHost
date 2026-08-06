@@ -52,8 +52,28 @@ class WindowsAutostartFallbackTest(unittest.TestCase):
             method = add_to_startup._install_windows_autostart("pythonw.exe", "-m polyhost", "C:\\repo", None)
         self.assertEqual(method, "none")
 
+    def test_falls_back_when_registered_task_does_not_exist(self):
+        """A PowerShell exit code is not proof the task is there.
+
+        The returned string lands in the startup log, where it reads as evidence
+        the logon task exists — so it must be a queried fact. If the task can't
+        be found, install the Startup-folder shortcut rather than reporting an
+        autostart that would never fire.
+        """
+        with mock.patch.object(add_to_startup, "register_windows_logon_task", return_value=True), \
+             mock.patch.object(add_to_startup, "windows_task_exists", return_value=False), \
+             mock.patch.object(add_to_startup, "create_windows_shortcut_powershell") as mk_lnk, \
+             mock.patch.object(add_to_startup, "_windows_startup_lnk") as startup, \
+             mock.patch.object(add_to_startup, "_windows_startmenu_lnk"):
+            startup.return_value.exists.return_value = False
+            method = add_to_startup._install_windows_autostart("pythonw.exe", "-m polyhost", "C:\\repo", None)
+
+        self.assertIn("fallback", method.lower())
+        self.assertEqual(mk_lnk.call_count, 2)   # Start-menu + Startup fallback
+
     def test_uses_task_and_removes_stale_shortcut_on_success(self):
         with mock.patch.object(add_to_startup, "register_windows_logon_task", return_value=True), \
+             mock.patch.object(add_to_startup, "windows_task_exists", return_value=True), \
              mock.patch.object(add_to_startup, "create_windows_shortcut_powershell") as mk_lnk, \
              mock.patch.object(add_to_startup, "_windows_startup_lnk") as startup, \
              mock.patch.object(add_to_startup, "_windows_startmenu_lnk"):
@@ -65,6 +85,58 @@ class WindowsAutostartFallbackTest(unittest.TestCase):
         stale.unlink.assert_called_once()
         # Only the Start-menu launcher shortcut is created (no Startup fallback).
         self.assertEqual(mk_lnk.call_count, 1)
+
+
+class LauncherLocationTest(unittest.TestCase):
+    """The generated launchers must live OUTSIDE the checkout.
+
+    They used to sit in ``polyhost/`` behind a .gitignore entry, so a
+    `git clean -xdf` deleted the very file the registered logon task points at:
+    a task that still reads State: Ready and silently starts nothing.
+    """
+
+    def test_bat_defaults_into_launcher_dir(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "userdata"
+            home.mkdir()
+            venv = Path(tmp) / "venv"
+            (venv / "Scripts").mkdir(parents=True)
+            (venv / "Scripts" / "activate.bat").write_text("")
+            script = Path(tmp) / "repo" / "polyhost" / "main_app.py"
+            script.parent.mkdir(parents=True)
+            with mock.patch.object(add_to_startup, "launcher_dir", return_value=home):
+                wrapper = add_to_startup.create_windows_bat_wrapper(venv, script)
+        self.assertEqual(Path(wrapper).parent, home)
+        self.assertFalse((script.parent / "start_polyhost.bat").exists())
+
+    def test_unix_wrapper_defaults_into_launcher_dir(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp) / "userdata"
+            home.mkdir()
+            script = Path(tmp) / "repo" / "polyhost" / "main_app.py"
+            script.parent.mkdir(parents=True)
+            with mock.patch.object(add_to_startup, "launcher_dir", return_value=home):
+                wrapper = add_to_startup.create_unix_shell_wrapper(Path(tmp) / "venv", script)
+        self.assertEqual(Path(wrapper).parent, home)
+
+    def test_legacy_in_checkout_launchers_are_removed(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            pkg = Path(tmp) / "polyhost"
+            pkg.mkdir()
+            script = pkg / "main_app.py"
+            script.write_text("")
+            stale = [pkg / n for n in add_to_startup._LAUNCHER_NAMES]
+            for f in stale:
+                f.write_text("old")
+            add_to_startup._remove_legacy_launchers(script)
+            self.assertEqual([f for f in stale if f.exists()], [])
+
+    def test_launcher_dir_is_not_inside_the_package(self):
+        pkg = Path(add_to_startup.__file__).resolve().parent.parent
+        self.assertNotIn(pkg, add_to_startup.launcher_dir().resolve().parents)
 
 
 class BatWrapperTest(unittest.TestCase):

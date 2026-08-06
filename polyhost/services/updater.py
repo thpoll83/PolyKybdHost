@@ -601,6 +601,78 @@ def _run_pip(args: list, label: str, line_cb=None) -> None:
         raise RuntimeError(f"pip {label} after update failed to run: {e}") from e
 
 
+# Win32 process-creation flags. Taken from `subprocess` where it defines them
+# (Windows) and spelled out otherwise, so the values stay correct — and testable —
+# on the platforms where the attributes simply don't exist.
+WIN_DETACHED_PROCESS = getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
+WIN_CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+WIN_CREATE_BREAKAWAY_FROM_JOB = getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0x01000000)
+
+
+def detached_creationflags() -> int:
+    """Windows creationflags for spawning a process that must OUTLIVE us.
+
+    Every relaunch in the update chain (relay script, restarted GUI, restarted
+    daemon) is spawned by a process that is about to exit, so the child must not
+    stay bound to the parent's console or process group:
+
+    - **DETACHED_PROCESS** — the child gets *no* console. Without it Windows
+      either hands the child the dying parent's console (closing that window then
+      sends CTRL_CLOSE and kills the freshly restarted app — the documented
+      "console opens, closing it drops the connection" failure the autostart
+      ``.bat`` wrapper avoids by using ``pythonw``) or, when the parent has no
+      console of its own (the detached daemon), allocates a **brand new console
+      window** for it. That is how a post-update daemon ended up owning a stray
+      console window it then died with.
+    - **CREATE_NEW_PROCESS_GROUP** — a Ctrl+C/Ctrl+Break in the old console
+      cannot reach the new process.
+
+    0 on non-Windows (``subprocess`` rejects a non-zero value there).
+    Same pair :func:`polyhost.server.daemon_launch.spawn_headless_daemon` and the
+    GUI's own relay spawn use.
+    """
+    if sys.platform != "win32":
+        return 0
+    return WIN_DETACHED_PROCESS | WIN_CREATE_NEW_PROCESS_GROUP
+
+
+def detached_popen_kwargs() -> dict:
+    """``subprocess.Popen`` kwargs for a relaunch that must outlive this process.
+
+    stdio goes to DEVNULL: a DETACHED_PROCESS child has no console, so inheriting
+    the parent's (soon-invalid) handles buys nothing. The app logs to its own
+    files either way.
+    """
+    kwargs = {
+        "close_fds": False,
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
+    flags = detached_creationflags()
+    if flags:
+        kwargs["creationflags"] = flags
+    return kwargs
+
+
+def relaunch_executable(executable: Optional[str] = None) -> str:
+    """The interpreter to relaunch the app with.
+
+    On Windows prefer ``pythonw.exe`` next to the running interpreter: neither
+    the tray GUI nor the daemon may own a console (see
+    :func:`detached_creationflags`), and a restart inherits ``sys.executable`` —
+    so a session that happened to start under ``python.exe`` would otherwise hand
+    the console down to every future restart. Falls back to the current
+    interpreter when there is no ``pythonw.exe`` beside it.
+    """
+    exe = Path(executable or sys.executable)
+    if sys.platform == "win32" and exe.name.lower() == "python.exe":
+        windowless = exe.with_name("pythonw.exe")
+        if windowless.exists():
+            return str(windowless)
+    return str(exe)
+
+
 # On Windows the running process holds native DLLs (e.g. hidapi.dll) open,
 # so shutil.copy2 fails with WinError 32 when trying to overwrite them.
 # apply_update() collects those files and returns them; UpdateInstaller
@@ -609,6 +681,19 @@ def _run_pip(args: list, label: str, line_cb=None) -> None:
 # remaining files, relaunches, and cleans up.
 _RELAY_SCRIPT_TEMPLATE = """\
 import shutil, subprocess, sys, time
+
+
+def note(msg):
+    # The relay runs detached with stdio on DEVNULL, so stderr goes nowhere —
+    # leave the trace on disk next to the app's own startup log instead. This is
+    # the last step of an update; a silent failure here reads as "the app never
+    # came back" with nothing to go on.
+    try:
+        with open({log_path!r}, "a", encoding="utf-8") as fh:
+            fh.write(f"[polyhost relay] {{msg}}\\n")
+    except Exception:
+        pass
+
 
 for src, dst in {pairs!r}:
     for attempt in range(4):
@@ -619,21 +704,41 @@ for src, dst in {pairs!r}:
             if attempt < 3:
                 time.sleep(2)
             else:
-                print(f"polyhost relay: {{e}}", file=sys.stderr)
+                note(f"failed to copy {{src}} -> {{dst}}: {{e}}")
 
-subprocess.Popen({restart_args!r}, close_fds=False)
+note("relaunching " + " ".join({restart_args!r}))
+try:
+    # Break out of any job object we inherited (a VS Code debug session tears
+    # its whole job down); a job that forbids it fails with ERROR_ACCESS_DENIED,
+    # so fall back to the plain detached spawn. Mirrors updater.spawn_detached.
+    subprocess.Popen({restart_args!r}, **dict({popen_kwargs!r},
+                     creationflags={creationflags!r} | {breakaway!r}))
+except OSError:
+    subprocess.Popen({restart_args!r}, **{popen_kwargs!r})
 shutil.rmtree({tmp_dir!r}, ignore_errors=True)
 """
 
 
 def _write_relay_script(locked: list, tmp_dir: Path) -> Path:
-    """Write a detached relay script that copies locked files after app exit."""
-    restart_args = [sys.executable, "-m", "polyhost", *sys.argv[1:]]
+    """Write a detached relay script that copies locked files after app exit.
+
+    The relaunch it performs is the *last* step of a Windows update, so it uses
+    the same detached/windowless spawn as :func:`restart_app` — the relay itself
+    exits immediately afterwards, and a non-detached child would be left holding
+    the relay's console (see :func:`detached_creationflags`).
+    """
+    restart_args = [relaunch_executable(), "-m", "polyhost", *sys.argv[1:]]
     script = tmp_dir / "_polyhost_relay.py"
     script.write_text(
         _RELAY_SCRIPT_TEMPLATE.format(
             pairs=locked,
             restart_args=restart_args,
+            popen_kwargs=detached_popen_kwargs(),
+            creationflags=detached_creationflags(),
+            breakaway=WIN_CREATE_BREAKAWAY_FROM_JOB if sys.platform == "win32" else 0,
+            # Where main_app's _setup_startup_logging writes (cwd-relative), so
+            # the relay's lines land beside the launch trace they explain.
+            log_path=str(Path("startup_log.txt").resolve()),
             tmp_dir=str(tmp_dir),
         ),
         encoding="utf-8",
@@ -678,6 +783,98 @@ def apply_update(extracted_dir: Path, install_root: Path, line_cb=None) -> list:
     return locked
 
 
+def spawn_detached(argv):
+    """Spawn ``argv`` so it survives this process going away. Returns the Popen.
+
+    On top of :func:`detached_popen_kwargs` this *first* tries
+    ``CREATE_BREAKAWAY_FROM_JOB``, because detaching the console is not enough
+    when the parent lives inside a **job object** — a VS Code debug session, and
+    some terminals, launch that way and tear the whole job down when the session
+    ends, taking a plain child with it no matter how it was created. Job
+    membership is inherited; breaking away is the only way out.
+
+    A job that forbids breakaway fails the spawn with ``ERROR_ACCESS_DENIED``
+    (WinError 5), so fall back to the plain detached spawn rather than not
+    starting the app at all — the ordinary autostart/tray case is in no job and
+    is unaffected either way (the flag is ignored outside a job).
+    """
+    kwargs = detached_popen_kwargs()
+    if sys.platform == "win32":
+        try:
+            return subprocess.Popen(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+                argv, **{**kwargs,
+                         "creationflags": kwargs["creationflags"] | WIN_CREATE_BREAKAWAY_FROM_JOB})
+        except OSError as e:
+            log.debug("Job breakaway refused (%s); spawning detached without it.", e)
+    return subprocess.Popen(argv, **kwargs)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+
+
+Preflight = namedtuple("Preflight", ["name", "ok", "blocking", "detail"])
+
+
+def preflight() -> list:
+    """Check — BEFORE anything is downloaded or overwritten — that an update can
+    apply *and* that the app can come back afterwards.
+
+    The second half is the one that bites: an update that copies perfectly and
+    then fails to relaunch looks exactly like "the app never came back", and by
+    then the tree is already rewritten. So this also reports the things the
+    *restart* depends on (the relaunch interpreter, the autostart entry), not
+    only the things the *copy* depends on.
+
+    Returns a list of :class:`Preflight` findings. ``blocking`` marks the ones
+    that make the update impossible (nothing has changed yet, so the caller can
+    still abort cleanly); the rest are warnings worth showing the user.
+    """
+    findings = []
+
+    try:
+        findings.append(Preflight("install dir", True, True, f"writable: {get_install_root()}"))
+    except NotWritableError as e:
+        findings.append(Preflight("install dir", False, True, f"not writable: {e}"))
+    except Exception as e:  # noqa: BLE001 — report, never raise out of a check
+        findings.append(Preflight("install dir", False, True, f"{type(e).__name__}: {e}"))
+
+    # The download + extract land here before a single install file is touched.
+    # Probe by actually creating a directory rather than asking os.access(): on
+    # Windows that reflects only the read-only attribute, not ACLs — and quota
+    # or policy can fail the real mkdtemp() the installer does moments later.
+    tmp = tempfile.gettempdir()
+    try:
+        probe = tempfile.mkdtemp(prefix="polyhost-preflight-")
+        shutil.rmtree(probe, ignore_errors=True)
+        findings.append(Preflight("temp dir", True, True, tmp))
+    except OSError as e:
+        findings.append(Preflight("temp dir", False, True, f"not usable: {tmp} ({e})"))
+
+    exe = Path(relaunch_executable())
+    if not exe.exists():
+        findings.append(Preflight("relaunch interpreter", False, False, f"missing: {exe}"))
+    elif sys.platform == "win32" and exe.name.lower() != "pythonw.exe":
+        # Not fatal, but the restart then owns a console window — and closing
+        # that window kills the app right after it came back.
+        findings.append(Preflight("relaunch interpreter", False, False,
+                                  f"{exe} (no pythonw.exe beside it — the restarted "
+                                  f"app will own a console window)"))
+    else:
+        findings.append(Preflight("relaunch interpreter", True, False, str(exe)))
+
+    try:
+        from polyhost.services.add_to_startup import get_autostart_status
+        status = get_autostart_status()
+        findings.append(Preflight("autostart entry", status != "none", False, status))
+    except Exception as e:  # noqa: BLE001
+        findings.append(Preflight("autostart entry", False, False,
+                                  f"could not read: {type(e).__name__}: {e}"))
+
+    return findings
+
+
+def preflight_blockers(findings) -> list:
+    """The findings that make an update impossible (as opposed to a warning)."""
+    return [f for f in findings if not f.ok and f.blocking]
+
+
 def restart_app() -> None:
     """Re-exec the app. Uses subprocess+exit on Windows (execv argv issues).
 
@@ -688,17 +885,25 @@ def restart_app() -> None:
     otherwise leave the app dead with no relaunch ("not starting up again after
     the update"). So fall back to spawning a detached child + exiting, which
     always brings the app back.
+
+    On Windows the relaunch is **detached and windowless** (see
+    :func:`detached_creationflags` / :func:`relaunch_executable`): a child left
+    in the exiting parent's console is killed with that console, which is the
+    other way the app fails to come back after an update.
     """
-    args = [sys.executable, "-m", "polyhost", *sys.argv[1:]]
+    args = [relaunch_executable(), "-m", "polyhost", *sys.argv[1:]]
     log.info("Restarting: %s", args)
     if sys.platform == "win32":
-        subprocess.Popen(args, close_fds=False)
+        spawn_detached(args)
         sys.exit(0)
     try:
-        os.execv(sys.executable, args)
+        os.execv(args[0], args)
     except OSError as e:
         log.warning("os.execv failed (%s); falling back to a subprocess relaunch.", e)
-        subprocess.Popen(args, close_fds=False)
+        # `args` is built above from our own resolved interpreter, the literal
+        # "-m polyhost" and this process's own argv, and is passed as a list with
+        # no shell — there is no shell for anything to be injected into.
+        subprocess.Popen(args, close_fds=False)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         sys.exit(0)
 
 
@@ -807,6 +1012,24 @@ class UpdateInstaller(threading.Thread):
         self._on_failed = on_failed
 
     def run(self):
+        # Preflight FIRST: nothing has been downloaded or overwritten yet, so a
+        # blocker here aborts with the install tree untouched. Every entry is
+        # logged; warnings also go out as progress lines so they show up in the
+        # tray dialog and in `polyctl update install`, not only in the log.
+        findings = preflight()
+        for f in findings:
+            (log.info if f.ok else (log.error if f.blocking else log.warning))(
+                "Update preflight — %s: %s", f.name, f.detail)
+        blockers = preflight_blockers(findings)
+        if blockers:
+            _fire(self._on_failed,
+                  "Preflight failed: "
+                  + "; ".join(f"{f.name}: {f.detail}" for f in blockers))
+            return
+        for f in findings:
+            if not f.ok:
+                _fire(self._on_progress, -1, f"Warning — {f.name}: {f.detail}")
+
         try:
             install_root = get_install_root()
         except NotWritableError as e:
@@ -814,8 +1037,16 @@ class UpdateInstaller(threading.Thread):
             return
 
         # Use mkdtemp (not TemporaryDirectory context manager) so that on Windows
-        # we can leave the directory alive for the relay script to consume.
-        tmp_dir = Path(tempfile.mkdtemp(prefix="polyhost-update-"))
+        # we can leave the directory alive for the relay script to consume. It
+        # needs its own guard: preflight probes the temp dir but cannot reserve
+        # it, and a raise out here would end the installer thread without ever
+        # firing on_failed — leaving the tray's progress dialog up forever.
+        try:
+            tmp_dir = Path(tempfile.mkdtemp(prefix="polyhost-update-"))
+        except OSError as e:
+            log.exception("Could not create the update temp dir")
+            _fire(self._on_failed, f"Could not create a temp directory for the update: {e}")
+            return
         try:
             _fire(self._on_progress, 0, "Starting download...")
             extracted = download_and_extract(

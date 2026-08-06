@@ -1,4 +1,5 @@
 import io
+import shutil
 import sys
 import tarfile
 import tempfile
@@ -736,6 +737,247 @@ class TestRestartApp(unittest.TestCase):
         execv.assert_not_called()
         popen.assert_called_once()
         sys_exit.assert_called_once_with(0)
+
+    def test_windows_relaunch_is_detached(self):
+        """The restarted app must not stay in the exiting parent's console.
+
+        Without DETACHED_PROCESS the child inherits that console (closing the
+        window kills the freshly restarted app) or — when the parent is itself
+        detached, as the daemon is — gets a brand new console window allocated
+        for it. Both were seen after a Windows self-update.
+        """
+        with mock.patch.object(updater.sys, "platform", "win32"), \
+             mock.patch.object(updater.subprocess, "Popen") as popen, \
+             mock.patch.object(updater.sys, "exit", side_effect=SystemExit):
+            with self.assertRaises(SystemExit):
+                updater.restart_app()
+        flags = popen.call_args.kwargs["creationflags"]
+        self.assertTrue(flags & updater.WIN_DETACHED_PROCESS)
+        self.assertTrue(flags & updater.WIN_CREATE_NEW_PROCESS_GROUP)
+
+    def test_posix_relaunch_passes_no_creationflags(self):
+        """subprocess rejects a non-zero creationflags outside Windows.
+
+        Patch the platform rather than relying on the host's: this repo is
+        developed on Windows, where the unpatched call returns the Windows flags
+        and the assertion below would fail for the wrong reason.
+        """
+        with mock.patch.object(updater.sys, "platform", "linux"):
+            self.assertEqual(updater.detached_creationflags(), 0)
+            self.assertNotIn("creationflags", updater.detached_popen_kwargs())
+
+
+class TestPreflight(unittest.TestCase):
+    """What must hold BEFORE an update is applied.
+
+    Half of it is about the copy (writable install/temp dirs), half about the
+    *restart* — an update that copies perfectly and then can't relaunch is
+    indistinguishable from "the app never came back", and by then the tree has
+    already been rewritten.
+    """
+
+    def _finding(self, findings, name):
+        return next(f for f in findings if f.name == name)
+
+    def test_not_writable_install_dir_is_blocking(self):
+        with mock.patch.object(updater, "get_install_root",
+                               side_effect=updater.NotWritableError("/install")):
+            findings = updater.preflight()
+        f = self._finding(findings, "install dir")
+        self.assertFalse(f.ok)
+        self.assertTrue(f.blocking)
+        self.assertEqual([b.name for b in updater.preflight_blockers(findings)],
+                         ["install dir"])
+
+    def test_missing_autostart_is_a_warning_not_a_blocker(self):
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch("polyhost.services.add_to_startup.get_autostart_status",
+                        return_value="none"):
+            findings = updater.preflight()
+        f = self._finding(findings, "autostart entry")
+        self.assertFalse(f.ok)
+        self.assertFalse(f.blocking)
+        self.assertEqual(updater.preflight_blockers(findings), [])
+
+    def test_console_owning_interpreter_is_flagged_on_windows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            exe = Path(tmp) / "python.exe"      # no pythonw.exe beside it
+            exe.write_text("")
+            with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+                 mock.patch.object(updater.sys, "platform", "win32"), \
+                 mock.patch.object(updater.sys, "executable", str(exe)):
+                findings = updater.preflight()
+        f = self._finding(findings, "relaunch interpreter")
+        self.assertFalse(f.ok)
+        self.assertFalse(f.blocking)
+        self.assertIn("console", f.detail)
+
+    def test_autostart_read_failure_does_not_raise(self):
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch("polyhost.services.add_to_startup.get_autostart_status",
+                        side_effect=OSError("schtasks missing")):
+            findings = updater.preflight()
+        f = self._finding(findings, "autostart entry")
+        self.assertFalse(f.ok)
+        self.assertFalse(f.blocking)
+
+
+class TestInstallerPreflight(unittest.TestCase):
+    """The installer runs preflight before the first byte is downloaded."""
+
+    def _make(self, rec):
+        rel = updater.ReleaseInfo("v1.0.0", "1.0.0", "url", "html", "")
+        return updater.UpdateInstaller(
+            rel,
+            on_progress=rec.make("progress"), on_finished_ok=rec.make("finished_ok"),
+            on_relay_needed=rec.make("relay_needed"), on_failed=rec.make("failed"))
+
+    def test_blocker_aborts_before_downloading_anything(self):
+        rec = _Recorder()
+        blocked = [updater.Preflight("install dir", False, True, "not writable: /install")]
+        with mock.patch.object(updater, "preflight", return_value=blocked), \
+             mock.patch.object(updater, "download_and_extract") as dl, \
+             mock.patch.object(updater, "apply_update") as apply_:
+            self._make(rec).run()
+        dl.assert_not_called()      # nothing downloaded…
+        apply_.assert_not_called()  # …and nothing overwritten
+        self.assertEqual(rec.names, ["failed"])
+        self.assertIn("/install", rec.args_for("failed")[0][0])
+
+    def test_temp_dir_creation_failure_reports_instead_of_dying(self):
+        """mkdtemp() runs outside the download's try block.
+
+        Preflight probes the temp dir but cannot reserve it, so this can still
+        fail — and an unguarded raise ends the installer thread silently, with
+        the tray's progress dialog left up forever waiting for a terminal event.
+        """
+        rec = _Recorder()
+        with mock.patch.object(updater, "preflight", return_value=[]), \
+             mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater.tempfile, "mkdtemp",
+                               side_effect=OSError("No space left on device")), \
+             mock.patch.object(updater, "download_and_extract") as dl:
+            self._make(rec).run()
+        dl.assert_not_called()
+        self.assertEqual(rec.names, ["failed"])
+        self.assertIn("No space left on device", rec.args_for("failed")[0][0])
+
+    def test_temp_dir_probe_creates_and_removes_a_directory(self):
+        """The temp-dir check must be a real creation, not os.access().
+
+        os.access() reflects only the read-only attribute on Windows (not ACLs),
+        so it passes where the installer's own mkdtemp() then fails.
+        """
+        with mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater.tempfile, "mkdtemp",
+                               side_effect=OSError("denied")) as mkdtemp:
+            findings = updater.preflight()
+        mkdtemp.assert_called_once()
+        tmp = next(f for f in findings if f.name == "temp dir")
+        self.assertFalse(tmp.ok)
+        self.assertTrue(tmp.blocking)
+
+    def test_warning_is_surfaced_but_does_not_stop_the_update(self):
+        rec = _Recorder()
+        warned = [updater.Preflight("autostart entry", False, False, "none")]
+        with mock.patch.object(updater, "preflight", return_value=warned), \
+             mock.patch.object(updater, "get_install_root", return_value=Path("/install")), \
+             mock.patch.object(updater, "download_and_extract", return_value=Path("/extracted")), \
+             mock.patch.object(updater, "apply_update", return_value=[]), \
+             mock.patch.object(updater.shutil, "rmtree"), \
+             mock.patch.object(updater.tempfile, "mkdtemp", return_value="/tmp/x"):
+            self._make(rec).run()
+        self.assertIn("finished_ok", rec.names)
+        self.assertTrue(any("autostart entry" in a[1] for a in rec.args_for("progress")))
+
+
+class TestSpawnDetached(unittest.TestCase):
+    """Detaching the console is not enough inside a job object.
+
+    A VS Code debug session (and some terminals) launch the app into a job and
+    tear the whole job down when the session ends, taking any child with it.
+    Breaking away is the only escape — but a job may forbid it, and then the
+    spawn must still happen rather than the app never coming back.
+    """
+
+    def test_tries_job_breakaway_first_on_windows(self):
+        with mock.patch.object(updater.sys, "platform", "win32"), \
+             mock.patch.object(updater.subprocess, "Popen") as popen:
+            updater.spawn_detached(["python.exe", "-m", "polyhost"])
+        popen.assert_called_once()
+        self.assertTrue(popen.call_args.kwargs["creationflags"]
+                        & updater.WIN_CREATE_BREAKAWAY_FROM_JOB)
+
+    def test_falls_back_when_the_job_forbids_breakaway(self):
+        # CreateProcess fails with ERROR_ACCESS_DENIED when the job has no
+        # JOB_OBJECT_LIMIT_BREAKAWAY_OK — spawn without the flag instead.
+        with mock.patch.object(updater.sys, "platform", "win32"), \
+             mock.patch.object(updater.subprocess, "Popen",
+                               side_effect=[OSError(5, "Access is denied"), "proc"]) as popen:
+            self.assertEqual(updater.spawn_detached(["python.exe"]), "proc")
+        self.assertEqual(popen.call_count, 2)
+        retry_flags = popen.call_args_list[1].kwargs["creationflags"]
+        self.assertFalse(retry_flags & updater.WIN_CREATE_BREAKAWAY_FROM_JOB)
+        self.assertTrue(retry_flags & updater.WIN_DETACHED_PROCESS)
+
+    def test_posix_spawns_once_without_creationflags(self):
+        with mock.patch.object(updater.sys, "platform", "linux"), \
+             mock.patch.object(updater.subprocess, "Popen") as popen:
+            updater.spawn_detached(["python3", "-m", "polyhost"])
+        popen.assert_called_once()
+        self.assertNotIn("creationflags", popen.call_args.kwargs)
+
+
+class TestRelaunchExecutable(unittest.TestCase):
+    """The relaunch interpreter, which a restart otherwise inherits forever.
+
+    On Windows the tray GUI and the daemon must never own a console, so a
+    relaunch swaps python.exe for the pythonw.exe beside it — the same reason
+    the autostart .bat wrapper calls pythonw.
+    """
+
+    def test_windows_prefers_pythonw(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            scripts = Path(tmp)
+            (scripts / "python.exe").write_text("")
+            (scripts / "pythonw.exe").write_text("")
+            with mock.patch.object(updater.sys, "platform", "win32"):
+                chosen = updater.relaunch_executable(str(scripts / "python.exe"))
+        self.assertEqual(Path(chosen).name, "pythonw.exe")
+
+    def test_windows_falls_back_when_pythonw_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            exe = Path(tmp) / "python.exe"
+            exe.write_text("")
+            with mock.patch.object(updater.sys, "platform", "win32"):
+                chosen = updater.relaunch_executable(str(exe))
+        self.assertEqual(Path(chosen).name, "python.exe")
+
+    def test_posix_keeps_the_current_interpreter(self):
+        with mock.patch.object(updater.sys, "platform", "linux"):
+            self.assertEqual(updater.relaunch_executable("/usr/bin/python3"),
+                             "/usr/bin/python3")
+
+
+class TestRelayScript(unittest.TestCase):
+    """The Windows locked-file relay script is generated source — it must parse,
+    and its relaunch must be detached like every other one in the chain."""
+
+    def _write(self, platform):
+        tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, tmp, True)
+        with mock.patch.object(updater.sys, "platform", platform):
+            return updater._write_relay_script([("a.dll", "b.dll")], tmp).read_text()
+
+    def test_script_is_valid_python(self):
+        compile(self._write("win32"), "relay.py", "exec")
+
+    def test_relaunch_is_detached(self):
+        source = self._write("win32")
+        flags = updater.WIN_DETACHED_PROCESS | updater.WIN_CREATE_NEW_PROCESS_GROUP
+        self.assertIn(f"'creationflags': {flags}", source)
+        self.assertIn("-m", source)
+        self.assertIn("polyhost", source)
 
 
 class TestUpdateChecker(unittest.TestCase):
