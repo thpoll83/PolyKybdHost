@@ -206,8 +206,10 @@ def main():
         d = ImageDraw.Draw(out)
         for side, panel in zip(("L", "R"), panels):
             mx0, my0, mx1, my1 = renderer.panel_box_px(module_rect(active[side]))
+            # Same body/outline as a keycap, so the module reads as part of the
+            # board rather than a floating black box.
             d.rounded_rectangle([mx0, my0, mx1, my1], radius=max(2, (mx1 - mx0) // 18),
-                                fill=(16, 16, 18), outline=(58, 58, 62), width=2)
+                                fill=theme.key_bg, outline=theme.key_outline, width=2)
             ax0, ay0, ax1, ay1 = renderer.panel_box_px(active[side])
             out.paste(panel.resize((max(1, ax1 - ax0), max(1, ay1 - ay0)), Image.NEAREST), (ax0, ay0))
 
