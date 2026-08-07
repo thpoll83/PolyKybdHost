@@ -1,0 +1,95 @@
+name: Deploy telemetry collector
+
+# Deploys telemetry-collector/ (the Cloudflare Worker behind the usage census) so
+# nobody has to run `wrangler deploy` from a laptop — which is how a collector fix
+# ends up sitting unshipped because the one person set up to deploy it is away.
+#
+# Requires two repository secrets (Settings -> Secrets and variables -> Actions):
+#   CLOUDFLARE_API_TOKEN   - a token with the "Edit Cloudflare Workers" template.
+#                            Scope it to this account only. It is the one real
+#                            credential here; everything else in wrangler.toml is
+#                            an identifier.
+#   CLOUDFLARE_ACCOUNT_ID  - the account the Worker lives in.
+#
+# Deliberately NOT automated: applying schema.sql. Schema changes to a live
+# database want a human deciding when, and an accidental re-run should never be
+# one push away. Do those by hand (see telemetry-collector/SETUP.md).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'telemetry-collector/**'
+      - '.github/workflows/deploy-telemetry.yml'
+  pull_request:
+    paths:
+      - 'telemetry-collector/**'
+      - '.github/workflows/deploy-telemetry.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never let two deploys overlap; and do NOT cancel one in flight — a half-applied
+# deploy is worse than a queued one.
+concurrency:
+  group: deploy-telemetry
+  cancel-in-progress: false
+
+jobs:
+  # On a PR: validate the Worker + config without touching production. --dry-run
+  # does the full build and binding resolution, so a broken wrangler.toml or a
+  # syntax error in the Worker fails here rather than after merge.
+  check:
+    name: Validate (dry run)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+      - name: wrangler deploy --dry-run
+        working-directory: telemetry-collector
+        # No credentials: --dry-run neither authenticates nor uploads, which is
+        # exactly why it is safe to run on a pull request.
+        run: npx --yes wrangler@4 deploy --dry-run --outdir=/tmp/worker-build
+
+  deploy:
+    name: Deploy
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          persist-credentials: false
+      - name: wrangler deploy
+        working-directory: telemetry-collector
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # Pinned to the v4 major (what the collector was built and verified
+        # against); patch/minor within v4 is picked up automatically.
+        run: npx --yes wrangler@4 deploy
+      - name: Smoke-test the deployed Worker
+        # A deploy that reports success but serves a broken Worker is the failure
+        # mode worth catching automatically. Only the unauthenticated banner is
+        # checked — posting a ping here would write a junk row into the real
+        # dataset every deploy.
+        #
+        # Retried because a deploy can take a moment to propagate, and a check
+        # that goes red on timing alone is one people learn to ignore — at which
+        # point it stops catching the real breakage it exists for.
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3 4 5; do
+            body=$(curl -fsS --max-time 20 https://polyhost-telemetry.polykybd.workers.dev/ || true)
+            case "$body" in
+              *"PolyHost telemetry collector"*)
+                echo "OK (attempt $attempt): $body"
+                exit 0 ;;
+            esac
+            echo "attempt $attempt: unexpected response: ${body:-<none>}"
+            sleep 5
+          done
+          echo "::error::the deployed Worker did not serve its banner after 5 attempts"
+          exit 1

@@ -7,6 +7,24 @@ from platformdirs import user_config_dir
 APP_NAME = "PolyHost"
 CONFIG_FILENAME = "settings.yaml"
 
+# Telemetry ingest URL — the collector in telemetry-collector/ (Cloudflare Worker
+# + D1), verified end to end 2026-08-07. An empty string disables sending entirely,
+# which is the escape hatch if the collector ever has to be taken down: blank this
+# in a release and clients stop as they update.
+#
+# ⚠️ This string is effectively PERMANENT once a release ships with it — clients in
+# the field cannot be told about a new address, and they keep posting here for as
+# long as they run. Two consequences to keep in mind before changing it:
+#   * the hostname must stay ours. Never point it at a domain we have not
+#     registered, or whoever registers it starts receiving the pings;
+#   * `*.workers.dev` is blanket-blocked on some corporate/filtered networks, so a
+#     share of installs will silently never reach us. That is a known, accepted
+#     under-count — not evidence of fewer users. Moving to a Custom Domain
+#     (telemetry.polykybd.org) fixes it for clients released after the move, and
+#     leaves older ones on this address, so the Worker must keep answering here.
+# Per-install override: `polyctl settings set telemetry_endpoint https://…/v1/ping`.
+TELEMETRY_ENDPOINT = "https://polyhost-telemetry.polykybd.workers.dev/v1/ping"
+
 
 def settings_path():
     """Path of the persisted settings file (no side effects)."""
@@ -150,6 +168,23 @@ class PolySettings:
             # token (set it in the extension options too). Defence-in-depth
             # against other local processes; empty = accept any loopback report.
             "browser_report_token": "",
+            # Anonymous usage census (polyhost/services/telemetry.py): one small
+            # JSON POST per install per day carrying the host + firmware version,
+            # OS, and a few event counters — never window titles, app names or
+            # location. ON by default, with the first-run notice in the tray GUI
+            # and this switch to turn it off; see docs/telemetry.md for the exact
+            # payload. `polyctl telemetry preview` prints what would be sent.
+            "telemetry_enabled": True,
+            # Where the ping goes. Kept a setting so a self-hoster can repoint it
+            # (or blank it, which disables sending as surely as the flag above).
+            "telemetry_endpoint": TELEMETRY_ENDPOINT,
+            # Random per-install id (uuid4, generated on first ping, no machine
+            # fingerprint) so a ping can be counted once per day. Delete it to
+            # become a new install; it is stored here rather than hidden in a
+            # cache file precisely so it is visible and erasable.
+            "telemetry_install_id": "",
+            # Set once the GUI has shown the one-time "we collect this" notice.
+            "telemetry_notice_shown": False,
         }
         self._legacy_key_renames = {
             "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",

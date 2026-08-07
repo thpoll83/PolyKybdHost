@@ -494,6 +494,25 @@ class RemoteCore:
     def settings_set(self, key, value):
         return self._device(p.M_SETTINGS_SET, {"key": key, "value": value})
 
+    # -- telemetry (the daemon owns the reporter; the client only asks) -----
+    def telemetry_status(self):
+        try:
+            return self._rpc_call(p.M_TELEMETRY_STATUS) or {}
+        except RpcError:
+            return {}
+
+    def telemetry_preview(self):
+        try:
+            return self._rpc_call(p.M_TELEMETRY_PREVIEW) or {}
+        except RpcError:
+            return {}
+
+    def telemetry_set_enabled(self, enabled):
+        return self._device(p.M_TELEMETRY_SET, {"enabled": bool(enabled)})
+
+    def telemetry_send_now(self):
+        return self._device(p.M_TELEMETRY_SEND, {})
+
     # -- no-ops / client-local ---------------------------------------------
     def tick_window_tracking(self, *args, **kwargs):
         # The daemon polls the active window where the display is; the client
