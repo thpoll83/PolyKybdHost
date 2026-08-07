@@ -143,7 +143,6 @@ def fetch_rows(remote: bool, wrangler: str) -> list[dict]:
     # downloads) wrangler before it runs anything, which takes 10-20s — during
     # which an unannounced wait looks like a hang, not a download.
     print(f"querying {'remote' if remote else 'local'} D1 via wrangler…", flush=True)
-    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
     # Audited and accepted (PolyKybdHost#154). This is an *audit* rule: it fires
     # on any non-literal argv and asks a human to check where the data came
     # from. It came from this process's own --wrangler argument, so whoever set
@@ -152,6 +151,11 @@ def fetch_rows(remote: bool, wrangler: str) -> list[dict]:
     # with a list means no shell parses it, so there is nothing to inject
     # through — and shlex.quote, the rule's suggested remedy, escapes for a
     # SHELL string and would only corrupt an argv element here.
+    #
+    # ⚠️ The marker below must stay on the line IMMEDIATELY above the call —
+    # semgrep only applies it to the next line, so putting it at the top of
+    # this comment block (where it reads better) silently does nothing.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
     proc = subprocess.run(
         parts, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
