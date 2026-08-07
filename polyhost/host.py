@@ -353,12 +353,9 @@ class PolyHost(QApplication):
             self.device_settings = self.core.device_settings
             self.overlay_handler = self.core.overlay_handler
         self.core.subscribe(self._on_core_event)
-        # NOTE: there is deliberately no first-run telemetry dialog. A modal that
-        # interrupts every user on upgrade is a poor trade for a disclosure most
-        # of them would dismiss unread; the release notes reach them at download
-        # time, before the app runs at all. The disclosure now lives in the
-        # release notes, docs/telemetry.md, the Settings → Telemetry checkbox and
-        # an INFO line the core logs on every start.
+        # NOTE: there is deliberately no first-run telemetry dialog — a modal on
+        # every upgrade is a poor trade for a disclosure that arrives after the
+        # install. Rationale and the disclosure surface: docs/telemetry.md.
 
         self.setApplicationName('PolyHost')
 
