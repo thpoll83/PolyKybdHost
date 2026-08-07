@@ -183,8 +183,6 @@ class PolySettings:
             # become a new install; it is stored here rather than hidden in a
             # cache file precisely so it is visible and erasable.
             "telemetry_install_id": "",
-            # Set once the GUI has shown the one-time "we collect this" notice.
-            "telemetry_notice_shown": False,
         }
         self._legacy_key_renames = {
             "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",

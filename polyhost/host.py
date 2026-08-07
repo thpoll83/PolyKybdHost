@@ -353,11 +353,9 @@ class PolyHost(QApplication):
             self.device_settings = self.core.device_settings
             self.overlay_handler = self.core.overlay_handler
         self.core.subscribe(self._on_core_event)
-        # One-time telemetry disclosure. Scheduled on the event loop (not run
-        # here) so the tray icon is up first and startup is never blocked by a
-        # modal dialog. Works in both modes: the client reads/writes the flag
-        # over RPC, so whichever process has a UI is the one that discloses.
-        QTimer.singleShot(2000, self._maybe_show_telemetry_notice)
+        # NOTE: there is deliberately no first-run telemetry dialog — a modal on
+        # every upgrade is a poor trade for a disclosure that arrives after the
+        # install. Rationale and the disclosure surface: docs/telemetry.md.
 
         self.setApplicationName('PolyHost')
 
@@ -732,78 +730,6 @@ class PolyHost(QApplication):
     # ------------------------------------------------------------------
     # Core adapter: events + shared connection state
     # ------------------------------------------------------------------
-
-    def _maybe_show_telemetry_notice(self):
-        """Show the one-time "here is what we send" notice.
-
-        Telemetry is ON by default, so this dialog — not a settings checkbox
-        nobody opens — is the disclosure. It offers the opt-out inline (a
-        second button) rather than pointing at Settings, because a notice that
-        makes you go hunting for the switch is a notice that is ignored. It is
-        suppressed entirely when no endpoint is configured, since nothing is
-        being sent and the dialog would be noise.
-        """
-        try:
-            shown = self.core.settings_get("telemetry_notice_shown")
-            endpoint = self.core.settings_get("telemetry_endpoint")
-            enabled = self.core.settings_get("telemetry_enabled")
-        except Exception:
-            self.log.debug("Telemetry notice check failed", exc_info=True)
-            endpoint = None
-            shown = enabled = None
-
-        # `None` means the read did not happen — in --connect mode the daemon may
-        # still be attaching, and RemoteCore.settings_get returns None on RpcError.
-        # Treating that as "no endpoint" would skip the disclosure for the whole
-        # session while default-on telemetry runs, so retry instead. A genuinely
-        # unconfigured endpoint reads as "", which is not None and stops here.
-        if endpoint is None:
-            self._telemetry_notice_tries = getattr(
-                self, "_telemetry_notice_tries", 0) + 1
-            if self._telemetry_notice_tries <= 10:
-                QTimer.singleShot(3000, self._maybe_show_telemetry_notice)
-            else:
-                self.log.debug("Telemetry notice: giving up waiting for settings.")
-            return
-
-        if shown:
-            return
-        if not endpoint:
-            return  # inert build — nothing is sent, so nothing to disclose
-        if not enabled:
-            # Already off (e.g. set in the config before first launch);
-            # mark it seen so it never nags.
-            try:
-                self.core.settings_set("telemetry_notice_shown", True)
-            except Exception:
-                self.log.debug("Could not persist the telemetry choice", exc_info=True)
-            return
-
-        answer = _msgbox(
-            QMessageBox.Information, "PolyKybd sends anonymous usage data",
-            "<p>Once a day PolyHost sends a small anonymous report so we can see "
-            "which host and firmware versions are actually in use, and whether "
-            "updates are working.</p>"
-            "<p><b>It contains:</b> host and firmware version, protocol version, "
-            "operating system, keyboard model, font-pack versions, and counts of "
-            "connects/flashes/updates.</p>"
-            "<p><b>It never contains:</b> window titles, application names, "
-            "keystrokes, your location, user or machine name.</p>"
-            "<p>You can see the exact report with <tt>polyctl telemetry preview</tt> "
-            "and change this any time under Settings → Telemetry.</p>"
-            "<p><b>Keep it on?</b></p>",
-            buttons=QMessageBox.Yes | QMessageBox.No, default=QMessageBox.Yes)
-        # Yes = keep sending, No = stop. Note _msgbox maps a dismissed dialog
-        # (Esc / window close) to No when No is offered, so dismissing turns
-        # telemetry OFF. That is the right direction to fail for a consent
-        # prompt — the ambiguous answer should never be the one that sends data.
-        try:
-            if answer == QMessageBox.No:
-                self.core.settings_set("telemetry_enabled", False)
-                self.log.info("Telemetry turned off by the user at first run.")
-            self.core.settings_set("telemetry_notice_shown", True)
-        except Exception:
-            self.log.debug("Could not persist the telemetry choice", exc_info=True)
 
     def _probe_input_language(self, want_debug_menu):
         """Background-thread input-language probe (PowerShell on Windows is

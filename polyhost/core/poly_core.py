@@ -1257,10 +1257,12 @@ class PolyCore:
     def _log_telemetry_notice(self):
         """One INFO line per start saying what the telemetry state is.
 
-        Deliberately NOT gated on a "already told them" flag: a headless daemon
-        has no dialog to show, and a line in the log every start is the honest
-        way for an always-on background process to keep disclosing this. The
-        GUI's one-time dialog is the user-facing half."""
+        ⚠️ This line is part of the DISCLOSURE, not debug output — since the
+        first-run dialog was removed there is no in-app consent step, so this and
+        the release notes are how a user learns telemetry is on. Do not gate it
+        on an "already told them" flag, downgrade it to debug, or drop it in a
+        logging cleanup: repeating it every start is the point, and it is the
+        only disclosure a headless daemon can make. See docs/telemetry.md."""
         if self.poly_settings.get("telemetry_enabled") and \
                 self.poly_settings.get("telemetry_endpoint"):
             self.log.info(
