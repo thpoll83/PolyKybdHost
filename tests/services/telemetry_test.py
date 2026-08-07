@@ -172,7 +172,7 @@ class ReporterTest(unittest.TestCase):
     def test_disabled_sends_nothing(self):
         self.enabled = False
         r = self._reporter()
-        sent, msg = r.maybe_send()
+        sent, _msg = r.maybe_send()
         self.assertFalse(sent)
         self.assertEqual(self.posted, [])
 

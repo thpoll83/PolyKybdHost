@@ -102,6 +102,12 @@ Nothing here needs to change to get charts. The two options, in order of effort:
 The payload carries a `schema` integer. Bump it in
 `polyhost/services/telemetry.py` when a field changes meaning, add the new value
 to `SUPPORTED_SCHEMAS` here, and keep accepting the old one — hosts in the field
-live for months and will keep sending the old shape. The full validated payload
-is stored in `ping.raw`, so a field added in a later schema can be queried
-retroactively with `json_extract` without a migration having been in place.
+live for months and will keep sending the old shape.
+
+⚠️ **A new field needs a column here before it is stored.** `ping.raw` holds the
+rebuilt canonical row — the allow-listed columns and nothing else — so a field the
+Worker does not know about is dropped, not captured for later. That is deliberate:
+`validate()` only checks `schema` and `install_id`, so storing the body as received
+would have let any caller persist arbitrary data (an email address, say) forever,
+which is precisely what the allow-list exists to prevent. Losing forward-compat for
+unknown fields is the correct price.

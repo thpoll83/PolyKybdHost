@@ -1246,7 +1246,13 @@ class PolyCore:
     def _telemetry_snapshot(self):
         """(status, fontpack versions) — both read from cache, no device I/O,
         so the reporter thread can call this without touching the worker."""
-        return self.get_status(), dict(self.keeb.fontpack_bundle_versions or {})
+        # getattr, matching fontpack_bundle_status and _fontpack_autocheck_job.
+        # PolyKybd always defines the attribute, so this is consistency rather
+        # than a live bug — but the callers swallow exceptions, so if a device
+        # object ever lacked it the whole device block would vanish from the
+        # ping with no trace, and all three reads should fail the same way.
+        return (self.get_status(),
+                dict(getattr(self.keeb, "fontpack_bundle_versions", None) or {}))
 
     def _log_telemetry_notice(self):
         """One INFO line per start saying what the telemetry state is.

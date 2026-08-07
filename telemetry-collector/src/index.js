@@ -121,14 +121,17 @@ export default {
       if (!success) return new Response('slow down', { status: 429 });
     }
 
-    const body = await request.text();
-    if (body.length > MAX_BODY_BYTES) {
+    // Limit on BYTES, not characters: request.text() would hand back a decoded
+    // string whose .length counts UTF-16 code units, so a multibyte payload
+    // could sail past an 8 KiB check while being far larger on the wire.
+    const raw = await request.arrayBuffer();
+    if (raw.byteLength > MAX_BODY_BYTES) {
       return new Response('payload too large', { status: 413 });
     }
 
     let payload;
     try {
-      payload = JSON.parse(body);
+      payload = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(raw));
     } catch {
       return new Response('bad json', { status: 400 });
     }
@@ -147,7 +150,7 @@ export default {
           row.host_version, row.host_protocol, row.os, row.os_release, row.arch,
           row.python, row.mode, row.device_present, row.device_connected,
           row.device_name, row.fw_version, row.device_protocol, row.hw_version,
-          row.fontpack, row.counters, JSON.stringify(payload),
+          row.fontpack, row.counters, JSON.stringify(row),
         )
         .run();
     } catch (e) {
