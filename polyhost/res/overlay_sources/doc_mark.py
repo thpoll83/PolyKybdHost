@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
-"""LibreOffice program marks: the Fluent `Document` glyph (MIT) as the page
-frame, with a per-module motif and the module name placed INSIDE it.
+"""Shared **document-framed program marks**: the Fluent `Document` glyph (MIT)
+as the page frame, with a per-app motif and the app name placed INSIDE it.
+
+Used by any overlay set whose app is a document/page (LibreOffice modules,
+Google Docs, ...). Peer of `program_marks.py` (letter tiles) — reach for this
+one when the app IS a document and the name is worth spelling out.
 
 Placement is geometric, not eyeballed. The glyph is parsed into polygons
 (svgpathtools -> shapely): an outer page ring, the page interior as a hole,
@@ -36,7 +40,7 @@ WID = {c: len(g[0]) for c, g in F.items()}
 CELL_W, CELL_H, CLEAR = 72, 40, 1.2
 FL=("https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/assets/"
     "Document/SVG/ic_fluent_document_24_regular.svg")
-_c = pathlib.Path(__file__).resolve().parent / "icons" / "_fluent_document.svg"
+_c = pathlib.Path(__file__).resolve().parent / "_assets" / "fluent_document.svg"
 if not _c.exists():
     _c.write_bytes(urllib.request.urlopen(urllib.request.Request(FL,
         headers={"User-Agent":"polykybd"}), timeout=30).read())

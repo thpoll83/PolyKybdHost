@@ -22,7 +22,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import editor_glyphs  # noqa: E402
-import icon_fetch  # noqa: E402
+import brand_marks, icon_fetch  # noqa: E402
 import program_marks  # noqa: E402
 
 FLUENT = {
@@ -78,7 +78,8 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
     n += editor_glyphs.draw_all(out, DRAWN)
-    program_marks.ensure(out / "sublime.png", "S", motif="brackets")
+    # Sublime's mark is monochrome and CC0 via Simple Icons — use the real one.
+    brand_marks.ensure(out / "sublime.png", "sublimetext")
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
 

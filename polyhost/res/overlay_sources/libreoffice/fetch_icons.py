@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import icon_fetch  # noqa: E402
+import doc_mark, icon_fetch  # noqa: E402
 import material_symbols as ms  # noqa: E402
 import program_marks  # noqa: E402
 
@@ -92,9 +92,10 @@ FLUENT = {
     "backward": "Position Backward",
 }
 
-MARKS = {"lo_writer.png": ("W", "corner"),
-         "lo_calc.png": ("C", "grid"),
-         "lo_impress.png": ("I", "screen")}
+# Label per module. ⚠️ "IMPRESS" does NOT fit inside the page at Fluent's native
+# aspect ratio (interior ~26px, the word needs 25px + clearance) — see doc_mark's
+# header. Stretching the page to fit it was tried and rejected.
+DOC_MARKS = {"writer": "WRITER", "calc": "CALC", "impress": "IMPR"}
 
 
 # See webapps/fetch_icons.py: Fluent has no ordered-list glyph, so this one
@@ -109,9 +110,17 @@ def main() -> int:
         ms.render(name, out / f"{stem}.png", weight=300)
         print(f"  {stem}.png  <- material-symbols/{name}")
     n += len(MATERIAL)
-    for fname, (letter, motif) in MARKS.items():
-        program_marks.ensure(out / fname, letter, motif=motif)
-    print(f"Wrote {n} icons (+ {len(MARKS)} program marks) to {out}")
+    # Program marks: Fluent `Document` frame + motif + module name, placed by
+    # geometry (see doc_mark). build() asserts nothing touches the page outline.
+    for app, label in DOC_MARKS.items():
+        dest = out / f"lo_{app}.png"
+        if dest.exists():
+            print(f"  {dest.name}  <- committed asset (left as-is)")
+            continue
+        r = doc_mark.build(app, [label], page_h=40, stretch=1.0, save=dest)
+        assert r and r[1] == 0 and r[2] == 0, f"{app}: content touches the page outline: {r}"
+        print(f"  {dest.name}  <- fluent Document + '{r[0]}' (0 touching, 0 outside)")
+    print(f"Wrote {n} icons (+ {len(DOC_MARKS)} document marks) to {out}")
     return 0
 
 

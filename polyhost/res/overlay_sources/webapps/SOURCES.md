@@ -87,3 +87,27 @@ for m in github gitlab confluence googledocs notion; do
       polyhost/res/overlay_sources/webapps/$m.yaml --preview /tmp/${m}_preview
 done
 ```
+
+## Program marks
+
+**GitHub (`gh.png`) and GitLab (`gl.png`) use the REAL logos**, rendered from
+**Simple Icons** (`simple-icons/simple-icons`, `icons/github.svg`,
+`icons/gitlab.svg`) whose artwork is **CC0-1.0** — so redistributing a rendered
+copy in this GPL-3.0-or-later repo is fine. CC0 grants no *trademark* rights;
+the basis for using them is **nominative use** — each mark identifies the very
+service its overlay set is for, unmodified, no endorsement implied. Both are
+plain monochrome silhouettes, which is exactly what survives the 1-bit 72x40
+downscale. See `../brand_marks.py`.
+
+**Google Docs (`gd.png`) is a labelled document frame** instead: Google's logo
+is not ours to ship, and Docs *is* a document, so it gets the Fluent `Document`
+glyph (MIT) with the module name inside — same builder as the LibreOffice marks
+(`../doc_mark.py`), which asserts nothing touches the page outline. It is a
+**full-cell** mark (`program_icon_region: [72, 40]`, authored 1:1) because a
+5px-tall label does not survive being rescaled; the cost is that it covers the
+firmware-drawn `Esc` legend.
+
+**Confluence (`cf.png`) and Notion (`nt.png`) keep the drawn letter tiles**
+(`../program_marks.py`) — the generic-document treatment was tried for them and
+rejected: as page/wiki apps they came out near-identical to Google Docs, with
+only a four-letter label to tell them apart at keycap size.

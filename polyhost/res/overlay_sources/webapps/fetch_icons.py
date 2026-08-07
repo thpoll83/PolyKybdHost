@@ -22,7 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import icon_fetch  # noqa: E402
+import brand_marks, doc_mark, icon_fetch  # noqa: E402
 import material_symbols as ms  # noqa: E402
 import program_marks  # noqa: E402
 
@@ -111,11 +111,16 @@ FLUENT = {
     "annotations": "Note",
 }
 
+# GitHub and GitLab publish plain monochrome marks that read cleanly as a 1-bit
+# silhouette, and Simple Icons redistributes that artwork CC0 — so these get the
+# REAL logo (nominative use; see brand_marks).
+BRAND = {"gh.png": "github", "gl.png": "gitlab"}
+# Google Docs is a document, and Google's logo is not ours to ship — a labelled
+# page frame says what it is without borrowing the mark.
+DOC = {"gd.png": ("googledocs", "DOCS")}
+# Confluence and Notion keep the drawn letter tiles for now.
 MARKS = {
-    "gh.png": ("G", "brackets"),
-    "gl.png": ("GL", "brackets"),
     "cf.png": ("C", "corner"),
-    "gd.png": ("D", "corner"),
     "nt.png": ("N", "corner"),
 }
 
@@ -134,9 +139,20 @@ def main() -> int:
         ms.render(name, out / f"{stem}.png", weight=300)
         print(f"  {stem}.png  <- material-symbols/{name}")
     n += len(MATERIAL)
+    for fname, slug in BRAND.items():
+        brand_marks.ensure(out / fname, slug)
+    for fname, (app, label) in DOC.items():
+        dest = out / fname
+        if dest.exists():
+            print(f"  {dest.name}  <- committed asset (left as-is)")
+        else:
+            doc_mark.MOTIF[app] = doc_mark.MOTIF["writer"]   # a text document
+            r = doc_mark.build(app, [label], page_h=40, stretch=1.0, save=dest)
+            assert r and r[1] == 0 and r[2] == 0, f"{app}: touches the page outline: {r}"
+            print(f"  {dest.name}  <- fluent Document + '{r[0]}'")
     for fname, (letter, motif) in MARKS.items():
         program_marks.ensure(out / fname, letter, motif=motif)
-    print(f"Wrote {n} icons (+ {len(MARKS)} program marks) to {out}")
+    print(f"Wrote {n} icons (+ {len(BRAND)+len(DOC)+len(MARKS)} program marks) to {out}")
     return 0
 
 
