@@ -284,9 +284,13 @@ time, font-pack versions, and a table of every install.
 It is a **generator, not a service**, and that is the point: the Worker keeps its
 "no read route, so no route can leak the dataset" property, and there is no
 dashboard credential to leak because it borrows the wrangler login you already
-have. The cost is that it shows the data as of the moment you ran it. If a hosted
-view is ever wanted, it needs a real auth story — and the security audit entry
-(HOST-3) has to move with it.
+have. The cost is that it shows the data as of the moment you ran it.
+
+A hosted, always-current version is planned but **not built** — it needs a real
+auth story, and on `workers.dev` that cannot be Cloudflare Access (same
+zone-scoping trap as the WAF rate limit in §5). The design, the options and the
+things that must change with it are in
+[`HOSTED_DASHBOARD.md`](./HOSTED_DASHBOARD.md); read that before starting it.
 
 `--from-json FILE` renders saved `--json` output without touching the network,
 which is also how the tests cover it.
