@@ -14,8 +14,17 @@ hostname we actually own.
 **[`SETUP.md`](SETUP.md) is the full walkthrough** — local dry-run first, the
 binding-name trap, rate limiting, backups and a troubleshooting table.
 
-The live collector is already deployed and its `database_id` is committed in
-`wrangler.toml`, so redeploying after a change to `src/index.js` is just:
+**Deploys happen in CI.** `.github/workflows/deploy-telemetry.yml` runs
+`wrangler deploy` on any push to `main` that touches this directory, and validates
+the config with `--dry-run` on pull requests. It needs two repository secrets,
+`CLOUDFLARE_API_TOKEN` (the "Edit Cloudflare Workers" template) and
+`CLOUDFLARE_ACCOUNT_ID`.
+
+Schema changes are deliberately **not** automated — applying `schema.sql` to a live
+database should be a decision, not a side effect of a push. Do those by hand.
+
+To deploy from a laptop anyway (the live `database_id` is committed, so there is
+nothing to configure):
 
 ```bash
 npx wrangler@latest login       # once per machine
