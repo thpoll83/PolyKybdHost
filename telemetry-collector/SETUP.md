@@ -232,10 +232,10 @@ For a release, set the same URL as `TELEMETRY_ENDPOINT` in
 Existing installs pick it up because settings `load()` uses `setdefault`, so a key
 they have never seen adopts the new default.
 
-<!-- There is no first-run dialog (removed in PolyKybdHost#153). Setting this
-     endpoint is therefore the moment reporting starts for real, and the release
-     notes are the disclosure — write them before shipping the release that sets
-     it, not after. See docs/telemetry.md § How users find out. -->
+> ⚠️ **Write the release notes before shipping the release that sets this.**
+> There is no first-run dialog (removed in PolyKybdHost#153), so the release
+> notes *are* the disclosure — this step is the moment reporting starts for
+> real. See `docs/telemetry.md` § How users find out.
 
 ---
 

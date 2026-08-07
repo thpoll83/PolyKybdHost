@@ -27,6 +27,8 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -37,6 +39,10 @@ from pathlib import Path
 
 DB_NAME = "polyhost-telemetry"
 SELECT_ALL = "SELECT * FROM ping ORDER BY received_at"
+
+# Keys that mark a `d1 execute --json` result envelope rather than a data row.
+# No `ping` column is named any of these, so the two can't be confused.
+ENVELOPE_KEYS = frozenset({"results", "success", "meta"})
 
 # The counters the client ships, in the order they tell a story: how much the
 # app ran, how well the keyboard stayed attached, what got flashed.
@@ -67,22 +73,59 @@ def parse_wrangler_json(text: str) -> list[dict]:
         default=-1,
     )
     if start == -1:
-        raise ValueError("no JSON found in wrangler output")
-    doc = json.JSONDecoder().raw_decode(text[start:])[0]
+        raise ValueError(f"no JSON found in wrangler output: {text[:200]!r}")
+    try:
+        doc = json.JSONDecoder().raw_decode(text[start:])[0]
+    except ValueError as exc:
+        # Quote from the START of the output, not from `start`: the bracket
+        # scan above happily latches onto one inside a prose error message
+        # ("Authentication error [code: 10000]"), and clipping to it hides the
+        # very words that explain the failure. A bare JSONDecodeError is worse
+        # still — a line and column into output the reader never sees.
+        raise ValueError(
+            f"could not parse wrangler output as JSON ({exc}): {text[:200]!r}"
+        ) from exc
 
     if isinstance(doc, dict):
         doc = [doc]
     rows: list[dict] = []
     for part in doc:
-        if isinstance(part, dict):
-            rows.extend(part.get("results") or [])
-        elif isinstance(part, list):  # already a bare row list
+        if isinstance(part, list):  # nested row list
             rows.extend(part)
+        elif isinstance(part, dict):
+            # Envelope or row? A result envelope is identified by its own
+            # keys; anything else is a row. Testing `part.get("results")`
+            # alone silently returned NOTHING for a bare row list — the shape
+            # this docstring claims to support (caught by CodeRabbit on #154,
+            # and by the regression test Sourcery asked for on the same PR).
+            if ENVELOPE_KEYS & part.keys():
+                rows.extend(part.get("results") or [])
+            else:
+                rows.append(part)
     return rows
 
 
+def split_command(cmd: str) -> list[str]:
+    """Tokenise the --wrangler string.
+
+    ⚠️ Plain `shlex.split()` is WRONG on Windows: in POSIX mode a backslash is
+    an escape character, so `C:\\tools\\wrangler.cmd` comes back as
+    `C:toolswrangler.cmd`. Non-POSIX mode keeps backslashes but leaves the
+    quotes attached to the token, which then fails `shutil.which()` — hence the
+    strip. A plain `.split()` (what this replaced) is fine until someone points
+    it at `C:\\Program Files\\...`, which on this platform is where things live.
+    """
+    if os.name == "nt":
+        return [part.strip('"') for part in shlex.split(cmd, posix=False)]
+    return shlex.split(cmd)
+
+
 def fetch_rows(remote: bool, wrangler: str) -> list[dict]:
-    parts = wrangler.split() + [
+    # shell=False with an argv list: the string below is tokenised, never
+    # interpreted by a shell, so there is no metacharacter to inject through.
+    # It also comes from this process's own --wrangler argument, i.e. from
+    # whoever is already running the command.
+    parts = split_command(wrangler) + [
         "d1", "execute", DB_NAME,
         "--remote" if remote else "--local",
         "--json", "--command", SELECT_ALL,
@@ -209,12 +252,23 @@ def fontpack_summary(rows: list[dict]) -> list[tuple[str, str]]:
     versions: dict[str, Counter] = defaultdict(Counter)
     for r in rows:
         for bundle, version in _jsonmap(r.get("fontpack")).items():
-            versions[str(bundle)][str(version)] += 1
+            versions[str(bundle)][version] += 1
     out = []
     for bundle in sorted(versions):
         seen = versions[bundle]
-        out.append((bundle, ", ".join(f"v{v} ×{n}" for v, n in sorted(seen.items()))))
+        # Sort NUMERICALLY. content_version is an integer that already reaches
+        # 5 on symbol, so a lexicographic sort would file v10 before v2 exactly
+        # when the split starts mattering.
+        ordered = sorted(seen.items(), key=lambda kv: _version_key(kv[0]))
+        out.append((bundle, ", ".join(f"v{v} ×{n}" for v, n in ordered)))
     return out
+
+
+def _version_key(value):
+    try:
+        return (0, int(value), "")
+    except (TypeError, ValueError):
+        return (1, 0, str(value))
 
 
 # --------------------------------------------------------------------------
@@ -302,7 +356,11 @@ def install_table(rows: list[dict]) -> str:
             device = '<span class="muted">none</span>'
         body.append(
             "<tr>"
-            f'<td class="mono">{esc(str(r.get("install_id") or "")[:12])}…</td>'
+            # Full id in the tooltip: the short form is for the column width,
+            # but cross-referencing one against `polyctl telemetry status`
+            # needs the whole thing.
+            f'<td class="mono" title="{esc(r.get("install_id"))}">'
+            f'{esc(str(r.get("install_id") or "")[:12])}…</td>'
             f'<td class="mono">{esc(str(r.get("received_at") or "")[:19].replace("T", " "))}</td>'
             f'<td>{esc(r.get("host_version"))}</td>'
             f'<td>{esc(" ".join(x for x in (r.get("os"), r.get("os_release")) if x))}</td>'
@@ -434,11 +492,28 @@ not lost in a crowd either. Nothing on this page left your machine to produce it
 
 # --------------------------------------------------------------------------
 
+def _positive_days(value: str) -> int:
+    """Reject --days 0 / negatives at parse time.
+
+    `day_range` clamps to 1 defensively, but the page subtitle prints whatever
+    was passed — so without this the header cheerfully reads "window: last 0
+    days" over a chart showing one.
+    """
+    try:
+        days = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{value!r} is not an integer") from None
+    if days < 1:
+        raise argparse.ArgumentTypeError("must be 1 or more")
+    return days
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", default=str(Path(__file__).with_name("dashboard.html")),
                     help="output file (default: dashboard.html beside this script)")
-    ap.add_argument("--days", type=int, default=30, help="time-series window in days (default 30)")
+    ap.add_argument("--days", type=_positive_days, default=30,
+                    help="time-series window in days (default 30)")
     ap.add_argument("--local", action="store_true", help="query the local dev DB instead of the remote one")
     ap.add_argument("--from-json", metavar="FILE",
                     help="read saved `wrangler d1 execute --json` output instead of querying")

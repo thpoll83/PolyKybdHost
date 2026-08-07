@@ -12,6 +12,7 @@ The module lives outside the package tree (it belongs beside the Worker it
 queries, not in polyhost/), so it is loaded by path.
 """
 import importlib.util
+import os
 import unittest
 from pathlib import Path
 
@@ -58,12 +59,48 @@ class ParseWranglerJson(unittest.TestCase):
             [{"install_id": "a"}],
         )
 
+    def test_bare_list_of_row_objects(self):
+        self.assertEqual(
+            dash.parse_wrangler_json('[{"install_id":"a"}]'), [{"install_id": "a"}]
+        )
+
     def test_empty_result_set(self):
         self.assertEqual(dash.parse_wrangler_json('[{"results":[]}]'), [])
 
-    def test_no_json_at_all_raises(self):
-        with self.assertRaises(ValueError):
+    def test_envelope_without_results_is_not_mistaken_for_a_row(self):
+        self.assertEqual(dash.parse_wrangler_json('[{"success":true,"meta":{}}]'), [])
+
+    def test_no_json_at_all_raises_with_the_output_quoted(self):
+        with self.assertRaises(ValueError) as cm:
             dash.parse_wrangler_json("Authentication error [code: 10000]")
+        self.assertIn("Authentication error", str(cm.exception))
+
+    def test_truncated_json_says_what_it_saw(self):
+        # A bare JSONDecodeError reports a line/column into output the reader
+        # never sees, which is a poor way to discover wrangler printed an error.
+        with self.assertRaises(ValueError) as cm:
+            dash.parse_wrangler_json('[{"results": [{"install_id"')
+        self.assertIn("install_id", str(cm.exception))
+
+
+class SplitCommand(unittest.TestCase):
+    def test_plain_command(self):
+        self.assertEqual(dash.split_command("npx wrangler"), ["npx", "wrangler"])
+
+    def test_quoted_path_with_spaces_stays_one_token(self):
+        self.assertEqual(
+            dash.split_command('"/opt/Cloudflare Wrangler/wrangler" --x'),
+            ["/opt/Cloudflare Wrangler/wrangler", "--x"],
+        )
+
+    @unittest.skipUnless(os.name == "nt", "Windows path semantics")
+    def test_windows_backslashes_survive(self):
+        # Plain shlex.split() in POSIX mode eats these, turning
+        # C:\tools\wrangler.cmd into C:toolswrangler.cmd.
+        self.assertEqual(
+            dash.split_command(r'"C:\Program Files\nodejs\wrangler.cmd"'),
+            [r"C:\Program Files\nodejs\wrangler.cmd"],
+        )
 
 
 class DayRange(unittest.TestCase):
@@ -81,6 +118,23 @@ class DayRange(unittest.TestCase):
     def test_empty_and_malformed_are_empty(self):
         self.assertEqual(dash.day_range([], 30), [])
         self.assertEqual(dash.day_range([row("a", "not-a-date")], 30), [])
+
+    def test_non_positive_days_is_a_single_day(self):
+        rows = [row("a", "2026-08-01"), row("b", "2026-08-04")]
+        self.assertEqual(dash.day_range(rows, 0), ["2026-08-04"])
+        self.assertEqual(dash.day_range(rows, -5), ["2026-08-04"])
+
+
+class DaysArgument(unittest.TestCase):
+    def test_rejects_zero_and_negative(self):
+        # day_range clamps defensively, but the subtitle prints what was passed
+        # — "window: last 0 days" over a one-day chart.
+        for bad in ("0", "-5"):
+            with self.assertRaises(SystemExit):
+                dash.main(["--from-json", os.devnull, "--days", bad])
+
+    def test_accepts_a_positive_window(self):
+        self.assertEqual(dash._positive_days("90"), 90)
 
 
 class Aggregations(unittest.TestCase):
@@ -149,6 +203,16 @@ class Aggregations(unittest.TestCase):
         self.assertEqual(dict((k, n) for k, _, n in totals)["sessions"], 2)
         self.assertEqual(dict((k, n) for k, _, n in totals)["fw_flashes"], 0)
 
+    def test_fontpack_versions_sort_numerically_not_lexicographically(self):
+        # content_version is an integer and symbol is already at 5, so a string
+        # sort would file v10 before v2 exactly when the split starts mattering.
+        rows = [
+            row("a", "2026-08-01", fontpack='{"symbol": 10}'),
+            row("b", "2026-08-01", fontpack='{"symbol": 2}'),
+            row("c", "2026-08-01", fontpack='{"symbol": 9}'),
+        ]
+        self.assertEqual(dict(dash.fontpack_summary(rows))["symbol"], "v2 ×1, v9 ×1, v10 ×1")
+
     def test_fontpack_summary_shows_a_split_across_installs(self):
         rows = [
             row("a", "2026-08-01", fontpack='{"symbol": 5, "emoji": 1}'),
@@ -178,6 +242,12 @@ class Render(unittest.TestCase):
         out = dash.render([row("a", "2026-08-01", device_name=evil, os=evil)], 30, "now")
         self.assertNotIn("<script>alert", out)
         self.assertIn("&lt;script&gt;", out)
+
+    def test_install_table_keeps_the_full_id_in_a_tooltip(self):
+        full = "d4e6321ebec1407dabbf5e83e5e2b445"
+        out = dash.render([row(full, "2026-08-01")], 30, "now")
+        self.assertIn(f'title="{full}"', out)
+        self.assertIn("d4e6321ebec1…", out)
 
     def test_bars_are_emitted_for_a_day_with_data(self):
         out = dash.svg_bars([("2026-08-01", 3), ("2026-08-02", 0)])
