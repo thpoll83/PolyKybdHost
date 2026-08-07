@@ -75,11 +75,21 @@ jobs:
         # mode worth catching automatically. Only the unauthenticated banner is
         # checked — posting a ping here would write a junk row into the real
         # dataset every deploy.
+        #
+        # Retried because a deploy can take a moment to propagate, and a check
+        # that goes red on timing alone is one people learn to ignore — at which
+        # point it stops catching the real breakage it exists for.
         run: |
-          set -euo pipefail
-          body=$(curl -fsS --max-time 20 https://polyhost-telemetry.polykybd.workers.dev/)
-          echo "$body"
-          case "$body" in
-            *"PolyHost telemetry collector"*) echo "OK" ;;
-            *) echo "::error::unexpected response from the deployed Worker"; exit 1 ;;
-          esac
+          set -uo pipefail
+          for attempt in 1 2 3 4 5; do
+            body=$(curl -fsS --max-time 20 https://polyhost-telemetry.polykybd.workers.dev/ || true)
+            case "$body" in
+              *"PolyHost telemetry collector"*)
+                echo "OK (attempt $attempt): $body"
+                exit 0 ;;
+            esac
+            echo "attempt $attempt: unexpected response: ${body:-<none>}"
+            sleep 5
+          done
+          echo "::error::the deployed Worker did not serve its banner after 5 attempts"
+          exit 1
