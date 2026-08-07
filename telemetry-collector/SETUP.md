@@ -74,23 +74,40 @@ production: a malformed body (`-d 'nonsense'`) must return **400**, and a `GET
 
 ---
 
-## 2. Log in and create the database
+## 2. Log in
 
 ```bash
 npx wrangler login          # opens a browser; authorises this machine
-npx wrangler d1 create polyhost-telemetry
+```
+
+**The database already exists and its `database_id` is committed in
+`wrangler.toml`**, so for the live collector there is nothing to create and nothing
+to paste — skip to step 3.
+
+The ID is checked in deliberately: it is an identifier rather than a credential (it
+grants nothing without account authentication), Wrangler supports no variable
+interpolation that could keep it out of the file, and the alternative — everyone
+carrying a local edit — means `git pull` never runs clean and every future change to
+this config has to be hand-merged.
+
+<details>
+<summary>Standing up a <em>separate</em> collector (a fork, or a staging copy)</summary>
+
+```bash
+npx wrangler d1 create polyhost-telemetry-staging
 ```
 
 The output ends with a config block containing a `database_id`. Copy that ID into
-the **existing** `[[d1_databases]]` block in `wrangler.toml`, replacing
-`REPLACE_WITH_D1_DATABASE_ID`:
+the **existing** `[[d1_databases]]` block in `wrangler.toml` (and change
+`database_name` to match):
 
 ```toml
 [[d1_databases]]
 binding = "DB"
-database_name = "polyhost-telemetry"
+database_name = "polyhost-telemetry-staging"
 database_id = "a1b2c3d4-…"
 ```
+</details>
 
 > ⚠️ **Keep `binding = "DB"`.** If you let Wrangler add the block for you (or use
 > `--update-config`), it names the binding after the database —
@@ -99,24 +116,12 @@ database_id = "a1b2c3d4-…"
 > undefined (reading 'prepare')`, and every ping returns 503. Either keep the block
 > that is already in the file, or rename the binding back to `DB`.
 
-### If you created the database in the dashboard instead
-
-Everything above still applies — you just need the ID that `d1 create` would have
-printed:
-
-```bash
-npx wrangler d1 list          # every database on the account: uuid + name
-```
-
-> ⚠️ **Use `d1 list`, not `d1 info polyhost-telemetry`.** `d1 info` resolves the name
-> through your local `wrangler.toml` **first**, so while the placeholder is still in
-> there it looks up `REPLACE_WITH_D1_DATABASE_ID` and fails with
-> `The database REPLACE_WITH_D1_DATABASE_ID could not be found [code: 7404]` — which
-> reads like the database does not exist, when in fact it is the config that is
-> unfilled. `d1 list` queries the account directly and ignores local config. Once the
-> real ID is in `wrangler.toml`, `d1 info` works fine.
-
-Lost the ID later? Same command.
+> ⚠️ **To look an ID up, use `d1 list`, not `d1 info <name>`.** `d1 info` resolves
+> the name through your local `wrangler.toml` **first**, so if that file holds a
+> placeholder (or the wrong ID) it queries *that* and reports
+> `The database … could not be found [code: 7404]` — which reads like the database
+> does not exist, when in fact it is the config that is wrong. `d1 list` queries the
+> account directly and ignores local config.
 
 ---
 

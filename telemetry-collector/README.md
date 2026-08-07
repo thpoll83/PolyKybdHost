@@ -12,13 +12,13 @@ hostname we actually own.
 ## Deploy
 
 **[`SETUP.md`](SETUP.md) is the full walkthrough** — local dry-run first, the
-binding-name trap, the rate-limit rule, backups and a troubleshooting table. The
-short version:
+binding-name trap, rate limiting, backups and a troubleshooting table.
+
+The live collector is already deployed and its `database_id` is committed in
+`wrangler.toml`, so redeploying after a change to `src/index.js` is just:
 
 ```bash
-npx wrangler@latest login
-npx wrangler d1 create polyhost-telemetry      # paste database_id into wrangler.toml
-npx wrangler d1 execute polyhost-telemetry --remote --file=./schema.sql
+npx wrangler@latest login       # once per machine
 npx wrangler deploy
 ```
 

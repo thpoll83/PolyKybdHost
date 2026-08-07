@@ -2,13 +2,20 @@ name = "polyhost-telemetry"
 main = "src/index.js"
 compatibility_date = "2026-08-01"
 
-# Created with:
-#   wrangler d1 create polyhost-telemetry
-# then paste the printed database_id below.
+# The live database. `database_id` is committed on purpose: it is an identifier,
+# not a credential — it grants nothing without account authentication, Wrangler
+# supports no variable interpolation that could keep it out of this file, and the
+# alternative (everyone carries a local edit) means every future change here has
+# to be hand-merged and `git pull` never runs clean.
+#
+# ⚠️ `binding` must stay "DB" — src/index.js reads env.DB. Renaming it deploys
+# fine and then fails at the first ping with "Cannot read properties of undefined
+# (reading 'prepare')", i.e. every ping 503s. Note `wrangler d1 create` names the
+# binding after the database, so do not let it rewrite this block.
 [[d1_databases]]
 binding = "DB"
 database_name = "polyhost-telemetry"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "1695e361-22b0-427f-afc5-adb3ccf8eeaa"
 
 # Per-IP rate limit, enforced in the Worker.
 #
