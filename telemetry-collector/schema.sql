@@ -36,9 +36,15 @@ CREATE TABLE IF NOT EXISTS ping (
   fontpack         TEXT,                      -- JSON {bundle: content_version}
 
   counters         TEXT,                      -- JSON {name: count}
-  -- The validated payload as received. Costs a few hundred bytes and means a
-  -- field added to a future schema is queryable retroactively via json_extract
-  -- without a migration having been in place first.
+  -- The CANONICAL row as JSON — i.e. exactly the allow-listed columns above,
+  -- never the request body. ⚠️ It used to hold the body as received, which
+  -- quietly defeated the whole allow-list: `validate()` only checks `schema`
+  -- and `install_id`, so any extra field a caller invented would have been
+  -- persisted here forever. Storing the rebuilt row keeps this queryable as one
+  -- blob while making it impossible to retain a field we did not ask for. The
+  -- cost is that an unknown field from a FUTURE schema is dropped rather than
+  -- captured for later — which is the correct trade for a privacy feature: add
+  -- the column when you add the field.
   raw              TEXT    NOT NULL
 );
 

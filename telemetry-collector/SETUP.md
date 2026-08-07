@@ -253,8 +253,11 @@ Add `--json` for machine-readable output.
 
 Two independent mechanisms; use both.
 
-**Time Travel** is built in and needs no setup — D1 can restore any point in the
-last 30 days:
+**Time Travel** is built in and needs no setup — D1 can restore any point within
+its retention window. ⚠️ That window is **7 days on the Workers Free plan** (what
+this collector runs on) and 30 days on Workers Paid. Do not plan a recovery around
+30 days here; past a week, the export below is the only thing that will still have
+the data.
 
 ```bash
 npx wrangler d1 time-travel info polyhost-telemetry

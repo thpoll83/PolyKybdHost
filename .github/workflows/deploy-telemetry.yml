@@ -52,7 +52,7 @@ jobs:
         working-directory: telemetry-collector
         # No credentials: --dry-run neither authenticates nor uploads, which is
         # exactly why it is safe to run on a pull request.
-        run: npx --yes wrangler@4 deploy --dry-run --outdir=/tmp/worker-build
+        run: npx --yes wrangler@4.119.0 deploy --dry-run --outdir=/tmp/worker-build
 
   deploy:
     name: Deploy
@@ -67,9 +67,11 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        # Pinned to the v4 major (what the collector was built and verified
-        # against); patch/minor within v4 is picked up automatically.
-        run: npx --yes wrangler@4 deploy
+        # Pinned to an EXACT version, not the v4 major. This step hands
+        # CLOUDFLARE_API_TOKEN to whatever npm resolves, so a floating range
+        # would mean a package we never reviewed receives the credential on some
+        # future run. Bump it deliberately, like the action SHAs above.
+        run: npx --yes wrangler@4.119.0 deploy
       - name: Smoke-test the deployed Worker
         # A deploy that reports success but serves a broken Worker is the failure
         # mode worth catching automatically. Only the unauthenticated banner is

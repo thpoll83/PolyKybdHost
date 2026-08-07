@@ -744,17 +744,39 @@ class PolyHost(QApplication):
         being sent and the dialog would be noise.
         """
         try:
-            if self.core.settings_get("telemetry_notice_shown"):
-                return
-            if not self.core.settings_get("telemetry_endpoint"):
-                return  # inert build — nothing to disclose yet
-            if not self.core.settings_get("telemetry_enabled"):
-                # Already off (e.g. set in the config before first launch);
-                # mark it seen so it never nags.
-                self.core.settings_set("telemetry_notice_shown", True)
-                return
+            shown = self.core.settings_get("telemetry_notice_shown")
+            endpoint = self.core.settings_get("telemetry_endpoint")
+            enabled = self.core.settings_get("telemetry_enabled")
         except Exception:
             self.log.debug("Telemetry notice check failed", exc_info=True)
+            endpoint = None
+            shown = enabled = None
+
+        # `None` means the read did not happen — in --connect mode the daemon may
+        # still be attaching, and RemoteCore.settings_get returns None on RpcError.
+        # Treating that as "no endpoint" would skip the disclosure for the whole
+        # session while default-on telemetry runs, so retry instead. A genuinely
+        # unconfigured endpoint reads as "", which is not None and stops here.
+        if endpoint is None:
+            self._telemetry_notice_tries = getattr(
+                self, "_telemetry_notice_tries", 0) + 1
+            if self._telemetry_notice_tries <= 10:
+                QTimer.singleShot(3000, self._maybe_show_telemetry_notice)
+            else:
+                self.log.debug("Telemetry notice: giving up waiting for settings.")
+            return
+
+        if shown:
+            return
+        if not endpoint:
+            return  # inert build — nothing is sent, so nothing to disclose
+        if not enabled:
+            # Already off (e.g. set in the config before first launch);
+            # mark it seen so it never nags.
+            try:
+                self.core.settings_set("telemetry_notice_shown", True)
+            except Exception:
+                self.log.debug("Could not persist the telemetry choice", exc_info=True)
             return
 
         answer = _msgbox(

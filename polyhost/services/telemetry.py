@@ -193,11 +193,25 @@ def _load_state() -> dict:
 
 
 def _save_state(data) -> None:
+    """Write the throttle state atomically.
+
+    A plain write truncates in place, so a crash — or the RPC thread's forced
+    send racing the reporter thread — can leave a half-written file. `_load_state`
+    recovers from that by returning `{}`, which reads as "never sent" and lets an
+    extra ping through. Write-then-replace closes the window."""
+    tmp = None
     try:
         _STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-        _STATE_FILE.write_text(json.dumps(data), encoding="utf-8")
+        tmp = _STATE_FILE.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data), encoding="utf-8")
+        tmp.replace(_STATE_FILE)
     except OSError as e:
         log.debug("Could not save telemetry state: %s", e)
+        if tmp is not None:
+            try:
+                tmp.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 def get_last_sent() -> float:
@@ -289,6 +303,11 @@ class TelemetryReporter:
     def start(self):
         if self._thread is not None:
             return
+        # stop() sets the event and never clears it, so without this a start()
+        # after a stop() would spawn a thread that returns at its first wait()
+        # and report nothing, silently. Same clear-then-start shape as
+        # PolyCore.start_window_tracking.
+        self._stop.clear()
         self._thread = threading.Thread(
             target=self._loop, name="telemetry", daemon=True)
         self._thread.start()
@@ -372,7 +391,9 @@ class TelemetryReporter:
         try:
             snapshot, fontpack = self._snapshot_fn()
         except Exception:
-            pass
+            # Same log as maybe_send: an empty device block in the preview
+            # should leave a trace saying why.
+            self.log.debug("Telemetry snapshot failed", exc_info=True)
         with self._lock:
             pending = dict(self._counters)
         return build_payload(self.install_id, self.mode, snapshot, fontpack, pending)
