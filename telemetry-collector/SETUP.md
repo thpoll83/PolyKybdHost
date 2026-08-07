@@ -174,6 +174,27 @@ the IP.
 
 To watch requests live while testing, run `npx wrangler tail` in another terminal.
 
+### Delete the test rows when you are done
+
+That hand-made ping is now a real row in the production table, and while the
+dataset is this small a couple of fake installs visibly skew it. Remove them by
+`install_id`:
+
+```bash
+npx wrangler d1 execute polyhost-telemetry --remote --command \
+  "DELETE FROM ping WHERE install_id IN
+     ('00112233445566778899aabbccddeeff',
+      'deadbeefdeadbeefdeadbeefdeadbeef')"
+```
+
+⚠️ **Without `--remote` this deletes from the local file and still reports
+success** — the same trap as applying the schema in step 3. If a row you just
+deleted is still there in the next `SELECT`, check which database each of the two
+commands hit before concluding something is re-creating it.
+
+Nothing does re-create them: the deploy workflow's smoke test only fetches the
+banner, deliberately, so shipping the collector never writes a junk row.
+
 ---
 
 ## 5. The rate limit
@@ -211,8 +232,10 @@ For a release, set the same URL as `TELEMETRY_ENDPOINT` in
 Existing installs pick it up because settings `load()` uses `setdefault`, so a key
 they have never seen adopts the new default.
 
-<!-- Reminder: the first-run notice stays hidden while the endpoint is empty, so
-     this is also the step that starts showing users the disclosure dialog. -->
+> ⚠️ **Write the release notes before shipping the release that sets this.**
+> There is no first-run dialog (removed in PolyKybdHost#153), so the release
+> notes *are* the disclosure — this step is the moment reporting starts for
+> real. See `docs/telemetry.md` § How users find out.
 
 ---
 
@@ -242,6 +265,35 @@ npx wrangler d1 execute polyhost-telemetry --remote --command \
 ```
 
 Add `--json` for machine-readable output.
+
+### The dashboard
+
+`dashboard.py` runs those queries for you and writes one self-contained HTML file
+— charts inlined, no CDN, no scripts — that you open locally:
+
+```bash
+python telemetry-collector/dashboard.py --open      # queries --remote, writes dashboard.html
+python telemetry-collector/dashboard.py --days 90   # widen the time-series window
+```
+
+It shows installs reporting per day, host/firmware/OS/country/mode splits **per
+install** (the newest report per install, so a long-running tester does not
+outvote a new one by having reported more often), the activity counters over
+time, font-pack versions, and a table of every install.
+
+It is a **generator, not a service**, and that is the point: the Worker keeps its
+"no read route, so no route can leak the dataset" property, and there is no
+dashboard credential to leak because it borrows the wrangler login you already
+have. The cost is that it shows the data as of the moment you ran it.
+
+A hosted, always-current version is planned but **not built** — it needs a real
+auth story, and on `workers.dev` that cannot be Cloudflare Access (same
+zone-scoping trap as the WAF rate limit in §5). The design, the options and the
+things that must change with it are in
+[`HOSTED_DASHBOARD.md`](./HOSTED_DASHBOARD.md); read that before starting it.
+
+`--from-json FILE` renders saved `--json` output without touching the network,
+which is also how the tests cover it.
 
 > ⚠️ In **bash**, escape the `$` in a `json_extract` path (`'\$.fw_flashes'`) or the
 > shell expands it to nothing and the query silently returns NULLs rather than

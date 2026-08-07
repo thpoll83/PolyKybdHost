@@ -37,6 +37,33 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   the absence of any *Actionable comments posted: N* line. When it matters, wait
   for the window or comment `@coderabbitai review`.
 
+- **When two reviewers disagree about the same code, WRITE THE TEST — it
+  adjudicates, and it is faster than arguing.** On PR #154 (2026-08-07) Sourcery
+  asked for a regression test on a parser input shape while CodeRabbit claimed
+  that shape silently returned an empty result. Writing the test settled it in
+  seconds: CodeRabbit was right, and the docstring had been advertising a shape
+  the code dropped. The general form is worth internalising — a "testing
+  suggestion" from one reviewer is often the cheapest way to check a
+  *correctness* claim from another, and unlike a code-reading argument it leaves
+  a permanent guard behind. It also inverts nicely: a test that passes
+  immediately is evidence the finding was wrong, which is exactly the evidence
+  to paste in the reply.
+
+- **Sourcery's `dangerous-subprocess-use-audit` (opengrep) fires on ANY
+  non-literal argv and will hold the check red forever — resolve it with a
+  `# nosemgrep` marker plus a written audit, not by contorting the code.** It is
+  an *audit* rule: it asks a human to confirm where the argv came from, which is
+  the whole remedy. A `subprocess.run(list, ...)` with the default
+  `shell=False` has no shell to inject through, and the rule's suggested
+  `shlex.quote` escapes for a **shell string** — applied to an argv element it
+  just corrupts the value. ⚠️ **The marker only applies to the line IMMEDIATELY
+  following it**, so putting it at the top of an explanatory comment block (where
+  it reads best) silently does nothing and the check stays red — cost an extra
+  push on #154. Record the reasoning above the block, the marker directly above
+  the call. Leaving the check red instead is the worse option: an always-red
+  check is one people learn to scroll past, and the next real finding rides in
+  behind it.
+
 ## Branching (all PolyKybd repos)
 
 - **Give every branch a name that hints at its content.** When creating a branch, append a short, descriptive slug describing the change (e.g. `claude/fix-firmware-update-menu-daemon-mode`, not just the auto-generated `claude/<random-scientist>-<id>`). The random scientist/id suffix from Claude Code on the web is auto-assigned server-side and can't always be overridden mid-session, but whenever a branch name is chosen by us, make it self-explanatory so the branch list reads as a changelog.
@@ -618,6 +645,63 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `settings.read_setting("developer_mode", False)` — the file-only helper — **not**
   `PolySettings()`, which creates/rewrites the config and log-dumps every key before the
   launch path is even known.
+- **Anonymous usage telemetry (`polyhost/services/telemetry.py` + `telemetry-collector/`)**:
+  one small JSON POST per install per day — host/protocol version, OS + coarse release,
+  arch, python, run mode, the attached keyboard's model/fw/protocol/hw/font-pack versions,
+  six counters since the last report (sessions, connects, reconnect_flaps, fw_flashes,
+  fontpack_flashes, update_installs), and a locally-generated random `install_id`. **On by
+  default**, opt out in the settings dialog or `polyctl telemetry disable`;
+  `polyctl telemetry status|preview|send` are the rest of the CLI surface. `PolyCore` owns
+  the reporter (`start_telemetry()` is called next to `worker.start()` in **both**
+  `host.py` and `headless.py` — both construct `PolyCore(start_worker=False)`, so the
+  reporter does not start itself). The endpoint is `TELEMETRY_ENDPOINT` in `settings.py`;
+  **empty disables sending entirely**, which is how it ships before a collector exists.
+  - **The payload is an ALLOW-LIST at both ends**, and that is a privacy guarantee, not a
+    style choice: `build_payload()` copies named fields (never `**status`), and the Worker
+    re-validates and rebuilds the row it stores. The host can see window titles and app
+    names — it reads them constantly for overlays — so the frozen `PAYLOAD_KEYS` test in
+    `tests/services/telemetry_test.py` exists to make an accidental widening fail loudly.
+    Never add a field by spreading a status dict.
+  - ⚠️ **There is NO in-app consent step.** The first-run dialog was removed (#153,
+    "a modal on every upgrade is a poor trade for a disclosure that arrives after the
+    install"), so the **release notes are the disclosure** and the one INFO line
+    `_log_telemetry_notice` prints at every start is the only thing a headless daemon can
+    say. Don't gate that line on an "already told them" flag, downgrade it to debug, or
+    drop it in a logging cleanup. Write the release notes *before* shipping a release that
+    sets the endpoint. Posture + residual risk: `polykybd-ctnd/docs/SECURITY_AUDIT.md`
+    **HOST-3**; user-facing page: `docs/telemetry.md` and the public
+    `software/telemetry` docs page.
+  - **Collector**: a Cloudflare Worker + D1 (`telemetry-collector/`, deployed by
+    `.github/workflows/deploy-telemetry.yml` on push to `main`). It is **write-only by
+    design** — no read route, therefore no route that can leak the dataset. Read the data
+    with `wrangler d1 execute` or **`python telemetry-collector/dashboard.py --open`**,
+    which renders a self-contained HTML dashboard locally (per-install version splits from
+    each install's *newest* report, so a long-running tester doesn't outvote a new one).
+    A hosted version is planned but unbuilt — design and its costs in
+    `telemetry-collector/HOSTED_DASHBOARD.md`. Full setup/runbook: `telemetry-collector/SETUP.md`.
+- ⚠️ **`workers.dev` is CLOUDFLARE's zone, not ours — so every zone-scoped Cloudflare
+  product is unavailable on the collector.** This has now cost a round twice: first on
+  rate limiting (WAF rate-limiting rules are zone-scoped, so the **Workers rate-limit
+  binding** in `wrangler.toml` is the mechanism that works), then again on **Cloudflare
+  Access**, the obvious way to put SSO in front of a hosted dashboard — also unavailable,
+  so that auth would have to live *inside* the Worker until a custom domain exists. Rule
+  of thumb: anything Cloudflare describes as "protect a route/hostname" needs a zone you
+  own; anything configured as a Worker **binding** works. Don't accept advice (including
+  mine) that reaches for a zone-level feature here without checking this first.
+- **`wrangler` gotchas that fail SILENTLY** (full detail in `telemetry-collector/SETUP.md`):
+  - ⚠️ **A command without `--remote` hits the LOCAL sqlite file and reports success.**
+    So a `DELETE` appears to run and the row is still there on the next `SELECT --remote`
+    — deleted three times before the cause was obvious (2026-08-07). This applies to every
+    `d1 execute`, not just the schema step.
+  - **`d1 info <name>` resolves the name through the local `wrangler.toml`**, so it 7404s
+    ("database could not be found") while the file still holds a placeholder id. Use
+    **`d1 list`** to get the real id.
+  - **The API token needs `Workers Scripts: Edit` (plus `D1: Edit`).** Without it the
+    deploy fails with `Authentication error [code: 10000]`, which names the *endpoint* it
+    could not reach and not the permission it lacked. Verify a token fix by triggering the
+    workflow (`workflow_dispatch`) rather than assuming — that is a 30 s check.
+  - **`binding = "DB"` in `wrangler.toml` must stay `DB`**: `d1 create` prints a suggested
+    binding named after the *database*, and adopting it 503s every ping.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
@@ -631,6 +715,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     env failures, not regressions (confirm by `git stash` + re-running on the pristine tree).
     A fully green run prints `OK (skipped=N)` with the env-gated tests skipped, not errored.
 - **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
+- **Chromium is available headless in the dev/remote container — use it to LOOK at
+  generated HTML/SVG rather than reading the markup.**
+  `/opt/pw-browsers/chromium --headless --no-sandbox --disable-gpu --hide-scrollbars
+  --window-size=1100,2400 --screenshot=out.png "file:///abs/path.html"`, then `Read` the
+  PNG. Add `--blink-settings=preferredColorScheme=0` to force the **dark** palette (the
+  default render is light), which is the only practical way to check a
+  `prefers-color-scheme` design without a browser in front of you. Ignore the D-Bus
+  `ERROR:` lines — it screenshots fine anyway. This is what caught the telemetry
+  dashboard's x-axis labels collapsing into an unreadable smear in the small-multiples
+  grid: the HTML and the tests were both perfectly correct, and the defect existed only
+  in the render. Same reasoning as judging a tray icon by rasterising it (above) —
+  measure or look, don't infer from the source.
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
 - **No *test* CI**: no workflow runs the unit tests. (The repo *does* have two
   workflows — `bump-version.yml` + `release.yml`; see **Releases** below.)
