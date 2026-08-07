@@ -452,8 +452,12 @@ def main(argv: list[str] | None = None) -> int:
     out.write_text(render(rows, args.days, generated), encoding="utf-8")
 
     print(f"{out} — {len(rows)} reports from {len(latest_per_install(rows))} installs")
-    if args.open:
-        webbrowser.open(out.resolve().as_uri())
+    # webbrowser.open() returns False rather than raising when it cannot find a
+    # browser (a bare Linux box, an SSH session, a locked-down desktop), so
+    # --open would otherwise appear to do nothing at all and read as "the tool
+    # is broken" when the file is sitting there, finished.
+    if args.open and not webbrowser.open(out.resolve().as_uri()):
+        print("could not open a browser — open the file above yourself")
     return 0
 
 
