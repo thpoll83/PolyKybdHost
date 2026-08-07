@@ -174,6 +174,27 @@ the IP.
 
 To watch requests live while testing, run `npx wrangler tail` in another terminal.
 
+### Delete the test rows when you are done
+
+That hand-made ping is now a real row in the production table, and while the
+dataset is this small a couple of fake installs visibly skew it. Remove them by
+`install_id`:
+
+```bash
+npx wrangler d1 execute polyhost-telemetry --remote --command \
+  "DELETE FROM ping WHERE install_id IN
+     ('00112233445566778899aabbccddeeff',
+      'deadbeefdeadbeefdeadbeefdeadbeef')"
+```
+
+⚠️ **Without `--remote` this deletes from the local file and still reports
+success** — the same trap as applying the schema in step 3. If a row you just
+deleted is still there in the next `SELECT`, check which database each of the two
+commands hit before concluding something is re-creating it.
+
+Nothing does re-create them: the deploy workflow's smoke test only fetches the
+banner, deliberately, so shipping the collector never writes a junk row.
+
 ---
 
 ## 5. The rate limit
