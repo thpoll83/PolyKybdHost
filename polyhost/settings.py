@@ -7,13 +7,23 @@ from platformdirs import user_config_dir
 APP_NAME = "PolyHost"
 CONFIG_FILENAME = "settings.yaml"
 
-# Telemetry ingest URL. DELIBERATELY EMPTY until the collector is deployed and
-# its hostname is one we own: an empty endpoint means the reporter never sends,
-# so shipping this inert is safe, whereas shipping a URL for a domain we have
-# not registered would invite someone else to register it and receive the pings.
-# Set it here (one line, in the release that turns telemetry on) or per-install
-# with `polyctl settings set telemetry_endpoint https://…/v1/ping`.
-TELEMETRY_ENDPOINT = ""
+# Telemetry ingest URL — the collector in telemetry-collector/ (Cloudflare Worker
+# + D1), verified end to end 2026-08-07. An empty string disables sending entirely,
+# which is the escape hatch if the collector ever has to be taken down: blank this
+# in a release and clients stop as they update.
+#
+# ⚠️ This string is effectively PERMANENT once a release ships with it — clients in
+# the field cannot be told about a new address, and they keep posting here for as
+# long as they run. Two consequences to keep in mind before changing it:
+#   * the hostname must stay ours. Never point it at a domain we have not
+#     registered, or whoever registers it starts receiving the pings;
+#   * `*.workers.dev` is blanket-blocked on some corporate/filtered networks, so a
+#     share of installs will silently never reach us. That is a known, accepted
+#     under-count — not evidence of fewer users. Moving to a Custom Domain
+#     (telemetry.polykybd.org) fixes it for clients released after the move, and
+#     leaves older ones on this address, so the Worker must keep answering here.
+# Per-install override: `polyctl settings set telemetry_endpoint https://…/v1/ping`.
+TELEMETRY_ENDPOINT = "https://polyhost-telemetry.polykybd.workers.dev/v1/ping"
 
 
 def settings_path():

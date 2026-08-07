@@ -105,7 +105,19 @@ dashboards, lives in the collector (`telemetry-collector/`), for three reasons:
 
 ## Endpoint configuration
 
-`TELEMETRY_ENDPOINT` in `polyhost/settings.py` ships **empty**, which disables
-sending entirely — deliberately, so that a build cannot post to a hostname we do
-not yet control. See [`../telemetry-collector/README.md`](../telemetry-collector/README.md)
-for deploying the collector and pointing the client at it.
+Reports go to `https://polyhost-telemetry.polykybd.workers.dev/v1/ping`
+(`TELEMETRY_ENDPOINT` in `polyhost/settings.py`) — a Cloudflare Worker backed by a
+D1 database we operate. Setting that string to empty disables sending entirely, for
+the whole release.
+
+Point a build somewhere else with
+`polyctl settings set telemetry_endpoint https://…/v1/ping`, or at nothing at all
+with `polyctl telemetry disable`. See
+[`../telemetry-collector/SETUP.md`](../telemetry-collector/SETUP.md) if you want to
+run your own collector.
+
+<!-- Note for a future release: a share of installs on filtered corporate networks
+     never reaches *.workers.dev, so the numbers are a floor. Moving to a Custom
+     Domain fixes it for future clients only — already-shipped ones keep posting to
+     the workers.dev address, so it must keep answering. -->
+
