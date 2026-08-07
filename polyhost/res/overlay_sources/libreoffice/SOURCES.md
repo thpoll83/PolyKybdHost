@@ -112,3 +112,46 @@ for m in writer calc impress; do
       polyhost/res/overlay_sources/libreoffice/$m.yaml --preview /tmp/lo_${m}_preview
 done
 ```
+
+## Program marks (ESC, all layers)
+
+`lo_writer.png` / `lo_calc.png` / `lo_impress.png` are built by
+**`_doc_mark.py`** from the **Microsoft Fluent UI System Icons** `Document`
+glyph (MIT — `microsoft/fluentui-system-icons`,
+`assets/Document/SVG/ic_fluent_document_24_regular.svg`, vendored as
+`icons/_fluent_document.svg` so a re-run needs no network). The page frame is
+Fluent's; the per-module motif (Writer text lines · Calc cell grid · Impress
+slide + caption) and the module name are ours.
+
+**Placement is computed, not eyeballed.** The glyph is parsed into polygons
+(`svgpathtools` → `shapely`): an outer page ring, the page interior as a hole,
+and the corner fold as a second hole. Content may only occupy
+
+    safe = interior.buffer(-CLEAR).difference(fold.buffer(+CLEAR))
+
+and the layout reads the **per-row** x-spans of that region — which is what
+makes the cut corner come out right, since the top rows really are narrower.
+`build()` returns `(label, touching, outside)` and the caller asserts both
+counts are `0`, so "nothing touches the outline" is a check rather than a
+claim.
+
+⚠️ **The page keeps Fluent's NATIVE aspect ratio — do not stretch it.** At that
+ratio the measured interior is ~26 px, so `IMPRESS` (25 px in the 3×5 pixel
+font, *plus* clearance both sides) does not fit and the Impress label is
+**`IMPR`**. A 1.15× horizontal stretch was tried and rejected: a distorted
+document reads worse than an abbreviation. If the full word matters more than
+the frame, move the label *below* the page — the cell is 72 px wide.
+
+⚠️ These three are **full-cell** marks (`program_icon_region: [72, 40]`,
+`margin: 0`), authored 1:1 so the generator never rescales them — the same
+trick the Explorer mark uses, and the only way a 5 px-tall label survives.
+The cost is that they cover the firmware-drawn `Esc` legend, where the other
+program marks sit bottom-right and leave it visible.
+
+The label font is a hand-built **3×5 pixel font** (`px3x5.json`). That is not a
+style choice: at this size no proportional face stays legible, and `I` is
+narrowed to 1 px purely to buy the 2 px that let `WRITER` fit.
+
+Authoring-time only: `pip install shapely svgpathtools cairosvg` (like
+`cairosvg` elsewhere, these are build tools and deliberately NOT in
+`requirements.txt`, which is the app's runtime set).
