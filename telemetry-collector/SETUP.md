@@ -99,7 +99,24 @@ database_id = "a1b2c3d4-…"
 > undefined (reading 'prepare')`, and every ping returns 503. Either keep the block
 > that is already in the file, or rename the binding back to `DB`.
 
-Lost the ID later? `npx wrangler d1 list`.
+### If you created the database in the dashboard instead
+
+Everything above still applies — you just need the ID that `d1 create` would have
+printed:
+
+```bash
+npx wrangler d1 list          # every database on the account: uuid + name
+```
+
+> ⚠️ **Use `d1 list`, not `d1 info polyhost-telemetry`.** `d1 info` resolves the name
+> through your local `wrangler.toml` **first**, so while the placeholder is still in
+> there it looks up `REPLACE_WITH_D1_DATABASE_ID` and fails with
+> `The database REPLACE_WITH_D1_DATABASE_ID could not be found [code: 7404]` — which
+> reads like the database does not exist, when in fact it is the config that is
+> unfilled. `d1 list` queries the account directly and ignores local config. Once the
+> real ID is in `wrangler.toml`, `d1 info` works fine.
+
+Lost the ID later? Same command.
 
 ---
 
