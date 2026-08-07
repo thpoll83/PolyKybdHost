@@ -110,6 +110,17 @@ export default {
       return new Response('method not allowed', { status: 405, headers: { allow: 'POST' } });
     }
 
+    // Per-IP rate limit (see wrangler.toml for why this is here and not in the
+    // WAF). Checked BEFORE reading the body so a flood costs as little as
+    // possible. Best-effort by design — it is enforced per location, not
+    // globally — which is fine: this caps abuse volume, while correctness of the
+    // counts comes from UNIQUE(install_id, day).
+    const ip = request.headers.get('CF-Connecting-IP') ?? '';
+    if (env.PING_LIMITER && ip) {
+      const { success } = await env.PING_LIMITER.limit({ key: ip });
+      if (!success) return new Response('slow down', { status: 429 });
+    }
+
     const body = await request.text();
     if (body.length > MAX_BODY_BYTES) {
       return new Response('payload too large', { status: 413 });

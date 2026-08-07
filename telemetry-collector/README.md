@@ -32,13 +32,18 @@ polyctl settings set telemetry_endpoint https://polyhost-telemetry.<subdomain>.w
 Verify end to end with `polyctl telemetry send` (bypasses the daily throttle),
 which prints the HTTP status it got back.
 
-## Recommended: one WAF rate-limiting rule
+## Rate limiting
 
-The `UNIQUE(install_id, day)` index means a repeated ping is a no-op, but it
-still costs a request and a D1 write attempt. The free plan includes one
-rate-limiting rule; scope it to `http.request.uri.path eq "/v1/ping"` at
-something like 10 requests per minute per IP. That is far above any honest
-client (which sends one request per day) and caps the damage from a flood.
+Already wired: the `[[ratelimits]]` binding in `wrangler.toml` caps `/v1/ping` at
+**10 requests per minute per IP**, checked in the Worker before the body is even
+read, and deployed along with the code. That is ~14,000× what an honest client
+sends (one request per day), so it cannot affect a real user.
+
+⚠️ **Not a WAF rule** — those are *zone*-scoped, and the endpoint lives on
+`workers.dev`, which is Cloudflare's zone rather than ours, so there is no zone to
+attach one to. If a Custom Domain is added later a WAF rule becomes available as an
+extra outer layer, but keep this binding: clients already shipped keep posting to
+the workers.dev address, which such a rule would never see.
 
 ## Querying
 

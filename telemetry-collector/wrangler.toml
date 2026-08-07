@@ -10,9 +10,29 @@ binding = "DB"
 database_name = "polyhost-telemetry"
 database_id = "REPLACE_WITH_D1_DATABASE_ID"
 
+# Per-IP rate limit, enforced in the Worker.
+#
+# ⚠️ It is done HERE and not as a WAF rate-limiting rule because WAF rules are
+# ZONE-scoped, and the endpoint lives on `workers.dev` — Cloudflare's zone, not
+# ours — so there is no zone to attach a rule to. If the Worker ever moves behind
+# a Custom Domain on polykybd.org, a WAF rule becomes available as an extra outer
+# layer, but this binding keeps working either way and should stay: clients already
+# shipped keep posting to the workers.dev address, which the WAF rule would not
+# cover.
+#
+# 10 per minute per IP is ~14,000x what an honest client sends (one per day), so it
+# cannot affect a real user. `period` may only be 10 or 60.
+[[ratelimits]]
+name = "PING_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
 # Deliberately absent:
-#  - no KV / Durable Object rate limiter: the UNIQUE(install_id, day) index makes
-#    a repeat ping a no-op insert, and a WAF rate-limiting rule (see README)
-#    covers the flood case more cheaply than anything we could write here;
+#  - no KV / Durable Object counters: the UNIQUE(install_id, day) index already
+#    makes a repeat ping a no-op insert, so the limiter only has to cap request
+#    volume, not correctness;
 #  - no secrets: the endpoint is unauthenticated by design, because any
 #    credential shipped in an open-source client is a public credential.

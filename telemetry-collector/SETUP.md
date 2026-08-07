@@ -171,23 +171,23 @@ To watch requests live while testing, run `npx wrangler tail` in another termina
 
 ---
 
-## 5. Add the rate-limit rule
+## 5. The rate limit
 
-The `UNIQUE(install_id, day)` index means a repeat ping is a no-op insert, but it
-still costs a request. The free plan includes one rate-limiting rule; spend it here.
+Already configured — the `[[ratelimits]]` binding in `wrangler.toml` caps `/v1/ping`
+at **10 requests per minute per IP**, enforced inside the Worker and deployed with
+it. Nothing to click. Ten a minute is roughly 14,000× what an honest client sends
+(one per day), so it can never affect a real user.
 
-**Dashboard → your domain (or Workers route) → Security → WAF → Rate limiting rules → Create rule:**
+> ⚠️ **Do not go looking for a WAF rate-limiting rule instead.** WAF rules are
+> **zone**-scoped, and the endpoint lives on `workers.dev` — Cloudflare's zone, not
+> yours — so there is no zone to attach one to. The binding is the mechanism that
+> works here.
 
-| Field | Value |
-|---|---|
-| Rule name | `telemetry-ping` |
-| If incoming requests match | `URI Path` `equals` `/v1/ping` |
-| Rate | 10 requests per 1 minute |
-| Counting characteristic | IP |
-| Action | Block for 1 minute |
-
-Ten a minute is roughly 14,000× what an honest client sends (one per day), so it
-will never touch a real user, and it caps what a flood can cost.
+Verify it by sending the test ping from step 4 a dozen times in a row: the first ten
+return `204`, the rest `429`. It resets within the minute. If a **Custom Domain** is
+added later, a WAF rule becomes available as an extra outer layer — but keep this
+binding regardless, since clients already in the field keep posting to the
+workers.dev address, which a WAF rule on your own zone would never see.
 
 ---
 
