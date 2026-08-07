@@ -14,6 +14,17 @@ Turn it off with `polyctl telemetry disable`, in the tray GUI under
 **Settings → Telemetry**, or by setting `telemetry_enabled: false` in
 `settings.yaml`.
 
+**How users find out.** There is deliberately **no first-run dialog** — a modal
+that interrupts everyone on upgrade is a poor trade for a disclosure most people
+dismiss unread, and it arrives *after* they have already installed. The
+disclosure is instead: the **release notes** (which they read at download time,
+before the app runs), the public
+[Usage Data & Privacy](https://www.polykybd.org/software/telemetry/) page, this
+document, and an INFO line the core logs on **every** start saying whether
+telemetry is on and how to turn it off. ⚠️ That means the release notes for any
+version that changes what is collected are **part of the disclosure, not
+marketing** — if the payload gains a field, the notes have to say so.
+
 ## What is sent
 
 ```json
