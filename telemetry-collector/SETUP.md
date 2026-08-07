@@ -232,8 +232,10 @@ For a release, set the same URL as `TELEMETRY_ENDPOINT` in
 Existing installs pick it up because settings `load()` uses `setdefault`, so a key
 they have never seen adopts the new default.
 
-<!-- Reminder: the first-run notice stays hidden while the endpoint is empty, so
-     this is also the step that starts showing users the disclosure dialog. -->
+<!-- There is no first-run dialog (removed in PolyKybdHost#153). Setting this
+     endpoint is therefore the moment reporting starts for real, and the release
+     notes are the disclosure — write them before shipping the release that sets
+     it, not after. See docs/telemetry.md § How users find out. -->
 
 ---
 
@@ -263,6 +265,31 @@ npx wrangler d1 execute polyhost-telemetry --remote --command \
 ```
 
 Add `--json` for machine-readable output.
+
+### The dashboard
+
+`dashboard.py` runs those queries for you and writes one self-contained HTML file
+— charts inlined, no CDN, no scripts — that you open locally:
+
+```bash
+python telemetry-collector/dashboard.py --open      # queries --remote, writes dashboard.html
+python telemetry-collector/dashboard.py --days 90   # widen the time-series window
+```
+
+It shows installs reporting per day, host/firmware/OS/country/mode splits **per
+install** (the newest report per install, so a long-running tester does not
+outvote a new one by having reported more often), the activity counters over
+time, font-pack versions, and a table of every install.
+
+It is a **generator, not a service**, and that is the point: the Worker keeps its
+"no read route, so no route can leak the dataset" property, and there is no
+dashboard credential to leak because it borrows the wrangler login you already
+have. The cost is that it shows the data as of the moment you ran it. If a hosted
+view is ever wanted, it needs a real auth story — and the security audit entry
+(HOST-3) has to move with it.
+
+`--from-json FILE` renders saved `--json` output without touching the network,
+which is also how the tests cover it.
 
 > ⚠️ In **bash**, escape the `$` in a `json_extract` path (`'\$.fw_flashes'`) or the
 > shell expands it to nothing and the query silently returns NULLs rather than
