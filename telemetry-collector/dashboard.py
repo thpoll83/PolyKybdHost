@@ -96,6 +96,10 @@ def fetch_rows(remote: bool, wrangler: str) -> list[dict]:
         )
     parts[0] = exe
 
+    # Say what is happening before blocking. npx resolves (and on a cold cache
+    # downloads) wrangler before it runs anything, which takes 10-20s — during
+    # which an unannounced wait looks like a hang, not a download.
+    print(f"querying {'remote' if remote else 'local'} D1 via wrangler…", flush=True)
     proc = subprocess.run(
         parts, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
