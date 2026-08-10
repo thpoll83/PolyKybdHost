@@ -172,7 +172,7 @@ def _hook(px: int, dilate: int, trim: int) -> Image.Image:
 
 def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
                       gap: float = -0.22, trim: int = 3,
-                      converge: int = 1) -> None:
+                      converge: int = 2, drop: int = 1) -> None:
     """Two mirrored J's, rotated 70 and 250 degrees counter-clockwise.
 
     `trim` cuts rows off the top of each J — the free end of its stem —
@@ -183,7 +183,9 @@ def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
 
     `converge` then nudges each hook back towards the centre in **x only**, in
     the same final-pixel unit, tightening the pair horizontally without
-    disturbing the diagonal the gap runs along.
+    disturbing the diagonal the gap runs along. `drop` lowers whichever hook
+    sits **above** the centre by that many pixels, closing the pair vertically
+    from one side only.
 
     Each hook is displaced from the centre **along its own rotation axis**, and
     `gap` is SIGNED: the sign is what chooses which side of the pair the space
@@ -204,14 +206,19 @@ def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
     for ang in (70, 250):
         r = hook.rotate(ang, resample=Image.BICUBIC, expand=True)
         a = math.radians(ang)
-        dx = d * math.cos(a)
+        dx, dy = d * math.cos(a), -d * math.sin(a)
         # Pull each hook back towards the centre in x only, AFTER it is placed.
         # Sign-driven rather than a fixed +/-, so it stays "inwards" for either
         # `gap` sign; it closes the pair horizontally without touching the
         # diagonal the gap runs along.
         dx -= math.copysign(converge * SS, dx) if dx else 0
+        # Nudge whichever hook sits above the centre downwards. Selected by the
+        # sign of its own y offset (negative = higher up the canvas), so it
+        # follows the upper hook rather than being pinned to one rotation angle.
+        if dy < 0:
+            dy += drop * SS
         img.paste(r, (int(W / 2 + dx - r.width / 2),
-                      int(H / 2 - d * math.sin(a) - r.height / 2)), r)
+                      int(H / 2 + dy - r.height / 2)), r)
     _emit(img, dest)
 
 

@@ -165,10 +165,12 @@ way). And the unit is **final output pixels** — the mark is drawn 8x
 supersampled, so a row of the drawing is an eighth of an output pixel and
 trimming three of *those* would be invisible.
 
-**Each hook is then nudged 1px back towards the centre in x only** (`converge`,
+**Each hook is then nudged 2px back towards the centre in x only** (`converge`,
 same final-pixel unit), tightening the pair horizontally without disturbing the
-diagonal the gap runs along. It is applied by the sign of each hook's own x
-offset rather than as a fixed ±, so it stays *inwards* whichever way `gap` goes.
+diagonal the gap runs along, and **the upper hook drops 1px** (`drop`), closing
+the pair vertically from one side. Both are applied by the sign of that hook's
+own offset rather than as fixed ±/rotation angle, so `converge` stays *inwards*
+whichever way `gap` goes and `drop` follows whichever hook is actually on top.
 
 ### Notion
 
