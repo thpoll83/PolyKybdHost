@@ -144,11 +144,16 @@ def _hook_font(px: int) -> ImageFont.FreeTypeFont:
 
 
 def _hook(px: int, dilate: int, trim: int) -> Image.Image:
-    """A vertically-mirrored J, thickened past Bold and trimmed at the top.
+    """A J, thickened past Bold, trimmed at the top, then vertically mirrored.
 
-    `trim` is in **final output pixels** (so it is scaled by `SS` here). The
-    flip puts the J's hook at the top and its stem below, so trimming takes
-    thickness off the hook's outer bar and leaves the stem alone.
+    `trim` cuts rows off the **top of the J** — the free end of its stem — so
+    the stem shortens and the hook keeps its full curl. It is in **final output
+    pixels** (scaled by `SS` here), not rows of this drawing.
+
+    ⚠️ The trim happens **before** `ImageOps.flip`, and that ordering is the
+    whole point: after the flip the hook sits at the top, so trimming there cuts
+    the hook instead of the stem — the opposite end. Do not fold this step into
+    the post-flip crop.
     """
     font = _hook_font(px)
     probe = ImageDraw.Draw(Image.new("L", (px * 3, px * 3)))
@@ -158,23 +163,22 @@ def _hook(px: int, dilate: int, trim: int) -> Image.Image:
     # No Black/Heavy weight is available, so the stroke is grown by dilation.
     for _ in range(dilate):
         img = img.filter(ImageFilter.MaxFilter(3))
-    img = ImageOps.flip(img)
-    img = img.crop(img.getbbox())
     if trim:
+        img = img.crop(img.getbbox())            # still J-side up
         img = img.crop((0, trim * SS, img.width, img.height))
-        img = img.crop(img.getbbox())
-    return img
+    img = ImageOps.flip(img)
+    return img.crop(img.getbbox())
 
 
 def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
                       gap: float = -0.22, trim: int = 3) -> None:
     """Two mirrored J's, rotated 70 and 250 degrees counter-clockwise.
 
-    `trim` cuts rows off the top of each J **before** it is rotated, thinning
-    the hook's outer bar. It is counted in **final output pixels**, not in the
-    glyph's own rows: the mark is drawn `SS`x supersampled, so a row of the
-    drawing is an eighth of an output pixel and trimming three of those would be
-    invisible.
+    `trim` cuts rows off the top of each J — the free end of its stem —
+    **before** it is mirrored and rotated, so the stem shortens and the hook
+    keeps its curl. It is counted in **final output pixels**, not in the glyph's
+    own rows: the mark is drawn `SS`x supersampled, so a row of the drawing is
+    an eighth of an output pixel and trimming three of those would be invisible.
 
     Each hook is displaced from the centre **along its own rotation axis**, and
     `gap` is SIGNED: the sign is what chooses which side of the pair the space

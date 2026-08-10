@@ -155,10 +155,15 @@ prints a warning that the mark **will** differ from the committed one — treat
 that output as a candidate, not a reship. No Black weight exists in any of
 these, so the stroke is grown by dilating Bold.
 
-**The J is trimmed at the top before it is rotated** (`trim`, default 3),
-thinning the hook's outer bar while leaving the stem. The unit is **final
-output pixels**: the mark is drawn 8x supersampled, so a row of the drawing is
-an eighth of an output pixel and trimming three of *those* would be invisible.
+**The J is trimmed at its top** (`trim`, default 3) — the free end of the stem —
+so the stem shortens and the hook keeps its full curl.
+
+Two things about that step are easy to get backwards. The cut must happen
+**before** `ImageOps.flip`: after the flip the hook sits at the top, so trimming
+there takes the hook off instead, which is the opposite end (shipped once that
+way). And the unit is **final output pixels** — the mark is drawn 8x
+supersampled, so a row of the drawing is an eighth of an output pixel and
+trimming three of *those* would be invisible.
 
 ### Notion
 
