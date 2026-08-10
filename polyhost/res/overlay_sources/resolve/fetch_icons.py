@@ -5,8 +5,9 @@ Style route: **Microsoft Fluent UI System Icons (MIT)** for everything generic,
 plus the shared custom-drawn NLE glyphs (`../nle_glyphs.py`) for the timeline
 operations no UI icon set has — blade, mark in/out, overwrite, append, ripple
 delete, trim, snapping. The ESC **program mark** is a drawn, license-clean
-substitute (`../program_marks.py`): Blackmagic's Resolve logo is a trademark we
-may not redistribute.
+substitute (`../geo_marks.py`): Blackmagic's Resolve logo is a trademark we may
+not redistribute, but the shape it is built from — a ring of three drops — is a
+plain construction we can draw ourselves.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/resolve/fetch_icons.py
@@ -18,9 +19,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import geo_marks  # noqa: E402
 import icon_fetch  # noqa: E402
 import nle_glyphs  # noqa: E402
-import program_marks  # noqa: E402
 
 # action filename -> Fluent folder name (icon_fetch resolves the asset + size).
 FLUENT = {
@@ -69,7 +70,7 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
     n += nle_glyphs.draw_all(out, DRAWN)
-    program_marks.ensure(out / "resolve.png", "R", motif="sprockets")
+    geo_marks.ensure_resolve(out / "resolve.png")
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
 

@@ -8,9 +8,10 @@ and the markdown/rich-text formatting run of bold/italic/link/lists/headings);
 duplicating ~30 identical PNGs five times would be pure noise in the tree.
 
 Style route: **Microsoft Fluent UI System Icons (MIT)**. The five ESC
-**program marks** are drawn, license-clean substitutes (`../program_marks.py`) —
-the GitHub, GitLab, Atlassian, Google and Notion logos are all trademarks we
-may not redistribute.
+**program marks** come from three sources: GitHub and GitLab use their real
+monochrome logos (`../brand_marks.py`, artwork CC0), Google Docs and Notion get
+drawn substitutes (`../doc_mark.py` / `../rect_mark.py`), and Confluence is
+rebuilt from its geometry (`../geo_marks.py`).
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/webapps/fetch_icons.py
@@ -22,10 +23,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import brand_marks, doc_mark, icon_fetch  # noqa: E402
+import brand_marks, doc_mark, geo_marks, icon_fetch  # noqa: E402
 import rect_mark  # noqa: E402
 import material_symbols as ms  # noqa: E402
-import program_marks  # noqa: E402
 
 FLUENT = {
     # --- shared: navigation & chrome ---
@@ -122,8 +122,9 @@ DOC = {"gd.png": ("googledocs", "DOCS")}
 # Notion: a framed serif N with a 1-bit extruded shade — its brand letter IS a
 # serif, and the depth is what separates it from the other framed marks.
 SHADED = {"nt.png": "N"}
-# Confluence keeps the drawn letter tile.
-MARKS = {"cf.png": ("C", "corner")}
+# Confluence: Atlassian's mark is a trademark, but its construction — a pair of
+# mirrored, rotated hooks — is a shape we can draw ourselves (see geo_marks).
+GEO = {"cf.png": geo_marks.ensure_confluence}
 
 
 # Fluent ships NO ordered-list glyph (every "Text Number List *" name 404s), and
@@ -153,9 +154,9 @@ def main() -> int:
             print(f"  {dest.name}  <- fluent Document + '{r[0]}'")
     for fname, letters in SHADED.items():
         rect_mark.ensure(out / fname, letters, serif=True, shade=2, shade_dir="tl")
-    for fname, (letter, motif) in MARKS.items():
-        program_marks.ensure(out / fname, letter, motif=motif)
-    print(f"Wrote {n} icons (+ {len(BRAND)+len(DOC)+len(SHADED)+len(MARKS)} program marks) to {out}")
+    for fname, draw in GEO.items():
+        draw(out / fname)
+    print(f"Wrote {n} icons (+ {len(BRAND)+len(DOC)+len(SHADED)+len(GEO)} program marks) to {out}")
     return 0
 
 

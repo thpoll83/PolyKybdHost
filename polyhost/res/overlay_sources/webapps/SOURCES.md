@@ -53,12 +53,19 @@ combination is not one of the nine representable modifier variants.
 |---|---|---|
 | all shortcut icons except `numberlist` | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
 | `numberlist` | [Google Material Symbols](https://fonts.google.com/icons) (`format_list_numbered`) | Apache-2.0 |
-| `gh.png`, `gl.png`, `cf.png`, `gd.png`, `nt.png` (ESC program marks) | Custom-drawn, `../program_marks.py` | GPL-3.0-or-later (this repo) |
+| `gh.png`, `gl.png` (ESC program marks) | [Simple Icons](https://github.com/simple-icons/simple-icons) via `../brand_marks.py` | CC0-1.0 (artwork) |
+| `gd.png` (ESC program mark) | Custom-drawn, `../doc_mark.py` | GPL-3.0-or-later (this repo) |
+| `nt.png` (ESC program mark) | Custom-drawn, `../rect_mark.py` | GPL-3.0-or-later (this repo) |
+| `cf.png` (ESC program mark) | Custom-drawn, `../geo_marks.py` | GPL-3.0-or-later (this repo) |
 
-**None of the program marks are the real logos.** The GitHub Invertocat, the
-GitLab tanuki, the Atlassian/Confluence mark, the Google Docs mark and the
-Notion mark are all trademarks we may not redistribute; each ESC cell shows a
-drawn tile with an initial (G, GL, C, D, N) instead.
+**GitHub and GitLab get their real marks; the other three do not.** The
+Invertocat and the tanuki are published as plain monochrome artwork that Simple
+Icons redistributes under CC0, and they read cleanly as a 1-bit silhouette — CC0
+settles the *copyright*, and using them here is nominative (the mark denotes the
+very app the overlay set is for). The Google Docs and Notion marks come with no
+such release, so they are drawn substitutes; Atlassian's Confluence mark is a
+trademark too, but its *construction* — a mirrored J rotated into a pair of
+hooks — is a shape we can draw ourselves (`../geo_marks.py`).
 
 Fluent ships **no ordered-list glyph** — every `Text Number List *` name 404s,
 and its nearest match `Text Number Format` draws "ABC 123", which reads as
@@ -107,10 +114,25 @@ glyph (MIT) with the module name inside — same builder as the LibreOffice mark
 5px-tall label does not survive being rescaled; the cost is that it covers the
 firmware-drawn `Esc` legend.
 
-**Confluence (`cf.png`) and Notion (`nt.png`) keep the drawn letter tiles**
-(`../program_marks.py`) — the generic-document treatment was tried for them and
-rejected: as page/wiki apps they came out near-identical to Google Docs, with
-only a four-letter label to tell them apart at keycap size.
+**Confluence (`cf.png`) and Notion (`nt.png`) do NOT use the document frame** —
+the generic-document treatment was tried for them and rejected: as page/wiki
+apps they came out near-identical to Google Docs, with only a four-letter label
+to tell them apart at keycap size.
+
+### Confluence
+
+`cf.png` is two thickened, vertically-mirrored **J**s rotated 70° and 250° CCW
+(`../geo_marks.py`). It replaced a drawn "C" letter tile.
+
+Two things are worth knowing before tuning it. The pair is **180°-symmetric by
+construction**, so mirroring the glyph horizontally, or flipping the sign of the
+offset, merely swaps which hook is which and returns a *pixel-identical* image —
+both were tried and hashed the same. The only control over where the space lands
+is the **offset axis**: each hook is pushed out along its own rotation angle, so
+the gap runs across the other diagonal. And the face matters — a J that is a
+straight stem with a clipped foot (DejaVu Sans) renders as two bars rather than
+two hooks, so `geo_marks` prefers FreeSans/Loma. No Black weight is installed,
+so the stroke is grown by dilating the Bold.
 
 ### Notion
 

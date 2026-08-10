@@ -8,8 +8,8 @@ line ops.
 This folder serves BOTH Sublime sets: the Windows/Linux `bindings.yaml` here and
 the macOS `../sublime_mac/bindings.yaml`, which points its `icon_dir` back at
 this directory. Same app, same actions, same artwork -- only the chords differ,
-so duplicating ~40 PNGs would be pure noise. The ESC **program mark** is a drawn substitute
-(`../program_marks.py`) — Sublime HQ's logo is proprietary.
+so duplicating ~40 PNGs would be pure noise. The ESC **program mark** is Sublime's own
+monochrome logo via Simple Icons (`../brand_marks.py`, artwork CC0).
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/sublime/fetch_icons.py
@@ -23,7 +23,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import editor_glyphs  # noqa: E402
 import brand_marks, icon_fetch  # noqa: E402
-import program_marks  # noqa: E402
 
 FLUENT = {
     # navigation -- Sublime's "Goto Anything" family

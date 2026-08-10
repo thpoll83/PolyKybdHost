@@ -6,7 +6,8 @@ custom-drawn NLE glyphs (`../nle_glyphs.py`) — including four drawn specifical
 for Premiere's tool row (ripple / rolling / slip / slide), whose whole point is
 *which* clip edge moves and by how much. No generic icon set expresses that.
 The ESC **program mark** is a drawn, license-clean substitute
-(`../program_marks.py`): Adobe's Pr logo is a trademark we may not redistribute.
+(`../rect_mark.py`): Adobe's Pr logo is a trademark we may not redistribute, so
+the cell carries a framed "Pr" — the app's own naming, not its logo styling.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/premiere/fetch_icons.py
@@ -21,7 +22,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import icon_fetch  # noqa: E402
 import rect_mark  # noqa: E402
 import nle_glyphs  # noqa: E402
-import program_marks  # noqa: E402
 
 FLUENT = {
     # tools

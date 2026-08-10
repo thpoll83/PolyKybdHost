@@ -7,8 +7,8 @@ large common command set (file, clipboard, find, character formatting) and only
 diverge in their module-specific tail.
 
 Style route: **Microsoft Fluent UI System Icons (MIT)**. The three ESC
-**program marks** are drawn, license-clean substitutes (`../program_marks.py`) —
-one per module, distinguished by initial + motif (document / grid / screen).
+**program marks** are drawn (`../doc_mark.py`) — a Fluent document frame with a
+per-module motif inside and the module name across the bottom.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/libreoffice/fetch_icons.py
@@ -22,7 +22,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import doc_mark, icon_fetch  # noqa: E402
 import material_symbols as ms  # noqa: E402
-import program_marks  # noqa: E402
 
 FLUENT = {
     # --- shared across all three modules ---

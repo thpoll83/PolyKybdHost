@@ -30,12 +30,19 @@ anything on the numeric keypad (no overlay cell).
 |---|---|---|
 | `newtimeline, save, import, render, renderqueue, undo, redo, cut, copy, paste, selectall, group, ungroup, link, addedit, zoomin, zoomout, select, marker, dyntrim, insert, play, stop, fwd, rev, pagecut, pageedit, pagefusion, pagecolor, pagefairlight, pagedeliver` | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
 | `blade, markin, markout, overwrite, append, rippledelete, trim, snap` | Custom-drawn, `../nle_glyphs.py` | GPL-3.0-or-later (this repo) |
-| `resolve.png` (ESC program mark) | Custom-drawn, `../program_marks.py` | GPL-3.0-or-later (this repo) |
+| `resolve.png` (ESC program mark) | Custom-drawn, `../geo_marks.py` | GPL-3.0-or-later (this repo) |
 
 **The program mark is NOT the Blackmagic logo.** The DaVinci Resolve logo is a
-Blackmagic Design trademark that we may not redistribute, so the ESC cell shows
-a generic drawn tile: a rounded rect with an "R" knocked out and film sprocket
-holes down the sides.
+Blackmagic Design trademark that we may not redistribute. What the ESC cell
+shows is *drawn from the construction* rather than copied: a 2px ring with three
+teardrops at 120°, tips pointing inwards. It replaced a generic "R" letter tile,
+which said nothing about the app.
+
+Both radii matter at 37x32. A drop that reaches the ring, or the centre, merges
+into a blob once the mark is thresholded to 1 bit — hence the bulb radius
+(`bulb`, 0.20 of the ring) and the orbit (`ring`, 0.52) leave air at both ends.
+The mark is drawn 8x supersampled and Lanczos-downscaled, because `ImageDraw`
+has no antialiasing and a circle drawn straight at this size is visibly ragged.
 
 The eight custom NLE glyphs exist because neither Fluent nor Material has them,
 and the nearest generic glyph actively misleads at keycap size — a scissors

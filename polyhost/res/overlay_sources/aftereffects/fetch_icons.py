@@ -5,7 +5,8 @@ Style route: **Microsoft Fluent UI System Icons (MIT)** throughout — unlike th
 two NLE sets, After Effects' shortcuts are layer *properties* and tools that map
 cleanly onto generic UI glyphs (anchor/position/scale/rotation/opacity/effects),
 so nothing needed custom drawing. The ESC **program mark** is a drawn,
-license-clean substitute (`../program_marks.py`).
+license-clean substitute (`../rect_mark.py`): a framed "Ae", set at the size the
+whole Adobe family shares.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/aftereffects/fetch_icons.py
@@ -19,7 +20,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
 import rect_mark  # noqa: E402
-import program_marks  # noqa: E402
 
 FLUENT = {
     # layer properties (the single-letter row -- After Effects' signature)
