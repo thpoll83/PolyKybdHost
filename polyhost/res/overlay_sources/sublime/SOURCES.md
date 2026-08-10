@@ -60,8 +60,10 @@ python scripts/generate_app_overlays.py \
 
 ## Program mark
 
-`sublime.png` is the **real Sublime Text mark**, rendered from **Simple Icons**
-(`icons/sublimetext.svg`, artwork **CC0-1.0**) — see `../brand_marks.py` for the
+`sublime.png` is the **real Sublime Text mark**, rendered from the **Simple
+Icons** `sublimetext` slug (artwork **CC0-1.0**), fetched at draw time and
+written straight to PNG — no SVG is vendored here, despite what an earlier
+revision of this line claimed. See `../brand_marks.py` for the
 copyright-vs-trademark split (CC0 covers redistribution; the mark itself is used
 nominatively, to identify the app the overlay set is for). It replaced a drawn
 `S` letter tile. The macOS set (`sublime_mac`) shares this file deliberately: it
