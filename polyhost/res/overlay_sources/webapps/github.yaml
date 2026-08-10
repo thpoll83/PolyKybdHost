@@ -1,7 +1,8 @@
 # GitHub (in-browser) shortcut overlays for PolyKybd.
 #
 # Icons: Microsoft Fluent UI System Icons (MIT); ESC program mark drawn
-# (../program_marks.py), NOT the GitHub logo. Shortcuts: GitHub's own docs.
+# GitHub's own monochrome mark via Simple Icons (CC0, ../brand_marks.py).
+# Shortcuts: GitHub's own docs.
 # See SOURCES.md.
 #
 # Wired under the browser entry via `urls-contains: github.com` - there is no

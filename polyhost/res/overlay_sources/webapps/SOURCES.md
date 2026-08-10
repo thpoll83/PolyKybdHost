@@ -180,7 +180,14 @@ reads as unchanged right through the failure.
 ### Notion
 
 `nt.png` is a framed **serif N with a 2px extruded shade** (`../rect_mark.py`,
-`serif=True, shade=2`). Notion's brand letter genuinely is a serif, and the
-extrude — right + bottom edges only, offset down-right — is the 1-bit stand-in
-for the logo's depth. Drawing all four offset edges would read as a second box
-rather than as a shadow.
+`serif=True, shade=2, shade_dir="tl"`). Notion's brand letter genuinely is a
+serif, and the extrude is the 1-bit stand-in for the logo's depth.
+
+Two deliberate choices, both of which have been queried:
+
+- **The shade goes to the TOP-LEFT** (`shade_dir="tl"`). It was right+bottom
+  first and was changed on request; an automated review later read the stale
+  version of this paragraph and proposed "fixing" the code back to `"br"`. The
+  code is correct — this text was the thing that was wrong.
+- **Two adjacent edges only.** Drawing all four offset edges reads as a second
+  box rather than as a shadow.

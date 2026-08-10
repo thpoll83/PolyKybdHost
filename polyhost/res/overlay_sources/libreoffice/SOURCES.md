@@ -52,12 +52,13 @@ so that would put wrong legends on the keycaps:
 |---|---|---|
 | all shortcut icons except `orderedlist` | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
 | `orderedlist` | [Google Material Symbols](https://fonts.google.com/icons) (`format_list_numbered`) | Apache-2.0 |
-| `lo_writer.png`, `lo_calc.png`, `lo_impress.png` (ESC program marks) | Custom-drawn, `../program_marks.py` | GPL-3.0-or-later (this repo) |
+| `lo_writer.png`, `lo_calc.png`, `lo_impress.png` (ESC program marks) | Custom-drawn, `../doc_mark.py` | GPL-3.0-or-later (this repo) |
 
 **The program marks are NOT the LibreOffice logos** (those are Document
-Foundation trademarks): a drawn tile with the module initial — W with a
-document-corner motif, C with a cell-grid motif, I with a slide-screen motif —
-so the three are distinguishable at a glance on the ESC key.
+Foundation trademarks): a Fluent document frame carrying a per-module motif
+(Writer text lines · Calc cell grid · Impress slide + caption) and the module
+name across the bottom, so the three are distinguishable at a glance on the ESC
+key. See "Program marks" below for how placement is computed.
 
 Fluent has no ordered-list glyph (see `../webapps/SOURCES.md`), so that one comes
 from Material Symbols.
@@ -122,10 +123,10 @@ done
 ## Program marks (ESC, all layers)
 
 `lo_writer.png` / `lo_calc.png` / `lo_impress.png` are built by
-**`_doc_mark.py`** from the **Microsoft Fluent UI System Icons** `Document`
+**`doc_mark.py`** from the **Microsoft Fluent UI System Icons** `Document`
 glyph (MIT — `microsoft/fluentui-system-icons`,
 `assets/Document/SVG/ic_fluent_document_24_regular.svg`, vendored as
-`icons/_fluent_document.svg` so a re-run needs no network). The page frame is
+`../_assets/fluent_document.svg` so a re-run needs no network). The page frame is
 Fluent's; the per-module motif (Writer text lines · Calc cell grid · Impress
 slide + caption) and the module name are ours.
 

@@ -52,8 +52,10 @@ for p in paths:
     for sub in p.continuous_subpaths():
         pts=[(sub.point(t).real, sub.point(t).imag) for t in np.linspace(0,1,600)]
         g=Polygon(pts)
-        if g.is_valid and g.area>0.5: rings.append(g)
-rings.sort(key=lambda g:-g.area); outer,interior,fold = rings[0],rings[1],rings[2]
+        if g.is_valid and g.area>0.5:
+            rings.append(g)
+rings.sort(key=lambda g:-g.area)
+outer,interior,fold = rings[0],rings[1],rings[2]
 def fit(page_h, stretch):
     s = page_h/(outer.bounds[3]-outer.bounds[1])
     g3=[shscale(g, s*stretch, s, origin=(outer.bounds[0],outer.bounds[1])) for g in (outer,interior,fold)]

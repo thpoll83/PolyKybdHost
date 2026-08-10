@@ -158,9 +158,9 @@ def _hook(px: int, dilate: int, trim: int) -> Image.Image:
     """
     font = _hook_font(px)
     probe = ImageDraw.Draw(Image.new("L", (px * 3, px * 3)))
-    l, t, r, b = probe.textbbox((0, 0), "J", font=font)
-    img = Image.new("L", (r - l + px, b - t + px), 0)
-    ImageDraw.Draw(img).text((px // 2 - l, px // 2 - t), "J", font=font, fill=255)
+    left, t, r, b = probe.textbbox((0, 0), "J", font=font)
+    img = Image.new("L", (r - left + px, b - t + px), 0)
+    ImageDraw.Draw(img).text((px // 2 - left, px // 2 - t), "J", font=font, fill=255)
     # No Black/Heavy weight is available, so the stroke is grown by dilation.
     for _ in range(dilate):
         img = img.filter(ImageFilter.MaxFilter(3))

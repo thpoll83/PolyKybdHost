@@ -30,7 +30,7 @@ Adobe Illustrator default keyboard shortcuts. Primary reference:
   S Save-as, O Create-outlines, G Ungroup, V Paste-in-place, P Place,
   `]` Bring-to-front, `[` Send-to-back.
 - **Shift (→ B channel of primary)** — 4:
-  E Free-transform, W Width-tool, B Blob-brush, L Live-paint-selection.
+  E Eraser, W Width-tool, B Blob-brush, L Live-paint-selection.
 
 ### Corrections to the starting list (verified)
 
@@ -115,18 +115,20 @@ Probed names that returned 404 and were substituted/drawn:
 
 ## Program icon (ESC, all layers)
 
-`program_icon: illustrator.png` is a **generic, license-clean rounded-square "Ai"
-monogram drawn in code** (NOT Adobe's logo): a rounded-rectangle frame with an
-"Ai" wordmark. Drawn by `_draw_ai_logo()` in `fetch_icons.py`
-(white-on-transparent → `program_icon_mode: alpha`), so it is fully reproducible
-and carries no trademark/licence risk. Drop a real mark as `icons/illustrator.png`
-to override (committed assets are left untouched).
+`program_icon: illustrator.png` is a **generic, license-clean framed "Ai"**
+(NOT Adobe's logo), built by the shared `../rect_mark.py`: a 2px rectangle with
+the product letters inside, at the size the whole Adobe family shares. It
+replaced an in-file `_draw_ai_logo()` rounded-square monogram, which is why that
+function may still exist unused in `fetch_icons.py`. White-on-transparent
+(`program_icon_mode: alpha`), fully reproducible, no trademark/licence risk.
+Drop a real mark as `icons/illustrator.png` to override (committed assets are
+left untouched).
 
 ## Transformations
 
 `bindings.yaml`: `mode: luma`, `threshold: 150`, `region: [36, 32]`,
 `anchor: bottom-right`, `margin: 0`; drawn glyphs use per-binding `mode: alpha`.
-Program icon bottom-right `[46, 40]`, `program_icon_mode: alpha`. Fluent `.svg` →
+Program icon bottom-right `[37, 32]`, `program_icon_mode: alpha`. Fluent `.svg` →
 cairosvg 96px in `fetch_icons.py`. Pin branch→SHA for byte-exact reproducibility;
 committed `icons/` freeze the render.
 
@@ -158,7 +160,7 @@ plain. Adobe's real logos are proprietary and cannot ship here; the letters are
 the app's own naming, not its trademark styling — no rounded-square gradient, no
 brand colours, no attempt to resemble the product tile.
 
-Authored **1:1** at the `[46, 40]` region so the generator never rescales it and
+Authored **1:1** at the `[37, 32]` region so the generator never rescales it and
 the 2px frame stays exactly 2px; the letter size is *measured* per pair (the
 widest that clears the frame by >=2px), since `Ai` is much narrower than `Pr`
 and one hardcoded size would either clip or float.

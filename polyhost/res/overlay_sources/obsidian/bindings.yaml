@@ -1,7 +1,7 @@
 # Obsidian shortcut overlays for PolyKybd.
 #
 # Icons: Microsoft Fluent UI System Icons (MIT); ESC program mark drawn
-# (../program_marks.py), NOT the Obsidian logo. See SOURCES.md.
+# (../geo_marks.py) - an irregular faceted stone, NOT the Obsidian logo. See SOURCES.md.
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/obsidian/fetch_icons.py

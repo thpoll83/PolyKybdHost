@@ -36,7 +36,7 @@ which has no overlay cell — bare `Space` covers preview instead.
 | File(s) | Source | License |
 |---|---|---|
 | all 34 shortcut icons | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
-| `aftereffects.png` (ESC program mark) | Custom-drawn, `../program_marks.py` | GPL-3.0-or-later (this repo) |
+| `aftereffects.png` (ESC program mark) | Custom-drawn, `../rect_mark.py` | GPL-3.0-or-later (this repo) |
 
 This is the only one of the three video sets that needed **no** custom glyphs:
 After Effects' shortcuts are layer properties and generic tools (anchor,
@@ -67,7 +67,7 @@ plain. Adobe's real logos are proprietary and cannot ship here; the letters are
 the app's own naming, not its trademark styling — no rounded-square gradient, no
 brand colours, no attempt to resemble the product tile.
 
-Authored **1:1** at the `[46, 40]` region so the generator never rescales it and
+Authored **1:1** at the `[37, 32]` region so the generator never rescales it and
 the 2px frame stays exactly 2px; the letter size is *measured* per pair (the
 widest that clears the frame by >=2px), since `Ai` is much narrower than `Pr`
 and one hardcoded size would either clip or float.

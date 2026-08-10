@@ -42,7 +42,7 @@ overlay cell.
 |---|---|---|
 | `select, ratestretch, pen, hand, zoom, newproject, newsequence, open, save, saveas, import, export, undo, redo, cut, copy, paste, pasteinsert, selectall, group, ungroup, link, addedit, speed, zoomin, zoomout, zoomfit, play, stop, fwd, rev, panel*` | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
 | `blade, markin, markout, rippledelete, rippleedit, rolledit, slip, slide, trackselect` | Custom-drawn, `../nle_glyphs.py` | GPL-3.0-or-later (this repo) |
-| `premiere.png` (ESC program mark) | Custom-drawn, `../program_marks.py` | GPL-3.0-or-later (this repo) |
+| `premiere.png` (ESC program mark) | Custom-drawn, `../rect_mark.py` | GPL-3.0-or-later (this repo) |
 
 **The program mark is NOT the Adobe logo.** "Pr" is set in Liberation Sans Bold
 inside a generic drawn tile with a playhead motif; Adobe's mark is a trademark
@@ -73,7 +73,7 @@ plain. Adobe's real logos are proprietary and cannot ship here; the letters are
 the app's own naming, not its trademark styling — no rounded-square gradient, no
 brand colours, no attempt to resemble the product tile.
 
-Authored **1:1** at the `[46, 40]` region so the generator never rescales it and
+Authored **1:1** at the `[37, 32]` region so the generator never rescales it and
 the 2px frame stays exactly 2px; the letter size is *measured* per pair (the
 widest that clears the frame by >=2px), since `Ai` is much narrower than `Pr`
 and one hardcoded size would either clip or float.

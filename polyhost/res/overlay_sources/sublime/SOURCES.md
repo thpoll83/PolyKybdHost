@@ -32,7 +32,7 @@ palette (`Ctrl+Shift+P`, which *is* shipped) cover them.
 |---|---|---|
 | 34 shortcut icons (`gotoanything, commandpalette, gotosymbol, gotoline, gotoword, find, replace, findinfiles, selectalloccur, indent, unindent, comment, blockcomment, duplicate, joinlines, cutline, swapup, swapdown, matchbracket, selectbrackets, autocomplete, insertafter, insertbefore, pasteindent, softundo, redo, build, closetab, reopentab, sidebar, fold, unfold, bookmark, wraptag`) | [Microsoft Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) | MIT |
 | `multicursor, cursorabove, cursorbelow, deleteline, selectline` | Custom-drawn, `../editor_glyphs.py` | GPL-3.0-or-later (this repo) |
-| `sublime.png` (ESC program mark) | Custom-drawn, `../program_marks.py` | GPL-3.0-or-later (this repo) |
+| `sublime.png` (ESC program mark) | [Simple Icons](https://github.com/simple-icons/simple-icons) via `../brand_marks.py` | CC0-1.0 (artwork) |
 
 Multiple cursors (`Ctrl+D`, `Ctrl+Alt+Up/Down`) are Sublime's defining feature
 and no general icon set draws them — Fluent's nearest glyphs read as "select
@@ -44,8 +44,9 @@ the delete-line strike must be **diagonal** (a horizontal one merges with the
 middle text row and nothing appears struck), and the caret is drawn as a
 serifed I-beam so it survives the 1-bit threshold.
 
-**The program mark is NOT the Sublime Text logo** — an "S" in a generic drawn
-tile with a code-brackets motif.
+**The program mark IS Sublime Text's own monochrome logo**, rendered from
+Simple Icons (artwork CC0-1.0) — see the "Program mark" section below for the
+copyright-vs-trademark split. It replaced an "S" letter tile.
 
 PolyKybdHost is GPL-3.0-or-later; MIT is GPL-3.0-compatible.
 

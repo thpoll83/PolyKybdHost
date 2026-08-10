@@ -63,8 +63,8 @@ PAD = BORDER + 2
 def _fits(d: ImageDraw.ImageDraw, letters: str, size: int, serif: bool,
           avail_w: int, avail_h: int):
     f = _font(size, serif)
-    l, t, r, b = d.textbbox((0, 0), letters, font=f)
-    return (f, l, t, r - l, b - t) if (r - l) <= avail_w and (b - t) <= avail_h else None
+    left, t, r, b = d.textbbox((0, 0), letters, font=f)
+    return (f, left, t, r - left, b - t) if (r - left) <= avail_w and (b - t) <= avail_h else None
 
 
 def shared_size(words: list[str], serif: bool = False, shade: int = 0) -> int:
@@ -123,8 +123,8 @@ def render(dest: Path, letters: str, serif: bool = False, shade: int = 0,
                 break
     if best is None:
         raise RuntimeError(f"{letters!r} does not fit the {CELL_W}x{CELL_H} frame")
-    f, l, t, tw, th = best
-    d.text((x0 + PAD + (avail_w - tw) // 2 - l, y0 + PAD + (avail_h - th) // 2 - t),
+    f, left, t, tw, th = best
+    d.text((x0 + PAD + (avail_w - tw) // 2 - left, y0 + PAD + (avail_h - th) // 2 - t),
            letters, fill=255, font=f)
 
     a = img.point(lambda v: 255 if v > 110 else 0)   # 1-bit: no grey survives
