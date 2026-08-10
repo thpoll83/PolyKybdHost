@@ -523,22 +523,44 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `faulthandler.dump_traceback_later(..., exit=True)`, so a stall prints every
   thread's stack and fails the command:
   `python scripts/run_tests.py [--timeout 180] [-s tests/device]`.
-  ⚠️ The stall was **not reproducible** in 20+ subsequent runs (plain, verbose,
-  under xvfb, two suites concurrently, and kill-mid-run-then-rerun). Ruled out:
-  orphaned processes, stale control sockets (the server tests use per-run
-  tempdirs), and the `RemoteCore` event-pump thread parked in `recv_bytes` (it is
-  `daemon=True`, so it cannot hold interpreter exit). Treat a hang as unexplained
-  environment flakiness, re-run once via the watchdog, and **paste the dump** —
-  that is the only artifact that will identify it.
-  ⚠️ **Set `--timeout` BELOW whatever will kill the shell, or the dump is lost
-  again.** It recurred once on 2026-08-10 (a ~28 s suite, wedged after the last
-  visible test line), and `--timeout 240` under a 120 s tool timeout meant the
-  outer kill landed first: SIGTERM, exit 143, **no traceback** — the watchdog
-  never got to fire. That is now three losses of the one artifact that would
-  identify this. `--timeout 60` is plenty for a 25–28 s suite and fires well
-  inside any shell limit. Redirect to a file (`> /tmp/tr.log 2>&1`) and read the
-  whole thing; do **not** pipe it through `tail`, which has eaten the dump
-  before.
+  ⚠️ **Set `--timeout` BELOW whatever will kill the shell, or the dump is lost.**
+  `--timeout 240` under a 120 s tool timeout means the outer kill lands first:
+  SIGTERM, exit 143, **no traceback**. That cost three losses of the one
+  artifact that identifies a stall. `--timeout 60` is plenty for a 25–28 s suite
+  and fires well inside any shell limit. Redirect to a file
+  (`> /tmp/tr.log 2>&1`) and read the whole thing; do **not** pipe it through
+  `tail`, which has eaten the dump before.
+- **✅ The intermittent test-suite stall is IDENTIFIED (2026-08-10): a deadlock in
+  `ControlServer.stop()`, not environment flakiness.** It had gone unexplained
+  across ~3 sessions and 20+ non-reproducing runs; the watchdog dump (finally
+  captured once `--timeout` sat under the shell limit) points at it exactly.
+  The hang is on the **main thread**, in
+  `tests/server/instance_test.py::test_probe_auth_mismatch_is_not_stale` →
+  `ControlServer.stop()` → `mpc.Client(...)` → `answer_challenge` →
+  `recv_bytes`, i.e. blocked forever in the authkey handshake.
+  - **Mechanism.** `stop()` sets `_running = False` **first**, then connects a
+    throwaway `mpc.Client` to unblock the blocking `accept()`. But
+    `multiprocessing.connection.Client` with an `authkey` performs a **blocking,
+    un-timeoutable** challenge/response, and only a thread sitting inside
+    `Listener.accept()` answers it. If the accept loop has already observed
+    `_running == False` and exited, nothing ever delivers the challenge: the OS
+    backlog completes the connect, and `stop()` blocks forever on the main
+    thread — wedging the whole run.
+  - **Why THIS test.** The auth-mismatch case deliberately drives the accept
+    loop through its `AuthenticationError` path immediately before `stop()`,
+    which is exactly the window where the loop re-checks `_running` and leaves.
+    That is why the stall is rare, un-reproducible on demand, and always lands
+    near the end of the suite.
+  - **This supersedes the earlier "unexplained environment flakiness" note.**
+    Ruled out then and still not the cause: orphaned processes, stale control
+    sockets, and the `daemon=True` `RemoteCore` event pump (the ~20 threads
+    parked in `recv_message` in the dump are that pump and the per-connection
+    readers — they are noise, not the hang; **read the `Current thread` /
+    unittest-framed stack, not the thread count**).
+  - **Not yet fixed** — the fix belongs in `stop()` (close the listener before
+    the throwaway connect, bound the connect with a timeout, or run it on a
+    throwaway thread), and it is a liveness change to shipped server code, so it
+    wants its own branch + review rather than riding along with unrelated work.
 - **Single-key keymap write**: the firmware supports `ID_DYNAMIC_KEYMAP_SET_KEYCODE` (0x05) — payload is `[layer, row, col, keycode_hi, keycode_lo]`. No need to write a full layer; `PolyKybd.set_dynamic_keycode()` wraps this.
 - **Firmware update survives protocol mismatches**: `PolyHost.device_present` tracks "a device answers protocol-independent queries (GET_ID/GET_LANG)" separately from `connected` (protocol/version compatible). The flash/apply/bootloader actions and the release-update flow gate on `_fw_actions_allowed()` (present, not paused) — NOT on `connected` — so a keyboard on a mismatched protocol can always be updated (`CommandsSubMenu.update_enabled` re-enables exactly those items when the rest of the menu is greyed out). The HID flash protocol (`hid_fw_up`) is dispatched independently of `PROTOCOL_VERSION` in the firmware. Don't re-gate any firmware-update path on `self.connected`.
 - **Autostart** (`polyhost/services/add_to_startup.py`): `setup_autostart_for_app()` registers the app to start at login (called from `main_app.py` unless `--portable`).
