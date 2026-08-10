@@ -135,17 +135,30 @@ tempting to conclude they collapse into one image — they do **not** (verified 
 hash), because the 180° rotation swaps the two hooks as well as their positions.
 An earlier revision of this file claimed otherwise; it was wrong.
 
-**The face decides the mark.** Measured on a 200px J — hook overhang past the
-stem, and box width/height:
+**The face decides the mark.** Ten sans faces were rendered as the finished
+mark and compared side by side; measured on a 200px J (hook overhang past the
+stem, and box width/height):
 
 | face | w/h | overhang | reads as |
 |---|---|---|---|
+| Rubik | 0.82 | 0.07 | barely hooks — two thick slabs |
 | DejaVu Sans | 0.37 | 0.43 | a straight stem — two *bars*, not hooks |
-| Loma | 0.55 | 0.42 | the middle ground — **the pick** |
+| **Lato** | **0.48** | **0.60** | **the pick** |
 | FreeSans | 0.62 | 0.67 | hook curls right over — too curvy |
 
-`_SANS` in `geo_marks.py` is therefore a preference order, not a chain of
-equals. No Black weight is installed, so the stroke is grown by dilating Bold.
+**Lato is not a system font**, so `geo_marks` fetches `Lato-Bold.ttf` from
+google/fonts (OFL) at draw time, the way `brand_marks` fetches its SVGs. That
+only matters when *regenerating*: `ensure_confluence` leaves a committed
+`cf.png` alone, so a normal fetch-script run touches no network for it. With no
+network it falls back to `_SANS` (a preference order, not a chain of equals) and
+prints a warning that the mark **will** differ from the committed one — treat
+that output as a candidate, not a reship. No Black weight exists in any of
+these, so the stroke is grown by dilating Bold.
+
+**The J is trimmed at the top before it is rotated** (`trim`, default 3),
+thinning the hook's outer bar while leaving the stem. The unit is **final
+output pixels**: the mark is drawn 8x supersampled, so a row of the drawing is
+an eighth of an output pixel and trimming three of *those* would be invisible.
 
 ### Notion
 

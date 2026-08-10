@@ -28,7 +28,11 @@ survives a re-run.
 """
 from __future__ import annotations
 
+import io
 import math
+import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
@@ -94,14 +98,22 @@ def ensure_resolve(dest: Path, **kw) -> None:
 # --------------------------------------------------------------------------- #
 # Confluence: two rotated hooks
 # --------------------------------------------------------------------------- #
-# The J's hook decides the whole mark, and the installed faces span a real
-# range. Measured on a 200px J (hook overhang past the stem, and box width/height):
+# The J's hook decides the whole mark, and the candidate faces span a real
+# range. Measured on a 200px J (hook overhang past the stem, box width/height),
+# over ten sans faces rendered as the finished mark and compared side by side:
 #
-#     DejaVu Sans   w/h 0.37  overhang 0.43   a straight stem -> reads as a BAR
-#     Loma          w/h 0.55  overhang 0.42   <- the middle ground, and the pick
+#     Rubik         w/h 0.82  overhang 0.07   barely hooks -> two thick slabs
+#     DejaVu Sans   w/h 0.37  overhang 0.43   straight stem -> reads as a BAR
+#     Lato          w/h 0.48  overhang 0.60   <- the pick
 #     FreeSans      w/h 0.62  overhang 0.67   hook curls right over -> too curvy
 #
-# So the order below is a preference, not a fallback chain of equals: Loma first.
+# Lato is **not** a system font, so it is fetched (OFL, from google/fonts) the
+# same way brand_marks fetches its SVGs. That is only needed to *regenerate* the
+# mark: `ensure_confluence` leaves a committed PNG alone, so a normal run of the
+# fetch script touches no network for it. `_SANS` is the offline fallback, in
+# preference order — it changes the mark, so it is a last resort, not an equal.
+_HOOK_TTF = ("https://raw.githubusercontent.com/google/fonts/main/"
+             "ofl/lato/Lato-Bold.ttf")
 _SANS = (
     "/usr/share/fonts/opentype/tlwg/Loma-Bold.otf",
     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
@@ -109,28 +121,60 @@ _SANS = (
 )
 
 
-def _hook(px: int, dilate: int) -> Image.Image:
-    """A vertically-mirrored J, thickened past the Bold weight."""
-    for p in _SANS:
-        if Path(p).exists():
-            font = ImageFont.truetype(p, px)
-            break
-    else:
-        raise RuntimeError(f"no curved sans face found; looked in {_SANS}")
+def _hook_font(px: int) -> ImageFont.FreeTypeFont:
+    try:
+        for i in range(4):                       # raw.githubusercontent 403s/resets
+            try:
+                data = urllib.request.urlopen(urllib.request.Request(
+                    _HOOK_TTF, headers={"User-Agent": "polykybd"}), timeout=30).read()
+                return ImageFont.truetype(io.BytesIO(data), px)
+            except (urllib.error.URLError, OSError):
+                if i == 3:
+                    raise
+                time.sleep(2 ** i)
+    except Exception as e:                       # noqa: BLE001 - offline is not fatal
+        for p in _SANS:
+            if Path(p).exists():
+                print(f"  ! Lato unavailable ({e}); falling back to {Path(p).name} "
+                      f"- the mark WILL differ from the committed one")
+                return ImageFont.truetype(p, px)
+        raise RuntimeError(f"no sans face available; {_HOOK_TTF} failed and "
+                           f"none of {_SANS} exist") from e
+    raise AssertionError("unreachable")
+
+
+def _hook(px: int, dilate: int, trim: int) -> Image.Image:
+    """A vertically-mirrored J, thickened past Bold and trimmed at the top.
+
+    `trim` is in **final output pixels** (so it is scaled by `SS` here). The
+    flip puts the J's hook at the top and its stem below, so trimming takes
+    thickness off the hook's outer bar and leaves the stem alone.
+    """
+    font = _hook_font(px)
     probe = ImageDraw.Draw(Image.new("L", (px * 3, px * 3)))
     l, t, r, b = probe.textbbox((0, 0), "J", font=font)
     img = Image.new("L", (r - l + px, b - t + px), 0)
     ImageDraw.Draw(img).text((px // 2 - l, px // 2 - t), "J", font=font, fill=255)
-    # No Black/Heavy weight is installed, so the stroke is grown by dilation.
+    # No Black/Heavy weight is available, so the stroke is grown by dilation.
     for _ in range(dilate):
         img = img.filter(ImageFilter.MaxFilter(3))
     img = ImageOps.flip(img)
-    return img.crop(img.getbbox())
+    img = img.crop(img.getbbox())
+    if trim:
+        img = img.crop((0, trim * SS, img.width, img.height))
+        img = img.crop(img.getbbox())
+    return img
 
 
 def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
-                      gap: float = -0.22) -> None:
+                      gap: float = -0.22, trim: int = 3) -> None:
     """Two mirrored J's, rotated 70 and 250 degrees counter-clockwise.
+
+    `trim` cuts rows off the top of each J **before** it is rotated, thinning
+    the hook's outer bar. It is counted in **final output pixels**, not in the
+    glyph's own rows: the mark is drawn `SS`x supersampled, so a row of the
+    drawing is an eighth of an output pixel and trimming three of those would be
+    invisible.
 
     Each hook is displaced from the centre **along its own rotation axis**, and
     `gap` is SIGNED: the sign is what chooses which side of the pair the space
@@ -146,7 +190,7 @@ def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
     """
     W, H = CELL_W * SS, CELL_H * SS
     img = Image.new("L", (W, H), 0)
-    hook = _hook(px, dilate)
+    hook = _hook(px, dilate, trim)
     d = min(W, H) * gap
     for ang in (70, 250):
         r = hook.rotate(ang, resample=Image.BICUBIC, expand=True)

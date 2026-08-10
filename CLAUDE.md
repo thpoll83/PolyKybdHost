@@ -530,6 +530,15 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `daemon=True`, so it cannot hold interpreter exit). Treat a hang as unexplained
   environment flakiness, re-run once via the watchdog, and **paste the dump** —
   that is the only artifact that will identify it.
+  ⚠️ **Set `--timeout` BELOW whatever will kill the shell, or the dump is lost
+  again.** It recurred once on 2026-08-10 (a ~28 s suite, wedged after the last
+  visible test line), and `--timeout 240` under a 120 s tool timeout meant the
+  outer kill landed first: SIGTERM, exit 143, **no traceback** — the watchdog
+  never got to fire. That is now three losses of the one artifact that would
+  identify this. `--timeout 60` is plenty for a 25–28 s suite and fires well
+  inside any shell limit. Redirect to a file (`> /tmp/tr.log 2>&1`) and read the
+  whole thing; do **not** pipe it through `tail`, which has eaten the dump
+  before.
 - **Single-key keymap write**: the firmware supports `ID_DYNAMIC_KEYMAP_SET_KEYCODE` (0x05) — payload is `[layer, row, col, keycode_hi, keycode_lo]`. No need to write a full layer; `PolyKybd.set_dynamic_keycode()` wraps this.
 - **Firmware update survives protocol mismatches**: `PolyHost.device_present` tracks "a device answers protocol-independent queries (GET_ID/GET_LANG)" separately from `connected` (protocol/version compatible). The flash/apply/bootloader actions and the release-update flow gate on `_fw_actions_allowed()` (present, not paused) — NOT on `connected` — so a keyboard on a mismatched protocol can always be updated (`CommandsSubMenu.update_enabled` re-enables exactly those items when the rest of the menu is greyed out). The HID flash protocol (`hid_fw_up`) is dispatched independently of `PROTOCOL_VERSION` in the firmware. Don't re-gate any firmware-update path on `self.connected`.
 - **Autostart** (`polyhost/services/add_to_startup.py`): `setup_autostart_for_app()` registers the app to start at login (called from `main_app.py` unless `--portable`).
