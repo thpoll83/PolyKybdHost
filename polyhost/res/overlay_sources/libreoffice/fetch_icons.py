@@ -117,7 +117,7 @@ def main() -> int:
         if dest.exists():
             print(f"  {dest.name}  <- committed asset (left as-is)")
             continue
-        r = doc_mark.build(app, [label], page_h=40, stretch=1.0, save=dest)
+        r = doc_mark.build(app, [label], page_h=39.6, stretch=1.0, save=dest)
         assert r and r[1] == 0 and r[2] == 0, f"{app}: content touches the page outline: {r}"
         print(f"  {dest.name}  <- fluent Document + '{r[0]}' (0 touching, 0 outside)")
     print(f"Wrote {n} icons (+ {len(DOC_MARKS)} document marks) to {out}")

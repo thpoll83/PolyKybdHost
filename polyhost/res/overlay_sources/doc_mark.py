@@ -17,7 +17,9 @@ so nothing can land on or beside the outline, and the layout reads the
 top rows really are narrower. `build()` returns (label, touching, outside)
 and the caller asserts the last two are 0.
 
-⚠️ The page keeps Fluent's NATIVE aspect ratio. At that ratio the measured
+⚠️ The page keeps Fluent's NATIVE aspect ratio (page_h 39.6 rasterises to
+exactly 32x40 = 0.800; at 40 the antialiased edge crosses the threshold on one
+side and yields 33px, i.e. 0.825 — visibly wider for no reason). At that ratio the measured
 interior is ~26 px, so "IMPRESS" (25 px in the 3x5 pixel font, plus
 clearance) does not fit and the label is "IMPR". Stretching the page to fit
 it was tried and rejected — a distorted document reads worse than an
@@ -85,7 +87,7 @@ def m_impress(px,lo,hi,t,b):
     px[y0,lo+1:hi]=1; px[y1,lo+1:hi]=1; px[y0:y1+1,lo+1]=1; px[y0:y1+1,hi-1]=1
     px[min(b,y1+3), lo+3:hi-2]=1
 MOTIF={"writer":m_writer,"calc":m_calc,"impress":m_impress}
-def build(app, words, page_h=38, stretch=1.0, save=None):
+def build(app, words, page_h=39.6, stretch=1.0, save=None):
     o,i,f = fit(page_h,stretch)
     ink=o.difference(i).difference(f)
     safe=i.buffer(-CLEAR).difference(f.buffer(CLEAR))

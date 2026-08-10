@@ -21,7 +21,12 @@ from __future__ import annotations
 
 import urllib.parse
 import urllib.request
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import rect_mark  # noqa: E402
 
 import cairosvg
 import numpy as np
@@ -380,9 +385,9 @@ def main() -> int:
     if (out / "photoshop.png").exists():
         print("  photoshop.png  <- committed asset (left as-is)")
     else:
-        _draw_ps_logo(out / "photoshop.png")
         print("  photoshop.png  <- custom (drawn 'Ps' monogram)")
 
+    rect_mark.ensure(out / "photoshop.png", "Ps")
     print(f"Wrote icons to {out}")
     return 0
 

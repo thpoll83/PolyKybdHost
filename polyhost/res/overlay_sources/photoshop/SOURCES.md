@@ -142,3 +142,17 @@ square), `Ctrl+Alt+Z` step backward (History), `Ctrl+1` zoom 100% (Ratio One To
 One), `Ctrl+Shift+J` new layer via cut (Add Square), `Shift+F6` feather (Blur),
 `Shift+Bksp` Fill dialog (reuses the Paint Bucket). All representable; sourced
 per binding `source:`.
+
+## Program mark
+
+The Adobe apps share one treatment (`../rect_mark.py`): a **2px rectangle with
+the product's two letters inside** — `Ps` / `Ai` / `Pr` / `Ae`. They are a
+family, and what identifies one is its letter pair, so the mark is deliberately
+plain. Adobe's real logos are proprietary and cannot ship here; the letters are
+the app's own naming, not its trademark styling — no rounded-square gradient, no
+brand colours, no attempt to resemble the product tile.
+
+Authored **1:1** at the `[46, 40]` region so the generator never rescales it and
+the 2px frame stays exactly 2px; the letter size is *measured* per pair (the
+widest that clears the frame by >=2px), since `Ai` is much narrower than `Pr`
+and one hardcoded size would either clip or float.

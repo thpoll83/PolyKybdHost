@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import rect_mark  # noqa: E402
 import nle_glyphs  # noqa: E402
 import program_marks  # noqa: E402
 
@@ -76,7 +77,7 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
     n += nle_glyphs.draw_all(out, DRAWN)
-    program_marks.ensure(out / "premiere.png", "Pr", motif="playhead")
+    rect_mark.ensure(out / "premiere.png", "Pr")
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
 

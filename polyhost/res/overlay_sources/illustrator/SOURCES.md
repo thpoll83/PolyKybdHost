@@ -140,3 +140,17 @@ Off), `Ctrl+L` new layer (Add Square), `Ctrl+K` preferences (Settings),
 `Ctrl+Shift+E` apply last effect (Sparkle), `Ctrl+Alt+J` average (drawn),
 `Ctrl+Alt+B` make blend (drawn), `Ctrl+Alt+3` show all (Eye). Fluent (MIT) +
 drawn glyphs; sources per binding `source:`.
+
+## Program mark
+
+The Adobe apps share one treatment (`../rect_mark.py`): a **2px rectangle with
+the product's two letters inside** — `Ps` / `Ai` / `Pr` / `Ae`. They are a
+family, and what identifies one is its letter pair, so the mark is deliberately
+plain. Adobe's real logos are proprietary and cannot ship here; the letters are
+the app's own naming, not its trademark styling — no rounded-square gradient, no
+brand colours, no attempt to resemble the product tile.
+
+Authored **1:1** at the `[46, 40]` region so the generator never rescales it and
+the 2px frame stays exactly 2px; the letter size is *measured* per pair (the
+widest that clears the frame by >=2px), since `Ai` is much narrower than `Pr`
+and one hardcoded size would either clip or float.

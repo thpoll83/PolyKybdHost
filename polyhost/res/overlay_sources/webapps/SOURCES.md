@@ -111,3 +111,11 @@ firmware-drawn `Esc` legend.
 (`../program_marks.py`) — the generic-document treatment was tried for them and
 rejected: as page/wiki apps they came out near-identical to Google Docs, with
 only a four-letter label to tell them apart at keycap size.
+
+### Notion
+
+`nt.png` is a framed **serif N with a 2px extruded shade** (`../rect_mark.py`,
+`serif=True, shade=2`). Notion's brand letter genuinely is a serif, and the
+extrude — right + bottom edges only, offset down-right — is the 1-bit stand-in
+for the logo's depth. Drawing all four offset edges would read as a second box
+rather than as a shadow.

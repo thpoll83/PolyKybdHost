@@ -18,6 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import rect_mark  # noqa: E402
 import program_marks  # noqa: E402
 
 FLUENT = {
@@ -66,7 +67,7 @@ FLUENT = {
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
-    program_marks.ensure(out / "aftereffects.png", "Ae", motif="keyframe")
+    rect_mark.ensure(out / "aftereffects.png", "Ae")
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
 

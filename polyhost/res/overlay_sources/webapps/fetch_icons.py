@@ -23,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import brand_marks, doc_mark, icon_fetch  # noqa: E402
+import rect_mark  # noqa: E402
 import material_symbols as ms  # noqa: E402
 import program_marks  # noqa: E402
 
@@ -118,11 +119,11 @@ BRAND = {"gh.png": "github", "gl.png": "gitlab"}
 # Google Docs is a document, and Google's logo is not ours to ship — a labelled
 # page frame says what it is without borrowing the mark.
 DOC = {"gd.png": ("googledocs", "DOCS")}
-# Confluence and Notion keep the drawn letter tiles for now.
-MARKS = {
-    "cf.png": ("C", "corner"),
-    "nt.png": ("N", "corner"),
-}
+# Notion: a framed serif N with a 1-bit extruded shade — its brand letter IS a
+# serif, and the depth is what separates it from the other framed marks.
+SHADED = {"nt.png": "N"}
+# Confluence keeps the drawn letter tile.
+MARKS = {"cf.png": ("C", "corner")}
 
 
 # Fluent ships NO ordered-list glyph (every "Text Number List *" name 404s), and
@@ -147,12 +148,14 @@ def main() -> int:
             print(f"  {dest.name}  <- committed asset (left as-is)")
         else:
             doc_mark.MOTIF[app] = doc_mark.MOTIF["writer"]   # a text document
-            r = doc_mark.build(app, [label], page_h=40, stretch=1.0, save=dest)
+            r = doc_mark.build(app, [label], page_h=39.6, stretch=1.0, save=dest)
             assert r and r[1] == 0 and r[2] == 0, f"{app}: touches the page outline: {r}"
             print(f"  {dest.name}  <- fluent Document + '{r[0]}'")
+    for fname, letters in SHADED.items():
+        rect_mark.ensure(out / fname, letters, serif=True, shade=2)
     for fname, (letter, motif) in MARKS.items():
         program_marks.ensure(out / fname, letter, motif=motif)
-    print(f"Wrote {n} icons (+ {len(BRAND)+len(DOC)+len(MARKS)} program marks) to {out}")
+    print(f"Wrote {n} icons (+ {len(BRAND)+len(DOC)+len(SHADED)+len(MARKS)} program marks) to {out}")
     return 0
 
 

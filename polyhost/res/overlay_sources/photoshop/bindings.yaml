@@ -22,10 +22,10 @@ margin: 0
 mode: luma
 threshold: 150
 
-program_icon: photoshop.png      # generic drawn "Ps" monogram (see fetch_icons._draw_ps_logo)
-program_icon_mode: alpha         # white-on-transparent drawing: alpha is the shape
+program_icon: photoshop.png
+program_icon_mode: alpha
 program_icon_anchor: bottom-right
-program_icon_region: [42, 34]
+program_icon_region: [46, 40]
 program_icon_margin: 0
 
 bindings:
