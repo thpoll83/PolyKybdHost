@@ -71,9 +71,29 @@ class TestFindMatchingEntry(unittest.TestCase):
     def test_contains_recurses_on_any_word(self):
         leaf = entry()
         e = entry(sw={"x": {}}, contains={"NEEDLE": leaf})
-        # has both starts_with and contains so the title is split into words.
         self.assertIs(find_matching_entry("a NEEDLE b", e), leaf)
         self.assertIs(find_matching_entry("no match words", e), e)  # parent, no title gate
+
+    def test_contains_alone_recurses(self):
+        # Regression: `titles-contains` used to be dead on its own, because the
+        # word-split was gated on startswith/endswith only. An earlier version of
+        # the test above papered over it by adding a dummy `titles-startswith`,
+        # so the suite passed while the shipped browser entry's Miro/Outlook/Jira
+        # keys could never match. Keep this entry free of any sibling title key.
+        leaf = entry()
+        e = entry(contains={"NEEDLE": leaf})
+        self.assertIs(find_matching_entry("a NEEDLE b", e), leaf)
+        self.assertIs(find_matching_entry("NEEDLE", e), leaf)
+        self.assertIs(find_matching_entry("no match here", e), e)  # parent, no title gate
+
+    def test_contains_matches_whole_words_only(self):
+        # Documented limit, unchanged by the fix: the title is split on
+        # whitespace, so a needle only matches a WHOLE word -- "Doc" does not
+        # match "Docs", and a multi-word needle can never match at all.
+        leaf = entry()
+        e = entry(contains={"Doc": leaf})
+        self.assertIs(find_matching_entry("My Doc here", e), leaf)
+        self.assertIs(find_matching_entry("My Docs here", e), e)  # parent, not leaf
 
     def test_bad_regex_raises(self):
         import re as _re
