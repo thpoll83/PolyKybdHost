@@ -77,7 +77,9 @@ def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
     n += nle_glyphs.draw_all(out, DRAWN)
-    rect_mark.ensure(out / "premiere.png", "Pr")
+    # One size across the whole family (see rect_mark.shared_size).
+    rect_mark.ensure(out / "premiere.png", "Pr",
+                     size=rect_mark.shared_size(["Ps", "Ai", "Pr", "Ae"]))
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
 

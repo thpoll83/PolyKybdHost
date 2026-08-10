@@ -387,7 +387,9 @@ def main() -> int:
     else:
         print("  photoshop.png  <- custom (drawn 'Ps' monogram)")
 
-    rect_mark.ensure(out / "photoshop.png", "Ps")
+    # One size across the whole family (see rect_mark.shared_size).
+    rect_mark.ensure(out / "photoshop.png", "Ps",
+                     size=rect_mark.shared_size(["Ps", "Ai", "Pr", "Ae"]))
     print(f"Wrote icons to {out}")
     return 0
 

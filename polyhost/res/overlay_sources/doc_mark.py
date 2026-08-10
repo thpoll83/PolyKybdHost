@@ -59,7 +59,10 @@ def fit(page_h, stretch):
     g3=[shscale(g, s*stretch, s, origin=(outer.bounds[0],outer.bounds[1])) for g in (outer,interior,fold)]
     dx,dy = -g3[0].bounds[0], -g3[0].bounds[1]
     g3=[shtrans(g,dx,dy) for g in g3]
-    ox=(CELL_W-(g3[0].bounds[2]-g3[0].bounds[0]))/2; oy=(CELL_H-(g3[0].bounds[3]-g3[0].bounds[1]))/2
+    # Right-aligned, not centred: the firmware draws the key legend top-LEFT, so
+    # a centred page sits under it. Every other program mark is bottom-right for
+    # the same reason.
+    ox=CELL_W-(g3[0].bounds[2]-g3[0].bounds[0]); oy=(CELL_H-(g3[0].bounds[3]-g3[0].bounds[1]))/2
     return [shtrans(g,ox,oy) for g in g3]
 def mask_of(geom):
     m=Image.new("L",(CELL_W,CELL_H),0); d=ImageDraw.Draw(m)

@@ -67,7 +67,9 @@ FLUENT = {
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
-    rect_mark.ensure(out / "aftereffects.png", "Ae")
+    # One size across the whole family (see rect_mark.shared_size).
+    rect_mark.ensure(out / "aftereffects.png", "Ae",
+                     size=rect_mark.shared_size(["Ps", "Ai", "Pr", "Ae"]))
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
 

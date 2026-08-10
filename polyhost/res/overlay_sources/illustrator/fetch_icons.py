@@ -333,7 +333,9 @@ def main() -> int:
         print("  illustrator.png  <- committed asset (left as-is)")
     else:
         print("  illustrator.png  <- drawn generic 'Ai' monogram (no Adobe logo)")
-    rect_mark.ensure(out / "illustrator.png", "Ai")
+    # One size across the whole family (see rect_mark.shared_size).
+    rect_mark.ensure(out / "illustrator.png", "Ai",
+                     size=rect_mark.shared_size(["Ps", "Ai", "Pr", "Ae"]))
     print(f"Wrote icons to {out}")
     return 0
 

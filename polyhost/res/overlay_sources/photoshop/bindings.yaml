@@ -25,7 +25,7 @@ threshold: 150
 program_icon: photoshop.png
 program_icon_mode: alpha
 program_icon_anchor: bottom-right
-program_icon_region: [46, 40]
+program_icon_region: [37, 32]
 program_icon_margin: 0
 
 bindings:

@@ -152,7 +152,7 @@ def main() -> int:
             assert r and r[1] == 0 and r[2] == 0, f"{app}: touches the page outline: {r}"
             print(f"  {dest.name}  <- fluent Document + '{r[0]}'")
     for fname, letters in SHADED.items():
-        rect_mark.ensure(out / fname, letters, serif=True, shade=2)
+        rect_mark.ensure(out / fname, letters, serif=True, shade=2, shade_dir="tl")
     for fname, (letter, motif) in MARKS.items():
         program_marks.ensure(out / fname, letter, motif=motif)
     print(f"Wrote {n} icons (+ {len(BRAND)+len(DOC)+len(SHADED)+len(MARKS)} program marks) to {out}")
