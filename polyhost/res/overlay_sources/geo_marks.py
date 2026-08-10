@@ -94,12 +94,18 @@ def ensure_resolve(dest: Path, **kw) -> None:
 # --------------------------------------------------------------------------- #
 # Confluence: two rotated hooks
 # --------------------------------------------------------------------------- #
-# A sans face with a genuinely curved J — a face whose J is a straight stem with
-# a clipped foot (DejaVu) renders as two bars, not two hooks.
+# The J's hook decides the whole mark, and the installed faces span a real
+# range. Measured on a 200px J (hook overhang past the stem, and box width/height):
+#
+#     DejaVu Sans   w/h 0.37  overhang 0.43   a straight stem -> reads as a BAR
+#     Loma          w/h 0.55  overhang 0.42   <- the middle ground, and the pick
+#     FreeSans      w/h 0.62  overhang 0.67   hook curls right over -> too curvy
+#
+# So the order below is a preference, not a fallback chain of equals: Loma first.
 _SANS = (
-    "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
     "/usr/share/fonts/opentype/tlwg/Loma-Bold.otf",
     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",
 )
 
 
@@ -123,15 +129,20 @@ def _hook(px: int, dilate: int) -> Image.Image:
 
 
 def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
-                      gap: float = 0.22) -> None:
+                      gap: float = -0.22) -> None:
     """Two mirrored J's, rotated 70 and 250 degrees counter-clockwise.
 
-    Each hook is pushed out from the centre **along its own rotation axis**, so
-    the space between them runs across the other diagonal. That offset axis is
-    the only control over where the space lands: the pair is 180-degree
-    symmetric by construction, so mirroring the glyph horizontally (or flipping
-    the sign of the offset) merely swaps which hook is which and returns a
-    pixel-identical image.
+    Each hook is displaced from the centre **along its own rotation axis**, and
+    `gap` is SIGNED: the sign is what chooses which side of the pair the space
+    falls on. It is the equivalent of padding the glyph box on the left rather
+    than the right before rotating — the rotation turns that padding into a
+    displacement along the rotated x-axis, so the two paddings differ by 180
+    degrees.
+
+    ⚠️ The two signs are genuinely different images (verified by hash), even
+    though each one is *individually* 180-degree symmetric. Do not assume the
+    symmetry collapses them — it does not, because the 180 rotation swaps the
+    two hooks as well as the two positions.
     """
     W, H = CELL_W * SS, CELL_H * SS
     img = Image.new("L", (W, H), 0)

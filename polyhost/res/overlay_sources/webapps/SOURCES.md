@@ -124,15 +124,28 @@ to tell them apart at keycap size.
 `cf.png` is two thickened, vertically-mirrored **J**s rotated 70° and 250° CCW
 (`../geo_marks.py`). It replaced a drawn "C" letter tile.
 
-Two things are worth knowing before tuning it. The pair is **180°-symmetric by
-construction**, so mirroring the glyph horizontally, or flipping the sign of the
-offset, merely swaps which hook is which and returns a *pixel-identical* image —
-both were tried and hashed the same. The only control over where the space lands
-is the **offset axis**: each hook is pushed out along its own rotation angle, so
-the gap runs across the other diagonal. And the face matters — a J that is a
-straight stem with a clipped foot (DejaVu Sans) renders as two bars rather than
-two hooks, so `geo_marks` prefers FreeSans/Loma. No Black weight is installed,
-so the stroke is grown by dilating the Bold.
+Two things are worth knowing before tuning it.
+
+**The `gap` is signed, and the sign is what moves the space.** Each hook is
+displaced along its own rotation axis; flipping the sign is the equivalent of
+padding the glyph box on the left rather than the right before rotating, since
+the rotation turns that padding into a displacement along the rotated x-axis.
+Each of the two configurations is *individually* 180°-symmetric, which makes it
+tempting to conclude they collapse into one image — they do **not** (verified by
+hash), because the 180° rotation swaps the two hooks as well as their positions.
+An earlier revision of this file claimed otherwise; it was wrong.
+
+**The face decides the mark.** Measured on a 200px J — hook overhang past the
+stem, and box width/height:
+
+| face | w/h | overhang | reads as |
+|---|---|---|---|
+| DejaVu Sans | 0.37 | 0.43 | a straight stem — two *bars*, not hooks |
+| Loma | 0.55 | 0.42 | the middle ground — **the pick** |
+| FreeSans | 0.62 | 0.67 | hook curls right over — too curvy |
+
+`_SANS` in `geo_marks.py` is therefore a preference order, not a chain of
+equals. No Black weight is installed, so the stroke is grown by dilating Bold.
 
 ### Notion
 
