@@ -172,7 +172,7 @@ def _hook(px: int, dilate: int, trim: int) -> Image.Image:
 
 def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
                       gap: float = -0.22, trim: int = 3,
-                      converge: int = 2, drop: int = 1) -> None:
+                      converge: int = 2, drop: int = 2) -> None:
     """Two mirrored J's, rotated 70 and 250 degrees counter-clockwise.
 
     `trim` cuts rows off the top of each J — the free end of its stem —
@@ -186,6 +186,11 @@ def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
     disturbing the diagonal the gap runs along. `drop` lowers whichever hook
     sits **above** the centre by that many pixels, closing the pair vertically
     from one side only.
+
+    ⚠️ `drop` is at its ceiling at 2: at 3 the two hooks touch and flood into a
+    single blob, losing the two-element reading entirely. Re-check with a
+    connected-component count (it must stay 2), not by eye — the merge costs
+    only a pixel or so of ink, so it does not show up as a size change.
 
     Each hook is displaced from the centre **along its own rotation axis**, and
     `gap` is SIGNED: the sign is what chooses which side of the pair the space

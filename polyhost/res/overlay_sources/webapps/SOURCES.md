@@ -167,10 +167,15 @@ trimming three of *those* would be invisible.
 
 **Each hook is then nudged 2px back towards the centre in x only** (`converge`,
 same final-pixel unit), tightening the pair horizontally without disturbing the
-diagonal the gap runs along, and **the upper hook drops 1px** (`drop`), closing
+diagonal the gap runs along, and **the upper hook drops 2px** (`drop`), closing
 the pair vertically from one side. Both are applied by the sign of that hook's
 own offset rather than as fixed ±/rotation angle, so `converge` stays *inwards*
 whichever way `gap` goes and `drop` follows whichever hook is actually on top.
+
+⚠️ **`drop` is at its ceiling at 2.** At 3 the hooks touch and flood into a
+single blob. Check that with a **connected-component count** (must stay 2), not
+by eye or by ink: the merge costs about one pixel of ink, so a size comparison
+reads as unchanged right through the failure.
 
 ### Notion
 
