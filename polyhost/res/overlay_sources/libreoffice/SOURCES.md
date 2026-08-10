@@ -37,6 +37,12 @@ so that would put wrong legends on the keycaps:
   they would collide with that same physical combination.
 - Impress **Ungroup** (`Ctrl+Alt+Shift+A`) is the one binding in this batch that
   lands on the third (`extra`) overlay layer, which is what that layer is for.
+  The `A` looks like a typo for `G` (Group is `Ctrl+Shift+G`) and was queried on
+  that basis in a later audit — but LibreOffice really does use **`A`** here, so
+  leave it alone.
+- Impress **`Shift+F3` is "Duplicate", and it duplicates the selected OBJECT**,
+  not the slide (there is no default shortcut for Duplicate Slide). It was
+  labelled "Duplicate slide" until an audit caught it.
 - Omitted throughout: numeric-keypad bindings (`*`, `/` zoom in Impress) — no
   overlay cell; and arrow/Home/End navigation, which needs no legend.
 

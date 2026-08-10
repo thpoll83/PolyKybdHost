@@ -65,3 +65,24 @@ copyright-vs-trademark split (CC0 covers redistribution; the mark itself is used
 nominatively, to identify the app the overlay set is for). It replaced a drawn
 `S` letter tile. The macOS set (`sublime_mac`) shares this file deliberately: it
 is the same application.
+
+## Correction (verified against the default keymap)
+
+**Join lines is `Ctrl+J`, not `Ctrl+Shift+J`.** It shipped on `Ctrl+Shift+J`,
+which in Sublime's stock keymap is `expand_selection` to indentation — a
+different command entirely.
+
+Two things make this worth recording. Community shortcut sites disagree with the
+product: `docs.sublimetext.io` lists "Ctrl ⇧ J — Join line below to the end of
+the current line", which is where the wrong binding came from. The settling
+evidence is the shipped `Default (Windows).sublime-keymap` itself:
+
+```json
+{ "keys": ["ctrl+j"], "command": "join_lines" }
+{ "keys": ["ctrl+shift+j"], "command": "expand_selection", "args": {"to": "indentation"} }
+```
+
+And the **macOS set had it right all along** (`Cmd+J`). When two platform sets
+cover the same app, a chord that differs by more than the platform's own
+modifier convention is a smell worth chasing — that mismatch is what surfaced
+this one.

@@ -56,7 +56,7 @@ bindings:
   - { key: P, mods: [CTRL, SHIFT], icon: commandpalette.png, label: "Command palette", source: "ms-fluent/Apps List Detail (MIT)" }
   - { key: D, mods: [CTRL, SHIFT], icon: duplicate.png,   label: "Duplicate line",  source: "ms-fluent/Row Triple (MIT)" }
   - { key: K, mods: [CTRL, SHIFT], icon: deleteline.png,  label: "Delete line",     source: "custom/editor_glyphs", mode: alpha }
-  - { key: J, mods: [CTRL, SHIFT], icon: joinlines.png,   label: "Join lines",      source: "ms-fluent/Text Wrap Off (MIT)" }
+  - { key: J, mods: [CTRL], icon: joinlines.png,          label: "Join lines",      source: "ms-fluent/Text Wrap Off (MIT)" }
   - { key: "/", mods: [CTRL, SHIFT], icon: blockcomment.png, label: "Block comment", source: "ms-fluent/Comment Multiple (MIT)" }
   - { key: F, mods: [CTRL, SHIFT], icon: findinfiles.png, label: "Find in files",   source: "ms-fluent/Folder Open (MIT)" }
   - { key: T, mods: [CTRL, SHIFT], icon: reopentab.png,   label: "Reopen closed tab", source: "ms-fluent/Tab Desktop (MIT)" }

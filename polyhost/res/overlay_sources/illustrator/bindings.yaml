@@ -53,7 +53,7 @@ bindings:
   - { key: K, mods: [], icon: livepaint.png,    label: "Live paint",     source: "ms-fluent/Paint Bucket (MIT)" }
   - { key: Z, mods: [], icon: zoom.png,         label: Zoom,             source: "ms-fluent/Zoom In (MIT)" }
   - { key: H, mods: [], icon: hand.png,         label: Hand,             source: "ms-fluent/Hand Right (MIT)" }
-  - { key: E, mods: [], icon: eraser.png,       label: Eraser,           source: "ms-fluent/Eraser (MIT)" }
+  - { key: E, mods: [], icon: scale.png,        label: "Free transform", source: "ms-fluent/Resize (MIT) - reused for transform" }
   - { key: X, mods: [], icon: swap.png, mode: alpha, label: "Swap fill/stroke", source: "custom (drawn: swap squares)" }
   - { key: D, mods: [], icon: default.png, mode: alpha, label: "Default fill/stroke", source: "custom (drawn: default swatch)" }
 
@@ -95,7 +95,7 @@ bindings:
   - { key: "[", mods: [CTRL, SHIFT], icon: toback.png,  label: "Send to back",   source: "ms-fluent/Position To Back (MIT)" }
 
   # ===== Shift -> B channel of primary =====
-  - { key: E, mods: [SHIFT], icon: scale.png,      label: "Free transform", source: "ms-fluent/Resize (MIT) - reused for transform" }
+  - { key: E, mods: [SHIFT], icon: eraser.png,     label: Eraser,           source: "ms-fluent/Eraser (MIT)" }
   - { key: W, mods: [SHIFT], icon: width.png, mode: alpha, label: "Width tool", source: "custom (drawn: variable width)" }
   - { key: B, mods: [SHIFT], icon: paintbrush.png, label: "Blob brush",     source: "ms-fluent/Paint Brush (MIT)" }
   - { key: L, mods: [SHIFT], icon: livepaint.png,  label: "Live paint select", source: "ms-fluent/Paint Bucket (MIT)" }

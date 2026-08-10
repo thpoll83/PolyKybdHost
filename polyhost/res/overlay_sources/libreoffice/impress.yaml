@@ -47,7 +47,7 @@ bindings:
   - { key: "-", mods: [CTRL], icon: backward.png, label: "Send backward", source: "ms-fluent/Position Backward (MIT)" }
 
   # --- Shift ---
-  - { key: F3, mods: [SHIFT], icon: duplicateslide.png, label: "Duplicate slide", source: "ms-fluent/Slide Multiple (MIT)" }
+  - { key: F3, mods: [SHIFT], icon: duplicateslide.png, label: "Duplicate object", source: "ms-fluent/Slide Multiple (MIT)" }
 
   # --- Ctrl+Shift ---
   # Ctrl+Plus is Ctrl+Shift+= on a US layout, which is how it is bound here.

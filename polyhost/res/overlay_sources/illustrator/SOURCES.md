@@ -19,7 +19,7 @@ Adobe Illustrator default keyboard shortcuts. Primary reference:
   V Selection, A Direct-selection, Y Magic-wand, Q Lasso, P Pen, T Type,
   `\` Line-segment, M Rectangle, L Ellipse, B Paintbrush, N Pencil, C Scissors,
   R Rotate, O Reflect, S Scale, U Mesh, G Gradient, I Eyedropper,
-  K Live-paint-bucket, Z Zoom, H Hand, E Eraser, X Swap-fill/stroke,
+  K Live-paint-bucket, Z Zoom, H Hand, E Free-transform, X Swap-fill/stroke,
   D Default-fill/stroke.
 - **Ctrl (→ R channel of primary)** — 20:
   N New, O Open, S Save, P Print, Z Undo, C Copy, X Cut, V Paste, A Select-all,
@@ -34,8 +34,16 @@ Adobe Illustrator default keyboard shortcuts. Primary reference:
 
 ### Corrections to the starting list (verified)
 
-- **E = Eraser** (no-mod), **Shift+E = Free Transform** — the starting list had
-  these the wrong way round. Verified across mirrors.
+- **E = Free Transform** (no-mod), **Shift+E = Eraser** — per Adobe's own
+  [default keyboard shortcuts](https://helpx.adobe.com/illustrator/using/default-keyboard-shortcuts.html).
+  ⚠️ An earlier revision of this file asserted the **opposite**, claiming the
+  starting list "had these the wrong way round" and that it was "verified across
+  mirrors". It was not: the mirrors were third-party cheat-sheets, the starting
+  list had been right, and the "correction" is what introduced the bug — it
+  shipped swapped until a later audit checked helpx directly. **Verify tool
+  shortcuts against the vendor's own documentation**; cheat-sheet sites copy each
+  other, so agreement between several of them is not independent confirmation.
+  (Everything else in this section re-checked clean against helpx.)
 - **W = Blend tool** (no-mod), **Shift+W = Width tool** — the starting list's
   "Shift+W = Warp" is wrong; Shift+W is the Width tool. There is no plain "Warp"
   tool letter (Warp lives in the Liquify group with no default single key).
