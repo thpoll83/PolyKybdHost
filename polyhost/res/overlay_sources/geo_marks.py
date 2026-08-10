@@ -171,7 +171,8 @@ def _hook(px: int, dilate: int, trim: int) -> Image.Image:
 
 
 def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
-                      gap: float = -0.22, trim: int = 3) -> None:
+                      gap: float = -0.22, trim: int = 3,
+                      converge: int = 1) -> None:
     """Two mirrored J's, rotated 70 and 250 degrees counter-clockwise.
 
     `trim` cuts rows off the top of each J — the free end of its stem —
@@ -179,6 +180,10 @@ def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
     keeps its curl. It is counted in **final output pixels**, not in the glyph's
     own rows: the mark is drawn `SS`x supersampled, so a row of the drawing is
     an eighth of an output pixel and trimming three of those would be invisible.
+
+    `converge` then nudges each hook back towards the centre in **x only**, in
+    the same final-pixel unit, tightening the pair horizontally without
+    disturbing the diagonal the gap runs along.
 
     Each hook is displaced from the centre **along its own rotation axis**, and
     `gap` is SIGNED: the sign is what chooses which side of the pair the space
@@ -199,7 +204,13 @@ def render_confluence(dest: Path, px: int = 180, dilate: int = 8,
     for ang in (70, 250):
         r = hook.rotate(ang, resample=Image.BICUBIC, expand=True)
         a = math.radians(ang)
-        img.paste(r, (int(W / 2 + d * math.cos(a) - r.width / 2),
+        dx = d * math.cos(a)
+        # Pull each hook back towards the centre in x only, AFTER it is placed.
+        # Sign-driven rather than a fixed +/-, so it stays "inwards" for either
+        # `gap` sign; it closes the pair horizontally without touching the
+        # diagonal the gap runs along.
+        dx -= math.copysign(converge * SS, dx) if dx else 0
+        img.paste(r, (int(W / 2 + dx - r.width / 2),
                       int(H / 2 - d * math.sin(a) - r.height / 2)), r)
     _emit(img, dest)
 

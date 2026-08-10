@@ -165,6 +165,11 @@ way). And the unit is **final output pixels** — the mark is drawn 8x
 supersampled, so a row of the drawing is an eighth of an output pixel and
 trimming three of *those* would be invisible.
 
+**Each hook is then nudged 1px back towards the centre in x only** (`converge`,
+same final-pixel unit), tightening the pair horizontally without disturbing the
+diagonal the gap runs along. It is applied by the sign of each hook's own x
+offset rather than as a fixed ±, so it stays *inwards* whichever way `gap` goes.
+
 ### Notion
 
 `nt.png` is a framed **serif N with a 2px extruded shade** (`../rect_mark.py`,
