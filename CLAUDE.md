@@ -39,7 +39,7 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   - ⚠️ **Both of those tells failed on #156 (2026-08-11) — the only reliable check
     is whether the walkthrough describes the commit you are looking at.** Compare
     its file list against the head commit's: the walkthrough named 2 files while
-    the head changed 4, and described the superseded change. Two ways it misleads:
+    the head changed 4, and described the superseded change. Three ways it misleads:
     - **The rate-limit banner DISAPPEARS on a re-render.** Editing the PR body
       re-rendered the pre-merge-check block, and the `> [!WARNING] Review limit
       reached` notice vanished with it — leaving a clean-looking walkthrough plus
@@ -55,6 +55,20 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       a commit it has "seen"). So a substantive verdict and a missing formal review
       can coexist. Take the verdict, but don't expect the PR summary to describe
       the change — put the real description in the **PR body**, which you control.
+    - **The FILE LIST is not enough on a single-file PR — compare what the
+      walkthrough SAYS.** On docs#42 (same day) a follow-up commit touched the
+      same one file the reviewed commit did, so the file-list check above passes
+      while the review is still describing the superseded diff; only the absent
+      mention of the new section gave it away. The mechanism: the walkthrough is
+      **sticky** — it survives from the last *successful* review and is not
+      refreshed by a rate-limited one, which replaces only the review-info block
+      beneath it. Note the banner behaved *correctly* here (present, with the
+      real `<old>..<new>` range), so the asymmetry is: **a banner that is present
+      is trustworthy; a banner that is absent proves nothing.**
+    - ⚠️ **The limit is per-developer across the ORG, so pushes to a trivial PR
+      starve the one that needs review.** Docs pushes on #42 consumed the window
+      #159 was waiting for. When two PRs are open and one is real code, stop
+      pushing cosmetic commits to the other until the important one is reviewed.
 
 - **When two reviewers disagree about the same code, WRITE THE TEST — it
   adjudicates, and it is faster than arguing.** On PR #154 (2026-08-07) Sourcery
