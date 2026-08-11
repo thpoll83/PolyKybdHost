@@ -36,6 +36,25 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   "Reviews paused" one — see the same section in `qmk_firmware/CLAUDE.md`), and
   the absence of any *Actionable comments posted: N* line. When it matters, wait
   for the window or comment `@coderabbitai review`.
+  - ⚠️ **Both of those tells failed on #156 (2026-08-11) — the only reliable check
+    is whether the walkthrough describes the commit you are looking at.** Compare
+    its file list against the head commit's: the walkthrough named 2 files while
+    the head changed 4, and described the superseded change. Two ways it misleads:
+    - **The rate-limit banner DISAPPEARS on a re-render.** Editing the PR body
+      re-rendered the pre-merge-check block, and the `> [!WARNING] Review limit
+      reached` notice vanished with it — leaving a clean-looking walkthrough plus
+      "🚥 Pre-merge checks ✅ 5" over a commit nothing had read. A missing banner is
+      not evidence a review ran.
+    - **`@coderabbitai review` can answer WITHOUT a formal review.** The reply ran
+      a real analysis chain (diffed the 4 files, read the callers, scripted its own
+      cross-check) and returned *"I reviewed commit f14ae25 … no correctness,
+      regression, or documentation issues"* — a genuine, verifiable read. But the
+      same comment was then **edited in place** from *"Action performed: Review
+      triggered"* to *"⚠️ Action not completed — Review rate limited"*, and the
+      walkthrough stayed stale for good (an incremental system will not re-review
+      a commit it has "seen"). So a substantive verdict and a missing formal review
+      can coexist. Take the verdict, but don't expect the PR summary to describe
+      the change — put the real description in the **PR body**, which you control.
 
 - **When two reviewers disagree about the same code, WRITE THE TEST — it
   adjudicates, and it is faster than arguing.** On PR #154 (2026-08-07) Sourcery
@@ -49,6 +68,26 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   immediately is evidence the finding was wrong, which is exactly the evidence
   to paste in the reply.
 
+- **A guard that ENUMERATES its siblings will go stale — delete it rather than
+  add the missing term, and distrust a test that documents the workaround.**
+  `find_matching_entry` (`handler/common.py`) split the window title only
+  `if title and (has_starts_with or has_ends_with)`, while the *third* word-based
+  matcher below it, `has_contains`, was never added to that list. So
+  `titles-contains` could not match unless the entry happened to declare a
+  sibling key it did not need — and the shipped browser entry's Miro / web-Outlook
+  / Jira overlays, which route purely on `titles-contains`, **had never once
+  rendered** since they were added (#156, 2026-08-11). Two things to carry over:
+  - **The fix is to drop the gate** (`words = title.split() if title else []`),
+    not to add `or has_contains`. Every branch under it already checks its own
+    `has_*` flag, so the gate's only job was to restate them and stay in sync —
+    exactly what it failed at, and one more term re-arms the same trap for
+    whoever adds a fourth matcher.
+  - ⚠️ **The test suite was green throughout, because the test encoded the
+    workaround as the contract**: it built its fixture as
+    `entry(sw={"x": {}}, contains={...})` with the comment *"has both starts_with
+    and contains so the title is split into words"*. That dummy `titles-startswith`
+    is the only reason it passed. A fixture carrying an unexplained extra key to
+    make the feature under test work is a **bug report**, not setup — chase it.
 - **Sourcery's `dangerous-subprocess-use-audit` (opengrep) fires on ANY
   non-literal argv and will hold the check red forever — resolve it with a
   `# nosemgrep` marker plus a written audit, not by contorting the code.** It is
@@ -750,7 +789,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   and fires well inside any shell limit. Redirect to a file
   (`> /tmp/tr.log 2>&1`) and read the whole thing; do **not** pipe it through
   `tail`, which has eaten the dump before.
-- **✅ The intermittent test-suite stall is IDENTIFIED (2026-08-10): a deadlock in
+- **✅ The intermittent test-suite stall is FIXED (2026-08-11): it was a deadlock in
   `ControlServer.stop()`, not environment flakiness.** It had gone unexplained
   across ~3 sessions and 20+ non-reproducing runs; the watchdog dump (finally
   captured once `--timeout` sat under the shell limit) points at it exactly.
@@ -777,10 +816,31 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     parked in `recv_message` in the dump are that pump and the per-connection
     readers — they are noise, not the hang; **read the `Current thread` /
     unittest-framed stack, not the thread count**).
-  - **Not yet fixed** — the fix belongs in `stop()` (close the listener before
-    the throwaway connect, bound the connect with a timeout, or run it on a
-    throwaway thread), and it is a liveness change to shipped server code, so it
-    wants its own branch + review rather than riding along with unrelated work.
+  - **The fix: waking `accept()` never needed a handshake at all.** `stop()` now
+    pokes the endpoint with a **bounded raw connect** (`_wake_accept()`: an
+    `AF_UNIX` socket on POSIX, an `open()` of the named pipe on Windows) instead
+    of an `mpc.Client`. A bare connect wakes the socket regardless of whether any
+    thread is in `accept()`, and `_accept_loop` **already** exits on the raised
+    handshake error — so the whole authenticated round-trip was doing nothing the
+    teardown needed, while supplying the only way to block. Note this beats the
+    three options this note used to suggest: closing the listener first does not
+    reliably wake a blocked `accept()` on Linux (which is *why* the poke exists),
+    and timing-out or threading the `mpc.Client` only bounds the hang instead of
+    removing it.
+  - ⚠️ **`WindowReportServer.stop()` already had this exact fix, comment and all**
+    ("A bounded raw socket is used deliberately rather than an authed
+    `mpc.Client`… would block `stop()` forever"). The lesson is about *search*,
+    not design: the deadlock was diagnosed from a stack trace across three
+    sessions while a sibling module in the same package carried the remedy and
+    the rationale in prose. **When a bug is found in one of the servers, grep the
+    other two (`control_server` / `window_report_server` / `browser_report_server`)
+    for the same shape before designing anything.**
+  - **Measured, so don't re-litigate the rate:** 5/5 clean runs on the fix vs a
+    stall on run 3 of 3 on `main` (~35 s each, 1417 tests). The regression test is
+    `tests/server/control_server_test.py::StopDoesNotDeadlockTest`, which forces
+    the accept thread out *without* `stop()` and then asserts `stop()` returns —
+    i.e. it pins the race, not the symptom, and it fails against the old
+    implementation.
 - **Single-key keymap write**: the firmware supports `ID_DYNAMIC_KEYMAP_SET_KEYCODE` (0x05) — payload is `[layer, row, col, keycode_hi, keycode_lo]`. No need to write a full layer; `PolyKybd.set_dynamic_keycode()` wraps this.
 - **Firmware update survives protocol mismatches**: `PolyHost.device_present` tracks "a device answers protocol-independent queries (GET_ID/GET_LANG)" separately from `connected` (protocol/version compatible). The flash/apply/bootloader actions and the release-update flow gate on `_fw_actions_allowed()` (present, not paused) — NOT on `connected` — so a keyboard on a mismatched protocol can always be updated (`CommandsSubMenu.update_enabled` re-enables exactly those items when the rest of the menu is greyed out). The HID flash protocol (`hid_fw_up`) is dispatched independently of `PROTOCOL_VERSION` in the firmware. Don't re-gate any firmware-update path on `self.connected`.
 - **Autostart** (`polyhost/services/add_to_startup.py`): `setup_autostart_for_app()` registers the app to start at login (called from `main_app.py` unless `--portable`).
