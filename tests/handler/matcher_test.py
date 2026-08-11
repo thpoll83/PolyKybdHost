@@ -89,11 +89,22 @@ class TestFindMatchingEntry(unittest.TestCase):
     def test_contains_matches_whole_words_only(self):
         # Documented limit, unchanged by the fix: the title is split on
         # whitespace, so a needle only matches a WHOLE word -- "Doc" does not
-        # match "Docs", and a multi-word needle can never match at all.
+        # match "Docs".
         leaf = entry()
         e = entry(contains={"Doc": leaf})
         self.assertIs(find_matching_entry("My Doc here", e), leaf)
         self.assertIs(find_matching_entry("My Docs here", e), e)  # parent, not leaf
+
+    def test_contains_never_matches_a_multi_word_needle(self):
+        # Corollary of the whitespace split, and the sharper edge of it: a needle
+        # containing a space cannot equal any single word, so it can never match
+        # however much of it appears in the title. Worth its own test because
+        # "contains" reads like a substring match, so a multi-word key looks
+        # reasonable when writing a mapping and then silently never fires.
+        leaf = entry()
+        e = entry(contains={"My Doc": leaf})
+        self.assertIs(find_matching_entry("My Doc here", e), e)   # parent, not leaf
+        self.assertIs(find_matching_entry("My Doc", e), e)        # even as the whole title
 
     def test_bad_regex_raises(self):
         import re as _re

@@ -184,14 +184,13 @@ def find_matching_entry(title, entry, url=None, os_name=None):
                 if m is not None:
                     return m
 
-    # ⚠️ `has_contains` belongs in this gate too. It was missing, so an entry
-    # declaring ONLY `titles-contains` never split the title into words and its
-    # sub-map below was unreachable — the shipped browser entry's Miro/Outlook/
-    # Jira keys had never once matched. The matcher_test even encoded the gap as
-    # intended behaviour ("has both starts_with and contains so the title is
-    # split into words"), which is why the suite stayed green over it.
-    words = title.split() if (
-        title and (has_starts_with or has_ends_with or has_contains)) else []
+    # Split unconditionally: each branch below gates on its own `has_*` flag, so
+    # a gate here would have to list every word-based matcher and stay in sync
+    # with them. It didn't — `has_contains` was missing, so a contains-only entry
+    # never split and its sub-map was unreachable (the shipped browser entry's
+    # Miro/Outlook/Jira keys had never once matched). Dropping the gate removes
+    # that failure mode rather than re-arming it with one more term.
+    words = title.split() if title else []
     if words:
         if has_starts_with and words[0] in entry[TITLE_SW]:
             m = find_matching_entry(title, entry[TITLE_SW][words[0]], url, os_name)
