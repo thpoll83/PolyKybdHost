@@ -32,7 +32,7 @@ class TestDeviceSettings(unittest.TestCase):
         self.assertEqual(self.s.HID_CONSOLE_REPORT_SIZE, 64)
 
     def test_max_payload_leaves_two_bytes_for_command_headers(self):
-        # 64 byte report - 1 VIA byte - 1 PolyKybd byte = 62 bytes payload
+        # 64 byte report - 1 report-id byte - 1 PolyKybd byte = 62 bytes payload
         self.assertEqual(self.s.MAX_PAYLOAD_BYTES_PER_REPORT, 62)
 
     def test_overlay_plain_data_bytes_total(self):
