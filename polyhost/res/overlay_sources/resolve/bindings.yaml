@@ -1,0 +1,77 @@
+# DaVinci Resolve shortcut overlays for PolyKybd.
+#
+# Icons: Microsoft Fluent UI System Icons (MIT) + shared custom-drawn NLE glyphs
+# (../nle_glyphs.py). Program mark (ESC, all layers): drawn substitute, NOT the
+# Blackmagic trademark. See SOURCES.md.
+# Shortcuts: DaVinci Resolve 18/19/20 Windows defaults (see SOURCES.md).
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/resolve/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/resolve/bindings.yaml --preview /tmp/resolve_preview
+app: resolve
+match: [resolve]
+output: resolve_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: resolve.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [37, 32]
+program_icon_margin: 0
+
+bindings:
+  # --- no modifier (A channel of the primary file): the single-key edit keys ---
+  - { key: I, mods: [], icon: markin.png,  label: "Mark In",       source: "custom/nle_glyphs", mode: alpha }
+  - { key: O, mods: [], icon: markout.png, label: "Mark Out",      source: "custom/nle_glyphs", mode: alpha }
+  - { key: A, mods: [], icon: select.png,  label: "Selection mode", source: "ms-fluent/Cursor (MIT)" }
+  - { key: T, mods: [], icon: trim.png,    label: "Trim edit mode", source: "custom/nle_glyphs", mode: alpha }
+  - { key: W, mods: [], icon: dyntrim.png, label: "Dynamic trim",  source: "ms-fluent/Arrow Autofit Width (MIT)" }
+  - { key: N, mods: [], icon: snap.png,    label: "Snapping",      source: "custom/nle_glyphs", mode: alpha }
+  - { key: M, mods: [], icon: marker.png,  label: "Add marker",    source: "ms-fluent/Flag (MIT)" }
+  - { key: SPACE, mods: [], icon: play.png, label: "Play / Stop",  source: "ms-fluent/Play (MIT)" }
+  - { key: J, mods: [], icon: rev.png,     label: "Play reverse",  source: "ms-fluent/Rewind (MIT)" }
+  - { key: K, mods: [], icon: stop.png,    label: "Stop",          source: "ms-fluent/Stop (MIT)" }
+  - { key: L, mods: [], icon: fwd.png,     label: "Play forward",  source: "ms-fluent/Fast Forward (MIT)" }
+  - { key: F9,  mods: [], icon: insert.png,    label: "Insert edit",    source: "ms-fluent/Arrow Between Down (MIT)" }
+  - { key: F10, mods: [], icon: overwrite.png, label: "Overwrite edit", source: "custom/nle_glyphs", mode: alpha }
+
+  # --- Ctrl (R channel of the primary file) ---
+  - { key: N, mods: [CTRL], icon: newtimeline.png, label: "New timeline", source: "ms-fluent/Add Square (MIT)" }
+  - { key: S, mods: [CTRL], icon: save.png,        label: "Save project", source: "ms-fluent/Save (MIT)" }
+  - { key: I, mods: [CTRL], icon: import.png,      label: "Import media", source: "ms-fluent/Arrow Import (MIT)" }
+  - { key: Z, mods: [CTRL], icon: undo.png,        label: Undo,           source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: X, mods: [CTRL], icon: cut.png,         label: Cut,            source: "ms-fluent/Cut (MIT)" }
+  - { key: C, mods: [CTRL], icon: copy.png,        label: Copy,           source: "ms-fluent/Copy (MIT)" }
+  - { key: V, mods: [CTRL], icon: paste.png,       label: Paste,          source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: A, mods: [CTRL], icon: selectall.png,   label: "Select all",   source: "ms-fluent/Select All On (MIT)" }
+  - { key: B, mods: [CTRL], icon: blade.png,       label: "Blade / split clip", source: "custom/nle_glyphs", mode: alpha }
+  - { key: G, mods: [CTRL], icon: group.png,       label: Group,          source: "ms-fluent/Group (MIT)" }
+  - { key: R, mods: [CTRL], icon: render.png,      label: "Start render", source: "ms-fluent/Arrow Export (MIT)" }
+  - { key: "\\", mods: [CTRL], icon: addedit.png,  label: "Add edit",     source: "ms-fluent/Split Vertical (MIT)" }
+  - { key: "=", mods: [CTRL], icon: zoomin.png,    label: "Zoom in",      source: "ms-fluent/Zoom In (MIT)" }
+  - { key: "-", mods: [CTRL], icon: zoomout.png,   label: "Zoom out",     source: "ms-fluent/Zoom Out (MIT)" }
+
+  # --- Shift (B channel of the primary file) ---
+  - { key: BACKSPACE, mods: [SHIFT], icon: rippledelete.png, label: "Ripple delete", source: "custom/nle_glyphs", mode: alpha }
+  - { key: F12, mods: [SHIFT], icon: append.png,        label: "Append to timeline", source: "custom/nle_glyphs", mode: alpha }
+  - { key: "3", mods: [SHIFT], icon: pagecut.png,       label: "Cut page",       source: "ms-fluent/Filmstrip (MIT)" }
+  - { key: "4", mods: [SHIFT], icon: pageedit.png,      label: "Edit page",      source: "ms-fluent/Timeline (MIT)" }
+  - { key: "5", mods: [SHIFT], icon: pagefusion.png,    label: "Fusion page",    source: "ms-fluent/Branch (MIT)" }
+  - { key: "6", mods: [SHIFT], icon: pagecolor.png,     label: "Color page",     source: "ms-fluent/Color (MIT)" }
+  - { key: "7", mods: [SHIFT], icon: pagefairlight.png, label: "Fairlight page", source: "ms-fluent/Music Note 2 (MIT)" }
+  - { key: "8", mods: [SHIFT], icon: pagedeliver.png,   label: "Deliver page",   source: "ms-fluent/Cloud Arrow Up (MIT)" }
+
+  # --- Ctrl+Shift (R channel of the combo file) ---
+  - { key: Z, mods: [CTRL, SHIFT], icon: redo.png,        label: Redo,           source: "ms-fluent/Arrow Redo (MIT)" }
+  - { key: G, mods: [CTRL, SHIFT], icon: ungroup.png,     label: Ungroup,        source: "ms-fluent/Group Dismiss (MIT)" }
+  - { key: R, mods: [CTRL, SHIFT], icon: renderqueue.png, label: "Render queue", source: "ms-fluent/List (MIT)" }
+
+  # --- Ctrl+Alt (G channel of the combo file) ---
+  - { key: L, mods: [CTRL, ALT], icon: link.png, label: "Link / unlink clips", source: "ms-fluent/Link (MIT)" }

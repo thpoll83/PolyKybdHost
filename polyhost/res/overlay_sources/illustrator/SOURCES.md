@@ -19,7 +19,7 @@ Adobe Illustrator default keyboard shortcuts. Primary reference:
   V Selection, A Direct-selection, Y Magic-wand, Q Lasso, P Pen, T Type,
   `\` Line-segment, M Rectangle, L Ellipse, B Paintbrush, N Pencil, C Scissors,
   R Rotate, O Reflect, S Scale, U Mesh, G Gradient, I Eyedropper,
-  K Live-paint-bucket, Z Zoom, H Hand, E Eraser, X Swap-fill/stroke,
+  K Live-paint-bucket, Z Zoom, H Hand, E Free-transform, X Swap-fill/stroke,
   D Default-fill/stroke.
 - **Ctrl (→ R channel of primary)** — 20:
   N New, O Open, S Save, P Print, Z Undo, C Copy, X Cut, V Paste, A Select-all,
@@ -30,12 +30,20 @@ Adobe Illustrator default keyboard shortcuts. Primary reference:
   S Save-as, O Create-outlines, G Ungroup, V Paste-in-place, P Place,
   `]` Bring-to-front, `[` Send-to-back.
 - **Shift (→ B channel of primary)** — 4:
-  E Free-transform, W Width-tool, B Blob-brush, L Live-paint-selection.
+  E Eraser, W Width-tool, B Blob-brush, L Live-paint-selection.
 
 ### Corrections to the starting list (verified)
 
-- **E = Eraser** (no-mod), **Shift+E = Free Transform** — the starting list had
-  these the wrong way round. Verified across mirrors.
+- **E = Free Transform** (no-mod), **Shift+E = Eraser** — per Adobe's own
+  [default keyboard shortcuts](https://helpx.adobe.com/illustrator/using/default-keyboard-shortcuts.html).
+  ⚠️ An earlier revision of this file asserted the **opposite**, claiming the
+  starting list "had these the wrong way round" and that it was "verified across
+  mirrors". It was not: the mirrors were third-party cheat-sheets, the starting
+  list had been right, and the "correction" is what introduced the bug — it
+  shipped swapped until a later audit checked helpx directly. **Verify tool
+  shortcuts against the vendor's own documentation**; cheat-sheet sites copy each
+  other, so agreement between several of them is not independent confirmation.
+  (Everything else in this section re-checked clean against helpx.)
 - **W = Blend tool** (no-mod), **Shift+W = Width tool** — the starting list's
   "Shift+W = Warp" is wrong; Shift+W is the Width tool. There is no plain "Warp"
   tool letter (Warp lives in the Liquify group with no default single key).
@@ -107,18 +115,20 @@ Probed names that returned 404 and were substituted/drawn:
 
 ## Program icon (ESC, all layers)
 
-`program_icon: illustrator.png` is a **generic, license-clean rounded-square "Ai"
-monogram drawn in code** (NOT Adobe's logo): a rounded-rectangle frame with an
-"Ai" wordmark. Drawn by `_draw_ai_logo()` in `fetch_icons.py`
-(white-on-transparent → `program_icon_mode: alpha`), so it is fully reproducible
-and carries no trademark/licence risk. Drop a real mark as `icons/illustrator.png`
-to override (committed assets are left untouched).
+`program_icon: illustrator.png` is a **generic, license-clean framed "Ai"**
+(NOT Adobe's logo), built by the shared `../rect_mark.py`: a 2px rectangle with
+the product letters inside, at the size the whole Adobe family shares. It
+replaced an in-file `_draw_ai_logo()` rounded-square monogram, which is why that
+function may still exist unused in `fetch_icons.py`. White-on-transparent
+(`program_icon_mode: alpha`), fully reproducible, no trademark/licence risk.
+Drop a real mark as `icons/illustrator.png` to override (committed assets are
+left untouched).
 
 ## Transformations
 
 `bindings.yaml`: `mode: luma`, `threshold: 150`, `region: [36, 32]`,
 `anchor: bottom-right`, `margin: 0`; drawn glyphs use per-binding `mode: alpha`.
-Program icon bottom-right `[46, 40]`, `program_icon_mode: alpha`. Fluent `.svg` →
+Program icon bottom-right `[37, 32]`, `program_icon_mode: alpha`. Fluent `.svg` →
 cairosvg 96px in `fetch_icons.py`. Pin branch→SHA for byte-exact reproducibility;
 committed `icons/` freeze the render.
 
@@ -140,3 +150,17 @@ Off), `Ctrl+L` new layer (Add Square), `Ctrl+K` preferences (Settings),
 `Ctrl+Shift+E` apply last effect (Sparkle), `Ctrl+Alt+J` average (drawn),
 `Ctrl+Alt+B` make blend (drawn), `Ctrl+Alt+3` show all (Eye). Fluent (MIT) +
 drawn glyphs; sources per binding `source:`.
+
+## Program mark
+
+The Adobe apps share one treatment (`../rect_mark.py`): a **2px rectangle with
+the product's two letters inside** — `Ps` / `Ai` / `Pr` / `Ae`. They are a
+family, and what identifies one is its letter pair, so the mark is deliberately
+plain. Adobe's real logos are proprietary and cannot ship here; the letters are
+the app's own naming, not its trademark styling — no rounded-square gradient, no
+brand colours, no attempt to resemble the product tile.
+
+Authored **1:1** at the `[37, 32]` region so the generator never rescales it and
+the 2px frame stays exactly 2px; the letter size is *measured* per pair (the
+widest that clears the frame by >=2px), since `Ai` is much narrower than `Pr`
+and one hardcoded size would either clip or float.

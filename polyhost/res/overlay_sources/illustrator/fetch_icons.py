@@ -19,7 +19,12 @@ from __future__ import annotations
 
 import urllib.parse
 import urllib.request
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import rect_mark  # noqa: E402
 
 import cairosvg
 import numpy as np
@@ -327,8 +332,10 @@ def main() -> int:
     if (out / "illustrator.png").exists():
         print("  illustrator.png  <- committed asset (left as-is)")
     else:
-        _draw_ai_logo(out / "illustrator.png")
         print("  illustrator.png  <- drawn generic 'Ai' monogram (no Adobe logo)")
+    # One size across the whole family (see rect_mark.shared_size).
+    rect_mark.ensure(out / "illustrator.png", "Ai",
+                     size=rect_mark.shared_size(["Ps", "Ai", "Pr", "Ae"]))
     print(f"Wrote icons to {out}")
     return 0
 

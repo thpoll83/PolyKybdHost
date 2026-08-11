@@ -23,10 +23,24 @@ chrome,google-chrome,chromium,brave,brave-browser,msedge,microsoft-edge,vivaldi,
       overlay: web_outlook_template.mods.png
     outlook.live.com:
       overlay: web_outlook_template.mods.png
+    github.com:
+      overlay: [github_template.mods.png, github_template.combo.mods.png]
+    gitlab.com:
+      overlay: [gitlab_template.mods.png, gitlab_template.combo.mods.png]
+    # MUST stay above the bare atlassian.net (Jira) entry: matching is
+    # first-hit over this map in order, and a Confluence URL
+    # (<site>.atlassian.net/wiki/...) also contains "atlassian.net".
+    atlassian.net/wiki:
+      overlay: [confluence_template.mods.png, confluence_template.combo.mods.png]
     atlassian.net:
       overlay: jira_template.mods.png
     bitbucket.org:
       overlay: bitbucket_pr_template.mods.png
+    docs.google.com/document:
+      overlay: [googledocs_template.mods.png, googledocs_template.combo.mods.png,
+                googledocs_template.extra.mods.png]
+    notion.so:
+      overlay: [notion_template.mods.png, notion_template.combo.mods.png]
   titles-contains:
     Miro:
       overlay: miro_template.mods.png
@@ -85,3 +99,48 @@ krita:
   overlay: [krita_template.mods.png, krita_template.combo.mods.png]
 ms-teams,teams:
   overlay: [teams_template.mods.png, teams_template.combo.mods.png]
+resolve,davinci resolve:
+  overlay: [resolve_template.mods.png, resolve_template.combo.mods.png]
+adobe premiere pro:
+  overlay: [premiere_template.mods.png, premiere_template.combo.mods.png]
+afterfx,adobe after effects:
+  overlay: [aftereffects_template.mods.png, aftereffects_template.combo.mods.png]
+# Sublime binds Cmd on macOS where it binds Ctrl on Windows/Linux, so the two
+# platforms need different artwork for the same app name. The `os:` branch picks
+# it: macOS gets the Cmd set (which uses the GUI-combo tiers unlocked by protocol
+# 12), everyone else falls through to the entry's own overlay. The OS is the one
+# running the focused app — a forwarded window uses the FORWARDER's OS, so a Mac
+# forwarding to a Windows keyboard host still gets the Mac artwork.
+sublime_text:
+  overlay: [sublime_template.mods.png, sublime_template.combo.mods.png]
+  os:
+    macos:
+      overlay: [sublime_mac_template.mods.png, sublime_mac_template.combo.mods.png,
+                sublime_mac_template.extra.mods.png, sublime_mac_template.gui.mods.png]
+obsidian:
+  overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png]
+notion:
+  overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+# All three LibreOffice modules are ONE process, and the app-name lookup is an
+# exact dict hit — so they cannot be three separate entries. They are told apart
+# by window title instead: LibreOffice titles end in the module name, e.g.
+# "Untitled 1 — LibreOffice Writer".
+#
+# `titles-endswith` (not `titles-contains`) on purpose — twice over. It matches
+# the title's LAST word, so a Writer document merely *named* "Calc notes" can't
+# pull the Calc overlay. And `titles-contains` would not fire at all here:
+# handler/common.py only word-splits the title when the entry also declares
+# titles-startswith/endswith, so a contains-only entry silently falls through to
+# the default overlay.
+#
+# The top-level overlay is the fallback — Start Center, Draw, Base, Math.
+soffice,soffice.bin,libreoffice,startcenter:
+  overlay: [libreoffice_writer_template.mods.png, libreoffice_writer_template.combo.mods.png]
+  titles-endswith:
+    Writer:
+      overlay: [libreoffice_writer_template.mods.png, libreoffice_writer_template.combo.mods.png]
+    Calc:
+      overlay: [libreoffice_calc_template.mods.png, libreoffice_calc_template.combo.mods.png]
+    Impress:
+      overlay: [libreoffice_impress_template.mods.png, libreoffice_impress_template.combo.mods.png,
+                libreoffice_impress_template.extra.mods.png]
