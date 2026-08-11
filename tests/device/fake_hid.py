@@ -9,7 +9,7 @@ here must survive the refactor.
 Replies are served from a scripted queue. With auto_ack=True the device
 answers like the firmware instead when the queue is empty:
   - PolyKybd commands (payload[0] == 0x50): reply "P" + cmd + "." (ACK)
-  - VIA requests: echo the request payload back
+  - dynamic-keymap requests: echo the request payload back
 """
 import threading
 from collections import deque
@@ -65,7 +65,7 @@ class FakeHidDevice:
             payload = self.last_payload()
             if payload and payload[0] == POLY_ID:
                 return ack(payload[1])
-            return pad(payload)     # VIA request: echo back
+            return pad(payload)     # dynamic-keymap request: echo back
         return b''                  # nothing queued -> read timeout
 
     def close(self):

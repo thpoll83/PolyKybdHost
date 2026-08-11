@@ -328,7 +328,7 @@ class TestKeypressCommands(unittest.TestCase, LockCheckMixin):
 
 
 # ---------------------------------------------------------------------------
-# Dynamic keymap (VIA-style requests)
+# Dynamic keymap (QMK dynamic-keymap requests)
 # ---------------------------------------------------------------------------
 
 class TestDynamicKeymap(unittest.TestCase, LockCheckMixin):
