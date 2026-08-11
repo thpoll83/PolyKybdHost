@@ -152,9 +152,33 @@ class TestUrlMatching(unittest.TestCase):
         e = entry(urls_contains={"mail.google.com": leaf})
         self.assertIs(find_matching_entry("anything", e), e)
 
+    def test_known_url_suppresses_the_titles_contains_fallback(self):
+        # The shipped browser entry's shape. A known URL that matched no needle
+        # is positive evidence about the site, and outranks a word in the title:
+        # searching google.com for "jira" must NOT load the Jira overlay.
+        by_url = entry()
+        by_title = entry()
+        e = entry(urls_contains={"atlassian.net": by_url}, contains={"Jira": by_title})
+        self.assertIs(
+            find_matching_entry("How to use Jira", e,
+                                url="https://www.google.com/search?q=jira"), e)
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_titles_contains_fallback_runs_when_url_unknown(self):
+        # ...but with no URL at all (no extension / stale report) the title
+        # fallback is the only signal there is, so it still fires.
+        by_url = entry()
+        by_title = entry()
+        e = entry(urls_contains={"atlassian.net": by_url}, contains={"Jira": by_title})
+        self.assertIs(find_matching_entry("PolyKybd - Jira", e, url=None), by_title)
+
+    def test_known_url_does_not_suppress_contains_without_urls_contains(self):
+        # The suppression is scoped to entries that actually declare
+        # urls-contains; a plain titles-contains entry is unaffected by a URL
+        # merely being known for the window.
+        leaf = entry()
+        e = entry(contains={"Jira": leaf})
+        self.assertIs(
+            find_matching_entry("PolyKybd - Jira", e, url="https://example.com"), leaf)
 
 
 class TestOsBranch(unittest.TestCase):
@@ -267,3 +291,7 @@ class TestOsBranchDesktopEnvironments(unittest.TestCase):
         e = self._entry("linux")
         for os_v in (OsType.LINUX, OsType.LINUX_GNOME, OsType.LINUX_KDE):
             self.assertEqual(find_matching_entry("t", e, None, os_v)["overlay"], "linux", os_v)
+
+
+if __name__ == "__main__":
+    unittest.main()

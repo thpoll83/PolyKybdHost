@@ -55,7 +55,8 @@ Most specific first; the first branch that yields a match wins:
 
 1. **`os`** — the platform decides which keymap the app even has.
 2. **`urls-contains`** — a tab's URL identifies a web app far better than its title.
-3. `titles-startswith`, then `titles-endswith`, then `titles-contains`.
+3. `titles-startswith`, then `titles-endswith`, then `titles-contains` (the last
+   only when no URL is known, if the entry declares `urls-contains` — see below).
 4. The entry's own `title` / `url` gates, then its own `overlay`.
 
 Nothing matching a sub-map is not a failure: the entry's own `overlay` applies.
@@ -113,22 +114,25 @@ All three title sub-maps match **whole words** of the title, split on whitespace
 A multi-word key like `LibreOffice Writer` can therefore never match — use the
 distinguishing single word (`Writer`).
 
-⚠️ **`titles-contains` only fires when the entry also declares
-`titles-startswith` or `titles-endswith`.** The matcher only splits the title
-into words in that case:
+A `titles-contains` entry needs no companion key — it matches on its own. (Up to
+host 0.11.11 it did not: the matcher only split the title into words when the
+entry *also* declared `titles-startswith` or `titles-endswith`, so a
+contains-only entry silently fell through to its own `overlay`. The shipped
+browser entry sat in exactly that state and its Miro / Outlook / Jira fallback
+had never run.)
 
-```python
-words = title.split() if (title and (has_starts_with or has_ends_with)) else []
-if words:
-    ...
-    if has_contains:      # unreachable when neither of the above is present
-```
+Still prefer `titles-endswith` where it fits: it pins the match to the end of
+the title, so a document merely *named* "Calc notes" cannot pull the Calc
+overlay.
 
-A `titles-contains`-only entry silently falls through to its own `overlay`. The
-shipped browser entry is in exactly this state — its Miro / Outlook / Jira title
-fallback does not currently run, despite the comment claiming it does. Prefer
-`titles-endswith` (which also pins the match to the end of the title, so a
-document merely *named* "Calc notes" cannot pull the Calc overlay).
+⚠️ **`titles-contains` is skipped when the entry also declares `urls-contains`
+and a URL is known.** It is the weakest signal available — any one word,
+anywhere in the title — so for a browser entry it exists to cover the case where
+*no* URL is known (no extension, or a stale report), not merely where the URL
+matched no needle. A known URL has already settled which site is open: on
+`google.com` searching for "jira" the title contains "Jira" while the URL says
+plainly that it is not Jira, and the URL wins. Entries without `urls-contains`
+are unaffected.
 
 ## `urls-contains` needs the browser extension
 
