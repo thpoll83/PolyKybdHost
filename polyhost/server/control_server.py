@@ -18,9 +18,15 @@ Core events are fanned out to every connection that has sent
 """
 import multiprocessing.connection as mpc
 import queue
+import socket
+import sys
 import threading
 
 from polyhost.server import protocol as p
+
+#: Bound on the raw connect ``stop()`` uses to wake a blocked ``accept()``.
+#: It is a local endpoint, so this only ever caps a pathological case.
+WAKE_TIMEOUT_S = 1.0
 
 
 class RpcError(Exception):
@@ -108,18 +114,11 @@ class ControlServer:
         # Wake the sender thread so it can exit its blocking queue.get().
         self._event_q.put(None)
         listener = self._listener
-        # Unblock the blocking accept() by connecting a throwaway client, then
+        # Unblock the blocking accept() with a short-lived RAW connection, then
         # close the listener. Both wrapped — a half-torn-down listener on a
         # racing stop() must not raise.
         if listener is not None:
-            try:
-                throwaway = mpc.Client(self.address, authkey=self.authkey)
-                try:
-                    throwaway.close()
-                except Exception:
-                    pass
-            except Exception:
-                pass
+            self._wake_accept()
             try:
                 listener.close()
             except Exception:
@@ -135,6 +134,38 @@ class ControlServer:
                 conn.close()
             except Exception:
                 pass
+
+    def _wake_accept(self):
+        """Poke the endpoint so a thread parked in ``accept()`` returns.
+
+        A bounded RAW connect is used deliberately rather than an authed
+        ``mpc.Client``: ``Client`` completes a two-way authkey handshake, and
+        only a thread already *inside* ``accept()`` can answer it. ``stop()``
+        clears ``_running`` first, so the accept loop may have re-checked the
+        flag and exited before we get here — and then the handshake has no one
+        to answer it and blocks ``stop()`` forever (a hang in
+        ``answer_challenge`` → ``recv_bytes``, seen on ~2 of 3 full-suite runs).
+
+        A raw connect+close wakes the socket and returns within the timeout
+        regardless of the accept thread's state; the server-side handshake on it
+        then fails fast (EOF) and the loop, seeing ``_running`` False, breaks.
+        This mirrors ``WindowReportServer.stop()``, which already does this.
+        """
+        try:
+            if sys.platform == "win32":
+                # Named pipe: opening the path completes the pending
+                # ConnectNamedPipe, which is what accept() is waiting on.
+                open(self.address, "rb", buffering=0).close()
+            else:
+                waker = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                waker.settimeout(WAKE_TIMEOUT_S)
+                try:
+                    waker.connect(self.address)
+                finally:
+                    waker.close()
+        except OSError:
+            # Endpoint already gone, refusing, or busy — nothing to wake.
+            pass
 
     # ------------------------------------------------------------------
     # Accept loop + per-connection handler

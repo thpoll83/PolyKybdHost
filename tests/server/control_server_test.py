@@ -432,6 +432,73 @@ class ControlServerTest(unittest.TestCase):
             bad.recv_bytes()
 
 
+class StopDoesNotDeadlockTest(unittest.TestCase):
+    """stop() must return even when the accept thread has already exited.
+
+    stop() clears _running *before* poking the endpoint, so the accept loop can
+    re-check the flag and exit in between. The old implementation poked it with
+    an authed mpc.Client, whose handshake only a thread inside accept() can
+    answer — with that thread gone it blocked in answer_challenge -> recv_bytes
+    forever, wedging roughly 2 of 3 full-suite runs. A raw connect cannot hang
+    on a missing peer, so this pins the shape of the fix, not just the symptom.
+    """
+
+    def setUp(self):
+        self._tmpdir = tempfile.mkdtemp(prefix="polykybd-cs-stop-")
+        self.address = os.path.join(self._tmpdir, "ctl.sock")
+        self.server = ControlServer(
+            FakeCore(), "0.8.31", _NullLog(),
+            address=self.address, authkey=b"testkey")
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def _wait_for_socket(self):
+        deadline = time.time() + 3.0
+        while time.time() < deadline:
+            if os.path.exists(self.address):
+                return
+            time.sleep(0.01)
+        self.fail("listener socket never appeared")
+
+    def test_stop_returns_when_accept_thread_already_exited(self):
+        self.server.start()
+        self._wait_for_socket()
+
+        # Drive the accept thread out of its loop WITHOUT calling stop(), so the
+        # listener is still open but nobody is in accept() — exactly the state
+        # the race leaves behind.
+        self.server._running = False
+        self.server._wake_accept()
+        self.server._accept_thread.join(timeout=3.0)
+        self.assertFalse(self.server._accept_thread.is_alive(),
+                         "accept thread should have exited")
+
+        done = threading.Event()
+        errors = []
+
+        def _stop():
+            try:
+                self.server.stop()
+            except Exception as exc:      # pragma: no cover - diagnostic only
+                errors.append(exc)
+            finally:
+                done.set()
+
+        t = threading.Thread(target=_stop, name="stop-under-test", daemon=True)
+        t.start()
+        self.assertTrue(done.wait(timeout=10.0),
+                        "stop() deadlocked with no thread in accept()")
+        self.assertEqual(errors, [])
+
+    def test_stop_is_idempotent(self):
+        self.server.start()
+        self._wait_for_socket()
+        self.server.stop()
+        self.server.stop()      # must not raise or block on a closed listener
+
+
 class UnwrapTest(unittest.TestCase):
     def test_unwrap_ok(self):
         self.assertEqual(_unwrap((True, {"a": 1})), {"a": 1})
