@@ -313,7 +313,7 @@ class CommandsSubMenu:
         """
         confirm_msg = (
             "<b>Reset the keyboard's keymap to its firmware default?</b><br><br>"
-            "Every key you remapped (here or in VIA) goes back to the layout the "
+            "Every key you remapped goes back to the layout the "
             "firmware ships with. This cannot be undone.<br><br>Continue?"
         )
         reply = QMessageBox.question(
