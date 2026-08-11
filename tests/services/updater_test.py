@@ -446,6 +446,39 @@ class TestCheckFwLatest(unittest.TestCase):
         self.assertEqual(release.bin_url, "https://example.com/fw.bin")
         self.assertEqual(release.sig_url, "https://example.com/fw.bin.sig")
 
+    def test_pre_signature_cache_entry_is_not_revalidated(self):
+        # The decisive one for "update the host and firmware updates work again":
+        # a cache written before sig_url existed must NOT be revalidated, or the
+        # 304 answers from it and the already-published release keeps arriving
+        # without its signature — so the keyboard keeps asking for the physical
+        # confirmation on a host that is perfectly capable of fetching the .sig.
+        self.mock_load.return_value = {"fw": {
+            "etag": '"abc"', "tag": "PolyKybd-fw-v0.9.0", "version": "0.9.0",
+            "bin_url": "https://example.com/fw.bin", "uf2_url": "",
+            "html_url": "https://example.com/fw-release", "published_at": "",
+        }}
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(200, _fw_release_json(
+                                   "PolyKybd-fw-v0.9.0"))) as mock_get:
+            release = updater.check_fw_latest("0.8.1")
+        sent = mock_get.call_args.kwargs["headers"]
+        self.assertNotIn("If-None-Match", sent,
+                         "a pre-sig_url cache entry must be refetched, not revalidated")
+        self.assertEqual(release.sig_url, "https://example.com/fw.bin.sig")
+
+    def test_current_cache_entry_is_still_revalidated(self):
+        # ...while a schema-current entry keeps using the ETag, which is what
+        # holds the anonymous 60-requests/hour limit at bay.
+        self.mock_load.return_value = {"fw": {
+            "etag": '"abc"', "tag": "PolyKybd-fw-v0.9.0", "version": "0.9.0",
+            "bin_url": "https://example.com/fw.bin", "uf2_url": "", "sig_url": "",
+            "html_url": "https://example.com/fw-release", "published_at": "",
+        }}
+        with mock.patch.object(updater.requests, "get",
+                               return_value=self._resp(304)) as mock_get:
+            updater.check_fw_latest("0.8.1")
+        self.assertEqual(mock_get.call_args.kwargs["headers"]["If-None-Match"], '"abc"')
+
     def test_pre_signature_cache_entry_survives_304(self):
         # An ETag cache written before sig_url existed has no such key, and the
         # ETag means every repeat check lands in the 304 branch — a KeyError
