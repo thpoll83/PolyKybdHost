@@ -69,6 +69,27 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       starve the one that needs review.** Docs pushes on #42 consumed the window
       #159 was waiting for. When two PRs are open and one is real code, stop
       pushing cosmetic commits to the other until the important one is reviewed.
+  - ⚠️ **A review that DID run, on the right commit, with an accurate walkthrough,
+    can still have SKIPPED the file you care about — read the "Files skipped from
+    review" list before trusting a clean verdict.** On qmk PR #198 (2026-08-11)
+    CodeRabbit reported *"No actionable comments were generated 🎉"* against the
+    right head, and its walkthrough had correctly refreshed (it dropped a claim the
+    latest commit had deleted), so every tell above says *reviewed* — while the
+    same comment listed `poly_keymap.c` under *"🚧 Files skipped from review as they
+    are similar to previous changes"*. That file held **all** the new logic (a
+    modifier latch, an ownership-gated release swallow, an inverted render path);
+    the incremental heuristic judged it similar to its own earlier review of the
+    same file, so the green verdict covered only a header, a tool script and a
+    keymap. This is the complement of the stale-walkthrough traps above: there the
+    walkthrough lies about *which commit*, here it is honest and the **coverage** is
+    the gap. The fix is **`@coderabbitai full review`**, which re-reviews the whole
+    diff regardless of incremental state — and it worked: the full pass read the
+    file and confirmed the latch ownership and release-swallow gating specifically.
+    ⚠️ Spend the slot deliberately, per the org-wide-limit note above: each
+    `@coderabbitai review` consumes one **even when it is refused** ("⚠️ Action not
+    completed / Review rate limited"), so retries starve the window they wait on. A
+    **push** re-triggers a review without spending a request — on that PR the next
+    commit is what finally got one to run after two requests had been eaten.
 
 - **When two reviewers disagree about the same code, WRITE THE TEST — it
   adjudicates, and it is faster than arguing.** On PR #154 (2026-08-07) Sourcery
