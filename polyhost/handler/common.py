@@ -136,7 +136,10 @@ def find_matching_entry(title, entry, url=None, os_name=None):
     active tab), else ``None``. A ``url``/``urls-contains`` constraint is
     *never* satisfied when ``url`` is ``None`` — so a browser-web-app entry only
     fires once the URL is actually available, and degrades to the plain
-    title-matched entry otherwise (never a false positive).
+    title-matched entry otherwise (never a false positive). Conversely, when a
+    URL *is* known, an entry declaring ``urls-contains`` skips its
+    ``titles-contains`` fallback: the URL has already answered which site this
+    is, so a stray word in the title must not overrule it.
 
     ``os_name`` is the OS running the focused app (``OsType``, its wire int, or
     a name); ``None``/unknown skips the ``os`` sub-map entirely, so an entry
@@ -184,7 +187,13 @@ def find_matching_entry(title, entry, url=None, os_name=None):
                 if m is not None:
                     return m
 
-    words = title.split() if (title and (has_starts_with or has_ends_with)) else []
+    # Split unconditionally: each branch below gates on its own `has_*` flag, so
+    # a gate here would have to list every word-based matcher and stay in sync
+    # with them. It didn't — `has_contains` was missing, so a contains-only entry
+    # never split and its sub-map was unreachable (the shipped browser entry's
+    # Miro/Outlook/Jira keys had never once matched). Dropping the gate removes
+    # that failure mode rather than re-arming it with one more term.
+    words = title.split() if title else []
     if words:
         if has_starts_with and words[0] in entry[TITLE_SW]:
             m = find_matching_entry(title, entry[TITLE_SW][words[0]], url, os_name)
@@ -194,7 +203,17 @@ def find_matching_entry(title, entry, url=None, os_name=None):
             m = find_matching_entry(title, entry[TITLE_EW][words[-1]], url, os_name)
             if m is not None:
                 return m
-        if has_contains:
+        # `titles-contains` is the weakest signal here — any single word anywhere
+        # in the title — so for an entry that also declares `urls-contains` it is
+        # a fallback for when the URL is *unknown*, not merely unmatched. A known
+        # URL that hit no needle above is positive evidence about which site this
+        # is, and it outranks a word: on google.com searching for "jira" the
+        # title contains "Jira" while the URL says plainly that it is not Jira.
+        # Entries with no `urls-contains` are unaffected -- `url_decided` is
+        # False for them whatever the URL is -- as are the two positional
+        # matchers above, which no shipped entry combines with `urls-contains`.
+        url_decided = bool(has_urls_contains and url)
+        if has_contains and not url_decided:
             for word in words:
                 if word in entry[TITLE_HAS]:
                     m = find_matching_entry(title, entry[TITLE_HAS][word], url, os_name)

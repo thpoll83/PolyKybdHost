@@ -71,9 +71,40 @@ class TestFindMatchingEntry(unittest.TestCase):
     def test_contains_recurses_on_any_word(self):
         leaf = entry()
         e = entry(sw={"x": {}}, contains={"NEEDLE": leaf})
-        # has both starts_with and contains so the title is split into words.
         self.assertIs(find_matching_entry("a NEEDLE b", e), leaf)
         self.assertIs(find_matching_entry("no match words", e), e)  # parent, no title gate
+
+    def test_contains_alone_recurses(self):
+        # Regression: `titles-contains` used to be dead on its own, because the
+        # word-split was gated on startswith/endswith only. An earlier version of
+        # the test above papered over it by adding a dummy `titles-startswith`,
+        # so the suite passed while the shipped browser entry's Miro/Outlook/Jira
+        # keys could never match. Keep this entry free of any sibling title key.
+        leaf = entry()
+        e = entry(contains={"NEEDLE": leaf})
+        self.assertIs(find_matching_entry("a NEEDLE b", e), leaf)
+        self.assertIs(find_matching_entry("NEEDLE", e), leaf)
+        self.assertIs(find_matching_entry("no match here", e), e)  # parent, no title gate
+
+    def test_contains_matches_whole_words_only(self):
+        # Documented limit, unchanged by the fix: the title is split on
+        # whitespace, so a needle only matches a WHOLE word -- "Doc" does not
+        # match "Docs".
+        leaf = entry()
+        e = entry(contains={"Doc": leaf})
+        self.assertIs(find_matching_entry("My Doc here", e), leaf)
+        self.assertIs(find_matching_entry("My Docs here", e), e)  # parent, not leaf
+
+    def test_contains_never_matches_a_multi_word_needle(self):
+        # Corollary of the whitespace split, and the sharper edge of it: a needle
+        # containing a space cannot equal any single word, so it can never match
+        # however much of it appears in the title. Worth its own test because
+        # "contains" reads like a substring match, so a multi-word key looks
+        # reasonable when writing a mapping and then silently never fires.
+        leaf = entry()
+        e = entry(contains={"My Doc": leaf})
+        self.assertIs(find_matching_entry("My Doc here", e), e)   # parent, not leaf
+        self.assertIs(find_matching_entry("My Doc", e), e)        # even as the whole title
 
     def test_bad_regex_raises(self):
         import re as _re
@@ -121,9 +152,33 @@ class TestUrlMatching(unittest.TestCase):
         e = entry(urls_contains={"mail.google.com": leaf})
         self.assertIs(find_matching_entry("anything", e), e)
 
+    def test_known_url_suppresses_the_titles_contains_fallback(self):
+        # The shipped browser entry's shape. A known URL that matched no needle
+        # is positive evidence about the site, and outranks a word in the title:
+        # searching google.com for "jira" must NOT load the Jira overlay.
+        by_url = entry()
+        by_title = entry()
+        e = entry(urls_contains={"atlassian.net": by_url}, contains={"Jira": by_title})
+        self.assertIs(
+            find_matching_entry("How to use Jira", e,
+                                url="https://www.google.com/search?q=jira"), e)
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_titles_contains_fallback_runs_when_url_unknown(self):
+        # ...but with no URL at all (no extension / stale report) the title
+        # fallback is the only signal there is, so it still fires.
+        by_url = entry()
+        by_title = entry()
+        e = entry(urls_contains={"atlassian.net": by_url}, contains={"Jira": by_title})
+        self.assertIs(find_matching_entry("PolyKybd - Jira", e, url=None), by_title)
+
+    def test_known_url_does_not_suppress_contains_without_urls_contains(self):
+        # The suppression is scoped to entries that actually declare
+        # urls-contains; a plain titles-contains entry is unaffected by a URL
+        # merely being known for the window.
+        leaf = entry()
+        e = entry(contains={"Jira": leaf})
+        self.assertIs(
+            find_matching_entry("PolyKybd - Jira", e, url="https://example.com"), leaf)
 
 
 class TestOsBranch(unittest.TestCase):
@@ -236,3 +291,7 @@ class TestOsBranchDesktopEnvironments(unittest.TestCase):
         e = self._entry("linux")
         for os_v in (OsType.LINUX, OsType.LINUX_GNOME, OsType.LINUX_KDE):
             self.assertEqual(find_matching_entry("t", e, None, os_v)["overlay"], "linux", os_v)
+
+
+if __name__ == "__main__":
+    unittest.main()
