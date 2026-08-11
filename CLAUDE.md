@@ -802,6 +802,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   in the render. Same reasoning as judging a tray icon by rasterising it (above) —
   measure or look, don't infer from the source.
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
+- ⚠️ **A stale `.pyc` can survive a CORRECT fix — clear `__pycache__` before you
+  disbelieve your own change.** Python invalidates cached bytecode on
+  **(mtime, size)**, so a **length-neutral edit landing in the same mtime second**
+  as the existing `.pyc` is invisible to it and the *old* code keeps running. That
+  is not exotic: it happened here renaming a format placeholder `stale` → `state`
+  (5 chars → 5 chars) moments after the previous write, and the test kept failing
+  with the *old* `TypeError` while the source on disk was already right — the
+  traceback even quoted a line that no longer existed. Tell: a traceback whose
+  quoted source doesn't match the file. Fix:
+  `find . -name __pycache__ -path "*/polyhost/*" -exec rm -rf {} +`. Suspect it
+  whenever a fix "doesn't take" — especially after a `cp`/restore, which sets a
+  fresh mtime but can land in the same second.
 - **No *test* CI**: no workflow runs the unit tests. (The repo *does* have two
   workflows — `bump-version.yml` + `release.yml`; see **Releases** below.)
 - **GUI tests need a display**: `tests/gui/host_client_test.py` constructs the real `PolyHost` (default + `--connect` client mode) in a subprocess (one `QApplication`/process; `pynput` needs X) with Qt forced to `offscreen`. They **skip unless `DISPLAY` is set** — run them under a virtual X server: `xvfb-run -a .venv/bin/python -m unittest tests.gui.host_client_test`. `host.py` can't even be *imported* without an X server (pynput at module load), so plain `unittest discover` skips them. Installing `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too (pywinctl/pymonctl `sys.exit(1)` without it).
@@ -809,6 +821,23 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     second one hangs (observed ~10 min at 0.7% CPU / 4 s CPU time, on a suite
     that had run green in 27 s moments earlier; both were auto-picking a display).
     Run them as separate commands.
+  - **To RENDER a widget headless (screenshots for the docs), you need BOTH
+    `xvfb-run` and `QT_QPA_PLATFORM=offscreen`** — and for opposite reasons. Qt's
+    **xcb** plugin does not load in the container at all ("Could not load the Qt
+    platform plugin xcb ... even though it was found"), so a real display does not
+    help Qt; `offscreen` renders into pixmaps perfectly well. The X display is
+    still required, but only for **pynput**, which `host.py` imports at module load
+    and which refuses to import without an X connection. Hence
+    `xvfb-run -a env QT_QPA_PLATFORM=offscreen .venv/bin/python …` —
+    **`tools/render_tray_menu.py`** does exactly this to regenerate the tray-menu
+    screenshots used by the docs site (real `QMenu`, real labels/icons/order, driven
+    in `--connect` client mode against a fake connected core, since a menu with no
+    keyboard attached renders entirely greyed out).
+    - ⚠️ Size a menu with **`resize(sizeHint())`, never `adjustSize()`**:
+      `adjustSize` clamps a window to **2/3 of the screen**, and the offscreen
+      platform reports an 800×600 screen — so anything taller than 400 px is
+      silently cropped. The developer-mode menu lost its last row that way, with no
+      warning and no error; only looking at the PNG caught it.
 - **Use `scripts/run_tests.py` when a run might hang — it has a stall watchdog.**
   The suite is **~25 s** (~27 s under xvfb, where the 11 GUI-subprocess tests run
   instead of skipping). Twice on 2026-08-03 it instead wedged past a 200 s
