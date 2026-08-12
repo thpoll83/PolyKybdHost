@@ -4,8 +4,11 @@ to glyph_script_demo.py / lang_demo.py.
 
 Holding Intl and tapping Ctrl turns the number row into a picker of the current
 letter's accented variations; a letter with more than one row's worth pages, with
-the arrows on the outer ends of the row. This walks every letter a-z and every
-page of each, so the whole 549-variation table goes past once.
+the arrows on the outer ends of the row. This drives the whole interaction: hold
+Intl, tap Ctrl, then for every letter a-z open the picker, page through all of it,
+PICK a variation and watch that letter's keycap change -- lower case first, then
+the same letter again with Shift held, since the two cases are chosen separately.
+The 549-variation table therefore goes past once per case.
 
 Faithful to the firmware:
   * geometry from the KLE, non-picker legends from lang_demo's real base-layer render
@@ -19,8 +22,9 @@ Faithful to the firmware:
   * arrows are BLANK on a letter that fits one page, and the armed Ctrl keycap is
     inverted -- both exactly as the firmware renders them
 
-Lowercase only: the rows are near-symmetric, and where they differ (h j k n t w y)
-the lowercase row is the longer one, so a-z is the fuller tour.
+`--no-shift` drops the upper-case half. The two rows are near-symmetric, and where
+they differ (h j k n t w y) the lower-case one is longer, so that still tours the
+wider set -- it just no longer shows that the cases are picked independently.
 
 Usage:
     python tools/intl_picker_demo.py
@@ -119,6 +123,8 @@ def main():
                     help='ms of the inverted press blink (emoji_demo uses 90)')
     ap.add_argument('--intro-hold', type=int, default=1900, help='ms on the two intro beats')
     ap.add_argument('--armed-hold', type=int, default=1300, help='ms on the armed-but-empty picker')
+    ap.add_argument('--pick-hold', type=int, default=1000,
+                    help='ms on the payoff frame after a pick, where the keycap changes')
     ap.add_argument('--still', action='store_true')
     ap.add_argument('--gui-icon', default='ICON_OS_GNOME',
                     help='which OS glyph the GUI key shows (kc_os_gui_icon picks this at '
@@ -220,6 +226,20 @@ def main():
     shift_pos = next((mp for mp, tok in matrix_kc.items()
                       if normalize_kc(display_keycode(tok)) == normalize_kc('KC_LSFT')), None)
 
+    picks: dict[tuple[str, bool], int] = {}       # (letter, upper) -> chosen variation index
+
+    def blank_picker(frame_map) -> dict:
+        """The picker row with the picker CLOSED. render_key returns false for every
+        KC_LAT* and both arrows when picker_open is false, and KC_LAT* has no
+        keycode_to_static_text entry, so nothing is drawn — these keycaps are blank,
+        NOT showing the base layer's numbers."""
+        out = dict(frame_map)
+        for pos in list(slot_pos.values()) + [prev_pos, next_pos]:
+            c = KeyContent()
+            c._oled = render_cps(R, [])
+            out[pos] = c
+        return out
+
     def intl_view(upper: bool) -> dict:
         """The _ADDLANG1 board: every letter shows its SELECTED variation (index 0 by
         default) for the ACTIVE CASE, and Ctrl carries the picker legend rather than the
@@ -230,8 +250,9 @@ def main():
             ch = next((k for k, v in letter_pos.items() if v == mp), None)
             if ch is not None:
                 row = variations[(0 if upper else 26) + (ord(ch) - ord('a'))]
+                idx = picks.get((ch, upper), 0)          # a pick sticks for the rest of the run
                 nc = copy.copy(c)
-                nc._oled = render_cps(R, row[:1])
+                nc._oled = render_cps(R, row[idx:idx + 1] if idx < len(row) else row[:1])
                 out[mp] = nc
             else:
                 out[mp] = c
@@ -299,9 +320,11 @@ def main():
     # --- the interaction, in order -------------------------------------------
     # 1. the board as it is
     push(base_frame, "The board", "as you left it", args.intro_hold)
-    # 2. press and hold Intl -> every letter shows its selected accent
-    push(held(base_frame, intl_pos), "Press", "Intl", FLASH)
-    intl_held = held(intl_frame, intl_pos)
+    # 2. press and hold Intl -> every letter shows its selected accent. The picker row
+    #    is already blank here: those positions hold KC_LAT* on _ADDLANG1, and with the
+    #    picker closed nothing is drawn for them.
+    push(blank_picker(held(base_frame, intl_pos)), "Press", "Intl", FLASH)
+    intl_held = blank_picker(held(intl_frame, intl_pos))
     push(intl_held, "Intl held —", "every letter shows its accent", args.intro_hold)
     # 3. tap Ctrl to arm the picker. Nothing is on the picker row yet: last_latin_kc
     #    starts at 0, which is outside KC_A..KC_Z, so render_key's picker_open is
@@ -309,26 +332,32 @@ def main():
     push(held(intl_held, ctrl_pos), "Tap", "Ctrl", FLASH)
     armed = held(intl_held, ctrl_pos)
     push(picker_row(armed, [], 0, 1), "Picker armed —", "now pick a letter", args.armed_hold)
-    # 4. a letter, its pages, then the same letter shifted
-    armed_upper = held(held(intl_view(True), intl_pos), ctrl_pos)
+    # 4. per letter: open the picker, page through, PICK, watch the keycap change.
+    def base_view(upper, armed_now):
+        """The board with Intl held (+ Shift when upper), Ctrl inverted only while armed."""
+        f = blank_picker(held(intl_view(upper), intl_pos))
+        if upper and shift_pos is not None:
+            f = held(f, shift_pos)
+        return held(f, ctrl_pos) if armed_now else f
 
-    def letter_pass(ch, upper, base):
-        """Press the letter (or Shift) and page through that case's variations."""
+    def letter_pass(ch, upper):
+        """Assumes the picker is ARMED. Opens on `ch`, pages through, picks the last
+        variation, and leaves the picker CLOSED — which is what the firmware does:
+        the pick unregisters the mod, clears s_picker_latched and resets the page."""
         row = variations[(0 if upper else 26) + (ord(ch) - ord('a'))]
         if not row:
             return
         pages = page_count(len(row), args.slots)
         shown = ch.upper() if upper else ch
         note = f"{shown}  ({len(row)} variation{'s' if len(row) != 1 else ''})"
-        page0 = picker_row(base, row, 0, pages)
+        armed_now = base_view(upper, True)
+        page0 = picker_row(armed_now, row, 0, pages)
         if upper:
-            # Shift is HELD, so it stays inverted for the whole upper-case pass.
-            push(held(page0, shift_pos), "Hold", "Shift", FLASH)
-            page0 = held(page0, shift_pos)
+            push(held(page0, shift_pos), "Hold", "Shift", FLASH)   # held => stays inverted
         else:
             push(held(page0, letter_pos[ch]), "Press", ch, FLASH)
         sel = dict(page0)
-        c = copy.copy(sel[letter_pos[ch]]); c.selected = True    # ring the letter being set
+        c = copy.copy(sel[letter_pos[ch]]); c.selected = True      # ring the letter being set
         sel[letter_pos[ch]] = c
         push(sel, "Intl + Ctrl —", note, args.first_hold,
              f"page 1/{pages}" if pages > 1 else None)
@@ -337,13 +366,25 @@ def main():
             push(held(nxt, next_pos), "Page", "▶", FLASH)
             push(nxt, "Intl + Ctrl —", note, args.settle, f"page {page + 1}/{pages}")
             sel = nxt
+        # pick the LAST variation — the one furthest from the default, so the change on
+        # the keycap is unmistakable. It sits on the page we just paged to.
+        pick_idx = len(row) - 1
+        push(held(sel, slot_pos[pick_idx % args.slots]), "Pick", shown, FLASH)
+        picks[(ch, upper)] = pick_idx
+        glyph = chr(row[pick_idx])
+        push(base_view(upper, False), f"{shown} is now", glyph, args.pick_hold)
 
-    for ch in args.letters:
-        if ch not in letter_pos:
-            continue
-        letter_pass(ch, False, armed)
+    todo = [ch for ch in args.letters if ch in letter_pos]
+    for n, ch in enumerate(todo):
+        letter_pass(ch, False)
         if not args.no_shift and shift_pos is not None:
-            letter_pass(ch, True, armed_upper)
+            push(held(base_view(True, False), ctrl_pos), "Tap", "Ctrl", FLASH)   # re-arm
+            letter_pass(ch, True)
+        # Re-arm for the NEXT letter (the pick above closed the picker). Skipped after
+        # the last one, or the GIF would loop out of a dangling "Tap Ctrl" that leads
+        # nowhere.
+        if n + 1 < len(todo):
+            push(held(base_view(False, False), ctrl_pos), "Tap", "Ctrl", FLASH)
 
     if not imgs:
         raise SystemExit("no frames — check --letters")
