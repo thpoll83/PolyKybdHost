@@ -79,6 +79,19 @@ The macOS artwork typically needs the `extra` and `gui` overlay tiers, since
 almost every Mac shortcut is a `Cmd+…` chord — see
 [`overlay_specification.md`](overlay_specification.md) for the channel map.
 
+**You do not have to author both sets by hand.** A binding file for
+`scripts/generate_app_overlays.py` can use the **`CMDCTRL`** modifier — Ctrl on
+Windows/Linux, Cmd on macOS — and the generator emits both artwork sets *and*
+the `os: macos:` branch above from one source. See
+[`overlay_specification.md`](overlay_specification.md) § *The `CMDCTRL`
+modifier*. A branch written by hand works exactly the same way; the token only
+removes the duplicated authoring.
+
+⚠️ **Repeat a `title:` / `url:` constraint inside the branch if the entry has
+one.** A matching `os:` branch is returned *instead of* the outer entry, not in
+addition to it, so a constraint left outside stops applying once the branch
+matches. (The generator does this for you.)
+
 **Accepted keys** (case-insensitive; anything else never matches):
 
 | Key | Also accepted |

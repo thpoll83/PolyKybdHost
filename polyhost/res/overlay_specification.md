@@ -24,6 +24,30 @@ Each PNG carries up to 4 modifier variations. Since protocol 12 **all sixteen** 
 
 An application needs only the tiers it actually binds — most ship just the primary tier, or primary + combo. The tier order is deliberate: the least-used variant of each tier sits in **A**, because a PNG saved without an alpha channel silently loses that variant.
 
+## The `CMDCTRL` modifier
+
+An app's shortcuts belong to its platform: Sublime Text's command palette is `Ctrl+Shift+P` on Windows and `Cmd+Shift+P` on macOS. Rather than author the same set twice, a binding file for `scripts/generate_app_overlays.py` can write **`CMDCTRL`** — the OS-relative command modifier, Ctrl on Windows/Linux and Cmd (GUI) on macOS:
+
+```yaml
+bindings:
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: palette.png, label: command palette }
+```
+
+Spellings accepted: `CMDCTRL`, `CMD_OR_CTRL`, `CMDORCTRL` (case-insensitive). GTK calls the same idea `<Primary>` and Electron calls it `CmdOrCtrl`; it is **not** called `primary` here because in this format "primary" already names the first tier PNG.
+
+The generator renders **two** artwork sets from one binding file — `<output>.*` with `CMDCTRL` resolved to Ctrl, and `<output>_mac.*` with it resolved to Cmd — and emits an `os: macos:` branch selecting between them (see [`overlay-mapping.md`](overlay-mapping.md)). A spec that never uses the token emits exactly one set, as before.
+
+Because the macOS destinations cross both tier and channel, the two sets are not a channel-for-channel copy:
+
+| Authored | Windows / Linux | macOS | Tier move |
+|---|---|---|---|
+| `CMDCTRL` | CTRL | GUI_KEY | primary R → combo A |
+| `CMDCTRL`+SHIFT | CTRL_SHIFT | GUI_SHIFT | combo R → extra G |
+| `CMDCTRL`+ALT | CTRL_ALT | GUI_ALT | combo G → extra B |
+| `CMDCTRL`+ALT+SHIFT | CTRL_ALT_SHIFT | GUI_ALT_SHIFT | extra R → gui G |
+
+⚠️ **`CMDCTRL` is not a blanket Ctrl→Cmd swap, and a plain `CTRL` binding stays literal Ctrl on every platform.** macOS binds real Ctrl chords of its own — `Ctrl+A`/`Ctrl+E` line navigation, `Ctrl+Space` input switching, `Ctrl+`arrows for Spaces — so both spellings have to coexist in one file. Mixing `CMDCTRL` with `CTRL` or `GUI` in the same binding is refused: it would collapse to a single bit on one of the two platforms and land the artwork on a variant the author never asked for.
+
 ## Slot → keycode mapping
 
 Iteration starts at `KC_A` and increments. Two jumps are taken to skip keypad and media ranges (see `ImageConverter.extract_overlays`):
