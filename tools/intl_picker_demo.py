@@ -10,6 +10,10 @@ PICK a variation and watch that letter's keycap change -- lower case first, then
 the same letter again with Shift held, since the two cases are chosen separately.
 The 549-variation table therefore goes past once per case.
 
+A row of ONE is skipped (q in both cases, upper J): there is nothing to choose, so
+the picker would show a single slot and a pick that changes nothing. Their one
+variation is still on the keycap throughout, like every other letter's.
+
 Faithful to the firmware:
   * geometry from the KLE, non-picker legends from lang_demo's real base-layer render
   * the variations come straight out of the generated latin_ex_map in lang_lut.c
@@ -350,19 +354,26 @@ def main():
     def row_for(ch, upper):
         return variations[(0 if upper else 26) + (ord(ch) - ord('a'))]
 
-    def letter_pass(ch, upper):
-        """Assumes the picker is ARMED. Opens on `ch`, pages through, picks the last
-        variation, and leaves the picker CLOSED — which is what the firmware does:
-        the pick unregisters the mod, clears s_picker_latched and resets the page."""
+    def has_choice(ch, upper):
+        """A row of one offers nothing to pick, so opening the picker on it would show
+        a single slot and a pick that changes nothing.  Only q (both cases) and upper
+        J are in that position; their one variation is still on the keycap throughout,
+        drawn by intl_view() like every other letter — they are just not toured."""
+        return len(row_for(ch, upper)) >= 2
+
+    def letter_pass(ch, upper, via_shift):
+        """Assumes the picker is ARMED. Opens on `ch` — by pressing it, or by adding
+        Shift when the lower-case pass has just left the picker on this same letter —
+        pages through, picks, and leaves the picker CLOSED, which is what the firmware
+        does: the pick unregisters the mod, clears s_picker_latched and resets the
+        page."""
         row = row_for(ch, upper)
-        if not row:
-            return
         pages = page_count(len(row), args.slots)
         shown = ch.upper() if upper else ch
         note = f"{shown}  ({len(row)} variation{'s' if len(row) != 1 else ''})"
         armed_now = base_view(upper, True)
         page0 = picker_row(armed_now, row, 0, pages)
-        if upper:
+        if via_shift:
             push(held(page0, shift_pos), "Hold", "Shift", FLASH)   # held => stays inverted
         else:
             push(held(page0, letter_pos[ch]), "Press", ch, FLASH)
@@ -392,10 +403,17 @@ def main():
         glyph = chr(row[pick_idx])
         push(base_view(upper, False), f"{shown} is now", glyph, args.pick_hold)
 
-    todo = [ch for ch in args.letters if ch in letter_pos]
+    shift_ok = not args.no_shift and shift_pos is not None
+    todo = [ch for ch in args.letters if ch in letter_pos
+            and (has_choice(ch, False) or (shift_ok and has_choice(ch, True)))]
+    skipped = [ch for ch in args.letters if ch in letter_pos and ch not in todo]
+    if skipped:
+        print(f"  no picker for {''.join(skipped)} — one variation, nothing to choose")
     for n, ch in enumerate(todo):
-        letter_pass(ch, False)
-        if not args.no_shift and shift_pos is not None:
+        did_lower = has_choice(ch, False)
+        if did_lower:
+            letter_pass(ch, False, via_shift=False)
+        if shift_ok and has_choice(ch, True) and did_lower:
             # Re-arm in LOWER case and hold the lower-case row for a beat, so the Shift
             # press that follows visibly turns that exact row into capitals. Tapping Ctrl
             # with Shift already down (what this used to do) folded both events into one
@@ -405,8 +423,15 @@ def main():
             if low:
                 push(picker_row(base_view(False, True), low, 0, page_count(len(low), args.slots)),
                      "Intl + Ctrl —", f"{ch}  (lower case)", args.case_pause)
-            letter_pass(ch, True)
+            letter_pass(ch, True, via_shift=True)
             # …and a matching beat after Shift comes back up.
+            push(base_view(False, False), "Shift", "released", args.case_pause)
+        elif shift_ok and has_choice(ch, True):
+            # Upper case has a choice but lower case does not, so there is no open
+            # picker to flip: press the letter with Shift already held.  No letter is
+            # in this position today (only upper J is single-valued, and its lower
+            # case has two), but the loop must not silently skip half a letter.
+            letter_pass(ch, True, via_shift=False)
             push(base_view(False, False), "Shift", "released", args.case_pause)
         # Re-arm for the NEXT letter (the pick above closed the picker). Skipped after
         # the last one, or the GIF would loop out of a dangling "Tap Ctrl" that leads
