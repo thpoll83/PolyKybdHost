@@ -31,7 +31,7 @@ Usage:
     python tools/intl_picker_demo.py --out /tmp/intl.gif --letters aeiou --settle 900
 """
 from __future__ import annotations
-import argparse, json, os, re, copy
+import argparse, json, os, re, copy, random
 from PIL import Image, ImageDraw, ImageFont
 
 import oled_preview as op
@@ -123,6 +123,9 @@ def main():
                     help='ms of the inverted press blink (emoji_demo uses 90)')
     ap.add_argument('--intro-hold', type=int, default=1900, help='ms on the two intro beats')
     ap.add_argument('--armed-hold', type=int, default=1300, help='ms on the armed-but-empty picker')
+    ap.add_argument('--seed', type=int, default=7,
+                    help='seeds the choice of which variation gets picked per letter, '
+                         'so a regenerated GIF is reproducible')
     ap.add_argument('--case-pause', type=int, default=800,
                     help='ms held either side of the Shift press, so the lower->upper '
                          'flip reads as its own event instead of riding a press blink')
@@ -230,6 +233,7 @@ def main():
                       if normalize_kc(display_keycode(tok)) == normalize_kc('KC_LSFT')), None)
 
     picks: dict[tuple[str, bool], int] = {}       # (letter, upper) -> chosen variation index
+    rng = random.Random(args.seed)
 
     def blank_picker(frame_map) -> dict:
         """The picker row with the picker CLOSED. render_key returns false for every
@@ -372,9 +376,17 @@ def main():
             push(held(nxt, next_pos), "Page", "▶", FLASH)
             push(nxt, "Intl + Ctrl —", note, args.settle, f"page {page + 1}/{pages}")
             sel = nxt
-        # pick the LAST variation — the one furthest from the default, so the change on
-        # the keycap is unmistakable. It sits on the page we just paged to.
-        pick_idx = len(row) - 1
+        # Pick one at random from the page we have just paged to — the last one.
+        # Picking the final slot every single time read as a rule rather than a choice.
+        # ⚠️ Exclude the variation already on the keycap, or the payoff frame shows no
+        # change at all: on a SINGLE-page letter the last page is the only page, so the
+        # range includes the current pick (index 0 for a fresh letter) and roughly one
+        # letter in twelve silently "changed" to what it already was.  Seeded, so a
+        # regenerated GIF is reproducible.
+        lo = (pages - 1) * args.slots
+        shown_idx = picks.get((ch, upper), 0)
+        choices = [i for i in range(lo, len(row)) if i != shown_idx] or [lo]
+        pick_idx = rng.choice(choices)
         push(held(sel, slot_pos[pick_idx % args.slots]), "Pick", shown, FLASH)
         picks[(ch, upper)] = pick_idx
         glyph = chr(row[pick_idx])
