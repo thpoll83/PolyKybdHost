@@ -113,9 +113,16 @@ def main():
     ap.add_argument('--gap', type=int, default=14)
     ap.add_argument('--margin', type=int, default=12)
     ap.add_argument('--exclude', default='3,7;8,0')
-    ap.add_argument('--settle', type=int, default=1100, help='ms per page')
-    ap.add_argument('--first-hold', type=int, default=2000, help='ms on the first page of each letter')
+    ap.add_argument('--settle', type=int, default=1000, help='ms per page')
+    ap.add_argument('--first-hold', type=int, default=1300, help='ms on the first page of each letter')
+    ap.add_argument('--flash', type=int, default=110,
+                    help='ms of the inverted press blink (emoji_demo uses 90)')
+    ap.add_argument('--intro-hold', type=int, default=1900, help='ms on the two intro beats')
+    ap.add_argument('--armed-hold', type=int, default=1300, help='ms on the armed-but-empty picker')
     ap.add_argument('--still', action='store_true')
+    ap.add_argument('--colors', type=int, default=64,
+                    help='GIF palette size; the board is near-greyscale so 64 is ample '
+                         'and roughly halves the file against 128')
     args = ap.parse_args()
     if args.scale <= 0:
         ap.error("--scale must be greater than zero")
@@ -160,6 +167,13 @@ def main():
                      if normalize_kc(display_keycode(tok)) == ctrl_kc), None)
     if ctrl_pos is None:
         print(f"  note: no {ctrl_kc} on [{args.layer}] — the armed-Ctrl inversion is skipped")
+    # The Intl key itself: MO(_ADDLANG1) on the base layer. Several positions carry it;
+    # take the one on the thumb row (highest matrix row) since that is the one a thumb
+    # actually holds.
+    intl_all = [mp for mp, tok in matrix_kc.items() if normalize_kc(tok) == 'MO(_ADDLANG1)']
+    if not intl_all:
+        raise SystemExit(f"no MO(_ADDLANG1) on [{args.layer}] — nothing opens the Intl layer")
+    intl_pos = max(intl_all, key=lambda mp: int(mp.split(',')[0]))
 
     static_map = parse_static_text_map(os.path.join(pk, 'keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
@@ -204,46 +218,84 @@ def main():
         cap_font = sub_font = ImageFont.load_default()
     CAP_H = 52
 
+    def held(frame_map, *positions, blink=False):
+        """Invert the given keys. matrix_scan_kb() inverts a keycap on press and
+        un-inverts on release, so a HELD key (Intl) stays inverted for as long as it
+        is down; a tap is a brief blink."""
+        out = dict(frame_map)
+        for pos in positions:
+            if pos in out:
+                c = copy.copy(out[pos])
+                c.invert = True
+                out[pos] = c
+        return out
+
+    def picker_row(frame_map, row, page, pages):
+        """Overwrite the picker slots + arrows for one page of `row`."""
+        out = dict(frame_map)
+        for slot in range(args.slots):
+            idx = page * args.slots + slot
+            c = KeyContent()
+            c._oled = render_cps(R, row[idx:idx + 1]) if idx < len(row) else render_cps(R, [])
+            out[slot_pos[slot]] = c
+        for pos, img in ((prev_pos, arrow_l), (next_pos, arrow_r)):
+            c = KeyContent()
+            c._oled = img if pages > 1 else render_cps(R, [])   # blank on a one-page letter
+            out[pos] = c
+        return out
+
+    def compose(frame_map, lead, note, prog=None):
+        board = renderer.render_frame(frame_map)
+        frame = Image.new('RGB', (board.width, board.height + CAP_H), Theme().bg)
+        frame.paste(board, (0, 0))
+        d = ImageDraw.Draw(frame)
+        d.text((14, board.height + 6), lead, font=sub_font, fill=(210, 210, 210))
+        x = 14 + d.textlength(lead, font=sub_font) + 12
+        d.text((x, board.height + 4), note, font=cap_font, fill=(255, 225, 0))
+        if prog:
+            d.text((frame.width - d.textlength(prog, font=sub_font) - 14,
+                    board.height + 14), prog, font=sub_font, fill=(120, 120, 120))
+        return frame
+
+    FLASH = args.flash
     imgs, durations = [], []
+
+    def push(frame_map, lead, note, ms, prog=None):
+        imgs.append(compose(frame_map, lead, note, prog))
+        durations.append(ms)
+
+    # --- the interaction, in order -------------------------------------------
+    # 1. the board as it is
+    push(base_frame, "The board", "as you left it", args.intro_hold)
+    # 2. press and hold Intl -> every letter shows its selected accent
+    push(held(base_frame, intl_pos), "Press", "Intl", FLASH)
+    intl_held = held(intl_frame, intl_pos)
+    push(intl_held, "Intl held —", "every letter shows its accent", args.intro_hold)
+    # 3. tap Ctrl to arm the picker. Nothing is on the picker row yet: last_latin_kc
+    #    starts at 0, which is outside KC_A..KC_Z, so render_key's picker_open is
+    #    false until a letter is touched.
+    push(held(intl_held, ctrl_pos), "Tap", "Ctrl", FLASH)
+    armed = held(intl_held, ctrl_pos)
+    push(picker_row(armed, [], 0, 1), "Picker armed —", "now pick a letter", args.armed_hold)
+    # 4. a letter, then its pages
     for ch in args.letters:
         row = variations[26 + (ord(ch) - ord('a'))]
-        if not row:
+        if not row or ch not in letter_pos:
             continue
         pages = page_count(len(row), args.slots)
-        for page in range(pages):
-            frame_map = dict(intl_frame)
-            for slot in range(args.slots):
-                idx = page * args.slots + slot
-                c = KeyContent()
-                c._oled = render_cps(R, row[idx:idx + 1]) if idx < len(row) else render_cps(R, [])
-                frame_map[slot_pos[slot]] = c
-            for pos, img in ((prev_pos, arrow_l), (next_pos, arrow_r)):
-                c = KeyContent()
-                c._oled = img if pages > 1 else render_cps(R, [])
-                frame_map[pos] = c
-            if ctrl_pos in frame_map:                   # armed: the firmware inverts it
-                c = copy.copy(frame_map[ctrl_pos])
-                c.invert = True
-                frame_map[ctrl_pos] = c
-            if ch in letter_pos:                        # which letter the picker belongs to
-                c = copy.copy(frame_map[letter_pos[ch]])
-                c.selected = True
-                frame_map[letter_pos[ch]] = c
-
-            board = renderer.render_frame(frame_map)
-            frame = Image.new('RGB', (board.width, board.height + CAP_H), Theme().bg)
-            frame.paste(board, (0, 0))
-            d = ImageDraw.Draw(frame)
-            d.text((14, board.height + 6), "Intl + Ctrl —", font=sub_font, fill=(210, 210, 210))
-            x = 14 + d.textlength("Intl + Ctrl —", font=sub_font) + 12
-            label = f"{ch}  ({len(row)} variation{'s' if len(row) != 1 else ''})"
-            d.text((x, board.height + 4), label, font=cap_font, fill=(255, 225, 0))
-            if pages > 1:
-                prog = f"page {page + 1}/{pages}"
-                d.text((frame.width - d.textlength(prog, font=sub_font) - 14,
-                        board.height + 14), prog, font=sub_font, fill=(120, 120, 120))
-            imgs.append(frame)
-            durations.append(args.first_hold if page == 0 else args.settle)
+        lead = "Intl + Ctrl —"
+        note = f"{ch}  ({len(row)} variation{'s' if len(row) != 1 else ''})"
+        page0 = picker_row(armed, row, 0, pages)
+        push(held(page0, letter_pos[ch]), "Press", ch, FLASH)   # press blink on the letter
+        sel = dict(page0)
+        c = copy.copy(sel[letter_pos[ch]]); c.selected = True    # ring the letter being set
+        sel[letter_pos[ch]] = c
+        push(sel, lead, note, args.first_hold, f"page 1/{pages}" if pages > 1 else None)
+        for page in range(1, pages):
+            nxt = picker_row(sel, row, page, pages)
+            push(held(nxt, next_pos), "Page", "▶", FLASH)
+            push(nxt, lead, note, args.settle, f"page {page + 1}/{pages}")
+            sel = nxt
 
     if not imgs:
         raise SystemExit("no frames — check --letters")
@@ -256,11 +308,18 @@ def main():
         imgs[0].save(png)
         print(f"  wrote {png}")
 
-    pal = imgs[0].quantize(colors=128, method=Image.MEDIANCUT)
+    pal = imgs[0].quantize(colors=args.colors, method=Image.MEDIANCUT)
     pimgs = [im.quantize(palette=pal, dither=Image.NONE) for im in imgs]
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
+    # disposal=1 ("leave the previous frame in place"), NOT the 2 the other demos use.
+    # Every frame here is fully opaque and the same size, so nothing needs restoring to
+    # background — and 1 lets Pillow emit just the changed rectangle. Consecutive frames
+    # differ by a press blink or one picker row, so that is a ~10x file saving: 4.2 MB
+    # -> 0.4 MB at 75 frames. Verified frame-for-frame pixel-identical against the
+    # disposal=2 encode before adopting it (a smaller GIF that renders wrong is worse
+    # than a big one).
     pimgs[0].save(args.out, save_all=True, append_images=pimgs[1:],
-                  duration=durations, loop=0, optimize=True, disposal=2)
+                  duration=durations, loop=0, optimize=True, disposal=1)
     print(f"  wrote {args.out}  ({len(pimgs)} frames, "
           f"{os.path.getsize(args.out)/1024:.0f} KB, {imgs[0].width}x{imgs[0].height})")
 
