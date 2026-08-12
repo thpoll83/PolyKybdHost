@@ -123,6 +123,9 @@ def main():
                     help='ms of the inverted press blink (emoji_demo uses 90)')
     ap.add_argument('--intro-hold', type=int, default=1900, help='ms on the two intro beats')
     ap.add_argument('--armed-hold', type=int, default=1300, help='ms on the armed-but-empty picker')
+    ap.add_argument('--case-pause', type=int, default=800,
+                    help='ms held either side of the Shift press, so the lower->upper '
+                         'flip reads as its own event instead of riding a press blink')
     ap.add_argument('--pick-hold', type=int, default=1000,
                     help='ms on the payoff frame after a pick, where the keycap changes')
     ap.add_argument('--still', action='store_true')
@@ -340,11 +343,14 @@ def main():
             f = held(f, shift_pos)
         return held(f, ctrl_pos) if armed_now else f
 
+    def row_for(ch, upper):
+        return variations[(0 if upper else 26) + (ord(ch) - ord('a'))]
+
     def letter_pass(ch, upper):
         """Assumes the picker is ARMED. Opens on `ch`, pages through, picks the last
         variation, and leaves the picker CLOSED — which is what the firmware does:
         the pick unregisters the mod, clears s_picker_latched and resets the page."""
-        row = variations[(0 if upper else 26) + (ord(ch) - ord('a'))]
+        row = row_for(ch, upper)
         if not row:
             return
         pages = page_count(len(row), args.slots)
@@ -378,8 +384,18 @@ def main():
     for n, ch in enumerate(todo):
         letter_pass(ch, False)
         if not args.no_shift and shift_pos is not None:
-            push(held(base_view(True, False), ctrl_pos), "Tap", "Ctrl", FLASH)   # re-arm
+            # Re-arm in LOWER case and hold the lower-case row for a beat, so the Shift
+            # press that follows visibly turns that exact row into capitals. Tapping Ctrl
+            # with Shift already down (what this used to do) folded both events into one
+            # 110 ms blink and the whole board just appeared to change by itself.
+            push(held(base_view(False, False), ctrl_pos), "Tap", "Ctrl", FLASH)
+            low = row_for(ch, False)
+            if low:
+                push(picker_row(base_view(False, True), low, 0, page_count(len(low), args.slots)),
+                     "Intl + Ctrl —", f"{ch}  (lower case)", args.case_pause)
             letter_pass(ch, True)
+            # …and a matching beat after Shift comes back up.
+            push(base_view(False, False), "Shift", "released", args.case_pause)
         # Re-arm for the NEXT letter (the pick above closed the picker). Skipped after
         # the last one, or the GIF would loop out of a dangling "Tap Ctrl" that leads
         # nowhere.
