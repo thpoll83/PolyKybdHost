@@ -350,7 +350,13 @@ class PolyForwarder(QApplication):
         normalised (windowless) interpreter and updater.spawn_detached — this
         used to be a bare Popen on sys.executable, which left the restarted
         forwarder owning a console window and dying with any job object."""
-        self._update_ui.stage_relay(relay_path)
+        if not self._update_ui.stage_relay(relay_path):
+            # Nothing will finish the locked-file copy if we exit now, and the
+            # tree is already partially rewritten — surface it and stay up.
+            self._on_update_failed(
+                "Could not start the update relay; the update is incomplete. "
+                "See the log for details.")
+            return
         # Brief pause so the user sees the "Restarting" label before we vanish.
         QTimer.singleShot(1200, self.quit)
 

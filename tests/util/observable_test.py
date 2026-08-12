@@ -109,6 +109,11 @@ class TestObservable(unittest.TestCase):
             t.start()
         for t in threads:
             t.join(timeout=10)
+        # join(timeout=) returns silently on timeout, so without this a deadlock
+        # (emit firing observers while holding the lock) would still pass.
+        for t in threads:
+            self.assertFalse(t.is_alive(),
+                             "subscribe/emit blocked — lock held during fire")
         self.assertEqual(errors, [])
 
 

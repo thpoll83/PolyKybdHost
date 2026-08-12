@@ -39,6 +39,19 @@ class _NullLog:
     def exception(self, *a, **k): pass
 
 
+class _CountingLog(_NullLog):
+    """Counts warning/exception lines so a retry loop's visibility is testable."""
+
+    def __init__(self):
+        self.count = 0
+
+    def warning(self, *a, **k):
+        self.count += 1
+
+    def exception(self, *a, **k):
+        self.count += 1
+
+
 def _free_port():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(("127.0.0.1", 0))
@@ -234,6 +247,70 @@ class TestStopDoesNotDeadlock(_InetServerCase):
     def test_stop_never_raises_on_a_half_torn_down_listener(self):
         self.server._listener.close()
         self.server.stop()
+
+
+class _RaisingListener:
+    """A listener whose accept() always fails immediately."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def accept(self):
+        self.calls += 1
+        raise OSError("listener is dead")
+
+    def close(self):
+        pass
+
+
+class TestAcceptRetryIsBounded(unittest.TestCase):
+    """A permanently-failing accept() must not spin the thread at 100% CPU.
+
+    Reported by CodeRabbit on #162, and inherited from BOTH pre-refactor
+    servers: the retry branch did a bare `continue`, so an accept() that fails
+    *immediately* (rather than blocking) re-entered with no delay and no log for
+    as long as `_running` stayed true.
+
+    Driven through an injected listener stub rather than a real closed socket,
+    deliberately: closing a listener does NOT wake a thread already parked in
+    accept() on Linux — that is the very reason `_wake_accept` exists — so the
+    real-socket version of this test measures nothing. What is being pinned here
+    is the loop's retry POLICY, which is ours; the OS socket semantics are not.
+    """
+
+    def _run_loop_briefly(self, seconds=0.25):
+        log = _CountingLog()
+        server = EchoServer(address=("127.0.0.1", _free_port()), family="AF_INET",
+                            authkey=b"k", host_version="1.0.0", log=log,
+                            thread_prefix="spin")
+        listener = _RaisingListener()
+        server._listener = listener
+        server._running = True
+        thread = threading.Thread(target=server._accept_loop, daemon=True)
+        thread.start()
+        time.sleep(seconds)
+        server._running = False
+        thread.join(timeout=5)
+        self.assertFalse(thread.is_alive(), "accept loop did not exit on _running=False")
+        return listener, log
+
+    def test_retries_are_rate_limited_not_a_busy_spin(self):
+        listener, _log = self._run_loop_briefly(0.25)
+        self.assertGreater(listener.calls, 1, "the loop gave up instead of retrying")
+        # ~0.25s / ACCEPT_RETRY_DELAY_S turns, with generous slack for a loaded
+        # box. An unbounded `continue` lands in the tens of thousands here.
+        self.assertLess(listener.calls, 60,
+                        f"accept() is spinning: {listener.calls} retries in 0.25s")
+
+    def test_the_failure_is_logged_so_a_dead_listener_is_visible(self):
+        _listener, log = self._run_loop_briefly(0.15)
+        self.assertGreater(log.count, 0, "a permanently failing accept() logged nothing")
+
+    def test_logging_is_throttled_rather_than_per_iteration(self):
+        """First failure, then every Nth — a broken listener must not flood."""
+        listener, log = self._run_loop_briefly(0.25)
+        self.assertLess(log.count, listener.calls,
+                        "every retry logged — this would flood the log")
 
 
 @unittest.skipIf(sys.platform == "win32", "AF_UNIX-specific wake path")

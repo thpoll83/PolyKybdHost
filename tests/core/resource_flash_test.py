@@ -15,16 +15,17 @@ from unittest import mock
 
 from polyhost.core import events, poly_core
 from polyhost.core.poly_core import PolyCore
+from polyhost.util.observable import Observable
 
 
 def make_core(*, connected=True, device_present=True, paused=False):
     core = PolyCore.__new__(PolyCore)
-    core.log = logging.getLogger("test.polycore.resflash")
+    # Build the observer seam the way the real constructor does, so this fixture
+    # can't drift from Observable's internals.
+    Observable.__init__(core, logging.getLogger("test.polycore.resflash"))
     core.connected = connected
     core.device_present = device_present
     core.paused = paused
-    core._observers = []
-    core._observers_lock = threading.Lock()
     core.worker = mock.MagicMock()
     core.keeb = mock.MagicMock()
     core.telemetry = mock.MagicMock()

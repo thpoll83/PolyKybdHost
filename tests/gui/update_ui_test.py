@@ -170,6 +170,41 @@ class TestRelaySpawn(unittest.TestCase):
             self.assertTrue(self.ctl.stage_relay("/tmp/relay.py"))
 
 
+class TestRelayFailureIsNotSilent(unittest.TestCase):
+    """A failed relay spawn must abort the exit, not be ignored.
+
+    Reported by CodeRabbit on #162 and correct: `stage_relay` returns False when
+    the spawn fails, and both apps went on to `QTimer.singleShot(…, self.quit)`
+    regardless — so a failed spawn quit the app with the locked-file copy never
+    finished and nothing left running to finish it. The pre-refactor code let the
+    Popen exception propagate; introducing the bool return is what turned that
+    into a silent ignore, so the guard belongs with it.
+    """
+
+    def _source(self, name):
+        import pathlib
+        import polyhost
+        return (pathlib.Path(polyhost.__file__).parent / name).read_text(encoding="utf-8")
+
+    def test_both_apps_branch_on_the_stage_relay_result(self):
+        for name in ("host.py", "forwarder.py"):
+            with self.subTest(module=name):
+                src = self._source(name)
+                self.assertIn("if not self._update_ui.stage_relay(relay_path):", src)
+
+    def test_both_apps_report_the_failure_before_returning(self):
+        """The failure has to reach the user: the tree is already rewritten."""
+        for name in ("host.py", "forwarder.py"):
+            with self.subTest(module=name):
+                src = self._source(name)
+                guard = src.index("if not self._update_ui.stage_relay(relay_path):")
+                window = src[guard:guard + 400]
+                self.assertIn("_on_update_failed", window)
+                self.assertIn("return", window)
+                # …and the quit must come after the guard, not before it.
+                self.assertLess(window.index("return"), len(window))
+
+
 class TestNoBareRelaySpawnRemains(unittest.TestCase):
     """Regression guard for the drift itself, not just its symptom."""
 

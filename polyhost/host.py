@@ -2094,7 +2094,13 @@ class PolyHost(QApplication):
         # Detached + windowless (updater.spawn_detached): the relay must outlive
         # this process, must not hand the restarted app a console, and must not
         # die with a job object (VS Code debug session) we happen to sit in.
-        self._update_ui.stage_relay(relay_path)
+        if not self._update_ui.stage_relay(relay_path):
+            # Nothing will finish the locked-file copy if we exit now, and the
+            # tree is already partially rewritten — surface it and stay up.
+            self._on_update_failed(
+                "Could not start the update relay; the update is incomplete. "
+                "See the log for details.")
+            return
         # Brief pause so the user sees the "Restarting" label before the window vanishes.
         QTimer.singleShot(1200, self.quit)
 

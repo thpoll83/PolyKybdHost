@@ -117,10 +117,19 @@ class ControlServer(MpcListenerServer):
 
     def send(self, conn, obj):
         """Serialize writes per connection so the handler thread and the event
-        fan-out can never interleave halves of two frames on one socket."""
+        fan-out can never interleave halves of two frames on one socket.
+
+        The lock table IS this server's liveness registry — a lock is created in
+        ``on_connection_added`` before the reader thread starts, and removed in
+        ``on_connection_dropped`` under the same mutex that discards the
+        subscription. So "no lock" means the connection is already dropped (and
+        closed), and the write is skipped rather than issued unsynchronised: the
+        event fan-out snapshots ``_subscribed`` and then sends *outside* the
+        mutex, so a teardown landing in that window would otherwise write to a
+        closing connection with no serialization at all.
+        """
         lock = self._conn_locks.get(conn)
         if lock is None:
-            p.send_message(conn, obj)
             return
         with lock:
             p.send_message(conn, obj)

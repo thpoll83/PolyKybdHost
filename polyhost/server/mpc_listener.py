@@ -27,12 +27,21 @@ import multiprocessing.connection as mpc
 import socket
 import sys
 import threading
+import time
 
 from polyhost.server import protocol as p
 
 #: Bound on the raw connect ``stop()`` uses to wake a blocked ``accept()``.
 #: Always a local endpoint, so this only ever caps a pathological case.
 WAKE_TIMEOUT_S = 1.0
+
+#: Backoff between ``accept()`` retries after a failure. Only ever paid on the
+#: error path, so it costs a legitimate client nothing.
+ACCEPT_RETRY_DELAY_S = 0.05
+
+#: Log the first consecutive accept failure and then every Nth, so a
+#: permanently broken listener is visible without flooding the log.
+ACCEPT_FAILURE_LOG_EVERY = 100
 
 
 class MpcListenerServer:
@@ -176,6 +185,7 @@ class MpcListenerServer:
     # ------------------------------------------------------------------
 
     def _accept_loop(self):
+        failures = 0
         while self._running:
             try:
                 conn = self._listener.accept()
@@ -185,7 +195,20 @@ class MpcListenerServer:
                 # unless we're shutting down.
                 if not self._running:
                     break
+                # Back off before retrying. A *dead* listener (closed
+                # externally, or erroring) fails accept() instantly, so an
+                # immediate `continue` spins this thread at 100% CPU for as long
+                # as _running stays true — invisibly, since nothing logged it.
+                # The delay is on the error path only, so a legitimate client
+                # never pays it; a rejected-authkey client pays 50 ms, which is
+                # also cheap brute-force friction.
+                failures += 1
+                if failures == 1 or failures % ACCEPT_FAILURE_LOG_EVERY == 0:
+                    self.log.warning("%s: accept() failed (%d consecutive) — retrying",
+                                     type(self).__name__, failures)
+                time.sleep(ACCEPT_RETRY_DELAY_S)
                 continue
+            failures = 0
             if not self._running:
                 _close_quietly(conn)
                 break
