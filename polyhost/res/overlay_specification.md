@@ -37,6 +37,8 @@ Spellings accepted: `CMDCTRL`, `CMD_OR_CTRL`, `CMDORCTRL` (case-insensitive). GT
 
 The generator renders **two** artwork sets from one binding file — `<output>.*` with `CMDCTRL` resolved to Ctrl, and `<output>_mac.*` with it resolved to Cmd — and emits an `os: macos:` branch selecting between them (see [`overlay-mapping.md`](overlay-mapping.md)). A spec that never uses the token emits exactly one set, as before.
 
+The macOS stem can be overridden with `output_macos:` in the binding file. It must differ from `output:` — the macOS set is written second, so a collision would overwrite the default artwork and leave both `os:` branches pointing at the Cmd-resolved files. The generator refuses that before writing anything.
+
 Because the macOS destinations cross both tier and channel, the two sets are not a channel-for-channel copy:
 
 | Authored | Windows / Linux | macOS | Tier move |

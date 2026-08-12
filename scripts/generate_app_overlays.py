@@ -358,8 +358,20 @@ def spec_uses_cmdctrl(spec: dict) -> bool:
 
 
 def macos_output(spec: dict) -> str:
-    """Filename stem for the macOS artwork set."""
-    return spec.get("output_macos") or f"{spec['output']}{MACOS_OUTPUT_SUFFIX}"
+    """Filename stem for the macOS artwork set.
+
+    ⚠️ It must differ from `output`. The default suffix guarantees that, but an
+    explicit `output_macos` can collide — and the collision is silent in the worst
+    way: the macOS set is written *second*, so it overwrites the default artwork,
+    and the mapping stanza then points both branches at the same (Cmd-resolved)
+    files. Every platform would show the Mac shortcuts, with a stanza that reads
+    as though per-OS selection were working."""
+    name = spec.get("output_macos") or f"{spec['output']}{MACOS_OUTPUT_SUFFIX}"
+    if name == spec["output"]:
+        raise ValueError(
+            f"output_macos must differ from output (both {name!r}) — the macOS "
+            f"artwork is written second and would overwrite the default set")
+    return name
 
 
 def generate(spec: dict, base_dir: Path, macos: bool = False) -> dict:
@@ -627,6 +639,15 @@ def main() -> int:
     # before, with no `os:` branch to keep in sync.
     mac_result = generate(spec, base_dir, macos=True) if spec_uses_cmdctrl(spec) else None
     spec["_result_macos"] = mac_result
+    mac_output = None
+    if mac_result:
+        # Resolve the macOS stem BEFORE anything is written: a colliding
+        # `output_macos` must abort with the tree untouched, not half-overwritten.
+        try:
+            mac_output = macos_output(spec)
+        except ValueError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
 
     def report(res: dict, what: str) -> None:
         print(f"Placed {len(res['placed'])} overlays for {spec.get('app', '?')}{what}:")
@@ -642,7 +663,7 @@ def main() -> int:
     args.out_dir.mkdir(parents=True, exist_ok=True)
     if not args.dry_run:
         for res, output in ((result, spec["output"]),
-                            *([(mac_result, macos_output(spec))] if mac_result else ())):
+                            *([(mac_result, mac_output)] if mac_result else ())):
             for tier, suffix in TIER_SUFFIX.items():
                 if res[tier] is not None:
                     path = args.out_dir / f"{output}{suffix}"

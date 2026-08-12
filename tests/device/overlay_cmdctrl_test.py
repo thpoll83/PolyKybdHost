@@ -71,7 +71,8 @@ def _load_variants(pngs) -> dict[Modifier, set[int]]:
 
 
 def _run_generator(tmp: pathlib.Path, bindings: list[str], output: str,
-                   title: str | None = None) -> subprocess.CompletedProcess:
+                   title: str | None = None,
+                   extra: list[str] | None = None) -> subprocess.CompletedProcess:
     icons = tmp / "icons"
     icons.mkdir(exist_ok=True)
     for key in CASES:
@@ -83,6 +84,7 @@ def _run_generator(tmp: pathlib.Path, bindings: list[str], output: str,
              "icon_dir: icons", "mode: alpha"]
     if title:
         lines.append(f"title: {title}")
+    lines.extend(extra or [])
     lines.append("bindings:")
     lines.extend(bindings)
     (tmp / f"{output}.yaml").write_text("\n".join(lines) + "\n")
@@ -197,6 +199,36 @@ class NoCmdCtrlIsUnchangedTest(unittest.TestCase):
         self.assertNotIn("  os:", self.proc.stdout)
 
 
+class CollidingMacosOutputTest(unittest.TestCase):
+    """An `output_macos` equal to `output` aborts before anything is written.
+
+    The macOS set is saved *second*, so the collision would overwrite the default
+    artwork and leave a mapping stanza whose two `os:` branches point at the same
+    Cmd-resolved files — per-OS selection that reads as working while serving Mac
+    shortcuts to every platform. Raised by CodeRabbit on #161.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls._tmp = tempfile.TemporaryDirectory()
+        tmp = pathlib.Path(cls._tmp.name)
+        cls.proc = _run_generator(
+            tmp, ["  - { key: A, mods: ['CMDCTRL'], icon: A.png, label: A }"],
+            "clash", extra=["output_macos: clash"])
+        cls.out = tmp / "out"
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._tmp.cleanup()
+
+    def test_generator_fails(self):
+        self.assertNotEqual(self.proc.returncode, 0)
+        self.assertIn("output_macos must differ from output", self.proc.stderr)
+
+    def test_nothing_is_written(self):
+        self.assertEqual(list(self.out.glob("*.png")) if self.out.exists() else [], [])
+
+
 class ResolveModifierTest(unittest.TestCase):
     """Unit-level: the resolver itself, including the combinations it refuses."""
 
@@ -229,6 +261,17 @@ class ResolveModifierTest(unittest.TestCase):
                 with self.subTest(mods=mods, macos=macos):
                     with self.assertRaisesRegex(ValueError, "mixes CMDCTRL"):
                         self.gen.resolve_modifier(mods, macos=macos)
+
+    def test_macos_output_defaults_to_a_suffixed_stem(self):
+        self.assertEqual(self.gen.macos_output({"output": "app_template"}),
+                         "app_template_mac")
+        self.assertEqual(
+            self.gen.macos_output({"output": "app_template", "output_macos": "app_mac"}),
+            "app_mac")
+
+    def test_macos_output_refuses_to_collide_with_the_default_stem(self):
+        with self.assertRaisesRegex(ValueError, "must differ from output"):
+            self.gen.macos_output({"output": "app_template", "output_macos": "app_template"})
 
     def test_uses_cmdctrl_detects_the_token(self):
         self.assertTrue(self.gen.uses_cmdctrl(["SHIFT", "CMDCTRL"]))
