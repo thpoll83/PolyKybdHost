@@ -29,6 +29,8 @@ from polyhost.core.events import flash_kind_label
 from polyhost.device.command_ids import IdleStyle, GlyphScript
 from polyhost.gui.file_dialogs import get_open_file_name
 from polyhost.gui.get_icon import get_icon
+from polyhost.gui.theme import apply_dark_palette
+from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.update_dialog import confirm_update
 
 # Tray labels for the Glyph Script submenu. Generic names (no franchise
@@ -64,7 +66,6 @@ from polyhost._version import __version__, __protocol__
 
 from polyhost.services.updater import (
     UpdateChecker, UpdateInstaller, FwUpDownloader, discard_fw_download,
-    relaunch_executable, spawn_detached,
     get_last_check_time, set_last_check_time)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.dialog_util import position_near_tray
@@ -532,7 +533,7 @@ class PolyHost(QApplication):
         self._update_checker = None
         self._update_check_last = None   # wall-clock ts of last AUTOMATIC check this session
         self._update_installer = None
-        self._update_progress = None
+        self._update_ui = UpdateProgressController(self.log)
         self._await_manual_prompt = False
         # Per-check closures wired up by _start_update_check; invoked from the Qt
         # main thread via the bridge (see _on_job_done) since the checker
@@ -813,28 +814,23 @@ class PolyHost(QApplication):
         return self.core.kb_sw_version
 
     def set_style(self):
-        self.setStyle("Fusion")
-        # Now use a palette to switch to dark colors:
-        palette = QPalette()
-        base_color = QColor(35, 35, 35)
-        window_base_color = QColor(80, 80, 80)
-        text_color = QColor(200, 200, 200)
-        highlight_text_color = QColor(255, 255, 255)
-        palette.setColor(QPalette.Window, window_base_color)
-        palette.setColor(QPalette.WindowText, text_color)
-        palette.setColor(QPalette.Base, base_color)
-        palette.setColor(QPalette.AlternateBase, window_base_color)
-        palette.setColor(QPalette.ToolTipBase, base_color)
-        palette.setColor(QPalette.ToolTipText, text_color)
-        palette.setColor(QPalette.Text,text_color)
-        palette.setColor(QPalette.Button, window_base_color)
-        palette.setColor(QPalette.ButtonText, text_color)
-        palette.setColor(QPalette.BrightText, Qt.red)
-        palette.setColor(QPalette.Link, QColor(42, 130, 218))
-        palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-        palette.setColor(QPalette.HighlightedText, highlight_text_color)
-        self.setPalette(palette)
-        
+        """Dark Fusion theme — shared with PolyForwarder (gui/theme.py)."""
+        apply_dark_palette(self)
+
+    @property
+    def _update_progress(self):
+        """The live update progress dialog, owned by ``_update_ui``.
+
+        A property (rather than a second attribute) so the controller stays the
+        single owner and the two can never disagree about whether a dialog is
+        up — the bug shape that leaves a modal progress dialog on screen after
+        the update it was tracking has finished."""
+        return self._update_ui.dialog
+
+    @_update_progress.setter
+    def _update_progress(self, dialog):
+        self._update_ui.dialog = dialog
+
     def _fw_actions_allowed(self):
         """Firmware flash/apply must stay reachable whenever a device is
         present — including on a protocol/version mismatch, which is exactly
@@ -2008,15 +2004,7 @@ class PolyHost(QApplication):
         self._update_installer.start()
 
     def _on_update_progress(self, percent, message):
-        if self._update_progress is None:
-            return
-        self._update_progress.setLabelText(message)
-        if percent < 0:
-            self._update_progress.setRange(0, 0)  # indeterminate / busy pulse
-        else:
-            if self._update_progress.maximum() == 0:
-                self._update_progress.setRange(0, 100)
-            self._update_progress.setValue(percent)
+        self._update_ui.on_progress(percent, message)
 
     def _on_update_done(self):
         if self._update_progress is not None:
@@ -2103,13 +2091,10 @@ class PolyHost(QApplication):
             self._await_daemon_restart_then_relaunch()
             return
         self.log.info("Relay restart needed for locked files: %s", relay_path)
-        if self._update_progress is not None:
-            self._update_progress.setLabelText("Restarting to complete update…")
-            self._update_progress.setValue(100)
         # Detached + windowless (updater.spawn_detached): the relay must outlive
         # this process, must not hand the restarted app a console, and must not
         # die with a job object (VS Code debug session) we happen to sit in.
-        spawn_detached([relaunch_executable(), relay_path])
+        self._update_ui.stage_relay(relay_path)
         # Brief pause so the user sees the "Restarting" label before the window vanishes.
         QTimer.singleShot(1200, self.quit)
 
