@@ -212,6 +212,69 @@ Abstract base `unicode_input.py` with per-platform implementations:
 ### GUI (`polyhost/gui/`)
 PyQt5 widgets: main window (`host.py`), settings dialog, command menu, log viewer, layout editor (`layout_dialog/`), tray icon state manager.
 
+### Shared components (extracted duplication — reuse these, don't re-type them)
+
+Five pieces of plumbing existed as two-or-more hand-written copies and are now
+single implementations. Each was extracted because a copy had **already drifted**
+or was one edit away from it, so reaching for the shared piece is the point:
+
+- **`polyhost/server/mpc_listener.py` — `MpcListenerServer`.** The accept loop,
+  per-connection reader thread, opening `hello` frame, JSON-RPC error mapping and
+  the non-deadlocking `stop()` shared by `ControlServer` and `WindowReportServer`.
+  Subclasses implement `dispatch(conn, req_id, method, params)` and may override
+  `on_connection_added/_dropped`, `send` (the control server serializes writes per
+  connection), `after_dispatch`, `secure_listener` and `wake_address`.
+  ⚠️ **The surfaces stay separate — that separation is the security boundary.**
+  The base carries no registry and no `PolyCore` reference; the network endpoint
+  still serves exactly one method. This is the direct fix for the class of bug
+  CLAUDE.md already documents ("grep the other two servers before designing
+  anything"): the bounded-raw-connect `accept()` wake lived in one server and not
+  the other, and its absence hung the suite intermittently for ~3 sessions.
+  ⚠️ `wake_address()` exists because a wildcard `0.0.0.0` bind is **not
+  connectable** — the window-report server overrides it to dial loopback, or
+  `stop()` could never wake `accept()`.
+- **`polyhost/gui/update_ui.py` — `UpdateProgressController`.** The self-update
+  progress dialog handling shared by `PolyHost` and `PolyForwarder`
+  (`on_progress` / `close` / `stage_relay`). It drives a **duck-typed** dialog, so
+  each app keeps its own styling (the tray snaps to the tray corner) and the module
+  stays Qt-free and unit-testable. `stage_relay` is the one correct relay spawn:
+  `spawn_detached([relaunch_executable(), path])`. The forwarder's copy had drifted
+  to a bare `Popen([sys.executable, …])` — both halves of that are the documented
+  failure modes (an un-normalised interpreter leaves the restarted app owning a
+  console; a bare `Popen` skips `CREATE_BREAKAWAY_FROM_JOB` and the DEVNULL stdio).
+  `PolyHost._update_progress` is a **property** over the controller's dialog so the
+  controller is the single owner and the two can't disagree about whether a dialog
+  is up.
+- **`polyhost/gui/theme.py` — `apply_dark_palette(app)` / `dark_palette()`.** The
+  dark Fusion theme both `QApplication`s wear; they had a byte-identical 22-line
+  `set_style`. It is an explicit palette (not a stylesheet) because the palette is
+  what propagates into the stock `QMessageBox`/`QProgressDialog`/file pickers
+  neither app styles by hand.
+- **`polyhost/util/observable.py` — `Observable`.** The `subscribe`/`emit` seam
+  `PolyCore` and `RemoteCore` both expose (and both duplicated). Two properties are
+  load-bearing and easy to drop when re-typing: `emit` **snapshots under the lock
+  and fires outside it** (an observer that subscribes another must not deadlock the
+  core), and a **raising observer is caught, logged and left subscribed** — the
+  emitting side is a worker thread, so an escaping exception doesn't fail an event,
+  it kills the thread that owns the device.
+- **`PolyCore._flash_resource` + `poly_core.flash_progress_relay`.** Every resource
+  that rides the font-pack transport (`.plyf` bundle, doom `.whx`, doom `.plyx`)
+  goes through `_flash_resource`; they differ only in the "cannot read" noun, the
+  validator, how the engine is invoked and the event `kind`. `flash_progress_relay`
+  builds the `(progress_cb, cancel_flag)` pair — ⚠️ `cancel_flag` is a **one-element
+  list** because the engines poll it by reference between chunks, and the only thing
+  that raises it is a progress callback observing the worker's cancel Event. Getting
+  that wiring wrong fails **silently**: the flash just becomes uncancellable.
+
+**Deliberately NOT extracted** (recorded so it isn't re-litigated): the
+`FW_UP_BEGIN` / `FONTPACK_BEGIN` erase-poll loops in `hid_fw_up.py` and
+`hid_fontpack.py` are structurally similar (~50 lines each, plus an identical
+`_erasing` closure) but genuinely diverge — the font-pack side supports cancel and
+returns a 3-tuple, the firmware side owns the `?`/`S` confirm-poll. That is the
+most safety-critical path in the repo and cannot be verified without hardware, so
+the duplication is the cheaper risk. Same for the two dialogs' `main()` dev
+launchers.
+
 ### Configuration (`polyhost/settings.py`)
 YAML config persisted to XDG config dir via `platformdirs`. Covers unicode composition mode, brightness/daylight settings (solar calculations via `pvlib`/`geocoder`), HID rate limits, and debug flags.
 

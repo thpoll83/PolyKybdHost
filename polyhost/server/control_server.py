@@ -28,7 +28,7 @@ import queue
 import threading
 
 from polyhost.server import protocol as p
-from polyhost.server.mpc_listener import MpcListenerServer, RpcError, WAKE_TIMEOUT_S  # noqa: F401
+from polyhost.server.mpc_listener import MpcListenerServer, RpcError
 
 
 def _unwrap(result):

@@ -77,6 +77,28 @@ def strip_key_injection(lines):
     return kept, len(lines) - len(kept)
 
 
+def flash_progress_relay(emit, cancel, kind):
+    """Build the ``(progress_cb, cancel_flag)`` pair every font-pack-transport
+    flash hands to its engine.
+
+    ``cancel_flag`` is a one-element **list** because the flash engines poll it
+    by reference between chunks — a plain bool could never reach them — and the
+    only thing that ever raises it is a progress callback noticing the worker's
+    cancel Event (a supersede or a ``suspend()``). Getting that wiring wrong
+    fails silently: the flash simply becomes uncancellable, which is why it
+    lives in one place rather than being re-typed at each of the five call
+    sites. Takes ``emit`` rather than a core so it stays a plain function.
+    """
+    cancel_flag = [False]
+
+    def _progress(pct, m):
+        if cancel.is_set():
+            cancel_flag[0] = True      # relay supersede/suspend to the engine
+        emit("fontpack_flash_progress", {"pct": pct, "msg": m, "kind": kind})
+
+    return _progress, cancel_flag
+
+
 class PolyCore(Observable):
     """Operational facade: commands in, events out. No Qt, no widgets."""
 
@@ -1377,15 +1399,8 @@ class PolyCore(Observable):
             self.telemetry.note(telemetry_counter)
 
         def _job(cancel):
-            cancel_flag = [False]
-
-            def _progress(pct, m):
-                if cancel.is_set():
-                    cancel_flag[0] = True      # relay supersede/suspend to the engine
-                self.emit("fontpack_flash_progress",
-                          {"pct": pct, "msg": m, "kind": kind})
-
-            fok, fmsg = run(data, _progress, cancel_flag)
+            progress, cancel_flag = flash_progress_relay(self.emit, cancel, kind)
+            fok, fmsg = run(data, progress, cancel_flag)
             self.emit("fontpack_flash_done",
                       {"ok": bool(fok), "msg": fmsg, "kind": kind})
 
@@ -1504,13 +1519,8 @@ class PolyCore(Observable):
         if self._fontpack_flash_in_progress:
             return
         self._fontpack_flash_in_progress = True
-        cancel_flag = [False]
-
-        def _progress(pct, m):
-            if cancel.is_set():
-                cancel_flag[0] = True
-            self.emit("fontpack_flash_progress",
-                      {"pct": pct, "msg": m, "kind": events.FLASH_KIND_FONTPACK})
+        _progress, cancel_flag = flash_progress_relay(
+            self.emit, cancel, events.FLASH_KIND_FONTPACK)
 
         fd, path = tempfile.mkstemp(suffix=".plyf", prefix="polykybd_wipe_")
         try:
@@ -1605,13 +1615,8 @@ class PolyCore(Observable):
             return
 
         self._fontpack_flash_in_progress = True
-        cancel_flag = [False]
-
-        def _progress(pct, m):
-            if cancel.is_set():
-                cancel_flag[0] = True
-            self.emit("fontpack_flash_progress",
-                      {"pct": pct, "msg": m, "kind": events.FLASH_KIND_FONTPACK})
+        _progress, cancel_flag = flash_progress_relay(
+            self.emit, cancel, events.FLASH_KIND_FONTPACK)
 
         try:
             n = len(stale)

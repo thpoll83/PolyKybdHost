@@ -278,5 +278,65 @@ class TestPerEntryPointSpecifics(unittest.TestCase):
                 self.assertEqual(core.worker.submit.call_args[0][0], job)
 
 
+class TestFlashProgressRelay(unittest.TestCase):
+    """The (progress_cb, cancel_flag) pair every font-pack-transport flash uses.
+
+    ``cancel_flag`` is a one-element LIST on purpose: the flash engines poll it
+    by reference between chunks, so a plain bool could never reach them. The
+    only thing that ever sets it is a progress callback observing the worker's
+    cancel Event — i.e. a supersede/suspend on the HID worker. Getting this
+    wrong does not fail loudly; it just makes a flash uncancellable.
+    """
+
+    def setUp(self):
+        self.core = make_core()
+        self.seen = _events(self.core)
+
+    def test_returns_a_callback_and_a_single_element_flag_list(self):
+        cancel = threading.Event()
+        cb, flag = poly_core.flash_progress_relay(self.core.emit, cancel, "somekind")
+        self.assertTrue(callable(cb))
+        self.assertEqual(flag, [False])
+
+    def test_progress_emits_a_kind_tagged_event(self):
+        cb, _flag = poly_core.flash_progress_relay(self.core.emit, threading.Event(), "somekind")
+        cb(33, "writing")
+        self.assertEqual(self.seen, [("fontpack_flash_progress",
+                                      {"pct": 33, "msg": "writing", "kind": "somekind"})])
+
+    def test_flag_stays_clear_while_the_worker_is_not_cancelling(self):
+        cb, flag = poly_core.flash_progress_relay(self.core.emit, threading.Event(), "k")
+        cb(1, "a")
+        cb(2, "b")
+        self.assertEqual(flag, [False])
+
+    def test_a_set_cancel_event_raises_the_flag_in_place(self):
+        """In place: the engine holds a reference to this exact list."""
+        cancel = threading.Event()
+        cb, flag = poly_core.flash_progress_relay(self.core.emit, cancel, "k")
+        same_list = flag
+        cancel.set()
+        cb(1, "a")
+        self.assertEqual(flag, [True])
+        self.assertIs(flag, same_list)
+
+    def test_the_event_is_still_emitted_when_cancelling(self):
+        """The UI must see the last progress line, not go silent mid-flash."""
+        cancel = threading.Event()
+        cancel.set()
+        cb, _flag = poly_core.flash_progress_relay(self.core.emit, cancel, "k")
+        cb(50, "half")
+        self.assertEqual(self.seen[0][0], "fontpack_flash_progress")
+
+    def test_the_flag_is_latched_once_raised(self):
+        cancel = threading.Event()
+        cb, flag = poly_core.flash_progress_relay(self.core.emit, cancel, "k")
+        cancel.set()
+        cb(1, "a")
+        cancel.clear()
+        cb(2, "b")
+        self.assertEqual(flag, [True])
+
+
 if __name__ == "__main__":
     unittest.main()
