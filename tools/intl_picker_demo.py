@@ -120,6 +120,11 @@ def main():
     ap.add_argument('--intro-hold', type=int, default=1900, help='ms on the two intro beats')
     ap.add_argument('--armed-hold', type=int, default=1300, help='ms on the armed-but-empty picker')
     ap.add_argument('--still', action='store_true')
+    ap.add_argument('--gui-icon', default='ICON_OS_GNOME',
+                    help='which OS glyph the GUI key shows (kc_os_gui_icon picks this at '
+                         'runtime): ICON_OS_GNOME / ICON_OS_KDE / ICON_OS_LINUX / ICON_OS_WINDOWS')
+    ap.add_argument('--no-shift', action='store_true',
+                    help='skip the upper-case pass after each letter')
     ap.add_argument('--colors', type=int, default=64,
                     help='GIF palette size; the board is near-greyscale so 64 is ample '
                          'and roughly halves the file against 128')
@@ -177,9 +182,19 @@ def main():
 
     static_map = parse_static_text_map(os.path.join(pk, 'keycode_helper.c'))
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
+    # INTL_LAYER_LEGEND (İñțł) and INTL_PICKER_LEGEND (Á»Æ) are defined in
+    # keycode_helper.h, not named_glyphs.h — without them the Intl key renders the
+    # literal macro NAME ("INTL_LAYER…") instead of the tile.
+    named.update(load_named_glyphs(os.path.join(pk, 'keycode_helper.h')))
+    # The GUI key's glyph is chosen at runtime by kc_os_gui_icon() from the active OS.
+    # Draw the GNOME foot rather than the generic penguin — the keyboard really does
+    # tell the desktops apart (ICON_OS_WINDOWS / GNOME / KDE / ANDROID / Command).
+    gui_icon = args.gui_icon
+    if gui_icon not in named:
+        raise SystemExit(f"unknown --gui-icon {gui_icon}; try ICON_OS_GNOME / ICON_OS_KDE / "
+                         f"ICON_OS_LINUX / ICON_OS_WINDOWS")
     for alias in ("kc_os_gui_icon()", "kc_os_gui_icon())"):
-        if "ICON_OS_LINUX" in named:
-            named[alias] = named["ICON_OS_LINUX"]
+        named[alias] = named[gui_icon]
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
     R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
     variations = parse_latin_ex_map(os.path.join(pk, 'lang', 'lang_lut.c'))
@@ -196,20 +211,37 @@ def main():
     renderer.compact_halves(lambda mp: 'L' if int(mp.split(',')[0]) < 5 else 'R', gap_px=args.gap)
     base_frame = build_frame(L, R, matrix_kc, args.lang, static_map)
 
-    # Every letter key shows its SELECTED variation on _ADDLANG1 (index 0 by default).
+    letter_pos = {mp: mp for mp in ()}                     # filled below
     letter_pos = {}
-    intl_frame = {}
-    for mp, c in base_frame.items():
+    for mp in base_frame:
         kc = normalize_kc(display_keycode(matrix_kc.get(mp, "")))
         if re.fullmatch(r'KC_[A-Z]', kc):
-            ch = kc[3].lower()
-            letter_pos[ch] = mp
-            row = variations[26 + (ord(ch) - ord('a'))]
-            nc = copy.copy(c)
-            nc._oled = render_cps(R, row[:1])
-            intl_frame[mp] = nc
-        else:
-            intl_frame[mp] = c
+            letter_pos[kc[3].lower()] = mp
+    shift_pos = next((mp for mp, tok in matrix_kc.items()
+                      if normalize_kc(display_keycode(tok)) == normalize_kc('KC_LSFT')), None)
+
+    def intl_view(upper: bool) -> dict:
+        """The _ADDLANG1 board: every letter shows its SELECTED variation (index 0 by
+        default) for the ACTIVE CASE, and Ctrl carries the picker legend rather than the
+        plain Ctrl symbol — poly_keymap.c returns INTL_PICKER_LEGEND for KC_*_CTRL
+        whenever the top layer is _ADDLANG1, checked before keycode_to_static_text()."""
+        out = {}
+        for mp, c in base_frame.items():
+            ch = next((k for k, v in letter_pos.items() if v == mp), None)
+            if ch is not None:
+                row = variations[(0 if upper else 26) + (ord(ch) - ord('a'))]
+                nc = copy.copy(c)
+                nc._oled = render_cps(R, row[:1])
+                out[mp] = nc
+            else:
+                out[mp] = c
+        if ctrl_pos is not None and 'INTL_PICKER_LEGEND' in named:
+            nc = copy.copy(out[ctrl_pos])
+            nc._oled = render_cps(R, named['INTL_PICKER_LEGEND'])
+            out[ctrl_pos] = nc
+        return out
+
+    intl_frame = intl_view(False)
 
     try:
         cap_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
@@ -277,25 +309,41 @@ def main():
     push(held(intl_held, ctrl_pos), "Tap", "Ctrl", FLASH)
     armed = held(intl_held, ctrl_pos)
     push(picker_row(armed, [], 0, 1), "Picker armed —", "now pick a letter", args.armed_hold)
-    # 4. a letter, then its pages
-    for ch in args.letters:
-        row = variations[26 + (ord(ch) - ord('a'))]
-        if not row or ch not in letter_pos:
-            continue
+    # 4. a letter, its pages, then the same letter shifted
+    armed_upper = held(held(intl_view(True), intl_pos), ctrl_pos)
+
+    def letter_pass(ch, upper, base):
+        """Press the letter (or Shift) and page through that case's variations."""
+        row = variations[(0 if upper else 26) + (ord(ch) - ord('a'))]
+        if not row:
+            return
         pages = page_count(len(row), args.slots)
-        lead = "Intl + Ctrl —"
-        note = f"{ch}  ({len(row)} variation{'s' if len(row) != 1 else ''})"
-        page0 = picker_row(armed, row, 0, pages)
-        push(held(page0, letter_pos[ch]), "Press", ch, FLASH)   # press blink on the letter
+        shown = ch.upper() if upper else ch
+        note = f"{shown}  ({len(row)} variation{'s' if len(row) != 1 else ''})"
+        page0 = picker_row(base, row, 0, pages)
+        if upper:
+            # Shift is HELD, so it stays inverted for the whole upper-case pass.
+            push(held(page0, shift_pos), "Hold", "Shift", FLASH)
+            page0 = held(page0, shift_pos)
+        else:
+            push(held(page0, letter_pos[ch]), "Press", ch, FLASH)
         sel = dict(page0)
         c = copy.copy(sel[letter_pos[ch]]); c.selected = True    # ring the letter being set
         sel[letter_pos[ch]] = c
-        push(sel, lead, note, args.first_hold, f"page 1/{pages}" if pages > 1 else None)
+        push(sel, "Intl + Ctrl —", note, args.first_hold,
+             f"page 1/{pages}" if pages > 1 else None)
         for page in range(1, pages):
             nxt = picker_row(sel, row, page, pages)
             push(held(nxt, next_pos), "Page", "▶", FLASH)
-            push(nxt, lead, note, args.settle, f"page {page + 1}/{pages}")
+            push(nxt, "Intl + Ctrl —", note, args.settle, f"page {page + 1}/{pages}")
             sel = nxt
+
+    for ch in args.letters:
+        if ch not in letter_pos:
+            continue
+        letter_pass(ch, False, armed)
+        if not args.no_shift and shift_pos is not None:
+            letter_pass(ch, True, armed_upper)
 
     if not imgs:
         raise SystemExit("no frames — check --letters")
