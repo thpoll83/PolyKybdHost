@@ -5,20 +5,21 @@ byte-identical 22-line ``set_style``. These pin the palette so the extracted
 helper cannot drift from what both apps rendered before, and assert both
 entry points route through it.
 """
-import os
 import unittest
 
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
+# No QApplication and no Qt platform: every test here either drives a fake
+# application object or reads source text, and QPalette/QColor construct fine
+# without one. Only a MISSING PyQt5 may skip this module — importing `theme`
+# is deliberately outside the guard so a real defect in theme.py surfaces as an
+# error rather than silently turning the whole module into a skip.
 try:
     from PyQt5.QtCore import Qt
     from PyQt5.QtGui import QColor, QPalette
-    from PyQt5.QtWidgets import QApplication
-    from polyhost.gui import theme
-    _APP = QApplication.instance() or QApplication([])
-    _IMPORT_ERR = None
-except Exception as e:  # pragma: no cover - no Qt platform available
+except ImportError as e:  # pragma: no cover - PyQt5 not installed
     _IMPORT_ERR = e
+else:
+    _IMPORT_ERR = None
+    from polyhost.gui import theme
 
 
 # The exact colours both apps rendered before the extraction. Kept as literals

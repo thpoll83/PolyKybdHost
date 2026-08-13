@@ -198,11 +198,13 @@ class TestRelayFailureIsNotSilent(unittest.TestCase):
             with self.subTest(module=name):
                 src = self._source(name)
                 guard = src.index("if not self._update_ui.stage_relay(relay_path):")
-                window = src[guard:guard + 400]
+                # Anchor on the actual quit call rather than a fixed-size window:
+                # everything the guard must do has to happen BETWEEN the branch and
+                # the scheduled quit, so that span is the contract.
+                quit_call = src.index("QTimer.singleShot", guard)
+                window = src[guard:quit_call]
                 self.assertIn("_on_update_failed", window)
                 self.assertIn("return", window)
-                # …and the quit must come after the guard, not before it.
-                self.assertLess(window.index("return"), len(window))
 
 
 class TestNoBareRelaySpawnRemains(unittest.TestCase):
