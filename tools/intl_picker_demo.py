@@ -181,6 +181,12 @@ def main():
     if missing or prev_pos is None or next_pos is None:
         raise SystemExit(f"_ADDLANG1 is missing picker keys: slots {missing}, "
                          f"prev={prev_pos}, next={next_pos}")
+    # The letter-remap key lives on _ADDLANG1 only, so it is found in picker_kc (the
+    # _ADDLANG1 scan) rather than in the base layer — same as the picker slots above.
+    remap_pos = next((mp for mp, tok in picker_kc.items()
+                      if normalize_kc(tok) == 'KC_LAT_REMAP'), None)
+    if remap_pos is None:
+        print("  note: no KC_LAT_REMAP on _ADDLANG1 — the remap key is not drawn")
     # ⚠️ Compare against the NORMALISED name: normalize_kc maps KC_LCTL -> KC_LEFT_CTRL,
     # so matching the raw literal silently finds nothing and the armed indicator is lost.
     ctrl_kc = normalize_kc('KC_LCTL')
@@ -271,6 +277,13 @@ def main():
             nc = copy.copy(out[ctrl_pos])
             nc._oled = render_cps(R, named['INTL_PICKER_LEGEND'])
             out[ctrl_pos] = nc
+        # The letter-remap key, beside Ctrl. It exists ONLY on _ADDLANG1, so on the
+        # base frame that position still carries whatever the base layer has — draw
+        # INTL_REMAP_LEGEND over it, the same way Ctrl gets the picker legend.
+        if remap_pos is not None and 'INTL_REMAP_LEGEND' in named:
+            nc = copy.copy(out[remap_pos])
+            nc._oled = render_cps(R, named['INTL_REMAP_LEGEND'])
+            out[remap_pos] = nc
         return out
 
     intl_frame = intl_view(False)
