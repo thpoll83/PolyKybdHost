@@ -67,6 +67,16 @@ kicad:
 code:
   overlay: [vscode_template.mods.png, vscode_template.combo.mods.png]
   title: .* Visual Studio Code
+  # macOS runs the Cmd-resolved set: VS Code registers most of its chords as
+  # KeyMod.CtrlCmd, so the artwork moves from Ctrl to Cmd. Generated from the
+  # SAME bindings file via the CMDCTRL token -- the two sets cannot drift.
+  # `title` is repeated on purpose: a matched os: branch REPLACES the outer
+  # entry, so a constraint left outside it is dropped.
+  os:
+    macos:
+      overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png,
+                vscode_mac_template.extra.mods.png]
+      title: .* Visual Studio Code
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
