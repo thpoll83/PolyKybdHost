@@ -50,6 +50,27 @@ Because the macOS destinations cross both tier and channel, the two sets are not
 
 ⚠️ **`CMDCTRL` is not a blanket Ctrl→Cmd swap, and a plain `CTRL` binding stays literal Ctrl on every platform.** macOS binds real Ctrl chords of its own — `Ctrl+A`/`Ctrl+E` line navigation, `Ctrl+Space` input switching, `Ctrl+`arrows for Spaces — so both spellings have to coexist in one file. Mixing `CMDCTRL` with `CTRL` or `GUI` in the same binding is refused: it would collapse to a single bit on one of the two platforms and land the artwork on a variant the author never asked for.
 
+## Per-binding platform scoping (`only:` / `except:`)
+
+`CMDCTRL` splits Windows from macOS, but **Windows and Linux share one PNG** — the default set serves both — so an action an app remaps on only one of them has nowhere to go. Two optional keys scope a binding to the platforms it is actually correct on:
+
+```yaml
+# Right on Windows and macOS; Linux moves this action to a two-stroke chord.
+- { key: U, mods: [CMDCTRL, SHIFT], icon: output.png, label: Output, except: [linux] }
+
+# One icon, a different chord per platform — write it twice with disjoint `only:`.
+- { key: LEFT, mods: [ALT],       icon: goback.png, label: "Go back", only: [windows, macos] }
+- { key: "-",  mods: [CTRL, ALT], icon: goback.png, label: "Go back", only: [linux] }
+```
+
+Valid platforms are `windows`, `macos`, `linux`. A binding may set `only:` **or** `except:`, never both — they express the same thing and can contradict each other outright, which would make the binding's platform set depend on evaluation order.
+
+Scoping is deliberately the **only** primitive: omission is `except:`, and re-chording is the same icon under disjoint `only:` lists. A dedicated "override the chord on platform X" key would have to answer what happens when the override collides with another binding's cell, which the ordinary duplicate-cell path already handles.
+
+**A Linux artwork set is emitted only when a binding actually distinguishes Linux from the default set.** `CMDCTRL` alone never does — it is Ctrl on both — so a spec that scopes nothing renders byte-identically to before, with no third PNG set and no `os: linux:` branch. When one *is* warranted the generator writes `<output>_linux.*` (override with `output_linux:`, which must differ from both `output` and `output_macos`) and adds the matching branch to the mapping stanza.
+
+⚠️ **Scope a binding rather than dropping it when only one platform diverges.** Removing it costs a correct cell on the other two and gains nothing on the odd one out — a two-stroke chord like `Ctrl+K Ctrl+H` cannot be drawn on a keycap at all, so there is no Linux artwork to be had either way. The keycap a platform *can* show is worth more than uniformity.
+
 ## Slot → keycode mapping
 
 Iteration starts at `KC_A` and increments. Two jumps are taken to skip keypad and media ranges (see `ImageConverter.extract_overlays`):

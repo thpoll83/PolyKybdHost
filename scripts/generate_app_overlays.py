@@ -94,11 +94,35 @@ MOD_BIT = {"CTRL": 1, "CONTROL": 1, "CTL": 1,
 # magic keycode, is a global symmetric swap and cannot express it.
 CMDCTRL_ALIASES = {"CMDCTRL", "CMD_OR_CTRL", "CMDORCTRL"}
 
-# Resolved value of CMDCTRL per platform.
-CMDCTRL_BIT = {False: MOD_BIT["CTRL"], True: MOD_BIT["GUI"]}
+# The three platforms a spec can describe. WINDOWS is the DEFAULT artwork set and
+# — unless a binding says otherwise — Linux renders from it too, which is why so
+# much of this file talks about "Windows/Linux" as one thing: they share a PNG.
+PLAT_WINDOWS, PLAT_MACOS, PLAT_LINUX = "windows", "macos", "linux"
+PLATFORMS = (PLAT_WINDOWS, PLAT_MACOS, PLAT_LINUX)
+
+# Resolved value of CMDCTRL per platform. Linux resolves it exactly as Windows
+# does; the two diverge only where a binding is explicitly scoped (see
+# `binding_applies`), which is what keeps the Linux set from being generated —
+# and the `os: linux:` branch from appearing — for the vast majority of apps.
+CMDCTRL_BIT = {PLAT_WINDOWS: MOD_BIT["CTRL"],
+               PLAT_LINUX: MOD_BIT["CTRL"],
+               PLAT_MACOS: MOD_BIT["GUI"]}
 
 # Suffix for the generated macOS artwork set (`<output>_mac.mods.png`, ...).
 MACOS_OUTPUT_SUFFIX = "_mac"
+# ...and for the Linux one, emitted only when a binding actually distinguishes it.
+LINUX_OUTPUT_SUFFIX = "_linux"
+
+# Per-binding platform scoping keys. `only:` restricts a binding to the listed
+# platforms, `except:` removes it from them.
+#
+# ⚠️ This is deliberately ONE primitive rather than two (an "omit here" flag plus
+# some "re-chord there" override syntax), because scoping alone already expresses
+# both: omit by excluding the platform, re-chord by writing the same icon twice
+# with disjoint `only:` lists. A dedicated override key would have to answer what
+# happens when the override itself collides with another binding's cell, which the
+# ordinary duplicate-cell path already handles for free.
+ONLY_KEY, EXCEPT_KEY = "only", "except"
 
 
 # --------------------------------------------------------------------------- #
@@ -177,11 +201,64 @@ def uses_cmdctrl(mods: list[str]) -> bool:
     return any(str(m).strip().upper() in CMDCTRL_ALIASES for m in mods or [])
 
 
-def resolve_modifier(mods: list[str], macos: bool = False) -> Modifier:
+def _platform_list(b: dict, key: str) -> list[str] | None:
+    """Read and validate a binding's `only:` / `except:` platform list."""
+    if key not in b:
+        return None
+    raw = b[key]
+    vals = [raw] if isinstance(raw, str) else list(raw or [])
+    out = [str(v).strip().lower() for v in vals]
+    for v in out:
+        if v not in PLATFORMS:
+            raise ValueError(
+                f"unknown platform {v!r} in {key!r}; expected one of {', '.join(PLATFORMS)}")
+    if not out:
+        raise ValueError(f"{key!r} is empty; omit the key instead of listing no platforms")
+    return out
+
+
+def binding_applies(b: dict, platform: str) -> bool:
+    """True if this binding should be drawn in `platform`'s artwork set.
+
+    A binding with neither `only:` nor `except:` applies everywhere, so every
+    existing spec keeps rendering exactly as it did."""
+    only = _platform_list(b, ONLY_KEY)
+    excl = _platform_list(b, EXCEPT_KEY)
+    if only is not None and excl is not None:
+        raise ValueError(
+            f"binding sets both {ONLY_KEY!r} and {EXCEPT_KEY!r}; use one — "
+            f"they express the same thing and can contradict each other")
+    if only is not None:
+        return platform in only
+    if excl is not None:
+        return platform not in excl
+    return True
+
+
+def spec_needs_linux_set(spec: dict) -> bool:
+    """True if any binding makes Linux differ from the default (Windows) set.
+
+    CMDCTRL alone never does — it resolves to Ctrl on both — so this is false for
+    every spec that does not explicitly scope a binding, and no Linux artwork or
+    `os: linux:` branch is produced for them."""
+    for b in spec.get("bindings", []):
+        if binding_applies(b, PLAT_WINDOWS) != binding_applies(b, PLAT_LINUX):
+            return True
+    return False
+
+
+def resolve_modifier(mods: list[str], macos: bool = False,
+                     platform: str | None = None) -> Modifier:
     """Resolve a binding's modifier list to a `Modifier` variant.
 
-    `macos` selects which platform CMDCTRL resolves for; every other token is
-    platform-independent and resolves identically either way."""
+    `platform` selects which platform CMDCTRL resolves for; every other token is
+    platform-independent and resolves identically on all three. `macos=True` is
+    the older two-platform spelling and still selects macOS, so existing callers
+    keep working; `platform` wins when both are given."""
+    if platform is None:
+        platform = PLAT_MACOS if macos else PLAT_WINDOWS
+    if platform not in CMDCTRL_BIT:
+        raise ValueError(f"unknown platform {platform!r}; expected one of {', '.join(PLATFORMS)}")
     keys = [str(m).strip().upper() for m in mods or []]
     # Combining CMDCTRL with the modifier it resolves to would silently collapse
     # to that one bit on the platform in question (CMDCTRL+CTRL is plain Ctrl off
@@ -196,7 +273,7 @@ def resolve_modifier(mods: list[str], macos: bool = False) -> Modifier:
     bits = 0
     for m, key in zip(mods or [], keys):
         if key in CMDCTRL_ALIASES:
-            bits |= CMDCTRL_BIT[macos]
+            bits |= CMDCTRL_BIT[platform]
             continue
         if key not in MOD_BIT:
             raise ValueError(f"unknown modifier {m!r}")
@@ -374,9 +451,35 @@ def macos_output(spec: dict) -> str:
     return name
 
 
-def generate(spec: dict, base_dir: Path, macos: bool = False) -> dict:
-    """Render one complete artwork set. `macos` decides only how CMDCTRL bindings
-    resolve; a spec with no CMDCTRL binding renders identically either way."""
+def linux_output(spec: dict) -> str:
+    """Filename stem for the Linux artwork set.
+
+    Same collision hazard as `macos_output`, and one more: the Linux stem must
+    also differ from the macOS one, or whichever is written second silently
+    becomes both."""
+    name = spec.get("output_linux") or f"{spec['output']}{LINUX_OUTPUT_SUFFIX}"
+    clash = {spec["output"]: "output"}
+    try:
+        clash.setdefault(macos_output(spec), "output_macos")
+    except ValueError:
+        # macos_output is already invalid; that error is reported on its own path.
+        pass
+    if name in clash:
+        raise ValueError(
+            f"output_linux must differ from {clash[name]} (both {name!r}) — the "
+            f"Linux artwork would overwrite that set")
+    return name
+
+
+def generate(spec: dict, base_dir: Path, macos: bool = False,
+             platform: str | None = None) -> dict:
+    """Render one complete artwork set for `platform`.
+
+    The platform decides how CMDCTRL bindings resolve and which bindings are in
+    scope (`only:` / `except:`); a spec that uses neither renders identically for
+    all three. `macos=True` is the older two-platform spelling."""
+    if platform is None:
+        platform = PLAT_MACOS if macos else PLAT_WINDOWS
     icon_dir = base_dir / spec.get("icon_dir", "icons")
     fit = spec.get("fit", "contain")
     threshold = int(spec.get("threshold", 128))
@@ -395,8 +498,10 @@ def generate(spec: dict, base_dir: Path, macos: bool = False) -> dict:
 
     for b in spec.get("bindings", []):
         try:
+            if not binding_applies(b, platform):
+                continue
             kc = resolve_key(b["key"])
-            mod = resolve_modifier(b.get("mods", []), macos)
+            mod = resolve_modifier(b.get("mods", []), platform=platform)
         except (KeyError, ValueError) as e:
             warnings.append(f"skipped {b}: {e}")
             continue
@@ -599,20 +704,26 @@ def mapping_stanza(spec: dict, out_dir_label: str) -> str:
     if title:
         lines.append(f"  title: {title}")
     mac = spec.get("_result_macos")
-    if mac and overlay_files(macos_output(spec), mac):
+    lnx = spec.get("_result_linux")
+    mac_files = overlay_files(macos_output(spec), mac) if mac else []
+    lnx_files = overlay_files(linux_output(spec), lnx) if lnx else []
+    if mac_files or lnx_files:
         # `os:` is the runtime half of CMDCTRL (added in the per-OS selection
         # work); the token itself is authoring-time sugar that fills this branch
         # in, so one binding file yields both artwork sets.
         lines.append("  os:")
-        lines.append("    macos:")
-        lines.append(f"      overlay: {_overlay_value(overlay_files(macos_output(spec), mac))}")
-        if title:
-            # ⚠️ A matching `os:` branch is returned INSTEAD of the outer entry,
-            # not in addition to it (find_matching_entry recurses and returns the
-            # first match), so a title constraint has to be repeated inside the
-            # branch or the macOS artwork would match windows the outer `title:`
-            # was written to exclude.
-            lines.append(f"      title: {title}")
+        for branch, branch_files in ((PLAT_MACOS, mac_files), (PLAT_LINUX, lnx_files)):
+            if not branch_files:
+                continue
+            lines.append(f"    {branch}:")
+            lines.append(f"      overlay: {_overlay_value(branch_files)}")
+            if title:
+                # ⚠️ A matching `os:` branch is returned INSTEAD of the outer
+                # entry, not in addition to it (find_matching_entry recurses and
+                # returns the first match), so a title constraint has to be
+                # repeated inside the branch or the per-OS artwork would match
+                # windows the outer `title:` was written to exclude.
+                lines.append(f"      title: {title}")
     return "\n".join(lines)
 
 
@@ -637,17 +748,27 @@ def main() -> int:
     # artwork sets. Render the second one only when the token is actually used —
     # an app with no CMDCTRL binding keeps emitting exactly the files it did
     # before, with no `os:` branch to keep in sync.
-    mac_result = generate(spec, base_dir, macos=True) if spec_uses_cmdctrl(spec) else None
+    mac_result = generate(spec, base_dir, platform=PLAT_MACOS) if spec_uses_cmdctrl(spec) else None
     spec["_result_macos"] = mac_result
-    mac_output = None
-    if mac_result:
-        # Resolve the macOS stem BEFORE anything is written: a colliding
-        # `output_macos` must abort with the tree untouched, not half-overwritten.
-        try:
+
+    # The Linux set is rendered only when a binding actually distinguishes Linux
+    # from the default set. CMDCTRL alone does not (it is Ctrl on both), so an app
+    # that never scopes a binding keeps emitting exactly the files it did before,
+    # with no `os: linux:` branch to keep in sync.
+    lnx_result = generate(spec, base_dir, platform=PLAT_LINUX) if spec_needs_linux_set(spec) else None
+    spec["_result_linux"] = lnx_result
+
+    mac_output = lnx_output = None
+    # Resolve BOTH stems before anything is written: a colliding `output_macos` /
+    # `output_linux` must abort with the tree untouched, not half-overwritten.
+    try:
+        if mac_result:
             mac_output = macos_output(spec)
-        except ValueError as e:
-            print(f"error: {e}", file=sys.stderr)
-            return 2
+        if lnx_result:
+            lnx_output = linux_output(spec)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
 
     def report(res: dict, what: str) -> None:
         print(f"Placed {len(res['placed'])} overlays for {spec.get('app', '?')}{what}:")
@@ -659,11 +780,14 @@ def main() -> int:
     report(result, "")
     if mac_result:
         report(mac_result, " (macOS, CMDCTRL -> Cmd)")
+    if lnx_result:
+        report(lnx_result, " (Linux)")
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     if not args.dry_run:
         for res, output in ((result, spec["output"]),
-                            *([(mac_result, mac_output)] if mac_result else ())):
+                            *([(mac_result, mac_output)] if mac_result else ()),
+                            *([(lnx_result, lnx_output)] if lnx_result else ())):
             for tier, suffix in TIER_SUFFIX.items():
                 if res[tier] is not None:
                     path = args.out_dir / f"{output}{suffix}"
@@ -675,6 +799,9 @@ def main() -> int:
             print(f"Preview {p}")
         if mac_result:
             for p in write_preview(mac_result, args.preview, name="overlay_preview_macos.png"):
+                print(f"Preview {p}")
+        if lnx_result:
+            for p in write_preview(lnx_result, args.preview, name="overlay_preview_linux.png"):
                 print(f"Preview {p}")
 
     print("\n--- paste into polyhost/res/overlay-mapping.poly.yaml ---")
