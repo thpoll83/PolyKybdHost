@@ -14,6 +14,10 @@ keycap should show.
 | `gfx_font.py` | Pixel-exact glyph rendering from the firmware's generated Adafruit-GFX headers (`base/fonts/`), reproducing `kdisp_write_gfx_char`/`text`. Used by `--font-mode gfx` (the default). |
 | `emoji_demo.py` | Data-driven driver for the emoji layer. Pulls geometry + roles + glyphs straight from the firmware so the demo always matches the keyboard. |
 | `oled_preview.py` | Pixel-exact **language keycap** preview (rendering analysis). For a chosen layout it replicates the firmware's per-key draw (`translate_keycode` + the letter/num/sym h/v offsets + shift-preview clear/clamp/stagger + AltGr preview), straight from `lang/lang_lut.xlsx` + `named_glyphs.h`, reusing `gfx_font.py`. Writes a contact sheet of every key (or one key with `--key`). Use it to check glyph clipping / overlaps before flashing. Needs `openpyxl` in addition to Pillow. |
+| `lang_demo.py` | Base-layer language tour. `LangBoard` (its `KleRenderer` subclass) takes a pre-rendered `L` image per key via `KeyContent._oled`, which is what makes it reusable as the board renderer for any composed still — see **Composed stills** below. |
+| `intl_picker_demo.py` | Walks the Intl variation picker: hold Intl → tap Ctrl → page a letter's variations → pick one → watch that keycap change, lower case then upper. Slots, page arrows and the remap key are read out of the `_ADDLANG1` keymap, so moving a key needs no change here. Also exports `parse_latin_ex_map()` + `render_cps()`, the two helpers every Intl still reuses. |
+| `intl_remap_demo.py` | Walks the Intl **letter remap**: two-step prompt (PICKKEY → PICKLTR) onto `q`/`j`/`;`, each then given its own accent, ending on `é è ê ë` across four keys. Mirrors `render_key()`'s blanking rules; inversion is *rendered*, never `kdisp_invert`ed. |
+| `intl_remap_hero.py` | The composed **still** for that feature — a French line needing all four accented `e`s, each letter colour-matched and curve-linked to the keycap that types it. `--tail-style {oblique,script,tuned}` picks the subline treatment. |
 | `poly_console.py` | Reads the keyboard's QMK HID console (a `hid-listen` equivalent), using only `hid` from polyhost's own deps. **Needed to see anything the firmware prints during a flash**: the update runs under `worker.exclusive()`, which suspends every periodic including the 250 ms console read, and QMK drops output nobody drains — so the FW-2 `FW_UP: image signature OK/INVALID/UNSIGNED` verdict is invisible from the host log. Run it in a second terminal *before* flashing. Also the practical answer to `qmk console` refusing to run outside MSYS2 MinGW64 on Windows. |
 | `dl-demo-fonts.sh` | Downloads the mono Noto Emoji + Symbols2 fonts (only needed for `--font-mode ttf`). |
 
@@ -76,6 +80,59 @@ r.save_gif([frame], "out.gif", durations=800)
   included). Needs only a `qmk_firmware` checkout — no font download.
 - **`ttf`** — live Noto Emoji (monochrome), 1-bit dithered and scaled to fit:
   a faithful *approximation*, not pixel-identical. Needs `dl-demo-fonts.sh`.
+
+## Composed stills (post / hero images)
+
+A GIF shows a mechanism; a still is what a post or a social preview leads with.
+Both are built the same way, and the rule that matters is:
+
+> **Drive the keycaps from the demo pipeline — never mock them up.**
+
+`intl_remap_hero.py` is the worked example: the board half is `LangBoard` +
+`intl_picker_demo.render_cps()` over the firmware's generated `latin_ex_map`, so
+the glyphs are the ones the keyboard draws, at the firmware's own baseline. Only
+the typography *around* the caps is composed. It also **asserts** what it claims —
+that `SENTENCE[idx]` really is that character, and that variation `vi` of the
+source letter really is that glyph — so a table change fails the render loudly
+instead of shipping an image that quietly lies.
+
+Four things that cost a round each when composing over the board render:
+
+- **Key out the board's background.** `KleRenderer` paints its own `Theme.bg`
+  across the whole canvas, so pasting it onto a gradient leaves a flat slab behind
+  the caps. Render with a sentinel `bg` that appears nowhere else
+  (`Theme(bg=(255, 0, 255))`) and build an alpha mask from it. The renderer does
+  not anti-alias its cap edges, so an exact colour compare is safe.
+- **PIL does not anti-alias lines, curves or rounded-rect outlines.** Draw them on
+  a transparent overlay at 3× and `resize(..., LANCZOS)` down, or connectors look
+  like a staircase.
+- **Glyphs sit LEFT in the 72×40 panel, not centred** — `render_cps()` draws at
+  `BUFFER_X`, which is where the firmware draws picker/legend text. That is
+  correct; don't "fix" it.
+- **Shadows go under the caps**, so compute the key rects *before* the paste
+  (`board._corners_px(board.km[mp])` minus `board.ox/oy`, plus the paste offset).
+
+### Fonts for the surrounding typography
+
+`fc-list` on a plain Linux box gives you **obliques and serif italics only** — no
+script/cursive face, and DejaVu ships **no proportional-sans oblique** (only
+`DejaVuSansMono-Oblique`). `LiberationSans-Italic.ttf` is the closest italic to the
+DejaVu Sans used elsewhere, and is what `--tail-style oblique` (the default) uses.
+
+An OFL script face can be fetched if you want one — `--tail-style script|tuned`
+looks for `tools/DancingScript.ttf` and falls back with a warning if it is absent:
+
+```bash
+curl -sSLo tools/DancingScript.ttf \
+  'https://raw.githubusercontent.com/google/fonts/main/ofl/dancingscript/DancingScript%5Bwght%5D.ttf'
+```
+
+**Pick a face by rendering the actual line, not by its name** — the same rule this
+repo already applies to tray icons. Rendering the real subline is what showed Great
+Vibes' hairlines disappearing against the dark ground while Dancing Script held up,
+and what showed a script face reads visibly smaller and lighter than a sans at
+equal px (smaller x-height) — hence `tuned` existing as a separate style rather than
+being folded into `script`.
 
 `out/` and `assets/fonts/` are generated and git-ignored.
 
