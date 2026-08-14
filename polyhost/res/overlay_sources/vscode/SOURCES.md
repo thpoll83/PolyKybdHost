@@ -27,17 +27,21 @@ secondary: [KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Minus, ...]
 primary really is `⌘-`, so `CMDCTRL` is correct here. This is the one place the
 published card would have led us to the wrong overlay; the source settled it.
 
-### The three classes in `bindings.yaml`
+### The four classes in `bindings.yaml`
 
 | Class | Windows/Linux | macOS | Why |
 |---|---|---|---|
-| `CMDCTRL` (22 bindings) | Ctrl | Cmd | registered `KeyMod.CtrlCmd` |
-| `CTRL` (3 bindings) | Ctrl | **Ctrl** | VS Code keeps these on Control on the Mac |
+| `CMDCTRL` (22) | Ctrl | Cmd | registered `KeyMod.CtrlCmd` |
+| `CTRL`, verified ⌃ on macOS (3) | Ctrl | **Ctrl** | VS Code keeps these on Control on the Mac |
+| literal, preserved verbatim (4) | as shipped | as shipped | see *Preserved as-is* below |
 | bare / `SHIFT` + F-keys (8) | same | same | no platform difference |
 
-The literal-`CTRL` three, verified against the macOS card: **⌃G** Go to Line,
-**⌃`** Show integrated terminal, **⌃F5** Run without debugging. Writing these as
-`CMDCTRL` would draw them on a Cmd chord that does nothing.
+37 bindings in total.
+
+The three verified against the macOS card: **⌃G** Go to Line, **⌃`** Show integrated
+terminal, **⌃F5** Run without debugging. Writing these as `CMDCTRL` would draw them on a
+Cmd chord that does nothing. (The fourth single-Ctrl binding, `Ctrl+F6`, is one of the
+preserved-verbatim four — its macOS chord is unknown, not verified as Control.)
 
 ### Deliberately EXCLUDED — macOS genuinely remaps these
 
@@ -59,36 +63,55 @@ approximated:
 If these are ever wanted, VS Code needs two hand-authored specs the way Sublime
 does (`sublime/` + `sublime_mac/`) — not a `CMDCTRL` file.
 
-### Dropped from the previously shipped set
+### Preserved as-is
 
-The old `vscode_template.*` PNGs had no source spec, and four of their cells could
-not be matched to any documented VS Code default: **Ctrl+F6**, **Alt+H**,
-**Ctrl+Shift+-** and **Ctrl+Alt+-**. They are not in this spec. If someone knows
-what they were meant to be, they can be added back with a source. Everything else
-that was shipped is preserved, and coverage goes from **27 → 41** cells
-(Windows/Linux), plus **45** new cells for macOS.
+**Nothing from the old set was dropped.** All 19 of its bindings are here with their
+original artwork, and every one of its 43 populated cells is byte-identical to what
+shipped (verified cell-by-cell against `origin/main`). Four needed identifying from
+the drawing, because they are not in the docs table the rest came from:
+
+| Chord | The old cell draws | Action |
+|---|---|---|
+| `Ctrl+Shift+-` | `→` in a circle | **Go Forward** |
+| `Ctrl+Alt+-` | `←` in a circle | **Go Back** |
+| `Ctrl+F6` | `❙❙` | **Pause** (debugger) |
+| `Alt+H` | clock with a reverse arrow | history / recent |
+
+⚠️ **Go Back / Go Forward are the LINUX chords.** The source is explicit:
+
+```ts
+id: 'workbench.action.navigateBack',
+win:   { primary: KeyMod.Alt | KeyCode.LeftArrow },
+mac:   { primary: KeyMod.WinCtrl | KeyCode.Minus },        // ⌃-
+linux: { primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.Minus },
+```
+
+So on Windows these are `Alt+←/→` and on macOS `⌃-` / `⌃⇧-`. They are kept exactly as
+shipped rather than re-chorded — the Windows/Linux artwork is one shared PNG, so the
+Linux chord is the one that can be drawn there. The consequence is that the macOS set
+also carries them at the Linux chord, which is the one place this spec knowingly draws
+a chord macOS does not bind. Re-chording them would need two hand-authored specs.
+
+`Ctrl+F6` and `Alt+H` are likewise preserved verbatim: neither is a documented VS Code
+default, so their labels above are read off the artwork rather than sourced. If you know
+what they were meant to be, the labels are the only thing to correct.
 
 ## Icons
 
 ### Reclaimed from the previously shipped artwork
 
-Two glyphs are **committed assets lifted pixel-for-pixel** out of the old
-`vscode_template.combo.mods.png`, because the old drawing said the thing better
-than any stock glyph did:
+**19 icons are committed assets lifted pixel-for-pixel out of the old PNGs** — every
+drawing the previous overlay had. They render 1:1 (`region: [72, 40]`, `anchor: center`),
+so the Windows/Linux set keeps exactly the artwork it always had, and the macOS set
+inherits the same drawings:
 
-| Binding | Old art | Why kept |
-|---|---|---|
-| `CMDCTRL+Shift+P` command palette | a palette *window* with lines | reads as the palette; a stock list glyph does not |
-| `CMDCTRL+Shift+\` matching bracket | `→{}`, an arrow *into* braces | says "jump to", which bare `{ }` does not |
+`gotoline` `newfile` `symbols` `runnodebug` `pause` `zoomout` `zoomin` `settings`
+`history` `stopdebug` `stepout` `run` `breakpoint` `stepover` `stepinto` `palette`
+`goforward` `matchbracket` `goback`
 
-Both are rendered at `region: [72, 40] anchor: center`, i.e. 1:1, so they are
-byte-identical to what shipped (verified: 0 differing pixels, 531 and 288 lit) —
-and the same art now also carries into the macOS set. Their original provenance
-is unrecorded (the old set had no source spec), but they were already shipped, so
-reusing them introduces nothing new. `fetch_icons.py` guards them.
-
-Of the 15 cells present in both the old and new Windows sets, the rest were near
--identical anyway — the old set was evidently drawn from the same Fluent family.
+Their original provenance is unrecorded (the old set had no source spec), but they were
+already shipped, so reusing them introduces nothing new. `fetch_icons.py` lists them in
+`RECLAIMED` and never fetches or clobbers them — they must be restored from git if lost.
 
 ### Everything else
 

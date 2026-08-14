@@ -29,12 +29,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
 
+# Committed assets: the ESC program mark plus every icon inherited from the
+# previously shipped overlay, lifted pixel-for-pixel so the Windows/Linux set
+# keeps exactly the drawings it always had. None of these is fetchable — the old
+# set had no source spec, and the mark's Simple Icons entry has been removed —
+# so they are guarded here and must be restored from git if lost.
+RECLAIMED = {
+    "vscode.png", "gotoline.png", "newfile.png", "symbols.png", "runnodebug.png",
+    "pause.png", "zoomout.png", "zoomin.png", "settings.png", "history.png",
+    "stopdebug.png", "stepout.png", "run.png", "breakpoint.png", "stepover.png",
+    "stepinto.png", "palette.png", "goforward.png", "matchbracket.png", "goback.png",
+}
+
 FLUENT = {
     # --- navigation / "go to" family ---
     "quickopen": "Document Search",
-    "symbols": "Code",
     "gotosymbol": "Text Bullet List Tree",
-    "gotoline": "Number Symbol",
     "definition": "Target",
     "rename": "Rename",
     # --- search ---
@@ -43,9 +53,7 @@ FLUENT = {
     "selectall": "Select All On",
     # --- editing ---
     "comment": "Comment",
-    "newfile": "Document Add",
     # --- view / panels ---
-    "settings": "Settings",
     "sidebar": "Panel Left",
     "split": "Split Horizontal",
     "closeeditor": "Dismiss",
@@ -56,28 +64,14 @@ FLUENT = {
     "output": "Document Text",
     "terminal": "Window Console",
     "mdpreview": "Eye",
-    "zoomin": "Zoom In",
-    "zoomout": "Zoom Out",
-    # --- debug ---
-    "run": "Play",
-    "runnodebug": "Play Circle",
-    "stopdebug": "Stop",
-    "breakpoint": "Record",
-    "stepover": "Arrow Step Over",
-    "stepinto": "Arrow Step In",
-    "stepout": "Arrow Step Out",
 }
 
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
-    # The program mark is committed, never fetched — see the module docstring.
-    # Three committed assets: the program mark plus two glyphs reclaimed
-    # pixel-for-pixel from the previously shipped artwork, where the old drawing
-    # said the thing better than any stock glyph did (a palette *window*; an
-    # arrow *into* braces). Never fetched, never clobbered.
-    for name in ("vscode.png", "palette.png", "matchbracket.png"):
+    # Never fetched, never clobbered — see RECLAIMED above.
+    for name in sorted(RECLAIMED):
         f = out / name
         print(f"  {name}  <- committed asset (left as-is)" if f.exists()
               else f"  !! {name} MISSING — restore it from git, it is not fetchable")

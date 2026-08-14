@@ -9,17 +9,25 @@
 # Before this, VS Code shipped a single Ctrl-only set and macOS users saw Ctrl
 # artwork for an app that is Cmd almost throughout — every icon on the wrong key.
 #
-# ⚠️ Three classes of binding live here, and the difference is deliberate:
+# ⚠️ EVERY binding and every icon from the previously shipped set is preserved.
+# The 19 icons marked `reclaimed` below are the ORIGINAL artwork, lifted
+# pixel-for-pixel out of the old PNGs and rendered 1:1 (`region: [72, 40]`,
+# `anchor: center`), so the Windows/Linux set keeps exactly the drawings it had.
+# New bindings — and only those — use Microsoft Fluent glyphs.
 #
-#   CMDCTRL  — Ctrl on Windows/Linux, Cmd on macOS. The large majority.
-#   CTRL     — literal Ctrl, and it stays Ctrl on macOS too. VS Code keeps a
-#              couple of chords on Control on the Mac; writing CMDCTRL for these
-#              would draw them on Cmd, where nothing happens.
-#   (none)/SHIFT + F-keys — identical on both platforms.
+# ⚠️ Four classes of binding live here, and the difference is deliberate:
+#
+#   CMDCTRL (22) — Ctrl on Windows/Linux, Cmd on macOS. The large majority.
+#   CTRL (3)     — literal, and verified to stay Ctrl on macOS too (⌃G, ⌃`, ⌃F5).
+#                  Writing CMDCTRL for those would draw them on a Cmd chord
+#                  where nothing happens.
+#   literal (4)  — preserved verbatim from the old set: Ctrl+Shift+- / Ctrl+Alt+-
+#                  (Go Forward / Go Back, the LINUX chords), Ctrl+F6, Alt+H.
+#   (none)/SHIFT + F-keys (8) — identical on both platforms.
 #
 # Anything whose macOS chord is a genuine REMAP rather than a modifier swap is
-# deliberately absent — one spec cannot express those, and a wrong overlay is
-# worse than a missing one. The exclusions are listed in SOURCES.md.
+# either kept literal (the preserved bindings) or left out (the new ones). One
+# spec cannot express a remap. The exclusions are listed in SOURCES.md.
 #
 # Shortcuts: VS Code default keybindings, cross-checked against the official
 # macOS shortcut card and, where the two disagreed, the vscode source itself.
@@ -49,22 +57,54 @@ program_icon_region: [72, 40]
 program_icon_anchor: center
 program_icon_margin: 0
 
-bindings:
-  # ---------------------------------------------------------------- CMDCTRL --
-  # Ctrl on Windows/Linux, Cmd on macOS. All verified `KeyMod.CtrlCmd`.
-  - { key: P, mods: [CMDCTRL], icon: quickopen.png,    label: "Quick Open / Go to File", source: "ms-fluent/Document Search (MIT)" }
-  - { key: N, mods: [CMDCTRL], icon: newfile.png,      label: "New file",       source: "ms-fluent/Document Add (MIT)" }
-  - { key: T, mods: [CMDCTRL], icon: symbols.png,      label: "Show all symbols", source: "ms-fluent/Code (MIT)" }
-  - { key: B, mods: [CMDCTRL], icon: sidebar.png,      label: "Toggle sidebar", source: "ms-fluent/Panel Left (MIT)" }
-  - { key: W, mods: [CMDCTRL], icon: closeeditor.png,  label: "Close editor",   source: "ms-fluent/Dismiss (MIT)" }
-  - { key: "\\", mods: [CMDCTRL], icon: split.png,     label: "Split editor",   source: "ms-fluent/Split Horizontal (MIT)" }
-  - { key: "/", mods: [CMDCTRL], icon: comment.png,    label: "Toggle line comment", source: "ms-fluent/Comment (MIT)" }
-  - { key: ",", mods: [CMDCTRL], icon: settings.png,   label: Settings,         source: "ms-fluent/Settings (MIT)" }
-  - { key: "=", mods: [CMDCTRL], icon: zoomin.png,     label: "Zoom in",        source: "ms-fluent/Zoom In (MIT)" }
-  - { key: "-", mods: [CMDCTRL], icon: zoomout.png,    label: "Zoom out",       source: "ms-fluent/Zoom Out (MIT)" }
+# Reclaimed artwork renders 1:1 — the old cell IS the icon, so no fit/anchor.
+_reclaimed: &reclaimed { region: [72, 40], anchor: center }
 
-  # CMDCTRL+Shift
-  - { key: P, mods: [CMDCTRL, SHIFT], icon: palette.png,        label: "Command palette",  region: [72, 40], anchor: center, source: "reclaimed from the previously shipped vscode_template" }
+bindings:
+  # ============================ PRESERVED from the previously shipped set =====
+  # Same key, same modifier, same drawing. `CMDCTRL` where VS Code registers the
+  # chord as KeyMod.CtrlCmd, so these now reach macOS too; literal otherwise.
+
+  # -- CMDCTRL (was Ctrl-only; verified KeyMod.CtrlCmd) --
+  - { key: N, mods: [CMDCTRL], icon: newfile.png,  <<: *reclaimed, label: "New file",         source: reclaimed }
+  - { key: T, mods: [CMDCTRL], icon: symbols.png,  <<: *reclaimed, label: "Show all symbols", source: reclaimed }
+  - { key: "-", mods: [CMDCTRL], icon: zoomout.png, <<: *reclaimed, label: "Zoom out",        source: reclaimed }
+  - { key: "=", mods: [CMDCTRL], icon: zoomin.png,  <<: *reclaimed, label: "Zoom in",         source: reclaimed }
+  - { key: ",", mods: [CMDCTRL], icon: settings.png, <<: *reclaimed, label: Settings,         source: reclaimed }
+  - { key: P, mods: [CMDCTRL, SHIFT], icon: palette.png, <<: *reclaimed, label: "Command palette", source: reclaimed }
+  - { key: "\\", mods: [CMDCTRL, SHIFT], icon: matchbracket.png, <<: *reclaimed, label: "Jump to matching bracket", source: reclaimed }
+
+  # -- literal Ctrl: stays Ctrl on macOS too (⌃G, ⌃F5) --
+  - { key: G,  mods: [CTRL], icon: gotoline.png,   <<: *reclaimed, label: "Go to line",            source: reclaimed }
+  - { key: F5, mods: [CTRL], icon: runnodebug.png, <<: *reclaimed, label: "Run without debugging", source: reclaimed }
+
+  # -- literal, preserved verbatim: see SOURCES.md "Preserved as-is" --
+  # Go Back / Go Forward are the LINUX chords (Windows uses Alt+←/→, macOS ⌃- /
+  # ⌃⇧-). Kept exactly as shipped rather than re-chorded.
+  - { key: "-", mods: [CTRL, SHIFT], icon: goforward.png, <<: *reclaimed, label: "Go forward", source: reclaimed }
+  - { key: "-", mods: [CTRL, ALT],   icon: goback.png,    <<: *reclaimed, label: "Go back",    source: reclaimed }
+  - { key: F6, mods: [CTRL], icon: pause.png,   <<: *reclaimed, label: "Pause (debug)", source: reclaimed }
+  - { key: H,  mods: [ALT],  icon: history.png, <<: *reclaimed, label: "History / recent", source: reclaimed }
+
+  # -- identical on both platforms --
+  - { key: F5,  mods: [],      icon: run.png,        <<: *reclaimed, label: "Start debugging",   source: reclaimed }
+  - { key: F5,  mods: [SHIFT], icon: stopdebug.png,  <<: *reclaimed, label: "Stop debugging",    source: reclaimed }
+  - { key: F9,  mods: [],      icon: breakpoint.png, <<: *reclaimed, label: "Toggle breakpoint", source: reclaimed }
+  - { key: F10, mods: [],      icon: stepover.png,   <<: *reclaimed, label: "Step over",         source: reclaimed }
+  - { key: F11, mods: [],      icon: stepinto.png,   <<: *reclaimed, label: "Step into",         source: reclaimed }
+  - { key: F11, mods: [SHIFT], icon: stepout.png,    <<: *reclaimed, label: "Step out",          source: reclaimed }
+
+  # ==================================================== NEW coverage ==========
+  # Fluent glyphs (MIT). None of these had artwork before.
+
+  # -- CMDCTRL --
+  - { key: P, mods: [CMDCTRL], icon: quickopen.png,   label: "Quick Open / Go to File", source: "ms-fluent/Document Search (MIT)" }
+  - { key: B, mods: [CMDCTRL], icon: sidebar.png,     label: "Toggle sidebar", source: "ms-fluent/Panel Left (MIT)" }
+  - { key: W, mods: [CMDCTRL], icon: closeeditor.png, label: "Close editor",   source: "ms-fluent/Dismiss (MIT)" }
+  - { key: "\\", mods: [CMDCTRL], icon: split.png,    label: "Split editor",   source: "ms-fluent/Split Horizontal (MIT)" }
+  - { key: "/", mods: [CMDCTRL], icon: comment.png,   label: "Toggle line comment", source: "ms-fluent/Comment (MIT)" }
+
+  # -- CMDCTRL+Shift --
   - { key: F, mods: [CMDCTRL, SHIFT], icon: findinfiles.png,    label: "Find in files",    source: "ms-fluent/Folder Search (MIT)" }
   - { key: H, mods: [CMDCTRL, SHIFT], icon: replaceinfiles.png, label: "Replace in files", source: "ms-fluent/Arrow Swap (MIT)" }
   - { key: O, mods: [CMDCTRL, SHIFT], icon: gotosymbol.png,     label: "Go to symbol in file", source: "ms-fluent/Text Bullet List Tree (MIT)" }
@@ -75,21 +115,10 @@ bindings:
   - { key: D, mods: [CMDCTRL, SHIFT], icon: debugview.png,      label: "Run and debug",    source: "ms-fluent/Bug (MIT)" }
   - { key: M, mods: [CMDCTRL, SHIFT], icon: problems.png,       label: Problems,           source: "ms-fluent/Warning (MIT)" }
   - { key: U, mods: [CMDCTRL, SHIFT], icon: output.png,         label: Output,             source: "ms-fluent/Document Text (MIT)" }
-  - { key: "\\", mods: [CMDCTRL, SHIFT], icon: matchbracket.png, label: "Jump to matching bracket", region: [72, 40], anchor: center, source: "reclaimed from the previously shipped vscode_template" }
 
-  # ------------------------------------------------------------ literal CTRL --
-  # These stay on Control on macOS (⌃G, ⌃`, ⌃F5) — NOT CMDCTRL. Writing them as
-  # CMDCTRL would put the icon on a Cmd chord that does nothing in VS Code.
-  - { key: G, mods: [CTRL], icon: gotoline.png,   label: "Go to line",          source: "ms-fluent/Number Symbol (MIT)" }
-  - { key: "`", mods: [CTRL], icon: terminal.png, label: "Toggle terminal",     source: "ms-fluent/Window Console (MIT)" }
-  - { key: F5, mods: [CTRL], icon: runnodebug.png, label: "Run without debugging", source: "ms-fluent/Play Circle (MIT)" }
+  # -- literal Ctrl (⌃` on macOS too) --
+  - { key: "`", mods: [CTRL], icon: terminal.png, label: "Toggle terminal", source: "ms-fluent/Window Console (MIT)" }
 
-  # ------------------------------------------------ identical on both platforms --
-  - { key: F5,  mods: [],      icon: run.png,        label: "Start debugging", source: "ms-fluent/Play (MIT)" }
-  - { key: F5,  mods: [SHIFT], icon: stopdebug.png,  label: "Stop debugging",  source: "ms-fluent/Stop (MIT)" }
-  - { key: F9,  mods: [],      icon: breakpoint.png, label: "Toggle breakpoint", source: "ms-fluent/Record (MIT)" }
-  - { key: F10, mods: [],      icon: stepover.png,   label: "Step over",       source: "ms-fluent/Arrow Step Over (MIT)" }
-  - { key: F11, mods: [],      icon: stepinto.png,   label: "Step into",       source: "ms-fluent/Arrow Step In (MIT)" }
-  - { key: F11, mods: [SHIFT], icon: stepout.png,    label: "Step out",        source: "ms-fluent/Arrow Step Out (MIT)" }
-  - { key: F2,  mods: [],      icon: rename.png,     label: "Rename symbol",   source: "ms-fluent/Rename (MIT)" }
-  - { key: F12, mods: [],      icon: definition.png, label: "Go to definition", source: "ms-fluent/Target (MIT)" }
+  # -- identical on both platforms --
+  - { key: F2,  mods: [], icon: rename.png,     label: "Rename symbol",    source: "ms-fluent/Rename (MIT)" }
+  - { key: F12, mods: [], icon: definition.png, label: "Go to definition", source: "ms-fluent/Target (MIT)" }
