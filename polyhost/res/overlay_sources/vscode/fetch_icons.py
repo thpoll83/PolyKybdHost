@@ -17,8 +17,11 @@ re-authoring does not change what users see. Simple Icons has *removed* its
 resolves), so re-fetching it is not an option and would be the wrong call anyway
 — the ribbon is a Microsoft trademark. See SOURCES.md.
 
-    pip install cairosvg Pillow
-    python polyhost/res/overlay_sources/vscode/fetch_icons.py
+Run from the repo root with the project venv — system `python3` is not the
+interpreter the rest of the tooling uses:
+
+    .venv/bin/pip install cairosvg Pillow
+    .venv/bin/python polyhost/res/overlay_sources/vscode/fetch_icons.py
 """
 from __future__ import annotations
 

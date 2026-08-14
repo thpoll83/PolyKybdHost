@@ -96,6 +96,40 @@ a chord macOS does not bind. Re-chording them would need two hand-authored specs
 default, so their labels above are read off the artwork rather than sourced. If you know
 what they were meant to be, the labels are the only thing to correct.
 
+### The other shared-PNG divergence: Show Output on Linux
+
+Go Back / Go Forward are not the only cell where the single Windows/Linux PNG cannot
+satisfy both. **Show Output** diverges the other way — correct on Windows, wrong on
+Linux:
+
+```ts
+id: 'workbench.action.output.toggleOutput',
+primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyU,
+linux:   { primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyH) }
+```
+
+So `CMDCTRL`+`SHIFT`+`U` is right on Windows (`Ctrl+Shift+U`) and right on macOS
+(`⇧⌘U`), but on Linux the action moved to the **chord** `Ctrl+K Ctrl+H` — Ubuntu
+reserves `Ctrl+Shift+U` for its own unicode input. It is kept because two of the three
+platforms are correct and the overlay format cannot draw a two-stroke chord at all, so
+dropping the binding would lose the Windows and macOS cells without gaining a Linux one.
+This is the mirror of Go Back / Go Forward, where the Linux chord is the drawable one.
+
+⚠️ **`Close editor` is NOT such a case, despite the docs table.** The Windows column
+lists `Ctrl+F4`, but `Ctrl+W` is registered there too, as a *secondary*:
+
+```ts
+id: 'workbench.action.closeActiveEditor',
+primary: KeyMod.CtrlCmd | KeyCode.KeyW,
+win: { primary: KeyMod.CtrlCmd | KeyCode.F4, secondary: [KeyMod.CtrlCmd | KeyCode.KeyW] }
+```
+
+`Ctrl+W` therefore closes the editor on Windows and Linux, and `⌘W` on macOS — the
+`CMDCTRL` cell is correct on all three. This is the same primary-vs-secondary trap as
+*Zoom out* above, in the opposite direction: there the card showed a secondary and hid
+the primary, here the table shows the primary and hides the secondary. Check both
+fields in the source before calling a shared cell unrepresentable.
+
 ## Icons
 
 ### Reclaimed from the previously shipped artwork

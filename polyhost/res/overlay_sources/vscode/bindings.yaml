@@ -33,9 +33,9 @@
 # macOS shortcut card and, where the two disagreed, the vscode source itself.
 # See SOURCES.md.
 #
-# Regenerate:
-#   python polyhost/res/overlay_sources/vscode/fetch_icons.py
-#   python scripts/generate_app_overlays.py \
+# Regenerate (from the repo root, with the project venv):
+#   .venv/bin/python polyhost/res/overlay_sources/vscode/fetch_icons.py
+#   .venv/bin/python scripts/generate_app_overlays.py \
 #       polyhost/res/overlay_sources/vscode/bindings.yaml --preview /tmp/vscode_preview
 app: code
 match: [code]
