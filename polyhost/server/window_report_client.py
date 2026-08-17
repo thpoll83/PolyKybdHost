@@ -67,6 +67,58 @@ class WindowReportClient:
             pass
 
 
+class WindowReportSession:
+    """A reconnecting window-report connection whose target may move.
+
+    The forwarder re-resolves its target for *every* report — with
+    ``--host-file`` the file is read each time and may be rewritten mid-session
+    — so a cached connection is only reusable while it still points at the host
+    that was just resolved. Remembering the connected host here is what makes a
+    changed address take effect on the next report instead of whenever the old
+    connection happens to break: the caller cannot notice on its own, because a
+    connection to the *previous* host keeps accepting reports quite happily.
+
+    A failed report closes the connection, so the next one reconnects.
+    """
+
+    def __init__(self, port=None, authkey=None, timeout=3.0, connect_fn=None):
+        self._port = port
+        self._authkey = authkey
+        self._timeout = timeout
+        self._connect = connect_fn if connect_fn is not None else connect
+        self._client = None
+        self._host = None
+
+    @property
+    def host(self):
+        """The host the open connection points at, or None when not connected."""
+        return self._host
+
+    def report(self, host, handle, name, title, os=None):
+        """Send one report to ``host``, (re)connecting as needed.
+
+        Raises whatever the connect or the report raised, having closed the
+        connection first — the caller logs it and the next call reconnects.
+        """
+        if self._client is not None and host != self._host:
+            self.close()
+        try:
+            if self._client is None:
+                self._client = self._connect(
+                    host, self._port, self._authkey, self._timeout)
+                self._host = host
+            return self._client.report(handle, name, title, os=os)
+        except Exception:
+            self.close()
+            raise
+
+    def close(self):
+        """Drop any open connection. Idempotent; never raises."""
+        client, self._client, self._host = self._client, None, None
+        if client is not None:
+            client.close()
+
+
 def connect(host, port=None, authkey=None, timeout=3.0):
     """Open an authenticated window-report connection to ``host``.
 
