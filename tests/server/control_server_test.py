@@ -116,9 +116,9 @@ class FakeCore:
         self.calls.append(("get_fontpack_status",))
         return (True, {"present": True, "abi": 1, "content_version": 7, "font_count": 3})
 
-    def sync_fontpack(self):
-        self.calls.append(("sync_fontpack",))
-        return (True, {"queued": True})
+    def sync_fontpack(self, force=False):
+        self.calls.append(("sync_fontpack", bool(force)))
+        return (True, {"queued": True, "force": bool(force)})
 
     def wipe_fontpack(self):
         self.calls.append(("wipe_fontpack",))
@@ -362,8 +362,13 @@ class ControlServerTest(unittest.TestCase):
         conn = self._connect()
         self._hello_then(conn)
         resp = self._call(conn, 34, p.M_FONTPACK_SYNC)
-        self.assertEqual(resp["result"], {"queued": True})
-        self.assertIn(("sync_fontpack",), self.core.calls)
+        self.assertEqual(resp["result"], {"queued": True, "force": False})
+        self.assertIn(("sync_fontpack", False), self.core.calls)
+        # The force flag has to survive the RPC — it is the only route to a bundle
+        # the keyboard reports as current but renders wrong.
+        resp = self._call(conn, 37, p.M_FONTPACK_SYNC, {"force": True})
+        self.assertEqual(resp["result"], {"queued": True, "force": True})
+        self.assertIn(("sync_fontpack", True), self.core.calls)
         resp = self._call(conn, 35, p.M_FONTPACK_BUNDLES)
         self.assertEqual(resp["result"], {"shipped": True, "bundles": []})
         self.assertIn(("fontpack_bundle_status",), self.core.calls)
