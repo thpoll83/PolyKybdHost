@@ -874,6 +874,36 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the box is unticked; default is OFF because a first support round with everything
     masked usually has to be repeated. `browser_report_token` / `telemetry_install_id`
     are masked **always**, independent of that flag.
+- **Multi-machine forwarding fails SILENTLY in three different ways, and NONE of
+  them is diagnosable from the forwarder's own log.** All three were hit on one
+  setup that had worked for weeks (field, 2026-08-17); the forwarder log showed
+  nothing but a repeating error with no cause in it. Check these before reading
+  any code:
+  - ⚠️ **A disabled relay reads as `Connection timed out`, NOT "connection
+    refused"** — so the log looks like a network problem rather than a host that
+    isn't listening. A closed port would RST, but the keyboard machine's firewall
+    silently drops SYNs to a port nothing has bound, and the old allow-rule went
+    away with the listener. The *cause* is logged once, on the **other machine**,
+    by `RemoteHandler.listen_to_forwarder` ("Remote overlay entries are configured
+    but the legacy plaintext window relay (TCP 50162) is disabled") — and only
+    when remote entries are mapped and `window_report_network_enabled` is off. In
+    daemon mode that line is in `daemon_log.txt`, not the tray log.
+  - ⚠️ **`WindowReportServer` is started ONLY by `HeadlessHost`** (`headless.py`
+    `_maybe_start_window_report_server` is its one construction site — `host.py`
+    has none). So under `--no-daemon`, `window_report_network_enabled` is a
+    **silent no-op**: the setting reads back true and nothing listens.
+  - ⚠️ **A forwarded window is used only while the keyboard machine's OWN focused
+    window is a `remote: true` mapping entry** (`active_window.py`
+    `is_remote_mapping_entry`, the `elif` in the window tick) — normally the
+    remote-desktop client you are viewing the other machine through (the shipped
+    entry is `nxplayer`/NoMachine). Without such an entry both logs look perfectly
+    healthy — the forwarder reports windows, the daemon receives them — and the
+    keycaps simply never change.
+  - The user-facing version of all three is the docs site's
+    [Multi-Machine Setup](https://www.polykybd.org/using/multi-machine/) page
+    (rewritten 2026-08-17, docs#51). ⚠️ **The relay gate that caused this shipped
+    in 0.10.5 and the docs kept recommending the dead path for six weeks** — when
+    you flip a transport off by default, move that page in the same change.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
@@ -899,6 +929,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   grid: the HTML and the tests were both perfectly correct, and the defect existed only
   in the render. Same reasoning as judging a tray icon by rasterising it (above) —
   measure or look, don't infer from the source.
+- ⚠️ **`polyhost/forwarder.py` is UNTESTABLE in the documented environment — put
+  any forwarder logic worth testing in a Qt-free module instead.** It imports
+  `pywinctl` at module load (the backend selection at the top), and pywinctl is
+  **not** in the full-suite dependency list above, so the module cannot even be
+  imported in a normal test run — a `DISPLAY` is necessary but not sufficient.
+  `PolyForwarder.__new__` (constructing the object without `QApplication.__init__`,
+  to call one plain method) fails at the *import*, before Qt is reached. Hence the
+  `--host-file` reconnect fix (2026-08-17) put the connection lifetime in
+  `server/window_report_client.py` `WindowReportSession` — stdlib-only, 10 unit
+  tests — and left only the two-line "no target ⇒ close" branch in the forwarder.
+  A test gated on both `DISPLAY` and pywinctl would be permanently skipped, which
+  is worse than none: it reads as coverage.
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
 - ⚠️ **A stale `.pyc` can survive a CORRECT fix — clear `__pycache__` before you
   disbelieve your own change.** Python invalidates cached bytecode on
