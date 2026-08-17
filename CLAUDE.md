@@ -30,7 +30,9 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   Review limit reached … next review in 43 minutes` comment, re-queued and still
   unavailable at merge time), Sourcery had hit its weekly diff-character limit so
   it posted only its descriptive *Reviewer's Guide*, and Qodo only ever posts a
-  *PR Summary*. All three render as long, confident-looking comments with
+  *PR Summary* (and, since its subscription lapsed, only a *"reviews are paused
+  because the subscription is no longer active"* notice — docs#48, 2026-08-17).
+  All three render as long, confident-looking comments with
   walkthroughs and file tables, so the PR read as well-reviewed and merged with
   zero findings raised against it. Tells: CodeRabbit's rate-limit notice (and the
   "Reviews paused" one — see the same section in `qmk_firmware/CLAUDE.md`), and
@@ -65,10 +67,31 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       beneath it. Note the banner behaved *correctly* here (present, with the
       real `<old>..<new>` range), so the asymmetry is: **a banner that is present
       is trustworthy; a banner that is absent proves nothing.**
+    - ✅ **There IS a cheap reliable tell after all: the Merge Risk block names the
+      commit it covers** — *"Merge Risk: 🟡 Moderate · up to `351b8`"*.
+      Read that sha instead of comparing walkthrough prose against the head
+      commit. On docs#48 (2026-08-17) the summary re-rendered on **three**
+      successive pushes, each time still scoped `up to 351b8` and still asserting
+      the PR was "not merge-ready" over a concern two later commits had already
+      fixed — while CodeRabbit's own chat reply confirmed the fix. Same sticky
+      mechanism as above, but self-labelling: if that sha is not the head, the
+      whole summary (risk verdict included) is describing an older commit. It is
+      worth checking before believing any *later* re-render of a summary,
+      including a scary one.
     - ⚠️ **The limit is per-developer across the ORG, so pushes to a trivial PR
       starve the one that needs review.** Docs pushes on #42 consumed the window
       #159 was waiting for. When two PRs are open and one is real code, stop
       pushing cosmetic commits to the other until the important one is reviewed.
+    - ⚠️ **A THIRD no-review mode: CodeRabbit does not auto-review a repo with
+      fewer than 10 stars at all** — *"Reviews should be triggered manually for
+      repositories with fewer than 10 stars"*, rendered as a *"Review available on
+      request"* box with a Trigger-review checkbox. This is permanent, not a
+      transient limit, so it is easy to mistake for "no findings". It currently
+      applies to **`polykybd-docs`** (docs#48, 2026-08-17); the fix is simply to
+      comment `@coderabbitai review`. The same reply then states the quota
+      outright — *"Your plan includes up to 1 review per rolling hour; 0 remain
+      after this review"* — which is the number to plan around when a PR needs a
+      re-review after a fix.
   - ⚠️ **A review that DID run, on the right commit, with an accurate walkthrough,
     can still have SKIPPED the file you care about — read the "Files skipped from
     review" list before trusting a clean verdict.** On qmk PR #198 (2026-08-11)
