@@ -100,7 +100,8 @@ M_FW_APPLY_STAGED = "fw.apply_staged"               # {} -> {"queued": True} (st
 M_FONTPACK_FLASH = "fontpack.flash"    # {"path": str, "bundle_id": int=0} or {"bundle": id|index}
                                        #   -> {"queued": bool} (streams fontpack_flash_* events)
 M_FONTPACK_STATUS = "fontpack.status"  # {} -> {"present", "abi", "content_version", "font_count"}
-M_FONTPACK_SYNC = "fontpack.sync"      # {} -> {"queued": bool}; flashes all stale bundles
+M_FONTPACK_SYNC = "fontpack.sync"      # {"force": bool=False} -> {"queued","force"}; flashes the
+                                       # stale + previously-failed bundles, or ALL when force
 M_FONTPACK_WIPE = "fontpack.wipe"      # {} -> {"queued": bool}; empties all bundle slots
 M_FONTPACK_BUNDLES = "fontpack.bundles"  # {} -> {"shipped": bool, "bundles": [{id,index,device_version,
                                          #        shipped_version,stale}]} (per-bundle device vs shipped)

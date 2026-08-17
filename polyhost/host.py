@@ -929,15 +929,31 @@ class PolyHost(QApplication):
             action.setVisible(False)
             return
         stale = [b for b in info.get("bundles", []) if b.get("stale")]
+        # A bundle whose flash failed can still report a current version, so it would
+        # sit under "up to date" with no way to retry it from the UI \u2014 which is exactly
+        # how a failed `symbol` flash became unreachable in the field (2026-08-17).
+        retry = [b for b in info.get("bundles", []) if b.get("retry") and not b.get("stale")]
         action.setVisible(True)
-        if stale:
-            action.setText(f"Update keyboard fonts ({len(stale)})\u2026")
-            action.setToolTip("Flash the font bundles the keyboard is missing or behind on: "
-                              + ", ".join(b["id"] for b in stale))
+        if stale or retry:
+            todo = stale + retry
+            if retry and not stale:
+                action.setText(f"Retry keyboard fonts ({len(retry)} failed)\u2026")
+                tip = ("Re-flash the font bundles whose last attempt failed: "
+                       + ", ".join(b["id"] for b in retry))
+                last = [b.get("last_error") for b in retry if b.get("last_error")]
+                if last:
+                    tip += "\n" + last[0]
+            else:
+                action.setText(f"Update keyboard fonts ({len(todo)})\u2026")
+                tip = ("Flash the font bundles the keyboard is missing, behind on, or "
+                       "failed to take: " + ", ".join(b["id"] for b in todo))
+            action.setToolTip(tip)
             action.setEnabled(self._fw_actions_allowed())
         else:
             action.setText("Keyboard fonts: up to date")
-            action.setToolTip("Every shipped font bundle is already on the keyboard.")
+            action.setToolTip("Every shipped font bundle is already on the keyboard.\n"
+                              "Developer \u2192 Font Pack \u2192 Re-flash all bundles forces a "
+                              "re-send if the keycaps still render wrong.")
             action.setEnabled(False)
 
     def _on_sync_fontpack_clicked(self):

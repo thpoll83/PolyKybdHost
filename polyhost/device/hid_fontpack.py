@@ -21,6 +21,34 @@ CMD_FONTPACK_CHUNK  = 0x51   # data[2..5]=offset, data[6..]=FONTPACK_CHUNK_SIZE 
 CMD_FONTPACK_COMMIT = 0x52   # verify CRC from flash + reload (no reboot); reply[3..4]=content_version
 CMD_FONTPACK_STATUS = 0x53   # reply: [3]=present [4]=abi [5..6]=content_version [7]=font_count
 
+# COMMIT outcomes. The firmware distinguishes a LINK failure from a DATA failure
+# (qmk hid_fontpack.h FONTPACK_COMMIT_*), because they need opposite responses:
+#   COMMIT_OK       '.'  both halves finalized and reloaded
+#   COMMIT_REJECTED 'R'  the master's finalize refused the image (staged CRC / bad PlyF)
+#                        -> a real data problem; re-flash is the only fix
+#   COMMIT_NO_SLAVE 'L'  the master committed (its copy is live, reply carries the
+#                        content_version) but the slave did not ACK -> retry the COMMIT,
+#                        which is free; do NOT re-stream the pack
+#   COMMIT_UNSPEC   '!'  older firmware, which collapsed all three into one byte
+#   COMMIT_NO_REPLY      no reply at all (lost/timed out) — indistinguishable from 'L'
+#                        as far as the host can tell, so treated the same way
+# ⚠️ Reporting 'R' for what was really 'L' is exactly what cost two rounds of field
+# debugging (2026-08-17): a bundle whose data was already live on the keyboard was
+# reported as "CRC mismatch", so nobody looked at the split link.
+COMMIT_OK        = "ok"
+COMMIT_REJECTED  = "rejected"
+COMMIT_NO_SLAVE  = "slave-unconfirmed"
+COMMIT_UNSPEC    = "unspecified"
+COMMIT_NO_REPLY  = "no-reply"
+
+# A lost/failed COMMIT ACK is retried rather than re-streamed: re-running the
+# firmware's finalize is free (it leaves the staged CRC and the write cursor
+# untouched, and the slave's handler is idempotent), so a dropped bridge ACK on a
+# busy split link — the observed failure — clears on the next attempt for the cost
+# of one report instead of re-sending tens of KB.
+_COMMIT_ATTEMPTS = 3
+_COMMIT_RETRY_PAUSE_S = 0.25
+
 FONTPACK_CHUNK_SIZE = 56            # payload bytes/chunk (+4-byte offset = 60); matches firmware FW_UP_CHUNK_SIZE
 FONTPACK_MAX_SIZE   = 0x200000      # 2 MB cap; the whole bundle window. Per-bundle, the
                                     # firmware rejects a pack larger than its fixed slot.
@@ -172,12 +200,54 @@ def decide_stale_bundles(device_versions: dict, shipped: list) -> list:
     return out
 
 
+def classify_commit_reply(ok, reply) -> str:
+    """Map a raw COMMIT reply to one of the COMMIT_* outcomes (pure).
+
+    `ok`/`reply` are exactly what `hid.send_and_read` returned. Anything the
+    firmware doesn't recognise, or a reply too short to hold a status byte, is
+    COMMIT_UNSPEC — never silently treated as success."""
+    if not ok or reply is None or len(reply) < 3:
+        return COMMIT_NO_REPLY
+    status = reply[2]
+    if status == ord('.'):
+        return COMMIT_OK
+    if status == ord('R'):
+        return COMMIT_REJECTED
+    if status == ord('L'):
+        return COMMIT_NO_SLAVE
+    return COMMIT_UNSPEC
+
+
+def commit_error_text(status: str, what: str) -> str:
+    """The user-facing message for a non-OK COMMIT outcome (pure).
+
+    Each one names what actually happened and what to do about it — the point of
+    splitting the firmware's status byte in the first place."""
+    if status == COMMIT_REJECTED:
+        return (f"COMMIT failed — the keyboard rejected the staged {what} "
+                "(CRC mismatch or an unreadable image). Try flashing it again.")
+    if status == COMMIT_NO_SLAVE:
+        return (f"COMMIT incomplete — the {what} is live on the USB half, but the other "
+                f"half did not confirm within the split link's retries, so its copy is "
+                f"unverified. It usually picks the data up at the next reboot; re-flash "
+                f"if anything still renders wrong.")
+    if status == COMMIT_NO_REPLY:
+        return (f"COMMIT failed — no reply from the keyboard. The {what} may or may not "
+                "have been stored; check the keyboard and try again.")
+    return (f"COMMIT failed — the keyboard reported an unspecified failure for the {what} "
+            "(older firmware does not distinguish a CRC mismatch from a split-link drop). "
+            "Try again.")
+
+
 def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
     """Shared BEGIN -> N*CHUNK -> COMMIT stream to one resource slot (both halves).
 
     `what` flavours the progress text ("font pack" / "game data"). Returns
-    (ok, error_msg, commit_reply) — on success error_msg is "" and commit_reply
+    (ok, error_msg, commit_reply, status) — on success error_msg is "" and commit_reply
     is the raw COMMIT reply (the fontpack caller parses content_version out of it).
+    `status` is a COMMIT_* outcome, or the stage that failed earlier
+    ("cancelled"/"begin"/"chunk"), so a caller can tell a data failure from a
+    link failure without re-parsing the message.
     """
     pack_size = len(pack_bytes)
     pack_crc  = binascii.crc32(pack_bytes) & 0xFFFFFFFF   # whole-image transport CRC (firmware fw_staging verifies this)
@@ -199,11 +269,11 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
     while not begin_ready:
         if cancelled():
             _abort_cleanup(hid)
-            return False, "Flash cancelled by user.", None
+            return False, "Flash cancelled by user.", None, "cancelled"
         if time.monotonic() > deadline:
             _abort_cleanup(hid)
             return False, (f"BEGIN timed out — keyboard did not finish erasing the {what} "
-                           "region within 90 s.  Check the USB cable and try again."), None
+                           "region within 90 s.  Check the USB cable and try again."), None, "begin"
 
         ok, reply = hid.send_and_read(pkt, timeout=timeout_ms)
         timeout_ms = 5000
@@ -212,7 +282,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
             _erasing(f"Erasing the {what} region — keyboard will reconnect when done")
             if not hid.wait_for_reconnect(timeout_s=30):
                 return False, ("BEGIN failed — keyboard did not reconnect "
-                               "within 30 s.  Check the USB cable and try again."), None
+                               "within 30 s.  Check the USB cable and try again."), None, "begin"
             hid.drain_replies()
         elif reply[2] == ord('.'):
             begin_ready = True
@@ -226,7 +296,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
                 f"BEGIN failed — the keyboard rejected the {what} transfer.\n"
                 "Ensure both keyboard halves are connected and powered on (and the "
                 "firmware supports this transfer), then try again."
-            ), None
+            ), None, "begin"
 
     report(2, f"Region erased. Sending {total_chunks} chunks…")
 
@@ -241,7 +311,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
         if cancelled():
             _abort_cleanup(hid)
             hid.close_interface()
-            return False, "Flash cancelled by user.", None
+            return False, "Flash cancelled by user.", None, "cancelled"
 
         offset    = i * FONTPACK_CHUNK_SIZE
         raw_chunk = pack_bytes[offset:offset + FONTPACK_CHUNK_SIZE]
@@ -281,7 +351,7 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
                 f"CHUNK failed at offset {offset} after {_CHUNK_ATTEMPTS} attempts — {reason}.\n"
                 "Ensure both keyboard halves are connected and running the same firmware, "
                 "then try again — the flash resumes from scratch and is safe to repeat."
-            ), None
+            ), None, "chunk"
         pause = min(0.05 * (2 ** (attempts - 1)), 1.0)
         report(2 + int(96 * (i + 1) / total_chunks),
                f"Chunk {i + 1}/{total_chunks} — retry {attempts}/{_CHUNK_ATTEMPTS - 1} "
@@ -291,15 +361,25 @@ def _stream_slot(hid, pack_bytes, bundle_id, what, report, cancelled):
     # -- FONTPACK_COMMIT -- verifies the staged CRC and finalizes the slot in place.
     report(98, f"Verifying the {what} (CRC32)…")
     pkt = bytearray([HID_POLYKYBD, CMD_FONTPACK_COMMIT])
-    ok, reply = hid.send_and_read(pkt, timeout=8000)
-    if not ok or len(reply) < 3 or reply[2] != ord('.'):
-        hid.close_interface()
-        return False, f"COMMIT failed — CRC mismatch or the {what} was rejected on the keyboard. Try again.", None
-    return True, "", reply
+    status, reply = COMMIT_NO_REPLY, None
+    for attempt in range(1, _COMMIT_ATTEMPTS + 1):
+        ok, reply = hid.send_and_read(pkt, timeout=8000)
+        status = classify_commit_reply(ok, reply)
+        # 'R' will not heal by asking again — the staged bytes are what they are.
+        if status in (COMMIT_OK, COMMIT_REJECTED):
+            break
+        if attempt < _COMMIT_ATTEMPTS:
+            report(98, f"Verifying the {what} — the keyboard halves did not both confirm; "
+                       f"re-sending COMMIT ({attempt}/{_COMMIT_ATTEMPTS - 1})…")
+            time.sleep(_COMMIT_RETRY_PAUSE_S)
+    if status == COMMIT_OK:
+        return True, "", reply, status
+    hid.close_interface()
+    return False, commit_error_text(status, what), reply, status
 
 
 def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = None,
-                   bundle_id: int = 0) -> tuple[bool, str]:
+                   bundle_id: int = 0) -> tuple[bool, str, str]:
     """Full HID font-pack flash flow: BEGIN -> N*CHUNK -> COMMIT (no reboot).
 
     Args:
@@ -311,7 +391,9 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
                       firmware resolves it to a fixed flash slot). 0 by default.
 
     Returns:
-        (True, success_msg) or (False, error_msg).
+        (ok, msg, status) — status is a COMMIT_* outcome (or the failing stage /
+        "validate"), so the caller can tell "the keyboard rejected the data" from
+        "the split link dropped the confirmation" without parsing the message.
     """
     def report(pct, msg):
         if progress_cb:
@@ -325,21 +407,21 @@ def flash_fontpack(hid, pack_path: str, progress_cb=None, cancel_flag: list = No
 
     valid, reason = validate_fontpack(pack_bytes)
     if not valid:
-        return False, reason
+        return False, reason, "validate"
     _, info = parse_fontpack_header(pack_bytes)
 
     report(0, f"Sending FONTPACK_BEGIN — {len(pack_bytes) // 1024} KB, "
               f"content v{info['content_version']}, {info['font_count']} fonts…")
-    ok, err, reply = _stream_slot(hid, pack_bytes, bundle_id, "font pack", report, cancelled)
+    ok, err, reply, status = _stream_slot(hid, pack_bytes, bundle_id, "font pack", report, cancelled)
     if not ok:
-        return False, err
+        return False, err, status
 
     cver = struct.unpack_from('<H', bytes(reply), 3)[0] if len(reply) >= 5 else info['content_version']
     report(100, f"Done. Font pack v{cver} loaded on both halves.")
     return True, (
         f"Font pack flashed and loaded successfully (content v{cver}, {info['font_count']} fonts).\n\n"
         "Both halves reloaded the new glyphs immediately — no reboot needed."
-    )
+    ), status
 
 
 def validate_doomwad(whx_bytes) -> tuple[bool, str]:
@@ -354,7 +436,7 @@ def validate_doomwad(whx_bytes) -> tuple[bool, str]:
     return True, ""
 
 
-def flash_doomwad(hid, whx: str | bytes, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
+def flash_doomwad(hid, whx: str | bytes, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str, str]:
     """Install the doom easter egg's WHX game data to BOTH halves over HID.
 
     Rides the font-pack BEGIN/CHUNK/COMMIT transport with the DOOMWAD pseudo
@@ -381,16 +463,16 @@ def flash_doomwad(hid, whx: str | bytes, progress_cb=None, cancel_flag: list = N
 
     valid, reason = validate_doomwad(whx_bytes)
     if not valid:
-        return False, reason
+        return False, reason, "validate"
 
     report(0, f"Sending game data — {len(whx_bytes) // 1024} KB…")
-    ok, err, _reply = _stream_slot(hid, whx_bytes, DOOMWAD_BUNDLE_ID, "game data", report, cancelled)
+    ok, err, _reply, status = _stream_slot(hid, whx_bytes, DOOMWAD_BUNDLE_ID, "game data", report, cancelled)
     if not ok:
-        return False, err
+        return False, err, status
 
     report(100, "Done. Game data installed on both halves.")
     return True, ("Game data installed on both halves (it survives firmware updates).\n\n"
-                  "You know the magic word.")
+                  "You know the magic word."), status
 
 
 def validate_doompack(pack_bytes) -> tuple[bool, str]:
@@ -409,7 +491,7 @@ def validate_doompack(pack_bytes) -> tuple[bool, str]:
     return True, ""
 
 
-def flash_doompack(hid, plyx: str | bytes, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str]:
+def flash_doompack(hid, plyx: str | bytes, progress_cb=None, cancel_flag: list = None) -> tuple[bool, str, str]:
     """Install the doom easter egg's executable engine pack (.plyx) to BOTH
     halves over HID — the slave's lockstep drone runs the same engine.
 
@@ -436,13 +518,13 @@ def flash_doompack(hid, plyx: str | bytes, progress_cb=None, cancel_flag: list =
 
     valid, reason = validate_doompack(pack_bytes)
     if not valid:
-        return False, reason
+        return False, reason, "validate"
 
     report(0, f"Sending engine pack — {len(pack_bytes) // 1024} KB…")
-    ok, err, _reply = _stream_slot(hid, pack_bytes, DOOMPACK_BUNDLE_ID, "engine pack", report, cancelled)
+    ok, err, _reply, status = _stream_slot(hid, pack_bytes, DOOMPACK_BUNDLE_ID, "engine pack", report, cancelled)
     if not ok:
-        return False, err
+        return False, err, status
 
     report(100, "Done. Engine pack installed on both halves.")
     return True, ("Engine pack installed on both halves (it survives firmware updates,\n"
-                  "but must match the firmware build it was made for).")
+                  "but must match the firmware build it was made for)."), status

@@ -17,7 +17,7 @@ except Exception:   # noqa: BLE001 — heavy optional deps (numpy/PIL/pvlib/…)
     _HAVE_CORE = False
 
 
-def _fake_core(auto=True, in_progress=False, device_versions=None):
+def _fake_core(auto=True, in_progress=False, device_versions=None, failed=None):
     """Minimal stand-in exposing exactly what the two methods touch."""
     settings = {"fontpack_auto_flash": auto, "fontpack_path": ""}
     submitted = []
@@ -29,7 +29,15 @@ def _fake_core(auto=True, in_progress=False, device_versions=None):
         log=types.SimpleNamespace(info=lambda *a, **k: None, warning=lambda *a, **k: None),
         emit=lambda name, payload: emitted.append((name, payload)),
         _fontpack_flash_in_progress=in_progress,
+        _fontpack_failed=dict(failed or {}),
     )
+    # The real implementations, bound to the stand-in — these are what the tests
+    # below exercise; only _maybe_auto_flash_fontpack's submit is stubbed.
+    core._fontpack_flash_bundles_job = lambda cancel, **kw: PolyCore._fontpack_flash_bundles_job(
+        core, cancel, **kw)
+    core._verify_flashed_bundle = lambda b, st, m: PolyCore._verify_flashed_bundle(core, b, st, m)
+    core._emit_fontpack_summary = lambda *a: PolyCore._emit_fontpack_summary(core, *a)
+    core._autocheck = lambda cancel: PolyCore._fontpack_autocheck_job(core, cancel)
     core._fontpack_autocheck_job = lambda cancel: None
     core._submitted, core._emitted = submitted, emitted
     return core
@@ -60,12 +68,15 @@ class TestMaybeAutoFlash(unittest.TestCase):
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
 class TestAutocheckJob(unittest.TestCase):
 
-    def _run(self, core, manifest, flash_result=(True, "ok")):
+    def _run(self, core, manifest, flash_result=(True, "ok", "ok"), side_effect=None, **kw):
         cancel = types.SimpleNamespace(is_set=lambda: False)
         with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=manifest), \
              patch("polyhost.device.hid_fontpack.flash_fontpack",
-                   return_value=flash_result) as ff:
-            PolyCore._fontpack_autocheck_job(core, cancel)
+                   return_value=flash_result, side_effect=side_effect) as ff:
+            if kw:
+                PolyCore._fontpack_flash_bundles_job(core, cancel, **kw)
+            else:
+                PolyCore._fontpack_autocheck_job(core, cancel)
         return ff
 
     def test_no_manifest_is_inert(self):
@@ -102,13 +113,71 @@ class TestAutocheckJob(unittest.TestCase):
         self.assertEqual(ff.call_count, 2)
         self.assertEqual([c.kwargs["bundle_id"] for c in ff.call_args_list], [0, 5])
 
-    def test_flash_failure_stops_and_reports(self):
+    def test_one_failure_does_not_abort_the_remaining_bundles(self):
+        # ⚠️ This inverts the old contract, which returned after the first failure.
+        # In the field that cost SIX good bundles a flash because the first one
+        # (symbol) failed (2026-08-17) — one bundle's failure says nothing about the
+        # next one's, so the pass continues and reports everything at the end.
         core = _fake_core(device_versions={})
-        ff = self._run(core, _MANIFEST, flash_result=(False, "CRC mismatch"))
-        ff.assert_called_once()       # stops after the first failure
+        ff = self._run(core, _MANIFEST,
+                       side_effect=[(False, "rejected", "rejected"), (True, "ok", "ok")])
+        self.assertEqual(ff.call_count, 2)
         done = [e for e in core._emitted if e[0] == "fontpack_flash_done"]
         self.assertEqual(len(done), 1)
-        self.assertFalse(done[0][1]["ok"])
+        self.assertFalse(done[0][1]["ok"])          # a failure still fails the run
+        self.assertIn("symbol", done[0][1]["msg"])  # ...and is named
+        self.assertIn("emoji", done[0][1]["msg"])   # ...alongside what did land
+
+    def test_a_hard_failure_is_remembered_for_the_next_pass(self):
+        # A 'rejected' bundle is never verified against the device (the keyboard said
+        # it refused the data), so it lands in the retry set.
+        core = _fake_core(device_versions={})
+        self._run(core, _MANIFEST, flash_result=(False, "rejected", "rejected"))
+        self.assertEqual(set(core._fontpack_failed), {0, 5})
+
+    def test_a_remembered_failure_is_reflashed_even_when_the_version_reads_current(self):
+        # THE FIELD BUG: the device reports the shipped version (the data landed and
+        # only the COMMIT ACK was lost), so decide_stale_bundles says "nothing to do"
+        # — but the previous attempt was reported as failed, so it must be retried.
+        core = _fake_core(device_versions={0: 2, 5: 3}, failed={0: "COMMIT failed"})
+        ff = self._run(core, _MANIFEST)
+        ff.assert_called_once()
+        self.assertEqual(ff.call_args.kwargs["bundle_id"], 0)
+        self.assertEqual(core._fontpack_failed, {})   # cleared once it succeeds
+
+    def test_lost_ack_is_verified_against_the_device_and_not_a_failure(self):
+        # 'slave-unconfirmed' + the device now reporting the shipped version = the
+        # data is stored; report it as done-with-a-caveat instead of a failure, and
+        # do NOT queue a pointless re-flash of tens of KB.
+        core = _fake_core(device_versions={0: 0, 5: 3})   # only symbol is behind
+
+        def _query_id():
+            # What the keyboard reports after the "failed" flash: the bundle is there.
+            core.keeb.fontpack_bundle_versions = {0: 2, 5: 3}
+            return True, "PolyKybd"
+        core.keeb.query_id = _query_id
+        ff = self._run(core, _MANIFEST,
+                       flash_result=(False, "COMMIT incomplete", "slave-unconfirmed"))
+        ff.assert_called_once()
+        done = [e for e in core._emitted if e[0] == "fontpack_flash_done"][0][1]
+        self.assertTrue(done["ok"])
+        self.assertIn("Unconfirmed", done["msg"])
+        self.assertIn("other half", done["msg"])
+        self.assertEqual(core._fontpack_failed, {})
+
+    def test_verification_that_still_reads_behind_stays_a_failure(self):
+        core = _fake_core(device_versions={0: 0, 5: 3})
+        core.keeb.query_id = lambda: (True, "PolyKybd")   # version block unchanged
+        self._run(core, _MANIFEST,
+                  flash_result=(False, "COMMIT incomplete", "slave-unconfirmed"))
+        done = [e for e in core._emitted if e[0] == "fontpack_flash_done"][0][1]
+        self.assertFalse(done["ok"])
+        self.assertEqual(set(core._fontpack_failed), {0})
+
+    def test_force_all_flashes_every_bundle_regardless_of_version(self):
+        core = _fake_core(device_versions={0: 2, 5: 3})    # everything up to date
+        ff = self._run(core, _MANIFEST, force_all=True)
+        self.assertEqual([c.kwargs["bundle_id"] for c in ff.call_args_list], [0, 5])
 
     def test_in_progress_blocks_concurrent_flash(self):
         # A flash is already running (e.g. the connection flapped) → don't double-flash.
@@ -129,6 +198,20 @@ class TestManualBundleOps(unittest.TestCase):
         by_id = {b["id"]: b for b in payload["bundles"]}
         self.assertFalse(by_id["symbol"]["stale"])      # device v2 == shipped v2
         self.assertTrue(by_id["emoji"]["stale"])        # device v1 < shipped v3
+        self.assertFalse(by_id["symbol"]["retry"])
+        self.assertEqual(payload["failed"], [])
+
+    def test_bundle_status_reports_a_bundle_needing_a_retry(self):
+        # Up to date by version, but the last flash failed — the UI needs to see this
+        # or it renders "up to date" over a bundle that never took.
+        core = _fake_core(device_versions={0: 2, 5: 3}, failed={0: "COMMIT failed"})
+        with patch("polyhost.services.fontpack_bundle.load_bundle_manifest", return_value=_MANIFEST):
+            ok, payload = PolyCore.fontpack_bundle_status(core)
+        by_id = {b["id"]: b for b in payload["bundles"]}
+        self.assertFalse(by_id["symbol"]["stale"])
+        self.assertTrue(by_id["symbol"]["retry"])
+        self.assertEqual(by_id["symbol"]["last_error"], "COMMIT failed")
+        self.assertEqual(payload["failed"], ["symbol"])
 
     def test_bundle_status_no_manifest(self):
         core = _fake_core()

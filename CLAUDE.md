@@ -406,6 +406,51 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   is the manual path; the tray surfaces flash progress (`_on_fontpack_progress/done`).
   Firmware-side architecture (slots, layout header, GET_ID block) is in the qmk repo's
   CLAUDE.md "Font pack" section.
+  - ⚠️ **A bundle can report a FAILED flash and still read as UP TO DATE, so the version
+    comparison alone must never decide what to re-flash.** The FONTPACK target writes **in
+    place** at the slot, so the pack (header first, carrying `content_version`) is in flash
+    as the chunks land; COMMIT only verifies the transport CRC and reloads. A flash whose
+    COMMIT *acknowledgement* is lost therefore leaves a complete, CRC-valid slot — the
+    firmware's `fontpack_bundle_version()` only answers for a slot that passed
+    `fontpack_load()`'s full CRC32, so the next `GET_ID` advertises the new version and
+    `decide_stale_bundles` says "nothing to do". Field 2026-08-17: `symbol` reported
+    *"COMMIT failed — CRC mismatch or the font pack was rejected"*, was then **skipped on
+    every later connect and on the manual sync**, and the glyphs were in fact fine all
+    along. Two consequences that are easy to get wrong:
+    - **The core remembers failures** (`_fontpack_failed`, slot → message) and re-flashes
+      them regardless of version; `fontpack_bundle_status()` exposes `retry`/`last_error`
+      per bundle plus a top-level `failed`, and the tray row relabels to *"Retry keyboard
+      fonts (N failed)…"*. Without that the UI renders *"Keyboard fonts: up to date"*
+      (disabled) over a bundle that never took — no route back from the GUI at all.
+    - **A failed COMMIT is VERIFIED before being believed** (`_verify_flashed_bundle`):
+      re-read `GET_ID` and, if the slot now advertises the shipped version, treat it as
+      stored-with-a-caveat instead of re-sending tens of KB. ⚠️ The version block reflects
+      the **master's** slots only, so it can never prove the *slave* got the bundle — on a
+      `slave-unconfirmed` status say so in the note rather than claiming plain success.
+      A `rejected` status is deliberately **not** verified (the keyboard told us it refused
+      the data).
+  - **One bundle's failure must not abort the pass.** `_fontpack_flash_bundles_job` flashes
+    every target, collects the outcomes and emits **one** terminal event naming what landed
+    and what failed. The old `return`-on-first-failure cost six perfectly good bundles a
+    flash because `symbol` (slot 0, first in order) failed; they only got flashed minutes
+    later because a firmware update happened to force a reconnect.
+  - **`sync_fontpack(force=True)`** (`M_FONTPACK_SYNC {"force": true}`, `polyctl fontpack
+    sync --force`, Developer → Font Pack → "Re-flash ALL bundles") re-sends every shipped
+    bundle ignoring the comparison — the only recovery for a bundle the keyboard reports as
+    current but renders wrong. Note the tray's "Update keyboard fonts" row and the menu's
+    "Sync" both submit the *same* job as the on-connect auto-check, so before this existed
+    pressing them could not re-flash such a bundle (the log line is identical either way,
+    which is also why auto and manual runs are indistinguishable in `daemon_log.txt`).
+  - **The COMMIT status is now three-valued** — `hid_fontpack.classify_commit_reply` maps
+    the firmware's `.`/`R`/`L` (+ legacy `!` and no-reply) to `COMMIT_OK` /
+    `COMMIT_REJECTED` / `COMMIT_NO_SLAVE` / `COMMIT_UNSPEC` / `COMMIT_NO_REPLY`, and
+    `flash_fontpack`/`flash_doomwad`/`flash_doompack` return `(ok, msg, status)`. A
+    non-`rejected` failure is **retried in place** (`_COMMIT_ATTEMPTS` 3) rather than
+    re-streamed: re-running the firmware's finalize is free (the staged CRC and write
+    cursor are untouched, and the slave's handler is idempotent), so a dropped bridge ACK
+    on a busy split link — the observed failure, with `giveup=44` in that window — usually
+    clears for the cost of one report. `rejected` is **not** retried; asking again cannot
+    change what is in flash.
 - **Font-pack inspect/extend tools** (`polyhost/gui/fontpack_inspector_dialog.py` +
   `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
   `fontgen*`): a standalone window to view every bundle glyph as

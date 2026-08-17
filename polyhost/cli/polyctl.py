@@ -399,8 +399,10 @@ def _cmd_fontpack(client, args):
     action = getattr(args, "fontpack_action", None)
 
     if action == "sync":
-        return _stream_fontpack_op(client, protocol.M_FONTPACK_SYNC, {},
-                                   "syncing font-pack bundles")
+        force = bool(getattr(args, "force", False))
+        return _stream_fontpack_op(client, protocol.M_FONTPACK_SYNC, {"force": force},
+                                   "re-flashing every font-pack bundle" if force
+                                   else "syncing font-pack bundles")
 
     if action == "flash":
         if args.file:
@@ -457,11 +459,27 @@ def _cmd_fontpack(client, args):
         return 0
     print(f"{'bundle':10} {'slot':>4} {'device':>7} {'shipped':>8}  state")
     for b in info["bundles"]:
-        state = "STALE -> flash" if b["stale"] else "up to date"
+        if b["stale"]:
+            state = "STALE -> flash"
+        elif b.get("retry"):
+            state = "RETRY (last flash failed)"
+        else:
+            state = "up to date"
         print(f"{b['id']:10} {b['index']:>4} {b['device_version']:>7} "
               f"{b['shipped_version']:>8}  {state}")
     stale = [b["id"] for b in info["bundles"] if b["stale"]]
-    print(f"\n{len(stale)} stale" + (f": {', '.join(stale)} — run `fontpack sync`" if stale else " — all up to date"))
+    retry = [b["id"] for b in info["bundles"] if b.get("retry") and not b["stale"]]
+    todo = stale + retry
+    if todo:
+        print(f"\n{len(todo)} to flash: {', '.join(todo)} — run `fontpack sync`")
+    else:
+        print("\n0 stale — all up to date")
+    if retry:
+        for b in info["bundles"]:
+            if b.get("retry") and b.get("last_error"):
+                print(f"  {b['id']}: last error — {b['last_error']}")
+    print("(a bundle can read as up to date and still render wrong — "
+          "`fontpack sync --force` re-flashes every bundle regardless of version)")
     return 0
 
 
@@ -689,7 +707,11 @@ def build_parser():
     p_fp = sub.add_parser("fontpack", help="external-flash font pack (per-bundle) operations")
     fp_sub = p_fp.add_subparsers(dest="fontpack_action", required=True)
     fp_sub.add_parser("status", help="per-bundle versions: device vs shipped (and which are stale)")
-    fp_sub.add_parser("sync", help="flash every bundle the keyboard is missing/behind on")
+    p_fp_sync = fp_sub.add_parser(
+        "sync", help="flash the bundles the keyboard is missing/behind on (or failed before)")
+    p_fp_sync.add_argument(
+        "--force", action="store_true",
+        help="re-flash EVERY shipped bundle, ignoring the version comparison")
     p_fp_flash = fp_sub.add_parser(
         "flash", help="flash one bundle (streams progress; no reboot)")
     p_fp_flash.add_argument(
