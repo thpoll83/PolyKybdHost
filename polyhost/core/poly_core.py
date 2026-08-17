@@ -1697,7 +1697,16 @@ class PolyCore:
                     if landed:
                         done.append(b["id"])
                         caveats.append(note)
-                        self._fontpack_failed.pop(b["index"], None)
+                        if fstatus == hid_fontpack.COMMIT_NO_SLAVE:
+                            # Verified on the MASTER only — and the firmware cannot tell
+                            # us whether the slave lost its ACK or explicitly refused its
+                            # own finalize (both surface as SYNC_CRC32_ERR over the
+                            # bridge). So keep it queued: a re-flash on the next pass is
+                            # one bundle's worth of traffic, whereas trusting it leaves
+                            # the halves silently rendering different glyph sets.
+                            self._fontpack_failed[b["index"]] = fmsg
+                        else:
+                            self._fontpack_failed.pop(b["index"], None)
                     else:
                         failed.append(b["id"])
                         self._fontpack_failed[b["index"]] = fmsg

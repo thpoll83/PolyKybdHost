@@ -163,7 +163,11 @@ class TestAutocheckJob(unittest.TestCase):
         self.assertTrue(done["ok"])
         self.assertIn("Unconfirmed", done["msg"])
         self.assertIn("other half", done["msg"])
-        self.assertEqual(core._fontpack_failed, {})
+        # ...but it stays QUEUED for the next pass: the version block only proves the
+        # MASTER stored it, and the firmware cannot distinguish a lost slave ACK from
+        # an explicit slave refusal (both are SYNC_CRC32_ERR over the bridge), so
+        # trusting it could leave the halves rendering different glyph sets.
+        self.assertEqual(set(core._fontpack_failed), {0})
 
     def test_verification_that_still_reads_behind_stays_a_failure(self):
         core = _fake_core(device_versions={0: 0, 5: 3})
