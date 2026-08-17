@@ -30,7 +30,9 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   Review limit reached … next review in 43 minutes` comment, re-queued and still
   unavailable at merge time), Sourcery had hit its weekly diff-character limit so
   it posted only its descriptive *Reviewer's Guide*, and Qodo only ever posts a
-  *PR Summary*. All three render as long, confident-looking comments with
+  *PR Summary* (and, since its subscription lapsed, only a *"reviews are paused
+  because the subscription is no longer active"* notice — docs#48, 2026-08-17).
+  All three render as long, confident-looking comments with
   walkthroughs and file tables, so the PR read as well-reviewed and merged with
   zero findings raised against it. Tells: CodeRabbit's rate-limit notice (and the
   "Reviews paused" one — see the same section in `qmk_firmware/CLAUDE.md`), and
@@ -65,10 +67,31 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       beneath it. Note the banner behaved *correctly* here (present, with the
       real `<old>..<new>` range), so the asymmetry is: **a banner that is present
       is trustworthy; a banner that is absent proves nothing.**
+    - ✅ **There IS a cheap reliable tell after all: the Merge Risk block names the
+      commit it covers** — *"Merge Risk: 🟡 Moderate · up to `351b8`"*.
+      Read that sha instead of comparing walkthrough prose against the head
+      commit. On docs#48 (2026-08-17) the summary re-rendered on **three**
+      successive pushes, each time still scoped `up to 351b8` and still asserting
+      the PR was "not merge-ready" over a concern two later commits had already
+      fixed — while CodeRabbit's own chat reply confirmed the fix. Same sticky
+      mechanism as above, but self-labelling: if that sha is not the head, the
+      whole summary (risk verdict included) is describing an older commit. It is
+      worth checking before believing any *later* re-render of a summary,
+      including a scary one.
     - ⚠️ **The limit is per-developer across the ORG, so pushes to a trivial PR
       starve the one that needs review.** Docs pushes on #42 consumed the window
       #159 was waiting for. When two PRs are open and one is real code, stop
       pushing cosmetic commits to the other until the important one is reviewed.
+    - ⚠️ **A THIRD no-review mode: CodeRabbit does not auto-review a repo with
+      fewer than 10 stars at all** — *"Reviews should be triggered manually for
+      repositories with fewer than 10 stars"*, rendered as a *"Review available on
+      request"* box with a Trigger-review checkbox. This is permanent, not a
+      transient limit, so it is easy to mistake for "no findings". It currently
+      applies to **`polykybd-docs`** (docs#48, 2026-08-17); the fix is simply to
+      comment `@coderabbitai review`. The same reply then states the quota
+      outright — *"Your plan includes up to 1 review per rolling hour; 0 remain
+      after this review"* — which is the number to plan around when a PR needs a
+      re-review after a fix.
   - ⚠️ **A review that DID run, on the right commit, with an accurate walkthrough,
     can still have SKIPPED the file you care about — read the "Files skipped from
     review" list before trusting a clean verdict.** On qmk PR #198 (2026-08-11)
@@ -265,6 +288,14 @@ or was one edit away from it, so reaching for the shared piece is the point:
   list** because the engines poll it by reference between chunks, and the only thing
   that raises it is a progress callback observing the worker's cancel Event. Getting
   that wiring wrong fails **silently**: the flash just becomes uncancellable.
+  ⚠️ The engines return **`(ok, msg, commit_status)`** and `_flash_resource` discards
+  the status deliberately — only the multi-bundle pass (`_fontpack_flash_bundles_job`)
+  acts on it, to tell a lost COMMIT acknowledgement apart from a real refusal and queue
+  a retry; a single explicit flash has nothing to retry into. That arity is **mocked in
+  every test**, so a change to it would leave the suite green while a real flash raises
+  `ValueError` inside the worker job — `TestFlasherReturnArity` asserts it against the
+  real functions for exactly that reason (it had to be corrected once already, when the
+  engines grew the third element).
 
 **Deliberately NOT extracted** (recorded so it isn't re-litigated): the
 `FW_UP_BEGIN` / `FONTPACK_BEGIN` erase-poll loops in `hid_fw_up.py` and
@@ -469,6 +500,51 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   is the manual path; the tray surfaces flash progress (`_on_fontpack_progress/done`).
   Firmware-side architecture (slots, layout header, GET_ID block) is in the qmk repo's
   CLAUDE.md "Font pack" section.
+  - ⚠️ **A bundle can report a FAILED flash and still read as UP TO DATE, so the version
+    comparison alone must never decide what to re-flash.** The FONTPACK target writes **in
+    place** at the slot, so the pack (header first, carrying `content_version`) is in flash
+    as the chunks land; COMMIT only verifies the transport CRC and reloads. A flash whose
+    COMMIT *acknowledgement* is lost therefore leaves a complete, CRC-valid slot — the
+    firmware's `fontpack_bundle_version()` only answers for a slot that passed
+    `fontpack_load()`'s full CRC32, so the next `GET_ID` advertises the new version and
+    `decide_stale_bundles` says "nothing to do". Field 2026-08-17: `symbol` reported
+    *"COMMIT failed — CRC mismatch or the font pack was rejected"*, was then **skipped on
+    every later connect and on the manual sync**, and the glyphs were in fact fine all
+    along. Two consequences that are easy to get wrong:
+    - **The core remembers failures** (`_fontpack_failed`, slot → message) and re-flashes
+      them regardless of version; `fontpack_bundle_status()` exposes `retry`/`last_error`
+      per bundle plus a top-level `failed`, and the tray row relabels to *"Retry keyboard
+      fonts (N failed)…"*. Without that the UI renders *"Keyboard fonts: up to date"*
+      (disabled) over a bundle that never took — no route back from the GUI at all.
+    - **A failed COMMIT is VERIFIED before being believed** (`_verify_flashed_bundle`):
+      re-read `GET_ID` and, if the slot now advertises the shipped version, treat it as
+      stored-with-a-caveat instead of re-sending tens of KB. ⚠️ The version block reflects
+      the **master's** slots only, so it can never prove the *slave* got the bundle — on a
+      `slave-unconfirmed` status say so in the note rather than claiming plain success.
+      A `rejected` status is deliberately **not** verified (the keyboard told us it refused
+      the data).
+  - **One bundle's failure must not abort the pass.** `_fontpack_flash_bundles_job` flashes
+    every target, collects the outcomes and emits **one** terminal event naming what landed
+    and what failed. The old `return`-on-first-failure cost six perfectly good bundles a
+    flash because `symbol` (slot 0, first in order) failed; they only got flashed minutes
+    later because a firmware update happened to force a reconnect.
+  - **`sync_fontpack(force=True)`** (`M_FONTPACK_SYNC {"force": true}`, `polyctl fontpack
+    sync --force`, Developer → Font Pack → "Re-flash ALL bundles") re-sends every shipped
+    bundle ignoring the comparison — the only recovery for a bundle the keyboard reports as
+    current but renders wrong. Note the tray's "Update keyboard fonts" row and the menu's
+    "Sync" both submit the *same* job as the on-connect auto-check, so before this existed
+    pressing them could not re-flash such a bundle (the log line is identical either way,
+    which is also why auto and manual runs are indistinguishable in `daemon_log.txt`).
+  - **The COMMIT status is now three-valued** — `hid_fontpack.classify_commit_reply` maps
+    the firmware's `.`/`R`/`L` (+ legacy `!` and no-reply) to `COMMIT_OK` /
+    `COMMIT_REJECTED` / `COMMIT_NO_SLAVE` / `COMMIT_UNSPEC` / `COMMIT_NO_REPLY`, and
+    `flash_fontpack`/`flash_doomwad`/`flash_doompack` return `(ok, msg, status)`. A
+    non-`rejected` failure is **retried in place** (`_COMMIT_ATTEMPTS` 3) rather than
+    re-streamed: re-running the firmware's finalize is free (the staged CRC and write
+    cursor are untouched, and the slave's handler is idempotent), so a dropped bridge ACK
+    on a busy split link — the observed failure, with `giveup=44` in that window — usually
+    clears for the cost of one report. `rejected` is **not** retried; asking again cannot
+    change what is in flash.
 - **Font-pack inspect/extend tools** (`polyhost/gui/fontpack_inspector_dialog.py` +
   `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
   `fontgen*`): a standalone window to view every bundle glyph as

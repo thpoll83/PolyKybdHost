@@ -72,7 +72,7 @@ class PolyForwarder(QApplication):
         # default (report_rpc False) keeps the proven TCP path untouched.
         self._report_rpc = report_rpc
         self._report_port = report_port
-        self._report_client = None
+        self._report_session = None
         self._report_authkey = None
 
         # This machine's OS, forwarded alongside the active window so the keyboard
@@ -112,6 +112,9 @@ class PolyForwarder(QApplication):
                     "Using this machine's local window-report authkey; for a "
                     "different keyboard machine pass --report-authkey-file with "
                     "its polykybd-winreport.authkey.")
+            from polyhost.server.window_report_client import WindowReportSession
+            self._report_session = WindowReportSession(
+                self._report_port, self._report_authkey)
             self.log.info("Forwarder using the authenticated window-report endpoint (H4d).")
 
         # Create the tray
@@ -199,22 +202,23 @@ class PolyForwarder(QApplication):
 
     def _send_via_rpc(self, handle, title, name):
         """Push the active window over the authenticated window-report endpoint
-        (H4d). Keeps a persistent connection, reconnecting on any failure."""
+        (H4d). `WindowReportSession` keeps the connection, reconnecting when it
+        fails *or when the resolved host changes* — with `--host-file` the
+        target can be rewritten between two reports."""
         host = self._resolve_host()
         if not host:
+            # The host-file is gone, i.e. no active session. Drop the
+            # connection: when the file returns it may name a different
+            # machine, and a stale connection would keep serving the old one.
+            if self._report_session is not None:
+                self._report_session.close()
             return False
         try:
-            if self._report_client is None:
-                from polyhost.server.window_report_client import connect
-                self._report_client = connect(
-                    host, self._report_port, self._report_authkey)
-            self._report_client.report(handle, name, title, os=self._os_value)
+            self._report_session.report(
+                host, handle, name, title, os=self._os_value)
             return True
         except Exception as e:
             self.log.error("Window-report RPC to %s failed: %s", host, e)
-            if self._report_client is not None:
-                self._report_client.close()
-                self._report_client = None
             return False
 
     def send_to_host(self, handle, title, name):
@@ -370,9 +374,8 @@ class PolyForwarder(QApplication):
     def quit_app(self):
         self.icon_manager.set_disconnected()
         self.is_closing = True
-        if self._report_client is not None:
-            self._report_client.close()
-            self._report_client = None
+        if self._report_session is not None:
+            self._report_session.close()
         # Tear the tray icon down before the loop exits so a re-exec (update
         # restart) doesn't leave a stale icon behind / a doubled tray.
         try:

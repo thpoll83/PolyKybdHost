@@ -15,6 +15,7 @@ from unittest import mock
 
 from polyhost.core import events, poly_core
 from polyhost.core.poly_core import PolyCore
+from polyhost.device.hid_fontpack import COMMIT_OK, COMMIT_REJECTED
 from polyhost.util.observable import Observable
 
 
@@ -109,7 +110,7 @@ class TestResourceFlashCommon(unittest.TestCase):
                      mock.patch.object(poly_core.hid_fontpack, validator,
                                        return_value=(True, "")), \
                      mock.patch.object(poly_core.hid_fontpack, flasher,
-                                       return_value=(True, "done")):
+                                       return_value=(True, "done", COMMIT_OK)):
                     ok, payload = getattr(core, name)("f.bin", **kwargs)
                     self.assertTrue(ok)
                     self.assertEqual(payload, {"queued": True})
@@ -124,7 +125,7 @@ class TestResourceFlashCommon(unittest.TestCase):
                 def _flash(*a, progress_cb=None, **kw):
                     progress_cb(10, "erasing")
                     progress_cb(100, "written")
-                    return True, "ok"
+                    return True, "ok", COMMIT_OK
 
                 with mock.patch("builtins.open", mock.mock_open(read_data=b"x")), \
                      mock.patch.object(poly_core.hid_fontpack, validator,
@@ -152,7 +153,7 @@ class TestResourceFlashCommon(unittest.TestCase):
                      mock.patch.object(poly_core.hid_fontpack, validator,
                                        return_value=(True, "")), \
                      mock.patch.object(poly_core.hid_fontpack, flasher,
-                                       return_value=(False, "NACK")):
+                                       return_value=(False, "NACK", COMMIT_REJECTED)):
                     getattr(core, name)("f.bin", **kwargs)
                     _run_submitted_job(core)
                 self.assertEqual(seen[-1], ("fontpack_flash_done",
@@ -168,7 +169,7 @@ class TestResourceFlashCommon(unittest.TestCase):
                 def _flash(*a, progress_cb=None, cancel_flag=None, **kw):
                     progress_cb(5, "starting")
                     captured["flag"] = list(cancel_flag)
-                    return False, "cancelled"
+                    return False, "cancelled", COMMIT_REJECTED
 
                 with mock.patch("builtins.open", mock.mock_open(read_data=b"x")), \
                      mock.patch.object(poly_core.hid_fontpack, validator,
@@ -188,7 +189,7 @@ class TestResourceFlashCommon(unittest.TestCase):
                 def _flash(*a, progress_cb=None, cancel_flag=None, **kw):
                     progress_cb(5, "starting")
                     captured["flag"] = list(cancel_flag)
-                    return True, "ok"
+                    return True, "ok", COMMIT_OK
 
                 with mock.patch("builtins.open", mock.mock_open(read_data=b"x")), \
                      mock.patch.object(poly_core.hid_fontpack, validator,
@@ -207,7 +208,7 @@ class TestPerEntryPointSpecifics(unittest.TestCase):
         with mock.patch("builtins.open", mock.mock_open(read_data=b"x")), \
              mock.patch.object(poly_core.hid_fontpack, validator, return_value=(True, "")), \
              mock.patch.object(poly_core.hid_fontpack, flasher,
-                               return_value=(True, "ok")) as f:
+                               return_value=(True, "ok", COMMIT_OK)) as f:
             getattr(core, name)(*args, **kwargs)
             _run_submitted_job(core)
         return f
@@ -252,7 +253,7 @@ class TestPerEntryPointSpecifics(unittest.TestCase):
                      mock.patch.object(poly_core.hid_fontpack, validator,
                                        return_value=(True, "")), \
                      mock.patch.object(poly_core.hid_fontpack, flasher,
-                                       return_value=(True, "ok")) as f:
+                                       return_value=(True, "ok", COMMIT_OK)) as f:
                     getattr(core, name)("f.bin")
                     _run_submitted_job(core)
                 self.assertEqual(f.call_args[0][1], b"PAYLOAD")
@@ -274,7 +275,7 @@ class TestPerEntryPointSpecifics(unittest.TestCase):
                      mock.patch.object(poly_core.hid_fontpack, validator,
                                        return_value=(True, "")), \
                      mock.patch.object(poly_core.hid_fontpack, flasher,
-                                       return_value=(True, "ok")):
+                                       return_value=(True, "ok", COMMIT_OK)):
                     getattr(core, name)("f.bin")
                 self.assertEqual(core.worker.submit.call_args[0][0], job)
 
@@ -337,6 +338,26 @@ class TestFlashProgressRelay(unittest.TestCase):
         cancel.clear()
         cb(2, "b")
         self.assertEqual(flag, [True])
+
+
+class TestFlasherReturnArity(unittest.TestCase):
+    """`_flash_resource` unpacks the engines' return as `(ok, msg, status)`.
+
+    Every test above mocks the flash engine, so if a real engine's arity changes
+    the mocks keep the old shape and the whole suite stays green while an actual
+    flash raises `ValueError` inside the worker job. That is not hypothetical:
+    the engines grew their third `commit_status` element (PR #166) and these
+    fakes had to be corrected to match. This asserts the declared contract
+    directly, against the real functions, so the drift fails here instead.
+    """
+
+    def test_every_flasher_returns_a_three_tuple(self):
+        import inspect
+        for name in ("flash_fontpack", "flash_doomwad", "flash_doompack"):
+            with self.subTest(flasher=name):
+                fn = getattr(poly_core.hid_fontpack, name)
+                ann = inspect.signature(fn).return_annotation
+                self.assertEqual(str(ann), "tuple[bool, str, str]")
 
 
 if __name__ == "__main__":

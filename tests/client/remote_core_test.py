@@ -77,6 +77,10 @@ class FakeCore:
         self.calls.append(("refresh_daylight_brightness",))
         return (True, "queued")
 
+    def sync_fontpack(self, force=False):
+        self.calls.append(("sync_fontpack", bool(force)))
+        return (True, {"queued": True, "force": bool(force)})
+
     def fontpack_bundle_status(self):
         self.calls.append(("fontpack_bundle_status",))
         return (True, {"shipped": True, "bundles": [
@@ -180,6 +184,18 @@ class TestRemoteCore(unittest.TestCase):
         self.assertTrue(info["shipped"])
         self.assertEqual([b["id"] for b in info["bundles"] if b["stale"]], ["symbol"])
         self.assertIn(("fontpack_bundle_status",), self.core.calls)
+
+    def test_sync_fontpack_mirrors_the_force_flag(self):
+        """The tray's force re-flash is only reachable in client mode through this
+        mirror — dropping the flag would silently downgrade it to a version-gated
+        sync, i.e. a no-op on exactly the bundle that needs re-sending."""
+        ok, payload = self.rc.sync_fontpack()
+        self.assertTrue(ok)
+        self.assertIn(("sync_fontpack", False), self.core.calls)
+        ok, payload = self.rc.sync_fontpack(force=True)
+        self.assertTrue(ok)
+        self.assertTrue(payload["force"])
+        self.assertIn(("sync_fontpack", True), self.core.calls)
 
     def test_request_host_shutdown_acks(self):
         # The "Quit & stop daemon" menu entry drives this: the control server

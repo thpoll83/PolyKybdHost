@@ -233,7 +233,8 @@ class ControlServer(MpcListenerServer):
                 c.flash_fontpack_bundle(params["bundle"]) if "bundle" in params
                 else c.flash_fontpack(params["path"], params.get("bundle_id", 0))),
             p.M_FONTPACK_STATUS: lambda conn, params: _unwrap(c.get_fontpack_status()),
-            p.M_FONTPACK_SYNC: lambda conn, params: _unwrap(c.sync_fontpack()),
+            p.M_FONTPACK_SYNC: lambda conn, params: _unwrap(
+                c.sync_fontpack(force=bool(params.get("force", False)))),
             p.M_FONTPACK_WIPE: lambda conn, params: _unwrap(c.wipe_fontpack()),
             p.M_FONTPACK_BUNDLES: lambda conn, params: _unwrap(c.fontpack_bundle_status()),
             p.M_DOOM_INSTALL: lambda conn, params: _unwrap(c.install_doomwad(params["path"])),

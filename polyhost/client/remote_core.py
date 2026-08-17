@@ -441,8 +441,8 @@ class RemoteCore(Observable):
     def apply_staged_firmware(self):
         return self._device(p.M_FW_APPLY_STAGED)
 
-    def sync_fontpack(self):
-        return self._device(p.M_FONTPACK_SYNC)
+    def sync_fontpack(self, force=False):
+        return self._device(p.M_FONTPACK_SYNC, {"force": bool(force)})
 
     def wipe_fontpack(self):
         return self._device(p.M_FONTPACK_WIPE)

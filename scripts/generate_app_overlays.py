@@ -21,6 +21,13 @@ shortcut as (key, modifiers, icon) and does the tedious, fully-mechanical part:
     5. emit     a ready-to-paste overlay-mapping.poly.yaml stanza
     6. preview  a scaled contact sheet per modifier so you can eyeball legibility
 
+A binding's `mods:` list may also use **CMDCTRL**, the OS-relative command
+modifier: Ctrl on Windows/Linux, Cmd (GUI) on macOS. A spec that uses it emits a
+SECOND artwork set (`<output>_mac.*`) with those bindings resolved to Cmd, plus
+an `os: macos:` branch in the mapping stanza that selects it. A plain `CTRL`
+binding stays literal Ctrl on every platform — macOS has real Ctrl chords of its
+own, so the two spellings must remain distinguishable in one file.
+
 Sourcing the shortcut list and the per-action icon art is the human part; the
 binding file is where that lives. Everything downstream is automated here.
 
@@ -70,6 +77,28 @@ MOD_BIT = {"CTRL": 1, "CONTROL": 1, "CTL": 1,
            "SHIFT": 2, "SFT": 2,
            "ALT": 4, "OPT": 4, "OPTION": 4,
            "GUI": 8, "WIN": 8, "CMD": 8, "META": 8, "SUPER": 8}
+
+# The OS-relative "command" modifier: Ctrl on Windows/Linux, Cmd (GUI) on macOS.
+# GTK spells it `<Primary>`, Electron `CmdOrCtrl`, Sublime Text `primary`.
+#
+# ⚠️ It is deliberately NOT another bit-8 alias next to CMD/WIN/SUPER, and it is
+# deliberately not called `primary`: in this format "primary" already means the
+# FIRST TIER PNG (`*.mods.png`, PRIMARY_CH above), so `mods: [PRIMARY]` would read
+# as a file, not a modifier.
+#
+# ⚠️ It is also NOT a blanket Ctrl->Cmd swap, which is why a plain `CTRL` binding
+# must stay literal Ctrl on every platform: macOS binds real Ctrl chords of its
+# own (Ctrl+A / Ctrl+E line nav, Ctrl+Space input switch, Ctrl+arrows for Spaces),
+# so an author needs both spellings available in the same file. That per-binding
+# distinction is the whole point of the token -- QMK's equivalent, the CG_SWAP
+# magic keycode, is a global symmetric swap and cannot express it.
+CMDCTRL_ALIASES = {"CMDCTRL", "CMD_OR_CTRL", "CMDORCTRL"}
+
+# Resolved value of CMDCTRL per platform.
+CMDCTRL_BIT = {False: MOD_BIT["CTRL"], True: MOD_BIT["GUI"]}
+
+# Suffix for the generated macOS artwork set (`<output>_mac.mods.png`, ...).
+MACOS_OUTPUT_SUFFIX = "_mac"
 
 
 # --------------------------------------------------------------------------- #
@@ -143,10 +172,32 @@ def _has_cell(kc: KeyCode) -> bool:
             or KeyCode.KC_LEFT_CTRL.value <= v <= KeyCode.KC_RIGHT_GUI.value)
 
 
-def resolve_modifier(mods: list[str]) -> Modifier:
+def uses_cmdctrl(mods: list[str]) -> bool:
+    """True if this binding's modifier list carries the OS-relative CMDCTRL token."""
+    return any(str(m).strip().upper() in CMDCTRL_ALIASES for m in mods or [])
+
+
+def resolve_modifier(mods: list[str], macos: bool = False) -> Modifier:
+    """Resolve a binding's modifier list to a `Modifier` variant.
+
+    `macos` selects which platform CMDCTRL resolves for; every other token is
+    platform-independent and resolves identically either way."""
+    keys = [str(m).strip().upper() for m in mods or []]
+    # Combining CMDCTRL with the modifier it resolves to would silently collapse
+    # to that one bit on the platform in question (CMDCTRL+CTRL is plain Ctrl off
+    # macOS, CMDCTRL+GUI is plain Cmd on it), so the artwork would land on a
+    # variant the author did not ask for. Reject both spellings on BOTH platforms,
+    # so the error does not depend on which set is generated first.
+    if any(k in CMDCTRL_ALIASES for k in keys) and any(
+            MOD_BIT.get(k) in CMDCTRL_BIT.values() for k in keys):
+        raise ValueError(
+            f"modifier combination {mods} mixes CMDCTRL with CTRL or GUI; CMDCTRL "
+            f"already resolves to one of them (Ctrl off macOS, Cmd on it)")
     bits = 0
-    for m in mods or []:
-        key = str(m).strip().upper()
+    for m, key in zip(mods or [], keys):
+        if key in CMDCTRL_ALIASES:
+            bits |= CMDCTRL_BIT[macos]
+            continue
         if key not in MOD_BIT:
             raise ValueError(f"unknown modifier {m!r}")
         bits |= MOD_BIT[key]
@@ -300,7 +351,32 @@ def render_label(text: str, region: tuple[int, int, int, int]) -> np.ndarray:
 # --------------------------------------------------------------------------- #
 # build the overlay images
 # --------------------------------------------------------------------------- #
-def generate(spec: dict, base_dir: Path) -> dict:
+def spec_uses_cmdctrl(spec: dict) -> bool:
+    """True if any binding in the spec uses the OS-relative CMDCTRL token, i.e. a
+    second, macOS-resolved artwork set has to be generated alongside the default."""
+    return any(uses_cmdctrl(b.get("mods", [])) for b in spec.get("bindings", []))
+
+
+def macos_output(spec: dict) -> str:
+    """Filename stem for the macOS artwork set.
+
+    ⚠️ It must differ from `output`. The default suffix guarantees that, but an
+    explicit `output_macos` can collide — and the collision is silent in the worst
+    way: the macOS set is written *second*, so it overwrites the default artwork,
+    and the mapping stanza then points both branches at the same (Cmd-resolved)
+    files. Every platform would show the Mac shortcuts, with a stanza that reads
+    as though per-OS selection were working."""
+    name = spec.get("output_macos") or f"{spec['output']}{MACOS_OUTPUT_SUFFIX}"
+    if name == spec["output"]:
+        raise ValueError(
+            f"output_macos must differ from output (both {name!r}) — the macOS "
+            f"artwork is written second and would overwrite the default set")
+    return name
+
+
+def generate(spec: dict, base_dir: Path, macos: bool = False) -> dict:
+    """Render one complete artwork set. `macos` decides only how CMDCTRL bindings
+    resolve; a spec with no CMDCTRL binding renders identically either way."""
     icon_dir = base_dir / spec.get("icon_dir", "icons")
     fit = spec.get("fit", "contain")
     threshold = int(spec.get("threshold", 128))
@@ -320,7 +396,7 @@ def generate(spec: dict, base_dir: Path) -> dict:
     for b in spec.get("bindings", []):
         try:
             kc = resolve_key(b["key"])
-            mod = resolve_modifier(b.get("mods", []))
+            mod = resolve_modifier(b.get("mods", []), macos)
         except (KeyError, ValueError) as e:
             warnings.append(f"skipped {b}: {e}")
             continue
@@ -450,7 +526,8 @@ def _plane_for(result: dict, mod_name: str):
     return None, None
 
 
-def write_preview(result: dict, out: Path, scale: int = 6, cols: int = 6) -> list[Path]:
+def write_preview(result: dict, out: Path, scale: int = 6, cols: int = 6,
+                  name: str = "overlay_preview.png") -> list[Path]:
     """Single review sheet of the ORIGINAL overlay: only the populated keys, each
     drawn in its full 72x40 cell (so real placement is visible), enlarged and
     labelled `Mod+Key: action`. The program icon (ESC, all layers) is included
@@ -490,27 +567,52 @@ def write_preview(result: dict, out: Path, scale: int = 6, cols: int = 6) -> lis
         d.rectangle([x0, y0 + lbl, x0 + cw - 1, y0 + chh + lbl - 1], outline=(120, 120, 120))
         d.text((x0 + 2, y0 + 3), label, fill=(180, 0, 0) if prog else (0, 110, 0),
                font=_label_font())
-    p = out / "overlay_preview.png"
+    p = out / name
     sheet.save(p)
     return [p]
 
 
+TIER_SUFFIX = {"primary": ".mods.png", "combo": ".combo.mods.png",
+               "extra": ".extra.mods.png", "gui": ".gui.mods.png"}
+
+
+def overlay_files(output: str, result: dict) -> list[str]:
+    """Names of the PNGs this result actually produced, in tier order."""
+    return [f"{output}{sfx}" for tier, sfx in TIER_SUFFIX.items()
+            if result.get(tier) is not None]
+
+
+def _overlay_value(files: list[str]) -> str:
+    return files[0] if len(files) == 1 else "[" + ", ".join(files) + "]"
+
+
 def mapping_stanza(spec: dict, out_dir_label: str) -> str:
     names = spec.get("match") or [spec.get("app", "app")]
-    files = []
-    if spec.get("_has_primary"):
-        files.append(f"{spec['output']}.mods.png")
-    if spec.get("_has_combo"):
-        files.append(f"{spec['output']}.combo.mods.png")
-    if spec.get("_has_extra"):
-        files.append(f"{spec['output']}.extra.mods.png")
-    if spec.get("_has_gui"):
-        files.append(f"{spec['output']}.gui.mods.png")
-    overlay = files[0] if len(files) == 1 else "[" + ", ".join(files) + "]"
     title = spec.get("title")
-    lines = [f"{','.join(names)}:", f"  overlay: {overlay}"]
+    files = overlay_files(spec["output"], spec["_result"])
+    if not files:
+        # Every binding was skipped (see the `!` lines above), so there is no
+        # artwork to point at — emitting `overlay: []` would look like a valid
+        # stanza to paste.
+        return "(no overlay files were produced — nothing to add to the mapping)"
+    lines = [f"{','.join(names)}:", f"  overlay: {_overlay_value(files)}"]
     if title:
         lines.append(f"  title: {title}")
+    mac = spec.get("_result_macos")
+    if mac and overlay_files(macos_output(spec), mac):
+        # `os:` is the runtime half of CMDCTRL (added in the per-OS selection
+        # work); the token itself is authoring-time sugar that fills this branch
+        # in, so one binding file yields both artwork sets.
+        lines.append("  os:")
+        lines.append("    macos:")
+        lines.append(f"      overlay: {_overlay_value(overlay_files(macos_output(spec), mac))}")
+        if title:
+            # ⚠️ A matching `os:` branch is returned INSTEAD of the outer entry,
+            # not in addition to it (find_matching_entry recurses and returns the
+            # first match), so a title constraint has to be repeated inside the
+            # branch or the macOS artwork would match windows the outer `title:`
+            # was written to exclude.
+            lines.append(f"      title: {title}")
     return "\n".join(lines)
 
 
@@ -529,36 +631,51 @@ def main() -> int:
     spec = yaml.safe_load(args.bindings.read_text())
     base_dir = args.bindings.resolve().parent
     result = generate(spec, base_dir)
+    spec["_result"] = result
 
-    spec["_has_primary"] = result["primary"] is not None
-    spec["_has_combo"] = result["combo"] is not None
-    spec["_has_extra"] = result["extra"] is not None
-    spec["_has_gui"] = result["gui"] is not None
+    # A CMDCTRL binding means "Ctrl here, Cmd on macOS", so the spec describes TWO
+    # artwork sets. Render the second one only when the token is actually used —
+    # an app with no CMDCTRL binding keeps emitting exactly the files it did
+    # before, with no `os:` branch to keep in sync.
+    mac_result = generate(spec, base_dir, macos=True) if spec_uses_cmdctrl(spec) else None
+    spec["_result_macos"] = mac_result
+    mac_output = None
+    if mac_result:
+        # Resolve the macOS stem BEFORE anything is written: a colliding
+        # `output_macos` must abort with the tree untouched, not half-overwritten.
+        try:
+            mac_output = macos_output(spec)
+        except ValueError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 2
 
-    print(f"Placed {len(result['placed'])} overlays for {spec.get('app', '?')}:")
-    for p in result["placed"]:
-        print(f"  {p['key']:<18} {p['mod']:<11} ch={p['ch']} cell={p['cell']}  <- {p['src']}")
-    for w in result["warnings"]:
-        print(f"  ! {w}")
+    def report(res: dict, what: str) -> None:
+        print(f"Placed {len(res['placed'])} overlays for {spec.get('app', '?')}{what}:")
+        for p in res["placed"]:
+            print(f"  {p['key']:<18} {p['mod']:<11} ch={p['ch']} cell={p['cell']}  <- {p['src']}")
+        for w in res["warnings"]:
+            print(f"  ! {w}")
+
+    report(result, "")
+    if mac_result:
+        report(mac_result, " (macOS, CMDCTRL -> Cmd)")
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     if not args.dry_run:
-        if result["primary"] is not None:
-            save_png(result["primary"], args.out_dir / f"{spec['output']}.mods.png")
-            print(f"Wrote {args.out_dir / (spec['output'] + '.mods.png')}")
-        if result["combo"] is not None:
-            save_png(result["combo"], args.out_dir / f"{spec['output']}.combo.mods.png")
-            print(f"Wrote {args.out_dir / (spec['output'] + '.combo.mods.png')}")
-        if result["extra"] is not None:
-            save_png(result["extra"], args.out_dir / f"{spec['output']}.extra.mods.png")
-            print(f"Wrote {args.out_dir / (spec['output'] + '.extra.mods.png')}")
-        if result["gui"] is not None:
-            save_png(result["gui"], args.out_dir / f"{spec['output']}.gui.mods.png")
-            print(f"Wrote {args.out_dir / (spec['output'] + '.gui.mods.png')}")
+        for res, output in ((result, spec["output"]),
+                            *([(mac_result, mac_output)] if mac_result else ())):
+            for tier, suffix in TIER_SUFFIX.items():
+                if res[tier] is not None:
+                    path = args.out_dir / f"{output}{suffix}"
+                    save_png(res[tier], path)
+                    print(f"Wrote {path}")
 
     if args.preview:
         for p in write_preview(result, args.preview):
             print(f"Preview {p}")
+        if mac_result:
+            for p in write_preview(mac_result, args.preview, name="overlay_preview_macos.png"):
+                print(f"Preview {p}")
 
     print("\n--- paste into polyhost/res/overlay-mapping.poly.yaml ---")
     print(mapping_stanza(spec, str(args.out_dir)))

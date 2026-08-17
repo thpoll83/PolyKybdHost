@@ -109,6 +109,11 @@ class TestPolyHostModes(unittest.TestCase):
         # One stale bundle -> the row says so and offers the flash, rather than
         # a bare "Sync" whose effect you cannot know before clicking it.
         self.assertIn("FONT_ROW Update keyboard fonts (1)", proc.stdout)
+        # Failed-but-current-looking bundle: the row offers the retry and stays live.
+        self.assertIn("FONT_ROW_RETRY Retry keyboard fonts (1 failed)", proc.stdout)
+        self.assertIn("| enabled True", proc.stdout)
+        # Genuinely current: the row answers the question and disables itself.
+        self.assertIn("FONT_ROW_CURRENT Keyboard fonts: up to date", proc.stdout)
 
 
 # ---------------------------------------------------------------------------
@@ -219,12 +224,20 @@ def _smoke_client():
             self.install_update_called = True
             return (True, {"queued": True, "version": "9.9.9"})
 
+        # Mutated between _refresh_fontpack_action() calls below to drive the row's
+        # three states through the real RPC mirror.
+        fontpack_state = "stale"
+
         def fontpack_bundle_status(self):
+            stale = self.fontpack_state == "stale"
+            retry = self.fontpack_state == "retry"
             return (True, {"shipped": True, "bundles": [
-                {"id": "symbol", "index": 0, "device_version": 4,
-                 "shipped_version": 5, "stale": True},
+                {"id": "symbol", "index": 0, "device_version": 4 if stale else 5,
+                 "shipped_version": 5, "stale": stale,
+                 "retry": retry, "last_error": "COMMIT incomplete" if retry else ""},
                 {"id": "emoji", "index": 5, "device_version": 1,
-                 "shipped_version": 1, "stale": False}]})
+                 "shipped_version": 1, "stale": False, "retry": False}],
+                "failed": ["symbol"] if retry else []})
 
     addr = os.path.join(tempfile.mkdtemp(), "ctl.sock")
     key = protocol.load_or_create_authkey()
@@ -301,6 +314,16 @@ def _smoke_client():
             # comparison (over the RPC mirror) instead of hiding it in a dialog.
             app._refresh_fontpack_action()
             print("FONT_ROW", app.fontpack_update_action.text())
+            # A bundle whose last flash FAILED reads as up to date by version, so the
+            # row must offer a retry instead of claiming everything is fine — the
+            # state that left a failed bundle unreachable from the UI (2026-08-17).
+            core.fontpack_state = "retry"
+            app._refresh_fontpack_action()
+            print("FONT_ROW_RETRY", app.fontpack_update_action.text(),
+                  "| enabled", app.fontpack_update_action.isEnabled())
+            core.fontpack_state = "current"
+            app._refresh_fontpack_action()
+            print("FONT_ROW_CURRENT", app.fontpack_update_action.text())
             app.quit_app()
         print("SERVER_RUNNING", srv._running)
     finally:
