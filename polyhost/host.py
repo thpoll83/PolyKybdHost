@@ -402,6 +402,15 @@ class PolyHost(QApplication):
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
+        # "Send me your log" is otherwise a request nobody can satisfy: the logs
+        # are five rotating files in the working directory, and in daemon mode
+        # the half that matters is the daemon's, not this process's.
+        self.collect_logs_action = QAction(get_icon("archive.svg"),
+                                           "Collect logs...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.collect_logs_action.triggered.connect(self.open_log_bundle)
+        self.log_bundle_dialog = None
+
         self.fontpack_inspector_action = QAction(get_icon("frame_inspect.svg"), "Inspect Font Packs...", parent=self)
         # noinspection PyUnresolvedReferences
         self.fontpack_inspector_action.triggered.connect(self.open_fontpack_inspector)
@@ -643,6 +652,7 @@ class PolyHost(QApplication):
         self.help_menu = self.menu.addMenu(get_icon("help.svg"), "Help && About")
         self.help_menu.addAction(self.about)
         self.help_menu.addAction(self.log_dialog)
+        self.help_menu.addAction(self.collect_logs_action)
         # settings.yaml + overlay-mapping.poly.yaml live in a platformdirs path
         # nobody can guess; editing a mapping meant reading it out of About first.
         self.open_config_action = QAction(get_icon("file_open.svg"),
@@ -1433,10 +1443,28 @@ class PolyHost(QApplication):
         # (especially under Windows pythonw, where print() goes nowhere).
         if os.path.exists("startup_log.txt"):
             log_files["Startup Log"] = "startup_log.txt"
-        self.log_viewer = LogViewerDialog(log_files)
+        self.log_viewer = LogViewerDialog(log_files, collect_cb=self.open_log_bundle)
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
+
+    def open_log_bundle(self):
+        """Open the log-collection dialog (bundle .zip / clipboard).
+
+        Kept out of __init__ so PyQt only imports it on demand. The dialog is
+        modeless and stashed on self — a local would be garbage-collected the
+        moment this returns, taking the window with it (the same reason
+        open_log holds self.log_viewer)."""
+        from polyhost.gui.log_bundle_dialog import LogBundleDialog
+        # The bundle embeds the same text as About's "Copy diagnostics" button,
+        # so a support bundle identifies the versions and connection state it
+        # came from without a second round trip.
+        self.log_bundle_dialog = LogBundleDialog(
+            parent=None,
+            diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()))
+        self.log_bundle_dialog.show()
+        self.log_bundle_dialog.raise_()
+        self.log_bundle_dialog.activateWindow()
 
     def open_fontpack_inspector(self):
         from polyhost.gui.fontpack_inspector_dialog import FontPackInspectorDialog
