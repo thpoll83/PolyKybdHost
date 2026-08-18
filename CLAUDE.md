@@ -874,6 +874,48 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the box is unticked; default is OFF because a first support round with everything
     masked usually has to be repeated. `browser_report_token` / `telemetry_install_id`
     are masked **always**, independent of that flag.
+- ⚠️ **"The tray icon is gone" is NOT the same as "the app crashed" — check the
+  process list before diagnosing anything else.** Field, 2026-08-18: the tray
+  vanished, `startup_log.txt` and `daemon_log.txt` showed nothing wrong, the user
+  relaunched, and it read as a silent crash. `Get-Process pythonw | Select Id,
+  StartTime` settled it in one command — **the original GUI was still running**,
+  minus its icon. Three things conspired, all now fixed on this branch:
+  - **The logon race.** The autostart scheduled task starts the GUI before
+    Explorer's notification area exists; `Shell_NotifyIcon` fails and the icon
+    never appears. Qt re-adds only on Explorer's `TaskbarCreated` broadcast, which
+    it sends when it **restarts**, not when it finishes starting — so losing that
+    race is permanent for the session. `host.py` called `setVisible(True)`
+    unconditionally and nothing anywhere in the app called
+    `isSystemTrayAvailable()`. Now `gui/tray_wait.py` waits for the tray (1→15 s
+    backoff, 5 min cap) and logs both the wait and the eventual show.
+    ⚠️ That check only looks for the shell's tray window, so it can say "available"
+    while the add still fails; if this recurs *with* "icon shown" in the log, the
+    remaining lever is a forced `hide()`/`show()` re-add.
+  - **Nothing could have recorded a crash if there had been one.** Under
+    `pythonw.exe` stderr is a black hole, and the app had no `sys.excepthook`, no
+    `threading.excepthook`, no `faulthandler` and no `qInstallMessageHandler` — so
+    PyQt's abort-on-unhandled-exception-in-a-slot (it calls the excepthook, *then*
+    `qFatal`) left zero trace. `util/crash_log.py` + `gui/qt_crash.py` now capture
+    all four, into `crash_log.txt`; a `session start` line with no matching
+    `clean exit` is itself the diagnosis.
+  - **Losing the tray costs the menu, not the keyboard.** Under daemon-by-default
+    the daemon owns the device, window tracking and overlays, so it kept switching
+    overlays for 14 minutes with no GUI attached — which is *why* nothing looked
+    broken. Also note the control server logs **nothing** when a client connects or
+    disconnects, so the daemon log can never date a GUI's death.
+  - ⚠️ **A tray "Quit" and a crash were previously indistinguishable in the logs** —
+    `quit_app()` writes no line. Don't reason about whether the GUI exited on
+    purpose from `startup_log.txt`; use the crash-log markers.
+- ⚠️ **The self-updater copies release files over a git checkout — `git log -1` can
+  be months behind what is actually running.** `apply_update()` is
+  `copytree(dirs_exist_ok=True)`: it overwrites and never deletes, and `copy2`
+  preserves the *tarball's* mtime, so on-disk timestamps show the release date, not
+  the day it was installed. A field machine sat on a July feature branch (HEAD
+  0.9.47) while running v0.11.10 from the release, with 354 files showing as
+  modified and a reflog untouched for two weeks. When a report's version doesn't
+  match the branch, that is the explanation — the running code is the release, and
+  `_version.py` on disk is the only thing that says which.
+
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.

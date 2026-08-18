@@ -154,6 +154,13 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     slog.info("PolyKybdHost %s launching | platform=%s %s | interpreter=%s | argv=%s",
               _ver, _platform.system(), _platform.release(), sys.executable, sys.argv[1:])
     slog.info("Developer mode=%s (source=%s), log verbosity=%d", developer, dev_source, verbosity)
+    # Crash capture, as early as possible: under pythonw an unhandled exception
+    # (PyQt aborts after the hook) or a hard fault leaves NO trace at all, which
+    # is why a vanished tray icon could not be told apart from a live process
+    # until someone listed the running pids (field, 2026-08-18). Installed here
+    # so it covers every launch path — GUI, headless daemon and forwarder alike.
+    from polyhost.util import crash_log
+    crash_log.install(slog)
     if args.debug_legacy is not None:
         slog.warning("--debug is deprecated; use --dev %d instead.", args.debug_legacy)
     # Pre-logging timing: how long the dependency bootstrap and the imports
@@ -306,6 +313,7 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         else:
             hl_level = logging.INFO
         run_headless(hl_level, ignore_version=args.ignore_version, developer=developer)
+        crash_log.note_clean_exit(slog, "headless daemon")
         sys.exit(0)
 
     # GUI / forwarder paths: import Qt lazily, only here.
@@ -370,6 +378,9 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
 
     slog.info("Handoff complete; entering the Qt event loop.")
     rc = app.exec_()
+    # The counterpart to the crash_log session marker: a launch with no matching
+    # clean-exit line was killed or crashed.
+    crash_log.note_clean_exit(slog, "Qt event loop", rc)
     # A self-update that lands mid-session asks for a re-exec into the freshly
     # installed version. Do it here — after the event loop has fully unwound —
     # rather than calling os.execv from inside a Qt slot with the tray/timer
