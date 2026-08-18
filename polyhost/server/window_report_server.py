@@ -15,171 +15,63 @@ the network would expose all of that; this exposes only the window report. The
 device-control surface stays on the local-only UDS / named-pipe endpoint served
 by :class:`polyhost.server.control_server.ControlServer`.
 
+The listener plumbing (accept loop, per-connection reader, hello frame, the
+non-deadlocking ``stop()``) is shared with the control server via
+:class:`polyhost.server.mpc_listener.MpcListenerServer`; only :meth:`dispatch`
+is local, which is exactly where the surface difference belongs.
+
 Transport is the same stdlib ``multiprocessing.connection`` as the local
 socket, here over ``AF_INET``. Its HMAC challenge auth is not strong crypto
 (see the stdlib docs) but is vastly better than the plaintext relay it replaces
 and is appropriate for a LAN window-title feed. It is **opt-in** — off by
 default, since it opens a network port.
 """
-import multiprocessing.connection as mpc
-import socket
-import threading
-
 from polyhost.server import protocol as p
+from polyhost.server.mpc_listener import MpcListenerServer
 
 
-class WindowReportServer:
+class WindowReportServer(MpcListenerServer):
     """Serve only ``window.report`` over an authenticated AF_INET socket."""
 
     def __init__(self, on_report, host_version, log, *,
                  bind_host="0.0.0.0", port=None, authkey=None):
         self._on_report = on_report
-        self.host_version = host_version
-        self.log = log
-        self.port = port if port is not None else p.WINDOW_REPORT_PORT
-        self.address = (bind_host, self.port)
-        self.authkey = (authkey if authkey is not None
-                        else p.load_or_create_authkey(p.window_report_authkey_path()))
+        port = port if port is not None else p.WINDOW_REPORT_PORT
+        super().__init__(
+            address=(bind_host, port),
+            family="AF_INET",
+            authkey=(authkey if authkey is not None
+                     else p.load_or_create_authkey(p.window_report_authkey_path())),
+            host_version=host_version,
+            log=log,
+            thread_prefix="winreport")
+        self.port = port
 
-        self._listener = None
-        self._accept_thread = None
-        self._running = False
-        self._conns = set()
-        self._lock = threading.Lock()
-
-    # ------------------------------------------------------------------
-    # Lifecycle
-    # ------------------------------------------------------------------
+    def wake_address(self):
+        """Dial loopback rather than the bound host: this server binds a
+        wildcard (``0.0.0.0``) by design, and a wildcard is bindable but not
+        connectable — ``stop()`` would never wake ``accept()``."""
+        host = self.address[0]
+        if host in ("", "0.0.0.0"):
+            return ("127.0.0.1", self.port)
+        return self.address
 
     def start(self):
-        self._listener = mpc.Listener(self.address, family="AF_INET", authkey=self.authkey)
-        self._running = True
-        self._accept_thread = threading.Thread(
-            target=self._accept_loop, name="winreport-accept", daemon=True)
-        self._accept_thread.start()
+        super().start()
         self.log.info(
             "Window-report network listener on %s:%d (auth-gated, '%s' only)",
             self.address[0], self.port, p.M_WINDOW_REPORT)
 
-    def stop(self):
-        """Stop accepting and close everything. Best-effort, never raises."""
-        self._running = False
-        listener = self._listener
-        if listener is not None:
-            # Unblock the blocking accept() by poking the port with a
-            # short-lived RAW connection, then close the listener. A bounded raw
-            # socket is used deliberately rather than an authed mpc.Client: if
-            # the accept thread has already exited (a race when stop() lands
-            # right as the loop re-checks _running), an mpc.Client's auth
-            # handshake would have no one to answer it and would block stop()
-            # forever. The raw connect+close just wakes accept()'s socket and
-            # returns within the timeout regardless of the thread's state; the
-            # server-side handshake on it then fails fast (EOF) and the loop,
-            # seeing _running False, breaks.
-            try:
-                waker = socket.create_connection(("127.0.0.1", self.port), timeout=1.0)
-                waker.close()
-            except OSError:
-                pass
-            try:
-                listener.close()
-            except Exception:
-                pass
-        with self._lock:
-            conns = list(self._conns)
-            self._conns.clear()
-        for conn in conns:
-            try:
-                conn.close()
-            except Exception:
-                pass
-
-    # ------------------------------------------------------------------
-    # Accept loop + per-connection handler
-    # ------------------------------------------------------------------
-
-    def _accept_loop(self):
-        while self._running:
-            try:
-                conn = self._listener.accept()
-            except Exception:
-                # AuthenticationError on a bad key, the listener closed on
-                # stop(), or a transport error on one client — keep serving
-                # unless we're shutting down.
-                if not self._running:
-                    break
-                continue
-            if not self._running:
-                try:
-                    conn.close()
-                except Exception:
-                    pass
-                break
-            with self._lock:
-                self._conns.add(conn)
-            t = threading.Thread(target=self._handle_connection, args=(conn,),
-                                 name="winreport-conn", daemon=True)
-            t.start()
-
-    def _handle_connection(self, conn):
-        # The very first frame is the server's hello notification.
-        try:
-            p.send_message(conn, p.make_notification(
-                p.HELLO, p.hello_params(self.host_version)))
-        except Exception:
-            self._drop(conn)
-            return
-        try:
-            while True:
-                try:
-                    msg = p.recv_message(conn)
-                except (EOFError, OSError):
-                    break
-                except Exception:
-                    self.log.warning("Window-report listener: malformed frame")
-                    break
-                self._dispatch(conn, msg)
-        finally:
-            self._drop(conn)
-
-    def _dispatch(self, conn, msg):
-        req_id = msg.get("id") if isinstance(msg, dict) else None
-        method = msg.get("method") if isinstance(msg, dict) else None
-        params = (msg.get("params") if isinstance(msg, dict) else None) or {}
-        if req_id is None:
-            return  # notification — nothing client->server is expected
+    def dispatch(self, conn, req_id, method, params):
         if method != p.M_WINDOW_REPORT:
             # The entire security model rests on nothing else being reachable.
-            self._reply(conn, p.make_error(
+            return p.make_error(
                 req_id, p.ERR_METHOD_NOT_FOUND,
-                f"only '{p.M_WINDOW_REPORT}' is served on the network endpoint"))
-            return
-        try:
-            ret = self._on_report(params["handle"], params["name"],
-                                  params.get("title", ""), os=params.get("os"),
-                                  url=params.get("url"))
-            # report_window returns the (ok, payload) contract; surface failure.
-            if isinstance(ret, tuple) and len(ret) == 2 and not ret[0]:
-                reply = p.make_error(req_id, p.ERR_DEVICE, str(ret[1]))
-            else:
-                reply = p.make_response(req_id, {"ok": True})
-        except (KeyError, TypeError, ValueError) as e:
-            reply = p.make_error(req_id, p.ERR_INVALID_PARAMS, f"{type(e).__name__}: {e}")
-        except Exception as e:  # noqa: BLE001 — last-resort guard
-            self.log.exception("Window-report handler failed")
-            reply = p.make_error(req_id, p.ERR_INTERNAL, f"{type(e).__name__}: {e}")
-        self._reply(conn, reply)
-
-    def _reply(self, conn, obj):
-        try:
-            p.send_message(conn, obj)
-        except Exception:
-            self._drop(conn)
-
-    def _drop(self, conn):
-        with self._lock:
-            self._conns.discard(conn)
-        try:
-            conn.close()
-        except Exception:
-            pass
+                f"only '{p.M_WINDOW_REPORT}' is served on the network endpoint")
+        ret = self._on_report(params["handle"], params["name"],
+                              params.get("title", ""), os=params.get("os"),
+                              url=params.get("url"))
+        # report_window returns the (ok, payload) contract; surface failure.
+        if isinstance(ret, tuple) and len(ret) == 2 and not ret[0]:
+            return p.make_error(req_id, p.ERR_DEVICE, str(ret[1]))
+        return p.make_response(req_id, {"ok": True})

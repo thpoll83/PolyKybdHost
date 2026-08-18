@@ -43,6 +43,7 @@ from polyhost.services import telemetry as telemetry_svc
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
+from polyhost.util.observable import Observable
 
 RECONNECT_CYCLE_MSEC = 1000
 # After an overlay/MRU send the keyboard goes deaf for a few hundred ms while it
@@ -76,7 +77,29 @@ def strip_key_injection(lines):
     return kept, len(lines) - len(kept)
 
 
-class PolyCore:
+def flash_progress_relay(emit, cancel, kind):
+    """Build the ``(progress_cb, cancel_flag)`` pair every font-pack-transport
+    flash hands to its engine.
+
+    ``cancel_flag`` is a one-element **list** because the flash engines poll it
+    by reference between chunks — a plain bool could never reach them — and the
+    only thing that ever raises it is a progress callback noticing the worker's
+    cancel Event (a supersede or a ``suspend()``). Getting that wiring wrong
+    fails silently: the flash simply becomes uncancellable, which is why it
+    lives in one place rather than being re-typed at each of the five call
+    sites. Takes ``emit`` rather than a core so it stays a plain function.
+    """
+    cancel_flag = [False]
+
+    def _progress(pct, m):
+        if cancel.is_set():
+            cancel_flag[0] = True      # relay supersede/suspend to the engine
+        emit("fontpack_flash_progress", {"pct": pct, "msg": m, "kind": kind})
+
+    return _progress, cancel_flag
+
+
+class PolyCore(Observable):
     """Operational facade: commands in, events out. No Qt, no widgets."""
 
     def __init__(self, log, ignore_version=False, start_worker=True,
@@ -169,9 +192,9 @@ class PolyCore:
             self.log.info("Not yet connected to PolyKybd...")
 
         # Observers: each is a callable(name, payload). Callbacks must be
-        # fast and exception-safe from the caller's perspective.
-        self._observers = []
-        self._observers_lock = threading.Lock()
+        # fast and exception-safe from the caller's perspective; Observable
+        # isolates one raising observer from the rest and from this thread.
+        Observable.__init__(self, log)
 
         # Overlay mapping + active-window handler. pywinctl hard-fails at
         # import without a display, so the handler is created lazily and
@@ -236,19 +259,8 @@ class PolyCore:
     # Observer plumbing
     # ------------------------------------------------------------------
 
-    def subscribe(self, callback):
-        """Register callable(name, payload); fired on core/worker threads."""
-        with self._observers_lock:
-            self._observers.append(callback)
-
-    def emit(self, name, payload):
-        with self._observers_lock:
-            observers = list(self._observers)
-        for cb in observers:
-            try:
-                cb(name, payload)
-            except Exception:  # one broken client must not break the core
-                self.log.exception("Core event observer failed for %r", name)
+    # subscribe() / emit() come from Observable (polyhost/util/observable.py) —
+    # the same seam RemoteCore exposes, so PolyHost can consume either.
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -1338,6 +1350,52 @@ class PolyCore:
         self.worker.submit("fw_flash", _job)
         return True, {"queued": True, "apply": bool(apply)}
 
+    def _flash_resource(self, path, *, job_name, noun, validate, run, kind,
+                        telemetry_counter=None):
+        """Shared body of every resource flash that rides the font-pack transport.
+
+        The font-pack bundle, the doom game data (``.whx``) and the doom engine
+        pack (``.plyx``) all take the same route to the keyboard and differ in
+        only four things — the "cannot read" noun, the validator, how the flash
+        engine is invoked, and the ``kind`` tag on the events. Everything else is
+        identical and lives here: the firmware-action gate, fail-fast reading +
+        validation returning the uniform ``(ok, payload)`` contract, the
+        **uncoalesced** worker job, the cancel relay into the flash engine, and
+        the ``fontpack_flash_progress`` / ``fontpack_flash_done`` event pair that
+        ``polyctl`` and the tray render their wording from (via ``kind``).
+
+        ``run(data, progress_cb, cancel_flag)`` performs the actual upload and
+        returns the engines' ``(ok, msg, commit_status)``; it is a closure rather
+        than a set of flags because the engines genuinely disagree on their
+        argument (``flash_fontpack`` re-opens the path, the doom flashers take the
+        read bytes). The ``commit_status`` is discarded here on purpose: only the
+        multi-bundle pass (``_fontpack_flash_bundles_job``) acts on it, to tell a
+        lost COMMIT acknowledgement apart from a real refusal and decide whether to
+        queue a retry. A single explicit flash has nothing to retry into — its
+        caller asked for exactly this one upload and gets the plain verdict."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot flash."
+        try:
+            with open(path, "rb") as f:
+                data = f.read()
+        except OSError as e:
+            return False, f"Cannot read {noun}: {e}"
+        ok, msg = validate(data)
+        if not ok:
+            return False, msg
+        if telemetry_counter is not None:
+            self.telemetry.note(telemetry_counter)
+
+        def _job(cancel):
+            progress, cancel_flag = flash_progress_relay(self.emit, cancel, kind)
+            fok, fmsg, _status = run(data, progress, cancel_flag)
+            self.emit("fontpack_flash_done",
+                      {"ok": bool(fok), "msg": fmsg, "kind": kind})
+
+        # No coalesce_key: a flash must never be superseded by a later job.
+        self.worker.submit(job_name, _job)
+        return True, {"queued": True}
+
     def flash_fontpack(self, path, bundle_id=0):
         """Flash an external-flash ``.plyf`` font-pack bundle as a worker job.
 
@@ -1347,36 +1405,18 @@ class PolyCore:
         in place on COMMIT (no reboot). Gating + header validation happen
         synchronously (uniform ``(ok, payload)``); the upload then streams
         ``fontpack_flash_progress`` events with a terminal ``fontpack_flash_done``."""
-        if not self._fw_actions_allowed():
-            return False, "No PolyKybd present (or paused) — cannot flash."
-        try:
-            with open(path, "rb") as f:
-                pack_bytes = f.read()
-        except OSError as e:
-            return False, f"Cannot read font-pack file: {e}"
-        ok, msg = hid_fontpack.validate_fontpack(pack_bytes)
-        if not ok:
-            return False, msg
-        self.telemetry.note("fontpack_flashes")
-
-        def _job(cancel):
-            cancel_flag = [False]
-
-            def _progress(pct, m):
-                if cancel.is_set():
-                    cancel_flag[0] = True      # relay supersede/suspend to hid_fontpack
-                self.emit("fontpack_flash_progress",
-                          {"pct": pct, "msg": m, "kind": events.FLASH_KIND_FONTPACK})
-
-            fok, fmsg, _status = hid_fontpack.flash_fontpack(
-                self.keeb.hid, path, progress_cb=_progress, cancel_flag=cancel_flag,
-                bundle_id=bundle_id)
-            self.emit("fontpack_flash_done",
-                      {"ok": bool(fok), "msg": fmsg, "kind": events.FLASH_KIND_FONTPACK})
-
-        # No coalesce_key: a flash must never be superseded by a later job.
-        self.worker.submit("fontpack_flash", _job)
-        return True, {"queued": True}
+        return self._flash_resource(
+            path,
+            job_name="fontpack_flash",
+            noun="font-pack file",
+            validate=hid_fontpack.validate_fontpack,
+            # The bundle flasher re-opens the path itself (it streams the file).
+            run=lambda data, progress, flag: hid_fontpack.flash_fontpack(
+                self.keeb.hid, path, progress_cb=progress, cancel_flag=flag,
+                bundle_id=bundle_id),
+            kind=events.FLASH_KIND_FONTPACK,
+            # Counts the ATTEMPT, not the outcome — see flash_firmware.
+            telemetry_counter="fontpack_flashes")
 
     def install_doomwad(self, path):
         """Install the doom easter egg's WHX game data (both halves) as a worker job.
@@ -1387,34 +1427,14 @@ class PolyCore:
         (``fontpack_flash_progress``/``fontpack_flash_done``), so ``polyctl`` and the
         tray progress surfaces work unchanged. Old firmware without the DOOMWAD
         target NACKs the BEGIN — reported as a plain error, nothing bricks."""
-        if not self._fw_actions_allowed():
-            return False, "No PolyKybd present (or paused) — cannot flash."
-        try:
-            with open(path, "rb") as f:
-                whx_bytes = f.read()
-        except OSError as e:
-            return False, f"Cannot read game-data file: {e}"
-        ok, msg = hid_fontpack.validate_doomwad(whx_bytes)
-        if not ok:
-            return False, msg
-
-        def _job(cancel):
-            cancel_flag = [False]
-
-            def _progress(pct, m):
-                if cancel.is_set():
-                    cancel_flag[0] = True
-                self.emit("fontpack_flash_progress",
-                          {"pct": pct, "msg": m, "kind": events.FLASH_KIND_DOOMWAD})
-
-            fok, fmsg, _status = hid_fontpack.flash_doomwad(
-                self.keeb.hid, whx_bytes, progress_cb=_progress, cancel_flag=cancel_flag)
-            self.emit("fontpack_flash_done",
-                      {"ok": bool(fok), "msg": fmsg, "kind": events.FLASH_KIND_DOOMWAD})
-
-        # No coalesce_key: a flash must never be superseded by a later job.
-        self.worker.submit("doomwad_install", _job)
-        return True, {"queued": True}
+        return self._flash_resource(
+            path,
+            job_name="doomwad_install",
+            noun="game-data file",
+            validate=hid_fontpack.validate_doomwad,
+            run=lambda data, progress, flag: hid_fontpack.flash_doomwad(
+                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag),
+            kind=events.FLASH_KIND_DOOMWAD)
 
     def install_doompack(self, path):
         """Install the doom easter egg's executable engine pack (.plyx, both
@@ -1424,34 +1444,14 @@ class PolyCore:
         :meth:`install_doomwad`, with the DOOMPACK pseudo bundle routing it
         to the engine-pack slot. Old firmware without the target NACKs the
         BEGIN — plain error, nothing bricks."""
-        if not self._fw_actions_allowed():
-            return False, "No PolyKybd present (or paused) — cannot flash."
-        try:
-            with open(path, "rb") as f:
-                pack_bytes = f.read()
-        except OSError as e:
-            return False, f"Cannot read engine-pack file: {e}"
-        ok, msg = hid_fontpack.validate_doompack(pack_bytes)
-        if not ok:
-            return False, msg
-
-        def _job(cancel):
-            cancel_flag = [False]
-
-            def _progress(pct, m):
-                if cancel.is_set():
-                    cancel_flag[0] = True
-                self.emit("fontpack_flash_progress",
-                          {"pct": pct, "msg": m, "kind": events.FLASH_KIND_DOOMPACK})
-
-            fok, fmsg, _status = hid_fontpack.flash_doompack(
-                self.keeb.hid, pack_bytes, progress_cb=_progress, cancel_flag=cancel_flag)
-            self.emit("fontpack_flash_done",
-                      {"ok": bool(fok), "msg": fmsg, "kind": events.FLASH_KIND_DOOMPACK})
-
-        # No coalesce_key: a flash must never be superseded by a later job.
-        self.worker.submit("doompack_install", _job)
-        return True, {"queued": True}
+        return self._flash_resource(
+            path,
+            job_name="doompack_install",
+            noun="engine-pack file",
+            validate=hid_fontpack.validate_doompack,
+            run=lambda data, progress, flag: hid_fontpack.flash_doompack(
+                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag),
+            kind=events.FLASH_KIND_DOOMPACK)
 
     def flash_fontpack_bundle(self, bundle):
         """Flash one shipped bundle (by id, e.g. ``"emoji"``, or its slot index) to
@@ -1514,13 +1514,8 @@ class PolyCore:
         if self._fontpack_flash_in_progress:
             return
         self._fontpack_flash_in_progress = True
-        cancel_flag = [False]
-
-        def _progress(pct, m):
-            if cancel.is_set():
-                cancel_flag[0] = True
-            self.emit("fontpack_flash_progress",
-                      {"pct": pct, "msg": m, "kind": events.FLASH_KIND_FONTPACK})
+        _progress, cancel_flag = flash_progress_relay(
+            self.emit, cancel, events.FLASH_KIND_FONTPACK)
 
         fd, path = tempfile.mkstemp(suffix=".plyf", prefix="polykybd_wipe_")
         try:
@@ -1647,13 +1642,8 @@ class PolyCore:
             return
 
         self._fontpack_flash_in_progress = True
-        cancel_flag = [False]
-
-        def _progress(pct, m):
-            if cancel.is_set():
-                cancel_flag[0] = True
-            self.emit("fontpack_flash_progress",
-                      {"pct": pct, "msg": m, "kind": events.FLASH_KIND_FONTPACK})
+        _progress, cancel_flag = flash_progress_relay(
+            self.emit, cancel, events.FLASH_KIND_FONTPACK)
 
         try:
             n = len(targets)

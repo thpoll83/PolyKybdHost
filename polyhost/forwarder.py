@@ -8,10 +8,7 @@ import sys
 import time
 
 
-import subprocess
-
-from PyQt5.QtCore import QTimer, Qt, QObject, pyqtSignal
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtCore import QTimer, QObject, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication,
     QSystemTrayIcon,
@@ -22,6 +19,8 @@ from PyQt5.QtWidgets import (
 from polyhost._version import __version__
 from polyhost.services import problem_report
 from polyhost.gui.get_icon import get_icon
+from polyhost.gui.theme import apply_dark_palette
+from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.qt_crash import install_qt_message_handler
 from polyhost.gui.tray_wait import TrayVisibilityWaiter
@@ -208,7 +207,7 @@ class PolyForwarder(QApplication):
         self._update_bridge.failed.connect(self._on_update_failed)
         self._update_checker = None
         self._update_installer = None
-        self._update_progress = None
+        self._update_ui = UpdateProgressController(self.log)
 
         self.menu.addAction(self.log_dialog)
         self.menu.addAction(self.report_problem_action)
@@ -225,28 +224,9 @@ class PolyForwarder(QApplication):
         QTimer.singleShot(1000, self.active_window_reporter)
 
     def set_style(self):
-        self.setStyle("Fusion")
-        # Now use a palette to switch to dark colors:
-        palette = QPalette()
-        base_color = QColor(35, 35, 35)
-        window_base_color = QColor(80, 80, 80)
-        text_color = QColor(200, 200, 200)
-        highlight_text_color = QColor(255, 255, 255)
-        palette.setColor(QPalette.Window, window_base_color)
-        palette.setColor(QPalette.WindowText, text_color)
-        palette.setColor(QPalette.Base, base_color)
-        palette.setColor(QPalette.AlternateBase, window_base_color)
-        palette.setColor(QPalette.ToolTipBase, base_color)
-        palette.setColor(QPalette.ToolTipText, text_color)
-        palette.setColor(QPalette.Text,text_color)
-        palette.setColor(QPalette.Button, window_base_color)
-        palette.setColor(QPalette.ButtonText, text_color)
-        palette.setColor(QPalette.BrightText, Qt.red)
-        palette.setColor(QPalette.Link, QColor(42, 130, 218))
-        palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-        palette.setColor(QPalette.HighlightedText, highlight_text_color)
-        self.setPalette(palette)
-        
+        """Dark Fusion theme — shared with PolyHost (gui/theme.py)."""
+        apply_dark_palette(self)
+
     def _on_browser_url_changed(self):
         """A tab switch / SPA navigation changed the URL. The window-change test
         below is handle+title, which such a change does not move, so flag it and
@@ -429,12 +409,12 @@ class PolyForwarder(QApplication):
         if self._update_installer is not None and self._update_installer.is_alive():
             return
         self.update_action.setEnabled(False)
-        self._update_progress = QProgressDialog(
-            f"Downloading v{release.version}…", "", 0, 100)
-        self._update_progress.setWindowTitle("PolyKybdHost Update")
-        self._update_progress.setCancelButton(None)
-        self._update_progress.setMinimumDuration(0)
-        self._update_progress.show()
+        dlg = QProgressDialog(f"Downloading v{release.version}…", "", 0, 100)
+        dlg.setWindowTitle("PolyKybdHost Update")
+        dlg.setCancelButton(None)
+        dlg.setMinimumDuration(0)
+        dlg.show()
+        self._update_ui.attach(dlg)
         ub = self._update_bridge
         self._update_installer = UpdateInstaller(
             release,
@@ -446,20 +426,10 @@ class PolyForwarder(QApplication):
         self._update_installer.start()
 
     def _on_update_progress(self, percent, message):
-        if self._update_progress is None:
-            return
-        self._update_progress.setLabelText(message)
-        if percent < 0:
-            self._update_progress.setRange(0, 0)
-        else:
-            if self._update_progress.maximum() == 0:
-                self._update_progress.setRange(0, 100)
-            self._update_progress.setValue(percent)
+        self._update_ui.on_progress(percent, message)
 
     def _on_update_done(self):
-        if self._update_progress is not None:
-            self._update_progress.close()
-            self._update_progress = None
+        self._update_ui.close()
         self.log.info("Update applied, restarting forwarder...")
         # Re-exec from a clean state after the event loop exits (see
         # `wants_restart` and main_app), not with os.execv from inside this
@@ -468,20 +438,23 @@ class PolyForwarder(QApplication):
         self.quit_app()
 
     def _on_relay_needed(self, relay_path):
-        if self._update_progress is not None:
-            self._update_progress.setLabelText("Restarting to complete update…")
-            self._update_progress.setValue(100)
-        popen_kwargs = {"close_fds": False}
-        if sys.platform == "win32":
-            popen_kwargs["creationflags"] = (
-                subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
-        subprocess.Popen([sys.executable, relay_path], **popen_kwargs)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        """Windows: some files were locked; a relay script finishes the copy
+        once we exit. Spawned through the shared controller so it gets the
+        normalised (windowless) interpreter and updater.spawn_detached — this
+        used to be a bare Popen on sys.executable, which left the restarted
+        forwarder owning a console window and dying with any job object."""
+        if not self._update_ui.stage_relay(relay_path):
+            # Nothing will finish the locked-file copy if we exit now, and the
+            # tree is already partially rewritten — surface it and stay up.
+            self._on_update_failed(
+                "Could not start the update relay; the update is incomplete. "
+                "See the log for details.")
+            return
+        # Brief pause so the user sees the "Restarting" label before we vanish.
         QTimer.singleShot(1200, self.quit)
 
     def _on_update_failed(self, message):
-        if self._update_progress is not None:
-            self._update_progress.close()
-            self._update_progress = None
+        self._update_ui.close()
         self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
         QMessageBox.warning(
