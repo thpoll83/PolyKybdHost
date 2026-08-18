@@ -307,16 +307,99 @@ def recent_text(log_dir: Path | str | None = None, since: datetime | None = None
     return "\n\n".join(chunks)
 
 
-def environment_text() -> str:
-    """Minimal environment block, available without Qt or a running daemon."""
+def os_detail() -> str:
+    """A version string that actually identifies the OS.
+
+    ``platform.release()`` alone is not diagnostic on two of the three
+    platforms: it returns **"10" on Windows 11** (only the build in
+    ``platform.version()`` — >= 22000 — tells them apart), and on Linux it
+    returns the *kernel* version rather than the distribution.
+    """
+    system = platform.system()
+    try:
+        if system == "Windows":
+            version = platform.version()               # e.g. "10.0.22631"
+            build = int(version.split(".")[2]) if version.count(".") >= 2 else 0
+            name = "Windows 11" if build >= 22000 else f"Windows {platform.release()}"
+            return f"{name} (build {version})"
+        if system == "Darwin":
+            mac = platform.mac_ver()[0]
+            return f"macOS {mac}" if mac else f"macOS (Darwin {platform.release()})"
+        if system == "Linux":
+            pretty = ""
+            try:
+                for line in Path("/etc/os-release").read_text(encoding="utf-8").splitlines():
+                    if line.startswith("PRETTY_NAME="):
+                        pretty = line.split("=", 1)[1].strip().strip('"')
+                        break
+            except OSError:
+                pass
+            return (f"{pretty} (kernel {platform.release()})" if pretty
+                    else f"Linux {platform.release()}")
+    except Exception:  # noqa: BLE001 — never let a version string break the bundle
+        pass
+    return f"{system} {platform.release()}".strip()
+
+
+def session_detail() -> str | None:
+    """Linux desktop + session type, and the window backend they select.
+
+    This is the single most load-bearing environment fact for a Linux report:
+    ``XDG_CURRENT_DESKTOP``/``XDG_SESSION_TYPE`` choose between the KDE D-Bus
+    reporter, the GNOME-Wayland extension path and plain pywinctl — so "overlays
+    do not follow my windows" cannot be diagnosed without them.
+    """
+    import os
+    if platform.system() != "Linux":
+        return None
+    desktop = os.environ.get("XDG_CURRENT_DESKTOP", "(unset)")
+    session = os.environ.get("XDG_SESSION_TYPE", "(unset)")
+    if desktop == "KDE":
+        backend = "kde_win_reporter (KWin script)"
+    elif session == "wayland":
+        backend = "gnome_wayland_reporter (needs the Window Reporter extension)"
+    else:
+        backend = "pywinctl (X11)"
+    return f"{desktop} / {session} -> {backend}"
+
+
+def autostart_detail() -> str | None:
+    """Which autostart mechanism is registered, if any.
+
+    ⚠️ On Windows this shells out to the task scheduler, so it is only gathered
+    where blocking is safe — inside :func:`build_bundle`, which the GUI runs on a
+    worker thread. "It stopped starting at login" is a whole family of reports
+    that this one line answers.
+    """
+    try:
+        from polyhost.services.add_to_startup import get_autostart_status
+        return get_autostart_status()
+    except Exception:  # noqa: BLE001 — a probe failure is not a bundle failure
+        return None
+
+
+def environment_text(include_slow: bool = False) -> str:
+    """Environment block, available without Qt or a running daemon.
+
+    ``include_slow`` adds probes that may shell out (autostart). Callers on the
+    GUI thread leave it off; :func:`build_bundle` turns it on because it runs on
+    a worker.
+    """
     from polyhost._version import __protocol__, __version__
     lines = [
         f"PolyHost version : {__version__}",
         f"Host protocol    : {__protocol__}",
         f"Python           : {platform.python_version()} ({sys.executable})",
-        f"OS               : {platform.system()} {platform.release()} ({platform.machine()})",
-        f"Collected        : {datetime.now().isoformat(timespec='seconds')}",
+        f"OS               : {os_detail()} ({platform.machine()})",
     ]
+    session = session_detail()
+    if session:
+        lines.append(f"Desktop session  : {session}")
+    if include_slow:
+        autostart = autostart_detail()
+        if autostart:
+            lines.append(f"Autostart        : {autostart}")
+    lines.append(f"Collected        : {datetime.now().isoformat(timespec='seconds')}")
     try:
         import platformdirs
         lines.append(f"Config dir       : {platformdirs.user_config_dir('PolyHost')}")
@@ -398,7 +481,7 @@ def build_bundle(dest: Path | str, log_dir: Path | str | None = None,
     dest.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("README.txt", _readme(since, redact, results))
-        diag = environment_text()
+        diag = environment_text(include_slow=True)
         if diagnostics:
             diag = f"{diagnostics.rstrip()}\n\n{diag}"
         zf.writestr("diagnostics.txt", diag + "\n")

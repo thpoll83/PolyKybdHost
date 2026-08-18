@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -50,6 +51,83 @@ class ParseSinceTest(unittest.TestCase):
         for spec in ("99999999999999999999h", "99999999999999999999w"):
             with self.assertRaises(ValueError):
                 lb.parse_since(spec, self.now)
+
+
+class EnvironmentDetailTest(unittest.TestCase):
+    """The environment block has to identify the machine, not merely mention it."""
+
+    def test_windows_11_is_not_reported_as_windows_10(self):
+        """platform.release() returns "10" on Windows 11 — only the build tells
+        them apart, so release alone actively misidentifies the OS."""
+        with mock.patch("platform.system", return_value="Windows"), \
+             mock.patch("platform.release", return_value="10"), \
+             mock.patch("platform.version", return_value="10.0.22631"):
+            self.assertIn("Windows 11", lb.os_detail())
+
+    def test_windows_10_stays_windows_10(self):
+        with mock.patch("platform.system", return_value="Windows"), \
+             mock.patch("platform.release", return_value="10"), \
+             mock.patch("platform.version", return_value="10.0.19045"):
+            detail = lb.os_detail()
+            self.assertIn("Windows 10", detail)
+            self.assertNotIn("Windows 11", detail)
+
+    def test_a_malformed_windows_version_does_not_raise(self):
+        with mock.patch("platform.system", return_value="Windows"), \
+             mock.patch("platform.release", return_value="10"), \
+             mock.patch("platform.version", return_value="garbage"):
+            self.assertTrue(lb.os_detail())
+
+    def test_macos_reports_its_product_version(self):
+        with mock.patch("platform.system", return_value="Darwin"), \
+             mock.patch("platform.mac_ver", return_value=("14.5", ("", "", ""), "arm64")):
+            self.assertIn("macOS 14.5", lb.os_detail())
+
+    def test_linux_reports_the_distro_not_only_the_kernel(self):
+        """A kernel version does not identify a distribution."""
+        with mock.patch("platform.system", return_value="Linux"):
+            detail = lb.os_detail()
+        self.assertTrue(detail)
+        self.assertNotEqual(detail, "Linux")
+
+    def test_session_detail_names_the_window_backend(self):
+        """XDG_CURRENT_DESKTOP/XDG_SESSION_TYPE select the backend, so a Linux
+        report is not diagnosable without them."""
+        with mock.patch("platform.system", return_value="Linux"):
+            with mock.patch.dict("os.environ", {"XDG_CURRENT_DESKTOP": "KDE",
+                                                "XDG_SESSION_TYPE": "x11"}):
+                self.assertIn("kde_win_reporter", lb.session_detail())
+            with mock.patch.dict("os.environ", {"XDG_CURRENT_DESKTOP": "GNOME",
+                                                "XDG_SESSION_TYPE": "wayland"}):
+                self.assertIn("gnome_wayland_reporter", lb.session_detail())
+            with mock.patch.dict("os.environ", {"XDG_CURRENT_DESKTOP": "GNOME",
+                                                "XDG_SESSION_TYPE": "x11"}):
+                self.assertIn("pywinctl", lb.session_detail())
+
+    def test_session_detail_is_linux_only(self):
+        for system in ("Windows", "Darwin"):
+            with mock.patch("platform.system", return_value=system):
+                self.assertIsNone(lb.session_detail())
+
+    def test_environment_text_carries_version_os_and_arch(self):
+        text = lb.environment_text()
+        self.assertIn("PolyHost version", text)
+        self.assertIn("OS ", text)
+        self.assertIn("Host protocol", text)
+
+    def test_slow_probes_are_opt_in(self):
+        """The autostart probe shells out on Windows, so a GUI-thread caller
+        must be able to leave it out."""
+        with mock.patch.object(lb, "autostart_detail",
+                               return_value="scheduled task (at logon)") as probe:
+            self.assertNotIn("Autostart", lb.environment_text())
+            probe.assert_not_called()
+            self.assertIn("Autostart", lb.environment_text(include_slow=True))
+
+    def test_a_failing_autostart_probe_is_not_fatal(self):
+        with mock.patch("polyhost.services.add_to_startup.get_autostart_status",
+                        side_effect=OSError("nope")):
+            self.assertIsNone(lb.autostart_detail())
 
 
 class SliceLinesTest(unittest.TestCase):

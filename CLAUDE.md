@@ -1050,12 +1050,52 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   match the branch, that is the explanation — the running code is the release, and
   `_version.py` on disk is the only thing that says which.
 
+- **"Report a Problem" is the guided sibling of log collection —
+  `polyhost/services/problem_report.py` + `gui/report_problem_dialog.py`.** The
+  tray's **Help & About → "Report a Problem…"** takes a description, builds a log
+  bundle, puts the composed issue body on the clipboard and opens a **pre-filled
+  GitHub issue** in the browser. "Collect logs…" beside it stays the manual half,
+  for when the file is going somewhere else. Four things are deliberate:
+  - ⚠️ **Redaction defaults ON here and OFF in "Collect logs…", and that
+    asymmetry is the point.** A local bundle is a file you inspect before
+    sending; a report is aimed at a **public** tracker. Same data, different
+    destination, so the safe default flips.
+  - **The issue body carries NO log lines** — only the description, the
+    diagnostics and the bundle's *filename*, with an instruction to attach it.
+    GitHub has no API to attach a file to an issue without a token, and shipping
+    one in an open-source client is shipping a public credential; more
+    importantly, an attachment is a file the reporter can look at before
+    uploading, which pasted log text is not.
+  - **Diagnostics are path-scrubbed** (`scrub_paths`): `_diagnostics_text` ends
+    with `Config:`/`Logs:` lines, and on every platform those contain the account
+    name (`C:\Users\tom\…`, `/home/tom/…`). Home → `~`, plus a regex for any
+    *other* user directory (a daemon under another account, another drive).
+  - **A pre-filled new-issue URL is a GET**, so an oversized body is truncated or
+    refused somewhere between browser and GitHub. `issue_url_for()` falls back to
+    the blank form above `MAX_URL_BYTES` (6000); the body is on the clipboard
+    either way, so the fallback costs a paste rather than the report. A test
+    pins that a *realistic* report still prefills — otherwise the fallback
+    quietly becomes the normal path.
+- ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
+  `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
+  menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
+  `host.py` is simply **absent** there until wired separately. It matters most
+  for support features: the forwarder runs on a **different machine** from the
+  keyboard, so its logs can never appear in a bundle collected host-side, and
+  its failure domain (which window backend that desktop selects, the report
+  transport, the authkey) is exactly the log-diagnosable kind. Both "Report a
+  Problem…" and "Collect logs…" are wired in both places, and the forwarder
+  supplies its **own** diagnostics text leading with `FORWARDER mode (no keyboard
+  attached to this machine)` — the plain version line otherwise reads exactly
+  like a report from the keyboard machine, which is a different failure domain
+  entirely. `tests/gui/host_client_test.py` has a `forwarder` smoke mode; it
+  **skips** without `pywinctl`, which `forwarder.py` imports at module load.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
   - **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
   - **To run the WHOLE suite** (not just `tests.device.*` — do this after any change touching
-    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5`
+    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5 pywinctl`
     (pip) **and** `xvfb x11-xserver-utils` (apt), run under `xvfb-run -a .venv/bin/python -m
     unittest discover -s ./tests -p "*_test.py"`. Without those deps `services/updater`,
     `sunlight_helper`, `langcode_flag`, `win_helper_parse`, and the `host_client`

@@ -415,6 +415,15 @@ class PolyHost(QApplication):
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
+        # The guided path: describe the problem, bundle the logs, open a
+        # pre-filled issue. "Collect logs..." below is the manual half, for when
+        # someone already knows where they are sending the file.
+        self.report_problem_action = QAction(get_icon("feedback.svg"),
+                                             "Report a Problem...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.report_problem_action.triggered.connect(self.open_report_problem)
+        self.report_problem_dialog = None
+
         # "Send me your log" is otherwise a request nobody can satisfy: the logs
         # are five rotating files in the working directory, and in daemon mode
         # the half that matters is the daemon's, not this process's.
@@ -664,6 +673,7 @@ class PolyHost(QApplication):
         # --- Help & About: the read-only, always-available corner --------------
         self.help_menu = self.menu.addMenu(get_icon("help.svg"), "Help && About")
         self.help_menu.addAction(self.about)
+        self.help_menu.addAction(self.report_problem_action)
         self.help_menu.addAction(self.log_dialog)
         self.help_menu.addAction(self.collect_logs_action)
         # settings.yaml + overlay-mapping.poly.yaml live in a platformdirs path
@@ -1463,6 +1473,22 @@ class PolyHost(QApplication):
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
 
+    def open_report_problem(self):
+        """Open the guided problem-report dialog.
+
+        Same retained-instance rule as open_log_bundle: this is the only strong
+        reference (the dialog is parentless) and its collection QThread is
+        parented to it, so rebuilding on a second click can destroy a running
+        thread — and it would also throw away a half-written description."""
+        from polyhost.gui.report_problem_dialog import ReportProblemDialog
+        if self.report_problem_dialog is None:
+            self.report_problem_dialog = ReportProblemDialog(
+                parent=None,
+                diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()))
+        self.report_problem_dialog.show()
+        self.report_problem_dialog.raise_()
+        self.report_problem_dialog.activateWindow()
+
     def open_log_bundle(self):
         """Open the log-collection dialog (bundle .zip / clipboard).
 
@@ -1593,7 +1619,38 @@ class PolyHost(QApplication):
             "n_maps": n_maps,
             "config_dir": platformdirs.user_config_dir("PolyHost"),
             "log_dir": os.getcwd(),
+            "fontpack": self._fontpack_summary(),
+            "unsupported": ", ".join(
+                sorted(f for f, ok in (st.get("capabilities") or {}).items() if not ok)),
         }
+
+    def _fontpack_summary(self) -> str:
+        """One line of per-bundle font-pack state, or '' when unknown.
+
+        `fontpack_bundle_status()` compares the cached GET_ID version block
+        against the shipped bundles.json — local on both sides of the RPC, so
+        this costs no device I/O. A bundle can read as current and still have
+        failed to flash, so failures are named separately from staleness."""
+        getter = getattr(self.core, "fontpack_bundle_status", None)
+        if getter is None:
+            return ""
+        try:
+            ok, info = getter()
+        except Exception as exc:  # noqa: BLE001 — diagnostics must never break About
+            self.log.debug("Font-pack status unavailable for diagnostics: %s", exc)
+            return ""
+        if not ok or not isinstance(info, dict) or not info.get("shipped"):
+            return ""
+        bundles = info.get("bundles") or []
+        if not bundles:
+            return ""
+        stale = [b.get("id") for b in bundles if b.get("stale")]
+        failed = [b.get("id") for b in bundles if b.get("last_error")]
+        parts = [f"{len(bundles)} bundles"]
+        parts.append(f"stale: {', '.join(stale)}" if stale else "all current")
+        if failed:
+            parts.append(f"FAILED: {', '.join(failed)}")
+        return " · ".join(parts)
 
     @staticmethod
     def _about_state_word(info: dict) -> str:
@@ -1658,6 +1715,16 @@ class PolyHost(QApplication):
             lines.append("Keyboard: not connected")
         if info["n_maps"]:
             lines.append(f"Overlay mappings: {info['n_maps']} apps")
+        # Two device-side facts that are LOCAL reads (a cached GET_ID block vs the
+        # shipped manifest, and the protocol-gate table) — no device I/O on either
+        # side of the RPC, so they are safe on the menu/GUI thread. Both answer a
+        # recurring class of report on their own: "the glyphs are wrong" (a stale
+        # or failed font-pack bundle) and "this menu is greyed out" (a feature the
+        # attached firmware is too old for).
+        if info.get("fontpack"):
+            lines.append(f"Font pack: {info['fontpack']}")
+        if info.get("unsupported"):
+            lines.append(f"Features unavailable on this firmware: {info['unsupported']}")
         lines += [f"Config: {info['config_dir']}", f"Logs: {info['log_dir']}"]
         return "\n".join(lines)
 

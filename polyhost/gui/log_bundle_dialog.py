@@ -35,6 +35,29 @@ TIMEFRAMES = (
 DEFAULT_INDEX = 2
 
 
+def reveal_in_file_manager(path, log=None):
+    """Show `path` in the OS file manager. Never raises — the file is already
+    written, so a missing file manager is a cosmetic failure, not a lost bundle."""
+    log = log or logging.getLogger("PolyHost")
+    if not path or not os.path.exists(path):
+        return
+    try:
+        # Audit (dangerous-subprocess-use-audit): argv is a literal program plus
+        # arguments and shell=False, so there is no shell to inject through;
+        # `path` is a bundle path this application just wrote itself.
+        if sys.platform.startswith("darwin"):
+            # nosemgrep: dangerous-subprocess-use-audit
+            subprocess.run(["open", "-R", path], check=False)
+        elif sys.platform.startswith("win"):
+            # nosemgrep: dangerous-subprocess-use-audit
+            subprocess.run(["explorer", "/select,", os.path.normpath(path)], check=False)
+        else:
+            from polyhost.gui.log_viewer import LogViewerDialog
+            LogViewerDialog.reveal_in_linux_file_manager(path)
+    except Exception:  # noqa: BLE001 — the bundle is already written
+        log.warning("Could not reveal %s in the file manager", path, exc_info=True)
+
+
 class _CollectWorker(QThread):
     """Runs one collection off the GUI thread.
 
@@ -213,22 +236,4 @@ class LogBundleDialog(QDialog):
 
     def _reveal(self):
         """Show the saved bundle in the OS file manager."""
-        path = self._last_bundle
-        if not path or not os.path.exists(path):
-            return
-        try:
-            # Audit (dangerous-subprocess-use-audit): argv is a literal program
-            # plus arguments and shell=False, so there is no shell to inject
-            # through; `path` is the bundle path this dialog just wrote itself.
-            if sys.platform.startswith("darwin"):
-                # nosemgrep: dangerous-subprocess-use-audit
-                subprocess.run(["open", "-R", path], check=False)
-            elif sys.platform.startswith("win"):
-                # nosemgrep: dangerous-subprocess-use-audit
-                subprocess.run(["explorer", "/select,", os.path.normpath(path)], check=False)
-            else:
-                from polyhost.gui.log_viewer import LogViewerDialog
-                LogViewerDialog.reveal_in_linux_file_manager(path)
-        except Exception:  # noqa: BLE001 — the bundle is already written
-            self.log.warning("Could not reveal %s in the file manager", path,
-                             exc_info=True)
+        reveal_in_file_manager(self._last_bundle, self.log)

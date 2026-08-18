@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QProgressDialog)
 from polyhost._version import __version__
+from polyhost.services import problem_report
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.qt_crash import install_qt_message_handler
@@ -175,6 +176,23 @@ class PolyForwarder(QApplication):
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
+        # The forwarder runs on a DIFFERENT machine from the keyboard, so its
+        # logs can never appear in a bundle collected on the host side — and its
+        # failure modes (which window backend this desktop selects, the report
+        # transport, the authkey) are exactly the log-diagnosable kind. Both
+        # entries are therefore worth as much here as in the tray app.
+        self.report_problem_action = QAction(get_icon("feedback.svg"),
+                                             "Report a Problem...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.report_problem_action.triggered.connect(self.open_report_problem)
+        self.report_problem_dialog = None
+
+        self.collect_logs_action = QAction(get_icon("archive.svg"),
+                                           "Collect logs...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.collect_logs_action.triggered.connect(self.open_log_bundle)
+        self.log_bundle_dialog = None
+
         self.update_action = QAction(get_icon("browser_updated.svg"), "Check for updates...", parent=self)
         # noinspection PyUnresolvedReferences
         self.update_action.triggered.connect(self._on_update_clicked)
@@ -193,6 +211,8 @@ class PolyForwarder(QApplication):
         self._update_progress = None
 
         self.menu.addAction(self.log_dialog)
+        self.menu.addAction(self.report_problem_action)
+        self.menu.addAction(self.collect_logs_action)
         self.menu.addAction(self.update_action)
         self.menu.addAction(self.support)
         self.menu.addAction(self.about)
@@ -307,10 +327,47 @@ class PolyForwarder(QApplication):
             self.log.error("Connection error: %s", err)
         return False
 
+    def _diagnostics_text(self) -> str:
+        """Diagnostics for a forwarder report.
+
+        Composition lives in the Qt-free `problem_report` module: this file
+        imports pywinctl at module load, so anything left here cannot be tested
+        in the documented environment (the forwarder smoke mode skips without
+        it). This method only supplies the state.
+        """
+        return problem_report.forwarder_diagnostics(
+            __version__, host=self.host, host_file=self.host_file,
+            report_rpc=self._report_rpc, report_port=self._report_port)
+
+    def open_report_problem(self):
+        """Guided problem report (retained instance — see PolyHost.open_report_problem)."""
+        from polyhost.gui.report_problem_dialog import ReportProblemDialog
+        if self.report_problem_dialog is None:
+            self.report_problem_dialog = ReportProblemDialog(
+                parent=None, diagnostics_cb=self._diagnostics_text)
+        self.report_problem_dialog.show()
+        self.report_problem_dialog.raise_()
+        self.report_problem_dialog.activateWindow()
+
+    def open_log_bundle(self):
+        """Log-collection dialog (retained instance — see PolyHost.open_log_bundle)."""
+        from polyhost.gui.log_bundle_dialog import LogBundleDialog
+        if self.log_bundle_dialog is None:
+            self.log_bundle_dialog = LogBundleDialog(
+                parent=None, diagnostics_cb=self._diagnostics_text)
+        self.log_bundle_dialog.show()
+        self.log_bundle_dialog.raise_()
+        self.log_bundle_dialog.activateWindow()
+
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately
         delta = time.perf_counter()
-        self.log_viewer = LogViewerDialog({"Forwarder Log": "forwarder_log.txt"})
+        log_files = {"Forwarder Log": "forwarder_log.txt"}
+        # The pre-GUI launch phase logs here regardless of mode, and it is the
+        # only record when the forwarder fails to come up at all.
+        if os.path.exists("startup_log.txt"):
+            log_files["Startup Log"] = "startup_log.txt"
+        self.log_viewer = LogViewerDialog(log_files, collect_cb=self.open_log_bundle)
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
