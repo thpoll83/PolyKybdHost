@@ -43,6 +43,14 @@ class ParseSinceTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             lb.parse_since("last tuesday", self.now)
 
+    def test_absurdly_large_value_is_a_ValueError_not_an_OverflowError(self):
+        """The regex accepts any number of digits, so timedelta() can overflow.
+        Callers only handle ValueError — an OverflowError reaches the user as a
+        traceback instead of 'bad input'."""
+        for spec in ("99999999999999999999h", "99999999999999999999w"):
+            with self.assertRaises(ValueError):
+                lb.parse_since(spec, self.now)
+
 
 class SliceLinesTest(unittest.TestCase):
     def setUp(self):

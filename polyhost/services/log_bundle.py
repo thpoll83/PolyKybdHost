@@ -176,7 +176,12 @@ def parse_since(spec: str | None, now: datetime | None = None) -> datetime | Non
     value = float(m.group(1))
     unit = m.group(2) or "h"
     seconds = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}[unit] * value
-    return (now or datetime.now()) - timedelta(seconds=seconds)
+    try:
+        return (now or datetime.now()) - timedelta(seconds=seconds)
+    except (OverflowError, OSError) as exc:
+        # The regex accepts any number of digits, so both timedelta() and the
+        # subtraction can overflow. Callers handle bad input as ValueError.
+        raise ValueError(f"Timeframe {spec!r} is out of range") from exc
 
 
 def slice_lines(lines, since: datetime | None) -> list[str]:

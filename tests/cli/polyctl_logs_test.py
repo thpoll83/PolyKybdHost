@@ -95,6 +95,37 @@ class PolyctlLogsOfflineTest(unittest.TestCase):
         self.assertEqual(2, code)
         self.assertIn("Unrecognised timeframe", err)
 
+    def test_non_positive_lines_is_rejected(self):
+        """`recent_text` slices lines[-n:], so 0 would print the WHOLE file under
+        a 'last 0 lines' header and -1 would silently drop the first line."""
+        for bad in ("0", "-1"):
+            with self.assertRaises(SystemExit) as cm:
+                with redirect_stderr(io.StringIO()):
+                    polyctl.build_parser().parse_args(
+                        ["logs", "show", "--lines", bad, "--log-dir", str(self.dir)])
+            self.assertEqual(2, cm.exception.code)
+
+    def test_positive_lines_is_accepted(self):
+        args = polyctl.build_parser().parse_args(
+            ["logs", "show", "--lines", "10", "--log-dir", str(self.dir)])
+        self.assertEqual(10, args.lines)
+
+    def test_paths_survives_a_file_vanishing_after_discovery(self):
+        """discover() sees the file; a rotation can move it before stat().
+
+        Patching Path.stat directly is no good here — Path.exists() is built on
+        stat, so discovery itself would stop seeing the file. Returning an
+        already-gone path from discover() is the real race: listed, then moved.
+        """
+        from polyhost.services import log_bundle
+        gone = self.dir / "host_log.txt.7"          # never created
+        with mock.patch.object(log_bundle, "discover",
+                               return_value={"host": [self.dir / "host_log.txt", gone]}):
+            code, out, _ = self._run("logs", "paths", "--log-dir", str(self.dir))
+        self.assertEqual(0, code)
+        self.assertIn("size unavailable", out)
+        self.assertIn("host_log.txt", out)          # the surviving file still listed
+
     def test_missing_logs_reports_and_fails(self):
         empty = self.dir / "nope"
         empty.mkdir()

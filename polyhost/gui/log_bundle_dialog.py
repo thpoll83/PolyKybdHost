@@ -42,7 +42,9 @@ class _CollectWorker(QThread):
     four rotation files × 5 MB — enough to visibly freeze the tray, and the
     no-blocking-the-main-thread rule covers file I/O of that size too.
     """
-    done = pyqtSignal(bool, str, object)  # ok, message, payload (text for clipboard)
+    # payload is None, ("clipboard", text) or ("bundle", path) — a tagged result
+    # rather than a shared attribute, so the worker never writes dialog state.
+    done = pyqtSignal(bool, str, object)
 
     def __init__(self, fn, parent=None):
         super().__init__(parent)
@@ -169,8 +171,14 @@ class LogBundleDialog(QDialog):
 
     def _finished(self, ok, message, payload):
         self._busy(False)
-        if ok and payload is not None:  # clipboard payload — set it on the GUI thread
-            QApplication.clipboard().setText(payload)
+        # Both of these land on the GUI thread by contract: `done` is a queued
+        # signal, so everything the worker produced is applied here, not there.
+        if ok and isinstance(payload, tuple):
+            kind, value = payload
+            if kind == "clipboard":
+                QApplication.clipboard().setText(value)
+            elif kind == "bundle":
+                self._last_bundle = value
         colour = "" if ok else "color:#c0392b;"
         self.status.setText(f"<span style='{colour}'>{message}</span>")
         self.reveal_btn.setVisible(bool(ok and self._last_bundle))
@@ -189,8 +197,7 @@ class LogBundleDialog(QDialog):
         def work():
             result = log_bundle.build_bundle(
                 path, since=since, redact=redact, diagnostics=diagnostics)
-            self._last_bundle = str(result.path)
-            return True, f"Saved {result.summary()}", None
+            return True, f"Saved {result.summary()}", ("bundle", str(result.path))
 
         self._start(work)
 
@@ -200,7 +207,7 @@ class LogBundleDialog(QDialog):
         def work():
             text = log_bundle.recent_text(since=since, redact=redact)
             lines = text.count("\n") + 1
-            return True, f"Copied {lines} lines to the clipboard.", text
+            return True, f"Copied {lines} lines to the clipboard.", ("clipboard", text)
 
         self._start(work)
 
@@ -210,9 +217,14 @@ class LogBundleDialog(QDialog):
         if not path or not os.path.exists(path):
             return
         try:
+            # Audit (dangerous-subprocess-use-audit): argv is a literal program
+            # plus arguments and shell=False, so there is no shell to inject
+            # through; `path` is the bundle path this dialog just wrote itself.
             if sys.platform.startswith("darwin"):
+                # nosemgrep: dangerous-subprocess-use-audit
                 subprocess.run(["open", "-R", path], check=False)
             elif sys.platform.startswith("win"):
+                # nosemgrep: dangerous-subprocess-use-audit
                 subprocess.run(["explorer", "/select,", os.path.normpath(path)], check=False)
             else:
                 from polyhost.gui.log_viewer import LogViewerDialog

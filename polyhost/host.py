@@ -1454,14 +1454,21 @@ class PolyHost(QApplication):
         Kept out of __init__ so PyQt only imports it on demand. The dialog is
         modeless and stashed on self — a local would be garbage-collected the
         moment this returns, taking the window with it (the same reason
-        open_log holds self.log_viewer)."""
+        open_log holds self.log_viewer).
+
+        ⚠️ The instance is REUSED, not rebuilt. self.log_bundle_dialog is the
+        only strong reference (the dialog is parentless), so re-assigning it on
+        a second click drops the previous one — and its collection QThread is
+        parented to it, so a rebuild mid-collection can destroy a running
+        thread. Reuse also keeps the timeframe/redaction choice across opens."""
         from polyhost.gui.log_bundle_dialog import LogBundleDialog
-        # The bundle embeds the same text as About's "Copy diagnostics" button,
-        # so a support bundle identifies the versions and connection state it
-        # came from without a second round trip.
-        self.log_bundle_dialog = LogBundleDialog(
-            parent=None,
-            diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()))
+        if self.log_bundle_dialog is None:
+            # The bundle embeds the same text as About's "Copy diagnostics"
+            # button, so it identifies the versions and connection state it came
+            # from without a second round trip.
+            self.log_bundle_dialog = LogBundleDialog(
+                parent=None,
+                diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()))
         self.log_bundle_dialog.show()
         self.log_bundle_dialog.raise_()
         self.log_bundle_dialog.activateWindow()

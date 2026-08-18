@@ -151,6 +151,22 @@ def _cmd_status(client, args):
     return 0
 
 
+def _positive_int(value):
+    """argparse type for --lines.
+
+    Non-positive values are not merely odd here, they misbehave: `recent_text`
+    slices `lines[-max_lines:]`, so 0 yields `lines[0:]` — the whole file, under
+    a header claiming "last 0 lines" — and -1 silently drops the first line.
+    """
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError(f"{value!r} is not an integer") from None
+    if n < 1:
+        raise argparse.ArgumentTypeError(f"must be 1 or more, got {n}")
+    return n
+
+
 def _cmd_logs(client, args):
     """Collect log files — the one command that must work with no daemon.
 
@@ -176,7 +192,13 @@ def _cmd_logs(client, args):
         for label, chain in found.items():
             print(f"{label}:")
             for path in chain:
-                print(f"  {path}  ({path.stat().st_size // 1024} KB)")
+                # discover() saw the file; a rotation can move it before we
+                # stat it. Losing a size must not cost the whole listing.
+                try:
+                    size = f"{path.stat().st_size // 1024} KB"
+                except OSError:
+                    size = "size unavailable"
+                print(f"  {path}  ({size})")
         return 0
 
     if args.logs_action == "show":
@@ -859,7 +881,7 @@ def build_parser():
         "-o", "--output", help="destination .zip (default: ./polyhost-logs-<stamp>.zip)")
     p_logs_show = logs_sub.add_parser(
         "show", help="print recent log lines to stdout (pipe it anywhere)")
-    p_logs_show.add_argument("--lines", type=int, default=500,
+    p_logs_show.add_argument("--lines", type=_positive_int, default=500,
                              help="max lines per log file (default 500)")
     p_logs_paths = logs_sub.add_parser(
         "paths", help="list the log files that were found")
