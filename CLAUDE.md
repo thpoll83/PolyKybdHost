@@ -125,6 +125,18 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     completed / Review rate limited"), so retries starve the window they wait on. A
     **push** re-triggers a review without spending a request — on that PR the next
     commit is what finally got one to run after two requests had been eaten.
+  - ⚠️ **The rate-limit wait is NOT a fixed hour — it stretches as you spend
+    requests, and the "Trigger review" checkbox spends one exactly like the chat
+    command.** On host #170 (2026-08-18) the first refusal said *"next review in
+    19 minutes"*; waiting that out and asking again returned **52 minutes**, i.e.
+    the second request pushed the window further out than the wait it was issued
+    for. So "wait for the stated time, then retry" is the one strategy that
+    reliably starves you — each retry buys a longer wait than it costs. Two
+    consequences: on an under-10-stars repo (host + docs, see below) do **not**
+    tick the box *and* comment `@coderabbitai review`, that is two slots for one
+    review; and when a review is genuinely needed, spend the slot on the final
+    commit and otherwise let a **push** trigger it (pushes don't draw on the
+    quota — the note above).
 
 - **When two reviewers disagree about the same code, WRITE THE TEST — it
   adjudicates, and it is faster than arguing.** On PR #154 (2026-08-07) Sourcery
@@ -914,6 +926,24 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     workflow (`workflow_dispatch`) rather than assuming — that is a 30 s check.
   - **`binding = "DB"` in `wrangler.toml` must stay `DB`**: `d1 create` prints a suggested
     binding named after the *database*, and adopting it 503s every ping.
+- ⚠️ **The telemetry collector CANNOT double as a problem-report backend — four
+  independent reasons, and the last one is a feature.** The obvious idea when
+  "Report a Problem" was designed (2026-08-18) was to POST the report to the
+  Cloudflare Worker that already exists. It doesn't fit, and each obstacle would
+  have to be removed separately: the Worker caps a request body at **8 KB** (a
+  description plus diagnostics blows past it, let alone logs); the D1 schema is
+  `UNIQUE(install_id, day)` and upserts, so a **second report the same day
+  overwrites the first** — exactly when a user is retrying because it broke
+  again; the payload is an **allow-list rebuilt server-side** (`PAYLOAD_KEYS`,
+  frozen by a test *designed* to make widening fail loudly), so free text can only
+  arrive by deliberately undoing that guarantee; and the Worker is **write-only by
+  design — there is no read route**, which is precisely what makes the dataset
+  unleakable, so retrieval would mean building the route the design exists to
+  avoid, plus auth *inside* the Worker (Cloudflare Access is zone-scoped and
+  unavailable on `workers.dev` — see the note above). Hence the shipped design is
+  a **pre-filled GitHub issue** with the bundle attached by the reporter: no
+  backend, no new data store, and the user sees what they send. Don't re-propose
+  the Worker without answering all four.
 - **Log collection is ONE Qt-free service with three front ends —
   `polyhost/services/log_bundle.py`.** "Send me your log" used to be a request
   nobody could satisfy: the logs are **five** rotating files
@@ -924,16 +954,17 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   redacted `settings.yaml` + a README stating the timeframe and redaction state);
   `recent_text()` returns the same content for the clipboard. Front ends: the tray's
   **Help & About → "Collect logs…"**, a **"Collect Logs…"** button in the log viewer,
-  and **`polyctl logs bundle|show|paths`**. Five things that are load-bearing:
+  and **`polyctl logs bundle|show|paths`**. Six things that are load-bearing:
   - ⚠️ **A NEW log file reaches nobody until it is registered in THREE places** —
-    `log_bundle.py` `_LOG_FILES`, the log viewer's `log_files` dict in `host.py`,
+    `log_bundle.py` `LOG_SOURCES`, the log viewer's `log_files` dict in `host.py`,
     and the count in this very paragraph. Writing the file is the easy half; a
     log nobody can collect is the same as no log. #172 shipped `crash_log.txt` —
     the file whose entire purpose is proving whether the app crashed — into none
     of the three, so the one artifact a support round would ask for could not be
     collected or even viewed. **`crash_log.txt` is still unregistered; fix that
     when you next touch this file.** Same shape as the enumerating-guard trap
-    below: three lists that must agree and nothing that makes them.
+    in the review conventions above: three lists that must agree and nothing that
+    makes them.
   - ⚠️ **`polyctl logs` MUST work with no host running** — `main()` routes it
     through `_is_offline_command` *before* `connect()`, and a reachable daemon only
     enriches the diagnostics. The moment a user most needs the logs is the one where
@@ -946,6 +977,15 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `slice_lines`. A traceback carries no timestamp of its own, so a naive
     per-line time filter keeps the `ERROR` line and drops the half that says what
     actually failed.
+  - ⚠️ **`default_log_dir()` falls back to the REPO ROOT, so a "there are no
+    logs" test passes for the wrong reason.** Logs are written relative to the
+    process cwd, so a test that runs in a temp dir does not get an empty
+    discovery — it finds the checkout's own `host_log.txt` and friends, and a
+    test asserting the no-logs failure path then passes without ever reaching it.
+    Force the failure at its source instead (make `build_bundle` raise), or the
+    branch you think you covered is untested. Same shape as the stale-guard note
+    in the review conventions above: a green test that pins the environment's
+    accident rather than the contract.
   - **Redaction is anchored on the log message's own wording, not "anything in
     quotes"** (`_TITLE_PATTERNS`), and masks **window titles only** — app/exe names
     are kept, since that is what overlay-matching support rounds actually need.

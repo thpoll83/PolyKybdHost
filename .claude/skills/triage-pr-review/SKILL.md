@@ -58,6 +58,19 @@ If nothing actually reviewed and it matters, comment `@coderabbitai review` (and
 `@coderabbitai full review` after an aborted run) rather than merging on the
 appearance of review.
 
+⚠️ **Spend that request once.** A refused request costs a slot too, and the stated
+wait *grows* with each one — host #170 answered "next review in 19 minutes", then
+**52** after the retry that wait invited. So:
+
+- **Never chase the clock.** "Wait N minutes, ask again" is the one loop that
+  reliably starves the PR; each retry buys a longer wait than it cost.
+- **On an under-10-stars repo** (`PolyKybdHost`, `polykybd-docs` — no auto-review,
+  rendered as a *"Review available on request"* box) the **checkbox and the chat
+  command are the same quota**. Ticking the box *and* commenting is two slots for
+  one review.
+- **A push re-triggers a review for free.** If more commits are coming anyway,
+  push first and ask afterwards — ask on the commit you intend to merge.
+
 ## 3. Verify every finding against the code — before touching anything
 
 For each finding, reproduce or refute it. Cheapest first:
