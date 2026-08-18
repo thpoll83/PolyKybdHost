@@ -22,6 +22,8 @@ from PyQt5.QtWidgets import (
 from polyhost._version import __version__
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
+from polyhost.gui.qt_crash import install_qt_message_handler
+from polyhost.gui.tray_wait import TrayVisibilityWaiter
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.handler.remote_window import TCP_PORT
 from polyhost.handler.browser_url_source import BrowserUrlSource
@@ -96,6 +98,7 @@ class PolyForwarder(QApplication):
             make_collapse_handler(make_stream_handler(fmt)),
         ])
         self.log = logging.getLogger("PolyForwarder")
+        install_qt_message_handler(self.log)
         log_env_info(self.log)
 
         if self._report_rpc:
@@ -132,7 +135,11 @@ class PolyForwarder(QApplication):
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
         self.icon_manager = IconStateManager(self, False, f"({__version__}) Forwarding to {host}")
-        self.tray.setVisible(True)
+        self._tray_waiter = TrayVisibilityWaiter(
+            show=lambda: self.tray.setVisible(True),
+            is_available=QSystemTrayIcon.isSystemTrayAvailable,
+            log=self.log)
+        self._tray_waiter.start()
         
         self.setQuitOnLastWindowClosed(False)
         self.win = None
@@ -148,7 +155,7 @@ class PolyForwarder(QApplication):
 
         self.heartbeat_msec = 0
 
-        self.tray.show()
+        self._tray_waiter.start()
         self.set_style()
 
         self.menu = QMenu()
