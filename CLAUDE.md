@@ -487,6 +487,16 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     on a busy split link — the observed failure, with `giveup=44` in that window — usually
     clears for the cost of one report. `rejected` is **not** retried; asking again cannot
     change what is in flash.
+    - ⚠️ **These host tests pin the contract from ONE side only, and it is the less
+      useful side.** `tests/device/hid_fontpack_test.py` encodes the firmware's reply
+      bytes as **fixtures** (`_commit_status_reply`), so it catches the *host*
+      misreading a status — the opposite direction from the bug that actually shipped,
+      which was the firmware *emitting* `!` for a dropped link ack. A fixture is not
+      the firmware. The firmware end is now pinned too (qmk
+      `make test:fw_up_verdict` → `FontpackCommitStatusTest`), so a change to either
+      side that breaks the mapping fails a test somewhere. **When you touch these
+      status values, update BOTH suites** — and prefer adding the firmware-side
+      assertion first, since that is the end a host fixture can never police.
 - **Font-pack inspect/extend tools** (`polyhost/gui/fontpack_inspector_dialog.py` +
   `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
   `fontgen*`): a standalone window to view every bundle glyph as
