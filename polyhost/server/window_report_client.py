@@ -36,7 +36,7 @@ class WindowReportClient:
         if not ok:
             raise WindowReportError(why)
 
-    def report(self, handle, name, title, os=None):
+    def report(self, handle, name, title, os=None, url=None):
         """Send one window report; raise WindowReportError on failure/timeout.
 
         ``os`` (optional, an OsType value int) lets the forwarder forward its host
@@ -47,6 +47,10 @@ class WindowReportClient:
         params = {"handle": str(handle), "name": str(name), "title": str(title)}
         if os is not None:
             params["os"] = int(os)
+        # Optional in both directions: an older daemon ignores unknown params,
+        # and a newer one reads None when an older forwarder omits it.
+        if url is not None:
+            params["url"] = str(url)
         p.send_message(self._conn, p.make_request(
             req_id, p.M_WINDOW_REPORT, params))
         while True:
@@ -94,7 +98,7 @@ class WindowReportSession:
         """The host the open connection points at, or None when not connected."""
         return self._host
 
-    def report(self, host, handle, name, title, os=None):
+    def report(self, host, handle, name, title, os=None, url=None):
         """Send one report to ``host``, (re)connecting as needed.
 
         Raises whatever the connect or the report raised, having closed the
@@ -107,7 +111,7 @@ class WindowReportSession:
                 self._client = self._connect(
                     host, self._port, self._authkey, self._timeout)
                 self._host = host
-            return self._client.report(handle, name, title, os=os)
+            return self._client.report(handle, name, title, os=os, url=url)
         except Exception:
             self.close()
             raise

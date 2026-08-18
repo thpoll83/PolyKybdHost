@@ -156,7 +156,8 @@ class WindowReportServer:
             return
         try:
             ret = self._on_report(params["handle"], params["name"],
-                                  params.get("title", ""), os=params.get("os"))
+                                  params.get("title", ""), os=params.get("os"),
+                                  url=params.get("url"))
             # report_window returns the (ok, payload) contract; surface failure.
             if isinstance(ret, tuple) and len(ret) == 2 and not ret[0]:
                 reply = p.make_error(req_id, p.ERR_DEVICE, str(ret[1]))
