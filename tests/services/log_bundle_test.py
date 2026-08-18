@@ -322,5 +322,160 @@ class RecentTextTest(unittest.TestCase):
         self.assertIn("no log content", lb.recent_text(self.dir))
 
 
+def _marker(what: str, pid: int, stamp: datetime) -> str:
+    """A crash_log._stamp() line, byte-for-byte as the writer emits it."""
+    return f"=== {what} | pid {pid} | {stamp.strftime('%Y-%m-%d %H:%M:%S')} ==="
+
+
+class CrashLogSourceTest(unittest.TestCase):
+    """crash_log.txt is collectable at all, and is never time-sliced.
+
+    It was written by util/crash_log.py but registered nowhere, so the one
+    artifact that proves whether the app crashed could be neither collected nor
+    viewed. Registering it is only half the fix: its lines do not carry the
+    `[YYYY-MM-DD HH:MM:SS,mmm]` prefix slice_lines keys off, so a naive
+    registration would have produced a permanently EMPTY section — the same
+    bug in a new costume.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+        self.old = datetime.now() - timedelta(days=3)
+
+    def _write(self, *lines):
+        (self.dir / "crash_log.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def test_the_source_is_registered(self):
+        labels = [s.label for s in lb.LOG_SOURCES]
+        self.assertIn("crash", labels)
+
+    def test_the_filename_comes_from_the_writer(self):
+        """A literal here could drift from the file crash_log actually opens."""
+        from polyhost.util import crash_log
+        source = next(s for s in lb.LOG_SOURCES if s.label == "crash")
+        self.assertEqual(crash_log.CRASH_LOG, source.filename)
+
+    def test_it_is_declared_unsliced(self):
+        source = next(s for s in lb.LOG_SOURCES if s.label == "crash")
+        self.assertFalse(source.sliced)
+
+    def test_every_other_source_is_still_sliced(self):
+        for source in lb.LOG_SOURCES:
+            if source.label != "crash":
+                self.assertTrue(source.sliced, source.label)
+
+    def test_old_crash_content_survives_a_narrow_window(self):
+        """The regression that makes registration meaningful: none of these
+        lines carries a sliceable timestamp, so under slicing all of them are
+        dropped and the section silently disappears."""
+        self._write(_marker("session start", 42, self.old),
+                    "Fatal Python error: Segmentation fault",
+                    "Current thread 0x00007f1a (most recent call first):",
+                    '  File "polyhost/host.py", line 1, in <module>')
+        out = lb.collect_text(self.dir, since=datetime.now() - timedelta(hours=1))
+        self.assertIn("crash", out)
+        self.assertIn("Segmentation fault", out["crash"])
+
+    def test_a_native_dump_is_kept_even_though_it_has_no_marker(self):
+        """faulthandler writes on the fault with no marker of its own, so under
+        slicing it would inherit the decision of a much older session start."""
+        self._write("Current thread 0x00007f1a (most recent call first):",
+                    '  File "polyhost/gui/host.py", line 9, in paintEvent')
+        out = lb.collect_text(self.dir, since=datetime.now())
+        self.assertIn("paintEvent", out["crash"])
+
+    def test_a_normal_log_is_still_sliced(self):
+        """The exemption must not have leaked into the other sources."""
+        (self.dir / "host_log.txt").write_text(
+            _line(self.old, "INFO", "ancient") + "\n", encoding="utf-8")
+        out = lb.collect_text(self.dir, since=datetime.now() - timedelta(hours=1))
+        self.assertNotIn("host", out)
+
+    def test_it_reaches_the_bug_report_bundle(self):
+        """The user-visible point: Report a Problem attaches build_bundle's zip,
+        so registration is what puts the crash evidence in front of a maintainer."""
+        self._write(_marker("session start", 7, self.old),
+                    _marker("unhandled exception: KeyError: 'boom'", 7, self.old))
+        dest = self.dir / "report.zip"
+        lb.build_bundle(dest, log_dir=self.dir, since=datetime.now() - timedelta(hours=1))
+        with zipfile.ZipFile(dest) as z:
+            names = z.namelist()
+            crash = [n for n in names if "crash" in n]
+            self.assertTrue(crash, names)
+            self.assertIn("KeyError", z.read(crash[0]).decode("utf-8"))
+
+
+class CrashSummaryTest(unittest.TestCase):
+    """The one-liner the report BODY carries, so the evidence is visible
+    without opening the attachment."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+        self.t = datetime(2026, 8, 18, 7, 30, 0)
+
+    def _write(self, *lines):
+        (self.dir / "crash_log.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def test_no_file_is_reported_as_nothing(self):
+        self.assertIsNone(lb.crash_summary(self.dir))
+
+    def test_counts_sessions_and_clean_exits(self):
+        self._write(_marker("session start", 1, self.t),
+                    _marker("clean exit (Qt event loop, rc=0)", 1, self.t))
+        got = lb.crash_summary(self.dir)
+        self.assertIn("1 session(s)", got)
+        self.assertIn("1 clean exit(s)", got)
+
+    def test_counts_unhandled_exceptions(self):
+        self._write(_marker("session start", 1, self.t),
+                    _marker("unhandled exception: KeyError: 'x'", 1, self.t))
+        self.assertIn("1 unhandled exception(s)", lb.crash_summary(self.dir))
+
+    def test_counts_native_fault_dumps(self):
+        self._write(_marker("session start", 1, self.t),
+                    "Fatal Python error: Segmentation fault")
+        self.assertIn("1 native fault dump(s)", lb.crash_summary(self.dir))
+
+    def test_one_dump_is_counted_once_not_per_line(self):
+        """A fatal signal prints BOTH a 'Fatal Python error' line and a
+        'Current thread' line; counting each reported one crash as two (caught
+        by running the real CLI, not by the test above)."""
+        self._write(_marker("session start", 1, self.t),
+                    "Fatal Python error: Segmentation fault",
+                    "",
+                    "Current thread 0x00007f1a (most recent call first):",
+                    '  File "polyhost/host.py", line 12, in paintEvent')
+        self.assertIn("1 native fault dump(s)", lb.crash_summary(self.dir))
+
+    def test_two_dumps_in_separate_sessions_are_counted_separately(self):
+        self._write(_marker("session start", 1, self.t),
+                    "Current thread 0x00007f1a (most recent call first):",
+                    _marker("session start", 2, self.t),
+                    "Current thread 0x00007f2b (most recent call first):")
+        self.assertIn("2 native fault dump(s)", lb.crash_summary(self.dir))
+
+    def test_a_healthy_log_makes_no_crash_claim(self):
+        """A live GUI and a live daemon each have an unmatched session start, so
+        a 'it crashed' verdict here would fire on every healthy report."""
+        self._write(_marker("session start", 1, self.t),
+                    _marker("session start", 2, self.t))
+        got = lb.crash_summary(self.dir).lower()
+        for word in ("crash", "died", "unclean", "unhandled", "fault"):
+            self.assertNotIn(word, got)
+
+    def test_it_appears_in_the_diagnostics_block(self):
+        self._write(_marker("session start", 1, self.t))
+        with mock.patch.object(lb, "default_log_dir", return_value=self.dir):
+            self.assertIn("Crash log", lb.environment_text())
+
+    def test_a_failing_summary_never_breaks_the_diagnostics(self):
+        with mock.patch.object(lb, "crash_summary", side_effect=OSError("nope")):
+            self.assertIn("PolyHost version", lb.environment_text())
+
+
 if __name__ == "__main__":
     unittest.main()

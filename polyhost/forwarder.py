@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import (
     QProgressDialog)
 from polyhost._version import __version__
 from polyhost.services import problem_report
+from polyhost.util import crash_log
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.theme import apply_dark_palette
 from polyhost.gui.update_ui import UpdateProgressController
@@ -347,6 +348,11 @@ class PolyForwarder(QApplication):
         # only record when the forwarder fails to come up at all.
         if os.path.exists("startup_log.txt"):
             log_files["Startup Log"] = "startup_log.txt"
+        # Crash markers + native fault dumps: the only record of a death that
+        # left no log line at all (see util/crash_log.py). Written by the GUI
+        # and its co-located daemon alike, so it is worth a tab in both apps.
+        if os.path.exists(crash_log.CRASH_LOG):
+            log_files["Crash Log"] = crash_log.CRASH_LOG
         self.log_viewer = LogViewerDialog(log_files, collect_cb=self.open_log_bundle)
         self.log_viewer.show()
         delta = time.perf_counter() - delta
