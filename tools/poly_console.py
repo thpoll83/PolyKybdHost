@@ -2,11 +2,11 @@
 """Read the keyboard's QMK HID console (a hid-listen equivalent).
 
 WHY THIS EXISTS — the host cannot show you this output during a flash.
-`PolyHost._on_flash_firmware` wraps the firmware update in `worker.exclusive()`,
-and `HidWorker.suspend()` sets the cancel flag on *every* periodic, including the
-250 ms console read. QMK drops console output that nobody drains, so anything the
-firmware prints between BEGIN and the post-apply reconnect is lost — including
-the FW-2 verdict, which is printed exactly there:
+A flash (firmware or font-pack) is ONE long job on the HID worker, and
+`HidWorker._run()` only runs due periodics *between* jobs — so the 250 ms console
+read cannot run for the whole flash. QMK drops console output that nobody drains,
+so anything the firmware prints between BEGIN and the post-apply reconnect is
+lost — including the FW-2 verdict, which is printed exactly there:
 
     FW_UP: image signature OK
     FW_UP: image signature INVALID
@@ -24,6 +24,9 @@ refuses to run on Windows outside an MSYS2 MinGW64 shell, which is the other
 reason this file exists.)
 """
 import argparse
+import ctypes
+import pathlib
+import platform
 import sys
 import time
 
@@ -36,6 +39,35 @@ CONSOLE_USAGE_PAGE, CONSOLE_USAGE = 0xFF31, 0x0074
 REPORT_LEN = 32
 READ_TIMEOUT_MS = 250
 RETRY_DELAY_S = 0.5
+
+
+def _preload_win_hidapi() -> None:
+    """Windows: load the repo's bundled hidapi.dll before `import hid`.
+
+    The `hid` package resolves its native library by LEAF NAME
+    (``LoadLibrary("hidapi.dll")``), and nothing installs that DLL onto the
+    default search path — the repo ships it instead, and every path into the
+    device goes through ``polyhost/device/hid_helper.py``, which pre-loads it at
+    import time. This tool deliberately does NOT import polyhost, so it used to
+    fail on Windows on every machine with "Unable to load any of the following
+    libraries: ... hidapi.dll" while the app itself worked fine.
+
+    Pre-loading by absolute path is enough HERE because Windows LoadLibrary
+    returns the already-loaded module when the leaf name matches. (That trick
+    does not work on macOS — see the dyld note in hid_helper._import_hid.)
+
+    Best-effort: a system-wide hidapi is equally fine, so a missing bundled DLL
+    is not an error — let `import hid` produce its own message.
+    """
+    if platform.system() != "Windows":
+        return
+    dll = (pathlib.Path(__file__).resolve().parent.parent
+           / "polyhost" / "device" / "win-hidapi-0-15" / "hidapi.dll")
+    if dll.is_file():
+        try:
+            ctypes.CDLL(str(dll))
+        except OSError:
+            pass
 
 
 def find_console(hid, vid: int, pid: int):
@@ -55,6 +87,7 @@ def main() -> int:
     args = ap.parse_args()
 
     # Imported after parse_args so --help works without the dependency present.
+    _preload_win_hidapi()
     import hid
 
     print(f"Waiting for the console interface of {args.vid:#06x}:{args.pid:#06x}… "
