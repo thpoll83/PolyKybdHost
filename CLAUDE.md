@@ -844,6 +844,36 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     workflow (`workflow_dispatch`) rather than assuming — that is a 30 s check.
   - **`binding = "DB"` in `wrangler.toml` must stay `DB`**: `d1 create` prints a suggested
     binding named after the *database*, and adopting it 503s every ping.
+- **Log collection is ONE Qt-free service with three front ends —
+  `polyhost/services/log_bundle.py`.** "Send me your log" used to be a request
+  nobody could satisfy: the logs are **five** rotating files
+  (`host_log.txt`, `daemon_log.txt`, `polykybd_console.txt`, `startup_log.txt`,
+  `forwarder_log.txt`) × up to 3 backups each, written **relative to the process
+  cwd**, and under daemon-by-default the half that matters is the *daemon's*, not
+  the GUI's. `build_bundle()` writes a `.zip` (logs + `diagnostics.txt` + a
+  redacted `settings.yaml` + a README stating the timeframe and redaction state);
+  `recent_text()` returns the same content for the clipboard. Front ends: the tray's
+  **Help & About → "Collect logs…"**, a **"Collect Logs…"** button in the log viewer,
+  and **`polyctl logs bundle|show|paths`**. Four things that are load-bearing:
+  - ⚠️ **`polyctl logs` MUST work with no host running** — `main()` routes it
+    through `_is_offline_command` *before* `connect()`, and a reachable daemon only
+    enriches the diagnostics. The moment a user most needs the logs is the one where
+    the app failed to start or the daemon died, i.e. exactly when `connect()` fails.
+    Don't "simplify" it back onto the normal connect-first path.
+  - **The rotation chain is read `.N` → `.1` → base, i.e. OLDEST first.**
+    `RotatingFileHandler` moves the live file to `.1` and shifts the rest up, so
+    reading base-first silently produces a backwards concatenation.
+  - **Continuation lines inherit their record's keep/drop decision** in
+    `slice_lines`. A traceback carries no timestamp of its own, so a naive
+    per-line time filter keeps the `ERROR` line and drops the half that says what
+    actually failed.
+  - **Redaction is anchored on the log message's own wording, not "anything in
+    quotes"** (`_TITLE_PATTERNS`), and masks **window titles only** — app/exe names
+    are kept, since that is what overlay-matching support rounds actually need.
+    Titles can name documents ("Q3 layoffs.xlsx"), so the dialog says so in red when
+    the box is unticked; default is OFF because a first support round with everything
+    masked usually has to be repeated. `browser_report_token` / `telemetry_install_id`
+    are masked **always**, independent of that flag.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.

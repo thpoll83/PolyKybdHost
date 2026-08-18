@@ -73,6 +73,13 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertNotIn("Developer", top)
         # About + the log file moved into Help & About and are still reachable.
         self.assertIn("ABOUT_UNDER Help && About True True", proc.stdout)
+        # "Collect logs..." sits beside them and stays clickable while
+        # disconnected — a support bundle is a file read, not a device command,
+        # and the disconnected case is when it is most needed.
+        self.assertIn("COLLECT_LOGS True True", proc.stdout)
+        # The row must actually open the dialog, and a second click must reuse it.
+        self.assertIn("COLLECT_LOGS_DIALOG True LogBundleDialog", proc.stdout)
+        self.assertIn("COLLECT_LOGS_REUSED True", proc.stdout)
         # The newer-firmware row must not clutter the normal menu.
         self.assertIn("NEWER_FW_ROW False", proc.stdout)
 
@@ -176,6 +183,27 @@ def _smoke_default():
         about_parent = app.help_menu.title()
         print("ABOUT_UNDER", about_parent,
               app.about in app.help_menu.actions(), app.log_dialog in app.help_menu.actions())
+        # Log collection reads files, never the device, so it must survive the
+        # blanket disable managed_connection_status applies on a disconnect —
+        # that is exactly when someone goes looking for the logs.
+        app.managed_connection_status()
+        print("COLLECT_LOGS",
+              app.collect_logs_action in app.help_menu.actions(),
+              app.collect_logs_action.isEnabled())
+        # Actually fire it: a disconnected signal or a broken import would leave
+        # the row enabled and do nothing at all when clicked, which is exactly
+        # the silent failure the icon test exists to prevent elsewhere.
+        app.collect_logs_action.trigger()
+        dlg = app.log_bundle_dialog
+        print("COLLECT_LOGS_DIALOG", dlg is not None,
+              type(dlg).__name__ if dlg else "-")
+        # Re-triggering must REUSE the instance: it holds the only reference to
+        # the dialog, whose collection QThread is parented to it, so rebuilding
+        # mid-collection can destroy a running thread.
+        app.collect_logs_action.trigger()
+        print("COLLECT_LOGS_REUSED", app.log_bundle_dialog is dlg)
+        if dlg is not None:
+            dlg.close()
         app.quit_app()
     print("SMOKE OK")
 
