@@ -46,6 +46,7 @@ UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
 
+from polyhost.util import crash_log
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
 
@@ -367,6 +368,8 @@ class PolyForwarder(QApplication):
         # only record when the forwarder fails to come up at all.
         if os.path.exists("startup_log.txt"):
             log_files["Startup Log"] = "startup_log.txt"
+        if os.path.exists(crash_log.CRASH_LOG):
+            log_files["Crash Log"] = crash_log.CRASH_LOG
         self.log_viewer = LogViewerDialog(log_files, collect_cb=self.open_log_bundle)
         self.log_viewer.show()
         delta = time.perf_counter() - delta

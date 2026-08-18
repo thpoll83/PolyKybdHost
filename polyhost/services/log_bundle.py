@@ -39,6 +39,10 @@ LOG_SOURCES: tuple[tuple[str, str], ...] = (
     ("keyboard-console", "polykybd_console.txt"),
     ("startup", "startup_log.txt"),
     ("forwarder", "forwarder_log.txt"),
+    # The one file that can answer "did it crash?" — a `session start` with no
+    # matching `clean exit` IS the diagnosis, and it is the artifact a support
+    # round asks for first. See `util/crash_log.py`.
+    ("crash", "crash_log.txt"),
 )
 
 # RotatingFileHandler(backupCount=3) — the highest suffix is the OLDEST.
@@ -54,6 +58,14 @@ _ALWAYS_MASKED_SETTINGS = ("browser_report_token", "telemetry_install_id")
 # "[2026-08-17 12:34:56,789] INFO ..." — every handler formats with the default
 # asctime, including MultiLineFormatter's continuation-line prefix.
 _TIMESTAMP_RE = re.compile(r"^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3})\]")
+
+# "=== session start | pid 4242 | 2026-08-17 12:34:56 ===" — crash_log.py writes
+# its own marker format (no logging handler is involved: it has to work after
+# the interpreter has stopped running Python). Without this the whole file
+# parses as continuation lines, so `slice_lines` drops it entirely under ANY
+# timeframe — registering it in LOG_SOURCES alone would ship an empty crash log.
+_CRASH_MARKER_RE = re.compile(
+    r"^=== .*\| pid \d+ \| (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) ===")
 
 
 class LogBundleError(Exception):
@@ -147,15 +159,28 @@ def discover(log_dir: Path | str | None = None) -> dict[str, list[Path]]:
 # --------------------------------------------------------------------------
 
 def parse_timestamp(line: str) -> datetime | None:
-    """The datetime a log line starts with, or None for a continuation line."""
+    """The datetime a log line starts with, or None for a continuation line.
+
+    Two formats, because two different writers produce these files: the logging
+    handlers' bracketed asctime, and crash_log.py's ``=== … | pid N | … ===``
+    markers. A faulthandler dump carries no stamp of its own and is therefore a
+    continuation of the marker above it — which is exactly the right answer, so
+    the dump travels with the session it belongs to.
+    """
     m = _TIMESTAMP_RE.match(line)
-    if not m:
-        return None
-    try:
-        stamp = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S")
-    except ValueError:
-        return None
-    return stamp.replace(microsecond=int(m.group(2)) * 1000)
+    if m:
+        try:
+            stamp = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return None
+        return stamp.replace(microsecond=int(m.group(2)) * 1000)
+    m = _CRASH_MARKER_RE.match(line)
+    if m:
+        try:
+            return datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return None
+    return None
 
 
 def parse_since(spec: str | None, now: datetime | None = None) -> datetime | None:

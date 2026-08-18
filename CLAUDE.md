@@ -946,25 +946,37 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   the Worker without answering all four.
 - **Log collection is ONE Qt-free service with three front ends —
   `polyhost/services/log_bundle.py`.** "Send me your log" used to be a request
-  nobody could satisfy: the logs are **five** rotating files
+  nobody could satisfy: the logs are **six** rotating files
   (`host_log.txt`, `daemon_log.txt`, `polykybd_console.txt`, `startup_log.txt`,
-  `forwarder_log.txt`) × up to 3 backups each, written **relative to the process
-  cwd**, and under daemon-by-default the half that matters is the *daemon's*, not
-  the GUI's. `build_bundle()` writes a `.zip` (logs + `diagnostics.txt` + a
+  `forwarder_log.txt`, `crash_log.txt`) × up to 3 backups each, written
+  **relative to the process cwd**, and under daemon-by-default the half that
+  matters is the *daemon's*, not the GUI's. `build_bundle()` writes a `.zip` (logs + `diagnostics.txt` + a
   redacted `settings.yaml` + a README stating the timeframe and redaction state);
   `recent_text()` returns the same content for the clipboard. Front ends: the tray's
   **Help & About → "Collect logs…"**, a **"Collect Logs…"** button in the log viewer,
-  and **`polyctl logs bundle|show|paths`**. Six things that are load-bearing:
+  and **`polyctl logs bundle|show|paths`**. Seven things that are load-bearing:
   - ⚠️ **A NEW log file reaches nobody until it is registered in THREE places** —
     `log_bundle.py` `LOG_SOURCES`, the log viewer's `log_files` dict in `host.py`,
     and the count in this very paragraph. Writing the file is the easy half; a
     log nobody can collect is the same as no log. #172 shipped `crash_log.txt` —
     the file whose entire purpose is proving whether the app crashed — into none
     of the three, so the one artifact a support round would ask for could not be
-    collected or even viewed. **`crash_log.txt` is still unregistered; fix that
-    when you next touch this file.** Same shape as the enumerating-guard trap
-    in the review conventions above: three lists that must agree and nothing that
-    makes them.
+    collected or even viewed (registered in #178). Same shape as the
+    enumerating-guard trap in the review conventions above: three lists that must
+    agree and nothing that makes them.
+  - ⚠️ **Registering a file is only HALF of adding one — if it doesn't carry the
+    bracketed asctime, `slice_lines` drops the whole thing under EVERY
+    timeframe.** `parse_timestamp` returning None means "continuation line", so
+    a file with no parseable stamp anywhere never flips `keep` on: the source is
+    collected, listed, and arrives **empty**, which reads as "nothing was logged"
+    rather than "this filter cannot parse it". `crash_log.txt` is written by
+    `util/crash_log.py`, not by a logging handler — it *has* to be, since it must
+    still work after the interpreter has stopped running Python — so its
+    `=== session start | pid N | <time> ===` markers needed their own pattern
+    (`_CRASH_MARKER_RE`). A faulthandler dump then inherits the marker above it
+    through the continuation rule, which is exactly right: the dump belongs to
+    that session. Check the format of any new source against `parse_timestamp`,
+    and pin it with a test that fails on the register-only version.
   - ⚠️ **`polyctl logs` MUST work with no host running** — `main()` routes it
     through `_is_offline_command` *before* `connect()`, and a reachable daemon only
     enriches the diagnostics. The moment a user most needs the logs is the one where

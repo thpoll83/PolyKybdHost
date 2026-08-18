@@ -24,6 +24,58 @@ class ParseTimestampTest(unittest.TestCase):
         self.assertIsNone(lb.parse_timestamp("[2026-13-45 99:99:99,000] INFO x"))
 
 
+class CrashLogTest(unittest.TestCase):
+    """crash_log.txt is the one file that can say whether the app crashed, and
+    it is written by crash_log.py rather than a logging handler — so it needs
+    both halves of this: registered as a source, AND parseable by the time
+    filter. Registering it alone ships an empty crash log in every bundle."""
+
+    MARKER = "=== session start | pid 4242 | 2026-08-17 12:34:56 ==="
+
+    def test_the_crash_log_is_a_collected_source(self):
+        self.assertIn("crash_log.txt", [name for _, name in lb.LOG_SOURCES])
+
+    def test_a_session_marker_carries_a_timestamp(self):
+        self.assertEqual(datetime(2026, 8, 17, 12, 34, 56),
+                         lb.parse_timestamp(self.MARKER))
+
+    def test_a_malformed_marker_is_not_a_crash(self):
+        self.assertIsNone(lb.parse_timestamp(
+            "=== session start | pid 1 | 2026-13-45 99:99:99 ==="))
+
+    def test_a_marker_survives_the_default_timeframe(self):
+        """The bug this guards: with no parseable stamp every line reads as a
+        continuation, `keep` never flips, and slice_lines returns []."""
+        stamp = datetime(2026, 8, 17, 12, 34, 56)
+        kept = lb.slice_lines([self.MARKER], stamp - timedelta(hours=24))
+        self.assertEqual([self.MARKER], kept)
+
+    def test_a_faulthandler_dump_travels_with_its_session(self):
+        """The dump has no stamp of its own; inheriting the marker's decision
+        is the right answer — it belongs to that session."""
+        old = "=== session start | pid 1 | 2026-08-17 09:00:00 ==="
+        new = "=== session start | pid 2 | 2026-08-17 11:00:00 ==="
+        lines = [old, "Current thread 0x1 (most recent call first):",
+                 "  File \"old.py\", line 1 in f",
+                 new, "Current thread 0x2 (most recent call first):",
+                 "  File \"new.py\", line 1 in g"]
+        kept = lb.slice_lines(lines, datetime(2026, 8, 17, 10, 0, 0))
+        self.assertEqual(3, len(kept))
+        self.assertIn("new.py", kept[2])
+        self.assertNotIn("  File \"old.py\", line 1 in f", kept)
+
+    def test_a_crash_log_reaches_the_bundle(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "crash_log.txt").write_text(self.MARKER + "\n", encoding="utf-8")
+            dest = d / "b.zip"
+            lb.build_bundle(dest, log_dir=d, since=None)
+            with zipfile.ZipFile(dest) as zf:
+                self.assertIn("logs/crash.txt", zf.namelist())
+                self.assertIn("session start",
+                              zf.read("logs/crash.txt").decode("utf-8"))
+
+
 class ParseSinceTest(unittest.TestCase):
     def setUp(self):
         self.now = datetime(2026, 8, 17, 12, 0, 0)

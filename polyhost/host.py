@@ -96,6 +96,7 @@ def get_lang_and_country(combined : str):
     return combined[:2], combined[2:]
 
 
+from polyhost.util import crash_log
 from polyhost.util.log_util import DEBUG_DETAILED, MultiLineFormatter, make_stream_handler, make_collapse_handler
 
 
@@ -1468,6 +1469,11 @@ class PolyHost(QApplication):
         # (especially under Windows pythonw, where print() goes nowhere).
         if os.path.exists("startup_log.txt"):
             log_files["Startup Log"] = "startup_log.txt"
+        # A `session start` with no matching `clean exit` is how a silent crash
+        # (or a vanished tray icon) is told apart from a clean quit — nothing in
+        # the other logs can answer that.
+        if os.path.exists(crash_log.CRASH_LOG):
+            log_files["Crash Log"] = crash_log.CRASH_LOG
         self.log_viewer = LogViewerDialog(log_files, collect_cb=self.open_log_bundle)
         self.log_viewer.show()
         delta = time.perf_counter() - delta
