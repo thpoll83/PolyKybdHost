@@ -69,6 +69,53 @@ class TestReportWindow(unittest.TestCase):
         rh.report_window(7, "subl", "main.py", os=OsType.MACOS.value)
         self.assertFalse(rh.remote_changed({}))
 
+    def test_forwarded_url_drives_urls_contains_matching(self):
+        # Before this, _match_remote passed None in the matcher's url position,
+        # so a forwarded browser could never match a url entry no matter what
+        # the forwarder sent — the two features looked like they composed.
+        mapping = {"chrome": {"overlay": "browser",
+                              "urls-contains": {
+                                  "miro.com": {"overlay": "miro",
+                                               "flags": [True] + [False] * 8}},
+                              # flags[7] = HAS_URLS_CONTAINS
+                              "flags": [True] + [False] * 6 + [True, False]}}
+        rh = self._handler(mapping)
+        rh.report_window(9, "chrome", "A board", url="https://miro.com/app/board/x")
+        self.assertTrue(rh.remote_changed({}))
+        self.assertEqual(rh.get_overlay_data(), "miro")
+
+    def test_url_change_on_the_same_window_re_matches(self):
+        # An SPA route change / in-app tab switch moves neither handle nor
+        # title, and that is exactly the case url matching exists for — so the
+        # url has to be part of the window's identity, like the OS above.
+        mapping = {"chrome": {"overlay": "browser",
+                              "urls-contains": {
+                                  "miro.com": {"overlay": "miro",
+                                               "flags": [True] + [False] * 8}},
+                              "flags": [True] + [False] * 6 + [True, False]}}
+        rh = self._handler(mapping)
+        rh.report_window(9, "chrome", "Same Title", url="https://example.com/")
+        self.assertTrue(rh.remote_changed({}))
+        self.assertEqual(rh.get_overlay_data(), "browser")
+
+        rh.report_window(9, "chrome", "Same Title", url="https://miro.com/app/x")
+        self.assertTrue(rh.remote_changed({}), "url change must count as a change")
+        self.assertEqual(rh.get_overlay_data(), "miro")
+
+        # Same window, same url -> no further change.
+        rh.report_window(9, "chrome", "Same Title", url="https://miro.com/app/x")
+        self.assertFalse(rh.remote_changed({}))
+
+    def test_a_report_without_a_url_clears_the_previous_one(self):
+        # Deliberately unlike `os`, which is left alone when None: a url belongs
+        # to the window in the report, so keeping the last one would pin a stale
+        # site's overlay onto the next non-browser window.
+        rh = self._handler(_annotated())
+        rh.report_window(9, "chrome", "A board", url="https://miro.com/app/x")
+        self.assertEqual(rh.forwarded_url, "https://miro.com/app/x")
+        rh.report_window(10, "code", "main.py - VS Code")
+        self.assertIsNone(rh.forwarded_url)
+
     def test_legacy_relay_off_by_default_does_not_bind(self):
         # A mapping WITH a remote entry, but the unauthenticated relay defaults off:
         # listen_to_forwarder (run in __init__) must not start the listener thread.

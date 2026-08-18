@@ -24,6 +24,7 @@ from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.handler.remote_window import TCP_PORT
+from polyhost.handler.browser_url_source import BrowserUrlSource
 
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -118,6 +119,16 @@ class PolyForwarder(QApplication):
                 self._report_port, self._report_authkey)
             self.log.info("Forwarder using the authenticated window-report endpoint (H4d).")
 
+        # Browser-URL feed for THIS machine. The extension is already willing to
+        # report here — it POSTs to 127.0.0.1 on whatever machine it runs on —
+        # but in forwarder mode nothing was listening, so its /ping failed and a
+        # forwarded browser could only ever match on its window title.
+        self._url_dirty = False
+        self._url_source = BrowserUrlSource(
+            self.log, on_change=self._on_browser_url_changed)
+        if self._url_source.start():
+            self.log.info("Browser-URL reporting enabled for forwarded windows.")
+
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
         self.icon_manager = IconStateManager(self, False, f"({__version__}) Forwarding to {host}")
@@ -209,6 +220,15 @@ class PolyForwarder(QApplication):
         palette.setColor(QPalette.HighlightedText, highlight_text_color)
         self.setPalette(palette)
         
+    def _on_browser_url_changed(self):
+        """A tab switch / SPA navigation changed the URL. The window-change test
+        below is handle+title, which such a change does not move, so flag it and
+        let the next 250 ms tick re-send instead of waiting for the heartbeat.
+
+        Called from the receiver's HTTP thread, so it deliberately does nothing
+        but set a bool — no Qt objects, no send from off the main thread."""
+        self._url_dirty = True
+
     def _resolve_host(self):
         """Return the target host string (from --host or the host-file), or None."""
         host = self.host
@@ -220,7 +240,7 @@ class PolyForwarder(QApplication):
                 return None  # file absent means no active session
         return host or None
 
-    def _send_via_rpc(self, handle, title, name):
+    def _send_via_rpc(self, handle, title, name, url=None):
         """Push the active window over the authenticated window-report endpoint
         (H4d). `WindowReportSession` keeps the connection, reconnecting when it
         fails *or when the resolved host changes* — with `--host-file` the
@@ -235,15 +255,20 @@ class PolyForwarder(QApplication):
             return False
         try:
             self._report_session.report(
-                host, handle, name, title, os=self._os_value)
+                host, handle, name, title, os=self._os_value, url=url)
             return True
         except Exception as e:
             self.log.error("Window-report RPC to %s failed: %s", host, e)
             return False
 
-    def send_to_host(self, handle, title, name):
+    def send_to_host(self, handle, title, name, url=None):
+        # ⚠️ `url` rides the authenticated RPC path ONLY. The legacy relay's
+        # framing is positional `handle;name;title;os` with the free-text field
+        # in the middle, so a title containing ';' already truncates the title
+        # and kills the os field — a fifth field would deepen a live bug on a
+        # transport that is off by default.
         if self._report_rpc:
-            return self._send_via_rpc(handle, title, name)
+            return self._send_via_rpc(handle, title, name, url=url)
         host = self._resolve_host()
         if not host:
             return False
@@ -403,6 +428,7 @@ class PolyForwarder(QApplication):
         self.is_closing = True
         if self._report_session is not None:
             self._report_session.close()
+        self._url_source.close()
         # Tear the tray icon down before the loop exits so a re-exec (update
         # restart) doesn't leave a stale icon behind / a doubled tray.
         try:
@@ -423,17 +449,23 @@ class PolyForwarder(QApplication):
                 if self.last_update_msec > NEW_WINDOW_ACCEPT_TIME_MSEC:
                     #just to limit the time value:
                     self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2
+                    app_name = win.getAppName()
+                    # None for every non-browser app, and for a browser whose
+                    # extension report is stale/unfocused — so a URL can never
+                    # linger onto the wrong window.
+                    url = self._url_source.current_url(app_name)
                     changed = (
                         self.win is None
                         or win.getHandle() != self.win.getHandle()
                         or win.title != self.title
+                        or self._url_dirty
                     )
                     if changed or self.heartbeat_msec >= HEARTBEAT_MSEC:
                         self.win = win
                         self.title = win.title
-                        app_name = win.getAppName()
+                        self._url_dirty = False
                         handle = win.getHandle()
-                        self.send_to_host(handle, self.title, app_name)
+                        self.send_to_host(handle, self.title, app_name, url=url)
                         if changed:
                             self.log.info("Active App: '%s' %s %d", self.title, app_name, handle)
                         else:
