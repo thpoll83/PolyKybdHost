@@ -24,10 +24,10 @@ class _FakeClient:
         self.closed = False
         self._fail = fail
 
-    def report(self, handle, name, title, os=None):
+    def report(self, handle, name, title, os=None, url=None):
         if self._fail:
             raise OSError("boom")
-        self.reports.append((handle, name, title, os))
+        self.reports.append((handle, name, title, os, url))
         return {"reported": True}
 
     def close(self):
@@ -74,9 +74,10 @@ class WindowReportSessionTest(unittest.TestCase):
         self.assertEqual(self.conn.calls, [("10.0.0.1", 50163, b"k", 1.5)])
 
     def test_report_forwards_every_field_including_os(self):
-        self.session.report("10.0.0.1", 42, "chrome", "A Title", os=2)
+        self.session.report("10.0.0.1", 42, "chrome", "A Title", os=2,
+                            url="https://example.com/a")
         self.assertEqual(self.conn.clients[0].reports,
-                         [(42, "chrome", "A Title", 2)])
+                         [(42, "chrome", "A Title", 2, "https://example.com/a")])
 
     def test_a_changed_host_reconnects_instead_of_reusing_the_old_link(self):
         # The regression this class exists for: the target moved (a rewritten

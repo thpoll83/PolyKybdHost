@@ -499,6 +499,16 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     on a busy split link — the observed failure, with `giveup=44` in that window — usually
     clears for the cost of one report. `rejected` is **not** retried; asking again cannot
     change what is in flash.
+    - ⚠️ **These host tests pin the contract from ONE side only, and it is the less
+      useful side.** `tests/device/hid_fontpack_test.py` encodes the firmware's reply
+      bytes as **fixtures** (`_commit_status_reply`), so it catches the *host*
+      misreading a status — the opposite direction from the bug that actually shipped,
+      which was the firmware *emitting* `!` for a dropped link ack. A fixture is not
+      the firmware. The firmware end is now pinned too (qmk
+      `make test:fw_up_verdict` → `FontpackCommitStatusTest`), so a change to either
+      side that breaks the mapping fails a test somewhere. **When you touch these
+      status values, update BOTH suites** — and prefer adding the firmware-side
+      assertion first, since that is the end a host fixture can never police.
 - **Font-pack inspect/extend tools** (`polyhost/gui/fontpack_inspector_dialog.py` +
   `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
   `fontgen*`): a standalone window to view every bundle glyph as
@@ -929,29 +939,25 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     (rewritten 2026-08-17, docs#51). ⚠️ **The relay gate that caused this shipped
     in 0.10.5 and the docs kept recommending the dead path for six weeks** — when
     you flip a transport off by default, move that page in the same change.
-  - ⚠️ **Browser-URL matching is LOCAL-ONLY — a forwarded window can never match a
-    `url:` / `urls-contains:` entry** (state as of 2026-08-17; the two features
-    look like they compose and do not). Three independent reasons, so fixing one
-    is not enough: the forwarder sends no URL (both transports carry only
-    `handle`/`name`/`title`/`os`); `RemoteHandler._match_remote` passes `None` in
-    the matcher's `url` position outright; and `BrowserReportServer` binds
-    `127.0.0.1` and is constructed **only** by `PolyCore` (`poly_core.py`
-    `_start_browser_report_server`), which the forwarder does not own — so on the
-    remote machine the extension has no receiver at all and its `/ping` fails.
-    Remote browsers therefore match on **title only** (`titles-contains` etc.,
-    which is how the shipped Miro / Jira / web-Outlook entries route). Making it
-    work is ~4 changes, not 1: run a receiver + a `BrowserUrlProvider` in the
-    forwarder (which today reads **no settings at all**), add the URL to the
-    forwarder's own change detection (its `changed` test is handle+title, so an
-    SPA route change would otherwise wait out the 15 s heartbeat), add an optional
-    `url` param to the **RPC** report (`params.get(...)` already ignores unknown
-    keys, so it is back-compatible both ways — no `CONTROL_PROTOCOL_VERSION`
-    bump), and pass it through `report_window` → `remote_changed`'s change
-    detection → `_match_remote`. ⚠️ Do **not** extend the legacy relay for this:
-    its framing is positional `handle;name;title;os` with the free-text field in
-    the *middle*, so a title containing `;` already truncates the title and kills
-    the `os` field today; a fifth field deepens a live bug on a transport that is
-    off by default.
+  - **Browser-URL matching DOES cross machines — but only over the authenticated
+    RPC path** (`--report-rpc`; the forwarder gained this in 0.12.x). Three things
+    had to be true at once, so if a `url:` / `urls-contains:` entry is not firing
+    for a forwarded window, check them in this order: the forwarder runs its own
+    loopback receiver for the extension (`handler/browser_url_source.BrowserUrlSource`,
+    shared with `PolyCore` so the two roles cannot drift — the extension itself is
+    unchanged and always POSTed to `127.0.0.1` on its own machine); the report
+    carries the optional `url` param (**RPC only**); and `RemoteHandler._match_remote`
+    passes it to the matcher. ⚠️ **The legacy plaintext relay deliberately does NOT
+    carry the URL**: its framing is positional `handle;name;title;os` with the
+    free-text field in the *middle*, so a title containing `;` already truncates the
+    title and kills the `os` field — a fifth field would deepen a live bug on a
+    transport that is off by default. Two details that are easy to get backwards:
+    a **None url is STORED** (unlike a None os, which is ignored — the OS belongs to
+    the sending machine, a URL to the window in that report, so keeping the last one
+    would pin a stale site's overlay onto the next non-browser window); and the URL
+    is **part of the window's identity on both ends**, because an SPA route change
+    moves neither handle nor title — the forwarder re-sends on a URL change rather
+    than waiting out its 15 s heartbeat, and `remote_changed` re-matches.
 - ⚠️ **"The tray icon is gone" is NOT the same as "the app crashed" — check the
   process list before diagnosing anything else.** Field, 2026-08-18: the tray
   vanished, `startup_log.txt` and `daemon_log.txt` showed nothing wrong, the user
