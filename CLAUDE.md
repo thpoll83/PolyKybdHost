@@ -165,6 +165,19 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
 
 - **Give every branch a name that hints at its content.** When creating a branch, append a short, descriptive slug describing the change (e.g. `claude/fix-firmware-update-menu-daemon-mode`, not just the auto-generated `claude/<random-scientist>-<id>`). The random scientist/id suffix from Claude Code on the web is auto-assigned server-side and can't always be overridden mid-session, but whenever a branch name is chosen by us, make it self-explanatory so the branch list reads as a changelog.
 - **Always start new work on a FRESH branch cut from the updated default branch — never keep committing to a branch whose PR has already merged.** Once a PR is merged, that branch is done: `git fetch origin <default>` (and for the next piece of work `git checkout -b claude/<new-slug> origin/<default>`). Cherry-pick only the still-unmerged commits onto the fresh branch if needed. This keeps each PR a clean, focused diff against the current default (`main` for host/rig, `PolyKybd` for the firmware) and avoids a new PR accidentally re-including already-merged commits.
+  - ⚠️ **Violating this is INVISIBLE — a push to a branch whose PR has already
+    merged SUCCEEDS and orphans the commit.** git reports an ordinary fast-forward,
+    GitHub shows nothing (a merged PR does not reopen, update, or list the new
+    commit), and the work is simply not in `main` and not in any PR. It is easy to
+    hit without meaning to: the window is "the PR merged while you were still
+    working", not "you deliberately reused an old branch" — that is exactly how
+    the CLAUDE.md commit from #168 was stranded (2026-08-17, recovered as #171).
+    The one check, worth running before reporting any push as done:
+    `git merge-base --is-ancestor <sha> origin/main` (and `git log --oneline
+    --merges -5 origin/main` to see whether your PR's merge already went in).
+    Recovery is the restart above: `git checkout -B <branch> origin/<default>`,
+    cherry-pick the orphan, `git push --force-with-lease`, open a NEW PR — expect
+    an add/add conflict if another PR touched the same region meanwhile.
 
 ## Commands
 
@@ -904,6 +917,29 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     (rewritten 2026-08-17, docs#51). ⚠️ **The relay gate that caused this shipped
     in 0.10.5 and the docs kept recommending the dead path for six weeks** — when
     you flip a transport off by default, move that page in the same change.
+  - ⚠️ **Browser-URL matching is LOCAL-ONLY — a forwarded window can never match a
+    `url:` / `urls-contains:` entry** (state as of 2026-08-17; the two features
+    look like they compose and do not). Three independent reasons, so fixing one
+    is not enough: the forwarder sends no URL (both transports carry only
+    `handle`/`name`/`title`/`os`); `RemoteHandler._match_remote` passes `None` in
+    the matcher's `url` position outright; and `BrowserReportServer` binds
+    `127.0.0.1` and is constructed **only** by `PolyCore` (`poly_core.py`
+    `_start_browser_report_server`), which the forwarder does not own — so on the
+    remote machine the extension has no receiver at all and its `/ping` fails.
+    Remote browsers therefore match on **title only** (`titles-contains` etc.,
+    which is how the shipped Miro / Jira / web-Outlook entries route). Making it
+    work is ~4 changes, not 1: run a receiver + a `BrowserUrlProvider` in the
+    forwarder (which today reads **no settings at all**), add the URL to the
+    forwarder's own change detection (its `changed` test is handle+title, so an
+    SPA route change would otherwise wait out the 15 s heartbeat), add an optional
+    `url` param to the **RPC** report (`params.get(...)` already ignores unknown
+    keys, so it is back-compatible both ways — no `CONTROL_PROTOCOL_VERSION`
+    bump), and pass it through `report_window` → `remote_changed`'s change
+    detection → `_match_remote`. ⚠️ Do **not** extend the legacy relay for this:
+    its framing is positional `handle;name;title;os` with the free-text field in
+    the *middle*, so a title containing `;` already truncates the title and kills
+    the `os` field today; a fifth field deepens a live bug on a transport that is
+    off by default.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
