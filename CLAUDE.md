@@ -1017,25 +1017,51 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   the Worker without answering all four.
 - **Log collection is ONE Qt-free service with three front ends —
   `polyhost/services/log_bundle.py`.** "Send me your log" used to be a request
-  nobody could satisfy: the logs are **five** rotating files
+  nobody could satisfy: the logs are **six** files
   (`host_log.txt`, `daemon_log.txt`, `polykybd_console.txt`, `startup_log.txt`,
-  `forwarder_log.txt`) × up to 3 backups each, written **relative to the process
+  `forwarder_log.txt`, `crash_log.txt`), the rotating ones × up to 3 backups
+  each, written **relative to the process
   cwd**, and under daemon-by-default the half that matters is the *daemon's*, not
   the GUI's. `build_bundle()` writes a `.zip` (logs + `diagnostics.txt` + a
   redacted `settings.yaml` + a README stating the timeframe and redaction state);
   `recent_text()` returns the same content for the clipboard. Front ends: the tray's
   **Help & About → "Collect logs…"**, a **"Collect Logs…"** button in the log viewer,
-  and **`polyctl logs bundle|show|paths`**. Six things that are load-bearing:
-  - ⚠️ **A NEW log file reaches nobody until it is registered in THREE places** —
-    `log_bundle.py` `LOG_SOURCES`, the log viewer's `log_files` dict in `host.py`,
-    and the count in this very paragraph. Writing the file is the easy half; a
-    log nobody can collect is the same as no log. #172 shipped `crash_log.txt` —
-    the file whose entire purpose is proving whether the app crashed — into none
-    of the three, so the one artifact a support round would ask for could not be
-    collected or even viewed. **`crash_log.txt` is still unregistered; fix that
-    when you next touch this file.** Same shape as the enumerating-guard trap
-    in the review conventions above: three lists that must agree and nothing that
-    makes them.
+  and **`polyctl logs bundle|show|paths`**. Eight things that are load-bearing:
+  - ⚠️ **A NEW log file reaches nobody unless `LOG_SOURCES` knows about it** —
+    that is now the single declaration (filename, viewer tab `title`, and
+    whether it is time-`sliced`), and `viewer_files()` derives both tray apps'
+    log-viewer tabs from it. It used to be **four** hand-maintained lists —
+    `log_bundle.py`, the `log_files` dict in `host.py` *and* in `forwarder.py`
+    (the forwarder is a second tray app with its own viewer), and the count in
+    this paragraph — and they drifted exactly as you would expect: #172 shipped
+    `crash_log.txt`, the file whose entire purpose is proving whether the app
+    crashed, into **none** of them, so the one artifact a support round asks for
+    first could be neither collected nor viewed. Worse, the note recording that
+    said THREE, having itself missed the forwarder: the guard meant to prevent
+    the drift was one of the drifting lists. Fixed 2026-08-18 (#178) by deriving
+    instead of enumerating — same shape as the enumerating-guard trap in the
+    review conventions above. The count in this paragraph is the one hand-kept
+    number left; it is prose, so nothing can derive it.
+  - ⚠️ **Registering a source is only half of it — check its lines carry a
+    sliceable timestamp.** `slice_lines` starts `keep = False` and only flips on a
+    `[YYYY-MM-DD HH:MM:SS,mmm]` prefix, so a file the logging handlers did not
+    write is dropped **in full** and the section silently vanishes: registered,
+    and still reaching nobody. `crash_log.txt` is exactly that — its markers are
+    `=== session start | pid N | … ===` — and worse, `faulthandler` writes its
+    native dump *on the fault* with no marker of its own, so even with the marker
+    format taught to the slicer the dump would inherit the keep/drop decision of a
+    `session start` that may be hours older, dropping precisely the crash being
+    reported. Hence `LogSource.sliced=False` for it. The flag lives **on the
+    entry**, not in a lookup table beside it, so a new source has to answer the
+    question where it is declared. `_collect_source()` is the single place that
+    honours it — `collect_text` and `build_bundle` had two copies of that loop,
+    and the bundle is the copy that reaches a maintainer.
+  - **`crash_summary()` puts the crash counts in the report BODY**, since the body
+    is read long before the attachment is opened. It is deliberately **not** a
+    verdict: a `session start` with no matching `clean exit` is the crash log's
+    headline signal, but the process writing the report is itself such a session
+    (as is a live daemon), so an "it crashed" claim derived here would fire on
+    every healthy report and be learned to ignore.
   - ⚠️ **`polyctl logs` MUST work with no host running** — `main()` routes it
     through `_is_offline_command` *before* `connect()`, and a reachable daemon only
     enriches the diagnostics. The moment a user most needs the logs is the one where

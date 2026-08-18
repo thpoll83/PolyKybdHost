@@ -322,5 +322,335 @@ class RecentTextTest(unittest.TestCase):
         self.assertIn("no log content", lb.recent_text(self.dir))
 
 
+def _marker(what: str, pid: int, stamp: datetime) -> str:
+    """A crash_log._stamp() line, byte-for-byte as the writer emits it."""
+    return f"=== {what} | pid {pid} | {stamp.strftime('%Y-%m-%d %H:%M:%S')} ==="
+
+
+class CrashLogSourceTest(unittest.TestCase):
+    """crash_log.txt is collectable at all, and is never time-sliced.
+
+    It was written by util/crash_log.py but registered nowhere, so the one
+    artifact that proves whether the app crashed could be neither collected nor
+    viewed. Registering it is only half the fix: its lines do not carry the
+    `[YYYY-MM-DD HH:MM:SS,mmm]` prefix slice_lines keys off, so a naive
+    registration would have produced a permanently EMPTY section — the same
+    bug in a new costume.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+        self.old = datetime.now() - timedelta(days=3)
+
+    def _write(self, *lines):
+        (self.dir / "crash_log.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def test_the_source_is_registered(self):
+        labels = [s.label for s in lb.LOG_SOURCES]
+        self.assertIn("crash", labels)
+
+    def test_the_filename_comes_from_the_writer(self):
+        """A literal here could drift from the file crash_log actually opens."""
+        from polyhost.util import crash_log
+        source = next(s for s in lb.LOG_SOURCES if s.label == "crash")
+        self.assertEqual(crash_log.CRASH_LOG, source.filename)
+
+    def test_it_is_declared_unsliced(self):
+        source = next(s for s in lb.LOG_SOURCES if s.label == "crash")
+        self.assertFalse(source.sliced)
+
+    def test_every_other_source_is_still_sliced(self):
+        for source in lb.LOG_SOURCES:
+            if source.label != "crash":
+                self.assertTrue(source.sliced, source.label)
+
+    def test_old_crash_content_survives_a_narrow_window(self):
+        """The regression that makes registration meaningful: none of these
+        lines carries a sliceable timestamp, so under slicing all of them are
+        dropped and the section silently disappears."""
+        self._write(_marker("session start", 42, self.old),
+                    "Fatal Python error: Segmentation fault",
+                    "Current thread 0x00007f1a (most recent call first):",
+                    '  File "polyhost/host.py", line 1, in <module>')
+        out = lb.collect_text(self.dir, since=datetime.now() - timedelta(hours=1))
+        self.assertIn("crash", out)
+        self.assertIn("Segmentation fault", out["crash"])
+
+    def test_a_native_dump_is_kept_even_though_it_has_no_marker(self):
+        """faulthandler writes on the fault with no marker of its own, so under
+        slicing it would inherit the decision of a much older session start."""
+        self._write("Current thread 0x00007f1a (most recent call first):",
+                    '  File "polyhost/gui/host.py", line 9, in paintEvent')
+        out = lb.collect_text(self.dir, since=datetime.now())
+        self.assertIn("paintEvent", out["crash"])
+
+    def test_a_normal_log_is_still_sliced(self):
+        """The exemption must not have leaked into the other sources."""
+        (self.dir / "host_log.txt").write_text(
+            _line(self.old, "INFO", "ancient") + "\n", encoding="utf-8")
+        out = lb.collect_text(self.dir, since=datetime.now() - timedelta(hours=1))
+        self.assertNotIn("host", out)
+
+    def test_it_reaches_the_bug_report_bundle(self):
+        """The user-visible point: Report a Problem attaches build_bundle's zip,
+        so registration is what puts the crash evidence in front of a maintainer."""
+        self._write(_marker("session start", 7, self.old),
+                    _marker("unhandled exception: KeyError: 'boom'", 7, self.old))
+        dest = self.dir / "report.zip"
+        lb.build_bundle(dest, log_dir=self.dir, since=datetime.now() - timedelta(hours=1))
+        with zipfile.ZipFile(dest) as z:
+            names = z.namelist()
+            crash = [n for n in names if "crash" in n]
+            self.assertTrue(crash, names)
+            self.assertIn("KeyError", z.read(crash[0]).decode("utf-8"))
+
+
+class CrashSummaryTest(unittest.TestCase):
+    """The one-liner the report BODY carries, so the evidence is visible
+    without opening the attachment."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+        self.t = datetime(2026, 8, 18, 7, 30, 0)
+
+    def _write(self, *lines):
+        (self.dir / "crash_log.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def test_no_file_is_reported_as_nothing(self):
+        self.assertIsNone(lb.crash_summary(self.dir))
+
+    def test_counts_sessions_and_clean_exits(self):
+        self._write(_marker("session start", 1, self.t),
+                    _marker("clean exit (Qt event loop, rc=0)", 1, self.t))
+        got = lb.crash_summary(self.dir)
+        self.assertIn("1 session(s)", got)
+        self.assertIn("1 clean exit(s)", got)
+
+    def test_counts_unhandled_exceptions(self):
+        self._write(_marker("session start", 1, self.t),
+                    _marker("unhandled exception: KeyError: 'x'", 1, self.t))
+        self.assertIn("1 unhandled exception(s)", lb.crash_summary(self.dir))
+
+    def test_counts_native_fault_dumps(self):
+        self._write(_marker("session start", 1, self.t),
+                    "Fatal Python error: Segmentation fault")
+        self.assertIn("1 native fault dump(s)", lb.crash_summary(self.dir))
+
+    def test_one_dump_is_counted_once_not_per_line(self):
+        """A fatal signal prints BOTH a 'Fatal Python error' line and a
+        'Current thread' line; counting each reported one crash as two (caught
+        by running the real CLI, not by the test above)."""
+        self._write(_marker("session start", 1, self.t),
+                    "Fatal Python error: Segmentation fault",
+                    "",
+                    "Current thread 0x00007f1a (most recent call first):",
+                    '  File "polyhost/host.py", line 12, in paintEvent')
+        self.assertIn("1 native fault dump(s)", lb.crash_summary(self.dir))
+
+    def test_two_dumps_in_separate_sessions_are_counted_separately(self):
+        self._write(_marker("session start", 1, self.t),
+                    "Current thread 0x00007f1a (most recent call first):",
+                    _marker("session start", 2, self.t),
+                    "Current thread 0x00007f2b (most recent call first):")
+        self.assertIn("2 native fault dump(s)", lb.crash_summary(self.dir))
+
+    def test_a_healthy_log_makes_no_crash_claim(self):
+        """A live GUI and a live daemon each have an unmatched session start, so
+        a 'it crashed' verdict here would fire on every healthy report."""
+        self._write(_marker("session start", 1, self.t),
+                    _marker("session start", 2, self.t))
+        got = lb.crash_summary(self.dir).lower()
+        for word in ("crash", "died", "unclean", "unhandled", "fault"):
+            self.assertNotIn(word, got)
+
+    def test_it_appears_in_the_diagnostics_block(self):
+        self._write(_marker("session start", 1, self.t))
+        with mock.patch.object(lb, "default_log_dir", return_value=self.dir):
+            self.assertIn("Crash log", lb.environment_text())
+
+    def test_a_failing_summary_never_breaks_the_diagnostics(self):
+        with mock.patch.object(lb, "crash_summary", side_effect=OSError("nope")):
+            self.assertIn("PolyHost version", lb.environment_text())
+
+
+class ViewerFilesTest(unittest.TestCase):
+    """The GUI log-viewer tabs are DERIVED from LOG_SOURCES.
+
+    Both tray apps used to hand-build this dict and they drifted: the
+    forwarder's was missing the crash log entirely. One declaration now feeds
+    the bundle, the clipboard text and both viewers.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+
+    def test_always_sources_appear_even_before_the_file_exists(self):
+        got = lb.viewer_files(always=("host",), log_dir=self.dir)
+        self.assertEqual({"PolyHost Log": str(self.dir / "host_log.txt")}, got)
+
+    def test_other_sources_appear_only_once_they_exist(self):
+        self.assertNotIn("Crash Log", lb.viewer_files(log_dir=self.dir))
+        (self.dir / "crash_log.txt").write_text("x", encoding="utf-8")
+        self.assertEqual(str(self.dir / "crash_log.txt"),
+                         lb.viewer_files(log_dir=self.dir)["Crash Log"])
+
+    def test_the_crash_log_reaches_BOTH_apps_tab_lists(self):
+        """The drift this whole change exists to fix."""
+        (self.dir / "crash_log.txt").write_text("x", encoding="utf-8")
+        host = lb.viewer_files(always=("host", "keyboard-console"), log_dir=self.dir)
+        forwarder = lb.viewer_files(always=("forwarder",), log_dir=self.dir)
+        self.assertIn("Crash Log", host)
+        self.assertIn("Crash Log", forwarder)
+
+    def test_every_source_carries_a_viewer_title(self):
+        """A source with no title is invisible in the viewers — if one is ever
+        added deliberately, this test is the place to say so."""
+        for source in lb.LOG_SOURCES:
+            self.assertTrue(source.title, source.label)
+
+    def test_both_apps_call_it_rather_than_building_a_dict(self):
+        import pathlib as _pl
+        import polyhost
+        root = _pl.Path(polyhost.__file__).parent
+        for name in ("host.py", "forwarder.py"):
+            src = (root / name).read_text(encoding="utf-8")
+            with self.subTest(module=name):
+                self.assertIn("log_bundle.viewer_files(", src)
+                self.assertNotIn('log_files["Crash Log"]', src)
+
+
+class CrashMarkerFormatTest(unittest.TestCase):
+    """The marker format lives with the WRITER; the collector imports it.
+
+    A second hand-written copy in log_bundle would not raise on drift — it would
+    match nothing and report a confidently wrong "0 session(s)".
+    """
+
+    def test_the_writer_and_the_reader_agree(self):
+        from polyhost.util import crash_log
+        line = crash_log.format_marker("session start", 4242)
+        what, pid, ts = crash_log.parse_marker(line)
+        self.assertEqual("session start", what)
+        self.assertEqual(4242, pid)
+        self.assertRegex(ts, r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$")
+
+    def test_a_real_stamp_write_round_trips(self):
+        """Goes through _stamp(), the function that actually writes the file —
+        not a re-typed format string."""
+        from polyhost.util import crash_log
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = Path(tmp.name) / "crash_log.txt"
+        with open(path, "w", encoding="utf-8") as f:
+            with mock.patch.object(crash_log, "_crash_file", f):
+                crash_log._stamp("clean exit (Qt event loop, rc=0)")
+        line = path.read_text(encoding="utf-8").strip()
+        parsed = crash_log.parse_marker(line)
+        self.assertIsNotNone(parsed, line)
+        self.assertEqual("clean exit (Qt event loop, rc=0)", parsed[0])
+
+    def test_a_non_marker_line_is_not_parsed(self):
+        from polyhost.util import crash_log
+        self.assertIsNone(crash_log.parse_marker("Fatal Python error: Segfault"))
+
+
+class ReviewRegressionTest(unittest.TestCase):
+    """Three findings from the CodeRabbit review on #178, all reproduced first."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+        self._other = tempfile.TemporaryDirectory()
+        self.other = Path(self._other.name)
+        self.addCleanup(self._other.cleanup)
+
+    def test_the_bundle_summarises_the_crash_log_it_actually_ships(self):
+        """build_bundle(log_dir=X) zipped X's logs while diagnostics.txt
+        summarised default_log_dir()'s crash log — a report whose body and
+        attachment describe different machines' state."""
+        (self.dir / "crash_log.txt").write_text(
+            "=== session start | pid 7 | 2026-08-15 09:00:00 ===\n", encoding="utf-8")
+        # A DIFFERENT directory is what default_log_dir() would pick.
+        (self.other / "crash_log.txt").write_text(
+            "=== session start | pid 9 | 2026-01-01 00:00:00 ===\n"
+            "=== session start | pid 9 | 2026-01-01 00:00:01 ===\n"
+            "=== session start | pid 9 | 2026-01-01 00:00:02 ===\n", encoding="utf-8")
+        dest = self.dir / "b.zip"
+        with mock.patch.object(lb, "default_log_dir", return_value=self.other):
+            lb.build_bundle(dest, log_dir=self.dir, since=None)
+        with zipfile.ZipFile(dest) as z:
+            diag = z.read("diagnostics.txt").decode("utf-8")
+            shipped = z.read("logs/crash.txt").decode("utf-8")
+        self.assertIn("pid 7", shipped)
+        self.assertIn("1 session(s)", diag)      # the shipped file, not the other
+        self.assertNotIn("3 session(s)", diag)
+
+    def test_viewer_files_returns_paths_the_viewer_can_actually_open(self):
+        """viewer_files() checked existence in default_log_dir() but returned
+        bare names, which LogViewerDialog opens relative to the cwd. When those
+        differ the viewer shows the wrong file or fails to load it."""
+        (self.other / "crash_log.txt").write_text("marker", encoding="utf-8")
+        with mock.patch.object(lb, "default_log_dir", return_value=self.other):
+            files = lb.viewer_files(always=("forwarder",))
+        for title, path in files.items():
+            with self.subTest(tab=title):
+                self.assertTrue(Path(path).is_absolute(), f"{title}: {path!r}")
+        # And the one that exists must be openable as given, from anywhere.
+        self.assertEqual("marker",
+                         Path(files["Crash Log"]).read_text(encoding="utf-8"))
+
+
+class MultilineMarkerTest(unittest.TestCase):
+    """A marker whose `what` spans lines cannot be parsed back.
+
+    `_stamp()` interpolates `str(exc)` into the marker, and plenty of exception
+    messages contain newlines. The marker then occupies several physical lines,
+    MARKER_RE (anchored) matches none of them, and crash_summary silently omits
+    that exception — an undercount in the one line of the report that is
+    supposed to say a crash happened.
+    """
+
+    def test_a_multiline_exception_message_still_round_trips(self):
+        from polyhost.util import crash_log
+        line = crash_log.format_marker(
+            "unhandled exception: ValueError: first line\nsecond line", 99)
+        self.assertEqual(1, len(line.splitlines()))
+        parsed = crash_log.parse_marker(line)
+        self.assertIsNotNone(parsed, line)
+        self.assertIn("first line", parsed[0])
+        self.assertIn("second line", parsed[0])
+
+    def test_carriage_returns_are_normalised_too(self):
+        from polyhost.util import crash_log
+        line = crash_log.format_marker("thread exception: a\r\nb", 1)
+        self.assertEqual(1, len(line.splitlines()))
+        self.assertIsNotNone(crash_log.parse_marker(line))
+
+    def test_an_empty_what_still_produces_a_parseable_marker(self):
+        from polyhost.util import crash_log
+        parsed = crash_log.parse_marker(crash_log.format_marker("", 1))
+        self.assertIsNotNone(parsed)
+
+    def test_such_an_exception_is_counted_in_the_summary(self):
+        """The user-visible consequence: the report body must not undercount."""
+        from polyhost.util import crash_log
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        d = Path(tmp.name)
+        (d / "crash_log.txt").write_text(
+            crash_log.format_marker("session start", 5) + "\n"
+            + crash_log.format_marker(
+                "unhandled exception: ValueError: broke\nbadly", 5) + "\n",
+            encoding="utf-8")
+        self.assertIn("1 unhandled exception(s)", lb.crash_summary(d))
+
+
 if __name__ == "__main__":
     unittest.main()

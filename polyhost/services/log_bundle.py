@@ -1,13 +1,13 @@
 """Collect PolyHost's log files into something a user can actually hand over.
 
-The logs are useful but awkward to gather by hand: they are **five** rotating
-files (``host_log.txt``, ``daemon_log.txt``, ``polykybd_console.txt``,
-``startup_log.txt``, ``forwarder_log.txt``) written to the app's working
-directory, each with up to three ``.1``/``.2``/``.3`` backups — so the lines
-that matter are routinely split across a rotation boundary, and under
-daemon-by-default the interesting half lives in ``daemon_log.txt`` while the
-GUI writes ``host_log.txt``. "Send me your log" is therefore a request nobody
-can reliably satisfy.
+The logs are useful but awkward to gather by hand: they are **six** files
+(``host_log.txt``, ``daemon_log.txt``, ``polykybd_console.txt``,
+``startup_log.txt``, ``forwarder_log.txt`` and ``crash_log.txt``) written to
+the app's working directory, the rotating ones with up to three
+``.1``/``.2``/``.3`` backups — so the lines that matter are routinely split
+across a rotation boundary, and under daemon-by-default the interesting half
+lives in ``daemon_log.txt`` while the GUI writes ``host_log.txt``. "Send me
+your log" is therefore a request nobody can reliably satisfy.
 
 This module is the one place that knows how to do it, and is **Qt-free** so the
 tray GUI, ``polyctl`` and the headless daemon all share it:
@@ -29,17 +29,47 @@ import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import NamedTuple
 
-# (label, base filename). The label names the file inside the bundle and the
-# section in the clipboard text; the filename is what the logging handlers in
-# host.py / headless.py / main_app.py / forwarder.py actually open.
-LOG_SOURCES: tuple[tuple[str, str], ...] = (
-    ("host", "host_log.txt"),
-    ("daemon", "daemon_log.txt"),
-    ("keyboard-console", "polykybd_console.txt"),
-    ("startup", "startup_log.txt"),
-    ("forwarder", "forwarder_log.txt"),
+from polyhost.util import crash_log
+
+
+class LogSource(NamedTuple):
+    """One collectable log file.
+
+    The label names the file inside the bundle and the section in the clipboard
+    text; the filename is what the logging handlers in host.py / headless.py /
+    main_app.py / forwarder.py actually open.
+
+    ``sliced`` lives on the entry rather than in a lookup table beside it, so
+    adding a source has to answer the question at the point of declaration — a
+    parallel list of exceptions is exactly the kind of guard that goes stale.
+    """
+
+    label: str
+    filename: str
+    sliced: bool = True
+    title: str = ""      # tab name in the GUI log viewers; see viewer_files()
+
+
+LOG_SOURCES: tuple[LogSource, ...] = (
+    LogSource("host", "host_log.txt", title="PolyHost Log"),
+    LogSource("daemon", "daemon_log.txt", title="Daemon Log"),
+    LogSource("keyboard-console", "polykybd_console.txt", title="PolyKybd Console Log"),
+    LogSource("startup", "startup_log.txt", title="Startup Log"),
+    LogSource("forwarder", "forwarder_log.txt", title="Forwarder Log"),
+    # ⚠️ NEVER time-sliced, and that is not a convenience. `faulthandler` writes
+    # its native dump directly on the fault, with no marker line of its own, so
+    # under slice_lines it inherits the keep/drop decision of the `session
+    # start` above it — which may be hours older than the window and would drop
+    # precisely the crash being reported. The file is small and unrotated, so
+    # carrying it whole costs nothing. The filename comes from crash_log so the
+    # writer and the collector cannot disagree about it.
+    LogSource("crash", crash_log.CRASH_LOG, sliced=False, title="Crash Log"),
 )
+
+# Derived from the declaration above — never hand-maintained.
+_SLICED: dict[str, bool] = {s.label: s.sliced for s in LOG_SOURCES}
 
 # RotatingFileHandler(backupCount=3) — the highest suffix is the OLDEST.
 MAX_BACKUPS = 9
@@ -105,7 +135,7 @@ def default_log_dir() -> Path:
     candidates = [Path.cwd(), Path(__file__).resolve().parent.parent.parent]
     for cand in candidates:
         try:
-            if any((cand / name).exists() for _, name in LOG_SOURCES):
+            if any((cand / s.filename).exists() for s in LOG_SOURCES):
                 return cand
         except OSError:
             continue
@@ -131,14 +161,43 @@ def _rotation_chain(log_dir: Path, name: str) -> list[Path]:
     return chain
 
 
+def viewer_files(always: tuple[str, ...] = (),
+                 log_dir: Path | str | None = None) -> dict[str, str]:
+    """``{tab title: absolute path}`` for a GUI log viewer, from LOG_SOURCES.
+
+    Values are ABSOLUTE paths, because the viewer opens them as given.
+    ``always`` names the sources this app writes itself, which get a tab whether
+    or not the file is there yet; every other source appears only once it
+    exists. Both tray apps call this instead of hand-building the dict, because
+    they had two hand-built dicts and they drifted — the forwarder's was missing
+    the crash log, which is the whole reason this change exists. One
+    declaration now feeds the bundle, the clipboard text and both viewers.
+    """
+    d = Path(log_dir) if log_dir else default_log_dir()
+    out: dict[str, str] = {}
+    for source in LOG_SOURCES:
+        if not source.title:
+            continue
+        path = d / source.filename
+        if source.label in always or path.exists():
+            # ⚠️ ABSOLUTE, not the bare name. LogViewerDialog opens this value
+            # directly, so a bare name resolves against the process cwd while
+            # the existence test above resolved against default_log_dir() —
+            # different directories mean the viewer shows the wrong file or
+            # fails to load it. (It also makes the dialog's "open containing
+            # folder" work, which os.path.dirname of a bare name never could.)
+            out[source.title] = str(path)
+    return out
+
+
 def discover(log_dir: Path | str | None = None) -> dict[str, list[Path]]:
     """Map each source label to its rotation chain (only sources that exist)."""
     d = Path(log_dir) if log_dir else default_log_dir()
     found = {}
-    for label, name in LOG_SOURCES:
-        chain = _rotation_chain(d, name)
+    for source in LOG_SOURCES:
+        chain = _rotation_chain(d, source.filename)
         if chain:
-            found[label] = chain
+            found[source.label] = chain
     return found
 
 
@@ -156,6 +215,56 @@ def parse_timestamp(line: str) -> datetime | None:
     except ValueError:
         return None
     return stamp.replace(microsecond=int(m.group(2)) * 1000)
+
+
+def crash_summary(log_dir: Path | str | None = None) -> str | None:
+    """A factual one-liner about ``crash_log.txt``, or None when there is none.
+
+    Deliberately **not** a verdict. A ``session start`` with no matching
+    ``clean exit`` is the crash log's headline signal, but the process writing
+    a bug report is itself exactly such a session — and so is a live daemon —
+    so any "it crashed" claim derived here would fire on every healthy report
+    and be learned to ignore. These counts are unambiguous; the attached file
+    carries the pairing, which a reader can interpret with the pids in hand.
+    """
+    chain = _rotation_chain(Path(log_dir) if log_dir else default_log_dir(),
+                            crash_log.CRASH_LOG)
+    if not chain:
+        return None
+    counts = {"session start": 0, "clean exit": 0, "exception": 0}
+    faults = 0
+    newest = None
+    # A native dump has no marker of its own, and spans several lines: a fatal
+    # signal prints "Fatal Python error: …" AND then "Current thread 0x…", while
+    # a bare dump prints only the latter. Counting both lines reports one crash
+    # as two, so a dump runs from its first such line until the next marker.
+    in_dump = False
+    for line in _read_chain(chain):
+        if line.startswith("Fatal Python error") or line.startswith("Current thread 0x"):
+            if not in_dump:
+                faults += 1
+                in_dump = True
+            continue
+        marker = crash_log.parse_marker(line)
+        if marker is None:
+            continue
+        in_dump = False
+        what, _pid, newest = marker
+        if what.startswith("session start"):
+            counts["session start"] += 1
+        elif what.startswith("clean exit"):
+            counts["clean exit"] += 1
+        elif "exception" in what:
+            counts["exception"] += 1
+    parts = [f"{counts['session start']} session(s)",
+             f"{counts['clean exit']} clean exit(s)"]
+    if counts["exception"]:
+        parts.append(f"{counts['exception']} unhandled exception(s)")
+    if faults:
+        parts.append(f"{faults} native fault dump(s)")
+    if newest:
+        parts.append(f"newest marker {newest}")
+    return ", ".join(parts)
 
 
 def parse_since(spec: str | None, now: datetime | None = None) -> datetime | None:
@@ -274,16 +383,30 @@ def redact_settings(raw: str) -> str:
 # Collecting
 # --------------------------------------------------------------------------
 
+def _collect_source(label: str, chain: list[Path], since: datetime | None,
+                    redact: bool) -> tuple[list[str], str]:
+    """Read one source's chain, honouring ITS slicing policy, and redact.
+
+    Shared by :func:`collect_text` and :func:`build_bundle` rather than written
+    out in each: they had two copies of this loop, so a per-source rule added to
+    one would silently not apply to the other — and the bundle is the copy that
+    reaches a maintainer.
+    """
+    lines = _read_chain(chain)
+    if _SLICED.get(label, True):
+        lines = slice_lines(lines, since)
+    text = "\n".join(lines)
+    return lines, redact_text(text) if redact else text
+
+
 def collect_text(log_dir: Path | str | None = None, since: datetime | None = None,
                  redact: bool = False) -> dict[str, str]:
     """Return ``{label: sliced log text}`` for every source that has content."""
     out: dict[str, str] = {}
     for label, chain in discover(log_dir).items():
-        lines = slice_lines(_read_chain(chain), since)
-        if not lines:
-            continue
-        text = "\n".join(lines)
-        out[label] = redact_text(text) if redact else text
+        lines, text = _collect_source(label, chain, since, redact)
+        if lines:
+            out[label] = text
     return out
 
 
@@ -378,7 +501,8 @@ def autostart_detail() -> str | None:
         return None
 
 
-def environment_text(include_slow: bool = False) -> str:
+def environment_text(include_slow: bool = False,
+                     log_dir: Path | str | None = None) -> str:
     """Environment block, available without Qt or a running daemon.
 
     ``include_slow`` adds probes that may shell out (autostart). Callers on the
@@ -399,6 +523,15 @@ def environment_text(include_slow: bool = False) -> str:
         autostart = autostart_detail()
         if autostart:
             lines.append(f"Autostart        : {autostart}")
+    # The crash markers are the first thing worth knowing on a "the app
+    # vanished" report, and the body is read long before the attachment is
+    # opened. Never fatal: diagnostics must not be able to break a bug report.
+    try:
+        crashes = crash_summary(log_dir)
+        if crashes:
+            lines.append(f"Crash log        : {crashes}")
+    except Exception:  # noqa: BLE001 — diagnostics must never break the bundle
+        pass
     lines.append(f"Collected        : {datetime.now().isoformat(timespec='seconds')}")
     try:
         import platformdirs
@@ -468,10 +601,7 @@ def build_bundle(dest: Path | str, log_dir: Path | str | None = None,
     results: list[SourceResult] = []
     payloads: dict[str, str] = {}
     for label, chain in chains.items():
-        lines = slice_lines(_read_chain(chain), since)
-        text = "\n".join(lines)
-        if redact:
-            text = redact_text(text)
+        lines, text = _collect_source(label, chain, since, redact)
         res = SourceResult(label=label, files=list(chain), lines=len(lines),
                            bytes=len(text.encode("utf-8")))
         results.append(res)
@@ -481,7 +611,9 @@ def build_bundle(dest: Path | str, log_dir: Path | str | None = None,
     dest.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("README.txt", _readme(since, redact, results))
-        diag = environment_text(include_slow=True)
+        # log_dir, so diagnostics.txt describes the crash log this zip
+        # actually ships — not whatever default_log_dir() happens to find.
+        diag = environment_text(include_slow=True, log_dir=log_dir)
         if diagnostics:
             diag = f"{diagnostics.rstrip()}\n\n{diag}"
         zf.writestr("diagnostics.txt", diag + "\n")

@@ -29,6 +29,7 @@ from polyhost.core.events import flash_kind_label
 from polyhost.device.command_ids import IdleStyle, GlyphScript
 from polyhost.gui.file_dialogs import get_open_file_name
 from polyhost.gui.get_icon import get_icon
+from polyhost.services import log_bundle
 from polyhost.gui.theme import apply_dark_palette
 from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.update_dialog import confirm_update
@@ -1451,19 +1452,11 @@ class PolyHost(QApplication):
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately
         delta = time.perf_counter()
-        log_files = {"PolyHost Log": "host_log.txt",
-                     "PolyKybd Console Log": "polykybd_console.txt"}
-        # In daemon mode the operational core runs in a separate headless process
-        # that writes its own daemon_log.txt (the GUI's host_log.txt only covers
-        # the client side). Surface it as a tab when present so the daemon's
-        # reconnect/overlay/window activity is visible from the tray GUI.
-        if os.path.exists("daemon_log.txt"):
-            log_files["Daemon Log"] = "daemon_log.txt"
-        # The pre-GUI launch phase (daemon spawn/attach, autostart, single-instance)
-        # logs to startup_log.txt — invaluable when the app fails to come up at all
-        # (especially under Windows pythonw, where print() goes nowhere).
-        if os.path.exists("startup_log.txt"):
-            log_files["Startup Log"] = "startup_log.txt"
+        # Derived from log_bundle.LOG_SOURCES, not hand-listed: the daemon log
+        # (daemon-by-default puts the interesting half there), the pre-GUI
+        # startup log and the crash log all appear once they exist. Both tray
+        # apps used to build this dict by hand and drifted apart.
+        log_files = log_bundle.viewer_files(always=("host", "keyboard-console"))
         self.log_viewer = LogViewerDialog(log_files, collect_cb=self.open_log_bundle)
         self.log_viewer.show()
         delta = time.perf_counter() - delta

@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
 from polyhost._version import __version__
 from polyhost.services import problem_report
 from polyhost.gui.get_icon import get_icon
+from polyhost.services import log_bundle
 from polyhost.gui.theme import apply_dark_palette
 from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.icon_state_manager import IconStateManager
@@ -342,11 +343,9 @@ class PolyForwarder(QApplication):
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately
         delta = time.perf_counter()
-        log_files = {"Forwarder Log": "forwarder_log.txt"}
-        # The pre-GUI launch phase logs here regardless of mode, and it is the
-        # only record when the forwarder fails to come up at all.
-        if os.path.exists("startup_log.txt"):
-            log_files["Startup Log"] = "startup_log.txt"
+        # See host.py: one declaration in log_bundle.LOG_SOURCES feeds the
+        # bundle, the clipboard text and both viewers' tabs.
+        log_files = log_bundle.viewer_files(always=("forwarder",))
         self.log_viewer = LogViewerDialog(log_files, collect_cb=self.open_log_bundle)
         self.log_viewer.show()
         delta = time.perf_counter() - delta
