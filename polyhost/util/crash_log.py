@@ -56,7 +56,16 @@ MARKER_RE = re.compile(
 
 
 def format_marker(what, pid, when=None):
-    """One marker line, without its trailing newline."""
+    """One marker line, without its trailing newline.
+
+    ``what`` is folded onto a single physical line first. It carries an
+    interpolated ``str(exc)`` on the exception paths, and plenty of exception
+    messages contain newlines — which would split the marker across lines, so
+    the anchored MARKER_RE matches none of them and the crash goes UNCOUNTED in
+    the report body. An undercount in the one line that says a crash happened
+    is worse than an ugly one.
+    """
+    what = " ".join(str(what).splitlines()) or "<empty>"
     return "=== %s | pid %d | %s ===" % (
         what, pid, time.strftime(_MARKER_TIME, when or time.localtime()))
 

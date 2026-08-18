@@ -163,8 +163,9 @@ def _rotation_chain(log_dir: Path, name: str) -> list[Path]:
 
 def viewer_files(always: tuple[str, ...] = (),
                  log_dir: Path | str | None = None) -> dict[str, str]:
-    """``{tab title: filename}`` for a GUI log viewer, derived from LOG_SOURCES.
+    """``{tab title: absolute path}`` for a GUI log viewer, from LOG_SOURCES.
 
+    Values are ABSOLUTE paths, because the viewer opens them as given.
     ``always`` names the sources this app writes itself, which get a tab whether
     or not the file is there yet; every other source appears only once it
     exists. Both tray apps call this instead of hand-building the dict, because
@@ -177,8 +178,15 @@ def viewer_files(always: tuple[str, ...] = (),
     for source in LOG_SOURCES:
         if not source.title:
             continue
-        if source.label in always or (d / source.filename).exists():
-            out[source.title] = source.filename
+        path = d / source.filename
+        if source.label in always or path.exists():
+            # ⚠️ ABSOLUTE, not the bare name. LogViewerDialog opens this value
+            # directly, so a bare name resolves against the process cwd while
+            # the existence test above resolved against default_log_dir() —
+            # different directories mean the viewer shows the wrong file or
+            # fails to load it. (It also makes the dialog's "open containing
+            # folder" work, which os.path.dirname of a bare name never could.)
+            out[source.title] = str(path)
     return out
 
 
@@ -493,7 +501,8 @@ def autostart_detail() -> str | None:
         return None
 
 
-def environment_text(include_slow: bool = False) -> str:
+def environment_text(include_slow: bool = False,
+                     log_dir: Path | str | None = None) -> str:
     """Environment block, available without Qt or a running daemon.
 
     ``include_slow`` adds probes that may shell out (autostart). Callers on the
@@ -518,7 +527,7 @@ def environment_text(include_slow: bool = False) -> str:
     # vanished" report, and the body is read long before the attachment is
     # opened. Never fatal: diagnostics must not be able to break a bug report.
     try:
-        crashes = crash_summary()
+        crashes = crash_summary(log_dir)
         if crashes:
             lines.append(f"Crash log        : {crashes}")
     except Exception:  # noqa: BLE001 — diagnostics must never break the bundle
@@ -602,7 +611,9 @@ def build_bundle(dest: Path | str, log_dir: Path | str | None = None,
     dest.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("README.txt", _readme(since, redact, results))
-        diag = environment_text(include_slow=True)
+        # log_dir, so diagnostics.txt describes the crash log this zip
+        # actually ships — not whatever default_log_dir() happens to find.
+        diag = environment_text(include_slow=True, log_dir=log_dir)
         if diagnostics:
             diag = f"{diagnostics.rstrip()}\n\n{diag}"
         zf.writestr("diagnostics.txt", diag + "\n")
