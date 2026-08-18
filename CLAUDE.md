@@ -900,12 +900,26 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     either way, so the fallback costs a paste rather than the report. A test
     pins that a *realistic* report still prefills — otherwise the fallback
     quietly becomes the normal path.
+- ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
+  `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
+  menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
+  `host.py` is simply **absent** there until wired separately. It matters most
+  for support features: the forwarder runs on a **different machine** from the
+  keyboard, so its logs can never appear in a bundle collected host-side, and
+  its failure domain (which window backend that desktop selects, the report
+  transport, the authkey) is exactly the log-diagnosable kind. Both "Report a
+  Problem…" and "Collect logs…" are wired in both places, and the forwarder
+  supplies its **own** diagnostics text leading with `FORWARDER mode (no keyboard
+  attached to this machine)` — the plain version line otherwise reads exactly
+  like a report from the keyboard machine, which is a different failure domain
+  entirely. `tests/gui/host_client_test.py` has a `forwarder` smoke mode; it
+  **skips** without `pywinctl`, which `forwarder.py` imports at module load.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
   - **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
   - **To run the WHOLE suite** (not just `tests.device.*` — do this after any change touching
-    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5`
+    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5 pywinctl`
     (pip) **and** `xvfb x11-xserver-utils` (apt), run under `xvfb-run -a .venv/bin/python -m
     unittest discover -s ./tests -p "*_test.py"`. Without those deps `services/updater`,
     `sunlight_helper`, `langcode_flag`, `win_helper_parse`, and the `host_client`

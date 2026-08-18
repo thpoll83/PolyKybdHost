@@ -103,6 +103,22 @@ class TestPolyHostModes(unittest.TestCase):
         for expected in ("Overlays", "Font Pack", "Firmware", "Idle"):
             self.assertIn(expected, subs)
 
+    def test_forwarder_can_collect_logs_and_report(self):
+        """The forwarder runs on a DIFFERENT machine from the keyboard, so its
+        logs can never reach a host-side bundle — both entries have to exist
+        here too, with diagnostics that say which machine they came from."""
+        proc = _run_smoke("forwarder")
+        if "SMOKE SKIP" in proc.stdout:
+            self.skipTest("pywinctl not installed — forwarder cannot be imported")
+        self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
+        rows = _grab(proc.stdout, "FWD_MENU").split("|")
+        self.assertIn("Report a Problem...", rows)
+        self.assertIn("Collect logs...", rows)
+        # A forwarder report must not read like one from the keyboard machine.
+        self.assertIn("FWD_DIAG_MODE True", proc.stdout)
+        self.assertIn("FWD_DIALOGS ReportProblemDialog LogBundleDialog", proc.stdout)
+        self.assertIn("FWD_REUSED True", proc.stdout)
+
     def test_client_mode_connects_and_renders(self):
         proc = _run_smoke("client")
         self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
@@ -142,6 +158,36 @@ def _toplevel(app):
     """
     return "|".join(a.text() for a in app.menu.actions()
                     if not a.isSeparator() and a.isVisible())
+
+
+def _smoke_forwarder():
+    import logging
+    from unittest import mock
+    try:
+        import pywinctl  # noqa: F401 — forwarder.py imports it at module load
+    except Exception:  # noqa: BLE001
+        print("SMOKE SKIP no-pywinctl")
+        return
+    with mock.patch("polyhost.input.linux_gnome_helper.LinuxGnomeInputHelper"):
+        from polyhost.forwarder import PolyForwarder
+        app = PolyForwarder(logging.CRITICAL, host="192.168.1.50",
+                            report_rpc=True, report_port=50163)
+        print("FWD_MENU", "|".join(a.text() for a in app.menu.actions()
+                                   if not a.isSeparator()))
+        diag = app._diagnostics_text()
+        print("FWD_DIAG_MODE", "FORWARDER" in diag and "192.168.1.50" in diag)
+        app.report_problem_action.trigger()
+        app.collect_logs_action.trigger()
+        rdlg, ldlg = app.report_problem_dialog, app.log_bundle_dialog
+        print("FWD_DIALOGS", type(rdlg).__name__, type(ldlg).__name__)
+        app.report_problem_action.trigger()
+        app.collect_logs_action.trigger()
+        print("FWD_REUSED", app.report_problem_dialog is rdlg
+              and app.log_bundle_dialog is ldlg)
+        for d in (rdlg, ldlg):
+            d.close()
+        app.quit_app()
+    print("SMOKE OK")
 
 
 def _smoke_default():
@@ -405,4 +451,5 @@ def _smoke_developer():
 
 if __name__ == "__main__":
     {"default": _smoke_default, "client": _smoke_client,
+     "forwarder": _smoke_forwarder,
      "developer": _smoke_developer}[sys.argv[1]]()
