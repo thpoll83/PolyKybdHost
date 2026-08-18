@@ -1604,7 +1604,38 @@ class PolyHost(QApplication):
             "n_maps": n_maps,
             "config_dir": platformdirs.user_config_dir("PolyHost"),
             "log_dir": os.getcwd(),
+            "fontpack": self._fontpack_summary(),
+            "unsupported": ", ".join(
+                sorted(f for f, ok in (st.get("capabilities") or {}).items() if not ok)),
         }
+
+    def _fontpack_summary(self) -> str:
+        """One line of per-bundle font-pack state, or '' when unknown.
+
+        `fontpack_bundle_status()` compares the cached GET_ID version block
+        against the shipped bundles.json — local on both sides of the RPC, so
+        this costs no device I/O. A bundle can read as current and still have
+        failed to flash, so failures are named separately from staleness."""
+        getter = getattr(self.core, "fontpack_bundle_status", None)
+        if getter is None:
+            return ""
+        try:
+            ok, info = getter()
+        except Exception as exc:  # noqa: BLE001 — diagnostics must never break About
+            self.log.debug("Font-pack status unavailable for diagnostics: %s", exc)
+            return ""
+        if not ok or not isinstance(info, dict) or not info.get("shipped"):
+            return ""
+        bundles = info.get("bundles") or []
+        if not bundles:
+            return ""
+        stale = [b.get("id") for b in bundles if b.get("stale")]
+        failed = [b.get("id") for b in bundles if b.get("last_error")]
+        parts = [f"{len(bundles)} bundles"]
+        parts.append(f"stale: {', '.join(stale)}" if stale else "all current")
+        if failed:
+            parts.append(f"FAILED: {', '.join(failed)}")
+        return " · ".join(parts)
 
     @staticmethod
     def _about_state_word(info: dict) -> str:
@@ -1669,6 +1700,16 @@ class PolyHost(QApplication):
             lines.append("Keyboard: not connected")
         if info["n_maps"]:
             lines.append(f"Overlay mappings: {info['n_maps']} apps")
+        # Two device-side facts that are LOCAL reads (a cached GET_ID block vs the
+        # shipped manifest, and the protocol-gate table) — no device I/O on either
+        # side of the RPC, so they are safe on the menu/GUI thread. Both answer a
+        # recurring class of report on their own: "the glyphs are wrong" (a stale
+        # or failed font-pack bundle) and "this menu is greyed out" (a feature the
+        # attached firmware is too old for).
+        if info.get("fontpack"):
+            lines.append(f"Font pack: {info['fontpack']}")
+        if info.get("unsupported"):
+            lines.append(f"Features unavailable on this firmware: {info['unsupported']}")
         lines += [f"Config: {info['config_dir']}", f"Logs: {info['log_dir']}"]
         return "\n".join(lines)
 

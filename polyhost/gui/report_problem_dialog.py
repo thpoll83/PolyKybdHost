@@ -129,14 +129,27 @@ class ReportProblemDialog(QDialog):
         self.create_btn.setEnabled(has_text and self._worker is None)
 
     def _diagnostics(self):
-        if not self._diagnostics_cb:
-            return ""
+        """About's diagnostics plus the environment block.
+
+        The About text alone omits the architecture, the real OS version
+        (`platform.release()` says "10" on Windows 11) and — on Linux — the
+        desktop/session that picks the window-tracking backend. Those belong in
+        the issue itself, not only in the attached bundle, because they decide
+        whether a report is even reproducible. `include_slow` stays off: this
+        runs on the GUI thread, and the autostart probe shells out on Windows.
+        """
+        parts = []
+        if self._diagnostics_cb:
+            try:
+                parts.append(self._diagnostics_cb() or "")
+            except Exception:  # noqa: BLE001 — a bonus, never a blocker
+                self.log.warning("Could not gather diagnostics for the problem report",
+                                 exc_info=True)
         try:
-            return self._diagnostics_cb() or ""
-        except Exception:  # noqa: BLE001 — diagnostics are a bonus, never a blocker
-            self.log.warning("Could not gather diagnostics for the problem report",
-                             exc_info=True)
-            return ""
+            parts.append(log_bundle.environment_text())
+        except Exception:  # noqa: BLE001
+            self.log.warning("Could not gather the environment block", exc_info=True)
+        return "\n\n".join(p for p in parts if p.strip())
 
     def _busy(self, busy: bool):
         for w in (self.timeframe, self.redact, self.description, self.expected):
