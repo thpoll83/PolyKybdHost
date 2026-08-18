@@ -18,9 +18,10 @@ failure to install crash reporting must never stop the app from starting.
 
 The session markers are the point of the file: ``install`` appends a
 ``session start`` line and :func:`note_clean_exit` appends a matching
-``clean exit``. A start with no matching exit is, by itself, the diagnosis (the
-process crashed, was killed, or bailed out early — the latter always logs its
-own error first, so the two are easy to tell apart) —
+``clean exit`` — the latter automatically, via ``atexit``, so every graceful
+shutdown is covered rather than an enumerated list of ``sys.exit`` sites. A start
+with no matching exit therefore means the interpreter never unwound at all: a
+crash, an ``abort()``, or a kill —
 which is exactly what was missing when a tray icon went missing in the field
 (2026-08-18) and neither ``host_log.txt`` nor ``daemon_log.txt`` could say
 whether the process had crashed or was still running, invisible.
@@ -32,6 +33,7 @@ which catches Qt's own fatals before the abort) is
 ⚠️ The GUI and the co-located daemon share one ``crash_log.txt``. Every line
 carries the pid for that reason; don't "tidy" it away.
 """
+import atexit
 import logging
 import os
 import sys
@@ -46,6 +48,7 @@ CRASH_LOG = "crash_log.txt"
 # whatever has since inherited that number).
 _crash_file = None
 _installed = False
+_clean_exit_noted = False
 
 
 def _stamp(what):
@@ -107,9 +110,25 @@ def install(log=None, filename=CRASH_LOG):
             log.warning("faulthandler not enabled (%s: %s).", type(e).__name__, e)
 
     _install_excepthooks(log)
+    # Mark every graceful exit, rather than calling note_clean_exit() at each
+    # `sys.exit` site. main_app alone has five, three of them entirely routine
+    # (a second launch finding the socket already served exits 0 — that would
+    # otherwise stamp a "crash" on a normal event), and an enumerated list is
+    # exactly the kind of guard that goes stale the next time someone adds a
+    # branch. atexit has the semantics we want for free: it runs on any
+    # interpreter shutdown including sys.exit, and does NOT run on abort(),
+    # SIGSEGV, a kill, or os.execv — which are precisely the cases that must
+    # stay unmarked.
+    atexit.register(_atexit_marker)
     _stamp("session start")
     _installed = True
     return True
+
+
+def _atexit_marker():
+    """Stamp a clean exit unless one was already recorded explicitly."""
+    if not _clean_exit_noted:
+        _stamp("clean exit (interpreter shutdown)")
 
 
 def _install_excepthooks(log):
@@ -137,16 +156,26 @@ def _install_excepthooks(log):
 
     # A thread that dies takes its work with it silently — the worker, the event
     # pump and the updater threads all matter enough to hear about.
+    previous_thread_hook = threading.excepthook
+
     def _thread_hook(args):
-        if args.exc_type is SystemExit:
-            return
+        # SystemExit is how a thread asks to stop; the stdlib default ignores it
+        # silently, so reporting it would invent noise the app never had.
+        if args.exc_type is not SystemExit:
+            try:
+                log.critical("UNHANDLED EXCEPTION in thread %r",
+                             getattr(args.thread, "name", "?"),
+                             exc_info=(args.exc_type, args.exc_value, args.exc_traceback))
+                _flush_logging()
+                _stamp("thread exception (%s): %s"
+                       % (getattr(args.thread, "name", "?"), args.exc_value))
+            except Exception:  # noqa: BLE001 — never raise from the last-resort hook
+                pass
+        # Chain, for the same reason sys.excepthook does: we are a reporter, not
+        # a replacement, and whatever was installed before (the stdlib default, a
+        # test harness, a debugger) keeps its behaviour.
         try:
-            log.critical("UNHANDLED EXCEPTION in thread %r",
-                         getattr(args.thread, "name", "?"),
-                         exc_info=(args.exc_type, args.exc_value, args.exc_traceback))
-            _flush_logging()
-            _stamp("thread exception (%s): %s"
-                   % (getattr(args.thread, "name", "?"), args.exc_value))
+            previous_thread_hook(args)
         except Exception:  # noqa: BLE001
             pass
 
@@ -160,7 +189,11 @@ def note_clean_exit(log=None, what="process", rc=None):
     ``clean exit`` line means the process was killed or crashed. Call it on
     every deliberate exit path.
     """
+    global _clean_exit_noted
     log = log or logging.getLogger("PolyHost")
+    if _clean_exit_noted:
+        return
+    _clean_exit_noted = True
     if rc is None:
         log.info("%s exited cleanly.", what)
         _stamp("clean exit (%s)" % what)

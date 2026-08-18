@@ -49,6 +49,7 @@ class CrashLogTestBase(unittest.TestCase):
             crash_log._crash_file.close()
         crash_log._crash_file = None
         crash_log._installed = False
+        crash_log._clean_exit_noted = False
         self._tmp.cleanup()
 
     def text(self):
@@ -139,11 +140,61 @@ class ThreadHookTest(CrashLogTestBase):
         self.assertEqual(self.log.levels(), [])
 
 
+class ThreadHookChainingTest(CrashLogTestBase):
+    """The thread hook reports; it does not replace what was there before."""
+
+    def test_chains_to_the_previous_thread_hook(self):
+        seen = []
+        threading.excepthook = lambda args: seen.append(args.exc_type)
+        crash_log.install(self.log, str(self.path))
+        t = threading.Thread(target=lambda: (_ for _ in ()).throw(KeyError("x")))
+        t.start()
+        t.join()
+        self.assertEqual(seen, [KeyError])
+
+    def test_chains_even_for_systemexit_which_we_do_not_report(self):
+        """The stdlib default ignores SystemExit, so we must not invent noise —
+        but the previous hook still gets to decide for itself."""
+        seen = []
+        threading.excepthook = lambda args: seen.append(args.exc_type)
+        crash_log.install(self.log, str(self.path))
+        t = threading.Thread(target=lambda: (_ for _ in ()).throw(SystemExit(0)))
+        t.start()
+        t.join()
+        self.assertEqual(seen, [SystemExit])
+        self.assertEqual(self.log.levels(), [])      # reported by us: no
+
+    def test_a_failing_previous_thread_hook_cannot_break_reporting(self):
+        def angry(_args):
+            raise RuntimeError("hook is broken")
+        threading.excepthook = angry
+        crash_log.install(self.log, str(self.path))
+        t = threading.Thread(target=lambda: (_ for _ in ()).throw(KeyError("x")),
+                             name="chained")
+        t.start()
+        t.join()
+        self.assertEqual(self.log.levels(), [logging.CRITICAL])
+        self.assertIn("chained", self.text())
+
+
 class CleanExitTest(CrashLogTestBase):
     def test_marks_a_deliberate_exit(self):
         crash_log.install(self.log, str(self.path))
         crash_log.note_clean_exit(self.log, "Qt event loop", 0)
         self.assertIn("clean exit (Qt event loop, rc=0)", self.text())
+
+    def test_atexit_marks_a_graceful_exit_nobody_announced(self):
+        """The routine `sys.exit(0)` paths (a second launch finding the socket
+        already served) must not read as crashes — atexit covers them all."""
+        crash_log.install(self.log, str(self.path))
+        crash_log._atexit_marker()
+        self.assertIn("clean exit (interpreter shutdown)", self.text())
+
+    def test_atexit_does_not_double_stamp_an_explicit_exit(self):
+        crash_log.install(self.log, str(self.path))
+        crash_log.note_clean_exit(self.log, "Qt event loop", 0)
+        crash_log._atexit_marker()
+        self.assertEqual(self.text().count("clean exit"), 1)
 
     def test_a_crashed_session_has_no_matching_exit_marker(self):
         """The whole diagnostic value is in the absence of this line."""
