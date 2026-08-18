@@ -402,6 +402,15 @@ class PolyHost(QApplication):
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
+        # The guided path: describe the problem, bundle the logs, open a
+        # pre-filled issue. "Collect logs..." below is the manual half, for when
+        # someone already knows where they are sending the file.
+        self.report_problem_action = QAction(get_icon("feedback.svg"),
+                                             "Report a Problem...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.report_problem_action.triggered.connect(self.open_report_problem)
+        self.report_problem_dialog = None
+
         # "Send me your log" is otherwise a request nobody can satisfy: the logs
         # are five rotating files in the working directory, and in daemon mode
         # the half that matters is the daemon's, not this process's.
@@ -651,6 +660,7 @@ class PolyHost(QApplication):
         # --- Help & About: the read-only, always-available corner --------------
         self.help_menu = self.menu.addMenu(get_icon("help.svg"), "Help && About")
         self.help_menu.addAction(self.about)
+        self.help_menu.addAction(self.report_problem_action)
         self.help_menu.addAction(self.log_dialog)
         self.help_menu.addAction(self.collect_logs_action)
         # settings.yaml + overlay-mapping.poly.yaml live in a platformdirs path
@@ -1447,6 +1457,22 @@ class PolyHost(QApplication):
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
+
+    def open_report_problem(self):
+        """Open the guided problem-report dialog.
+
+        Same retained-instance rule as open_log_bundle: this is the only strong
+        reference (the dialog is parentless) and its collection QThread is
+        parented to it, so rebuilding on a second click can destroy a running
+        thread — and it would also throw away a half-written description."""
+        from polyhost.gui.report_problem_dialog import ReportProblemDialog
+        if self.report_problem_dialog is None:
+            self.report_problem_dialog = ReportProblemDialog(
+                parent=None,
+                diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()))
+        self.report_problem_dialog.show()
+        self.report_problem_dialog.raise_()
+        self.report_problem_dialog.activateWindow()
 
     def open_log_bundle(self):
         """Open the log-collection dialog (bundle .zip / clipboard).

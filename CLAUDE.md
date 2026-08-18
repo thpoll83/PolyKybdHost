@@ -874,6 +874,32 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the box is unticked; default is OFF because a first support round with everything
     masked usually has to be repeated. `browser_report_token` / `telemetry_install_id`
     are masked **always**, independent of that flag.
+- **"Report a Problem" is the guided sibling of log collection —
+  `polyhost/services/problem_report.py` + `gui/report_problem_dialog.py`.** The
+  tray's **Help & About → "Report a Problem…"** takes a description, builds a log
+  bundle, puts the composed issue body on the clipboard and opens a **pre-filled
+  GitHub issue** in the browser. "Collect logs…" beside it stays the manual half,
+  for when the file is going somewhere else. Four things are deliberate:
+  - ⚠️ **Redaction defaults ON here and OFF in "Collect logs…", and that
+    asymmetry is the point.** A local bundle is a file you inspect before
+    sending; a report is aimed at a **public** tracker. Same data, different
+    destination, so the safe default flips.
+  - **The issue body carries NO log lines** — only the description, the
+    diagnostics and the bundle's *filename*, with an instruction to attach it.
+    GitHub has no API to attach a file to an issue without a token, and shipping
+    one in an open-source client is shipping a public credential; more
+    importantly, an attachment is a file the reporter can look at before
+    uploading, which pasted log text is not.
+  - **Diagnostics are path-scrubbed** (`scrub_paths`): `_diagnostics_text` ends
+    with `Config:`/`Logs:` lines, and on every platform those contain the account
+    name (`C:\Users\tom\…`, `/home/tom/…`). Home → `~`, plus a regex for any
+    *other* user directory (a daemon under another account, another drive).
+  - **A pre-filled new-issue URL is a GET**, so an oversized body is truncated or
+    refused somewhere between browser and GitHub. `issue_url_for()` falls back to
+    the blank form above `MAX_URL_BYTES` (6000); the body is on the clipboard
+    either way, so the fallback costs a paste rather than the report. A test
+    pins that a *realistic* report still prefills — otherwise the fallback
+    quietly becomes the normal path.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.

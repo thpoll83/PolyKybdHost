@@ -80,6 +80,12 @@ class TestPolyHostModes(unittest.TestCase):
         # The row must actually open the dialog, and a second click must reuse it.
         self.assertIn("COLLECT_LOGS_DIALOG True LogBundleDialog", proc.stdout)
         self.assertIn("COLLECT_LOGS_REUSED True", proc.stdout)
+        # The guided "Report a Problem..." row beside it.
+        self.assertIn("REPORT_PROBLEM True True", proc.stdout)
+        self.assertIn("REPORT_PROBLEM_DIALOG True ReportProblemDialog", proc.stdout)
+        self.assertIn("REPORT_PROBLEM_GATED True", proc.stdout)
+        self.assertIn("REPORT_PROBLEM_REDACTS True", proc.stdout)
+        self.assertIn("REPORT_PROBLEM_REUSED True", proc.stdout)
         # The newer-firmware row must not clutter the normal menu.
         self.assertIn("NEWER_FW_ROW False", proc.stdout)
 
@@ -190,6 +196,27 @@ def _smoke_default():
         print("COLLECT_LOGS",
               app.collect_logs_action in app.help_menu.actions(),
               app.collect_logs_action.isEnabled())
+        # Same three properties for the guided report row: present, live while
+        # disconnected, opens its dialog, and reuses it on a second click (which
+        # here also protects a half-written description).
+        print("REPORT_PROBLEM",
+              app.report_problem_action in app.help_menu.actions(),
+              app.report_problem_action.isEnabled())
+        app.report_problem_action.trigger()
+        rdlg = app.report_problem_dialog
+        print("REPORT_PROBLEM_DIALOG", rdlg is not None,
+              type(rdlg).__name__ if rdlg else "-")
+        # Empty description => nothing to report, so the button must be dead.
+        print("REPORT_PROBLEM_GATED",
+              rdlg is not None and not rdlg.create_btn.isEnabled())
+        # Masking defaults ON here (unlike the local bundle) — a report is aimed
+        # at a public tracker.
+        print("REPORT_PROBLEM_REDACTS", rdlg is not None and rdlg.redact.isChecked())
+        app.report_problem_action.trigger()
+        print("REPORT_PROBLEM_REUSED", app.report_problem_dialog is rdlg)
+        if rdlg is not None:
+            rdlg.close()
+
         # Actually fire it: a disconnected signal or a broken import would leave
         # the row enabled and do nothing at all when clicked, which is exactly
         # the silent failure the icon test exists to prevent elsewhere.
