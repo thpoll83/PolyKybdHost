@@ -56,6 +56,69 @@ def scrub_paths(text: str, home: str | None = None) -> str:
     return out
 
 
+# Diagnostics labels whose VALUE is a network endpoint. Anchored on the label
+# wording rather than "anything that looks like an address", for the same reason
+# the log redactor anchors on each message's wording: a broad match would eat
+# version numbers and ports that are not sensitive.
+_ENDPOINT_LABELS = re.compile(
+    r"(?im)^(\s*(?:target host|host|endpoint|server)\s*:\s*)(\S.*)$")
+
+_IPV4 = re.compile(r"^\d{1,3}(\.\d{1,3}){3}$")
+
+
+def _endpoint_kind(value: str) -> str:
+    """Describe an endpoint without disclosing it.
+
+    The kind is worth keeping: "it is an IP" versus "it is a name" is often the
+    difference between a routing problem and a resolution one, and neither
+    identifies the network.
+    """
+    value = value.strip()
+    if _IPV4.match(value):
+        return "<redacted ipv4 address>"
+    return "<redacted hostname>"
+
+
+def scrub_endpoints(text: str) -> str:
+    """Mask network endpoints in text bound for a PUBLIC issue.
+
+    The forwarder's target is an address on someone's private network — often an
+    internal DNS name — and it is not needed to read a report: the mode and the
+    transport are. The exact value stays in the local bundle, which the reporter
+    reviews before attaching.
+    """
+    if not text:
+        return text
+    return _ENDPOINT_LABELS.sub(
+        lambda m: m.group(1) + _endpoint_kind(m.group(2)), text)
+
+
+def forwarder_diagnostics(version: str, host=None, host_file=None,
+                          report_rpc: bool = False, report_port=None) -> str:
+    """The diagnostics block for a report from a FORWARDER machine.
+
+    Qt-free and free of PolyForwarder, so it is unit-testable: `forwarder.py`
+    imports pywinctl at module load and cannot be imported in the documented
+    test environment at all.
+
+    ⚠️ It must say FORWARDER first. The version line otherwise reads exactly
+    like a report from the keyboard machine, and the two have completely
+    different failure domains — this one has no HID device at all.
+    """
+    lines = [f"PolyKybdHost {version} — FORWARDER mode "
+             f"(no keyboard attached to this machine)"]
+    if host_file:
+        lines.append(f"Target: from host file {host_file}")
+    if host:
+        lines.append(f"Target host: {host}")
+    if report_rpc:
+        lines.append(f"Window reports: authenticated RPC (port {report_port})")
+    else:
+        lines.append("Window reports: legacy plaintext TCP relay "
+                     "(needs dev_legacy_plaintext_relay on the host)")
+    return "\n".join(lines)
+
+
 def default_title(description: str) -> str:
     """A one-line issue title from the first line of the description."""
     first = (description or "").strip().splitlines()
@@ -81,7 +144,10 @@ def compose_body(description: str, expected: str = "", diagnostics: str = "",
     if (expected or "").strip():
         parts += ["", "### What I expected", expected.strip()]
     if (diagnostics or "").strip():
-        parts += ["", "### Diagnostics", "```", scrub_paths(diagnostics.strip(), home), "```"]
+        # Two scrubbers, both public-body only: the bundle keeps the exact values
+        # for the reporter to inspect before attaching.
+        clean = scrub_endpoints(scrub_paths(diagnostics.strip(), home))
+        parts += ["", "### Diagnostics", "```", clean, "```"]
     if bundle_name:
         masked = ("window titles masked" if redacted
                   else "⚠️ window titles NOT masked — check it before attaching")

@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QProgressDialog)
 from polyhost._version import __version__
+from polyhost.services import problem_report
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.qt_crash import install_qt_message_handler
@@ -329,26 +330,14 @@ class PolyForwarder(QApplication):
     def _diagnostics_text(self) -> str:
         """Diagnostics for a forwarder report.
 
-        ⚠️ It must say FORWARDER first. The version line otherwise reads exactly
-        like a report from the keyboard machine, and the two have completely
-        different failure domains — this one has no HID device at all, and its
-        job is only to observe windows and relay them.
+        Composition lives in the Qt-free `problem_report` module: this file
+        imports pywinctl at module load, so anything left here cannot be tested
+        in the documented environment (the forwarder smoke mode skips without
+        it). This method only supplies the state.
         """
-        lines = [
-            f"PolyKybdHost {__version__} — FORWARDER mode "
-            f"(no keyboard attached to this machine)",
-        ]
-        if self.host_file:
-            lines.append(f"Target: from host file {self.host_file}")
-        if self.host:
-            lines.append(f"Target host: {self.host}")
-        if self._report_rpc:
-            lines.append(
-                f"Window reports: authenticated RPC (port {self._report_port})")
-        else:
-            lines.append("Window reports: legacy plaintext TCP relay "
-                         "(needs dev_legacy_plaintext_relay on the host)")
-        return "\n".join(lines)
+        return problem_report.forwarder_diagnostics(
+            __version__, host=self.host, host_file=self.host_file,
+            report_rpc=self._report_rpc, report_port=self._report_port)
 
     def open_report_problem(self):
         """Guided problem report (retained instance — see PolyHost.open_report_problem)."""

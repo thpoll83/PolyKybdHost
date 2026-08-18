@@ -185,17 +185,13 @@ class ReportProblemDialog(QDialog):
         """Bundle finished (GUI thread — `done` is a queued signal)."""
         self._worker = None
         self._busy(False)
-        if not ok:
-            self.status.setText(
-                f"<span style='color:#c0392b;'>{message}</span><br>"
-                "You can still report the problem without logs: "
-                "<a href='https://github.com/thpoll83/PolyKybdHost/issues/new'>"
-                "open an issue</a>.")
-            self.status.setOpenExternalLinks(True)
-            return
-
+        # A failed bundle must not cost the user the words they just typed: carry
+        # on with the report, minus the attachment. build_bundle raises when
+        # there are no log sources at all, which is a plausible first-run state.
         if isinstance(payload, tuple) and payload[0] == "bundle":
             self._bundle_path = payload[1]
+        elif not ok:
+            self._bundle_path = None
 
         body = problem_report.compose_body(
             description, expected, diagnostics,
@@ -216,11 +212,15 @@ class ReportProblemDialog(QDialog):
                              exc_info=True)
 
         self.reveal_btn.setVisible(bool(self._bundle_path))
-        self.status.setText(self._outcome_html(opened, prefilled, message))
+        self.status.setText(self._outcome_html(opened, prefilled, message, ok))
         self.status.setOpenExternalLinks(True)
 
-    def _outcome_html(self, opened, prefilled, bundle_message):
-        steps = [f"{bundle_message}."]
+    def _outcome_html(self, opened, prefilled, bundle_message, bundle_ok=True):
+        if bundle_ok:
+            steps = [f"{bundle_message}."]
+        else:
+            steps = [f"<span style='color:#c0392b;'>{bundle_message}</span> "
+                     "The report itself is fine — it just has no logs attached."]
         if opened:
             steps.append("A GitHub issue has been opened in your browser"
                          + ("." if prefilled else
@@ -230,8 +230,11 @@ class ReportProblemDialog(QDialog):
                 "Could not open your browser — the report is on your clipboard. "
                 "<a href='https://github.com/thpoll83/PolyKybdHost/issues/new'>"
                 "Open an issue</a> and paste it in.")
-        steps.append("<b>Attach the log file</b> (button on the left reveals it) "
-                     "and press Submit.")
+        if self._bundle_path:
+            steps.append("<b>Attach the log file</b> (button on the left reveals "
+                         "it) and press Submit.")
+        else:
+            steps.append("Press Submit. (No log file was produced — see above.)")
         return "<div style='line-height:150%;'>" + "<br>".join(
             f"{i}. {s}" for i, s in enumerate(steps, 1)) + "</div>"
 

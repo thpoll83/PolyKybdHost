@@ -23,6 +23,17 @@ class ScrubPathsTest(unittest.TestCase):
         self.assertNotIn("alice", out)
         self.assertNotIn("bob", out)
 
+    def test_forward_slash_windows_user_dir_on_another_drive(self):
+        """`D:/Users/alice` is covered by the POSIX `/Users/` pattern rather than
+        the backslash-specific Windows one — pinned so a future edit to either
+        regex cannot silently open the gap."""
+        for raw in (r"D:\Users\alice\logs", "D:/Users/alice/logs",
+                    "C:/Users/Tom/AppData"):
+            out = pr.scrub_paths(raw, home="/home/tom")
+            self.assertNotIn("alice", out)
+            self.assertNotIn("Tom", out)
+            self.assertIn("<user>", out)
+
     def test_macos_users_dir(self):
         self.assertNotIn("tom", pr.scrub_paths("/Users/tom/Library/x", home="/nope"))
 
@@ -32,6 +43,74 @@ class ScrubPathsTest(unittest.TestCase):
 
     def test_empty_input(self):
         self.assertEqual("", pr.scrub_paths("", home="/home/tom"))
+
+
+class ScrubEndpointsTest(unittest.TestCase):
+    """The forwarder's target is an address on someone's private network. The
+    mode and transport are what a maintainer needs; the address is not."""
+
+    def test_masks_an_ipv4_target(self):
+        out = pr.scrub_endpoints("Target host: 192.168.1.50")
+        self.assertNotIn("192.168.1.50", out)
+        self.assertIn("ipv4", out)
+
+    def test_masks_an_internal_hostname(self):
+        out = pr.scrub_endpoints("Target host: keyboard-pc.internal")
+        self.assertNotIn("keyboard-pc", out)
+        self.assertIn("hostname", out)
+
+    def test_keeps_the_kind_because_it_changes_the_diagnosis(self):
+        """An IP vs a name is often routing vs resolution — worth knowing, and
+        neither identifies the network."""
+        self.assertNotEqual(pr.scrub_endpoints("Host: 10.0.0.2"),
+                            pr.scrub_endpoints("Host: nas.local"))
+
+    def test_leaves_ports_versions_and_prose_alone(self):
+        text = ("PolyKybdHost 0.12.4 — FORWARDER mode\n"
+                "Window reports: authenticated RPC (port 50163)")
+        self.assertEqual(text, pr.scrub_endpoints(text))
+
+    def test_applied_to_the_issue_body(self):
+        body = pr.compose_body("x", diagnostics="Target host: 192.168.1.50")
+        self.assertNotIn("192.168.1.50", body)
+
+    def test_but_NOT_to_the_bundle_copy(self):
+        """The bundle keeps the exact value — the reporter reviews that file
+        before attaching it, which is a different trust decision."""
+        diag = pr.forwarder_diagnostics("0.12.4", host="192.168.1.50")
+        self.assertIn("192.168.1.50", diag)
+
+
+class ForwarderDiagnosticsTest(unittest.TestCase):
+    """Qt-free so it is testable at all: forwarder.py imports pywinctl at module
+    load and cannot be imported in the documented test environment."""
+
+    def test_leads_with_forwarder_mode(self):
+        """A report from the forwarder machine must not read like one from the
+        keyboard machine — different failure domain, no HID device at all."""
+        first = pr.forwarder_diagnostics("0.12.4", host="h").splitlines()[0]
+        self.assertIn("FORWARDER", first)
+        self.assertIn("no keyboard attached", first)
+
+    def test_reports_the_rpc_transport_with_its_port(self):
+        out = pr.forwarder_diagnostics("0.12.4", host="h", report_rpc=True,
+                                       report_port=50163)
+        self.assertIn("authenticated RPC", out)
+        self.assertIn("50163", out)
+
+    def test_reports_the_legacy_relay_and_what_it_needs(self):
+        out = pr.forwarder_diagnostics("0.12.4", host="h", report_rpc=False)
+        self.assertIn("legacy plaintext", out)
+        self.assertIn("dev_legacy_plaintext_relay", out)
+
+    def test_host_file_target_is_named(self):
+        out = pr.forwarder_diagnostics("0.12.4", host_file="/home/tom/hosts.txt")
+        self.assertIn("host file", out)
+
+    def test_no_target_configured(self):
+        out = pr.forwarder_diagnostics("0.12.4")
+        self.assertIn("FORWARDER", out)
+        self.assertNotIn("Target host:", out)
 
 
 class TitleTest(unittest.TestCase):
