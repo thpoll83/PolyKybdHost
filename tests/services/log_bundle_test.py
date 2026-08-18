@@ -477,5 +477,88 @@ class CrashSummaryTest(unittest.TestCase):
             self.assertIn("PolyHost version", lb.environment_text())
 
 
+class ViewerFilesTest(unittest.TestCase):
+    """The GUI log-viewer tabs are DERIVED from LOG_SOURCES.
+
+    Both tray apps used to hand-build this dict and they drifted: the
+    forwarder's was missing the crash log entirely. One declaration now feeds
+    the bundle, the clipboard text and both viewers.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+
+    def test_always_sources_appear_even_before_the_file_exists(self):
+        got = lb.viewer_files(always=("host",), log_dir=self.dir)
+        self.assertEqual({"PolyHost Log": "host_log.txt"}, got)
+
+    def test_other_sources_appear_only_once_they_exist(self):
+        self.assertNotIn("Crash Log", lb.viewer_files(log_dir=self.dir))
+        (self.dir / "crash_log.txt").write_text("x", encoding="utf-8")
+        self.assertEqual("crash_log.txt",
+                         lb.viewer_files(log_dir=self.dir)["Crash Log"])
+
+    def test_the_crash_log_reaches_BOTH_apps_tab_lists(self):
+        """The drift this whole change exists to fix."""
+        (self.dir / "crash_log.txt").write_text("x", encoding="utf-8")
+        host = lb.viewer_files(always=("host", "keyboard-console"), log_dir=self.dir)
+        forwarder = lb.viewer_files(always=("forwarder",), log_dir=self.dir)
+        self.assertIn("Crash Log", host)
+        self.assertIn("Crash Log", forwarder)
+
+    def test_every_source_carries_a_viewer_title(self):
+        """A source with no title is invisible in the viewers — if one is ever
+        added deliberately, this test is the place to say so."""
+        for source in lb.LOG_SOURCES:
+            self.assertTrue(source.title, source.label)
+
+    def test_both_apps_call_it_rather_than_building_a_dict(self):
+        import pathlib as _pl
+        import polyhost
+        root = _pl.Path(polyhost.__file__).parent
+        for name in ("host.py", "forwarder.py"):
+            src = (root / name).read_text(encoding="utf-8")
+            with self.subTest(module=name):
+                self.assertIn("log_bundle.viewer_files(", src)
+                self.assertNotIn('log_files["Crash Log"]', src)
+
+
+class CrashMarkerFormatTest(unittest.TestCase):
+    """The marker format lives with the WRITER; the collector imports it.
+
+    A second hand-written copy in log_bundle would not raise on drift — it would
+    match nothing and report a confidently wrong "0 session(s)".
+    """
+
+    def test_the_writer_and_the_reader_agree(self):
+        from polyhost.util import crash_log
+        line = crash_log.format_marker("session start", 4242)
+        what, pid, ts = crash_log.parse_marker(line)
+        self.assertEqual("session start", what)
+        self.assertEqual(4242, pid)
+        self.assertRegex(ts, r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$")
+
+    def test_a_real_stamp_write_round_trips(self):
+        """Goes through _stamp(), the function that actually writes the file —
+        not a re-typed format string."""
+        from polyhost.util import crash_log
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = Path(tmp.name) / "crash_log.txt"
+        with open(path, "w", encoding="utf-8") as f:
+            with mock.patch.object(crash_log, "_crash_file", f):
+                crash_log._stamp("clean exit (Qt event loop, rc=0)")
+        line = path.read_text(encoding="utf-8").strip()
+        parsed = crash_log.parse_marker(line)
+        self.assertIsNotNone(parsed, line)
+        self.assertEqual("clean exit (Qt event loop, rc=0)", parsed[0])
+
+    def test_a_non_marker_line_is_not_parsed(self):
+        from polyhost.util import crash_log
+        self.assertIsNone(crash_log.parse_marker("Fatal Python error: Segfault"))
+
+
 if __name__ == "__main__":
     unittest.main()

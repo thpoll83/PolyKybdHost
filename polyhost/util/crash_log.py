@@ -36,11 +36,37 @@ carries the pid for that reason; don't "tidy" it away.
 import atexit
 import logging
 import os
+import re
 import sys
 import threading
 import time
 
 CRASH_LOG = "crash_log.txt"
+
+# The marker format lives HERE, with the writer, and readers import it. The
+# collector (services/log_bundle.crash_summary) parses these lines; a second
+# hand-written copy of the format there would fail silently on any change —
+# not by raising, but by counting zero markers and reporting a confidently
+# wrong "0 session(s)". Same reasoning as CRASH_LOG itself being imported
+# rather than restated.
+_MARKER_TIME = "%Y-%m-%d %H:%M:%S"
+MARKER_RE = re.compile(
+    r"^=== (?P<what>.+?) \| pid (?P<pid>\d+) \| "
+    r"(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) ===$")
+
+
+def format_marker(what, pid, when=None):
+    """One marker line, without its trailing newline."""
+    return "=== %s | pid %d | %s ===" % (
+        what, pid, time.strftime(_MARKER_TIME, when or time.localtime()))
+
+
+def parse_marker(line):
+    """``(what, pid, timestamp_text)`` for a marker line, else None."""
+    m = MARKER_RE.match(line)
+    if not m:
+        return None
+    return m.group("what"), int(m.group("pid")), m.group("ts")
 
 # The faulthandler file must stay open and referenced for the life of the
 # process: faulthandler keeps only the file DESCRIPTOR, so letting the object be
@@ -56,9 +82,7 @@ def _stamp(what):
     if _crash_file is None:
         return
     try:
-        _crash_file.write("=== %s | pid %d | %s ===\n"
-                          % (what, os.getpid(),
-                             time.strftime("%Y-%m-%d %H:%M:%S")))
+        _crash_file.write(format_marker(what, os.getpid()) + "\n")
         _crash_file.flush()
     except Exception:  # noqa: BLE001 — reporting must never raise
         pass

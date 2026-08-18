@@ -49,14 +49,15 @@ class LogSource(NamedTuple):
     label: str
     filename: str
     sliced: bool = True
+    title: str = ""      # tab name in the GUI log viewers; see viewer_files()
 
 
 LOG_SOURCES: tuple[LogSource, ...] = (
-    LogSource("host", "host_log.txt"),
-    LogSource("daemon", "daemon_log.txt"),
-    LogSource("keyboard-console", "polykybd_console.txt"),
-    LogSource("startup", "startup_log.txt"),
-    LogSource("forwarder", "forwarder_log.txt"),
+    LogSource("host", "host_log.txt", title="PolyHost Log"),
+    LogSource("daemon", "daemon_log.txt", title="Daemon Log"),
+    LogSource("keyboard-console", "polykybd_console.txt", title="PolyKybd Console Log"),
+    LogSource("startup", "startup_log.txt", title="Startup Log"),
+    LogSource("forwarder", "forwarder_log.txt", title="Forwarder Log"),
     # ⚠️ NEVER time-sliced, and that is not a convenience. `faulthandler` writes
     # its native dump directly on the fault, with no marker line of its own, so
     # under slice_lines it inherits the keep/drop decision of the `session
@@ -64,7 +65,7 @@ LOG_SOURCES: tuple[LogSource, ...] = (
     # precisely the crash being reported. The file is small and unrotated, so
     # carrying it whole costs nothing. The filename comes from crash_log so the
     # writer and the collector cannot disagree about it.
-    LogSource("crash", crash_log.CRASH_LOG, sliced=False),
+    LogSource("crash", crash_log.CRASH_LOG, sliced=False, title="Crash Log"),
 )
 
 # Derived from the declaration above — never hand-maintained.
@@ -83,12 +84,6 @@ _ALWAYS_MASKED_SETTINGS = ("browser_report_token", "telemetry_install_id")
 # "[2026-08-17 12:34:56,789] INFO ..." — every handler formats with the default
 # asctime, including MultiLineFormatter's continuation-line prefix.
 _TIMESTAMP_RE = re.compile(r"^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3})\]")
-
-# "=== session start | pid 1234 | 2026-08-18 07:30:00 ===" — crash_log._stamp's
-# format, which is NOT the logging one above (hence LogSource.sliced=False).
-_CRASH_MARKER_RE = re.compile(
-    r"^=== (?P<what>.+?) \| pid (?P<pid>\d+) \| "
-    r"(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) ===$")
 
 
 class LogBundleError(Exception):
@@ -166,6 +161,27 @@ def _rotation_chain(log_dir: Path, name: str) -> list[Path]:
     return chain
 
 
+def viewer_files(always: tuple[str, ...] = (),
+                 log_dir: Path | str | None = None) -> dict[str, str]:
+    """``{tab title: filename}`` for a GUI log viewer, derived from LOG_SOURCES.
+
+    ``always`` names the sources this app writes itself, which get a tab whether
+    or not the file is there yet; every other source appears only once it
+    exists. Both tray apps call this instead of hand-building the dict, because
+    they had two hand-built dicts and they drifted — the forwarder's was missing
+    the crash log, which is the whole reason this change exists. One
+    declaration now feeds the bundle, the clipboard text and both viewers.
+    """
+    d = Path(log_dir) if log_dir else default_log_dir()
+    out: dict[str, str] = {}
+    for source in LOG_SOURCES:
+        if not source.title:
+            continue
+        if source.label in always or (d / source.filename).exists():
+            out[source.title] = source.filename
+    return out
+
+
 def discover(log_dir: Path | str | None = None) -> dict[str, list[Path]]:
     """Map each source label to its rotation chain (only sources that exist)."""
     d = Path(log_dir) if log_dir else default_log_dir()
@@ -221,12 +237,11 @@ def crash_summary(log_dir: Path | str | None = None) -> str | None:
                 faults += 1
                 in_dump = True
             continue
-        m = _CRASH_MARKER_RE.match(line)
-        if not m:
+        marker = crash_log.parse_marker(line)
+        if marker is None:
             continue
         in_dump = False
-        newest = m.group("ts")
-        what = m.group("what")
+        what, _pid, newest = marker
         if what.startswith("session start"):
             counts["session start"] += 1
         elif what.startswith("clean exit"):
