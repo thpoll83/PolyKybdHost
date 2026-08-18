@@ -190,6 +190,26 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     Recovery is the restart above: `git checkout -B <branch> origin/<default>`,
     cherry-pick the orphan, `git push --force-with-lease`, open a NEW PR — expect
     an add/add conflict if another PR touched the same region meanwhile.
+- ⚠️ **A CLAUDE.md conflict is one of TWO kinds, and telling them apart matters —
+  the second one deletes your work silently if you resolve it the usual way.**
+  This file is append-heavy and every branch adds notes at the same anchors, so
+  conflicts here are routine (two in 90 minutes on 2026-08-18):
+  - **Addition beside addition** — main and your branch each inserted a new note
+    at the same anchor. Keep BOTH; put main's first so the diff against main
+    stays minimal.
+  - **Supersession** — main's PR *implemented* something and rewrote the note
+    that said it was impossible (`Browser-URL matching is LOCAL-ONLY` → `…DOES
+    cross machines`, #173). Main's version wins **outright**; keeping both ships
+    a file that contradicts itself. Verify you contributed nothing to that region
+    first — `git show <base>:CLAUDE.md | grep -c "<phrase>"` against your branch
+    proves it is inherited, not yours.
+  - ⚠️ **After resolving, grep each of your notes back by name.** Taking one side
+    wholesale also deletes anything of yours that merely *shared the conflict
+    block* — git reports a clean merge, the file has no markers, and the loss is
+    invisible. That happened on 2026-08-18: a supersession block also contained
+    two unrelated new notes, and "take theirs" removed them. The check is
+    `for pat in "<note phrase>" …; do grep -c "$pat" CLAUDE.md; done` — one line,
+    and the only thing standing between you and silently dropped work.
 
 ## Commands
 
@@ -889,7 +909,16 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   redacted `settings.yaml` + a README stating the timeframe and redaction state);
   `recent_text()` returns the same content for the clipboard. Front ends: the tray's
   **Help & About → "Collect logs…"**, a **"Collect Logs…"** button in the log viewer,
-  and **`polyctl logs bundle|show|paths`**. Four things that are load-bearing:
+  and **`polyctl logs bundle|show|paths`**. Five things that are load-bearing:
+  - ⚠️ **A NEW log file reaches nobody until it is registered in THREE places** —
+    `log_bundle.py` `_LOG_FILES`, the log viewer's `log_files` dict in `host.py`,
+    and the count in this very paragraph. Writing the file is the easy half; a
+    log nobody can collect is the same as no log. #172 shipped `crash_log.txt` —
+    the file whose entire purpose is proving whether the app crashed — into none
+    of the three, so the one artifact a support round would ask for could not be
+    collected or even viewed. **`crash_log.txt` is still unregistered; fix that
+    when you next touch this file.** Same shape as the enumerating-guard trap
+    below: three lists that must agree and nothing that makes them.
   - ⚠️ **`polyctl logs` MUST work with no host running** — `main()` routes it
     through `_is_offline_command` *before* `connect()`, and a reachable daemon only
     enriches the diagnostics. The moment a user most needs the logs is the one where
@@ -963,7 +992,13 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   vanished, `startup_log.txt` and `daemon_log.txt` showed nothing wrong, the user
   relaunched, and it read as a silent crash. `Get-Process pythonw | Select Id,
   StartTime` settled it in one command — **the original GUI was still running**,
-  minus its icon. Three things conspired, all now fixed on this branch:
+  minus its icon. ⚠️ **Read that list in PAIRS: each launch showed TWO
+  `pythonw.exe` entries** with the same start time and command line (6 processes
+  for 1 daemon + 2 GUIs). Cause unestablished — so do not explain it, just don't
+  double-count it into "two daemons are fighting over the device". `Get-CimInstance
+  Win32_Process -Filter "Name='pythonw.exe'" | Select ProcessId, ParentProcessId,
+  CreationDate, CommandLine` settles it: one of each pair parenting the other is a
+  launcher stub, a shared parent would be two real instances. Three things conspired, all now fixed on this branch:
   - **The logon race.** The autostart scheduled task starts the GUI before
     Explorer's notification area exists; `Shell_NotifyIcon` fails and the icon
     never appears. Qt re-adds only on Explorer's `TaskbarCreated` broadcast, which
@@ -1257,4 +1292,8 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 - ⚠️ **From Claude Code on the web you can neither push tags (git proxy 403 on
   `refs/tags/*`) nor create a release (no `gh`, no create-release MCP tool)** — stage the
   notes on the branch and hand the user `python scripts/publish_release.py`.
+  The same proxy also **403s on branch DELETION** (`git push origin --delete
+  <branch>`, verified 2026-08-18), so a leftover branch has to be removed in the
+  GitHub UI — don't burn retries on it, and don't create scratch branches you
+  can't clean up.
 
