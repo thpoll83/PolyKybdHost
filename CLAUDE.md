@@ -86,12 +86,24 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       fewer than 10 stars at all** — *"Reviews should be triggered manually for
       repositories with fewer than 10 stars"*, rendered as a *"Review available on
       request"* box with a Trigger-review checkbox. This is permanent, not a
-      transient limit, so it is easy to mistake for "no findings". It currently
-      applies to **`polykybd-docs`** (docs#48, 2026-08-17); the fix is simply to
-      comment `@coderabbitai review`. The same reply then states the quota
+      transient limit, so it is easy to mistake for "no findings". It applies to
+      **`polykybd-docs`** (docs#48, 2026-08-17) **and to `PolyKybdHost`** (#172,
+      2026-08-18) — i.e. do not assume the host repo auto-reviews; the fix is
+      simply to comment `@coderabbitai review`. The same reply then states the quota
       outright — *"Your plan includes up to 1 review per rolling hour; 0 remain
       after this review"* — which is the number to plan around when a PR needs a
       re-review after a fix.
+    - ⚠️ **All THREE bots can be unavailable at once, each in its own disguise —
+      #172 (2026-08-18) collected a full page of bot output and not one review.**
+      CodeRabbit posted the under-10-stars "Review available on request" box;
+      Sourcery submitted a review whose entire body was its weekly rate-limit
+      notice **and a `Sourcery review` check run with conclusion `skipped`**
+      (green-adjacent, not red); Qodo posted its subscription-lapsed notice. On top
+      of that Sourcery still rendered a full *Reviewer's Guide* with two mermaid
+      sequence diagrams and a file-level change table — pure description, zero
+      findings — which is the most convincing-looking artifact of the three. Read
+      the check-run *conclusion* and the review *body*, never the presence of
+      output.
   - ⚠️ **A review that DID run, on the right commit, with an accurate walkthrough,
     can still have SKIPPED the file you care about — read the "Files skipped from
     review" list before trusting a clean verdict.** On qmk PR #198 (2026-08-11)
