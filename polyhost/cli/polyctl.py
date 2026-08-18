@@ -680,7 +680,8 @@ def _cmd_watch(client, args):
 
 def _cmd_window_report(client, args):
     _print_result(client.call(protocol.M_WINDOW_REPORT, {
-        "handle": args.handle, "name": args.name, "title": args.title}))
+        "handle": args.handle, "name": args.name, "title": args.title,
+        "url": args.url}))
 
 
 def _cmd_shutdown(client, args):
@@ -867,6 +868,8 @@ def build_parser():
     p_win_report.add_argument("--handle", default="0", help="window handle (any string/int)")
     p_win_report.add_argument("--name", required=True, help="application name, e.g. Code.exe")
     p_win_report.add_argument("--title", default="", help="window title")
+    p_win_report.add_argument("--url", default=None,
+                              help="focused browser tab URL (enables url/urls-contains matching)")
     p_win_report.set_defaults(func=_cmd_window_report)
 
     # --- logs ------------------------------------------------------------

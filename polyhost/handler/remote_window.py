@@ -91,11 +91,15 @@ class RemoteHandler:
         # Latest OS reported by the forwarder (an OsType value int), or None when
         # the forwarder does not forward its OS. Read by PolyCore's window tick.
         self.forwarded_os = None
+        # Latest URL reported for the forwarded window (None for any non-browser
+        # window). Only the authenticated RPC transport carries it.
+        self.forwarded_url = None
         # The forwarded_os value the cached match was computed with. Part of the
         # change detection in remote_changed(): the same window reported first
         # without an OS and then with one must re-run the matcher, or the `os:`
         # sub-map branch would never be taken for it.
         self._matched_os = None
+        self._matched_url = None
         self.listen_to_forwarder()
 
     def _has_remote_entries(self):
@@ -130,7 +134,7 @@ class RemoteHandler:
         self.forwarder.daemon = True
         self.forwarder.start()
 
-    def report_window(self, handle, name, title, os=None):
+    def report_window(self, handle, name, title, os=None, url=None):
         """Single entry point for an active-window report, from either source:
         the cross-machine TCP relay (`receive_from_forwarder`) or the
         ``window.report`` control-socket RPC / ``polyctl window report``.
@@ -147,6 +151,12 @@ class RemoteHandler:
         self.connections["_latest"] = "_report"
         if os is not None:
             self.forwarded_os = os
+        # ⚠️ Unlike `os`, a None url is STORED, not ignored: os is a constant
+        # property of the sending machine, but a url belongs to the window in
+        # this report. Keeping the previous one would pin a stale site's overlay
+        # onto the next non-browser window. The sender already gates freshness
+        # and focus, so None here means "this window has no URL".
+        self.forwarded_url = url
         self.log.debug_detailed(
             "report_window: handle=%s name=%s title=%s os=%s", handle, name, title, os)
 
@@ -159,7 +169,8 @@ class RemoteHandler:
             # The forwarder's OS, not ours: the remote app's keymap is a property
             # of the machine it runs on.
             matched = find_matching_entry(self.title, self.mapping[self.name],
-                                          None, getattr(self, "forwarded_os", None))
+                                          getattr(self, "forwarded_url", None),
+                                          getattr(self, "forwarded_os", None))
         except re.error as e:
             self.log.warning(
                 "Cannot match entry '%s': %s, because '%s'@%d with '%s'",
@@ -188,17 +199,22 @@ class RemoteHandler:
         # entry a function of it, so a forwarder that reports the same window first
         # without an OS and then with one (or that changes OS) must re-match.
         os_changed = self._matched_os != self.forwarded_os
+        # A same-title navigation (an SPA route change, or a tab switch inside
+        # one web app) moves neither handle nor title — and that is exactly the
+        # case url matching exists for, so it has to be part of the identity.
+        url_changed = self._matched_url != self.forwarded_url
 
         if (
             data
             and len(data) > 2
             and (self.handle != data["handle"] or self.title != data["title"]
-                 or os_changed)
+                 or os_changed or url_changed)
         ):
             self.handle = data["handle"]
             self.title = data["title"]
             self.name = data["name"].split(".")[0].lower()
             self._matched_os = self.forwarded_os
+            self._matched_url = self.forwarded_url
             self.log.info(
                 'Remote App Changed: "%s", Title: "%s"  Handle: %s',
                 data["name"],
@@ -230,6 +246,7 @@ class RemoteHandler:
         self.title = None
         self.last_entry = None
         self._matched_os = None
+        self._matched_url = None
 
     def close(self):
         self.stop_event.set()

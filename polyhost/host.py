@@ -48,6 +48,8 @@ GLYPH_SCRIPT_LABELS = {
     GlyphScript.BRAILLE:  "Braille",
 }
 from polyhost.gui.icon_state_manager import IconStateManager
+from polyhost.gui.qt_crash import install_qt_message_handler
+from polyhost.gui.tray_wait import TrayVisibilityWaiter
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
 from polyhost.gui.settings_dialog import SettingsDialog
@@ -259,11 +261,22 @@ class PolyHost(QApplication):
 
         logging.basicConfig(level=level, handlers=[file_handler, stream_handler])
         self.log = logging.getLogger('PolyHost')
+        # Qt's own diagnostics (including the qFatal message PyQt emits just
+        # before aborting on an unhandled exception in a slot) go to stderr,
+        # which is /dev/null under pythonw. Route them here instead.
+        install_qt_message_handler(self.log)
 
-        # Create the tray
+        # Create the tray. Showing it is deliberately NOT unconditional: at
+        # logon the notification area may not exist yet, and an icon added then
+        # is lost for the WHOLE session (see gui/tray_wait.py). The waiter shows
+        # it now when it can and retries when it can't.
         self.tray = QSystemTrayIcon(parent=self)
         self.icon_manager = IconStateManager(self, False, f"PolyKybdHost {__version__}")
-        self.tray.setVisible(True)
+        self._tray_waiter = TrayVisibilityWaiter(
+            show=lambda: self.tray.setVisible(True),
+            is_available=QSystemTrayIcon.isSystemTrayAvailable,
+            log=self.log)
+        self._tray_waiter.start()
 
         self.keeb_log = logging.getLogger("PolyKybdConsole")
         self.keeb_log.setLevel(logging.INFO)  # Set log level for logger 'b'
@@ -713,7 +726,9 @@ class PolyHost(QApplication):
         self.tray.setContextMenu(self.menu)
         # noinspection PyUnresolvedReferences
         self.tray.messageClicked.connect(self._on_balloon_clicked)
-        self.tray.show()
+        # Re-assert now that the icon has its menu; a no-op while the waiter is
+        # still waiting, so this can never start a second retry chain.
+        self._tray_waiter.start()
 
         QTimer.singleShot(15_000, self._start_update_check)
         self._update_timer = QTimer(self)

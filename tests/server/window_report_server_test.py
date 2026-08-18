@@ -37,6 +37,7 @@ class WindowReportServerTest(unittest.TestCase):
     def setUp(self):
         self.reports = []
         self.last_os = None
+        self.last_url = None
         self.report_result = (True, {"reported": True})
         self.authkey = b"winreport-testkey"
         self.port = _free_port()
@@ -57,9 +58,10 @@ class WindowReportServerTest(unittest.TestCase):
         except Exception:
             pass
 
-    def _on_report(self, handle, name, title, os=None):
+    def _on_report(self, handle, name, title, os=None, url=None):
         self.reports.append((handle, name, title))
         self.last_os = os
+        self.last_url = url
         return self.report_result
 
     def _client(self, authkey=None):
@@ -75,6 +77,19 @@ class WindowReportServerTest(unittest.TestCase):
         self.assertEqual(result, {"ok": True})
         self.assertEqual(self.reports, [("1234", "code.exe", "main.py - VS Code")])
         self.assertIsNone(self.last_os)  # no os field -> callback gets None
+
+    def test_report_forwards_the_url_over_the_socket(self):
+        # End-to-end over a real AF_INET connection: the optional url param
+        # survives the framing and reaches the injected callback.
+        c = self._client()
+        c.report(9, "chrome", "A board", url="https://miro.com/app/board/x")
+        self.assertEqual(self.last_url, "https://miro.com/app/board/x")
+
+    def test_a_report_without_a_url_arrives_as_none(self):
+        # Back-compatibility with a forwarder that does not send one.
+        c = self._client()
+        c.report(9, "code", "main.py")
+        self.assertIsNone(self.last_url)
 
     def test_report_forwards_os(self):
         c = self._client()
