@@ -206,12 +206,17 @@ class PolyCore(Observable):
         # (browser web-apps defeat window-title matching). Fed by the browser
         # extension via the loopback report server below, and/or the macOS
         # AppleScript fallback consulted inside current_url.
-        from polyhost.handler.browser_url import BrowserUrlProvider
-        self.browser_url_provider = BrowserUrlProvider()
-        self.browser_report_server = None
+        from polyhost.handler.browser_url_source import BrowserUrlSource
+        # Shared with the forwarder, which needs the same receiver+provider pair
+        # to put the URL on the wire — one implementation, so the two roles
+        # cannot drift. `on_change` re-drives an SPA route change (no title
+        # change, so the window tick would otherwise see nothing).
+        self.browser_url_source = BrowserUrlSource(
+            self.log, settings_get=self.poly_settings.get,
+            on_change=self._on_browser_url_changed)
         self.load_overlay_mapping(str(_RES_DIR / "overlay-mapping.poly.yaml"))
         self._create_overlay_handler()
-        self._start_browser_report_server()
+        self.browser_url_source.start()
 
         self.sunlight = Sunlight(
             self.poly_settings.get("brightness_allow_online_location_lookup"),
@@ -361,9 +366,7 @@ class PolyCore(Observable):
             self._sleep_listener.close()
         self.telemetry.stop()
         self.worker.stop()
-        if self.browser_report_server is not None:
-            self.browser_report_server.stop()
-            self.browser_report_server = None
+        self.browser_url_source.close()
         if self.overlay_handler is not None:
             self.overlay_handler.close()
 
@@ -409,9 +412,8 @@ class PolyCore(Observable):
             # url_provider lets the matcher key overlays off the focused
             # browser's website; None-safe (returns None for non-browsers / when
             # no reporter is present, so matching is unchanged without it).
-            url_lookup = (self.browser_url_provider.current_url
-                          if self.poly_settings.get("browser_url_detection")
-                          else None)
+            url_lookup = (self.browser_url_source.current_url
+                          if self.browser_url_source.enabled else None)
             self.overlay_handler = OverlayHandler(
                 self.mapping, url_provider=url_lookup,
                 enable_legacy_relay=bool(self.settings_get("dev_legacy_plaintext_relay")),
@@ -424,35 +426,10 @@ class PolyCore(Observable):
                              "active-window overlay switching disabled.",
                              type(e).__name__, e)
 
-    def _start_browser_report_server(self):
-        """Start the loopback HTTP receiver the browser extension POSTs to.
-
-        Off when ``browser_url_detection`` or ``browser_report_local_enabled`` is
-        cleared (the macOS AppleScript fallback still works via current_url), and
-        a best-effort start — a bind failure (port in use) just logs and leaves
-        the feature on the AppleScript path only, never blocking startup."""
-        if not (self.poly_settings.get("browser_url_detection")
-                and self.poly_settings.get("browser_report_local_enabled")):
-            return
-        try:
-            from polyhost.server.browser_report_server import BrowserReportServer
-            self.browser_report_server = BrowserReportServer(
-                self._on_browser_report, self.log,
-                port=int(self.poly_settings.get("browser_report_port")),
-                token=str(self.poly_settings.get("browser_report_token") or ""))
-            self.browser_report_server.start()
-        except Exception as e:  # noqa: BLE001 — feature is optional, never fatal
-            self.browser_report_server = None
-            self.log.warning("Browser-report listener unavailable (%s: %s) — "
-                             "browser-URL overlays rely on the macOS fallback only.",
-                             type(e).__name__, e)
-
-    def _on_browser_report(self, browser=None, url=None, title=None, focused=True):
-        """Ingest one extension report; on an actual URL change, nudge window
-        tracking so an SPA route change (no title change) still swaps overlays."""
-        changed = self.browser_url_provider.update(
-            browser=browser, url=url, title=title, focused=focused)
-        if changed and self.overlay_handler is not None:
+    def _on_browser_url_changed(self):
+        """A real URL change arrived: nudge window tracking so an SPA route
+        change (which moves no window title) still swaps overlays."""
+        if self.overlay_handler is not None:
             self.overlay_handler.invalidate_window_cache()
 
     # ------------------------------------------------------------------
@@ -541,7 +518,7 @@ class PolyCore(Observable):
         self.log.info("Pushing OS %s to keyboard.", _OsType(value))
         self.worker.submit("set_os", lambda c, v=value: self.keeb.set_os(v))
 
-    def report_window(self, handle, name, title, os=None):
+    def report_window(self, handle, name, title, os=None, url=None):
         """Inject an external active-window report into remote window tracking
         (the ``window.report`` RPC / ``polyctl window report``).
 

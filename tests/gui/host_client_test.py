@@ -73,6 +73,19 @@ class TestPolyHostModes(unittest.TestCase):
         self.assertNotIn("Developer", top)
         # About + the log file moved into Help & About and are still reachable.
         self.assertIn("ABOUT_UNDER Help && About True True", proc.stdout)
+        # "Collect logs..." sits beside them and stays clickable while
+        # disconnected — a support bundle is a file read, not a device command,
+        # and the disconnected case is when it is most needed.
+        self.assertIn("COLLECT_LOGS True True", proc.stdout)
+        # The row must actually open the dialog, and a second click must reuse it.
+        self.assertIn("COLLECT_LOGS_DIALOG True LogBundleDialog", proc.stdout)
+        self.assertIn("COLLECT_LOGS_REUSED True", proc.stdout)
+        # The guided "Report a Problem..." row beside it.
+        self.assertIn("REPORT_PROBLEM True True", proc.stdout)
+        self.assertIn("REPORT_PROBLEM_DIALOG True ReportProblemDialog", proc.stdout)
+        self.assertIn("REPORT_PROBLEM_GATED True", proc.stdout)
+        self.assertIn("REPORT_PROBLEM_REDACTS True", proc.stdout)
+        self.assertIn("REPORT_PROBLEM_REUSED True", proc.stdout)
         # The newer-firmware row must not clutter the normal menu.
         self.assertIn("NEWER_FW_ROW False", proc.stdout)
 
@@ -89,6 +102,22 @@ class TestPolyHostModes(unittest.TestCase):
         subs = _grab(proc.stdout, "DEV_SUBMENUS").split("|")
         for expected in ("Overlays", "Font Pack", "Firmware", "Idle"):
             self.assertIn(expected, subs)
+
+    def test_forwarder_can_collect_logs_and_report(self):
+        """The forwarder runs on a DIFFERENT machine from the keyboard, so its
+        logs can never reach a host-side bundle — both entries have to exist
+        here too, with diagnostics that say which machine they came from."""
+        proc = _run_smoke("forwarder")
+        if "SMOKE SKIP" in proc.stdout:
+            self.skipTest("pywinctl not installed — forwarder cannot be imported")
+        self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
+        rows = _grab(proc.stdout, "FWD_MENU").split("|")
+        self.assertIn("Report a Problem...", rows)
+        self.assertIn("Collect logs...", rows)
+        # A forwarder report must not read like one from the keyboard machine.
+        self.assertIn("FWD_DIAG_MODE True", proc.stdout)
+        self.assertIn("FWD_DIALOGS ReportProblemDialog LogBundleDialog", proc.stdout)
+        self.assertIn("FWD_REUSED True", proc.stdout)
 
     def test_client_mode_connects_and_renders(self):
         proc = _run_smoke("client")
@@ -129,6 +158,36 @@ def _toplevel(app):
     """
     return "|".join(a.text() for a in app.menu.actions()
                     if not a.isSeparator() and a.isVisible())
+
+
+def _smoke_forwarder():
+    import logging
+    from unittest import mock
+    try:
+        import pywinctl  # noqa: F401 — forwarder.py imports it at module load
+    except Exception:  # noqa: BLE001
+        print("SMOKE SKIP no-pywinctl")
+        return
+    with mock.patch("polyhost.input.linux_gnome_helper.LinuxGnomeInputHelper"):
+        from polyhost.forwarder import PolyForwarder
+        app = PolyForwarder(logging.CRITICAL, host="192.168.1.50",
+                            report_rpc=True, report_port=50163)
+        print("FWD_MENU", "|".join(a.text() for a in app.menu.actions()
+                                   if not a.isSeparator()))
+        diag = app._diagnostics_text()
+        print("FWD_DIAG_MODE", "FORWARDER" in diag and "192.168.1.50" in diag)
+        app.report_problem_action.trigger()
+        app.collect_logs_action.trigger()
+        rdlg, ldlg = app.report_problem_dialog, app.log_bundle_dialog
+        print("FWD_DIALOGS", type(rdlg).__name__, type(ldlg).__name__)
+        app.report_problem_action.trigger()
+        app.collect_logs_action.trigger()
+        print("FWD_REUSED", app.report_problem_dialog is rdlg
+              and app.log_bundle_dialog is ldlg)
+        for d in (rdlg, ldlg):
+            d.close()
+        app.quit_app()
+    print("SMOKE OK")
 
 
 def _smoke_default():
@@ -176,6 +235,48 @@ def _smoke_default():
         about_parent = app.help_menu.title()
         print("ABOUT_UNDER", about_parent,
               app.about in app.help_menu.actions(), app.log_dialog in app.help_menu.actions())
+        # Log collection reads files, never the device, so it must survive the
+        # blanket disable managed_connection_status applies on a disconnect —
+        # that is exactly when someone goes looking for the logs.
+        app.managed_connection_status()
+        print("COLLECT_LOGS",
+              app.collect_logs_action in app.help_menu.actions(),
+              app.collect_logs_action.isEnabled())
+        # Same three properties for the guided report row: present, live while
+        # disconnected, opens its dialog, and reuses it on a second click (which
+        # here also protects a half-written description).
+        print("REPORT_PROBLEM",
+              app.report_problem_action in app.help_menu.actions(),
+              app.report_problem_action.isEnabled())
+        app.report_problem_action.trigger()
+        rdlg = app.report_problem_dialog
+        print("REPORT_PROBLEM_DIALOG", rdlg is not None,
+              type(rdlg).__name__ if rdlg else "-")
+        # Empty description => nothing to report, so the button must be dead.
+        print("REPORT_PROBLEM_GATED",
+              rdlg is not None and not rdlg.create_btn.isEnabled())
+        # Masking defaults ON here (unlike the local bundle) — a report is aimed
+        # at a public tracker.
+        print("REPORT_PROBLEM_REDACTS", rdlg is not None and rdlg.redact.isChecked())
+        app.report_problem_action.trigger()
+        print("REPORT_PROBLEM_REUSED", app.report_problem_dialog is rdlg)
+        if rdlg is not None:
+            rdlg.close()
+
+        # Actually fire it: a disconnected signal or a broken import would leave
+        # the row enabled and do nothing at all when clicked, which is exactly
+        # the silent failure the icon test exists to prevent elsewhere.
+        app.collect_logs_action.trigger()
+        dlg = app.log_bundle_dialog
+        print("COLLECT_LOGS_DIALOG", dlg is not None,
+              type(dlg).__name__ if dlg else "-")
+        # Re-triggering must REUSE the instance: it holds the only reference to
+        # the dialog, whose collection QThread is parented to it, so rebuilding
+        # mid-collection can destroy a running thread.
+        app.collect_logs_action.trigger()
+        print("COLLECT_LOGS_REUSED", app.log_bundle_dialog is dlg)
+        if dlg is not None:
+            dlg.close()
         app.quit_app()
     print("SMOKE OK")
 
@@ -350,4 +451,5 @@ def _smoke_developer():
 
 if __name__ == "__main__":
     {"default": _smoke_default, "client": _smoke_client,
+     "forwarder": _smoke_forwarder,
      "developer": _smoke_developer}[sys.argv[1]]()

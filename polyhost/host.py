@@ -50,6 +50,8 @@ GLYPH_SCRIPT_LABELS = {
     GlyphScript.BRAILLE:  "Braille",
 }
 from polyhost.gui.icon_state_manager import IconStateManager
+from polyhost.gui.qt_crash import install_qt_message_handler
+from polyhost.gui.tray_wait import TrayVisibilityWaiter
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
 from polyhost.gui.settings_dialog import SettingsDialog
@@ -260,11 +262,22 @@ class PolyHost(QApplication):
 
         logging.basicConfig(level=level, handlers=[file_handler, stream_handler])
         self.log = logging.getLogger('PolyHost')
+        # Qt's own diagnostics (including the qFatal message PyQt emits just
+        # before aborting on an unhandled exception in a slot) go to stderr,
+        # which is /dev/null under pythonw. Route them here instead.
+        install_qt_message_handler(self.log)
 
-        # Create the tray
+        # Create the tray. Showing it is deliberately NOT unconditional: at
+        # logon the notification area may not exist yet, and an icon added then
+        # is lost for the WHOLE session (see gui/tray_wait.py). The waiter shows
+        # it now when it can and retries when it can't.
         self.tray = QSystemTrayIcon(parent=self)
         self.icon_manager = IconStateManager(self, False, f"PolyKybdHost {__version__}")
-        self.tray.setVisible(True)
+        self._tray_waiter = TrayVisibilityWaiter(
+            show=lambda: self.tray.setVisible(True),
+            is_available=QSystemTrayIcon.isSystemTrayAvailable,
+            log=self.log)
+        self._tray_waiter.start()
 
         self.keeb_log = logging.getLogger("PolyKybdConsole")
         self.keeb_log.setLevel(logging.INFO)  # Set log level for logger 'b'
@@ -402,6 +415,24 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
+
+        # The guided path: describe the problem, bundle the logs, open a
+        # pre-filled issue. "Collect logs..." below is the manual half, for when
+        # someone already knows where they are sending the file.
+        self.report_problem_action = QAction(get_icon("feedback.svg"),
+                                             "Report a Problem...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.report_problem_action.triggered.connect(self.open_report_problem)
+        self.report_problem_dialog = None
+
+        # "Send me your log" is otherwise a request nobody can satisfy: the logs
+        # are five rotating files in the working directory, and in daemon mode
+        # the half that matters is the daemon's, not this process's.
+        self.collect_logs_action = QAction(get_icon("archive.svg"),
+                                           "Collect logs...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.collect_logs_action.triggered.connect(self.open_log_bundle)
+        self.log_bundle_dialog = None
 
         self.fontpack_inspector_action = QAction(get_icon("frame_inspect.svg"), "Inspect Font Packs...", parent=self)
         # noinspection PyUnresolvedReferences
@@ -643,7 +674,9 @@ class PolyHost(QApplication):
         # --- Help & About: the read-only, always-available corner --------------
         self.help_menu = self.menu.addMenu(get_icon("help.svg"), "Help && About")
         self.help_menu.addAction(self.about)
+        self.help_menu.addAction(self.report_problem_action)
         self.help_menu.addAction(self.log_dialog)
+        self.help_menu.addAction(self.collect_logs_action)
         # settings.yaml + overlay-mapping.poly.yaml live in a platformdirs path
         # nobody can guess; editing a mapping meant reading it out of About first.
         self.open_config_action = QAction(get_icon("file_open.svg"),
@@ -694,7 +727,9 @@ class PolyHost(QApplication):
         self.tray.setContextMenu(self.menu)
         # noinspection PyUnresolvedReferences
         self.tray.messageClicked.connect(self._on_balloon_clicked)
-        self.tray.show()
+        # Re-assert now that the icon has its menu; a no-op while the waiter is
+        # still waiting, so this can never start a second retry chain.
+        self._tray_waiter.start()
 
         QTimer.singleShot(15_000, self._start_update_check)
         self._update_timer = QTimer(self)
@@ -1429,10 +1464,51 @@ class PolyHost(QApplication):
         # (especially under Windows pythonw, where print() goes nowhere).
         if os.path.exists("startup_log.txt"):
             log_files["Startup Log"] = "startup_log.txt"
-        self.log_viewer = LogViewerDialog(log_files)
+        self.log_viewer = LogViewerDialog(log_files, collect_cb=self.open_log_bundle)
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
+
+    def open_report_problem(self):
+        """Open the guided problem-report dialog.
+
+        Same retained-instance rule as open_log_bundle: this is the only strong
+        reference (the dialog is parentless) and its collection QThread is
+        parented to it, so rebuilding on a second click can destroy a running
+        thread — and it would also throw away a half-written description."""
+        from polyhost.gui.report_problem_dialog import ReportProblemDialog
+        if self.report_problem_dialog is None:
+            self.report_problem_dialog = ReportProblemDialog(
+                parent=None,
+                diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()))
+        self.report_problem_dialog.show()
+        self.report_problem_dialog.raise_()
+        self.report_problem_dialog.activateWindow()
+
+    def open_log_bundle(self):
+        """Open the log-collection dialog (bundle .zip / clipboard).
+
+        Kept out of __init__ so PyQt only imports it on demand. The dialog is
+        modeless and stashed on self — a local would be garbage-collected the
+        moment this returns, taking the window with it (the same reason
+        open_log holds self.log_viewer).
+
+        ⚠️ The instance is REUSED, not rebuilt. self.log_bundle_dialog is the
+        only strong reference (the dialog is parentless), so re-assigning it on
+        a second click drops the previous one — and its collection QThread is
+        parented to it, so a rebuild mid-collection can destroy a running
+        thread. Reuse also keeps the timeframe/redaction choice across opens."""
+        from polyhost.gui.log_bundle_dialog import LogBundleDialog
+        if self.log_bundle_dialog is None:
+            # The bundle embeds the same text as About's "Copy diagnostics"
+            # button, so it identifies the versions and connection state it came
+            # from without a second round trip.
+            self.log_bundle_dialog = LogBundleDialog(
+                parent=None,
+                diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()))
+        self.log_bundle_dialog.show()
+        self.log_bundle_dialog.raise_()
+        self.log_bundle_dialog.activateWindow()
 
     def open_fontpack_inspector(self):
         from polyhost.gui.fontpack_inspector_dialog import FontPackInspectorDialog
@@ -1539,7 +1615,38 @@ class PolyHost(QApplication):
             "n_maps": n_maps,
             "config_dir": platformdirs.user_config_dir("PolyHost"),
             "log_dir": os.getcwd(),
+            "fontpack": self._fontpack_summary(),
+            "unsupported": ", ".join(
+                sorted(f for f, ok in (st.get("capabilities") or {}).items() if not ok)),
         }
+
+    def _fontpack_summary(self) -> str:
+        """One line of per-bundle font-pack state, or '' when unknown.
+
+        `fontpack_bundle_status()` compares the cached GET_ID version block
+        against the shipped bundles.json — local on both sides of the RPC, so
+        this costs no device I/O. A bundle can read as current and still have
+        failed to flash, so failures are named separately from staleness."""
+        getter = getattr(self.core, "fontpack_bundle_status", None)
+        if getter is None:
+            return ""
+        try:
+            ok, info = getter()
+        except Exception as exc:  # noqa: BLE001 — diagnostics must never break About
+            self.log.debug("Font-pack status unavailable for diagnostics: %s", exc)
+            return ""
+        if not ok or not isinstance(info, dict) or not info.get("shipped"):
+            return ""
+        bundles = info.get("bundles") or []
+        if not bundles:
+            return ""
+        stale = [b.get("id") for b in bundles if b.get("stale")]
+        failed = [b.get("id") for b in bundles if b.get("last_error")]
+        parts = [f"{len(bundles)} bundles"]
+        parts.append(f"stale: {', '.join(stale)}" if stale else "all current")
+        if failed:
+            parts.append(f"FAILED: {', '.join(failed)}")
+        return " · ".join(parts)
 
     @staticmethod
     def _about_state_word(info: dict) -> str:
@@ -1604,6 +1711,16 @@ class PolyHost(QApplication):
             lines.append("Keyboard: not connected")
         if info["n_maps"]:
             lines.append(f"Overlay mappings: {info['n_maps']} apps")
+        # Two device-side facts that are LOCAL reads (a cached GET_ID block vs the
+        # shipped manifest, and the protocol-gate table) — no device I/O on either
+        # side of the RPC, so they are safe on the menu/GUI thread. Both answer a
+        # recurring class of report on their own: "the glyphs are wrong" (a stale
+        # or failed font-pack bundle) and "this menu is greyed out" (a feature the
+        # attached firmware is too old for).
+        if info.get("fontpack"):
+            lines.append(f"Font pack: {info['fontpack']}")
+        if info.get("unsupported"):
+            lines.append(f"Features unavailable on this firmware: {info['unsupported']}")
         lines += [f"Config: {info['config_dir']}", f"Logs: {info['log_dir']}"]
         return "\n".join(lines)
 

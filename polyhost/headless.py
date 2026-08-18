@@ -157,6 +157,11 @@ class HeadlessHost:
             # when someone closes it (see updater.detached_creationflags).
             updater.spawn_detached([updater.relaunch_executable(), self._relay_path])
             return
+        # restart_app() re-execs and never returns, so main_app's clean-exit
+        # marker would never be written — record it here or every self-update
+        # would read as a crash in crash_log.txt.
+        from polyhost.util import crash_log
+        crash_log.note_clean_exit(self.log, "headless daemon (self-update re-exec)")
         updater.restart_app()
 
 

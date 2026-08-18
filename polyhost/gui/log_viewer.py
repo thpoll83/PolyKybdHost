@@ -53,9 +53,10 @@ class _LogHighlighter(QSyntaxHighlighter):
 
 
 class LogViewerDialog(QMainWindow):
-    def __init__(self, log_files):
+    def __init__(self, log_files, collect_cb=None):
         super().__init__()
         self.log = logging.getLogger('PolyHost')
+        self._collect_cb = collect_cb
         self.setWindowTitle("Log Viewer")
         self.setWindowIcon(get_icon("pcolor.png"))
 
@@ -89,6 +90,14 @@ class LogViewerDialog(QMainWindow):
 
         button_layout = QHBoxLayout()
         button_layout.addStretch(1)
+
+        # Reading a log here is one thing; handing it to someone else is the
+        # other half, and this is where a user looks for it.
+        if collect_cb is not None:
+            button = QPushButton("Collect Logs...")
+            button.setToolTip("Save all logs as a .zip, or copy them to the clipboard")
+            button.clicked.connect(collect_cb)
+            button_layout.addWidget(button)
 
         button = QPushButton("Open Folder")
         button.clicked.connect(self.open_file_directory)

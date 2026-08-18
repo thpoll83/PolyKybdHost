@@ -86,12 +86,24 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       fewer than 10 stars at all** — *"Reviews should be triggered manually for
       repositories with fewer than 10 stars"*, rendered as a *"Review available on
       request"* box with a Trigger-review checkbox. This is permanent, not a
-      transient limit, so it is easy to mistake for "no findings". It currently
-      applies to **`polykybd-docs`** (docs#48, 2026-08-17); the fix is simply to
-      comment `@coderabbitai review`. The same reply then states the quota
+      transient limit, so it is easy to mistake for "no findings". It applies to
+      **`polykybd-docs`** (docs#48, 2026-08-17) **and to `PolyKybdHost`** (#172,
+      2026-08-18) — i.e. do not assume the host repo auto-reviews; the fix is
+      simply to comment `@coderabbitai review`. The same reply then states the quota
       outright — *"Your plan includes up to 1 review per rolling hour; 0 remain
       after this review"* — which is the number to plan around when a PR needs a
       re-review after a fix.
+    - ⚠️ **All THREE bots can be unavailable at once, each in its own disguise —
+      #172 (2026-08-18) collected a full page of bot output and not one review.**
+      CodeRabbit posted the under-10-stars "Review available on request" box;
+      Sourcery submitted a review whose entire body was its weekly rate-limit
+      notice **and a `Sourcery review` check run with conclusion `skipped`**
+      (green-adjacent, not red); Qodo posted its subscription-lapsed notice. On top
+      of that Sourcery still rendered a full *Reviewer's Guide* with two mermaid
+      sequence diagrams and a file-level change table — pure description, zero
+      findings — which is the most convincing-looking artifact of the three. Read
+      the check-run *conclusion* and the review *body*, never the presence of
+      output.
   - ⚠️ **A review that DID run, on the right commit, with an accurate walkthrough,
     can still have SKIPPED the file you care about — read the "Files skipped from
     review" list before trusting a clean verdict.** On qmk PR #198 (2026-08-11)
@@ -165,6 +177,39 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
 
 - **Give every branch a name that hints at its content.** When creating a branch, append a short, descriptive slug describing the change (e.g. `claude/fix-firmware-update-menu-daemon-mode`, not just the auto-generated `claude/<random-scientist>-<id>`). The random scientist/id suffix from Claude Code on the web is auto-assigned server-side and can't always be overridden mid-session, but whenever a branch name is chosen by us, make it self-explanatory so the branch list reads as a changelog.
 - **Always start new work on a FRESH branch cut from the updated default branch — never keep committing to a branch whose PR has already merged.** Once a PR is merged, that branch is done: `git fetch origin <default>` (and for the next piece of work `git checkout -b claude/<new-slug> origin/<default>`). Cherry-pick only the still-unmerged commits onto the fresh branch if needed. This keeps each PR a clean, focused diff against the current default (`main` for host/rig, `PolyKybd` for the firmware) and avoids a new PR accidentally re-including already-merged commits.
+  - ⚠️ **Violating this is INVISIBLE — a push to a branch whose PR has already
+    merged SUCCEEDS and orphans the commit.** git reports an ordinary fast-forward,
+    GitHub shows nothing (a merged PR does not reopen, update, or list the new
+    commit), and the work is simply not in `main` and not in any PR. It is easy to
+    hit without meaning to: the window is "the PR merged while you were still
+    working", not "you deliberately reused an old branch" — that is exactly how
+    the CLAUDE.md commit from #168 was stranded (2026-08-17, recovered as #171).
+    The one check, worth running before reporting any push as done:
+    `git merge-base --is-ancestor <sha> origin/main` (and `git log --oneline
+    --merges -5 origin/main` to see whether your PR's merge already went in).
+    Recovery is the restart above: `git checkout -B <branch> origin/<default>`,
+    cherry-pick the orphan, `git push --force-with-lease`, open a NEW PR — expect
+    an add/add conflict if another PR touched the same region meanwhile.
+- ⚠️ **A CLAUDE.md conflict is one of TWO kinds, and telling them apart matters —
+  the second one deletes your work silently if you resolve it the usual way.**
+  This file is append-heavy and every branch adds notes at the same anchors, so
+  conflicts here are routine (two in 90 minutes on 2026-08-18):
+  - **Addition beside addition** — main and your branch each inserted a new note
+    at the same anchor. Keep BOTH; put main's first so the diff against main
+    stays minimal.
+  - **Supersession** — main's PR *implemented* something and rewrote the note
+    that said it was impossible (`Browser-URL matching is LOCAL-ONLY` → `…DOES
+    cross machines`, #173). Main's version wins **outright**; keeping both ships
+    a file that contradicts itself. Verify you contributed nothing to that region
+    first — `git show <base>:CLAUDE.md | grep -c "<phrase>"` against your branch
+    proves it is inherited, not yours.
+  - ⚠️ **After resolving, grep each of your notes back by name.** Taking one side
+    wholesale also deletes anything of yours that merely *shared the conflict
+    block* — git reports a clean merge, the file has no markers, and the loss is
+    invisible. That happened on 2026-08-18: a supersession block also contained
+    two unrelated new notes, and "take theirs" removed them. The check is
+    `for pat in "<note phrase>" …; do grep -c "$pat" CLAUDE.md; done` — one line,
+    and the only thing standing between you and silently dropped work.
 
 ## Commands
 
@@ -319,11 +364,26 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main thread does **no device I/O** after `PolyHost.__init__` (the one synchronous `connect()` at startup — which seeds `device_present` for firmware-action gating — is the only exception). There is deliberately **no synchronous language enumeration at startup**: `self.connected` can only be set by the reconnect decision tree (that's where the protocol/version gate lives), so the first worker probe always sees a False→True transition and runs the full fresh-connect flow (enumerate + menu build + unicode mode + cache reset). A startup enumerate just duplicated all of it within the first second (double menu build, field 2026-06-13) — don't re-add one.
 
 - `HidWorker` (`polyhost/device/hid_worker.py`) owns the device. Periodic tasks on the worker: reconnect probe (1 s), console/serial reads (250 ms), daylight brightness incl. its network lookups (10 min).
-- UI code enqueues jobs (`worker.submit`); overlay sends use `coalesce_key="overlay"` so rapid app switches supersede/cancel stale transfers instead of replaying them. Dialogs use `worker.run_sync` (short bounded block; raises `RuntimeError` while suspended). Firmware flash/apply wraps the dialog in `worker.exclusive()`; tray pause maps to `suspend()`/`resume()`, and `exclusive()` restores the prior suspend state on exit.
+- UI code enqueues jobs (`worker.submit`); overlay sends use `coalesce_key="overlay"` so rapid app switches supersede/cancel stale transfers instead of replaying them. Dialogs use `worker.run_sync` (short bounded block; raises `RuntimeError` while suspended). Tray pause maps to `suspend()`/`resume()`, and `exclusive()` restores the prior suspend state on exit. ⚠️ **There are TWO flash paths and only one of them uses `exclusive()`** — see the console-starvation note below, which is what makes the distinction matter.
 - ⚠️ **Nothing the firmware prints during a flash is observable from the host** — and
-  this is not a logging-level problem, so don't go hunting for a switch. `exclusive()`
-  calls `suspend()`, which sets the cancel flag on **every** periodic including the
-  250 ms console read, and QMK *drops* console output that no one drains. So the
+  this is not a logging-level problem, so don't go hunting for a switch. QMK *drops*
+  console output that no one drains, and during a flash nobody does. ⚠️ **TWO flash
+  paths reach that outcome by DIFFERENT mechanisms**, so don't reason from one to the
+  other:
+  - The **core job** path (`PolyCore.flash_firmware` / `flash_fontpack`, i.e. the
+    daemon, `polyctl`, and the tray's RPC flash) runs the whole upload as **one long
+    job on the HID worker** and deliberately takes **no `exclusive()`** — its docstring
+    says so, since the worker's single thread already blocks the reconnect probe.
+    `HidWorker._run()` runs due periodics only **between** jobs, so the 250 ms console
+    read simply never gets a turn for the duration.
+  - The **GUI dialog** path (`host.py` `_on_fw_download_done()`, and `cmd_menu.py`'s
+    `_paused_polling()` context manager) *does* wrap in `worker.exclusive()`, because
+    `HidFwUpDialog` stages chunks from **its own QThread** — nothing would otherwise
+    stop the worker's periodics contending for the device while the keyboard
+    re-enumerates. There `suspend()` sets the cancel flag on every periodic, the
+    console read included.
+
+  Either way the
   window from BEGIN to the post-apply reconnect is a blind spot in the host log,
   which is exactly where the FW-2 verdict lands: `FW_UP: image signature
   OK|INVALID|UNSIGNED`, printed at COMMIT. Two rounds were spent concluding "it
@@ -545,6 +605,16 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     on a busy split link — the observed failure, with `giveup=44` in that window — usually
     clears for the cost of one report. `rejected` is **not** retried; asking again cannot
     change what is in flash.
+    - ⚠️ **These host tests pin the contract from ONE side only, and it is the less
+      useful side.** `tests/device/hid_fontpack_test.py` encodes the firmware's reply
+      bytes as **fixtures** (`_commit_status_reply`), so it catches the *host*
+      misreading a status — the opposite direction from the bug that actually shipped,
+      which was the firmware *emitting* `!` for a dropped link ack. A fixture is not
+      the firmware. The firmware end is now pinned too (qmk
+      `make test:fw_up_verdict` → `FontpackCommitStatusTest`), so a change to either
+      side that breaks the mapping fails a test somewhere. **When you touch these
+      status values, update BOTH suites** — and prefer adding the firmware-side
+      assertion first, since that is the end a host fixture can never police.
 - **Font-pack inspect/extend tools** (`polyhost/gui/fontpack_inspector_dialog.py` +
   `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
   `fontgen*`): a standalone window to view every bundle glyph as
@@ -915,12 +985,188 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     workflow (`workflow_dispatch`) rather than assuming — that is a 30 s check.
   - **`binding = "DB"` in `wrangler.toml` must stay `DB`**: `d1 create` prints a suggested
     binding named after the *database*, and adopting it 503s every ping.
+- **Log collection is ONE Qt-free service with three front ends —
+  `polyhost/services/log_bundle.py`.** "Send me your log" used to be a request
+  nobody could satisfy: the logs are **five** rotating files
+  (`host_log.txt`, `daemon_log.txt`, `polykybd_console.txt`, `startup_log.txt`,
+  `forwarder_log.txt`) × up to 3 backups each, written **relative to the process
+  cwd**, and under daemon-by-default the half that matters is the *daemon's*, not
+  the GUI's. `build_bundle()` writes a `.zip` (logs + `diagnostics.txt` + a
+  redacted `settings.yaml` + a README stating the timeframe and redaction state);
+  `recent_text()` returns the same content for the clipboard. Front ends: the tray's
+  **Help & About → "Collect logs…"**, a **"Collect Logs…"** button in the log viewer,
+  and **`polyctl logs bundle|show|paths`**. Five things that are load-bearing:
+  - ⚠️ **A NEW log file reaches nobody until it is registered in THREE places** —
+    `log_bundle.py` `_LOG_FILES`, the log viewer's `log_files` dict in `host.py`,
+    and the count in this very paragraph. Writing the file is the easy half; a
+    log nobody can collect is the same as no log. #172 shipped `crash_log.txt` —
+    the file whose entire purpose is proving whether the app crashed — into none
+    of the three, so the one artifact a support round would ask for could not be
+    collected or even viewed. **`crash_log.txt` is still unregistered; fix that
+    when you next touch this file.** Same shape as the enumerating-guard trap
+    below: three lists that must agree and nothing that makes them.
+  - ⚠️ **`polyctl logs` MUST work with no host running** — `main()` routes it
+    through `_is_offline_command` *before* `connect()`, and a reachable daemon only
+    enriches the diagnostics. The moment a user most needs the logs is the one where
+    the app failed to start or the daemon died, i.e. exactly when `connect()` fails.
+    Don't "simplify" it back onto the normal connect-first path.
+  - **The rotation chain is read `.N` → `.1` → base, i.e. OLDEST first.**
+    `RotatingFileHandler` moves the live file to `.1` and shifts the rest up, so
+    reading base-first silently produces a backwards concatenation.
+  - **Continuation lines inherit their record's keep/drop decision** in
+    `slice_lines`. A traceback carries no timestamp of its own, so a naive
+    per-line time filter keeps the `ERROR` line and drops the half that says what
+    actually failed.
+  - **Redaction is anchored on the log message's own wording, not "anything in
+    quotes"** (`_TITLE_PATTERNS`), and masks **window titles only** — app/exe names
+    are kept, since that is what overlay-matching support rounds actually need.
+    Titles can name documents ("Q3 layoffs.xlsx"), so the dialog says so in red when
+    the box is unticked; default is OFF because a first support round with everything
+    masked usually has to be repeated. `browser_report_token` / `telemetry_install_id`
+    are masked **always**, independent of that flag.
+- **Multi-machine forwarding fails SILENTLY in three different ways, and NONE of
+  them is diagnosable from the forwarder's own log.** All three were hit on one
+  setup that had worked for weeks (field, 2026-08-17); the forwarder log showed
+  nothing but a repeating error with no cause in it. Check these before reading
+  any code:
+  - ⚠️ **A disabled relay reads as `Connection timed out`, NOT "connection
+    refused"** — so the log looks like a network problem rather than a host that
+    isn't listening. A closed port would RST, but the keyboard machine's firewall
+    silently drops SYNs to a port nothing has bound, and the old allow-rule went
+    away with the listener. The *cause* is logged once, on the **other machine**,
+    by `RemoteHandler.listen_to_forwarder` ("Remote overlay entries are configured
+    but the legacy plaintext window relay (TCP 50162) is disabled") — and only
+    when remote entries are mapped and `window_report_network_enabled` is off. In
+    daemon mode that line is in `daemon_log.txt`, not the tray log.
+  - ⚠️ **`WindowReportServer` is started ONLY by `HeadlessHost`** (`headless.py`
+    `_maybe_start_window_report_server` is its one construction site — `host.py`
+    has none). So under `--no-daemon`, `window_report_network_enabled` is a
+    **silent no-op**: the setting reads back true and nothing listens.
+  - ⚠️ **A forwarded window is used only while the keyboard machine's OWN focused
+    window is a `remote: true` mapping entry** (`active_window.py`
+    `is_remote_mapping_entry`, the `elif` in the window tick) — normally the
+    remote-desktop client you are viewing the other machine through (the shipped
+    entry is `nxplayer`/NoMachine). Without such an entry both logs look perfectly
+    healthy — the forwarder reports windows, the daemon receives them — and the
+    keycaps simply never change.
+  - The user-facing version of all three is the docs site's
+    [Multi-Machine Setup](https://www.polykybd.org/using/multi-machine/) page
+    (rewritten 2026-08-17, docs#51). ⚠️ **The relay gate that caused this shipped
+    in 0.10.5 and the docs kept recommending the dead path for six weeks** — when
+    you flip a transport off by default, move that page in the same change.
+  - **Browser-URL matching DOES cross machines — but only over the authenticated
+    RPC path** (`--report-rpc`; the forwarder gained this in 0.12.x). Three things
+    had to be true at once, so if a `url:` / `urls-contains:` entry is not firing
+    for a forwarded window, check them in this order: the forwarder runs its own
+    loopback receiver for the extension (`handler/browser_url_source.BrowserUrlSource`,
+    shared with `PolyCore` so the two roles cannot drift — the extension itself is
+    unchanged and always POSTed to `127.0.0.1` on its own machine); the report
+    carries the optional `url` param (**RPC only**); and `RemoteHandler._match_remote`
+    passes it to the matcher. ⚠️ **The legacy plaintext relay deliberately does NOT
+    carry the URL**: its framing is positional `handle;name;title;os` with the
+    free-text field in the *middle*, so a title containing `;` already truncates the
+    title and kills the `os` field — a fifth field would deepen a live bug on a
+    transport that is off by default. Two details that are easy to get backwards:
+    a **None url is STORED** (unlike a None os, which is ignored — the OS belongs to
+    the sending machine, a URL to the window in that report, so keeping the last one
+    would pin a stale site's overlay onto the next non-browser window); and the URL
+    is **part of the window's identity on both ends**, because an SPA route change
+    moves neither handle nor title — the forwarder re-sends on a URL change rather
+    than waiting out its 15 s heartbeat, and `remote_changed` re-matches.
+- ⚠️ **"The tray icon is gone" is NOT the same as "the app crashed" — check the
+  process list before diagnosing anything else.** Field, 2026-08-18: the tray
+  vanished, `startup_log.txt` and `daemon_log.txt` showed nothing wrong, the user
+  relaunched, and it read as a silent crash. `Get-Process pythonw | Select Id,
+  StartTime` settled it in one command — **the original GUI was still running**,
+  minus its icon. ⚠️ **Read that list in PAIRS: each launch showed TWO
+  `pythonw.exe` entries** with the same start time and command line (6 processes
+  for 1 daemon + 2 GUIs). Cause unestablished — so do not explain it, just don't
+  double-count it into "two daemons are fighting over the device". `Get-CimInstance
+  Win32_Process -Filter "Name='pythonw.exe'" | Select ProcessId, ParentProcessId,
+  CreationDate, CommandLine` settles it: one of each pair parenting the other is a
+  launcher stub, a shared parent would be two real instances. Three things conspired, all now fixed on this branch:
+  - **The logon race.** The autostart scheduled task starts the GUI before
+    Explorer's notification area exists; `Shell_NotifyIcon` fails and the icon
+    never appears. Qt re-adds only on Explorer's `TaskbarCreated` broadcast, which
+    it sends when it **restarts**, not when it finishes starting — so losing that
+    race is permanent for the session. `host.py` called `setVisible(True)`
+    unconditionally and nothing anywhere in the app called
+    `isSystemTrayAvailable()`. Now `gui/tray_wait.py` waits for the tray (1→15 s
+    backoff, 5 min cap) and logs both the wait and the eventual show.
+    ⚠️ That check only looks for the shell's tray window, so it can say "available"
+    while the add still fails; if this recurs *with* "icon shown" in the log, the
+    remaining lever is a forced `hide()`/`show()` re-add.
+  - **Nothing could have recorded a crash if there had been one.** Under
+    `pythonw.exe` stderr is a black hole, and the app had no `sys.excepthook`, no
+    `threading.excepthook`, no `faulthandler` and no `qInstallMessageHandler` — so
+    PyQt's abort-on-unhandled-exception-in-a-slot (it calls the excepthook, *then*
+    `qFatal`) left zero trace. `util/crash_log.py` + `gui/qt_crash.py` now capture
+    all four, into `crash_log.txt`; a `session start` line with no matching
+    `clean exit` is itself the diagnosis.
+  - **Losing the tray costs the menu, not the keyboard.** Under daemon-by-default
+    the daemon owns the device, window tracking and overlays, so it kept switching
+    overlays for 14 minutes with no GUI attached — which is *why* nothing looked
+    broken. Also note the control server logs **nothing** when a client connects or
+    disconnects, so the daemon log can never date a GUI's death.
+  - ⚠️ **A tray "Quit" and a crash were previously indistinguishable in the logs** —
+    `quit_app()` writes no line. Don't reason about whether the GUI exited on
+    purpose from `startup_log.txt`; use the crash-log markers.
+- ⚠️ **The self-updater copies release files over a git checkout — `git log -1` can
+  be months behind what is actually running.** `apply_update()` is
+  `copytree(dirs_exist_ok=True)`: it overwrites and never deletes, and `copy2`
+  preserves the *tarball's* mtime, so on-disk timestamps show the release date, not
+  the day it was installed. A field machine sat on a July feature branch (HEAD
+  0.9.47) while running v0.11.10 from the release, with 354 files showing as
+  modified and a reflog untouched for two weeks. When a report's version doesn't
+  match the branch, that is the explanation — the running code is the release, and
+  `_version.py` on disk is the only thing that says which.
+
+- **"Report a Problem" is the guided sibling of log collection —
+  `polyhost/services/problem_report.py` + `gui/report_problem_dialog.py`.** The
+  tray's **Help & About → "Report a Problem…"** takes a description, builds a log
+  bundle, puts the composed issue body on the clipboard and opens a **pre-filled
+  GitHub issue** in the browser. "Collect logs…" beside it stays the manual half,
+  for when the file is going somewhere else. Four things are deliberate:
+  - ⚠️ **Redaction defaults ON here and OFF in "Collect logs…", and that
+    asymmetry is the point.** A local bundle is a file you inspect before
+    sending; a report is aimed at a **public** tracker. Same data, different
+    destination, so the safe default flips.
+  - **The issue body carries NO log lines** — only the description, the
+    diagnostics and the bundle's *filename*, with an instruction to attach it.
+    GitHub has no API to attach a file to an issue without a token, and shipping
+    one in an open-source client is shipping a public credential; more
+    importantly, an attachment is a file the reporter can look at before
+    uploading, which pasted log text is not.
+  - **Diagnostics are path-scrubbed** (`scrub_paths`): `_diagnostics_text` ends
+    with `Config:`/`Logs:` lines, and on every platform those contain the account
+    name (`C:\Users\tom\…`, `/home/tom/…`). Home → `~`, plus a regex for any
+    *other* user directory (a daemon under another account, another drive).
+  - **A pre-filled new-issue URL is a GET**, so an oversized body is truncated or
+    refused somewhere between browser and GitHub. `issue_url_for()` falls back to
+    the blank form above `MAX_URL_BYTES` (6000); the body is on the clipboard
+    either way, so the fallback costs a paste rather than the report. A test
+    pins that a *realistic* report still prefills — otherwise the fallback
+    quietly becomes the normal path.
+- ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
+  `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
+  menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
+  `host.py` is simply **absent** there until wired separately. It matters most
+  for support features: the forwarder runs on a **different machine** from the
+  keyboard, so its logs can never appear in a bundle collected host-side, and
+  its failure domain (which window backend that desktop selects, the report
+  transport, the authkey) is exactly the log-diagnosable kind. Both "Report a
+  Problem…" and "Collect logs…" are wired in both places, and the forwarder
+  supplies its **own** diagnostics text leading with `FORWARDER mode (no keyboard
+  attached to this machine)` — the plain version line otherwise reads exactly
+  like a report from the keyboard machine, which is a different failure domain
+  entirely. `tests/gui/host_client_test.py` has a `forwarder` smoke mode; it
+  **skips** without `pywinctl`, which `forwarder.py` imports at module load.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
   - **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
   - **To run the WHOLE suite** (not just `tests.device.*` — do this after any change touching
-    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5`
+    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5 pywinctl`
     (pip) **and** `xvfb x11-xserver-utils` (apt), run under `xvfb-run -a .venv/bin/python -m
     unittest discover -s ./tests -p "*_test.py"`. Without those deps `services/updater`,
     `sunlight_helper`, `langcode_flag`, `win_helper_parse`, and the `host_client`
@@ -940,6 +1186,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   grid: the HTML and the tests were both perfectly correct, and the defect existed only
   in the render. Same reasoning as judging a tray icon by rasterising it (above) —
   measure or look, don't infer from the source.
+- ⚠️ **`polyhost/forwarder.py` is UNTESTABLE in the documented environment — put
+  any forwarder logic worth testing in a Qt-free module instead.** It imports
+  `pywinctl` at module load (the backend selection at the top), and pywinctl is
+  **not** in the full-suite dependency list above, so the module cannot even be
+  imported in a normal test run — a `DISPLAY` is necessary but not sufficient.
+  `PolyForwarder.__new__` (constructing the object without `QApplication.__init__`,
+  to call one plain method) fails at the *import*, before Qt is reached. Hence the
+  `--host-file` reconnect fix (2026-08-17) put the connection lifetime in
+  `server/window_report_client.py` `WindowReportSession` — stdlib-only, 10 unit
+  tests — and left only the two-line "no target ⇒ close" branch in the forwarder.
+  A test gated on both `DISPLAY` and pywinctl would be permanently skipped, which
+  is worse than none: it reads as coverage.
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
 - ⚠️ **A stale `.pyc` can survive a CORRECT fix — clear `__pycache__` before you
   disbelieve your own change.** Python invalidates cached bytecode on
@@ -1160,4 +1418,8 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 - ⚠️ **From Claude Code on the web you can neither push tags (git proxy 403 on
   `refs/tags/*`) nor create a release (no `gh`, no create-release MCP tool)** — stage the
   notes on the branch and hand the user `python scripts/publish_release.py`.
+  The same proxy also **403s on branch DELETION** (`git push origin --delete
+  <branch>`, verified 2026-08-18), so a leftover branch has to be removed in the
+  GitHub UI — don't burn retries on it, and don't create scratch branches you
+  can't clean up.
 

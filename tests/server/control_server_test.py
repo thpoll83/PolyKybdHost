@@ -143,8 +143,8 @@ class FakeCore:
     def set_all_overlay_usage(self):
         return (True, "all")
 
-    def report_window(self, handle, name, title):
-        self.calls.append(("report_window", handle, name, title))
+    def report_window(self, handle, name, title, os=None, url=None):
+        self.calls.append(("report_window", handle, name, title, os, url))
         return (True, {"reported": True})
 
     def send_overlay_mapping(self, mapping):
@@ -317,7 +317,18 @@ class ControlServerTest(unittest.TestCase):
         resp = self._call(conn, 42, p.M_WINDOW_REPORT,
                           {"handle": "7", "name": "Code.exe", "title": "x - VS Code"})
         self.assertEqual(resp["result"], {"reported": True})
-        self.assertIn(("report_window", "7", "Code.exe", "x - VS Code"), self.core.calls)
+        # os/url are optional: absent params must arrive as None, not raise.
+        self.assertIn(("report_window", "7", "Code.exe", "x - VS Code", None, None),
+                      self.core.calls)
+
+    def test_window_report_forwards_os_and_url(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        self._call(conn, 43, p.M_WINDOW_REPORT,
+                   {"handle": "7", "name": "chrome", "title": "Board — Miro",
+                    "os": 2, "url": "https://miro.com/app/board/x"})
+        self.assertIn(("report_window", "7", "chrome", "Board — Miro", 2,
+                       "https://miro.com/app/board/x"), self.core.calls)
 
     def test_pause_set(self):
         conn = self._connect()
