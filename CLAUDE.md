@@ -222,6 +222,11 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     two unrelated new notes, and "take theirs" removed them. The check is
     `for pat in "<note phrase>" …; do grep -c "$pat" CLAUDE.md; done` — one line,
     and the only thing standing between you and silently dropped work.
+    ⚠️ Grep **prose**, not a phrase containing markup: this file wraps identifiers
+    in backticks, so a pattern typed as `crash_summary() puts the crash counts`
+    scores 0 against a line reading ``` `crash_summary()` puts the crash counts ```
+    — a false "note lost" scare mid-resolution (2026-08-18). Pick a distinctive
+    run of plain words, or include the backticks.
 
 ## Commands
 
@@ -1026,7 +1031,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   redacted `settings.yaml` + a README stating the timeframe and redaction state);
   `recent_text()` returns the same content for the clipboard. Front ends: the tray's
   **Help & About → "Collect logs…"**, a **"Collect Logs…"** button in the log viewer,
-  and **`polyctl logs bundle|show|paths`**. Eight things that are load-bearing:
+  and **`polyctl logs bundle|show|paths`**. Nine things that are load-bearing:
   - ⚠️ **A NEW log file reaches nobody unless `LOG_SOURCES` knows about it** —
     that is now the single declaration (filename, viewer tab `title`, and
     whether it is time-`sliced`), and `viewer_files()` derives both tray apps'
@@ -1083,6 +1088,28 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     branch you think you covered is untested. Same shape as the stale-guard note
     in the review conventions above: a green test that pins the environment's
     accident rather than the contract.
+    - ⚠️ **And do NOT reach for `mock.patch(default_log_dir)` to steady a test —
+      patching the resolver a function depends on pins the coincidence, not the
+      contract.** `build_bundle(log_dir=X)` bundles X's logs, but
+      `environment_text()` called `crash_summary()` with no directory, so
+      `diagnostics.txt` described `default_log_dir()`'s crash log instead — a
+      report whose body and attachment can describe different machines. The test
+      that was supposed to cover that line patched `default_log_dir` to point at
+      its fixture, so the two agreed *only in the test* and the mismatch shipped
+      (caught in review, #178). The test that actually holds it uses **two
+      different directories** with deliberately different contents and asserts
+      the diagnostics describe the one the zip ships. `log_dir` is now threaded
+      `build_bundle` → `environment_text` → `crash_summary`; keep it threaded.
+  - ⚠️ **If a helper resolves a directory to make a decision, what it RETURNS has
+    to carry that resolution.** `viewer_files()` tested
+    `(default_log_dir() / name).exists()` but returned the **bare** filename, and
+    `LogViewerDialog` opens the value it is given relative to the process cwd — so
+    the check and the open could resolve in different directories, showing the
+    wrong file or none. Note the code it replaced was *worse in principle but
+    self-consistent* (it checked and opened the same bare name), which is how the
+    regression got written: centralising the check moved one half and not the
+    other. It returns absolute paths now, which also makes the dialog's "open
+    containing folder" work at all — `os.path.dirname` of a bare name is `""`.
   - **Redaction is anchored on the log message's own wording, not "anything in
     quotes"** (`_TITLE_PATTERNS`), and masks **window titles only** — app/exe names
     are kept, since that is what overlay-matching support rounds actually need.
@@ -1252,6 +1279,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   grid: the HTML and the tests were both perfectly correct, and the defect existed only
   in the render. Same reasoning as judging a tray icon by rasterising it (above) —
   measure or look, don't infer from the source.
+- **RUN the real entry point once before believing a mocked suite — the output is
+  where format bugs live.** Same instinct as rendering a widget or rasterising an
+  icon above, applied to the CLI: a suite whose fixtures you wrote can only be as
+  right as your idea of the real data. `crash_summary()` reported *"2 native fault
+  dump(s)"* for a single crash, because a fatal signal prints **both** a
+  `Fatal Python error` line and a `Current thread` line and the unit fixture had
+  only the first. Every test passed; one `polyctl logs bundle` in a temp dir with
+  a realistic file showed it immediately (2026-08-18). Cheap recipe: make a temp
+  dir, write a realistic log, run the actual command, read the artifact —
+  `cd /tmp/x && PYTHONPATH=<repo> <repo>/.venv/bin/python -m polyhost.cli.polyctl
+  logs bundle --since 1h`, then unzip and look. It is ~30 s and it has now caught
+  two bugs in one PR that the tests could not see.
 - ⚠️ **`polyhost/forwarder.py` is UNTESTABLE in the documented environment — put
   any forwarder logic worth testing in a Qt-free module instead.** It imports
   `pywinctl` at module load (the backend selection at the top), and pywinctl is
