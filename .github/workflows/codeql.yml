@@ -1,0 +1,48 @@
+# CodeQL static analysis for the Python host app.
+#
+# Deliberately NOT another AI reviewer. CodeRabbit, Sourcery and the on-demand
+# Claude reviewer are all LLMs trained on much the same public code, so their
+# blind spots overlap; CodeQL is dataflow analysis and fails in entirely
+# different places. It is also free on public repos with no quota, so unlike
+# every bot on this PR it cannot go quiet at the moment it is needed.
+#
+# Findings land in the Security tab and as PR annotations.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so a new query release surfaces findings in code that has not
+    # changed. Monday 06:00 UTC.
+    - cron: "0 6 * * 1"
+
+jobs:
+  analyze:
+    name: Analyze Python
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      security-events: write   # required to upload results
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          # Python needs no compilation, so no build step is required.
+          build-mode: none
+          # security-and-quality adds maintainability queries on top of the
+          # default security set. Drop to "security-extended" if the quality
+          # queries prove noisy on this codebase.
+          queries: security-and-quality
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"
