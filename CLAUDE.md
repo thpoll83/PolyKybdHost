@@ -200,9 +200,42 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   - ⚠️ **Comment and `workflow_dispatch` triggers always run the copy of the
     workflow on the DEFAULT branch**, so neither does anything until merged
     there — you cannot test them on the PR that adds them.
-  - Only the exact phrase `@claude review` reaches the review workflow; any other
-    `@claude ...` goes to the mention one. That split is what stops a single
-    comment starting two runs.
+  - **Routing: `startsWith('@claude review')` reaches the review workflow; any
+    other `@claude ...` goes to the mention one.** Both files use the identical
+    test, which is what stops one comment starting two runs. It is `startsWith`
+    and not `contains`, so a comment that merely *quotes* the phrase — a reply, a
+    pasted excerpt of a PR body — cannot spend a review.
+    - ⚠️ **Both workflows must listen on `issue_comment` AND
+      `pull_request_review_comment`.** This shipped with the review one listening
+      only to `issue_comment`, so `@claude review` typed on a **diff hunk**
+      triggered *nothing at all* — the mention workflow does see that event but
+      excludes the phrase by design. Silently dead in the one place a reviewer is
+      most likely to type it (caught by Sourcery, 2026-08-19). On that event
+      `github.event.issue` is null, so the PR number has to fall back through
+      `github.event.pull_request.number`.
+  - **`pull-requests: read` is CORRECT for the review workflow — do not "fix" it
+    to write.** With `github_token` omitted the action authenticates as the
+    **Claude GitHub App**, not `GITHUB_TOKEN`, so read permissions are enough to
+    post inline comments; Anthropic's own code-review example uses exactly these.
+    Reviewers raise this as a bug on every workflow change, so the refutation is
+    written down here to be quoted rather than re-derived.
+  - **The action enforces write-access and rejects bot actors ITSELF**, before
+    Claude starts, so the `if:` does not need to duplicate it — and a duplicate
+    would drift from it. That human-actor check is what stops another reviewer's
+    rate-limit notice from summoning Claude in a loop. The only residue is that a
+    runner *starts* before the rejection, which is free on a public repo.
+  - ⚠️ **A Claude review of Claude-written code is a third CORRELATED opinion,
+    not independent verification.** Most of this codebase is written in Claude
+    sessions, so the reviewer carries the author's priors and sails past the same
+    things — `send_to_bridge()`'s non-zero returns, the enumerating guard in
+    `find_matching_entry`, the `.pyc` mtime trap were each missed by an author and
+    would likely be missed by a same-model reviewer. It is genuinely useful for
+    the two jobs above (checking a *claim* against the code, and checking a diff
+    against *this file*, where the knowledge lives in the file rather than the
+    weights) and for the case where nothing else reviewed at all. The risk is not
+    that it is weak but that a clean one **reads as cover** — the same failure the
+    bot-tells above document. The last line of defence stays the HIL rig and the
+    unit suites; that asymmetry is why cppcheck was added alongside it.
 
 ## Branching (all PolyKybd repos)
 
