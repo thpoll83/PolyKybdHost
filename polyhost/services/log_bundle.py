@@ -177,8 +177,11 @@ class ClearResult:
     def summary(self) -> str:
         if not self.files:
             return "no log files to clear"
-        return "cleared %d file(s), freed %d KB" % (
-            self.files, max(1, self.bytes_freed // 1024))
+        # max(1, …) keeps a sub-KB clear from reading as "freed 0 KB", but it
+        # must not invent a kilobyte when there was genuinely nothing to free
+        # (clearing twice in a row, or a set of already-empty files).
+        freed_kb = max(1, self.bytes_freed // 1024) if self.bytes_freed else 0
+        return "cleared %d file(s), freed %d KB" % (self.files, freed_kb)
 
 
 def clear_logs(log_dir: Path | str | None = None) -> ClearResult:
@@ -227,8 +230,13 @@ def clear_logs(log_dir: Path | str | None = None) -> ClearResult:
             except OSError as exc:
                 # One unwritable file must not abandon the rest.
                 result.errors.append("%s: %s" % (path.name, exc))
-    if cleared_crash:
-        crash_log.note_cleared(str(d / crash_log.CRASH_LOG))
+    # ⚠️ Report a lost marker. Without it the crash log is emptied and nothing
+    # records why, which is precisely the "0 session(s) on a machine that has
+    # never crashed" misreading note_cleared() exists to prevent — reporting
+    # success there would hide the one failure that matters.
+    if cleared_crash and not crash_log.note_cleared(str(d / crash_log.CRASH_LOG)):
+        result.errors.append(
+            "%s: could not record the clear marker" % crash_log.CRASH_LOG)
     return result
 
 

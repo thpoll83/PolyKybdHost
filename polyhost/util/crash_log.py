@@ -313,8 +313,19 @@ def note_cleared(filename=CRASH_LOG):
             fh.write(format_marker("crash log cleared", os.getpid()) + "\n")
     except OSError:
         return False
+    # ⚠️ Only when the file just cleared IS the one this process is writing to.
+    # _stamp() writes to _crash_file, not to `filename`, so clearing some other
+    # directory's crash log would otherwise plant a false session record in a
+    # file the user never asked to touch. Same rule as the log viewer deriving
+    # its directory from the tabs it was handed: what a helper acts on must be
+    # what it was pointed at.
     if _crash_file is not None:
-        _stamp("session start (after clear)")
+        try:
+            same_file = os.path.samefile(_crash_file.name, filename)
+        except OSError:
+            same_file = False
+        if same_file:
+            _stamp("session start (after clear)")
     return True
 
 

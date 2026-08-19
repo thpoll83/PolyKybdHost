@@ -176,6 +176,11 @@ class PolyctlLogsOfflineTest(unittest.TestCase):
         # service tests could not see it because they pass the directory in.
         code, _, _ = self._run("logs", "clear", "--yes", "--log-dir", str(self.dir))
         self.assertEqual(code, 0)
+        # Exit 0 alone would also pass if --log-dir were ignored and the DEFAULT
+        # directory got cleared instead — and default_log_dir() falls back to the
+        # repo root, so that version of this test could truncate a developer's
+        # real logs while looking green.
+        self.assertEqual((self.dir / "host_log.txt").stat().st_size, 0)
 
 
 class PolyctlLogsWithHostTest(unittest.TestCase):

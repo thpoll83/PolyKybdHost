@@ -756,6 +756,34 @@ class ClearLogsTest(unittest.TestCase):
             live.write("after clear\n")
         self.assertEqual(path.read_text(encoding="utf-8"), "after clear\n")
 
+    def test_it_does_not_claim_a_kilobyte_it_did_not_free(self):
+        # Files that are already empty free nothing; saying "freed 1 KB" there
+        # is simply untrue. (Note a second clear of a REAL set still frees the
+        # crash marker the first one wrote, so that is not the zero case.)
+        (self.dir / "host_log.txt").write_text("", encoding="utf-8")
+        (self.dir / "daemon_log.txt").write_text("", encoding="utf-8")
+        result = lb.clear_logs(self.dir)
+        self.assertEqual(result.files, 2)
+        self.assertEqual(result.bytes_freed, 0)
+        self.assertIn("freed 0 KB", result.summary())
+
+    def test_a_sub_kilobyte_clear_still_reports_one_kb_not_zero(self):
+        # The other side of the same line: a real but tiny clear must not read
+        # as "freed 0 KB" either.
+        (self.dir / "host_log.txt").write_text("x" * 100, encoding="utf-8")
+        result = lb.clear_logs(self.dir)
+        self.assertIn("freed 1 KB", result.summary())
+
+    def test_a_lost_crash_marker_is_reported_rather_than_swallowed(self):
+        # The crash log is emptied either way; if the marker cannot be written,
+        # the file is left looking like a machine that has never crashed, and
+        # reporting plain success would hide exactly that.
+        self._populate()
+        with mock.patch("polyhost.util.crash_log.note_cleared", return_value=False):
+            result = lb.clear_logs(self.dir)
+        self.assertTrue(result.errors)
+        self.assertIn("clear marker", result.errors[0])
+
     def test_the_summary_says_the_log_was_cleared(self):
         # The marker in the file only helps someone who opens the attachment;
         # the report BODY is where a bare "0 session(s)" would mislead.
