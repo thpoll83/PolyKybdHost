@@ -43,6 +43,18 @@ import time
 
 CRASH_LOG = "crash_log.txt"
 
+# ⚠️ This file is the ONE log source the bundle collector carries WHOLE,
+# ignoring the timeframe the user picked (services/log_bundle.LOG_SOURCES marks
+# it ``sliced=False``, because a faulthandler dump has no timestamp of its own
+# to filter on). Its size is therefore *bundle* size, permanently — and a bundle
+# is what gets uploaded to a public issue tracker. Steady state is nothing (two
+# ~65-byte markers per session), but a crash LOOP — a fault during startup, with
+# the autostart chain or the update relay relaunching — appends an all-threads
+# dump of ~6 KB per iteration with nothing bounding it, in precisely the
+# situation where this file matters most. Hence a cap, applied at install().
+MAX_BYTES = 1024 * 1024
+KEEP_BYTES = 256 * 1024
+
 # The marker format lives HERE, with the writer, and readers import it. The
 # collector (services/log_bundle.crash_summary) parses these lines; a second
 # hand-written copy of the format there would fail silently on any change —
@@ -76,6 +88,68 @@ def parse_marker(line):
     if not m:
         return None
     return m.group("what"), int(m.group("pid")), m.group("ts")
+
+def trim_if_oversized(filename=CRASH_LOG, max_bytes=MAX_BYTES,
+                      keep_bytes=KEEP_BYTES):
+    """Bound the crash log, keeping the NEWEST whole records. Best effort.
+
+    ⚠️ **Not** a RotatingFileHandler, and the reasons are worth stating because
+    rotation is the obvious thing to reach for and it is silently wrong here:
+
+    * ``faulthandler`` keeps the file DESCRIPTOR (see the note below). Rotation
+      renames the file and the fd follows the *inode*, so the live process goes
+      on dumping into ``crash_log.txt.1`` — and, once that is rotated away in
+      turn, into a deleted inode. The dump lands nowhere, with nothing said.
+    * ``faulthandler`` bypasses ``logging`` entirely, writing straight to the
+      fd. A handler therefore never sees the 6 KB dumps that are the whole
+      reason the file grows; it could only ever roll over on the marker lines.
+    * The GUI and the daemon share this file, each holding its own append fd,
+      so whichever rotated would orphan the other's.
+
+    Called from :func:`install` **before** the file is opened and handed over,
+    which is the only safe moment: no fd exists yet and no dump can be in
+    flight. That keeps the one-stable-fd-for-the-life-of-the-process invariant
+    exactly as it was.
+
+    ⚠️ The rewrite is IN PLACE rather than the usual write-a-temp-file +
+    ``os.replace``, for the same reason rotation is out: ``replace`` would swap
+    the inode out from under the *other* process's open fd. Truncating instead
+    is safe because every writer opens with mode ``"a"`` (O_APPEND), so a
+    concurrent append resolves to the new end of file rather than a stale
+    offset.
+
+    Returns True if the file was trimmed.
+    """
+    try:
+        size = os.path.getsize(filename)
+    except OSError:
+        return False  # no file yet, or unreadable — nothing to bound
+    if size <= max_bytes:
+        return False
+    try:
+        with open(filename, "rb") as fh:
+            fh.seek(size - keep_bytes)
+            tail = fh.read()
+        # Resume at a record boundary, so half a traceback is never kept: every
+        # record starts with a marker line, and a dump always follows the
+        # session marker of the process that produced it. Cutting after a
+        # newline also guarantees the retained bytes start on a valid UTF-8
+        # boundary, whatever the seek landed in the middle of.
+        cut = tail.find(b"\n=== ")
+        if cut >= 0:
+            tail = tail[cut + 1:]
+        else:
+            nl = tail.find(b"\n")
+            tail = tail[nl + 1:] if nl >= 0 else b""
+        note = format_marker("crash log trimmed (was %d bytes)" % size,
+                             os.getpid()) + "\n"
+        with open(filename, "wb") as fh:
+            fh.write(note.encode("utf-8"))
+            fh.write(tail)
+        return True
+    except Exception:  # noqa: BLE001 — reporting must never raise
+        return False
+
 
 # The faulthandler file must stay open and referenced for the life of the
 # process: faulthandler keeps only the file DESCRIPTOR, so letting the object be
@@ -122,6 +196,10 @@ def install(log=None, filename=CRASH_LOG):
     if _installed:
         return False
     log = log or logging.getLogger("PolyHost")
+
+    # Before the open, never after: from here on the fd is faulthandler's and
+    # must not be disturbed. See trim_if_oversized's note.
+    trim_if_oversized(filename)
 
     try:
         # line buffering: a dump must reach disk before the process dies.
