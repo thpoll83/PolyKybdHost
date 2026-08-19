@@ -16,6 +16,10 @@
 # it finds nothing. Runs are billed to the CLAUDE_CODE_OAUTH_TOKEN owner's
 # Claude subscription, NOT to an API key.
 #
+# ⚠️ That secret is REQUIRED and is not optional plumbing: without it the run
+# dies at credential validation having reviewed nothing. The preflight job below
+# turns that into a comment on the PR rather than a silent no-op.
+#
 # NOTE: issue_comment and workflow_dispatch always run the copy of this file on
 # the DEFAULT branch, so this workflow does nothing until it is merged there.
 name: Claude Review (on demand)
@@ -35,18 +39,76 @@ on:
     types: [created]
 
 jobs:
-  review:
+  # Refuse to start without the credential, and SAY SO ON THE PULL REQUEST.
+  #
+  # ⚠️ Without this the failure is invisible from the PR. The action installs
+  # Claude Code and only then aborts with "Environment variable validation
+  # failed: Either ANTHROPIC_API_KEY, CLAUDE_CODE_OAUTH_TOKEN, ... is required"
+  # — and because an issue_comment workflow attaches NO check run to the pull
+  # request, that leaves no comment, no red tick, and nothing on the PR page at
+  # all. The summons simply evaporates. Both #181 and #182 were summoned this
+  # way on 2026-08-19, on a repository where the secret had never been added,
+  # and the only trace was in the Actions tab.
+  #
+  # That matters more here than for an ordinary workflow: this is the reviewer
+  # people reach for precisely WHEN the other bots have gone quiet, so a silent
+  # failure is indistinguishable from the situation it was summoned to fix.
+  preflight:
     # Comment path: only on a PR, and only for the exact "@claude review"
     # phrase, which is what keeps this from overlapping claude-mention.yml.
     # startsWith, not contains: a comment that merely QUOTES "@claude review"
     # (a reply, a pasted excerpt) should not spend a review. The phrase is a
     # command, so it has to lead the comment.
+    #
+    # The condition lives HERE and nowhere else: `review` gates on
+    # `needs: preflight`, so a skipped preflight skips the review with it. A
+    # copy of this expression in both jobs is exactly the sort of duplicate
+    # that goes stale.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request_review_comment' &&
        startsWith(github.event.comment.body, '@claude review')) ||
       (github.event.issue.pull_request != null &&
        startsWith(github.event.comment.body, '@claude review'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Write is needed to post the comment, and is confined to THIS job so the
+    # review job below keeps its read-only token.
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Require CLAUDE_CODE_OAUTH_TOKEN
+        env:
+          # secrets are not available to a job- or step-level `if`, so the
+          # emptiness test has to happen in the shell.
+          OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.issue.number || github.event.pull_request.number || inputs.pr }}
+        run: |
+          if [ -n "$OAUTH_TOKEN" ]; then
+            echo "CLAUDE_CODE_OAUTH_TOKEN is set; handing over to the review job."
+            exit 0
+          fi
+          cat > "$RUNNER_TEMP/missing-token.md" <<'BODY'
+          ### The on-demand reviewer could not run
+
+          `@claude review` reached the workflow and the trigger fired correctly,
+          but this repository has no **`CLAUDE_CODE_OAUTH_TOKEN`** secret, so the
+          run stops at credential validation before reviewing anything.
+
+          To enable it: generate a token with `claude setup-token`, add it under
+          **Settings → Secrets and variables → Actions** as
+          `CLAUDE_CODE_OAUTH_TOKEN`, then comment `@claude review` again.
+
+          Until then this PR has **not** been reviewed by anyone.
+          BODY
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" \
+            --body-file "$RUNNER_TEMP/missing-token.md" || true
+          echo "::error::CLAUDE_CODE_OAUTH_TOKEN is not set - the reviewer cannot run (commented on PR #$PR)."
+          exit 1
+
+  review:
+    needs: preflight
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:

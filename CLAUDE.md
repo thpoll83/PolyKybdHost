@@ -104,6 +104,35 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       findings — which is the most convincing-looking artifact of the three. Read
       the check-run *conclusion* and the review *body*, never the presence of
       output.
+      - ✅ **The remedy for all three at once is the on-demand reviewer:
+        comment `@claude review`** (`.github/workflows/claude-review.yml`, host
+        repo only — the docs repo has just `deploy.yml`). It is deliberately
+        never automatic, draws on no bot's quota, and unlike `@coderabbitai
+        review` costs nothing when refused. It runs the copy of the workflow on
+        the **default branch**, so it works on a stacked PR whose base is a
+        feature branch — the one case CodeRabbit skips outright.
+      - ⚠️ **It needs the `CLAUDE_CODE_OAUTH_TOKEN` repository secret, and
+        without it the summons EVAPORATES — no comment, no check run, nothing on
+        the PR page.** The action installs Claude Code and only then aborts on
+        *"Environment variable validation failed: Either ANTHROPIC_API_KEY,
+        CLAUDE_CODE_OAUTH_TOKEN, ... is required"*; an `issue_comment` workflow
+        attaches **no check run to the pull request**, so the failure is visible
+        only in the Actions tab. Both #181 and #182 were summoned this way
+        (2026-08-19) on a repo where the secret had never been added, and read
+        as simply still-unreviewed. This is the nastiest member of the
+        looks-reviewed-but-wasn't family, because it is the fallback you reach
+        for *when the other bots have gone quiet* — so its silent failure is
+        indistinguishable from the situation it was summoned to fix. A
+        **preflight job now comments on the PR and fails the run** instead;
+        if you ever see that comment, the fix is to add the secret
+        (`claude setup-token` → Settings → Secrets and variables → Actions),
+        not to re-summon.
+      - ⚠️ **When a summons appears to do nothing, check the Actions tab, not
+        the PR.** `actions_list` with `claude-review.yml` shows the run and its
+        conclusion; `get_job_logs` with `failed_only` then names the cause —
+        but ask for **≥300 `tail_lines`**, because every job ends in ~40 lines
+        of git post-job cleanup and a smaller tail lands squarely in it (the
+        real error sat ~45 lines above the end here).
   - ⚠️ **A review that DID run, on the right commit, with an accurate walkthrough,
     can still have SKIPPED the file you care about — read the "Files skipped from
     review" list before trusting a clean verdict.** On qmk PR #198 (2026-08-11)
