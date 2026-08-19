@@ -7,7 +7,8 @@ import sys
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat, QTextCursor
 from PyQt5.QtWidgets import (QHBoxLayout, QMainWindow, QPlainTextEdit,
-                              QPushButton, QTabWidget, QVBoxLayout, QWidget)
+                              QMessageBox, QPushButton, QTabWidget, QVBoxLayout,
+                              QWidget)
 
 from polyhost.gui.get_icon import get_icon
 from polyhost.util.log_util import LEVEL_HEX_COLORS
@@ -99,6 +100,11 @@ class LogViewerDialog(QMainWindow):
             button.clicked.connect(collect_cb)
             button_layout.addWidget(button)
 
+        button = QPushButton("Clear Logs...")
+        button.setToolTip("Empty every log file, including the crash log")
+        button.clicked.connect(self.clear_logs)
+        button_layout.addWidget(button)
+
         button = QPushButton("Open Folder")
         button.clicked.connect(self.open_file_directory)
         button_layout.addWidget(button)
@@ -118,6 +124,71 @@ class LogViewerDialog(QMainWindow):
 
     def sizeHint(self):
         return QSize(1600, 1000)
+
+    def _log_dir(self):
+        """The directory the open tabs actually came from.
+
+        Derived from the paths we were HANDED rather than by calling
+        default_log_dir() a second time: the viewer opens exactly the files in
+        ``log_files``, so a clear has to act on those same files. Resolving the
+        directory independently is how the two halves come to disagree — the
+        same trap viewer_files() itself had to be fixed for. None falls back to
+        the default inside clear_logs().
+        """
+        for path in self.log_files.values():
+            parent = os.path.dirname(path)
+            if parent:
+                return parent
+        return None
+
+    def clear_logs(self):
+        """Empty every log file, after a confirmation.
+
+        The offer to collect first is not decoration: the expensive mistake
+        here is clearing the evidence and *then* filing the report, and this is
+        the one moment we can cheaply prevent it.
+        """
+        from polyhost.services import log_bundle
+
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Warning)
+        box.setWindowTitle("Clear Logs")
+        box.setText("Empty every log file?")
+        box.setInformativeText(
+            "This clears the history behind every tab, including the crash log "
+            "— the record of whether this app has crashed. It cannot be undone, "
+            "and a problem report filed afterwards will carry nothing from "
+            "before now.")
+        clear_btn = box.addButton("Clear Logs", QMessageBox.DestructiveRole)
+        collect_btn = (box.addButton("Collect First...", QMessageBox.ActionRole)
+                       if self._collect_cb is not None else None)
+        cancel_btn = box.addButton("Cancel", QMessageBox.RejectRole)
+        box.setDefaultButton(cancel_btn)   # destructive, so default to not doing it
+        box.exec_()
+
+        clicked = box.clickedButton()
+        if collect_btn is not None and clicked is collect_btn:
+            self._collect_cb()
+            return
+        if clicked is not clear_btn:
+            return
+
+        result = log_bundle.clear_logs(self._log_dir())
+        self.log.info("Cleared logs: %s", result.summary())
+        for err in result.errors:
+            self.log.warning("Could not clear %s", err)
+        # Reload rather than leaving the tabs showing text that is no longer
+        # on disk.
+        self.load_log()
+
+        done = QMessageBox(self)
+        done.setWindowTitle("Clear Logs")
+        done.setIcon(QMessageBox.Warning if result.errors else QMessageBox.Information)
+        done.setText(result.summary())
+        if result.errors:
+            done.setInformativeText(
+                "Some files could not be cleared:\n" + "\n".join(result.errors))
+        done.exec_()
 
     def load_log(self):
         for tab_name, tab_log_file_name in self.log_files.items():

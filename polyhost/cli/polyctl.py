@@ -201,6 +201,22 @@ def _cmd_logs(client, args):
                 print(f"  {path}  ({size})")
         return 0
 
+    if args.logs_action == "clear":
+        if not args.yes:
+            try:
+                reply = input("Empty every log file, including the crash log? "
+                              "[y/N] ")
+            except EOFError:      # piped/non-interactive: never destroy by default
+                reply = ""
+            if reply.strip().lower() not in ("y", "yes"):
+                print("cancelled")
+                return 1
+        result = log_bundle.clear_logs(log_dir)
+        print(result.summary())
+        for err in result.errors:
+            print(f"warning: could not clear {err}", file=sys.stderr)
+        return 1 if result.errors else 0
+
     if args.logs_action == "show":
         print(log_bundle.recent_text(log_dir, since=since, max_lines=args.lines,
                                      redact=args.redact))
@@ -882,6 +898,11 @@ def build_parser():
         "bundle", help="write a support .zip (logs + diagnostics + settings)")
     p_logs_bundle.add_argument(
         "-o", "--output", help="destination .zip (default: ./polyhost-logs-<stamp>.zip)")
+    p_logs_clear = logs_sub.add_parser(
+        "clear", help="empty every log file, including the crash log")
+    p_logs_clear.add_argument(
+        "-y", "--yes", action="store_true", help="skip the confirmation prompt")
+    p_logs_clear.set_defaults(since=None, redact=False, lines=500, output=None)
     p_logs_show = logs_sub.add_parser(
         "show", help="print recent log lines to stdout (pipe it anywhere)")
     p_logs_show.add_argument("--lines", type=_positive_int, default=500,
@@ -895,7 +916,7 @@ def build_parser():
                             f"(default {LOGS_DEFAULT_SINCE})")
         p.add_argument("--redact", action="store_true",
                        help="mask window titles (they can name open documents)")
-    for p in (p_logs_bundle, p_logs_show, p_logs_paths):
+    for p in (p_logs_bundle, p_logs_show, p_logs_paths, p_logs_clear):
         p.add_argument("--log-dir", help="where the logs are (default: auto-detect)")
     p_logs.set_defaults(func=_cmd_logs)
 

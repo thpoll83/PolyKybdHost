@@ -141,6 +141,42 @@ class PolyctlLogsOfflineTest(unittest.TestCase):
         self.assertEqual(1, code)
         self.assertIn("cannot reach PolyKybdHost", err)
 
+    def test_clear_works_without_a_running_host(self):
+        # Same reasoning as the rest of `logs`: tidying up after a mess is
+        # exactly when the daemon is not there to ask.
+        code, out, _ = self._run("logs", "clear", "--yes", "--log-dir", str(self.dir))
+        self.assertEqual(code, 0)
+        self.assertIn("cleared", out)
+        self.assertEqual((self.dir / "host_log.txt").stat().st_size, 0)
+
+    def test_clear_refuses_without_confirmation(self):
+        # stdin is not a terminal under the test runner, so input() raises
+        # EOFError — which must read as "no", never as consent.
+        with mock.patch("builtins.input", side_effect=EOFError):
+            code, out, _ = self._run("logs", "clear", "--log-dir", str(self.dir))
+        self.assertEqual(code, 1)
+        self.assertIn("cancelled", out)
+        self.assertGreater((self.dir / "host_log.txt").stat().st_size, 0)
+
+    def test_clear_refuses_on_anything_other_than_yes(self):
+        for reply in ("", "n", "no", "maybe", "Y E S"):
+            with mock.patch("builtins.input", return_value=reply):
+                code, _, _ = self._run("logs", "clear", "--log-dir", str(self.dir))
+            self.assertEqual(code, 1, f"reply {reply!r} should not have cleared")
+            self.assertGreater((self.dir / "host_log.txt").stat().st_size, 0)
+
+    def test_clear_accepts_a_typed_yes(self):
+        with mock.patch("builtins.input", return_value="y"):
+            code, _, _ = self._run("logs", "clear", "--log-dir", str(self.dir))
+        self.assertEqual(code, 0)
+        self.assertEqual((self.dir / "host_log.txt").stat().st_size, 0)
+
+    def test_clear_honours_log_dir_rather_than_the_default(self):
+        # --log-dir was missing from `clear`'s parser at first; the mocked
+        # service tests could not see it because they pass the directory in.
+        code, _, _ = self._run("logs", "clear", "--yes", "--log-dir", str(self.dir))
+        self.assertEqual(code, 0)
+
 
 class PolyctlLogsWithHostTest(unittest.TestCase):
     """When a host IS reachable, the bundle picks up its status as diagnostics."""
