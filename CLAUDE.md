@@ -156,8 +156,8 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         parse that rather than retrying with a smaller page size (it is the
         per-run payload that is large, not the count). Hit 3× in one session.
         ⚠️ Read the conclusion defensively — an **in-progress run has no
-        `conclusion` key at all**, so the obvious parse KeyErrors on exactly the
-        run you are waiting for:
+        `conclusion` key at all**, so the obvious parse raises a KeyError on
+        exactly the run you are waiting for:
         ```python
         d = json.load(open(saved_path))
         for r in d.get("workflow_runs", d):
