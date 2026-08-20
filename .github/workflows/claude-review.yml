@@ -133,3 +133,35 @@ jobs:
           # the action only starts the inline-comment MCP server when
           # --allowedTools lists it here.
           claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment"'
+          # ⚠️ REQUIRED, and its absence fails SILENTLY. The action loads
+          # settingSources ["user","project","local"], so this repo's own
+          # .claude/settings.json applies inside the runner — and its
+          # `permissions.allow` list names none of the tools a review needs.
+          # Locally an unlisted tool merely prompts; in CI there is nobody to
+          # answer, so it is DENIED. An allow-list that is harmless on a
+          # developer's machine is therefore a deny-list here.
+          #
+          # The result is a green run that reviewed nothing: on #181 the model
+          # spent 10 turns and ~94 s, logged `permission_denials_count: 5`, and
+          # posted not one comment (2026-08-20). Upstream calls this out in
+          # anthropics/claude-code#32459 and claude-code-action#1087; this
+          # settings block is their recommended fix.
+          #
+          # `Bash(gh:*)` is deliberately broad: narrowing it to the subcommands
+          # the plugin happens to use today re-arms exactly this silent failure
+          # the next time it uses another. The job's own GitHub permissions stay
+          # read-only.
+          settings: |
+            {
+              "permissions": {
+                "allow": [
+                  "Bash(gh:*)",
+                  "Bash(git diff:*)",
+                  "Bash(git log:*)",
+                  "Bash(git show:*)",
+                  "Read",
+                  "Glob",
+                  "Grep"
+                ]
+              }
+            }

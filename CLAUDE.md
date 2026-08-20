@@ -127,6 +127,22 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         if you ever see that comment, the fix is to add the secret
         (`claude setup-token` → Settings → Secrets and variables → Actions),
         not to re-summon.
+      - ⚠️ **A GREEN run can also review nothing — this repo's own
+        `.claude/settings.json` was silently disabling it.** The action loads
+        `settingSources ["user","project","local"]`, so the checked-in
+        `permissions.allow` list applies **inside the runner**, and it names
+        none of `Read`/`Glob`/`Grep`/`Bash(git diff:*)`. **Locally an unlisted
+        tool merely prompts; in CI nobody can answer, so it is denied** — an
+        allow-list meant to cut local prompts is a deny-list in Actions. On
+        #181 (2026-08-20) the model ran 10 turns and ~94 s, then posted
+        nothing. The tells are in the run log, not on the PR:
+        `"permission_denials_count": 5` in the result JSON, followed by
+        `No buffered inline comments`. Upstream: anthropics/claude-code#32459
+        and claude-code-action#1087; the fix is a `settings:` input on the
+        action granting those tools, now in both `claude-review.yml` and
+        `claude-mention.yml`. ⚠️ **The preflight above does NOT catch this** —
+        the credential was perfectly valid. And note the run still bills: that
+        silent one cost $2.76 at list rates against the subscription.
       - ⚠️ **When a summons appears to do nothing, check the Actions tab, not
         the PR.** `actions_list` with `claude-review.yml` shows the run and its
         conclusion; `get_job_logs` with `failed_only` then names the cause —
