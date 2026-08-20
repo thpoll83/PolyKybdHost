@@ -293,6 +293,42 @@ def _install_excepthooks(log):
     threading.excepthook = _thread_hook
 
 
+def note_cleared(filename=CRASH_LOG):
+    """Record that the crash log was deliberately emptied.
+
+    Without this line an emptied file is indistinguishable from one belonging
+    to a machine that has never crashed, and :func:`crash_summary` would report
+    a confidently wrong "0 session(s)" over it — in a bug report filed the next
+    day. That is the same failure mode the marker format is kept in this module
+    to avoid, so the "it was cleared" line belongs here with the format too.
+
+    Written through a plain append rather than the module's own handle, so it
+    works from a process that never called :func:`install` (``polyctl``). When
+    this process HAS installed, a fresh session marker is stamped after it: the
+    live session's start was just deleted, and without a replacement its
+    eventual ``clean exit`` would pair with nothing.
+    """
+    try:
+        with open(filename, "a", buffering=1, encoding="utf-8") as fh:
+            fh.write(format_marker("crash log cleared", os.getpid()) + "\n")
+    except OSError:
+        return False
+    # ⚠️ Only when the file just cleared IS the one this process is writing to.
+    # _stamp() writes to _crash_file, not to `filename`, so clearing some other
+    # directory's crash log would otherwise plant a false session record in a
+    # file the user never asked to touch. Same rule as the log viewer deriving
+    # its directory from the tabs it was handed: what a helper acts on must be
+    # what it was pointed at.
+    if _crash_file is not None:
+        try:
+            same_file = os.path.samefile(_crash_file.name, filename)
+        except OSError:
+            same_file = False
+        if same_file:
+            _stamp("session start (after clear)")
+    return True
+
+
 def note_clean_exit(log=None, what="process", rc=None):
     """Record that this process is exiting on purpose.
 

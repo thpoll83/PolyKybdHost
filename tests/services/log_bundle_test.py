@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 from unittest import mock
@@ -6,6 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from polyhost.services import log_bundle as lb
+from polyhost.util import crash_log
 
 
 def _line(stamp: datetime, level: str, msg: str) -> str:
@@ -654,3 +656,139 @@ class MultilineMarkerTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ClearLogsTest(unittest.TestCase):
+    """clear_logs(): empty everything, without breaking the live writers.
+
+    The invariant that matters is TRUNCATE-don't-delete for the live files —
+    they are held open by this process, by the daemon, and (for the crash log)
+    by faulthandler, whose fd would be left pointing at a deleted inode.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _populate(self):
+        """One live file per source, plus a couple of rotated backups."""
+        for source in lb.LOG_SOURCES:
+            (self.dir / source.filename).write_text("x" * 1000, encoding="utf-8")
+        (self.dir / "host_log.txt.1").write_text("y" * 2000, encoding="utf-8")
+        (self.dir / "host_log.txt.2").write_text("z" * 3000, encoding="utf-8")
+
+    def test_live_files_are_truncated_and_still_exist(self):
+        # Deleting them would orphan the open fds of this process, the daemon
+        # and faulthandler — see the docstring on clear_logs.
+        self._populate()
+        lb.clear_logs(self.dir)
+        for source in lb.LOG_SOURCES:
+            path = self.dir / source.filename
+            self.assertTrue(path.exists(), f"{source.filename} was deleted")
+            if source.label != "crash":
+                self.assertEqual(path.stat().st_size, 0)
+
+    def test_rotated_backups_are_removed_outright(self):
+        self._populate()
+        lb.clear_logs(self.dir)
+        self.assertFalse((self.dir / "host_log.txt.1").exists())
+        self.assertFalse((self.dir / "host_log.txt.2").exists())
+
+    def test_it_reports_what_it_freed(self):
+        self._populate()
+        result = lb.clear_logs(self.dir)
+        self.assertEqual(len(result.removed), 2)
+        self.assertEqual(len(result.truncated), len(lb.LOG_SOURCES))
+        self.assertGreater(result.bytes_freed, 5000)
+        self.assertIn("cleared", result.summary())
+
+    def test_clearing_the_crash_log_leaves_a_marker_saying_so(self):
+        # Otherwise the emptied file is indistinguishable from a machine that
+        # has never crashed, and the next report says "0 session(s)".
+        self._populate()
+        lb.clear_logs(self.dir)
+        text = (self.dir / "crash_log.txt").read_text(encoding="utf-8")
+        self.assertIn("crash log cleared", text)
+        self.assertIsNotNone(crash_log.parse_marker(text.splitlines()[0]))
+
+    def test_the_marker_keeps_the_summary_honest(self):
+        self._populate()
+        lb.clear_logs(self.dir)
+        # The summary must still be readable, and must not claim a history it
+        # no longer has.
+        summary = lb.crash_summary(self.dir)
+        self.assertIsNotNone(summary)
+        self.assertIn("0 session(s)", summary)
+
+    def test_an_empty_directory_is_not_an_error(self):
+        result = lb.clear_logs(self.dir)
+        self.assertEqual(result.files, 0)
+        self.assertEqual(result.errors, [])
+        self.assertIn("no log files", result.summary())
+
+    def test_one_unclearable_file_does_not_abandon_the_rest(self):
+        self._populate()
+        real_truncate = os.truncate
+
+        def flaky(path, length):
+            if str(path).endswith("daemon_log.txt"):
+                raise OSError(13, "Permission denied")
+            return real_truncate(path, length)
+
+        with mock.patch("polyhost.services.log_bundle.os.truncate", flaky):
+            result = lb.clear_logs(self.dir)
+        self.assertTrue(result.errors)
+        self.assertIn("daemon_log.txt", result.errors[0])
+        # …and everything else still went.
+        self.assertEqual((self.dir / "host_log.txt").stat().st_size, 0)
+        self.assertFalse((self.dir / "host_log.txt.1").exists())
+
+    def test_a_truncated_file_is_still_appendable_at_the_new_end(self):
+        # O_APPEND is what makes truncation safe for a live writer: the next
+        # write must land at 0, not at the old offset behind a NUL hole.
+        path = self.dir / "host_log.txt"
+        path.write_text("old content\n" * 100, encoding="utf-8")
+        with open(path, "a", encoding="utf-8") as live:   # stands in for the daemon
+            lb.clear_logs(self.dir)
+            live.write("after clear\n")
+        self.assertEqual(path.read_text(encoding="utf-8"), "after clear\n")
+
+    def test_it_does_not_claim_a_kilobyte_it_did_not_free(self):
+        # Files that are already empty free nothing; saying "freed 1 KB" there
+        # is simply untrue. (Note a second clear of a REAL set still frees the
+        # crash marker the first one wrote, so that is not the zero case.)
+        (self.dir / "host_log.txt").write_text("", encoding="utf-8")
+        (self.dir / "daemon_log.txt").write_text("", encoding="utf-8")
+        result = lb.clear_logs(self.dir)
+        self.assertEqual(result.files, 2)
+        self.assertEqual(result.bytes_freed, 0)
+        self.assertIn("freed 0 KB", result.summary())
+
+    def test_a_sub_kilobyte_clear_still_reports_one_kb_not_zero(self):
+        # The other side of the same line: a real but tiny clear must not read
+        # as "freed 0 KB" either.
+        (self.dir / "host_log.txt").write_text("x" * 100, encoding="utf-8")
+        result = lb.clear_logs(self.dir)
+        self.assertIn("freed 1 KB", result.summary())
+
+    def test_a_lost_crash_marker_is_reported_rather_than_swallowed(self):
+        # The crash log is emptied either way; if the marker cannot be written,
+        # the file is left looking like a machine that has never crashed, and
+        # reporting plain success would hide exactly that.
+        self._populate()
+        with mock.patch("polyhost.util.crash_log.note_cleared", return_value=False):
+            result = lb.clear_logs(self.dir)
+        self.assertTrue(result.errors)
+        self.assertIn("clear marker", result.errors[0])
+
+    def test_the_summary_says_the_log_was_cleared(self):
+        # The marker in the file only helps someone who opens the attachment;
+        # the report BODY is where a bare "0 session(s)" would mislead.
+        self._populate()
+        lb.clear_logs(self.dir)
+        summary = lb.crash_summary(self.dir)
+        self.assertIn("cleared", summary)
+        self.assertIn("nothing before that is on file", summary)

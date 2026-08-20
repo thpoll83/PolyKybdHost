@@ -22,6 +22,7 @@ tray GUI, ``polyctl`` and the headless daemon all share it:
 
 from __future__ import annotations
 
+import os
 import platform
 import re
 import sys
@@ -161,6 +162,84 @@ def _rotation_chain(log_dir: Path, name: str) -> list[Path]:
     return chain
 
 
+@dataclass
+class ClearResult:
+    """What clear_logs() actually managed to empty."""
+    removed: list[Path] = field(default_factory=list)     # backups deleted
+    truncated: list[Path] = field(default_factory=list)   # live files emptied
+    bytes_freed: int = 0
+    errors: list[str] = field(default_factory=list)
+
+    @property
+    def files(self) -> int:
+        return len(self.removed) + len(self.truncated)
+
+    def summary(self) -> str:
+        if not self.files:
+            return "no log files to clear"
+        # max(1, …) keeps a sub-KB clear from reading as "freed 0 KB", but it
+        # must not invent a kilobyte when there was genuinely nothing to free
+        # (clearing twice in a row, or a set of already-empty files).
+        freed_kb = max(1, self.bytes_freed // 1024) if self.bytes_freed else 0
+        return "cleared %d file(s), freed %d KB" % (self.files, freed_kb)
+
+
+def clear_logs(log_dir: Path | str | None = None) -> ClearResult:
+    """Empty every log this app writes. Best effort, per file.
+
+    ⚠️ Live files are TRUNCATED, not deleted, and that is not a stylistic
+    choice. ``host_log.txt`` is held open by this process's handler,
+    ``daemon_log.txt`` by a DIFFERENT process, and ``crash_log.txt`` by both —
+    plus ``faulthandler``, which holds the raw fd. So:
+
+    * Windows will not delete a file another process holds open, i.e. exactly
+      the set of files worth clearing. Deletion would fail on those and
+      "succeed" on the ones nobody cares about.
+    * Deleting the crash log would leave ``faulthandler``'s fd pointing at a
+      deleted inode, so the NEXT crash dump would go nowhere: clearing your
+      logs would silently disable crash capture until restart. (Same mechanism
+      that rules out rotation — see ``crash_log.trim_if_oversized``.)
+
+    Truncation is safe because every writer opens with mode ``"a"`` (O_APPEND),
+    so a concurrent write resolves to the new end of file rather than a stale
+    offset that would leave a NUL-padded hole. Rotated backups are nobody's
+    open file, and are most of the bytes, so those are removed outright.
+
+    Driven off LOG_SOURCES rather than a list of its own, for the same reason
+    :func:`viewer_files` is: a second enumeration of the log files is one that
+    goes stale silently.
+    """
+    d = Path(log_dir) if log_dir else default_log_dir()
+    result = ClearResult()
+    cleared_crash = False
+    for source in LOG_SOURCES:
+        for path in _rotation_chain(d, source.filename):
+            try:
+                size = path.stat().st_size
+            except OSError:
+                continue  # a rotation moved it between listing and stat
+            try:
+                if path.name == source.filename:      # the live file
+                    os.truncate(path, 0)
+                    result.truncated.append(path)
+                    cleared_crash |= source.label == "crash"
+                else:                                  # a rotated backup
+                    path.unlink()
+                    result.removed.append(path)
+                result.bytes_freed += size
+            except OSError as exc:
+                # One unwritable file must not abandon the rest.
+                result.errors.append("%s: %s" % (path.name, exc))
+    # ⚠️ Report a lost marker. Without it the crash log is emptied and nothing
+    # records why, which is precisely the "0 session(s) on a machine that has
+    # never crashed" misreading note_cleared() exists to prevent — reporting
+    # success there would hide the one failure that matters.
+    if cleared_crash and not crash_log.note_cleared(str(d / crash_log.CRASH_LOG)):
+        result.errors.append(
+            "%s: could not record the clear marker" % crash_log.CRASH_LOG)
+    return result
+
+
 def viewer_files(always: tuple[str, ...] = (),
                  log_dir: Path | str | None = None) -> dict[str, str]:
     """``{tab title: absolute path}`` for a GUI log viewer, from LOG_SOURCES.
@@ -239,6 +318,11 @@ def crash_summary(log_dir: Path | str | None = None) -> str | None:
     # a bare dump prints only the latter. Counting both lines reports one crash
     # as two, so a dump runs from its first such line until the next marker.
     in_dump = False
+    # A deliberate clear is surfaced because it is the one thing that makes the
+    # counts below misleading rather than merely partial: without it "0
+    # session(s)" reads as "this machine has never crashed". A *trim* is not
+    # surfaced — it bounds the history but leaves the counts meaningful.
+    cleared = None
     for line in _read_chain(chain):
         if line.startswith("Fatal Python error") or line.startswith("Current thread 0x"):
             if not in_dump:
@@ -256,12 +340,16 @@ def crash_summary(log_dir: Path | str | None = None) -> str | None:
             counts["clean exit"] += 1
         elif "exception" in what:
             counts["exception"] += 1
+        elif what.startswith("crash log cleared"):
+            cleared = newest
     parts = [f"{counts['session start']} session(s)",
              f"{counts['clean exit']} clean exit(s)"]
     if counts["exception"]:
         parts.append(f"{counts['exception']} unhandled exception(s)")
     if faults:
         parts.append(f"{faults} native fault dump(s)")
+    if cleared:
+        parts.append(f"cleared {cleared} (nothing before that is on file)")
     if newest:
         parts.append(f"newest marker {newest}")
     return ", ".join(parts)
