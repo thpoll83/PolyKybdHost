@@ -50,6 +50,15 @@ Because the macOS destinations cross both tier and channel, the two sets are not
 
 ⚠️ **`CMDCTRL` is not a blanket Ctrl→Cmd swap, and a plain `CTRL` binding stays literal Ctrl on every platform.** macOS binds real Ctrl chords of its own — `Ctrl+A`/`Ctrl+E` line navigation, `Ctrl+Space` input switching, `Ctrl+`arrows for Spaces — so both spellings have to coexist in one file. Mixing `CMDCTRL` with `CTRL` or `GUI` in the same binding is refused: it would collapse to a single bit on one of the two platforms and land the artwork on a variant the author never asked for.
 
+### Choosing: one `CMDCTRL` spec, or two hand-authored sets?
+
+`CMDCTRL` expresses a modifier **swap**. It cannot express a **remap** — a different key, or a different modifier set, for the same action on macOS. Both shapes exist in the wild, and both are in this repo:
+
+- **`vscode/` — one spec.** VS Code registers most chords as `KeyMod.CtrlCmd` (its own name for this idea), so 22 bindings are `CMDCTRL`, 3 are literal `CTRL` (macOS keeps `⌃G`, `` ⌃` ``, `⌃F5`), and the rest are F-keys that never differ. Eight genuinely-remapped actions (`Ctrl+Shift+I` → `⇧⌥F`, …) are **left out** rather than approximated.
+- **`sublime/` + `sublime_mac/` — two specs.** Sublime's macOS keymap is a real remap: of its 40 macOS bindings, `CMDCTRL` would reproduce only 21. Five chords stay on Ctrl, five move to a *different* modifier (`Ctrl+H` → `Cmd+Alt+F`), and `Cmd+Shift+[`/`]` is fold/unfold on Windows but **cycle-tab** on macOS — so the token would confidently draw the wrong icon on a real key.
+
+The rule of thumb: **write the token when the macOS keymap is the Windows keymap with a different modifier; hand-author two specs when it is a different keymap.** When in doubt, list the app's macOS chords next to its Windows ones first — if more than a couple move key or modifier, it is the second case. A missing overlay is a blank keycap; a wrong one actively misleads.
+
 ## Per-binding platform scoping (`only:` / `except:`)
 
 `CMDCTRL` splits Windows from macOS, but **Windows and Linux share one PNG** — the default set serves both — so an action an app remaps on only one of them has nowhere to go. Two optional keys scope a binding to the platforms it is actually correct on:
