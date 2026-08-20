@@ -77,6 +77,13 @@ code:
       overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png,
                 vscode_mac_template.extra.mods.png]
       title: .* Visual Studio Code
+    # Linux differs from the default set by exactly ONE cell: Show Output, which
+    # Linux moves to the two-stroke chord Ctrl+K Ctrl+H. Scoped out there rather
+    # than dropped outright, which would also have cost the correct Windows and
+    # macOS cells. Same bindings file, so the three sets cannot drift.
+    linux:
+      overlay: [vscode_linux_template.mods.png, vscode_linux_template.combo.mods.png]
+      title: .* Visual Studio Code
 java:
   overlay: [jetbrains_template.mods.png, jetbrains_template.combo.mods.png, jetbrains_template.extra.mods.png]
   title: .* \– .*(cpp|hpp|c|cc|h|inc|txt|conv|Makefile|java|py|...)
