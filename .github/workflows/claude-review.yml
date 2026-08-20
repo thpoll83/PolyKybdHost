@@ -64,12 +64,21 @@ jobs:
     # `needs: preflight`, so a skipped preflight skips the review with it. A
     # copy of this expression in both jobs is exactly the sort of duplicate
     # that goes stale.
+      # ⚠️ Actor guard: runs bill to the CLAUDE_CODE_OAUTH_TOKEN owner's Claude
+      # subscription, so a trigger is a spend. The action already rejects
+      # non-write users and bot actors BEFORE any model request (visible in the
+      # run log as "Actor has write access" / "Verified human actor"), so a
+      # passer-by commenting on a public PR cannot spend anything. This pins it
+      # to a named account as well, so granting someone write access for an
+      # unrelated reason does not silently hand them the subscription too.
+      # To let someone else summon it, add their login here.
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request_review_comment' &&
-       startsWith(github.event.comment.body, '@claude review')) ||
-      (github.event.issue.pull_request != null &&
-       startsWith(github.event.comment.body, '@claude review'))
+      github.actor == 'thpoll83' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'pull_request_review_comment' &&
+        startsWith(github.event.comment.body, '@claude review')) ||
+       (github.event.issue.pull_request != null &&
+        startsWith(github.event.comment.body, '@claude review')))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # Write is needed to post the comment, and is confined to THIS job so the
@@ -132,7 +141,14 @@ jobs:
           # Required even though the skill's own frontmatter names this tool:
           # the action only starts the inline-comment MCP server when
           # --allowedTools lists it here.
-          claude_args: '--allowedTools "mcp__github_inline_comment__create_inline_comment"'
+          # ⚠️ --max-turns is a RUNAWAY BACKSTOP, not a budget dial. Set it low
+          # and a real review is cut off mid-way, which lands as a partial or
+          # absent verdict on a green run — the same silent-failure shape this
+          # file already documents twice. A 2-file PR used 10 turns, so 50
+          # leaves ample room and only catches a loop.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment"
+            --max-turns 50
           # ⚠️ REQUIRED, and its absence fails SILENTLY. The action loads
           # settingSources ["user","project","local"], so this repo's own
           # .claude/settings.json applies inside the runner — and its
