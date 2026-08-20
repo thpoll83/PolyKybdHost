@@ -247,14 +247,23 @@ def spec_needs_linux_set(spec: dict) -> bool:
     return False
 
 
-def resolve_modifier(mods: list[str], macos: bool = False,
+def resolve_modifier(mods: list[str], macos: bool | None = None,
                      platform: str | None = None) -> Modifier:
     """Resolve a binding's modifier list to a `Modifier` variant.
 
     `platform` selects which platform CMDCTRL resolves for; every other token is
     platform-independent and resolves identically on all three. `macos=True` is
     the older two-platform spelling and still selects macOS, so existing callers
-    keep working; `platform` wins when both are given."""
+    keep working.
+
+    ⚠️ Passing BOTH is refused rather than settled by precedence: they can
+    disagree outright (`macos=True, platform=PLAT_LINUX`), and honouring one
+    silently would make a call site's meaning depend on a rule the reader has to
+    go and look up. Same reasoning as the CMDCTRL+CTRL refusal below."""
+    if macos is not None and platform is not None:
+        raise ValueError(
+            "pass either macos= or platform=, not both — they can disagree and "
+            "the winner would not be visible at the call site")
     if platform is None:
         platform = PLAT_MACOS if macos else PLAT_WINDOWS
     if platform not in CMDCTRL_BIT:
@@ -471,13 +480,18 @@ def linux_output(spec: dict) -> str:
     return name
 
 
-def generate(spec: dict, base_dir: Path, macos: bool = False,
+def generate(spec: dict, base_dir: Path, macos: bool | None = None,
              platform: str | None = None) -> dict:
     """Render one complete artwork set for `platform`.
 
     The platform decides how CMDCTRL bindings resolve and which bindings are in
     scope (`only:` / `except:`); a spec that uses neither renders identically for
-    all three. `macos=True` is the older two-platform spelling."""
+    all three. `macos=True` is the older two-platform spelling, and passing both
+    it and `platform` is refused — see `resolve_modifier`."""
+    if macos is not None and platform is not None:
+        raise ValueError(
+            "pass either macos= or platform=, not both — they can disagree and "
+            "the winner would not be visible at the call site")
     if platform is None:
         platform = PLAT_MACOS if macos else PLAT_WINDOWS
     icon_dir = base_dir / spec.get("icon_dir", "icons")

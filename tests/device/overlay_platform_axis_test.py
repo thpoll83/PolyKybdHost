@@ -87,7 +87,11 @@ def _keycodes(pngs, mod: Modifier) -> set[int]:
     found: set[int] = set()
     for png in pngs:
         conv = ImageConverter(DeviceSettings())
-        assert conv.open(str(png)), f"loader rejected {png.name}"
+        # ⚠️ The open() call must NOT live inside the assert: `python -O` strips
+        # assert statements, so the image would never be loaded and every caller
+        # would silently compare empty sets — a vacuous pass, not a failure.
+        opened = conv.open(str(png))
+        assert opened, f"loader rejected {png.name}"
         found.update(conv.extract_overlays(mod) or {})
     return found
 
@@ -164,6 +168,23 @@ class CmdCtrlAcrossThreePlatformsTest(unittest.TestCase):
     def test_unknown_platform_is_refused(self):
         with self.assertRaisesRegex(ValueError, "unknown platform"):
             self.gen.resolve_modifier(["CTRL"], platform="bsd")
+
+    def test_macos_and_platform_together_are_refused(self):
+        # They can disagree outright, and resolving that by precedence would put
+        # the winner in the docstring rather than at the call site. Refusing is
+        # the same choice the CMDCTRL+CTRL check below makes.
+        with self.assertRaisesRegex(ValueError, "not both"):
+            self.gen.resolve_modifier(["CMDCTRL"], macos=True,
+                                      platform=self.gen.PLAT_LINUX)
+        # ...including when they happen to AGREE, so the rule needs no caveat.
+        with self.assertRaisesRegex(ValueError, "not both"):
+            self.gen.resolve_modifier(["CMDCTRL"], macos=True,
+                                      platform=self.gen.PLAT_MACOS)
+
+    def test_macos_false_still_means_windows(self):
+        # The default moved from False to None to tell "not passed" from
+        # "passed False"; an explicit False must still resolve to Ctrl.
+        self.assertEqual(self.gen.resolve_modifier(["CMDCTRL"], macos=False), Modifier.CTRL)
 
 
 class NoLinuxSetWithoutScopingTest(unittest.TestCase):
