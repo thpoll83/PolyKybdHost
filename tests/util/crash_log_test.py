@@ -206,3 +206,105 @@ class CleanExitTest(CrashLogTestBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TrimTest(unittest.TestCase):
+    """The size bound on crash_log.txt (see trim_if_oversized's docstring).
+
+    The file is the one source the bundle collector never time-slices, so its
+    size is bundle size — these pin that a crash loop cannot grow it without
+    limit, and that trimming keeps whole records rather than half a traceback.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.path = Path(self._tmp.name) / "crash_log.txt"
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _write_sessions(self, n, dump_bytes=0):
+        """n complete session records, optionally each with a fake dump."""
+        with open(self.path, "w", encoding="utf-8") as fh:
+            for i in range(n):
+                fh.write(crash_log.format_marker("session start", 1000 + i) + "\n")
+                if dump_bytes:
+                    fh.write("Fatal Python error: Segmentation fault\n")
+                    fh.write("x" * dump_bytes + "\n")
+                fh.write(crash_log.format_marker("clean exit (test)", 1000 + i) + "\n")
+
+    def test_a_small_file_is_left_completely_alone(self):
+        self._write_sessions(3)
+        before = self.path.read_bytes()
+        self.assertFalse(crash_log.trim_if_oversized(self.path))
+        self.assertEqual(self.path.read_bytes(), before)
+
+    def test_a_missing_file_is_not_an_error(self):
+        self.assertFalse(crash_log.trim_if_oversized(self.path))
+        self.assertFalse(self.path.exists())
+
+    def test_an_oversized_file_is_bounded(self):
+        self._write_sessions(400, dump_bytes=6000)
+        self.assertGreater(self.path.stat().st_size, crash_log.MAX_BYTES)
+        self.assertTrue(crash_log.trim_if_oversized(self.path))
+        # Bounded by what we keep, plus the note line — never by max_bytes.
+        self.assertLessEqual(self.path.stat().st_size, crash_log.KEEP_BYTES + 4096)
+
+    def test_it_keeps_the_NEWEST_records_not_the_oldest(self):
+        # The crash being reported is the recent one; dropping the tail would
+        # keep only history nobody is asking about.
+        self._write_sessions(400, dump_bytes=6000)
+        crash_log.trim_if_oversized(self.path)
+        text = self.path.read_text(encoding="utf-8", errors="replace")
+        self.assertIn("pid 1399", text)      # the last session written
+        self.assertNotIn("pid 1000", text)   # the first
+
+    def test_the_retained_text_starts_on_a_whole_record(self):
+        self._write_sessions(400, dump_bytes=6000)
+        crash_log.trim_if_oversized(self.path)
+        lines = self.path.read_text(encoding="utf-8").splitlines()
+        # Line 0 is the trim note; line 1 must be a marker, not the middle of
+        # somebody's traceback.
+        self.assertIsNotNone(crash_log.parse_marker(lines[0]))
+        self.assertIsNotNone(crash_log.parse_marker(lines[1]))
+
+    def test_the_trim_is_recorded_in_the_file(self):
+        self._write_sessions(400, dump_bytes=6000)
+        crash_log.trim_if_oversized(self.path)
+        first = self.path.read_text(encoding="utf-8").splitlines()[0]
+        what, _pid, _ts = crash_log.parse_marker(first)
+        self.assertIn("trimmed", what)
+
+    def test_the_result_is_still_valid_utf8_after_cutting_mid_character(self):
+        # The seek lands at an arbitrary byte offset; a naive slice could split
+        # a multi-byte character and make the whole file undecodable.
+        with open(self.path, "w", encoding="utf-8") as fh:
+            for i in range(200):
+                fh.write(crash_log.format_marker("session start", 2000 + i) + "\n")
+                fh.write("ünïcodé — ✓ " * 500 + "\n")
+        self.assertGreater(self.path.stat().st_size, crash_log.MAX_BYTES)
+        crash_log.trim_if_oversized(self.path)
+        self.path.read_text(encoding="utf-8")  # must not raise
+
+    def test_install_bounds_an_oversized_file_before_handing_it_to_faulthandler(self):
+        # The integration that matters: install() is the single choke point, and
+        # the trim has to happen while there is still no fd to disturb.
+        self._write_sessions(400, dump_bytes=6000)
+        saved_hook, saved_thread = sys.excepthook, threading.excepthook
+        try:
+            crash_log.install(CollectingLogger(), filename=str(self.path))
+            size = self.path.stat().st_size
+            self.assertLess(size, crash_log.MAX_BYTES)
+            # …and the fresh session marker still landed, i.e. the file the
+            # trim left behind is the one that got opened.
+            self.assertIn("session start", self.path.read_text(encoding="utf-8"))
+        finally:
+            if crash_log._crash_file is not None:
+                crash_log._crash_file.close()
+            crash_log._crash_file = None
+            crash_log._installed = False
+            crash_log._clean_exit_noted = False
+            faulthandler.disable()
+            sys.excepthook, threading.excepthook = saved_hook, saved_thread
+
+
