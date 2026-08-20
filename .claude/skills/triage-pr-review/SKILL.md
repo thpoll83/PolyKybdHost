@@ -71,44 +71,23 @@ wait *grows* with each one — host #170 answered "next review in 19 minutes", t
 - **A push re-triggers a review for free.** If more commits are coming anyway,
   push first and ask afterwards — ask on the commit you intend to merge.
 
-## 2b. When `@claude review` produced nothing
+## 2b. When nothing reviewed at all
 
-The on-demand reviewer (`.github/workflows/claude-review.yml`) fails in ways the
-PR page cannot show, because an `issue_comment` workflow attaches **no check run
-to the pull request**. So when a summons appears to have been ignored:
+Sometimes the honest answer is that **no reviewer read this PR**. All three bots
+can be unavailable at once, each in its own disguise (§2), and there is no
+fallback: an on-demand Claude reviewer was tried across all three repos and
+removed on 2026-08-20 — it published one review in its life and burned ~$4 of
+subscription posting nothing the rest of the time, with the deciding detail
+(which tool it was denied) unreadable from the log.
 
-**Look in the Actions tab, never the PR.**
+So when §2 says nothing reviewed:
 
-```bash
-# 1. find the run (saves a big JSON to a file — parse it, don't re-fetch smaller)
-#    actions_list  method=list_workflow_runs  resource_id=claude-review.yml
-python3 -c "
-import json; d=json.load(open('<saved path>'))
-for r in d.get('workflow_runs', d)[:5]:
-    print(r['id'], r['status'], r.get('conclusion','<running>'), r['created_at'])"
-
-# 2. read the job log — ask for a GENEROUS tail; ~40 lines of git cleanup end
-#    every job, and the result JSON sits just above it
-#    get_job_logs  job_id=<id>  return_content=true  tail_lines=150
-```
-
-Then classify from the result JSON:
-
-| Log shows | Cause | Fix |
-|---|---|---|
-| `Environment variable validation failed: Either ANTHROPIC_API_KEY, CLAUDE_CODE_OAUTH_TOKEN …` | secret missing | add `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`). A preflight job now comments on the PR instead of failing silently — if you see that comment, add the secret, don't re-summon |
-| `"permission_denials_count": N` (N>0) + `No buffered inline comments` | the repo's own `.claude/settings.json` denied the plugin its tools **inside the runner** | the `settings:` input on the action. Locally an unlisted tool prompts; in CI nobody can answer, so it is denied |
-| `"num_turns": ~4`, ~15 s, denials 0, nothing posted | the skill **skipped** the PR (drafts, closed, judged trivial, or already has a `claude[bot]` comment) | not a config fault — verify on a fresh PR before changing anything |
-
-⚠️ **A green run proves nothing about whether a review was published.** Two of
-the three rows above end in `conclusion: success`, and the middle one had done —
-and billed — the entire review before discarding it.
-
-⚠️ **Before blaming the workflow, check a fresh PR.** A small real PR with no
-prior `claude[bot]` comment discriminates "systemic" from "specific to this PR"
-for one cheap run, and needs no workflow change — whereas `--debug` lives in the
-workflow file and comment triggers run the **default-branch** copy, so a
-diagnostic run costs two merge cycles.
+- **Say so on the PR**, rather than letting a page of bot output imply otherwise.
+- **Spend the one CodeRabbit slot deliberately** — on the commit you intend to
+  merge, per the rate-limit note above.
+- **Lean on what actually catches things here**: the HIL rig, cppcheck (the only
+  non-LLM reviewer, and the one with no quota), and the unit suites. That
+  asymmetry is the point — the bots are a convenience, those are the coverage.
 
 ## 3. Verify every finding against the code — before touching anything
 
