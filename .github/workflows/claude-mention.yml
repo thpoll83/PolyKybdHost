@@ -33,7 +33,16 @@ jobs:
     # stops one comment from starting two runs.
     # Mirrors claude-review.yml's startsWith exactly, so the two cannot both
     # fire and no "@claude ..." comment can fall between them.
+      # ⚠️ Actor guard: runs bill to the CLAUDE_CODE_OAUTH_TOKEN owner's Claude
+      # subscription, so a trigger is a spend. The action already rejects
+      # non-write users and bot actors BEFORE any model request (visible in the
+      # run log as "Actor has write access" / "Verified human actor"), so a
+      # passer-by commenting on a public PR cannot spend anything. This pins it
+      # to a named account as well, so granting someone write access for an
+      # unrelated reason does not silently hand them the subscription too.
+      # To let someone else summon it, add their login here.
     if: >-
+      github.actor == 'thpoll83' &&
       contains(github.event.comment.body, '@claude') &&
       !startsWith(github.event.comment.body, '@claude review')
     runs-on: ubuntu-latest
@@ -51,3 +60,40 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # ⚠️ REQUIRED, and its absence fails SILENTLY. The action loads
+          # settingSources ["user","project","local"], so this repo's own
+          # .claude/settings.json applies inside the runner — and its
+          # `permissions.allow` list names none of the tools an answer needs.
+          # Locally an unlisted tool merely prompts; in CI there is nobody to
+          # answer, so it is DENIED. An allow-list that is harmless on a
+          # developer's machine is therefore a deny-list here.
+          #
+          # Here the result is worse than silence: this workflow CAN post (it
+          # holds issues/pull-requests write), so without these tools it would
+          # answer a question about the code having read none of it. The sibling
+          # claude-review.yml hit the denial side of the same cause on #181
+          # (2026-08-20). Upstream: anthropics/claude-code#32459 and
+          # claude-code-action#1087; this block is their recommended fix.
+          #
+          # `Bash(gh:*)` is deliberately broad: narrowing it to the subcommands
+          # used today re-arms exactly this silent failure the next time another
+          # is needed. ⚠️ Unlike the review job, this one DOES hold write
+          # permissions, so the actor guard above is what bounds it.
+          settings: |
+            {
+              "permissions": {
+                "allow": [
+                  "Bash(gh:*)",
+                  "Bash(git diff:*)",
+                  "Bash(git log:*)",
+                  "Bash(git show:*)",
+                  "Read",
+                  "Glob",
+                  "Grep"
+                ]
+              }
+            }
+          # Runaway backstop; see the note in claude-review.yml. Answering a
+          # question needs fewer turns than reviewing a diff.
+          claude_args: |
+            --max-turns 30
