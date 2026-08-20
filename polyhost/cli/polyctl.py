@@ -167,6 +167,18 @@ def _positive_int(value):
     return n
 
 
+def _format_size(num_bytes: int) -> str:
+    """Size for `logs paths`, which must never call a non-empty file empty.
+
+    Integer KB division reported anything under 1024 bytes as "0 KB", so a log
+    that had just started collecting read as though nothing was in it — the
+    opposite of what someone runs this command to find out.
+    """
+    if num_bytes < 1024:
+        return f"{num_bytes} B"
+    return f"{num_bytes // 1024} KB"
+
+
 def _cmd_logs(client, args):
     """Collect log files — the one command that must work with no daemon.
 
@@ -195,7 +207,7 @@ def _cmd_logs(client, args):
                 # discover() saw the file; a rotation can move it before we
                 # stat it. Losing a size must not cost the whole listing.
                 try:
-                    size = f"{path.stat().st_size // 1024} KB"
+                    size = _format_size(path.stat().st_size)
                 except OSError:
                     size = "size unavailable"
                 print(f"  {path}  ({size})")
