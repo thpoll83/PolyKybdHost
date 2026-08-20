@@ -105,8 +105,10 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       the check-run *conclusion* and the review *body*, never the presence of
       output.
       - ✅ **The remedy for all three at once is the on-demand reviewer:
-        comment `@claude review`** (`.github/workflows/claude-review.yml`, host
-        repo only — the docs repo has just `deploy.yml`). It is deliberately
+        comment `@claude review`** — **verified working end to end on #185
+        (2026-08-20)**, which is worth stating because it had never once
+        published a review before that (`.github/workflows/claude-review.yml`,
+        host repo only — the docs repo has just `deploy.yml`). It is deliberately
         never automatic, draws on no bot's quota, and unlike `@coderabbitai
         review` costs nothing when refused. It runs the copy of the workflow on
         the **default branch**, so it works on a stacked PR whose base is a
@@ -149,6 +151,36 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         but ask for **≥300 `tail_lines`**, because every job ends in ~40 lines
         of git post-job cleanup and a smaller tail lands squarely in it (the
         real error sat ~45 lines above the end here).
+      - ⚠️ **`actions_list` blows the tool token cap — 130–220 KB per call, even
+        at `per_page: 3`.** It saves the JSON to a file and tells you the path;
+        parse that rather than retrying with a smaller page size (it is the
+        per-run payload that is large, not the count). Hit 3× in one session.
+        ⚠️ Read the conclusion defensively — an **in-progress run has no
+        `conclusion` key at all**, so the obvious parse KeyErrors on exactly the
+        run you are waiting for:
+        ```python
+        d = json.load(open(saved_path))
+        for r in d.get("workflow_runs", d):
+            print(r["id"], r["status"], r.get("conclusion", "<running>"))
+        ```
+      - **Who can summon it, and whose money it spends.** A run bills the
+        `CLAUDE_CODE_OAUTH_TOKEN` owner's Claude **subscription** (~$0.6–2.8 at
+        list rates per review), so a trigger is a spend. The action gates on
+        write access and rejects bot actors **before any model request** —
+        visible in the log as `Actor has write access` / `Verified human actor`
+        — so a passer-by commenting on a public PR costs Actions minutes and
+        nothing else. Both workflows additionally pin `github.actor`, which is
+        the case that gate does *not* cover: granting someone write access for
+        an unrelated reason would otherwise hand them the subscription silently.
+        ⚠️ Do **not** set `allowed_non_write_users` or `allowed_bots`; those are
+        the knobs that weaken this.
+      - **`--debug` would NOT leak the token, contrary to first instinct.**
+        GitHub auto-masks registered secrets in logs (`GITHUB_TOKEN: ***` is
+        right there in these runs), and masking only fails for values that are
+        *unregistered* or transformed. The real cost of a debug run is turnaround,
+        not disclosure: it lives in the workflow file, and comment-triggered
+        workflows run the **default-branch** copy, so one diagnostic costs two
+        merge cycles. A throwaway PR usually answers the same question for free.
   - ⚠️ **A review that DID run, on the right commit, with an accurate walkthrough,
     can still have SKIPPED the file you care about — read the "Files skipped from
     review" list before trusting a clean verdict.** On qmk PR #198 (2026-08-11)
@@ -1207,6 +1239,29 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     regression got written: centralising the check moved one half and not the
     other. It returns absolute paths now, which also makes the dialog's "open
     containing folder" work at all — `os.path.dirname` of a bare name is `""`.
+  - ⚠️ **`crash_log.txt` is bounded by an in-place TRIM, and is the one log that
+    must never be rotated or deleted — `faulthandler` holds the file
+    DESCRIPTOR.** Three consequences that all follow from that one fact, and
+    that will each look like an arbitrary choice to whoever reads the code next:
+    - **Not a `RotatingFileHandler`.** Rotation renames the file; the fd follows
+      the *inode*, so the live process keeps dumping into `crash_log.txt.1` and
+      eventually into a deleted inode — silently. `faulthandler` also bypasses
+      `logging` entirely, so a handler would never even see the ~6 KB dumps that
+      cause the growth; it could only roll over on the marker lines.
+      `trim_if_oversized()` therefore runs inside `install()` **before** the fd
+      is created, which is the only moment with nothing to disturb.
+    - **Rewritten in place, not via `os.replace`.** A replace swaps the inode out
+      from under the *other* process's fd — the GUI and daemon share this file.
+    - **Cleared by TRUNCATION, never `unlink`.** Deleting it would leave
+      `faulthandler` writing to a deleted inode, so "clear my logs" would
+      silently disable crash capture until restart. Truncation is safe only
+      because every writer opens with mode `"a"` (**O_APPEND**), so a concurrent
+      write lands at the new end rather than behind a NUL hole — verify that
+      still holds before adding a handler. Rotated backups are nobody's open
+      file and are most of the bytes, so those *are* unlinked.
+    Size matters here beyond disk: this is the one source the bundle carries
+    **whole** (`sliced=False`), so its size is *bundle* size, and a bundle is
+    what gets attached to a public issue.
   - **Redaction is anchored on the log message's own wording, not "anything in
     quotes"** (`_TITLE_PATTERNS`), and masks **window titles only** — app/exe names
     are kept, since that is what overlay-matching support rounds actually need.
@@ -1401,6 +1456,15 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   A test gated on both `DISPLAY` and pywinctl would be permanently skipped, which
   is worse than none: it reads as coverage.
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
+  - ⚠️ **Appending test methods after a file's trailing `if __name__ ==
+    "__main__":` block registers NOTHING, and the suite stays green.** The
+    indented `def`s become part of the `if` body, so they parse, never run, and
+    never appear as failures. Hit while adding 5 CLI tests (2026-08-20); the
+    only tell was that the run reported **44 tests before and 44 after**.
+    Generalise: after adding tests, check the **count changed**, not just that
+    the suite is green — `python3 -m unittest ... 2>&1 | tail -3` prints it.
+    Same family as the mocked-suite traps above: green is not evidence your new
+    code ran.
 - ⚠️ **A stale `.pyc` can survive a CORRECT fix — clear `__pycache__` before you
   disbelieve your own change.** Python invalidates cached bytecode on
   **(mtime, size)**, so a **length-neutral edit landing in the same mtime second**
