@@ -20,7 +20,7 @@ import json
 import sys
 import time
 
-from polyhost.device.command_ids import GlyphScript, IdleStyle  # stdlib-only (Enum), no Qt
+from polyhost.device.command_ids import GlyphScript, GlyphSize, IdleStyle  # stdlib-only (Enum), no Qt
 from polyhost.server import protocol
 
 # Default timeframe for `polyctl logs` — long enough for "it broke this
@@ -319,6 +319,23 @@ def _cmd_glyph_script(client, args):
         value = _GLYPH_SCRIPT_VALUES[args.script]
         client.call(protocol.M_GLYPH_SCRIPT_SET, {"value": value})
         print(f"glyph script set to {args.script} ({value})")
+    return 0
+
+
+# Derived from the shared GlyphSize enum. ⚠️ Unlike the script list above, this one
+# is a CLOSED set the firmware validates — do not let a user pass a raw integer.
+_GLYPH_SIZE_VALUES = {s.name.lower(): s.value for s in GlyphSize}
+_GLYPH_SIZE_NAMES = {v: k for k, v in _GLYPH_SIZE_VALUES.items()}
+
+
+def _cmd_glyph_size(client, args):
+    if args.size is None:
+        value = client.call(protocol.M_GLYPH_SIZE_GET, {})
+        print(f"glyph size: {_GLYPH_SIZE_NAMES.get(value, value)} ({value})")
+    else:
+        value = _GLYPH_SIZE_VALUES[args.size]
+        client.call(protocol.M_GLYPH_SIZE_SET, {"value": value})
+        print(f"glyph size set to {args.size} ({value})")
     return 0
 
 
@@ -746,6 +763,15 @@ def build_parser():
         help="omit to print the current script; 'standard' = normal legends, "
              "any other = fantasy/retro override (needs the fantasy font-pack bundle)")
     p_glyph_script.set_defaults(func=_cmd_glyph_script)
+
+    p_glyph_size = sub.add_parser(
+        "glyph-size", help="get or set the keycap legend size (firmware v13+)")
+    p_glyph_size.add_argument(
+        "size", nargs="?", choices=sorted(_GLYPH_SIZE_VALUES), default=None,
+        help="omit to print the current size; 'small' is the original face, "
+             "'medium'/'large' draw a key's main legend bigger (latin only, and "
+             "they need the latinbig font-pack bundle)")
+    p_glyph_size.set_defaults(func=_cmd_glyph_size)
 
     p_unicode = sub.add_parser(
         "unicode-mode",

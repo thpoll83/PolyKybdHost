@@ -13,7 +13,7 @@ from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import (pack_report, pairs_per_report,
                                          plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
-from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType, GlyphScript
+from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType, GlyphScript, GlyphSize
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block
 from polyhost.device.im_converter import ImageConverter
@@ -56,6 +56,9 @@ OVERLAY_PACKED_HEADER_MIN_PROTOCOL = 11
 # SEND_OVERLAY_MAPPING_W (the width-carrying mapping command) does not exist.
 GUI_COMBO_MODIFIERS_MIN_PROTOCOL = 12
 
+# Minimum firmware PROTOCOL_VERSION for the keycap legend-size command (cmd 34).
+GLYPH_SIZE_MIN_PROTOCOL = 13
+
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
 # of protocols (see polyhost/core/decisions.decide_reconnect_apply) and disables
@@ -70,6 +73,7 @@ FEATURE_MIN_PROTOCOL = {
     "glyph_script": GLYPH_SCRIPT_MIN_PROTOCOL,
     "overlay_packed_header": OVERLAY_PACKED_HEADER_MIN_PROTOCOL,
     "gui_combo_modifiers": GUI_COMBO_MODIFIERS_MIN_PROTOCOL,
+    "glyph_size": GLYPH_SIZE_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -481,6 +485,40 @@ class PolyKybd:
         try:
             result, reply = self.hid.send_and_read_validate(
                 compose_cmd(Cmd.GLYPH_SCRIPT, 0xFF), 100, expect(Cmd.GLYPH_SCRIPT))
+            if result and len(reply) > 3 and reply[2:3] == b'.':
+                return True, reply[3]
+        except Exception:
+            pass
+        return False, 0
+
+    def _glyph_size_supported(self) -> bool:
+        return self.supports("glyph_size")
+
+    def set_glyph_size(self, size: GlyphSize | int) -> tuple[bool, Any]:
+        """Select the keycap legend size (cmd 34, protocol v13+).
+
+        SMALL (0) is the face the keyboard has always drawn; MEDIUM and LARGE draw a
+        key's MAIN legend bigger, leaving the shift/AltGr previews alone. Persisted
+        to EEPROM by the firmware (flushed at the next suspend/store).
+
+        ⚠️ The firmware NACKs a value outside its enum — see GlyphSize — so pass a
+        GlyphSize, not an arbitrary int from a newer host."""
+        value = size.value if isinstance(size, GlyphSize) else int(size)
+        if not self._glyph_size_supported():
+            return False, (
+                f"Firmware protocol too old for keycap legend-size control "
+                f"(need v{GLYPH_SIZE_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        self.log.info("Setting glyph size to %d...", value)
+        return self.hid.send_and_read_validate(
+            compose_cmd(Cmd.GLYPH_SIZE, value), 100, expect(Cmd.GLYPH_SIZE))
+
+    def get_glyph_size(self) -> tuple[bool, int]:
+        """Read the current keycap legend size (raw enum value, 0=small)."""
+        if not self._glyph_size_supported():
+            return False, 0
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.GLYPH_SIZE, 0xFF), 100, expect(Cmd.GLYPH_SIZE))
             if result and len(reply) > 3 and reply[2:3] == b'.':
                 return True, reply[3]
         except Exception:

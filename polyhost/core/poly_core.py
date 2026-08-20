@@ -1114,6 +1114,18 @@ class PolyCore(Observable):
         return self._device_call(
             "glyph_script_get", lambda c: self.keeb.get_glyph_script())
 
+    def set_glyph_size(self, value):
+        try:
+            v = int(value)
+        except (TypeError, ValueError):
+            return False, f"Invalid glyph size: {value!r}"
+        return self._device_call(
+            "glyph_size_set", lambda c, v=v: self.keeb.set_glyph_size(v))
+
+    def get_glyph_size(self):
+        return self._device_call(
+            "glyph_size_get", lambda c: self.keeb.get_glyph_size())
+
     def replay_startup_anim(self):
         return self._device_call(
             "replay_startup_anim", lambda c: self.keeb.replay_startup_anim())

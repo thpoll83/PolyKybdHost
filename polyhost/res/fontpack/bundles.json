@@ -1,6 +1,6 @@
 {
   "layout_version": 1,
-  "bundle_count": 7,
+  "bundle_count": 8,
   "bundles": [
     {
       "id": "symbol",
@@ -69,8 +69,18 @@
       "content_version": 5,
       "size": 26624,
       "slot_offset": 1347584,
-      "slot_size": 749568,
+      "slot_size": 131072,
       "sha256": "39ed6aafdc8a1868"
+    },
+    {
+      "id": "latinbig",
+      "index": 7,
+      "file": "latinbig.plyf",
+      "content_version": 1,
+      "size": 162528,
+      "slot_offset": 1478656,
+      "slot_size": 618496,
+      "sha256": "59f9e85ad666b842"
     }
   ]
 }

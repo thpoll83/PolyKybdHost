@@ -63,6 +63,11 @@ M_IDLE_STYLE_SET = "idle.style.set"    # {"value": 0|1|2} -> (ok, payload)  (0=p
 M_IDLE_STYLE_GET = "idle.style.get"    # {} -> (ok, value)
 M_GLYPH_SCRIPT_SET = "glyph.script.set"  # {"value": 0|1|...} -> (ok, payload)  (0=standard, 1=tengwar)
 M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
+# Keycap legend SIZE (firmware protocol v13+). A closed range, unlike the script
+# above: 0=small (the original face), 1=medium, 2=large — the firmware NACKs
+# anything else. Affects a key's MAIN legend only, not the shift/AltGr previews.
+M_GLYPH_SIZE_SET = "glyph.size.set"      # {"value": 0|1|2} -> (ok, payload)
+M_GLYPH_SIZE_GET = "glyph.size.get"      # {} -> (ok, value)
 M_REPLAY_ANIM = "anim.replay"            # {} -> (ok, payload)  replay the startup ("Eden") animation
 # Re-detect the host unicode input method (WinCompose vs native) and push it to the
 # keyboard. Normally sent once per connect; needed when WinCompose is installed or

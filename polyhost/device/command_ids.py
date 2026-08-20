@@ -58,6 +58,7 @@ class Cmd(Enum):
     # bit width, so each group of pairs travels at the narrowest width it
     # fits in (8 bits = 30 pairs/report, 9 = 27, 10 = 24, 11 = 22).
     SEND_OVERLAY_MAPPING_W = 33
+    GLYPH_SIZE = 34  # get/set the keycap legend size (protocol v13+)
 
 
 class OsType(Enum):
@@ -124,3 +125,27 @@ class GlyphScript(Enum):
     AMIGA = 8
     APL = 9
     BRAILLE = 10
+
+
+class GlyphSize(Enum):
+    """Keycap legend size — mirrors the firmware's poly_glyph_size.
+
+    Selects how large a key's MAIN legend is drawn — the single glyph the key
+    produces. The shift / AltGr previews and every other kind of chrome are
+    deliberately unaffected: a keycap has room for one big thing. Values are
+    append-only and shared on the wire with the firmware — never reorder.
+
+    ⚠️ Unlike GlyphScript, this range is CLOSED: the firmware NACKs a value it does
+    not know, because a size names a rendering tier rather than a catalogue entry,
+    and an unknown one would persist as a setting that silently renders as SMALL.
+    So do NOT send a value that is not in this enum, and do not expect a newer
+    keyboard to accept one that is.
+
+    The bigger faces are latin only and ship in the `latinbig` font-pack bundle
+    (auto-flashed on connect). Without it — or for a legend outside the latin
+    repertoire, e.g. a CJK or Arabic keycap — the keyboard falls back to SMALL for
+    that key, so selecting a size is always safe.
+    """
+    SMALL = 0    # the original 27 px face, and the default
+    MEDIUM = 1   # 33 px em
+    LARGE = 2    # 39 px em
