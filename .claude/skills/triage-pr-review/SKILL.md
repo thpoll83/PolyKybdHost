@@ -71,7 +71,7 @@ wait *grows* with each one — host #170 answered "next review in 19 minutes", t
 - **A push re-triggers a review for free.** If more commits are coming anyway,
   push first and ask afterwards — ask on the commit you intend to merge.
 
-## 2b. When nothing reviewed at all
+## 2b. When nothing reviewed the PR at all
 
 Sometimes the honest answer is that **no reviewer read this PR**. All three bots
 can be unavailable at once, each in its own disguise (§2), and there is no
@@ -80,7 +80,7 @@ removed on 2026-08-20 — it published one review in its life and burned ~$4 of
 subscription posting nothing the rest of the time, with the deciding detail
 (which tool it was denied) unreadable from the log.
 
-So when §2 says nothing reviewed:
+So when §2 says nothing reviewed it:
 
 - **Say so on the PR**, rather than letting a page of bot output imply otherwise.
 - **Spend the one CodeRabbit slot deliberately** — on the commit you intend to
