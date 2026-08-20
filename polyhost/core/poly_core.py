@@ -43,6 +43,7 @@ from polyhost.services import telemetry as telemetry_svc
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
+from polyhost.util.observable import Observable
 
 RECONNECT_CYCLE_MSEC = 1000
 # After an overlay/MRU send the keyboard goes deaf for a few hundred ms while it
@@ -76,7 +77,29 @@ def strip_key_injection(lines):
     return kept, len(lines) - len(kept)
 
 
-class PolyCore:
+def flash_progress_relay(emit, cancel, kind):
+    """Build the ``(progress_cb, cancel_flag)`` pair every font-pack-transport
+    flash hands to its engine.
+
+    ``cancel_flag`` is a one-element **list** because the flash engines poll it
+    by reference between chunks — a plain bool could never reach them — and the
+    only thing that ever raises it is a progress callback noticing the worker's
+    cancel Event (a supersede or a ``suspend()``). Getting that wiring wrong
+    fails silently: the flash simply becomes uncancellable, which is why it
+    lives in one place rather than being re-typed at each of the five call
+    sites. Takes ``emit`` rather than a core so it stays a plain function.
+    """
+    cancel_flag = [False]
+
+    def _progress(pct, m):
+        if cancel.is_set():
+            cancel_flag[0] = True      # relay supersede/suspend to the engine
+        emit("fontpack_flash_progress", {"pct": pct, "msg": m, "kind": kind})
+
+    return _progress, cancel_flag
+
+
+class PolyCore(Observable):
     """Operational facade: commands in, events out. No Qt, no widgets."""
 
     def __init__(self, log, ignore_version=False, start_worker=True,
@@ -137,6 +160,12 @@ class PolyCore:
         # decide_stale_bundles keeps it self-terminating: once the device is
         # current, a reconnect finds nothing to do.
         self._fontpack_flash_in_progress = False
+        # Bundles whose last flash attempt genuinely failed: {slot index: message}.
+        # Re-flashed on the next pass regardless of the version comparison, because a
+        # bundle can report a failure and still read as current (see
+        # _fontpack_flash_bundles_job). In-memory only — a daemon restart re-reads the
+        # device versions anyway, and a persisted failure could outlive its cause.
+        self._fontpack_failed = {}
 
         self.poly_settings = PolySettings()
         self.device_settings = DeviceSettings()
@@ -163,9 +192,9 @@ class PolyCore:
             self.log.info("Not yet connected to PolyKybd...")
 
         # Observers: each is a callable(name, payload). Callbacks must be
-        # fast and exception-safe from the caller's perspective.
-        self._observers = []
-        self._observers_lock = threading.Lock()
+        # fast and exception-safe from the caller's perspective; Observable
+        # isolates one raising observer from the rest and from this thread.
+        Observable.__init__(self, log)
 
         # Overlay mapping + active-window handler. pywinctl hard-fails at
         # import without a display, so the handler is created lazily and
@@ -177,12 +206,17 @@ class PolyCore:
         # (browser web-apps defeat window-title matching). Fed by the browser
         # extension via the loopback report server below, and/or the macOS
         # AppleScript fallback consulted inside current_url.
-        from polyhost.handler.browser_url import BrowserUrlProvider
-        self.browser_url_provider = BrowserUrlProvider()
-        self.browser_report_server = None
+        from polyhost.handler.browser_url_source import BrowserUrlSource
+        # Shared with the forwarder, which needs the same receiver+provider pair
+        # to put the URL on the wire — one implementation, so the two roles
+        # cannot drift. `on_change` re-drives an SPA route change (no title
+        # change, so the window tick would otherwise see nothing).
+        self.browser_url_source = BrowserUrlSource(
+            self.log, settings_get=self.poly_settings.get,
+            on_change=self._on_browser_url_changed)
         self.load_overlay_mapping(str(_RES_DIR / "overlay-mapping.poly.yaml"))
         self._create_overlay_handler()
-        self._start_browser_report_server()
+        self.browser_url_source.start()
 
         self.sunlight = Sunlight(
             self.poly_settings.get("brightness_allow_online_location_lookup"),
@@ -225,19 +259,8 @@ class PolyCore:
     # Observer plumbing
     # ------------------------------------------------------------------
 
-    def subscribe(self, callback):
-        """Register callable(name, payload); fired on core/worker threads."""
-        with self._observers_lock:
-            self._observers.append(callback)
-
-    def emit(self, name, payload):
-        with self._observers_lock:
-            observers = list(self._observers)
-        for cb in observers:
-            try:
-                cb(name, payload)
-            except Exception:  # one broken client must not break the core
-                self.log.exception("Core event observer failed for %r", name)
+    # subscribe() / emit() come from Observable (polyhost/util/observable.py) —
+    # the same seam RemoteCore exposes, so PolyHost can consume either.
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -343,9 +366,7 @@ class PolyCore:
             self._sleep_listener.close()
         self.telemetry.stop()
         self.worker.stop()
-        if self.browser_report_server is not None:
-            self.browser_report_server.stop()
-            self.browser_report_server = None
+        self.browser_url_source.close()
         if self.overlay_handler is not None:
             self.overlay_handler.close()
 
@@ -391,9 +412,8 @@ class PolyCore:
             # url_provider lets the matcher key overlays off the focused
             # browser's website; None-safe (returns None for non-browsers / when
             # no reporter is present, so matching is unchanged without it).
-            url_lookup = (self.browser_url_provider.current_url
-                          if self.poly_settings.get("browser_url_detection")
-                          else None)
+            url_lookup = (self.browser_url_source.current_url
+                          if self.browser_url_source.enabled else None)
             self.overlay_handler = OverlayHandler(
                 self.mapping, url_provider=url_lookup,
                 enable_legacy_relay=bool(self.settings_get("dev_legacy_plaintext_relay")),
@@ -406,35 +426,10 @@ class PolyCore:
                              "active-window overlay switching disabled.",
                              type(e).__name__, e)
 
-    def _start_browser_report_server(self):
-        """Start the loopback HTTP receiver the browser extension POSTs to.
-
-        Off when ``browser_url_detection`` or ``browser_report_local_enabled`` is
-        cleared (the macOS AppleScript fallback still works via current_url), and
-        a best-effort start — a bind failure (port in use) just logs and leaves
-        the feature on the AppleScript path only, never blocking startup."""
-        if not (self.poly_settings.get("browser_url_detection")
-                and self.poly_settings.get("browser_report_local_enabled")):
-            return
-        try:
-            from polyhost.server.browser_report_server import BrowserReportServer
-            self.browser_report_server = BrowserReportServer(
-                self._on_browser_report, self.log,
-                port=int(self.poly_settings.get("browser_report_port")),
-                token=str(self.poly_settings.get("browser_report_token") or ""))
-            self.browser_report_server.start()
-        except Exception as e:  # noqa: BLE001 — feature is optional, never fatal
-            self.browser_report_server = None
-            self.log.warning("Browser-report listener unavailable (%s: %s) — "
-                             "browser-URL overlays rely on the macOS fallback only.",
-                             type(e).__name__, e)
-
-    def _on_browser_report(self, browser=None, url=None, title=None, focused=True):
-        """Ingest one extension report; on an actual URL change, nudge window
-        tracking so an SPA route change (no title change) still swaps overlays."""
-        changed = self.browser_url_provider.update(
-            browser=browser, url=url, title=title, focused=focused)
-        if changed and self.overlay_handler is not None:
+    def _on_browser_url_changed(self):
+        """A real URL change arrived: nudge window tracking so an SPA route
+        change (which moves no window title) still swaps overlays."""
+        if self.overlay_handler is not None:
             self.overlay_handler.invalidate_window_cache()
 
     # ------------------------------------------------------------------
@@ -523,7 +518,7 @@ class PolyCore:
         self.log.info("Pushing OS %s to keyboard.", _OsType(value))
         self.worker.submit("set_os", lambda c, v=value: self.keeb.set_os(v))
 
-    def report_window(self, handle, name, title, os=None):
+    def report_window(self, handle, name, title, os=None, url=None):
         """Inject an external active-window report into remote window tracking
         (the ``window.report`` RPC / ``polyctl window report``).
 
@@ -1355,6 +1350,52 @@ class PolyCore:
         self.worker.submit("fw_flash", _job)
         return True, {"queued": True, "apply": bool(apply)}
 
+    def _flash_resource(self, path, *, job_name, noun, validate, run, kind,
+                        telemetry_counter=None):
+        """Shared body of every resource flash that rides the font-pack transport.
+
+        The font-pack bundle, the doom game data (``.whx``) and the doom engine
+        pack (``.plyx``) all take the same route to the keyboard and differ in
+        only four things — the "cannot read" noun, the validator, how the flash
+        engine is invoked, and the ``kind`` tag on the events. Everything else is
+        identical and lives here: the firmware-action gate, fail-fast reading +
+        validation returning the uniform ``(ok, payload)`` contract, the
+        **uncoalesced** worker job, the cancel relay into the flash engine, and
+        the ``fontpack_flash_progress`` / ``fontpack_flash_done`` event pair that
+        ``polyctl`` and the tray render their wording from (via ``kind``).
+
+        ``run(data, progress_cb, cancel_flag)`` performs the actual upload and
+        returns the engines' ``(ok, msg, commit_status)``; it is a closure rather
+        than a set of flags because the engines genuinely disagree on their
+        argument (``flash_fontpack`` re-opens the path, the doom flashers take the
+        read bytes). The ``commit_status`` is discarded here on purpose: only the
+        multi-bundle pass (``_fontpack_flash_bundles_job``) acts on it, to tell a
+        lost COMMIT acknowledgement apart from a real refusal and decide whether to
+        queue a retry. A single explicit flash has nothing to retry into — its
+        caller asked for exactly this one upload and gets the plain verdict."""
+        if not self._fw_actions_allowed():
+            return False, "No PolyKybd present (or paused) — cannot flash."
+        try:
+            with open(path, "rb") as f:
+                data = f.read()
+        except OSError as e:
+            return False, f"Cannot read {noun}: {e}"
+        ok, msg = validate(data)
+        if not ok:
+            return False, msg
+        if telemetry_counter is not None:
+            self.telemetry.note(telemetry_counter)
+
+        def _job(cancel):
+            progress, cancel_flag = flash_progress_relay(self.emit, cancel, kind)
+            fok, fmsg, _status = run(data, progress, cancel_flag)
+            self.emit("fontpack_flash_done",
+                      {"ok": bool(fok), "msg": fmsg, "kind": kind})
+
+        # No coalesce_key: a flash must never be superseded by a later job.
+        self.worker.submit(job_name, _job)
+        return True, {"queued": True}
+
     def flash_fontpack(self, path, bundle_id=0):
         """Flash an external-flash ``.plyf`` font-pack bundle as a worker job.
 
@@ -1364,36 +1405,18 @@ class PolyCore:
         in place on COMMIT (no reboot). Gating + header validation happen
         synchronously (uniform ``(ok, payload)``); the upload then streams
         ``fontpack_flash_progress`` events with a terminal ``fontpack_flash_done``."""
-        if not self._fw_actions_allowed():
-            return False, "No PolyKybd present (or paused) — cannot flash."
-        try:
-            with open(path, "rb") as f:
-                pack_bytes = f.read()
-        except OSError as e:
-            return False, f"Cannot read font-pack file: {e}"
-        ok, msg = hid_fontpack.validate_fontpack(pack_bytes)
-        if not ok:
-            return False, msg
-        self.telemetry.note("fontpack_flashes")
-
-        def _job(cancel):
-            cancel_flag = [False]
-
-            def _progress(pct, m):
-                if cancel.is_set():
-                    cancel_flag[0] = True      # relay supersede/suspend to hid_fontpack
-                self.emit("fontpack_flash_progress",
-                          {"pct": pct, "msg": m, "kind": events.FLASH_KIND_FONTPACK})
-
-            fok, fmsg = hid_fontpack.flash_fontpack(
-                self.keeb.hid, path, progress_cb=_progress, cancel_flag=cancel_flag,
-                bundle_id=bundle_id)
-            self.emit("fontpack_flash_done",
-                      {"ok": bool(fok), "msg": fmsg, "kind": events.FLASH_KIND_FONTPACK})
-
-        # No coalesce_key: a flash must never be superseded by a later job.
-        self.worker.submit("fontpack_flash", _job)
-        return True, {"queued": True}
+        return self._flash_resource(
+            path,
+            job_name="fontpack_flash",
+            noun="font-pack file",
+            validate=hid_fontpack.validate_fontpack,
+            # The bundle flasher re-opens the path itself (it streams the file).
+            run=lambda data, progress, flag: hid_fontpack.flash_fontpack(
+                self.keeb.hid, path, progress_cb=progress, cancel_flag=flag,
+                bundle_id=bundle_id),
+            kind=events.FLASH_KIND_FONTPACK,
+            # Counts the ATTEMPT, not the outcome — see flash_firmware.
+            telemetry_counter="fontpack_flashes")
 
     def install_doomwad(self, path):
         """Install the doom easter egg's WHX game data (both halves) as a worker job.
@@ -1404,34 +1427,14 @@ class PolyCore:
         (``fontpack_flash_progress``/``fontpack_flash_done``), so ``polyctl`` and the
         tray progress surfaces work unchanged. Old firmware without the DOOMWAD
         target NACKs the BEGIN — reported as a plain error, nothing bricks."""
-        if not self._fw_actions_allowed():
-            return False, "No PolyKybd present (or paused) — cannot flash."
-        try:
-            with open(path, "rb") as f:
-                whx_bytes = f.read()
-        except OSError as e:
-            return False, f"Cannot read game-data file: {e}"
-        ok, msg = hid_fontpack.validate_doomwad(whx_bytes)
-        if not ok:
-            return False, msg
-
-        def _job(cancel):
-            cancel_flag = [False]
-
-            def _progress(pct, m):
-                if cancel.is_set():
-                    cancel_flag[0] = True
-                self.emit("fontpack_flash_progress",
-                          {"pct": pct, "msg": m, "kind": events.FLASH_KIND_DOOMWAD})
-
-            fok, fmsg = hid_fontpack.flash_doomwad(
-                self.keeb.hid, whx_bytes, progress_cb=_progress, cancel_flag=cancel_flag)
-            self.emit("fontpack_flash_done",
-                      {"ok": bool(fok), "msg": fmsg, "kind": events.FLASH_KIND_DOOMWAD})
-
-        # No coalesce_key: a flash must never be superseded by a later job.
-        self.worker.submit("doomwad_install", _job)
-        return True, {"queued": True}
+        return self._flash_resource(
+            path,
+            job_name="doomwad_install",
+            noun="game-data file",
+            validate=hid_fontpack.validate_doomwad,
+            run=lambda data, progress, flag: hid_fontpack.flash_doomwad(
+                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag),
+            kind=events.FLASH_KIND_DOOMWAD)
 
     def install_doompack(self, path):
         """Install the doom easter egg's executable engine pack (.plyx, both
@@ -1441,34 +1444,14 @@ class PolyCore:
         :meth:`install_doomwad`, with the DOOMPACK pseudo bundle routing it
         to the engine-pack slot. Old firmware without the target NACKs the
         BEGIN — plain error, nothing bricks."""
-        if not self._fw_actions_allowed():
-            return False, "No PolyKybd present (or paused) — cannot flash."
-        try:
-            with open(path, "rb") as f:
-                pack_bytes = f.read()
-        except OSError as e:
-            return False, f"Cannot read engine-pack file: {e}"
-        ok, msg = hid_fontpack.validate_doompack(pack_bytes)
-        if not ok:
-            return False, msg
-
-        def _job(cancel):
-            cancel_flag = [False]
-
-            def _progress(pct, m):
-                if cancel.is_set():
-                    cancel_flag[0] = True
-                self.emit("fontpack_flash_progress",
-                          {"pct": pct, "msg": m, "kind": events.FLASH_KIND_DOOMPACK})
-
-            fok, fmsg = hid_fontpack.flash_doompack(
-                self.keeb.hid, pack_bytes, progress_cb=_progress, cancel_flag=cancel_flag)
-            self.emit("fontpack_flash_done",
-                      {"ok": bool(fok), "msg": fmsg, "kind": events.FLASH_KIND_DOOMPACK})
-
-        # No coalesce_key: a flash must never be superseded by a later job.
-        self.worker.submit("doompack_install", _job)
-        return True, {"queued": True}
+        return self._flash_resource(
+            path,
+            job_name="doompack_install",
+            noun="engine-pack file",
+            validate=hid_fontpack.validate_doompack,
+            run=lambda data, progress, flag: hid_fontpack.flash_doompack(
+                self.keeb.hid, data, progress_cb=progress, cancel_flag=flag),
+            kind=events.FLASH_KIND_DOOMPACK)
 
     def flash_fontpack_bundle(self, bundle):
         """Flash one shipped bundle (by id, e.g. ``"emoji"``, or its slot index) to
@@ -1492,13 +1475,20 @@ class PolyCore:
                 return b
         return None
 
-    def sync_fontpack(self):
-        """Flash every font-pack bundle the keyboard is missing/behind on — the
-        same comparison as the on-connect auto-flash, triggered manually."""
+    def sync_fontpack(self, force=False):
+        """Flash font-pack bundles manually.
+
+        Default: the same targets the on-connect auto-check picks — stale bundles plus
+        anything a previous attempt failed on. ``force=True`` re-flashes EVERY shipped
+        bundle regardless of version, which is the only way to recover a bundle the
+        keyboard reports as current but renders wrong (a version comparison cannot see
+        that, so without a force there was no route back at all)."""
         if not self._fw_actions_allowed():
             return False, "No PolyKybd present (or paused) — cannot flash."
-        self.worker.submit("fontpack_sync", self._fontpack_autocheck_job)
-        return True, {"queued": True}
+        self.worker.submit(
+            "fontpack_sync",
+            lambda cancel: self._fontpack_flash_bundles_job(cancel, force_all=bool(force)))
+        return True, {"queued": True, "force": bool(force)}
 
     def wipe_fontpack(self):
         """Wipe every font-pack slot — flash the empty-pack sentinel to each shipped
@@ -1524,34 +1514,34 @@ class PolyCore:
         if self._fontpack_flash_in_progress:
             return
         self._fontpack_flash_in_progress = True
-        cancel_flag = [False]
-
-        def _progress(pct, m):
-            if cancel.is_set():
-                cancel_flag[0] = True
-            self.emit("fontpack_flash_progress",
-                      {"pct": pct, "msg": m, "kind": events.FLASH_KIND_FONTPACK})
+        _progress, cancel_flag = flash_progress_relay(
+            self.emit, cancel, events.FLASH_KIND_FONTPACK)
 
         fd, path = tempfile.mkstemp(suffix=".plyf", prefix="polykybd_wipe_")
         try:
             with os.fdopen(fd, "wb") as f:
                 f.write(hid_fontpack.build_empty_pack())
             n = len(slots)
+            wiped, failed = [], []
             for i, b in enumerate(slots):
                 self.log.info("Font pack wipe: bundle %s (slot %d) — wiping (%d/%d).",
                               b["id"], b["index"], i + 1, n)
-                fok, fmsg = hid_fontpack.flash_fontpack(
+                fok, fmsg, _status = hid_fontpack.flash_fontpack(
                     self.keeb.hid, path, progress_cb=_progress,
                     cancel_flag=cancel_flag, bundle_id=b["index"])
+                # Carry on through a failure, like the flash pass: one slot refusing
+                # says nothing about the rest, and stopping leaves a half-wiped pack
+                # with no report of which slots were reached.
+                (wiped if fok else failed).append(b["id"])
                 if not fok:
-                    self.emit("fontpack_flash_done",
-                              {"ok": False, "msg": f"Wipe bundle {b['id']}: {fmsg}",
-                               "kind": events.FLASH_KIND_FONTPACK})
-                    return
+                    self.log.warning("Font pack wipe failed for slot %s: %s", b["id"], fmsg)
                 if cancel_flag[0]:
-                    return
+                    break
+            msg = f"Wiped {len(wiped)} font-pack slot(s)."
+            if failed:
+                msg += f" Failed: {', '.join(failed)}."
             self.emit("fontpack_flash_done",
-                      {"ok": True, "msg": f"Wiped {n} font-pack slot(s).",
+                      {"ok": not failed, "msg": msg,
                        "kind": events.FLASH_KIND_FONTPACK})
         finally:
             self._fontpack_flash_in_progress = False
@@ -1568,12 +1558,18 @@ class PolyCore:
         if manifest is None:
             return True, {"shipped": False, "bundles": []}
         dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
+        # "retry" is separate from "stale" on purpose: a bundle whose flash failed can
+        # still read as current, so a UI that only looks at `stale` shows "up to date"
+        # over a bundle that needs another attempt.
         bundles = [{"id": b["id"], "index": b["index"],
                     "device_version": dev.get(b["index"], 0),
                     "shipped_version": b["content_version"],
-                    "stale": b["content_version"] > dev.get(b["index"], 0)}
+                    "stale": b["content_version"] > dev.get(b["index"], 0),
+                    "retry": b["index"] in self._fontpack_failed,
+                    "last_error": self._fontpack_failed.get(b["index"], "")}
                    for b in manifest["bundles"]]
-        return True, {"shipped": True, "bundles": bundles}
+        return True, {"shipped": True, "bundles": bundles,
+                      "failed": [b["id"] for b in bundles if b["retry"]]}
 
     def get_fontpack_status(self):
         """Query the keyboard's currently-loaded font pack (present / abi /
@@ -1604,13 +1600,25 @@ class PolyCore:
         self.worker.submit("fontpack_autocheck", self._fontpack_autocheck_job)
 
     def _fontpack_autocheck_job(self, cancel):
-        """Flash any font-pack bundles the keyboard is missing or behind on.
+        """Flash any font-pack bundles the keyboard is missing, behind on, or that
+        failed a previous attempt.
 
         Compares the device's per-bundle versions (the GET_ID version block,
         captured by the reconnect probe into keeb.fontpack_bundle_versions)
-        against the shipped bundles.json, and flashes only the stale ones to
-        their fixed slots. Self-terminating: a successful flash makes the
-        versions equal, so the next connect finds nothing to do."""
+        against the shipped bundles.json. ⚠️ That comparison alone is NOT enough to
+        decide what to flash: a flash that streamed fine and only lost its COMMIT
+        acknowledgement leaves the slot valid and current, so the version check
+        reports it as up to date and it is never retried (field 2026-08-17 — the
+        `symbol` bundle reported a failure and was then skipped on every later
+        connect and manual sync). Anything a previous attempt genuinely failed is
+        therefore remembered and re-flashed regardless of its version."""
+        self._fontpack_flash_bundles_job(cancel, auto=True)
+
+    def _fontpack_flash_bundles_job(self, cancel, auto=False, force_all=False):
+        """The shared bundle-flash pass: pick the targets, flash them all, report once.
+
+        Targets are the stale bundles ∪ the ones a previous pass failed on, or every
+        shipped bundle when ``force_all``."""
         from polyhost.services import fontpack_bundle
         manifest = fontpack_bundle.load_bundle_manifest()
         if manifest is None:
@@ -1618,47 +1626,129 @@ class PolyCore:
         if self._fontpack_flash_in_progress:
             return   # a flash is already running (connection flapped) — don't double-flash
         device_versions = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {})
-        stale = hid_fontpack.decide_stale_bundles(device_versions, manifest["bundles"])
-        if not stale:
+        if force_all:
+            targets = list(manifest["bundles"])
+        else:
+            stale = hid_fontpack.decide_stale_bundles(device_versions, manifest["bundles"])
+            stale_idx = {b["index"] for b in stale}
+            # Re-add anything a previous pass failed on even though its version now
+            # reads current — see the docstring above.
+            retry = [b for b in manifest["bundles"]
+                     if b["index"] in self._fontpack_failed and b["index"] not in stale_idx]
+            targets = sorted(stale + retry, key=lambda b: b["index"])
+        if not targets:
             self.log.info("Font pack auto-check: all %d bundle(s) up to date.",
                           len(manifest["bundles"]))
             return
 
         self._fontpack_flash_in_progress = True
-        cancel_flag = [False]
-
-        def _progress(pct, m):
-            if cancel.is_set():
-                cancel_flag[0] = True
-            self.emit("fontpack_flash_progress",
-                      {"pct": pct, "msg": m, "kind": events.FLASH_KIND_FONTPACK})
+        _progress, cancel_flag = flash_progress_relay(
+            self.emit, cancel, events.FLASH_KIND_FONTPACK)
 
         try:
-            n = len(stale)
-            for i, b in enumerate(stale):
+            n = len(targets)
+            done, failed, caveats = [], [], []
+            for i, b in enumerate(targets):
                 dev = device_versions.get(b["index"], 0)
-                self.log.info("Font pack auto-flash: bundle %s (slot %d) device v%d < v%d "
-                              "— flashing (%d/%d).", b["id"], b["index"], dev,
-                              b["content_version"], i + 1, n)
-                fok, fmsg = hid_fontpack.flash_fontpack(
+                self.log.info("Font pack flash: bundle %s (slot %d) device v%d -> v%d "
+                              "(%d/%d).", b["id"], b["index"], dev, b["content_version"],
+                              i + 1, n)
+                fok, fmsg, fstatus = hid_fontpack.flash_fontpack(
                     self.keeb.hid, b["path"], progress_cb=_progress,
                     cancel_flag=cancel_flag, bundle_id=b["index"])
-                if not fok:
-                    self.log.warning("Font pack auto-flash failed for bundle %s: %s", b["id"], fmsg)
-                    self.emit("fontpack_flash_done",
-                              {"ok": False, "msg": f"Bundle {b['id']}: {fmsg}", "auto": True,
-                               "kind": events.FLASH_KIND_FONTPACK})
-                    return
+                if fok:
+                    done.append(b["id"])
+                    self._fontpack_failed.pop(b["index"], None)
+                else:
+                    landed, note = self._verify_flashed_bundle(b, fstatus, fmsg)
+                    if landed:
+                        done.append(b["id"])
+                        caveats.append(note)
+                        if fstatus == hid_fontpack.COMMIT_NO_SLAVE:
+                            # Verified on the MASTER only — and the firmware cannot tell
+                            # us whether the slave lost its ACK or explicitly refused its
+                            # own finalize (both surface as SYNC_CRC32_ERR over the
+                            # bridge). So keep it queued: a re-flash on the next pass is
+                            # one bundle's worth of traffic, whereas trusting it leaves
+                            # the halves silently rendering different glyph sets.
+                            self._fontpack_failed[b["index"]] = fmsg
+                        else:
+                            self._fontpack_failed.pop(b["index"], None)
+                    else:
+                        failed.append(b["id"])
+                        self._fontpack_failed[b["index"]] = fmsg
+                        # Keep going: one bundle's failure says nothing about the
+                        # next one's, and aborting here cost six perfectly good
+                        # bundles a re-flash on the next connect (field 2026-08-17).
+                        self.log.warning("Font pack flash failed for bundle %s (%s): %s",
+                                         b["id"], fstatus, fmsg)
                 if cancel_flag[0]:
-                    self.log.info("Font pack auto-flash cancelled after bundle %s.", b["id"])
-                    return
-            msg = f"Flashed {n} font-pack bundle(s): {', '.join(b['id'] for b in stale)}."
-            self.log.info("Font pack auto-flash complete: %s", msg)
-            self.emit("fontpack_flash_done",
-                      {"ok": True, "msg": msg, "auto": True,
-                       "kind": events.FLASH_KIND_FONTPACK})
+                    self.log.info("Font pack flash cancelled after bundle %s.", b["id"])
+                    break
+            self._emit_fontpack_summary(done, failed, caveats, auto)
         finally:
             self._fontpack_flash_in_progress = False
+
+    def _verify_flashed_bundle(self, bundle, status, msg):
+        """After a failed COMMIT, ask the keyboard whether the bundle landed anyway.
+
+        Re-reads the GET_ID version block (the same cheap query the reconnect probe
+        uses) and reports ``(landed, note)``. This is what stops a lost
+        acknowledgement being reported as a failed flash — and, just as important,
+        stops it being silently forgotten, since ``landed`` also clears the retry
+        entry. Two things it deliberately does NOT do:
+
+        * A ``rejected`` status is never verified. The keyboard told us it refused
+          the data, so re-reading a version could only mislead.
+        * The version block reflects the MASTER's slots only, so it cannot prove the
+          slave got the bundle. On a ``slave-unconfirmed`` status the note says so
+          rather than claiming success outright.
+
+        Safe to run next to the reconnect probe: this is the worker thread (the flash
+        job owns it), and ``query_id`` only ever *sets* the firmware's one-shot
+        fresh-boot flag — only ``pop_fresh_boot`` clears it — so if this query is the
+        one that happens to see the ``*`` marker, the next probe still pops it."""
+        if status == hid_fontpack.COMMIT_REJECTED:
+            return False, ""
+        try:
+            ok, _ = self.keeb.query_id()
+        except Exception as exc:                      # noqa: BLE001 — a probe must not mask the flash error
+            self.log.debug("Post-flash verification query failed: %s", exc)
+            return False, ""
+        if not ok:
+            return False, ""
+        dev = dict(getattr(self.keeb, "fontpack_bundle_versions", {}) or {}).get(bundle["index"], 0)
+        if dev < bundle["content_version"]:
+            return False, ""
+        if status == hid_fontpack.COMMIT_NO_SLAVE:
+            note = (f"{bundle['id']}: stored (v{dev}), but the other half never confirmed — "
+                    f"it should pick the glyphs up at the next reboot")
+        else:
+            note = f"{bundle['id']}: stored (v{dev}); only the confirmation was lost"
+        self.log.warning("Font pack bundle %s reported a failed COMMIT (%s) but the keyboard "
+                         "now reports v%d — treating it as stored. %s", bundle["id"], status,
+                         dev, msg)
+        return True, note
+
+    def _emit_fontpack_summary(self, done, failed, caveats, auto):
+        """One terminal ``fontpack_flash_done`` for the whole pass, naming every
+        bundle that failed — a per-bundle abort used to hide the rest."""
+        parts = []
+        if done:
+            parts.append(f"Flashed {len(done)} font-pack bundle(s): {', '.join(done)}.")
+        if caveats:
+            parts.append("Unconfirmed: " + "; ".join(caveats) + ".")
+        if failed:
+            parts.append(f"Failed: {', '.join(failed)} — retried automatically on the "
+                         f"next connect, or from Updates → Retry keyboard fonts.")
+        msg = " ".join(parts) or "Nothing to flash."
+        if failed:
+            self.log.warning("Font pack flash finished with failures: %s", msg)
+        else:
+            self.log.info("Font pack flash complete: %s", msg)
+        self.emit("fontpack_flash_done",
+                  {"ok": not failed, "msg": msg, "auto": auto,
+                   "kind": events.FLASH_KIND_FONTPACK})
 
     def check_update(self):
         """Check GitHub for a newer host release (synchronous HTTP — runs on

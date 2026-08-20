@@ -21,6 +21,14 @@ from polyhost.device.hid_fontpack import (
     flash_fontpack,
     parse_id_version_block,
     decide_stale_bundles,
+    classify_commit_reply,
+    commit_error_text,
+    COMMIT_OK,
+    COMMIT_REJECTED,
+    COMMIT_NO_SLAVE,
+    COMMIT_UNSPEC,
+    COMMIT_NO_REPLY,
+    _COMMIT_ATTEMPTS,
     HID_POLYKYBD,
     CMD_FONTPACK_BEGIN,
     CMD_FONTPACK_CHUNK,
@@ -72,6 +80,16 @@ def _ack_reply(cmd: int, extra: bytes = b'') -> bytearray:
     buf[0] = HID_POLYKYBD
     buf[1] = cmd
     buf[2] = ACK
+    buf[3:3 + len(extra)] = extra
+    return buf
+
+
+def _commit_status_reply(cmd: int, status: bytes, extra: bytes = b'') -> bytearray:
+    """A reply carrying an arbitrary status byte (the split COMMIT statuses 'R'/'L')."""
+    buf = bytearray(64)
+    buf[0] = HID_POLYKYBD
+    buf[1] = cmd
+    buf[2] = status[0]
     buf[3:3 + len(extra)] = extra
     return buf
 
@@ -227,7 +245,7 @@ class TestFlashFontpackValidation(unittest.TestCase):
         path = _write_bin(b'')
         hid = MagicMock()
         try:
-            ok, msg = flash_fontpack(hid, path)
+            ok, msg, _st = flash_fontpack(hid, path)
             self.assertFalse(ok)
             hid.send_and_read.assert_not_called()
         finally:
@@ -237,7 +255,7 @@ class TestFlashFontpackValidation(unittest.TestCase):
         path = _write_bin(b'\xAB' * 300)
         hid = MagicMock()
         try:
-            ok, msg = flash_fontpack(hid, path)
+            ok, msg, _st = flash_fontpack(hid, path)
             self.assertFalse(ok)
             self.assertIn('magic', msg.lower())
             hid.send_and_read.assert_not_called()
@@ -248,7 +266,7 @@ class TestFlashFontpackValidation(unittest.TestCase):
         path = _write_bin(_make_pack())
         try:
             hid = _make_hid([(False, bytearray(64))], reconnect=False)
-            ok, msg = flash_fontpack(hid, path)
+            ok, msg, _st = flash_fontpack(hid, path)
             self.assertFalse(ok)        # BEGIN dropout, no reconnect
             self.assertIn('BEGIN', msg)
             hid.send_and_read.assert_called()
@@ -291,7 +309,7 @@ class TestFlashFontpackBegin(unittest.TestCase):
                 [(True, _ack_reply(CMD_FONTPACK_COMMIT))]
             )
             with patch('polyhost.device.hid_fontpack.time.sleep'):
-                ok, msg = flash_fontpack(hid, path)
+                ok, msg, _st = flash_fontpack(hid, path)
             self.assertTrue(ok, msg)
             for i in range(3):
                 self.assertEqual(hid.send_and_read.call_args_list[i][0][0][1], CMD_FONTPACK_BEGIN)
@@ -310,7 +328,7 @@ class TestFlashFontpackBegin(unittest.TestCase):
                 [(True, _ack_reply(CMD_FONTPACK_COMMIT))],
                 reconnect=True,
             )
-            ok, msg = flash_fontpack(hid, path)
+            ok, msg, _st = flash_fontpack(hid, path)
             self.assertTrue(ok, msg)
             hid.wait_for_reconnect.assert_called_once_with(timeout_s=30)
         finally:
@@ -320,7 +338,7 @@ class TestFlashFontpackBegin(unittest.TestCase):
         path = _write_bin(_make_pack())
         try:
             hid = _make_hid([(True, _nack_reply(CMD_FONTPACK_BEGIN))])
-            ok, msg = flash_fontpack(hid, path)
+            ok, msg, _st = flash_fontpack(hid, path)
             self.assertFalse(ok)
             self.assertIn('BEGIN', msg)
         finally:
@@ -338,7 +356,7 @@ class TestFlashFontpackChunks(unittest.TestCase):
         path = _write_bin(pack)
         try:
             hid = _flash_hid(pack)
-            ok, _ = flash_fontpack(hid, path)
+            ok, _, _st = flash_fontpack(hid, path)
             self.assertTrue(ok)
             self.assertEqual(hid.send_and_read.call_count, 7)   # 1 BEGIN + 5 + 1 COMMIT
             for i in range(5):
@@ -388,7 +406,7 @@ class TestFlashFontpackChunks(unittest.TestCase):
             with patch('polyhost.device.hid_fontpack.time.sleep'):
                 hid = MagicMock()
                 hid.send_and_read.side_effect = side_effect
-                ok, _ = flash_fontpack(hid, path)
+                ok, _, _st = flash_fontpack(hid, path)
             self.assertTrue(ok)
             self.assertEqual(sent, [0, 56, 112, 168, 56, 112, 168, 224])
         finally:
@@ -403,7 +421,7 @@ class TestFlashFontpackChunks(unittest.TestCase):
                     [(True, _nack_reply(CMD_FONTPACK_CHUNK))] * 8 +
                     [(True, _nack_reply(CMD_FONTPACK_COMMIT))]   # cleanup commit
                 )
-                ok, msg = flash_fontpack(hid, path)
+                ok, msg, _st = flash_fontpack(hid, path)
             self.assertFalse(ok)
             self.assertIn('CHUNK', msg)
             self.assertEqual(hid.send_and_read.call_count, 10)  # 1 + 8 + cleanup
@@ -415,6 +433,38 @@ class TestFlashFontpackChunks(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # flash_fontpack -- COMMIT (terminal; no apply)
 # ---------------------------------------------------------------------------
+
+class TestClassifyCommitReply(unittest.TestCase):
+    """The COMMIT status classifier — the seam that stopped a dropped split-link ACK
+    being reported as a CRC mismatch (field 2026-08-17)."""
+
+    def test_known_statuses(self):
+        for byte, expect in ((b'.', COMMIT_OK), (b'R', COMMIT_REJECTED),
+                             (b'L', COMMIT_NO_SLAVE), (b'!', COMMIT_UNSPEC)):
+            with self.subTest(byte=byte):
+                reply = _commit_status_reply(CMD_FONTPACK_COMMIT, byte)
+                self.assertEqual(classify_commit_reply(True, reply), expect)
+
+    def test_an_unknown_status_is_never_success(self):
+        # A future firmware status must degrade to "unspecified", not to OK.
+        reply = _commit_status_reply(CMD_FONTPACK_COMMIT, b'Z')
+        self.assertEqual(classify_commit_reply(True, reply), COMMIT_UNSPEC)
+
+    def test_missing_and_short_replies(self):
+        self.assertEqual(classify_commit_reply(False, None), COMMIT_NO_REPLY)
+        self.assertEqual(classify_commit_reply(True, None), COMMIT_NO_REPLY)
+        self.assertEqual(classify_commit_reply(True, bytearray(2)), COMMIT_NO_REPLY)
+
+    def test_each_failure_gets_its_own_wording(self):
+        texts = {st: commit_error_text(st, "font pack")
+                 for st in (COMMIT_REJECTED, COMMIT_NO_SLAVE, COMMIT_UNSPEC, COMMIT_NO_REPLY)}
+        self.assertEqual(len(set(texts.values())), 4)     # no two share a message
+        # Only the genuine data failure may mention the CRC — blaming it for a link
+        # drop is the exact mistake this split exists to prevent.
+        self.assertIn("CRC", texts[COMMIT_REJECTED])
+        self.assertNotIn("CRC", texts[COMMIT_NO_SLAVE])
+        self.assertIn("font pack", texts[COMMIT_NO_SLAVE])
+
 
 class TestFlashFontpackCommit(unittest.TestCase):
 
@@ -441,27 +491,83 @@ class TestFlashFontpackCommit(unittest.TestCase):
                 [(True, _ack_reply(CMD_FONTPACK_CHUNK))] * n +
                 [(True, commit_reply)]
             )
-            ok, msg = flash_fontpack(hid, path)
+            ok, msg, _st = flash_fontpack(hid, path)
             self.assertTrue(ok)
             self.assertIn('v99', msg)
         finally:
             os.unlink(path)
 
-    def test_commit_nack_returns_false(self):
-        pack = _make_pack()
+    def _commit_flash(self, commit_replies, pack=None):
+        """Flash a pack whose COMMIT answers with `commit_replies` in order."""
+        pack = pack if pack is not None else _make_pack()
         path = _write_bin(pack)
         n = _chunks(pack)
         try:
             hid = _make_hid(
                 [(True, _ack_reply(CMD_FONTPACK_BEGIN))] +
                 [(True, _ack_reply(CMD_FONTPACK_CHUNK))] * n +
-                [(True, _nack_reply(CMD_FONTPACK_COMMIT))]
+                list(commit_replies)
             )
-            ok, msg = flash_fontpack(hid, path)
-            self.assertFalse(ok)
-            self.assertIn('COMMIT', msg)
+            return (*flash_fontpack(hid, path), hid)
         finally:
             os.unlink(path)
+
+    @staticmethod
+    def _commit_count(hid):
+        return sum(1 for c in hid.send_and_read.call_args_list
+                   if c[0][0][1] == CMD_FONTPACK_COMMIT)
+
+    def test_commit_nack_returns_false(self):
+        # Legacy '!' — one byte for every failure. Retried (the host cannot tell a
+        # link drop from a data problem), then reported as unspecified.
+        ok, msg, st, hid = self._commit_flash(
+            [(True, _nack_reply(CMD_FONTPACK_COMMIT))] * _COMMIT_ATTEMPTS)
+        self.assertFalse(ok)
+        self.assertIn('COMMIT', msg)
+        self.assertEqual(st, COMMIT_UNSPEC)
+
+    def test_commit_rejected_is_not_retried(self):
+        # 'R' = the keyboard refused the staged image. Asking again cannot change
+        # that, so it must fail on the FIRST reply rather than burn two more.
+        ok, msg, st, hid = self._commit_flash(
+            [(True, _commit_status_reply(CMD_FONTPACK_COMMIT, b'R'))])
+        self.assertFalse(ok)
+        self.assertEqual(st, COMMIT_REJECTED)
+        self.assertEqual(self._commit_count(hid), 1)
+        self.assertIn('rejected', msg.lower())
+
+    def test_commit_slave_unconfirmed_is_retried_then_reported(self):
+        # 'L' = the master committed, the slave never ACKed. Re-sending COMMIT is
+        # free and usually clears it, so the host retries before giving up — and the
+        # message must NOT blame the CRC (the bug this status exists to fix).
+        ok, msg, st, hid = self._commit_flash(
+            [(True, _commit_status_reply(CMD_FONTPACK_COMMIT, b'L'))] * _COMMIT_ATTEMPTS)
+        self.assertFalse(ok)
+        self.assertEqual(st, COMMIT_NO_SLAVE)
+        self.assertEqual(self._commit_count(hid), _COMMIT_ATTEMPTS)
+        self.assertNotIn('CRC', msg)
+        self.assertIn('other half', msg)
+
+    def test_commit_retry_recovers_a_dropped_ack(self):
+        # The field failure: the data was fine and only the confirmation was lost.
+        # One retry turns it into a plain success — no re-stream of the pack.
+        pack = _make_pack(content_version=7)
+        ok, msg, st, hid = self._commit_flash(
+            [(True, _commit_status_reply(CMD_FONTPACK_COMMIT, b'L')),
+             (True, _ack_reply(CMD_FONTPACK_COMMIT, struct.pack('<H', 7)))],
+            pack=pack)
+        self.assertTrue(ok)
+        self.assertEqual(st, COMMIT_OK)
+        self.assertEqual(self._commit_count(hid), 2)
+        # The pack itself was sent exactly once.
+        self.assertEqual(sum(1 for c in hid.send_and_read.call_args_list
+                             if c[0][0][1] == CMD_FONTPACK_BEGIN), 1)
+
+    def test_commit_no_reply_is_retried(self):
+        ok, msg, st, hid = self._commit_flash([(False, None)] * _COMMIT_ATTEMPTS)
+        self.assertFalse(ok)
+        self.assertEqual(st, COMMIT_NO_REPLY)
+        self.assertEqual(self._commit_count(hid), _COMMIT_ATTEMPTS)
 
     def test_no_apply_step_after_commit(self):
         # COMMIT is terminal for a font pack — there must be no extra send and no
@@ -470,7 +576,7 @@ class TestFlashFontpackCommit(unittest.TestCase):
         path = _write_bin(pack)
         try:
             hid = _flash_hid(pack)
-            ok, _ = flash_fontpack(hid, path)
+            ok, _, _st = flash_fontpack(hid, path)
             self.assertTrue(ok)
             hid.wait_for_reconnect.assert_not_called()
             self.assertEqual(hid.send_and_read.call_count, 1 + _chunks(pack) + 1)
@@ -501,7 +607,7 @@ class TestFlashFontpackCancellationProgress(unittest.TestCase):
 
             hid = MagicMock()
             hid.send_and_read.side_effect = side_effect
-            ok, msg = flash_fontpack(hid, path, cancel_flag=cancel_flag)
+            ok, msg, _st = flash_fontpack(hid, path, cancel_flag=cancel_flag)
             self.assertFalse(ok)
             self.assertIn('cancel', msg.lower())
             self.assertEqual(calls[0], 5)   # BEGIN + 3 chunks + cleanup COMMIT
@@ -616,10 +722,10 @@ class TestValidateDoomwad(unittest.TestCase):
         # through, so the file is read once — invalid bytes must be rejected
         # before any HID traffic (hid=None would explode otherwise).
         from polyhost.device.hid_fontpack import flash_doomwad, flash_doompack
-        ok, msg = flash_doomwad(None, b"IWAD" + b"\x00" * 100)
+        ok, msg, _st = flash_doomwad(None, b"IWAD" + b"\x00" * 100)
         self.assertFalse(ok)
         self.assertIn("magic", msg)
-        ok, msg = flash_doompack(None, b"NOPE" + b"\x00" * 100)
+        ok, msg, _st = flash_doompack(None, b"NOPE" + b"\x00" * 100)
         self.assertFalse(ok)
         self.assertIn("magic", msg)
 

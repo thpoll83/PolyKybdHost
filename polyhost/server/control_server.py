@@ -12,34 +12,23 @@ Threading model:
   - writes on a connection are serialized through a per-connection lock so the
     handler thread and the core-event fan-out never interleave a frame.
 
+The first two of those, plus the opening ``hello`` frame, the JSON-RPC error
+mapping and the non-deadlocking ``stop()``, are shared with
+:class:`polyhost.server.window_report_server.WindowReportServer` through
+:class:`polyhost.server.mpc_listener.MpcListenerServer`. What is genuinely local
+to this server — and stays here — is the **method registry** (the whole
+device-control surface, which is precisely what the network endpoint must not
+have), the per-connection write locks, and the event fan-out.
+
 Core events are fanned out to every connection that has sent
 ``events.subscribe``. The server subscribes to the core exactly once at
 ``start()`` and pushes :func:`protocol.make_event` notifications.
 """
-import multiprocessing.connection as mpc
 import queue
-import socket
-import sys
 import threading
 
 from polyhost.server import protocol as p
-
-#: Bound on the raw connect ``stop()`` uses to wake a blocked ``accept()``.
-#: It is a local endpoint, so this only ever caps a pathological case.
-WAKE_TIMEOUT_S = 1.0
-
-
-class RpcError(Exception):
-    """Raised by a method handler to produce a JSON-RPC error response.
-
-    ``code`` is one of the ``protocol.ERR_*`` constants; ``message`` is a
-    human-readable string sent back to the client verbatim.
-    """
-
-    def __init__(self, code, message):
-        super().__init__(message)
-        self.code = code
-        self.message = str(message)
+from polyhost.server.mpc_listener import MpcListenerServer, RpcError
 
 
 def _unwrap(result):
@@ -54,27 +43,25 @@ def _unwrap(result):
     return payload
 
 
-class ControlServer:
+class ControlServer(MpcListenerServer):
     """Serve a :class:`PolyCore` over the local control socket."""
 
     def __init__(self, core, host_version, log, *,
                  on_shutdown=None, address=None, authkey=None):
+        super().__init__(
+            address=address or p.endpoint_address(),
+            authkey=authkey if authkey is not None else p.load_or_create_authkey(),
+            host_version=host_version,
+            log=log,
+            thread_prefix="control")
         self.core = core
-        self.host_version = host_version
-        self.log = log
         self._on_shutdown = on_shutdown
-        self.address = address or p.endpoint_address()
-        self.authkey = authkey if authkey is not None else p.load_or_create_authkey()
 
-        self._listener = None
-        self._accept_thread = None
-        self._running = False
-
-        # Live connections and the subset that have subscribed to events.
-        self._conns = set()              # conn -> write lock
+        # Per-connection write locks and the subset subscribed to events. The
+        # live-connection set itself is the base's; these ride alongside it via
+        # the on_connection_added / _dropped hooks.
         self._conn_locks = {}
         self._subscribed = set()
-        self._lock = threading.Lock()    # guards the three structures above
 
         # Core events are handed off to this queue and sent by a dedicated
         # thread; the emitting core/worker thread must never do socket I/O (a
@@ -84,7 +71,7 @@ class ControlServer:
         self._sender_thread = None
 
         # Set by host.shutdown; the teardown callback fires only after the
-        # reply has been written (see _dispatch), so the client sees the ack.
+        # reply has been written (see after_dispatch), so the client sees the ack.
         self._pending_shutdown = False
 
         self.registry = self._build_registry()
@@ -93,187 +80,79 @@ class ControlServer:
     # Lifecycle
     # ------------------------------------------------------------------
 
+    def secure_listener(self):
+        """Tighten the endpoint's permissions right after bind (0600 UDS)."""
+        p.secure_endpoint(self.address)
+
     def start(self):
         """Bind the listener, tighten its permissions, and start accepting."""
-        self._listener = mpc.Listener(self.address, authkey=self.authkey)
-        p.secure_endpoint(self.address)
-        self._running = True
         # Start the event sender before subscribing so no event is dropped.
         self._sender_thread = threading.Thread(
             target=self._event_sender_loop, name="control-events", daemon=True)
         self._sender_thread.start()
         # Subscribe to the core exactly once; fan-out filters by subscription.
         self.core.subscribe(self._on_core_event)
-        self._accept_thread = threading.Thread(
-            target=self._accept_loop, name="control-accept", daemon=True)
-        self._accept_thread.start()
+        super().start()
 
     def stop(self):
         """Stop accepting and close everything. Best-effort, never raises."""
-        self._running = False
         # Wake the sender thread so it can exit its blocking queue.get().
         self._event_q.put(None)
-        listener = self._listener
-        # Unblock the blocking accept() with a short-lived RAW connection, then
-        # close the listener. Both wrapped — a half-torn-down listener on a
-        # racing stop() must not raise.
-        if listener is not None:
-            self._wake_accept()
-            try:
-                listener.close()
-            except Exception:
-                pass
-        # Close every live connection.
+        super().stop()
+        self._conn_locks.clear()
+        self._subscribed.clear()
+
+    # ------------------------------------------------------------------
+    # Per-connection state + serialized writes
+    # ------------------------------------------------------------------
+
+    def on_connection_added(self, conn):
         with self._lock:
-            conns = list(self._conns)
-            self._conns.clear()
-            self._conn_locks.clear()
-            self._subscribed.clear()
-        for conn in conns:
-            try:
-                conn.close()
-            except Exception:
-                pass
+            self._conn_locks[conn] = threading.Lock()
 
-    def _wake_accept(self):
-        """Poke the endpoint so a thread parked in ``accept()`` returns.
+    def on_connection_dropped(self, conn):
+        with self._lock:
+            self._conn_locks.pop(conn, None)
+            self._subscribed.discard(conn)
 
-        A bounded RAW connect is used deliberately rather than an authed
-        ``mpc.Client``: ``Client`` completes a two-way authkey handshake, and
-        only a thread already *inside* ``accept()`` can answer it. ``stop()``
-        clears ``_running`` first, so the accept loop may have re-checked the
-        flag and exited before we get here — and then the handshake has no one
-        to answer it and blocks ``stop()`` forever (a hang in
-        ``answer_challenge`` → ``recv_bytes``, seen on ~2 of 3 full-suite runs).
+    def send(self, conn, obj):
+        """Serialize writes per connection so the handler thread and the event
+        fan-out can never interleave halves of two frames on one socket.
 
-        A raw connect+close wakes the socket and returns within the timeout
-        regardless of the accept thread's state; the server-side handshake on it
-        then fails fast (EOF) and the loop, seeing ``_running`` False, breaks.
-        This mirrors ``WindowReportServer.stop()``, which already does this.
+        The lock table IS this server's liveness registry — a lock is created in
+        ``on_connection_added`` before the reader thread starts, and removed in
+        ``on_connection_dropped`` under the same mutex that discards the
+        subscription. So "no lock" means the connection is already dropped (and
+        closed), and the write is skipped rather than issued unsynchronised: the
+        event fan-out snapshots ``_subscribed`` and then sends *outside* the
+        mutex, so a teardown landing in that window would otherwise write to a
+        closing connection with no serialization at all.
         """
-        try:
-            if sys.platform == "win32":
-                # Named pipe: opening the path completes the pending
-                # ConnectNamedPipe, which is what accept() is waiting on.
-                open(self.address, "rb", buffering=0).close()
-            else:
-                waker = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                waker.settimeout(WAKE_TIMEOUT_S)
-                try:
-                    waker.connect(self.address)
-                finally:
-                    waker.close()
-        except OSError:
-            # Endpoint already gone, refusing, or busy — nothing to wake.
-            pass
+        lock = self._conn_locks.get(conn)
+        if lock is None:
+            return
+        with lock:
+            p.send_message(conn, obj)
 
     # ------------------------------------------------------------------
-    # Accept loop + per-connection handler
+    # Dispatch
     # ------------------------------------------------------------------
 
-    def _accept_loop(self):
-        while self._running:
-            try:
-                conn = self._listener.accept()
-            except Exception:
-                # Listener closed (normal stop()) or an auth/transport error on
-                # a single client — keep serving unless we're shutting down.
-                if not self._running:
-                    break
-                continue
-            if not self._running:
-                try:
-                    conn.close()
-                except Exception:
-                    pass
-                break
-            lock = threading.Lock()
-            with self._lock:
-                self._conns.add(conn)
-                self._conn_locks[conn] = lock
-            t = threading.Thread(
-                target=self._handle_connection, args=(conn, lock),
-                name="control-conn", daemon=True)
-            t.start()
-
-    def _handle_connection(self, conn, lock):
-        # The very first frame is the server's hello notification.
-        try:
-            with lock:
-                p.send_message(conn, p.make_notification(
-                    p.HELLO, p.hello_params(self.host_version)))
-        except Exception:
-            self._drop(conn)
-            return
-
-        try:
-            while True:
-                try:
-                    msg = p.recv_message(conn)
-                except (EOFError, OSError):
-                    break
-                except Exception:
-                    self.log.exception("Control server: malformed frame")
-                    break
-                self._dispatch(conn, lock, msg)
-        finally:
-            self._drop(conn)
-
-    def _dispatch(self, conn, lock, msg):
-        req_id = msg.get("id") if isinstance(msg, dict) else None
-        method = msg.get("method") if isinstance(msg, dict) else None
-        params = (msg.get("params") if isinstance(msg, dict) else None) or {}
-
-        if req_id is None:
-            # A notification (no id) — we don't expect client->server
-            # notifications today; ignore silently.
-            return
-
+    def dispatch(self, conn, req_id, method, params):
         handler = self.registry.get(method)
         if handler is None:
-            self._reply(conn, lock, p.make_error(
-                req_id, p.ERR_METHOD_NOT_FOUND, f"unknown method '{method}'"))
-            return
+            return p.make_error(
+                req_id, p.ERR_METHOD_NOT_FOUND, f"unknown method '{method}'")
+        return p.make_response(req_id, handler(conn, params))
 
-        try:
-            result = handler(conn, params)
-            reply = p.make_response(req_id, result)
-        except RpcError as e:
-            reply = p.make_error(req_id, e.code, e.message)
-        except (KeyError, TypeError, ValueError) as e:
-            reply = p.make_error(
-                req_id, p.ERR_INVALID_PARAMS, f"{type(e).__name__}: {e}")
-        except Exception as e:  # noqa: BLE001 — last-resort guard
-            self.log.exception("Control server: handler for %r failed", method)
-            reply = p.make_error(
-                req_id, p.ERR_INTERNAL, f"{type(e).__name__}: {e}")
-
-        self._reply(conn, lock, reply)
-
+    def after_dispatch(self, conn, method):
         # host.shutdown defers teardown to here so the reply is on the wire
-        # before quit_app() closes the connection (client would otherwise see
-        # EOF instead of {"shutting_down": True}).
+        # before quit_app() closes the connection (the client would otherwise
+        # see EOF instead of {"shutting_down": True}).
         if self._pending_shutdown:
             self._pending_shutdown = False
             if self._on_shutdown is not None:
                 self._on_shutdown()
-
-    def _reply(self, conn, lock, obj):
-        try:
-            with lock:
-                p.send_message(conn, obj)
-        except Exception:
-            self._drop(conn)
-
-    def _drop(self, conn):
-        with self._lock:
-            self._conns.discard(conn)
-            self._conn_locks.pop(conn, None)
-            self._subscribed.discard(conn)
-        try:
-            conn.close()
-        except Exception:
-            pass
 
     # ------------------------------------------------------------------
     # Core event fan-out
@@ -294,17 +173,14 @@ class ControlServer:
                 break
             name, payload = item
             with self._lock:
-                targets = [(c, self._conn_locks.get(c)) for c in self._subscribed]
+                targets = list(self._subscribed)
             if not targets:
                 continue
             event = p.make_event(name, payload)
             dead = []
-            for conn, lock in targets:
-                if lock is None:
-                    continue
+            for conn in targets:
                 try:
-                    with lock:
-                        p.send_message(conn, event)
+                    self.send(conn, event)   # per-connection write lock
                 except Exception:   # noqa: BLE001 — subscriber went away
                     dead.append(conn)
             for conn in dead:
@@ -357,7 +233,8 @@ class ControlServer:
                 c.flash_fontpack_bundle(params["bundle"]) if "bundle" in params
                 else c.flash_fontpack(params["path"], params.get("bundle_id", 0))),
             p.M_FONTPACK_STATUS: lambda conn, params: _unwrap(c.get_fontpack_status()),
-            p.M_FONTPACK_SYNC: lambda conn, params: _unwrap(c.sync_fontpack()),
+            p.M_FONTPACK_SYNC: lambda conn, params: _unwrap(
+                c.sync_fontpack(force=bool(params.get("force", False)))),
             p.M_FONTPACK_WIPE: lambda conn, params: _unwrap(c.wipe_fontpack()),
             p.M_FONTPACK_BUNDLES: lambda conn, params: _unwrap(c.fontpack_bundle_status()),
             p.M_DOOM_INSTALL: lambda conn, params: _unwrap(c.install_doomwad(params["path"])),
@@ -376,7 +253,8 @@ class ControlServer:
                 c.telemetry_set_enabled(params["enabled"])),
             p.M_TELEMETRY_SEND: lambda conn, params: _unwrap(c.telemetry_send_now()),
             p.M_WINDOW_REPORT: lambda conn, params: _unwrap(c.report_window(
-                params["handle"], params["name"], params.get("title", ""))),
+                params["handle"], params["name"], params.get("title", ""),
+                os=params.get("os"), url=params.get("url"))),
             p.M_HOST_SHUTDOWN: self._cmd_host_shutdown,
             p.EVENTS_SUBSCRIBE: self._cmd_events_subscribe,
         }

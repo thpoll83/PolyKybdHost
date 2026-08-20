@@ -243,6 +243,8 @@ class CommandsSubMenu:
                                     self.show_fontpack_status, firmware=True))
         fp_menu.addAction(self._act("sync_alt.svg", "Sync (flash missing/updated bundles)",
                                     self.sync_fontpack, firmware=True))
+        fp_menu.addAction(self._act("sync_alt.svg", "Re-flash ALL bundles (force)…",
+                                    self.force_sync_fontpack, firmware=True))
         fp_menu.addAction(self._act("delete.svg", "Wipe (empty all bundles)",
                                     self.wipe_fontpack, firmware=True))
         # The submenu's own action must be in _fw_actions too, else it stays grey
@@ -363,6 +365,26 @@ class CommandsSubMenu:
         comparison as the on-connect auto-flash). Progress shows in the tray."""
         self._report(self._core.sync_fontpack(),
                      lambda m: f"Failed to sync font pack: '{m}'")
+
+    def force_sync_fontpack(self):
+        """Re-flash every shipped bundle, ignoring the version comparison.
+
+        The version-based Sync cannot fix a bundle the keyboard reports as current but
+        renders wrong (a lost COMMIT acknowledgement leaves exactly that state), so this
+        is the way back. Confirmed because it re-sends the whole pack (~0.5 MB, ~1 min)."""
+        reply = QMessageBox.question(
+            None, "Re-flash Font Pack",
+            "<b>Re-flash every font-pack bundle?</b><br><br>"
+            "Every shipped bundle is sent again even if the keyboard already reports it as "
+            "up to date — use this when a glyph renders wrong or a previous flash was "
+            "reported as failed. Takes about a minute; typing keeps working throughout."
+            "<br><br>Continue?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            self.log.info("Font pack force re-flash: user cancelled at confirmation.")
+            return
+        self._report(self._core.sync_fontpack(force=True),
+                     lambda m: f"Failed to re-flash the font pack: '{m}'")
 
     def wipe_fontpack(self):
         """Empty every font-pack slot (resident-only fonts until re-flashed). The next

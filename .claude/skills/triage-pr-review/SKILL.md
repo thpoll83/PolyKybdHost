@@ -58,6 +58,58 @@ If nothing actually reviewed and it matters, comment `@coderabbitai review` (and
 `@coderabbitai full review` after an aborted run) rather than merging on the
 appearance of review.
 
+⚠️ **Spend that request once.** A refused request costs a slot too, and the stated
+wait *grows* with each one — host #170 answered "next review in 19 minutes", then
+**52** after the retry that wait invited. So:
+
+- **Never chase the clock.** "Wait N minutes, ask again" is the one loop that
+  reliably starves the PR; each retry buys a longer wait than it cost.
+- **On an under-10-stars repo** (`PolyKybdHost`, `polykybd-docs` — no auto-review,
+  rendered as a *"Review available on request"* box) the **checkbox and the chat
+  command are the same quota**. Ticking the box *and* commenting is two slots for
+  one review.
+- **A push re-triggers a review for free.** If more commits are coming anyway,
+  push first and ask afterwards — ask on the commit you intend to merge.
+
+## 2b. When `@claude review` produced nothing
+
+The on-demand reviewer (`.github/workflows/claude-review.yml`) fails in ways the
+PR page cannot show, because an `issue_comment` workflow attaches **no check run
+to the pull request**. So when a summons appears to have been ignored:
+
+**Look in the Actions tab, never the PR.**
+
+```bash
+# 1. find the run (saves a big JSON to a file — parse it, don't re-fetch smaller)
+#    actions_list  method=list_workflow_runs  resource_id=claude-review.yml
+python3 -c "
+import json; d=json.load(open('<saved path>'))
+for r in d.get('workflow_runs', d)[:5]:
+    print(r['id'], r['status'], r.get('conclusion','<running>'), r['created_at'])"
+
+# 2. read the job log — ask for a GENEROUS tail; ~40 lines of git cleanup end
+#    every job, and the result JSON sits just above it
+#    get_job_logs  job_id=<id>  return_content=true  tail_lines=150
+```
+
+Then classify from the result JSON:
+
+| Log shows | Cause | Fix |
+|---|---|---|
+| `Environment variable validation failed: Either ANTHROPIC_API_KEY, CLAUDE_CODE_OAUTH_TOKEN …` | secret missing | add `CLAUDE_CODE_OAUTH_TOKEN` (`claude setup-token`). A preflight job now comments on the PR instead of failing silently — if you see that comment, add the secret, don't re-summon |
+| `"permission_denials_count": N` (N>0) + `No buffered inline comments` | the repo's own `.claude/settings.json` denied the plugin its tools **inside the runner** | the `settings:` input on the action. Locally an unlisted tool prompts; in CI nobody can answer, so it is denied |
+| `"num_turns": ~4`, ~15 s, denials 0, nothing posted | the skill **skipped** the PR (drafts, closed, judged trivial, or already has a `claude[bot]` comment) | not a config fault — verify on a fresh PR before changing anything |
+
+⚠️ **A green run proves nothing about whether a review was published.** Two of
+the three rows above end in `conclusion: success`, and the middle one had done —
+and billed — the entire review before discarding it.
+
+⚠️ **Before blaming the workflow, check a fresh PR.** A small real PR with no
+prior `claude[bot]` comment discriminates "systemic" from "specific to this PR"
+for one cheap run, and needs no workflow change — whereas `--debug` lives in the
+workflow file and comment triggers run the **default-branch** copy, so a
+diagnostic run costs two merge cycles.
+
 ## 3. Verify every finding against the code — before touching anything
 
 For each finding, reproduce or refute it. Cheapest first:

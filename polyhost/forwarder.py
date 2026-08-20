@@ -8,10 +8,7 @@ import sys
 import time
 
 
-import subprocess
-
-from PyQt5.QtCore import QTimer, Qt, QObject, pyqtSignal
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtCore import QTimer, QObject, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication,
     QSystemTrayIcon,
@@ -20,10 +17,17 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QProgressDialog)
 from polyhost._version import __version__
+from polyhost.services import problem_report
 from polyhost.gui.get_icon import get_icon
+from polyhost.services import log_bundle
+from polyhost.gui.theme import apply_dark_palette
+from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.icon_state_manager import IconStateManager
+from polyhost.gui.qt_crash import install_qt_message_handler
+from polyhost.gui.tray_wait import TrayVisibilityWaiter
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.handler.remote_window import TCP_PORT
+from polyhost.handler.browser_url_source import BrowserUrlSource
 
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -73,7 +77,7 @@ class PolyForwarder(QApplication):
         # default (report_rpc False) keeps the proven TCP path untouched.
         self._report_rpc = report_rpc
         self._report_port = report_port
-        self._report_client = None
+        self._report_session = None
         self._report_authkey = None
 
         # This machine's OS, forwarded alongside the active window so the keyboard
@@ -95,6 +99,7 @@ class PolyForwarder(QApplication):
             make_collapse_handler(make_stream_handler(fmt)),
         ])
         self.log = logging.getLogger("PolyForwarder")
+        install_qt_message_handler(self.log)
         log_env_info(self.log)
 
         if self._report_rpc:
@@ -113,12 +118,29 @@ class PolyForwarder(QApplication):
                     "Using this machine's local window-report authkey; for a "
                     "different keyboard machine pass --report-authkey-file with "
                     "its polykybd-winreport.authkey.")
+            from polyhost.server.window_report_client import WindowReportSession
+            self._report_session = WindowReportSession(
+                self._report_port, self._report_authkey)
             self.log.info("Forwarder using the authenticated window-report endpoint (H4d).")
+
+        # Browser-URL feed for THIS machine. The extension is already willing to
+        # report here — it POSTs to 127.0.0.1 on whatever machine it runs on —
+        # but in forwarder mode nothing was listening, so its /ping failed and a
+        # forwarded browser could only ever match on its window title.
+        self._url_dirty = False
+        self._url_source = BrowserUrlSource(
+            self.log, on_change=self._on_browser_url_changed)
+        if self._url_source.start():
+            self.log.info("Browser-URL reporting enabled for forwarded windows.")
 
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
         self.icon_manager = IconStateManager(self, False, f"({__version__}) Forwarding to {host}")
-        self.tray.setVisible(True)
+        self._tray_waiter = TrayVisibilityWaiter(
+            show=lambda: self.tray.setVisible(True),
+            is_available=QSystemTrayIcon.isSystemTrayAvailable,
+            log=self.log)
+        self._tray_waiter.start()
         
         self.setQuitOnLastWindowClosed(False)
         self.win = None
@@ -134,7 +156,7 @@ class PolyForwarder(QApplication):
 
         self.heartbeat_msec = 0
 
-        self.tray.show()
+        self._tray_waiter.start()
         self.set_style()
 
         self.menu = QMenu()
@@ -154,6 +176,23 @@ class PolyForwarder(QApplication):
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
+        # The forwarder runs on a DIFFERENT machine from the keyboard, so its
+        # logs can never appear in a bundle collected on the host side — and its
+        # failure modes (which window backend this desktop selects, the report
+        # transport, the authkey) are exactly the log-diagnosable kind. Both
+        # entries are therefore worth as much here as in the tray app.
+        self.report_problem_action = QAction(get_icon("feedback.svg"),
+                                             "Report a Problem...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.report_problem_action.triggered.connect(self.open_report_problem)
+        self.report_problem_dialog = None
+
+        self.collect_logs_action = QAction(get_icon("archive.svg"),
+                                           "Collect logs...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.collect_logs_action.triggered.connect(self.open_log_bundle)
+        self.log_bundle_dialog = None
+
         self.update_action = QAction(get_icon("browser_updated.svg"), "Check for updates...", parent=self)
         # noinspection PyUnresolvedReferences
         self.update_action.triggered.connect(self._on_update_clicked)
@@ -169,9 +208,11 @@ class PolyForwarder(QApplication):
         self._update_bridge.failed.connect(self._on_update_failed)
         self._update_checker = None
         self._update_installer = None
-        self._update_progress = None
+        self._update_ui = UpdateProgressController(self.log)
 
         self.menu.addAction(self.log_dialog)
+        self.menu.addAction(self.report_problem_action)
+        self.menu.addAction(self.collect_logs_action)
         self.menu.addAction(self.update_action)
         self.menu.addAction(self.support)
         self.menu.addAction(self.about)
@@ -184,28 +225,18 @@ class PolyForwarder(QApplication):
         QTimer.singleShot(1000, self.active_window_reporter)
 
     def set_style(self):
-        self.setStyle("Fusion")
-        # Now use a palette to switch to dark colors:
-        palette = QPalette()
-        base_color = QColor(35, 35, 35)
-        window_base_color = QColor(80, 80, 80)
-        text_color = QColor(200, 200, 200)
-        highlight_text_color = QColor(255, 255, 255)
-        palette.setColor(QPalette.Window, window_base_color)
-        palette.setColor(QPalette.WindowText, text_color)
-        palette.setColor(QPalette.Base, base_color)
-        palette.setColor(QPalette.AlternateBase, window_base_color)
-        palette.setColor(QPalette.ToolTipBase, base_color)
-        palette.setColor(QPalette.ToolTipText, text_color)
-        palette.setColor(QPalette.Text,text_color)
-        palette.setColor(QPalette.Button, window_base_color)
-        palette.setColor(QPalette.ButtonText, text_color)
-        palette.setColor(QPalette.BrightText, Qt.red)
-        palette.setColor(QPalette.Link, QColor(42, 130, 218))
-        palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-        palette.setColor(QPalette.HighlightedText, highlight_text_color)
-        self.setPalette(palette)
-        
+        """Dark Fusion theme — shared with PolyHost (gui/theme.py)."""
+        apply_dark_palette(self)
+
+    def _on_browser_url_changed(self):
+        """A tab switch / SPA navigation changed the URL. The window-change test
+        below is handle+title, which such a change does not move, so flag it and
+        let the next 250 ms tick re-send instead of waiting for the heartbeat.
+
+        Called from the receiver's HTTP thread, so it deliberately does nothing
+        but set a bool — no Qt objects, no send from off the main thread."""
+        self._url_dirty = True
+
     def _resolve_host(self):
         """Return the target host string (from --host or the host-file), or None."""
         host = self.host
@@ -217,29 +248,35 @@ class PolyForwarder(QApplication):
                 return None  # file absent means no active session
         return host or None
 
-    def _send_via_rpc(self, handle, title, name):
+    def _send_via_rpc(self, handle, title, name, url=None):
         """Push the active window over the authenticated window-report endpoint
-        (H4d). Keeps a persistent connection, reconnecting on any failure."""
+        (H4d). `WindowReportSession` keeps the connection, reconnecting when it
+        fails *or when the resolved host changes* — with `--host-file` the
+        target can be rewritten between two reports."""
         host = self._resolve_host()
         if not host:
+            # The host-file is gone, i.e. no active session. Drop the
+            # connection: when the file returns it may name a different
+            # machine, and a stale connection would keep serving the old one.
+            if self._report_session is not None:
+                self._report_session.close()
             return False
         try:
-            if self._report_client is None:
-                from polyhost.server.window_report_client import connect
-                self._report_client = connect(
-                    host, self._report_port, self._report_authkey)
-            self._report_client.report(handle, name, title, os=self._os_value)
+            self._report_session.report(
+                host, handle, name, title, os=self._os_value, url=url)
             return True
         except Exception as e:
             self.log.error("Window-report RPC to %s failed: %s", host, e)
-            if self._report_client is not None:
-                self._report_client.close()
-                self._report_client = None
             return False
 
-    def send_to_host(self, handle, title, name):
+    def send_to_host(self, handle, title, name, url=None):
+        # ⚠️ `url` rides the authenticated RPC path ONLY. The legacy relay's
+        # framing is positional `handle;name;title;os` with the free-text field
+        # in the middle, so a title containing ';' already truncates the title
+        # and kills the os field — a fifth field would deepen a live bug on a
+        # transport that is off by default.
         if self._report_rpc:
-            return self._send_via_rpc(handle, title, name)
+            return self._send_via_rpc(handle, title, name, url=url)
         host = self._resolve_host()
         if not host:
             return False
@@ -271,10 +308,45 @@ class PolyForwarder(QApplication):
             self.log.error("Connection error: %s", err)
         return False
 
+    def _diagnostics_text(self) -> str:
+        """Diagnostics for a forwarder report.
+
+        Composition lives in the Qt-free `problem_report` module: this file
+        imports pywinctl at module load, so anything left here cannot be tested
+        in the documented environment (the forwarder smoke mode skips without
+        it). This method only supplies the state.
+        """
+        return problem_report.forwarder_diagnostics(
+            __version__, host=self.host, host_file=self.host_file,
+            report_rpc=self._report_rpc, report_port=self._report_port)
+
+    def open_report_problem(self):
+        """Guided problem report (retained instance — see PolyHost.open_report_problem)."""
+        from polyhost.gui.report_problem_dialog import ReportProblemDialog
+        if self.report_problem_dialog is None:
+            self.report_problem_dialog = ReportProblemDialog(
+                parent=None, diagnostics_cb=self._diagnostics_text)
+        self.report_problem_dialog.show()
+        self.report_problem_dialog.raise_()
+        self.report_problem_dialog.activateWindow()
+
+    def open_log_bundle(self):
+        """Log-collection dialog (retained instance — see PolyHost.open_log_bundle)."""
+        from polyhost.gui.log_bundle_dialog import LogBundleDialog
+        if self.log_bundle_dialog is None:
+            self.log_bundle_dialog = LogBundleDialog(
+                parent=None, diagnostics_cb=self._diagnostics_text)
+        self.log_bundle_dialog.show()
+        self.log_bundle_dialog.raise_()
+        self.log_bundle_dialog.activateWindow()
+
     def open_log(self):
         # assignment is needed otherwise the dialog would go away immediately
         delta = time.perf_counter()
-        self.log_viewer = LogViewerDialog({"Forwarder Log": "forwarder_log.txt"})
+        # See host.py: one declaration in log_bundle.LOG_SOURCES feeds the
+        # bundle, the clipboard text and both viewers' tabs.
+        log_files = log_bundle.viewer_files(always=("forwarder",))
+        self.log_viewer = LogViewerDialog(log_files, collect_cb=self.open_log_bundle)
         self.log_viewer.show()
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
@@ -336,12 +408,12 @@ class PolyForwarder(QApplication):
         if self._update_installer is not None and self._update_installer.is_alive():
             return
         self.update_action.setEnabled(False)
-        self._update_progress = QProgressDialog(
-            f"Downloading v{release.version}…", "", 0, 100)
-        self._update_progress.setWindowTitle("PolyKybdHost Update")
-        self._update_progress.setCancelButton(None)
-        self._update_progress.setMinimumDuration(0)
-        self._update_progress.show()
+        dlg = QProgressDialog(f"Downloading v{release.version}…", "", 0, 100)
+        dlg.setWindowTitle("PolyKybdHost Update")
+        dlg.setCancelButton(None)
+        dlg.setMinimumDuration(0)
+        dlg.show()
+        self._update_ui.attach(dlg)
         ub = self._update_bridge
         self._update_installer = UpdateInstaller(
             release,
@@ -353,20 +425,10 @@ class PolyForwarder(QApplication):
         self._update_installer.start()
 
     def _on_update_progress(self, percent, message):
-        if self._update_progress is None:
-            return
-        self._update_progress.setLabelText(message)
-        if percent < 0:
-            self._update_progress.setRange(0, 0)
-        else:
-            if self._update_progress.maximum() == 0:
-                self._update_progress.setRange(0, 100)
-            self._update_progress.setValue(percent)
+        self._update_ui.on_progress(percent, message)
 
     def _on_update_done(self):
-        if self._update_progress is not None:
-            self._update_progress.close()
-            self._update_progress = None
+        self._update_ui.close()
         self.log.info("Update applied, restarting forwarder...")
         # Re-exec from a clean state after the event loop exits (see
         # `wants_restart` and main_app), not with os.execv from inside this
@@ -375,20 +437,23 @@ class PolyForwarder(QApplication):
         self.quit_app()
 
     def _on_relay_needed(self, relay_path):
-        if self._update_progress is not None:
-            self._update_progress.setLabelText("Restarting to complete update…")
-            self._update_progress.setValue(100)
-        popen_kwargs = {"close_fds": False}
-        if sys.platform == "win32":
-            popen_kwargs["creationflags"] = (
-                subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
-        subprocess.Popen([sys.executable, relay_path], **popen_kwargs)  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        """Windows: some files were locked; a relay script finishes the copy
+        once we exit. Spawned through the shared controller so it gets the
+        normalised (windowless) interpreter and updater.spawn_detached — this
+        used to be a bare Popen on sys.executable, which left the restarted
+        forwarder owning a console window and dying with any job object."""
+        if not self._update_ui.stage_relay(relay_path):
+            # Nothing will finish the locked-file copy if we exit now, and the
+            # tree is already partially rewritten — surface it and stay up.
+            self._on_update_failed(
+                "Could not start the update relay; the update is incomplete. "
+                "See the log for details.")
+            return
+        # Brief pause so the user sees the "Restarting" label before we vanish.
         QTimer.singleShot(1200, self.quit)
 
     def _on_update_failed(self, message):
-        if self._update_progress is not None:
-            self._update_progress.close()
-            self._update_progress = None
+        self._update_ui.close()
         self.update_action.setEnabled(True)
         self.log.error("Update failed: %s", message)
         QMessageBox.warning(
@@ -397,9 +462,9 @@ class PolyForwarder(QApplication):
     def quit_app(self):
         self.icon_manager.set_disconnected()
         self.is_closing = True
-        if self._report_client is not None:
-            self._report_client.close()
-            self._report_client = None
+        if self._report_session is not None:
+            self._report_session.close()
+        self._url_source.close()
         # Tear the tray icon down before the loop exits so a re-exec (update
         # restart) doesn't leave a stale icon behind / a doubled tray.
         try:
@@ -420,17 +485,23 @@ class PolyForwarder(QApplication):
                 if self.last_update_msec > NEW_WINDOW_ACCEPT_TIME_MSEC:
                     #just to limit the time value:
                     self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2
+                    app_name = win.getAppName()
+                    # None for every non-browser app, and for a browser whose
+                    # extension report is stale/unfocused — so a URL can never
+                    # linger onto the wrong window.
+                    url = self._url_source.current_url(app_name)
                     changed = (
                         self.win is None
                         or win.getHandle() != self.win.getHandle()
                         or win.title != self.title
+                        or self._url_dirty
                     )
                     if changed or self.heartbeat_msec >= HEARTBEAT_MSEC:
                         self.win = win
                         self.title = win.title
-                        app_name = win.getAppName()
+                        self._url_dirty = False
                         handle = win.getHandle()
-                        self.send_to_host(handle, self.title, app_name)
+                        self.send_to_host(handle, self.title, app_name, url=url)
                         if changed:
                             self.log.info("Active App: '%s' %s %d", self.title, app_name, handle)
                         else:

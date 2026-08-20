@@ -1,0 +1,183 @@
+# On-demand Claude code review.
+#
+# This is a FALLBACK reviewer, deliberately never automatic: CodeRabbit and
+# Sourcery review every PR already, and a fourth always-on bot would only add
+# noise. Summon this one when the others are unavailable — CodeRabbit rate
+# limited ("Review limit reached ... next review in N minutes"), Sourcery out of
+# weekly diff-character budget (its check still goes GREEN when that happens),
+# or an upstream-merge PR over 100 changed files, which CodeRabbit skips
+# outright. See the "Code review conventions" section in CLAUDE.md.
+#
+# Two ways to run it:
+#   - comment "@claude review" on a pull request
+#   - Actions -> "Claude Review (on demand)" -> Run workflow, with the PR number
+#
+# Findings are posted as inline comments on the PR, or one summary comment when
+# it finds nothing. Runs are billed to the CLAUDE_CODE_OAUTH_TOKEN owner's
+# Claude subscription, NOT to an API key.
+#
+# ⚠️ That secret is REQUIRED and is not optional plumbing: without it the run
+# dies at credential validation having reviewed nothing. The preflight job below
+# turns that into a comment on the PR rather than a silent no-op.
+#
+# NOTE: issue_comment and workflow_dispatch always run the copy of this file on
+# the DEFAULT branch, so this workflow does nothing until it is merged there.
+name: Claude Review (on demand)
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "Pull request number to review"
+        required: true
+  issue_comment:
+    types: [created]
+  # Also listen on diff-hunk comments. Without this, "@claude review" typed in a
+  # review comment triggered NOTHING: this workflow did not see the event, and
+  # claude-mention.yml (which does) excludes that phrase on purpose.
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  # Refuse to start without the credential, and SAY SO ON THE PULL REQUEST.
+  #
+  # ⚠️ Without this the failure is invisible from the PR. The action installs
+  # Claude Code and only then aborts with "Environment variable validation
+  # failed: Either ANTHROPIC_API_KEY, CLAUDE_CODE_OAUTH_TOKEN, ... is required"
+  # — and because an issue_comment workflow attaches NO check run to the pull
+  # request, that leaves no comment, no red tick, and nothing on the PR page at
+  # all. The summons simply evaporates. Both #181 and #182 were summoned this
+  # way on 2026-08-19, on a repository where the secret had never been added,
+  # and the only trace was in the Actions tab.
+  #
+  # That matters more here than for an ordinary workflow: this is the reviewer
+  # people reach for precisely WHEN the other bots have gone quiet, so a silent
+  # failure is indistinguishable from the situation it was summoned to fix.
+  preflight:
+    # Comment path: only on a PR, and only for the exact "@claude review"
+    # phrase, which is what keeps this from overlapping claude-mention.yml.
+    # startsWith, not contains: a comment that merely QUOTES "@claude review"
+    # (a reply, a pasted excerpt) should not spend a review. The phrase is a
+    # command, so it has to lead the comment.
+    #
+    # The condition lives HERE and nowhere else: `review` gates on
+    # `needs: preflight`, so a skipped preflight skips the review with it. A
+    # copy of this expression in both jobs is exactly the sort of duplicate
+    # that goes stale.
+      # ⚠️ Actor guard: runs bill to the CLAUDE_CODE_OAUTH_TOKEN owner's Claude
+      # subscription, so a trigger is a spend. The action already rejects
+      # non-write users and bot actors BEFORE any model request (visible in the
+      # run log as "Actor has write access" / "Verified human actor"), so a
+      # passer-by commenting on a public PR cannot spend anything. This pins it
+      # to a named account as well, so granting someone write access for an
+      # unrelated reason does not silently hand them the subscription too.
+      # To let someone else summon it, add their login here.
+    if: >-
+      github.actor == 'thpoll83' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'pull_request_review_comment' &&
+        startsWith(github.event.comment.body, '@claude review')) ||
+       (github.event.issue.pull_request != null &&
+        startsWith(github.event.comment.body, '@claude review')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Write is needed to post the comment, and is confined to THIS job so the
+    # review job below keeps its read-only token.
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Require CLAUDE_CODE_OAUTH_TOKEN
+        env:
+          # secrets are not available to a job- or step-level `if`, so the
+          # emptiness test has to happen in the shell.
+          OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.issue.number || github.event.pull_request.number || inputs.pr }}
+        run: |
+          if [ -n "$OAUTH_TOKEN" ]; then
+            echo "CLAUDE_CODE_OAUTH_TOKEN is set; handing over to the review job."
+            exit 0
+          fi
+          cat > "$RUNNER_TEMP/missing-token.md" <<'BODY'
+          ### The on-demand reviewer could not run
+
+          `@claude review` reached the workflow and the trigger fired correctly,
+          but this repository has no **`CLAUDE_CODE_OAUTH_TOKEN`** secret, so the
+          run stops at credential validation before reviewing anything.
+
+          To enable it: generate a token with `claude setup-token`, add it under
+          **Settings → Secrets and variables → Actions** as
+          `CLAUDE_CODE_OAUTH_TOKEN`, then comment `@claude review` again.
+
+          Until then this PR has **not** been reviewed by anyone.
+          BODY
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" \
+            --body-file "$RUNNER_TEMP/missing-token.md" || true
+          echo "::error::CLAUDE_CODE_OAUTH_TOKEN is not set - the reviewer cannot run (commented on PR #$PR)."
+          exit 1
+
+  review:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: claude-review-${{ github.event.issue.number || github.event.pull_request.number || inputs.pr }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          plugin_marketplaces: "https://github.com/anthropics/claude-code.git"
+          plugins: "code-review@claude-code-plugins"
+          prompt: "/code-review:code-review --comment ${{ github.repository }}/pull/${{ github.event.issue.number || github.event.pull_request.number || inputs.pr }}"
+          # Required even though the skill's own frontmatter names this tool:
+          # the action only starts the inline-comment MCP server when
+          # --allowedTools lists it here.
+          # ⚠️ --max-turns is a RUNAWAY BACKSTOP, not a budget dial. Set it low
+          # and a real review is cut off mid-way, which lands as a partial or
+          # absent verdict on a green run — the same silent-failure shape this
+          # file already documents twice. A 2-file PR used 10 turns, so 50
+          # leaves ample room and only catches a loop.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment"
+            --max-turns 50
+          # ⚠️ REQUIRED, and its absence fails SILENTLY. The action loads
+          # settingSources ["user","project","local"], so this repo's own
+          # .claude/settings.json applies inside the runner — and its
+          # `permissions.allow` list names none of the tools a review needs.
+          # Locally an unlisted tool merely prompts; in CI there is nobody to
+          # answer, so it is DENIED. An allow-list that is harmless on a
+          # developer's machine is therefore a deny-list here.
+          #
+          # The result is a green run that reviewed nothing: on #181 the model
+          # spent 10 turns and ~94 s, logged `permission_denials_count: 5`, and
+          # posted not one comment (2026-08-20). Upstream calls this out in
+          # anthropics/claude-code#32459 and claude-code-action#1087; this
+          # settings block is their recommended fix.
+          #
+          # `Bash(gh:*)` is deliberately broad: narrowing it to the subcommands
+          # the plugin happens to use today re-arms exactly this silent failure
+          # the next time it uses another. The job's own GitHub permissions stay
+          # read-only.
+          settings: |
+            {
+              "permissions": {
+                "allow": [
+                  "Bash(gh:*)",
+                  "Bash(git diff:*)",
+                  "Bash(git log:*)",
+                  "Bash(git show:*)",
+                  "Read",
+                  "Glob",
+                  "Grep"
+                ]
+              }
+            }

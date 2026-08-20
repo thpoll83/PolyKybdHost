@@ -22,6 +22,7 @@ import threading
 
 from polyhost.cli.polyctl import RpcError
 from polyhost.server import protocol as p
+from polyhost.util.observable import Observable
 
 
 def _close_quietly(*conns):
@@ -34,11 +35,11 @@ def _close_quietly(*conns):
                 pass
 
 
-class RemoteCore:
+class RemoteCore(Observable):
     """RPC-backed proxy for the GUI's ``self.core`` (see docs/headless-h4-plan.md)."""
 
     def __init__(self, rpc_client, event_client, log, address=None, authkey=None):
-        self.log = log
+        Observable.__init__(self, log)
         self._rpc = rpc_client
         self._evt = event_client
         # Endpoint kept so a dropped request connection can be re-established
@@ -47,8 +48,6 @@ class RemoteCore:
         self._address = address
         self._authkey = authkey
         self._rpc_lock = threading.Lock()      # GUI dialogs may call off-main-thread
-        self._observers = []
-        self._observers_lock = threading.Lock()
         self._status = {}
         self._status_lock = threading.Lock()
         self._stop = threading.Event()
@@ -159,18 +158,8 @@ class RemoteCore:
     # Observer plumbing (mirrors PolyCore)
     # ------------------------------------------------------------------
 
-    def subscribe(self, callback):
-        with self._observers_lock:
-            self._observers.append(callback)
-
-    def emit(self, name, payload):
-        with self._observers_lock:
-            observers = list(self._observers)
-        for cb in observers:
-            try:
-                cb(name, payload)
-            except Exception:
-                self.log.exception("RemoteCore observer failed for %r", name)
+    # subscribe() / emit() come from Observable (polyhost/util/observable.py) —
+    # the same seam PolyCore exposes, so PolyHost consumes either transparently.
 
     def _pump(self):
         """Drain server-pushed events on the dedicated connection, keep the
@@ -452,8 +441,8 @@ class RemoteCore:
     def apply_staged_firmware(self):
         return self._device(p.M_FW_APPLY_STAGED)
 
-    def sync_fontpack(self):
-        return self._device(p.M_FONTPACK_SYNC)
+    def sync_fontpack(self, force=False):
+        return self._device(p.M_FONTPACK_SYNC, {"force": bool(force)})
 
     def wipe_fontpack(self):
         return self._device(p.M_FONTPACK_WIPE)

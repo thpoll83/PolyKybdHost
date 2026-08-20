@@ -116,9 +116,9 @@ class FakeCore:
         self.calls.append(("get_fontpack_status",))
         return (True, {"present": True, "abi": 1, "content_version": 7, "font_count": 3})
 
-    def sync_fontpack(self):
-        self.calls.append(("sync_fontpack",))
-        return (True, {"queued": True})
+    def sync_fontpack(self, force=False):
+        self.calls.append(("sync_fontpack", bool(force)))
+        return (True, {"queued": True, "force": bool(force)})
 
     def wipe_fontpack(self):
         self.calls.append(("wipe_fontpack",))
@@ -143,8 +143,8 @@ class FakeCore:
     def set_all_overlay_usage(self):
         return (True, "all")
 
-    def report_window(self, handle, name, title):
-        self.calls.append(("report_window", handle, name, title))
+    def report_window(self, handle, name, title, os=None, url=None):
+        self.calls.append(("report_window", handle, name, title, os, url))
         return (True, {"reported": True})
 
     def send_overlay_mapping(self, mapping):
@@ -317,7 +317,18 @@ class ControlServerTest(unittest.TestCase):
         resp = self._call(conn, 42, p.M_WINDOW_REPORT,
                           {"handle": "7", "name": "Code.exe", "title": "x - VS Code"})
         self.assertEqual(resp["result"], {"reported": True})
-        self.assertIn(("report_window", "7", "Code.exe", "x - VS Code"), self.core.calls)
+        # os/url are optional: absent params must arrive as None, not raise.
+        self.assertIn(("report_window", "7", "Code.exe", "x - VS Code", None, None),
+                      self.core.calls)
+
+    def test_window_report_forwards_os_and_url(self):
+        conn = self._connect()
+        self._hello_then(conn)
+        self._call(conn, 43, p.M_WINDOW_REPORT,
+                   {"handle": "7", "name": "chrome", "title": "Board — Miro",
+                    "os": 2, "url": "https://miro.com/app/board/x"})
+        self.assertIn(("report_window", "7", "chrome", "Board — Miro", 2,
+                       "https://miro.com/app/board/x"), self.core.calls)
 
     def test_pause_set(self):
         conn = self._connect()
@@ -362,8 +373,13 @@ class ControlServerTest(unittest.TestCase):
         conn = self._connect()
         self._hello_then(conn)
         resp = self._call(conn, 34, p.M_FONTPACK_SYNC)
-        self.assertEqual(resp["result"], {"queued": True})
-        self.assertIn(("sync_fontpack",), self.core.calls)
+        self.assertEqual(resp["result"], {"queued": True, "force": False})
+        self.assertIn(("sync_fontpack", False), self.core.calls)
+        # The force flag has to survive the RPC — it is the only route to a bundle
+        # the keyboard reports as current but renders wrong.
+        resp = self._call(conn, 37, p.M_FONTPACK_SYNC, {"force": True})
+        self.assertEqual(resp["result"], {"queued": True, "force": True})
+        self.assertIn(("sync_fontpack", True), self.core.calls)
         resp = self._call(conn, 35, p.M_FONTPACK_BUNDLES)
         self.assertEqual(resp["result"], {"shipped": True, "bundles": []})
         self.assertIn(("fontpack_bundle_status",), self.core.calls)

@@ -30,7 +30,9 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   Review limit reached … next review in 43 minutes` comment, re-queued and still
   unavailable at merge time), Sourcery had hit its weekly diff-character limit so
   it posted only its descriptive *Reviewer's Guide*, and Qodo only ever posts a
-  *PR Summary*. All three render as long, confident-looking comments with
+  *PR Summary* (and, since its subscription lapsed, only a *"reviews are paused
+  because the subscription is no longer active"* notice — docs#48, 2026-08-17).
+  All three render as long, confident-looking comments with
   walkthroughs and file tables, so the PR read as well-reviewed and merged with
   zero findings raised against it. Tells: CodeRabbit's rate-limit notice (and the
   "Reviews paused" one — see the same section in `qmk_firmware/CLAUDE.md`), and
@@ -65,10 +67,120 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       beneath it. Note the banner behaved *correctly* here (present, with the
       real `<old>..<new>` range), so the asymmetry is: **a banner that is present
       is trustworthy; a banner that is absent proves nothing.**
+    - ✅ **There IS a cheap reliable tell after all: the Merge Risk block names the
+      commit it covers** — *"Merge Risk: 🟡 Moderate · up to `351b8`"*.
+      Read that sha instead of comparing walkthrough prose against the head
+      commit. On docs#48 (2026-08-17) the summary re-rendered on **three**
+      successive pushes, each time still scoped `up to 351b8` and still asserting
+      the PR was "not merge-ready" over a concern two later commits had already
+      fixed — while CodeRabbit's own chat reply confirmed the fix. Same sticky
+      mechanism as above, but self-labelling: if that sha is not the head, the
+      whole summary (risk verdict included) is describing an older commit. It is
+      worth checking before believing any *later* re-render of a summary,
+      including a scary one.
     - ⚠️ **The limit is per-developer across the ORG, so pushes to a trivial PR
       starve the one that needs review.** Docs pushes on #42 consumed the window
       #159 was waiting for. When two PRs are open and one is real code, stop
       pushing cosmetic commits to the other until the important one is reviewed.
+    - ⚠️ **A THIRD no-review mode: CodeRabbit does not auto-review a repo with
+      fewer than 10 stars at all** — *"Reviews should be triggered manually for
+      repositories with fewer than 10 stars"*, rendered as a *"Review available on
+      request"* box with a Trigger-review checkbox. This is permanent, not a
+      transient limit, so it is easy to mistake for "no findings". It applies to
+      **`polykybd-docs`** (docs#48, 2026-08-17) **and to `PolyKybdHost`** (#172,
+      2026-08-18) — i.e. do not assume the host repo auto-reviews; the fix is
+      simply to comment `@coderabbitai review`. The same reply then states the quota
+      outright — *"Your plan includes up to 1 review per rolling hour; 0 remain
+      after this review"* — which is the number to plan around when a PR needs a
+      re-review after a fix.
+    - ⚠️ **All THREE bots can be unavailable at once, each in its own disguise —
+      #172 (2026-08-18) collected a full page of bot output and not one review.**
+      CodeRabbit posted the under-10-stars "Review available on request" box;
+      Sourcery submitted a review whose entire body was its weekly rate-limit
+      notice **and a `Sourcery review` check run with conclusion `skipped`**
+      (green-adjacent, not red); Qodo posted its subscription-lapsed notice. On top
+      of that Sourcery still rendered a full *Reviewer's Guide* with two mermaid
+      sequence diagrams and a file-level change table — pure description, zero
+      findings — which is the most convincing-looking artifact of the three. Read
+      the check-run *conclusion* and the review *body*, never the presence of
+      output.
+      - ✅ **The remedy for all three at once is the on-demand reviewer:
+        comment `@claude review`** — **verified working end to end on #185
+        (2026-08-20)**, which is worth stating because it had never once
+        published a review before that (`.github/workflows/claude-review.yml`,
+        host repo only — the docs repo has just `deploy.yml`). It is deliberately
+        never automatic, draws on no bot's quota, and unlike `@coderabbitai
+        review` costs nothing when refused. It runs the copy of the workflow on
+        the **default branch**, so it works on a stacked PR whose base is a
+        feature branch — the one case CodeRabbit skips outright.
+      - ⚠️ **It needs the `CLAUDE_CODE_OAUTH_TOKEN` repository secret, and
+        without it the summons EVAPORATES — no comment, no check run, nothing on
+        the PR page.** The action installs Claude Code and only then aborts on
+        *"Environment variable validation failed: Either ANTHROPIC_API_KEY,
+        CLAUDE_CODE_OAUTH_TOKEN, ... is required"*; an `issue_comment` workflow
+        attaches **no check run to the pull request**, so the failure is visible
+        only in the Actions tab. Both #181 and #182 were summoned this way
+        (2026-08-19) on a repo where the secret had never been added, and read
+        as simply still-unreviewed. This is the nastiest member of the
+        looks-reviewed-but-wasn't family, because it is the fallback you reach
+        for *when the other bots have gone quiet* — so its silent failure is
+        indistinguishable from the situation it was summoned to fix. A
+        **preflight job now comments on the PR and fails the run** instead;
+        if you ever see that comment, the fix is to add the secret
+        (`claude setup-token` → Settings → Secrets and variables → Actions),
+        not to re-summon.
+      - ⚠️ **A GREEN run can also review nothing — this repo's own
+        `.claude/settings.json` was silently disabling it.** The action loads
+        `settingSources ["user","project","local"]`, so the checked-in
+        `permissions.allow` list applies **inside the runner**, and it names
+        none of `Read`/`Glob`/`Grep`/`Bash(git diff:*)`. **Locally an unlisted
+        tool merely prompts; in CI nobody can answer, so it is denied** — an
+        allow-list meant to cut local prompts is a deny-list in Actions. On
+        #181 (2026-08-20) the model ran 10 turns and ~94 s, then posted
+        nothing. The tells are in the run log, not on the PR:
+        `"permission_denials_count": 5` in the result JSON, followed by
+        `No buffered inline comments`. Upstream: anthropics/claude-code#32459
+        and claude-code-action#1087; the fix is a `settings:` input on the
+        action granting those tools, now in both `claude-review.yml` and
+        `claude-mention.yml`. ⚠️ **The preflight above does NOT catch this** —
+        the credential was perfectly valid. And note the run still bills: that
+        silent one cost $2.76 at list rates against the subscription.
+      - ⚠️ **When a summons appears to do nothing, check the Actions tab, not
+        the PR.** `actions_list` with `claude-review.yml` shows the run and its
+        conclusion; `get_job_logs` with `failed_only` then names the cause —
+        but ask for **≥300 `tail_lines`**, because every job ends in ~40 lines
+        of git post-job cleanup and a smaller tail lands squarely in it (the
+        real error sat ~45 lines above the end here).
+      - ⚠️ **`actions_list` blows the tool token cap — 130–220 KB per call, even
+        at `per_page: 3`.** It saves the JSON to a file and tells you the path;
+        parse that rather than retrying with a smaller page size (it is the
+        per-run payload that is large, not the count). Hit 3× in one session.
+        ⚠️ Read the conclusion defensively — an **in-progress run has no
+        `conclusion` key at all**, so the obvious parse raises a KeyError on
+        exactly the run you are waiting for:
+        ```python
+        d = json.load(open(saved_path))
+        for r in d.get("workflow_runs", d):
+            print(r["id"], r["status"], r.get("conclusion", "<running>"))
+        ```
+      - **Who can summon it, and whose money it spends.** A run bills the
+        `CLAUDE_CODE_OAUTH_TOKEN` owner's Claude **subscription** (~$0.6–2.8 at
+        list rates per review), so a trigger is a spend. The action gates on
+        write access and rejects bot actors **before any model request** —
+        visible in the log as `Actor has write access` / `Verified human actor`
+        — so a passer-by commenting on a public PR costs Actions minutes and
+        nothing else. Both workflows additionally pin `github.actor`, which is
+        the case that gate does *not* cover: granting someone write access for
+        an unrelated reason would otherwise hand them the subscription silently.
+        ⚠️ Do **not** set `allowed_non_write_users` or `allowed_bots`; those are
+        the knobs that weaken this.
+      - **`--debug` would NOT leak the token, contrary to first instinct.**
+        GitHub auto-masks registered secrets in logs (`GITHUB_TOKEN: ***` is
+        right there in these runs), and masking only fails for values that are
+        *unregistered* or transformed. The real cost of a debug run is turnaround,
+        not disclosure: it lives in the workflow file, and comment-triggered
+        workflows run the **default-branch** copy, so one diagnostic costs two
+        merge cycles. A throwaway PR usually answers the same question for free.
   - ⚠️ **A review that DID run, on the right commit, with an accurate walkthrough,
     can still have SKIPPED the file you care about — read the "Files skipped from
     review" list before trusting a clean verdict.** On qmk PR #198 (2026-08-11)
@@ -90,6 +202,18 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     completed / Review rate limited"), so retries starve the window they wait on. A
     **push** re-triggers a review without spending a request — on that PR the next
     commit is what finally got one to run after two requests had been eaten.
+  - ⚠️ **The rate-limit wait is NOT a fixed hour — it stretches as you spend
+    requests, and the "Trigger review" checkbox spends one exactly like the chat
+    command.** On host #170 (2026-08-18) the first refusal said *"next review in
+    19 minutes"*; waiting that out and asking again returned **52 minutes**, i.e.
+    the second request pushed the window further out than the wait it was issued
+    for. So "wait for the stated time, then retry" is the one strategy that
+    reliably starves you — each retry buys a longer wait than it costs. Two
+    consequences: on an under-10-stars repo (host + docs, see below) do **not**
+    tick the box *and* comment `@coderabbitai review`, that is two slots for one
+    review; and when a review is genuinely needed, spend the slot on the final
+    commit and otherwise let a **push** trigger it (pushes don't draw on the
+    quota — the note above).
 
 - **When two reviewers disagree about the same code, WRITE THE TEST — it
   adjudicates, and it is faster than arguing.** On PR #154 (2026-08-07) Sourcery
@@ -138,10 +262,100 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   check is one people learn to scroll past, and the next real finding rides in
   behind it.
 
+- **When the other reviewers are unavailable, summon Claude with `@claude review`
+  on the PR.** `.github/workflows/claude-review.yml` runs the `code-review` skill
+  on demand (never automatically — three always-on bots is already the noise
+  ceiling) and posts inline comments; `claude-mention.yml` answers a plain
+  `@claude <question>` with the repo and this file loaded, which is the cheap way
+  to **adjudicate a suspect finding** per the verify-don't-dismiss rule above.
+  Neither has an external quota, so between them they cover the three cases that
+  otherwise leave a PR genuinely unreviewed: CodeRabbit rate-limited, Sourcery's
+  green-check-but-empty weekly limit, and an upstream-merge PR over 100 files.
+  - ⚠️ **Billed to the `CLAUDE_CODE_OAUTH_TOKEN` owner's Claude SUBSCRIPTION** —
+    the same budget as an interactive session, not an API key. A 400-file merge
+    review is the case you most want it and the one that costs most.
+  - ⚠️ **Comment and `workflow_dispatch` triggers always run the copy of the
+    workflow on the DEFAULT branch**, so neither does anything until merged
+    there — you cannot test them on the PR that adds them.
+  - **Routing: `startsWith('@claude review')` reaches the review workflow; any
+    other `@claude ...` goes to the mention one.** Both files use the identical
+    test, which is what stops one comment starting two runs. It is `startsWith`
+    and not `contains`, so a comment that merely *quotes* the phrase — a reply, a
+    pasted excerpt of a PR body — cannot spend a review.
+    - ⚠️ **Both workflows must listen on `issue_comment` AND
+      `pull_request_review_comment`.** This shipped with the review one listening
+      only to `issue_comment`, so `@claude review` typed on a **diff hunk**
+      triggered *nothing at all* — the mention workflow does see that event but
+      excludes the phrase by design. Silently dead in the one place a reviewer is
+      most likely to type it (caught by Sourcery, 2026-08-19). On that event
+      `github.event.issue` is null, so the PR number has to fall back through
+      `github.event.pull_request.number`.
+  - **`pull-requests: read` is CORRECT for the review workflow — do not "fix" it
+    to write.** With `github_token` omitted the action authenticates as the
+    **Claude GitHub App**, not `GITHUB_TOKEN`, so read permissions are enough to
+    post inline comments; Anthropic's own code-review example uses exactly these.
+    Reviewers raise this as a bug on every workflow change, so the refutation is
+    written down here to be quoted rather than re-derived.
+  - **The action enforces write-access and rejects bot actors ITSELF**, before
+    Claude starts, so the `if:` does not need to duplicate it — and a duplicate
+    would drift from it. That human-actor check is what stops another reviewer's
+    rate-limit notice from summoning Claude in a loop. The only residue is that a
+    runner *starts* before the rejection, which is free on a public repo.
+  - ⚠️ **A Claude review of Claude-written code is a third CORRELATED opinion,
+    not independent verification.** Most of this codebase is written in Claude
+    sessions, so the reviewer carries the author's priors and sails past the same
+    things — `send_to_bridge()`'s non-zero returns, the enumerating guard in
+    `find_matching_entry`, the `.pyc` mtime trap were each missed by an author and
+    would likely be missed by a same-model reviewer. It is genuinely useful for
+    the two jobs above (checking a *claim* against the code, and checking a diff
+    against *this file*, where the knowledge lives in the file rather than the
+    weights) and for the case where nothing else reviewed at all. The risk is not
+    that it is weak but that a clean one **reads as cover** — the same failure the
+    bot-tells above document. The last line of defence stays the HIL rig and the
+    unit suites; that asymmetry is why cppcheck was added alongside it.
+
 ## Branching (all PolyKybd repos)
 
 - **Give every branch a name that hints at its content.** When creating a branch, append a short, descriptive slug describing the change (e.g. `claude/fix-firmware-update-menu-daemon-mode`, not just the auto-generated `claude/<random-scientist>-<id>`). The random scientist/id suffix from Claude Code on the web is auto-assigned server-side and can't always be overridden mid-session, but whenever a branch name is chosen by us, make it self-explanatory so the branch list reads as a changelog.
 - **Always start new work on a FRESH branch cut from the updated default branch — never keep committing to a branch whose PR has already merged.** Once a PR is merged, that branch is done: `git fetch origin <default>` (and for the next piece of work `git checkout -b claude/<new-slug> origin/<default>`). Cherry-pick only the still-unmerged commits onto the fresh branch if needed. This keeps each PR a clean, focused diff against the current default (`main` for host/rig, `PolyKybd` for the firmware) and avoids a new PR accidentally re-including already-merged commits.
+  - ⚠️ **Violating this is INVISIBLE — a push to a branch whose PR has already
+    merged SUCCEEDS and orphans the commit.** git reports an ordinary fast-forward,
+    GitHub shows nothing (a merged PR does not reopen, update, or list the new
+    commit), and the work is simply not in `main` and not in any PR. It is easy to
+    hit without meaning to: the window is "the PR merged while you were still
+    working", not "you deliberately reused an old branch" — that is exactly how
+    the CLAUDE.md commit from #168 was stranded (2026-08-17, recovered as #171).
+    The one check, worth running before reporting any push as done:
+    `git merge-base --is-ancestor <sha> origin/main` (and `git log --oneline
+    --merges -5 origin/main` to see whether your PR's merge already went in).
+    Recovery is the restart above: `git checkout -B <branch> origin/<default>`,
+    cherry-pick the orphan, `git push --force-with-lease`, open a NEW PR — expect
+    an add/add conflict if another PR touched the same region meanwhile.
+- ⚠️ **A CLAUDE.md conflict is one of TWO kinds, and telling them apart matters —
+  the second one deletes your work silently if you resolve it the usual way.**
+  This file is append-heavy and every branch adds notes at the same anchors, so
+  conflicts here are routine (two in 90 minutes on 2026-08-18):
+  - **Addition beside addition** — main and your branch each inserted a new note
+    at the same anchor. Keep BOTH; put main's first so the diff against main
+    stays minimal.
+  - **Supersession** — main's PR *implemented* something and rewrote the note
+    that said it was impossible (`Browser-URL matching is LOCAL-ONLY` → `…DOES
+    cross machines`, #173). Main's version wins **outright**; keeping both ships
+    a file that contradicts itself. Verify you contributed nothing to that region
+    first — `git show <base>:CLAUDE.md | grep -c "<phrase>"` against your branch
+    proves it is inherited, not yours.
+  - ⚠️ **After resolving, grep each of your notes back by name.** Taking one side
+    wholesale also deletes anything of yours that merely *shared the conflict
+    block* — git reports a clean merge, the file has no markers, and the loss is
+    invisible. That happened on 2026-08-18: a supersession block also contained
+    two unrelated new notes, and "take theirs" removed them. The check is
+    `for pat in "<note phrase>" …; do grep -c "$pat" CLAUDE.md; done` — one line,
+    and the only thing standing between you and silently dropped work.
+    ⚠️ Grep **prose**, not a phrase containing markup: this file wraps identifiers
+    in backticks, so a pattern typed as `crash_summary() puts the crash counts`
+    scores 0 against a line reading ``` `crash_summary()` puts the crash counts ```
+    — a false "note lost" scare mid-resolution (2026-08-18). Pick a distinctive
+    run of plain words, or include the backticks.
 
 ## Commands
 
@@ -212,6 +426,77 @@ Abstract base `unicode_input.py` with per-platform implementations:
 ### GUI (`polyhost/gui/`)
 PyQt5 widgets: main window (`host.py`), settings dialog, command menu, log viewer, layout editor (`layout_dialog/`), tray icon state manager.
 
+### Shared components (extracted duplication — reuse these, don't re-type them)
+
+Five pieces of plumbing existed as two-or-more hand-written copies and are now
+single implementations. Each was extracted because a copy had **already drifted**
+or was one edit away from it, so reaching for the shared piece is the point:
+
+- **`polyhost/server/mpc_listener.py` — `MpcListenerServer`.** The accept loop,
+  per-connection reader thread, opening `hello` frame, JSON-RPC error mapping and
+  the non-deadlocking `stop()` shared by `ControlServer` and `WindowReportServer`.
+  Subclasses implement `dispatch(conn, req_id, method, params)` and may override
+  `on_connection_added/_dropped`, `send` (the control server serializes writes per
+  connection), `after_dispatch`, `secure_listener` and `wake_address`.
+  ⚠️ **The surfaces stay separate — that separation is the security boundary.**
+  The base carries no registry and no `PolyCore` reference; the network endpoint
+  still serves exactly one method. This is the direct fix for the class of bug
+  CLAUDE.md already documents ("grep the other two servers before designing
+  anything"): the bounded-raw-connect `accept()` wake lived in one server and not
+  the other, and its absence hung the suite intermittently for ~3 sessions.
+  ⚠️ `wake_address()` exists because a wildcard `0.0.0.0` bind is **not
+  connectable** — the window-report server overrides it to dial loopback, or
+  `stop()` could never wake `accept()`.
+- **`polyhost/gui/update_ui.py` — `UpdateProgressController`.** The self-update
+  progress dialog handling shared by `PolyHost` and `PolyForwarder`
+  (`on_progress` / `close` / `stage_relay`). It drives a **duck-typed** dialog, so
+  each app keeps its own styling (the tray snaps to the tray corner) and the module
+  stays Qt-free and unit-testable. `stage_relay` is the one correct relay spawn:
+  `spawn_detached([relaunch_executable(), path])`. The forwarder's copy had drifted
+  to a bare `Popen([sys.executable, …])` — both halves of that are the documented
+  failure modes (an un-normalised interpreter leaves the restarted app owning a
+  console; a bare `Popen` skips `CREATE_BREAKAWAY_FROM_JOB` and the DEVNULL stdio).
+  `PolyHost._update_progress` is a **property** over the controller's dialog so the
+  controller is the single owner and the two can't disagree about whether a dialog
+  is up.
+- **`polyhost/gui/theme.py` — `apply_dark_palette(app)` / `dark_palette()`.** The
+  dark Fusion theme both `QApplication`s wear; they had a byte-identical 22-line
+  `set_style`. It is an explicit palette (not a stylesheet) because the palette is
+  what propagates into the stock `QMessageBox`/`QProgressDialog`/file pickers
+  neither app styles by hand.
+- **`polyhost/util/observable.py` — `Observable`.** The `subscribe`/`emit` seam
+  `PolyCore` and `RemoteCore` both expose (and both duplicated). Two properties are
+  load-bearing and easy to drop when re-typing: `emit` **snapshots under the lock
+  and fires outside it** (an observer that subscribes another must not deadlock the
+  core), and a **raising observer is caught, logged and left subscribed** — the
+  emitting side is a worker thread, so an escaping exception doesn't fail an event,
+  it kills the thread that owns the device.
+- **`PolyCore._flash_resource` + `poly_core.flash_progress_relay`.** Every resource
+  that rides the font-pack transport (`.plyf` bundle, doom `.whx`, doom `.plyx`)
+  goes through `_flash_resource`; they differ only in the "cannot read" noun, the
+  validator, how the engine is invoked and the event `kind`. `flash_progress_relay`
+  builds the `(progress_cb, cancel_flag)` pair — ⚠️ `cancel_flag` is a **one-element
+  list** because the engines poll it by reference between chunks, and the only thing
+  that raises it is a progress callback observing the worker's cancel Event. Getting
+  that wiring wrong fails **silently**: the flash just becomes uncancellable.
+  ⚠️ The engines return **`(ok, msg, commit_status)`** and `_flash_resource` discards
+  the status deliberately — only the multi-bundle pass (`_fontpack_flash_bundles_job`)
+  acts on it, to tell a lost COMMIT acknowledgement apart from a real refusal and queue
+  a retry; a single explicit flash has nothing to retry into. That arity is **mocked in
+  every test**, so a change to it would leave the suite green while a real flash raises
+  `ValueError` inside the worker job — `TestFlasherReturnArity` asserts it against the
+  real functions for exactly that reason (it had to be corrected once already, when the
+  engines grew the third element).
+
+**Deliberately NOT extracted** (recorded so it isn't re-litigated): the
+`FW_UP_BEGIN` / `FONTPACK_BEGIN` erase-poll loops in `hid_fw_up.py` and
+`hid_fontpack.py` are structurally similar (~50 lines each, plus an identical
+`_erasing` closure) but genuinely diverge — the font-pack side supports cancel and
+returns a 3-tuple, the firmware side owns the `?`/`S` confirm-poll. That is the
+most safety-critical path in the repo and cannot be verified without hardware, so
+the duplication is the cheaper risk. Same for the two dialogs' `main()` dev
+launchers.
+
 ### Configuration (`polyhost/settings.py`)
 YAML config persisted to XDG config dir via `platformdirs`. Covers unicode composition mode, brightness/daylight settings (solar calculations via `pvlib`/`geocoder`), HID rate limits, and debug flags.
 
@@ -225,11 +510,26 @@ YAML config persisted to XDG config dir via `platformdirs`. Covers unicode compo
 Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main thread does **no device I/O** after `PolyHost.__init__` (the one synchronous `connect()` at startup — which seeds `device_present` for firmware-action gating — is the only exception). There is deliberately **no synchronous language enumeration at startup**: `self.connected` can only be set by the reconnect decision tree (that's where the protocol/version gate lives), so the first worker probe always sees a False→True transition and runs the full fresh-connect flow (enumerate + menu build + unicode mode + cache reset). A startup enumerate just duplicated all of it within the first second (double menu build, field 2026-06-13) — don't re-add one.
 
 - `HidWorker` (`polyhost/device/hid_worker.py`) owns the device. Periodic tasks on the worker: reconnect probe (1 s), console/serial reads (250 ms), daylight brightness incl. its network lookups (10 min).
-- UI code enqueues jobs (`worker.submit`); overlay sends use `coalesce_key="overlay"` so rapid app switches supersede/cancel stale transfers instead of replaying them. Dialogs use `worker.run_sync` (short bounded block; raises `RuntimeError` while suspended). Firmware flash/apply wraps the dialog in `worker.exclusive()`; tray pause maps to `suspend()`/`resume()`, and `exclusive()` restores the prior suspend state on exit.
+- UI code enqueues jobs (`worker.submit`); overlay sends use `coalesce_key="overlay"` so rapid app switches supersede/cancel stale transfers instead of replaying them. Dialogs use `worker.run_sync` (short bounded block; raises `RuntimeError` while suspended). Tray pause maps to `suspend()`/`resume()`, and `exclusive()` restores the prior suspend state on exit. ⚠️ **There are TWO flash paths and only one of them uses `exclusive()`** — see the console-starvation note below, which is what makes the distinction matter.
 - ⚠️ **Nothing the firmware prints during a flash is observable from the host** — and
-  this is not a logging-level problem, so don't go hunting for a switch. `exclusive()`
-  calls `suspend()`, which sets the cancel flag on **every** periodic including the
-  250 ms console read, and QMK *drops* console output that no one drains. So the
+  this is not a logging-level problem, so don't go hunting for a switch. QMK *drops*
+  console output that no one drains, and during a flash nobody does. ⚠️ **TWO flash
+  paths reach that outcome by DIFFERENT mechanisms**, so don't reason from one to the
+  other:
+  - The **core job** path (`PolyCore.flash_firmware` / `flash_fontpack`, i.e. the
+    daemon, `polyctl`, and the tray's RPC flash) runs the whole upload as **one long
+    job on the HID worker** and deliberately takes **no `exclusive()`** — its docstring
+    says so, since the worker's single thread already blocks the reconnect probe.
+    `HidWorker._run()` runs due periodics only **between** jobs, so the 250 ms console
+    read simply never gets a turn for the duration.
+  - The **GUI dialog** path (`host.py` `_on_fw_download_done()`, and `cmd_menu.py`'s
+    `_paused_polling()` context manager) *does* wrap in `worker.exclusive()`, because
+    `HidFwUpDialog` stages chunks from **its own QThread** — nothing would otherwise
+    stop the worker's periodics contending for the device while the keyboard
+    re-enumerates. There `suspend()` sets the cancel flag on every periodic, the
+    console read included.
+
+  Either way the
   window from BEGIN to the post-apply reconnect is a blind spot in the host log,
   which is exactly where the FW-2 verdict lands: `FW_UP: image signature
   OK|INVALID|UNSIGNED`, printed at COMMIT. Two rounds were spent concluding "it
@@ -406,6 +706,61 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   is the manual path; the tray surfaces flash progress (`_on_fontpack_progress/done`).
   Firmware-side architecture (slots, layout header, GET_ID block) is in the qmk repo's
   CLAUDE.md "Font pack" section.
+  - ⚠️ **A bundle can report a FAILED flash and still read as UP TO DATE, so the version
+    comparison alone must never decide what to re-flash.** The FONTPACK target writes **in
+    place** at the slot, so the pack (header first, carrying `content_version`) is in flash
+    as the chunks land; COMMIT only verifies the transport CRC and reloads. A flash whose
+    COMMIT *acknowledgement* is lost therefore leaves a complete, CRC-valid slot — the
+    firmware's `fontpack_bundle_version()` only answers for a slot that passed
+    `fontpack_load()`'s full CRC32, so the next `GET_ID` advertises the new version and
+    `decide_stale_bundles` says "nothing to do". Field 2026-08-17: `symbol` reported
+    *"COMMIT failed — CRC mismatch or the font pack was rejected"*, was then **skipped on
+    every later connect and on the manual sync**, and the glyphs were in fact fine all
+    along. Two consequences that are easy to get wrong:
+    - **The core remembers failures** (`_fontpack_failed`, slot → message) and re-flashes
+      them regardless of version; `fontpack_bundle_status()` exposes `retry`/`last_error`
+      per bundle plus a top-level `failed`, and the tray row relabels to *"Retry keyboard
+      fonts (N failed)…"*. Without that the UI renders *"Keyboard fonts: up to date"*
+      (disabled) over a bundle that never took — no route back from the GUI at all.
+    - **A failed COMMIT is VERIFIED before being believed** (`_verify_flashed_bundle`):
+      re-read `GET_ID` and, if the slot now advertises the shipped version, treat it as
+      stored-with-a-caveat instead of re-sending tens of KB. ⚠️ The version block reflects
+      the **master's** slots only, so it can never prove the *slave* got the bundle — on a
+      `slave-unconfirmed` status say so in the note rather than claiming plain success.
+      A `rejected` status is deliberately **not** verified (the keyboard told us it refused
+      the data).
+  - **One bundle's failure must not abort the pass.** `_fontpack_flash_bundles_job` flashes
+    every target, collects the outcomes and emits **one** terminal event naming what landed
+    and what failed. The old `return`-on-first-failure cost six perfectly good bundles a
+    flash because `symbol` (slot 0, first in order) failed; they only got flashed minutes
+    later because a firmware update happened to force a reconnect.
+  - **`sync_fontpack(force=True)`** (`M_FONTPACK_SYNC {"force": true}`, `polyctl fontpack
+    sync --force`, Developer → Font Pack → "Re-flash ALL bundles") re-sends every shipped
+    bundle ignoring the comparison — the only recovery for a bundle the keyboard reports as
+    current but renders wrong. Note the tray's "Update keyboard fonts" row and the menu's
+    "Sync" both submit the *same* job as the on-connect auto-check, so before this existed
+    pressing them could not re-flash such a bundle (the log line is identical either way,
+    which is also why auto and manual runs are indistinguishable in `daemon_log.txt`).
+  - **The COMMIT status is now three-valued** — `hid_fontpack.classify_commit_reply` maps
+    the firmware's `.`/`R`/`L` (+ legacy `!` and no-reply) to `COMMIT_OK` /
+    `COMMIT_REJECTED` / `COMMIT_NO_SLAVE` / `COMMIT_UNSPEC` / `COMMIT_NO_REPLY`, and
+    `flash_fontpack`/`flash_doomwad`/`flash_doompack` return `(ok, msg, status)`. A
+    non-`rejected` failure is **retried in place** (`_COMMIT_ATTEMPTS` 3) rather than
+    re-streamed: re-running the firmware's finalize is free (the staged CRC and write
+    cursor are untouched, and the slave's handler is idempotent), so a dropped bridge ACK
+    on a busy split link — the observed failure, with `giveup=44` in that window — usually
+    clears for the cost of one report. `rejected` is **not** retried; asking again cannot
+    change what is in flash.
+    - ⚠️ **These host tests pin the contract from ONE side only, and it is the less
+      useful side.** `tests/device/hid_fontpack_test.py` encodes the firmware's reply
+      bytes as **fixtures** (`_commit_status_reply`), so it catches the *host*
+      misreading a status — the opposite direction from the bug that actually shipped,
+      which was the firmware *emitting* `!` for a dropped link ack. A fixture is not
+      the firmware. The firmware end is now pinned too (qmk
+      `make test:fw_up_verdict` → `FontpackCommitStatusTest`), so a change to either
+      side that breaks the mapping fails a test somewhere. **When you touch these
+      status values, update BOTH suites** — and prefer adding the firmware-side
+      assertion first, since that is the end a host fixture can never police.
 - **Font-pack inspect/extend tools** (`polyhost/gui/fontpack_inspector_dialog.py` +
   `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
   `fontgen*`): a standalone window to view every bundle glyph as
@@ -776,12 +1131,287 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     workflow (`workflow_dispatch`) rather than assuming — that is a 30 s check.
   - **`binding = "DB"` in `wrangler.toml` must stay `DB`**: `d1 create` prints a suggested
     binding named after the *database*, and adopting it 503s every ping.
+- ⚠️ **The telemetry collector CANNOT double as a problem-report backend — four
+  independent reasons, and the last one is a feature.** The obvious idea when
+  "Report a Problem" was designed (2026-08-18) was to POST the report to the
+  Cloudflare Worker that already exists. It doesn't fit, and each obstacle would
+  have to be removed separately: the Worker caps a request body at **8 KB** (a
+  description plus diagnostics blows past it, let alone logs); the D1 schema is
+  `UNIQUE(install_id, day)` and upserts, so a **second report the same day
+  overwrites the first** — exactly when a user is retrying because it broke
+  again; the payload is an **allow-list rebuilt server-side** (`PAYLOAD_KEYS`,
+  frozen by a test *designed* to make widening fail loudly), so free text can only
+  arrive by deliberately undoing that guarantee; and the Worker is **write-only by
+  design — there is no read route**, which is precisely what makes the dataset
+  unleakable, so retrieval would mean building the route the design exists to
+  avoid, plus auth *inside* the Worker (Cloudflare Access is zone-scoped and
+  unavailable on `workers.dev` — see the note above). Hence the shipped design is
+  a **pre-filled GitHub issue** with the bundle attached by the reporter: no
+  backend, no new data store, and the user sees what they send. Don't re-propose
+  the Worker without answering all four.
+- **Log collection is ONE Qt-free service with three front ends —
+  `polyhost/services/log_bundle.py`.** "Send me your log" used to be a request
+  nobody could satisfy: the logs are **six** files
+  (`host_log.txt`, `daemon_log.txt`, `polykybd_console.txt`, `startup_log.txt`,
+  `forwarder_log.txt`, `crash_log.txt`), the rotating ones × up to 3 backups
+  each, written **relative to the process
+  cwd**, and under daemon-by-default the half that matters is the *daemon's*, not
+  the GUI's. `build_bundle()` writes a `.zip` (logs + `diagnostics.txt` + a
+  redacted `settings.yaml` + a README stating the timeframe and redaction state);
+  `recent_text()` returns the same content for the clipboard. Front ends: the tray's
+  **Help & About → "Collect logs…"**, a **"Collect Logs…"** button in the log viewer,
+  and **`polyctl logs bundle|show|paths`**. Nine things that are load-bearing:
+  - ⚠️ **A NEW log file reaches nobody unless `LOG_SOURCES` knows about it** —
+    that is now the single declaration (filename, viewer tab `title`, and
+    whether it is time-`sliced`), and `viewer_files()` derives both tray apps'
+    log-viewer tabs from it. It used to be **four** hand-maintained lists —
+    `log_bundle.py`, the `log_files` dict in `host.py` *and* in `forwarder.py`
+    (the forwarder is a second tray app with its own viewer), and the count in
+    this paragraph — and they drifted exactly as you would expect: #172 shipped
+    `crash_log.txt`, the file whose entire purpose is proving whether the app
+    crashed, into **none** of them, so the one artifact a support round asks for
+    first could be neither collected nor viewed. Worse, the note recording that
+    said THREE, having itself missed the forwarder: the guard meant to prevent
+    the drift was one of the drifting lists. Fixed 2026-08-18 (#178) by deriving
+    instead of enumerating — same shape as the enumerating-guard trap in the
+    review conventions above. The count in this paragraph is the one hand-kept
+    number left; it is prose, so nothing can derive it.
+  - ⚠️ **Registering a source is only half of it — check its lines carry a
+    sliceable timestamp.** `slice_lines` starts `keep = False` and only flips on a
+    `[YYYY-MM-DD HH:MM:SS,mmm]` prefix, so a file the logging handlers did not
+    write is dropped **in full** and the section silently vanishes: registered,
+    and still reaching nobody. `crash_log.txt` is exactly that — its markers are
+    `=== session start | pid N | … ===` — and worse, `faulthandler` writes its
+    native dump *on the fault* with no marker of its own, so even with the marker
+    format taught to the slicer the dump would inherit the keep/drop decision of a
+    `session start` that may be hours older, dropping precisely the crash being
+    reported. Hence `LogSource.sliced=False` for it. The flag lives **on the
+    entry**, not in a lookup table beside it, so a new source has to answer the
+    question where it is declared. `_collect_source()` is the single place that
+    honours it — `collect_text` and `build_bundle` had two copies of that loop,
+    and the bundle is the copy that reaches a maintainer.
+  - **`crash_summary()` puts the crash counts in the report BODY**, since the body
+    is read long before the attachment is opened. It is deliberately **not** a
+    verdict: a `session start` with no matching `clean exit` is the crash log's
+    headline signal, but the process writing the report is itself such a session
+    (as is a live daemon), so an "it crashed" claim derived here would fire on
+    every healthy report and be learned to ignore.
+  - ⚠️ **`polyctl logs` MUST work with no host running** — `main()` routes it
+    through `_is_offline_command` *before* `connect()`, and a reachable daemon only
+    enriches the diagnostics. The moment a user most needs the logs is the one where
+    the app failed to start or the daemon died, i.e. exactly when `connect()` fails.
+    Don't "simplify" it back onto the normal connect-first path.
+  - **The rotation chain is read `.N` → `.1` → base, i.e. OLDEST first.**
+    `RotatingFileHandler` moves the live file to `.1` and shifts the rest up, so
+    reading base-first silently produces a backwards concatenation.
+  - **Continuation lines inherit their record's keep/drop decision** in
+    `slice_lines`. A traceback carries no timestamp of its own, so a naive
+    per-line time filter keeps the `ERROR` line and drops the half that says what
+    actually failed.
+  - ⚠️ **`default_log_dir()` falls back to the REPO ROOT, so a "there are no
+    logs" test passes for the wrong reason.** Logs are written relative to the
+    process cwd, so a test that runs in a temp dir does not get an empty
+    discovery — it finds the checkout's own `host_log.txt` and friends, and a
+    test asserting the no-logs failure path then passes without ever reaching it.
+    Force the failure at its source instead (make `build_bundle` raise), or the
+    branch you think you covered is untested. Same shape as the stale-guard note
+    in the review conventions above: a green test that pins the environment's
+    accident rather than the contract.
+    - ⚠️ **And do NOT reach for `mock.patch(default_log_dir)` to steady a test —
+      patching the resolver a function depends on pins the coincidence, not the
+      contract.** `build_bundle(log_dir=X)` bundles X's logs, but
+      `environment_text()` called `crash_summary()` with no directory, so
+      `diagnostics.txt` described `default_log_dir()`'s crash log instead — a
+      report whose body and attachment can describe different machines. The test
+      that was supposed to cover that line patched `default_log_dir` to point at
+      its fixture, so the two agreed *only in the test* and the mismatch shipped
+      (caught in review, #178). The test that actually holds it uses **two
+      different directories** with deliberately different contents and asserts
+      the diagnostics describe the one the zip ships. `log_dir` is now threaded
+      `build_bundle` → `environment_text` → `crash_summary`; keep it threaded.
+  - ⚠️ **If a helper resolves a directory to make a decision, what it RETURNS has
+    to carry that resolution.** `viewer_files()` tested
+    `(default_log_dir() / name).exists()` but returned the **bare** filename, and
+    `LogViewerDialog` opens the value it is given relative to the process cwd — so
+    the check and the open could resolve in different directories, showing the
+    wrong file or none. Note the code it replaced was *worse in principle but
+    self-consistent* (it checked and opened the same bare name), which is how the
+    regression got written: centralising the check moved one half and not the
+    other. It returns absolute paths now, which also makes the dialog's "open
+    containing folder" work at all — `os.path.dirname` of a bare name is `""`.
+  - ⚠️ **`crash_log.txt` is bounded by an in-place TRIM, and is the one log that
+    must never be rotated or deleted — `faulthandler` holds the file
+    DESCRIPTOR.** Three consequences that all follow from that one fact, and
+    that will each look like an arbitrary choice to whoever reads the code next:
+    - **Not a `RotatingFileHandler`.** Rotation renames the file; the fd follows
+      the *inode*, so the live process keeps dumping into `crash_log.txt.1` and
+      eventually into a deleted inode — silently. `faulthandler` also bypasses
+      `logging` entirely, so a handler would never even see the ~6 KB dumps that
+      cause the growth; it could only roll over on the marker lines.
+      `trim_if_oversized()` therefore runs inside `install()` **before** the fd
+      is created, which is the only moment with nothing to disturb.
+    - **Rewritten in place, not via `os.replace`.** A replace swaps the inode out
+      from under the *other* process's fd — the GUI and daemon share this file.
+    - **Cleared by TRUNCATION, never `unlink`.** Deleting it would leave
+      `faulthandler` writing to a deleted inode, so "clear my logs" would
+      silently disable crash capture until restart. Truncation is safe only
+      because every writer opens with mode `"a"` (**O_APPEND**), so a concurrent
+      write lands at the new end rather than behind a NUL hole — verify that
+      still holds before adding a handler. Rotated backups are nobody's open
+      file and are most of the bytes, so those *are* unlinked.
+    Size matters here beyond disk: this is the one source the bundle carries
+    **whole** (`sliced=False`), so its size is *bundle* size, and a bundle is
+    what gets attached to a public issue.
+  - **Redaction is anchored on the log message's own wording, not "anything in
+    quotes"** (`_TITLE_PATTERNS`), and masks **window titles only** — app/exe names
+    are kept, since that is what overlay-matching support rounds actually need.
+    Titles can name documents ("Q3 layoffs.xlsx"), so the dialog says so in red when
+    the box is unticked; default is OFF because a first support round with everything
+    masked usually has to be repeated. `browser_report_token` / `telemetry_install_id`
+    are masked **always**, independent of that flag.
+- **Multi-machine forwarding fails SILENTLY in three different ways, and NONE of
+  them is diagnosable from the forwarder's own log.** All three were hit on one
+  setup that had worked for weeks (field, 2026-08-17); the forwarder log showed
+  nothing but a repeating error with no cause in it. Check these before reading
+  any code:
+  - ⚠️ **A disabled relay reads as `Connection timed out`, NOT "connection
+    refused"** — so the log looks like a network problem rather than a host that
+    isn't listening. A closed port would RST, but the keyboard machine's firewall
+    silently drops SYNs to a port nothing has bound, and the old allow-rule went
+    away with the listener. The *cause* is logged once, on the **other machine**,
+    by `RemoteHandler.listen_to_forwarder` ("Remote overlay entries are configured
+    but the legacy plaintext window relay (TCP 50162) is disabled") — and only
+    when remote entries are mapped and `window_report_network_enabled` is off. In
+    daemon mode that line is in `daemon_log.txt`, not the tray log.
+  - ⚠️ **`WindowReportServer` is started ONLY by `HeadlessHost`** (`headless.py`
+    `_maybe_start_window_report_server` is its one construction site — `host.py`
+    has none). So under `--no-daemon`, `window_report_network_enabled` is a
+    **silent no-op**: the setting reads back true and nothing listens.
+  - ⚠️ **A forwarded window is used only while the keyboard machine's OWN focused
+    window is a `remote: true` mapping entry** (`active_window.py`
+    `is_remote_mapping_entry`, the `elif` in the window tick) — normally the
+    remote-desktop client you are viewing the other machine through (the shipped
+    entry is `nxplayer`/NoMachine). Without such an entry both logs look perfectly
+    healthy — the forwarder reports windows, the daemon receives them — and the
+    keycaps simply never change.
+  - The user-facing version of all three is the docs site's
+    [Multi-Machine Setup](https://www.polykybd.org/using/multi-machine/) page
+    (rewritten 2026-08-17, docs#51). ⚠️ **The relay gate that caused this shipped
+    in 0.10.5 and the docs kept recommending the dead path for six weeks** — when
+    you flip a transport off by default, move that page in the same change.
+  - **Browser-URL matching DOES cross machines — but only over the authenticated
+    RPC path** (`--report-rpc`; the forwarder gained this in 0.12.x). Three things
+    had to be true at once, so if a `url:` / `urls-contains:` entry is not firing
+    for a forwarded window, check them in this order: the forwarder runs its own
+    loopback receiver for the extension (`handler/browser_url_source.BrowserUrlSource`,
+    shared with `PolyCore` so the two roles cannot drift — the extension itself is
+    unchanged and always POSTed to `127.0.0.1` on its own machine); the report
+    carries the optional `url` param (**RPC only**); and `RemoteHandler._match_remote`
+    passes it to the matcher. ⚠️ **The legacy plaintext relay deliberately does NOT
+    carry the URL**: its framing is positional `handle;name;title;os` with the
+    free-text field in the *middle*, so a title containing `;` already truncates the
+    title and kills the `os` field — a fifth field would deepen a live bug on a
+    transport that is off by default. Two details that are easy to get backwards:
+    a **None url is STORED** (unlike a None os, which is ignored — the OS belongs to
+    the sending machine, a URL to the window in that report, so keeping the last one
+    would pin a stale site's overlay onto the next non-browser window); and the URL
+    is **part of the window's identity on both ends**, because an SPA route change
+    moves neither handle nor title — the forwarder re-sends on a URL change rather
+    than waiting out its 15 s heartbeat, and `remote_changed` re-matches.
+- ⚠️ **"The tray icon is gone" is NOT the same as "the app crashed" — check the
+  process list before diagnosing anything else.** Field, 2026-08-18: the tray
+  vanished, `startup_log.txt` and `daemon_log.txt` showed nothing wrong, the user
+  relaunched, and it read as a silent crash. `Get-Process pythonw | Select Id,
+  StartTime` settled it in one command — **the original GUI was still running**,
+  minus its icon. ⚠️ **Read that list in PAIRS: each launch showed TWO
+  `pythonw.exe` entries** with the same start time and command line (6 processes
+  for 1 daemon + 2 GUIs). Cause unestablished — so do not explain it, just don't
+  double-count it into "two daemons are fighting over the device". `Get-CimInstance
+  Win32_Process -Filter "Name='pythonw.exe'" | Select ProcessId, ParentProcessId,
+  CreationDate, CommandLine` settles it: one of each pair parenting the other is a
+  launcher stub, a shared parent would be two real instances. Three things conspired, all now fixed on this branch:
+  - **The logon race.** The autostart scheduled task starts the GUI before
+    Explorer's notification area exists; `Shell_NotifyIcon` fails and the icon
+    never appears. Qt re-adds only on Explorer's `TaskbarCreated` broadcast, which
+    it sends when it **restarts**, not when it finishes starting — so losing that
+    race is permanent for the session. `host.py` called `setVisible(True)`
+    unconditionally and nothing anywhere in the app called
+    `isSystemTrayAvailable()`. Now `gui/tray_wait.py` waits for the tray (1→15 s
+    backoff, 5 min cap) and logs both the wait and the eventual show.
+    ⚠️ That check only looks for the shell's tray window, so it can say "available"
+    while the add still fails; if this recurs *with* "icon shown" in the log, the
+    remaining lever is a forced `hide()`/`show()` re-add.
+  - **Nothing could have recorded a crash if there had been one.** Under
+    `pythonw.exe` stderr is a black hole, and the app had no `sys.excepthook`, no
+    `threading.excepthook`, no `faulthandler` and no `qInstallMessageHandler` — so
+    PyQt's abort-on-unhandled-exception-in-a-slot (it calls the excepthook, *then*
+    `qFatal`) left zero trace. `util/crash_log.py` + `gui/qt_crash.py` now capture
+    all four, into `crash_log.txt`; a `session start` line with no matching
+    `clean exit` is itself the diagnosis.
+  - **Losing the tray costs the menu, not the keyboard.** Under daemon-by-default
+    the daemon owns the device, window tracking and overlays, so it kept switching
+    overlays for 14 minutes with no GUI attached — which is *why* nothing looked
+    broken. Also note the control server logs **nothing** when a client connects or
+    disconnects, so the daemon log can never date a GUI's death.
+  - ⚠️ **A tray "Quit" and a crash were previously indistinguishable in the logs** —
+    `quit_app()` writes no line. Don't reason about whether the GUI exited on
+    purpose from `startup_log.txt`; use the crash-log markers.
+- ⚠️ **The self-updater copies release files over a git checkout — `git log -1` can
+  be months behind what is actually running.** `apply_update()` is
+  `copytree(dirs_exist_ok=True)`: it overwrites and never deletes, and `copy2`
+  preserves the *tarball's* mtime, so on-disk timestamps show the release date, not
+  the day it was installed. A field machine sat on a July feature branch (HEAD
+  0.9.47) while running v0.11.10 from the release, with 354 files showing as
+  modified and a reflog untouched for two weeks. When a report's version doesn't
+  match the branch, that is the explanation — the running code is the release, and
+  `_version.py` on disk is the only thing that says which.
+
+- **"Report a Problem" is the guided sibling of log collection —
+  `polyhost/services/problem_report.py` + `gui/report_problem_dialog.py`.** The
+  tray's **Help & About → "Report a Problem…"** takes a description, builds a log
+  bundle, puts the composed issue body on the clipboard and opens a **pre-filled
+  GitHub issue** in the browser. "Collect logs…" beside it stays the manual half,
+  for when the file is going somewhere else. Four things are deliberate:
+  - ⚠️ **Redaction defaults ON here and OFF in "Collect logs…", and that
+    asymmetry is the point.** A local bundle is a file you inspect before
+    sending; a report is aimed at a **public** tracker. Same data, different
+    destination, so the safe default flips.
+  - **The issue body carries NO log lines** — only the description, the
+    diagnostics and the bundle's *filename*, with an instruction to attach it.
+    GitHub has no API to attach a file to an issue without a token, and shipping
+    one in an open-source client is shipping a public credential; more
+    importantly, an attachment is a file the reporter can look at before
+    uploading, which pasted log text is not.
+  - **Diagnostics are path-scrubbed** (`scrub_paths`): `_diagnostics_text` ends
+    with `Config:`/`Logs:` lines, and on every platform those contain the account
+    name (`C:\Users\tom\…`, `/home/tom/…`). Home → `~`, plus a regex for any
+    *other* user directory (a daemon under another account, another drive).
+  - **A pre-filled new-issue URL is a GET**, so an oversized body is truncated or
+    refused somewhere between browser and GitHub. `issue_url_for()` falls back to
+    the blank form above `MAX_URL_BYTES` (6000); the body is on the clipboard
+    either way, so the fallback costs a paste rather than the report. A test
+    pins that a *realistic* report still prefills — otherwise the fallback
+    quietly becomes the normal path.
+- ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
+  `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
+  menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
+  `host.py` is simply **absent** there until wired separately. It matters most
+  for support features: the forwarder runs on a **different machine** from the
+  keyboard, so its logs can never appear in a bundle collected host-side, and
+  its failure domain (which window backend that desktop selects, the report
+  transport, the authkey) is exactly the log-diagnosable kind. Both "Report a
+  Problem…" and "Collect logs…" are wired in both places, and the forwarder
+  supplies its **own** diagnostics text leading with `FORWARDER mode (no keyboard
+  attached to this machine)` — the plain version line otherwise reads exactly
+  like a report from the keyboard machine, which is a different failure domain
+  entirely. `tests/gui/host_client_test.py` has a `forwarder` smoke mode; it
+  **skips** without `pywinctl`, which `forwarder.py` imports at module load.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
   - **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
   - **To run the WHOLE suite** (not just `tests.device.*` — do this after any change touching
-    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5`
+    `core/`, `gui/`, or `cli/`) you also need `requests packaging pynput pvlib geocoder PyQt5 pywinctl`
     (pip) **and** `xvfb x11-xserver-utils` (apt), run under `xvfb-run -a .venv/bin/python -m
     unittest discover -s ./tests -p "*_test.py"`. Without those deps `services/updater`,
     `sunlight_helper`, `langcode_flag`, `win_helper_parse`, and the `host_client`
@@ -801,7 +1431,40 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   grid: the HTML and the tests were both perfectly correct, and the defect existed only
   in the render. Same reasoning as judging a tray icon by rasterising it (above) —
   measure or look, don't infer from the source.
+- **RUN the real entry point once before believing a mocked suite — the output is
+  where format bugs live.** Same instinct as rendering a widget or rasterising an
+  icon above, applied to the CLI: a suite whose fixtures you wrote can only be as
+  right as your idea of the real data. `crash_summary()` reported *"2 native fault
+  dump(s)"* for a single crash, because a fatal signal prints **both** a
+  `Fatal Python error` line and a `Current thread` line and the unit fixture had
+  only the first. Every test passed; one `polyctl logs bundle` in a temp dir with
+  a realistic file showed it immediately (2026-08-18). Cheap recipe: make a temp
+  dir, write a realistic log, run the actual command, read the artifact —
+  `cd /tmp/x && PYTHONPATH=<repo> <repo>/.venv/bin/python -m polyhost.cli.polyctl
+  logs bundle --since 1h`, then unzip and look. It is ~30 s and it has now caught
+  two bugs in one PR that the tests could not see.
+- ⚠️ **`polyhost/forwarder.py` is UNTESTABLE in the documented environment — put
+  any forwarder logic worth testing in a Qt-free module instead.** It imports
+  `pywinctl` at module load (the backend selection at the top), and pywinctl is
+  **not** in the full-suite dependency list above, so the module cannot even be
+  imported in a normal test run — a `DISPLAY` is necessary but not sufficient.
+  `PolyForwarder.__new__` (constructing the object without `QApplication.__init__`,
+  to call one plain method) fails at the *import*, before Qt is reached. Hence the
+  `--host-file` reconnect fix (2026-08-17) put the connection lifetime in
+  `server/window_report_client.py` `WindowReportSession` — stdlib-only, 10 unit
+  tests — and left only the two-line "no target ⇒ close" branch in the forwarder.
+  A test gated on both `DISPLAY` and pywinctl would be permanently skipped, which
+  is worse than none: it reads as coverage.
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
+  - ⚠️ **Appending test methods after a file's trailing `if __name__ ==
+    "__main__":` block registers NOTHING, and the suite stays green.** The
+    indented `def`s become part of the `if` body, so they parse, never run, and
+    never appear as failures. Hit while adding 5 CLI tests (2026-08-20); the
+    only tell was that the run reported **44 tests before and 44 after**.
+    Generalise: after adding tests, check the **count changed**, not just that
+    the suite is green — `python3 -m unittest ... 2>&1 | tail -3` prints it.
+    Same family as the mocked-suite traps above: green is not evidence your new
+    code ran.
 - ⚠️ **A stale `.pyc` can survive a CORRECT fix — clear `__pycache__` before you
   disbelieve your own change.** Python invalidates cached bytecode on
   **(mtime, size)**, so a **length-neutral edit landing in the same mtime second**
@@ -1021,4 +1684,8 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 - ⚠️ **From Claude Code on the web you can neither push tags (git proxy 403 on
   `refs/tags/*`) nor create a release (no `gh`, no create-release MCP tool)** — stage the
   notes on the branch and hand the user `python scripts/publish_release.py`.
+  The same proxy also **403s on branch DELETION** (`git push origin --delete
+  <branch>`, verified 2026-08-18), so a leftover branch has to be removed in the
+  GitHub UI — don't burn retries on it, and don't create scratch branches you
+  can't clean up.
 

@@ -23,6 +23,10 @@ import time
 from polyhost.device.command_ids import GlyphScript, IdleStyle  # stdlib-only (Enum), no Qt
 from polyhost.server import protocol
 
+# Default timeframe for `polyctl logs` — long enough for "it broke this
+# morning", short enough that a bundle stays small (and carries less history).
+LOGS_DEFAULT_SINCE = "24h"
+
 
 class RpcError(Exception):
     """An ``{"error": {...}}`` response from the server (carries code+message)."""
@@ -144,6 +148,100 @@ def _cmd_status(client, args):
         print(f"capabilities: {', '.join(supported) or '(none)'}")
         if unsupported:
             print(f"unsupported (update firmware): {', '.join(unsupported)}")
+    return 0
+
+
+def _positive_int(value):
+    """argparse type for --lines.
+
+    Non-positive values are not merely odd here, they misbehave: `recent_text`
+    slices `lines[-max_lines:]`, so 0 yields `lines[0:]` — the whole file, under
+    a header claiming "last 0 lines" — and -1 silently drops the first line.
+    """
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError(f"{value!r} is not an integer") from None
+    if n < 1:
+        raise argparse.ArgumentTypeError(f"must be 1 or more, got {n}")
+    return n
+
+
+def _format_size(num_bytes: int) -> str:
+    """Size for `logs paths`, which must never call a non-empty file empty.
+
+    Integer KB division reported anything under 1024 bytes as "0 KB", so a log
+    that had just started collecting read as though nothing was in it — the
+    opposite of what someone runs this command to find out.
+    """
+    if num_bytes < 1024:
+        return f"{num_bytes} B"
+    return f"{num_bytes // 1024} KB"
+
+
+def _cmd_logs(client, args):
+    """Collect log files — the one command that must work with no daemon.
+
+    ``client`` is None when nothing is listening (see ``_is_offline_command``);
+    a reachable daemon only enriches the bundle's diagnostics, it is never
+    required. This is deliberate: the moment you most want the logs is the one
+    where the host is not running.
+    """
+    from polyhost.services import log_bundle
+
+    log_dir = args.log_dir or None
+    try:
+        since = log_bundle.parse_since(args.since)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    if args.logs_action == "paths":
+        found = log_bundle.discover(log_dir)
+        if not found:
+            print(f"no log files found in {log_dir or log_bundle.default_log_dir()}")
+            return 1
+        for label, chain in found.items():
+            print(f"{label}:")
+            for path in chain:
+                # discover() saw the file; a rotation can move it before we
+                # stat it. Losing a size must not cost the whole listing.
+                try:
+                    size = _format_size(path.stat().st_size)
+                except OSError:
+                    size = "size unavailable"
+                print(f"  {path}  ({size})")
+        return 0
+
+    if args.logs_action == "show":
+        print(log_bundle.recent_text(log_dir, since=since, max_lines=args.lines,
+                                     redact=args.redact))
+        return 0
+
+    # bundle
+    dest = args.output or log_bundle.default_bundle_name()
+    diagnostics = None
+    if client is not None:
+        try:  # best effort — a status read must never cost us the bundle
+            diagnostics = "Daemon status\n-------------\n" + json.dumps(
+                client.call(protocol.M_STATUS_GET), indent=2, default=str)
+        except (RpcError, ConnectionError, OSError, EOFError):
+            diagnostics = None
+    try:
+        result = log_bundle.build_bundle(dest, log_dir=log_dir, since=since,
+                                         redact=args.redact, diagnostics=diagnostics)
+    except log_bundle.LogBundleError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        print(f"error: could not write {dest}: {exc}", file=sys.stderr)
+        return 1
+
+    print(f"wrote {result.path.resolve()}")
+    print(result.summary())
+    if not result.redacted:
+        print("note: window titles are included — check the contents before "
+              "posting it publicly (re-run with --redact to mask them)")
     return 0
 
 
@@ -399,8 +497,10 @@ def _cmd_fontpack(client, args):
     action = getattr(args, "fontpack_action", None)
 
     if action == "sync":
-        return _stream_fontpack_op(client, protocol.M_FONTPACK_SYNC, {},
-                                   "syncing font-pack bundles")
+        force = bool(getattr(args, "force", False))
+        return _stream_fontpack_op(client, protocol.M_FONTPACK_SYNC, {"force": force},
+                                   "re-flashing every font-pack bundle" if force
+                                   else "syncing font-pack bundles")
 
     if action == "flash":
         if args.file:
@@ -457,11 +557,27 @@ def _cmd_fontpack(client, args):
         return 0
     print(f"{'bundle':10} {'slot':>4} {'device':>7} {'shipped':>8}  state")
     for b in info["bundles"]:
-        state = "STALE -> flash" if b["stale"] else "up to date"
+        if b["stale"]:
+            state = "STALE -> flash"
+        elif b.get("retry"):
+            state = "RETRY (last flash failed)"
+        else:
+            state = "up to date"
         print(f"{b['id']:10} {b['index']:>4} {b['device_version']:>7} "
               f"{b['shipped_version']:>8}  {state}")
     stale = [b["id"] for b in info["bundles"] if b["stale"]]
-    print(f"\n{len(stale)} stale" + (f": {', '.join(stale)} — run `fontpack sync`" if stale else " — all up to date"))
+    retry = [b["id"] for b in info["bundles"] if b.get("retry") and not b["stale"]]
+    todo = stale + retry
+    if todo:
+        print(f"\n{len(todo)} to flash: {', '.join(todo)} — run `fontpack sync`")
+    else:
+        print("\n0 stale — all up to date")
+    if retry:
+        for b in info["bundles"]:
+            if b.get("retry") and b.get("last_error"):
+                print(f"  {b['id']}: last error — {b['last_error']}")
+    print("(a bundle can read as up to date and still render wrong — "
+          "`fontpack sync --force` re-flashes every bundle regardless of version)")
     return 0
 
 
@@ -576,7 +692,8 @@ def _cmd_watch(client, args):
 
 def _cmd_window_report(client, args):
     _print_result(client.call(protocol.M_WINDOW_REPORT, {
-        "handle": args.handle, "name": args.name, "title": args.title}))
+        "handle": args.handle, "name": args.name, "title": args.title,
+        "url": args.url}))
 
 
 def _cmd_shutdown(client, args):
@@ -689,7 +806,11 @@ def build_parser():
     p_fp = sub.add_parser("fontpack", help="external-flash font pack (per-bundle) operations")
     fp_sub = p_fp.add_subparsers(dest="fontpack_action", required=True)
     fp_sub.add_parser("status", help="per-bundle versions: device vs shipped (and which are stale)")
-    fp_sub.add_parser("sync", help="flash every bundle the keyboard is missing/behind on")
+    p_fp_sync = fp_sub.add_parser(
+        "sync", help="flash the bundles the keyboard is missing/behind on (or failed before)")
+    p_fp_sync.add_argument(
+        "--force", action="store_true",
+        help="re-flash EVERY shipped bundle, ignoring the version comparison")
     p_fp_flash = fp_sub.add_parser(
         "flash", help="flash one bundle (streams progress; no reboot)")
     p_fp_flash.add_argument(
@@ -759,7 +880,36 @@ def build_parser():
     p_win_report.add_argument("--handle", default="0", help="window handle (any string/int)")
     p_win_report.add_argument("--name", required=True, help="application name, e.g. Code.exe")
     p_win_report.add_argument("--title", default="", help="window title")
+    p_win_report.add_argument("--url", default=None,
+                              help="focused browser tab URL (enables url/urls-contains matching)")
     p_win_report.set_defaults(func=_cmd_window_report)
+
+    # --- logs ------------------------------------------------------------
+    # Works without a running host (see _is_offline_command): the logs are on
+    # disk, and a dead daemon is precisely when they are wanted.
+    p_logs = sub.add_parser(
+        "logs", help="collect log files (works with the host stopped)")
+    logs_sub = p_logs.add_subparsers(dest="logs_action", required=True)
+    p_logs_bundle = logs_sub.add_parser(
+        "bundle", help="write a support .zip (logs + diagnostics + settings)")
+    p_logs_bundle.add_argument(
+        "-o", "--output", help="destination .zip (default: ./polyhost-logs-<stamp>.zip)")
+    p_logs_show = logs_sub.add_parser(
+        "show", help="print recent log lines to stdout (pipe it anywhere)")
+    p_logs_show.add_argument("--lines", type=_positive_int, default=500,
+                             help="max lines per log file (default 500)")
+    p_logs_paths = logs_sub.add_parser(
+        "paths", help="list the log files that were found")
+    p_logs_paths.set_defaults(since=None, redact=False, lines=500)
+    for p in (p_logs_bundle, p_logs_show):
+        p.add_argument("--since", default=LOGS_DEFAULT_SINCE,
+                       help="timeframe, e.g. 30m, 2h, 7d, or 'all' "
+                            f"(default {LOGS_DEFAULT_SINCE})")
+        p.add_argument("--redact", action="store_true",
+                       help="mask window titles (they can name open documents)")
+    for p in (p_logs_bundle, p_logs_show, p_logs_paths):
+        p.add_argument("--log-dir", help="where the logs are (default: auto-detect)")
+    p_logs.set_defaults(func=_cmd_logs)
 
     sub.add_parser("watch", help="stream events until Ctrl-C").set_defaults(func=_cmd_watch)
     sub.add_parser("shutdown", help="ask the host to shut down").set_defaults(func=_cmd_shutdown)
@@ -791,9 +941,31 @@ def _run_with_client(client, argv=None):
         return 1
 
 
+def _is_offline_command(args) -> bool:
+    """True for commands that read the disk rather than drive the device.
+
+    Only ``logs`` qualifies. It must not require a reachable host: the logs are
+    files, and the case where someone needs them most is the one where the app
+    failed to start or the daemon died — exactly when ``connect()`` fails.
+    """
+    return getattr(args, "command", None) == "logs"
+
+
 def main(argv=None):
     # Parse first so --help / bad args exit before we open a socket.
-    build_parser().parse_args(argv)
+    args = build_parser().parse_args(argv)
+
+    if _is_offline_command(args):
+        # Still try to attach, so a bundle picks up live daemon status — but a
+        # failure here is not an error, it just means fewer diagnostics.
+        try:
+            client = connect()
+        except Exception:  # noqa: BLE001 — any failure degrades to offline
+            return args.func(None, args)
+        try:
+            return args.func(client, args)
+        finally:
+            client.close()
 
     try:
         client = connect()
