@@ -142,6 +142,21 @@ class PolyctlLogsOfflineTest(unittest.TestCase):
         self.assertIn("cannot reach PolyKybdHost", err)
 
 
+class FormatSizeTest(unittest.TestCase):
+    """`logs paths` must not report a non-empty log as empty."""
+
+    def test_a_sub_kilobyte_file_is_not_reported_as_zero(self):
+        self.assertEqual(polyctl._format_size(1), "1 B")
+        self.assertEqual(polyctl._format_size(1023), "1023 B")
+
+    def test_an_empty_file_still_reads_as_empty(self):
+        self.assertEqual(polyctl._format_size(0), "0 B")
+
+    def test_kilobytes_are_unchanged(self):
+        self.assertEqual(polyctl._format_size(1024), "1 KB")
+        self.assertEqual(polyctl._format_size(14 * 1024), "14 KB")
+
+
 class PolyctlLogsWithHostTest(unittest.TestCase):
     """When a host IS reachable, the bundle picks up its status as diagnostics."""
 
