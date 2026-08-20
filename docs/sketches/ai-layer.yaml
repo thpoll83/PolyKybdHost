@@ -1,0 +1,122 @@
+# Sketch of the proposed PolyKybd `_AI` layer.
+#
+# SINGLE SOURCE OF TRUTH for the layer picture: docs/ai-integration.md quotes it
+# and tools/ai_layer_demo.py renders it onto the real split72 geometry. Edit here,
+# re-run the demo, and the doc's picture and table stay in step.
+#
+# Keys are addressed by the keycode they carry on the BASE layer (_L0 in
+# split72/keymaps/default/keymap.c), so "KC_S = Summarise" reads the way a user
+# thinks about it and the mapping survives a geometry change.
+#
+# Fields per entry:
+#   label    short caption drawn on the 72x40 keycap (\n splits the line)
+#   glyph    optional leading symbol (dropped automatically if the font lacks it)
+#   group    verb | target | control | status  -- only used for grouping in docs
+#   does     one line: what pressing it actually runs
+#   context  what the host puts in the request beyond the action's own prompt
+
+meta:
+  name: "_AI"
+  entered_by: "MO(_AI) — proposed on the right inner thumb; see 'Open questions'"
+  note: >
+    Labels are what the keycap shows when the focused app is unknown. Every entry
+    may be overridden per application, which is the whole point of putting the
+    layer on displays: in an editor KC_C is "Explain code", in a mail client it
+    is "Draft reply". The per-app override lives in the same action registry.
+
+keys:
+  # ---- verbs: left hand, the things you do to a selection ------------------
+  KC_Q: {label: "Explain",      glyph: "?", group: verb,
+         does: "explain the selection at the reading level in settings",
+         context: "selection, app, language"}
+  KC_W: {label: "Rewrite",      glyph: "~", group: verb,
+         does: "rewrite in the tone picked on the number row (formal/casual/direct)",
+         context: "selection, tone"}
+  KC_E: {label: "Expand",       glyph: "+", group: verb,
+         does: "expand terse notes into prose",
+         context: "selection"}
+  KC_R: {label: "Reply",        glyph: "<", group: verb,
+         does: "draft a reply to the focused message/thread",
+         context: "selection or window text, app"}
+  KC_T: {label: "Trans-\nlate", glyph: ">", group: verb,
+         does: "translate into the keyboard's ACTIVE language layer -- no target menu needed",
+         context: "selection, current xx-YY from the language layer"}
+
+  KC_A: {label: "Ask",          glyph: "*", group: verb,
+         does: "free prompt: opens a one-line input near the cursor",
+         context: "typed prompt, optional selection"}
+  KC_S: {label: "Summa-\nrise",                group: verb,
+         does: "3-bullet summary of the selection",
+         context: "selection"}
+  KC_D: {label: "Define",                      group: verb,
+         does: "define / look up the word or symbol under the selection",
+         context: "selection, app"}
+  KC_F: {label: "Fix",          glyph: "v", group: verb,
+         does: "grammar + spelling only, no rewording",
+         context: "selection"}
+  KC_G: {label: "Gener-\nate",                 group: verb,
+         does: "app-aware generate: commit message in a VCS app, alt-text in a design app",
+         context: "app, selection, app-specific hook"}
+
+  KC_Z: {label: "Shorter",      glyph: "-", group: verb,
+         does: "cut length ~40% without losing facts",
+         context: "selection"}
+  KC_X: {label: "Extract",      glyph: "#", group: verb,
+         does: "pull structured data out (table / JSON) via structured outputs",
+         context: "selection, schema"}
+  KC_C: {label: "Code",         glyph: "{", group: verb,
+         does: "explain / refactor / write a test for the selected code",
+         context: "selection, file type, app"}
+  KC_V: {label: "Verify",       glyph: "!", group: verb,
+         does: "sanity-check claims; the only action allowed the web-search tool",
+         context: "selection"}
+  KC_B: {label: "Bullets",      glyph: "=", group: verb,
+         does: "turn prose into a bullet list",
+         context: "selection"}
+
+  # ---- controls: left number row + Esc -------------------------------------
+  KC_ESC: {label: "Cancel",     glyph: "x", group: control,
+           does: "abort the running request (also: any keypress stops the stream)"}
+  KC_1: {label: "Model",                       group: control,
+         does: "cycle the model for the next run (opus-5 / sonnet-5 / haiku-4.5)"}
+  KC_2: {label: "Effort",                      group: control,
+         does: "cycle output_config.effort: low / medium / high / xhigh"}
+  KC_3: {label: "Fast",                        group: control,
+         does: "toggle fast mode (Opus only, premium rate) for latency-critical runs"}
+  KC_4: {label: "Web",                         group: control,
+         does: "allow the web-search server tool for this run"}
+  KC_5: {label: "Local",      glyph: "@", group: control,
+         does: "route to the local provider (Ollama/LM Studio) -- nothing leaves the machine"}
+
+  # ---- targets: right hand, what happens to the answer ---------------------
+  KC_Y: {label: "Insert",       glyph: "v", group: target,
+         does: "type the result into the focused app (the ONLY path to the app)"}
+  KC_U: {label: "Undo",         glyph: "<", group: target,
+         does: "undo the last insertion (host-side, does not rely on the app's undo)"}
+  KC_I: {label: "Insert/\nRepl",                group: target,
+         does: "toggle: insert at cursor vs replace the selection"}
+  KC_O: {label: "Open",                        group: target,
+         does: "show the result in a window instead of typing it (the default)"}
+  KC_P: {label: "Pin",          glyph: "*", group: target,
+         does: "append the result to a scratch file"}
+
+  KC_H: {label: "History",                     group: target,
+         does: "previous results for this app"}
+  KC_J: {label: "Scroll\ndown",  glyph: "v", group: target,
+         does: "page the result window"}
+  KC_K: {label: "Scroll\nup",    glyph: "^", group: target,
+         does: "page the result window"}
+  KC_L: {label: "Retry",        glyph: "o", group: target,
+         does: "re-run the same action (new sample / next model up)"}
+
+  KC_N: {label: "New",                         group: target,
+         does: "clear the thread -- each action is one-shot unless you keep the thread"}
+  KC_M: {label: "More",         glyph: ">", group: target,
+         does: "continue the answer (raises max_tokens for the continuation)"}
+
+  # ---- status: right number row, driven by the run ------------------------
+  KC_6:  {label: "tok\nin",     group: status, does: "input tokens of the last run"}
+  KC_7:  {label: "tok\nout",    group: status, does: "output tokens of the last run"}
+  KC_8:  {label: "cache",       group: status, does: "cache-read share -- 0 means the prefix broke"}
+  KC_9:  {label: "ms",          group: status, does: "time to first token"}
+  KC_0:  {label: "$ today",     group: status, does: "spend against the daily cap"}
