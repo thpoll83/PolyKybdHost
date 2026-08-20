@@ -104,58 +104,27 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       findings — which is the most convincing-looking artifact of the three. Read
       the check-run *conclusion* and the review *body*, never the presence of
       output.
-      - ✅ **The remedy for all three at once is the on-demand reviewer:
-        comment `@claude review`** — **verified working end to end on #185
-        (2026-08-20)**, which is worth stating because it had never once
-        published a review before that (`.github/workflows/claude-review.yml`,
-        now in **both** the host repo and `polykybd-docs` — the qmk repo has its
-        own pair too, so all three carry it). It is deliberately
-        never automatic, draws on no bot's quota, and unlike `@coderabbitai
-        review` costs nothing when refused. It runs the copy of the workflow on
-        the **default branch**, so it works on a stacked PR whose base is a
-        feature branch — the one case CodeRabbit skips outright.
-      - ⚠️ **It needs the `CLAUDE_CODE_OAUTH_TOKEN` repository secret, and
-        without it the summons EVAPORATES — no comment, no check run, nothing on
-        the PR page.** The action installs Claude Code and only then aborts on
-        *"Environment variable validation failed: Either ANTHROPIC_API_KEY,
-        CLAUDE_CODE_OAUTH_TOKEN, ... is required"*; an `issue_comment` workflow
-        attaches **no check run to the pull request**, so the failure is visible
-        only in the Actions tab. Both #181 and #182 were summoned this way
-        (2026-08-19) on a repo where the secret had never been added, and read
-        as simply still-unreviewed. This is the nastiest member of the
-        looks-reviewed-but-wasn't family, because it is the fallback you reach
-        for *when the other bots have gone quiet* — so its silent failure is
-        indistinguishable from the situation it was summoned to fix. A
-        **preflight job now comments on the PR and fails the run** instead;
-        if you ever see that comment, the fix is to add the secret
-        (`claude setup-token` → Settings → Secrets and variables → Actions),
-        not to re-summon.
-      - ⚠️ **A GREEN run can also review nothing — this repo's own
-        `.claude/settings.json` was silently disabling it.** The action loads
-        `settingSources ["user","project","local"]`, so the checked-in
-        `permissions.allow` list applies **inside the runner**, and it names
-        none of `Read`/`Glob`/`Grep`/`Bash(git diff:*)`. **Locally an unlisted
-        tool merely prompts; in CI nobody can answer, so it is denied** — an
-        allow-list meant to cut local prompts is a deny-list in Actions. On
-        #181 (2026-08-20) the model ran 10 turns and ~94 s, then posted
-        nothing. The tells are in the run log, not on the PR:
-        `"permission_denials_count": 5` in the result JSON, followed by
-        `No buffered inline comments`. Upstream: anthropics/claude-code#32459
-        and claude-code-action#1087; the fix is a `settings:` input on the
-        action granting those tools, now in both `claude-review.yml` and
-        `claude-mention.yml`. ⚠️ **The preflight above does NOT catch this** —
-        the credential was perfectly valid. And note the run still bills: that
-        silent one cost $2.76 at list rates against the subscription.
-      - ⚠️ **When a summons appears to do nothing, check the Actions tab, not
-        the PR.** `actions_list` with `claude-review.yml` shows the run and its
-        conclusion; `get_job_logs` with `failed_only` then names the cause —
-        but ask for **≥300 `tail_lines`**, because every job ends in ~40 lines
-        of git post-job cleanup and a smaller tail lands squarely in it (the
-        real error sat ~45 lines above the end here).
+      - ⚠️ **An on-demand Claude reviewer was tried as the remedy for all
+        three and REMOVED (2026-08-20) — don't rebuild it.** `claude-review.yml`
+        + `claude-mention.yml` ran the `code-review` plugin off a `@claude
+        review` comment, in all three repos. It published exactly **one** usable
+        review in its life (host #185) and otherwise didn't: on #181 it spent 10
+        turns and $2.76 and posted nothing, and three summonses on `polykybd-docs`
+        each went green having published nothing, with a
+        `permission_denials_count` the log would not let us identify (the action
+        prints *"full output hidden for security"* and uploads no artifact, so
+        naming the denied tool would have cost two more merge cycles per guess).
+        Roughly $4 of subscription spend for one review. The workflows and the
+        `CLAUDE_CODE_OAUTH_TOKEN` secret are gone from all three repos.
+        **When all three bots are unavailable, the honest answer is that the PR
+        is unreviewed** — say so in the PR rather than reaching for a fourth
+        opinion, and lean on the HIL rig, cppcheck and the unit suites, which is
+        where the real coverage was all along.
       - ⚠️ **`actions_list` blows the tool token cap — 130–220 KB per call, even
-        at `per_page: 3`.** It saves the JSON to a file and tells you the path;
-        parse that rather than retrying with a smaller page size (it is the
-        per-run payload that is large, not the count). Hit 3× in one session.
+        at `per_page: 3`** (kept from the above, because it applies to reading
+        *any* workflow run). It saves the JSON to a file and tells you the path;
+        parse that rather than retrying with a smaller page size — it is the
+        per-run payload that is large, not the count. Hit 3× in one session.
         ⚠️ Read the conclusion defensively — an **in-progress run has no
         `conclusion` key at all**, so the obvious parse raises a KeyError on
         exactly the run you are waiting for:
@@ -164,24 +133,10 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         for r in d.get("workflow_runs", d):
             print(r["id"], r["status"], r.get("conclusion", "<running>"))
         ```
-      - **Who can summon it, and whose money it spends.** A run bills the
-        `CLAUDE_CODE_OAUTH_TOKEN` owner's Claude **subscription** (~$0.6–2.8 at
-        list rates per review), so a trigger is a spend. The action gates on
-        write access and rejects bot actors **before any model request** —
-        visible in the log as `Actor has write access` / `Verified human actor`
-        — so a passer-by commenting on a public PR costs Actions minutes and
-        nothing else. Both workflows additionally pin `github.actor`, which is
-        the case that gate does *not* cover: granting someone write access for
-        an unrelated reason would otherwise hand them the subscription silently.
-        ⚠️ Do **not** set `allowed_non_write_users` or `allowed_bots`; those are
-        the knobs that weaken this.
-      - **`--debug` would NOT leak the token, contrary to first instinct.**
-        GitHub auto-masks registered secrets in logs (`GITHUB_TOKEN: ***` is
-        right there in these runs), and masking only fails for values that are
-        *unregistered* or transformed. The real cost of a debug run is turnaround,
-        not disclosure: it lives in the workflow file, and comment-triggered
-        workflows run the **default-branch** copy, so one diagnostic costs two
-        merge cycles. A throwaway PR usually answers the same question for free.
+      - **Reading a job log: ask for ≥300 `tail_lines`.** Every job ends in ~40
+        lines of git post-job cleanup, and a failing tool often dumps
+        diagnostics *after* its own error, so a smaller tail lands squarely in
+        the noise.
   - ⚠️ **A review that DID run, on the right commit, with an accurate walkthrough,
     can still have SKIPPED the file you care about — read the "Files skipped from
     review" list before trusting a clean verdict.** On qmk PR #198 (2026-08-11)
@@ -262,58 +217,6 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   the call. Leaving the check red instead is the worse option: an always-red
   check is one people learn to scroll past, and the next real finding rides in
   behind it.
-
-- **When the other reviewers are unavailable, summon Claude with `@claude review`
-  on the PR.** `.github/workflows/claude-review.yml` runs the `code-review` skill
-  on demand (never automatically — three always-on bots is already the noise
-  ceiling) and posts inline comments; `claude-mention.yml` answers a plain
-  `@claude <question>` with the repo and this file loaded, which is the cheap way
-  to **adjudicate a suspect finding** per the verify-don't-dismiss rule above.
-  Neither has an external quota, so between them they cover the three cases that
-  otherwise leave a PR genuinely unreviewed: CodeRabbit rate-limited, Sourcery's
-  green-check-but-empty weekly limit, and an upstream-merge PR over 100 files.
-  - ⚠️ **Billed to the `CLAUDE_CODE_OAUTH_TOKEN` owner's Claude SUBSCRIPTION** —
-    the same budget as an interactive session, not an API key. A 400-file merge
-    review is the case you most want it and the one that costs most.
-  - ⚠️ **Comment and `workflow_dispatch` triggers always run the copy of the
-    workflow on the DEFAULT branch**, so neither does anything until merged
-    there — you cannot test them on the PR that adds them.
-  - **Routing: `startsWith('@claude review')` reaches the review workflow; any
-    other `@claude ...` goes to the mention one.** Both files use the identical
-    test, which is what stops one comment starting two runs. It is `startsWith`
-    and not `contains`, so a comment that merely *quotes* the phrase — a reply, a
-    pasted excerpt of a PR body — cannot spend a review.
-    - ⚠️ **Both workflows must listen on `issue_comment` AND
-      `pull_request_review_comment`.** This shipped with the review one listening
-      only to `issue_comment`, so `@claude review` typed on a **diff hunk**
-      triggered *nothing at all* — the mention workflow does see that event but
-      excludes the phrase by design. Silently dead in the one place a reviewer is
-      most likely to type it (caught by Sourcery, 2026-08-19). On that event
-      `github.event.issue` is null, so the PR number has to fall back through
-      `github.event.pull_request.number`.
-  - **`pull-requests: read` is CORRECT for the review workflow — do not "fix" it
-    to write.** With `github_token` omitted the action authenticates as the
-    **Claude GitHub App**, not `GITHUB_TOKEN`, so read permissions are enough to
-    post inline comments; Anthropic's own code-review example uses exactly these.
-    Reviewers raise this as a bug on every workflow change, so the refutation is
-    written down here to be quoted rather than re-derived.
-  - **The action enforces write-access and rejects bot actors ITSELF**, before
-    Claude starts, so the `if:` does not need to duplicate it — and a duplicate
-    would drift from it. That human-actor check is what stops another reviewer's
-    rate-limit notice from summoning Claude in a loop. The only residue is that a
-    runner *starts* before the rejection, which is free on a public repo.
-  - ⚠️ **A Claude review of Claude-written code is a third CORRELATED opinion,
-    not independent verification.** Most of this codebase is written in Claude
-    sessions, so the reviewer carries the author's priors and sails past the same
-    things — `send_to_bridge()`'s non-zero returns, the enumerating guard in
-    `find_matching_entry`, the `.pyc` mtime trap were each missed by an author and
-    would likely be missed by a same-model reviewer. It is genuinely useful for
-    the two jobs above (checking a *claim* against the code, and checking a diff
-    against *this file*, where the knowledge lives in the file rather than the
-    weights) and for the case where nothing else reviewed at all. The risk is not
-    that it is weak but that a clean one **reads as cover** — the same failure the
-    bot-tells above document. The last line of defence stays the HIL rig and the
-    unit suites; that asymmetry is why cppcheck was added alongside it.
 
 ## Branching (all PolyKybd repos)
 
