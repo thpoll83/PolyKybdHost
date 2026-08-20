@@ -108,7 +108,8 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         comment `@claude review`** — **verified working end to end on #185
         (2026-08-20)**, which is worth stating because it had never once
         published a review before that (`.github/workflows/claude-review.yml`,
-        host repo only — the docs repo has just `deploy.yml`). It is deliberately
+        now in **both** the host repo and `polykybd-docs` — the qmk repo has its
+        own pair too, so all three carry it). It is deliberately
         never automatic, draws on no bot's quota, and unlike `@coderabbitai
         review` costs nothing when refused. It runs the copy of the workflow on
         the **default branch**, so it works on a stacked PR whose base is a
