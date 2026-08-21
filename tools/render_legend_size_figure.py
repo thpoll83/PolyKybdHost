@@ -1,10 +1,21 @@
 #!/usr/bin/env python3
-"""Render the docs figure for the keycap legend size (HID cmd 34) — one labelled
-row per size, real legends for a real layout.
+"""Render the docs figures for the keycap legend size (HID cmd 34) — real legends
+for a real layout, either as a strip of keys or as the whole board.
 
+    # a strip: one labelled row per size
     python3 tools/render_legend_size_figure.py \
         --lang fr-FR --keys KC_2,KC_7,KC_9,KC_0,KC_Q \
         --out ../polykybd-docs/src/assets/using/legend-sizes-french.png
+
+    # the whole split72 board, one per size
+    python3 tools/render_legend_size_figure.py --board --lang fr-FR \
+        --out ../polykybd-docs/src/assets/using/legend-size-board-french.png
+
+`--board` reuses `lang_demo`'s parsing (keyboard.json -> matrix, keymap.c -> the
+base layer, keycode_helper.c -> the static legends) and `kle_render`'s real KLE
+geometry, so every key is the key the firmware would draw there — including the
+rotated thumbs and the two positions with no display. It drops the demo's caption
+bar and adds its own size labels.
 
 Draws through oled_preview's `render_key`, so what it shows is what the 72x40
 keycap OLED shows — including the Shift and AltGr previews, which is the point of
@@ -44,8 +55,9 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from gfx_font import load_all_fonts                                    # noqa: E402
+import oled_preview as OP                                              # noqa: E402
 from oled_preview import (Lang, Renderer, load_named_glyphs, render_key,  # noqa: E402
-                          ROW, OLED_W, OLED_H, OVERSHOOT)
+                          ROW, OLED_W, OLED_H)
 
 BG, KEY_BG, INK, BORDER, LABEL = (17, 18, 22), (6, 8, 12), (168, 216, 255), (58, 62, 72), (190, 195, 205)
 ROWS = [(0, "Small  (default)"), (1, "Medium"), (2, "Large")]
@@ -55,10 +67,10 @@ FRAME = 6          # margin the outline lives in, so it never overdraws panel in
 
 def _panel_pixels(img):
     """The 72x40 panel out of render_key's overshoot-padded image (see the note above)."""
-    want = (OLED_W + 2 * OVERSHOOT, OLED_H + 2 * OVERSHOOT)
+    want = (OLED_W + 2 * OP.OVERSHOOT, OLED_H + 2 * OP.OVERSHOOT)
     if img.size != want:
         sys.exit(f"render_key returned {img.size}, expected {want} — the panel offset "
-                 f"below assumes OVERSHOOT={OVERSHOOT} padding on every side")
+                 f"below assumes OVERSHOOT={OP.OVERSHOOT} padding on every side")
     return img.convert("L").load()
 
 
@@ -104,7 +116,7 @@ def render(L, R, lang: str, keys, out: str) -> None:
             cd = ImageDraw.Draw(cell)
             for yy in range(OLED_H):
                 for xx in range(OLED_W):
-                    if src[xx + OVERSHOOT, yy + OVERSHOOT]:
+                    if src[xx + OP.OVERSHOOT, yy + OP.OVERSHOOT]:
                         cd.rectangle([xx * SCALE, yy * SCALE,
                                       xx * SCALE + SCALE - 1, yy * SCALE + SCALE - 1], fill=INK)
             d.rounded_rectangle([x, y, x + cw - 1, y + ch - 1],
@@ -112,6 +124,57 @@ def render(L, R, lang: str, keys, out: str) -> None:
             img.paste(cell, (x + FRAME, y + FRAME))   # ink inside the margin, never under it
             x += cw + GAP
         y += ch + GAP
+    img.save(out)
+    print(f"wrote {out} {img.size}")
+
+
+def render_board(fw: str, lang: str, out: str, unit: int) -> None:
+    """The whole split72 board at each size, stacked and labelled."""
+    import json
+    from PIL import Image, ImageDraw, ImageFont
+    sys.path.insert(0, HERE)
+    import lang_demo as LD
+    from kle_render import Theme
+
+    # ⚠️ The overshoot margin is a DEBUG aid — it pads render_key's output so ink
+    # drawn outside the panel stays visible. lang_demo's board path assumes a clean
+    # 72x40 keycap (its _oled_buffer builds the mask at OLED_W x OLED_H), so the
+    # padded image raises "images do not match". lang_demo.main() zeroes it for
+    # exactly this reason; importing the module does not run main(), so do it here.
+    OP.OVERSHOOT = 0
+
+    pk = fw
+    matrices = LD.parse_layout_matrix(os.path.join(pk, "split72", "keyboard.json"))
+    kcs = LD.parse_base_layer_keycodes(
+        os.path.join(pk, "split72", "keymaps", "default", "keymap.c"))
+    if len(matrices) != len(kcs):
+        sys.exit(f"layout/keymap length mismatch: {len(matrices)} vs {len(kcs)}")
+    matrix_kc = dict(zip(matrices, kcs))
+    static_map = LD.parse_static_text_map(os.path.join(pk, "keycode_helper.c"))
+    L, R = load(pk)
+    kle = os.path.join(os.path.dirname(HERE), "polyhost", "res", "polykybd-split72.json")
+    board = LD.LangBoard(json.load(open(kle, encoding="utf-8")), unit=unit, glyphs=None,
+                         bezel=True, margin=12,
+                         exclude={"3,7", "8,0"},      # the two keys with no OLED
+                         dither=False)
+    board.compact_halves(lambda mp: "L" if int(mp.split(",")[0]) < 5 else "R", gap_px=14)
+
+    try:
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
+    except OSError:
+        font = ImageFont.load_default()
+    LH, GAP_Y = 34, 10
+    frames = [board.render_frame(LD.build_frame(L, R, matrix_kc, lang, static_map, size))
+              for size, _ in ROWS]
+    W = max(f.width for f in frames)
+    H = sum(f.height + LH + GAP_Y for f in frames) - GAP_Y
+    img = Image.new("RGB", (W, H), Theme().bg)
+    d = ImageDraw.Draw(img)
+    y = 0
+    for frame, (_, label) in zip(frames, ROWS):
+        d.text((14, y + 5), label, fill=LABEL, font=font)
+        img.paste(frame, (0, y + LH))
+        y += frame.height + LH + GAP_Y
     img.save(out)
     print(f"wrote {out} {img.size}")
 
@@ -125,7 +188,14 @@ def main() -> int:
     ap.add_argument("--keys", default="KC_2,KC_7,KC_9,KC_0,KC_Q")
     ap.add_argument("--out", help="PNG to write; omit to only --check")
     ap.add_argument("--check", action="store_true", help="report clipping/overlap per cell")
+    ap.add_argument("--board", action="store_true", help="render the whole split72 board per size")
+    ap.add_argument("--unit", type=int, default=96, help="--board: pixels per key unit")
     a = ap.parse_args()
+    if a.board:
+        if not a.out:
+            sys.exit("--board needs --out")
+        render_board(a.fw, a.lang, a.out, a.unit)
+        return 0
     keys = [k if k.startswith("KC_") else f"KC_{k}" for k in a.keys.split(",")]
     unknown = [k for k in keys if k not in ROW]
     if unknown:

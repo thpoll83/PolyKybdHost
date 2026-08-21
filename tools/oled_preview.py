@@ -495,7 +495,7 @@ def main():
     a = ap.parse_args()
     OVERSHOOT = a.overshoot
 
-    pk = os.path.join(a.qmk, 'keyboards', 'handwired', 'polykybd')
+    pk = os.path.join(a.qmk, 'keyboards', 'polykybd')
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
     if a.lang != 'ALL' and a.lang not in L.langs: sys.exit(f"unknown lang {a.lang}; have {L.langs}")

@@ -149,7 +149,7 @@ def main():
     ap.add_argument('--out', default=os.path.join(HERE, 'out', 'courtyard_compare.png'))
     a = ap.parse_args()
 
-    pk = os.path.join(a.qmk, 'keyboards', 'handwired', 'polykybd')
+    pk = os.path.join(a.qmk, 'keyboards', 'polykybd')
     R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
     chars = [c for c in a.chars.split(' ') if c != '']
 

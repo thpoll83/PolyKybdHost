@@ -109,7 +109,7 @@ def glyph_pool(R: "op.Renderer", used: set) -> dict:
 
 def build_data(qmk: str, codes=None) -> dict:
     """codes=None -> every layout in lang_lut.xlsx; else the given list (in order)."""
-    pk = os.path.join(qmk, 'keyboards', 'handwired', 'polykybd')
+    pk = os.path.join(qmk, 'keyboards', 'polykybd')
     named = op.load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = op.Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
     R = op.Renderer(op.load_all_fonts(os.path.join(pk, 'base', 'fonts')))

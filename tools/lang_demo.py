@@ -183,6 +183,17 @@ def _pick_default_branch(expr: str) -> str:
     return _pick_default_branch(a if val else b)
 
 
+# keycode_to_static_text() returns a few OS-dependent icons through a helper CALL
+# rather than a literal, and there is nothing here to evaluate it with. Substitute
+# the helper's own `default:` branch — what the firmware draws when no OS has been
+# selected — so the key renders its real glyph instead of the raw expression text
+# (`kc_os_gui_icon()` used to print as "kc_os" on the GUI keycap of every board
+# render, which reads as a defect in a published figure).
+STATIC_CALL_DEFAULTS = {
+    'kc_os_gui_icon()': 'DINGBAT_BLACK_DIA_X',
+}
+
+
 def parse_static_text_map(keycode_helper_c: str) -> dict:
     """token -> the icon/text expression keycode_to_static_text() returns at rest.
     Handles C fall-through (several `case`s sharing one `return`)."""
@@ -200,6 +211,9 @@ def parse_static_text_map(keycode_helper_c: str) -> dict:
             for lbl in pending:
                 out[lbl] = branch
             pending = []
+    for tok, expr in list(out.items()):
+        if expr in STATIC_CALL_DEFAULTS:
+            out[tok] = STATIC_CALL_DEFAULTS[expr]
     return out
 
 
@@ -335,13 +349,16 @@ def render_static(L, R, expr) -> Image.Image:
     return img
 
 
-def build_frame(L, R, matrix_kc, lang, static_map) -> dict[str, KeyContent]:
+def build_frame(L, R, matrix_kc, lang, static_map, size: int = 0) -> dict[str, KeyContent]:
     out: dict[str, KeyContent] = {}
     for mp, tok in matrix_kc.items():
         kc = normalize_kc(display_keycode(tok))
         whole = normalize_kc(tok)
         if kc in op.ROW:                       # letter / number / symbol (language LUT)
-            img = op.render_key(L, R, lang, kc, shift=False, caps=False)
+            # `size` is the keycap legend size (HID cmd 34): 0 small, 1 medium,
+            # 2 large. It applies to the MAIN legend only — the Shift/AltGr
+            # previews and every static key are unaffected, by design.
+            img = op.render_key(L, R, lang, kc, shift=False, caps=False, size=size)
         elif whole in static_map:              # MO(_FL0), TO(_EMJ), … (match the wrapped token)
             img = render_static(L, R, static_map[whole])
         elif kc in static_map:                 # KC_LSFT, KC_ENTER, KC_SPACE, arrows, …
@@ -374,6 +391,8 @@ def main():
     ap.add_argument('--settle', type=int, default=1400, help='ms each language is held')
     ap.add_argument('--first-hold', type=int, default=2200, help='ms to hold en-US (orientation)')
     ap.add_argument('--still', action='store_true', help='also write a still PNG of frame 0')
+    ap.add_argument('--size', type=int, default=0, choices=(0, 1, 2),
+                    help='keycap legend size: 0 small (default), 1 medium, 2 large')
     ap.add_argument('--no-bezel', action='store_true')
     args = ap.parse_args()
 
@@ -381,7 +400,7 @@ def main():
     exclude = {m.strip() for m in args.exclude.split(';') if m.strip()}
     langs = [s.strip() for s in args.langs.split(',') if s.strip()]
 
-    pk = os.path.join(args.qmk, 'keyboards', 'handwired', 'polykybd')
+    pk = os.path.join(args.qmk, 'keyboards', 'polykybd')
     keyboard_json = os.path.join(pk, 'split72', 'keyboard.json')
     keymap_c = os.path.join(pk, 'split72', 'keymaps', 'default', 'keymap.c')
 
@@ -415,7 +434,7 @@ def main():
 
     imgs, durations = [], []
     for li, lang in enumerate(langs):
-        board = renderer.render_frame(build_frame(L, R, matrix_kc, lang, static_map))
+        board = renderer.render_frame(build_frame(L, R, matrix_kc, lang, static_map, args.size))
         frame = Image.new('RGB', (board.width, board.height + CAP_H), Theme().bg)
         frame.paste(board, (0, 0))
         d = ImageDraw.Draw(frame)

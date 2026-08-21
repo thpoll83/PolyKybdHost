@@ -181,7 +181,7 @@ def main():
     args = ap.parse_args()
     exclude = {m.strip() for m in args.exclude.split(';') if m.strip()}
 
-    pk = os.path.join(args.qmk, 'keyboards', 'handwired', 'polykybd')
+    pk = os.path.join(args.qmk, 'keyboards', 'polykybd')
     keyboard_json = os.path.join(pk, 'split72', 'keyboard.json')
     keymap_c = os.path.join(pk, 'split72', 'keymaps', 'default', 'keymap.c')
     emoji_data_h = os.path.join(pk, 'emoji', 'emoji_data.h')
