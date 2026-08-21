@@ -128,25 +128,26 @@ def render(L, R, lang: str, keys, out: str) -> None:
     print(f"wrote {out} {img.size}")
 
 
-def render_size_key(fw: str, out: str) -> None:
-    """The settings-layer Size key (KC_GLYPH_SIZE) in each of its three states.
+def render_static_keys(fw: str, keys, labels, out: str) -> None:
+    """A row of STATIC keycaps (keycode_to_static_text legends), labelled.
 
-    Its legend is the one on the board that is resolved from the SYNCED STATE
-    rather than from keycode_to_static_text() — poly_keymap.c's render_key() picks
-    the string from local_state->glyph_size — so it is read out of the firmware
-    source rather than retyped here.
+    Used for the settings-layer size keys, whose whole legend is one icon: the
+    figure has to show the icon itself, since no words on the keycap say what it
+    does. The legends are read from the firmware's keycode_helper.c, so a wording
+    or glyph change there cannot leave the figure stale.
     """
     from PIL import Image, ImageDraw, ImageFont
     sys.path.insert(0, HERE)
     import lang_demo as LD
     OP.OVERSHOOT = 0
-    legends = LD.parse_glyph_size_legends(os.path.join(fw, "poly_keymap.c"))
-    if len(legends) != len(ROWS):
-        sys.exit(f"expected {len(ROWS)} Size legends in poly_keymap.c, found {sorted(legends)}")
+    static_map = LD.parse_static_text_map(os.path.join(fw, "keycode_helper.c"))
+    missing = [k for k in keys if k not in static_map]
+    if missing:
+        sys.exit(f"no static legend for {', '.join(missing)} in keycode_helper.c")
     L, R = load(fw)
     kw, kh = OLED_W * SCALE, OLED_H * SCALE
     cw, ch = kw + 2 * FRAME, kh + 2 * FRAME
-    W = PAD * 2 + len(ROWS) * cw + (len(ROWS) - 1) * GAP
+    W = PAD * 2 + len(keys) * cw + (len(keys) - 1) * GAP
     H = PAD * 2 + LBL_H + ch
     img = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(img)
@@ -155,9 +156,9 @@ def render_size_key(fw: str, out: str) -> None:
     except OSError:
         font = ImageFont.load_default()
     x = PAD
-    for size, label in ROWS:
+    for kc, label in zip(keys, labels):
         d.text((x + FRAME, PAD), label, fill=LABEL, font=font)
-        src = LD.render_static(L, R, legends[size]).load()
+        src = LD.render_static(L, R, static_map[kc]).load()
         cell = Image.new("RGB", (kw, kh), KEY_BG)
         cd = ImageDraw.Draw(cell)
         for yy in range(OLED_H):
@@ -207,7 +208,6 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
         sys.exit(f"layout/keymap length mismatch: {len(matrices)} vs {len(kcs)}")
     matrix_kc = dict(zip(matrices, kcs))
     static_map = LD.parse_static_text_map(os.path.join(pk, "keycode_helper.c"))
-    size_legends = LD.parse_glyph_size_legends(os.path.join(pk, "poly_keymap.c"))
     L, R = load(pk)
     theme = Theme()
     kle = os.path.join(os.path.dirname(HERE), "polyhost", "res", "polykybd-split72.json")
@@ -288,7 +288,7 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
     frames = []
     for size, _ in ROWS:
         f = board.render_frame(LD.build_frame(L, R, matrix_kc, lang, static_map, size,
-                                              shift=shift, size_legends=size_legends))
+                                              shift=shift))
         if status:
             draw_status(f)
         frames.append(f)
@@ -316,8 +316,9 @@ def main() -> int:
     ap.add_argument("--out", help="PNG to write; omit to only --check")
     ap.add_argument("--check", action="store_true", help="report clipping/overlap per cell")
     ap.add_argument("--board", action="store_true", help="render the whole split72 board per size")
-    ap.add_argument("--size-key", action="store_true",
-                    help="render the settings-layer Size key (KC_GLYPH_SIZE) in its three states")
+    ap.add_argument("--static-keys",
+                    help="render a row of static keycaps, e.g. "
+                         "KC_GLYPH_SIZE_DOWN=Smaller,KC_GLYPH_SIZE_UP=Bigger")
     ap.add_argument("--unit", type=int, default=96, help="--board: pixels per key unit")
     ap.add_argument("--layer", default=None,
                     help="--board: base layout — qwerty|stag|colemak|neo|workman or _L0.._L4")
@@ -330,10 +331,12 @@ def main() -> int:
                     help="--board --status: clearance between the two OLED modules, in key "
                          "units (the halves are spaced to make room for them)")
     a = ap.parse_args()
-    if a.size_key:
+    if a.static_keys:
         if not a.out:
-            sys.exit("--size-key needs --out")
-        render_size_key(a.fw, a.out)
+            sys.exit("--static-keys needs --out")
+        pairs = [p.split("=", 1) for p in a.static_keys.split(",")]
+        render_static_keys(a.fw, [p[0] for p in pairs],
+                           [p[1] if len(p) > 1 else p[0] for p in pairs], a.out)
         return 0
     if a.board:
         if not a.out:
