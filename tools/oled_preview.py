@@ -103,8 +103,9 @@ def load_named_glyphs(path: str, *extra: str) -> dict[str, list[int]]:
     for p in paths:
         if not os.path.exists(p):
             continue
-        for m in re.finditer(r'#define\s+(\w+)\s+[uU]"((?:\\.|[^"\\])*)"',
-                             open(p, encoding='utf-8').read()):
+        with open(p, encoding='utf-8') as fh:
+            text = fh.read()
+        for m in re.finditer(r'#define\s+(\w+)\s+[uU]"((?:\\.|[^"\\])*)"', text):
             out[m.group(1)] = parse_u_string(m.group(2))
     return out
 
@@ -349,6 +350,13 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     # relocated glyph at the tier's nominal baseline, clamped against its own ink
     # box so a tall accent or deep descender shifts to fit instead of clipping.
     # base_ink is what everything below lays out around.
+    # `big_plan` is the (x, y) the relocated glyph is drawn at, bound in the SAME
+    # branch that decides there is one — mirroring the firmware's main_legend_t /
+    # plan_main_legend() pair. Two separate `if big is not None` blocks with the
+    # coordinates living between them read as a use-before-assign to any
+    # path-insensitive reader (CodeQL flagged exactly that), and would become one
+    # for real the moment anything reassigned `big` in between.
+    big_plan = None
     big = R.relocate(base, size)
     if big is not None:
         xmn, xmx, ymn, ymx = R.bbox(big)
@@ -358,6 +366,7 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
         big_y = GLYPH_SIZE_BASELINE[size]
         if big_y + ymn < 0:          big_y = -ymn
         if big_y + ymx > OLED_H - 1: big_y = OLED_H - 1 - ymx
+        big_plan = (big_x, big_y)
         base_ink_max = big_x + xmx
     else:
         _bmn, _bmx = R.bounds(base)
@@ -401,8 +410,8 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
         return s
     sp_base, sp_shift, sp_alt = make_setter(1, 'base'), make_setter(2, 'shift'), make_setter(0, 'altgr')
 
-    if big is not None:
-        R.draw(sp_base, big, big_x, big_y)
+    if big_plan is not None:
+        R.draw(sp_base, big, *big_plan)
     else:
         R.draw(sp_base, base, base_x, BASELINE + base_v)
     if shift_letter is not None:

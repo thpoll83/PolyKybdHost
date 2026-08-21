@@ -55,9 +55,13 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from gfx_font import load_all_fonts                                    # noqa: E402
+# One import form only: OP.OVERSHOOT is REASSIGNED here (the board path needs a
+# clean 72x40 keycap), and a `from` import would bind copies of the module's other
+# names beside it — two views of one module, where only one of them tracks a
+# rebind. Everything therefore goes through OP.
 import oled_preview as OP                                              # noqa: E402
-from oled_preview import (Lang, Renderer, load_named_glyphs, render_key,  # noqa: E402
-                          ROW, OLED_W, OLED_H)
+
+OLED_W, OLED_H, ROW = OP.OLED_W, OP.OLED_H, OP.ROW   # true constants, safe to alias
 
 BG, KEY_BG, INK, BORDER, LABEL = (17, 18, 22), (6, 8, 12), (168, 216, 255), (58, 62, 72), (190, 195, 205)
 ROWS = [(0, "Small  (default)"), (1, "Medium"), (2, "Large")]
@@ -75,8 +79,8 @@ def _panel_pixels(img):
 
 
 def load(fw: str):
-    L = Lang(f"{fw}/lang/lang_lut.xlsx", load_named_glyphs(f"{fw}/lang/named_glyphs.h"))
-    return L, Renderer(load_all_fonts(f"{fw}/base/fonts"))
+    L = OP.Lang(f"{fw}/lang/lang_lut.xlsx", OP.load_named_glyphs(f"{fw}/lang/named_glyphs.h"))
+    return L, OP.Renderer(load_all_fonts(f"{fw}/base/fonts"))
 
 
 def check(L, R, lang: str, keys) -> int:
@@ -84,7 +88,7 @@ def check(L, R, lang: str, keys) -> int:
     for kc in keys:
         for size, name in ROWS:
             rep = {}
-            render_key(L, R, lang, kc, False, False, report=rep, size=size)
+            OP.render_key(L, R, lang, kc, False, False, report=rep, size=size)
             clip, ov = sum(rep["oob"].values()), rep["overlap"]
             if clip or ov:
                 bad += 1
@@ -111,7 +115,7 @@ def render(L, R, lang: str, keys, out: str) -> None:
         y += LBL_H
         x = PAD
         for kc in keys:
-            src = _panel_pixels(render_key(L, R, lang, kc, False, False, size=size))
+            src = _panel_pixels(OP.render_key(L, R, lang, kc, False, False, size=size))
             cell = Image.new("RGB", (kw, kh), KEY_BG)
             cd = ImageDraw.Draw(cell)
             for yy in range(OLED_H):
@@ -212,7 +216,9 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
     theme = Theme()
     kle = os.path.join(os.path.dirname(HERE), "polyhost", "res", "polykybd-split72.json")
     active = dict(FCP.OLED_ACTIVE_U)
-    board = LD.LangBoard(json.load(open(kle, encoding="utf-8")), unit=unit, glyphs=None,
+    with open(kle, encoding="utf-8") as fh:
+        kle_json = json.load(fh)
+    board = LD.LangBoard(kle_json, unit=unit, glyphs=None,
                          bezel=True, margin=12,
                          exclude={"3,7", "8,0"},      # the two keys with no OLED
                          dither=False,
