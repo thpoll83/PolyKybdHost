@@ -360,7 +360,8 @@ def render_static(L, R, expr) -> Image.Image:
     return img
 
 
-def build_frame(L, R, matrix_kc, lang, static_map, size: int = 0) -> dict[str, KeyContent]:
+def build_frame(L, R, matrix_kc, lang, static_map, size: int = 0,
+                shift: bool = False) -> dict[str, KeyContent]:
     out: dict[str, KeyContent] = {}
     for mp, tok in matrix_kc.items():
         kc = normalize_kc(display_keycode(tok))
@@ -369,7 +370,11 @@ def build_frame(L, R, matrix_kc, lang, static_map, size: int = 0) -> dict[str, K
             # `size` is the keycap legend size (HID cmd 34): 0 small, 1 medium,
             # 2 large. It applies to the MAIN legend only — the Shift/AltGr
             # previews and every static key are unaffected, by design.
-            img = op.render_key(L, R, lang, kc, shift=False, caps=False, size=size)
+            # `shift` models the Shift-held view: translate_keycode() hands back the
+            # SHIFTED character and plan_main_legend() sizes that, so the shifted
+            # legend grows with the setting exactly as the base one does — while the
+            # two previews are dropped (the key is showing what it would type).
+            img = op.render_key(L, R, lang, kc, shift=shift, caps=False, size=size)
         elif whole in static_map:              # MO(_FL0), TO(_EMJ), … (match the wrapped token)
             img = render_static(L, R, static_map[whole])
         elif kc in static_map:                 # KC_LSFT, KC_ENTER, KC_SPACE, arrows, …

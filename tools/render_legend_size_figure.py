@@ -129,7 +129,8 @@ def render(L, R, lang: str, keys, out: str) -> None:
 
 
 def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
-                 status: bool = False, oled_gap: float = 0.30) -> None:
+                 status: bool = False, oled_gap: float = 0.30,
+                 shift: bool = False) -> None:
     """The whole split72 board at each size, stacked and labelled."""
     import json
     from PIL import Image, ImageDraw, ImageFont
@@ -239,7 +240,8 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
     LH, GAP_Y = 34, 10
     frames = []
     for size, _ in ROWS:
-        f = board.render_frame(LD.build_frame(L, R, matrix_kc, lang, static_map, size))
+        f = board.render_frame(LD.build_frame(L, R, matrix_kc, lang, static_map, size,
+                                              shift=shift))
         if status:
             draw_status(f)
         frames.append(f)
@@ -249,7 +251,8 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
     d = ImageDraw.Draw(img)
     y = 0
     for frame, (_, label) in zip(frames, ROWS):
-        d.text((14, y + 5), label, fill=LABEL, font=font)
+        d.text((14, y + 5), label + ("   \u2014 Shift held" if shift else ""),
+               fill=LABEL, font=font)
         img.paste(frame, ((W - frame.width) // 2, y + LH))
         y += frame.height + LH + GAP_Y
     img.save(out)
@@ -271,6 +274,9 @@ def main() -> int:
                     help="--board: base layout — qwerty|stag|colemak|neo|workman or _L0.._L4")
     ap.add_argument("--status", action="store_true",
                     help="--board: also draw each half's 128x64 status OLED")
+    ap.add_argument("--shift", action="store_true",
+                    help="--board: draw the Shift-held view (the shifted character is "
+                         "the main legend, so it grows too; the previews are dropped)")
     ap.add_argument("--oled-gap", type=float, default=0.30,
                     help="--board --status: clearance between the two OLED modules, in key "
                          "units (the halves are spaced to make room for them)")
@@ -278,7 +284,7 @@ def main() -> int:
     if a.board:
         if not a.out:
             sys.exit("--board needs --out")
-        render_board(a.fw, a.lang, a.out, a.unit, a.layer, a.status, a.oled_gap)
+        render_board(a.fw, a.lang, a.out, a.unit, a.layer, a.status, a.oled_gap, a.shift)
         return 0
     keys = [k if k.startswith("KC_") else f"KC_{k}" for k in a.keys.split(",")]
     unknown = [k for k in keys if k not in ROW]
