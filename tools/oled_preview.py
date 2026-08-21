@@ -236,18 +236,28 @@ class Renderer:
         """glyph_size_remap(): the legend at the requested size, or None to fall
         back to the small face. ALL-OR-NOTHING — a partial hit would mix two faces
         (and so two baselines) in one legend."""
-        if size == 0 or not cps or len(cps) > GLYPH_SIZE_MAX_LEN:
+        if size == 0 or not cps:
             return None
         base = GLYPH_SIZE_BASE[size]
         out = []
         for cp in cps:
-            if cp < 0x20:            # a display-list op, not a glyph
+            if cp < 0x20:
+                # A display-list op, not a glyph. The five zero-argument cursor
+                # nudges are DROPPED (they were hand-tuned for the small face, and
+                # kdisp_gfx_text_bbox cannot see what they do to the draw, so
+                # carrying one clips the accent); every other op bails, since the
+                # arg-taking ones would have their arguments relocated as glyphs.
+                # Mirrors the switch in glyph_size_remap().
+                if cp in (0x05, 0x06, 0x08, 0x0B, 0x0C):
+                    continue
+                return None
+            if len(out) + 1 >= GLYPH_SIZE_MAX_LEN + 1:
                 return None
             rel = base + cp
             if self._font(rel) is None:
                 return None
             out.append(rel)
-        return out
+        return out or None
 
     def draw(self, setpix, cps, x, y):
         xc, yc = x, y
@@ -401,6 +411,13 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
         b, sh, al = rpx['base'], rpx['shift'], rpx['altgr']
         report['overlap'] = len((b & sh) | (b & al) | (sh & al))
         report['overlap_detail'] = {'base^shift': len(b & sh), 'base^altgr': len(b & al), 'shift^altgr': len(sh & al)}
+        # Per-element ink boxes (x0,x1,y0,y1), so a caller can measure the CLEAR
+        # SPACE between elements rather than only whether they collide. Keyed by the
+        # element that actually drew, so a key with an AltGr hint but no Shift hint
+        # cannot be mis-attributed (positional tagging gets that wrong).
+        report['box'] = {k: (min(x for x, _ in v), max(x for x, _ in v),
+                             min(y for _, y in v), max(y for _, y in v))
+                         for k, v in rpx.items() if v}
     return img
 
 
