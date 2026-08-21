@@ -18,6 +18,13 @@ if either is regenerated.
 element overlap per cell and exits non-zero on either. A figure of a defect is
 worse than no figure, and the previews sit close enough to the legend at the big
 sizes that this is a real risk (see plan_main_legend's AltGr push-clear).
+
+⚠️ The keycap outline is drawn in a MARGIN around the panel, never on top of it.
+A glyph may legitimately ink the outermost column — fr-FR's AltGr `@` ends on
+column 71 of 0..71 — so a border stroked at the cell edge paints over it, and the
+glyph reads as an oversized one spilling out of the frame. That is a defect of the
+figure, not of the firmware, and it is invisible in a figure whose glyphs happen to
+sit away from the edge (the sibling sample-letter figure never shows it).
 """
 from __future__ import annotations
 
@@ -34,6 +41,7 @@ from oled_preview import (Lang, Renderer, load_named_glyphs, render_key,  # noqa
 BG, KEY_BG, INK, BORDER, LABEL = (17, 18, 22), (6, 8, 12), (168, 216, 255), (58, 62, 72), (190, 195, 205)
 ROWS = [(0, "Small  (default)"), (1, "Medium"), (2, "Large")]
 SCALE, PAD, GAP, LBL_H, RADIUS = 4, 26, 24, 26, 14
+FRAME = 6          # margin the outline lives in, so it never overdraws panel ink
 
 
 def load(fw: str):
@@ -58,8 +66,9 @@ def check(L, R, lang: str, keys) -> int:
 def render(L, R, lang: str, keys, out: str) -> None:
     from PIL import Image, ImageDraw, ImageFont
     kw, kh = OLED_W * SCALE, OLED_H * SCALE
-    W = PAD * 2 + len(keys) * kw + (len(keys) - 1) * GAP
-    H = PAD * 2 + len(ROWS) * (LBL_H + kh + GAP) - GAP
+    cw, ch = kw + 2 * FRAME, kh + 2 * FRAME        # panel + the outline's margin
+    W = PAD * 2 + len(keys) * cw + (len(keys) - 1) * GAP
+    H = PAD * 2 + len(ROWS) * (LBL_H + ch + GAP) - GAP
     img = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(img)
     try:
@@ -80,11 +89,11 @@ def render(L, R, lang: str, keys, out: str) -> None:
                     if src[xx, yy]:
                         cd.rectangle([xx * SCALE, yy * SCALE,
                                       xx * SCALE + SCALE - 1, yy * SCALE + SCALE - 1], fill=INK)
-            img.paste(cell, (x, y))
-            d.rounded_rectangle([x, y, x + kw - 1, y + kh - 1],
-                                radius=RADIUS, outline=BORDER, width=2)
-            x += kw + GAP
-        y += kh + GAP
+            d.rounded_rectangle([x, y, x + cw - 1, y + ch - 1],
+                                radius=RADIUS, fill=KEY_BG, outline=BORDER, width=2)
+            img.paste(cell, (x + FRAME, y + FRAME))   # ink inside the margin, never under it
+            x += cw + GAP
+        y += ch + GAP
     img.save(out)
     print(f"wrote {out} {img.size}")
 
