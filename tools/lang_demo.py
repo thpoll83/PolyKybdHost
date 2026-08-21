@@ -248,6 +248,9 @@ def parse_layout_matrix(keyboard_json: str) -> list[str]:
 # The five base layers are the LAYOUTS, in the order oled_helper.c names them:
 # _L0 Qwerty, _L1 Qwerty Stag!, _L2 Colemak DH, _L3 Neo, _L4 Workman.
 BASE_LAYOUTS = {'qwerty': '_L0', 'stag': '_L1', 'colemak': '_L2', 'neo': '_L3', 'workman': '_L4'}
+# The names the status OLED shows for them (oled_helper.c's layout_name array).
+LAYOUT_NAMES = {'_L0': 'Qwerty', '_L1': 'Qwerty Stag!', '_L2': 'Colemak DH',
+                '_L3': 'Neo', '_L4': 'Workman'}
 
 
 def parse_base_layer_keycodes(keymap_c: str, layer: str = None) -> list[str]:

@@ -128,7 +128,8 @@ def render(L, R, lang: str, keys, out: str) -> None:
     print(f"wrote {out} {img.size}")
 
 
-def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None) -> None:
+def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
+                 status: bool = False, status_scale: int = 2) -> None:
     """The whole split72 board at each size, stacked and labelled."""
     import json
     from PIL import Image, ImageDraw, ImageFont
@@ -160,6 +161,31 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None) -> 
                          dither=False)
     board.compact_halves(lambda mp: "L" if int(mp.split(",")[0]) < 5 else "R", gap_px=14)
 
+    # The 128x64 status OLED on each half. It is driven by its OWN standalone fonts
+    # (_Small_ / _Mid_ / _Nano_, see gen-status-fonts.sh), NOT by the keycap `latin`
+    # face, so the legend size does not touch it — which is exactly why it is worth
+    # showing: the figure then says what the setting does and does not reach.
+    status_img = None
+    if status:
+        sys.path.insert(0, os.path.join(pk, "tools"))
+        import status_oled_preview as SP
+        fonts = SP.load_fonts()
+        rgb = (128, 255, 100, 80, 5, "Rainbow")
+        name = LD.LAYOUT_NAMES.get(LD.BASE_LAYOUTS.get((layer or "").lower(), layer or "_L0"),
+                                   "Qwerty")
+        # ⚠️ Keep this close to hardware proportion: the status OLED is 128x64 over
+        # ~35 mm and a keycap is 72x40 over ~18 mm, so the panel is about TWICE a
+        # keycap wide in real life. Rendered at sc=3 against unit 68 it came out
+        # 5.6x and read as the main subject of the figure.
+        panels = [SP.render_plain(SP.build_panel(side, *fonts, 50, rgb, lang, 0, name),
+                                  sc=status_scale)
+                  for side in ("L", "R")]
+        gap = 40
+        w = panels[0].width * 2 + gap
+        status_img = Image.new("RGB", (w, panels[0].height), Theme().bg)
+        status_img.paste(panels[0], (0, 0))
+        status_img.paste(panels[1], (panels[0].width + gap, 0))
+
     try:
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
     except OSError:
@@ -167,15 +193,20 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None) -> 
     LH, GAP_Y = 34, 10
     frames = [board.render_frame(LD.build_frame(L, R, matrix_kc, lang, static_map, size))
               for size, _ in ROWS]
-    W = max(f.width for f in frames)
-    H = sum(f.height + LH + GAP_Y for f in frames) - GAP_Y
+    row_h = frames[0].height + (status_img.height + 12 if status_img else 0)
+    W = max(max(f.width for f in frames), status_img.width if status_img else 0)
+    H = sum(row_h + LH + GAP_Y for _ in frames) - GAP_Y
     img = Image.new("RGB", (W, H), Theme().bg)
     d = ImageDraw.Draw(img)
     y = 0
     for frame, (_, label) in zip(frames, ROWS):
         d.text((14, y + 5), label, fill=LABEL, font=font)
-        img.paste(frame, (0, y + LH))
-        y += frame.height + LH + GAP_Y
+        top = y + LH
+        if status_img:
+            img.paste(status_img, ((W - status_img.width) // 2, top))
+            top += status_img.height + 12
+        img.paste(frame, ((W - frame.width) // 2, top))
+        y += row_h + LH + GAP_Y
     img.save(out)
     print(f"wrote {out} {img.size}")
 
@@ -193,11 +224,15 @@ def main() -> int:
     ap.add_argument("--unit", type=int, default=96, help="--board: pixels per key unit")
     ap.add_argument("--layer", default=None,
                     help="--board: base layout — qwerty|stag|colemak|neo|workman or _L0.._L4")
+    ap.add_argument("--status", action="store_true",
+                    help="--board: also draw each half's 128x64 status OLED")
+    ap.add_argument("--status-scale", type=int, default=2,
+                    help="--board: px per status-OLED pixel (2 keeps it near hardware proportion)")
     a = ap.parse_args()
     if a.board:
         if not a.out:
             sys.exit("--board needs --out")
-        render_board(a.fw, a.lang, a.out, a.unit, a.layer)
+        render_board(a.fw, a.lang, a.out, a.unit, a.layer, a.status, a.status_scale)
         return 0
     keys = [k if k.startswith("KC_") else f"KC_{k}" for k in a.keys.split(",")]
     unknown = [k for k in keys if k not in ROW]
