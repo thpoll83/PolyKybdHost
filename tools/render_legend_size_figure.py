@@ -19,6 +19,15 @@ element overlap per cell and exits non-zero on either. A figure of a defect is
 worse than no figure, and the previews sit close enough to the legend at the big
 sizes that this is a real risk (see plan_main_legend's AltGr push-clear).
 
+⚠️ `render_key` returns the panel PLUS a 2 px `OVERSHOOT` margin on every side —
+(76, 44), not (72, 40) — so that ink drawn outside the panel stays visible. The
+panel occupies cols/rows `OVERSHOOT .. OVERSHOOT + OLED_* - 1`; reading from 0
+shifts the whole cell up-left by 2 px AND chops the panel's last two columns. That
+is invisible on a glyph sitting away from the edge and obvious on one that reaches
+it — fr-FR's AltGr `@` ends on column 71 and lost its right edge, reading as an
+oversized glyph spilling out of the keycap. `_panel_pixels` asserts the returned
+size so a change to OVERSHOOT cannot silently re-introduce the offset.
+
 ⚠️ The keycap outline is drawn in a MARGIN around the panel, never on top of it.
 A glyph may legitimately ink the outermost column — fr-FR's AltGr `@` ends on
 column 71 of 0..71 — so a border stroked at the cell edge paints over it, and the
@@ -36,12 +45,21 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from gfx_font import load_all_fonts                                    # noqa: E402
 from oled_preview import (Lang, Renderer, load_named_glyphs, render_key,  # noqa: E402
-                          ROW, OLED_W, OLED_H)
+                          ROW, OLED_W, OLED_H, OVERSHOOT)
 
 BG, KEY_BG, INK, BORDER, LABEL = (17, 18, 22), (6, 8, 12), (168, 216, 255), (58, 62, 72), (190, 195, 205)
 ROWS = [(0, "Small  (default)"), (1, "Medium"), (2, "Large")]
 SCALE, PAD, GAP, LBL_H, RADIUS = 4, 26, 24, 26, 14
 FRAME = 6          # margin the outline lives in, so it never overdraws panel ink
+
+
+def _panel_pixels(img):
+    """The 72x40 panel out of render_key's overshoot-padded image (see the note above)."""
+    want = (OLED_W + 2 * OVERSHOOT, OLED_H + 2 * OVERSHOOT)
+    if img.size != want:
+        sys.exit(f"render_key returned {img.size}, expected {want} — the panel offset "
+                 f"below assumes OVERSHOOT={OVERSHOOT} padding on every side")
+    return img.convert("L").load()
 
 
 def load(fw: str):
@@ -81,12 +99,12 @@ def render(L, R, lang: str, keys, out: str) -> None:
         y += LBL_H
         x = PAD
         for kc in keys:
-            src = render_key(L, R, lang, kc, False, False, size=size).convert("L").load()
+            src = _panel_pixels(render_key(L, R, lang, kc, False, False, size=size))
             cell = Image.new("RGB", (kw, kh), KEY_BG)
             cd = ImageDraw.Draw(cell)
             for yy in range(OLED_H):
                 for xx in range(OLED_W):
-                    if src[xx, yy]:
+                    if src[xx + OVERSHOOT, yy + OVERSHOOT]:
                         cd.rectangle([xx * SCALE, yy * SCALE,
                                       xx * SCALE + SCALE - 1, yy * SCALE + SCALE - 1], fill=INK)
             d.rounded_rectangle([x, y, x + cw - 1, y + ch - 1],
