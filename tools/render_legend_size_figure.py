@@ -128,7 +128,7 @@ def render(L, R, lang: str, keys, out: str) -> None:
     print(f"wrote {out} {img.size}")
 
 
-def render_board(fw: str, lang: str, out: str, unit: int) -> None:
+def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None) -> None:
     """The whole split72 board at each size, stacked and labelled."""
     import json
     from PIL import Image, ImageDraw, ImageFont
@@ -146,7 +146,8 @@ def render_board(fw: str, lang: str, out: str, unit: int) -> None:
     pk = fw
     matrices = LD.parse_layout_matrix(os.path.join(pk, "split72", "keyboard.json"))
     kcs = LD.parse_base_layer_keycodes(
-        os.path.join(pk, "split72", "keymaps", "default", "keymap.c"))
+        os.path.join(pk, "split72", "keymaps", "default", "keymap.c"),
+        LD.BASE_LAYOUTS.get((layer or "").lower(), layer) if layer else None)
     if len(matrices) != len(kcs):
         sys.exit(f"layout/keymap length mismatch: {len(matrices)} vs {len(kcs)}")
     matrix_kc = dict(zip(matrices, kcs))
@@ -190,11 +191,13 @@ def main() -> int:
     ap.add_argument("--check", action="store_true", help="report clipping/overlap per cell")
     ap.add_argument("--board", action="store_true", help="render the whole split72 board per size")
     ap.add_argument("--unit", type=int, default=96, help="--board: pixels per key unit")
+    ap.add_argument("--layer", default=None,
+                    help="--board: base layout — qwerty|stag|colemak|neo|workman or _L0.._L4")
     a = ap.parse_args()
     if a.board:
         if not a.out:
             sys.exit("--board needs --out")
-        render_board(a.fw, a.lang, a.out, a.unit)
+        render_board(a.fw, a.lang, a.out, a.unit, a.layer)
         return 0
     keys = [k if k.startswith("KC_") else f"KC_{k}" for k in a.keys.split(",")]
     unknown = [k for k in keys if k not in ROW]

@@ -245,10 +245,18 @@ def parse_layout_matrix(keyboard_json: str) -> list[str]:
     return [f"{k['matrix'][0]},{k['matrix'][1]}" for k in lay]
 
 
-def parse_base_layer_keycodes(keymap_c: str) -> list[str]:
-    """arg index -> the raw keycode token for the [_L0] layer."""
+# The five base layers are the LAYOUTS, in the order oled_helper.c names them:
+# _L0 Qwerty, _L1 Qwerty Stag!, _L2 Colemak DH, _L3 Neo, _L4 Workman.
+BASE_LAYOUTS = {'qwerty': '_L0', 'stag': '_L1', 'colemak': '_L2', 'neo': '_L3', 'workman': '_L4'}
+
+
+def parse_base_layer_keycodes(keymap_c: str, layer: str = None) -> list[str]:
+    """arg index -> the raw keycode token for `layer` (default the [_L0] base)."""
+    layer = layer or BASE_LAYER
     text = strip_c_comments(open(keymap_c, encoding='utf-8').read())
-    i = text.index(f'[{BASE_LAYER}]')
+    if f'[{layer}]' not in text:
+        raise SystemExit(f"no layer {layer} in {keymap_c}")
+    i = text.index(f'[{layer}]')
     k = text.index('(', text.index(LAYOUT_NAME, i))
     depth, end = 0, None
     for m in range(k, len(text)):
@@ -260,7 +268,7 @@ def parse_base_layer_keycodes(keymap_c: str) -> list[str]:
                 end = m
                 break
     if end is None:
-        raise SystemExit(f"unbalanced {LAYOUT_NAME} parentheses for {BASE_LAYER}")
+        raise SystemExit(f"unbalanced {LAYOUT_NAME} parentheses for {layer}")
     return [t.strip() for t in _split_args(text[k + 1:end])]
 
 
@@ -393,19 +401,24 @@ def main():
     ap.add_argument('--still', action='store_true', help='also write a still PNG of frame 0')
     ap.add_argument('--size', type=int, default=0, choices=(0, 1, 2),
                     help='keycap legend size: 0 small (default), 1 medium, 2 large')
+    ap.add_argument('--layer', default=None,
+                    help='base layer / layout: _L0.._L4 or a name '
+                         '(qwerty, stag, colemak, neo, workman)')
     ap.add_argument('--no-bezel', action='store_true')
     args = ap.parse_args()
 
     op.OVERSHOOT = 0   # hardware-exact 72x40 keycap renders, no debug margin
     exclude = {m.strip() for m in args.exclude.split(';') if m.strip()}
     langs = [s.strip() for s in args.langs.split(',') if s.strip()]
+    if args.layer:
+        args.layer = BASE_LAYOUTS.get(args.layer.lower(), args.layer)
 
     pk = os.path.join(args.qmk, 'keyboards', 'polykybd')
     keyboard_json = os.path.join(pk, 'split72', 'keyboard.json')
     keymap_c = os.path.join(pk, 'split72', 'keymaps', 'default', 'keymap.c')
 
     matrices = parse_layout_matrix(keyboard_json)
-    kcs = parse_base_layer_keycodes(keymap_c)
+    kcs = parse_base_layer_keycodes(keymap_c, args.layer)
     if len(matrices) != len(kcs):
         raise SystemExit(f"layout/keymap length mismatch: {len(matrices)} vs {len(kcs)}")
     matrix_kc = dict(zip(matrices, kcs))

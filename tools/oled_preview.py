@@ -84,10 +84,28 @@ def parse_u_string(content: str) -> list[int]:
     return cps
 
 
-def load_named_glyphs(path: str) -> dict[str, list[int]]:
+def load_named_glyphs(path: str, *extra: str) -> dict[str, list[int]]:
+    """Named-glyph macros, merged over every header given (later files win).
+
+    ⚠️ `lang/named_glyphs.h` is NOT the only place a keycap legend macro lives —
+    `keycode_helper.h` defines the Intl ones (INTL_LAYER_LEGEND / _PICKER_ / _REMAP_),
+    and `keycode_to_static_text()` returns those by name. A macro this loader has not
+    seen falls back to drawing its own IDENTIFIER, so the Intl key rendered as the
+    text "INTL_" on every board preview instead of İñțł. Sibling headers are picked
+    up automatically below; pass more explicitly if a legend ever moves again.
+    """
     out = {}
-    for m in re.finditer(r'#define\s+(\w+)\s+[uU]"((?:\\.|[^"\\])*)"', open(path, encoding='utf-8').read()):
-        out[m.group(1)] = parse_u_string(m.group(2))
+    paths = [path, *extra]
+    sibling = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(path))),
+                           'keycode_helper.h')
+    if not extra and os.path.exists(sibling):
+        paths.append(sibling)
+    for p in paths:
+        if not os.path.exists(p):
+            continue
+        for m in re.finditer(r'#define\s+(\w+)\s+[uU]"((?:\\.|[^"\\])*)"',
+                             open(p, encoding='utf-8').read()):
+            out[m.group(1)] = parse_u_string(m.group(2))
     return out
 
 
