@@ -129,13 +129,20 @@ def render(L, R, lang: str, keys, out: str) -> None:
 
 
 def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
-                 status: bool = False, status_scale: int = 2) -> None:
+                 status: bool = False, oled_gap: float = 0.30) -> None:
     """The whole split72 board at each size, stacked and labelled."""
     import json
     from PIL import Image, ImageDraw, ImageFont
     sys.path.insert(0, HERE)
     import lang_demo as LD
     from kle_render import Theme
+    # The status OLEDs' real place and size come from the PCB, and that geometry
+    # already exists — OLED_ACTIVE_U (the Eco2.User active-area rect measured off
+    # poly_kybd_split72_{left,right}.kicad_pcb) plus module_rect_bounds() (the
+    # plate's 27x26 mm module opening around it). Import them rather than
+    # re-deriving, so this figure and fw_confirm_preview can never disagree about
+    # where the panel sits. Importing the module does not run its main().
+    import fw_confirm_preview as FCP
 
     # ⚠️ The overshoot margin is a DEBUG aid — it pads render_key's output so ink
     # drawn outside the panel stays visible. lang_demo's board path assumes a clean
@@ -154,18 +161,39 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
     matrix_kc = dict(zip(matrices, kcs))
     static_map = LD.parse_static_text_map(os.path.join(pk, "keycode_helper.c"))
     L, R = load(pk)
+    theme = Theme()
     kle = os.path.join(os.path.dirname(HERE), "polyhost", "res", "polykybd-split72.json")
+    active = dict(FCP.OLED_ACTIVE_U)
     board = LD.LangBoard(json.load(open(kle, encoding="utf-8")), unit=unit, glyphs=None,
                          bezel=True, margin=12,
                          exclude={"3,7", "8,0"},      # the two keys with no OLED
-                         dither=False)
-    board.compact_halves(lambda mp: "L" if int(mp.split(",")[0]) < 5 else "R", gap_px=14)
+                         dither=False,
+                         panels=[FCP.module_rect_bounds(active[s]) for s in ("L", "R")]
+                                if status else None)
+    if status:
+        # The OLEDs live in the inner gap, so with them drawn the halves are spaced
+        # by what the two MODULES need, not by the key gap — same pass as
+        # fw_confirm_preview. compact_halves() only knows about keys, so it would
+        # overlap them.
+        ml, mr = (FCP.module_rect_bounds(active["L"]), FCP.module_rect_bounds(active["R"]))
+        delta = (mr[0] - ml[2]) - oled_gap
+        if delta > 0:
+            for mp, p_ in board.km.items():
+                if int(mp.split(",")[0]) >= 5:
+                    p_["x"] -= delta
+                    p_["rx"] -= delta   # the pivot too, so the rotated thumbs follow
+            x0, y0, x1, y1 = active["R"]
+            active["R"] = (x0 - delta, y0, x1 - delta, y1)
+            board.panels = [FCP.module_rect_bounds(active[s]) for s in ("L", "R")]
+            board._geom()
+    else:
+        board.compact_halves(lambda mp: "L" if int(mp.split(",")[0]) < 5 else "R", gap_px=14)
 
     # The 128x64 status OLED on each half. It is driven by its OWN standalone fonts
     # (_Small_ / _Mid_ / _Nano_, see gen-status-fonts.sh), NOT by the keycap `latin`
     # face, so the legend size does not touch it — which is exactly why it is worth
     # showing: the figure then says what the setting does and does not reach.
-    status_img = None
+    lit = {}
     if status:
         sys.path.insert(0, os.path.join(pk, "tools"))
         import status_oled_preview as SP
@@ -173,40 +201,57 @@ def render_board(fw: str, lang: str, out: str, unit: int, layer: str = None,
         rgb = (128, 255, 100, 80, 5, "Rainbow")
         name = LD.LAYOUT_NAMES.get(LD.BASE_LAYOUTS.get((layer or "").lower(), layer or "_L0"),
                                    "Qwerty")
-        # ⚠️ Keep this close to hardware proportion: the status OLED is 128x64 over
-        # ~35 mm and a keycap is 72x40 over ~18 mm, so the panel is about TWICE a
-        # keycap wide in real life. Rendered at sc=3 against unit 68 it came out
-        # 5.6x and read as the main subject of the figure.
-        panels = [SP.render_plain(SP.build_panel(side, *fonts, 50, rgb, lang, 0, name),
-                                  sc=status_scale)
-                  for side in ("L", "R")]
-        gap = 40
-        w = panels[0].width * 2 + gap
-        status_img = Image.new("RGB", (w, panels[0].height), Theme().bg)
-        status_img.paste(panels[0], (0, 0))
-        status_img.paste(panels[1], (panels[0].width + gap, 0))
+        # The panel's on-screen size is fixed by the PCB rect, so it will not land
+        # on a whole multiple of 128x64 — supersample and LANCZOS down into the real
+        # box rather than magnifying a small buffer (fw_confirm_preview's PANEL_SS).
+        SS = 4
+        for side in ("L", "R"):
+            pts = SP.build_panel(side, *fonts, 50, rgb, lang, 0, name)
+            buf = Image.new("L", (SP.P_W * SS, SP.P_H * SS), 0)
+            px = buf.load()
+            for (x, y) in pts:
+                if 0 <= x < SP.P_W and 0 <= y < SP.P_H:
+                    for dy in range(SS):
+                        for dx in range(SS):
+                            px[x * SS + dx, y * SS + dy] = 255
+            lit[side] = buf
+
+    def draw_status(img):
+        """Module bezel + active area, at the PCB position, on one rendered board."""
+        d = ImageDraw.Draw(img)
+        for side in ("L", "R"):
+            mx0, my0, mx1, my1 = board.panel_box_px(FCP.module_rect_bounds(active[side]))
+            # Same body/outline as a keycap, so the module reads as part of the board.
+            d.rounded_rectangle([mx0, my0, mx1, my1], radius=max(2, (mx1 - mx0) // 18),
+                                fill=theme.key_bg, outline=theme.key_outline, width=2)
+            ax0, ay0, ax1, ay1 = board.panel_box_px(active[side])
+            aw, ah = max(1, ax1 - ax0), max(1, ay1 - ay0)
+            panel = lit[side].resize((aw, ah), Image.LANCZOS)
+            on, bg = theme.oled_on, theme.oled_bg
+            cell = Image.new("RGB", (aw, ah), bg)
+            cell.paste(Image.new("RGB", (aw, ah), on), (0, 0), panel)
+            img.paste(cell, (ax0, ay0))
 
     try:
         font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 22)
     except OSError:
         font = ImageFont.load_default()
     LH, GAP_Y = 34, 10
-    frames = [board.render_frame(LD.build_frame(L, R, matrix_kc, lang, static_map, size))
-              for size, _ in ROWS]
-    row_h = frames[0].height + (status_img.height + 12 if status_img else 0)
-    W = max(max(f.width for f in frames), status_img.width if status_img else 0)
-    H = sum(row_h + LH + GAP_Y for _ in frames) - GAP_Y
-    img = Image.new("RGB", (W, H), Theme().bg)
+    frames = []
+    for size, _ in ROWS:
+        f = board.render_frame(LD.build_frame(L, R, matrix_kc, lang, static_map, size))
+        if status:
+            draw_status(f)
+        frames.append(f)
+    W = max(f.width for f in frames)
+    H = sum(f.height + LH + GAP_Y for f in frames) - GAP_Y
+    img = Image.new("RGB", (W, H), theme.bg)
     d = ImageDraw.Draw(img)
     y = 0
     for frame, (_, label) in zip(frames, ROWS):
         d.text((14, y + 5), label, fill=LABEL, font=font)
-        top = y + LH
-        if status_img:
-            img.paste(status_img, ((W - status_img.width) // 2, top))
-            top += status_img.height + 12
-        img.paste(frame, ((W - frame.width) // 2, top))
-        y += row_h + LH + GAP_Y
+        img.paste(frame, ((W - frame.width) // 2, y + LH))
+        y += frame.height + LH + GAP_Y
     img.save(out)
     print(f"wrote {out} {img.size}")
 
@@ -226,13 +271,14 @@ def main() -> int:
                     help="--board: base layout — qwerty|stag|colemak|neo|workman or _L0.._L4")
     ap.add_argument("--status", action="store_true",
                     help="--board: also draw each half's 128x64 status OLED")
-    ap.add_argument("--status-scale", type=int, default=2,
-                    help="--board: px per status-OLED pixel (2 keeps it near hardware proportion)")
+    ap.add_argument("--oled-gap", type=float, default=0.30,
+                    help="--board --status: clearance between the two OLED modules, in key "
+                         "units (the halves are spaced to make room for them)")
     a = ap.parse_args()
     if a.board:
         if not a.out:
             sys.exit("--board needs --out")
-        render_board(a.fw, a.lang, a.out, a.unit, a.layer, a.status, a.status_scale)
+        render_board(a.fw, a.lang, a.out, a.unit, a.layer, a.status, a.oled_gap)
         return 0
     keys = [k if k.startswith("KC_") else f"KC_{k}" for k in a.keys.split(",")]
     unknown = [k for k in keys if k not in ROW]
