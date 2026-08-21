@@ -360,13 +360,42 @@ def render_static(L, R, expr) -> Image.Image:
     return img
 
 
+def parse_glyph_size_legends(poly_keymap_c: str) -> dict[int, str]:
+    """size -> the legend KC_GLYPH_SIZE shows, read out of render_key().
+
+    That key is the one legend resolved from the SYNCED STATE rather than from
+    keycode_to_static_text() (the size is in poly_sync_t and that function is a pure
+    keycode -> text table), so parse_static_text_map() cannot see it and the key
+    renders blank. Read the three literals from the firmware instead of retyping
+    them, so a wording change there cannot leave this preview stale.
+    """
+    text = strip_c_comments(open(poly_keymap_c, encoding='utf-8').read())
+    i = text.find('keycode == KC_GLYPH_SIZE')
+    if i < 0:
+        return {}
+    block = text[i:i + 600]
+    out = {}
+    for case, expr in re.findall(r'case\s+GLYPH_SIZE_(\w+)\s*:\s*return\s+(U"[^"]*")', block):
+        out[{'S': 0, 'M': 1, 'L': 2}.get(case, -1)] = expr
+    m = re.search(r'default\s*:\s*return\s+(U"[^"]*")', block)
+    if m:
+        out.setdefault(0, m.group(1))
+    return {k: v for k, v in out.items() if k >= 0}
+
+
 def build_frame(L, R, matrix_kc, lang, static_map, size: int = 0,
-                shift: bool = False) -> dict[str, KeyContent]:
+                shift: bool = False,
+                size_legends: dict[int, str] | None = None) -> dict[str, KeyContent]:
     out: dict[str, KeyContent] = {}
     for mp, tok in matrix_kc.items():
         kc = normalize_kc(display_keycode(tok))
         whole = normalize_kc(tok)
-        if kc in op.ROW:                       # letter / number / symbol (language LUT)
+        if size_legends and kc == 'KC_GLYPH_SIZE':
+            # The settings-layer Size key names the size it is currently on, so it
+            # is the one keycap whose legend CHANGES with `size` while not being
+            # drawn at that size (it is static text, like every other settings key).
+            img = render_static(L, R, size_legends.get(size, size_legends.get(0)))
+        elif kc in op.ROW:                       # letter / number / symbol (language LUT)
             # `size` is the keycap legend size (HID cmd 34): 0 small, 1 medium,
             # 2 large. It applies to the MAIN legend only — the Shift/AltGr
             # previews and every static key are unaffected, by design.
