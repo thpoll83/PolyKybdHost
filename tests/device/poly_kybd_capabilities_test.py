@@ -13,10 +13,10 @@ from unittest.mock import MagicMock
 
 from polyhost.device.poly_kybd import (
     PolyKybd, protocol_supports, FEATURE_MIN_PROTOCOL, MIN_SUPPORTED_PROTOCOL,
-    OVERLAY_PACKED_HEADER_MIN_PROTOCOL,
+    OVERLAY_PACKED_HEADER_MIN_PROTOCOL, GLYPH_SIZE_MIN_PROTOCOL,
 )
 from polyhost.device.device_settings import DeviceSettings
-from polyhost.device.command_ids import HidId, Cmd
+from polyhost.device.command_ids import HidId, Cmd, GlyphScript, GlyphSize
 from polyhost.device.keys import Modifier, LEGACY_MAX_MODIFIER_VALUE
 from polyhost.settings import PolySettings
 
@@ -150,3 +150,82 @@ class TestGuiComboModifierGate(unittest.TestCase):
 
     def test_legacy_ceiling_is_the_bare_gui_variant(self):
         self.assertEqual(LEGACY_MAX_MODIFIER_VALUE, Modifier.GUI_KEY.value)
+
+
+class TestGlyphSize(unittest.TestCase):
+    """Keycap legend size (cmd 34, protocol v13+).
+
+    The contrast with the glyph SCRIPT one command over is the point of these
+    tests: the script range is deliberately OPEN (the firmware keeps an index it
+    cannot render and falls back to the normal legend, so the host may offer faces
+    a given keyboard lacks), while the size range is CLOSED — every value has to
+    name a rendering tier the firmware knows, so it NACKs anything else.
+    """
+
+    def _keeb(self, protocol):
+        keeb = PolyKybd(DeviceSettings(), PolySettings())
+        keeb.protocol_version = protocol
+        keeb.hid = MagicMock()
+        return keeb
+
+    def test_feature_threshold(self):
+        self.assertEqual(FEATURE_MIN_PROTOCOL["glyph_size"], GLYPH_SIZE_MIN_PROTOCOL)
+        self.assertFalse(protocol_supports(GLYPH_SIZE_MIN_PROTOCOL - 1, "glyph_size"))
+        self.assertTrue(protocol_supports(GLYPH_SIZE_MIN_PROTOCOL, "glyph_size"))
+
+    def test_old_firmware_refuses_without_touching_the_device(self):
+        """The gate must fail BEFORE any I/O — an ungated command would connect
+        and then NACK at runtime, which is the failure the range-connect model
+        exists to prevent."""
+        keeb = self._keeb(GLYPH_SIZE_MIN_PROTOCOL - 1)
+        ok, msg = keeb.set_glyph_size(GlyphSize.LARGE)
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        keeb.hid.send_and_read_validate.assert_not_called()
+        ok, value = keeb.get_glyph_size()
+        self.assertFalse(ok)
+        self.assertEqual(value, 0)
+        keeb.hid.send_and_read_validate.assert_not_called()
+
+    def test_set_sends_the_enum_value_on_cmd_34(self):
+        keeb = self._keeb(GLYPH_SIZE_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (True, b"P\x22.")
+        ok, _ = keeb.set_glyph_size(GlyphSize.MEDIUM)
+        self.assertTrue(ok)
+        report = keeb.hid.send_and_read_validate.call_args.args[0]
+        self.assertEqual(report[1], Cmd.GLYPH_SIZE.value)
+        self.assertEqual(report[2], GlyphSize.MEDIUM.value)
+
+    def test_get_queries_with_the_0xff_sentinel_and_reads_data3(self):
+        keeb = self._keeb(GLYPH_SIZE_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.GLYPH_SIZE.value, ord("."), GlyphSize.LARGE.value]))
+        ok, value = keeb.get_glyph_size()
+        self.assertTrue(ok)
+        self.assertEqual(value, GlyphSize.LARGE.value)
+        report = keeb.hid.send_and_read_validate.call_args.args[0]
+        self.assertEqual(report[2], 0xFF)
+
+    def test_a_nacked_reply_is_not_read_as_a_size(self):
+        """The firmware answers 'P\x22!' for a value it does not know. Reading
+        data[3] regardless would hand back whatever byte followed the NACK."""
+        keeb = self._keeb(GLYPH_SIZE_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.GLYPH_SIZE.value, ord("!"), 7]))
+        ok, value = keeb.get_glyph_size()
+        self.assertFalse(ok)
+        self.assertEqual(value, 0)
+
+    def test_command_id_and_enum_match_the_firmware(self):
+        self.assertEqual(Cmd.GLYPH_SIZE.value, 34)
+        # poly_glyph_size in the firmware's state.h — append-only, never reordered.
+        self.assertEqual([(s.name, s.value) for s in GlyphSize],
+                         [("SMALL", 0), ("MEDIUM", 1), ("LARGE", 2)])
+
+    def test_size_is_a_closed_range_unlike_the_script(self):
+        """Documented contrast, pinned so a future 'make it open like the script'
+        change has to confront it: GlyphScript is open-ended by design, GlyphSize
+        is not, and SMALL/STANDARD are both 0 so neither ever needs a migration."""
+        self.assertEqual(GlyphSize.SMALL.value, 0)
+        self.assertEqual(GlyphScript.STANDARD.value, 0)
+        self.assertEqual(max(s.value for s in GlyphSize), 2)

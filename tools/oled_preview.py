@@ -53,6 +53,15 @@ SHEET = [
     ["KC_NONUS_BACKSLASH","KC_Z","KC_X","KC_C","KC_V","KC_B","KC_N","KC_M","KC_COMMA","KC_DOT","KC_SLASH"],
 ]
 VAR_SMALL, VAR_SHIFT, VAR_CAPS, VAR_ALTGR = 0, 1, 2, 3
+
+# Keycap legend SIZE (HID cmd 34, firmware protocol v13+). Mirrors
+# glyph_size_base[] / glyph_size_baseline[] in poly_keymap.c — the bigger faces are
+# the same characters emitted at an offset into supplementary private-use plane 15,
+# so the resident small face cannot win the front-to-back lookup for them.
+GLYPH_SIZE_BASE     = {0: 0, 1: 0xF0000, 2: 0xF3000}
+GLYPH_SIZE_BASELINE = {0: 21, 1: 25, 2: 28}   # [0] unused: size S keeps the language offset
+GLYPH_SIZE_MAX_LEN  = 4                        # glyph_size_remap()'s length guard
+GLYPH_SIZE_NAMES    = {0: "small", 1: "medium", 2: "large"}
 SET = {"letter": (57, 56), "num": (59, 58), "sym": (61, 60)}   # (voffset_row, hoffset_row)
 
 
@@ -75,10 +84,29 @@ def parse_u_string(content: str) -> list[int]:
     return cps
 
 
-def load_named_glyphs(path: str) -> dict[str, list[int]]:
+def load_named_glyphs(path: str, *extra: str) -> dict[str, list[int]]:
+    """Named-glyph macros, merged over every header given (later files win).
+
+    ⚠️ `lang/named_glyphs.h` is NOT the only place a keycap legend macro lives —
+    `keycode_helper.h` defines the Intl ones (INTL_LAYER_LEGEND / _PICKER_ / _REMAP_),
+    and `keycode_to_static_text()` returns those by name. A macro this loader has not
+    seen falls back to drawing its own IDENTIFIER, so the Intl key rendered as the
+    text "INTL_" on every board preview instead of İñțł. Sibling headers are picked
+    up automatically below; pass more explicitly if a legend ever moves again.
+    """
     out = {}
-    for m in re.finditer(r'#define\s+(\w+)\s+[uU]"((?:\\.|[^"\\])*)"', open(path, encoding='utf-8').read()):
-        out[m.group(1)] = parse_u_string(m.group(2))
+    paths = [path, *extra]
+    sibling = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(path))),
+                           'keycode_helper.h')
+    if not extra and os.path.exists(sibling):
+        paths.append(sibling)
+    for p in paths:
+        if not os.path.exists(p):
+            continue
+        with open(p, encoding='utf-8') as fh:
+            text = fh.read()
+        for m in re.finditer(r'#define\s+(\w+)\s+[uU]"((?:\\.|[^"\\])*)"', text):
+            out[m.group(1)] = parse_u_string(m.group(2))
     return out
 
 
@@ -191,6 +219,65 @@ class Renderer:
         if mx < mn: mn = mx = 0
         return mn, mx
 
+    def bbox(self, cps):
+        """Full ink box relative to the draw origin (x from origin x, y from the
+        baseline) — like kdisp_gfx_text_bbox. Mirrors draw()'s cursor rules,
+        including the per-font yAdvance shift, so a caller can clamp a draw
+        position to keep the glyph on the panel."""
+        x = y = 0
+        xmn = ymn = 127
+        xmx = ymx = -128
+        for cp in cps:
+            if cp == 0x05: y += 2; continue
+            if cp == 0x06: x += 2; continue
+            if cp == 0x18: x = y = 0; continue
+            if cp == 0x08: x = x - 2 if x > 1 else 0; continue
+            if cp == 0x0c: y = y - 2 if y > 1 else 0; continue
+            if cp == 0x09: x += (x // 36 + 1) * 36; continue
+            if cp == 0x0a: y += self.base_yadv; x = 0; continue
+            if cp == 0x0b: y += (y // 15 + 1) * 15; continue
+            if cp == 0x0d: x = 0; continue
+            f = self._font(cp); ch = cp
+            if f is None: f = self.fonts[0]; ch = ord('!')
+            if not (f.first <= ch <= f.last): continue
+            g = f.glyphs[ch - f.first]
+            gy = y + (f.yAdvance - self.base_yadv)
+            if g['width'] > 0 and g['height'] > 0:
+                xmn = min(xmn, x + g['xOffset'])
+                xmx = max(xmx, x + g['xOffset'] + g['width'] - 1)
+                ymn = min(ymn, gy + g['yOffset'])
+                ymx = max(ymx, gy + g['yOffset'] + g['height'] - 1)
+            x += g['xAdvance']
+        if xmx < xmn: return 0, 0, 0, 0
+        return xmn, xmx, ymn, ymx
+
+    def relocate(self, cps, size):
+        """glyph_size_remap(): the legend at the requested size, or None to fall
+        back to the small face. ALL-OR-NOTHING — a partial hit would mix two faces
+        (and so two baselines) in one legend."""
+        if size == 0 or not cps:
+            return None
+        base = GLYPH_SIZE_BASE[size]
+        out = []
+        for cp in cps:
+            if cp < 0x20:
+                # A display-list op, not a glyph. The five zero-argument cursor
+                # nudges are DROPPED (they were hand-tuned for the small face, and
+                # kdisp_gfx_text_bbox cannot see what they do to the draw, so
+                # carrying one clips the accent); every other op bails, since the
+                # arg-taking ones would have their arguments relocated as glyphs.
+                # Mirrors the switch in glyph_size_remap().
+                if cp in (0x05, 0x06, 0x08, 0x0B, 0x0C):
+                    continue
+                return None
+            if len(out) + 1 >= GLYPH_SIZE_MAX_LEN + 1:
+                return None
+            rel = base + cp
+            if self._font(rel) is None:
+                return None
+            out.append(rel)
+        return out or None
+
     def draw(self, setpix, cps, x, y):
         xc, yc = x, y
         for cp in cps:
@@ -225,7 +312,8 @@ class Renderer:
 
 
 def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool,
-               channels: bool = False, report: dict | None = None) -> Image.Image:
+               channels: bool = False, report: dict | None = None,
+               size: int = 0) -> Image.Image:
     """Replicate the per-key draw in keymap.c (process_record_user render path).
 
     channels=True renders each element into its own colour channel - base->green,
@@ -257,6 +345,33 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     h_small = get_setting(L, hrow, li, VAR_SMALL); v_small = get_setting(L, vrow, li, VAR_SMALL)
     base_x = 28 + h_small; base_v = v_small
 
+    # --- legend size: plan_main_legend() in poly_keymap.c. At size 0 this is the
+    # placement the keyboard has always used; above it the base legend becomes a
+    # relocated glyph at the tier's nominal baseline, clamped against its own ink
+    # box so a tall accent or deep descender shifts to fit instead of clipping.
+    # base_ink is what everything below lays out around.
+    # `big_plan` is the (x, y) the relocated glyph is drawn at, bound in the SAME
+    # branch that decides there is one — mirroring the firmware's main_legend_t /
+    # plan_main_legend() pair. Two separate `if big is not None` blocks with the
+    # coordinates living between them read as a use-before-assign to any
+    # path-insensitive reader (CodeQL flagged exactly that), and would become one
+    # for real the moment anything reassigned `big` in between.
+    big_plan = None
+    big = R.relocate(base, size)
+    if big is not None:
+        xmn, xmx, ymn, ymx = R.bbox(big)
+        big_x = base_x
+        if big_x + xmx > BUFFER_X + SCREEN_WIDTH - 1: big_x = BUFFER_X + SCREEN_WIDTH - 1 - xmx
+        if big_x + xmn < BUFFER_X:                    big_x = BUFFER_X - xmn
+        big_y = GLYPH_SIZE_BASELINE[size]
+        if big_y + ymn < 0:          big_y = -ymn
+        if big_y + ymx > OLED_H - 1: big_y = OLED_H - 1 - ymx
+        big_plan = (big_x, big_y)
+        base_ink_max = big_x + xmx
+    else:
+        _bmn, _bmx = R.bounds(base)
+        base_ink_max = base_x + _bmx
+
     shift_letter = None; preview_x = preview_v = 0
     if not shift and not caps:
         v_pv = get_setting(L, vrow, li, VAR_SHIFT); h_pv = get_setting(L, hrow, li, VAR_SHIFT)
@@ -270,13 +385,16 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
             if shift_letter is None and L.cell(li, row, VAR_SMALL) is None:
                 shift_letter = L.var(0, row, VAR_SHIFT)
             if shift_letter is not None:
-                bmin, bmax = R.bounds(base); pmin, pmax = R.bounds(shift_letter)
+                pmin, pmax = R.bounds(shift_letter)
                 preview_x = 28 + h_pv
-                if preview_x + pmin < base_x + bmax + 2: preview_x = base_x + bmax + 2 - pmin
+                if preview_x + pmin < base_ink_max + 2: preview_x = base_ink_max + 2 - pmin
                 if preview_x + pmax > BUFFER_X + SCREEN_WIDTH - 1: preview_x = (BUFFER_X + SCREEN_WIDTH - 1) - pmax
                 preview_v = v_pv
-                if preview_x + pmin <= base_x + bmax:
-                    base_v -= 6; preview_v += 4
+                if preview_x + pmin <= base_ink_max:
+                    # Only a SMALL base can be lifted: a big one was already clamped
+                    # to the panel, so a 6 px lift pushes its ink off the top.
+                    if big is None: base_v -= 6
+                    preview_v += 4
 
     EXP = OVERSHOOT
     # report: per-element pixel sets so callers can flag out-of-bounds (a pixel the
@@ -292,7 +410,10 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
         return s
     sp_base, sp_shift, sp_alt = make_setter(1, 'base'), make_setter(2, 'shift'), make_setter(0, 'altgr')
 
-    R.draw(sp_base, base, base_x, BASELINE + base_v)
+    if big_plan is not None:
+        R.draw(sp_base, big, *big_plan)
+    else:
+        R.draw(sp_base, base, base_x, BASELINE + base_v)
     if shift_letter is not None:
         R.draw(sp_shift, shift_letter, preview_x, BASELINE + preview_v)
     if not shift and not caps:
@@ -303,6 +424,11 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                 # mirror the firmware's right-edge clamp (keymap.c altgr preview)
                 amin, amax = R.bounds(alt)
                 alt_x = 28 + h_off
+                # At the small size this mark is kept off the legend by its VERTICAL
+                # offset; a big legend fills that height, so there the only separation
+                # left is horizontal (keymap.c does the same).
+                if big is not None and alt_x + amin < base_ink_max + 2:
+                    alt_x = base_ink_max + 2 - amin
                 if alt_x + amax > BUFFER_X + SCREEN_WIDTH - 1:
                     alt_x = (BUFFER_X + SCREEN_WIDTH - 1) - amax
                 R.draw(sp_alt, alt, alt_x, BASELINE + v_off)
@@ -312,6 +438,13 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
         b, sh, al = rpx['base'], rpx['shift'], rpx['altgr']
         report['overlap'] = len((b & sh) | (b & al) | (sh & al))
         report['overlap_detail'] = {'base^shift': len(b & sh), 'base^altgr': len(b & al), 'shift^altgr': len(sh & al)}
+        # Per-element ink boxes (x0,x1,y0,y1), so a caller can measure the CLEAR
+        # SPACE between elements rather than only whether they collide. Keyed by the
+        # element that actually drew, so a key with an AltGr hint but no Shift hint
+        # cannot be mis-attributed (positional tagging gets that wrong).
+        report['box'] = {k: (min(x for x, _ in v), max(x for x, _ in v),
+                             min(y for _, y in v), max(y for _, y in v))
+                         for k, v in rpx.items() if v}
     return img
 
 
@@ -389,7 +522,7 @@ def main():
     a = ap.parse_args()
     OVERSHOOT = a.overshoot
 
-    pk = os.path.join(a.qmk, 'keyboards', 'handwired', 'polykybd')
+    pk = os.path.join(a.qmk, 'keyboards', 'polykybd')
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
     if a.lang != 'ALL' and a.lang not in L.langs: sys.exit(f"unknown lang {a.lang}; have {L.langs}")

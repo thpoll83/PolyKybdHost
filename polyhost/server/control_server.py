@@ -202,6 +202,8 @@ class ControlServer(MpcListenerServer):
             p.M_IDLE_STYLE_GET: lambda conn, params: _unwrap(c.get_idle_style()),
             p.M_GLYPH_SCRIPT_SET: lambda conn, params: _unwrap(c.set_glyph_script(params["value"])),
             p.M_GLYPH_SCRIPT_GET: lambda conn, params: _unwrap(c.get_glyph_script()),
+            p.M_GLYPH_SIZE_SET: lambda conn, params: _unwrap(c.set_glyph_size(params["value"])),
+            p.M_GLYPH_SIZE_GET: lambda conn, params: _unwrap(c.get_glyph_size()),
             p.M_REPLAY_ANIM: lambda conn, params: _unwrap(c.replay_startup_anim()),
             p.M_UNICODE_MODE_REFRESH: lambda conn, params: _unwrap(c.refresh_unicode_mode()),
             p.M_DAYLIGHT_REFRESH: lambda conn, params: _unwrap(c.refresh_daylight_brightness()),

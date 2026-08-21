@@ -223,6 +223,16 @@ class PolyKybdMock:
         self._log_call("get_glyph_script")
         return True, getattr(self, "_glyph_script", 0)
 
+    def set_glyph_size(self, size) -> tuple[bool, str]:
+        value = size.value if hasattr(size, "value") else int(size)
+        self._log_call("set_glyph_size", value)
+        self._glyph_size = int(value)
+        return True, "ok"
+
+    def get_glyph_size(self) -> tuple[bool, int]:
+        self._log_call("get_glyph_size")
+        return True, getattr(self, "_glyph_size", 0)
+
     def replay_startup_anim(self) -> tuple[bool, str]:
         self._log_call("replay_startup_anim")
         return True, ""
