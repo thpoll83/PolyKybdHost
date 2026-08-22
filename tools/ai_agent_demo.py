@@ -42,22 +42,10 @@ from ai_layer_demo import (CapPainter, parse_layout_matrix,                # noq
 from polyhost.device.device_settings import DeviceSettings                 # noqa: E402
 from polyhost.device.overlay_data import OverlayData                       # noqa: E402
 
-# Where the agent surface lives on the board, addressed by the BASE-layer keycode
-# of the key (so the layout reads the way a user thinks about it).
-AGENT_KEY = "KC_HYPR"          # stand-in for the proposed KC_AGENT
-AGENT_TILES = ["KC_1", "KC_2", "KC_3", "KC_4", "KC_5", "KC_6"]
-QUESTION_KEYS = ["KC_1", "KC_2", "KC_3", "KC_4", "KC_5"]
-ANSWER_KEYS = ["KC_A", "KC_S", "KC_D"]
-CANCEL_KEY = "KC_ESC"
+from ai_agent_scenario import (AGENT_KEY, CANCEL_KEY, ROW_QUESTION,     # noqa: E402
+                               OPTION_ROWS, AGENT_TILES, AGENTS, ASKING, ROUNDS)
 
-# Six parallel sessions, the Codex Micro's model — but shown only while you ask.
-AGENTS = [
-    ("fw",    "think"), ("docs",  "ASK?"), ("rig",   "done"),
-    ("host",  "think"), ("kicad", "idle"), ("web",   "err"),
-]
-ASKING = 1                                     # index of the agent with a question
-QUESTION = ["merge", "conflict", "in", "split_", "sync.c"]
-ANSWERS = ["OURS", "THEIRS", "SHOW"]
+ROUND = ROUNDS[0]          # the frame the cost model measures
 
 # Base-layer legends: enough of a map to render a believable resting keyboard.
 SPECIAL = {
@@ -99,6 +87,12 @@ def frames(matrix_kc, painter):
         return img
 
     typing, overview, question = {}, {}, {}
+    q_cells = dict(zip(ROW_QUESTION, ROUND["q"].split()))
+    q_badges = {}
+    for i, opt in enumerate(ROUND["options"]):
+        q_cells.update(dict(zip(OPTION_ROWS[i], opt.split())))
+        if OPTION_ROWS[i]:
+            q_badges[OPTION_ROWS[i][0]] = str(i + 1)
     for mp, kc in matrix_kc.items():
         base = legend_for(kc)
         # --- 1. typing: the ordinary board, plus one badge
@@ -119,16 +113,13 @@ def frames(matrix_kc, painter):
         else:
             overview[mp] = None
 
-        # --- 3. question: the question on the number row, answers on the home row
-        if kc in QUESTION_KEYS:
-            question[mp] = (QUESTION[QUESTION_KEYS.index(kc)], None, None, None)
-        elif kc in ANSWER_KEYS:
-            question[mp] = (ANSWERS[ANSWER_KEYS.index(kc)], None,
-                            None if NO_ANSWER_FRAME else "cap", None)
+        # --- 3. question: one line per row, one word per key
+        if kc in q_cells:
+            question[mp] = (q_cells[kc], None, None, q_badges.get(kc))
         elif kc == CANCEL_KEY:
             question[mp] = ("esc", None, None, None)
         elif kc == AGENT_KEY:
-            question[mp] = (f"{AGENTS[ASKING][0]}\nasks", None, None, None)
+            question[mp] = (ROUND["who"], None, None, None)
         else:
             question[mp] = None
     return typing, overview, question

@@ -33,22 +33,10 @@ sys.path.insert(0, HOST_REPO)
 
 from kle_render import KeyContent, KleRenderer, Theme                      # noqa: E402
 from ai_layer_demo import CapPainter, parse_layout_matrix, parse_layer_keycodes  # noqa: E402
-from ai_agent_demo import legend_for, AGENT_KEY                            # noqa: E402
+from ai_agent_demo import legend_for                                       # noqa: E402
 
-# The session. Each round: the words that stream onto the number row, the answer
-# keys, and which answer the user presses.
-ROUNDS = [
-    {"q": ["merge", "conflict", "in", "split_", "sync.c"],
-     "who": "fw\nasks",
-     "answers": [("KC_A", "OURS"), ("KC_S", "THEIRS"), ("KC_D", "SHOW")],
-     "press": "KC_S"},
-    {"q": ["HIL", "test", "failed", "on", "split72"],
-     "who": "rig\nasks",
-     "answers": [("KC_A", "RERUN"), ("KC_S", "LOGS"), ("KC_D", "STOP")],
-     "press": "KC_A"},
-]
-QUESTION_KEYS = ["KC_1", "KC_2", "KC_3", "KC_4", "KC_5"]
-CANCEL_KEY = "KC_ESC"
+from ai_agent_scenario import (ROUNDS, ROW_QUESTION, OPTION_ROWS,   # noqa: E402
+                               AGENT_KEY, CANCEL_KEY)
 
 
 def build(matrix_kc, painter):
@@ -77,16 +65,34 @@ def build(matrix_kc, painter):
                 spec[mp] = None
         return render(spec)
 
-    def prompt(words, who=None, answers=(), pressed=None):
-        """The board as a dialog: `words` of the question so far, then answers."""
-        answer_map = dict(answers)
+    def lay_out(text, keys):
+        """One word per key, wrapping onto the next key; long words shrink to fit."""
+        return dict(zip(keys, text.split()))
+
+    def prompt(q_words=None, who=None, options=(), pressed=None):
+        """The board as a dialog.
+
+        `q_words` limits how much of the question has arrived (streaming);
+        `options` are whole sentences, each laid across its own row.
+        """
+        cells, badges = {}, {}
+        if q_words is not None:
+            for key, word in zip(ROW_QUESTION, q_words.split()):
+                cells[key] = word
+        pressed_keys = set()
+        for i, text in enumerate(options):
+            row = OPTION_ROWS[i]
+            placed = lay_out(text, row)
+            cells.update(placed)
+            if row:
+                badges[row[0]] = str(i + 1)
+            if pressed == i:
+                pressed_keys |= set(placed)          # the whole row IS the button
         spec = {}
         for mp, kc in matrix_kc.items():
-            if kc in QUESTION_KEYS and QUESTION_KEYS.index(kc) < len(words):
-                spec[mp] = (words[QUESTION_KEYS.index(kc)], None, None, False)
-            elif kc in answer_map:
-                spec[mp] = (answer_map[kc], "cap", None, kc == pressed)
-            elif kc == CANCEL_KEY and answers:
+            if kc in cells:
+                spec[mp] = (cells[kc], None, badges.get(kc), kc in pressed_keys)
+            elif kc == CANCEL_KEY and options:
                 spec[mp] = ("esc", None, None, False)
             elif kc == AGENT_KEY and who:
                 spec[mp] = (who, None, None, False)
@@ -110,14 +116,21 @@ def storyboard(typing, prompt):
     add(typing(badge="1"), 1100, "badge-rests")                          # ...then just sits there
 
     for i, rnd in enumerate(ROUNDS):
-        add(typing(badge=str(len(ROUNDS) - i), pressed=AGENT_KEY), 220, f"r{i}-tap")   # you tap it
-        add(prompt([], who=rnd["who"]), 140, f"r{i}-clear")                              # board clears
-        for n in range(1, len(rnd["q"]) + 1):                             # question streams
-            add(prompt(rnd["q"][:n], who=rnd["who"]), 250, f"r{i}-stream{n}")
-        add(prompt(rnd["q"], who=rnd["who"], answers=rnd["answers"]), 1500, f"r{i}-read")   # read it
-        add(prompt(rnd["q"], who=rnd["who"], answers=rnd["answers"],
-                   pressed=rnd["press"]), 260, f"r{i}-answer")                            # answer
-        add(prompt([], who=rnd["who"]), 160, f"r{i}-done")                              # tear down
+        add(typing(badge=str(len(ROUNDS) - i), pressed=AGENT_KEY), 220, f"r{i}-tap")
+        add(prompt("", who=rnd["who"]), 140, f"r{i}-clear")
+        words = rnd["q"].split()
+        # The question streams in a few words at a time — the model's own cadence.
+        for n in range(3, len(words) + 1, 3):
+            add(prompt(" ".join(words[:n]), who=rnd["who"]), 300, f"r{i}-q{n}")
+        add(prompt(rnd["q"], who=rnd["who"]), 500, f"r{i}-qfull")
+        # then the options land, one row at a time
+        for n in range(1, len(rnd["options"]) + 1):
+            add(prompt(rnd["q"], who=rnd["who"], options=rnd["options"][:n]),
+                420, f"r{i}-opt{n}")
+        add(prompt(rnd["q"], who=rnd["who"], options=rnd["options"]), 2600, f"r{i}-read")
+        add(prompt(rnd["q"], who=rnd["who"], options=rnd["options"],
+                   pressed=rnd["press"]), 420, f"r{i}-answer")
+        add(prompt("", who=rnd["who"]), 160, f"r{i}-done")
         if i == 0:
             add(typing(), 900, "back-to-typing")          # between rounds
             add(typing(badge="1"), 320, "blink2-on")      # ...the rig comes back

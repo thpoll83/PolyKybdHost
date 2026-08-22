@@ -216,7 +216,7 @@ does not. So the fleet lives in the **overview**, one tap deep:
 |---|---|
 | **typing** | the ordinary keyboard; one key badges with the pending count |
 | **overview** | one tile per agent — name + state — everything else blank |
-| **question** | the question across the number row, answers on the home row |
+| **question** | the question across the top row; **one option per full row** below it, the whole row being the button |
 
 With exactly one agent waiting the tap goes straight to the question; the
 overview only appears when there is a fleet to choose from. Six status LEDs cost
@@ -226,12 +226,25 @@ six keys forever; six status *keycaps* cost nothing until you ask for them.
 ![overview](sketches/agent_2_overview.png)
 ![question](sketches/agent_3_question.png)
 
-#### The prompt is TEXT, not pictures — and that is a ~15x saving
+#### The prompt is TEXT, not pictures — and that is a ~12x saving
 
 The first cost model uploaded each keycap as an **image**, because that is how
-app overlays work. Measured with the host's own encoder (`OverlayData`, what
-`send_smallest_overlay()` consults) that is 22 reports for the overview and 29
-for the question — both just over the throttle cliff below, so ~330 ms each.
+app overlays work. That was measured on a *toy* prompt (one question, three
+one-word answers) and came out at 22 reports for the overview and 29 for the
+question. Real agent prompts are not that shape: a coding agent asks a
+sentence-length question with **up to four sentence-length options**, which is
+what `tools/ai_agent_scenario.py` now models —
+
+> *Conflict in `split_sync.c`: both sides changed the retry logic. Resolve how?*
+> 1. Keep ours, drop upstream backoff · 2. Take upstream, keep our retry count ·
+> 3. Show me both sides first · 4. Skip file, continue merge
+
+— **31 keycaps, 190 characters**. Measured with the host's own encoder
+(`OverlayData`, what `send_smallest_overlay()` consults) that is **68 reports**,
+and because the host sleeps 300 ms after every 15 (`max_hid_message_before_delay`
+/ `delay_time_after_max_hid_messages`) it crosses the throttle **four times**:
+**~1.27 s** before the question is readable. That is the number that kills the
+image path — not the toy 29.
 
 But an agent's question is **words**, and words are what the keyboard renders
 natively: every legend it draws already comes from text plus a font, through
@@ -241,23 +254,36 @@ the shortcut hints use (`HINT_MOVE`, `HINT_FRAME`, `HINT_HALF`, `HINT_RESET` in
 is missing.
 
 At 59 bytes of payload after a 3-byte header, one report carries ~59 characters —
-so the entire worked example (`merge conflict in split_ sync.c` + `OURS` /
-`THEIRS` / `SHOW` = 41 chars over 8 keys) is **one report**:
+so the whole 190-character prompt above is **4 reports**, plus one to commit:
 
 | step | as images (measured) | as text |
 |---|---:|---:|
 | notify — all six agents | n/a | **1** |
-| open -> overview | 22 | **1** |
-| pick -> question | 29 | **1-2** |
+| open -> overview | 22 (1 pause) | **1** |
+| pick -> question, realistic 4-option | 68 (4 pauses, ~1.27 s) | **5** (~5 ms) |
 | answer -> back to typing | 2 | **1** |
 
-The whole interaction goes from ~54 reports to ~4, the 15-report throttle never
-fires, and the pre-staging trick below stops being necessary at all — there is no
-burst left to hide.
+**12x fewer reports on the frame that matters, and ~250x less wall-clock**,
+because the text path never reaches the 15-report cliff at all. The pre-staging
+trick below stops being necessary — there is no burst left to hide.
+
+⚠️ **Two layout rules came out of actually rendering it, not from reasoning:**
+
+- **A row belongs to ONE option, across both halves.** The obvious layout is a
+  quadrant — option 1 on the left home row, option 2 on the right home row — and
+  it is unreadable: the halves sit ~20 cm apart, but the eye still reads straight
+  across them, so the two options merge into one sentence. Tried it; scrapped it.
+  A row is one option and the whole row is the button; a short option simply stops
+  part-way (see the picture, where all four fit on the left half) and a long one
+  continues onto the other half.
+- **Four options fit; three read well.** The 4th lands on the thumb cluster, which
+  is rotated and unevenly spaced (see the picture) — legible, but visibly worse
+  than 1-3 on the letter rows. If a prompt has more than four choices, paginate
+  rather than reaching further down.
 
 **Streaming falls out for free.** A long question is several reports, and the host
-can send them as the model produces them: the number row fills word by word while
-you read, and the answer keys land last, which is the order a model emits them
+can send them as the model produces them: the top row fills word by word while
+you read, and the option rows land last, which is the order a model emits them
 anyway. The read time *is* the transfer budget.
 
 ⚠️ **Not base64.** Base64 exists to survive text-only channels and costs +33% —
