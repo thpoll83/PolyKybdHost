@@ -391,15 +391,45 @@ class KleRenderer:
         return img
 
     def save_gif(self, frames: Iterable[dict[str, KeyContent]], path: str,
-                 durations, loop: int = 0, scale: float = 1.0):
+                 durations, loop: int = 0, scale: float = 1.0,
+                 colors: int = 64, palette_from_all: bool = False):
         imgs = [self.render_frame(f) for f in frames]
         if not imgs:
             raise ValueError("save_gif() requires at least one frame")
         if scale != 1.0:
             size = (int(self.cw * scale), int(self.ch * scale))
             imgs = [im.resize(size, Image.LANCZOS) for im in imgs]
-        # Quantise to a shared palette for a compact, clean GIF.
-        pal = imgs[0].quantize(colors=64, method=Image.MEDIANCUT)
+        # Quantise to a shared palette for a compact, clean GIF. By default the
+        # palette comes from frame 0 — fine when every frame looks alike, but a
+        # sequence whose LATER frames are the bright ones (an inverted key, a lit
+        # legend) then has its whites mapped to whatever grey frame 0 happened to
+        # contain. palette_from_all samples the whole sequence instead.
+        if palette_from_all:
+            # ⚠️ Sample by CROPPING, never by resizing. A downscaled sample blurs
+            # thin lit text into greys, so the palette ends up without the very
+            # whites it was built to capture and every frame quantises dim — the
+            # exact artefact this option exists to prevent.
+            step = max(1, len(imgs) // 12)
+            sample = imgs[::step]
+            band = max(1, sample[0].height // 3)
+            strip = Image.new('RGB', (sample[0].width, band * len(sample)))
+            for i, im in enumerate(sample):
+                top = max(0, (im.height - band) // 2)
+                strip.paste(im.crop((0, top, im.width, top + band)), (0, i * band))
+            # Anchor the extremes. Median-cut allocates palette entries by
+            # POPULATION, and lit text is a tiny minority of a mostly-dark frame,
+            # so pure white gets merged into a mid grey and every legend ships
+            # dim (measured: peak 187 instead of 255). Two swatches force the
+            # endpoints into the palette.
+            # One swatch pair PER BAND: a single pair is ~0.08% of a 12-band
+            # strip, still small enough for median-cut to merge away.
+            sw = max(24, band // 3)
+            for i in range(len(sample)):
+                strip.paste((255, 255, 255), (0, i * band, sw, i * band + sw))
+                strip.paste((0, 0, 0), (sw, i * band, 2 * sw, i * band + sw))
+            pal = strip.quantize(colors=colors, method=Image.MEDIANCUT)
+        else:
+            pal = imgs[0].quantize(colors=colors, method=Image.MEDIANCUT)
         pimgs = [im.quantize(palette=pal, dither=Image.NONE) for im in imgs]
         if isinstance(durations, (int, float)):
             durations = [durations] * len(pimgs)
