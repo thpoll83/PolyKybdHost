@@ -20,7 +20,31 @@ an app nobody has drawn one for yet), and an **agent surface** (a local MCP serv
 that lets an agent already running on the machine use the keyboard as its status
 display and its prompt).
 
-## 1. What this is NOT
+## 1. The rule that constrains everything
+
+> **Legends may change at any time — that is the product. Assignments may never
+> change without consent.**
+
+An app switch repainting 72 keycaps is the feature. An agent silently making `D`
+mean "THEIRS" while you are mid-word is not — and neither is a layer that arrives
+under your fingers because something off-screen decided it should.
+
+Three consequences, which shape every design below rather than being bolted on
+afterwards:
+
+- **A notification is passive.** Anything the keyboard wants to tell you starts as
+  a *mark* — a badge and an LED on one dedicated key — and changes no behaviour
+  anywhere, including on that key.
+- **Modal is consented.** The board may become a dialog only after a deliberate
+  gesture, which by definition means you were not mid-word.
+- **Every AI surface is entered, never imposed.** Pillar A's `_AI` layer is
+  compliant by construction (`MO`, so you are holding it open); pillar B's
+  generated overlays stay review-gated; pillar C gets the two-phase handshake
+  below.
+
+---
+
+## 2. What this is NOT
 
 - **Not on-device inference.** The RP2040 runs at 200 MHz with ~264 KB of SRAM
   and a 2 MB firmware partition of which `split72:default` uses ~0.76 MB. Nothing
@@ -31,13 +55,13 @@ display and its prompt).
   *one-shot verb on the thing I have selected*, and showing state without stealing
   focus.
 - **Not a new transport.** Every device interaction below rides commands that
-  already exist, except one small polling command in §4.
+  already exist, except the one new host-event command in §5.
 - **Not a reason to weaken the device surface.** No model output ever becomes a
-  device command; see §8.
+  device command; see §9.
 
 ---
 
-## 2. Three pillars
+## 3. Three pillars
 
 ### A. Prompt keys — *the keyboard as a verb palette*
 
@@ -45,7 +69,7 @@ A dedicated `_AI` layer. Each keycap is one action applied to the current
 selection: Explain, Summarise, Rewrite, Fix, Translate, Extract, Verify… Press
 one, the host grabs the selection, runs the action, and streams the answer into a
 small window near the cursor (typing it into the app is a **second, explicit**
-key — see §8).
+key — see §9).
 
 The two things that make this better on a PolyKybd than as a global hotkey:
 
@@ -124,25 +148,143 @@ The inverse direction, and the cheapest of the three to build. A local MCP serve
 
 | Tool | Effect |
 |---|---|
-| `keyboard.notify(state, label)` | status OLED / RGB: running · needs input · done · failed |
-| `keyboard.progress(pct, label)` | a progress bar on a keycap, or the status OLED |
+| `keyboard.notify(state, label)` | the agent key badges; its LED pulses |
+| `keyboard.progress(pct, label)` | a progress bar on that keycap |
 | `keyboard.set_keycap(key, text)` | one keycap becomes a labelled button |
-| `keyboard.ask(question, options)` | **the keycaps become the answer buttons**, and the pressed one is returned |
+| `keyboard.ask(question, options)` | **the keycaps become the answer buttons** — after you accept the prompt |
 
 `keyboard.ask` is the one worth building the rest for. An agent that needs a
 decision currently has to steal focus or wait unread in a terminal; here the
 choices appear under your fingers, on keys that say what they do, without a window
-appearing over what you are reading. It needs the same key-event path as pillar A
-(§4), so the two share their only firmware dependency.
+appearing over what you are reading.
 
-Security posture is the existing one for local servers, and it is not optional:
-the MCP server holds **no `PolyCore` reference** — only injected callbacks — the
-same way `WindowReportServer` and `BrowserReportServer` do, so it can never reach
-device control, flash, or the bootloader.
+**The MCP server is a CLIENT, not a listener inside the daemon.** MCP clients
+spawn stdio servers themselves, so there is no new port, no second authkey and no
+lifecycle to manage — and the process sits *outside* the daemon, which is the
+strongest form of the boundary `WindowReportServer` and `BrowserReportServer`
+already keep (neither holds a `PolyCore` reference). It reaches the core exactly
+the way `polyctl` does:
+
+```
+  MCP client (Claude Code, …)
+        │  stdio, JSON-RPC (MCP)      ← the client spawns this process
+        ▼
+  polykybd-mcp                        a console-script, stdlib-only, no Qt
+        │  multiprocessing.connection + authkey   (server/protocol.py)
+        ▼
+  ControlServer ──▶ PolyCore ──▶ HidWorker ──▶ keyboard
+```
+
+The tool surface **is** the security boundary: four display-and-ask tools, none
+mapping to a device-mutating command, even though the control socket itself can
+flash and reboot. Register the `agent.*` methods only when the setting is on, so a
+daemon with the feature off has no such surface at all.
+
+#### Two phases, because of §1
+
+A prompt may not seize the board. It arrives as a mark and waits.
+
+| Phase | What changes | Owner |
+|---|---|---|
+| **Pending** | one keycap badges, its LED pulses. **Zero behavioural change, anywhere.** | firmware state, synced |
+| **Opening** | you tap the agent key — deliberately, when you are not mid-word | firmware detects, host reacts |
+| **Prompt** | *now* the board becomes the dialog | host + firmware |
+
+The pending badge has to live in **firmware synced state**
+(`poly_sync_t.agent_pending`, count + badge id) rather than a host-pushed overlay,
+because the window handler repaints overlays on every app switch and the mark must
+survive that. It is the `fw_confirm` shape minus the modality.
+
+⚠️ That makes the badge a **secondary mark that must coexist with the legend**,
+which is a solved problem here with two rules worth reusing rather than
+rediscovering: it goes **bottom-right** (the shift preview owns the upper right),
+and the collision is measured as the **intersection of the two ink sets** — a
+"how many legend pixels survived" count reads 0 damage for a real overlap.
+
+RGB is the better peripheral channel (both variants have a matrix), but the
+colour semantics are already taken: orange means *you cannot type*, cyan means
+*staging in progress*. A pending notification is emphatically "you can type", so
+it needs its own hue on **one key's LED**, not `set_color_all`.
+
+#### The dedicated keycode
+
+The announce key must be a **new keycode the user maps where they like** — not a
+borrowed modifier. With a dedicated key there is no tap/hold gymnastics to make
+the gesture host-invisible, because a custom keycode emits nothing in the first
+place, and the key's meaning never changes with state:
+
+| Gesture | Effect |
+|---|---|
+| tap, nothing pending | brief "nothing pending" flash on that keycap |
+| tap, something pending | opens the head of the queue → the modal prompt |
+| long press | dismiss / snooze everything pending |
+
+Keep it **separate from the `_AI` layer key**. `KC_AGENT` opens what the agent is
+asking; `MO(_AI)` enters the verb palette. One key doing both reintroduces exactly
+the "what does this key do right now" problem the rule exists to remove.
+
+**Firmware — about six lines, with one trap.** It appends to `enum my_keycodes`
+in `keycode_helper.h`, whose `QK_KB_0` block currently holds **36 entries**
+(`0x7E00`–`0x7E23`, ending at `KC_LAT_REMAP`) with **28 slots free** to
+`QK_KB_MAX`.
+
+- ⚠️ **Append only, never insert.** Keycodes are persisted in the dynamic keymap
+  in EEPROM and in host-saved layouts, so inserting re-points every stored key on
+  every board in the field. `KC_DAUTO`, `KC_IDDQD` and the latin-picker keycodes
+  were all appended for exactly this reason.
+- ⚠️ **Re-anchor the budget `static_assert`.** The file already carries the scar —
+  an earlier assert "stopped covering the tail it exists to bound" the moment
+  something was appended past `KC_DAUTO`.
+- ⚠️ **`to_static_text()` and `render_key()` must BOTH learn it**, or the key draws
+  its chrome into an empty cell — the documented mod-tap failure, and a brand-new
+  keycode is the case that hits it.
+
+**The legend is free.** `IconsFont` spans `0x80..0x9C` and has unused gap records
+at **`0x89`, `0x8A`, `0x93`, `0x9A`, `0x9B`**. A glyph in an existing gap costs
+only its bitmap — the table entry already exists — and `IconsFont` is resident, so
+it ships with the firmware, needs **no font-pack reship** and shifts no pack index.
+Two glyphs (idle, attention) still leaves three spare, and nothing goes near
+`0xA0+`, which would shadow printable Latin-1.
+
+**The real work is host-side: nothing can map it today.** The layout editor's
+keycode browser builds its palette by parsing **stock QMK's**
+`polyhost/res/keycodes.h`, and `qmk_keycode_helper` only *decodes* the custom
+range as `KB(n)`. No PolyKybd keycode is named anywhere in `polyhost/` — so **no
+custom key is offerable in the editor at all** right now. Making `KC_AGENT`
+mappable therefore needs a small PolyKybd keycode table in the host (name, nice
+name, category, glyph) fed into the browser beside the parsed stock header. Worth
+doing on its own terms: it makes `KC_LANG`, `KC_EDEN`, `KC_STORE_EE`, `KC_DAUTO`
+and the picker keys mappable too, which today they silently are not. Derive it
+from the firmware enum rather than hand-copying, or it becomes another list that
+goes stale.
+
+**Then: is it actually mapped?** A notification with nowhere to appear is worse
+than none, so the host checks before arming — against the **effective** keymap,
+since the dynamic keymap overrides the compiled one. Precedent for the read:
+`boot_diag.c` scans the compiled `keymaps[]` to report the Intl picker's modifier
+masks, with the standing rule to verify against the compiled keymap rather than by
+counting columns in the `LAYOUT` macro. Unmapped: fall back to the status OLED and
+the RGB pulse, and say so in the tool result.
+
+#### What the two-phase rule buys
+
+The lease is no longer taken at notify time, only on open — so an agent
+notification never freezes window-driven overlay switching while you finish a
+paragraph, which the first draft of this design would have done for minutes. "User
+just wants to type" also drops out of the failure table entirely, because the board
+cannot become modal without your gesture.
+
+It costs three things, all of which the tool contract must expose: **two timeouts**
+(`notice_timeout_s` in minutes, `answer_timeout_s` in seconds once open, and a
+result that distinguishes `not_noticed` from `timed_out`); **a queue rather than a
+lock**, since a second action increments the badge count instead of getting `busy`;
+and **two inbound event types** — `AGENT_OPENED` and `OPTION_PRESSED` — where there
+was one.
+
 
 ---
 
-## 3. Where the code goes
+## 4. Where the code goes
 
 Everything Qt-free, under `polyhost/services/ai/`, reached through `PolyCore` like
 every other capability:
@@ -158,7 +300,7 @@ polyhost/services/ai/
     actions.py              the action registry + per-app overrides
     context.py              what may be sent, as an allow-list
     budget.py               per-run and per-day caps, token counting
-    secrets.py              key storage (see §8 — NOT settings.yaml)
+    secrets.py              key storage (see §9 — NOT settings.yaml)
 polyhost/res/ai/actions.yaml    the shipped action registry
 ```
 
@@ -195,7 +337,7 @@ time is untouched. Never reach for an OpenAI-compatible shim to talk to Anthropi
 
 ---
 
-## 4. The trigger problem — how the host learns a key was pressed
+## 5. The trigger problem — how the host learns a key was pressed
 
 This is the only genuinely new mechanism, and it is worth being precise about
 because the obvious answers are wrong.
@@ -216,17 +358,45 @@ keystroke-injection primitive.
 Sketch of (b) — a ring buffer the host drains:
 
 ```c
-case 34: // GET_EVENT (protocol v13) — drain the user-event queue
-    // reply: 'P' 0x22 '.' [count] then count * {type, kc_hi, kc_lo, flags}
-    // The queue only fills while a KC_HOST_EVENT keycode is pressed, so a
-    // keyboard nobody has put on the AI layer queues nothing and costs nothing.
+case 34: // HOST_EVENT (protocol v13) — one command, four sub-ops
+    //  0 DRAIN   -> 'P' 0x22 '.' [count] then count * {type, kc_hi, kc_lo, flags}
+    //              type: AGENT_OPENED (you tapped the agent key)
+    //                    OPTION_PRESSED (you answered a prompt)
+    //  1 NOTIFY  <- pending count + badge id  (passive: no behaviour changes)
+    //  2 ENTER   <- the option keycodes; blank the rest, swallow, go modal
+    //  3 EXIT    <- tear the prompt down (host abort / agent withdrew)
+    // Nothing is queued unless KC_AGENT is mapped and something is pending, so a
+    // keyboard nobody uses this on costs exactly nothing.
 ```
+
+Prompt-enter/exit ride *inside* this command, so the whole of pillars A and C is
+still one protocol addition — but it is more than a queue, and the modal half is
+the part that needs care.
 
 Host side it is a periodic on the existing model: the console read already runs
 every 250 ms on the worker. The event poll joins it at 250 ms normally and **60 ms
-while a host-event layer is active** — the keyboard's own press feedback (the
-firmware inverts the pressed keycap in `matrix_scan_kb`) covers the perceptual gap
-so the poll interval is not the felt latency.
+while something is pending or a prompt is open** — the keyboard's own press
+feedback (the firmware inverts the pressed keycap in `matrix_scan_kb`) covers the
+perceptual gap so the poll interval is not the felt latency.
+
+**The modal half is not new behaviour — it is a second caller of a proven
+pattern.** The FW-2 signature prompt already turns the board into a dialog, and in
+doing so it solved five traps a fresh implementation would re-hit: the state is
+**synced** so both halves render it; `clear_keyboard()` runs *before* swallowing
+starts (a key held when the prompt goes up otherwise auto-repeats on the host for
+the whole window — field-reported as "a few hundred repetitions"); it answers on
+the **release**, because `matrix_scan_kb` inverts the keycap on press
+independently of `process_record`; only the master runs `process_record`, so a
+press on either half arrives in one place; and the idle timer is held off, or the
+fade dims the prompt out from under you.
+
+One deliberate difference: FW-2 compares *matrix positions* (its two keys sit at
+the same local position on both halves). An agent prompt should carry its **option
+keycodes** in ENTER and compare those in `process_record_user`, which already has
+the resolved keycode — no matrix math, no display-grid phantoms. ENTER should also
+drop to the base layer first, reusing `poly_prepare_for_flash()`'s existing "drop
+and bridge to the slave" helper, so a resolved keycode means what the host thinks
+it means.
 
 ⚠️ Whatever it renders, do **not** drive latched state through `kdisp_invert()` —
 that panel-level toggle is undone by the next keypress. A latched indicator is
@@ -235,25 +405,28 @@ state so the slave half follows.
 
 ---
 
-## 5. Feedback on the keyboard — what is free and what is not
+## 6. Feedback on the keyboard — what is free and what is not
 
 | Feedback | Mechanism | Firmware change? |
 |---|---|---|
 | pressed-key flash | `matrix_scan_kb` already inverts on press | none |
+| pending badge on the agent key | `poly_sync_t.agent_pending` + a resident `IconsFont` gap glyph | part of the same command |
 | per-key spinner / progress while streaming | ROI partial refresh (cmds `0x12`/`0x13`) on that one keycap | none |
 | relabel the whole layer per app | the ordinary overlay path (`0x10`/`0x11` + mapping `21`/`33`) | none |
 | status-OLED line ("opus-5 · 1.2k tok · $0.07") | **no host command exists** — the 128×64 screen is composed entirely in firmware | new command + a measured layout slot |
 | RGB colour while a request runs | `rgb_matrix_indicators_kb` already does this for flashing (cyan/orange) | small |
 
-So pillars A and C are reachable with **zero firmware change beyond the event
-queue**, and the status OLED is a later nicety rather than a prerequisite. If it
+So pillars A and C are reachable with **one protocol addition** — the host-event
+command above, whose sub-ops carry the badge and the modal prompt as well as the
+queue — plus the new `KC_AGENT` keycode. The status OLED is a later nicety rather
+than a prerequisite. If it
 is built: space the rows with `keyboards/polykybd/.claude/skills/status-oled-layout/measure_bands.py`
 rather than by eye, and check the worst case (a 3-digit token count and the
 longest model name), not the happy fixture.
 
 ---
 
-## 6. Model, latency and cost
+## 7. Model, latency and cost
 
 Defaults, from the current model line-up:
 
@@ -295,7 +468,7 @@ instant because the firmware does it without asking anyone.
 
 ---
 
-## 7. Configuration
+## 8. Configuration
 
 New settings, all defaulting to off/conservative (`polyhost/settings.py`):
 
@@ -317,7 +490,7 @@ API keys are **not** among them — see below.
 
 ---
 
-## 8. Security and privacy
+## 9. Security and privacy
 
 This is the section to read twice. The features above put a network client next to
 a keystroke-injection path and a window-title stream, which is a combination worth
@@ -330,7 +503,7 @@ being paranoid about.
    never a spread of a status dict, with a frozen-keys test. The host sees window
    titles constantly; nothing else may ride along.
 3. **Never keystrokes.** The app has no key logger and must not grow one — which
-   is also the strongest argument for the firmware event queue (§4) over a global
+   is also the strongest argument for the firmware event queue (§5) over a global
    `pynput` listener.
 4. ⚠️ **API keys must NOT live in `settings.yaml`.** That file is collected into
    support bundles (`log_bundle.py` ships a redacted copy) and attached to public
@@ -359,7 +532,7 @@ being paranoid about.
 
 ---
 
-## 9. Testing
+## 10. Testing
 
 - **A `MockProvider` is the default in tests** — deterministic, no network,
   scriptable failures (refusal, rate limit, mid-stream cancel). Same role as
@@ -379,15 +552,15 @@ being paranoid about.
 
 ---
 
-## 10. Rollout
+## 11. Rollout
 
 | Phase | Deliverable | Device needed? |
 |---|---|---|
 | **P0** | provider layer + mock + budget + `polyctl ai ask` streaming to stdout | no |
 | **P1** | prompt keys via F13–F24 + a listener on one OS; result in a window; ROI spinner | yes |
-| **P2** | firmware event queue (protocol 13) + `KC_HOST_EVENT`; drop the listener; per-app legends | yes |
+| **P2** | host-event command (protocol 13) + `KC_AGENT` + the host keycode table; drop the listener; per-app legends | yes |
 | **P3** | auto-overlay forge with the review gate + Batch API | yes |
-| **P4** | MCP agent surface (`keyboard.ask`), status-OLED host line | yes |
+| **P4** | MCP agent surface (`keyboard.ask`) with the two-phase handshake, status-OLED host line | yes |
 
 P0 is worth doing on its own even if the rest is never built: it is the whole
 provider/budget/secret surface, it is testable with no hardware, and it makes the
@@ -399,10 +572,13 @@ ordered before the firmware release. Don't start it until P1 has been lived with
 
 ---
 
-## 11. Open questions
+## 12. Open questions
 
-1. **Which key enters `_AI`?** The sketch assumes `MO(_AI)` on a right inner
-   thumb. Every thumb is spoken for; this is a layout decision, not a code one.
+1. **Which keys carry `MO(_AI)` and `KC_AGENT`?** The sketch assumes a right
+   inner thumb for the layer. Every thumb is spoken for, and `KC_AGENT` wants to be
+   visible without being in the way — both are layout decisions, not code ones.
+   `KC_MEH` is *not* currently bound on either keymap, for what it is worth;
+   `KC_HYPR` is.
 2. **Should `Insert` ever be the default target** for a low-risk action like Fix,
    or does everything land in the preview window first? (I lean: preview always,
    until the feature has been used for a month.)
