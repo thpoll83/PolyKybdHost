@@ -127,6 +127,17 @@ class CapPainter:
         self.f_line = ImageFont.truetype(FONT_BOLD, 14)
         self.f_glyph = ImageFont.truetype(FONT_BOLD, 15)
 
+    def _fit(self, d, text, font, max_w=OLED_W - 4):
+        """Step the size down until the string fits the 72 px cell."""
+        size = font.size
+        while size > 8:
+            f = ImageFont.truetype(FONT_BOLD, size)
+            b = d.textbbox((0, 0), text, font=f)
+            if b[2] - b[0] <= max_w:
+                return f
+            size -= 1
+        return ImageFont.truetype(FONT_BOLD, 8)
+
     def _centre(self, d, y, text, font):
         """Draw ``text`` horizontally centred with its INK TOP at ``y``.
 
@@ -134,10 +145,22 @@ class CapPainter:
         no ascender sit lower than one with, and the bottom line then clips off
         the 40 px panel — which reads as a layout problem rather than a bug.
         """
+        font = self._fit(d, text, font)
         b = d.textbbox((0, 0), text, font=font)
         d.text(((OLED_W - (b[2] - b[0])) / 2 - b[0], y - b[1]), text, font=font, fill=255)
 
-    def paint(self, label: str, glyph: str | None = None, invert: bool = False) -> Image.Image:
+    def paint(self, label: str, glyph: str | None = None, invert: bool = False,
+              frame: str | None = None, badge: str | None = None) -> Image.Image:
+        return self.paint_with_mask(label, glyph, invert, frame, badge)[0]
+
+    def paint_with_mask(self, label: str, glyph: str | None = None,
+                        invert: bool = False, frame: str | None = None,
+                        badge: str | None = None):
+        """Return (RGB cell for the picture, 1-bit mask for the cost model).
+
+        Both come from the SAME buffer, so a mockup can never disagree with the
+        report count measured from it.
+        """
         buf = Image.new('L', (OLED_W, OLED_H), 0)
         d = ImageDraw.Draw(buf)
         lines = label.split('\n')
@@ -149,11 +172,23 @@ class CapPainter:
             self._centre(d, 23, lines[0], self.f_line)
         else:
             self._centre(d, 13, lines[0], self.f_big)
+        if badge:
+            # A secondary mark goes BOTTOM-right: render_key() draws the shift
+            # preview in the upper right, so a top-anchored badge lands on it.
+            fb = ImageFont.truetype(FONT_BOLD, 13)
+            b = d.textbbox((0, 0), badge, font=fb)
+            d.text((OLED_W - (b[2] - b[0]) - 2 - b[0], OLED_H - (b[3] - b[1]) - 2 - b[1]),
+                   badge, font=fb, fill=255)
+        if frame == 'cap':                       # the firmware's selected-tab chrome
+            d.rectangle([2, 0, OLED_W - 3, 0], fill=255)
+            d.rectangle([1, 1, OLED_W - 2, 1], fill=255)
+            d.rectangle([0, 2, 2, OLED_H - 1], fill=255)
+            d.rectangle([OLED_W - 3, 2, OLED_W - 1, OLED_H - 1], fill=255)
         mask = buf.point(lambda v: 255 if v >= 110 else 0).convert('1')
         fg, bgc = (self.bg, self.on) if invert else (self.on, self.bg)
         rgb = Image.new('RGB', (OLED_W, OLED_H), bgc)
         rgb.paste(Image.new('RGB', (OLED_W, OLED_H), fg), (0, 0), mask)
-        return rgb
+        return rgb, mask
 
 
 def build_state(matrix_kc, actions, painter, *, pressed=None, values=None, spin=None):
