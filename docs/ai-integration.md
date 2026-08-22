@@ -206,6 +206,85 @@ colour semantics are already taken: orange means *you cannot type*, cyan means
 *staging in progress*. A pending notification is emphatically "you can type", so
 it needs its own hue on **one key's LED**, not `set_color_all`.
 
+#### Six agents, shown only when you ask
+
+The Codex Micro maps six RGB keys to six parallel threads. That is the right
+model and worth taking — but an LED has to be permanently assigned, and a keycap
+does not. So the fleet lives in the **overview**, one tap deep:
+
+| Frame | What the board shows |
+|---|---|
+| **typing** | the ordinary keyboard; one key badges with the pending count |
+| **overview** | one tile per agent — name + state — everything else blank |
+| **question** | the question across the number row, answers on the home row |
+
+With exactly one agent waiting the tap goes straight to the question; the
+overview only appears when there is a fleet to choose from. Six status LEDs cost
+six keys forever; six status *keycaps* cost nothing until you ask for them.
+
+![the three frames](sketches/agent_1_typing.png)
+![overview](sketches/agent_2_overview.png)
+![question](sketches/agent_3_question.png)
+
+#### The prompt is TEXT, not pictures — and that is a ~15x saving
+
+The first cost model uploaded each keycap as an **image**, because that is how
+app overlays work. Measured with the host's own encoder (`OverlayData`, what
+`send_smallest_overlay()` consults) that is 22 reports for the overview and 29
+for the question — both just over the throttle cliff below, so ~330 ms each.
+
+But an agent's question is **words**, and words are what the keyboard renders
+natively: every legend it draws already comes from text plus a font, through
+`kdisp_write_gfx_text_cy()` — which additionally interprets the mini display list
+the shortcut hints use (`HINT_MOVE`, `HINT_FRAME`, `HINT_HALF`, `HINT_RESET` in
+`lang/named_glyphs.h`). The renderer exists; only a command to hand it a string
+is missing.
+
+At 59 bytes of payload after a 3-byte header, one report carries ~59 characters —
+so the entire worked example (`merge conflict in split_ sync.c` + `OURS` /
+`THEIRS` / `SHOW` = 41 chars over 8 keys) is **one report**:
+
+| step | as images (measured) | as text |
+|---|---:|---:|
+| notify — all six agents | n/a | **1** |
+| open -> overview | 22 | **1** |
+| pick -> question | 29 | **1-2** |
+| answer -> back to typing | 2 | **1** |
+
+The whole interaction goes from ~54 reports to ~4, the 15-report throttle never
+fires, and the pre-staging trick below stops being necessary at all — there is no
+burst left to hide.
+
+**Streaming falls out for free.** A long question is several reports, and the host
+can send them as the model produces them: the number row fills word by word while
+you read, and the answer keys land last, which is the order a model emits them
+anyway. The read time *is* the transfer budget.
+
+⚠️ **Not base64.** Base64 exists to survive text-only channels and costs +33% —
+raw HID is already binary, so it would cut ~59 characters per report to ~44. Send
+UTF-8 with a length byte.
+
+⚠️ **Strip C0 control bytes from agent text.** The display list is *in-band*: a
+question containing `\x0E` would move the render cursor. Model output is data, so
+the command must reject or escape everything below `0x20` unless the host
+deliberately opts into display-list ops — this is the same sink discipline as
+§9's "model output is data, never a command", one layer lower.
+
+**Prepared graphics belong on the keyboard — but only the ICONS.** The five agent
+states (thinking / asking / done / error / idle) are art the fonts cannot draw, so
+they ship resident in `IconsFont`, which has exactly five free gap records at
+`0x89`, `0x8A`, `0x93`, `0x9A`, `0x9B` — a glyph in an existing gap costs only its
+bitmap and forces no font-pack reship. A notify then carries `(slot, state)` pairs:
+**all six agents in one report.** Do *not* pre-bake word graphics (`OURS`, `YES`,
+`RETRY`) into flash — those are 4-6 bytes of text, and a bitmap of them costs more
+than it saves.
+
+⚠️ **What the text path gives up.** The keyboard renders only what its fonts hold
+(Latin is resident; other scripts need the pack), and the firmware owns the
+layout, so the host loses pixel control. Both are fine for words and wrong for
+art — which is exactly the split: agent prompts are text, app overlays stay
+images. Where a glyph is missing, fall back to the image path for that one key.
+
 #### The dedicated keycode
 
 The announce key must be a **new keycode the user maps where they like** — not a
@@ -273,6 +352,9 @@ notification never freezes window-driven overlay switching while you finish a
 paragraph, which the first draft of this design would have done for minutes. "User
 just wants to type" also drops out of the failure table entirely, because the board
 cannot become modal without your gesture.
+
+(With the text path above the burst is ~4 reports, so pre-staging is no longer
+needed to hide it — the option remains only if a prompt ever falls back to images.)
 
 It costs three things, all of which the tool contract must expose: **two timeouts**
 (`notice_timeout_s` in minutes, `answer_timeout_s` in seconds once open, and a
