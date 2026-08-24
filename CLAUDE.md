@@ -855,6 +855,28 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   range-connect note above), so the Glyph-Script menu is disabled on a pre-v9 keyboard but
   the rest of the app still connects; within a glyph-script-capable device the script set is
   free to grow.
+- **Keycap legend size (protocol 13+)**: HID cmd 34 sets how large a key's MAIN
+  legend is drawn — `GlyphSize.SMALL` (the original face), `MEDIUM`, `LARGE`. Wired
+  exactly like the glyph script: `PolyKybd.get/set_glyph_size` behind a
+  `"glyph_size"` `FEATURE_MIN_PROTOCOL` entry, `PolyCore`, `M_GLYPH_SIZE_GET/SET`,
+  the `RemoteCore` mirror, `polyctl glyph-size`, and a **"Keycap Size"** tray
+  submenu gated on `self.supports("glyph_size")`.
+  - ⚠️ **`GlyphSize` is a CLOSED range and that is the ONE way it differs from
+    `GlyphScript` — do not "simplify" it to match.** An unknown SCRIPT index is
+    accepted by the firmware and degrades to the normal legend, which is what lets
+    the host offer faces a keyboard lacks without a protocol bump. An unknown SIZE
+    is NACKed, because it would otherwise persist as a setting that silently renders
+    small. So never send a value outside the enum, and don't expect a newer keyboard
+    to take one. `tests/device/poly_kybd_capabilities_test.py` pins the contrast.
+  - The bigger faces ship in the **`latinbig`** bundle (auto-flashed on connect like
+    every other). Latin only: a CJK/Arabic/Indic legend, or a keyboard without the
+    bundle, keeps drawing small — so selecting a size is always safe and takes effect
+    on its own once the bundle lands.
+  - **`tools/glyph_size_preview.py`** renders and clip-checks the sizes straight from
+    the FIRMWARE's generated headers, mirroring `plan_main_legend()` coordinate for
+    coordinate. `--check` is the gate to re-run after any change to the firmware's
+    `latinbig` entries; `--out` writes the contact sheet the docs page uses. Same
+    caveat as `oled_preview.py`: it is a Python model of the C and can drift.
 - **Tray/menu icons (`polyhost/res/icons/`) are Material Symbols at optical size
   48 — fetch the `_48px` cut, never `_24px`.** The optical-size axis changes the
   **geometry**, not just the header: the same symbol at opsz24 is drawn with

@@ -183,6 +183,17 @@ def _pick_default_branch(expr: str) -> str:
     return _pick_default_branch(a if val else b)
 
 
+# keycode_to_static_text() returns a few OS-dependent icons through a helper CALL
+# rather than a literal, and there is nothing here to evaluate it with. Substitute
+# the helper's own `default:` branch — what the firmware draws when no OS has been
+# selected — so the key renders its real glyph instead of the raw expression text
+# (`kc_os_gui_icon()` used to print as "kc_os" on the GUI keycap of every board
+# render, which reads as a defect in a published figure).
+STATIC_CALL_DEFAULTS = {
+    'kc_os_gui_icon()': 'DINGBAT_BLACK_DIA_X',
+}
+
+
 def parse_static_text_map(keycode_helper_c: str) -> dict:
     """token -> the icon/text expression keycode_to_static_text() returns at rest.
     Handles C fall-through (several `case`s sharing one `return`)."""
@@ -200,6 +211,9 @@ def parse_static_text_map(keycode_helper_c: str) -> dict:
             for lbl in pending:
                 out[lbl] = branch
             pending = []
+    for tok, expr in list(out.items()):
+        if expr in STATIC_CALL_DEFAULTS:
+            out[tok] = STATIC_CALL_DEFAULTS[expr]
     return out
 
 
@@ -231,10 +245,21 @@ def parse_layout_matrix(keyboard_json: str) -> list[str]:
     return [f"{k['matrix'][0]},{k['matrix'][1]}" for k in lay]
 
 
-def parse_base_layer_keycodes(keymap_c: str) -> list[str]:
-    """arg index -> the raw keycode token for the [_L0] layer."""
+# The five base layers are the LAYOUTS, in the order oled_helper.c names them:
+# _L0 Qwerty, _L1 Qwerty Stag!, _L2 Colemak DH, _L3 Neo, _L4 Workman.
+BASE_LAYOUTS = {'qwerty': '_L0', 'stag': '_L1', 'colemak': '_L2', 'neo': '_L3', 'workman': '_L4'}
+# The names the status OLED shows for them (oled_helper.c's layout_name array).
+LAYOUT_NAMES = {'_L0': 'Qwerty', '_L1': 'Qwerty Stag!', '_L2': 'Colemak DH',
+                '_L3': 'Neo', '_L4': 'Workman'}
+
+
+def parse_base_layer_keycodes(keymap_c: str, layer: str = None) -> list[str]:
+    """arg index -> the raw keycode token for `layer` (default the [_L0] base)."""
+    layer = layer or BASE_LAYER
     text = strip_c_comments(open(keymap_c, encoding='utf-8').read())
-    i = text.index(f'[{BASE_LAYER}]')
+    if f'[{layer}]' not in text:
+        raise SystemExit(f"no layer {layer} in {keymap_c}")
+    i = text.index(f'[{layer}]')
     k = text.index('(', text.index(LAYOUT_NAME, i))
     depth, end = 0, None
     for m in range(k, len(text)):
@@ -246,7 +271,7 @@ def parse_base_layer_keycodes(keymap_c: str) -> list[str]:
                 end = m
                 break
     if end is None:
-        raise SystemExit(f"unbalanced {LAYOUT_NAME} parentheses for {BASE_LAYER}")
+        raise SystemExit(f"unbalanced {LAYOUT_NAME} parentheses for {layer}")
     return [t.strip() for t in _split_args(text[k + 1:end])]
 
 
@@ -335,13 +360,21 @@ def render_static(L, R, expr) -> Image.Image:
     return img
 
 
-def build_frame(L, R, matrix_kc, lang, static_map) -> dict[str, KeyContent]:
+def build_frame(L, R, matrix_kc, lang, static_map, size: int = 0,
+                shift: bool = False) -> dict[str, KeyContent]:
     out: dict[str, KeyContent] = {}
     for mp, tok in matrix_kc.items():
         kc = normalize_kc(display_keycode(tok))
         whole = normalize_kc(tok)
         if kc in op.ROW:                       # letter / number / symbol (language LUT)
-            img = op.render_key(L, R, lang, kc, shift=False, caps=False)
+            # `size` is the keycap legend size (HID cmd 34): 0 small, 1 medium,
+            # 2 large. It applies to the MAIN legend only — the Shift/AltGr
+            # previews and every static key are unaffected, by design.
+            # `shift` models the Shift-held view: translate_keycode() hands back the
+            # SHIFTED character and plan_main_legend() sizes that, so the shifted
+            # legend grows with the setting exactly as the base one does — while the
+            # two previews are dropped (the key is showing what it would type).
+            img = op.render_key(L, R, lang, kc, shift=shift, caps=False, size=size)
         elif whole in static_map:              # MO(_FL0), TO(_EMJ), … (match the wrapped token)
             img = render_static(L, R, static_map[whole])
         elif kc in static_map:                 # KC_LSFT, KC_ENTER, KC_SPACE, arrows, …
@@ -374,19 +407,26 @@ def main():
     ap.add_argument('--settle', type=int, default=1400, help='ms each language is held')
     ap.add_argument('--first-hold', type=int, default=2200, help='ms to hold en-US (orientation)')
     ap.add_argument('--still', action='store_true', help='also write a still PNG of frame 0')
+    ap.add_argument('--size', type=int, default=0, choices=(0, 1, 2),
+                    help='keycap legend size: 0 small (default), 1 medium, 2 large')
+    ap.add_argument('--layer', default=None,
+                    help='base layer / layout: _L0.._L4 or a name '
+                         '(qwerty, stag, colemak, neo, workman)')
     ap.add_argument('--no-bezel', action='store_true')
     args = ap.parse_args()
 
     op.OVERSHOOT = 0   # hardware-exact 72x40 keycap renders, no debug margin
     exclude = {m.strip() for m in args.exclude.split(';') if m.strip()}
     langs = [s.strip() for s in args.langs.split(',') if s.strip()]
+    if args.layer:
+        args.layer = BASE_LAYOUTS.get(args.layer.lower(), args.layer)
 
-    pk = os.path.join(args.qmk, 'keyboards', 'handwired', 'polykybd')
+    pk = os.path.join(args.qmk, 'keyboards', 'polykybd')
     keyboard_json = os.path.join(pk, 'split72', 'keyboard.json')
     keymap_c = os.path.join(pk, 'split72', 'keymaps', 'default', 'keymap.c')
 
     matrices = parse_layout_matrix(keyboard_json)
-    kcs = parse_base_layer_keycodes(keymap_c)
+    kcs = parse_base_layer_keycodes(keymap_c, args.layer)
     if len(matrices) != len(kcs):
         raise SystemExit(f"layout/keymap length mismatch: {len(matrices)} vs {len(kcs)}")
     matrix_kc = dict(zip(matrices, kcs))
@@ -415,7 +455,7 @@ def main():
 
     imgs, durations = [], []
     for li, lang in enumerate(langs):
-        board = renderer.render_frame(build_frame(L, R, matrix_kc, lang, static_map))
+        board = renderer.render_frame(build_frame(L, R, matrix_kc, lang, static_map, args.size))
         frame = Image.new('RGB', (board.width, board.height + CAP_H), Theme().bg)
         frame.paste(board, (0, 0))
         d = ImageDraw.Draw(frame)

@@ -135,7 +135,7 @@ def main():
     if not edits or not any(edits.values()):
         print("no edits in export — nothing to do"); return
 
-    XLSX = a.xlsx or os.path.join(a.qmk, 'keyboards', 'handwired', 'polykybd', 'lang', 'lang_lut.xlsx')
+    XLSX = a.xlsx or os.path.join(a.qmk, 'keyboards', 'polykybd', 'lang', 'lang_lut.xlsx')
     if not os.path.exists(XLSX):
         sys.exit(f"lang_lut.xlsx not found at {XLSX} (use --qmk or --xlsx)")
 

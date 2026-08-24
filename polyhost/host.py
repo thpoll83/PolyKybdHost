@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, )
 
 from polyhost.core.events import flash_kind_label
-from polyhost.device.command_ids import IdleStyle, GlyphScript
+from polyhost.device.command_ids import IdleStyle, GlyphScript, GlyphSize
 from polyhost.gui.file_dialogs import get_open_file_name
 from polyhost.gui.get_icon import get_icon
 from polyhost.services import log_bundle
@@ -49,6 +49,14 @@ GLYPH_SCRIPT_LABELS = {
     GlyphScript.AMIGA:    "Amiga Topaz",
     GlyphScript.APL:      "APL",
     GlyphScript.BRAILLE:  "Braille",
+}
+
+# Keys cover every GlyphSize so the menu builds from the enum. Worded as what the
+# user sees on the keycap, not as the internal enum name.
+GLYPH_SIZE_LABELS = {
+    GlyphSize.SMALL:  "Small (standard)",
+    GlyphSize.MEDIUM: "Medium",
+    GlyphSize.LARGE:  "Large",
 }
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.qt_crash import install_qt_message_handler
@@ -544,6 +552,25 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.glyph_script_menu.aboutToShow.connect(self.refresh_glyph_script_menu)
 
+        # Keycap legend size (firmware v13+). Same device-coupled radio pattern.
+        # It sizes a key's MAIN legend only — the shift/AltGr previews stay put —
+        # and the bigger faces are latin, from the `latinbig` font-pack bundle; a
+        # keycap they do not cover keeps drawing at the small size.
+        self.glyph_size_menu = self.menu.addMenu(get_icon("format_size.svg"), "Keycap Size")
+        size_group = QActionGroup(self)
+        size_group.setExclusive(True)
+        self.glyph_size_actions = {}
+        for size in GlyphSize:
+            act = QAction(GLYPH_SIZE_LABELS[size], parent=self, checkable=True)
+            act.setData(size.value)
+            size_group.addAction(act)
+            # noinspection PyUnresolvedReferences
+            act.triggered.connect(self.change_glyph_size)
+            self.glyph_size_menu.addAction(act)
+            self.glyph_size_actions[size.value] = act
+        # noinspection PyUnresolvedReferences
+        self.glyph_size_menu.aboutToShow.connect(self.refresh_glyph_size_menu)
+
         # The layout editor is device-independent of the in-process worker — it
         # drives the device through core.keymap_* (RPC in client mode), so it
         # works in either mode (H4a-2).
@@ -1032,6 +1059,7 @@ class PolyHost(QApplication):
         # (the blanket loop above already set them to `enabled`).
         self.idle_style_menu.menuAction().setEnabled(enabled and self.supports("idle_style"))
         self.glyph_script_menu.menuAction().setEnabled(enabled and self.supports("glyph_script"))
+        self.glyph_size_menu.menuAction().setEnabled(enabled and self.supports("glyph_size"))
         # The Developer parent stays enabled UNCONDITIONALLY: several of its
         # entries are offline tools (the font-pack inspector inspects the shipped
         # bundles with no device at all, the mock-bitmap dump writes files), and a
@@ -1914,6 +1942,24 @@ class PolyHost(QApplication):
             # checkmark to the device's actual script so the menu doesn't lie.
             self.report_device_result("Error", f"Could not set glyph script: {msg}")
             self.refresh_glyph_script_menu()
+
+    def refresh_glyph_size_menu(self):
+        # Read the active legend size from the device and tick the matching entry;
+        # on failure (old firmware / disconnected) leave all unchecked.
+        ok, value = self.core.get_glyph_size()
+        for sval, act in self.glyph_size_actions.items():
+            act.setChecked(bool(ok) and value == sval)
+
+    def change_glyph_size(self):
+        value = self.sender().data()
+        ok, msg = self.core.set_glyph_size(value)
+        if ok:
+            self.log.info("Keycap legend size set to %s.", GlyphSize(value).name.lower())
+        else:
+            # Firmware too old (needs v13+) or device busy — log and re-sync the
+            # checkmark to the device's actual size so the menu doesn't lie.
+            self.report_device_result("Error", f"Could not set keycap size: {msg}")
+            self.refresh_glyph_size_menu()
 
     def reset_glyph_script_to_standard(self):
         """Force the glyph script back to Standard (used by the settings-dialog

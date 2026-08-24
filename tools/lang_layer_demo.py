@@ -277,7 +277,7 @@ def main():
 
     op.OVERSHOOT = 0
     exclude = {m.strip() for m in args.exclude.split(';') if m.strip()}
-    pk = os.path.join(args.qmk, 'keyboards', 'handwired', 'polykybd')
+    pk = os.path.join(args.qmk, 'keyboards', 'polykybd')
 
     matrices = parse_layout_matrix(os.path.join(pk, 'split72', 'keyboard.json'))
     role_list = parse_ll_roles(os.path.join(pk, 'split72', 'keymaps', 'default', 'keymap.c'))
