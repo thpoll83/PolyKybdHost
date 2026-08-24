@@ -171,6 +171,38 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     commit and otherwise let a **push** trigger it (pushes don't draw on the
     quota — the note above).
 
+- **A reviewer's CONCLUSION can be sound while its EVIDENCE is invented — and the
+  evidence is worth correcting separately.** The existing rule above says verify and
+  decline the false ones. The 2026-08-23 round on PolyKybd#35 sharpened it: **3 of 4
+  findings had a defensible conclusion resting on a claim that was simply not true of
+  the repo.** (1) *"the netlist shows LED1 uses `WS2812B-Mini`/`C527089`"* — real
+  identifiers, read out of a **2024 generated netlist** describing a design two board
+  revisions old. (2) *"a later BOM exporter reading `MPN` will produce a wrong
+  manufacturer id"* — there **is no `MPN` column** in the BOMs that repo generates; the
+  exporter reads `Value`, which was already correct. (3) *"omits the standard footprint
+  header"* — it had been added two commits earlier. Only the fourth (an exposed pad
+  drawn 5× too tall) was right as stated, and that one was genuinely valuable.
+  - **Take the conclusion when it stands on its own merits** — the stale-netlist finding
+    led to a real improvement (a library footprint should not restate what the schematic
+    instantiates) even though its evidence was junk. Say so explicitly: *"fixed, but for
+    a different reason"*.
+  - ⚠️ **Reply with the counter-evidence anyway, because CodeRabbit stores a learning
+    from the thread.** It did: after being shown the 2024 timestamps and the BOM
+    history it recorded *"`*.kicad_sch` files are the authoritative current schematic
+    sources… do not use `poly_kb.net`, `poly_kb.xml`… these artifacts are stale"*. That
+    is a durable repo-wide fix bought with one reply. Declining silently buys nothing.
+
+- **CodeRabbit's plan is PER-REPOSITORY, and Pro Plus still means only 2 included
+  reviews per hour.** Private repos here get the summary-only Free tier; public ones
+  (PolyKybd, qmk_firmware) report `Plan: Pro Plus` — but the run footer then says
+  *"Your plan provides up to 2 included reviews per hour; N remain after this review"*.
+  ⚠️ **A request consumes a slot even when it is refused**, so retries starve the window
+  they are waiting on (already recorded for the org-wide limit; it applies to the hourly
+  one too). A **push** re-triggers a review without spending a request. And after a few
+  quick commits CodeRabbit **auto-pauses** the branch — from then on nothing is reviewed
+  until you comment `@coderabbitai review`, which is easy to miss because the paused
+  comment still renders a full walkthrough and green pre-merge checks.
+
 - **When two reviewers disagree about the same code, WRITE THE TEST — it
   adjudicates, and it is faster than arguing.** On PR #154 (2026-08-07) Sourcery
   asked for a regression test on a parser input shape while CodeRabbit claimed
