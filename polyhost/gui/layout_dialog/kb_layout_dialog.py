@@ -89,6 +89,22 @@ class KbLayoutDialog(QMainWindow):
     def get_selected_key(self):
         return self.selected_key
 
+    def _layer_names(self) -> dict[int, str]:
+        """Layer labels, preferring what the keyboard says over the shipped file.
+
+        res/layer_names.yaml is generated from the firmware's layers.h at BUILD time,
+        so it can describe an enum the connected keyboard no longer has — it silently
+        did, for two renames of its source path. Firmware v14+ answers cmd 35 with its
+        own names, which cannot drift; the file stays as the fallback for older boards.
+        """
+        try:
+            ok, names = self.core.keymap_layer_names()
+        except Exception:
+            ok, names = False, []
+        if ok and names:
+            return {idx: name for idx, name in enumerate(names) if name}
+        return parse_layer_names()
+
     def init_ui(self):
         central = QWidget()
         main_layout = QVBoxLayout()
@@ -103,7 +119,7 @@ class KbLayoutDialog(QMainWindow):
 
         success, num_layers = self.core.keymap_layer_count()
         self.num_layers = num_layers if success else 0
-        layer_names = parse_layer_names()
+        layer_names = self._layer_names()
 
         if not success:
             QMessageBox.warning(

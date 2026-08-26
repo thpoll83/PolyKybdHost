@@ -45,6 +45,11 @@ OS_MIN_PROTOCOL = 7
 # Minimum firmware PROTOCOL_VERSION for the glyph-script get/set command (cmd 30).
 GLYPH_SCRIPT_MIN_PROTOCOL = 9
 
+# Minimum firmware PROTOCOL_VERSION for GET_LAYER_NAMES (cmd 35) — the keyboard
+# reporting what each host-remappable layer is called. Below this the layout editor
+# falls back to res/layer_names.yaml, which is a build-time artifact and can be stale.
+LAYER_NAMES_MIN_PROTOCOL = 14
+
 # Minimum firmware PROTOCOL_VERSION for the packed plain-overlay header (cmd 0x0A:
 # modifier and segment share one byte, (segment << 4) | modifier). Pre-v11 firmware
 # expects them as two separate header bytes — see send_overlay_for_keycode.
@@ -74,6 +79,7 @@ FEATURE_MIN_PROTOCOL = {
     "overlay_packed_header": OVERLAY_PACKED_HEADER_MIN_PROTOCOL,
     "gui_combo_modifiers": GUI_COMBO_MODIFIERS_MIN_PROTOCOL,
     "glyph_size": GLYPH_SIZE_MIN_PROTOCOL,
+    "layer_names": LAYER_NAMES_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -90,6 +96,48 @@ def protocol_supports(protocol: int | None, feature: str) -> bool:
     client so the feature/min-protocol table lives in exactly one place.
     """
     return (protocol or 0) >= FEATURE_MIN_PROTOCOL[feature]
+
+
+LAYER_NAME_MAX = 8   # firmware POLY_LAYER_NAME_MAX: longest name, excluding the NUL
+LAYER_NAMES_HEADER = 2  # the total byte and the count byte
+
+
+def decode_layer_names(payload: bytes) -> list[str] | None:
+    """Decode a GET_LAYER_NAMES payload.
+
+        [0]    total   whole payload length, this byte included
+        [1]    count   number of layers named
+        [2..]  count NUL-terminated ASCII names
+
+    Returns None while the payload is still INCOMPLETE, so a multi-report read
+    knows to keep going.
+
+    ⚠️ The TOTAL is what makes this decodable, and it is why the length is not in
+    the records. It is read from the first report, so termination is arithmetic
+    rather than a scan and the report's zero fill is never examined. The two
+    encodings tried before it are both worse: fixed-width 8-byte records give the
+    same arithmetic length but cost a second report, and terminated records with
+    no total force the decoder to find the end by scanning -- where the only way
+    to tell a real terminator from the zero fill is "an empty name means padding",
+    which makes an UNNAMED layer (a bare terminator) indistinguishable from the
+    fill and silently truncates the list.
+    """
+    if len(payload) < LAYER_NAMES_HEADER:
+        return None
+    total = payload[0]
+    # A plausible total is the one thing the decoder has to trust, so bound it:
+    # below the header it cannot describe a reply at all.
+    if total < LAYER_NAMES_HEADER + 1:
+        return None
+    if len(payload) < total:
+        return None
+    count = payload[1]
+    body = bytes(payload[LAYER_NAMES_HEADER:total])
+    names = body.split(b"\x00")[:count]
+    if len(names) < count:
+        return None
+    return [n.decode("ascii", "replace") for n in names]
+
 
 # Console self-heal (see get_console_output): reopen the console interface after
 # this many consecutive failed reads (~5 s at the 250 ms poll), throttled to at
@@ -524,6 +572,45 @@ class PolyKybd:
         except Exception:
             pass
         return False, 0
+
+    def get_layer_names(self) -> tuple[bool, list[str]]:
+        """Ask the keyboard what its host-remappable layers are called (cmd 35, v14+).
+
+        Returns one name per layer, in layer order, at most 8 chars each — the labels
+        the layout editor puts on its tabs. The count matches what
+        get_dynamic_layer_count() reports, because the firmware answers both from the
+        same constant.
+
+        Prefer this over res/layer_names.yaml: that file is generated from the
+        firmware's layers.h at build time and silently went stale for two renames of
+        its source path, so the editor was labelling tabs from an enum the firmware no
+        longer had. A name the keyboard states itself cannot drift from the keyboard.
+        """
+        if not self.supports("layer_names"):
+            return False, []
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.GET_LAYER_NAMES), 100, expect(Cmd.GET_LAYER_NAMES))
+            if not result or len(reply) < 4 or reply[2] != ord('.'):
+                return False, []
+            data = bytearray(reply[3:])
+            names = decode_layer_names(data)
+            while names is None:
+                # Same guard as the packed language list: a timeout returns
+                # (True, b'') and a continuation without a valid "P<cmd>." header is
+                # not ours — break either way so a device that stops mid-list cannot
+                # spin this worker-thread loop forever.
+                result, reply = self.hid.read(100)
+                if not result or len(reply) < 4 or reply[2] != ord('.'):
+                    break
+                data += reply[3:]
+                names = decode_layer_names(data)
+            if names is None:
+                return False, []
+            return True, names
+        except Exception:
+            pass
+        return False, []
 
     def replay_startup_anim(self) -> tuple[bool, Any]:
         """Replay the one-time startup ("Eden") animation on demand (cmd 31).
