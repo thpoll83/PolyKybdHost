@@ -65,7 +65,15 @@ DOOMWAD_MAX_SIZE   = 0x1C0000       # the 1.75 MB WHX slot (flash 0x600000..0x7B
                                     # shrunk from 2 MB when the pack slot was carved)
 DOOMPACK_BUNDLE_ID = 0x7E
 DOOMPACK_MAGIC     = b"PlyX"
-DOOMPACK_MAX_SIZE  = 0x40000        # the 256 KB engine-pack slot (flash 0x7C0000..0x7FFFFF)
+# ⚠️ 248 KB, not 256: the last 8 KB of flash (0x7FE000..0x7FFFFF) is the keyboard's
+# wear-levelling EEPROM — keymap, brightness, language, idle style, the Intl map.
+# The slot was declared as the full 256 KB on both sides until 2026-08; the firmware
+# only erases the sectors an image needs, so nothing had overlapped in practice, but
+# a pack over 248 KB would have wiped the user's settings on flash. Mirrors
+# FW_DOOMPACK_SLOT_SIZE / FW_EEPROM_RESERVE_SIZE in qmk base/fw_staging.h — keep the
+# two in step, and prefer failing here (before streaming ~200 KB over HID) to
+# failing at the firmware's COMMIT.
+DOOMPACK_MAX_SIZE  = 0x3E000        # the 248 KB engine-pack slot (flash 0x7C0000..0x7FDFFF)
 
 # Pack format (base/fontpack.h). The host only needs to parse/validate the header.
 FONTPACK_MAGIC        = b"PlyF"
