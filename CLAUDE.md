@@ -856,6 +856,34 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `-C`/`-F` extra_args), falling back to **inferring** it (every group starts with
   `25CC` → composite; regional-indicator flag groups don't) for older manifests.
   Host builds matras via fontgen's mono composite path.
+- ⚠️ **A GENERATOR whose default source path has gone dead fails SILENTLY, and its
+  output then rots for months with nothing to notice.** `scripts/generate_layer_names.py`
+  produces `polyhost/res/layer_names.yaml`, which is what labels each layer in the
+  layout editor. Its `DEFAULT_LAYERS_H` pointed at
+  `qmk_firmware/keyboards/handwired/polykybd/split72/keymaps/default/layers.h` — a path
+  that died **twice over**: the enum moved out of the per-keymap directory when
+  split72/split42 began sharing one keymap, and out of `keyboards/handwired/` when the
+  boards were promoted. Nothing failed, because nothing ran it. The committed file still
+  listed **14** layers ending in `EMJ0`/`EMJ1`, a split the firmware had not had in a
+  very long time, so the editor was mislabelling the tail of every layer list (found
+  2026-08-26, only because a layer merge made it *worse* and prompted a look).
+  - **This is a different failure from the mirrored-file drift already documented
+    here.** `noto-fonts.yaml`, `fontpack_render_settings.json`, `lang_flags.json` and
+    `iso_lang_country.py` are *copies*, guarded by "keep both in sync (`cmp`)" — and a
+    `cmp` genuinely catches those. `layer_names.yaml` is **generated**, so there is no
+    counterpart to compare it against; the only thing that could have caught it is
+    whether its **generator still resolves its input**, which nothing checks. When you
+    touch any of these, run the generator (or `cmp`) rather than trusting the file.
+  - **Make the provenance line machine-independent.** It recorded the absolute path of
+    whoever last ran it (`/home/thomaspollak/Repos/qmk_firmware/...`), so regenerating
+    anywhere else produced a one-line diff carrying no information — the same noise the
+    firmware's font headers get from embedding the `fontconvert` binary path. It now
+    records the `qmk_firmware`-relative path.
+  - **The layer COUNT was never affected** and needed no change: the editor reads it
+    live from the keyboard (`M_KEYMAP_LAYER_COUNT` → `PolyCore.keymap_layer_count()` →
+    the firmware's `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT`). Only the *names* were
+    stale. Worth knowing which half of an editor's layer list is live and which is a
+    committed artifact before debugging either.
 - **Source-font download validation** (`font_downloader.py`): a download is rejected
   (`DownloadError`, no file cached) when it's short (Content-Length mismatch) or not a
   complete sfnt (`_validate_sfnt` checks the table directory fits the file) — this is
