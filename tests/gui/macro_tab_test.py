@@ -214,6 +214,42 @@ class BrowserIntegrationTest(unittest.TestCase):
         b.tabs.setCurrentIndex(self._titles(b).index("Macros"))
         self.assertTrue(core.macro_list.called)
 
+    def test_the_page_fits_the_height_the_browser_will_give_it(self):
+        """The label meter must not be drawn over the keycap preview.
+
+        Measured, not reasoned: the browser caps itself at 400 px, so this page is
+        handed ~350 px on EVERY open -- always short, never occasionally. The preview
+        is a fixed size and cannot give the deficit back, so a full-width meter row
+        below it landed on top of the preview's bottom rows, which is exactly where
+        the label renders (field, 2026-08-27).
+
+        The WIDTH matters and 900 is not arbitrary: the two notes below are
+        word-wrapped labels, which report a ONE-LINE minimum to the layout, so the
+        deficit only appears once they wrap -- at 1200 px the pre-fix layout does not
+        overlap and this test would pass against the bug. The dialog clamps itself to
+        the screen, so a 1024/1280-wide display lands squarely here.
+
+        A height assertion would not pin this either, for the same reason: the wrapped
+        labels make minimumSizeHint() understate what the page needs.
+        """
+        core = _core()
+        b = self._browser(core)
+        b.resize(900, b.maximumHeight())
+        b.tabs.setCurrentIndex(self._titles(b).index("Macros"))
+        b.show()
+        _APP.processEvents()
+        tab = b.macro_tab
+        meter = tab.width_meter.geometry().translated(
+            tab.width_meter.parentWidget().mapTo(tab, tab.width_meter.pos()) -
+            tab.width_meter.pos())
+        preview = tab.preview.geometry().translated(
+            tab.preview.parentWidget().mapTo(tab, tab.preview.pos()) -
+            tab.preview.pos())
+        b.hide()
+        self.assertFalse(
+            meter.intersects(preview),
+            f"the label meter {meter} overlaps the keycap preview {preview}")
+
 
 if __name__ == "__main__":
     unittest.main()

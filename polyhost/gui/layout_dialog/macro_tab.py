@@ -23,7 +23,7 @@ from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QImage, QPixmap
 from PyQt5.QtWidgets import (
     QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMessageBox,
-    QProgressBar, QPushButton, QVBoxLayout, QWidget,
+    QProgressBar, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
 from polyhost.services import macro_label as ml
@@ -63,26 +63,50 @@ class MacroTab(QWidget):
         self.list.currentRowChanged.connect(self._on_select)
         outer.addWidget(self.list)
 
-        right = QVBoxLayout()
-        outer.addLayout(right, 1)
+        # Scrolled, because the column can genuinely need more height than it will
+        # ever be given: the keycode browser caps itself at 400 px, and the two
+        # word-wrapped notes below report a ONE-LINE minimum to the layout, so a
+        # narrow window silently under-allocates them and they print over each
+        # other and over the preview. A scrollbar that appears only when it is
+        # needed is the honest version of that.
+        panel = QWidget()
+        right = QVBoxLayout(panel)
+        right.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidget(panel)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        outer.addWidget(scroll, 1)
 
         right.addWidget(self._caption("LABEL"))
+        # The field and its meter stack to the LEFT of the preview rather than
+        # running full width above it. Not cosmetic: the browser caps itself at
+        # 400 px, so this page is handed ~351 px against a ~389 px sizeHint on
+        # every open -- always short, never occasionally. The fixed-size preview
+        # cannot give the deficit back, so a full-width meter row was drawn over
+        # the bottom of the keycap, which is exactly where the label renders.
+        # Beside the preview the two share the preview's 80 px and the row costs
+        # nothing extra.
         label_row = QHBoxLayout()
+        label_col = QVBoxLayout()
         self.label_edit = QLineEdit()
         self.label_edit.setMaxLength(ml.LABEL_MAX_CHARS)
         self.label_edit.textChanged.connect(self._on_label_changed)
-        label_row.addWidget(self.label_edit, 1)
+        label_col.addWidget(self.label_edit)
+
+        self.width_meter = QProgressBar()
+        self.width_meter.setRange(0, ml.PANEL_W)
+        self.width_meter.setTextVisible(True)
+        label_col.addWidget(self.width_meter)
+        label_col.addStretch(1)
+        label_row.addLayout(label_col, 1)
 
         self.preview = QLabel()
         self.preview.setFixedSize(ml.PANEL_W * PREVIEW_SCALE, ml.PANEL_H * PREVIEW_SCALE)
         self.preview.setToolTip("How the keycap will look")
         label_row.addWidget(self.preview)
         right.addLayout(label_row)
-
-        self.width_meter = QProgressBar()
-        self.width_meter.setRange(0, ml.PANEL_W)
-        self.width_meter.setTextVisible(True)
-        right.addWidget(self.width_meter)
 
         right.addWidget(self._caption("WHAT IT TYPES"))
         self.text_edit = QLineEdit()
