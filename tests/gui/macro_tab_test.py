@@ -111,7 +111,7 @@ class MacroTabTest(unittest.TestCase):
         """macro_list fails with the device layer's "firmware too old" message, and
         that is what the user should read -- not an empty list that looks like a
         keyboard with no macros."""
-        core = _core(ok=False, payload="Firmware protocol too old for macros (need v14+).")
+        core = _core(ok=False, payload="Firmware protocol too old for macros (need v15+).")
         tab = MacroTab(core)
         tab.reload()
         self.assertFalse(tab.isEnabled())

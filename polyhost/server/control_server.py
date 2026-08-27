@@ -212,6 +212,7 @@ class ControlServer(MpcListenerServer):
             p.M_OVERLAY_DISABLE: lambda conn, params: _unwrap(c.disable_overlays()),
             p.M_OVERLAY_RESET: lambda conn, params: _unwrap(c.reset_overlays()),
             p.M_KEYMAP_LAYER_COUNT: lambda conn, params: _unwrap(c.keymap_layer_count()),
+            p.M_KEYMAP_LAYER_NAMES: lambda conn, params: _unwrap(c.keymap_layer_names()),
             p.M_KEYMAP_DEFAULT_LAYER: lambda conn, params: _unwrap(c.keymap_default_layer()),
             p.M_KEYMAP_BUFFER: lambda conn, params: _unwrap(c.keymap_buffer()),
             p.M_KEYMAP_SET: lambda conn, params: _unwrap(c.keymap_set(

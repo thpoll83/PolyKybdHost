@@ -525,6 +525,11 @@ class PolyKybdMock:
         self._log_call("get_dynamic_layer_count")
         return True, self._num_layers
 
+    def get_layer_names(self) -> tuple[bool, list[str]]:
+        self._log_call("get_layer_names")
+        names = ["Qwerty", "Stag!", "ColemkDH", "Neo", "Workman", "Fn", "Numpad", "Utility"]
+        return True, names[:self._num_layers]
+
     def get_dynamic_keycode(self, layer: int, row: int, col: int) -> tuple[bool, int | None]:
         self._log_call("get_dynamic_keycode", layer, row, col)
         if (layer >= self._num_layers

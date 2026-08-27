@@ -439,6 +439,14 @@ def _cmd_overlay(client, args):
 def _cmd_keymap(client, args):
     if args.keymap_action == "layer-count":
         _print_result(client.call(protocol.M_KEYMAP_LAYER_COUNT))
+    elif args.keymap_action == "layer-names":
+        ok, names = client.call(protocol.M_KEYMAP_LAYER_NAMES)
+        if ok:
+            for idx, name in enumerate(names):
+                print(f"{idx}  {name}")
+        else:
+            _print_result((ok, names))
+        return 0 if ok else 1
     elif args.keymap_action == "default-layer":
         _print_result(client.call(protocol.M_KEYMAP_DEFAULT_LAYER))
     elif args.keymap_action == "buffer":
@@ -838,7 +846,7 @@ def build_parser():
     p_glyph_size.set_defaults(func=_cmd_glyph_size)
 
     p_macro = sub.add_parser(
-        "macro", help="list, read, write or clear the keyboard's macros (firmware v14+)")
+        "macro", help="list, read, write or clear the keyboard's macros (firmware v15+)")
     p_macro.add_argument(
         "macro_action", nargs="?", choices=["list", "get", "set", "clear"], default="list",
         help="omit to list every macro with its label, size and contents")
@@ -883,6 +891,7 @@ def build_parser():
     p_km = sub.add_parser("keymap", help="keymap inspection / single-key write")
     km_sub = p_km.add_subparsers(dest="keymap_action", required=True)
     km_sub.add_parser("layer-count", help="number of keymap layers")
+    km_sub.add_parser("layer-names", help="layer names reported by the keyboard (firmware v14+)")
     km_sub.add_parser("default-layer", help="current default layer")
     km_sub.add_parser("buffer", help="raw keymap buffer")
     p_km_set = km_sub.add_parser("set", help="write a single keycode")

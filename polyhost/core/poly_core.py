@@ -1231,6 +1231,14 @@ class PolyCore(Observable):
         return self._device_call(
             "keymap_layer_count", lambda c: self.keeb.get_dynamic_layer_count())
 
+    def keymap_layer_names(self):
+        """Names for the host-remappable layers, straight from the keyboard (v14+).
+
+        Empty list on firmware too old to answer; the layout editor then falls back
+        to the shipped res/layer_names.yaml."""
+        return self._device_call(
+            "keymap_layer_names", lambda c: self.keeb.get_layer_names())
+
     def keymap_default_layer(self):
         return self._device_call(
             "keymap_default_layer", lambda c: self.keeb.get_default_layer())

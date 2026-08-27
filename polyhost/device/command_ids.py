@@ -59,14 +59,17 @@ class Cmd(Enum):
     # fits in (8 bits = 30 pairs/report, 9 = 27, 10 = 24, 11 = 22).
     SEND_OVERLAY_MAPPING_W = 33
     GLYPH_SIZE = 34  # get/set the keycap legend size (protocol v13+)
-    # --- dynamic macros (protocol v14+) -------------------------------------
+    # Read-only: count byte + that many NUL-terminated ASCII layer names of at
+    # most 8 chars. The count matches ID_DYNAMIC_KEYMAP_GET_LAYER_COUNT.
+    GET_LAYER_NAMES = 35  # (protocol v14+)
+    # --- dynamic macros (protocol v15+) -------------------------------------
     # Split three ways because they answer different questions at different rates:
     # INFO is a cheap header the editor needs before it can lay anything out, BODY is
     # streamed in report-sized windows (the buffer is ~2 KB and a report holds 64), and
     # LABEL is the one field the keycap renders, so it round-trips on its own.
-    MACRO_INFO = 35   # count, label stride, capacity, bytes in use
-    MACRO_BODY = 36   # windowed read/write of the shared body buffer
-    MACRO_LABEL = 37  # get/set one macro's keycap label
+    MACRO_INFO = 36   # count, label stride, capacity, bytes in use
+    MACRO_BODY = 37   # windowed read/write of the shared body buffer
+    MACRO_LABEL = 38  # get/set one macro's keycap label
 
 
 class OsType(Enum):

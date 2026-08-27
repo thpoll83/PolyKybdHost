@@ -233,7 +233,7 @@ class TestGlyphSize(unittest.TestCase):
 
 
 class MacroCapabilityTest(unittest.TestCase):
-    """Macros are three commands behind ONE gate (cmds 35/36/37, protocol v14+).
+    """Macros are three commands behind ONE gate (cmds 36/37/38, protocol v15+).
 
     All three go through the same ``supports("macros")`` check, because a host that
     could read the info header but not the bodies would render an editor over data it
