@@ -680,7 +680,17 @@ class PolyCore(Observable):
             # failed probe so the marker survives until a probe that gets applied.
             "fresh_boot": self.keeb.pop_fresh_boot() if connected_now else False,
         }
-        if not snapshot["state_changed"]:
+        # ⚠️ A FRESH BOOT must re-read the version block even when connectivity
+        # never appeared to change. A firmware apply reboots the keyboard INSIDE
+        # the flash's own suspend/long-job window, so the probe never observes a
+        # disconnect: connected before, connected after, state_changed False.
+        # Returning here left `keeb.protocol_version` at its PRE-FLASH value, so
+        # everything computed from it -- per-feature capabilities, the
+        # newer-firmware decision, the editor's feature gates -- kept describing
+        # the firmware that had just been replaced, until the app was restarted.
+        # The marker is popped once per keyboard boot, so this costs one extra
+        # version+lang query per reboot and nothing in steady state.
+        if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
         if not connected_now:
@@ -747,8 +757,14 @@ class PolyCore(Observable):
             "do_overlay_reset": False,
             "fresh_boot": False,
         }
+        caches_reset = False
 
-        if snapshot["state_changed"]:
+        # `fresh_boot` joins `state_changed` here for the reboot-with-no-observed-
+        # disconnect case above. Note the block below already MEANT to cover it --
+        # its first comment says "e.g. after a firmware flash" -- but sat behind a
+        # guard a firmware flash cannot satisfy, and read `kb_proto` which the
+        # probe only fills in when it gets this far.
+        if snapshot["state_changed"] or snapshot["fresh_boot"]:
             # Forget a remembered newer-firmware choice if the device's protocol
             # changed (e.g. after a firmware flash) so the user is asked again for
             # the new firmware rather than silently reusing the old decision.
@@ -805,6 +821,7 @@ class PolyCore(Observable):
                     self._last_pushed_os = None
                     self._push_os(get_host_os())
                 self.device_mgr.reset_all_caches()
+                caches_reset = True
                 if self.overlay_handler is not None:
                     self.overlay_handler.force_resend()
                 self.needs_overlay_reset = True
@@ -855,9 +872,13 @@ class PolyCore(Observable):
                     except Exception as e:
                         self.log.warning("Connect-time overlay reset failed: %s", e)
             # Independent of state_changed: a fast reboot (no observed
-            # disconnect) still must invalidate the host-side MRU cache.
+            # disconnect) still must invalidate the host-side MRU cache. Post-connect
+            # already does it on the paths where it runs, so this is the fallback for
+            # the ones where it does not (a reboot into firmware this host refuses,
+            # or into safe mode) -- not a second reset on top of it.
             if snapshot.get("fresh_boot"):
-                self.device_mgr.reset_all_caches()
+                if not caches_reset:
+                    self.device_mgr.reset_all_caches()
                 self.log.info("Firmware restart detected — overlay MRU cache reset.")
                 applied["fresh_boot"] = True
 

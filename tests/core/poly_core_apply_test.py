@@ -224,8 +224,54 @@ class TestApplyReconnect(unittest.TestCase):
         applied = core.apply_reconnect(snap)
         self.assertTrue(applied["fresh_boot"])
         core.device_mgr.reset_all_caches.assert_called_once()
+        # The decision NOW runs on a fresh boot too. It used to be skipped, which
+        # is the bug below: a reboot the host never saw as a disconnect left every
+        # protocol-derived conclusion describing the previous firmware.
+        self.assertIsNotNone(applied["decision"])
+
+    def test_a_flash_that_changes_protocol_is_noticed_without_a_disconnect(self):
+        """The reported bug: flash new firmware from the host app and the app keeps
+        treating the keyboard as the OLD protocol until it is restarted.
+
+        A firmware apply reboots the keyboard INSIDE the flash's own suspend/long-job
+        window, so the reconnect probe never observes a disconnect -- connected
+        before, connected after, `state_changed` False. Everything derived from the
+        protocol (capabilities, the newer-firmware decision, the editor's feature
+        gates) was therefore computed from the firmware that had just been replaced.
+
+        `fresh_boot` is the signal that distinguishes this from steady state, and the
+        firmware sets it on every boot precisely because a reboot can be too fast for
+        the host to see.
+        """
+        core = make_core(connected=True)
+        core.keeb.get_protocol_version.return_value = __protocol__ + 1
+        applied = core.apply_reconnect(connect_snapshot(
+            state_changed=False, fresh_boot=True, kb_proto=__protocol__ + 1))
+        self.assertIsNotNone(applied["decision"], "the decision tree never re-ran")
+        self.assertTrue(applied["decision"]["newer_fw_pending"],
+                        "the newer-firmware prompt never fired for the new protocol")
+        self.assertTrue(core.safe_mode)
+
+    def test_a_remembered_policy_is_dropped_when_a_flash_changes_the_protocol(self):
+        """The forget-the-remembered-choice block carries the comment "e.g. after a
+        firmware flash" -- and used to sit behind a guard a firmware flash could not
+        satisfy, so it could never fire for the case it names."""
+        core = make_core(connected=True)
+        core.keeb.get_protocol_version.return_value = __protocol__ + 1
+        core.set_newer_firmware_policy("ignore")
+        self.assertEqual(core._newer_fw_policy, "ignore")
+        core.apply_reconnect(connect_snapshot(
+            state_changed=False, fresh_boot=True, kb_proto=__protocol__ + 2))
+        self.assertIsNone(core._newer_fw_policy, "stale choice reused for new firmware")
+
+    def test_steady_state_still_short_circuits(self):
+        """No fresh boot, no state change -> the decision must NOT re-run. This is
+        what keeps the ~1 s probe free in steady state."""
+        core = make_core(connected=True)
+        applied = core.apply_reconnect(
+            connect_snapshot(state_changed=False, fresh_boot=False))
         self.assertIsNone(applied["decision"])
-        self.assertFalse(applied["do_overlay_reset"])
+        core.device_mgr.reset_all_caches.assert_not_called()
 
     def test_headless_handler_none_does_not_crash_post_connect(self):
         core = make_core()
