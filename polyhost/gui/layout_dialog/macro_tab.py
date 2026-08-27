@@ -34,7 +34,14 @@ from polyhost.services import macro_look as mk
 # for it and VIA_ENABLE is unset -- so a macro key is an ordinary keycode assignment.
 QK_MACRO = 0x7700
 
-PREVIEW_SCALE = 2
+# 3, not 2: the icon controls sit under the preview now, and two buttons need a
+# sensible width to share. It also makes the half-size icon legible at a glance,
+# which is the thing the preview exists to show.
+PREVIEW_SCALE = 3
+
+# One line with the byte count -- both describe the body, and on its own the caveat
+# wrapped to two rows in a column the browser already under-allocates.
+BODY_CAVEAT = "stored unencrypted, readable by anything on the USB"
 
 
 class MacroTab(QWidget):
@@ -105,19 +112,22 @@ class MacroTab(QWidget):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         outer.addWidget(scroll, 1)
 
-        right.addWidget(self._caption("KEYCAP"))
         # EVERYTHING that composes the keycap sits in one column beside the preview,
         # and the label shares its line with the meter. Not cosmetic: the browser caps
         # itself at 400 px, so this page is handed ~351 px on every open -- always
         # short, never occasionally -- and the fixed-size preview cannot give the
         # deficit back. Stacked full-width, the meter row was drawn over the bottom of
-        # the keycap, which is exactly where the label renders. Beside the preview the
-        # four controls share its 80 px and cost no height at all, which is what keeps
-        # the column off a scrollbar.
+        # the keycap, which is exactly where the label renders.
+        #
+        # The fields are named INLINE, at the ordinary widget size, rather than under
+        # 10 px letter-spaced captions: a caption costs a row of its own AND was too
+        # small to read at a glance, and "Keycap:" in front of the field it names says
+        # the same thing in the space the field already occupies.
         top_row = QHBoxLayout()
         left_col = QVBoxLayout()
 
         name_row = QHBoxLayout()
+        name_row.addWidget(self._field_label("Keycap:"))
         self.label_edit = QLineEdit()
         self.label_edit.setMaxLength(ml.LABEL_MAX_CHARS)
         self.label_edit.setPlaceholderText("work mail")
@@ -140,38 +150,46 @@ class MacroTab(QWidget):
         self.style_box.currentIndexChanged.connect(self._on_style_changed)
         left_col.addWidget(self.style_box)
 
+        left_col.addStretch(1)
+        top_row.addLayout(left_col, 1)
+
+        # The icon controls live UNDER the preview, with the picture they change: the
+        # button reads back the chosen codepoint, so it is a readout as much as a
+        # control and belongs beside what it draws. The preview is scaled up to give
+        # the pair a sensible width to sit in.
+        preview_col = QVBoxLayout()
+        self.preview = QLabel()
+        self.preview.setFixedSize(ml.PANEL_W * PREVIEW_SCALE, ml.PANEL_H * PREVIEW_SCALE)
+        self.preview.setToolTip("How the keycap will look")
+        preview_col.addWidget(self.preview)
+
         icon_row = QHBoxLayout()
+        icon_row.setContentsMargins(0, 0, 0, 0)
         self.icon_btn = QPushButton("Choose icon…")
         self.icon_btn.clicked.connect(self._on_pick_icon)
         icon_row.addWidget(self.icon_btn, 1)
         self.icon_clear = QPushButton("Clear")
         self.icon_clear.clicked.connect(self._on_clear_icon)
         icon_row.addWidget(self.icon_clear)
-        left_col.addLayout(icon_row)
-        left_col.addStretch(1)
-        top_row.addLayout(left_col, 1)
-
-        self.preview = QLabel()
-        self.preview.setFixedSize(ml.PANEL_W * PREVIEW_SCALE, ml.PANEL_H * PREVIEW_SCALE)
-        self.preview.setToolTip("How the keycap will look")
-        top_row.addWidget(self.preview)
+        preview_col.addLayout(icon_row)
+        preview_col.addStretch(1)
+        top_row.addLayout(preview_col)
         right.addLayout(top_row)
 
-        right.addWidget(self._caption("WHAT IT TYPES"))
+        types_row = QHBoxLayout()
+        types_row.addWidget(self._field_label("Types:"))
         self.text_edit = QLineEdit()
         self.text_edit.setPlaceholderText("tom@example.com")
-        right.addWidget(self.text_edit)
+        types_row.addWidget(self.text_edit, 1)
+        right.addLayout(types_row)
 
+        # The size and the caveat share ONE line: both describe the body, neither
+        # needs a row of its own, and the caveat wrapped to two lines when it had one.
+        # Not a scary modal, just the truth: people will store passwords here anyway.
         self.body_note = QLabel()
         self.body_note.setWordWrap(True)
+        self.body_note.setStyleSheet("color: palette(mid);")
         right.addWidget(self.body_note)
-
-        # Not a scary modal, just the truth: people will store passwords here anyway.
-        warn = QLabel("Stored unencrypted on the keyboard, and readable by anything "
-                      "that can talk to it over USB.")
-        warn.setWordWrap(True)
-        warn.setStyleSheet("color: palette(mid);")
-        right.addWidget(warn)
 
         right.addStretch(1)
 
@@ -211,9 +229,14 @@ class MacroTab(QWidget):
     # -- helpers ------------------------------------------------------------
 
     @staticmethod
-    def _caption(text: str) -> QLabel:
+    def _field_label(text: str) -> QLabel:
+        """A field name, at the ordinary widget size.
+
+        Both are given the SAME minimum width so the two fields start on one x --
+        without it "Keycap:" and "Types:" measure differently and the boxes step.
+        """
         lbl = QLabel(text)
-        lbl.setStyleSheet("color: palette(mid); font-size: 10px; letter-spacing: 1px;")
+        lbl.setMinimumWidth(lbl.fontMetrics().horizontalAdvance("Keycap:") + 6)
         return lbl
 
     def _error(self, title: str, msg: str):
@@ -285,7 +308,7 @@ class MacroTab(QWidget):
         else:
             self.text_edit.setEnabled(True)
             self.text_edit.setText(m["text"])
-            self.body_note.setText(f"{m['bytes']} bytes")
+            self.body_note.setText(f"{m['bytes']} bytes  ·  {BODY_CAVEAT}")
 
     # -- label preview ------------------------------------------------------
 

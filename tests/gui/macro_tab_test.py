@@ -72,6 +72,15 @@ class MacroTabTest(unittest.TestCase):
         self.assertEqual(tab.storage.maximum(), 2267)
         self.assertEqual(tab.storage.value(), 14)
 
+    def test_the_body_note_carries_the_size_and_the_caveat_on_one_line(self):
+        """They describe the same thing and the caveat wrapped to two rows on its own,
+        in a column the browser already under-allocates. One label, one row."""
+        tab = MacroTab(_core())
+        tab.reload()
+        note = tab.body_note.text()
+        self.assertIn("5 bytes", note)
+        self.assertIn("unencrypted", note)
+
     def test_a_macro_that_is_not_text_locks_the_text_field(self):
         """Editing it as text and saving would silently drop the chords and delays."""
         tab = MacroTab(_core())
@@ -404,6 +413,24 @@ class BrowserIntegrationTest(unittest.TestCase):
         self.assertFalse(
             meter.intersects(preview),
             f"the label meter {meter} overlaps the keycap preview {preview}")
+
+    def test_the_icon_controls_sit_under_the_preview(self):
+        """The button reads the chosen codepoint back, so it is a readout as much as a
+        control -- it belongs with the picture it changes, not in the field column."""
+        core = _core()
+        b = self._browser(core)
+        b.resize(900, b.maximumHeight())
+        b.tabs.setCurrentIndex(self._titles(b).index("Macros"))
+        b.show()
+        _APP.processEvents()
+        tab = b.macro_tab
+        prev = tab.preview.parentWidget().mapTo(tab, tab.preview.pos())
+        btn = tab.icon_btn.parentWidget().mapTo(tab, tab.icon_btn.pos())
+        b.hide()
+        self.assertGreaterEqual(btn.y(), prev.y() + tab.preview.height(),
+                                "the icon button is not below the preview")
+        self.assertGreaterEqual(btn.x(), prev.x(),
+                                "the icon button is not in the preview's column")
 
     def test_the_editing_column_needs_no_vertical_scrolling(self):
         """Everything that composes the keycap sits beside the preview, so the column
