@@ -13,9 +13,11 @@ from unittest.mock import MagicMock
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
-    from PyQt5.QtWidgets import QApplication
+    from PyQt5.QtWidgets import QApplication, QScrollArea
+    from PyQt5.QtGui import QImage
     from polyhost.gui.layout_dialog.macro_tab import MacroTab, QK_MACRO
     from polyhost.services import macro_label as ml
+    from polyhost.services import macro_look as mk
     _APP = QApplication.instance() or QApplication([])
     _IMPORT_ERR = None
 except Exception as e:  # pragma: no cover
@@ -230,6 +232,65 @@ class MacroTabPreviewTest(unittest.TestCase):
         self.assertNotIn("no glyph", tab.icon_btn.text())
         self.assertIn("unverified", tab.icon_btn.text())
 
+    def test_a_tall_icon_is_drawn_rather_than_skipped(self):
+        """The icon has to appear above the caption -- at half size if that is what it
+        takes.
+
+        This is the bug the halving exists for, and it was silent on both ends because
+        the preview mirrors the firmware's placement: a pack emoji renders at 26-39 px
+        of ink while a captioned keycap leaves ~29 rows, so drawing only at native size
+        showed NOTHING for four of five picker icons (field, 2026-08-27 -- "after
+        selecting the icon I cannot see it in the preview and also not on the keyboard").
+
+        Measured as ink against two references, because the failure has two shapes: it
+        must beat the caption alone (something was drawn) and differ from the index
+        (what was drawn is the icon, not the fallback).
+        """
+        tab = self._tab()
+        tab.label_edit.setText("push")
+
+        # Caption alone: no mark of any kind. `_mid` is what draws the index, so
+        # dropping it is how the reference is taken without touching the render path.
+        mid, tab._mid = tab._mid, None
+        tab._icon = 0
+        tab.style_box.setCurrentIndex(0)
+        tab._repaint_preview()
+        caption_only = self._lit(tab)
+        tab._mid = mid
+
+        tab._repaint_preview()
+        with_index = self._lit(tab)
+
+        tab.style_box.setCurrentIndex(1)
+        for cp in (0x1F511, 0x2699, 0x1F4E7, 0x1F4BB):   # 33-39 px of ink apiece
+            with self.subTest(codepoint=hex(cp)):
+                if mk.find_glyph(tab._fonts, cp) is None:
+                    self.skipTest(f"no glyph for U+{cp:04X} in the fonts available here")
+                tab._icon = cp
+                tab._repaint_preview()
+                ink = self._lit(tab)
+                self.assertGreater(ink, caption_only,
+                                   "the icon drew nothing above the caption")
+                self.assertNotEqual(ink, with_index,
+                                    "the keycap fell back to the index")
+
+    def test_an_icon_that_fits_at_no_size_is_reported_as_not_drawn(self):
+        """`_draw_mark` returns False rather than clipping, so `_render` can fall back
+        to the index. Defensive in practice -- half of even the tallest pack glyph is
+        ~20 px and a single-line caption leaves ~29 rows -- but the fallback is only
+        correct if this half of it is honest.
+        """
+        tab = self._tab()
+        hit = mk.find_glyph(tab._fonts, 0x1F511)
+        if hit is None:
+            self.skipTest("no glyph to measure")
+        font, glyph = hit
+        img = QImage(ml.PANEL_W, ml.PANEL_H, QImage.Format_RGB32)
+        img.fill(0)
+        self.assertFalse(
+            tab._draw_mark(img, 0xFFFFFF, chr(0x1F511), [font], 0,
+                           free_rows=4, glyph=glyph))
+
     def test_the_icon_controls_are_dead_unless_the_style_uses_them(self):
         tab = self._tab()
         tab.style_box.setCurrentIndex(0)
@@ -308,6 +369,32 @@ class BrowserIntegrationTest(unittest.TestCase):
         self.assertFalse(
             meter.intersects(preview),
             f"the label meter {meter} overlaps the keycap preview {preview}")
+
+    def test_the_editing_column_needs_no_vertical_scrolling(self):
+        """Everything that composes the keycap sits beside the preview, so the column
+        fits the height the browser gives it and the scrollbar stays a safety net
+        rather than the normal state.
+
+        Asserted on the scroll area's own arithmetic -- widget height against viewport
+        height -- because that IS what decides whether the bar appears.
+        """
+        core = _core()
+        b = self._browser(core)
+        b.resize(900, b.maximumHeight())
+        b.tabs.setCurrentIndex(self._titles(b).index("Macros"))
+        b.show()
+        _APP.processEvents()
+        tab = b.macro_tab
+        area = tab.preview.parentWidget().parentWidget()   # the QScrollArea's viewport owner
+        while area is not None and not isinstance(area, QScrollArea):
+            area = area.parentWidget()
+        self.assertIsNotNone(area, "the editing column is no longer in a scroll area")
+        needed = area.widget().sizeHint().height()
+        have = area.viewport().height()
+        b.hide()
+        self.assertLessEqual(needed, have,
+                             f"the editing column needs {needed} px of the {have} it is "
+                             "given -- it will scroll")
 
     def test_the_actions_stay_reachable_at_the_height_it_is_given(self):
         """Save / Clear / Use-on-key sit in a fixed footer, not in the scrolled column.

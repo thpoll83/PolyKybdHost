@@ -105,37 +105,31 @@ class MacroTab(QWidget):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         outer.addWidget(scroll, 1)
 
-        right.addWidget(self._caption("LABEL"))
-        # The field and its meter stack to the LEFT of the preview rather than
-        # running full width above it. Not cosmetic: the browser caps itself at
-        # 400 px, so this page is handed ~351 px against a ~389 px sizeHint on
-        # every open -- always short, never occasionally. The fixed-size preview
-        # cannot give the deficit back, so a full-width meter row was drawn over
-        # the bottom of the keycap, which is exactly where the label renders.
-        # Beside the preview the two share the preview's 80 px and the row costs
-        # nothing extra.
-        label_row = QHBoxLayout()
-        label_col = QVBoxLayout()
+        right.addWidget(self._caption("KEYCAP"))
+        # EVERYTHING that composes the keycap sits in one column beside the preview,
+        # and the label shares its line with the meter. Not cosmetic: the browser caps
+        # itself at 400 px, so this page is handed ~351 px on every open -- always
+        # short, never occasionally -- and the fixed-size preview cannot give the
+        # deficit back. Stacked full-width, the meter row was drawn over the bottom of
+        # the keycap, which is exactly where the label renders. Beside the preview the
+        # four controls share its 80 px and cost no height at all, which is what keeps
+        # the column off a scrollbar.
+        top_row = QHBoxLayout()
+        left_col = QVBoxLayout()
+
+        name_row = QHBoxLayout()
         self.label_edit = QLineEdit()
         self.label_edit.setMaxLength(ml.LABEL_MAX_CHARS)
+        self.label_edit.setPlaceholderText("work mail")
         self.label_edit.textChanged.connect(self._on_label_changed)
-        label_col.addWidget(self.label_edit)
+        name_row.addWidget(self.label_edit, 3)
 
         self.width_meter = QProgressBar()
         self.width_meter.setRange(0, ml.PANEL_W)
         self.width_meter.setTextVisible(True)
-        label_col.addWidget(self.width_meter)
-        label_col.addStretch(1)
-        label_row.addLayout(label_col, 1)
+        name_row.addWidget(self.width_meter, 2)
+        left_col.addLayout(name_row)
 
-        self.preview = QLabel()
-        self.preview.setFixedSize(ml.PANEL_W * PREVIEW_SCALE, ml.PANEL_H * PREVIEW_SCALE)
-        self.preview.setToolTip("How the keycap will look")
-        label_row.addWidget(self.preview)
-        right.addLayout(label_row)
-
-        right.addWidget(self._caption("KEYCAP"))
-        keycap_row = QHBoxLayout()
         self.style_box = QComboBox()
         # A macro owns its whole keycap, so the cell can be more than a legend. Order
         # IS the wire value.
@@ -143,15 +137,24 @@ class MacroTab(QWidget):
         self.style_box.addItem("Icon above the label", MacroStyle.ICON.value)
         self.style_box.addItem("Label only, as large as it fits", MacroStyle.TEXT.value)
         self.style_box.currentIndexChanged.connect(self._on_style_changed)
-        keycap_row.addWidget(self.style_box, 1)
+        left_col.addWidget(self.style_box)
 
+        icon_row = QHBoxLayout()
         self.icon_btn = QPushButton("Choose icon…")
         self.icon_btn.clicked.connect(self._on_pick_icon)
-        keycap_row.addWidget(self.icon_btn)
+        icon_row.addWidget(self.icon_btn, 1)
         self.icon_clear = QPushButton("Clear")
         self.icon_clear.clicked.connect(self._on_clear_icon)
-        keycap_row.addWidget(self.icon_clear)
-        right.addLayout(keycap_row)
+        icon_row.addWidget(self.icon_clear)
+        left_col.addLayout(icon_row)
+        left_col.addStretch(1)
+        top_row.addLayout(left_col, 1)
+
+        self.preview = QLabel()
+        self.preview.setFixedSize(ml.PANEL_W * PREVIEW_SCALE, ml.PANEL_H * PREVIEW_SCALE)
+        self.preview.setToolTip("How the keycap will look")
+        top_row.addWidget(self.preview)
+        right.addLayout(top_row)
 
         right.addWidget(self._caption("WHAT IT TYPES"))
         self.text_edit = QLineEdit()
@@ -171,7 +174,6 @@ class MacroTab(QWidget):
 
         right.addStretch(1)
 
-        right.addWidget(self._caption("SHARED STORAGE"))
         self.storage = QProgressBar()
         self.storage.setTextVisible(True)
         right.addWidget(self.storage)
@@ -239,7 +241,7 @@ class MacroTab(QWidget):
         used = self._info.get("used", 0)
         self.storage.setRange(0, max(cap, 1))
         self.storage.setValue(used)
-        self.storage.setFormat(f"{used} of {cap} bytes  ·  %p%")
+        self.storage.setFormat(f"{used} of {cap} bytes shared across all macros  ·  %p%")
 
     # -- selection ----------------------------------------------------------
 
@@ -348,7 +350,7 @@ class MacroTab(QWidget):
             # Nothing on the ladder fits: the firmware falls through to a captioned
             # style rather than drawing an empty keycap, so the preview does too.
 
-        mark, mark_fonts, mark_base = self._mark(style)
+        mark, mark_fonts, mark_base, mark_glyph = self._mark(style)
         if not label:
             if mark and mark_fonts:
                 box = mk.bbox(mark, mark_fonts, mark_base)
@@ -368,22 +370,58 @@ class MacroTab(QWidget):
                    baseline=cap_base)
 
         if mark and mark_fonts:
-            box = mk.bbox(mark, mark_fonts, mark_base)
-            # Skipped rather than squeezed when the caption leaves no room -- a clipped
-            # mark is worse than none, which is the firmware's own call.
-            if box and (box[3] - box[2] + 1) < free_rows:
-                h = box[3] - box[2] + 1
-                self._plot(img, mark, mark_fonts, mark_base, lit,
-                           x0=(ml.PANEL_W - (box[1] - box[0] + 1)) // 2 - box[0],
-                           baseline=(free_rows - h) // 2 - box[2])
+            drawn = self._draw_mark(img, lit, mark, mark_fonts, mark_base,
+                                    free_rows, mark_glyph)
+            if not drawn and mark_glyph is not None:
+                # An icon that fits at no size falls back to the index, which always
+                # does -- the same fallback a missing glyph takes, so an icon can
+                # never leave the keycap without a mark.
+                idx, idx_fonts, idx_base, _ = self._index_mark()
+                if idx and idx_fonts:
+                    self._draw_mark(img, lit, idx, idx_fonts, idx_base, free_rows, None)
         return self._scaled(img)
+
+    def _draw_mark(self, img: QImage, lit: int, mark: str, fonts, base: int,
+                   free_rows: int, glyph) -> bool:
+        """Place the mark in the rows the caption left; report whether it landed.
+
+        Mirrors draw_macro_mark() in poly_keymap.c, including the HALVING: a pack
+        emoji renders at 40 px while a captioned key leaves about 29 rows, so drawing
+        only at native size showed NOTHING for four picker icons out of five -- and
+        because this preview mirrors the firmware, it was silent on both ends.
+        """
+        box = mk.bbox(mark, fonts, base)
+        if box is None:
+            return False
+        h = box[3] - box[2] + 1
+        if h < free_rows:
+            self._plot(img, mark, fonts, base, lit,
+                       x0=(ml.PANEL_W - (box[1] - box[0] + 1)) // 2 - box[0],
+                       baseline=(free_rows - h) // 2 - box[2])
+            return True
+        if glyph is None:      # text marks (the index) are never rescaled
+            return False
+        hw, hh = (glyph["width"] + 1) // 2, (glyph["height"] + 1) // 2
+        if hh >= free_rows:
+            return False
+        self._plot_half(img, fonts[0], glyph, lit,
+                        x=(ml.PANEL_W - hw) // 2, y=(free_rows - hh) // 2)
+        return True
+
+    def _index_mark(self):
+        """The fallback mark: "M3" in the mid face, which fits any caption."""
+        if self._mid is None:
+            return "", [], 0, None
+        mid = self._macros[self._current]["id"] if self._macros else 0
+        return f"M{mid}", [self._mid], 0, None
 
     def _mark(self, style):
         """What goes above the caption: a chosen glyph, or the macro's index.
 
         An icon the keyboard has no glyph for falls back to the index, exactly as the
         firmware does -- so a choice made against a richer font pack still names its
-        macro here rather than drawing nothing.
+        macro here rather than drawing nothing. The glyph comes back too, because a
+        tall one is drawn at half size (see _draw_mark).
         """
         if style == MacroStyle.ICON.value and self._icon:
             hit = mk.find_glyph(self._fonts, self._icon)
@@ -391,11 +429,8 @@ class MacroTab(QWidget):
                 # Through the glyph's OWN font: kdisp_write_gfx_char baseline-aligns to
                 # fonts[0], so drawing a tall pack glyph through the whole pool shifts
                 # it down by the difference (the language-flag gap-at-top regression).
-                return chr(self._icon), [hit[0]], 0
-        if self._mid is None:
-            return "", [], 0
-        mid = self._macros[self._current]["id"] if self._macros else 0
-        return f"M{mid}", [self._mid], 0
+                return chr(self._icon), [hit[0]], 0, hit[1]
+        return self._index_mark()
 
     def _plot(self, img: QImage, text: str, fonts, base: int, lit: int,
               x0: int, baseline: int):
@@ -414,6 +449,31 @@ class MacroTab(QWidget):
                         if 0 <= vx < ml.PANEL_W and 0 <= vy < ml.PANEL_H:
                             img.setPixel(vx, vy, lit)
             x += g["xAdvance"]
+
+    def _plot_half(self, img: QImage, font, g, lit: int, x: int, y: int):
+        """2x2-OR downsample at a literal top-left -- kdisp_draw_glyph_half_at().
+
+        OR rather than decimation because it keeps thin strokes a sampled downscale
+        drops, and the halved extents round UP or an odd-width glyph loses its last
+        column.
+        """
+        bo, w, h = g["bitmapOffset"], g["width"], g["height"]
+        cb = (h + 7) >> 3                                   # column-native
+        for dy in range((h + 1) // 2):
+            for dx in range((w + 1) // 2):
+                on = False
+                for oy in range(2):
+                    for ox in range(2):
+                        sx, sy = dx * 2 + ox, dy * 2 + oy
+                        if sx >= w or sy >= h:
+                            continue
+                        if font.bitmap[bo + sx * cb + (sy >> 3)] & (1 << (sy & 7)):
+                            on = True
+                            break
+                    if on:
+                        break
+                if on and 0 <= x + dx < ml.PANEL_W and 0 <= y + dy < ml.PANEL_H:
+                    img.setPixel(x + dx, y + dy, lit)
 
     @staticmethod
     def _scaled(img: QImage) -> QPixmap:
