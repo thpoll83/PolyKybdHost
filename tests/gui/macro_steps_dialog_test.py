@@ -24,7 +24,6 @@ try:
     )
     from polyhost.services import macro_body as mb
     from polyhost.services import macro_keys as mk
-    from polyhost.services import macro_script as msc
     _APP = QApplication.instance() or QApplication([])
     _IMPORT_ERR = None
 except Exception as e:  # pragma: no cover
