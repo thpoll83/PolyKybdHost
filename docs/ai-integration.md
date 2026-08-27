@@ -216,7 +216,7 @@ does not. So the fleet lives in the **overview**, one tap deep:
 |---|---|
 | **typing** | the ordinary keyboard; one key badges with the pending count |
 | **overview** | one tile per agent — name + state — everything else blank |
-| **question** | the question across the top row; **one option per full row** below it, the whole row being the button |
+| **question** | the question flowed across the top row; **one option per full row** below it, the whole row being the button |
 
 With exactly one agent waiting the tap goes straight to the question; the
 overview only appears when there is a fleet to choose from. Six status LEDs cost
@@ -224,62 +224,97 @@ six keys forever; six status *keycaps* cost nothing until you ask for them.
 
 ![the three frames](sketches/agent_1_typing.png)
 ![overview](sketches/agent_2_overview.png)
-![question](sketches/agent_3_question.png)
 
-#### The prompt is TEXT, not pictures — and that is a ~12x saving
+#### The prompt is TEXT, not pictures — and that is a ~13x saving
 
-The first cost model uploaded each keycap as an **image**, because that is how
-app overlays work. That was measured on a *toy* prompt (one question, three
-one-word answers) and came out at 22 reports for the overview and 29 for the
-question. Real agent prompts are not that shape: a coding agent asks a
-sentence-length question with **up to four sentence-length options**, which is
-what `tools/ai_agent_scenario.py` now models —
+Two false starts got costed before this one, and both were killed by rendering
+them rather than by reasoning about them:
 
-> *Conflict in `split_sync.c`: both sides changed the retry logic. Resolve how?*
-> 1. Keep ours, drop upstream backoff · 2. Take upstream, keep our retry count ·
-> 3. Show me both sides first · 4. Skip file, continue merge
+1. **One word per cap.** Tidy on a toy prompt (one question, three one-word
+   answers: 29 reports). It does not survive a real one — a 72x40 panel spent on
+   the word "in" leaves nowhere for the other 160 characters, and a 12-cap row
+   holds twelve words.
+2. **The row as one wide two-line display**, filling line 0 across all twelve caps
+   and then line 1. That is what a single strip would do, and it renders *wrong*:
+   the caps are physically separate — and the halves ~20 cm apart — so the eye
+   reads each cap's two lines as a pair. The top row came out as
+   *"The upstr / M menu"*.
 
-— **31 keycaps, 190 characters**. Measured with the host's own encoder
-(`OverlayData`, what `send_smallest_overlay()` consults) that is **68 reports**,
-and because the host sleeps 300 ms after every 15 (`max_hid_message_before_delay`
-/ `delay_time_after_max_hid_messages`) it crosses the throttle **four times**:
-**~1.27 s** before the question is readable. That is the number that kills the
-image path — not the toy 29.
+What works is **flowed prose, cap-major**: each cap is a ~16-character chunk of two
+lines, filled completely before moving to the next, broken at **letter** boundaries
+rather than word boundaries. A glyph is never cut in half — one that would straddle
+a cap edge is pushed to the next cap — so a word splits in the physical gutter,
+where the eye already expects a break. That is 220 characters on a 12-cap row
+instead of twelve words.
+
+So the modelled prompt is one a coding agent would really send —
+
+> *The upstream merge added `-Wunused-but-set-parameter` to `common_rules.mk`. With
+> `-Werror` that fails six DOOM menu callbacks in vendored `m_menu.c`. How should I
+> resolve it?*
+> **1** Demote it in the doom-only `EXTRAFLAGS` block in
+> `keyboards/polykybd/rules.mk`, so our own sources keep the warning · **2** Patch
+> the six `m_menu.c` callbacks to consume the ignored parameter, editing vendored
+> third-party code · **3** Show me the failing output and that `rules.mk` block
+> first · **4** Skip the DOOM pack, finish the merge without it
+
+— **166 characters of question, 480 in total, over 32 caps**. Measured with the
+host's own encoder (`OverlayData`, what `send_smallest_overlay()` consults) that is
+**129 reports**, and because the host sleeps 300 ms after every 15
+(`max_hid_message_before_delay` / `delay_time_after_max_hid_messages`) it crosses
+the throttle **eight times**: **~2.5 s** before the question is readable.
 
 But an agent's question is **words**, and words are what the keyboard renders
 natively: every legend it draws already comes from text plus a font, through
 `kdisp_write_gfx_text_cy()` — which additionally interprets the mini display list
 the shortcut hints use (`HINT_MOVE`, `HINT_FRAME`, `HINT_HALF`, `HINT_RESET` in
-`lang/named_glyphs.h`). The renderer exists; only a command to hand it a string
-is missing.
+`lang/named_glyphs.h`). The renderer exists; only a command to hand it a string is
+missing.
 
 At 59 bytes of payload after a 3-byte header, one report carries ~59 characters —
-so the whole 190-character prompt above is **4 reports**, plus one to commit:
+so all 480 characters are **9 reports**, plus one to commit:
 
 | step | as images (measured) | as text |
 |---|---:|---:|
 | notify — all six agents | n/a | **1** |
 | open -> overview | 22 (1 pause) | **1** |
-| pick -> question, realistic 4-option | 68 (4 pauses, ~1.27 s) | **5** (~5 ms) |
+| pick -> question, realistic 4-option | 129 (8 pauses, ~2.5 s) | **10** (~10 ms) |
 | answer -> back to typing | 2 | **1** |
 
-**12x fewer reports on the frame that matters, and ~250x less wall-clock**,
-because the text path never reaches the 15-report cliff at all. The pre-staging
-trick below stops being necessary — there is no burst left to hide.
+**13x fewer reports on the frame that matters, and ~250x less wall-clock**, because
+the text path never reaches the 15-report cliff at all. Note the image path got
+*worse* as the prompt got realistic (29 -> 129) while the text path scales with
+characters, not caps — which is the actual argument, not the ratio at any one size.
+The pre-staging trick below stops being necessary: there is no burst left to hide.
 
-⚠️ **Two layout rules came out of actually rendering it, not from reasoning:**
+![question](sketches/agent_3_question.png)
+
+⚠️ **Density is a real lever, and it is measured, not guessed.** The default is two
+14 px lines per cap — the firmware's own keycap face (`_Small_`, 15 px) fits about
+the same nine characters across a 72 px panel. `--lines 3` drops to 10 px, which is
+`_Nano_`, the face split42 already ships for its layout name, and buys **469
+characters per row instead of 220** — the whole prompt above then fits on the left
+half alone. It is at the limit of what a keycap diffuser resolves, so it is an
+option rather than the default; try it on hardware before committing to it.
+
+![the same prompt at 3 lines per cap](sketches/agent_3_question_dense.png)
+
+⚠️ **Two more layout rules came out of rendering, not reasoning:**
 
 - **A row belongs to ONE option, across both halves.** The obvious layout is a
-  quadrant — option 1 on the left home row, option 2 on the right home row — and
-  it is unreadable: the halves sit ~20 cm apart, but the eye still reads straight
-  across them, so the two options merge into one sentence. Tried it; scrapped it.
-  A row is one option and the whole row is the button; a short option simply stops
-  part-way (see the picture, where all four fit on the left half) and a long one
-  continues onto the other half.
-- **Four options fit; three read well.** The 4th lands on the thumb cluster, which
-  is rotated and unevenly spaced (see the picture) — legible, but visibly worse
-  than 1-3 on the letter rows. If a prompt has more than four choices, paginate
-  rather than reaching further down.
+  quadrant — option 1 on the left home row, option 2 on the right — and it is
+  unreadable: the halves are far apart but the eye still reads straight across, so
+  the two options merge into one sentence. A row is one option and the whole row is
+  the button; a short option simply stops part-way along it.
+- **Nothing may sit in the MIDDLE of a row.** The agent-name tile started on the AI
+  key at matrix `(6,1)` — the right half's *inner* edge, which is exactly where the
+  eye crosses the gap — and it cut option 1 in half. It belongs at `(5,7)`, the far
+  outer corner, mirroring Esc at `(0,0)`.
+
+⚠️ **Address the rows by MATRIX POSITION, not by keycode.** The layout is physical —
+a row of caps is a line of text, whatever those keys happen to type — and
+`KC_ENTER` appears **twice** in the base keymap, at `(4,6)` and `(7,7)`, so a
+keycode-keyed cell map silently paints one cap with the other's text.
 
 **Streaming falls out for free.** A long question is several reports, and the host
 can send them as the model produces them: the top row fills word by word while

@@ -43,6 +43,25 @@ LAYOUT_NAME = "LAYOUT_left_right_stacked"
 BASE_LAYER = "_L0"
 OLED_W, OLED_H = 72, 40
 FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+FONT_TEXT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+# A row of keycaps read as ONE two-line text strip. Continuous prose is broken at
+# LETTER boundaries, not word boundaries: a real agent question is far too long to
+# spend a whole 72x40 panel on the word "in", and word-per-key wastes most of the
+# row. A glyph is never cut in half -- one that would straddle a key edge is pushed
+# to the next key -- so the split lands in the physical gutter between two caps,
+# which is where the eye already expects a break.
+# Two presets, both measured rather than guessed. 2 lines at 14 px is the safe
+# default -- the firmware's own keycap face (`_Small_`, 15 px) holds about the
+# same 9 characters across a 72 px panel. 3 lines at 10 px matches `_Nano_`, the
+# face split42 uses for its layout name, and buys ~75% more text at the bottom of
+# what is legible through a keycap diffuser.
+FLOW_PAD = 2          # left/right margin inside one cap
+FLOW_PRESETS = {
+    2: (14, (3, 21)),     # px em, ink top per line
+    3: (10, (2, 15, 28)),
+}
+
 
 # Status readouts shown in the "running" still. Sketch values, not measurements.
 RUNNING_VALUES = {"KC_6": "1.2k", "KC_7": "310", "KC_8": "91%", "KC_9": "480", "KC_0": "$0.07"}
@@ -152,6 +171,81 @@ class CapPainter:
     def paint(self, label: str, glyph: str | None = None, invert: bool = False,
               frame: str | None = None, badge: str | None = None) -> Image.Image:
         return self.paint_with_mask(label, glyph, invert, frame, badge)[0]
+
+    # ---------------------------------------------------------------- text flow
+
+    def flow(self, text: str, n_keys: int, marker: str | None = None,
+             lines: int = 2):
+        """Lay ``text`` across ``n_keys`` caps as a 2-line strip; return their buffers.
+
+        Returns ``(buffers, overflow)`` -- ``overflow`` is the tail that did not
+        fit, so a caller can page rather than silently truncate.
+
+        The cursor walks the whole strip in global pixel coordinates. A character
+        that would straddle a cap edge is pushed to the next cap instead of being
+        clipped, which is the only place this differs from ordinary text layout.
+        """
+        pt, bases = FLOW_PRESETS[lines]
+        font = ImageFont.truetype(FONT_TEXT, pt)
+        bufs = [Image.new("L", (OLED_W, OLED_H), 0) for _ in range(n_keys)]
+        draws = [ImageDraw.Draw(b) for b in bufs]
+        indent = [FLOW_PAD] * n_keys
+        if marker and n_keys:
+            self._marker(draws[0], marker)
+            indent[0] = FLOW_PAD + 15
+
+        # CAP-MAJOR, not line-major: fill both lines of one cap, then move to the
+        # next. Filling line 0 across the whole row first is what a single wide
+        # display would do, and it renders WRONG here -- the caps are physically
+        # separated (and the halves by ~20 cm), so the eye reads each cap's two
+        # lines as a pair and the sentence comes out shuffled. Tried it; the top
+        # row read "The upstr / M menu". Each cap is its own ~16-char chunk.
+        k, line, x = 0, 0, indent[0]
+        i = 0
+        while i < len(text):
+            ch = text[i]
+            w = font.getlength(ch)
+            if x + w > OLED_W - FLOW_PAD:               # this cap's line is full
+                line += 1
+                if line >= len(bases):                   # this cap is full
+                    line = 0
+                    k += 1
+                    if k >= n_keys:
+                        break
+                x = indent[k] if (line == 0) else FLOW_PAD
+                if ch == " ":                            # no leading space on a line
+                    i += 1
+                    continue
+            draws[k].text((x, bases[line] - self._top(draws[k], ch, font)),
+                          ch, font=font, fill=255)
+            x += w
+            i += 1
+        return bufs, text[i:]
+
+    @staticmethod
+    def _top(d, ch, font):
+        """Ink-top offset, so every character sits on ONE baseline.
+
+        Without it PIL anchors each character at its own bbox top and the line
+        turns into a staircase -- 'a' riding as high as 'l'.
+        """
+        return d.textbbox((0, 0), "Ag", font=font)[1]
+
+    def _marker(self, d, marker: str):
+        """The option number: a knocked-out digit, so it reads as a list bullet."""
+        d.rounded_rectangle([1, 1, 13, 14], radius=3, fill=255)
+        f = ImageFont.truetype(FONT_BOLD, 11)
+        b = d.textbbox((0, 0), marker, font=f)
+        d.text((7 - (b[2] - b[0]) / 2 - b[0], 8 - (b[3] - b[1]) / 2 - b[1]),
+               marker, font=f, fill=0)
+
+    def from_buffer(self, buf: Image.Image, invert: bool = False):
+        """(RGB cell, 1-bit mask) for a buffer ``flow()`` produced."""
+        mask = buf.point(lambda v: 255 if v >= 110 else 0).convert("1")
+        fg, bgc = (self.bg, self.on) if invert else (self.on, self.bg)
+        rgb = Image.new("RGB", (OLED_W, OLED_H), bgc)
+        rgb.paste(Image.new("RGB", (OLED_W, OLED_H), fg), (0, 0), mask)
+        return rgb, mask
 
     def paint_with_mask(self, label: str, glyph: str | None = None,
                         invert: bool = False, frame: str | None = None,

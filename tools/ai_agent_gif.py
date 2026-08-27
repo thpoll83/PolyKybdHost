@@ -25,6 +25,8 @@ import json
 import os
 import sys
 
+from PIL import Image
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
 HOME = os.path.dirname(HOST_REPO)
@@ -35,8 +37,9 @@ from kle_render import KeyContent, KleRenderer, Theme                      # noq
 from ai_layer_demo import CapPainter, parse_layout_matrix, parse_layer_keycodes  # noqa: E402
 from ai_agent_demo import legend_for                                       # noqa: E402
 
-from ai_agent_scenario import (ROUNDS, ROW_QUESTION, OPTION_ROWS,   # noqa: E402
-                               AGENT_KEY, CANCEL_KEY)
+from ai_agent_scenario import (ROUNDS, AGENT_POS, CANCEL_POS,       # noqa: E402
+                               WHO_POS, prompt_cells, option_positions,
+                               check_fits)
 
 
 def build(matrix_kc, painter):
@@ -46,6 +49,9 @@ def build(matrix_kc, painter):
         for mp, item in spec.items():
             if item is None:
                 out[mp] = KeyContent(dim=True)
+                continue
+            if isinstance(item, tuple) and isinstance(item[0], Image.Image):
+                out[mp] = KeyContent(image=painter.from_buffer(item[0], item[1])[0])
                 continue
             label, frame, badge, invert = item
             out[mp] = KeyContent(image=painter.paint(label, None, invert=invert,
@@ -57,44 +63,36 @@ def build(matrix_kc, painter):
         spec = {}
         for mp, kc in matrix_kc.items():
             base = legend_for(kc)
-            if kc == AGENT_KEY:
-                spec[mp] = ("AI", None, badge, kc == pressed)
+            if mp == AGENT_POS:
+                spec[mp] = ("AI", None, badge, mp == pressed)
             elif base is not None:
-                spec[mp] = (base, None, None, kc == pressed)
+                spec[mp] = (base, None, None, mp == pressed)
             else:
                 spec[mp] = None
         return render(spec)
 
-    def lay_out(text, keys):
-        """One word per key, wrapping onto the next key; long words shrink to fit."""
-        return dict(zip(keys, text.split()))
+    def prompt(q=None, q_chars=None, who=None, options=(), pressed=None):
+        """The board as a dialog, with the prompt flowed across whole rows.
 
-    def prompt(q_words=None, who=None, options=(), pressed=None):
-        """The board as a dialog.
-
-        `q_words` limits how much of the question has arrived (streaming);
-        `options` are whole sentences, each laid across its own row.
+        `q_chars` limits how many CHARACTERS of the question have arrived, so the
+        strip fills like a terminal line rather than word by word -- which is what
+        a token stream actually looks like.
         """
-        cells, badges = {}, {}
-        if q_words is not None:
-            for key, word in zip(ROW_QUESTION, q_words.split()):
-                cells[key] = word
-        pressed_keys = set()
-        for i, text in enumerate(options):
-            row = OPTION_ROWS[i]
-            placed = lay_out(text, row)
-            cells.update(placed)
-            if row:
-                badges[row[0]] = str(i + 1)
-            if pressed == i:
-                pressed_keys |= set(placed)          # the whole row IS the button
+        cells = prompt_cells(painter, q or "", options, q_chars=q_chars)
+        # The whole ROW is the button, but only light the caps that carry ink:
+        # inverting a blank 72x40 panel turns it fully white, and a run of solid
+        # white blocks past the end of a short option reads as an error, not as
+        # feedback.
+        lit = {mp for mp in option_positions(pressed)
+               if cells.get(mp) is not None and cells[mp].getbbox()} \
+            if pressed is not None else set()
         spec = {}
-        for mp, kc in matrix_kc.items():
-            if kc in cells:
-                spec[mp] = (cells[kc], None, badges.get(kc), kc in pressed_keys)
-            elif kc == CANCEL_KEY and options:
+        for mp in matrix_kc:
+            if mp in cells:
+                spec[mp] = (cells[mp], mp in lit)
+            elif mp == CANCEL_POS and options:
                 spec[mp] = ("esc", None, None, False)
-            elif kc == AGENT_KEY and who:
+            elif mp == WHO_POS and who:
                 spec[mp] = (who, None, None, False)
             else:
                 spec[mp] = None
@@ -116,20 +114,21 @@ def storyboard(typing, prompt):
     add(typing(badge="1"), 1100, "badge-rests")                          # ...then just sits there
 
     for i, rnd in enumerate(ROUNDS):
-        add(typing(badge=str(len(ROUNDS) - i), pressed=AGENT_KEY), 220, f"r{i}-tap")
+        add(typing(badge=str(len(ROUNDS) - i), pressed=AGENT_POS), 220, f"r{i}-tap")
         add(prompt("", who=rnd["who"]), 140, f"r{i}-clear")
-        words = rnd["q"].split()
-        # The question streams in a few words at a time — the model's own cadence.
-        for n in range(3, len(words) + 1, 3):
-            add(prompt(" ".join(words[:n]), who=rnd["who"]), 300, f"r{i}-q{n}")
-        add(prompt(rnd["q"], who=rnd["who"]), 500, f"r{i}-qfull")
+        # The question streams in a chunk of characters at a time — a token stream
+        # arrives mid-word, so the strip grows mid-word too.
+        q = rnd["q"]
+        for n in range(24, len(q), 24):
+            add(prompt(q, q_chars=n, who=rnd["who"]), 190, f"r{i}-q{n}")
+        add(prompt(q, who=rnd["who"]), 600, f"r{i}-qfull")
         # then the options land, one row at a time
         for n in range(1, len(rnd["options"]) + 1):
-            add(prompt(rnd["q"], who=rnd["who"], options=rnd["options"][:n]),
-                420, f"r{i}-opt{n}")
-        add(prompt(rnd["q"], who=rnd["who"], options=rnd["options"]), 2600, f"r{i}-read")
-        add(prompt(rnd["q"], who=rnd["who"], options=rnd["options"],
-                   pressed=rnd["press"]), 420, f"r{i}-answer")
+            add(prompt(q, who=rnd["who"], options=rnd["options"][:n]),
+                460, f"r{i}-opt{n}")
+        add(prompt(q, who=rnd["who"], options=rnd["options"]), 4200, f"r{i}-read")
+        add(prompt(q, who=rnd["who"], options=rnd["options"],
+                   pressed=rnd["press"]), 460, f"r{i}-answer")
         add(prompt("", who=rnd["who"]), 160, f"r{i}-done")
         if i == 0:
             add(typing(), 900, "back-to-typing")          # between rounds
@@ -174,7 +173,10 @@ def main():
     renderer.compact_halves(lambda mp: 'L' if int(mp.split(',')[0]) < 5 else 'R',
                             gap_px=args.gap)
 
-    typing, prompt = build(matrix_kc, CapPainter(theme))
+    painter = CapPainter(theme)
+    for problem in check_fits(painter):     # silent truncation is the
+        print(f"  WARNING: {problem}")      # failure a mockup hides best
+    typing, prompt = build(matrix_kc, painter)
     seq = storyboard(typing, prompt)
     frames = [f for f, _, _ in seq]
     durations = [d for _, d, _ in seq]

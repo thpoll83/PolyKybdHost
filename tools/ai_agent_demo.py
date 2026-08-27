@@ -42,8 +42,9 @@ from ai_layer_demo import (CapPainter, parse_layout_matrix,                # noq
 from polyhost.device.device_settings import DeviceSettings                 # noqa: E402
 from polyhost.device.overlay_data import OverlayData                       # noqa: E402
 
-from ai_agent_scenario import (AGENT_KEY, CANCEL_KEY, ROW_QUESTION,     # noqa: E402
-                               OPTION_ROWS, AGENT_TILES, AGENTS, ASKING, ROUNDS)
+from ai_agent_scenario import (AGENT_POS, CANCEL_POS, WHO_POS,          # noqa: E402
+                               AGENT_TILES, AGENTS, ASKING, ROUNDS,
+                               prompt_cells, check_fits)
 
 ROUND = ROUNDS[0]          # the frame the cost model measures
 
@@ -75,7 +76,7 @@ def legend_for(kc: str) -> str | None:
 NO_ANSWER_FRAME = False
 
 
-def frames(matrix_kc, painter):
+def frames(matrix_kc, painter, lines=2):
     """Build the three states as {matrix_pos: (KeyContent, 72x40 bool array|None)}.
 
     The array is kept beside the rendered cell so the same pixels that go into the
@@ -87,16 +88,13 @@ def frames(matrix_kc, painter):
         return img
 
     typing, overview, question = {}, {}, {}
-    q_cells = dict(zip(ROW_QUESTION, ROUND["q"].split()))
-    q_badges = {}
-    for i, opt in enumerate(ROUND["options"]):
-        q_cells.update(dict(zip(OPTION_ROWS[i], opt.split())))
-        if OPTION_ROWS[i]:
-            q_badges[OPTION_ROWS[i][0]] = str(i + 1)
+    # The prompt is FLOWED prose, so each cap is a pre-rendered slice of a row
+    # strip rather than a word -- see ai_agent_scenario for why.
+    q_cells = prompt_cells(painter, ROUND["q"], ROUND["options"], lines=lines)
     for mp, kc in matrix_kc.items():
         base = legend_for(kc)
         # --- 1. typing: the ordinary board, plus one badge
-        if kc == AGENT_KEY:
+        if mp == AGENT_POS:
             typing[mp] = ("AI", None, None, "1")      # legend + bottom-right badge
         elif base is not None:
             typing[mp] = (base, None, None, None)
@@ -104,21 +102,21 @@ def frames(matrix_kc, painter):
             typing[mp] = None
 
         # --- 2. overview: one tile per pending agent, everything else blank
-        if kc in AGENT_TILES:
-            name, state = AGENTS[AGENT_TILES.index(kc)]
-            asking = AGENT_TILES.index(kc) == ASKING
+        if mp in AGENT_TILES:
+            name, state = AGENTS[AGENT_TILES.index(mp)]
+            asking = AGENT_TILES.index(mp) == ASKING
             overview[mp] = (f"{name}\n{state}", None, "cap" if asking else None, None)
-        elif kc == CANCEL_KEY:
+        elif mp == CANCEL_POS:
             overview[mp] = ("esc", None, None, None)
         else:
             overview[mp] = None
 
-        # --- 3. question: one line per row, one word per key
-        if kc in q_cells:
-            question[mp] = (q_cells[kc], None, None, q_badges.get(kc))
-        elif kc == CANCEL_KEY:
+        # --- 3. question: one option per row, flowed across its caps
+        if mp in q_cells:
+            question[mp] = q_cells[mp]
+        elif mp == CANCEL_POS:
             question[mp] = ("esc", None, None, None)
-        elif kc == AGENT_KEY:
+        elif mp == WHO_POS:
             question[mp] = (ROUND["who"], None, None, None)
         else:
             question[mp] = None
@@ -133,8 +131,11 @@ def to_state(spec, painter):
         if item is None:
             content[mp] = KeyContent(dim=True)
             continue
-        label, glyph, frame, badge = item
-        rgb, mask = painter.paint_with_mask(label, glyph, frame=frame, badge=badge)
+        if isinstance(item, Image.Image):        # a flowed prose slice
+            rgb, mask = painter.from_buffer(item)
+        else:
+            label, glyph, frame, badge = item
+            rgb, mask = painter.paint_with_mask(label, glyph, frame=frame, badge=badge)
         content[mp] = KeyContent(image=rgb)
         arrays[mp] = np.array(mask, dtype=bool)
     return content, arrays
@@ -168,6 +169,9 @@ def main():
     ap.add_argument('--gap', type=int, default=28)
     ap.add_argument('--margin', type=int, default=12)
     ap.add_argument('--exclude', default='3,7;8,0')
+    ap.add_argument('--lines', type=int, default=2, choices=(2, 3),
+                    help='text lines per cap: 2 (14 px, ~220 chars/row) or '
+                         '3 (10 px, ~469) -- see FLOW_PRESETS')
     ap.add_argument('--detail', action='store_true', help='per-keycap encoding')
     ap.add_argument('--no-answer-frame', action='store_true',
                     help='drop the border chrome on the answer keys (cost experiment)')
@@ -190,6 +194,8 @@ def main():
 
     theme = Theme()
     painter = CapPainter(theme)
+    for problem in check_fits(painter, args.lines):     # silent truncation is the
+        print(f"  WARNING: {problem}")      # failure a mockup hides best
     renderer = KleRenderer(json.load(open(args.kle, encoding='utf-8')),
                            unit=args.unit, theme=theme, margin=args.margin,
                            exclude={m.strip() for m in args.exclude.split(';') if m.strip()})
@@ -198,7 +204,7 @@ def main():
 
     settings = DeviceSettings()
     os.makedirs(args.out_dir, exist_ok=True)
-    specs = frames(matrix_kc, painter)
+    specs = frames(matrix_kc, painter, args.lines)
     names = ("agent_1_typing", "agent_2_overview", "agent_3_question")
     costs = []
     for spec, name in zip(specs, names):
