@@ -1126,6 +1126,93 @@ class PolyCore(Observable):
         return self._device_call(
             "glyph_size_get", lambda c: self.keeb.get_glyph_size())
 
+    # --- dynamic macros ---------------------------------------------------
+    #
+    # Deliberately whole-buffer rather than per-macro: the bodies share one NUL
+    # delimited buffer, so writing macro 3 means rewriting everything after it. Reading
+    # it, editing in memory and writing it back is the only shape that cannot corrupt a
+    # neighbour, and at ~2 KB it is a handful of reports either way.
+
+    def macro_list(self):
+        """Every macro: label, decoded steps, and the plain text when it is text.
+
+        One call, because an editor needs all of it to draw a list and the alternative
+        is sixteen round trips through the worker for something that is two reads.
+        """
+        from polyhost.services import macro_body
+
+        ok, info = self._device_call("macro_info", lambda c: self.keeb.get_macro_info())
+        if not ok:
+            return False, info
+        ok, buf = self._device_call(
+            "macro_read", lambda c, n=info["capacity"]: self.keeb.read_macro_buffer(n))
+        if not ok:
+            return False, buf
+        bodies = macro_body.split_buffer(buf, info["count"])
+        macros = []
+        for i, body in enumerate(bodies):
+            ok_l, label = self._device_call(
+                "macro_label_get", lambda c, i=i: self.keeb.get_macro_label(i))
+            steps = macro_body.decode(body)
+            macros.append({
+                "id": i,
+                "label": label if ok_l else "",
+                "bytes": len(body),
+                "text": macro_body.to_text(steps),
+                "steps": [{"kind": s.kind, "code": s.code, "ms": s.ms} for s in steps],
+            })
+        return True, {**info, "macros": macros}
+
+    def macro_set(self, macro_id, *, text=None, steps=None, label=None):
+        """Replace one macro's body and/or label.
+
+        `text` and `steps` are alternatives; passing neither leaves the body alone,
+        which is how a label-only edit avoids re-streaming the whole buffer.
+        """
+        from polyhost.services import macro_body
+
+        try:
+            macro_id = int(macro_id)
+        except (TypeError, ValueError):
+            return False, f"Invalid macro id: {macro_id!r}"
+
+        if text is not None or steps is not None:
+            ok, info = self._device_call("macro_info", lambda c: self.keeb.get_macro_info())
+            if not ok:
+                return False, info
+            if not 0 <= macro_id < info["count"]:
+                return False, f"macro {macro_id} out of range (0..{info['count'] - 1})"
+            ok, buf = self._device_call(
+                "macro_read", lambda c, n=info["capacity"]: self.keeb.read_macro_buffer(n))
+            if not ok:
+                return False, buf
+            bodies = macro_body.split_buffer(buf, info["count"])
+            try:
+                if steps is not None:
+                    bodies[macro_id] = macro_body.encode_steps(
+                        [macro_body.Step(**s) for s in steps])
+                else:
+                    bodies[macro_id] = macro_body.encode_text(text)
+                packed = macro_body.join_buffer(bodies, info["capacity"])
+            except (macro_body.MacroError, TypeError) as e:
+                return False, str(e)
+            ok, msg = self._device_call(
+                "macro_write", lambda c, d=packed: self.keeb.write_macro_buffer(d))
+            if not ok:
+                return False, msg
+
+        if label is not None:
+            ok, msg = self._device_call(
+                "macro_label_set",
+                lambda c, i=macro_id, s=label: self.keeb.set_macro_label(i, s))
+            if not ok:
+                return False, msg
+        return True, "ok"
+
+    def macro_clear(self, macro_id):
+        """Empty one macro's body and label."""
+        return self.macro_set(macro_id, text="", label="")
+
     def replay_startup_anim(self):
         return self._device_call(
             "replay_startup_anim", lambda c: self.keeb.replay_startup_anim())

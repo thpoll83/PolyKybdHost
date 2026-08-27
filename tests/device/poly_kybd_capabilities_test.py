@@ -14,6 +14,7 @@ from unittest.mock import MagicMock
 from polyhost.device.poly_kybd import (
     PolyKybd, protocol_supports, FEATURE_MIN_PROTOCOL, MIN_SUPPORTED_PROTOCOL,
     OVERLAY_PACKED_HEADER_MIN_PROTOCOL, GLYPH_SIZE_MIN_PROTOCOL,
+    MACRO_MIN_PROTOCOL,
 )
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.command_ids import HidId, Cmd, GlyphScript, GlyphSize
@@ -229,3 +230,108 @@ class TestGlyphSize(unittest.TestCase):
         self.assertEqual(GlyphSize.SMALL.value, 0)
         self.assertEqual(GlyphScript.STANDARD.value, 0)
         self.assertEqual(max(s.value for s in GlyphSize), 2)
+
+
+class MacroCapabilityTest(unittest.TestCase):
+    """Macros are three commands behind ONE gate (cmds 35/36/37, protocol v14+).
+
+    All three go through the same ``supports("macros")`` check, because a host that
+    could read the info header but not the bodies would render an editor over data it
+    cannot fetch -- worse than a cleanly disabled tab.
+    """
+
+    def _keeb(self, protocol):
+        keeb = PolyKybd(DeviceSettings(), PolySettings())
+        keeb.protocol_version = protocol
+        keeb.hid = MagicMock()
+        return keeb
+
+    def test_feature_threshold(self):
+        self.assertEqual(FEATURE_MIN_PROTOCOL["macros"], MACRO_MIN_PROTOCOL)
+        self.assertFalse(protocol_supports(MACRO_MIN_PROTOCOL - 1, "macros"))
+        self.assertTrue(protocol_supports(MACRO_MIN_PROTOCOL, "macros"))
+
+    def test_every_macro_command_refuses_without_touching_the_device(self):
+        """The gate must fail BEFORE any I/O, on all three commands. Gating only the
+        writer would let the editor load a list from a keyboard that cannot save it."""
+        keeb = self._keeb(MACRO_MIN_PROTOCOL - 1)
+        for call in (lambda: keeb.get_macro_info(),
+                     lambda: keeb.read_macro_buffer(64),
+                     lambda: keeb.write_macro_buffer(b"\0"),
+                     lambda: keeb.get_macro_label(0),
+                     lambda: keeb.set_macro_label(0, "x")):
+            with self.subTest(call=call):
+                ok, msg = call()
+                self.assertFalse(ok)
+                self.assertIn("too old", msg)
+        keeb.hid.send_and_read_validate.assert_not_called()
+
+    def test_info_decodes_the_header(self):
+        keeb = self._keeb(MACRO_MIN_PROTOCOL)
+        # count, label stride, capacity LE, used LE
+        keeb.hid.send_and_read_validate.return_value = (True, bytes(
+            [ord("P"), Cmd.MACRO_INFO.value, ord("."), 16, 12, 0xDB, 0x08, 0x2A, 0x01]))
+        ok, info = keeb.get_macro_info()
+        self.assertTrue(ok)
+        self.assertEqual(info, {"count": 16, "label_len": 12,
+                                "capacity": 2267, "used": 298})
+
+    def test_a_short_reply_is_not_read_as_a_header(self):
+        """Reading past a truncated reply would hand back a capacity of whatever
+        followed it -- and the editor sizes its storage bar from that number."""
+        keeb = self._keeb(MACRO_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.MACRO_INFO.value, ord("."), 16]))
+        ok, _ = keeb.get_macro_info()
+        self.assertFalse(ok)
+
+    def test_a_nacked_reply_is_not_read_as_a_header(self):
+        keeb = self._keeb(MACRO_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (True, bytes(
+            [ord("P"), Cmd.MACRO_INFO.value, ord("!"), 9, 9, 9, 9, 9, 9]))
+        ok, _ = keeb.get_macro_info()
+        self.assertFalse(ok)
+
+    def test_label_set_drops_what_the_face_cannot_draw(self):
+        """The _Nano_ face is 0x20..0x7E. Sending a character it cannot draw would
+        make the keycap show less than the user typed, which reads as a bug."""
+        keeb = self._keeb(MACRO_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (True, bytes(
+            [ord("P"), Cmd.MACRO_LABEL.value, ord("."), 4]) + b"caf ")
+        ok, _ = keeb.set_macro_label(0, "caf\u00e9 \u2764")
+        self.assertTrue(ok)
+        report = keeb.hid.send_and_read_validate.call_args.args[0]
+        self.assertEqual(bytes(report[4:]), b"caf ")
+        self.assertEqual(report[3], 4)   # the length must match what was sent
+
+    def test_body_read_walks_the_buffer_in_windows(self):
+        keeb = self._keeb(MACRO_MIN_PROTOCOL)
+        chunk = keeb.MACRO_BODY_CHUNK
+
+        def reply(cmd, *_a, **_k):
+            want = cmd[5]
+            return True, bytes([ord("P"), Cmd.MACRO_BODY.value, ord("."), want, 0, 0]) + bytes(want)
+
+        keeb.hid.send_and_read_validate.side_effect = reply
+        ok, data = keeb.read_macro_buffer(chunk + 5)
+        self.assertTrue(ok)
+        self.assertEqual(len(data), chunk + 5)
+        # Two reports: a full window then the remainder, with the offset advancing.
+        offsets = [c.args[0][3] | (c.args[0][4] << 8)
+                   for c in keeb.hid.send_and_read_validate.call_args_list]
+        self.assertEqual(offsets, [0, chunk])
+
+    def test_a_read_that_returns_nothing_stops_rather_than_spinning(self):
+        """A zero-length window would leave the offset where it was, so a naive loop
+        would re-request it forever."""
+        keeb = self._keeb(MACRO_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.MACRO_BODY.value, ord("."), 0, 0, 0]))
+        ok, msg = keeb.read_macro_buffer(128)
+        self.assertFalse(ok)
+        self.assertIn("nothing", msg)
+
+    def test_command_ids_match_the_firmware(self):
+        self.assertEqual(Cmd.MACRO_INFO.value, 35)
+        self.assertEqual(Cmd.MACRO_BODY.value, 36)
+        self.assertEqual(Cmd.MACRO_LABEL.value, 37)

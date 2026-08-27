@@ -98,7 +98,7 @@ class KbLayoutDialog(QMainWindow):
         self.view = ZoomableGraphicsView(zoom_callback=self.zoom)
         self.view.setScene(self.scene)
 
-        self.keycode_browser = KeycodeBrowser()
+        self.keycode_browser = KeycodeBrowser(core=self.core)
         self.keycode_browser.keycodeSelected.connect(self.keycodeSelected)
 
         success, num_layers = self.core.keymap_layer_count()

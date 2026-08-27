@@ -339,6 +339,70 @@ def _cmd_glyph_size(client, args):
     return 0
 
 
+def _macro_summary(m, label_len):
+    """One line per macro: what it is called, what it types, what it costs."""
+    label = m["label"] or "-"
+    if m["text"] is not None:
+        what = repr(m["text"]) if m["text"] else "(empty)"
+    else:
+        # Not expressible as text -- show the shape rather than pretending.
+        kinds = ", ".join(f"{s['kind']}" for s in m["steps"][:4])
+        more = "..." if len(m["steps"]) > 4 else ""
+        what = f"<{len(m['steps'])} steps: {kinds}{more}>"
+    return f"M{m['id']:<3} {label:<{label_len}}  {m['bytes']:>4}B  {what}"
+
+
+def _cmd_macro(client, args):
+    action = args.macro_action or "list"
+
+    if action == "list":
+        info = client.call(protocol.M_MACRO_LIST, {})
+        width = max([len(m["label"]) for m in info["macros"]] + [5])
+        for m in info["macros"]:
+            print(_macro_summary(m, width))
+        pct = (100 * info["used"] // info["capacity"]) if info["capacity"] else 0
+        print(f"\n{info['used']} of {info['capacity']} bytes used ({pct}%) "
+              f"across {info['count']} macros; labels up to {info['label_len']} chars")
+        return 0
+
+    if action == "get":
+        info = client.call(protocol.M_MACRO_LIST, {})
+        for m in info["macros"]:
+            if m["id"] == args.id:
+                print(f"label: {m['label']!r}")
+                if m["text"] is not None:
+                    print(f"text:  {m['text']!r}")
+                else:
+                    for i, s in enumerate(m["steps"]):
+                        detail = f"{s['ms']} ms" if s["kind"] == "delay" else f"{s['code']:#04x}"
+                        print(f"  {i:>3} {s['kind']:<6} {detail}")
+                print(f"bytes: {m['bytes']}")
+                return 0
+        print(f"no macro {args.id}", file=sys.stderr)
+        return 1
+
+    if action == "set":
+        params = {"id": args.id}
+        if args.text is not None:
+            params["text"] = args.text
+        if args.label is not None:
+            params["label"] = args.label
+        if len(params) == 1:
+            print("nothing to set: pass --text and/or --label", file=sys.stderr)
+            return 1
+        client.call(protocol.M_MACRO_SET, params)
+        print(f"macro {args.id} updated")
+        return 0
+
+    if action == "clear":
+        client.call(protocol.M_MACRO_CLEAR, {"id": args.id})
+        print(f"macro {args.id} cleared")
+        return 0
+
+    print(f"unknown macro action {action!r}", file=sys.stderr)
+    return 1
+
+
 def _cmd_unicode_mode(client, args):
     """Re-detect the host's unicode input method and re-push it to the keyboard.
 
@@ -772,6 +836,21 @@ def build_parser():
              "'medium'/'large' draw a key's main legend bigger (latin only, and "
              "they need the latinbig font-pack bundle)")
     p_glyph_size.set_defaults(func=_cmd_glyph_size)
+
+    p_macro = sub.add_parser(
+        "macro", help="list, read, write or clear the keyboard's macros (firmware v14+)")
+    p_macro.add_argument(
+        "macro_action", nargs="?", choices=["list", "get", "set", "clear"], default="list",
+        help="omit to list every macro with its label, size and contents")
+    p_macro.add_argument("id", nargs="?", type=int, default=0,
+                         help="which macro (0-based); unused by 'list'")
+    p_macro.add_argument("--text", default=None,
+                         help="what the macro types. Printable ASCII, tab and newline "
+                              "only -- the keyboard sends keycodes, not Unicode")
+    p_macro.add_argument("--label", default=None,
+                         help="the keycap legend. Truncated by pixel width, not by "
+                              "character count, so a wide word fits fewer letters")
+    p_macro.set_defaults(func=_cmd_macro)
 
     p_unicode = sub.add_parser(
         "unicode-mode",

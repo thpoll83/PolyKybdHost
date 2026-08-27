@@ -389,6 +389,21 @@ class RemoteCore(Observable):
         return self._device(p.M_KEYMAP_SET, {
             "layer": layer, "row": row, "col": col, "keycode": keycode})
 
+    # Macros go over RPC like everything else the layout editor drives, so the Macros
+    # tab works in client mode -- which is the DEFAULT under daemon-by-default, so a
+    # device-coupled surface that only worked in-process would be unreachable out of
+    # the box.
+    def macro_list(self):
+        return self._device(p.M_MACRO_LIST)
+
+    def macro_set(self, macro_id, *, text=None, steps=None, label=None):
+        return self._device(p.M_MACRO_SET, {
+            "id": macro_id, "text": text, "steps": steps, "label": label,
+        })
+
+    def macro_clear(self, macro_id):
+        return self._device(p.M_MACRO_CLEAR, {"id": macro_id})
+
     # -- commands / firmware / update --------------------------------------
     def execute_commands(self, lines):
         try:

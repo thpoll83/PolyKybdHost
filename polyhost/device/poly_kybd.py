@@ -58,6 +58,7 @@ GUI_COMBO_MODIFIERS_MIN_PROTOCOL = 12
 
 # Minimum firmware PROTOCOL_VERSION for the keycap legend-size command (cmd 34).
 GLYPH_SIZE_MIN_PROTOCOL = 13
+MACRO_MIN_PROTOCOL = 14
 
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
@@ -74,6 +75,7 @@ FEATURE_MIN_PROTOCOL = {
     "overlay_packed_header": OVERLAY_PACKED_HEADER_MIN_PROTOCOL,
     "gui_combo_modifiers": GUI_COMBO_MODIFIERS_MIN_PROTOCOL,
     "glyph_size": GLYPH_SIZE_MIN_PROTOCOL,
+    "macros": MACRO_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -524,6 +526,110 @@ class PolyKybd:
         except Exception:
             pass
         return False, 0
+
+    # ---------------------------------------------------------------------
+    # Dynamic macros (cmds 35/36/37, protocol v14+)
+
+    def _macros_supported(self) -> bool:
+        return self.supports("macros")
+
+    def _macro_unsupported(self) -> tuple[bool, str]:
+        return False, (
+            f"Firmware protocol too old for macros (need v{MACRO_MIN_PROTOCOL}+). "
+            f"Please update the PolyKybd firmware.")
+
+    def get_macro_info(self) -> tuple[bool, Any]:
+        """Header the editor needs before it can lay anything out (cmd 35).
+
+        Returns {count, label_len, capacity, used}. `capacity` and `used` are what make
+        the shared-storage bar honest: the bodies share one buffer, so a long macro
+        takes room from the others and that has to be visible before a save fails.
+        """
+        if not self._macros_supported():
+            return self._macro_unsupported()
+        ok, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.MACRO_INFO), 200, expect(Cmd.MACRO_INFO))
+        if not ok or len(reply) < 9 or reply[2:3] != b'.':
+            return False, "no reply to the macro info request"
+        return True, {
+            "count": reply[3],
+            "label_len": reply[4],
+            "capacity": reply[5] | (reply[6] << 8),
+            "used": reply[7] | (reply[8] << 8),
+        }
+
+    # 6 header bytes (report id, cmd, sub, offset lo, offset hi, count) out of 64.
+    MACRO_BODY_CHUNK = 58
+
+    def read_macro_buffer(self, capacity: int) -> tuple[bool, Any]:
+        """Read the whole shared body buffer, one report-sized window at a time."""
+        if not self._macros_supported():
+            return self._macro_unsupported()
+        out = bytearray()
+        while len(out) < capacity:
+            want = min(self.MACRO_BODY_CHUNK, capacity - len(out))
+            offset = len(out)
+            ok, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.MACRO_BODY, 0, offset & 0xFF, (offset >> 8) & 0xFF, want),
+                200, expect(Cmd.MACRO_BODY))
+            if not ok or len(reply) < 6 or reply[2:3] != b'.':
+                return False, f"macro buffer read failed at offset {offset}"
+            got = reply[3]
+            if got == 0:
+                return False, f"macro buffer read returned nothing at offset {offset}"
+            out += reply[6:6 + got]
+        return True, bytes(out[:capacity])
+
+    def write_macro_buffer(self, data: bytes) -> tuple[bool, Any]:
+        """Write the whole shared body buffer.
+
+        ⚠️ The LAST byte must be NUL and is what marks the write complete -- the
+        firmware refuses to play a buffer whose final byte is not zero, which is what
+        stops a half-streamed macro from typing an arbitrary prefix of someone's
+        password. join_buffer() zero-fills to capacity, so that holds by construction;
+        do not "optimise" the trailing zeros away.
+        """
+        if not self._macros_supported():
+            return self._macro_unsupported()
+        offset = 0
+        while offset < len(data):
+            chunk = data[offset:offset + self.MACRO_BODY_CHUNK]
+            cmd = compose_cmd(Cmd.MACRO_BODY, 1, offset & 0xFF, (offset >> 8) & 0xFF, len(chunk))
+            cmd.extend(chunk)
+            ok, reply = self.hid.send_and_read_validate(cmd, 200, expect(Cmd.MACRO_BODY))
+            if not ok or len(reply) < 3 or reply[2:3] != b'.':
+                return False, f"macro buffer write failed at offset {offset}"
+            offset += len(chunk)
+        return True, offset
+
+    def get_macro_label(self, macro_id: int) -> tuple[bool, Any]:
+        """Read one macro's keycap label (cmd 37)."""
+        if not self._macros_supported():
+            return self._macro_unsupported()
+        ok, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.MACRO_LABEL, macro_id, 0xFF), 200, expect(Cmd.MACRO_LABEL))
+        if not ok or len(reply) < 4 or reply[2:3] != b'.':
+            return False, f"no reply for macro {macro_id}'s label"
+        n = reply[3]
+        return True, reply[4:4 + n].decode("ascii", errors="replace")
+
+    def set_macro_label(self, macro_id: int, text: str) -> tuple[bool, Any]:
+        """Set one macro's keycap label (cmd 37).
+
+        The firmware drops anything outside 0x20..0x7E, because the _Nano_ face cannot
+        draw it and a keycap silently showing less than you typed reads as a bug. Doing
+        the same here means the reply can be compared against what was asked for.
+        """
+        if not self._macros_supported():
+            return self._macro_unsupported()
+        clean = "".join(c for c in text if 0x20 <= ord(c) <= 0x7E)
+        cmd = compose_cmd(Cmd.MACRO_LABEL, macro_id, len(clean))
+        cmd.extend(clean.encode("ascii"))
+        ok, reply = self.hid.send_and_read_validate(cmd, 200, expect(Cmd.MACRO_LABEL))
+        if not ok or len(reply) < 3 or reply[2:3] != b'.':
+            return False, f"the keyboard refused macro {macro_id}'s label"
+        n = reply[3]
+        return True, reply[4:4 + n].decode("ascii", errors="replace")
 
     def replay_startup_anim(self) -> tuple[bool, Any]:
         """Replay the one-time startup ("Eden") animation on demand (cmd 31).

@@ -233,6 +233,61 @@ class PolyKybdMock:
         self._log_call("get_glyph_size")
         return True, getattr(self, "_glyph_size", 0)
 
+    # --- dynamic macros ---------------------------------------------------
+    # Backed by a real byte buffer, not a dict of strings: the whole point of the
+    # host-side encoding is the NUL-delimited packing, and a mock that stored macros
+    # as separate strings would let a packing bug through untouched.
+    MACRO_COUNT = 16
+    MACRO_LABEL_LEN = 12
+    MACRO_CAPACITY = 2267
+
+    def _macro_buf(self) -> bytearray:
+        if not hasattr(self, "_macros"):
+            self._macros = bytearray(self.MACRO_CAPACITY)
+            self._macro_labels = [""] * self.MACRO_COUNT
+        return self._macros
+
+    def get_macro_info(self) -> tuple[bool, dict]:
+        self._log_call("get_macro_info")
+        buf = self._macro_buf()
+        used = 0
+        for i, b in enumerate(buf):
+            if b:
+                used = i + 2
+        return True, {
+            "count": self.MACRO_COUNT,
+            "label_len": self.MACRO_LABEL_LEN,
+            "capacity": self.MACRO_CAPACITY,
+            "used": min(used, self.MACRO_CAPACITY),
+        }
+
+    def read_macro_buffer(self, capacity: int) -> tuple[bool, bytes]:
+        self._log_call("read_macro_buffer", capacity)
+        return True, bytes(self._macro_buf()[:capacity])
+
+    def write_macro_buffer(self, data: bytes) -> tuple[bool, int]:
+        self._log_call("write_macro_buffer", len(data))
+        buf = self._macro_buf()
+        buf[:len(data)] = data
+        return True, len(data)
+
+    def get_macro_label(self, macro_id: int) -> tuple[bool, str]:
+        self._log_call("get_macro_label", macro_id)
+        self._macro_buf()
+        if not 0 <= macro_id < self.MACRO_COUNT:
+            return False, "out of range"
+        return True, self._macro_labels[macro_id]
+
+    def set_macro_label(self, macro_id: int, text: str) -> tuple[bool, str]:
+        self._log_call("set_macro_label", macro_id, text)
+        self._macro_buf()
+        if not 0 <= macro_id < self.MACRO_COUNT:
+            return False, "out of range"
+        # Mirror the firmware: ASCII only, cut to the stride.
+        clean = "".join(c for c in text if 0x20 <= ord(c) <= 0x7E)[:self.MACRO_LABEL_LEN]
+        self._macro_labels[macro_id] = clean
+        return True, clean
+
     def replay_startup_anim(self) -> tuple[bool, str]:
         self._log_call("replay_startup_anim")
         return True, ""

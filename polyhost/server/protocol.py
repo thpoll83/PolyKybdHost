@@ -81,6 +81,12 @@ M_KEYMAP_LAYER_COUNT = "keymap.layer_count"      # {} -> (ok, count)
 M_KEYMAP_DEFAULT_LAYER = "keymap.default_layer"  # {} -> (ok, layer)
 M_KEYMAP_BUFFER = "keymap.buffer"      # {} -> (ok, [int, ...])
 M_KEYMAP_SET = "keymap.set"            # {"layer","row","col","keycode"} -> (ok, payload)
+
+# Dynamic macros. Whole-buffer by design (see PolyCore.macro_set): the bodies share one
+# NUL-delimited buffer, so editing one means rewriting everything after it.
+M_MACRO_LIST = "macro.list"            # {} -> (ok, {count,label_len,capacity,used,macros})
+M_MACRO_SET = "macro.set"              # {"id","text"?,"steps"?,"label"?} -> (ok, payload)
+M_MACRO_CLEAR = "macro.clear"          # {"id"} -> (ok, payload)
 M_COMMANDS_EXECUTE = "commands.execute"  # {"lines": [str, ...]} -> {"queued": True}
 M_FW_VERSION = "fw.version"            # {} -> {"version","fw_size","fw_crc"} (LIVE device query)
 M_FW_FLASH = "fw.flash"                # {"path": str, "apply": bool} -> {"queued": bool} (streams fw_flash_* events)
