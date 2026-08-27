@@ -398,6 +398,12 @@ def _cmd_macro(client, args):
                 if m["text"] is not None:
                     print(f"text:  {m['text']!r}")
                 else:
+                    # The script form as well as the rows: it is the one output that can
+                    # be pasted straight back into `--script`, which the numbered list
+                    # never could.
+                    from polyhost.services import macro_body, macro_script
+                    steps = [macro_body.Step(**st) for st in m["steps"]]
+                    print(f"script: {macro_script.format(steps)}")
                     for i, s in enumerate(m["steps"]):
                         detail = f"{s['ms']} ms" if s["kind"] == "delay" else f"{s['code']:#04x}"
                         print(f"  {i:>3} {s['kind']:<6} {detail}")
@@ -408,8 +414,23 @@ def _cmd_macro(client, args):
 
     if action == "set":
         params = {"id": args.id}
+        if args.text is not None and args.script is not None:
+            print("--text and --script both set the body; pass one", file=sys.stderr)
+            return 1
         if args.text is not None:
             params["text"] = args.text
+        if args.script is not None:
+            # Parsed HERE rather than sent as text, so a typo is a message with the bad
+            # token in it and nothing is written -- the daemon would otherwise refuse a
+            # body it could not name a reason for.
+            from polyhost.services import macro_body, macro_script
+            try:
+                steps = macro_script.parse(args.script)
+            except (macro_script.ScriptError, macro_body.MacroError) as e:
+                print(str(e), file=sys.stderr)
+                return 1
+            params["steps"] = [{"kind": st.kind, "code": st.code, "ms": st.ms}
+                               for st in steps]
         if args.label is not None:
             params["label"] = args.label
         if args.style is not None:
@@ -889,6 +910,11 @@ def build_parser():
     p_macro.add_argument("--text", default=None,
                          help="what the macro types. Printable ASCII, tab and newline "
                               "only -- the keyboard sends keycodes, not Unicode")
+    p_macro.add_argument("--script", default=None,
+                         help="the macro as VIA-compatible script: plain text types "
+                              "itself, {KC_A} taps, {+KC_A} holds, {-KC_A} releases, "
+                              "{250} waits, \\{ is a literal brace. This is how chords "
+                              "and pauses are written from the command line")
     p_macro.add_argument("--label", default=None,
                          help="the keycap legend. Truncated by pixel width, not by "
                               "character count, so a wide word fits fewer letters")

@@ -21,6 +21,13 @@ def parse_qmk_keycode_header(header_path: Path, enum_to_parse: str) -> dict[str,
     body = enum_match.group(1)
 
     entries = {}
+    # Two passes, because the enum assigns in two forms. The hex one defines a keycode;
+    # the name-to-name one is QMK's short ALIAS (`KC_ENT = KC_ENTER,` -- 128 of them),
+    # which a hex-only regex silently skips. A caller that resolves a name typed by a
+    # user needs the aliases; one that renders a name back wants the canonical long
+    # form, which is why the aliases are added AFTER and callers keep the first name
+    # they saw for a value.
+    aliases = {}
     for line in body.splitlines():
         line = line.strip()
         if not line or line.startswith("//"):
@@ -29,6 +36,21 @@ def parse_qmk_keycode_header(header_path: Path, enum_to_parse: str) -> dict[str,
         m = re.match(r'([A-Z0-9_]+)\s*=\s*(0x[0-9A-Fa-f]+)', line)
         if m:
             entries[m.group(1)] = int(m.group(2), 16)
+            continue
+        m = re.match(r'([A-Z0-9_]+)\s*=\s*([A-Z][A-Z0-9_]*)\s*,?\s*$', line)
+        if m:
+            aliases[m.group(1)] = m.group(2)
+
+    # One resolution round handles a chain (an alias of an alias); anything still
+    # unresolved names something outside this enum and is dropped rather than guessed.
+    for _ in range(len(aliases)):
+        progressed = False
+        for name, target in list(aliases.items()):
+            if name not in entries and target in entries:
+                entries[name] = entries[target]
+                progressed = True
+        if not progressed:
+            break
 
     return entries
 

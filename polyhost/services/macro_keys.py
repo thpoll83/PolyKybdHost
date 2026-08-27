@@ -120,6 +120,9 @@ _MOD_SYMBOL = {
     0xE4: "RCtrl", 0xE5: "RShift", 0xE6: "RAlt", 0xE7: "RGui",
 }
 
+# KC_NO and KC_TRANSPARENT. Keymap placeholders, not keys -- see `_load`.
+PLACEHOLDER_VALUES = frozenset((0x00, 0x01))
+
 _keycodes: dict[str, int] | None = None
 _by_value: dict[int, str] | None = None
 _qt_map: dict[int, int] | None = None
@@ -131,8 +134,13 @@ def _load() -> dict[str, int]:
     Read from the same `res/keycodes.h` the keycode browser parses, so the names in a
     macro are the names everywhere else in the app -- and a QMK update moves both at
     once. Keycodes above 0xFF cannot ride a macro body at all (the wire format stores
-    one byte), and KC_NO / KC_TRANSPARENT are meaningless in a macro, so neither is
-    offered.
+    one byte), and the two keymap placeholders are meaningless in a macro.
+
+    ⚠️ The placeholders are excluded BY VALUE, not by name. QMK spells each of them
+    three ways -- `KC_NO`/`XXXXXXX` and `KC_TRANSPARENT`/`KC_TRNS`/`_______` -- and the
+    alias pass brings every spelling along, so a name blocklist leaks whichever one it
+    forgot. Excluding 0x00 and 0x01 cannot miss a spelling that has not been invented
+    yet.
     """
     global _keycodes, _by_value
     if _keycodes is None:
@@ -144,7 +152,7 @@ def _load() -> dict[str, int]:
         except Exception:
             table = {}
         _keycodes = {n: v for n, v in table.items()
-                     if 0 < v <= 0xFF and n not in ("KC_TRANSPARENT",)}
+                     if v not in PLACEHOLDER_VALUES and 0 <= v <= 0xFF}
         # `setdefault`, so the FIRST name wins if a value ever gains two. Measured
         # today: no value in this header has two enum names -- QMK's short aliases are
         # `#define`s, which the enum parser never sees -- so the tie-break is inert and

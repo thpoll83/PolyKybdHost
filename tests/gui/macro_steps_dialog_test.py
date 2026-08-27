@@ -20,10 +20,11 @@ try:
     from PyQt5.QtGui import QKeyEvent
     from PyQt5.QtWidgets import QApplication
     from polyhost.gui.layout_dialog.macro_steps_dialog import (
-        COL_KEY, COL_KIND, COL_MS, MacroStepsDialog,
+        COL_KEY, COL_KIND, COL_MS, VIEW_SCRIPT, VIEW_TABLE, MacroStepsDialog,
     )
     from polyhost.services import macro_body as mb
     from polyhost.services import macro_keys as mk
+    from polyhost.services import macro_script as msc
     _APP = QApplication.instance() or QApplication([])
     _IMPORT_ERR = None
 except Exception as e:  # pragma: no cover
@@ -142,6 +143,75 @@ class StepTableTest(unittest.TestCase):
 
 
 @unittest.skipIf(_IMPORT_ERR, f"PyQt5/offscreen unavailable: {_IMPORT_ERR}")
+class ScriptViewTest(unittest.TestCase):
+    """Two views over one macro. What matters is that switching cannot lose or change
+    it -- the toggle converts through `macro_script` on every flip."""
+
+    def test_the_table_converts_to_a_script(self):
+        dlg = MacroStepsDialog(CHORD)
+        dlg.view_box.setCurrentIndex(VIEW_SCRIPT)
+        self.assertEqual(dlg.script.toPlainText(),
+                         "{+KC_LEFT_CTRL}{+KC_LEFT_SHIFT}{KC_P}"
+                         "{-KC_LEFT_SHIFT}{-KC_LEFT_CTRL}")
+
+    def test_steps_answers_for_whichever_view_is_live(self):
+        """Both views are readable through the same method, so nothing downstream --
+        save, the summary, the accept check -- has to know which one is showing."""
+        dlg = MacroStepsDialog(CHORD)
+        self.assertEqual(dlg.steps(), CHORD)
+        dlg.view_box.setCurrentIndex(VIEW_SCRIPT)
+        self.assertEqual(dlg.steps(), CHORD)
+
+    def test_a_script_typed_by_hand_becomes_rows(self):
+        dlg = MacroStepsDialog()
+        dlg.view_box.setCurrentIndex(VIEW_SCRIPT)
+        dlg.script.setPlainText("{+KC_LCTL}{KC_A}{-KC_LCTL}{50}hi")
+        dlg.view_box.setCurrentIndex(VIEW_TABLE)
+        self.assertEqual(dlg.table.rowCount(), 6)
+        self.assertEqual(mk.describe(dlg.steps()), 'Ctrl+A  ·  50 ms  ·  "hi"')
+
+    def test_a_broken_script_KEEPS_THE_TEXT_and_stays_put(self):
+        """The moment the user most wants to see what they typed is the moment it does
+        not parse. Converting "as far as it got" would discard the rest and clearing it
+        would discard all of it, so the switch is refused and the box is put back.
+        """
+        dlg = MacroStepsDialog()
+        dlg.view_box.setCurrentIndex(VIEW_SCRIPT)
+        dlg.script.setPlainText("{KC_WAT}")
+        dlg.view_box.setCurrentIndex(VIEW_TABLE)
+        self.assertEqual(dlg.view_box.currentData(), VIEW_SCRIPT)
+        self.assertEqual(dlg.stack.currentIndex(), VIEW_SCRIPT)
+        self.assertEqual(dlg.script.toPlainText(), "{KC_WAT}")
+        self.assertIn("KC_WAT", dlg.summary.text())
+
+    def test_accepting_a_broken_script_refuses_rather_than_saving_nothing(self):
+        dlg = MacroStepsDialog()
+        dlg.view_box.setCurrentIndex(VIEW_SCRIPT)
+        dlg.script.setPlainText("{KC_WAT}")
+        dlg._on_accept()
+        self.assertEqual(dlg.result_steps, [])
+        self.assertIn("KC_WAT", dlg.summary.text())
+
+    def test_the_row_buttons_are_dead_in_the_script_view(self):
+        """They act on the table; in the script view the equivalent gesture is typing."""
+        dlg = MacroStepsDialog([mb.Step("tap", code=0x04)])
+        dlg.table.selectRow(0)
+        self.assertTrue(dlg.add_btn.isEnabled())
+        dlg.view_box.setCurrentIndex(VIEW_SCRIPT)
+        for b in (dlg.add_btn, dlg.text_btn, dlg.remove_btn, dlg.up_btn, dlg.down_btn):
+            self.assertFalse(b.isEnabled(), b)
+
+    def test_a_round_trip_through_both_views_changes_nothing(self):
+        steps = CHORD + [mb.Step("delay", ms=120)] + \
+            [mb.Step("char", code=ord(c)) for c in "a{b"]
+        dlg = MacroStepsDialog(steps)
+        for _ in range(3):
+            dlg.view_box.setCurrentIndex(VIEW_SCRIPT)
+            dlg.view_box.setCurrentIndex(VIEW_TABLE)
+        self.assertEqual(dlg.steps(), steps)
+
+
+@unittest.skipIf(_IMPORT_ERR, f"PyQt5/offscreen unavailable: {_IMPORT_ERR}")
 class RecorderTest(unittest.TestCase):
     @staticmethod
     def _send(dlg, key, text="", press=True, repeat=False):
@@ -205,6 +275,26 @@ class RecorderTest(unittest.TestCase):
         self.assertEqual(dlg.table.rowCount(), 0)
         self.assertIn("No basic keycode", dlg.summary.text())
         dlg.record_btn.setChecked(False)
+
+    def test_recording_appends_to_the_SCRIPT_view_when_that_is_showing(self):
+        """Capturing a chord and then hand-editing it as text is a normal thing to
+        want, so Record works in both views -- and routing it through one append is
+        what stops the two views disagreeing about what was just captured.
+        """
+        dlg = MacroStepsDialog()
+        dlg.view_box.setCurrentIndex(VIEW_SCRIPT)
+        self._record(dlg, [(Qt.Key_Control, "", True), (Qt.Key_X, "x", True),
+                           (Qt.Key_X, "x", False), (Qt.Key_Control, "", False)])
+        self.assertEqual(dlg.script.toPlainText(),
+                         "{+KC_LEFT_CTRL}{+KC_X}{-KC_X}{-KC_LEFT_CTRL}")
+        self.assertEqual(dlg.table.rowCount(), 0, "it also wrote into the hidden table")
+
+    def test_the_view_cannot_be_switched_mid_recording(self):
+        dlg = MacroStepsDialog()
+        dlg.record_btn.setChecked(True)
+        self.assertFalse(dlg.view_box.isEnabled())
+        dlg.record_btn.setChecked(False)
+        self.assertTrue(dlg.view_box.isEnabled())
 
     def test_nothing_is_captured_while_not_recording(self):
         """The dialog is an ordinary editor the rest of the time -- typing in a Key cell

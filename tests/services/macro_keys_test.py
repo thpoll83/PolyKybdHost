@@ -33,12 +33,6 @@ class KeycodeTableTest(unittest.TestCase):
         self.assertTrue(table, "no keycodes parsed -- res/keycodes.h missing?")
         self.assertTrue(all(0 < v <= 0xFF for v in table.values()))
 
-    def test_the_placeholders_are_not_offered(self):
-        """KC_NO and KC_TRANSPARENT mean something to a keymap and nothing to a macro."""
-        table = mk.keycodes()
-        self.assertNotIn("KC_NO", table)
-        self.assertNotIn("KC_TRANSPARENT", table)
-
     def test_names_match_the_rest_of_the_app(self):
         """Same header the keycode browser parses, so a macro step and a keymap entry
         call the same key by the same name."""
@@ -46,22 +40,45 @@ class KeycodeTableTest(unittest.TestCase):
         self.assertEqual(mk.value_for("KC_LEFT_CTRL"), 0xE0)
         self.assertEqual(mk.name_for(0x28), "KC_ENTER")
 
-    def test_every_value_has_exactly_one_name_today(self):
-        """Pins the fact `_load`'s first-wins tie-break is written for but cannot
-        currently exercise: QMK's short aliases are `#define`s, so the enum parser
-        never sees them and no value arrives with two names.
+    def test_the_short_aliases_resolve(self):
+        """QMK's short spellings are what a person types, and what a VIA-style script
+        carries -- `{KC_LSFT}`, not `{KC_LEFT_SHIFT}`.
 
-        If a header update ever changes that, the tie-break becomes live -- and a
-        keycode quietly renaming itself in the editor is exactly the sort of drift
-        that goes unnoticed, so it should arrive as a failing test instead.
+        They live in the enum as name-to-name assignments (`KC_ENT = KC_ENTER,`, 128 of
+        them), which a hex-only parse silently skips. This test exists because that
+        skip was invisible: the table simply did not contain the names, and every
+        lookup of one failed as though the key did not exist.
         """
-        seen: dict[int, str] = {}
-        clashes = []
-        for name, value in mk.keycodes().items():
-            if value in seen:
-                clashes.append((hex(value), seen[value], name))
-            seen[value] = name
-        self.assertEqual(clashes, [], "keycodes.h now has aliased enum values")
+        for short, long in (("KC_LSFT", "KC_LEFT_SHIFT"), ("KC_LCTL", "KC_LEFT_CTRL"),
+                            ("KC_ENT", "KC_ENTER"), ("KC_ESC", "KC_ESCAPE"),
+                            ("KC_BSPC", "KC_BACKSPACE"), ("KC_SPC", "KC_SPACE"),
+                            ("KC_MINS", "KC_MINUS")):
+            with self.subTest(alias=short):
+                self.assertEqual(mk.value_for(short), mk.value_for(long))
+
+    def test_a_value_renders_as_its_CANONICAL_name(self):
+        """Now that a value has several names, which one comes back matters: the long
+        form is what the enum defines and what every other surface in the app shows, so
+        an alias winning would rename keys in the editor for no reason.
+
+        This is the tie-break `_load` was written for before any alias existed. It is
+        live now -- the test that pinned "no value has two names" failed the moment the
+        aliases were parsed, which is exactly what it was there to do.
+        """
+        self.assertEqual(mk.name_for(0xE1), "KC_LEFT_SHIFT")
+        self.assertEqual(mk.name_for(0x28), "KC_ENTER")
+        self.assertEqual(mk.name_for(0x2A), "KC_BACKSPACE")
+
+    def test_the_placeholders_are_excluded_in_EVERY_spelling(self):
+        """QMK spells each of them three ways and the alias pass brings all three, so a
+        name blocklist leaks whichever spelling it forgot -- `_______` and `KC_TRNS` both
+        got in when this was filtered by name. Excluded by value instead.
+        """
+        table = mk.keycodes()
+        for name in ("KC_NO", "XXXXXXX", "KC_TRANSPARENT", "KC_TRNS", "_______"):
+            self.assertNotIn(name, table)
+        self.assertNotIn(0x00, set(table.values()))
+        self.assertNotIn(0x01, set(table.values()))
 
     def test_an_unnamed_keycode_is_shown_not_refused(self):
         """The firmware plays whatever byte it is handed, so the editor has to be able

@@ -392,5 +392,58 @@ class ImportGuardTest(unittest.TestCase):
         self.assertIn("ok", proc.stdout)
 
 
+class MacroScriptTest(unittest.TestCase):
+    """`--script` is how chords and pauses are written from the command line -- the
+    plain `--text` form can only ever produce characters."""
+
+    _LIST = {"count": 1, "label_len": 12, "capacity": 2267, "used": 9, "macros": [
+        {"id": 0, "label": "sel", "bytes": 9, "text": None, "style": 0, "icon": 0,
+         "steps": [{"kind": "down", "code": 0xE0, "ms": 0},
+                   {"kind": "tap", "code": 0x04, "ms": 0},
+                   {"kind": "up", "code": 0xE0, "ms": 0}]}]}
+
+    def test_a_script_is_sent_as_STEPS_not_as_text(self):
+        rc, out, err, server = run_main(
+            ["macro", "set", "0", "--script", "{+KC_LCTL}{KC_A}{-KC_LCTL}"],
+            {protocol.M_MACRO_SET: [True, "ok"]})
+        self.assertEqual(rc, 0, err)
+        params = dict(server.received)[protocol.M_MACRO_SET]
+        self.assertEqual(params["steps"],
+                         [{"kind": "down", "code": 0xE0, "ms": 0},
+                          {"kind": "tap", "code": 0x04, "ms": 0},
+                          {"kind": "up", "code": 0xE0, "ms": 0}])
+        self.assertNotIn("text", params)
+
+    def test_a_bad_script_is_refused_LOCALLY_and_writes_nothing(self):
+        """Parsed before the call, so the error names the offending token -- the daemon
+        would only be able to refuse a body it could not explain. And a refused macro
+        must not have half-written itself first.
+        """
+        rc, out, err, server = run_main(
+            ["macro", "set", "0", "--script", "{KC_WAT}"],
+            {protocol.M_MACRO_SET: [True, "ok"]})
+        self.assertEqual(rc, 1)
+        self.assertIn("KC_WAT", err)
+        self.assertNotIn(protocol.M_MACRO_SET, [m for m, _ in server.received])
+
+    def test_text_and_script_together_are_refused(self):
+        """Both set the body, so obeying one silently would discard the other."""
+        rc, out, err, server = run_main(
+            ["macro", "set", "0", "--text", "hi", "--script", "{KC_A}"],
+            {protocol.M_MACRO_SET: [True, "ok"]})
+        self.assertEqual(rc, 1)
+        self.assertIn("pass one", err)
+        self.assertNotIn(protocol.M_MACRO_SET, [m for m, _ in server.received])
+
+    def test_get_prints_a_script_you_can_paste_back(self):
+        """The numbered rows say what the macro is; only the script says it in a form
+        `--script` accepts."""
+        rc, out, err, _ = run_main(["macro", "get", "0"],
+                                    {protocol.M_MACRO_LIST: self._LIST})
+        self.assertEqual(rc, 0, err)
+        self.assertIn("script: {+KC_LEFT_CTRL}{KC_A}{-KC_LEFT_CTRL}", out)
+        self.assertIn("down", out)      # the rows are still there
+
+
 if __name__ == "__main__":
     unittest.main()
