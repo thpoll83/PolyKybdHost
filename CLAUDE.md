@@ -937,6 +937,43 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     coordinate. `--check` is the gate to re-run after any change to the firmware's
     `latinbig` entries; `--out` writes the contact sheet the docs page uses. Same
     caveat as `oled_preview.py`: it is a Python model of the C and can drift.
+- **Macros (protocol 14+)**: HID cmds 35/36/37 behind ONE `"macros"`
+  `FEATURE_MIN_PROTOCOL` entry — splitting the gate would let the editor load a list
+  from a keyboard that cannot save it. `PolyKybd.get_macro_info` /
+  `read_macro_buffer` / `write_macro_buffer` / `get_macro_label` / `set_macro_label`,
+  then `PolyCore.macro_list/macro_set/macro_clear`, `M_MACRO_LIST/SET/CLEAR`, the
+  `RemoteCore` mirror, `polyctl macro list|get|set|clear`, and a **Macros tab in the
+  keycode browser** (`gui/layout_dialog/macro_tab.py`).
+  - **A tab, not a window.** The browser is already a `QTabWidget` whose "Layers &&
+    Mods" page BUILDS a keycode rather than listing a fixed set, so a macro page is the
+    same shape — and it puts authoring and placement in one view. `KeycodeBrowser`
+    takes `core=None`; without one the tab is simply absent, and the existing tabs are
+    not reordered (pinned by a test, same invariant as the developer-menu one).
+  - ⚠️ **`PolyCore.macro_*` is WHOLE-BUFFER on purpose.** The bodies are NUL-delimited
+    in one shared buffer, so writing macro 3 means rewriting everything after it;
+    read-modify-write is the only shape that cannot corrupt a neighbour. A label-only
+    edit skips the body write entirely. The mock device is backed by a real `bytearray`
+    rather than a dict of strings for exactly this reason — a per-macro mock could
+    never show a neighbour being clobbered.
+  - ⚠️ **The label meter is in PIXELS, not characters, and that is not a nicety.**
+    `polyhost/services/macro_label.py` mirrors the firmware's
+    `kdisp_gfx_text_bbox` for the single-font ASCII case a label always is. Measured
+    against the committed `nano_font.h`: `'email'` 25 px, `'work mail'` 48,
+    `'password'` 49, `'Hello World!'` 61, `'WWWWWWWW'` **exactly 72** — so the real
+    budget is ~12 characters, 8 in the worst case, and a character count is wrong in
+    both directions. It parses `nano_font.h` **directly** rather than through
+    `load_all_fonts()`, which returns the `ALL_FONTS[]` priority list and deliberately
+    excludes the three standalone UI faces (no codepoint can reach them — that is why
+    the firmware draws a label through a single-font array).
+  - **What a macro can type is keystrokes, not characters.** `macro_body.encode_text`
+    REFUSES anything outside printable ASCII + tab/newline rather than dropping it: a
+    macro that silently types less than you asked for is worse than one that refuses,
+    because you find out when it matters. Accented letters and emoji belong on the
+    language/emoji layers, and the docs page says so.
+  - `tools/macro_label_preview.py --check` renders the keycap the way the firmware's
+    `render_macro_key()` composes it and counts pixels outside the 72×40 window (320
+    cells, 0 clipped) — the same "verify by rendering" rule as `glyph_size_preview.py`,
+    with the same caveat that it is a Python model of the C and can drift.
 - **Tray/menu icons (`polyhost/res/icons/`) are Material Symbols at optical size
   48 — fetch the `_48px` cut, never `_24px`.** The optical-size axis changes the
   **geometry**, not just the header: the same symbol at opsz24 is drawn with
