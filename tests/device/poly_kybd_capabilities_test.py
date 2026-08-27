@@ -331,6 +331,49 @@ class MacroCapabilityTest(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("nothing", msg)
 
+    def test_a_write_raises_an_in_progress_marker_first(self):
+        """An interrupted upload must leave the buffer UNPLAYABLE.
+
+        The firmware refuses to play a buffer whose last byte is not NUL. That guard
+        is inert on its own -- join_buffer() zero-fills to capacity, so the byte reads
+        0 throughout and the guard could never fire, leaving a half-written buffer
+        playable as a splice of new text and whatever preceded it. So the host raises
+        a non-zero marker at the end BEFORE streaming, and the final window carries
+        the real trailing NUL that clears it.
+        """
+        keeb = self._keeb(MACRO_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.MACRO_BODY.value, ord(".")]))
+        data = bytes(range(1, 200)) + b"\0"
+        ok, _ = keeb.write_macro_buffer(data)
+        self.assertTrue(ok)
+
+        sent = [c.args[0] for c in keeb.hid.send_and_read_validate.call_args_list]
+        last = len(data) - 1
+
+        first = sent[0]
+        self.assertEqual(first[3] | (first[4] << 8), last, "marker not at the end")
+        self.assertEqual(first[5], 1)
+        self.assertNotEqual(first[6], 0, "the marker must be non-zero to arm the guard")
+
+        # ...and the streaming that follows starts at 0 and ends by writing the real
+        # trailing NUL over the marker.
+        self.assertEqual(sent[1][3] | (sent[1][4] << 8), 0)
+        final = sent[-1]
+        off, n = final[3] | (final[4] << 8), final[5]
+        self.assertEqual(off + n, len(data), "the last window must reach the end")
+        self.assertEqual(final[6:6 + n][-1], 0, "the last byte written must be NUL")
+
+    def test_a_refused_marker_aborts_before_any_data_is_written(self):
+        """Failing closed matters more than failing late: if the guard cannot be armed
+        we must not go on to overwrite macros that are currently intact."""
+        keeb = self._keeb(MACRO_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (True, b"P\x25!")
+        ok, msg = keeb.write_macro_buffer(bytes(100))
+        self.assertFalse(ok)
+        self.assertIn("mark", msg)
+        self.assertEqual(keeb.hid.send_and_read_validate.call_count, 1)
+
     def test_command_ids_match_the_firmware(self):
         # These moved once already: cmd 35 was taken by GET_LAYER_NAMES on a branch
         # that landed first, so the macros shifted up one and the protocol floor went

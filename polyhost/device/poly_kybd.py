@@ -666,24 +666,45 @@ class PolyKybd:
             out += reply[6:6 + got]
         return True, bytes(out[:capacity])
 
-    def write_macro_buffer(self, data: bytes) -> tuple[bool, Any]:
-        """Write the whole shared body buffer.
+    # Written into the buffer's last byte for the duration of a write. Any non-zero
+    # value works -- the firmware only tests "is the last byte NUL".
+    MACRO_WRITE_MARKER = 0xFF
 
-        ⚠️ The LAST byte must be NUL and is what marks the write complete -- the
-        firmware refuses to play a buffer whose final byte is not zero, which is what
-        stops a half-streamed macro from typing an arbitrary prefix of someone's
-        password. join_buffer() zero-fills to capacity, so that holds by construction;
-        do not "optimise" the trailing zeros away.
+    def _macro_write_window(self, offset: int, payload: bytes) -> bool:
+        cmd = compose_cmd(Cmd.MACRO_BODY, 1, offset & 0xFF, (offset >> 8) & 0xFF, len(payload))
+        cmd.extend(payload)
+        ok, reply = self.hid.send_and_read_validate(cmd, 200, expect(Cmd.MACRO_BODY))
+        return bool(ok) and len(reply) >= 3 and reply[2:3] == b'.'
+
+    def write_macro_buffer(self, data: bytes) -> tuple[bool, Any]:
+        """Write the whole shared body buffer, marking it in-progress while we do.
+
+        ⚠️ The firmware refuses to play a buffer whose LAST byte is not NUL
+        (`poly_macro_buffer_intact`), which is what stops a half-streamed upload from
+        typing a splice of the new text and whatever was there before. That guard only
+        works if the last byte is actually non-zero mid-write -- and it is not by
+        itself: `join_buffer()` zero-fills to capacity, so the byte reads 0 before the
+        write, during it and after it, and the guard could never fire. An interrupted
+        upload therefore left a *playable* mix of new prefix and old suffix, which can
+        promote a fragment of a previous macro (a password, say) into a macro of its
+        own.
+
+        So the marker is raised deliberately: write a non-zero byte at the end FIRST,
+        then stream from offset 0. The final window carries the real trailing NUL, so
+        a completed write clears the marker as its last act and an interrupted one
+        leaves it standing. Fail-closed: the macros stay unplayable until a write
+        finishes, which is the right way round.
         """
         if not self._macros_supported():
             return self._macro_unsupported()
+        if not data:
+            return True, 0
+        if not self._macro_write_window(len(data) - 1, bytes([self.MACRO_WRITE_MARKER])):
+            return False, "could not mark the macro buffer as being written"
         offset = 0
         while offset < len(data):
             chunk = data[offset:offset + self.MACRO_BODY_CHUNK]
-            cmd = compose_cmd(Cmd.MACRO_BODY, 1, offset & 0xFF, (offset >> 8) & 0xFF, len(chunk))
-            cmd.extend(chunk)
-            ok, reply = self.hid.send_and_read_validate(cmd, 200, expect(Cmd.MACRO_BODY))
-            if not ok or len(reply) < 3 or reply[2:3] != b'.':
+            if not self._macro_write_window(offset, chunk):
                 return False, f"macro buffer write failed at offset {offset}"
             offset += len(chunk)
         return True, offset
