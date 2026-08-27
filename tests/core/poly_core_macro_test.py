@@ -15,26 +15,28 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.poly_kybd_mock import PolyKybdMock
 
 
-class _Core(PolyCore):
-    """PolyCore with the worker replaced by a direct call.
+def _core_for(keeb):
+    """A real PolyCore with the worker hop replaced by a direct call.
 
-    _device_call normally hops onto the HID worker thread; here it runs the lambda
-    inline, so these tests exercise the real macro_list / macro_set logic without a
-    thread or a device.
+    `_device_call` normally marshals onto the HID worker thread; here it runs the
+    lambda inline, so these tests exercise the real macro_list / macro_set logic
+    without a thread or a device.
+
+    This deliberately builds a REAL PolyCore rather than subclassing it with a
+    stub __init__ -- a subclass that skips the base constructor leaves every other
+    attribute unset, so a test would pass while touching an object no production
+    code path could produce (and CodeQL flags exactly that).
     """
-
-    def __init__(self, keeb):
-        self.keeb = keeb
-        self.log = MagicMock()
-
-    def _device_call(self, name, fn):
-        return fn(None)
+    core = PolyCore(MagicMock(), start_worker=False)
+    core.keeb = keeb
+    core._device_call = lambda name, fn: fn(None)
+    return core
 
 
 class MacroCoreTest(unittest.TestCase):
     def setUp(self):
         self.keeb = PolyKybdMock(DeviceSettings())
-        self.core = _Core(self.keeb)
+        self.core = _core_for(self.keeb)
 
     def test_a_fresh_keyboard_lists_empty_macros(self):
         ok, info = self.core.macro_list()

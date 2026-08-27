@@ -25,6 +25,18 @@ HAVE_FONT = os.path.isfile(os.path.join(ml.default_font_dir(), "nano_font.h")) \
     if _IMPORT_ERR is None else False
 
 
+def setUpModule():
+    """Pin the QApplication reference for the life of the module.
+
+    `_APP` looks unused -- it is not. Qt requires exactly one QApplication and it
+    must outlive every widget; letting it be garbage-collected takes the Qt runtime
+    with it and the next widget construction segfaults. Asserting it here is what
+    says so, to a reader and to a static analyser alike.
+    """
+    if _IMPORT_ERR is None:
+        assert _APP is not None
+
+
 def _core(macros=None, ok=True, payload=None):
     """A stand-in core answering macro_list/macro_set/macro_clear."""
     core = MagicMock()
