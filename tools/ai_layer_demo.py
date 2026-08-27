@@ -45,28 +45,21 @@ OLED_W, OLED_H = 72, 40
 FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 FONT_TEXT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
-# A row of keycaps read as ONE two-line text strip. Continuous prose is broken at
-# LETTER boundaries, not word boundaries: a real agent question is far too long to
-# spend a whole 72x40 panel on the word "in", and word-per-key wastes most of the
-# row. A glyph is never cut in half -- one that would straddle a key edge is pushed
-# to the next key -- so the split lands in the physical gutter between two caps,
-# which is where the eye already expects a break.
-# Two presets, both measured rather than guessed. 2 lines at 14 px is the safe
-# default -- the firmware's own keycap face (`_Small_`, 15 px) holds about the
-# same 9 characters across a 72 px panel. 3 lines at 10 px matches `_Nano_`, the
-# face split42 uses for its layout name, and buys ~75% more text at the bottom of
-# what is legible through a keycap diffuser.
+# A row of keycaps reads as ONE text strip. Continuous prose is broken at LETTER
+# boundaries, not word boundaries: a real agent question is far too long to spend a
+# whole 72x40 panel on the word "in", and word-per-key wastes most of the row. A
+# glyph is never cut in half -- one that would straddle a cap edge is pushed to the
+# next cap -- so the split lands in the physical gutter between two caps, which is
+# where the eye already expects a break.
+#
+# Fill order is LINE-MAJOR: line 0 runs across every cap of the row, then line 1.
+# The row is a paragraph, exactly as if it were one wide display. See FLOW_ORDERS.
 FLOW_PAD = 2          # left/right margin inside one cap
-FLOW_PRESETS = {
-    2: (14, (3, 21)),     # px em, ink top per line
-    3: (10, (2, 15, 28)),
+FLOW_ORDERS = ("line", "cap")
+FLOW_PRESETS = {      # lines per cap -> (px em, ink top per line, ink top when solo)
+    2: (14, (3, 21), 13),
+    3: (10, (2, 15, 28), 15),
 }
-
-
-# Status readouts shown in the "running" still. Sketch values, not measurements.
-RUNNING_VALUES = {"KC_6": "1.2k", "KC_7": "310", "KC_8": "91%", "KC_9": "480", "KC_0": "$0.07"}
-SPINNER = "|/-\\"
-
 
 def strip_c_comments(s: str) -> str:
     s = re.sub(r'/\*.*?\*/', '', s, flags=re.S)
@@ -175,55 +168,90 @@ class CapPainter:
     # ---------------------------------------------------------------- text flow
 
     def flow(self, text: str, n_keys: int, marker: str | None = None,
-             lines: int = 2):
-        """Lay ``text`` across ``n_keys`` caps as a 2-line strip; return their buffers.
+             lines: int = 2, order: str = "line"):
+        """Lay ``text`` across ``n_keys`` caps; return ``(buffers, overflow)``.
 
-        Returns ``(buffers, overflow)`` -- ``overflow`` is the tail that did not
-        fit, so a caller can page rather than silently truncate.
+        ``overflow`` is the tail that did not fit, so a caller can page rather than
+        silently truncate.
 
-        The cursor walks the whole strip in global pixel coordinates. A character
-        that would straddle a cap edge is pushed to the next cap instead of being
-        clipped, which is the only place this differs from ordinary text layout.
+        ⚠️ ``order`` decides the fill, and the two read very differently:
+
+        ``"line"`` (default) runs line 0 across every cap of the row before
+        starting line 1 -- the row is one paragraph, as if it were a single wide
+        display. ``"cap"`` fills both lines of one cap before moving to the next,
+        so each cap is a self-contained ~16-character chunk.
+
+        Line-major wins for a reason that only shows up once the text is real: a
+        12-cap row holds ~106 characters on ONE line, and most agent *options* are
+        shorter than that, so they render as a single clean line with no second
+        row to wonder about -- ``lines`` is a ceiling, not a quota. Cap-major uses
+        both lines of its first caps on every row, however short the text, and
+        leaves the rest of the row blank, so it forces the "which line next?"
+        question even where nothing needed it.
         """
-        pt, bases = FLOW_PRESETS[lines]
+        if order not in FLOW_ORDERS:
+            raise ValueError(f"order must be one of {FLOW_ORDERS}, got {order!r}")
+        pt, bases, solo = FLOW_PRESETS[lines]
         font = ImageFont.truetype(FONT_TEXT, pt)
-        bufs = [Image.new("L", (OLED_W, OLED_H), 0) for _ in range(n_keys)]
-        draws = [ImageDraw.Draw(b) for b in bufs]
         indent = [FLOW_PAD] * n_keys
         if marker and n_keys:
-            self._marker(draws[0], marker)
             indent[0] = FLOW_PAD + 15
 
-        # CAP-MAJOR, not line-major: fill both lines of one cap, then move to the
-        # next. Filling line 0 across the whole row first is what a single wide
-        # display would do, and it renders WRONG here -- the caps are physically
-        # separated (and the halves by ~20 cm), so the eye reads each cap's two
-        # lines as a pair and the sentence comes out shuffled. Tried it; the top
-        # row read "The upstr / M menu". Each cap is its own ~16-char chunk.
-        k, line, x = 0, 0, indent[0]
+        placed, used = self._place(text, n_keys, font, indent, len(bases), order)
+        # A row that needs only one line CENTRES it, so a short option reads as an
+        # ordinary line of text rather than as text clinging to the top of the cap.
+        rows = max((line for _, line, _, _ in placed), default=0) + 1
+        ys = (solo,) if rows == 1 else bases
+
+        bufs = [Image.new("L", (OLED_W, OLED_H), 0) for _ in range(n_keys)]
+        draws = [ImageDraw.Draw(b) for b in bufs]
+        if marker and n_keys:
+            self._marker(draws[0], marker, ys[0])
+        top = self._top(draws[0], font)
+        for k, line, x, ch in placed:
+            draws[k].text((x, ys[line] - top), ch, font=font, fill=255)
+        return bufs, text[used:]
+
+    @staticmethod
+    def _place(text, n_keys, font, indent, n_lines, order):
+        """-> (list of (cap, line, x, char), characters consumed).
+
+        Laying out first and drawing second is what lets the caller discover how
+        many lines the text actually needed before it commits to a baseline.
+        """
+        placed = []
+        k = line = 0
+        x = indent[0]
         i = 0
         while i < len(text):
             ch = text[i]
             w = font.getlength(ch)
-            if x + w > OLED_W - FLOW_PAD:               # this cap's line is full
-                line += 1
-                if line >= len(bases):                   # this cap is full
-                    line = 0
-                    k += 1
+            if x + w > OLED_W - FLOW_PAD:                  # this line of this cap is full
+                if order == "line":
+                    k += 1                                 # ...continue on the next CAP
                     if k >= n_keys:
-                        break
-                x = indent[k] if (line == 0) else FLOW_PAD
-                if ch == " ":                            # no leading space on a line
+                        line += 1                          # ...then wrap to the next LINE
+                        k = 0
+                        if line >= n_lines:
+                            break
+                else:
+                    line += 1                              # ...continue on the next LINE
+                    if line >= n_lines:
+                        line = 0                           # ...then move to the next CAP
+                        k += 1
+                        if k >= n_keys:
+                            break
+                x = indent[k] if line == 0 else FLOW_PAD
+                if ch == " ":                              # no leading space on a line
                     i += 1
                     continue
-            draws[k].text((x, bases[line] - self._top(draws[k], ch, font)),
-                          ch, font=font, fill=255)
+            placed.append((k, line, x, ch))
             x += w
             i += 1
-        return bufs, text[i:]
+        return placed, i
 
     @staticmethod
-    def _top(d, ch, font):
+    def _top(d, font):
         """Ink-top offset, so every character sits on ONE baseline.
 
         Without it PIL anchors each character at its own bbox top and the line
@@ -231,12 +259,17 @@ class CapPainter:
         """
         return d.textbbox((0, 0), "Ag", font=font)[1]
 
-    def _marker(self, d, marker: str):
-        """The option number: a knocked-out digit, so it reads as a list bullet."""
-        d.rounded_rectangle([1, 1, 13, 14], radius=3, fill=255)
+    def _marker(self, d, marker: str, base: int):
+        """The option number: a knocked-out digit, so it reads as a list bullet.
+
+        ``base`` is the ink top of the line it sits on, so it follows the text down
+        when a one-line row centres itself.
+        """
+        top = base - 2
+        d.rounded_rectangle([1, top, 13, top + 13], radius=3, fill=255)
         f = ImageFont.truetype(FONT_BOLD, 11)
         b = d.textbbox((0, 0), marker, font=f)
-        d.text((7 - (b[2] - b[0]) / 2 - b[0], 8 - (b[3] - b[1]) / 2 - b[1]),
+        d.text((7 - (b[2] - b[0]) / 2 - b[0], top + 7 - (b[3] - b[1]) / 2 - b[1]),
                marker, font=f, fill=0)
 
     def from_buffer(self, buf: Image.Image, invert: bool = False):

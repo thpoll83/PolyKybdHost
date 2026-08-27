@@ -76,7 +76,7 @@ def legend_for(kc: str) -> str | None:
 NO_ANSWER_FRAME = False
 
 
-def frames(matrix_kc, painter, lines=2):
+def frames(matrix_kc, painter, lines=2, order="line"):
     """Build the three states as {matrix_pos: (KeyContent, 72x40 bool array|None)}.
 
     The array is kept beside the rendered cell so the same pixels that go into the
@@ -90,7 +90,8 @@ def frames(matrix_kc, painter, lines=2):
     typing, overview, question = {}, {}, {}
     # The prompt is FLOWED prose, so each cap is a pre-rendered slice of a row
     # strip rather than a word -- see ai_agent_scenario for why.
-    q_cells = prompt_cells(painter, ROUND["q"], ROUND["options"], lines=lines)
+    q_cells = prompt_cells(painter, ROUND["q"], ROUND["options"],
+                           lines=lines, order=order)
     for mp, kc in matrix_kc.items():
         base = legend_for(kc)
         # --- 1. typing: the ordinary board, plus one badge
@@ -172,6 +173,10 @@ def main():
     ap.add_argument('--lines', type=int, default=2, choices=(2, 3),
                     help='text lines per cap: 2 (14 px, ~220 chars/row) or '
                          '3 (10 px, ~469) -- see FLOW_PRESETS')
+    ap.add_argument('--order', default='line', choices=('line', 'cap'),
+                    help="fill order: 'line' runs line 0 across the whole row "
+                         "first (the row is a paragraph); 'cap' fills both "
+                         'lines of a cap before the next')
     ap.add_argument('--detail', action='store_true', help='per-keycap encoding')
     ap.add_argument('--no-answer-frame', action='store_true',
                     help='drop the border chrome on the answer keys (cost experiment)')
@@ -194,7 +199,7 @@ def main():
 
     theme = Theme()
     painter = CapPainter(theme)
-    for problem in check_fits(painter, args.lines):     # silent truncation is the
+    for problem in check_fits(painter, args.lines, args.order):     # silent truncation is the
         print(f"  WARNING: {problem}")      # failure a mockup hides best
     renderer = KleRenderer(json.load(open(args.kle, encoding='utf-8')),
                            unit=args.unit, theme=theme, margin=args.margin,
@@ -204,7 +209,7 @@ def main():
 
     settings = DeviceSettings()
     os.makedirs(args.out_dir, exist_ok=True)
-    specs = frames(matrix_kc, painter, args.lines)
+    specs = frames(matrix_kc, painter, args.lines, args.order)
     names = ("agent_1_typing", "agent_2_overview", "agent_3_question")
     costs = []
     for spec, name in zip(specs, names):

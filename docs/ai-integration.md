@@ -225,27 +225,31 @@ six keys forever; six status *keycaps* cost nothing until you ask for them.
 ![the three frames](sketches/agent_1_typing.png)
 ![overview](sketches/agent_2_overview.png)
 
-#### The prompt is TEXT, not pictures — and that is a ~13x saving
+#### The prompt is TEXT, not pictures — and that is a ~12x saving
 
-Two false starts got costed before this one, and both were killed by rendering
-them rather than by reasoning about them:
+**One word per cap does not survive a real prompt.** It is tidy on a toy one — a
+question and three one-word answers, 29 reports — but a 72x40 panel spent on the
+word "in" leaves nowhere for the other 160 characters, and a 12-cap row holds
+twelve words.
 
-1. **One word per cap.** Tidy on a toy prompt (one question, three one-word
-   answers: 29 reports). It does not survive a real one — a 72x40 panel spent on
-   the word "in" leaves nowhere for the other 160 characters, and a 12-cap row
-   holds twelve words.
-2. **The row as one wide two-line display**, filling line 0 across all twelve caps
-   and then line 1. That is what a single strip would do, and it renders *wrong*:
-   the caps are physically separate — and the halves ~20 cm apart — so the eye
-   reads each cap's two lines as a pair. The top row came out as
-   *"The upstr / M menu"*.
+What works is **flowed prose**: a row of caps is one text strip, broken at
+**letter** boundaries rather than word boundaries. A glyph is never cut in half —
+one that would straddle a cap edge is pushed to the next cap — so a word splits in
+the physical gutter, where the eye already expects a break. That is ~106
+characters across a 12-cap row on one line, 220 on two.
 
-What works is **flowed prose, cap-major**: each cap is a ~16-character chunk of two
-lines, filled completely before moving to the next, broken at **letter** boundaries
-rather than word boundaries. A glyph is never cut in half — one that would straddle
-a cap edge is pushed to the next cap — so a word splits in the physical gutter,
-where the eye already expects a break. That is 220 characters on a 12-cap row
-instead of twelve words.
+⚠️ **Fill LINE-MAJOR — line 0 across every cap of the row, then line 1.** The row
+is a paragraph. Cap-major (fill both lines of a cap, then move to the next, so each
+cap is a self-contained ~16-character chunk) was implemented first, and the
+measurement is what killed it: **a row holds ~106 characters on one line, and seven
+of the eight options across both modelled rounds are shorter than that.** Line-major
+therefore renders them as a single clean line and the "which line do I read next?"
+question never arises — the two-line ceiling is a ceiling, not a quota, and only the
+166-character *questions* reach it. Cap-major uses both lines of its first caps on
+every row however short the text, forcing that question even where nothing needed
+it, and leaves the rest of the row blank. A row that needs only one line centres it,
+so a short option reads as ordinary text rather than clinging to the top of the cap.
+`--order cap` still renders the other way for comparison.
 
 So the modelled prompt is one a coding agent would really send —
 
@@ -258,9 +262,9 @@ So the modelled prompt is one a coding agent would really send —
 > third-party code · **3** Show me the failing output and that `rules.mk` block
 > first · **4** Skip the DOOM pack, finish the merge without it
 
-— **166 characters of question, 480 in total, over 32 caps**. Measured with the
+— **166 characters of question, 480 in total, over 52 caps**. Measured with the
 host's own encoder (`OverlayData`, what `send_smallest_overlay()` consults) that is
-**129 reports**, and because the host sleeps 300 ms after every 15
+**122 reports**, and because the host sleeps 300 ms after every 15
 (`max_hid_message_before_delay` / `delay_time_after_max_hid_messages`) it crosses
 the throttle **eight times**: **~2.5 s** before the question is readable.
 
@@ -278,12 +282,12 @@ so all 480 characters are **9 reports**, plus one to commit:
 |---|---:|---:|
 | notify — all six agents | n/a | **1** |
 | open -> overview | 22 (1 pause) | **1** |
-| pick -> question, realistic 4-option | 129 (8 pauses, ~2.5 s) | **10** (~10 ms) |
+| pick -> question, realistic 4-option | 122 (8 pauses, ~2.5 s) | **10** (~10 ms) |
 | answer -> back to typing | 2 | **1** |
 
-**13x fewer reports on the frame that matters, and ~250x less wall-clock**, because
+**12x fewer reports on the frame that matters, and ~250x less wall-clock**, because
 the text path never reaches the 15-report cliff at all. Note the image path got
-*worse* as the prompt got realistic (29 -> 129) while the text path scales with
+*worse* as the prompt got realistic (29 -> 122) while the text path scales with
 characters, not caps — which is the actual argument, not the ratio at any one size.
 The pre-staging trick below stops being necessary: there is no burst left to hide.
 
@@ -292,10 +296,10 @@ The pre-staging trick below stops being necessary: there is no burst left to hid
 ⚠️ **Density is a real lever, and it is measured, not guessed.** The default is two
 14 px lines per cap — the firmware's own keycap face (`_Small_`, 15 px) fits about
 the same nine characters across a 72 px panel. `--lines 3` drops to 10 px, which is
-`_Nano_`, the face split42 already ships for its layout name, and buys **469
-characters per row instead of 220** — the whole prompt above then fits on the left
-half alone. It is at the limit of what a keycap diffuser resolves, so it is an
-option rather than the default; try it on hardware before committing to it.
+`_Nano_`, the face split42 already ships for its layout name, and roughly doubles
+the row to ~469 characters, so the whole prompt above fits on the left half alone.
+It is at the limit of what a keycap diffuser resolves, so it is an option rather
+than the default; try it on hardware before committing to it.
 
 ![the same prompt at 3 lines per cap](sketches/agent_3_question_dense.png)
 
@@ -305,7 +309,9 @@ option rather than the default; try it on hardware before committing to it.
   quadrant — option 1 on the left home row, option 2 on the right — and it is
   unreadable: the halves are far apart but the eye still reads straight across, so
   the two options merge into one sentence. A row is one option and the whole row is
-  the button; a short option simply stops part-way along it.
+  the button. Only the caps carrying ink light up on the press: inverting a blank
+  72x40 panel turns it fully white, and a run of solid white blocks past the end of
+  a short option reads as an error rather than as feedback.
 - **Nothing may sit in the MIDDLE of a row.** The agent-name tile started on the AI
   key at matrix `(6,1)` — the right half's *inner* edge, which is exactly where the
   eye crosses the gap — and it cut option 1 in half. It belongs at `(5,7)`, the far
@@ -317,9 +323,13 @@ a row of caps is a line of text, whatever those keys happen to type — and
 keycode-keyed cell map silently paints one cap with the other's text.
 
 **Streaming falls out for free.** A long question is several reports, and the host
-can send them as the model produces them: the top row fills word by word while
-you read, and the option rows land last, which is the order a model emits them
-anyway. The read time *is* the transfer budget.
+can send them as the model produces them: the top row fills character by character
+while you read — a token stream arrives mid-word, so the strip grows mid-word too —
+and the option rows land last, which is the order a model emits them anyway. The
+read time *is* the transfer budget. ⚠️ One consequence to design for: a question
+that grows past ~106 characters **reflows** from one centred line to two, so the
+text visibly jumps once mid-stream. Either accept it, or lay the question out for
+two lines from the start once the host knows the length.
 
 ⚠️ **Not base64.** Base64 exists to survive text-only channels and costs +33% —
 raw HID is already binary, so it would cut ~59 characters per report to ~44. Send

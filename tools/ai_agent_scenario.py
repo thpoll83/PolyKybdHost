@@ -18,11 +18,14 @@ Layout rules that came out of actually rendering it:
     prompt and collapses on a real one: an agent question is 150-200 characters,
     and spending a whole 72x40 panel on "in" leaves nowhere for the rest. Flowed,
     a 12-cap row holds ~220 characters instead of ~12 words.
-  * ⚠️ FILL EACH CAP BEFORE MOVING ON (cap-major), never line-0-across-the-row.
-    A single wide display would do the latter, and it renders WRONG here: the caps
-    are physically separate — and the halves ~20 cm apart — so the eye reads one
-    cap's two lines as a pair. Line-major made the top row read "The upstr / M
-    menu". Each cap is its own ~16-character chunk, read like a word.
+  * ⚠️ FILL LINE-MAJOR: line 0 across every cap of the row, THEN line 1. The row
+    is a paragraph. Cap-major (both lines of one cap, then the next) was tried
+    first and is wrong for a reason that only appears once the text is real: a
+    12-cap row holds ~106 characters on ONE line, and most agent *options* are
+    shorter than that -- so line-major renders them as a single clean line and the
+    "which line do I read next?" question never arises. Cap-major uses both lines
+    of its first caps on every row however short the text, forcing that question
+    even where nothing needed it, and leaves the rest of the row blank.
   * ⚠️ A ROW BELONGS TO ONE OPTION, across both halves. The halves sit far apart
     but the eye still reads straight across them, so option 1 on the left home row
     and option 2 on the right home row read as ONE sentence. Tried it; unreadable.
@@ -101,7 +104,8 @@ ROUNDS = [
 ]
 
 
-def prompt_cells(painter, q, options=(), *, q_chars=None, marker=True, lines=2):
+def prompt_cells(painter, q, options=(), *, q_chars=None, marker=True,
+                 lines=2, order="line"):
     """{matrix_pos: 72x40 buffer} for one prompt frame, flowed across the rows.
 
     ``q_chars`` truncates the question to that many characters, which is how the
@@ -111,12 +115,12 @@ def prompt_cells(painter, q, options=(), *, q_chars=None, marker=True, lines=2):
     """
     cells = {}
     text = q if q_chars is None else q[:q_chars]
-    bufs, _ = painter.flow(text, len(ROW_QUESTION), lines=lines)
+    bufs, _ = painter.flow(text, len(ROW_QUESTION), lines=lines, order=order)
     cells.update(zip(ROW_QUESTION, bufs))
     for i, opt in enumerate(options):
         row = OPTION_ROWS[i]
-        bufs, _ = painter.flow(opt, len(row),
-                               marker=str(i + 1) if marker else None, lines=lines)
+        bufs, _ = painter.flow(opt, len(row), lines=lines, order=order,
+                               marker=str(i + 1) if marker else None)
         cells.update(zip(row, bufs))
     return cells
 
@@ -126,17 +130,18 @@ def option_positions(index):
     return set(OPTION_ROWS[index])
 
 
-def check_fits(painter, lines=2):
+def check_fits(painter, lines=2, order="line"):
     """Text that overflows its row. Silent truncation is the failure mode a mockup
     hides best, so both tools call this at startup and print what it returns."""
     bad = []
     for r, rnd in enumerate(ROUNDS):
-        _, over = painter.flow(rnd["q"], len(ROW_QUESTION), lines=lines)
+        _, over = painter.flow(rnd["q"], len(ROW_QUESTION), lines=lines,
+                               order=order)
         if over:
             bad.append(f"round {r} question overflows by {len(over)} chars: {over!r}")
         for i, opt in enumerate(rnd["options"]):
-            _, over = painter.flow(opt, len(OPTION_ROWS[i]),
-                                   marker=str(i + 1), lines=lines)
+            _, over = painter.flow(opt, len(OPTION_ROWS[i]), lines=lines,
+                                   order=order, marker=str(i + 1))
             if over:
                 bad.append(f"round {r} option {i + 1} overflows by "
                            f"{len(over)} chars: {over!r}")
