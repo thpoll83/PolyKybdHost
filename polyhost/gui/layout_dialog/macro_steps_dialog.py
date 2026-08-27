@@ -5,10 +5,14 @@ to itself.** While it is armed every keystroke belongs to the macro, so it canno
 a window with a label field that also wants them. Everything else here follows from
 that -- once there is a window, the step table may as well live in it too.
 
-Two views over ONE macro, which is the shape VIA settled on and the reason its two tabs
+Two TABS over ONE macro, which is the shape VIA settled on and the reason its two tabs
 work: **Table** builds it a row at a time, **Script** is the same thing as VIA-compatible
 text (`{+KC_LSFT}{KC_P}{-KC_LSFT}`). Switching converts through `macro_script`, so
 whichever you prefer, the other stays true -- and text you paste from VIA lands here.
+
+The row buttons (add / remove / reorder) belong to the **Table tab**, with the rows they
+act on; only **Record** is shared, because it is the one control that means something in
+both. Record appends through `_append_step`, which writes to whichever tab is up.
 
 The summary line under them is a view of the steps and is never editable: a third
 editable representation would be a third thing to keep in agreement.
@@ -23,7 +27,7 @@ from __future__ import annotations
 from PyQt5.QtCore import QElapsedTimer, Qt
 from PyQt5.QtWidgets import (
     QAbstractItemView, QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QHeaderView,
-    QInputDialog, QLabel, QPlainTextEdit, QPushButton, QSpinBox, QStackedWidget,
+    QInputDialog, QLabel, QPlainTextEdit, QPushButton, QSpinBox, QTabWidget,
     QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
 
@@ -43,6 +47,8 @@ MIN_RECORDED_GAP_MS = 40
 
 COL_KIND, COL_KEY, COL_MS = 0, 1, 2
 
+# Tab indices. The tab bar IS the view state -- there is no separate selector to keep
+# in agreement with it.
 VIEW_TABLE, VIEW_SCRIPT = 0, 1
 
 
@@ -87,26 +93,16 @@ class MacroStepsDialog(QDialog):
         self.script.setToolTip(
             "VIA's macro syntax:  plain text  ·  {KC_A} tap  ·  {+KC_A} hold  ·  "
             "{-KC_A} release  ·  {250} wait  ·  \\{ a literal brace")
+        # The summary follows the script as it is typed, exactly as it follows the table
+        # -- and because `_refresh` catches a parse failure, the same line doubles as the
+        # error display. Without this the script view was the one place where the
+        # summary described something other than what was on screen.
+        self.script.textChanged.connect(self._refresh)
 
-        self.stack = QStackedWidget()
-        table_page = QWidget()
-        table_layout = QVBoxLayout(table_page)
-        table_layout.setContentsMargins(0, 0, 0, 0)
-        table_layout.addWidget(self.table)
-        self.stack.addWidget(table_page)
-        self.stack.addWidget(self.script)
-        page.addWidget(self.stack, 1)
-
-        view_row = QHBoxLayout()
-        view_row.addWidget(QLabel("View:"))
-        self.view_box = QComboBox()
-        self.view_box.addItem("Table", VIEW_TABLE)
-        self.view_box.addItem("Script", VIEW_SCRIPT)
-        self.view_box.currentIndexChanged.connect(self._on_view_changed)
-        view_row.addWidget(self.view_box)
-        view_row.addStretch(1)
-        page.addLayout(view_row)
-
+        # The row buttons live INSIDE the Table tab, with the rows they act on. They
+        # have no meaning in the script view -- "Remove" removes a table row, and the
+        # equivalent gesture in a text box is the Delete key -- so a shared footer would
+        # be five permanently-greyed buttons whenever the Script tab is up.
         row = QHBoxLayout()
         self.add_btn = QPushButton("Add step")
         self.add_btn.clicked.connect(self._on_add)
@@ -126,22 +122,38 @@ class MacroStepsDialog(QDialog):
         row.addWidget(self.down_btn)
         row.addStretch(1)
 
-        # The recorder. A toggle rather than a modal-within-a-modal: the table stays
-        # visible while it fills, which is what makes it obvious what was captured.
+        table_page = QWidget()
+        table_layout = QVBoxLayout(table_page)
+        table_layout.setContentsMargins(0, 0, 0, 0)
+        table_layout.addWidget(self.table, 1)
+        table_layout.addLayout(row)
+
+        # Real tabs, not a combo over a stack: the two views are peers rather than a
+        # setting, and a tab bar says so without spending a labelled row on it.
+        self.tabs = QTabWidget()
+        self.tabs.addTab(table_page, "Table")
+        self.tabs.addTab(self.script, "Script")
+        self.tabs.currentChanged.connect(self._on_view_changed)
+        page.addWidget(self.tabs, 1)
+
+        # The recorder is SHARED, because it works in both views -- it appends through
+        # `_append_step`, which writes to whichever tab is up.
+        shared = QHBoxLayout()
+        shared.addStretch(1)
         self.record_btn = QPushButton("Record")
         self.record_btn.setCheckable(True)
         self.record_btn.setToolTip(
             "Press the keys you want, then click Stop. Esc stops recording.")
         self.record_btn.toggled.connect(self._on_record_toggled)
-        row.addWidget(self.record_btn)
+        shared.addWidget(self.record_btn)
         self.timing_box = QComboBox()
         self.timing_box.addItem("no timing", False)
         self.timing_box.addItem("with timing", True)
         self.timing_box.setToolTip(
             "Record the real pauses between keystrokes as Wait steps.\n"
             "Off by default: most macros want to run as fast as the keyboard can.")
-        row.addWidget(self.timing_box)
-        page.addLayout(row)
+        shared.addWidget(self.timing_box)
+        page.addLayout(shared)
 
         self.summary = QLabel()
         self.summary.setWordWrap(True)
@@ -171,7 +183,7 @@ class MacroStepsDialog(QDialog):
         Raises `ScriptError` from the script view, which is the one view whose contents
         can be nonsense; every caller either catches it or is called from one that does.
         """
-        if self.stack.currentIndex() == VIEW_SCRIPT:
+        if self.tabs.currentIndex() == VIEW_SCRIPT:
             return msc.parse(self.script.toPlainText())
         return self._table_steps()
 
@@ -197,7 +209,7 @@ class MacroStepsDialog(QDialog):
         views from disagreeing about what was just captured. Appending to the script is
         safe even while it does not parse: it is text until someone asks it to be steps.
         """
-        if self.stack.currentIndex() == VIEW_SCRIPT:
+        if self.tabs.currentIndex() == VIEW_SCRIPT:
             self.script.setPlainText(self.script.toPlainText() + msc.format([step]))
             cursor = self.script.textCursor()
             cursor.movePosition(cursor.End)
@@ -206,30 +218,31 @@ class MacroStepsDialog(QDialog):
             self._append_row(step)
             self.table.scrollToBottom()
 
-    def _on_view_changed(self, _i: int):
-        """Convert what is on screen into the other view.
+    def _on_view_changed(self, index: int):
+        """Fill the tab that has just become current from the other one.
 
-        ⚠️ A script that does not parse must NOT lose the text. Refusing the switch and
-        putting the box back is the only honest option: converting "as far as it got"
-        would silently discard the rest, and clearing it would discard all of it -- both
-        at the moment the user most wants to see what they typed.
+        ⚠️ `QTabWidget.currentChanged` fires AFTER the switch, so this converts INTO the
+        new tab rather than deciding whether to move -- and a refusal has to move the
+        tab bar BACK. That inversion is the whole difference from driving a stack from a
+        combo, and getting it backwards silently shows an empty tab.
+
+        ⚠️ A script that does not parse must NOT lose the text. Reverting the tab is the
+        only honest option: converting "as far as it got" would silently discard the
+        rest and clearing it would discard all of it -- both at the moment the user most
+        wants to see what they typed.
         """
-        want = self.view_box.currentData()
-        if want == self.stack.currentIndex():
-            return
-        if want == VIEW_SCRIPT:
+        if index == VIEW_SCRIPT:
             self.script.setPlainText(msc.format(self._table_steps()))
         else:
             try:
                 steps = msc.parse(self.script.toPlainText())
             except (msc.ScriptError, mb.MacroError) as e:
                 self.summary.setText(f"{e}  — fix it or switch back.")
-                self.view_box.blockSignals(True)
-                self.view_box.setCurrentIndex(VIEW_SCRIPT)
-                self.view_box.blockSignals(False)
+                self.tabs.blockSignals(True)
+                self.tabs.setCurrentIndex(VIEW_SCRIPT)
+                self.tabs.blockSignals(False)
                 return
             self._reload_table(steps)
-        self.stack.setCurrentIndex(want)
         self._refresh()
 
     def _append_row(self, step: mb.Step, at: int | None = None) -> int:
@@ -359,17 +372,21 @@ class MacroStepsDialog(QDialog):
         self._refresh_buttons()
 
     def _refresh_buttons(self):
-        # The row buttons act on the TABLE, so they are dead in the script view -- where
-        # the equivalent gesture is typing. Record stays live in both: it appends to
-        # whichever view is showing, via `_append_step`.
-        table = self.stack.currentIndex() == VIEW_TABLE
+        # The row buttons live on the Table tab, so the script view already hides them.
+        # They are ALSO disabled there: every one of them mutates the table, and a stale
+        # signal or a shortcut reaching one while Script is up would edit rows that the
+        # next tab switch overwrites -- a change that appears to be accepted and is not.
+        # Record stays live in both; it appends through `_append_step`.
+        table = self.tabs.currentIndex() == VIEW_TABLE
         has = self._selected() >= 0
         for b in (self.remove_btn, self.up_btn, self.down_btn):
             b.setEnabled(table and has and not self._recording)
         for b in (self.add_btn, self.text_btn):
             b.setEnabled(table and not self._recording)
         self.timing_box.setEnabled(not self._recording)
-        self.view_box.setEnabled(not self._recording)
+        # The TAB BAR, not a selector: switching mid-recording would convert half a
+        # capture through the parser and land the rest somewhere else.
+        self.tabs.tabBar().setEnabled(not self._recording)
 
     # -- recording ----------------------------------------------------------
 
