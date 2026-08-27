@@ -93,7 +93,8 @@ class MacroTabTest(unittest.TestCase):
         tab.label_edit.setText("shove")
         tab.text_edit.setText("git push")
         tab._on_save()
-        core.macro_set.assert_called_with(0, label="shove", text="git push")
+        core.macro_set.assert_called_with(0, label="shove", text="git push",
+                                          style=0, icon=0)
 
     def test_save_omits_the_body_when_it_is_not_editable(self):
         """A label-only edit must not re-stream a body the tab could not show."""
@@ -103,7 +104,7 @@ class MacroTabTest(unittest.TestCase):
         tab.list.setCurrentRow(2)
         tab.label_edit.setText("renamed")
         tab._on_save()
-        core.macro_set.assert_called_with(2, label="renamed")
+        core.macro_set.assert_called_with(2, label="renamed", style=0, icon=0)
 
     def test_assign_emits_the_macro_keycode(self):
         core = _core()
@@ -167,16 +168,56 @@ class MacroTabPreviewTest(unittest.TestCase):
                   if img.pixelColor(x, y).lightness() > 100)
         self.assertGreater(lit, 0, "the label preview rendered no lit pixels")
 
-    def test_an_empty_label_previews_blank_rather_than_stale(self):
+    @staticmethod
+    def _lit(tab):
+        img = tab.preview.pixmap().toImage()
+        return sum(1 for y in range(img.height()) for x in range(img.width())
+                   if img.pixelColor(x, y).lightness() > 100)
+
+    def test_clearing_the_label_does_not_leave_a_stale_render(self):
+        """A macro with no caption is NOT a blank keycap -- render_macro_key() centres
+        the mark in the whole cell -- so the check is that the render CHANGED, not that
+        it went dark. Asserting blank pinned the old preview's own omission."""
         tab = self._tab()
         tab.label_edit.setText("push")
         tab._repaint_preview()
+        with_label = self._lit(tab)
         tab.label_edit.setText("")
         tab._repaint_preview()
-        img = tab.preview.pixmap().toImage()
-        lit = sum(1 for y in range(img.height()) for x in range(img.width())
-                  if img.pixelColor(x, y).lightness() > 100)
-        self.assertEqual(lit, 0)
+        without = self._lit(tab)
+        self.assertGreater(with_label, 0)
+        self.assertGreater(without, 0, "an unlabelled macro still shows its index")
+        self.assertNotEqual(with_label, without)
+
+    def test_the_label_only_style_draws_bigger_than_the_captioned_one(self):
+        """The whole point of STYLE_TEXT: the caption gets the entire cell instead of
+        the bottom band, so it lands on a larger face. Measured as ink, because the
+        face is chosen by a ladder rather than named."""
+        tab = self._tab()
+        tab.label_edit.setText("mail")
+        tab.style_box.setCurrentIndex(0)
+        tab._repaint_preview()
+        captioned = self._lit(tab)
+        tab.style_box.setCurrentIndex(2)
+        tab._repaint_preview()
+        big = self._lit(tab)
+        self.assertGreater(big, captioned)
+
+    def test_an_icon_the_keyboard_cannot_draw_says_so(self):
+        """The firmware falls back to the index for an unknown glyph, so a keycap that
+        looks unchanged would read as a bug. The button has to name the case."""
+        tab = self._tab()
+        tab.style_box.setCurrentIndex(1)
+        tab._icon = 0x10FFFD
+        tab._refresh_icon_button()
+        self.assertIn("no glyph", tab.icon_btn.text())
+
+    def test_the_icon_controls_are_dead_unless_the_style_uses_them(self):
+        tab = self._tab()
+        tab.style_box.setCurrentIndex(0)
+        self.assertFalse(tab.icon_btn.isEnabled())
+        tab.style_box.setCurrentIndex(1)
+        self.assertTrue(tab.icon_btn.isEnabled())
 
 
 @unittest.skipIf(_IMPORT_ERR, f"PyQt5/offscreen unavailable: {_IMPORT_ERR}")
@@ -249,6 +290,26 @@ class BrowserIntegrationTest(unittest.TestCase):
         self.assertFalse(
             meter.intersects(preview),
             f"the label meter {meter} overlaps the keycap preview {preview}")
+
+    def test_the_actions_stay_reachable_at_the_height_it_is_given(self):
+        """Save / Clear / Use-on-key sit in a fixed footer, not in the scrolled column.
+
+        The column can need more height than the browser's 400 px cap ever gives it, so
+        anything inside it can end up below the fold -- and a tab whose Save button is
+        the part you cannot see reads as one that does not work.
+        """
+        core = _core()
+        b = self._browser(core)
+        b.resize(900, b.maximumHeight())
+        b.tabs.setCurrentIndex(self._titles(b).index("Macros"))
+        b.show()
+        _APP.processEvents()
+        tab = b.macro_tab
+        btn = tab.save_btn
+        top_left = btn.parentWidget().mapTo(tab, btn.pos())
+        b.hide()
+        self.assertLessEqual(top_left.y() + btn.height(), tab.height(),
+                             "the Save button is below the fold")
 
 
 if __name__ == "__main__":

@@ -22,11 +22,13 @@ from __future__ import annotations
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QImage, QPixmap
 from PyQt5.QtWidgets import (
-    QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMessageBox,
-    QProgressBar, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QComboBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem,
+    QMessageBox, QProgressBar, QPushButton, QScrollArea, QVBoxLayout, QWidget,
 )
 
+from polyhost.device.command_ids import MacroStyle
 from polyhost.services import macro_label as ml
+from polyhost.services import macro_look as mk
 
 # QK_MACRO_0. The firmware owns this range outright -- via.c is the only core dispatcher
 # for it and VIA_ENABLE is unset -- so a macro key is an ordinary keycode assignment.
@@ -47,16 +49,38 @@ class MacroTab(QWidget):
         self._macros: list[dict] = []
         self._current = 0
         self._font = None
+        self._mid = None
+        self._fonts: list = []
+        self._ladder: list = []
         self._loaded = False
+        self._icon = 0
 
         # A missing font only costs the preview, so the tab still edits macros on a
-        # machine without the firmware checkout beside it.
+        # machine without the firmware checkout beside it. The packs ship with this
+        # repo, so the icon half survives even when the firmware headers do not.
         try:
             self._font = ml.load_nano_font(ml.default_font_dir())
         except Exception:
             self._font = None
+        try:
+            self._mid = mk.load_ui_font(ml.default_font_dir(), "util_font.h",
+                                        mk.MID_FONT_SYMBOL)
+        except Exception:
+            self._mid = None
+        try:
+            self._fonts, _src = mk.load_render_fonts()
+            self._ladder = mk.caption_ladder(mk.load_pack_fonts(), mid_font=self._mid,
+                                             nano_font=self._font)
+        except Exception:
+            self._fonts, self._ladder = [], []
 
-        outer = QHBoxLayout(self)
+        # The actions live OUTSIDE the scrolled column, in a fixed footer: the column
+        # can be taller than the page is ever given (see the scroll note below), and
+        # Save / Clear / Use-on-key falling below the fold makes the tab look like it
+        # cannot do anything. Only the editing controls scroll.
+        page = QVBoxLayout(self)
+        outer = QHBoxLayout()
+        page.addLayout(outer, 1)
 
         self.list = QListWidget()
         self.list.setMaximumWidth(190)
@@ -108,6 +132,25 @@ class MacroTab(QWidget):
         label_row.addWidget(self.preview)
         right.addLayout(label_row)
 
+        right.addWidget(self._caption("KEYCAP"))
+        keycap_row = QHBoxLayout()
+        self.style_box = QComboBox()
+        # A macro owns its whole keycap, so the cell can be more than a legend. Order
+        # IS the wire value.
+        self.style_box.addItem("Number above the label", MacroStyle.INDEX.value)
+        self.style_box.addItem("Icon above the label", MacroStyle.ICON.value)
+        self.style_box.addItem("Label only, as large as it fits", MacroStyle.TEXT.value)
+        self.style_box.currentIndexChanged.connect(self._on_style_changed)
+        keycap_row.addWidget(self.style_box, 1)
+
+        self.icon_btn = QPushButton("Choose icon…")
+        self.icon_btn.clicked.connect(self._on_pick_icon)
+        keycap_row.addWidget(self.icon_btn)
+        self.icon_clear = QPushButton("Clear")
+        self.icon_clear.clicked.connect(self._on_clear_icon)
+        keycap_row.addWidget(self.icon_clear)
+        right.addLayout(keycap_row)
+
         right.addWidget(self._caption("WHAT IT TYPES"))
         self.text_edit = QLineEdit()
         self.text_edit.setPlaceholderText("tom@example.com")
@@ -142,7 +185,7 @@ class MacroTab(QWidget):
         self.assign_btn.clicked.connect(self._on_assign)
         buttons.addWidget(self.assign_btn)
         buttons.addStretch(1)
-        right.addLayout(buttons)
+        page.addLayout(buttons)
 
         # Debounced so a fast typist does not repaint per keystroke.
         self._preview_timer = QTimer(self)
@@ -203,7 +246,15 @@ class MacroTab(QWidget):
             return
         self._current = row
         m = self._macros[row]
+        self._icon = m.get("icon", 0)
+        style = m.get("style", 0)
+        self.style_box.blockSignals(True)
+        self.style_box.setCurrentIndex(
+            style if 0 <= style < self.style_box.count() else 0)
+        self.style_box.blockSignals(False)
+        self._refresh_icon_button()
         self.label_edit.setText(m["label"])
+        self._preview_timer.start()
         if m["text"] is None:
             # Not expressible as text. Showing it as text and saving would silently
             # drop the chords and delays, so the field is locked instead.
@@ -222,6 +273,37 @@ class MacroTab(QWidget):
     def _on_label_changed(self, _text: str):
         self._preview_timer.start()
 
+    def _on_style_changed(self, _i: int):
+        self._refresh_icon_button()
+        self._preview_timer.start()
+
+    def _refresh_icon_button(self):
+        icon_style = self.style_box.currentData() == MacroStyle.ICON.value
+        self.icon_btn.setEnabled(icon_style)
+        self.icon_clear.setEnabled(icon_style and bool(self._icon))
+        if not self._icon:
+            self.icon_btn.setText("Choose icon…")
+        else:
+            drawable = mk.find_glyph(self._fonts, self._icon) is not None
+            # Say so when the keyboard cannot draw it: the firmware falls back to the
+            # index, so a silently-unchanged keycap would otherwise read as a bug.
+            self.icon_btn.setText(f"U+{self._icon:04X}"
+                                  + ("" if drawable else " (no glyph)"))
+
+    def _on_pick_icon(self):
+        from polyhost.gui.layout_dialog.macro_icon_dialog import MacroIconDialog
+
+        dlg = MacroIconDialog(self._icon, self)
+        if dlg.exec_() and dlg.codepoint() is not None:
+            self._icon = dlg.codepoint()
+            self._refresh_icon_button()
+            self._preview_timer.start()
+
+    def _on_clear_icon(self):
+        self._icon = 0
+        self._refresh_icon_button()
+        self._preview_timer.start()
+
     def _repaint_preview(self):
         text = self.label_edit.text()
         if self._font is None:
@@ -234,46 +316,88 @@ class MacroTab(QWidget):
         # Amber past the panel: the label is still accepted, it is just cut.
         self.width_meter.setStyleSheet(
             "QProgressBar::chunk { background: #B4690E; }" if r.truncated else "")
+        # The meter measures the CAPTION band, which the label-only style does not use --
+        # there the whole cell is the caption and the ladder decides what fits.
+        self.width_meter.setEnabled(self.style_box.currentData() != MacroStyle.TEXT.value)
         self.preview.setPixmap(self._render(r.text))
 
+    # -- keycap composition -------------------------------------------------
+
     def _render(self, label: str) -> QPixmap:
-        """Draw the keycap the way render_macro_key() composes it."""
+        """Draw the keycap the way render_macro_key() composes it, for this style."""
         img = QImage(ml.PANEL_W, ml.PANEL_H, QImage.Format_RGB32)
         img.fill(QColor(8, 10, 14))
         lit = QColor(207, 231, 245).rgb()
-        if label and self._font is not None:
-            self._blit(img, label, lit)
-        return QPixmap.fromImage(
-            img.scaled(ml.PANEL_W * PREVIEW_SCALE, ml.PANEL_H * PREVIEW_SCALE,
-                       Qt.IgnoreAspectRatio, Qt.FastTransformation))
+        style = self.style_box.currentData()
 
-    def _blit(self, img: QImage, label: str, lit: int):
-        f = self._font
-        # Mirror the firmware's placement: pin the caption's lowest lit pixel to the
-        # last row, centre it horizontally on its own ink box.
-        x = 0
-        xmn = xmx = ymx = None
-        for ch in label:
-            g = self._glyph(ord(ch))
-            if g is None:
-                continue
-            if g["width"] and g["height"]:
-                l, r = x + g["xOffset"], x + g["xOffset"] + g["width"] - 1
-                b = g["yOffset"] + g["height"] - 1
-                xmn = l if xmn is None else min(xmn, l)
-                xmx = r if xmx is None else max(xmx, r)
-                ymx = b if ymx is None else max(ymx, b)
-            x += g["xAdvance"]
-        if xmn is None:
-            return
-        x0 = (ml.PANEL_W - (xmx - xmn + 1)) // 2 - xmn
-        baseline = ml.PANEL_H - 1 - ymx
+        if style == MacroStyle.TEXT.value and label and self._ladder:
+            plan = mk.plan_caption(label, self._ladder)
+            if plan is not None:
+                fonts, base, box, _name = plan
+                self._plot(img, label, fonts, base, lit,
+                           x0=(ml.PANEL_W - (box[1] - box[0] + 1)) // 2 - box[0],
+                           baseline=(ml.PANEL_H - (box[3] - box[2] + 1)) // 2 - box[2])
+                return self._scaled(img)
+            # Nothing on the ladder fits: the firmware falls through to a captioned
+            # style rather than drawing an empty keycap, so the preview does too.
 
+        mark, mark_fonts, mark_base = self._mark(style)
+        if not label:
+            if mark and mark_fonts:
+                box = mk.bbox(mark, mark_fonts, mark_base)
+                if box:
+                    self._plot(img, mark, mark_fonts, mark_base, lit,
+                               x0=(ml.PANEL_W - (box[1] - box[0] + 1)) // 2 - box[0],
+                               baseline=(ml.PANEL_H - (box[3] - box[2] + 1)) // 2 - box[2])
+            return self._scaled(img)
+
+        cap = mk.bbox(label, [self._font], 0)
+        if cap is None:
+            return self._scaled(img)
+        cap_base = ml.PANEL_H - 1 - cap[3]
+        free_rows = cap_base + cap[2]
+        self._plot(img, label, [self._font], 0, lit,
+                   x0=(ml.PANEL_W - (cap[1] - cap[0] + 1)) // 2 - cap[0],
+                   baseline=cap_base)
+
+        if mark and mark_fonts:
+            box = mk.bbox(mark, mark_fonts, mark_base)
+            # Skipped rather than squeezed when the caption leaves no room -- a clipped
+            # mark is worse than none, which is the firmware's own call.
+            if box and (box[3] - box[2] + 1) < free_rows:
+                h = box[3] - box[2] + 1
+                self._plot(img, mark, mark_fonts, mark_base, lit,
+                           x0=(ml.PANEL_W - (box[1] - box[0] + 1)) // 2 - box[0],
+                           baseline=(free_rows - h) // 2 - box[2])
+        return self._scaled(img)
+
+    def _mark(self, style):
+        """What goes above the caption: a chosen glyph, or the macro's index.
+
+        An icon the keyboard has no glyph for falls back to the index, exactly as the
+        firmware does -- so a choice made against a richer font pack still names its
+        macro here rather than drawing nothing.
+        """
+        if style == MacroStyle.ICON.value and self._icon:
+            hit = mk.find_glyph(self._fonts, self._icon)
+            if hit is not None:
+                # Through the glyph's OWN font: kdisp_write_gfx_char baseline-aligns to
+                # fonts[0], so drawing a tall pack glyph through the whole pool shifts
+                # it down by the difference (the language-flag gap-at-top regression).
+                return chr(self._icon), [hit[0]], 0
+        if self._mid is None:
+            return "", [], 0
+        mid = self._macros[self._current]["id"] if self._macros else 0
+        return f"M{mid}", [self._mid], 0
+
+    def _plot(self, img: QImage, text: str, fonts, base: int, lit: int,
+              x0: int, baseline: int):
         x = x0
-        for ch in label:
-            g = self._glyph(ord(ch))
-            if g is None:
+        for ch in text:
+            hit = mk.find_glyph(fonts, ord(ch) + base)
+            if hit is None:
                 continue
+            f, g = hit
             bo, cb = g["bitmapOffset"], (g["height"] + 7) >> 3   # column-native
             for xx in range(g["width"]):
                 col = bo + xx * cb
@@ -284,14 +408,11 @@ class MacroTab(QWidget):
                             img.setPixel(vx, vy, lit)
             x += g["xAdvance"]
 
-    def _glyph(self, cp: int):
-        f = self._font
-        if f is None or not (f.first <= cp <= f.last):
-            return None
-        g = f.glyphs[cp - f.first]
-        if g["width"] == 0 and g["height"] == 0 and g["xAdvance"] == 0:
-            return None
-        return g
+    @staticmethod
+    def _scaled(img: QImage) -> QPixmap:
+        return QPixmap.fromImage(
+            img.scaled(ml.PANEL_W * PREVIEW_SCALE, ml.PANEL_H * PREVIEW_SCALE,
+                       Qt.IgnoreAspectRatio, Qt.FastTransformation))
 
     # -- actions ------------------------------------------------------------
 
@@ -299,7 +420,9 @@ class MacroTab(QWidget):
         if not self._macros:
             return
         m = self._macros[self._current]
-        params = {"label": self.label_edit.text()}
+        params = {"label": self.label_edit.text(),
+                  "style": self.style_box.currentData(),
+                  "icon": self._icon}
         if self.text_edit.isEnabled():
             params["text"] = self.text_edit.text()
         ok, msg = self.core.macro_set(m["id"], **params)
