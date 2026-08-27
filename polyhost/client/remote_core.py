@@ -379,6 +379,9 @@ class RemoteCore(Observable):
     def keymap_layer_count(self):
         return self._device(p.M_KEYMAP_LAYER_COUNT)
 
+    def keymap_layer_names(self):
+        return self._device(p.M_KEYMAP_LAYER_NAMES)
+
     def keymap_default_layer(self):
         return self._device(p.M_KEYMAP_DEFAULT_LAYER)
 

@@ -884,6 +884,45 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the firmware's `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT`). Only the *names* were
     stale. Worth knowing which half of an editor's layer list is live and which is a
     committed artifact before debugging either.
+  - ✅ **RESOLVED for firmware v14+ (2026-08-26): the names come off the wire too.**
+    `PolyKybd.get_layer_names()` (cmd 35, `FEATURE_MIN_PROTOCOL["layer_names"]`) asks
+    the keyboard, and `KbLayoutDialog._layer_names()` prefers that over the file — so
+    both halves of the editor's layer list are now live and the generated artifact is
+    only the fallback for older boards. It also gets *better* names: the yaml could
+    only ever carry the enum tags (`L0`, `FL`, …), while the firmware answers with
+    what each layer actually is (`Qwerty`, `Stag!`, `ColemkDH`, …, `Fn`, `Numpad`,
+    `Utility`). **`layer_names.yaml` and its generator stay** — do not delete them,
+    they are what a pre-v14 keyboard falls back to — but they are no longer the only
+    source, so the rot above can no longer reach a current board.
+  - ⚠️ **The reply is `[total][count]` then NUL-terminated names, and the TOTAL is
+    what makes it decodable.** `total` is the whole payload length, that byte
+    included; the host reads it from the first report, keeps reading until it holds
+    that many bytes, and only then splits on the NULs. So termination is arithmetic
+    rather than a scan, and the report's zero fill is never examined. Two encodings
+    were built first and both are worse:
+    - **fixed-width 8-byte records** give the same arithmetic length but cost a
+      second report (65 bytes vs 54);
+    - **terminated with no total** forces the decoder to find the end by scanning,
+      and the only way to separate a real terminator from the zero fill is "an empty
+      name means padding" — which makes an **unnamed layer** (a bare terminator)
+      indistinguishable from the fill and silently truncates the list.
+  - ⚠️ **A robustness argument was asserted here on the strength of a BAD FIXTURE,
+    and it was wrong.** The test that "proved" terminated records unsafe fed the
+    decoder a **short non-final report**, which the firmware's emit loop cannot
+    produce — a short report is always the last one. Measured over every reachable
+    failure mode (last report lost, first lost, reordered, nothing arrives), all
+    three encodings behave identically, because HID delivers whole 64-byte reports
+    or nothing. **Robustness is a wash; the encoding choice is size, report count
+    and whether an unnamed layer is expressible.** Before claiming a wire format is
+    unsafe, check which scenarios the emitter can actually produce.
+  - **Mutation-tested.** The suite catches trusting the buffer length over the
+    total, dropping the implausible-total guard, slicing past the total, losing the
+    2-byte header offset, and accepting a short name list. ⚠️ The slice-past-the-total
+    mutation initially **escaped**, because `test_count_larger_than_the_body_is_incomplete`
+    used a bare payload with no report padding — so nothing supplied the empty fields
+    that a decoder ignoring the total would read. Padding the fixture to the real wire
+    is what catches it: a fixture that omits the padding cannot test the thing the
+    padding causes.
 - **Source-font download validation** (`font_downloader.py`): a download is rejected
   (`DownloadError`, no file cached) when it's short (Content-Length mismatch) or not a
   complete sfnt (`_validate_sfnt` checks the table directory fits the file) — this is

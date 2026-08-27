@@ -59,6 +59,9 @@ class Cmd(Enum):
     # fits in (8 bits = 30 pairs/report, 9 = 27, 10 = 24, 11 = 22).
     SEND_OVERLAY_MAPPING_W = 33
     GLYPH_SIZE = 34  # get/set the keycap legend size (protocol v13+)
+    # Read-only: count byte + that many NUL-terminated ASCII layer names of at
+    # most 8 chars. The count matches ID_DYNAMIC_KEYMAP_GET_LAYER_COUNT.
+    GET_LAYER_NAMES = 35  # (protocol v14+)
 
 
 class OsType(Enum):
