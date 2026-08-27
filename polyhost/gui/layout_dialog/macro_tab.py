@@ -7,11 +7,11 @@ keycodes rather than just listing them -- a macro page is the same shape.
 
 Two widgets here do real work rather than decorate:
 
-* the meter under the label is in PIXELS, not characters, and the preview beside it
-  renders the label through the firmware's own font. The keycap truncates by measured
-  width, so a character count would promise letters that will not be drawn -- and the
-  preview is also the only place the ASCII-only limit explains itself, since an umlaut
-  simply does not appear.
+* the meter beside the label is in PIXELS, not characters, and the preview renders the
+  label through the firmware's own font. The keycap truncates by measured width, so a
+  character count would promise letters that will not be drawn -- and the preview is
+  also the only place the ASCII-only limit explains itself, since an umlaut simply does
+  not appear.
 * the storage bar. The bodies share one buffer, so a long macro takes room from the
   others; without it the failure mode is a confusing refusal when you save the ninth
   macro because the third is enormous.
@@ -150,6 +150,17 @@ class MacroTab(QWidget):
         self.style_box.currentIndexChanged.connect(self._on_style_changed)
         left_col.addWidget(self.style_box)
 
+        # The body field sits here rather than under the whole top row: the preview is
+        # three keycaps tall and the two rows above are one each, so the column had a
+        # hole in it while the body -- the field most edits actually touch -- sat below
+        # the fold, further from the fields it belongs with than from the buttons.
+        types_row = QHBoxLayout()
+        types_row.addWidget(self._field_label("Types:"))
+        self.text_edit = QLineEdit()
+        self.text_edit.setPlaceholderText("tom@example.com")
+        types_row.addWidget(self.text_edit, 1)
+        left_col.addLayout(types_row)
+
         left_col.addStretch(1)
         top_row.addLayout(left_col, 1)
 
@@ -175,13 +186,6 @@ class MacroTab(QWidget):
         preview_col.addStretch(1)
         top_row.addLayout(preview_col)
         right.addLayout(top_row)
-
-        types_row = QHBoxLayout()
-        types_row.addWidget(self._field_label("Types:"))
-        self.text_edit = QLineEdit()
-        self.text_edit.setPlaceholderText("tom@example.com")
-        types_row.addWidget(self.text_edit, 1)
-        right.addLayout(types_row)
 
         # The size and the caveat share ONE line: both describe the body, neither
         # needs a row of its own, and the caveat wrapped to two lines when it had one.

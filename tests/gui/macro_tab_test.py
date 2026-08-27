@@ -432,6 +432,32 @@ class BrowserIntegrationTest(unittest.TestCase):
         self.assertGreaterEqual(btn.x(), prev.x(),
                                 "the icon button is not in the preview's column")
 
+    def test_the_body_field_sits_beside_the_preview_not_under_it(self):
+        """The preview is three keycaps tall and the fields beside it are one row each,
+        so the column had a hole in it and the body field sat below the whole top row --
+        further from the fields it belongs with than from the buttons.
+
+        Pinned as geometry rather than as layout structure: what the reader sees is
+        where it lands, and the two are only the same while nothing else grows.
+        """
+        core = _core()
+        b = self._browser(core)
+        b.resize(900, b.maximumHeight())
+        b.tabs.setCurrentIndex(self._titles(b).index("Macros"))
+        b.show()
+        _APP.processEvents()
+        tab = b.macro_tab
+        prev = tab.preview.parentWidget().mapTo(tab, tab.preview.pos())
+        body = tab.text_edit.parentWidget().mapTo(tab, tab.text_edit.pos())
+        name = tab.label_edit.parentWidget().mapTo(tab, tab.label_edit.pos())
+        b.hide()
+        self.assertLess(body.y(), prev.y() + tab.preview.height(),
+                        "the body field is below the preview, not beside it")
+        self.assertLessEqual(body.x() + tab.text_edit.width(), prev.x(),
+                             "the body field runs under the preview")
+        self.assertEqual(body.x(), name.x(),
+                         "the two fields no longer start on one x")
+
     def test_the_editing_column_needs_no_vertical_scrolling(self):
         """Everything that composes the keycap sits beside the preview, so the column
         fits the height the browser gives it and the scrollbar stays a safety net
