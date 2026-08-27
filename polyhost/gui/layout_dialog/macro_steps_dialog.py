@@ -292,13 +292,17 @@ class MacroStepsDialog(QDialog):
             self._refresh()
         self._refresh_buttons()
 
+    # ⚠️ These two return NOTHING, deliberately and uniformly. A Qt event handler's
+    # return value is unused -- `super().keyPressEvent(event)` yields None -- so
+    # `return super().…()` reads as forwarding a result that does not exist, and mixing
+    # it with the bare fall-throughs below is what CodeQL flags. Call, then return.
     def keyPressEvent(self, event):
         if not self._recording:
             # Enter must not accept the dialog from inside the table -- it is how you
             # commit a cell edit.
-            if event.key() in (Qt.Key_Return, Qt.Key_Enter):
-                return
-            return super().keyPressEvent(event)
+            if event.key() not in (Qt.Key_Return, Qt.Key_Enter):
+                super().keyPressEvent(event)
+            return
         if event.key() == Qt.Key_Escape:
             self.record_btn.setChecked(False)
             return
@@ -306,7 +310,8 @@ class MacroStepsDialog(QDialog):
 
     def keyReleaseEvent(self, event):
         if not self._recording:
-            return super().keyReleaseEvent(event)
+            super().keyReleaseEvent(event)
+            return
         self._capture(event, "up")
 
     def _capture(self, event, kind: str):

@@ -8,8 +8,7 @@ drawn.
 """
 import os
 import unittest
-from unittest import mock
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -173,7 +172,7 @@ class MacroTabTest(unittest.TestCase):
         tab = MacroTab(_core())
         tab.reload()
         tab.list.setCurrentRow(0)               # "push"
-        with mock.patch(
+        with patch(
                 "polyhost.gui.layout_dialog.macro_steps_dialog.MacroStepsDialog",
                 FakeDialog):
             tab._on_edit_steps()
@@ -221,7 +220,7 @@ class MacroTabTest(unittest.TestCase):
             def exec_(self):
                 return 1
 
-        with mock.patch(
+        with patch(
                 "polyhost.gui.layout_dialog.macro_steps_dialog.MacroStepsDialog",
                 FakeDialog):
             tab._on_edit_steps()
