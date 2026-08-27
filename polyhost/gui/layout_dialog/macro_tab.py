@@ -62,6 +62,10 @@ class MacroTab(QWidget):
         self._ladder: list = []
         self._loaded = False
         self._icon = 0
+        # None means "the body is whatever the text field says". A list means the body
+        # is steps and the text field is showing a read-only summary of them -- one of
+        # the two is the truth at any moment, never both.
+        self._steps: list | None = None
 
         # A missing font only costs the preview, so the tab still edits macros on a
         # machine without the firmware checkout beside it. The packs ship with this
@@ -164,6 +168,14 @@ class MacroTab(QWidget):
         self.text_edit = QLineEdit()
         self.text_edit.setPlaceholderText("tom@example.com")
         types_row.addWidget(self.text_edit, 1)
+        # Chords, delays and held modifiers do not fit a single line of text, so they
+        # get an editor of their own -- and recording needs a window that can take the
+        # keyboard away from this field. See macro_steps_dialog.
+        self.steps_btn = QPushButton("Steps…")
+        self.steps_btn.setToolTip(
+            "Build the macro out of key presses, chords and pauses — or record them")
+        self.steps_btn.clicked.connect(self._on_edit_steps)
+        types_row.addWidget(self.steps_btn)
         left_col.addLayout(types_row)
 
         left_col.addStretch(1)
@@ -307,18 +319,70 @@ class MacroTab(QWidget):
         self.label_edit.setText(m["label"])
         self._preview_timer.start()
         if m["text"] is None:
-            # Not expressible as text. Showing it as text and saving would silently
-            # drop the chords and delays, so the field is locked instead.
-            self.text_edit.setText("")
-            self.text_edit.setEnabled(False)
-            self.body_note.setText(
-                f"{len(m['steps'])} steps including keys or delays — not plain text. "
-                f"Nothing writes one yet, so it is shown and left alone rather than "
-                f"flattened; the label and keycap style are still editable.")
+            # Not expressible as text: showing it as text and saving would silently drop
+            # the chords and delays. The field turns into a read-only summary and the
+            # Steps… button is the way in.
+            self._show_steps(m["steps"], m["bytes"])
         else:
+            self._steps = None
+            self.text_edit.setReadOnly(False)
             self.text_edit.setEnabled(True)
             self.text_edit.setText(m["text"])
             self.body_note.setText(f"{m['bytes']} bytes  ·  {BODY_CAVEAT}")
+
+    def _show_steps(self, steps: list, size: int | None = None):
+        """Put the tab into step mode: the field summarises, the dialog edits.
+
+        Read-only rather than disabled, because a disabled field reads as "this macro
+        cannot be edited" when the truth is "not here".
+        """
+        from polyhost.services import macro_body, macro_keys
+        self._steps = list(steps)
+        decoded = [macro_body.Step(**st) for st in self._steps]
+        self.text_edit.setEnabled(True)
+        self.text_edit.setReadOnly(True)
+        self.text_edit.setText(macro_keys.describe(decoded))
+        note = f"{len(self._steps)} step(s)"
+        if size is not None:
+            note = f"{size} bytes  ·  {note}"
+        self.body_note.setText(f"{note} — press Steps… to edit  ·  {BODY_CAVEAT}")
+
+    def _on_edit_steps(self):
+        """Open the step editor on whatever the body currently is.
+
+        Plain text opens as one Type row per character rather than as an empty list --
+        a macro is usually *extended* into a chord, and starting from nothing would
+        throw away what is already in the field.
+        """
+        from polyhost.services import macro_body
+        from polyhost.gui.layout_dialog.macro_steps_dialog import MacroStepsDialog
+
+        if self._steps is not None:
+            steps = [macro_body.Step(**st) for st in self._steps]
+        else:
+            try:
+                steps = macro_body.decode(macro_body.encode_text(self.text_edit.text()))
+            except macro_body.MacroError as e:
+                self._error("That text cannot become steps", str(e))
+                return
+
+        dlg = MacroStepsDialog(steps, parent=self)
+        if not dlg.exec_():
+            return
+        result = dlg.result_steps
+        # Back to plain text when it IS plain text, so an edit that removes the last
+        # chord hands the ordinary field back rather than leaving the macro in a mode
+        # it no longer needs.
+        text = macro_body.to_text(result)
+        if text is not None:
+            self._steps = None
+            self.text_edit.setReadOnly(False)
+            self.text_edit.setText(text)
+            self.body_note.setText(f"{len(result)} bytes  ·  {BODY_CAVEAT}")
+        else:
+            self._show_steps([{"kind": st.kind, "code": st.code, "ms": st.ms}
+                              for st in result])
+        self._preview_timer.start()
 
     # -- label preview ------------------------------------------------------
 
@@ -546,7 +610,15 @@ class MacroTab(QWidget):
         params = {"label": self.label_edit.text(),
                   "style": self.style_box.currentData(),
                   "icon": self._icon}
-        if self.text_edit.isEnabled():
+        # The body goes only when it CHANGED. `macro_set` rewrites the whole shared
+        # buffer to place one body, so a label-only edit that re-sent it would cost
+        # every other macro a rewrite for nothing -- and the core's own docstring says
+        # omitting the body is how a look-only edit avoids exactly that. The text path
+        # sent it unconditionally before this, which quietly defeated it.
+        if self._steps is not None:
+            if self._steps != m["steps"]:
+                params["steps"] = self._steps
+        elif self.text_edit.text() != (m["text"] or ""):
             params["text"] = self.text_edit.text()
         ok, msg = self.core.macro_set(m["id"], **params)
         if not ok:

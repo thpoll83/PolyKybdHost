@@ -8,6 +8,7 @@ drawn.
 """
 import os
 import unittest
+from unittest import mock
 from unittest.mock import MagicMock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -16,6 +17,7 @@ try:
     from PyQt5.QtWidgets import QApplication, QScrollArea
     from PyQt5.QtGui import QImage
     from polyhost.gui.layout_dialog.macro_tab import MacroTab, QK_MACRO
+    from polyhost.services import macro_body
     from polyhost.services import macro_label as ml
     from polyhost.services import macro_look as mk
     _APP = QApplication.instance() or QApplication([])
@@ -81,13 +83,23 @@ class MacroTabTest(unittest.TestCase):
         self.assertIn("5 bytes", note)
         self.assertIn("unencrypted", note)
 
-    def test_a_macro_that_is_not_text_locks_the_text_field(self):
-        """Editing it as text and saving would silently drop the chords and delays."""
+    def test_a_macro_that_is_not_text_summarises_rather_than_lying(self):
+        """Editing a chord as text and saving would silently drop the chords and
+        delays, so the field turns into a read-only summary and the step editor is the
+        way in.
+
+        Read-only rather than DISABLED: a disabled field reads as "this macro cannot be
+        edited", when the truth is "not here". It said exactly that until the step
+        editor existed, and the note used to admit that nothing could write one.
+        """
         tab = MacroTab(_core())
         tab.reload()
         tab.list.setCurrentRow(2)
-        self.assertFalse(tab.text_edit.isEnabled())
-        self.assertIn("not plain text", tab.body_note.text())
+        self.assertTrue(tab.text_edit.isReadOnly())
+        self.assertTrue(tab.text_edit.isEnabled())
+        self.assertTrue(tab.steps_btn.isEnabled())
+        self.assertEqual(tab.text_edit.text(), "Ctrl+C")   # the summary, not the bytes
+        self.assertIn("Steps", tab.body_note.text())
 
     def test_a_text_macro_is_editable(self):
         tab = MacroTab(_core())
@@ -107,15 +119,112 @@ class MacroTabTest(unittest.TestCase):
         core.macro_set.assert_called_with(0, label="shove", text="git push",
                                           style=0, icon=0)
 
-    def test_save_omits_the_body_when_it_is_not_editable(self):
-        """A label-only edit must not re-stream a body the tab could not show."""
+    def test_a_label_only_edit_sends_no_body_at_all(self):
+        """`macro_set` rewrites the whole shared buffer to place one body, so re-sending
+        an unchanged one costs every other macro a rewrite for nothing.
+
+        Asserted for BOTH modes: the step macro is the case that used to be impossible
+        to send, and the text macro is the case that used to be sent every single time
+        -- which quietly defeated the core's own look-only fast path.
+        """
         core = _core()
         tab = MacroTab(core)
         tab.reload()
-        tab.list.setCurrentRow(2)
+
+        tab.list.setCurrentRow(2)              # a chord: body is steps
         tab.label_edit.setText("renamed")
         tab._on_save()
         core.macro_set.assert_called_with(2, label="renamed", style=0, icon=0)
+
+        tab.list.setCurrentRow(0)              # plain text, left alone
+        tab.label_edit.setText("shove")
+        tab._on_save()
+        core.macro_set.assert_called_with(0, label="shove", style=0, icon=0)
+
+    def test_an_edited_body_is_still_sent(self):
+        """The other half of the same rule -- skipping an unchanged body must not turn
+        into skipping a changed one."""
+        core = _core()
+        tab = MacroTab(core)
+        tab.reload()
+        tab.list.setCurrentRow(0)
+        tab.text_edit.setText("git push --force-with-lease")
+        tab._on_save()
+        core.macro_set.assert_called_with(
+            0, label="push", text="git push --force-with-lease", style=0, icon=0)
+
+    def test_the_step_editor_opens_on_the_current_body(self):
+        """Plain text opens as one Type row per character, not as an empty list.
+
+        A macro is usually *extended* into a chord -- you have the text and you want a
+        Ctrl+A in front of it -- so starting from nothing would throw away what the
+        field already holds.
+        """
+        seen = {}
+
+        class FakeDialog:
+            def __init__(self, steps, parent=None):
+                seen["steps"] = steps
+                self.result_steps = list(steps)
+
+            def exec_(self):
+                return 0        # cancelled
+
+        tab = MacroTab(_core())
+        tab.reload()
+        tab.list.setCurrentRow(0)               # "push"
+        with mock.patch(
+                "polyhost.gui.layout_dialog.macro_steps_dialog.MacroStepsDialog",
+                FakeDialog):
+            tab._on_edit_steps()
+        self.assertEqual([s.kind for s in seen["steps"]], ["char"] * 4)
+        self.assertEqual("".join(chr(s.code) for s in seen["steps"]), "push")
+
+    def test_a_step_edit_that_is_a_chord_switches_the_tab_to_steps(self):
+        core = _core()
+        tab = MacroTab(core)
+        tab.reload()
+        tab.list.setCurrentRow(0)
+        self._edit_steps(tab, [macro_body.Step("down", code=0xE0),
+                               macro_body.Step("tap", code=0x04),
+                               macro_body.Step("up", code=0xE0)])
+        self.assertTrue(tab.text_edit.isReadOnly())
+        self.assertEqual(tab.text_edit.text(), "Ctrl+A")
+        tab._on_save()
+        core.macro_set.assert_called_with(
+            0, label="push", style=0, icon=0,
+            steps=[{"kind": "down", "code": 0xE0, "ms": 0},
+                   {"kind": "tap", "code": 0x04, "ms": 0},
+                   {"kind": "up", "code": 0xE0, "ms": 0}])
+
+    def test_a_step_edit_back_to_plain_text_hands_the_field_back(self):
+        """Removing the last chord must return the ordinary editable field rather than
+        leaving the macro in a mode it no longer needs."""
+        core = _core()
+        tab = MacroTab(core)
+        tab.reload()
+        tab.list.setCurrentRow(2)               # starts as a chord
+        self.assertTrue(tab.text_edit.isReadOnly())
+        self._edit_steps(tab, [macro_body.Step("char", code=ord(c)) for c in "hi"])
+        self.assertFalse(tab.text_edit.isReadOnly())
+        self.assertEqual(tab.text_edit.text(), "hi")
+        tab._on_save()
+        core.macro_set.assert_called_with(2, label="chord", text="hi", style=0, icon=0)
+
+    @staticmethod
+    def _edit_steps(tab, result):
+        """Drive `_on_edit_steps` with a dialog that returns `result` and was accepted."""
+        class FakeDialog:
+            def __init__(self, steps, parent=None):
+                self.result_steps = result
+
+            def exec_(self):
+                return 1
+
+        with mock.patch(
+                "polyhost.gui.layout_dialog.macro_steps_dialog.MacroStepsDialog",
+                FakeDialog):
+            tab._on_edit_steps()
 
     def test_assign_emits_the_macro_keycode(self):
         core = _core()
