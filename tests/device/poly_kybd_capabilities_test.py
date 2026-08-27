@@ -332,6 +332,12 @@ class MacroCapabilityTest(unittest.TestCase):
         self.assertIn("nothing", msg)
 
     def test_command_ids_match_the_firmware(self):
-        self.assertEqual(Cmd.MACRO_INFO.value, 35)
-        self.assertEqual(Cmd.MACRO_BODY.value, 36)
-        self.assertEqual(Cmd.MACRO_LABEL.value, 37)
+        # These moved once already: cmd 35 was taken by GET_LAYER_NAMES on a branch
+        # that landed first, so the macros shifted up one and the protocol floor went
+        # v14 -> v15. That is exactly the collision this assertion exists to catch --
+        # a host talking to the wrong command reads a plausible reply from a real
+        # feature rather than failing, so nothing else here would have noticed.
+        self.assertEqual(Cmd.GET_LAYER_NAMES.value, 35)
+        self.assertEqual(Cmd.MACRO_INFO.value, 36)
+        self.assertEqual(Cmd.MACRO_BODY.value, 37)
+        self.assertEqual(Cmd.MACRO_LABEL.value, 38)
