@@ -241,7 +241,7 @@ class PolyKybdMock:
     MACRO_LABEL_LEN = 12
     MACRO_CAPACITY = 2267
 
-    MACRO_STYLES = 3
+    MACRO_STYLES = 4
 
     def _macro_buf(self) -> bytearray:
         if not hasattr(self, "_macros"):

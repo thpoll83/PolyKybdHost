@@ -341,7 +341,7 @@ def _cmd_glyph_size(client, args):
 
 # Order IS the wire value -- index 0 is POLY_MACRO_STYLE_INDEX. Kept as plain strings
 # rather than importing the device enum, because polyctl never imports the device layer.
-_STYLES = ["index", "icon", "text"]
+_STYLES = ["index", "icon", "text", "icononly"]
 
 
 def _style_name(value):
@@ -895,7 +895,8 @@ def build_parser():
     p_macro.add_argument("--style", default=None, choices=_STYLES,
                          help="how the keycap draws itself: 'index' shows M0..M15 above "
                               "the label, 'icon' shows the --icon glyph instead, 'text' "
-                              "drops both and draws the label as large as it fits")
+                              "drops both and draws the label as large as it fits, "
+                              "'icononly' draws the --icon glyph alone over the whole key")
     p_macro.add_argument("--icon", default=None,
                          help="codepoint for --style icon (U+1F4E7, 0x1F4E7, or the "
                               "character itself). Needs a font pack that has the glyph; "

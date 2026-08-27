@@ -87,9 +87,10 @@ class MacroStyle(Enum):
     actually render.
     """
 
-    INDEX = 0   # "M3" above the caption -- the default
-    ICON = 1    # a chosen glyph above the caption
-    TEXT = 2    # the caption alone, at the largest face that fits
+    INDEX = 0      # "M3" above the caption -- the default
+    ICON = 1       # a chosen glyph above the caption
+    TEXT = 2       # the caption alone, at the largest face that fits
+    ICON_ONLY = 3  # the icon alone, filling the whole key
 
 class OsType(Enum):
     """Active host-OS identity — mirrors the firmware's enum poly_os.

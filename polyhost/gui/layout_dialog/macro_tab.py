@@ -136,6 +136,7 @@ class MacroTab(QWidget):
         self.style_box.addItem("Number above the label", MacroStyle.INDEX.value)
         self.style_box.addItem("Icon above the label", MacroStyle.ICON.value)
         self.style_box.addItem("Label only, as large as it fits", MacroStyle.TEXT.value)
+        self.style_box.addItem("Icon only, filling the key", MacroStyle.ICON_ONLY.value)
         self.style_box.currentIndexChanged.connect(self._on_style_changed)
         left_col.addWidget(self.style_box)
 
@@ -174,10 +175,6 @@ class MacroTab(QWidget):
 
         right.addStretch(1)
 
-        self.storage = QProgressBar()
-        self.storage.setTextVisible(True)
-        right.addWidget(self.storage)
-
         buttons = QHBoxLayout()
         self.save_btn = QPushButton("Save macro")
         self.save_btn.clicked.connect(self._on_save)
@@ -189,6 +186,20 @@ class MacroTab(QWidget):
         self.assign_btn.clicked.connect(self._on_assign)
         buttons.addWidget(self.assign_btn)
         buttons.addStretch(1)
+
+        # The pool is shared by every macro, so this is the one readout on the page
+        # that does NOT describe the macro being edited -- it belongs with the actions
+        # rather than in the per-macro column, and it costs that column no height.
+        self.storage = QProgressBar()
+        self.storage.setTextVisible(True)
+        self.storage.setToolTip(
+            "All the macros share one pool on the keyboard, so a long one leaves "
+            "less for the others")
+        # Sized, not left to the sizeHint: the hint is ~107 px, which clips the text
+        # the bar exists to show. Bounded above so it cannot crowd the buttons.
+        self.storage.setMinimumWidth(260)
+        self.storage.setMaximumWidth(340)
+        buttons.addWidget(self.storage, 1)
         page.addLayout(buttons)
 
         # Debounced so a fast typist does not repaint per keystroke.
@@ -241,7 +252,10 @@ class MacroTab(QWidget):
         used = self._info.get("used", 0)
         self.storage.setRange(0, max(cap, 1))
         self.storage.setValue(used)
-        self.storage.setFormat(f"{used} of {cap} bytes shared across all macros  ·  %p%")
+        # Short, because it now sits beside the buttons rather than under its own
+        # caption -- the long sentence wrapped to two lines and clipped there. The
+        # tooltip carries it instead.
+        self.storage.setFormat(f"{used} / {cap} bytes  ·  %p%")
 
     # -- selection ----------------------------------------------------------
 
@@ -282,7 +296,8 @@ class MacroTab(QWidget):
         self._preview_timer.start()
 
     def _refresh_icon_button(self):
-        icon_style = self.style_box.currentData() == MacroStyle.ICON.value
+        icon_style = self.style_box.currentData() in (MacroStyle.ICON.value,
+                                                      MacroStyle.ICON_ONLY.value)
         self.icon_btn.setEnabled(icon_style)
         self.icon_clear.setEnabled(icon_style and bool(self._icon))
         if not self._icon:
@@ -327,7 +342,9 @@ class MacroTab(QWidget):
             "QProgressBar::chunk { background: #B4690E; }" if r.truncated else "")
         # The meter measures the CAPTION band, which the label-only style does not use --
         # there the whole cell is the caption and the ladder decides what fits.
-        self.width_meter.setEnabled(self.style_box.currentData() != MacroStyle.TEXT.value)
+        self.width_meter.setEnabled(
+            self.style_box.currentData() not in (MacroStyle.TEXT.value,
+                                                 MacroStyle.ICON_ONLY.value))
         self.preview.setPixmap(self._render(r.text))
 
     # -- keycap composition -------------------------------------------------
@@ -351,6 +368,11 @@ class MacroTab(QWidget):
             # style rather than drawing an empty keycap, so the preview does too.
 
         mark, mark_fonts, mark_base, mark_glyph = self._mark(style)
+        # ICON_ONLY draws the icon alone in the whole cell -- the caption is kept in
+        # storage but not drawn, so it takes the same branch an uncaptioned key does.
+        # A missing glyph leaves mark_glyph None and falls back to the captioned index.
+        if style == MacroStyle.ICON_ONLY.value and mark_glyph is not None:
+            label = ""
         if not label:
             if mark and mark_fonts:
                 box = mk.bbox(mark, mark_fonts, mark_base)
@@ -423,7 +445,7 @@ class MacroTab(QWidget):
         macro here rather than drawing nothing. The glyph comes back too, because a
         tall one is drawn at half size (see _draw_mark).
         """
-        if style == MacroStyle.ICON.value and self._icon:
+        if style in (MacroStyle.ICON.value, MacroStyle.ICON_ONLY.value) and self._icon:
             hit = mk.find_glyph(self._fonts, self._icon)
             if hit is not None:
                 # Through the glyph's OWN font: kdisp_write_gfx_char baseline-aligns to

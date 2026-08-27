@@ -274,6 +274,41 @@ class MacroTabPreviewTest(unittest.TestCase):
                 self.assertNotEqual(ink, with_index,
                                     "the keycap fell back to the index")
 
+    def test_the_icon_only_style_draws_the_icon_and_not_the_caption(self):
+        """ICON_ONLY gives the icon the whole cell: the caption is kept in storage —
+        so switching back does not lose it — but not drawn.
+
+        Pinned as an EQUALITY against the same icon with the label cleared, which is
+        precisely the claim. Ink alone would not distinguish "the caption is not
+        drawn" from "the icon moved".
+        """
+        tab = self._tab()
+        if mk.find_glyph(tab._fonts, 0x1F511) is None:
+            self.skipTest("no glyph to draw")
+        tab._icon = 0x1F511
+        tab.style_box.setCurrentIndex(1)          # icon above the label
+        tab.label_edit.setText("")
+        tab._repaint_preview()
+        icon_alone = tab.preview.pixmap().toImage()
+
+        tab.label_edit.setText("work mail")
+        tab.style_box.setCurrentIndex(3)          # icon only
+        tab._repaint_preview()
+        self.assertEqual(tab.preview.pixmap().toImage(), icon_alone)
+
+        tab.style_box.setCurrentIndex(1)
+        tab._repaint_preview()
+        self.assertNotEqual(tab.preview.pixmap().toImage(), icon_alone,
+                            "the captioned style must still draw its caption")
+
+    def test_the_icon_only_style_still_lets_you_choose_an_icon(self):
+        """It is one of the two styles that uses the icon, so the picker must be
+        reachable from it -- gating on the captioned style alone left the setting
+        selectable and unconfigurable."""
+        tab = self._tab()
+        tab.style_box.setCurrentIndex(3)
+        self.assertTrue(tab.icon_btn.isEnabled())
+
     def test_an_icon_that_fits_at_no_size_is_reported_as_not_drawn(self):
         """`_draw_mark` returns False rather than clipping, so `_render` can fall back
         to the index. Defensive in practice -- half of even the tallest pack glyph is
