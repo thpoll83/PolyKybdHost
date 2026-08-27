@@ -220,7 +220,8 @@ class ControlServer(MpcListenerServer):
             p.M_MACRO_LIST: lambda conn, params: _unwrap(c.macro_list()),
             p.M_MACRO_SET: lambda conn, params: _unwrap(c.macro_set(
                 params["id"], text=params.get("text"), steps=params.get("steps"),
-                label=params.get("label"))),
+                label=params.get("label"), style=params.get("style"),
+                icon=params.get("icon"))),
             p.M_MACRO_CLEAR: lambda conn, params: _unwrap(c.macro_clear(params["id"])),
             p.M_COMMANDS_EXECUTE: self._cmd_commands_execute,
             p.M_FW_VERSION: lambda conn, params: _unwrap(c.get_fw_version()),

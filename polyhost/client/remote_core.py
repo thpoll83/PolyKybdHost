@@ -399,9 +399,14 @@ class RemoteCore(Observable):
     def macro_list(self):
         return self._device(p.M_MACRO_LIST)
 
-    def macro_set(self, macro_id, *, text=None, steps=None, label=None):
+    def macro_set(self, macro_id, *, text=None, steps=None, label=None,
+                  style=None, icon=None):
+        # None means "leave it alone" all the way down -- PolyCore reads the current
+        # look and carries the omitted fields forward, so a caption edit cannot reset
+        # the style. Passing them through unfiltered is what preserves that.
         return self._device(p.M_MACRO_SET, {
             "id": macro_id, "text": text, "steps": steps, "label": label,
+            "style": style, "icon": icon,
         })
 
     def macro_clear(self, macro_id):

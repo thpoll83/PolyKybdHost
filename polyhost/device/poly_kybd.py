@@ -627,9 +627,14 @@ class PolyKybd:
     def get_macro_info(self) -> tuple[bool, Any]:
         """Header the editor needs before it can lay anything out (cmd 36).
 
-        Returns {count, label_len, capacity, used}. `capacity` and `used` are what make
-        the shared-storage bar honest: the bodies share one buffer, so a long macro
-        takes room from the others and that has to be visible before a save fails.
+        Returns {count, label_len, capacity, used, styles}. `capacity` and `used` are
+        what make the shared-storage bar honest: the bodies share one buffer, so a long
+        macro takes room from the others and that has to be visible before a save fails.
+
+        `styles` is how many keycap styles the firmware can actually DRAW. Offering more
+        is safe (an unknown style degrades to the index), but a menu listing only what
+        the board renders is the honest one. Firmware that predates the field reports a
+        zero byte, which reads as "just the index" -- the truth for such a build.
         """
         if not self._macros_supported():
             return self._macro_unsupported()
@@ -642,6 +647,7 @@ class PolyKybd:
             "label_len": reply[4],
             "capacity": reply[5] | (reply[6] << 8),
             "used": reply[7] | (reply[8] << 8),
+            "styles": max(1, reply[9] if len(reply) > 9 else 1),
         }
 
     # 6 header bytes (report id, cmd, sub, offset lo, offset hi, count) out of 64.
@@ -709,34 +715,58 @@ class PolyKybd:
             offset += len(chunk)
         return True, offset
 
-    def get_macro_label(self, macro_id: int) -> tuple[bool, Any]:
-        """Read one macro's keycap label (cmd 38)."""
+    # cmd 38 payload: [id][len|0xFF][style][icon u32 LE][text...]. The caption starts at
+    # byte 9, and the reply mirrors the same layout.
+    MACRO_LOOK_HEADER = 9
+
+    @staticmethod
+    def _decode_look(reply: bytes) -> dict:
+        n = reply[3]
+        h = PolyKybd.MACRO_LOOK_HEADER
+        return {
+            "label": reply[h:h + n].decode("ascii", errors="replace"),
+            "style": reply[4],
+            "icon": int.from_bytes(reply[5:9], "little"),
+        }
+
+    def get_macro_look(self, macro_id: int) -> tuple[bool, Any]:
+        """Read one macro's whole keycap look (cmd 38).
+
+        Returns {label, style, icon}. One exchange rather than three, because the keycap
+        composes the caption WITH the style and the icon -- reading them separately
+        would let a UI render a combination that never existed on the keyboard.
+        """
         if not self._macros_supported():
             return self._macro_unsupported()
         ok, reply = self.hid.send_and_read_validate(
             compose_cmd(Cmd.MACRO_LABEL, macro_id, 0xFF), 200, expect(Cmd.MACRO_LABEL))
-        if not ok or len(reply) < 4 or reply[2:3] != b'.':
-            return False, f"no reply for macro {macro_id}'s label"
-        n = reply[3]
-        return True, reply[4:4 + n].decode("ascii", errors="replace")
+        if not ok or len(reply) < self.MACRO_LOOK_HEADER or reply[2:3] != b'.':
+            return False, f"no reply for macro {macro_id}'s look"
+        return True, self._decode_look(reply)
 
-    def set_macro_label(self, macro_id: int, text: str) -> tuple[bool, Any]:
-        """Set one macro's keycap label (cmd 38).
+    def set_macro_look(self, macro_id: int, text: str,
+                       style: int = 0, icon: int = 0) -> tuple[bool, Any]:
+        """Set one macro's whole keycap look (cmd 38).
 
-        The firmware drops anything outside 0x20..0x7E, because the _Nano_ face cannot
-        draw it and a keycap silently showing less than you typed reads as a bug. Doing
-        the same here means the reply can be compared against what was asked for.
+        The firmware drops anything outside 0x20..0x7E from the caption, because the
+        _Nano_ face cannot draw it and a keycap silently showing less than you typed
+        reads as a bug. Doing the same here means the reply can be compared against what
+        was asked for.
+
+        The style and the icon travel WITH the caption, so a macro's appearance can
+        never be half-applied -- see the firmware's poly_macro_look_t.
         """
         if not self._macros_supported():
             return self._macro_unsupported()
         clean = "".join(c for c in text if 0x20 <= ord(c) <= 0x7E)
         cmd = compose_cmd(Cmd.MACRO_LABEL, macro_id, len(clean))
+        cmd.append(int(style) & 0xFF)
+        cmd.extend(int(icon).to_bytes(4, "little"))
         cmd.extend(clean.encode("ascii"))
         ok, reply = self.hid.send_and_read_validate(cmd, 200, expect(Cmd.MACRO_LABEL))
-        if not ok or len(reply) < 3 or reply[2:3] != b'.':
-            return False, f"the keyboard refused macro {macro_id}'s label"
-        n = reply[3]
-        return True, reply[4:4 + n].decode("ascii", errors="replace")
+        if not ok or len(reply) < self.MACRO_LOOK_HEADER or reply[2:3] != b'.':
+            return False, f"the keyboard refused macro {macro_id}'s look"
+        return True, self._decode_look(reply)
 
     def replay_startup_anim(self) -> tuple[bool, Any]:
         """Replay the one-time startup ("Eden") animation on demand (cmd 31).

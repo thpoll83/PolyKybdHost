@@ -1172,23 +1172,33 @@ class PolyCore(Observable):
         bodies = macro_body.split_buffer(buf, info["count"])
         macros = []
         for i, body in enumerate(bodies):
-            ok_l, label = self._device_call(
-                "macro_label_get", lambda c, i=i: self.keeb.get_macro_label(i))
+            ok_l, look = self._device_call(
+                "macro_look_get", lambda c, i=i: self.keeb.get_macro_look(i))
+            if not ok_l or not isinstance(look, dict):
+                look = {"label": "", "style": 0, "icon": 0}
             steps = macro_body.decode(body)
             macros.append({
                 "id": i,
-                "label": label if ok_l else "",
+                "label": look.get("label", ""),
+                "style": look.get("style", 0),
+                "icon": look.get("icon", 0),
                 "bytes": len(body),
                 "text": macro_body.to_text(steps),
                 "steps": [{"kind": s.kind, "code": s.code, "ms": s.ms} for s in steps],
             })
         return True, {**info, "macros": macros}
 
-    def macro_set(self, macro_id, *, text=None, steps=None, label=None):
-        """Replace one macro's body and/or label.
+    def macro_set(self, macro_id, *, text=None, steps=None, label=None,
+                  style=None, icon=None):
+        """Replace one macro's body and/or its keycap look.
 
         `text` and `steps` are alternatives; passing neither leaves the body alone,
-        which is how a label-only edit avoids re-streaming the whole buffer.
+        which is how a look-only edit avoids re-streaming the whole buffer.
+
+        The look is caption + style + icon and travels as ONE write, so it can never be
+        half-applied. Passing only some of the three therefore has to read the current
+        look first and carry the rest forward, rather than defaulting the omitted
+        fields -- otherwise setting a caption would silently reset the style.
         """
         from polyhost.services import macro_body
 
@@ -1222,17 +1232,29 @@ class PolyCore(Observable):
             if not ok:
                 return False, msg
 
-        if label is not None:
+        if label is not None or style is not None or icon is not None:
+            cur = {"label": "", "style": 0, "icon": 0}
+            if label is None or style is None or icon is None:
+                ok, got = self._device_call(
+                    "macro_look_get", lambda c, i=macro_id: self.keeb.get_macro_look(i))
+                if not ok:
+                    return False, got
+                if isinstance(got, dict):
+                    cur = got
+            new_label = cur.get("label", "") if label is None else label
+            new_style = cur.get("style", 0) if style is None else int(style)
+            new_icon = cur.get("icon", 0) if icon is None else int(icon)
             ok, msg = self._device_call(
-                "macro_label_set",
-                lambda c, i=macro_id, s=label: self.keeb.set_macro_label(i, s))
+                "macro_look_set",
+                lambda c, i=macro_id, t=new_label, st=new_style, ic=new_icon:
+                    self.keeb.set_macro_look(i, t, st, ic))
             if not ok:
                 return False, msg
         return True, "ok"
 
     def macro_clear(self, macro_id):
-        """Empty one macro's body and label."""
-        return self.macro_set(macro_id, text="", label="")
+        """Empty one macro's body and its whole keycap look."""
+        return self.macro_set(macro_id, text="", label="", style=0, icon=0)
 
     def replay_startup_anim(self):
         return self._device_call(

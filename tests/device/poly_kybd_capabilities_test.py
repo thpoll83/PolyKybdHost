@@ -258,8 +258,8 @@ class MacroCapabilityTest(unittest.TestCase):
         for call in (lambda: keeb.get_macro_info(),
                      lambda: keeb.read_macro_buffer(64),
                      lambda: keeb.write_macro_buffer(b"\0"),
-                     lambda: keeb.get_macro_label(0),
-                     lambda: keeb.set_macro_label(0, "x")):
+                     lambda: keeb.get_macro_look(0),
+                     lambda: keeb.set_macro_look(0, "x")):
             with self.subTest(call=call):
                 ok, msg = call()
                 self.assertFalse(ok)
@@ -268,13 +268,24 @@ class MacroCapabilityTest(unittest.TestCase):
 
     def test_info_decodes_the_header(self):
         keeb = self._keeb(MACRO_MIN_PROTOCOL)
-        # count, label stride, capacity LE, used LE
+        # count, label stride, capacity LE, used LE, style count
+        keeb.hid.send_and_read_validate.return_value = (True, bytes(
+            [ord("P"), Cmd.MACRO_INFO.value, ord("."), 16, 12, 0xDB, 0x08, 0x2A, 0x01, 3]))
+        ok, info = keeb.get_macro_info()
+        self.assertTrue(ok)
+        self.assertEqual(info, {"count": 16, "label_len": 12,
+                                "capacity": 2267, "used": 298, "styles": 3})
+
+    def test_a_firmware_without_the_style_byte_reports_one_style(self):
+        """The byte was appended after the macro commands shipped, so a reply that
+        stops at `used` is a real firmware -- and it draws exactly the index style.
+        Reporting 0 would make a host menu offer nothing at all."""
+        keeb = self._keeb(MACRO_MIN_PROTOCOL)
         keeb.hid.send_and_read_validate.return_value = (True, bytes(
             [ord("P"), Cmd.MACRO_INFO.value, ord("."), 16, 12, 0xDB, 0x08, 0x2A, 0x01]))
         ok, info = keeb.get_macro_info()
         self.assertTrue(ok)
-        self.assertEqual(info, {"count": 16, "label_len": 12,
-                                "capacity": 2267, "used": 298})
+        self.assertEqual(info["styles"], 1)
 
     def test_a_short_reply_is_not_read_as_a_header(self):
         """Reading past a truncated reply would hand back a capacity of whatever
@@ -292,17 +303,43 @@ class MacroCapabilityTest(unittest.TestCase):
         ok, _ = keeb.get_macro_info()
         self.assertFalse(ok)
 
+    def _look_reply(self, label=b"caf ", style=0, icon=0):
+        return (True, bytes([ord("P"), Cmd.MACRO_LABEL.value, ord("."), len(label), style])
+                + icon.to_bytes(4, "little") + label)
+
     def test_label_set_drops_what_the_face_cannot_draw(self):
         """The _Nano_ face is 0x20..0x7E. Sending a character it cannot draw would
         make the keycap show less than the user typed, which reads as a bug."""
         keeb = self._keeb(MACRO_MIN_PROTOCOL)
-        keeb.hid.send_and_read_validate.return_value = (True, bytes(
-            [ord("P"), Cmd.MACRO_LABEL.value, ord("."), 4]) + b"caf ")
-        ok, _ = keeb.set_macro_label(0, "caf\u00e9 \u2764")
+        keeb.hid.send_and_read_validate.return_value = self._look_reply()
+        ok, _ = keeb.set_macro_look(0, "caf\u00e9 \u2764")
         self.assertTrue(ok)
         report = keeb.hid.send_and_read_validate.call_args.args[0]
-        self.assertEqual(bytes(report[4:]), b"caf ")
+        self.assertEqual(bytes(report[keeb.MACRO_LOOK_HEADER:]), b"caf ")
         self.assertEqual(report[3], 4)   # the length must match what was sent
+
+    def test_the_look_travels_as_one_write(self):
+        """Caption, style and icon share a single exchange, so a keycap can never be
+        left composing a caption with a style from a different moment."""
+        keeb = self._keeb(MACRO_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = self._look_reply(
+            b"mail", style=1, icon=0x1F4E7)
+        ok, look = keeb.set_macro_look(0, "mail", 1, 0x1F4E7)
+        self.assertTrue(ok)
+        self.assertEqual(look, {"label": "mail", "style": 1, "icon": 0x1F4E7})
+        report = keeb.hid.send_and_read_validate.call_args.args[0]
+        self.assertEqual(report[4], 1)
+        self.assertEqual(int.from_bytes(bytes(report[5:9]), "little"), 0x1F4E7)
+
+    def test_an_icon_past_the_bmp_survives_the_round_trip(self):
+        """The interesting glyphs are emoji at 0x1F300+, so a 16-bit field would have
+        silently truncated exactly the codepoints this feature exists for."""
+        keeb = self._keeb(MACRO_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = self._look_reply(
+            b"x", style=1, icon=0x1F680)
+        ok, look = keeb.set_macro_look(0, "x", 1, 0x1F680)
+        self.assertTrue(ok)
+        self.assertEqual(look["icon"], 0x1F680)
 
     def test_body_read_walks_the_buffer_in_windows(self):
         keeb = self._keeb(MACRO_MIN_PROTOCOL)

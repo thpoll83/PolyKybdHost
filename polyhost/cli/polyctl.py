@@ -339,6 +339,28 @@ def _cmd_glyph_size(client, args):
     return 0
 
 
+# Order IS the wire value -- index 0 is POLY_MACRO_STYLE_INDEX. Kept as plain strings
+# rather than importing the device enum, because polyctl never imports the device layer.
+_STYLES = ["index", "icon", "text"]
+
+
+def _style_name(value):
+    return _STYLES[value] if 0 <= value < len(_STYLES) else f"unknown({value})"
+
+
+def _parse_codepoint(text):
+    """Accept U+1F4E7, 0x1F4E7, 1F4E7 or a single literal character."""
+    t = text.strip()
+    if len(t) == 1 and not t.isdigit():
+        return ord(t)
+    body = t[2:] if t.upper().startswith(("U+", "0X")) else t
+    try:
+        return int(body, 16)
+    except ValueError:
+        raise ValueError(f"not a codepoint: {text!r} (try U+1F4E7, 0x1F4E7 or the "
+                         f"character itself)") from None
+
+
 def _macro_summary(m, label_len):
     """One line per macro: what it is called, what it types, what it costs."""
     label = m["label"] or "-"
@@ -370,6 +392,9 @@ def _cmd_macro(client, args):
         for m in info["macros"]:
             if m["id"] == args.id:
                 print(f"label: {m['label']!r}")
+                print(f"style: {_style_name(m.get('style', 0))}")
+                if m.get("icon"):
+                    print(f"icon:  U+{m['icon']:04X}")
                 if m["text"] is not None:
                     print(f"text:  {m['text']!r}")
                 else:
@@ -387,8 +412,17 @@ def _cmd_macro(client, args):
             params["text"] = args.text
         if args.label is not None:
             params["label"] = args.label
+        if args.style is not None:
+            params["style"] = _STYLES.index(args.style)
+        if args.icon is not None:
+            try:
+                params["icon"] = _parse_codepoint(args.icon)
+            except ValueError as e:
+                print(str(e), file=sys.stderr)
+                return 1
         if len(params) == 1:
-            print("nothing to set: pass --text and/or --label", file=sys.stderr)
+            print("nothing to set: pass --text, --label, --style and/or --icon",
+                  file=sys.stderr)
             return 1
         client.call(protocol.M_MACRO_SET, params)
         print(f"macro {args.id} updated")
@@ -858,6 +892,14 @@ def build_parser():
     p_macro.add_argument("--label", default=None,
                          help="the keycap legend. Truncated by pixel width, not by "
                               "character count, so a wide word fits fewer letters")
+    p_macro.add_argument("--style", default=None, choices=_STYLES,
+                         help="how the keycap draws itself: 'index' shows M0..M15 above "
+                              "the label, 'icon' shows the --icon glyph instead, 'text' "
+                              "drops both and draws the label as large as it fits")
+    p_macro.add_argument("--icon", default=None,
+                         help="codepoint for --style icon (U+1F4E7, 0x1F4E7, or the "
+                              "character itself). Needs a font pack that has the glyph; "
+                              "one the keyboard cannot draw falls back to the index")
     p_macro.set_defaults(func=_cmd_macro)
 
     p_unicode = sub.add_parser(

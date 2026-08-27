@@ -241,10 +241,13 @@ class PolyKybdMock:
     MACRO_LABEL_LEN = 12
     MACRO_CAPACITY = 2267
 
+    MACRO_STYLES = 3
+
     def _macro_buf(self) -> bytearray:
         if not hasattr(self, "_macros"):
             self._macros = bytearray(self.MACRO_CAPACITY)
-            self._macro_labels = [""] * self.MACRO_COUNT
+            self._macro_looks = [{"label": "", "style": 0, "icon": 0}
+                                 for _ in range(self.MACRO_COUNT)]
         return self._macros
 
     def get_macro_info(self) -> tuple[bool, dict]:
@@ -259,6 +262,7 @@ class PolyKybdMock:
             "label_len": self.MACRO_LABEL_LEN,
             "capacity": self.MACRO_CAPACITY,
             "used": min(used, self.MACRO_CAPACITY),
+            "styles": self.MACRO_STYLES,
         }
 
     def read_macro_buffer(self, capacity: int) -> tuple[bool, bytes]:
@@ -271,22 +275,27 @@ class PolyKybdMock:
         buf[:len(data)] = data
         return True, len(data)
 
-    def get_macro_label(self, macro_id: int) -> tuple[bool, str]:
-        self._log_call("get_macro_label", macro_id)
+    def get_macro_look(self, macro_id: int) -> tuple[bool, dict]:
+        self._log_call("get_macro_look", macro_id)
         self._macro_buf()
         if not 0 <= macro_id < self.MACRO_COUNT:
             return False, "out of range"
-        return True, self._macro_labels[macro_id]
+        return True, dict(self._macro_looks[macro_id])
 
-    def set_macro_label(self, macro_id: int, text: str) -> tuple[bool, str]:
-        self._log_call("set_macro_label", macro_id, text)
+    def set_macro_look(self, macro_id: int, text: str,
+                       style: int = 0, icon: int = 0) -> tuple[bool, dict]:
+        self._log_call("set_macro_look", macro_id, text, style, icon)
         self._macro_buf()
         if not 0 <= macro_id < self.MACRO_COUNT:
             return False, "out of range"
-        # Mirror the firmware: ASCII only, cut to the stride.
+        # Mirror the firmware: ASCII only, cut to the stride, and an unknown style
+        # stored as INDEX rather than refused.
         clean = "".join(c for c in text if 0x20 <= ord(c) <= 0x7E)[:self.MACRO_LABEL_LEN]
-        self._macro_labels[macro_id] = clean
-        return True, clean
+        look = {"label": clean,
+                "style": style if 0 <= style < self.MACRO_STYLES else 0,
+                "icon": icon & 0xFFFFFFFF}
+        self._macro_looks[macro_id] = look
+        return True, dict(look)
 
     def replay_startup_anim(self) -> tuple[bool, str]:
         self._log_call("replay_startup_anim")
