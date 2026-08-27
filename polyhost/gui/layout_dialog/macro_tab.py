@@ -279,8 +279,9 @@ class MacroTab(QWidget):
             self.text_edit.setText("")
             self.text_edit.setEnabled(False)
             self.body_note.setText(
-                f"{len(m['steps'])} steps including keys or delays — not plain text, "
-                f"so it can only be edited with <tt>polyctl macro</tt> for now.")
+                f"{len(m['steps'])} steps including keys or delays — not plain text. "
+                f"Nothing writes one yet, so it is shown and left alone rather than "
+                f"flattened; the label and keycap style are still editable.")
         else:
             self.text_edit.setEnabled(True)
             self.text_edit.setText(m["text"])
