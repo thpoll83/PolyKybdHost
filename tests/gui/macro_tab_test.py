@@ -205,12 +205,30 @@ class MacroTabPreviewTest(unittest.TestCase):
 
     def test_an_icon_the_keyboard_cannot_draw_says_so(self):
         """The firmware falls back to the index for an unknown glyph, so a keycap that
-        looks unchanged would read as a bug. The button has to name the case."""
+        looks unchanged would read as a bug. The button has to name the case.
+
+        The font source is set EXPLICITLY rather than taken from the environment: it
+        decides the wording, so a test that inherited it would pass or fail depending
+        on whether a qmk_firmware checkout happens to sit beside this repo.
+        """
         tab = self._tab()
         tab.style_box.setCurrentIndex(1)
         tab._icon = 0x10FFFD
+        tab._font_source = "headers"
         tab._refresh_icon_button()
         self.assertIn("no glyph", tab.icon_btn.text())
+
+    def test_it_does_not_claim_a_missing_glyph_it_could_not_have_seen(self):
+        """Falling back to the shipped packs leaves the RESIDENT fonts out, so a
+        resident-only glyph reads as absent when the keyboard draws it fine. A
+        confident wrong warning is worse than none."""
+        tab = self._tab()
+        tab.style_box.setCurrentIndex(1)
+        tab._icon = 0x10FFFD
+        tab._font_source = "packs"
+        tab._refresh_icon_button()
+        self.assertNotIn("no glyph", tab.icon_btn.text())
+        self.assertIn("unverified", tab.icon_btn.text())
 
     def test_the_icon_controls_are_dead_unless_the_style_uses_them(self):
         tab = self._tab()

@@ -51,6 +51,7 @@ class MacroTab(QWidget):
         self._font = None
         self._mid = None
         self._fonts: list = []
+        self._font_source = "packs"
         self._ladder: list = []
         self._loaded = False
         self._icon = 0
@@ -68,11 +69,12 @@ class MacroTab(QWidget):
         except Exception:
             self._mid = None
         try:
-            self._fonts, _src = mk.load_render_fonts()
+            self._fonts, self._font_source = mk.load_render_fonts()
             self._ladder = mk.caption_ladder(mk.load_pack_fonts(), mid_font=self._mid,
                                              nano_font=self._font)
         except Exception:
             self._fonts, self._ladder = [], []
+            self._font_source = "none"
 
         # The actions live OUTSIDE the scrolled column, in a fixed footer: the column
         # can be taller than the page is ever given (see the scroll note below), and
@@ -287,8 +289,13 @@ class MacroTab(QWidget):
             drawable = mk.find_glyph(self._fonts, self._icon) is not None
             # Say so when the keyboard cannot draw it: the firmware falls back to the
             # index, so a silently-unchanged keycap would otherwise read as a bug.
-            self.icon_btn.setText(f"U+{self._icon:04X}"
-                                  + ("" if drawable else " (no glyph)"))
+            #
+            # ⚠️ Only claim that when the lookup could see the RESIDENT fonts. Falling
+            # back to the shipped packs leaves them out, so a resident-only glyph reads
+            # as absent when the keyboard draws it perfectly well -- and a confident
+            # wrong warning is worse than none.
+            warn = " (no glyph)" if self._font_source == "headers" else " (unverified)"
+            self.icon_btn.setText(f"U+{self._icon:04X}" + ("" if drawable else warn))
 
     def _on_pick_icon(self):
         from polyhost.gui.layout_dialog.macro_icon_dialog import MacroIconDialog

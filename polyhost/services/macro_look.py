@@ -200,5 +200,10 @@ def load_render_fonts(font_dir: str | None = None, pack_dir: str | None = None):
         if fonts:
             return fonts, "headers"
     except Exception:
+        # Deliberately swallowed: no qmk_firmware checkout beside this repo is the
+        # NORMAL case for an installed host, and the pack fallback below covers it.
+        # Anything else that goes wrong reading the headers has the same remedy, so
+        # there is nothing to distinguish here -- the caller is told which source it
+        # got and can be honest about the difference.
         pass
     return load_pack_fonts(pack_dir), "packs"
