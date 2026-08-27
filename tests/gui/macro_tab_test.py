@@ -450,13 +450,17 @@ class BrowserIntegrationTest(unittest.TestCase):
         prev = tab.preview.parentWidget().mapTo(tab, tab.preview.pos())
         body = tab.text_edit.parentWidget().mapTo(tab, tab.text_edit.pos())
         name = tab.label_edit.parentWidget().mapTo(tab, tab.label_edit.pos())
+        style = tab.style_box.parentWidget().mapTo(tab, tab.style_box.pos())
         b.hide()
         self.assertLess(body.y(), prev.y() + tab.preview.height(),
                         "the body field is below the preview, not beside it")
         self.assertLessEqual(body.x() + tab.text_edit.width(), prev.x(),
                              "the body field runs under the preview")
-        self.assertEqual(body.x(), name.x(),
-                         "the two fields no longer start on one x")
+        # All three rows are named, so all three start on one x. The style box was
+        # the last unnamed control in the column and read as a stray one because of
+        # it -- it began at the labels' margin while its neighbours began after them.
+        self.assertEqual({body.x(), name.x(), style.x()}, {name.x()},
+                         "the three fields no longer start on one x")
 
     def test_the_editing_column_needs_no_vertical_scrolling(self):
         """Everything that composes the keycap sits beside the preview, so the column

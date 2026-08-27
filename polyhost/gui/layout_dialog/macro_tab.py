@@ -122,7 +122,9 @@ class MacroTab(QWidget):
         # The fields are named INLINE, at the ordinary widget size, rather than under
         # 10 px letter-spaced captions: a caption costs a row of its own AND was too
         # small to read at a glance, and "Keycap:" in front of the field it names says
-        # the same thing in the space the field already occupies.
+        # the same thing in the space the field already occupies. All THREE rows carry
+        # one -- the style box read as a stray control while its neighbours were named,
+        # and it was the only thing in the column not starting on the fields' x.
         top_row = QHBoxLayout()
         left_col = QVBoxLayout()
 
@@ -148,7 +150,10 @@ class MacroTab(QWidget):
         self.style_box.addItem("Label only, as large as it fits", MacroStyle.TEXT.value)
         self.style_box.addItem("Icon only, filling the key", MacroStyle.ICON_ONLY.value)
         self.style_box.currentIndexChanged.connect(self._on_style_changed)
-        left_col.addWidget(self.style_box)
+        style_row = QHBoxLayout()
+        style_row.addWidget(self._field_label("Style:"))
+        style_row.addWidget(self.style_box, 1)
+        left_col.addLayout(style_row)
 
         # The body field sits here rather than under the whole top row: the preview is
         # three keycaps tall and the two rows above are one each, so the column had a
@@ -236,8 +241,9 @@ class MacroTab(QWidget):
     def _field_label(text: str) -> QLabel:
         """A field name, at the ordinary widget size.
 
-        Both are given the SAME minimum width so the two fields start on one x --
-        without it "Keycap:" and "Types:" measure differently and the boxes step.
+        All three are given the SAME minimum width -- measured off the longest of
+        them -- so the fields start on one x. Without it "Keycap:", "Style:" and
+        "Types:" each measure differently and the boxes step across the column.
         """
         lbl = QLabel(text)
         lbl.setMinimumWidth(lbl.fontMetrics().horizontalAdvance("Keycap:") + 6)
