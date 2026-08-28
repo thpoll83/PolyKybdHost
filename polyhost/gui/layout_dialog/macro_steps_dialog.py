@@ -253,7 +253,11 @@ class MacroStepsDialog(QDialog):
             self._reload_table(steps)
         self._refresh()
 
-    def _append_row(self, step: mb.Step, at: int | None = None) -> int:
+    def _append_row(self, step: mb.Step, at: int | None = None,
+                    remembered: str = "") -> int:
+        """Add one row. `remembered` is the keycode a WAIT row is parking (see
+        `_sync_row`); it is ignored for every other kind, whose key comes from the step
+        itself."""
         r = self.table.rowCount() if at is None else at
         self.table.insertRow(r)
 
@@ -277,7 +281,8 @@ class MacroStepsDialog(QDialog):
             item.setData(Qt.UserRole, step.code)
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)
         else:
-            item = QTableWidgetItem(mk.name_for(step.code) if step.kind != "delay" else "")
+            item = QTableWidgetItem(
+                remembered if step.kind == "delay" else mk.name_for(step.code))
         self.table.setItem(r, COL_VALUE, item)
 
         self._sync_row(r, ms=int(step.ms))
@@ -314,13 +319,17 @@ class MacroStepsDialog(QDialog):
 
         item = self.table.item(r, COL_VALUE)
         if kind == "delay":
-            # Cleared as well as covered. Keeping the keycode hidden under the spin box
-            # so that switching back restores it is tempting and would be HALF a
-            # feature: `_move` and the tab switch rebuild the table from `steps()`,
-            # where a Wait carries only its duration, so the remembered key would
-            # survive a kind toggle and vanish on the next reorder. Never remembering
-            # is the behaviour that is the same everywhere.
-            item.setText("")
+            # PARKED, not cleared: the keycode stays in the item under the spin box, so
+            # turning a Tap into a Wait and back gives the key back rather than KC_A.
+            # It is invisible while the Wait is up (the widget covers the cell) and
+            # `_table_steps` reads the spin box for a delay, so it cannot reach the
+            # macro -- it is only ever a UI memory.
+            #
+            # ⚠️ That memory is ROW-LOCAL, and a rebuild destroys rows. `_move` carries
+            # it across explicitly (`_remembered_keys`); the SCRIPT tab deliberately
+            # does not, because there the text is the macro -- `{250}` says a duration
+            # and nothing else, and inventing syntax to smuggle a keycode through it
+            # would break VIA interchange for a convenience.
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)
         elif kind != "char":
             item.setFlags(item.flags() | Qt.ItemIsEditable)
@@ -374,14 +383,26 @@ class MacroStepsDialog(QDialog):
         if r < 0 or not 0 <= t < self.table.rowCount():
             return
         steps = self._table_steps()
+        keys = self._remembered_keys()
         steps[r], steps[t] = steps[t], steps[r]
-        self._reload_table(steps)
+        keys[r], keys[t] = keys[t], keys[r]
+        self._reload_table(steps, keys)
         self.table.selectRow(t)
 
-    def _reload_table(self, steps: list[mb.Step]):
+    def _remembered_keys(self) -> list[str]:
+        """Each row's parked keycode text, in row order.
+
+        Only a Wait row has one worth carrying -- every other kind rebuilds its key from
+        the step. Reading them all is simpler than asking which rows are Waits, and the
+        extra strings are ignored on the way back in.
+        """
+        return [(self.table.item(r, COL_VALUE).text() if self.table.item(r, COL_VALUE)
+                 else "") for r in range(self.table.rowCount())]
+
+    def _reload_table(self, steps: list[mb.Step], keys: list[str] | None = None):
         self.table.setRowCount(0)
-        for step in steps:
-            self._append_row(step)
+        for i, step in enumerate(steps):
+            self._append_row(step, remembered=keys[i] if keys else "")
         self._refresh()
 
     def _refresh(self, *_):

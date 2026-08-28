@@ -235,18 +235,56 @@ class RowEditingTest(unittest.TestCase):
         dlg.table.item(0, COL_VALUE).setText("KC_ENTER")
         self.assertEqual(dlg.steps(), [mb.Step("tap", code=mk.value_for("KC_ENTER"))])
 
-    def test_a_keycode_is_NOT_remembered_across_a_trip_through_wait(self):
-        """Deliberate, and the alternative would be HALF a feature.
-
-        Hiding the keycode under the spin box so the switch back restores it works only
-        until the row is moved: `_move` and the tab switch rebuild from `steps()`, where
-        a Wait carries a duration and nothing else. Remembering it in one path and not
-        the other is worse than never remembering.
+    def test_a_keycode_SURVIVES_a_trip_through_wait(self):
+        """Turning a Tap into a Wait to time something, then back, is a real edit -- and
+        re-typing the keycode afterwards is the annoyance the Tap/Hold case already
+        avoids. The key is parked in the item under the spin box; nothing can read it
+        while the Wait is up, because `_table_steps` reads the spin box for a delay.
         """
         dlg = MacroStepsDialog([mb.Step("tap", code=mk.value_for("KC_ENTER"))])
         _set_kind(dlg, 0, "delay")
+        self.assertEqual(dlg.steps(), [mb.Step("delay", ms=0)])   # parked, not used
+        _set_kind(dlg, 0, "tap")
+        self.assertEqual(dlg.steps(), [mb.Step("tap", code=mk.value_for("KC_ENTER"))])
+
+    def test_the_parked_keycode_survives_a_REORDER_too(self):
+        """The memory is row-local and `_move` rebuilds the table, so it has to be
+        carried across explicitly -- otherwise the key would come back after a straight
+        toggle and vanish after a toggle that happened to follow a drag, which is the
+        half-feature this was nearly shipped as.
+        """
+        dlg = MacroStepsDialog([mb.Step("tap", code=mk.value_for("KC_ENTER")),
+                                mb.Step("tap", code=mk.value_for("KC_B"))])
+        _set_kind(dlg, 0, "delay")
+        dlg.table.selectRow(0)
+        dlg._move(1)                       # the Wait is now row 1
+        _set_kind(dlg, 1, "tap")
+        self.assertEqual(dlg.steps(), [mb.Step("tap", code=mk.value_for("KC_B")),
+                                       mb.Step("tap", code=mk.value_for("KC_ENTER"))])
+
+    def test_the_SCRIPT_tab_deliberately_forgets_it(self):
+        """`{250}` says a duration and nothing else. Smuggling a keycode through the
+        script would mean inventing syntax VIA does not have, breaking the interchange
+        this view exists for -- so the boundary is honest: convert to text and the text
+        is the macro.
+        """
+        dlg = MacroStepsDialog([mb.Step("tap", code=mk.value_for("KC_ENTER"))])
+        _set_kind(dlg, 0, "delay")
+        dlg.tabs.setCurrentIndex(VIEW_SCRIPT)
+        self.assertEqual(dlg.script.toPlainText(), "{0}")
+        dlg.tabs.setCurrentIndex(VIEW_TABLE)
         _set_kind(dlg, 0, "tap")
         self.assertEqual(dlg.steps(), [mb.Step("tap", code=mk.value_for("KC_A"))])
+
+    def test_a_parked_keycode_never_reaches_the_macro(self):
+        """The whole safety of parking it: while the row is a Wait, what is saved is the
+        duration. If the item could leak into `steps()` the macro would carry a
+        keystroke the user removed."""
+        dlg = MacroStepsDialog([mb.Step("tap", code=mk.value_for("KC_ENTER"))])
+        _set_kind(dlg, 0, "delay")
+        dlg.table.cellWidget(0, COL_VALUE).setValue(120)
+        self.assertEqual(dlg.steps(), [mb.Step("delay", ms=120)])
+        self.assertEqual(mb.encode_steps(dlg.steps()), b"\x01\x04120")
 
     def test_changing_the_ms_box_changes_the_step(self):
         dlg = MacroStepsDialog([mb.Step("delay", ms=10)])
