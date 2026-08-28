@@ -301,13 +301,49 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         self.assertEqual(dlg._resolve(first, 1), 0x0005)
         self.assertEqual(dlg._resolve(first, 0), 0x0004)
 
+    def test_a_MISSING_language_table_still_draws_modifiers(self):
+        """The two halves have different prerequisites and must not take each other
+        down: the language LUT needs `openpyxl` to open the .xlsx, while the static
+        text half reads only the named-glyph map. Loading them together meant a machine
+        without openpyxl rendered nothing but macros, when it could have drawn every
+        modifier, arrow and Esc/Tab (field, 2026-08-28 -- "I can only see the M0 key
+        with a preview render").
+        """
+        dlg = _editor()
+        p = dlg._preview
+        self.assertTrue(p.usable)
+        p._lang_ok = False                       # as if openpyxl were absent
+        dlg._key_cache.clear()
+
+        self.assertIsNone(p.render(0x0004, "KC_A"), "a letter needs the workbook")
+        for kc, name in ((0x00E1, "KC_LSFT"), (0x0029, "KC_ESC"), (0x004F, "KC_RIGHT")):
+            with self.subTest(key=name):
+                self.assertIsNotNone(p.render(kc, name),
+                                     f"{name} needs no workbook and should still draw")
+
+    def test_the_tooltip_SAYS_when_only_half_the_preview_loaded(self):
+        """A partly-loaded preview draws macros and modifiers while every letter falls
+        back to text, which reads as broken with nothing to explain it. The reason has
+        to reach the user somewhere other than a debug log."""
+        dlg = _editor()
+        dlg._preview._reason = "letters and digits need the language table (test)"
+        tip = KbLayoutDialog._build_keycap_toggle(dlg).toolTip()
+        self.assertIn("Partly unavailable", tip)
+        self.assertIn("language table", tip)
+
     def test_the_toggle_is_ON_by_default_when_the_fonts_are_there(self):
         self.assertTrue(_editor().keycap_toggle.isChecked())
 
 
 class _DeadPreview:
-    """Stands in for a machine with no firmware checkout."""
+    """Stands in for a machine with no firmware checkout.
+
+    Mirrors the whole KeycapPreview surface the dialog touches -- a stub that is
+    missing one attribute fails as an AttributeError deep in the paint path, which
+    reads as a crash rather than as "this machine has no previews".
+    """
     usable = False
+    reason = "no firmware checkout (test stub)"
 
     def render(self, keycode, name):
         return None

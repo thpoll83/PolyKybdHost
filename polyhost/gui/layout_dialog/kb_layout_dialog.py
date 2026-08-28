@@ -231,12 +231,18 @@ class KbLayoutDialog(QMainWindow):
         usable = macro_ok or self._preview.usable
         self.keycap_toggle.setChecked(usable and self._show_keycaps)
         self.keycap_toggle.setEnabled(usable)
-        self.keycap_toggle.setToolTip(
-            "Draw each key as the keycap the keyboard shows. A key whose legend is "
-            "not modelled here keeps its keycode text."
-            if usable else
-            "Unavailable: the keycap fonts and layout tables could not be loaded, so "
-            "keys show their keycode.")
+        # ⚠️ Say WHY when a half is missing. A partly-loaded preview renders macros and
+        # modifiers while every letter falls back to text, which reads as "broken" with
+        # nothing anywhere to explain it -- the shape that shipped once already, when a
+        # missing openpyxl silently disabled everything but the macros.
+        tip = ("Draw each key as the keycap the keyboard shows. A key whose legend is "
+               "not modelled here keeps its keycode text.") if usable else (
+              "Unavailable: the keycap fonts and layout tables could not be loaded, so "
+              "keys show their keycode.")
+        why = self._preview.reason
+        if why:
+            tip += f"\n\nPartly unavailable — {why}"
+        self.keycap_toggle.setToolTip(tip)
         self.keycap_toggle.toggled.connect(self._on_keycap_toggle)
         return self.keycap_toggle
 

@@ -66,12 +66,25 @@ class KeycapPreview:
         self._lang = lang
         self._loaded = False
         self._ok = False
-        self._op = self._ld = self._L = self._R = None
+        self._static_ok = False
+        self._lang_ok = False
+        self._reason = ""
+        self._op = self._ld = self._L = self._R = self._resolver = None
         self._static: dict = {}
 
     # -- loading ------------------------------------------------------------
 
     def _load(self):
+        """Load the two halves INDEPENDENTLY, and report which ones came up.
+
+        ⚠️ They have different prerequisites and one used to take the other down with
+        it: the language LUT needs `openpyxl` to open the .xlsx, the static-text half
+        needs only the named-glyph map -- `Lang.resolve()` reads `self.named` and never
+        touches the workbook grid. Loading them in one try meant a machine without
+        openpyxl rendered NOTHING but macros, when it could have drawn every modifier,
+        arrow and Esc/Tab on the board (field, 2026-08-28: "I can only see the M0 key
+        with a preview render").
+        """
         if self._loaded:
             return self._ok
         self._loaded = True
@@ -89,14 +102,32 @@ class KeycapPreview:
             # keycode_helper.h carries the names the static-text switch returns; without
             # it those legends resolve to nothing and the key silently renders blank.
             named.update(op.load_named_glyphs(os.path.join(pk, "keycode_helper.h")))
-            self._L = op.Lang(os.path.join(pk, "lang", "lang_lut.xlsx"), named)
             self._R = op.Renderer(load_all_fonts(fonts_dir))
             self._static = ld.parse_static_text_map(os.path.join(pk, "keycode_helper.c"))
             self._op, self._ld = op, ld
-            self._ok = True
+            # Resolve-only view: same class, so the codepoint tokenising stays the ONE
+            # implementation that mirrors the firmware's make_key -- but built without
+            # the workbook, which is the part that needs openpyxl.
+            self._resolver = object.__new__(op.Lang)
+            self._resolver.named = named
+            self._static_ok = True
         except Exception as e:
-            self.log.debug("keycap previews unavailable (%s: %s)", type(e).__name__, e)
+            self._reason = f"{type(e).__name__}: {e}"
+            self.log.warning("key previews unavailable: %s", self._reason)
             self._ok = False
+            return False
+
+        try:
+            self._L = self._op.Lang(os.path.join(pk, "lang", "lang_lut.xlsx"), named)
+            self._lang_ok = True
+        except Exception as e:
+            self._L = self._resolver
+            self._reason = (f"letters and digits need the language table "
+                            f"({type(e).__name__}: {e})")
+            self.log.warning("key previews: %s -- modifiers and arrows still render",
+                             self._reason)
+
+        self._ok = self._static_ok or self._lang_ok
         return self._ok
 
     @property
@@ -104,14 +135,20 @@ class KeycapPreview:
         return self._load()
 
     @property
+    def reason(self) -> str:
+        """Why a half is missing, for the tooltip. Empty when everything loaded."""
+        self._load()
+        return self._reason
+
+    @property
     def languages(self) -> list:
-        return list(self._L.langs) if self._load() else []
+        return list(self._L.langs) if self._load() and self._lang_ok else []
 
     def set_language(self, lang: str) -> bool:
         """Point the LUT at another layout. False when the keyboard names one this
         firmware's spreadsheet does not have, so the caller can keep the old one
         rather than render every letter blank."""
-        if not self._load() or lang not in self._L.langs:
+        if not self._load() or not self._lang_ok or lang not in self._L.langs:
             return False
         self._lang = lang
         return True
@@ -130,13 +167,15 @@ class KeycapPreview:
         kc = self._ld.normalize_kc(name)
         try:
             if kc in self._op.ROW:
+                if not self._lang_ok:
+                    return None          # a letter needs the workbook; a modifier does not
                 img = self._op.render_key(self._L, self._R, self._lang, kc,
                                           shift=False, caps=False)
             else:
                 expr = self._static.get(kc)
                 if expr is None:
                     return None
-                img = self._ld.render_static(self._L, self._R, expr)
+                img = self._ld.render_static(self._resolver, self._R, expr)
         except Exception as e:
             self.log.debug("no preview for %s (%s: %s)", kc, type(e).__name__, e)
             return None
