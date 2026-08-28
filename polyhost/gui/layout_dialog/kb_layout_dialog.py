@@ -284,6 +284,15 @@ class KbLayoutDialog(QMainWindow):
         idx = keycode - QK_MACRO
         return idx if 0 <= idx < len(self._macros) else None
 
+    # ⚠️ 74 keys, 72 OLEDs. The inner key at matrix (3,7) on the left half and (8,0)
+    # on the right have no display and no RGB LED — they sit under the rotary encoder.
+    # Previewing them would promise a keycap the hardware cannot show.
+    NO_DISPLAY_MATRIX = ((3, 7), (8, 0))
+
+    def _has_display(self, idx):
+        cols = self.settings.MATRIX_COLUMNS
+        return all(idx != r * cols + c for r, c in self.NO_DISPLAY_MATRIX)
+
     def _keycap_for(self, keycode):
         """The rendered keycap for a macro keycode, or None for everything else.
 
@@ -309,23 +318,17 @@ class KbLayoutDialog(QMainWindow):
         return hit
 
     def _resolve(self, idx, layer):
-        """The keycode whose legend the KEYBOARD draws at this slot on this layer.
+        """The keycode at this slot, WITHOUT following a transparent fall-through.
 
-        A transparent slot falls through to the layer below, and that is what the
-        hardware shows -- so a preview that drew nothing for it would disagree with
-        the board on 110 of the 888 keys in the shipped keymap, which is by far the
-        biggest single gap in the coverage.
-
-        Walks DOWNWARD rather than assuming layer 0: the fall-through is to the next
-        active layer, and the nearest non-transparent one below is the best a static
-        editor can know without the live layer stack.
+        ⚠️ This used to walk down to the layer below, because that is what the
+        keyboard shows. It reads wrong in an EDITOR: the tile then displays a keycap
+        for a key that is not bound on the layer you are looking at, and the text
+        beside it still says transparent — so a `=` appears on a layer where nothing
+        was assigned (field, 2026-08-28: "an unrendered key saying EQL in layer 3").
+        A transparent slot now previews nothing and keeps its own label.
         """
         max_idx = self.settings.MATRIX_COLUMNS * self.settings.MATRIX_ROWS
-        for lay in range(layer, -1, -1):
-            kc = self.key_buffer[idx + lay * max_idx]
-            if kc != KC_TRANSPARENT:
-                return kc
-        return KC_TRANSPARENT
+        return self.key_buffer[idx + layer * max_idx]
 
     def _preview_for(self, keycode):
         """The keycap for an ordinary (non-macro) keycode, or None.
@@ -381,7 +384,9 @@ class KbLayoutDialog(QMainWindow):
             # After set_display, which restores the text a keycap hides. The PREVIEW
             # resolves transparency; the TEXT deliberately does not, so the tile still
             # says the slot is transparent rather than claiming it holds that key.
-            self.keys[idx].set_keycap(self._keycap_for(self._resolve(idx, layer)))
+            self.keys[idx].set_keycap(
+                self._keycap_for(self._resolve(idx, layer)) if self._has_display(idx)
+                else None)
             idx += 1
 
     def layerChanged(self, button):
@@ -462,7 +467,9 @@ class KbLayoutDialog(QMainWindow):
         main = self._tile_main(keycode, main)
         self.selected_key.set_display(main, badge, color, 9 if len(main) < 5 else 7)
         # None for a non-macro keycode, which is what clears a key that WAS a macro.
-        self.selected_key.set_keycap(self._keycap_for(keycode))
+        sel = self.selected_key.matrix_index
+        self.selected_key.set_keycap(
+            self._keycap_for(keycode) if sel is None or self._has_display(sel) else None)
         idx = self.selected_key.matrix_index
         if idx is None:
             return

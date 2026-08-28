@@ -213,6 +213,11 @@ def _pick_default_branch(expr: str) -> str:
 # render, which reads as a defect in a published figure).
 STATIC_CALL_DEFAULTS = {
     'kc_os_gui_icon()': 'DINGBAT_BLACK_DIA_X',
+    # These two build their legend from the CURRENT setting, which a static preview
+    # cannot know — show the value the keyboard boots with (index 0) rather than the
+    # function's own name, which is what rendered before.
+    'idle_style_legend()': 'SETTING_LBL("IDLE:", "Pulse")',
+    'glyph_script_legend()': 'SETTING_LBL("SCRIPT:", "Std")',
 }
 
 

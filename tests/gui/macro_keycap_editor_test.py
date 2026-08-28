@@ -278,13 +278,12 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         toggle_x = dlg.keycap_toggle.mapTo(dlg, dlg.keycap_toggle.rect().topLeft()).x()
         self.assertGreater(toggle_x, last)
 
-    def test_a_TRANSPARENT_slot_previews_the_layer_it_falls_through_to(self):
-        """The keyboard shows the lower layer's legend at a transparent slot, so a
-        preview that drew nothing there would disagree with the board on 110 of the
-        888 keys in the shipped keymap -- the single biggest gap in the coverage.
-
-        The TEXT deliberately still reads as transparent: the tile has to say the slot
-        is empty on this layer, or the editor would claim the key is bound here.
+    def test_a_TRANSPARENT_slot_previews_NOTHING(self):
+        """The keyboard follows a transparent slot down to the layer below, and this
+        deliberately does NOT -- an editor is not the keyboard. Following it put a
+        keycap for `=` on a layer where nothing was assigned, beside a label still
+        reading transparent (field, 2026-08-28: "an unrendered key saying EQL in
+        layer 3"). The slot keeps its own label and draws no picture.
         """
         dlg = _editor()
         first = sorted(dlg.keys)[0]
@@ -293,77 +292,56 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         dlg.key_buffer[first + max_idx] = KC_TRANSPARENT  # layer 1: transparent
 
         dlg.set_keycodes_for_layer(0)
-        from_base = dlg.keys[first]._keycap.toImage()
+        self.assertIsNotNone(dlg.keys[first]._keycap)
         dlg.set_keycodes_for_layer(1)
-        self.assertIsNotNone(dlg.keys[first]._keycap, "transparent slot drew nothing")
-        self.assertEqual(dlg.keys[first]._keycap.toImage(), from_base)
+        self.assertIsNone(dlg.keys[first]._keycap,
+                          "a transparent slot must not borrow the layer below")
+        self.assertTrue(dlg.keys[first].text.isVisible())
 
-    def test_resolve_walks_DOWN_and_stops_at_the_first_real_key(self):
-        """Not "always layer 0": the fall-through is to the next active layer, so the
-        nearest non-transparent one below is the answer."""
+    def test_the_two_keys_with_no_OLED_never_preview(self):
+        """74 keys, 72 displays: the inner key at matrix (3,7) left and (8,0) right sit
+        under the rotary encoder and have no panel at all, so a keycap there promises
+        something the hardware cannot show."""
         dlg = _editor()
-        first = sorted(dlg.keys)[0]
-        m = dlg.settings.MATRIX_COLUMNS * dlg.settings.MATRIX_ROWS
-        dlg.key_buffer[first] = 0x0004                 # L0 KC_A
-        dlg.key_buffer[first + m] = 0x0005             # L1 KC_B
-        dlg.key_buffer[first + 2 * m] = KC_TRANSPARENT  # L2 transparent
-        self.assertEqual(dlg._resolve(first, 2), 0x0005)
-        self.assertEqual(dlg._resolve(first, 1), 0x0005)
-        self.assertEqual(dlg._resolve(first, 0), 0x0004)
+        cols = dlg.settings.MATRIX_COLUMNS
+        for r, c in dlg.NO_DISPLAY_MATRIX:
+            idx = r * cols + c
+            with self.subTest(matrix=(r, c)):
+                self.assertIn(idx, dlg.keys, "the slot should still be a KEY")
+                self.assertFalse(dlg._has_display(idx))
+                dlg.key_buffer[idx] = 0x0004              # KC_A — previewable anywhere
+                dlg.set_keycodes_for_layer(0)
+                self.assertIsNone(dlg.keys[idx]._keycap)
+        # …and a neighbouring key on the same row still does preview.
+        other = sorted(k for k in dlg.keys if dlg._has_display(k))[0]
+        dlg.key_buffer[other] = 0x0004
+        dlg.set_keycodes_for_layer(0)
+        self.assertIsNotNone(dlg.keys[other]._keycap)
 
-    def test_a_MISSING_language_table_still_draws_modifiers(self):
-        """The two halves have different prerequisites and must not take each other
-        down: the language LUT needs `openpyxl` to open the .xlsx, while the static
-        text half reads only the named-glyph map. Loading them together meant a machine
-        without openpyxl rendered nothing but macros, when it could have drawn every
-        modifier, arrow and Esc/Tab (field, 2026-08-28 -- "I can only see the M0 key
-        with a preview render").
-        """
-        dlg = _editor()
-        p = dlg._preview
-        self.assertTrue(p.usable)
-        p._lang_ok = False                       # as if openpyxl were absent
-        dlg._key_cache.clear()
+    def test_polykybd_s_OWN_keycodes_preview(self):
+        """The editor's keycode table is QMK's and knows nothing about KC_BASE,
+        KC_EDEN or the settings keys, so they arrived unnamed and the preview had no
+        token to look up -- even though keycode_helper.c has a legend for each. The
+        names come from the firmware's own enum now."""
+        p = _editor()._preview
+        names = {n: v for v, n in p._custom.items()}
+        for n in ("KC_BASE", "KC_DAUTO", "KC_DMAX", "KC_LANG"):
+            with self.subTest(keycode=n):
+                self.assertIn(n, names, "not parsed out of keycode_helper.h")
+                self.assertIsNotNone(p.render(names[n], None), f"{n} drew nothing")
 
-        self.assertIsNone(p.render(0x0004, "KC_A"), "a letter needs the workbook")
-        for kc, name in ((0x00E1, "KC_LSFT"), (0x0029, "KC_ESC"), (0x004F, "KC_RIGHT")):
-            with self.subTest(key=name):
-                self.assertIsNotNone(p.render(kc, name),
-                                     f"{name} needs no workbook and should still draw")
-
-    def test_the_tooltip_SAYS_when_only_half_the_preview_loaded(self):
-        """A partly-loaded preview draws macros and modifiers while every letter falls
-        back to text, which reads as broken with nothing to explain it. The reason has
-        to reach the user somewhere other than a debug log."""
-        dlg = _editor()
-        dlg._preview._reason = "letters and digits need the language table (test)"
-        tip = KbLayoutDialog._build_keycap_toggle(dlg).toolTip()
-        self.assertIn("Partly unavailable", tip)
-        self.assertIn("language table", tip)
-
-    def test_a_LAYER_key_previews_the_firmware_s_own_legend(self):
-        """`keycode_helper.c` switches on the SOURCE token (`MO(_FL)`, `OSL(_UL)`)
-        while the editor decodes the keycode to `MO(5)` and the browser's name table
-        has no entry at all -- so without the enum tags every layer key fell back to
-        text. Those legends are worth having: they carry the firmware's convention of
-        the layer name, `!` while it is only held, `*` for a one-shot, layer icon
-        underneath.
+    def test_a_legend_that_CHANGES_FONT_SIZE_falls_back_to_text(self):
+        """`HINT_MID`/`HINT_SMALL` switch to a smaller face for the rest of the
+        string, and `oled_preview.Renderer` implements the cursor ops but not those —
+        so the settings legends came out with both lines drawn full-size on top of
+        each other. Refusing is honest; drawing the collision is not.
         """
         p = _editor()._preview
-        for kc, token in ((0x5220 + 5, "MO(_FL)"), (0x5220 + 6, "MO(_NL)"),
-                          (0x5280 + 7, "OSL(_UL)"), (0x5200 + 11, "TO(_EMJ)")):
-            with self.subTest(token=token):
-                self.assertEqual(p._layer_token(kc), token)
-                self.assertIsNotNone(p.render(kc, None), f"{token} drew nothing")
-
-    def test_alt_previews_under_its_MAC_alias(self):
-        """0xE2 is listed as KC_LOPT and 0xE6 as KC_ALGR in QMK's table, which is what
-        the editor uses -- so checking "is KC_LALT handled?" passes while the board
-        shows no Alt at all (field, 2026-08-28)."""
-        p = _editor()._preview
-        for kc, name in ((0x00E2, "KC_LOPT"), (0x00E6, "KC_ALGR"), (0x00E2, "KC_LALT")):
-            with self.subTest(name=name):
-                self.assertIsNotNone(p.render(kc, name))
+        names = {n: v for v, n in p._custom.items()}
+        for n in ("KC_EDEN", "KC_GLYPH_SCRIPT", "KC_IDLE_STYLE"):
+            with self.subTest(keycode=n):
+                self.assertIsNone(p.render(names[n], None),
+                                  f"{n} uses a size op the renderer cannot follow")
 
     def test_previews_are_OFF_when_the_dialog_opens(self):
         """The editor is for assigning keycodes; a wall of keycaps makes the code you
