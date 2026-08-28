@@ -21,8 +21,8 @@ try:
     from PyQt5.QtGui import QKeyEvent
     from PyQt5.QtWidgets import QApplication
     from polyhost.gui.layout_dialog.macro_steps_dialog import (
-        COL_KIND, COL_VALUE, MIN_RECORDED_GAP_MS, VIEW_SCRIPT, VIEW_TABLE,
-        MacroStepsDialog,
+        COL_KIND, COL_VALUE, DEFAULT_SIZE, MIN_RECORDED_GAP_MS, RECORD_BUTTON_HEIGHT,
+        ROW_BUTTON_HEIGHT, VIEW_SCRIPT, VIEW_TABLE, MacroStepsDialog,
     )
     from polyhost.services import macro_body as mb
     from polyhost.services import macro_keys as mk
@@ -106,6 +106,47 @@ class LayoutTest(unittest.TestCase):
         dlg = MacroStepsDialog()
         self.assertIn("{", dlg.script.placeholderText())
         self.assertIn("tap", dlg.script.toolTip())
+
+    def test_the_record_button_has_an_icon_set(self):
+        """Guards the icon being dropped, NOT the filename being wrong.
+
+        ⚠️ `QIcon.isNull()` cannot tell you a file is missing: an icon is "null" only
+        when it has neither a pixmap nor a filename, so `QIcon("...does_not_exist")`
+        comes back NON-null purely because a name was recorded. Measured -- a path with
+        no `.svg` suffix (the mistake made here first) reports `isNull() == False` and
+        even yields a pixmap, while the same missing name WITH the suffix engages the
+        SVG engine, fails to open, and does report null. So this assertion is worth
+        exactly what it says and no more; `tests/gui/icon_assets_test.py` is what checks
+        the name resolves to a file on disk, and it is what caught the missing suffix.
+        """
+        dlg = MacroStepsDialog()
+        self.assertFalse(dlg.record_btn.icon().isNull())
+
+    def test_record_is_bigger_than_the_row_buttons(self):
+        """It is the control people look for, and the only one whose effect is a burst
+        of rows appearing -- so it is deliberately not the same size as Add step."""
+        dlg = MacroStepsDialog()
+        self.assertGreater(dlg.record_btn.minimumHeight(), ROW_BUTTON_HEIGHT)
+        self.assertGreaterEqual(dlg.record_btn.minimumHeight(), RECORD_BUTTON_HEIGHT)
+
+    def test_record_does_not_resize_when_it_becomes_stop(self):
+        """"Record" and "Stop" are different lengths, so without a minimum width the
+        button shrinks the moment you start a take -- under the cursor that just
+        clicked it."""
+        dlg = MacroStepsDialog()
+        wide = dlg.record_btn.minimumWidth()
+        dlg.record_btn.setChecked(True)
+        try:
+            self.assertEqual(dlg.record_btn.text(), "Stop")
+            self.assertEqual(dlg.record_btn.minimumWidth(), wide)
+        finally:
+            dlg.record_btn.setChecked(False)
+
+    def test_the_dialog_opens_at_the_declared_size(self):
+        """Cheap guard on a value that is easy to revert by accident -- the old 560x420
+        put the row buttons right under a short table."""
+        dlg = MacroStepsDialog()
+        self.assertEqual((dlg.width(), dlg.height()), DEFAULT_SIZE)
 
     def test_the_table_is_TWO_columns_an_action_and_its_value(self):
         """One value column, not Key plus ms.

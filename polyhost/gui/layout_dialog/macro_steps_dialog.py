@@ -24,13 +24,14 @@ the keycode it stored, so a wrong one is visible and editable rather than silent
 
 from __future__ import annotations
 
-from PyQt5.QtCore import QElapsedTimer, Qt
+from PyQt5.QtCore import QElapsedTimer, QSize, Qt
 from PyQt5.QtWidgets import (
     QAbstractItemView, QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QHeaderView,
     QInputDialog, QLabel, QPlainTextEdit, QPushButton, QSpinBox, QTabWidget,
     QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
 
+from polyhost.gui.get_icon import get_icon
 from polyhost.services import macro_body as mb
 from polyhost.services import macro_keys as mk
 from polyhost.services import macro_script as msc
@@ -56,6 +57,23 @@ MIN_RECORDED_GAP_MS = 40
 # and `steps()` never reads ms for a non-delay kind, so it went nowhere. An editor that
 # accepts what it will discard is the shape that gets reported as confusing.
 COL_KIND, COL_VALUE = 0, 1
+
+# Opening size. Wide enough that a keycode and a long legend are readable without a
+# resize, and tall enough to show a chord (5 rows) plus room to grow before the table
+# starts scrolling -- the earlier 560x420 put the row buttons right under a short table
+# and made the dialog feel cramped the moment a macro had more than a few steps.
+DEFAULT_SIZE = (760, 560)
+
+# The Table tab's toolbar. One gap value for the margin and the spacing, so the buttons
+# sit the same distance from each other as from the edges.
+PAGE_MARGIN = 6
+ROW_BUTTON_GAP = 6
+ROW_BUTTON_HEIGHT = 30
+
+# Record is deliberately larger than the row buttons -- see where it is built.
+RECORD_BUTTON_HEIGHT = 34
+RECORD_BUTTON_WIDTH = 120
+RECORD_ICON_PX = 18
 
 # Tab indices. The tab bar IS the view state -- there is no separate selector to keep
 # in agreement with it.
@@ -111,28 +129,38 @@ class MacroStepsDialog(QDialog):
         # have no meaning in the script view -- "Remove" removes a table row, and the
         # equivalent gesture in a text box is the Delete key -- so a shared footer would
         # be five permanently-greyed buttons whenever the Script tab is up.
+        # Spread across the width rather than bunched at the left with a trailing
+        # stretch: they are the Table tab's whole toolbar, so the row reads as one band
+        # of controls instead of a cramped cluster. Each gets an equal stretch and
+        # `addStretch` is gone -- a stretch at the end is what pushed them together.
         row = QHBoxLayout()
+        row.setContentsMargins(0, ROW_BUTTON_GAP, 0, 0)
+        row.setSpacing(ROW_BUTTON_GAP)
         self.add_btn = QPushButton("Add step")
         self.add_btn.clicked.connect(self._on_add)
-        row.addWidget(self.add_btn)
         self.text_btn = QPushButton("Add text…")
         self.text_btn.setToolTip("Append a run of characters the macro should type")
         self.text_btn.clicked.connect(self._on_add_text)
-        row.addWidget(self.text_btn)
         self.remove_btn = QPushButton("Remove")
         self.remove_btn.clicked.connect(self._on_remove)
-        row.addWidget(self.remove_btn)
         self.up_btn = QPushButton("↑")
+        self.up_btn.setToolTip("Move the selected step up")
         self.up_btn.clicked.connect(lambda: self._move(-1))
-        row.addWidget(self.up_btn)
         self.down_btn = QPushButton("↓")
+        self.down_btn.setToolTip("Move the selected step down")
         self.down_btn.clicked.connect(lambda: self._move(1))
-        row.addWidget(self.down_btn)
-        row.addStretch(1)
+        for b in (self.add_btn, self.text_btn, self.remove_btn):
+            b.setMinimumHeight(ROW_BUTTON_HEIGHT)
+            row.addWidget(b, 3)
+        # The two arrows carry one glyph each, so an equal share would leave them
+        # absurdly wide beside three labelled buttons -- they take a smaller slice.
+        for b in (self.up_btn, self.down_btn):
+            b.setMinimumHeight(ROW_BUTTON_HEIGHT)
+            row.addWidget(b, 1)
 
         table_page = QWidget()
         table_layout = QVBoxLayout(table_page)
-        table_layout.setContentsMargins(0, 0, 0, 0)
+        table_layout.setContentsMargins(PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN)
         table_layout.addWidget(self.table, 1)
         table_layout.addLayout(row)
 
@@ -147,9 +175,18 @@ class MacroStepsDialog(QDialog):
         # The recorder is SHARED, because it works in both views -- it appends through
         # `_append_step`, which writes to whichever tab is up.
         shared = QHBoxLayout()
+        shared.setContentsMargins(PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN, PAGE_MARGIN)
+        shared.setSpacing(ROW_BUTTON_GAP)
         shared.addStretch(1)
-        self.record_btn = QPushButton("Record")
+        # Record is the one control here that does something irreversible-looking to
+        # the list, and the one people look for, so it is sized to be found: taller
+        # than the row buttons, a minimum width so "Stop" does not shrink it mid-take,
+        # and the standard red dot.
+        self.record_btn = QPushButton(get_icon("radio_button_checked.svg"), "Record")
         self.record_btn.setCheckable(True)
+        self.record_btn.setMinimumHeight(RECORD_BUTTON_HEIGHT)
+        self.record_btn.setMinimumWidth(RECORD_BUTTON_WIDTH)
+        self.record_btn.setIconSize(QSize(RECORD_ICON_PX, RECORD_ICON_PX))
         self.record_btn.setToolTip(
             "Press the keys you want, then click Stop. Esc stops recording.")
         self.record_btn.toggled.connect(self._on_record_toggled)
@@ -160,6 +197,7 @@ class MacroStepsDialog(QDialog):
         self.timing_box.setToolTip(
             "Record the real pauses between keystrokes as Wait steps.\n"
             "Off by default: most macros want to run as fast as the keyboard can.")
+        self.timing_box.setMinimumHeight(RECORD_BUTTON_HEIGHT)
         shared.addWidget(self.timing_box)
         page.addLayout(shared)
 
@@ -176,7 +214,7 @@ class MacroStepsDialog(QDialog):
         for step in (steps or []):
             self._append_row(step)
         self._refresh()
-        self.resize(560, 420)
+        self.resize(*DEFAULT_SIZE)
 
     # -- the table is the model ---------------------------------------------
 
