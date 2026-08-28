@@ -1030,6 +1030,46 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `render_macro_key()` composes it and counts pixels outside the 72×40 window (320
     cells, 0 clipped) — the same "verify by rendering" rule as `glyph_size_preview.py`,
     with the same caveat that it is a Python model of the C and can drift.
+- **The editor's "Key previews" toggle draws every key through the FIRMWARE's own
+  renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
+  for the language LUT and `tools/lang_demo.py` for the `keycode_helper.c` static-text
+  map; macros go through the host's own composer). Off is the default, and off means
+  each key shows its keycode text. ⚠️ **Both halves need the firmware checkout beside
+  this repo, and the LUT half additionally needs `openpyxl`** — so on an ordinary
+  install the box is DISABLED with a tooltip saying why, rather than toggling something
+  that would silently do nothing. Six traps and a design note:
+  - ⚠️ **Load the two halves INDEPENDENTLY.** Coupling them shipped once: `openpyxl`
+    was undeclared in `requirements.txt`, so on the author's machine the letters *and*
+    the modifiers/custom keys both went dark and **only macros previewed** — reported
+    as "I can only see the M0 key with a preview render". Each half now reports its own
+    `reason` and the tooltip names the missing one, because a partly-loaded preview
+    (macros and modifiers drawn, every letter falling back to text) reads as "broken"
+    with nothing anywhere to explain it.
+  - ⚠️ **The missing dependency failed SILENTLY** — `usable` read False in 0.00 s,
+    indistinguishable from "no firmware checkout". A preview that cannot say *why* it
+    is unavailable is a preview nobody can fix.
+  - ⚠️ **`_tools_dir()` is FOUR dirnames up, not three** — three lands on `polyhost/`
+    and finds no `tools/`, which presents as the same silent False.
+  - ⚠️ **A `FlowLayout` inside a widget capped at `setMaximumHeight(40)` swallows
+    wrapped rows with no error.** Adding the toggle with a sibling `addStretch(1)`
+    squeezed the layer strip to 118 px, it wrapped, and **seven of the eight layer tabs
+    vanished** — reported as "I can only see one layer". Give the widget a stretch
+    FACTOR (`addWidget(self.layers, 1)`); never put an `addStretch()` beside a
+    flow-laid-out widget.
+  - ⚠️ **Strip a C continuation as `re.sub(r"\\\s*\n\s*", " ", ...)`, never a blanket
+    backslash strip** — the legends are `U"…"` literals, so removing every backslash
+    turns `U"\f\f\f"` into `U" f f f"` and the keycap renders `f f f f`.
+  - **A legend using an op the renderer lacks is REFUSED, not drawn.**
+    `oled_preview.Renderer` implements the cursor ops (`\x05 \x06 \x08 \x09 \x0a \x0b
+    \x0c \x0d \x18`) but not `HINT_SMALL` (`\x10`) or `HINT_MID` (`\x16`), which
+    rescale the rest of the run — so `UNSUPPORTED_OPS` returns None and the key keeps
+    its text rather than drawing two lines on top of each other. That is why
+    `KC_EDEN`, `KC_GLYPH_SCRIPT`, `KC_IDLE_STYLE` and `KC_STORE_EE` show text; teaching
+    the renderer those two ops is what restores them.
+  - **Two things are deliberately never previewed**: a `KC_TRNS` slot (the keyboard
+    draws the layer below, so a preview here would invent a legend the key does not
+    have) and the two keys with no OLED behind them (matrix `(3,7)` and `(8,0)` — the
+    inner keys documented in the firmware's non-rectangular display grid).
 - **Tray/menu icons (`polyhost/res/icons/`) are Material Symbols at optical size
   48 — fetch the `_48px` cut, never `_24px`.** The optical-size axis changes the
   **geometry**, not just the header: the same symbol at opsz24 is drawn with
