@@ -189,6 +189,13 @@ def _resolve_init(init: str, anchors: dict, seen: dict):
         return None
 
 
+def _read(base: str, name: str) -> str:
+    """Read a firmware source file. Closes it -- the bare `open(...).read()` this
+    replaced leaked a handle per load."""
+    with open(os.path.join(base, name), encoding="utf-8") as fh:
+        return fh.read()
+
+
 def _strip_c_comments(s: str) -> str:
     s = re.sub(r"/\*.*?\*/", "", s, flags=re.S)
     return re.sub(r"//[^\n]*", "", s)
@@ -262,12 +269,10 @@ class KeycapPreview:
             named.update(op.load_named_glyphs(os.path.join(pk, "keycode_helper.h")))
             self._R = op.Renderer(load_all_fonts(fonts_dir))
             self._static = ld.parse_static_text_map(os.path.join(pk, "keycode_helper.c"))
-            self._custom = parse_custom_keycodes(
-                open(os.path.join(pk, "keycode_helper.h"), encoding="utf-8").read())
+            self._custom = parse_custom_keycodes(_read(pk, "keycode_helper.h"))
             self._macros = parse_function_macros(
-                *(open(os.path.join(pk, f), encoding="utf-8").read()
-                  for f in ("lang/named_glyphs.h", "keycode_helper.h",
-                            "keycode_helper.c")))
+                *(_read(pk, f) for f in ("lang/named_glyphs.h", "keycode_helper.h",
+                                         "keycode_helper.c")))
             self._op, self._ld = op, ld
             # Resolve-only view: same class, so the codepoint tokenising stays the ONE
             # implementation that mirrors the firmware's make_key -- but built without

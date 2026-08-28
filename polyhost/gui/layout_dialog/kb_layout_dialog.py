@@ -14,7 +14,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
-from polyhost.gui.layout_dialog.keycap_preview import KC_TRANSPARENT, KeycapPreview
+from polyhost.gui.layout_dialog.keycap_preview import KeycapPreview
 from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
 from polyhost.gui.layout_dialog.macro_tab import QK_MACRO
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
