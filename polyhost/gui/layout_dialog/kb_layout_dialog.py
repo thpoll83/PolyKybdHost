@@ -14,6 +14,7 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
+from polyhost.gui.layout_dialog.keycap_preview import KC_TRANSPARENT, KeycapPreview
 from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
 from polyhost.gui.layout_dialog.macro_tab import QK_MACRO
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
@@ -92,8 +93,12 @@ class KbLayoutDialog(QMainWindow):
         # once and cached per macro id -- see `_keycap_for`. A missing font pack costs
         # only the picture: `usable` goes False and every key falls back to its text.
         self._macros: list = []
-        self._keycap_cache: dict = {}
+        self._keycap_cache: dict = {}     # macro id -> pixmap
+        self._key_cache: dict = {}        # keycode -> pixmap or None
         self._keycap_render = None
+        # Everything that is NOT a macro: the firmware composes those legends, so
+        # this drives the firmware-side renderers rather than reimplementing them.
+        self._preview = KeycapPreview()
         # Drives the header toggle. A plain flag rather than reading the checkbox back,
         # so `_keycap_for` does not depend on a widget that init_ui has not built yet.
         self._show_keycaps = True
@@ -206,28 +211,32 @@ class KbLayoutDialog(QMainWindow):
     # -- macro keycaps ------------------------------------------------------
 
     def _build_keycap_toggle(self):
-        """The header's "Macro keycaps" switch.
+        """The header's "Key previews" switch.
 
-        It covers MACRO KEYS ONLY, and the label says so rather than promising
-        previews generally: every other key's legend is composed by the firmware from
-        data this app does not have (`lang_lut.xlsx`, `named_glyphs.h`) and depends on
-        the active language, glyph script, legend size and held modifiers -- see
-        `tools/oled_preview.py`, which only manages it by reading a firmware checkout.
-        A macro is the one keycap the host itself composes, so it is the one it can
-        draw honestly.
+        On, every key draws the keycap the KEYBOARD draws: macros through the host's
+        own composer, and everything else through the firmware-side renderers in
+        `keycap_preview` (the language LUT for letters/digits/punctuation, the
+        `keycode_helper.c` static-text map for modifiers, arrows and the custom
+        PolyKybd keys). Off, every key falls back to its keycode text.
 
-        When the fonts are missing the box is DISABLED and says why, instead of
-        toggling something that would silently do nothing.
+        ⚠️ Coverage is NOT total and the label must not imply it is: a keycode neither
+        table names simply keeps its text, mixed in with the previewed keys. Both
+        sources also need the firmware checkout beside this repo (and `openpyxl` for
+        the .xlsx), so on an ordinary install nothing here is available -- the box is
+        then DISABLED and its tooltip says so, rather than toggling something that
+        would silently do nothing.
         """
-        self.keycap_toggle = QCheckBox("Macro keycaps")
-        usable = self._keycap_render is not None and self._keycap_render.usable
+        self.keycap_toggle = QCheckBox("Key previews")
+        macro_ok = self._keycap_render is not None and self._keycap_render.usable
+        usable = macro_ok or self._preview.usable
         self.keycap_toggle.setChecked(usable and self._show_keycaps)
         self.keycap_toggle.setEnabled(usable)
         self.keycap_toggle.setToolTip(
-            "Draw macro keys as the keycap the keyboard shows, instead of MACRO(n)."
+            "Draw each key as the keycap the keyboard shows. A key whose legend is "
+            "not modelled here keeps its keycode text."
             if usable else
-            "Unavailable: the keycap fonts could not be loaded, so macro keys show "
-            "MACRO(n).")
+            "Unavailable: the keycap fonts and layout tables could not be loaded, so "
+            "keys show their keycode.")
         self.keycap_toggle.toggled.connect(self._on_keycap_toggle)
         return self.keycap_toggle
 
@@ -272,10 +281,11 @@ class KbLayoutDialog(QMainWindow):
         """
         if not self._show_keycaps:
             return None
-        if self._keycap_render is None or not self._keycap_render.usable:
-            return None
         idx = self._macro_index(keycode)
         if idx is None:
+            # Not a macro: the firmware composes this legend.
+            return self._preview_for(keycode)
+        if self._keycap_render is None or not self._keycap_render.usable:
             return None
         hit = self._keycap_cache.get(idx)
         if hit is None:
@@ -285,6 +295,41 @@ class KbLayoutDialog(QMainWindow):
             hit = QPixmap.fromImage(img)
             self._keycap_cache[idx] = hit
         return hit
+
+    def _resolve(self, idx, layer):
+        """The keycode whose legend the KEYBOARD draws at this slot on this layer.
+
+        A transparent slot falls through to the layer below, and that is what the
+        hardware shows -- so a preview that drew nothing for it would disagree with
+        the board on 110 of the 888 keys in the shipped keymap, which is by far the
+        biggest single gap in the coverage.
+
+        Walks DOWNWARD rather than assuming layer 0: the fall-through is to the next
+        active layer, and the nearest non-transparent one below is the best a static
+        editor can know without the live layer stack.
+        """
+        max_idx = self.settings.MATRIX_COLUMNS * self.settings.MATRIX_ROWS
+        for lay in range(layer, -1, -1):
+            kc = self.key_buffer[idx + lay * max_idx]
+            if kc != KC_TRANSPARENT:
+                return kc
+        return KC_TRANSPARENT
+
+    def _preview_for(self, keycode):
+        """The keycap for an ordinary (non-macro) keycode, or None.
+
+        Cached INCLUDING the misses: a keycode with no preview is asked about once per
+        key per layer switch, and re-deciding that costs a name lookup and two dict
+        probes for an answer that cannot change while the dialog is open. `None` is a
+        real cached value here, so the sentinel has to be the absence of the KEY.
+        """
+        if keycode in self._key_cache:
+            return self._key_cache[keycode]
+        name = self.keycode_browser.get_keycode_to_name_mapping().get(keycode)
+        img = self._preview.render(keycode, name)
+        pm = QPixmap.fromImage(img) if img is not None else None
+        self._key_cache[keycode] = pm
+        return pm
 
     def _load_macros(self):
         """Pull the macro list the keycaps are drawn from. Never fatal -- a keyboard
@@ -321,8 +366,10 @@ class KbLayoutDialog(QMainWindow):
             main, badge, color = describe_keycode(keycode, mapping)
             main = self._tile_main(keycode, main)
             self.keys[idx].set_display(main, badge, color, 9 if len(main) < 5 else 7)
-            # After set_display, which restores the text a keycap hides.
-            self.keys[idx].set_keycap(self._keycap_for(keycode))
+            # After set_display, which restores the text a keycap hides. The PREVIEW
+            # resolves transparency; the TEXT deliberately does not, so the tile still
+            # says the slot is transparent rather than claiming it holds that key.
+            self.keys[idx].set_keycap(self._keycap_for(self._resolve(idx, layer)))
             idx += 1
 
     def layerChanged(self, button):

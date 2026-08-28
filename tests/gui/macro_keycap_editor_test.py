@@ -19,6 +19,7 @@ try:
     from PyQt5.QtWidgets import QApplication
     from polyhost.device.device_settings import DeviceSettings
     from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
+    from polyhost.gui.layout_dialog.keycap_preview import KC_TRANSPARENT
     from polyhost.gui.layout_dialog.macro_tab import MacroTab, QK_MACRO
     from polyhost.services import macro_label as ml
     _APP = QApplication.instance() or QApplication([])
@@ -97,13 +98,25 @@ def _assign(dlg, idx, keycode):
 @unittest.skipUnless(HAVE_FONT, "keycap fonts not present")
 class MacroKeycapInEditorTest(unittest.TestCase):
 
-    def test_a_macro_key_draws_a_keycap_and_an_ordinary_key_does_not(self):
+    def test_BOTH_a_macro_key_and_an_ordinary_key_draw_a_keycap(self):
+        """The toggle covers every key, not just macros: a macro composes through the
+        host's own renderer and everything else through the firmware-side tables, so
+        a row of keys must not be half pictures and half keycode text."""
         dlg = _editor()
-        first = sorted(dlg.keys)[0]
+        first, second = sorted(dlg.keys)[0], sorted(dlg.keys)[1]
         _assign(dlg, first, QK_MACRO + 0)
         self.assertIsNotNone(dlg.keys[first]._keycap)
-        second = sorted(dlg.keys)[1]
-        self.assertIsNone(dlg.keys[second]._keycap)
+        self.assertIsNotNone(dlg.keys[second]._keycap,
+                             "KC_A drew no keycap -- is the firmware checkout present?")
+
+    def test_the_two_kinds_of_keycap_are_DIFFERENT_pictures(self):
+        """Cheap guard against the wiring collapsing to one renderer: a macro and a
+        letter must not come out identical."""
+        dlg = _editor()
+        first, second = sorted(dlg.keys)[0], sorted(dlg.keys)[1]
+        _assign(dlg, first, QK_MACRO + 0)
+        self.assertNotEqual(dlg.keys[first]._keycap.toImage(),
+                            dlg.keys[second]._keycap.toImage())
 
     def test_the_keycap_hides_the_keycode_text(self):
         """The caption is already IN the picture; `MACRO(0)` drawn over it is both
@@ -113,16 +126,18 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         _assign(dlg, first, QK_MACRO + 0)
         self.assertFalse(dlg.keys[first].text.isVisible())
 
-    def test_reassigning_away_from_a_macro_CLEARS_the_keycap(self):
+    def test_reassigning_away_from_a_macro_REPLACES_the_keycap(self):
         """The failure this guards: a key that stops being a macro keeps the old
-        picture, so the tile shows a macro that is no longer on it."""
+        picture, so the tile shows a macro that is no longer on it. It no longer goes
+        blank -- KC_A has a keycap of its own -- so the assertion is that the picture
+        CHANGED, which is the property that actually matters."""
         dlg = _editor()
         first = sorted(dlg.keys)[0]
         _assign(dlg, first, QK_MACRO + 0)
-        self.assertIsNotNone(dlg.keys[first]._keycap)
+        was_macro = dlg.keys[first]._keycap.toImage()
         _assign(dlg, first, 0x0004)                  # KC_A
-        self.assertIsNone(dlg.keys[first]._keycap)
-        self.assertTrue(dlg.keys[first].text.isVisible())
+        self.assertIsNotNone(dlg.keys[first]._keycap)
+        self.assertNotEqual(dlg.keys[first]._keycap.toImage(), was_macro)
 
     def test_a_macro_id_the_keyboard_does_not_have_draws_nothing(self):
         """QMK's range is 0x7700..0x777F but the firmware ships 16 and this fake has
@@ -253,8 +268,49 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         toggle_x = dlg.keycap_toggle.mapTo(dlg, dlg.keycap_toggle.rect().topLeft()).x()
         self.assertGreater(toggle_x, last)
 
+    def test_a_TRANSPARENT_slot_previews_the_layer_it_falls_through_to(self):
+        """The keyboard shows the lower layer's legend at a transparent slot, so a
+        preview that drew nothing there would disagree with the board on 110 of the
+        888 keys in the shipped keymap -- the single biggest gap in the coverage.
+
+        The TEXT deliberately still reads as transparent: the tile has to say the slot
+        is empty on this layer, or the editor would claim the key is bound here.
+        """
+        dlg = _editor()
+        first = sorted(dlg.keys)[0]
+        max_idx = dlg.settings.MATRIX_COLUMNS * dlg.settings.MATRIX_ROWS
+        dlg.key_buffer[first] = 0x0004                    # layer 0: KC_A
+        dlg.key_buffer[first + max_idx] = KC_TRANSPARENT  # layer 1: transparent
+
+        dlg.set_keycodes_for_layer(0)
+        from_base = dlg.keys[first]._keycap.toImage()
+        dlg.set_keycodes_for_layer(1)
+        self.assertIsNotNone(dlg.keys[first]._keycap, "transparent slot drew nothing")
+        self.assertEqual(dlg.keys[first]._keycap.toImage(), from_base)
+
+    def test_resolve_walks_DOWN_and_stops_at_the_first_real_key(self):
+        """Not "always layer 0": the fall-through is to the next active layer, so the
+        nearest non-transparent one below is the answer."""
+        dlg = _editor()
+        first = sorted(dlg.keys)[0]
+        m = dlg.settings.MATRIX_COLUMNS * dlg.settings.MATRIX_ROWS
+        dlg.key_buffer[first] = 0x0004                 # L0 KC_A
+        dlg.key_buffer[first + m] = 0x0005             # L1 KC_B
+        dlg.key_buffer[first + 2 * m] = KC_TRANSPARENT  # L2 transparent
+        self.assertEqual(dlg._resolve(first, 2), 0x0005)
+        self.assertEqual(dlg._resolve(first, 1), 0x0005)
+        self.assertEqual(dlg._resolve(first, 0), 0x0004)
+
     def test_the_toggle_is_ON_by_default_when_the_fonts_are_there(self):
         self.assertTrue(_editor().keycap_toggle.isChecked())
+
+
+class _DeadPreview:
+    """Stands in for a machine with no firmware checkout."""
+    usable = False
+
+    def render(self, keycode, name):
+        return None
 
 
 @unittest.skipIf(_IMPORT_ERR, f"PyQt5/offscreen unavailable: {_IMPORT_ERR}")
@@ -264,18 +320,22 @@ class NoFontTest(unittest.TestCase):
         `usable` goes False and every key falls back to its keycode text."""
         dlg = _editor()
         dlg._keycap_render = None
+        dlg._preview = _DeadPreview()
+        dlg._key_cache.clear()
         self.assertIsNone(dlg._keycap_for(QK_MACRO + 0))
+        self.assertIsNone(dlg._keycap_for(0x0004))
 
     def test_the_toggle_is_DISABLED_rather_than_silently_inert(self):
         """A tickable box that draws nothing is worse than a greyed-out one: the
         tooltip is the only place that can say the fonts are missing."""
         dlg = KbLayoutDialog.__new__(KbLayoutDialog)
         dlg._keycap_render = None
+        dlg._preview = _DeadPreview()
         dlg._show_keycaps = True
         box = KbLayoutDialog._build_keycap_toggle(dlg)
         self.assertFalse(box.isEnabled())
         self.assertFalse(box.isChecked())
-        self.assertIn("MACRO(n)", box.toolTip())
+        self.assertIn("Unavailable", box.toolTip())
 
 
 if __name__ == "__main__":

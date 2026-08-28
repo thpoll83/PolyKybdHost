@@ -83,6 +83,20 @@ KC_ALIAS = {
     "KC_LCTL": "KC_LEFT_CTRL", "KC_RCTL": "KC_RIGHT_CTRL",
     "KC_LALT": "KC_LEFT_ALT", "KC_RALT": "KC_RIGHT_ALT",
     "KC_LWIN": "KC_LGUI", "KC_RWIN": "KC_RGUI", "KC_LCMD": "KC_LGUI",
+    # ⚠️ The tables above hold the LONG canonical names while a keymap -- and the
+    # host editor's keycode->name mapping -- uses the short ones, so without these a
+    # perfectly ordinary Page Up renders nothing and reads as "unsupported".
+    "KC_CAPS": "KC_CAPS_LOCK", "KC_NUM": "KC_NUM_LOCK", "KC_SCRL": "KC_SCROLL_LOCK",
+    "KC_PSCR": "KC_PRINT_SCREEN", "KC_INS": "KC_INSERT",
+    "KC_PGUP": "KC_PAGE_UP", "KC_PGDN": "KC_PAGE_DOWN",
+    "KC_RGHT": "KC_RIGHT", "KC_PAUS": "KC_PAUSE", "KC_BRK": "KC_PAUSE",
+    # numpad
+    "KC_P0": "KC_KP_0", "KC_P1": "KC_KP_1", "KC_P2": "KC_KP_2", "KC_P3": "KC_KP_3",
+    "KC_P4": "KC_KP_4", "KC_P5": "KC_KP_5", "KC_P6": "KC_KP_6", "KC_P7": "KC_KP_7",
+    "KC_P8": "KC_KP_8", "KC_P9": "KC_KP_9",
+    "KC_PDOT": "KC_KP_DOT", "KC_PENT": "KC_KP_ENTER", "KC_PPLS": "KC_KP_PLUS",
+    "KC_PMNS": "KC_KP_MINUS", "KC_PAST": "KC_KP_ASTERISK", "KC_PSLS": "KC_KP_SLASH",
+    "KC_PEQL": "KC_KP_EQUAL",
 }
 
 
