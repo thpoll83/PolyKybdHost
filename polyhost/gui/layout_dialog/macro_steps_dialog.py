@@ -45,7 +45,12 @@ KIND_LABEL = dict(KINDS)
 # is just noise in the list and bytes on the keyboard.
 MIN_RECORDED_GAP_MS = 40
 
-COL_KIND, COL_KEY, COL_MS = 0, 1, 2
+# ONE value column, not a Key column plus an ms column. Two columns meant every row
+# showed a cell that its kind cannot use -- a Wait with an empty Key box, a Tap with an
+# ms box beside it -- and both accepted an entry that was silently dropped on save. The
+# ms box is now a WIDGET inside the value cell, so a row offers exactly the one editor
+# its action has, and the header can say what that is: "Value".
+COL_KIND, COL_VALUE = 0, 1
 
 # Tab indices. The tab bar IS the view state -- there is no separate selector to keep
 # in agreement with it.
@@ -71,22 +76,20 @@ class MacroStepsDialog(QDialog):
 
         page = QVBoxLayout(self)
 
-        self.table = QTableWidget(0, 3)
-        self.table.setHorizontalHeaderLabels(["Action", "Key", "ms"])
+        self.table = QTableWidget(0, 2)
+        self.table.setHorizontalHeaderLabels(["Action", "Value"])
         self.table.verticalHeader().setVisible(False)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
         head = self.table.horizontalHeader()
-        # ⚠️ ResizeToContents measures the cell's ITEM, not a cell WIDGET, so the two
-        # combo columns come out sized for an empty cell and clip ("Rele"). Measure the
-        # widest label ourselves and leave the section fixed.
+        # ⚠️ ResizeToContents measures the cell's ITEM, not a cell WIDGET, so the Action
+        # column comes out sized for an empty cell and clips its combo ("Rele"). Measure
+        # the widest label ourselves and leave the section fixed.
         fm = self.table.fontMetrics()
         head.setSectionResizeMode(COL_KIND, QHeaderView.Fixed)
         self.table.setColumnWidth(
             COL_KIND, max(fm.horizontalAdvance(l) for _, l in KINDS + [("", "Type")]) + 42)
-        head.setSectionResizeMode(COL_KEY, QHeaderView.Stretch)
-        head.setSectionResizeMode(COL_MS, QHeaderView.Fixed)
-        self.table.setColumnWidth(COL_MS, fm.horizontalAdvance("65535 ms") + 34)
+        head.setSectionResizeMode(COL_VALUE, QHeaderView.Stretch)
         self.table.itemSelectionChanged.connect(self._refresh_buttons)
         self.script = QPlainTextEdit()
         self.script.setPlaceholderText("{+KC_LCTL}{KC_A}{-KC_LCTL}{50}done")
@@ -192,12 +195,12 @@ class MacroStepsDialog(QDialog):
         for r in range(self.table.rowCount()):
             kind = self.table.cellWidget(r, COL_KIND).currentData()
             if kind == "delay":
-                out.append(mb.Step("delay", ms=int(self.table.cellWidget(r, COL_MS).value())))
+                out.append(mb.Step("delay", ms=int(self.table.cellWidget(r, COL_VALUE).value())))
             elif kind == "char":
-                item = self.table.item(r, COL_KEY)
+                item = self.table.item(r, COL_VALUE)
                 out.append(mb.Step("char", code=int(item.data(Qt.UserRole))))
             else:
-                code = mk.value_for(self.table.item(r, COL_KEY).text())
+                code = mk.value_for(self.table.item(r, COL_VALUE).text())
                 out.append(mb.Step(kind, code=code or 0))
         return out
 
@@ -270,36 +273,48 @@ class MacroStepsDialog(QDialog):
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)
         else:
             item = QTableWidgetItem(mk.name_for(step.code) if step.kind != "delay" else "")
-        self.table.setItem(r, COL_KEY, item)
+        self.table.setItem(r, COL_VALUE, item)
 
         self._sync_row(r, ms=int(step.ms))
         return r
 
     def _sync_row(self, r: int, ms: int = 0):
-        """Give the row only the editor its kind uses.
+        """Give the row the ONE editor its kind uses, in the value cell.
 
-        A Wait with a Key box and a Tap with a ms box both invite an entry that is
-        silently discarded on save, which is the shape of edit that gets reported as
-        "it did not keep what I typed".
+        A Wait step's value is a duration and a Tap step's is a key; they are the same
+        column because they are the same thing -- what this action acts on. With two
+        columns each row also showed the other kind's editor, and both accepted an entry
+        that was silently discarded on save, which is the shape of edit that gets
+        reported as "it did not keep what I typed".
 
-        ⚠️ The ms box is ADDED and REMOVED, not shown and hidden: `setVisible(False)`
-        on a cell widget does not stop the table drawing it, so hiding left a live
-        spin box on every Tap row.
+        The spin box is a cell WIDGET over the item, so a Wait row cannot be given a
+        keycode and a Tap row cannot be given a duration -- the editor that would take
+        it is not there to type into.
+
+        ⚠️ It is ADDED and REMOVED, not shown and hidden: `setVisible(False)` on a cell
+        widget does not stop the table drawing it, so hiding left a live spin box
+        floating over the keycode of every Tap row.
         """
         kind = self.table.cellWidget(r, COL_KIND).currentData()
-        spin = self.table.cellWidget(r, COL_MS)
+        spin = self.table.cellWidget(r, COL_VALUE)
         if kind == "delay" and spin is None:
             spin = QSpinBox()
             spin.setRange(0, 0xFFFF)
             spin.setSuffix(" ms")
             spin.setValue(ms)
             spin.valueChanged.connect(self._refresh)
-            self.table.setCellWidget(r, COL_MS, spin)
+            self.table.setCellWidget(r, COL_VALUE, spin)
         elif kind != "delay" and spin is not None:
-            self.table.removeCellWidget(r, COL_MS)
+            self.table.removeCellWidget(r, COL_VALUE)
 
-        item = self.table.item(r, COL_KEY)
+        item = self.table.item(r, COL_VALUE)
         if kind == "delay":
+            # Cleared as well as covered. Keeping the keycode hidden under the spin box
+            # so that switching back restores it is tempting and would be HALF a
+            # feature: `_move` and the tab switch rebuild the table from `steps()`,
+            # where a Wait carries only its duration, so the remembered key would
+            # survive a kind toggle and vanish on the next reorder. Never remembering
+            # is the behaviour that is the same everywhere.
             item.setText("")
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)
         elif kind != "char":

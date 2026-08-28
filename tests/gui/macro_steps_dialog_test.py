@@ -21,7 +21,7 @@ try:
     from PyQt5.QtGui import QKeyEvent
     from PyQt5.QtWidgets import QApplication
     from polyhost.gui.layout_dialog.macro_steps_dialog import (
-        COL_KEY, COL_KIND, COL_MS, MIN_RECORDED_GAP_MS, VIEW_SCRIPT, VIEW_TABLE,
+        COL_KIND, COL_VALUE, MIN_RECORDED_GAP_MS, VIEW_SCRIPT, VIEW_TABLE,
         MacroStepsDialog,
     )
     from polyhost.services import macro_body as mb
@@ -107,12 +107,19 @@ class LayoutTest(unittest.TestCase):
         self.assertIn("{", dlg.script.placeholderText())
         self.assertIn("tap", dlg.script.toolTip())
 
-    def test_the_table_columns_are_named(self):
+    def test_the_table_is_TWO_columns_an_action_and_its_value(self):
+        """One value column, not Key plus ms.
+
+        With two, every row showed the editor its kind cannot use -- and both accepted
+        an entry that was dropped on save, which is exactly the edit that gets reported
+        as "it did not keep what I typed". A third column would have to mean a third
+        thing a step can carry, and there isn't one.
+        """
         dlg = MacroStepsDialog()
         head = dlg.table.horizontalHeader()
         titles = [dlg.table.horizontalHeaderItem(i).text()
                   for i in range(dlg.table.columnCount())]
-        self.assertEqual(titles, ["Action", "Key", "ms"])
+        self.assertEqual(titles, ["Action", "Value"])
         self.assertGreater(dlg.table.columnWidth(COL_KIND), 0)
         self.assertIsNotNone(head)
 
@@ -148,19 +155,19 @@ class RowEditingTest(unittest.TestCase):
 
     def test_typing_a_keycode_name_into_the_key_cell_changes_the_step(self):
         dlg = MacroStepsDialog([mb.Step("tap", code=0x04)])
-        dlg.table.item(0, COL_KEY).setText("KC_ENTER")
+        dlg.table.item(0, COL_VALUE).setText("KC_ENTER")
         self.assertEqual(dlg.steps(), [mb.Step("tap", code=mk.value_for("KC_ENTER"))])
 
     def test_a_short_alias_is_accepted_in_the_key_cell(self):
         """`KC_LSFT` is what a VIA user types and what the script view accepts; the
         table must not be the one place that rejects it."""
         dlg = MacroStepsDialog([mb.Step("tap", code=0x04)])
-        dlg.table.item(0, COL_KEY).setText("KC_LSFT")
+        dlg.table.item(0, COL_VALUE).setText("KC_LSFT")
         self.assertEqual(dlg.steps(), [mb.Step("tap", code=mk.value_for("KC_LEFT_SHIFT"))])
 
-    def test_a_raw_hex_keycode_is_accepted_in_the_key_cell(self):
+    def test_a_raw_hex_keycode_is_accepted_in_the_value_cell(self):
         dlg = MacroStepsDialog([mb.Step("tap", code=0x04)])
-        dlg.table.item(0, COL_KEY).setText("0xFD")
+        dlg.table.item(0, COL_VALUE).setText("0xFD")
         self.assertEqual(dlg.steps(), [mb.Step("tap", code=0xFD)])
 
     def test_changing_the_action_KEEPS_the_key(self):
@@ -171,25 +178,81 @@ class RowEditingTest(unittest.TestCase):
         self.assertEqual(dlg.steps(),
                          [mb.Step("down", code=mk.value_for("KC_LEFT_CTRL"))])
 
-    def test_a_wait_rows_key_cell_is_not_editable(self):
+    def test_a_wait_rows_value_cell_is_not_editable(self):
         """A Wait has no key, so an entry there is one save discards silently."""
         dlg = MacroStepsDialog([mb.Step("delay", ms=10)])
-        self.assertFalse(dlg.table.item(0, COL_KEY).flags() & Qt.ItemIsEditable)
+        self.assertFalse(dlg.table.item(0, COL_VALUE).flags() & Qt.ItemIsEditable)
 
-    def test_a_keycode_rows_key_cell_IS_editable(self):
+    def test_a_keycode_rows_value_cell_IS_editable(self):
         dlg = MacroStepsDialog([mb.Step("tap", code=0x04)])
-        self.assertTrue(dlg.table.item(0, COL_KEY).flags() & Qt.ItemIsEditable)
+        self.assertTrue(dlg.table.item(0, COL_VALUE).flags() & Qt.ItemIsEditable)
+
+    def test_a_wait_row_offers_NO_PLACE_to_type_a_keycode(self):
+        """The point of one value column: the editor a Wait cannot use is not merely
+        greyed, it is not there.
+
+        With Key and ms side by side a Wait row still showed an empty Key cell, and it
+        took an entry that the save then dropped -- the reader's complaint that started
+        this. Here the spin box IS the cell, and the item under it is blank.
+        """
+        dlg = MacroStepsDialog([mb.Step("delay", ms=10)])
+        self.assertIsNotNone(dlg.table.cellWidget(0, COL_VALUE))     # the spin box
+        self.assertEqual(dlg.table.item(0, COL_VALUE).text(), "")
+        self.assertFalse(dlg.table.item(0, COL_VALUE).flags() & Qt.ItemIsEditable)
+
+    def test_a_keycode_row_offers_NO_PLACE_to_type_a_duration(self):
+        """The same rule the other way round -- a Tap used to carry an ms box that
+        accepted a number nothing ever read."""
+        dlg = MacroStepsDialog([mb.Step("tap", code=0x04)])
+        self.assertIsNone(dlg.table.cellWidget(0, COL_VALUE))
+        self.assertTrue(dlg.table.item(0, COL_VALUE).flags() & Qt.ItemIsEditable)
+
+    def test_both_editors_live_in_the_SAME_column(self):
+        """A duration and a keycode are the same thing -- what this action acts on --
+        so they share one column, and that is what lets the header name it."""
+        dlg = MacroStepsDialog([mb.Step("tap", code=0x04), mb.Step("delay", ms=10)])
+        self.assertEqual(dlg.table.columnCount(), 2)
+        self.assertIsNotNone(dlg.table.item(0, COL_VALUE).text())
+        self.assertIsNotNone(dlg.table.cellWidget(1, COL_VALUE))
+
+    def test_a_row_that_was_a_WAIT_can_be_typed_into_again(self):
+        """The re-editable flag only matters on the way BACK.
+
+        A fresh `QTableWidgetItem` is editable already, so the `|= ItemIsEditable` in
+        `_sync_row` does nothing on a new row and everything on a row the Wait branch
+        has cleared. Found by mutation: deleting that line left the whole suite green
+        while a row that had once been a Wait could never be given a keycode again.
+        """
+        dlg = MacroStepsDialog([mb.Step("tap", code=0x04)])
+        _set_kind(dlg, 0, "delay")
+        _set_kind(dlg, 0, "tap")
+        self.assertTrue(dlg.table.item(0, COL_VALUE).flags() & Qt.ItemIsEditable)
+        dlg.table.item(0, COL_VALUE).setText("KC_ENTER")
+        self.assertEqual(dlg.steps(), [mb.Step("tap", code=mk.value_for("KC_ENTER"))])
+
+    def test_a_keycode_is_NOT_remembered_across_a_trip_through_wait(self):
+        """Deliberate, and the alternative would be HALF a feature.
+
+        Hiding the keycode under the spin box so the switch back restores it works only
+        until the row is moved: `_move` and the tab switch rebuild from `steps()`, where
+        a Wait carries a duration and nothing else. Remembering it in one path and not
+        the other is worse than never remembering.
+        """
+        dlg = MacroStepsDialog([mb.Step("tap", code=mk.value_for("KC_ENTER"))])
+        _set_kind(dlg, 0, "delay")
+        _set_kind(dlg, 0, "tap")
+        self.assertEqual(dlg.steps(), [mb.Step("tap", code=mk.value_for("KC_A"))])
 
     def test_changing_the_ms_box_changes_the_step(self):
         dlg = MacroStepsDialog([mb.Step("delay", ms=10)])
-        dlg.table.cellWidget(0, COL_MS).setValue(400)
+        dlg.table.cellWidget(0, COL_VALUE).setValue(400)
         self.assertEqual(dlg.steps(), [mb.Step("delay", ms=400)])
 
     def test_the_ms_box_is_bounded_to_what_the_format_holds(self):
         """The wire format stores the delay as ASCII digits the firmware caps at 65535,
         so a spin box that went higher would offer a value that silently truncates."""
         dlg = MacroStepsDialog([mb.Step("delay", ms=10)])
-        spin = dlg.table.cellWidget(0, COL_MS)
+        spin = dlg.table.cellWidget(0, COL_VALUE)
         self.assertEqual((spin.minimum(), spin.maximum()), (0, 0xFFFF))
 
     def test_remove_with_nothing_selected_is_a_no_op(self):
@@ -213,8 +276,8 @@ class RowEditingTest(unittest.TestCase):
         dlg = MacroStepsDialog([mb.Step("tap", code=0x04), mb.Step("delay", ms=99)])
         dlg.table.selectRow(1)
         dlg._move(-1)
-        self.assertIsNotNone(dlg.table.cellWidget(0, COL_MS))
-        self.assertIsNone(dlg.table.cellWidget(1, COL_MS))
+        self.assertIsNotNone(dlg.table.cellWidget(0, COL_VALUE))
+        self.assertIsNone(dlg.table.cellWidget(1, COL_VALUE))
         self.assertEqual(dlg.steps(), [mb.Step("delay", ms=99), mb.Step("tap", code=0x04)])
 
 
@@ -286,14 +349,14 @@ class StepTableTest(unittest.TestCase):
         which is the shape that gets reported as "it did not keep what I typed".
         """
         dlg = MacroStepsDialog([mb.Step("tap", code=0x04), mb.Step("delay", ms=10)])
-        self.assertIsNone(dlg.table.cellWidget(0, COL_MS))
-        self.assertIsNotNone(dlg.table.cellWidget(1, COL_MS))
+        self.assertIsNone(dlg.table.cellWidget(0, COL_VALUE))
+        self.assertIsNotNone(dlg.table.cellWidget(1, COL_VALUE))
 
     def test_switching_a_row_to_wait_gives_it_the_ms_box(self):
         dlg = MacroStepsDialog([mb.Step("tap", code=0x04)])
         box = dlg.table.cellWidget(0, COL_KIND)
         box.setCurrentIndex([box.itemData(i) for i in range(box.count())].index("delay"))
-        self.assertIsNotNone(dlg.table.cellWidget(0, COL_MS))
+        self.assertIsNotNone(dlg.table.cellWidget(0, COL_VALUE))
         self.assertEqual(dlg.steps(), [mb.Step("delay", ms=0)])
 
     def test_switching_a_wait_row_back_to_tap_takes_the_ms_box_away(self):
@@ -304,7 +367,7 @@ class StepTableTest(unittest.TestCase):
         dlg = MacroStepsDialog([mb.Step("delay", ms=10)])
         box = dlg.table.cellWidget(0, COL_KIND)
         box.setCurrentIndex([box.itemData(i) for i in range(box.count())].index("tap"))
-        self.assertIsNone(dlg.table.cellWidget(0, COL_MS))
+        self.assertIsNone(dlg.table.cellWidget(0, COL_VALUE))
         self.assertEqual(dlg.steps(), [mb.Step("tap", code=mk.value_for("KC_A"))])
 
     def test_a_character_row_cannot_be_turned_into_a_keycode(self):
@@ -317,7 +380,7 @@ class StepTableTest(unittest.TestCase):
         """The firmware plays whatever byte it is handed, so a body written elsewhere
         must not be silently rewritten by opening it here."""
         dlg = MacroStepsDialog([mb.Step("tap", code=0xFD)])
-        self.assertEqual(dlg.table.item(0, COL_KEY).text(), "0xFD")
+        self.assertEqual(dlg.table.item(0, COL_VALUE).text(), "0xFD")
         self.assertEqual(dlg.steps(), [mb.Step("tap", code=0xFD)])
 
     def test_reordering_moves_the_row_and_the_selection_with_it(self):
@@ -357,7 +420,7 @@ class StepTableTest(unittest.TestCase):
         of a branch nothing can enter.
         """
         dlg = MacroStepsDialog([mb.Step("delay", ms=10)])
-        dlg.table.cellWidget(0, COL_MS).setValue(0xFFFF)
+        dlg.table.cellWidget(0, COL_VALUE).setValue(0xFFFF)
         dlg._on_accept()
         self.assertEqual(dlg.result_steps, [mb.Step("delay", ms=0xFFFF)])
         self.assertEqual(mb.decode(mb.encode_steps(dlg.result_steps)),
@@ -635,7 +698,7 @@ class ScriptEditingTest(unittest.TestCase):
         dlg = MacroStepsDialog([mb.Step("tap", code=0x04)])
         dlg.tabs.setCurrentIndex(VIEW_SCRIPT)
         dlg.tabs.setCurrentIndex(VIEW_TABLE)
-        dlg.table.item(0, COL_KEY).setText("KC_ENTER")
+        dlg.table.item(0, COL_VALUE).setText("KC_ENTER")
         dlg.tabs.setCurrentIndex(VIEW_SCRIPT)
         self.assertEqual(dlg.script.toPlainText(), "{KC_ENTER}")
 
