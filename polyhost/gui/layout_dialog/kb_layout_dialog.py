@@ -3,10 +3,10 @@ import logging
 import pathlib
 import traceback
 
-from PyQt5.QtGui import QTransform, QGuiApplication, QCursor
+from PyQt5.QtGui import QTransform, QGuiApplication, QCursor, QPixmap
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox,
+    QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox, QCheckBox,
     QGraphicsScene, QDialog, QFormLayout
 )
 
@@ -14,10 +14,14 @@ from polyhost.device.device_settings import DeviceSettings
 from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
+from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
+from polyhost.gui.layout_dialog.macro_tab import QK_MACRO
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
 from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
 from polyhost.kle.kle_praser import parse_kle
+from polyhost.services import macro_label as ml
+from polyhost.services import macro_look as mkl
 
 KEY_SCALE = 80.0
 KLE_DEFINITION = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "polykybd-split72.json"
@@ -83,6 +87,26 @@ class KbLayoutDialog(QMainWindow):
         self.keys = {}
         self.current_layer = 0
         self.key_buffer = None
+        # A macro key draws its real keycap rather than reading `MACRO(3)`, so the
+        # editor needs the same fonts and the macro list the Macros tab uses. Loaded
+        # once and cached per macro id -- see `_keycap_for`. A missing font pack costs
+        # only the picture: `usable` goes False and every key falls back to its text.
+        self._macros: list = []
+        self._keycap_cache: dict = {}
+        self._keycap_render = None
+        # Drives the header toggle. A plain flag rather than reading the checkbox back,
+        # so `_keycap_for` does not depend on a widget that init_ui has not built yet.
+        self._show_keycaps = True
+        try:
+            nano = ml.load_nano_font(ml.default_font_dir())
+            mid = mkl.load_ui_font(ml.default_font_dir(), "util_font.h",
+                                   mkl.MID_FONT_SYMBOL)
+            fonts, _src = mkl.load_render_fonts()
+            ladder = mkl.caption_ladder(mkl.load_pack_fonts(), mid_font=mid,
+                                        nano_font=nano)
+            self._keycap_render = MacroKeycapRenderer(fonts, nano, mid, ladder)
+        except Exception:
+            self.log.debug("macro keycap fonts unavailable; keys show their keycode")
 
         self.init_ui()
 
@@ -116,6 +140,7 @@ class KbLayoutDialog(QMainWindow):
 
         self.keycode_browser = KeycodeBrowser(core=self.core)
         self.keycode_browser.keycodeSelected.connect(self.keycodeSelected)
+        self.keycode_browser.macrosChanged.connect(self.refresh_macro_keycaps)
 
         success, num_layers = self.core.keymap_layer_count()
         self.num_layers = num_layers if success else 0
@@ -141,6 +166,10 @@ class KbLayoutDialog(QMainWindow):
         label.setMaximumWidth(50)
         header_layout.addWidget(label)
         header_layout.addWidget(self.layers)
+        # The layer buttons size to their content, so without this the toggle sits
+        # against them mid-header instead of at the top right.
+        header_layout.addStretch(1)
+        header_layout.addWidget(self._build_keycap_toggle())
         main_layout.addLayout(header_layout)
         main_layout.addWidget(self.view)
         main_layout.addWidget(self.keycode_browser)
@@ -159,6 +188,10 @@ class KbLayoutDialog(QMainWindow):
             if ok and self.num_layers and 0 <= default_layer < self.num_layers:
                 self.current_layer = default_layer
                 self.layers.set_active(default_layer)
+            # BEFORE the first paint: `_keycap_for` reads this list, so drawing the
+            # layer first leaves every macro key showing MACRO(3) until something
+            # else happens to refresh it.
+            self._load_macros()
             self.set_keycodes_for_layer(self.current_layer)
         else:
             self.log.warning("Failed to receive dynamic key buffer")
@@ -167,6 +200,110 @@ class KbLayoutDialog(QMainWindow):
             self.layers.setEnabled(False)
             self.keycode_browser.setEnabled(False)
     
+    # -- macro keycaps ------------------------------------------------------
+
+    def _build_keycap_toggle(self):
+        """The header's "Macro keycaps" switch.
+
+        It covers MACRO KEYS ONLY, and the label says so rather than promising
+        previews generally: every other key's legend is composed by the firmware from
+        data this app does not have (`lang_lut.xlsx`, `named_glyphs.h`) and depends on
+        the active language, glyph script, legend size and held modifiers -- see
+        `tools/oled_preview.py`, which only manages it by reading a firmware checkout.
+        A macro is the one keycap the host itself composes, so it is the one it can
+        draw honestly.
+
+        When the fonts are missing the box is DISABLED and says why, instead of
+        toggling something that would silently do nothing.
+        """
+        self.keycap_toggle = QCheckBox("Macro keycaps")
+        usable = self._keycap_render is not None and self._keycap_render.usable
+        self.keycap_toggle.setChecked(usable and self._show_keycaps)
+        self.keycap_toggle.setEnabled(usable)
+        self.keycap_toggle.setToolTip(
+            "Draw macro keys as the keycap the keyboard shows, instead of MACRO(n)."
+            if usable else
+            "Unavailable: the keycap fonts could not be loaded, so macro keys show "
+            "MACRO(n).")
+        self.keycap_toggle.toggled.connect(self._on_keycap_toggle)
+        return self.keycap_toggle
+
+    def _on_keycap_toggle(self, on):
+        self._show_keycaps = bool(on)
+        if self.key_buffer is not None:
+            self.set_keycodes_for_layer(self.current_layer)
+
+    def _tile_main(self, keycode, main):
+        """The tile caption for a macro key, when no keycap is drawn over it.
+
+        `describe_keycode` answers `MACRO(12)`, which is the right name in the
+        keycode BROWSER and too long for a tile: the label item is centred and not
+        clipped, so it overflows the key and the neighbouring tiles paint over its
+        head -- `MACRO(0)` renders as a bare `0`, which reads like a digit key.
+        `M0` is what the KEYBOARD itself draws as its fallback mark (`_index_mark`),
+        so the off state of the toggle matches the hardware and fits.
+
+        Bounded by QMK's macro range rather than the list the keyboard reported: an
+        id past the end still IS a macro keycode with nothing to draw, and shortening
+        its name is right for the same reason.
+        """
+        if 0x7700 <= keycode <= 0x777F:
+            return f"M{keycode - 0x7700}"
+        return main
+
+    def _macro_index(self, keycode):
+        """The macro id a keycode names, or None.
+
+        Bounded by the number the KEYBOARD reports rather than QMK's 0x7700..0x777F
+        range: the firmware ships 16, and an out-of-range id has no macro to draw.
+        """
+        idx = keycode - QK_MACRO
+        return idx if 0 <= idx < len(self._macros) else None
+
+    def _keycap_for(self, keycode):
+        """The rendered keycap for a macro keycode, or None for everything else.
+
+        Cached per macro id: `set_keycodes_for_layer` runs over every key on every
+        layer switch, and re-composing a 72x40 keycap glyph-by-glyph per key per switch
+        is real work for a picture that only changes when the macro does.
+        """
+        if not self._show_keycaps:
+            return None
+        if self._keycap_render is None or not self._keycap_render.usable:
+            return None
+        idx = self._macro_index(keycode)
+        if idx is None:
+            return None
+        hit = self._keycap_cache.get(idx)
+        if hit is None:
+            m = self._macros[idx]
+            img = self._keycap_render.render(m.get("label", ""), m.get("style", 0),
+                                             icon=m.get("icon", 0), index=m.get("id", idx))
+            hit = QPixmap.fromImage(img)
+            self._keycap_cache[idx] = hit
+        return hit
+
+    def _load_macros(self):
+        """Pull the macro list the keycaps are drawn from. Never fatal -- a keyboard
+        too old for macros, or a failed read, just means no key draws one."""
+        try:
+            ok, info = self.core.macro_list()
+        except Exception:
+            ok, info = False, {}
+        self._macros = info.get("macros", []) if ok else []
+        self._keycap_cache.clear()
+
+    def refresh_macro_keycaps(self):
+        """Re-read the macros and repaint every key showing one.
+
+        Called when the Macros tab saves: the editor holds its own copy for rendering,
+        so without this a caption edit shows on the tab's preview and on the keyboard
+        while the key tile keeps the picture it drew when the dialog opened.
+        """
+        self._load_macros()
+        if self.key_buffer is not None:
+            self.set_keycodes_for_layer(self.current_layer)
+
     def set_keycodes_for_layer(self, layer):
         mapping = self.keycode_browser.get_keycode_to_name_mapping()
         num_keys = len(self.keys)
@@ -179,7 +316,10 @@ class KbLayoutDialog(QMainWindow):
                 idx += 1
             keycode = self.key_buffer[idx + offset]
             main, badge, color = describe_keycode(keycode, mapping)
+            main = self._tile_main(keycode, main)
             self.keys[idx].set_display(main, badge, color, 9 if len(main) < 5 else 7)
+            # After set_display, which restores the text a keycap hides.
+            self.keys[idx].set_keycap(self._keycap_for(keycode))
             idx += 1
 
     def layerChanged(self, button):
@@ -257,7 +397,10 @@ class KbLayoutDialog(QMainWindow):
             return
         mapping = self.keycode_browser.get_keycode_to_name_mapping()
         main, badge, color = describe_keycode(keycode, mapping)
+        main = self._tile_main(keycode, main)
         self.selected_key.set_display(main, badge, color, 9 if len(main) < 5 else 7)
+        # None for a non-macro keycode, which is what clears a key that WAS a macro.
+        self.selected_key.set_keycap(self._keycap_for(keycode))
         idx = self.selected_key.matrix_index
         if idx is None:
             return

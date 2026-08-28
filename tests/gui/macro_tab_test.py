@@ -368,12 +368,14 @@ class MacroTabPreviewTest(unittest.TestCase):
 
         # Caption alone: no mark of any kind. `_mid` is what draws the index, so
         # dropping it is how the reference is taken without touching the render path.
-        mid, tab._mid = tab._mid, None
+        # It lives on the RENDERER -- the tab's copy is only what it was built from,
+        # so mutating that one would leave the render untouched and the test moot.
+        mid, tab._keycap._mid = tab._keycap._mid, None
         tab._icon = 0
         tab.style_box.setCurrentIndex(0)
         tab._repaint_preview()
         caption_only = self._lit(tab)
-        tab._mid = mid
+        tab._keycap._mid = mid
 
         tab._repaint_preview()
         with_index = self._lit(tab)
@@ -439,9 +441,11 @@ class MacroTabPreviewTest(unittest.TestCase):
         font, glyph = hit
         img = QImage(ml.PANEL_W, ml.PANEL_H, QImage.Format_RGB32)
         img.fill(0)
+        # Through the shared renderer: the composition moved out of MacroTab so the
+        # keymap editor could draw the same keycap, and the tab now delegates to it.
         self.assertFalse(
-            tab._draw_mark(img, 0xFFFFFF, chr(0x1F511), [font], 0,
-                           free_rows=4, glyph=glyph))
+            tab._keycap._draw_mark(img, 0xFFFFFF, chr(0x1F511), [font], 0,
+                                   free_rows=4, glyph=glyph))
 
     def test_the_icon_controls_are_dead_unless_the_style_uses_them(self):
         tab = self._tab()

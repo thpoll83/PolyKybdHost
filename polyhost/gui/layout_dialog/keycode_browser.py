@@ -14,6 +14,7 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import HEADER_FILE, parse_qmk
 
 class KeycodeBrowser(QWidget):
     keycodeSelected = pyqtSignal(str, str, int, int)  # uint16
+    macrosChanged = pyqtSignal()          # relayed from the Macros tab
 
     def __init__(self, num_layers: int = 9, core=None):
         super().__init__()
@@ -67,6 +68,7 @@ class KeycodeBrowser(QWidget):
         if core is not None:
             self.macro_tab = MacroTab(core)
             self.macro_tab.keycodeSelected.connect(self.keycodeSelected)
+            self.macro_tab.macrosChanged.connect(self.macrosChanged)
             tabs.addTab(self.macro_tab, "Macros")
             tabs.currentChanged.connect(self._on_tab_changed)
 
