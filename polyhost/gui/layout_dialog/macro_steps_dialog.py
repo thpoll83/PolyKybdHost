@@ -45,11 +45,16 @@ KIND_LABEL = dict(KINDS)
 # is just noise in the list and bytes on the keyboard.
 MIN_RECORDED_GAP_MS = 40
 
-# ONE value column, not a Key column plus an ms column. Two columns meant every row
-# showed a cell that its kind cannot use -- a Wait with an empty Key box, a Tap with an
-# ms box beside it -- and both accepted an entry that was silently dropped on save. The
-# ms box is now a WIDGET inside the value cell, so a row offers exactly the one editor
-# its action has, and the header can say what that is: "Value".
+# ONE value column, not a Key column plus an ms column. EVERY step kind carries exactly
+# one value -- a keycode for Tap/Hold/Release, a character for Type, a duration for Wait
+# (there is no tap-with-a-duration: `Step("tap", code=X, ms=N)` encodes byte-identically
+# to the same tap without the ms) -- so a second column can only ever be the empty one.
+#
+# ⚠️ Empty did NOT mean inert, which is the bug this closed. A Tap row's ms cell held no
+# widget and no item, but the table's edit triggers are DoubleClicked|EditKeyPressed|
+# AnyKeyPressed, so double-clicking it CREATED an item and took "4 ms" quite happily --
+# and `steps()` never reads ms for a non-delay kind, so it went nowhere. An editor that
+# accepts what it will discard is the shape that gets reported as confusing.
 COL_KIND, COL_VALUE = 0, 1
 
 # Tab indices. The tab bar IS the view state -- there is no separate selector to keep
@@ -282,14 +287,14 @@ class MacroStepsDialog(QDialog):
         """Give the row the ONE editor its kind uses, in the value cell.
 
         A Wait step's value is a duration and a Tap step's is a key; they are the same
-        column because they are the same thing -- what this action acts on. With two
-        columns each row also showed the other kind's editor, and both accepted an entry
-        that was silently discarded on save, which is the shape of edit that gets
-        reported as "it did not keep what I typed".
+        column because they are the same thing -- what this action acts on, and no kind
+        carries two.
 
         The spin box is a cell WIDGET over the item, so a Wait row cannot be given a
-        keycode and a Tap row cannot be given a duration -- the editor that would take
-        it is not there to type into.
+        keycode and a Tap row cannot be given a duration -- the cell that would take it
+        is occupied by the one editor that kind uses. Under two columns the spare cell
+        was merely EMPTY, and an empty QTableWidget cell is still editable on a
+        double-click (see the COL_VALUE note); what you typed there was then dropped.
 
         ⚠️ It is ADDED and REMOVED, not shown and hidden: `setVisible(False)` on a cell
         widget does not stop the table drawing it, so hiding left a live spin box

@@ -201,8 +201,13 @@ class RowEditingTest(unittest.TestCase):
         self.assertFalse(dlg.table.item(0, COL_VALUE).flags() & Qt.ItemIsEditable)
 
     def test_a_keycode_row_offers_NO_PLACE_to_type_a_duration(self):
-        """The same rule the other way round -- a Tap used to carry an ms box that
-        accepted a number nothing ever read."""
+        """The same rule the other way round.
+
+        A Tap's spare ms cell used to hold no widget and no item -- and was still
+        editable, because an empty QTableWidget cell opens an editor on a double-click.
+        `steps()` never read it, so the number went nowhere. There is no tap-with-a-
+        duration in the format for it to have gone to.
+        """
         dlg = MacroStepsDialog([mb.Step("tap", code=0x04)])
         self.assertIsNone(dlg.table.cellWidget(0, COL_VALUE))
         self.assertTrue(dlg.table.item(0, COL_VALUE).flags() & Qt.ItemIsEditable)
