@@ -276,6 +276,27 @@ class RowEditingTest(unittest.TestCase):
         _set_kind(dlg, 0, "tap")
         self.assertEqual(dlg.steps(), [mb.Step("tap", code=mk.value_for("KC_A"))])
 
+    def test_a_parked_keycode_SAYS_it_is_parked(self):
+        """Otherwise the memory is invisible magic -- nothing on screen admits the key
+        still exists, so the restore looks like the editor inventing a value."""
+        dlg = MacroStepsDialog([mb.Step("tap", code=mk.value_for("KC_ENTER"))])
+        _set_kind(dlg, 0, "delay")
+        self.assertIn("KC_ENTER", dlg.table.cellWidget(0, COL_VALUE).toolTip())
+
+    def test_the_tooltip_goes_on_the_SPIN_BOX_not_the_item(self):
+        """The widget covers the cell, so an item tooltip can never be reached by a
+        hover -- it would be a promise nobody can read."""
+        dlg = MacroStepsDialog([mb.Step("tap", code=mk.value_for("KC_ENTER"))])
+        _set_kind(dlg, 0, "delay")
+        self.assertTrue(dlg.table.cellWidget(0, COL_VALUE).toolTip())
+        self.assertEqual(dlg.table.item(0, COL_VALUE).toolTip(), "")
+
+    def test_a_wait_with_NOTHING_parked_promises_nothing(self):
+        """A row that was always a Wait has no key to restore, so a tooltip there would
+        be a claim the switch-back cannot honour -- it comes back as KC_A."""
+        dlg = MacroStepsDialog([mb.Step("delay", ms=10)])
+        self.assertEqual(dlg.table.cellWidget(0, COL_VALUE).toolTip(), "")
+
     def test_a_parked_keycode_never_reaches_the_macro(self):
         """The whole safety of parking it: while the row is a Wait, what is saved is the
         duration. If the item could leak into `steps()` the macro would carry a

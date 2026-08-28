@@ -331,6 +331,14 @@ class MacroStepsDialog(QDialog):
             # and nothing else, and inventing syntax to smuggle a keycode through it
             # would break VIA interchange for a convenience.
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+            # Say so, or the memory is invisible magic: the parked key is under the spin
+            # box and nothing on screen admits it exists. The tooltip goes on the SPIN
+            # BOX rather than the item because the widget covers the cell, so the item's
+            # own tooltip can never be reached by a hover. Cleared when there is nothing
+            # parked, so a row that was always a Wait makes no promise.
+            spin.setToolTip(
+                f"Switch this row back to a key action to restore {item.text()}."
+                if item.text() else "")
         elif kind != "char":
             item.setFlags(item.flags() | Qt.ItemIsEditable)
             if not item.text():
