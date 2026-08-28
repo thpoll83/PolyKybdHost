@@ -165,10 +165,13 @@ class KbLayoutDialog(QMainWindow):
         label = QLabel("Layers:")
         label.setMaximumWidth(50)
         header_layout.addWidget(label)
-        header_layout.addWidget(self.layers)
-        # The layer buttons size to their content, so without this the toggle sits
-        # against them mid-header instead of at the top right.
-        header_layout.addStretch(1)
+        # ⚠️ The stretch factor goes ON the ButtonArray -- do NOT push the toggle
+        # right with an addStretch() between them. `self.layers` holds a FlowLayout
+        # and is capped at 40 px high, so a stretch that takes the spare width
+        # squeezes it to ~118 px, the flow wraps every layer onto its own row, and
+        # the cap hides all but the FIRST: eight layers render as one, with nothing
+        # clipped-looking to give it away.
+        header_layout.addWidget(self.layers, 1)
         header_layout.addWidget(self._build_keycap_toggle())
         main_layout.addLayout(header_layout)
         main_layout.addWidget(self.view)

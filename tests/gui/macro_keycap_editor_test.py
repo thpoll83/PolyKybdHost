@@ -75,6 +75,18 @@ def _editor(core=None):
     return KbLayoutDialog(core or FakeCore(), DeviceSettings())
 
 
+class EightLayerCore(FakeCore):
+    """A realistic layer count -- the default fake has two, which is few enough to
+    fit any header width and would hide the wrapping bug below."""
+
+    def keymap_layer_count(self):
+        return True, 8
+
+    def keymap_layer_names(self):
+        return True, ["Qwerty", "Stag!", "ColemkDH", "Neo", "Wkmn", "Fn", "Numpad",
+                      "Utility"]
+
+
 def _assign(dlg, idx, keycode):
     """Put a keycode on one key the way the editor's own load path does."""
     dlg.key_buffer[idx] = keycode
@@ -203,6 +215,43 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         first = sorted(dlg.keys)[0]
         _assign(dlg, first, QK_MACRO + 9)
         self.assertEqual(dlg.keys[first].text.document().toPlainText(), "M9")
+
+    def test_every_layer_button_stays_VISIBLE_beside_the_toggle(self):
+        """The toggle shares the header with the layer buttons, and squeezing them is
+        SILENT: `ButtonArray` holds a FlowLayout and is capped at 40 px high, so a
+        header that takes its width wraps each layer onto its own row and the cap
+        hides all but the first. Eight layers then render as one, with nothing
+        clipped-looking to give it away (field, 2026-08-28 -- "I can only see one
+        layer ... there should be 8").
+
+        Asserted on geometry rather than on the widget tree: every button exists and
+        reports `isVisible()` either way, which is exactly why this was invisible to
+        the rest of the suite.
+        """
+        dlg = KbLayoutDialog(EightLayerCore(), DeviceSettings())
+        dlg.resize(1800, 1000)
+        dlg.show()
+        _APP.processEvents()
+
+        buttons = dlg.layers.group.buttons()
+        self.assertEqual(len(buttons), 8)
+        height = dlg.layers.height()
+        hidden = [b.text() for b in buttons if b.geometry().bottom() >= height]
+        self.assertEqual(hidden, [], f"layer buttons pushed out of the header: {hidden}")
+
+        rows = {b.geometry().y() for b in buttons}
+        self.assertEqual(len(rows), 1, "the layer buttons wrapped onto several rows")
+
+    def test_the_toggle_still_sits_to_the_RIGHT_of_the_layers(self):
+        """The fix is a stretch FACTOR on the ButtonArray, not a spacer between the
+        two -- so this pins the placement the spacer was there for."""
+        dlg = KbLayoutDialog(EightLayerCore(), DeviceSettings())
+        dlg.resize(1800, 1000)
+        dlg.show()
+        _APP.processEvents()
+        last = max(b.mapTo(dlg, b.rect().topRight()).x() for b in dlg.layers.group.buttons())
+        toggle_x = dlg.keycap_toggle.mapTo(dlg, dlg.keycap_toggle.rect().topLeft()).x()
+        self.assertGreater(toggle_x, last)
 
     def test_the_toggle_is_ON_by_default_when_the_fonts_are_there(self):
         self.assertTrue(_editor().keycap_toggle.isChecked())
