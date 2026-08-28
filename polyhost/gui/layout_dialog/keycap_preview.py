@@ -150,17 +150,18 @@ class KeycapPreview:
         the hardware would clip is visible in its contact sheets. The editor wants the
         hardware view, so the border is cropped rather than shown.
         """
-        o = 2
         try:
             from tools.gfx_font import OLED_W, OLED_H
         except Exception:
             OLED_W, OLED_H = ml.PANEL_W, ml.PANEL_H
+        # Centred crop rather than a fixed 2 px: OVERSHOOT is oled_preview's constant,
+        # not ours, so the border is derived from the size difference and a future
+        # change to it needs no edit here.
         if img.size != (OLED_W, OLED_H):
             bw = (img.size[0] - OLED_W) // 2
             bh = (img.size[1] - OLED_H) // 2
             if bw >= 0 and bh >= 0:
                 img = img.crop((bw, bh, bw + OLED_W, bh + OLED_H))
-            o = 0
         if img.mode != "L":
             img = img.convert("L")
         w, h = img.size
