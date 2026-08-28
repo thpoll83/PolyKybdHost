@@ -680,7 +680,17 @@ class PolyCore(Observable):
             # failed probe so the marker survives until a probe that gets applied.
             "fresh_boot": self.keeb.pop_fresh_boot() if connected_now else False,
         }
-        if not snapshot["state_changed"]:
+        # ⚠️ A FRESH BOOT must re-read the version block even when connectivity
+        # never appeared to change. A firmware apply reboots the keyboard INSIDE
+        # the flash's own suspend/long-job window, so the probe never observes a
+        # disconnect: connected before, connected after, state_changed False.
+        # Returning here left `keeb.protocol_version` at its PRE-FLASH value, so
+        # everything computed from it -- per-feature capabilities, the
+        # newer-firmware decision, the editor's feature gates -- kept describing
+        # the firmware that had just been replaced, until the app was restarted.
+        # The marker is popped once per keyboard boot, so this costs one extra
+        # version+lang query per reboot and nothing in steady state.
+        if not snapshot["state_changed"] and not snapshot["fresh_boot"]:
             return snapshot
 
         if not connected_now:
@@ -747,8 +757,14 @@ class PolyCore(Observable):
             "do_overlay_reset": False,
             "fresh_boot": False,
         }
+        caches_reset = False
 
-        if snapshot["state_changed"]:
+        # `fresh_boot` joins `state_changed` here for the reboot-with-no-observed-
+        # disconnect case above. Note the block below already MEANT to cover it --
+        # its first comment says "e.g. after a firmware flash" -- but sat behind a
+        # guard a firmware flash cannot satisfy, and read `kb_proto` which the
+        # probe only fills in when it gets this far.
+        if snapshot["state_changed"] or snapshot["fresh_boot"]:
             # Forget a remembered newer-firmware choice if the device's protocol
             # changed (e.g. after a firmware flash) so the user is asked again for
             # the new firmware rather than silently reusing the old decision.
@@ -805,6 +821,7 @@ class PolyCore(Observable):
                     self._last_pushed_os = None
                     self._push_os(get_host_os())
                 self.device_mgr.reset_all_caches()
+                caches_reset = True
                 if self.overlay_handler is not None:
                     self.overlay_handler.force_resend()
                 self.needs_overlay_reset = True
@@ -855,9 +872,13 @@ class PolyCore(Observable):
                     except Exception as e:
                         self.log.warning("Connect-time overlay reset failed: %s", e)
             # Independent of state_changed: a fast reboot (no observed
-            # disconnect) still must invalidate the host-side MRU cache.
+            # disconnect) still must invalidate the host-side MRU cache. Post-connect
+            # already does it on the paths where it runs, so this is the fallback for
+            # the ones where it does not (a reboot into firmware this host refuses,
+            # or into safe mode) -- not a second reset on top of it.
             if snapshot.get("fresh_boot"):
-                self.device_mgr.reset_all_caches()
+                if not caches_reset:
+                    self.device_mgr.reset_all_caches()
                 self.log.info("Firmware restart detected — overlay MRU cache reset.")
                 applied["fresh_boot"] = True
 
@@ -1125,6 +1146,115 @@ class PolyCore(Observable):
     def get_glyph_size(self):
         return self._device_call(
             "glyph_size_get", lambda c: self.keeb.get_glyph_size())
+
+    # --- dynamic macros ---------------------------------------------------
+    #
+    # Deliberately whole-buffer rather than per-macro: the bodies share one NUL
+    # delimited buffer, so writing macro 3 means rewriting everything after it. Reading
+    # it, editing in memory and writing it back is the only shape that cannot corrupt a
+    # neighbour, and at ~2 KB it is a handful of reports either way.
+
+    def macro_list(self):
+        """Every macro: label, decoded steps, and the plain text when it is text.
+
+        One call, because an editor needs all of it to draw a list and the alternative
+        is sixteen round trips through the worker for something that is two reads.
+        """
+        from polyhost.services import macro_body
+
+        ok, info = self._device_call("macro_info", lambda c: self.keeb.get_macro_info())
+        if not ok:
+            return False, info
+        ok, buf = self._device_call(
+            "macro_read", lambda c, n=info["capacity"]: self.keeb.read_macro_buffer(n))
+        if not ok:
+            return False, buf
+        bodies = macro_body.split_buffer(buf, info["count"])
+        macros = []
+        for i, body in enumerate(bodies):
+            ok_l, look = self._device_call(
+                "macro_look_get", lambda c, i=i: self.keeb.get_macro_look(i))
+            if not ok_l or not isinstance(look, dict):
+                look = {"label": "", "style": 0, "icon": 0}
+            steps = macro_body.decode(body)
+            macros.append({
+                "id": i,
+                "label": look.get("label", ""),
+                "style": look.get("style", 0),
+                "icon": look.get("icon", 0),
+                "bytes": len(body),
+                "text": macro_body.to_text(steps),
+                "steps": [{"kind": s.kind, "code": s.code, "ms": s.ms} for s in steps],
+            })
+        return True, {**info, "macros": macros}
+
+    def macro_set(self, macro_id, *, text=None, steps=None, label=None,
+                  style=None, icon=None):
+        """Replace one macro's body and/or its keycap look.
+
+        `text` and `steps` are alternatives; passing neither leaves the body alone,
+        which is how a look-only edit avoids re-streaming the whole buffer.
+
+        The look is caption + style + icon and travels as ONE write, so it can never be
+        half-applied. Passing only some of the three therefore has to read the current
+        look first and carry the rest forward, rather than defaulting the omitted
+        fields -- otherwise setting a caption would silently reset the style.
+        """
+        from polyhost.services import macro_body
+
+        try:
+            macro_id = int(macro_id)
+        except (TypeError, ValueError):
+            return False, f"Invalid macro id: {macro_id!r}"
+
+        if text is not None or steps is not None:
+            ok, info = self._device_call("macro_info", lambda c: self.keeb.get_macro_info())
+            if not ok:
+                return False, info
+            if not 0 <= macro_id < info["count"]:
+                return False, f"macro {macro_id} out of range (0..{info['count'] - 1})"
+            ok, buf = self._device_call(
+                "macro_read", lambda c, n=info["capacity"]: self.keeb.read_macro_buffer(n))
+            if not ok:
+                return False, buf
+            bodies = macro_body.split_buffer(buf, info["count"])
+            try:
+                if steps is not None:
+                    bodies[macro_id] = macro_body.encode_steps(
+                        [macro_body.Step(**s) for s in steps])
+                else:
+                    bodies[macro_id] = macro_body.encode_text(text)
+                packed = macro_body.join_buffer(bodies, info["capacity"])
+            except (macro_body.MacroError, TypeError) as e:
+                return False, str(e)
+            ok, msg = self._device_call(
+                "macro_write", lambda c, d=packed: self.keeb.write_macro_buffer(d))
+            if not ok:
+                return False, msg
+
+        if label is not None or style is not None or icon is not None:
+            cur = {"label": "", "style": 0, "icon": 0}
+            if label is None or style is None or icon is None:
+                ok, got = self._device_call(
+                    "macro_look_get", lambda c, i=macro_id: self.keeb.get_macro_look(i))
+                if not ok:
+                    return False, got
+                if isinstance(got, dict):
+                    cur = got
+            new_label = cur.get("label", "") if label is None else label
+            new_style = cur.get("style", 0) if style is None else int(style)
+            new_icon = cur.get("icon", 0) if icon is None else int(icon)
+            ok, msg = self._device_call(
+                "macro_look_set",
+                lambda c, i=macro_id, t=new_label, st=new_style, ic=new_icon:
+                    self.keeb.set_macro_look(i, t, st, ic))
+            if not ok:
+                return False, msg
+        return True, "ok"
+
+    def macro_clear(self, macro_id):
+        """Empty one macro's body and its whole keycap look."""
+        return self.macro_set(macro_id, text="", label="", style=0, icon=0)
 
     def replay_startup_anim(self):
         return self._device_call(

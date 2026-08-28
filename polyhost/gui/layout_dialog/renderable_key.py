@@ -1,5 +1,5 @@
 from PyQt5.QtGui import QPixmap, QPainter, QColor, QBrush, QTransform, QPen, QFont, QTextOption
-from PyQt5.QtCore import Qt, pyqtSignal, QRectF
+from PyQt5.QtCore import QRect, Qt, pyqtSignal, QRectF
 
 from PyQt5.QtWidgets import (
     QGraphicsObject, QGraphicsTextItem
@@ -57,6 +57,7 @@ class RenderableKey(QGraphicsObject):
         self.badge.document().setDefaultTextOption(badge_opt)
         self.badge.setVisible(False)
 
+        self._keycap = None      # a rendered macro keycap, drawn in the display rect
         self.update_text_position()
 
         # hover state
@@ -118,6 +119,11 @@ class RenderableKey(QGraphicsObject):
 
         # draw the rectangle (use drawRoundedRect(...) if you prefer rounded corners)
         painter.drawRoundedRect(x, y, inner_w, h, 0.05, 0.05)
+        # A macro key paints its real keycap into that same rect. The tile already
+        # reserved a 72:40 box for a mock panel, so the picture goes exactly where the
+        # placeholder was -- no layout change, and a non-macro key is untouched.
+        if self._keycap is not None and inner_w > 0 and h > 0:
+            painter.drawPixmap(QRect(x, y, inner_w, h), self._keycap)
         painter.setBrush(self.display_attachment)
         painter.drawRoundedRect(x, y+h, inner_w, int(h/2), 0.05, 0.05)
 
@@ -166,6 +172,18 @@ class RenderableKey(QGraphicsObject):
     def setKeycode(self, nice_name, name, keycode, font_size_hint=None):
         # Legacy single-line setter (kept for compatibility). Prefer set_display.
         self.set_display(nice_name, "", None, font_size_hint)
+
+    def set_keycap(self, pixmap):
+        """Show a rendered keycap in the display rect instead of the placeholder fill.
+
+        The centre TEXT is hidden while one is set: the keycap already carries the
+        caption, and `MACRO(3)` drawn over it is both redundant and unreadable. Pass
+        None to go back to the plain tile -- every reassignment must do that, or a key
+        that stops being a macro keeps the old picture.
+        """
+        self._keycap = pixmap
+        self.text.setVisible(pixmap is None)
+        self.update()
 
     def set_display(self, main_text, badge_text="", badge_color=None, font_size_hint=None):
         """Update the tile to show a base/tap label plus an optional behaviour badge."""

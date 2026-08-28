@@ -83,6 +83,28 @@ KC_ALIAS = {
     "KC_LCTL": "KC_LEFT_CTRL", "KC_RCTL": "KC_RIGHT_CTRL",
     "KC_LALT": "KC_LEFT_ALT", "KC_RALT": "KC_RIGHT_ALT",
     "KC_LWIN": "KC_LGUI", "KC_RWIN": "KC_RGUI", "KC_LCMD": "KC_LGUI",
+    # ⚠️ The tables above hold the LONG canonical names while a keymap -- and the
+    # host editor's keycode->name mapping -- uses the short ones, so without these a
+    # perfectly ordinary Page Up renders nothing and reads as "unsupported".
+    "KC_CAPS": "KC_CAPS_LOCK", "KC_NUM": "KC_NUM_LOCK", "KC_SCRL": "KC_SCROLL_LOCK",
+    "KC_PSCR": "KC_PRINT_SCREEN", "KC_INS": "KC_INSERT",
+    "KC_PGUP": "KC_PAGE_UP", "KC_PGDN": "KC_PAGE_DOWN",
+    "KC_RGHT": "KC_RIGHT", "KC_PAUS": "KC_PAUSE", "KC_BRK": "KC_PAUSE",
+    # numpad
+    "KC_P0": "KC_KP_0", "KC_P1": "KC_KP_1", "KC_P2": "KC_KP_2", "KC_P3": "KC_KP_3",
+    "KC_P4": "KC_KP_4", "KC_P5": "KC_KP_5", "KC_P6": "KC_KP_6", "KC_P7": "KC_KP_7",
+    "KC_P8": "KC_KP_8", "KC_P9": "KC_KP_9",
+    "KC_PDOT": "KC_KP_DOT", "KC_PENT": "KC_KP_ENTER", "KC_PPLS": "KC_KP_PLUS",
+    "KC_PMNS": "KC_KP_MINUS", "KC_PAST": "KC_KP_ASTERISK", "KC_PSLS": "KC_KP_SLASH",
+    "KC_PEQL": "KC_KP_EQUAL",
+    # ⚠️ ALT hides behind its MAC names in QMK's table -- 0xE2 is listed as KC_LOPT
+    # (Option) and 0xE6 as KC_ALGR, so a plain "is KC_LALT handled?" check passes
+    # while the editor, which uses those names, renders no Alt at all.
+    "KC_LOPT": "KC_LEFT_ALT", "KC_ROPT": "KC_RIGHT_ALT", "KC_ALGR": "KC_RIGHT_ALT",
+    "KC_RCMD": "KC_RGUI",
+    # QMK's alias for "no key here". The keyboard draws an empty cap for it, so it is
+    # previewable -- without this it falls back to the cryptic literal XXXXXXX.
+    "XXXXXXX": "KC_NO",
 }
 
 
@@ -191,6 +213,11 @@ def _pick_default_branch(expr: str) -> str:
 # render, which reads as a defect in a published figure).
 STATIC_CALL_DEFAULTS = {
     'kc_os_gui_icon()': 'DINGBAT_BLACK_DIA_X',
+    # These two build their legend from the CURRENT setting, which a static preview
+    # cannot know — show the value the keyboard boots with (index 0) rather than the
+    # function's own name, which is what rendered before.
+    'idle_style_legend()': 'SETTING_LBL("IDLE:", "Pulse")',
+    'glyph_script_legend()': 'SETTING_LBL("SCRIPT:", "Std")',
 }
 
 

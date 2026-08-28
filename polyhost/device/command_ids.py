@@ -62,7 +62,35 @@ class Cmd(Enum):
     # Read-only: count byte + that many NUL-terminated ASCII layer names of at
     # most 8 chars. The count matches ID_DYNAMIC_KEYMAP_GET_LAYER_COUNT.
     GET_LAYER_NAMES = 35  # (protocol v14+)
+    # --- dynamic macros (protocol v15+) -------------------------------------
+    # Split three ways because they answer different questions at different rates:
+    # INFO is a cheap header the editor needs before it can lay anything out, BODY is
+    # streamed in report-sized windows (the buffer is ~2 KB and a report holds 64), and
+    # LABEL is the one field the keycap renders, so it round-trips on its own.
+    MACRO_INFO = 36   # count, label stride, capacity, bytes in use
+    MACRO_BODY = 37   # windowed read/write of the shared body buffer
+    MACRO_LABEL = 38  # get/set one macro's whole keycap look (caption+style+icon)
 
+
+
+class MacroStyle(Enum):
+    """How a macro keycap composes itself. Byte-identical to `poly_macro_style`.
+
+    A macro owns its whole cell -- it cannot ride a modifier, because QMK carries the
+    wrapped key in the low byte and a macro keycode is 0x7700+ -- so the cell is free to
+    be more than a legend.
+
+    Append-only, and a value the keyboard does not know is stored as INDEX rather than
+    refused (the open-ended glyph-script rule, not the closed glyph-size one): INDEX is
+    the one style that needs neither a font pack nor a chosen icon, so it always draws
+    something. `PolyKybd.get_macro_info()["styles"]` reports how many the firmware can
+    actually render.
+    """
+
+    INDEX = 0      # "M3" above the caption -- the default
+    ICON = 1       # a chosen glyph above the caption
+    TEXT = 2       # the caption alone, at the largest face that fits
+    ICON_ONLY = 3  # the icon alone, filling the whole key
 
 class OsType(Enum):
     """Active host-OS identity — mirrors the firmware's enum poly_os.

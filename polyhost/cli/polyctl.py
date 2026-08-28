@@ -339,6 +339,125 @@ def _cmd_glyph_size(client, args):
     return 0
 
 
+# Order IS the wire value -- index 0 is POLY_MACRO_STYLE_INDEX. Kept as plain strings
+# rather than importing the device enum, because polyctl never imports the device layer.
+_STYLES = ["index", "icon", "text", "icononly"]
+
+
+def _style_name(value):
+    return _STYLES[value] if 0 <= value < len(_STYLES) else f"unknown({value})"
+
+
+def _parse_codepoint(text):
+    """Accept U+1F4E7, 0x1F4E7, 1F4E7 or a single literal character."""
+    t = text.strip()
+    if len(t) == 1 and not t.isdigit():
+        return ord(t)
+    body = t[2:] if t.upper().startswith(("U+", "0X")) else t
+    try:
+        return int(body, 16)
+    except ValueError:
+        raise ValueError(f"not a codepoint: {text!r} (try U+1F4E7, 0x1F4E7 or the "
+                         f"character itself)") from None
+
+
+def _macro_summary(m, label_len):
+    """One line per macro: what it is called, what it types, what it costs."""
+    label = m["label"] or "-"
+    if m["text"] is not None:
+        what = repr(m["text"]) if m["text"] else "(empty)"
+    else:
+        # Not expressible as text -- show the shape rather than pretending.
+        kinds = ", ".join(f"{s['kind']}" for s in m["steps"][:4])
+        more = "..." if len(m["steps"]) > 4 else ""
+        what = f"<{len(m['steps'])} steps: {kinds}{more}>"
+    return f"M{m['id']:<3} {label:<{label_len}}  {m['bytes']:>4}B  {what}"
+
+
+def _cmd_macro(client, args):
+    action = args.macro_action or "list"
+
+    if action == "list":
+        info = client.call(protocol.M_MACRO_LIST, {})
+        width = max([len(m["label"]) for m in info["macros"]] + [5])
+        for m in info["macros"]:
+            print(_macro_summary(m, width))
+        pct = (100 * info["used"] // info["capacity"]) if info["capacity"] else 0
+        print(f"\n{info['used']} of {info['capacity']} bytes used ({pct}%) "
+              f"across {info['count']} macros; labels up to {info['label_len']} chars")
+        return 0
+
+    if action == "get":
+        info = client.call(protocol.M_MACRO_LIST, {})
+        for m in info["macros"]:
+            if m["id"] == args.id:
+                print(f"label: {m['label']!r}")
+                print(f"style: {_style_name(m.get('style', 0))}")
+                if m.get("icon"):
+                    print(f"icon:  U+{m['icon']:04X}")
+                if m["text"] is not None:
+                    print(f"text:  {m['text']!r}")
+                else:
+                    # The script form as well as the rows: it is the one output that can
+                    # be pasted straight back into `--script`, which the numbered list
+                    # never could.
+                    from polyhost.services import macro_body, macro_script
+                    steps = [macro_body.Step(**st) for st in m["steps"]]
+                    print(f"script: {macro_script.format(steps)}")
+                    for i, s in enumerate(m["steps"]):
+                        detail = f"{s['ms']} ms" if s["kind"] == "delay" else f"{s['code']:#04x}"
+                        print(f"  {i:>3} {s['kind']:<6} {detail}")
+                print(f"bytes: {m['bytes']}")
+                return 0
+        print(f"no macro {args.id}", file=sys.stderr)
+        return 1
+
+    if action == "set":
+        params = {"id": args.id}
+        if args.text is not None and args.script is not None:
+            print("--text and --script both set the body; pass one", file=sys.stderr)
+            return 1
+        if args.text is not None:
+            params["text"] = args.text
+        if args.script is not None:
+            # Parsed HERE rather than sent as text, so a typo is a message with the bad
+            # token in it and nothing is written -- the daemon would otherwise refuse a
+            # body it could not name a reason for.
+            from polyhost.services import macro_body, macro_script
+            try:
+                steps = macro_script.parse(args.script)
+            except (macro_script.ScriptError, macro_body.MacroError) as e:
+                print(str(e), file=sys.stderr)
+                return 1
+            params["steps"] = [{"kind": st.kind, "code": st.code, "ms": st.ms}
+                               for st in steps]
+        if args.label is not None:
+            params["label"] = args.label
+        if args.style is not None:
+            params["style"] = _STYLES.index(args.style)
+        if args.icon is not None:
+            try:
+                params["icon"] = _parse_codepoint(args.icon)
+            except ValueError as e:
+                print(str(e), file=sys.stderr)
+                return 1
+        if len(params) == 1:
+            print("nothing to set: pass --text, --label, --style and/or --icon",
+                  file=sys.stderr)
+            return 1
+        client.call(protocol.M_MACRO_SET, params)
+        print(f"macro {args.id} updated")
+        return 0
+
+    if action == "clear":
+        client.call(protocol.M_MACRO_CLEAR, {"id": args.id})
+        print(f"macro {args.id} cleared")
+        return 0
+
+    print(f"unknown macro action {action!r}", file=sys.stderr)
+    return 1
+
+
 def _cmd_unicode_mode(client, args):
     """Re-detect the host's unicode input method and re-push it to the keyboard.
 
@@ -780,6 +899,35 @@ def build_parser():
              "'medium'/'large' draw a key's main legend bigger (latin only, and "
              "they need the latinbig font-pack bundle)")
     p_glyph_size.set_defaults(func=_cmd_glyph_size)
+
+    p_macro = sub.add_parser(
+        "macro", help="list, read, write or clear the keyboard's macros (firmware v15+)")
+    p_macro.add_argument(
+        "macro_action", nargs="?", choices=["list", "get", "set", "clear"], default="list",
+        help="omit to list every macro with its label, size and contents")
+    p_macro.add_argument("id", nargs="?", type=int, default=0,
+                         help="which macro (0-based); unused by 'list'")
+    p_macro.add_argument("--text", default=None,
+                         help="what the macro types. Printable ASCII, tab and newline "
+                              "only -- the keyboard sends keycodes, not Unicode")
+    p_macro.add_argument("--script", default=None,
+                         help="the macro as VIA-compatible script: plain text types "
+                              "itself, {KC_A} taps, {+KC_A} holds, {-KC_A} releases, "
+                              "{250} waits, \\{ is a literal brace. This is how chords "
+                              "and pauses are written from the command line")
+    p_macro.add_argument("--label", default=None,
+                         help="the keycap legend. Truncated by pixel width, not by "
+                              "character count, so a wide word fits fewer letters")
+    p_macro.add_argument("--style", default=None, choices=_STYLES,
+                         help="how the keycap draws itself: 'index' shows M0..M15 above "
+                              "the label, 'icon' shows the --icon glyph instead, 'text' "
+                              "drops both and draws the label as large as it fits, "
+                              "'icononly' draws the --icon glyph alone over the whole key")
+    p_macro.add_argument("--icon", default=None,
+                         help="codepoint for --style icon (U+1F4E7, 0x1F4E7, or the "
+                              "character itself). Needs a font pack that has the glyph; "
+                              "one the keyboard cannot draw falls back to the index")
+    p_macro.set_defaults(func=_cmd_macro)
 
     p_unicode = sub.add_parser(
         "unicode-mode",

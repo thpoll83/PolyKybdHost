@@ -217,6 +217,12 @@ class ControlServer(MpcListenerServer):
             p.M_KEYMAP_BUFFER: lambda conn, params: _unwrap(c.keymap_buffer()),
             p.M_KEYMAP_SET: lambda conn, params: _unwrap(c.keymap_set(
                 params["layer"], params["row"], params["col"], params["keycode"])),
+            p.M_MACRO_LIST: lambda conn, params: _unwrap(c.macro_list()),
+            p.M_MACRO_SET: lambda conn, params: _unwrap(c.macro_set(
+                params["id"], text=params.get("text"), steps=params.get("steps"),
+                label=params.get("label"), style=params.get("style"),
+                icon=params.get("icon"))),
+            p.M_MACRO_CLEAR: lambda conn, params: _unwrap(c.macro_clear(params["id"])),
             p.M_COMMANDS_EXECUTE: self._cmd_commands_execute,
             p.M_FW_VERSION: lambda conn, params: _unwrap(c.get_fw_version()),
             p.M_FW_FLASH: lambda conn, params: _unwrap(c.flash_firmware(
