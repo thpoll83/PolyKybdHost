@@ -72,8 +72,18 @@ class FakeCore:
         return True, [0x0004] * (12 * s.MATRIX_ROWS * s.MATRIX_COLUMNS)
 
 
-def _editor(core=None):
-    return KbLayoutDialog(core or FakeCore(), DeviceSettings())
+def _editor(core=None, previews=True):
+    """The dialog, with previews ON unless asked otherwise.
+
+    They ship OFF -- the editor's job is assigning keycodes and a board of pictures
+    makes the one you are about to change harder to read -- but almost every test here
+    is ABOUT the previews, so the fixture turns them on rather than each test doing it.
+    `test_previews_are_OFF_when_the_dialog_opens` pins the shipped default.
+    """
+    dlg = KbLayoutDialog(core or FakeCore(), DeviceSettings())
+    if previews:
+        dlg.keycap_toggle.setChecked(True)
+    return dlg
 
 
 class EightLayerCore(FakeCore):
@@ -331,8 +341,40 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         self.assertIn("Partly unavailable", tip)
         self.assertIn("language table", tip)
 
-    def test_the_toggle_is_ON_by_default_when_the_fonts_are_there(self):
-        self.assertTrue(_editor().keycap_toggle.isChecked())
+    def test_a_LAYER_key_previews_the_firmware_s_own_legend(self):
+        """`keycode_helper.c` switches on the SOURCE token (`MO(_FL)`, `OSL(_UL)`)
+        while the editor decodes the keycode to `MO(5)` and the browser's name table
+        has no entry at all -- so without the enum tags every layer key fell back to
+        text. Those legends are worth having: they carry the firmware's convention of
+        the layer name, `!` while it is only held, `*` for a one-shot, layer icon
+        underneath.
+        """
+        p = _editor()._preview
+        for kc, token in ((0x5220 + 5, "MO(_FL)"), (0x5220 + 6, "MO(_NL)"),
+                          (0x5280 + 7, "OSL(_UL)"), (0x5200 + 11, "TO(_EMJ)")):
+            with self.subTest(token=token):
+                self.assertEqual(p._layer_token(kc), token)
+                self.assertIsNotNone(p.render(kc, None), f"{token} drew nothing")
+
+    def test_alt_previews_under_its_MAC_alias(self):
+        """0xE2 is listed as KC_LOPT and 0xE6 as KC_ALGR in QMK's table, which is what
+        the editor uses -- so checking "is KC_LALT handled?" passes while the board
+        shows no Alt at all (field, 2026-08-28)."""
+        p = _editor()._preview
+        for kc, name in ((0x00E2, "KC_LOPT"), (0x00E6, "KC_ALGR"), (0x00E2, "KC_LALT")):
+            with self.subTest(name=name):
+                self.assertIsNotNone(p.render(kc, name))
+
+    def test_previews_are_OFF_when_the_dialog_opens(self):
+        """The editor is for assigning keycodes; a wall of keycaps makes the code you
+        are about to change harder to read. Previews are what you switch ON to check
+        the result, so the box starts clear even when everything loaded fine."""
+        dlg = _editor(previews=False)
+        self.assertFalse(dlg.keycap_toggle.isChecked())
+        self.assertTrue(dlg.keycap_toggle.isEnabled(), "…but still available")
+        first = sorted(dlg.keys)[0]
+        _assign(dlg, first, QK_MACRO + 0)
+        self.assertIsNone(dlg.keys[first]._keycap)
 
 
 class _DeadPreview:

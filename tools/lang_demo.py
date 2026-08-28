@@ -97,6 +97,14 @@ KC_ALIAS = {
     "KC_PDOT": "KC_KP_DOT", "KC_PENT": "KC_KP_ENTER", "KC_PPLS": "KC_KP_PLUS",
     "KC_PMNS": "KC_KP_MINUS", "KC_PAST": "KC_KP_ASTERISK", "KC_PSLS": "KC_KP_SLASH",
     "KC_PEQL": "KC_KP_EQUAL",
+    # ⚠️ ALT hides behind its MAC names in QMK's table -- 0xE2 is listed as KC_LOPT
+    # (Option) and 0xE6 as KC_ALGR, so a plain "is KC_LALT handled?" check passes
+    # while the editor, which uses those names, renders no Alt at all.
+    "KC_LOPT": "KC_LEFT_ALT", "KC_ROPT": "KC_RIGHT_ALT", "KC_ALGR": "KC_RIGHT_ALT",
+    "KC_RCMD": "KC_RGUI",
+    # QMK's alias for "no key here". The keyboard draws an empty cap for it, so it is
+    # previewable -- without this it falls back to the cryptic literal XXXXXXX.
+    "XXXXXXX": "KC_NO",
 }
 
 

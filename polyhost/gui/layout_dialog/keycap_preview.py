@@ -71,6 +71,7 @@ class KeycapPreview:
         self._reason = ""
         self._op = self._ld = self._L = self._R = self._resolver = None
         self._static: dict = {}
+        self._layer_tags: dict = {}       # layer index -> enum tag, e.g. 5 -> "FL"
 
     # -- loading ------------------------------------------------------------
 
@@ -153,6 +154,29 @@ class KeycapPreview:
         self._lang = lang
         return True
 
+    def set_layer_tags(self, tags: dict):
+        """Layer index -> enum tag (5 -> "FL"), so a layer key can be named.
+
+        `keycode_helper.c` switches on the SOURCE token -- `MO(_FL)`, `OSL(_UL)` --
+        while the editor decodes the keycode to `MO(5)`. Without the tag the two never
+        meet and every layer key falls back to text, which is a shame because those
+        legends carry the firmware's own convention: the layer name, `!` while it is
+        only held, `*` for a one-shot, then the layer icon underneath.
+        """
+        self._layer_tags = {int(k): str(v).lstrip("_") for k, v in (tags or {}).items()}
+
+    # QMK's layer-keycode ranges, in the order keycode_helper.c spells them.
+    _LAYER_RANGES = ((0x5200, 0x521F, "TO"), (0x5220, 0x523F, "MO"),
+                     (0x5260, 0x527F, "TG"), (0x5280, 0x529F, "OSL"))
+
+    def _layer_token(self, keycode: int):
+        """`MO(_FL)` for a layer keycode, or None. Needs the tag map."""
+        for lo, hi, kind in self._LAYER_RANGES:
+            if lo <= keycode <= hi:
+                tag = self._layer_tags.get(keycode - lo)
+                return f"{kind}(_{tag})" if tag else None
+        return None
+
     # -- rendering ----------------------------------------------------------
 
     def render(self, keycode: int, name: str | None) -> QImage | None:
@@ -162,9 +186,18 @@ class KeycapPreview:
         derived here: that table is what the editor already labels tiles from, so a
         keycode it cannot name is one the editor cannot preview either.
         """
-        if not self._load() or not name:
+        if not self._load():
+            return None
+        # A layer key has no entry in the browser's name table at all -- it is decoded,
+        # not looked up -- so the token is synthesised from the keycode.
+        name = name or self._layer_token(keycode)
+        if not name:
             return None
         kc = self._ld.normalize_kc(name)
+        if kc not in self._op.ROW and kc not in self._static:
+            alt = self._layer_token(keycode)
+            if alt:
+                kc = alt
         try:
             if kc in self._op.ROW:
                 if not self._lang_ok:

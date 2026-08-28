@@ -99,9 +99,15 @@ class KbLayoutDialog(QMainWindow):
         # Everything that is NOT a macro: the firmware composes those legends, so
         # this drives the firmware-side renderers rather than reimplementing them.
         self._preview = KeycapPreview()
+        # Layer keys are decoded rather than named, so the preview needs the enum tags
+        # to rebuild the `MO(_FL)` token keycode_helper.c switches on.
+        self._preview.set_layer_tags(parse_layer_names())
         # Drives the header toggle. A plain flag rather than reading the checkbox back,
         # so `_keycap_for` does not depend on a widget that init_ui has not built yet.
-        self._show_keycaps = True
+        # OFF by default: the editor's job is assigning keycodes, and a board of
+        # pictures makes the keycode you are about to change harder to read, not
+        # easier. The previews are the thing you turn ON to check your work.
+        self._show_keycaps = False
         try:
             nano = ml.load_nano_font(ml.default_font_dir())
             mid = mkl.load_ui_font(ml.default_font_dir(), "util_font.h",
