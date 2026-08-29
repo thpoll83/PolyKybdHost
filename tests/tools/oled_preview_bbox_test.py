@@ -169,6 +169,27 @@ class FontBboxTest(unittest.TestCase):
     def test_small_latches_for_the_rest_of_the_run(self):
         self.assertEqual(self.measure([0x10, A, 0x18, A]), (0, 2, -5, -1))
 
+    def test_a_small_run_STILL_substitutes_bang_for_a_missing_glyph(self):
+        """⚠️ Deliberate, and it looks like a bug — it is the FIRMWARE's asymmetry.
+
+        `kdisp_gfx_text_bbox_in` substitutes `'!'` from `pool[0]` with no `small`
+        guard, while `kdisp_write_gfx_char_half` returns 0 for a glyph it cannot
+        find and draws nothing. So in a SMALL run the C measures a glyph it will
+        not draw, and this model reproduces that rather than quietly diverging from
+        the thing it exists to mirror (flagged by Greptile on #200; declined here,
+        worth fixing in `base/font_lookup.c` where both ends would move together).
+
+        Nothing in the host measures a SMALL legend today — `render_static` only
+        draws, and the LUT path's legends carry no ops — so the divergence is
+        unreachable from the preview.
+        """
+        self.assertEqual(self.measure([0x10, 0x4000]),
+                         (0, 0, -6, -1))          # half of '!': 2x12 at yo -12
+        # ...whereas the DRAW skips it, so the run stays at the cursor.
+        drawn = []
+        self.R.draw(lambda vx, vy: drawn.append((vx, vy)), [0x10, 0x4000], 0, 0)
+        self.assertEqual(drawn, [])
+
     # -- HINT_MID ----------------------------------------------------------
     def test_mid_measures_from_the_mid_face_with_its_own_baseline(self):
         self.assertEqual(self.measure_mid([0x16, A]), (0, 3, -7, -1))
