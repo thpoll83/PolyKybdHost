@@ -24,6 +24,11 @@ BUFFER_X = 28          # (128-buffer − 72-visible) / 2  → buffer x 28 == vis
 BASELINE = 23          # the y passed to kdisp_write_gfx_text for keycap glyphs
 EMOJI_PREFIX = "  "    # make_emoji_str(): two leading spaces before the glyph
 
+# The standalone HINT_MID face. Not in ALL_FONTS[] (see load_ui_font), so it has to
+# be named; `base/disp_array.c` binds the same symbol as its `s_mid_font`.
+MID_FONT_FILE = "util_font.h"
+MID_FONT_SYMBOL = "NotoSans_Regular_Mid_19px7b"
+
 
 @dataclass
 class GfxFont:
@@ -166,3 +171,24 @@ class GfxGlyphRenderer:
             x = self._blit(px, ord(c), x)
         self._cache[ch] = img
         return img
+
+
+def load_ui_font(font_dir: str, filename: str, symbol: str) -> GfxFont:
+    """Parse one standalone UI face out of a committed firmware header.
+
+    The three UI faces (``_Small_`` 15px, ``_Mid_`` 19px, ``_Nano_`` 10px) are
+    deliberately absent from ``ALL_FONTS[]`` -- no codepoint can reach them, which is
+    why the firmware draws each through a single-font array -- so they have to be read
+    from their own header rather than through :func:`load_all_fonts`.
+    """
+    path = os.path.join(font_dir, filename)
+    bitmaps: dict = {}
+    glyph_arrays: dict = {}
+    fonts: dict = {}
+    with open(path, encoding='utf-8', errors='replace') as fh:
+        _parse_header(fh.read(), bitmaps, glyph_arrays, fonts)
+    raw = fonts.get(symbol)
+    if raw is None:
+        raise RuntimeError(f"{symbol} not found in {path}")
+    return GfxFont(name=symbol, bitmap=bitmaps[raw['bmp']], glyphs=glyph_arrays[raw['gly']],
+                   first=raw['first'], last=raw['last'], yAdvance=raw['yAdvance'])

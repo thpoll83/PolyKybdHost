@@ -330,18 +330,35 @@ class MacroKeycapInEditorTest(unittest.TestCase):
                 self.assertIn(n, names, "not parsed out of keycode_helper.h")
                 self.assertIsNotNone(p.render(names[n], None), f"{n} drew nothing")
 
-    def test_a_legend_that_CHANGES_FONT_SIZE_falls_back_to_text(self):
-        """`HINT_MID`/`HINT_SMALL` switch to a smaller face for the rest of the
-        string, and `oled_preview.Renderer` implements the cursor ops but not those —
-        so the settings legends came out with both lines drawn full-size on top of
-        each other. Refusing is honest; drawing the collision is not.
+    def test_a_legend_that_CHANGES_FONT_SIZE_now_RENDERS(self):
+        """`HINT_MID` / `HINT_SMALL` switch to a smaller face for the rest of the
+        string, and the renderer follows both now — so the two-line settings legends
+        draw as two lines instead of being refused. This test used to assert the
+        opposite; it is inverted deliberately.
         """
         p = _editor()._preview
         names = {n: v for v, n in p._custom.items()}
-        for n in ("KC_EDEN", "KC_GLYPH_SCRIPT", "KC_IDLE_STYLE"):
+        # PolyKybd's own keycodes only -- `_custom` is parsed out of keycode_helper.h,
+        # so a stock QMK name (KC_SELECT and the other HINT_SMALL legends) is not in it.
+        for n in ("KC_EDEN", "KC_GLYPH_SCRIPT", "KC_IDLE_STYLE",   # HINT_MID
+                  "KC_STORE_EE"):                                  # HINT_SMALL
             with self.subTest(keycode=n):
-                self.assertIsNone(p.render(names[n], None),
-                                  f"{n} uses a size op the renderer cannot follow")
+                self.assertIsNotNone(p.render(names[n], None), f"{n} drew nothing")
+
+    def test_an_op_the_renderer_CANNOT_follow_still_falls_back_to_text(self):
+        """The refusal itself is not gone — it just names a smaller set now.
+
+        An op needing a primitive this model does not have (a rounded rect, a
+        rotated glyph, an absolute buffer position) must keep the key on its keycode
+        text: drawing a legend that is quietly missing its frame or badge is worse
+        than not drawing it. The renderer answers that question, so nothing here has
+        to keep a list that goes stale when one is implemented.
+        """
+        R = _editor()._preview._R
+        self.assertEqual(R.unsupported_ops([0x10, 0x16, ord("a")]), set())
+        for op_cp in (0x0E, 0x0F, 0x11, 0x12, 0x13, 0x14, 0x15):
+            with self.subTest(op=hex(op_cp)):
+                self.assertIn(op_cp, R.unsupported_ops([op_cp, 1, 2, 3]))
 
     def test_previews_are_OFF_when_the_dialog_opens(self):
         """The editor is for assigning keycodes; a wall of keycaps makes the code you

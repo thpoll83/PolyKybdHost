@@ -39,12 +39,13 @@ DEFAULT_LANG = "en-US"
 KC_TRANSPARENT = 0x0001
 KC_NO = 0x0000
 
-# Display-list ops that switch to a SMALLER face for the rest of the string —
-# HINT_SMALL (halve) and HINT_MID (the standalone 19px face). `oled_preview.Renderer`
-# implements the cursor ops but not these, so a legend using one renders every glyph
-# at full size: the settings keys came out with both lines of `RESET`/`Eden` stacked
-# on top of each other. Refusing is honest; drawing the collision is not.
-UNSUPPORTED_OPS = (0x10, 0x16)
+# Which display-list ops the renderer can follow is `oled_preview.Renderer`'s own
+# question, so it answers it (`unsupported_ops`) rather than this module keeping a
+# list that would go stale the moment one is implemented — which is exactly what
+# happened to the previous constant here: it named HINT_SMALL and HINT_MID, and both
+# are now drawn. What is left is the ops that need a primitive this model does not
+# have (a rounded rect, a rotated glyph, an absolute buffer position). Refusing those
+# is honest; drawing a legend that is quietly missing its frame or badge is not.
 
 
 # QMK's keyboard/user keycode anchors (quantum/keycodes.h). The firmware's enums are
@@ -109,7 +110,13 @@ def parse_function_macros(*texts: str) -> dict:
             # ⚠️ Strip LINE CONTINUATIONS only. A blanket backslash strip also eats the
             # escapes inside the literals -- `U"\\f\\f\\f"` became `U" f f f"` and the
             # legend rendered the letter f four times over.
-            body = re.sub(r"\\\\\s*\n\s*", " ", m.group(3)).strip()
+            #
+            # ⚠️ ...and a C continuation is ONE backslash. This pattern asked for TWO
+            # (`\\\\` in a raw string), so it never matched and every multi-line legend
+            # macro kept a literal `\\` at the front -- which resolves to a real glyph, so
+            # the five settings keycaps drew a backslash before their label. It was
+            # invisible while those legends were refused for using HINT_MID.
+            body = re.sub(r"\\\s*\n\s*", " ", m.group(3)).strip()
             if params and body:
                 out[m.group(1)] = (params, body)
     return out
@@ -259,7 +266,6 @@ class KeycapPreview:
                 sys.path.insert(0, tools)
             import oled_preview as op
             import lang_demo as ld
-            from gfx_font import load_all_fonts
 
             fonts_dir = ml.default_font_dir()                  # <fw>/base/fonts
             pk = os.path.dirname(os.path.dirname(fonts_dir))   # <fw>/keyboards/polykybd
@@ -267,7 +273,10 @@ class KeycapPreview:
             # keycode_helper.h carries the names the static-text switch returns; without
             # it those legends resolve to nothing and the key silently renders blank.
             named.update(op.load_named_glyphs(os.path.join(pk, "keycode_helper.h")))
-            self._R = op.Renderer(load_all_fonts(fonts_dir))
+            # load_renderer, not Renderer(load_all_fonts(...)): it also binds the
+            # standalone 19px HINT_MID face, without which the settings legends draw
+            # both of their lines at full size, on top of each other.
+            self._R = op.load_renderer(fonts_dir)
             self._static = ld.parse_static_text_map(os.path.join(pk, "keycode_helper.c"))
             self._custom = parse_custom_keycodes(_read(pk, "keycode_helper.h"))
             self._macros = parse_function_macros(
@@ -386,12 +395,12 @@ class KeycapPreview:
         return self._to_qimage(img)
 
     def _uses_unsupported_op(self, expr: str) -> bool:
-        """True when the legend switches font size, which the renderer cannot follow."""
+        """True when the legend needs a display-list op the renderer cannot follow."""
         try:
             cps = self._resolver.resolve(expr) or []
         except Exception:
             return False
-        return any(cp in UNSUPPORTED_OPS for cp in cps)
+        return bool(self._R.unsupported_ops(cps))
 
     @staticmethod
     def _to_qimage(img) -> QImage | None:

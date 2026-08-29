@@ -33,26 +33,15 @@ BIG_BASE = {"M": 0xF0000, "L": 0xF3000}
 
 
 def load_ui_font(font_dir: str, filename: str, symbol: str):
-    """Parse one standalone UI face out of a committed firmware header.
+    """One standalone UI face (_Small_ / _Mid_ / _Nano_) out of its committed header.
 
-    The three UI faces (_Small_, _Mid_, _Nano_) are deliberately absent from
-    ``ALL_FONTS[]`` -- no codepoint can reach them, which is why the firmware draws
-    through a single-font array -- so they have to be read from their own header rather
-    than through ``load_all_fonts()``.
+    Thin re-export of ``tools.gfx_font.load_ui_font``, which ``tools/oled_preview.py``
+    also needs for HINT_MID -- one parser, so the two cannot disagree about the face
+    they are drawing.
     """
-    from tools.gfx_font import GfxFont, _parse_header
+    from tools.gfx_font import load_ui_font as _load
 
-    path = os.path.join(font_dir, filename)
-    bitmaps: dict = {}
-    glyph_arrays: dict = {}
-    fonts: dict = {}
-    with open(path, encoding="utf-8", errors="replace") as fh:
-        _parse_header(fh.read(), bitmaps, glyph_arrays, fonts)
-    raw = fonts.get(symbol)
-    if raw is None:
-        raise RuntimeError(f"{symbol} not found in {path}")
-    return GfxFont(name=symbol, bitmap=bitmaps[raw["bmp"]], glyphs=glyph_arrays[raw["gly"]],
-                   first=raw["first"], last=raw["last"], yAdvance=raw["yAdvance"])
+    return _load(font_dir, filename, symbol)
 
 
 def default_pack_dir() -> str:

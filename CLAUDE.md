@@ -1059,13 +1059,53 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   - ⚠️ **Strip a C continuation as `re.sub(r"\\\s*\n\s*", " ", ...)`, never a blanket
     backslash strip** — the legends are `U"…"` literals, so removing every backslash
     turns `U"\f\f\f"` into `U" f f f"` and the keycap renders `f f f f`.
-  - **A legend using an op the renderer lacks is REFUSED, not drawn.**
-    `oled_preview.Renderer` implements the cursor ops (`\x05 \x06 \x08 \x09 \x0a \x0b
-    \x0c \x0d \x18`) but not `HINT_SMALL` (`\x10`) or `HINT_MID` (`\x16`), which
-    rescale the rest of the run — so `UNSUPPORTED_OPS` returns None and the key keeps
-    its text rather than drawing two lines on top of each other. That is why
-    `KC_EDEN`, `KC_GLYPH_SCRIPT`, `KC_IDLE_STYLE` and `KC_STORE_EE` show text; teaching
-    the renderer those two ops is what restores them.
+    - ⚠️ **…and the shipped pattern asked for TWO backslashes, so it never matched
+      anything.** A C continuation is ONE. Every multi-line legend macro therefore
+      kept a literal `\` at the front of its body, which resolves to a real glyph —
+      the five settings keycaps drew a backslash before their label. It hid behind
+      the size-op refusal below (those were the only multi-line macros) and surfaced
+      the moment they started rendering. Over-escaping a raw-string regex fails
+      **silently**; the guard is now a unit test on the parser
+      (`tests/gui/keycap_preview_macros_test.py`), not the eye.
+  - **A legend using an op the renderer lacks is REFUSED, not drawn — and the
+    RENDERER answers that question now, not a list in `keycap_preview`.**
+    `oled_preview.Renderer.unsupported_ops(cps)` returns the ops it cannot follow;
+    empty means the legend is safe to draw. The old module-level `UNSUPPORTED_OPS`
+    named `HINT_SMALL` (`\x10`) and `HINT_MID` (`\x16`), and went stale the moment
+    both were implemented — the same enumerating-guard shape recorded in the review
+    conventions above.
+    - **Both size ops are supported now** (2026-08-29), so `KC_EDEN`,
+      `KC_GLYPH_SCRIPT`, `KC_IDLE_STYLE`, `KC_TOGMODS`/`KC_TOGTEXT` and the ten
+      half-scale two-liners (`KC_STORE_EE`, `KC_SELECT`, the `KC_OS_*` keys, …) draw
+      their real legends. `HINT_MID` needs the standalone 19px face, which is NOT in
+      `ALL_FONTS[]` — build the renderer with **`oled_preview.load_renderer(font_dir)`**
+      rather than `Renderer(load_all_fonts(d))`, or `\x16` silently renders full size.
+      It degrades rather than raising when `util_font.h` is missing (a second
+      prerequisite must not take the other legends down with it) and reports `\x16`
+      as unsupported in that state.
+    - **What is still refused** is the ops needing a primitive this model does not
+      have: MOVE (`\x0E`, an absolute buffer position), HALF/THIN (`\x0F`/`\x11`),
+      FRAME (`\x12`), BADGE (`\x13`), ERASE (`\x14`), ROT (`\x15`). Measured over
+      `keycode_helper.c`'s 188 static legends, **none** uses one — so refusing them
+      costs no preview today and closes the class if one appears.
+  - ⚠️ **The renderer's `\v` and `\t` steps need C TRUNCATING division — Python's
+    `//` silently produced a ZERO step.** Both are `x += (x / N + 1) * N` on a cursor
+    that can be **negative** relative to the origin: `MID_TWO_LINE` lifts the first
+    baseline 10px before stepping down a line. C truncates toward zero
+    (`-10/15 == 0`, step 15); Python floors (`-10//15 == -1`, step **0**), so the
+    second line landed on top of the first. Only a legend that moves the cursor up
+    before a `\v` can reach it, which is why it went unnoticed until the size ops
+    made such legends renderable. `_trunc_div` names the rule.
+    - **This is the "run it and look" rule earning its keep.** The 31 bbox cases
+      ported from the firmware's own `font_bbox_tests.cpp` all passed with the bug
+      present — the C suite has no negative-cursor `\v` case either — and one
+      contact sheet of the affected keycaps showed it immediately.
+  - **`tests/tools/oled_preview_bbox_test.py` ports the firmware's bbox expectations
+    verbatim** (same synthetic fonts, same display lists, same boxes, out of
+    `base/tests/font_bbox_tests.cpp`). A Python model of C checked only against
+    itself proves nothing; these fixtures are the C's, so a divergence fails in the
+    host suite rather than showing up as a keycap drawn slightly wrong. Keep the two
+    in step when either side gains a case.
   - **Two things are deliberately never previewed**: a `KC_TRNS` slot (the keyboard
     draws the layer below, so a preview here would invent a legend the key does not
     have) and the two keys with no OLED behind them (matrix `(3,7)` and `(8,0)` — the
