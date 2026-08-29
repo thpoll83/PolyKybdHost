@@ -116,10 +116,21 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         naming the denied tool would have cost two more merge cycles per guess).
         Roughly $4 of subscription spend for one review. The workflows and the
         `CLAUDE_CODE_OAUTH_TOKEN` secret are gone from all three repos.
-        **When all three bots are unavailable, the honest answer is that the PR
-        is unreviewed** — say so in the PR rather than reaching for a fourth
-        opinion, and lean on the HIL rig, cppcheck and the unit suites, which is
-        where the real coverage was all along.
+        ✅ **The remedy is now GREPTILE, a MANUAL bot — comment `@greptileai` on
+        the PR to summon it** (added 2026-08-29, thpoll83; GitHub won't
+        autocomplete the bot handle — type it out; reply `@greptileai` in a thread
+        for interactive fix suggestions). So when all three of CodeRabbit /
+        Sourcery / Qodo are rate-limited, budget-spent or lapsed, that is the fresh
+        independent read to reach for — the on-demand fourth opinion the removed
+        `@claude review` tried and failed to be. ⚠️ It is still an LLM, so it
+        **shares their training-data blind spots** (verify every finding against the
+        code, the "verify, not dismiss" rule) and does **not** replace cppcheck, the
+        HIL rig or hardware testing — those are where the real coverage was all
+        along. Confirmed on `qmk_firmware` (PR #249); check whether it is installed
+        on this repo / `polykybd-docs` before relying on it there. If it too is
+        unavailable, only then is the honest answer that the PR is unreviewed — say
+        so in the PR. (Full trigger + scope note in `qmk_firmware/CLAUDE.md` code-
+        review conventions.)
       - ⚠️ **`actions_list` blows the tool token cap — 130–220 KB per call, even
         at `per_page: 3`** (kept from the above, because it applies to reading
         *any* workflow run). It saves the JSON to a file and tells you the path;
