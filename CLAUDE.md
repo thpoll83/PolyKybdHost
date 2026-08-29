@@ -74,10 +74,19 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       successive pushes, each time still scoped `up to 351b8` and still asserting
       the PR was "not merge-ready" over a concern two later commits had already
       fixed — while CodeRabbit's own chat reply confirmed the fix. Same sticky
-      mechanism as above, but self-labelling: if that sha is not the head, the
-      whole summary (risk verdict included) is describing an older commit. It is
-      worth checking before believing any *later* re-render of a summary,
-      including a scary one.
+      mechanism as above, but self-labelling: if that sha is not the head,
+      something in the summary is stale. It is worth checking before believing
+      any *later* re-render of a summary, including a scary one.
+      - ⚠️ **But it is a POSITIVE tell only — a lagging Merge Risk sha does NOT
+        prove the whole summary is old, and this line used to say it did.**
+        On qmk#250 (2026-08-29) the sha read `up to b6c1b` while the **📥 Commits**
+        line in the *same comment* correctly said *"between `b6c1b7f` and
+        `386d74f`"* — i.e. the review genuinely covered the newer head and only
+        the risk block lagged. Measured across both incidents, the reviewed-range
+        line was accurate every time and the Merge Risk sha only sometimes, so
+        **read the range line, and settle it against the PR's actual head sha
+        from the API.** Full case in the CodeRabbit sub-note under Sourcery's
+        `✅ Addressed in <sha>` entry below.
     - ⚠️ **The limit is per-developer across the ORG, so pushes to a trivial PR
       starve the one that needs review.** Docs pushes on #42 consumed the window
       #159 was waiting for. When two PRs are open and one is real code, stop
