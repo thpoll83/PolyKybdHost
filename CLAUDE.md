@@ -120,6 +120,25 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         is unreviewed** — say so in the PR rather than reaching for a fourth
         opinion, and lean on the HIL rig, cppcheck and the unit suites, which is
         where the real coverage was all along.
+      - ✅ **…except there IS a fourth reviewer now, and it works: GREPTILE.**
+        On host #200 (2026-08-29) all three of the above were unavailable in
+        exactly their documented disguises — Sourcery `skipped` plus a full
+        Reviewer's Guide, CodeRabbit's under-10-stars box, Qodo's lapsed notice —
+        and `greptile-apps[bot]` still produced a real review on the right commit,
+        with a confidence score and one **correct** P1 finding (a bbox/draw
+        asymmetry in new code). So the paragraph above no longer describes the
+        worst case: check for a **`Greptile Review` check run** before concluding
+        a PR is unreviewed, and read its finding like any other bot's — verify
+        first (it was right here, and the right response was still to decline the
+        fix; see the CONCLUSION/EVIDENCE note below).
+        - ⚠️ **It posts the SAME finding TWICE** — once as an issue comment
+          (its summary, with a "Prompt To Fix All With AI" block) and once as an
+          inline **review thread**. They arrive as separate events minutes apart,
+          so answering the comment leaves the thread open and unresolved. Reply on
+          the thread and resolve it; the issue comment is the copy that can be left.
+        - It cites `CLAUDE.md` as "Context Used", i.e. it reads this file — which
+          is a reason to keep the notes here accurate about intent, not only about
+          mechanism.
       - ⚠️ **`actions_list` blows the tool token cap — 130–220 KB per call, even
         at `per_page: 3`** (kept from the above, because it applies to reading
         *any* workflow run). It saves the JSON to a file and tells you the path;
@@ -191,6 +210,20 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     history it recorded *"`*.kicad_sch` files are the authoritative current schematic
     sources… do not use `poly_kb.net`, `poly_kb.xml`… these artifacts are stale"*. That
     is a durable repo-wide fix bought with one reply. Declining silently buys nothing.
+  - ⚠️ **The mirror case: a finding can be right about the code and STILL wrong to
+    fix, when the code's contract is parity with something else.** Greptile's #200
+    finding was correct in every particular — `oled_preview.Renderer.bbox()`
+    measures a substituted `'!'` for a missing glyph in a `HINT_SMALL` run while
+    `draw()` skips it. Applying the one-line fix would have been wrong anyway: that
+    asymmetry is the FIRMWARE's (`kdisp_gfx_text_bbox_in` substitutes with no
+    `small` guard; `kdisp_write_gfx_char_half` returns 0), and the module exists to
+    mirror the C, not to be internally consistent. "Verify the finding" is not
+    enough here — the finding verified fine; what needed checking was whether the
+    **remedy** violated a contract the reviewer could not see.
+    - **The response that leaves something behind is to pin BOTH halves as a
+      test**, with the reasoning in the docstring, so the next reader (or the next
+      bot) does not re-raise it — and to say on the thread where the real fix
+      belongs. Declining without that just resets the clock.
 
 - ⚠️ **Sourcery's `✅ Addressed in <sha>` line names the CURRENT HEAD, not the commit
   that fixed anything — treat it as a timestamp, never as evidence.** On docs#67
@@ -1805,6 +1838,34 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     raise. A "registered" task that isn't queryable now falls back to the
     Startup-folder shortcut instead of leaving no autostart at all.
 - **Layout dialog** (`polyhost/gui/layout_dialog/`): fully implemented — layer switching re-renders all key labels from the cached buffer; clicking a key then selecting from the browser writes immediately to the device via `set_dynamic_keycode()` and keeps the local buffer in sync. `RenderableKey` carries `matrix_index` for row/col derivation.
+- ⚠️ **The editor's key GEOMETRY comes from `polyhost/res/polykybd-split72.json`
+  (KLE), and the firmware's `keyboard.json` is NOT a second opinion on it.** When
+  the board looks misaligned, that is the first thing to get straight, because the
+  obvious cross-check is worthless: QMK's `layouts.*.layout` is a **coarse grid**
+  used for `qmk info -l` ASCII art — it carries no column stagger and no thumb
+  rotation at all. Compared key for key (2026-08-29), **64 of the 74** disagree
+  with the KLE: every non-thumb key by 0.125–0.25 in `y` (the stagger the KLE
+  expresses with fractional `y` offsets), and all ten thumbs by position *and* by
+  the whole `r`/`rx`/`ry` rotation the grid simply does not have. The x values do
+  agree, which is exactly what makes it feel authoritative when it is not.
+  - **The authority is the PCB** (`PolyKybd/poly_kybd/poly_kybd_split72_*.kicad_pcb`),
+    read via the `investigate-kicad-pcb` skill: switch footprints are `SW_K_<n>`,
+    and a row of them at one `y` gives the real pitch. Worked example — the
+    "bottom row looks inset" question: `SW_K_30` sits at x=53.25 against the
+    column above at x=48.49, i.e. **inset 0.25U (4.76 mm)**. So the inset is
+    real; flushing that key to `x: 0` in the KLE would have made the editor
+    disagree with the hardware.
+  - ⚠️ **The KLE's outer column is a STYLISATION, and it is what makes the two
+    numbers differ.** The PCB has 1U switches on a 1.25U pitch (48.49 → 72.30 is
+    23.81 mm = 1.25U, while every other gap is 19.05 mm = 1U); the KLE draws them
+    as 1.25U-wide keys with a 0.25U gap. That is why the bottom row reads as a
+    0.5U inset there and 0.25U on the board. It applies to all five rows, so
+    "fixing" it is a redraw of the whole column, not a bottom-row tweak — don't
+    take it for a bottom-row bug.
+  - `parse_kle` (`polyhost/kle/kle_praser.py`) is the decoder to reason through;
+    note `row_defaults.clear()` after each key (so `w` does not persist) and that
+    `y_cursor` only advances at end-of-row when `current_rotation == 0`, which is
+    what lets the rotated thumb clusters sit outside the row flow.
 
 ## Releases
 
