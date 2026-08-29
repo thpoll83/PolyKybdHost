@@ -208,6 +208,28 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     contradicting the new Macros page, and a CLI reference missing a whole subcommand
     family). This is the same "conclusion sound, evidence invented" shape recorded for
     CodeRabbit below — take the finding, check the attribution.
+  - ⚠️ **CodeRabbit does this too, and its version is WORSE: it AUTO-RESOLVES the
+    thread on the strength of the false attribution.** On qmk#250 (2026-08-29) its one
+    inline finding was stamped `✅ Addressed in commit 9357ee4` and the thread closed —
+    but `git show 9357ee4 -- <path> | grep -c _WIN32` returns **0**: that commit never
+    touched the flagged sentence, which was still at head. The real fix landed two
+    commits later in `386d74f`. Sourcery's version merely misleads; this one *files the
+    thread away*, and a resolved thread is one nobody re-reads — so an unaddressed
+    finding can disappear silently. **Check the sha before trusting a resolution, not
+    just before trusting a claim.**
+    - **Three of its self-reports on that one PR were false, while the finding itself
+      was genuine and improved the change** (it correctly caught that `#ifndef _WIN32`
+      does not exclude an RP2040 build, so citing it as proof of "desktop-only" was bad
+      reasoning). The other two: it said *"I couldn't resolve this review thread … so it
+      remains open"* while the API reported `is_resolved: true`, and its **Merge Risk**
+      line still read `up to b6c1b` two pushes later, in the *same comment* that
+      correctly named the reviewed range `b6c1b7f..386d74f`. So the sha-in-the-Merge-Risk
+      tell recorded above is itself only as good as the render you are reading — it went
+      stale while the commit range beside it stayed accurate.
+    - ✅ **Replying with the evidence is worth it.** CodeRabbit conceded every point
+      (including "The fix belongs to `386d74f`. The previous attribution to `9357ee4`
+      was incorrect") and recorded a durable repo learning about the file. Same payoff
+      as the PolyKybd#35 stale-netlist reply — one reply, a permanent correction.
 
 - **CodeRabbit's plan is PER-REPOSITORY, and Pro Plus still means only 2 included
   reviews per hour.** Private repos here get the summary-only Free tier; public ones
