@@ -23,7 +23,8 @@ from __future__ import annotations
 import argparse, os, re, sys
 from PIL import Image, ImageDraw, ImageFont
 
-from gfx_font import load_all_fonts, OLED_W, OLED_H, BUFFER_X, BASELINE
+from gfx_font import (load_all_fonts, load_ui_font, MID_FONT_FILE, MID_FONT_SYMBOL,
+                      OLED_W, OLED_H, BUFFER_X, BASELINE)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOST_REPO = os.path.dirname(HERE)
@@ -35,6 +36,96 @@ SCREEN_WIDTH = 72
 # with any lit pixels in yellow, so glyphs that get cut off on the device are
 # obvious in the preview. 0 = hardware-exact (no margin). Overridable via --overshoot.
 OVERSHOOT = 2
+
+# ---- display-list ops (base/disp_array.c gfx_text_run / base/font_lookup.c) ----
+# A legend is a mini display list, not just text: codepoints below 0x20 are ops, and
+# some of them consume the codepoints that follow as ARGUMENTS. Renderer interprets
+# the cursor nudges and the two size ops; everything else it can only SKIP, because
+# drawing it would need a primitive this model does not have (a rounded rect, a
+# rotated glyph, an absolute buffer position). Skipping is still much better than the
+# old fall-through, which measured and drew the op byte AND each of its arguments as
+# a substituted '!'.
+HINT_SMALL = 0x10      # rest of the run at half scale (kdisp_write_gfx_char_half)
+HINT_MID = 0x16        # rest of the run from the standalone 19px UI face
+CURSOR_OPS = frozenset({0x05, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x18})
+SUPPORTED_OPS = CURSOR_OPS | {HINT_SMALL, HINT_MID}
+# op -> how many following codepoints are its arguments.
+OP_ARGS = {0x0E: 2,    # MOVE (x, y)  - an ABSOLUTE buffer position
+           0x0F: 1,    # HALF    (glyph) - composite at the cursor, no advance
+           0x11: 1,    # THIN    (glyph)
+           0x12: 2,    # FRAME   (w, h)
+           0x13: 3,    # BADGE   (w, h, style)
+           0x14: 0,    # ERASE   - a plotter mode, no extent
+           0x15: 2}    # ROT     (angle, glyph)
+
+
+def _half_floor(v: int) -> int:
+    """Floor division by two — glyph_half_floor() in base/font_lookup.h.
+
+    Glyph offsets are negative (above the baseline) and C truncates toward zero,
+    which rounds those the wrong way and puts a lowercase glyph 1px off its run's
+    baseline. Python's // already floors; this exists to name the rule.
+    """
+    return v // 2
+
+
+def _trunc_div(a: int, b: int) -> int:
+    """C integer division — truncate toward ZERO, not Python's floor.
+
+    ⚠️ The \\v and \\t steps are `x += (x / N + 1) * N` on a cursor that can be
+    NEGATIVE relative to the origin: MID_TWO_LINE lifts the first baseline 10px
+    before stepping down a line. Python's `//` floors, so (-10)//15 is -1 and the
+    step came out as ZERO — the second line landed on top of the first, which is
+    the exact collision the size ops were added to avoid.
+    """
+    q = abs(a) // abs(b)
+    return q if (a >= 0) == (b >= 0) else -q
+
+
+def _walk_ops(cps):
+    """Yield ``(is_op, cp)`` for a display list, consuming each op's ARGUMENTS once.
+
+    The argument-skipping rule is the part of this that has been got wrong before —
+    a coordinate byte that is itself an op byte (``HINT_SZ_STOPSQ`` is (15,15), i.e.
+    two HALFs) silently latching a font for the rest of the run. So it lives in ONE
+    walk that measuring, drawing and the can-I-draw-this check all share, rather
+    than in three copies that have to be kept in step.
+
+    ⚠️ A TRUNCATED op does not skip: the firmware guards each ``text += n`` on the
+    arguments actually being there, so the op is consumed and the stray bytes are
+    then read as ordinary codepoints.
+    """
+    skip = 0
+    for i, cp in enumerate(cps):
+        if skip:
+            skip -= 1
+            continue
+        if cp in OP_ARGS:
+            n = OP_ARGS[cp]
+            if n and len(cps) - i - 1 >= n:
+                skip = n
+            yield True, cp
+            continue
+        yield cp < 0x20, cp
+
+
+def load_renderer(font_dir: str) -> "Renderer":
+    """A Renderer with the ALL_FONTS pool AND the HINT_MID face.
+
+    Prefer this over ``Renderer(load_all_fonts(d))``: without the mid face a legend
+    carrying \\x16 renders at full size, which for the settings keys stacks two lines
+    of text on top of each other.
+    """
+    # ⚠️ Degrade rather than raise if the mid header is missing. It is a SECOND
+    # prerequisite, and the caller's other legends do not need it -- taking the whole
+    # renderer down over it is the "load the two halves independently" mistake that
+    # once left a machine previewing nothing but macros. Without it \x16 is reported
+    # by unsupported_ops(), so those few legends are refused instead of drawn wrong.
+    try:
+        mid = [load_ui_font(font_dir, MID_FONT_FILE, MID_FONT_SYMBOL)]
+    except Exception:
+        mid = None
+    return Renderer(load_all_fonts(font_dir), mid_fonts=mid)
 
 # keycode -> lang_lut row, in translate_keycode order
 LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -182,12 +273,18 @@ def get_setting(L: Lang, row: int, lang_idx: int, var: int) -> int:
 
 # ---- GFX text blit (parameterised y; mirrors kdisp_write_gfx_text_cy) ------
 class Renderer:
-    def __init__(self, fonts):
+    def __init__(self, fonts, mid_fonts=None):
         self.fonts = fonts
         self.base_yadv = fonts[0].yAdvance
+        # HINT_MID's face is a SEPARATE pool, not another entry in `fonts`: the
+        # firmware draws it through a single-font array, so its own yAdvance is the
+        # baseline reference for the glyphs it supplies (adjustment 0). None = this
+        # renderer was built without it and cannot follow \x16 (see unsupported_ops).
+        self.mid_fonts = list(mid_fonts) if mid_fonts else None
 
-    def _font(self, cp):
-        for f in self.fonts:
+    @staticmethod
+    def _font_in(pool, cp):
+        for f in pool:
             if f.first <= cp <= f.last:
                 g = f.glyphs[cp - f.first]
                 # skip an empty padding gap (non-contiguous range filled with 0x0
@@ -198,26 +295,47 @@ class Renderer:
                 return f
         return None
 
+    def _font(self, cp):
+        return self._font_in(self.fonts, cp)
+
+    def _pool(self, cp, mid):
+        """(pool, baseline-reference yAdvance) for one codepoint of a run.
+
+        Mirrors the draw's PER-GLYPH mid fallback: the mid face is ASCII-only, so
+        anything outside it comes from the caller's pool at full size — which is what
+        makes a word-over-icon legend possible at all. The baseline reference has to
+        follow that per-glyph choice, because the draw aligns each glyph by
+        `font.yAdvance - fonts[0].yAdvance` and fonts[0] is the mid face only for the
+        glyphs the mid face supplied.
+        """
+        if mid and self.mid_fonts and self._font_in(self.mid_fonts, cp) is not None:
+            return self.mid_fonts, self.mid_fonts[0].yAdvance
+        return self.fonts, self.base_yadv
+
+    def unsupported_ops(self, cps) -> set:
+        """The ops in `cps` this renderer cannot follow — empty means it can draw it.
+
+        A caller that shows the result as if it were the keyboard should refuse a
+        legend this reports on, rather than draw one that is quietly missing a frame,
+        a badge or a MOVE'd mark. HINT_MID counts as unsupported when no mid face was
+        loaded, since the run would then silently render at full size.
+        """
+        bad = {cp for is_op, cp in _walk_ops(cps) if is_op and cp not in SUPPORTED_OPS}
+        if self.mid_fonts is None and HINT_MID in cps:
+            bad.add(HINT_MID)
+        return bad
+
     def bounds(self, cps):
-        """(min,max) horizontal extent relative to cursor 0 - like kdisp_gfx_text_bounds."""
-        x, mn, mx = 0, 127, -128
-        for cp in cps:
-            if cp in (0x05, 0x0c, 0x0b): continue
-            if cp in (0x18, 0x0d, 0x0a): x = 0; continue
-            if cp == 0x08: x = x - 2 if x > 1 else 0; continue
-            if cp == 0x06: x += 2; continue
-            if cp == 0x09: x += ((x) // 36 + 1) * 36; continue
-            f = self._font(cp); ch = cp
-            if f is None: f = self.fonts[0]; ch = ord('!')
-            if not (f.first <= ch <= f.last): continue
-            g = f.glyphs[ch - f.first]
-            w = g['width']
-            if w > 0:                                   # match kdisp_gfx_text_bounds' w>0 guard
-                l = x + g['xOffset']; r = x + g['xOffset'] + w - 1   # -1: rightMOST pixel, not one past
-                mn = min(mn, l); mx = max(mx, r)
-            x += g['xAdvance']
-        if mx < mn: mn = mx = 0
-        return mn, mx
+        """(min,max) horizontal extent relative to cursor 0 — kdisp_gfx_text_bounds.
+
+        That function is a pure wrapper over the bbox in the firmware too, and for
+        the reason wrappers usually exist here: the two used to be separate walks of
+        the same display list, so every op added to one had to be remembered in the
+        other.
+        """
+        xmn, xmx, _ymn, _ymx = self.bbox(cps)
+        return xmn, xmx
+
 
     def bbox(self, cps):
         """Full ink box relative to the draw origin (x from origin x, y from the
@@ -227,29 +345,42 @@ class Renderer:
         x = y = 0
         xmn = ymn = 127
         xmx = ymx = -128
-        for cp in cps:
+        small = mid = False
+        for is_op, cp in _walk_ops(cps):
+            if is_op and cp in OP_ARGS: continue   # nothing this model can measure
             if cp == 0x05: y += 2; continue
             if cp == 0x06: x += 2; continue
             if cp == 0x18: x = y = 0; continue
             if cp == 0x08: x = x - 2 if x > 1 else 0; continue
             if cp == 0x0c: y = y - 2 if y > 1 else 0; continue
-            if cp == 0x09: x += (x // 36 + 1) * 36; continue
+            if cp == 0x09: x += (_trunc_div(x, 36) + 1) * 36; continue
             if cp == 0x0a: y += self.base_yadv; x = 0; continue
-            if cp == 0x0b: y += (y // 15 + 1) * 15; continue
+            if cp == 0x0b: y += (_trunc_div(y, 15) + 1) * 15; continue
             if cp == 0x0d: x = 0; continue
-            f = self._font(cp); ch = cp
-            if f is None: f = self.fonts[0]; ch = ord('!')
+            if cp == HINT_SMALL: small = True; continue
+            if cp == HINT_MID: mid = True; continue
+            pool, base_yadv = self._pool(cp, mid)
+            f = self._font_in(pool, cp); ch = cp
+            if f is None: f = pool[0]; ch = ord('!')
             if not (f.first <= ch <= f.last): continue
             g = f.glyphs[ch - f.first]
-            gy = y + (f.yAdvance - self.base_yadv)
-            if g['width'] > 0 and g['height'] > 0:
-                xmn = min(xmn, x + g['xOffset'])
-                xmx = max(xmx, x + g['xOffset'] + g['width'] - 1)
-                ymn = min(ymn, gy + g['yOffset'])
-                ymx = max(ymx, gy + g['yOffset'] + g['height'] - 1)
-            x += g['xAdvance']
+            gyadj = f.yAdvance - base_yadv
+            w, h = g['width'], g['height']
+            if w > 0 and h > 0:
+                # In a SMALL run mirror kdisp_write_gfx_char_half — halved extents and
+                # offsets, floored — so the measured box still matches the pixels.
+                gx = _half_floor(g['xOffset']) if small else g['xOffset']
+                gw = (w + 1) // 2 if small else w
+                gh = (h + 1) // 2 if small else h
+                gy = _half_floor(gyadj + g['yOffset']) if small else gyadj + g['yOffset']
+                xmn = min(xmn, x + gx)
+                xmx = max(xmx, x + gx + gw - 1)
+                ymn = min(ymn, y + gy)
+                ymx = max(ymx, y + gy + gh - 1)
+            x += (g['xAdvance'] + 1) // 2 if small else g['xAdvance']
         if xmx < xmn: return 0, 0, 0, 0
         return xmn, xmx, ymn, ymx
+
 
     def relocate(self, cps, size):
         """glyph_size_remap(): the legend at the requested size, or None to fall
@@ -280,26 +411,67 @@ class Renderer:
 
     def draw(self, setpix, cps, x, y):
         xc, yc = x, y
-        for cp in cps:
+        # HINT_SMALL / HINT_MID latch for the REST of the run — there is no "back to
+        # full size" op, and \x18 (reset) does not clear them either; it resets the
+        # cursor only. The two compose: \x10 after \x16 half-scales the 19px face.
+        small = mid = False
+        for is_op, cp in _walk_ops(cps):
+            # An op needing a primitive this model does not have draws NOTHING rather
+            # than falling through to the glyph path, where it (and each of its
+            # arguments) would render a substituted '!'. Callers that must not show a
+            # legend with a hole in it ask unsupported_ops() first.
+            if is_op and cp in OP_ARGS: continue
             if cp == 0x05: yc += 2; continue
             if cp == 0x06: xc += 2; continue
             if cp == 0x18: xc, yc = x, y; continue
             if cp == 0x08: xc = xc - 2 if xc > 1 else 0; continue
             if cp == 0x0c: yc = yc - 2 if yc > 1 else 0; continue
-            if cp == 0x09: xc += ((xc - x) // 36 + 1) * 36; continue
+            if cp == 0x09: xc += (_trunc_div(xc - x, 36) + 1) * 36; continue
             if cp == 0x0a: yc += self.base_yadv; xc = x; continue
-            if cp == 0x0b: yc += ((yc - y) // 15 + 1) * 15; continue
+            if cp == 0x0b: yc += (_trunc_div(yc - y, 15) + 1) * 15; continue
             if cp == 0x0d: xc = x; continue
-            f = self._font(cp); ch = cp
-            if f is None: f = self.fonts[0]; ch = ord('!')
+            if cp == HINT_SMALL: small = True; continue
+            if cp == HINT_MID: mid = True; continue
+            pool, base_yadv = self._pool(cp, mid)
+            f = self._font_in(pool, cp); ch = cp
+            if f is None:
+                # ⚠️ Only the FULL-SIZE writer substitutes '!'. kdisp_write_gfx_char_half
+                # returns 0 for a glyph it cannot find: it draws nothing and does not
+                # advance, which is why a small legend on a keyboard with no font pack
+                # comes up blank rather than as a row of '!'.
+                if small: continue
+                f = pool[0]; ch = ord('!')
             if not (f.first <= ch <= f.last): continue
             g = f.glyphs[ch - f.first]
-            gy = yc + (f.yAdvance - self.base_yadv)
+            gyadj = f.yAdvance - base_yadv
             bo = g['bitmapOffset']
-            cb = (g['height'] + 7) >> 3   # column-native (OLED page) bytes per column
-            for xx in range(g['width']):
+            w, h = g['width'], g['height']
+            cb = (h + 7) >> 3             # column-native (OLED page) bytes per column
+            if small:
+                # 2x2-OR downsample, the same one kdisp_write_gfx_char_half does: plain
+                # decimation drops the thin strokes these faces are made of.
+                gx0 = xc + _half_floor(g['xOffset'])
+                gy0 = yc + _half_floor(gyadj + g['yOffset'])
+                for dy in range((h + 1) // 2):
+                    for dx in range((w + 1) // 2):
+                        lit = False
+                        for oy in range(2):
+                            for ox in range(2):
+                                sx, sy = dx * 2 + ox, dy * 2 + oy
+                                if sx >= w or sy >= h: continue
+                                if f.bitmap[bo + sx * cb + (sy >> 3)] & (1 << (sy & 7)):
+                                    lit = True; break
+                            if lit: break
+                        if not lit: continue
+                        vx, vy = gx0 + dx - BUFFER_X, gy0 + dy
+                        if -OVERSHOOT <= vx < OLED_W + OVERSHOOT and -OVERSHOOT <= vy < OLED_H + OVERSHOOT:
+                            setpix(vx, vy)
+                xc += (g['xAdvance'] + 1) // 2
+                continue
+            gy = yc + gyadj
+            for xx in range(w):
                 col = bo + xx * cb
-                for yy in range(g['height']):
+                for yy in range(h):
                     if f.bitmap[col + (yy >> 3)] & (1 << (yy & 7)):
                         vx = xc + g['xOffset'] + xx - BUFFER_X
                         vy = gy + g['yOffset'] + yy
@@ -526,7 +698,7 @@ def main():
     named = load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
     if a.lang != 'ALL' and a.lang not in L.langs: sys.exit(f"unknown lang {a.lang}; have {L.langs}")
-    R = Renderer(load_all_fonts(os.path.join(pk, 'base', 'fonts')))
+    R = load_renderer(os.path.join(pk, 'base', 'fonts'))
     s = a.cell_scale
 
     if a.check_bounds:
