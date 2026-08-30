@@ -186,15 +186,25 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     quota — the note above).
 
 - ⚠️ **There is a FOURTH reviewer — Greptile — and its failure mode is the
-  QUIETEST of the four: when it does not review, it emits NOTHING AT ALL.** Every
-  other note in this section catalogues a way CodeRabbit / Sourcery / Qodo go
-  quiet, and the set was written when those three were all there was. Greptile
-  posts no rate-limit banner, no "review skipped" box, no check run — a PR it
-  never looked at is byte-for-byte indistinguishable from one it had no findings
-  on. CodeRabbit at least renders a notice; Sourcery at least submits a review
-  object you can read the body of. **So Greptile cannot be counted as cover
-  unless you have confirmed a review object exists**, and its silence must never
-  be read as a clean bill.
+  QUIETEST of the four: when it does not review, it says so NOWHERE.** Every other
+  note in this section catalogues a way CodeRabbit / Sourcery / Qodo go quiet, and
+  the set was written when those three were all there was. Greptile posts no
+  rate-limit banner and no "review skipped" box, so a PR it never looked at reads
+  exactly like one it had no findings on. CodeRabbit at least renders a notice;
+  Sourcery at least submits a review object whose body says why. **So Greptile
+  cannot be counted as cover unless you have confirmed a review object exists**,
+  and its silence must never be read as a clean bill.
+  - ⚠️ **The `Greptile Review` CHECK RUN is not that confirmation — measured, it
+    pointed the WRONG WAY every time.** It is a check run like Sourcery's, and a
+    green one is the same trap `qmk_firmware/CLAUDE.md` already records for
+    Sourcery ("goes GREEN while no review happened"). Here it is stranger: across
+    the three completed PRs of the session below, the check run and the review
+    object were **perfectly anti-correlated** — qmk#251 had a green `success`
+    check that ran two minutes and **no review object at all**, while qmk#253
+    (two reviews) and host#202 (one) had **no check run**. Four data points is
+    not a mechanism and this is deliberately not theorised into one; the
+    operative rule is simply that **the check run answers a different question
+    than "was this reviewed"**, and only `get_reviews` answers that one.
   - **Measured over one six-PR session** (2026-08-29, across `PolyKybdHost`,
     `qmk_firmware` and `Adafruit-GFX-Library` — `pull_request_read`
     `get_reviews` on each): Greptile reviewed **2 of 6**. Sourcery refused all
@@ -220,13 +230,17 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     reconciliation in the Merge-Risk-sha note below.
   - **The standing check is the same one every failure mode above is caught by**
     and it is two seconds: `pull_request_read` `get_reviews`, then compare each
-    review's `commit_id` against the PR's head sha. Nothing else distinguishes
-    "reviewed and clean" from "never read".
-  - ⚠️ **This entry exists because the first draft of it claimed Greptile had
-    reviewed all six PRs, from memory, and the API said 2.** Reviewer coverage is
-    exactly the kind of claim that feels observed and is not — every bot posts
-    *something* on most PRs, so the impression of having been reviewed accrues
-    without a single review. Count them before writing one of these notes down.
+    review's `commit_id` against the PR's head sha. **Nothing else** distinguishes
+    "reviewed and clean" from "never read" — not a green check run, not the
+    presence of bot output, not a walkthrough.
+  - ⚠️ **This entry has now been wrong TWICE, in the same direction, and both
+    corrections came from the API rather than from thinking harder.** The first
+    draft claimed Greptile had reviewed all six PRs — it was 2. The second claimed
+    it emits "no check run" — it emits one, and a green one at that. Reviewer
+    coverage is exactly the kind of claim that feels observed and is not: every
+    bot posts *something* on most PRs, so the impression of having been reviewed
+    accrues without a single review. **Count them, and read the check runs, before
+    writing one of these notes down.**
 
 - **A reviewer's CONCLUSION can be sound while its EVIDENCE is invented — and the
   evidence is worth correcting separately.** The existing rule above says verify and
