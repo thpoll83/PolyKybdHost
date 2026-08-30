@@ -229,10 +229,22 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     **contradicted an entry two paragraphs above it**, which is what produced the
     reconciliation in the Merge-Risk-sha note below.
   - **The standing check is the same one every failure mode above is caught by**
-    and it is two seconds: `pull_request_read` `get_reviews`, then compare each
-    review's `commit_id` against the PR's head sha. **Nothing else** distinguishes
+    and it is two seconds: `pull_request_read` `get_reviews`, then **for each
+    review, both** (a) its `commit_id` equals the PR's head sha, **and** (b) its
+    body is not a refusal notice. Nothing outside that pair distinguishes
     "reviewed and clean" from "never read" — not a green check run, not the
     presence of bot output, not a walkthrough.
+    - ⚠️ **(b) is not a refinement, it is half the check — a REFUSAL IS A REVIEW
+      OBJECT, and it carries the head sha.** Sourcery's budget and diff-too-large
+      notices arrive as `COMMENTED` reviews stamped with the current head, so a
+      `commit_id`-only rule marks the PR reviewed. The six-PR table above proves
+      it against itself: Sourcery submitted such an object on **every** one, each
+      matching that PR's head — including the three the table records as reviewed
+      by nobody. This entry asserted the `commit_id` rule alone anyway, two
+      paragraphs below a Sourcery note that already said the tell is the body
+      text (caught by Greptile in review, 2026-08-30). **A check that contradicts
+      another entry in the same file is the failure mode this section keeps
+      producing; grep for the sibling note before writing the rule.**
   - ⚠️ **This entry has now been wrong TWICE, in the same direction, and both
     corrections came from the API rather than from thinking harder.** The first
     draft claimed Greptile had reviewed all six PRs — it was 2. The second claimed
@@ -321,8 +333,9 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       was incorrect") and recorded a durable repo learning about the file. Same payoff
       as the PolyKybd#35 stale-netlist reply — one reply, a permanent correction.
 
-- **CodeRabbit's plan is PER-REPOSITORY, and Pro Plus still means only 2 included
-  reviews per hour.** Private repos here get the summary-only Free tier; public ones
+- **CodeRabbit's plan is PER-REPOSITORY, and Pro Plus does NOT mean a fixed
+  number of included reviews per hour — read the figure off the run footer.**
+  Private repos here get the summary-only Free tier; public ones
   (PolyKybd, qmk_firmware) report `Plan: Pro Plus` — but the run footer then says
   *"Your plan provides up to N included reviews per hour; M remain after this review"*.
   ⚠️ **Read N off the run footer rather than trusting a number written here — it is not
