@@ -245,14 +245,17 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       text (caught by Greptile in review, 2026-08-30). **A check that contradicts
       another entry in the same file is the failure mode this section keeps
       producing; grep for the sibling note before writing the rule.**
-  - ⚠️ **This entry has now been wrong TWICE, in the same direction, and both
-    corrections came from the API rather than from thinking harder.** The first
-    draft claimed Greptile had reviewed all six PRs — it was 2. The second claimed
-    it emits "no check run" — it emits one, and a green one at that. Reviewer
-    coverage is exactly the kind of claim that feels observed and is not: every
-    bot posts *something* on most PRs, so the impression of having been reviewed
-    accrues without a single review. **Count them, and read the check runs, before
-    writing one of these notes down.**
+  - ⚠️ **This entry has now been wrong THREE times, and every correction came
+    from the API rather than from thinking harder.** The first draft claimed
+    Greptile had reviewed all six PRs — it was 2. The second claimed it emits "no
+    check run" — it emits one, and a green one at that. The third said Sourcery's
+    countdown "says when a review is actually available again" — one was
+    superseded three minutes later. Reviewer behaviour is exactly the kind of
+    claim that feels observed and is not: every bot posts *something* on most PRs,
+    so the impression of having been reviewed accrues without a single review, and
+    a confidently-worded notice reads as a fact about the system rather than as
+    one sample. **Nothing in this section should be written from recollection —
+    `get_reviews`, `get_check_runs`, and the timestamps, every time.**
 
 - **A reviewer's CONCLUSION can be sound while its EVIDENCE is invented — and the
   evidence is worth correcting separately.** The existing rule above says verify and
@@ -282,8 +285,17 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     for the last 7 days ... You can request another review in 1 day and 16 hours by
     commenting `@sourcery-ai review`"*. ⚠️ Note **250,000, per USER, rolling 7
     days** — `qmk_firmware/CLAUDE.md` quotes 500,000 from an older notice, so take
-    the figure from the message in front of you. The countdown is exact and worth
-    reading: it says when a review is actually available again.
+    the figure from the message in front of you. ⚠️ **The countdown is NOT "come
+    back then" — do not plan around it.** Measured across the four PRs of
+    2026-08-30, four refusals issued **within 61 seconds of each other** quoted
+    four different waits — 4 days, 1 day 3 hours, 1 day 3 hours, 19 hours 41
+    minutes — so it is computed per PR, not from one global clock. And one of them
+    was superseded almost immediately: qmk#255 was told *"1 day and 3 hours"* at
+    08:58:18 and Sourcery submitted a real **`APPROVED`** review on its next
+    commit at **09:02:21, three minutes later**. The other three pushed follow-up
+    commits too and got nothing, so this is neither reliable nor universal —
+    **1 of 4**. Treat the countdown as an upper bound of unknown tightness, keep
+    pushing, and check `get_reviews` rather than waiting out the clock.
   - **Diff too large** — *"Sorry, we are unable to review this pull request. The
     GitHub API does not allow us to fetch diffs exceeding 20000 lines"*. A hard
     ceiling, not a quota, so waiting does nothing. This is Sourcery's version of
