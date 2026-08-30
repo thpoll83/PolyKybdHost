@@ -21,14 +21,17 @@ if not os.environ.get("DISPLAY"):
 
 from PyQt5.QtWidgets import QApplication
 
-from polyhost.gui.layout_dialog.keycode_composer import KeycodeComposer, BEHAVIORS
+from polyhost.gui.layout_dialog.keycode_composer import KeycodeComposer
 from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     HEADER_FILE, parse_qmk_keycodes, decode_for_composer)
 
+# Owns the only Python reference to the QApplication: every widget below needs one
+# alive for its whole lifetime, so this is a held reference, not a dead assignment.
 _app = QApplication.instance() or QApplication([])
 
 
 def _composer():
+    assert _app is not None, "a QApplication must outlive the widgets it builds"
     return KeycodeComposer(parse_qmk_keycodes(HEADER_FILE))
 
 
