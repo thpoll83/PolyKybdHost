@@ -74,10 +74,19 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       successive pushes, each time still scoped `up to 351b8` and still asserting
       the PR was "not merge-ready" over a concern two later commits had already
       fixed — while CodeRabbit's own chat reply confirmed the fix. Same sticky
-      mechanism as above, but self-labelling: if that sha is not the head, the
-      whole summary (risk verdict included) is describing an older commit. It is
-      worth checking before believing any *later* re-render of a summary,
-      including a scary one.
+      mechanism as above, but self-labelling: if that sha is not the head,
+      something in the summary is stale. It is worth checking before believing
+      any *later* re-render of a summary, including a scary one.
+      - ⚠️ **But it is a POSITIVE tell only — a lagging Merge Risk sha does NOT
+        prove the whole summary is old, and this line used to say it did.**
+        On qmk#250 (2026-08-29) the sha read `up to b6c1b` while the **📥 Commits**
+        line in the *same comment* correctly said *"between `b6c1b7f` and
+        `386d74f`"* — i.e. the review genuinely covered the newer head and only
+        the risk block lagged. Measured across both incidents, the reviewed-range
+        line was accurate every time and the Merge Risk sha only sometimes, so
+        **read the range line, and settle it against the PR's actual head sha
+        from the API.** Full case in the CodeRabbit sub-note under Sourcery's
+        `✅ Addressed in <sha>` entry below.
     - ⚠️ **The limit is per-developer across the ORG, so pushes to a trivial PR
       starve the one that needs review.** Docs pushes on #42 consumed the window
       #159 was waiting for. When two PRs are open and one is real code, stop
@@ -116,29 +125,15 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         naming the denied tool would have cost two more merge cycles per guess).
         Roughly $4 of subscription spend for one review. The workflows and the
         `CLAUDE_CODE_OAUTH_TOKEN` secret are gone from all three repos.
-        **When all three bots are unavailable, the honest answer is that the PR
-        is unreviewed** — say so in the PR rather than reaching for a fourth
+        **When no reviewer has run, the honest answer is that the PR is
+        unreviewed** — say so in the PR rather than reaching for a bespoke
         opinion, and lean on the HIL rig, cppcheck and the unit suites, which is
-        where the real coverage was all along.
-      - ✅ **…except there IS a fourth reviewer now, and it works: GREPTILE.**
-        On host #200 (2026-08-29) all three of the above were unavailable in
-        exactly their documented disguises — Sourcery `skipped` plus a full
-        Reviewer's Guide, CodeRabbit's under-10-stars box, Qodo's lapsed notice —
-        and `greptile-apps[bot]` still produced a real review on the right commit,
-        with a confidence score and one **correct** P1 finding (a bbox/draw
-        asymmetry in new code). So the paragraph above no longer describes the
-        worst case: check for a **`Greptile Review` check run** before concluding
-        a PR is unreviewed, and read its finding like any other bot's — verify
-        first (it was right here, and the right response was still to decline the
-        fix; see the CONCLUSION/EVIDENCE note below).
-        - ⚠️ **It posts the SAME finding TWICE** — once as an issue comment
-          (its summary, with a "Prompt To Fix All With AI" block) and once as an
-          inline **review thread**. They arrive as separate events minutes apart,
-          so answering the comment leaves the thread open and unresolved. Reply on
-          the thread and resolve it; the issue comment is the copy that can be left.
-        - It cites `CLAUDE.md` as "Context Used", i.e. it reads this file — which
-          is a reason to keep the notes here accurate about intent, not only about
-          mechanism.
+        where the real coverage was all along. ⚠️ **It is FOUR bots now, not
+        three** — Greptile was installed later and has its own entry below; check
+        it too before concluding a PR is unreviewed. That does not weaken the
+        conclusion, it sharpens it: on 2026-08-29 three of six PRs really were
+        reviewed by nobody, and Greptile's silence is the one that leaves no
+        trace to notice.
       - ⚠️ **`actions_list` blows the tool token cap — 130–220 KB per call, even
         at `per_page: 3`** (kept from the above, because it applies to reading
         *any* workflow run). It saves the JSON to a file and tells you the path;
@@ -190,6 +185,87 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     commit and otherwise let a **push** trigger it (pushes don't draw on the
     quota — the note above).
 
+- ⚠️ **There is a FOURTH reviewer — Greptile — and its failure mode is the
+  QUIETEST of the four: when it does not review, it says so NOWHERE.** Every other
+  note in this section catalogues a way CodeRabbit / Sourcery / Qodo go quiet, and
+  the set was written when those three were all there was. Greptile posts no
+  rate-limit banner and no "review skipped" box, so a PR it never looked at reads
+  exactly like one it had no findings on. CodeRabbit at least renders a notice;
+  Sourcery at least submits a review object whose body says why. **So Greptile
+  cannot be counted as cover unless you have confirmed a review object exists**,
+  and its silence must never be read as a clean bill.
+  - ⚠️ **The `Greptile Review` CHECK RUN is not that confirmation — measured, it
+    pointed the WRONG WAY every time.** It is a check run like Sourcery's, and a
+    green one is the same trap `qmk_firmware/CLAUDE.md` already records for
+    Sourcery ("goes GREEN while no review happened"). Here it is stranger: across
+    the three completed PRs of the session below, the check run and the review
+    object were **perfectly anti-correlated** — qmk#251 had a green `success`
+    check that ran two minutes and **no review object at all**, while qmk#253
+    (two reviews) and host#202 (one) had **no check run**. Four data points is
+    not a mechanism and this is deliberately not theorised into one; the
+    operative rule is simply that **the check run answers a different question
+    than "was this reviewed"**, and only `get_reviews` answers that one.
+  - **Measured over one six-PR session** (2026-08-29, across `PolyKybdHost`,
+    `qmk_firmware` and `Adafruit-GFX-Library` — `pull_request_read`
+    `get_reviews` on each): Greptile reviewed **2 of 6**. Sourcery refused all
+    six, CodeRabbit reviewed one. **Three PRs — Adafruit#11, host#201, qmk#251 —
+    were reviewed by NOBODY**, and only the Sourcery refusal notice made that
+    visible.
+  - ⚠️ **There is no size or repo pattern to predict from.** It skipped a 2-line
+    `requirements.txt` PR and a small workflow PR while reviewing a docs-only one,
+    so "it was too big / too trivial" does not explain the gaps. Do not build an
+    expectation of when it runs.
+  - ✅ **What it does well, when it runs, is the thing the others get wrong:
+    it re-reviews the follow-up commit.** On qmk#253 it reviewed `dcaaf27` and
+    then `24aa1ed` on its own, both `commit_id`s matching the head — none of the
+    stale-walkthrough / sticky-summary / false-`✅ Addressed in <sha>` bookkeeping
+    catalogued above. It also reviews **`.md`-only PRs**, which CodeRabbit's
+    incremental heuristics routinely skip, so it is often the only reviewer that
+    reads a CLAUDE.md change — and given how much load-bearing detail lives in
+    these files, that is not a lesser class of review.
+  - **Its findings get the same scrutiny as anyone's** — verify, don't defer. Its
+    one real catch that session was a *consistency* finding an LLM is well placed
+    to make and a linter is not: a note being added to this very file
+    **contradicted an entry two paragraphs above it**, which is what produced the
+    reconciliation in the Merge-Risk-sha note below.
+    - ⚠️ **It posts the SAME finding TWICE, and answering one leaves the other
+      open** — once as an issue comment (its summary, carrying a "Prompt To Fix
+      All With AI" block) and once as an inline **review thread**. They arrive as
+      separate events minutes apart, so a reply to the comment does not resolve
+      the thread. Reply on the **thread** and resolve it; the issue comment is
+      the copy that can be left. Seen on host#200 and host#204.
+    - It cites `CLAUDE.md` as "Context Used", i.e. it reads this file — which is
+      a reason to keep these notes accurate about *intent*, not only about
+      mechanism.
+  - **The standing check is the same one every failure mode above is caught by**
+    and it is two seconds: `pull_request_read` `get_reviews`, then **for each
+    review, both** (a) its `commit_id` equals the PR's head sha, **and** (b) its
+    body is not a refusal notice. Nothing outside that pair distinguishes
+    "reviewed and clean" from "never read" — not a green check run, not the
+    presence of bot output, not a walkthrough.
+    - ⚠️ **(b) is not a refinement, it is half the check — a REFUSAL IS A REVIEW
+      OBJECT, and it carries the head sha.** Sourcery's budget and diff-too-large
+      notices arrive as `COMMENTED` reviews stamped with the current head, so a
+      `commit_id`-only rule marks the PR reviewed. The six-PR table above proves
+      it against itself: Sourcery submitted such an object on **every** one, each
+      matching that PR's head — including the three the table records as reviewed
+      by nobody. This entry asserted the `commit_id` rule alone anyway, two
+      paragraphs below a Sourcery note that already said the tell is the body
+      text (caught by Greptile in review, 2026-08-30). **A check that contradicts
+      another entry in the same file is the failure mode this section keeps
+      producing; grep for the sibling note before writing the rule.**
+  - ⚠️ **This entry has now been wrong THREE times, and every correction came
+    from the API rather than from thinking harder.** The first draft claimed
+    Greptile had reviewed all six PRs — it was 2. The second claimed it emits "no
+    check run" — it emits one, and a green one at that. The third said Sourcery's
+    countdown "says when a review is actually available again" — one was
+    superseded three minutes later. Reviewer behaviour is exactly the kind of
+    claim that feels observed and is not: every bot posts *something* on most PRs,
+    so the impression of having been reviewed accrues without a single review, and
+    a confidently-worded notice reads as a fact about the system rather than as
+    one sample. **Nothing in this section should be written from recollection —
+    `get_reviews`, `get_check_runs`, and the timestamps, every time.**
+
 - **A reviewer's CONCLUSION can be sound while its EVIDENCE is invented — and the
   evidence is worth correcting separately.** The existing rule above says verify and
   decline the false ones. The 2026-08-23 round on PolyKybd#35 sharpened it: **3 of 4
@@ -225,6 +301,34 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       bot) does not re-raise it — and to say on the thread where the real fix
       belongs. Declining without that just resets the clock.
 
+- ⚠️ **Sourcery refuses in TWO different ways, and only one of them is the weekly
+  budget.** Both arrive as a `COMMENTED` review whose entire body is the notice, so
+  the tell is the body text, not the presence of a review:
+  - **Budget** — *"you've used your own review budget of 250,000 diff characters
+    for the last 7 days ... You can request another review in 1 day and 16 hours by
+    commenting `@sourcery-ai review`"*. ⚠️ Note **250,000, per USER, rolling 7
+    days** — `qmk_firmware/CLAUDE.md` quotes 500,000 from an older notice, so take
+    the figure from the message in front of you. ⚠️ **The countdown is NOT "come
+    back then" — do not plan around it.** Measured across the four PRs of
+    2026-08-30, four refusals issued **within 61 seconds of each other** quoted
+    four different waits — 4 days, 1 day 3 hours, 1 day 3 hours, 19 hours 41
+    minutes — so it is computed per PR, not from one global clock. And one of them
+    was superseded almost immediately: qmk#255 was told *"1 day and 3 hours"* at
+    08:58:18 and Sourcery submitted a real **`APPROVED`** review on its next
+    commit at **09:02:21, three minutes later**. The other three pushed follow-up
+    commits too and got nothing, so this is neither reliable nor universal —
+    **1 of 4**. Treat the countdown as an upper bound of unknown tightness, keep
+    pushing, and check `get_reviews` rather than waiting out the clock.
+  - **Diff too large** — *"Sorry, we are unable to review this pull request. The
+    GitHub API does not allow us to fetch diffs exceeding 20000 lines"*. A hard
+    ceiling, not a quota, so waiting does nothing. This is Sourcery's version of
+    CodeRabbit's >100-file skip (`qmk_firmware/CLAUDE.md`), and the two land on the
+    same PRs: an upstream merge, or anything mechanical like untracking a committed
+    build directory (Adafruit#11, 5,224 files). On such a PR **both** LLM reviewers
+    are out by construction, so plan the review before opening it — split the
+    mechanical change from the reviewable one, or accept that only cppcheck, the
+    build and the rig will read it.
+
 - ⚠️ **Sourcery's `✅ Addressed in <sha>` line names the CURRENT HEAD, not the commit
   that fixed anything — treat it as a timestamp, never as evidence.** On docs#67
   (2026-08-27) the same two findings were re-rendered three times, credited in turn to
@@ -241,11 +345,37 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     contradicting the new Macros page, and a CLI reference missing a whole subcommand
     family). This is the same "conclusion sound, evidence invented" shape recorded for
     CodeRabbit below — take the finding, check the attribution.
+  - ⚠️ **CodeRabbit does this too, and its version is WORSE: it AUTO-RESOLVES the
+    thread on the strength of the false attribution.** On qmk#250 (2026-08-29) its one
+    inline finding was stamped `✅ Addressed in commit 9357ee4` and the thread closed —
+    but `git show 9357ee4 -- <path> | grep -c _WIN32` returns **0**: that commit never
+    touched the flagged sentence, which was still at head. The real fix landed two
+    commits later in `386d74f`. Sourcery's version merely misleads; this one *files the
+    thread away*, and a resolved thread is one nobody re-reads — so an unaddressed
+    finding can disappear silently. **Check the sha before trusting a resolution, not
+    just before trusting a claim.**
+    - **Three of its self-reports on that one PR were false, while the finding itself
+      was genuine and improved the change** (it correctly caught that `#ifndef _WIN32`
+      does not exclude an RP2040 build, so citing it as proof of "desktop-only" was bad
+      reasoning). The other two: it said *"I couldn't resolve this review thread … so it
+      remains open"* while the API reported `is_resolved: true`, and its **Merge Risk**
+      line still read `up to b6c1b` two pushes later, in the *same comment* that
+      correctly named the reviewed range `b6c1b7f..386d74f`. So the sha-in-the-Merge-Risk
+      tell recorded above is itself only as good as the render you are reading — it went
+      stale while the commit range beside it stayed accurate.
+    - ✅ **Replying with the evidence is worth it.** CodeRabbit conceded every point
+      (including "The fix belongs to `386d74f`. The previous attribution to `9357ee4`
+      was incorrect") and recorded a durable repo learning about the file. Same payoff
+      as the PolyKybd#35 stale-netlist reply — one reply, a permanent correction.
 
-- **CodeRabbit's plan is PER-REPOSITORY, and Pro Plus still means only 2 included
-  reviews per hour.** Private repos here get the summary-only Free tier; public ones
+- **CodeRabbit's plan is PER-REPOSITORY, and Pro Plus does NOT mean a fixed
+  number of included reviews per hour — read the figure off the run footer.**
+  Private repos here get the summary-only Free tier; public ones
   (PolyKybd, qmk_firmware) report `Plan: Pro Plus` — but the run footer then says
-  *"Your plan provides up to 2 included reviews per hour; N remain after this review"*.
+  *"Your plan provides up to N included reviews per hour; M remain after this review"*.
+  ⚠️ **Read N off the run footer rather than trusting a number written here — it is not
+  a constant.** This line said "2" for a while; the `qmk_firmware` footer on 2026-08-29
+  read **1**, on the same Pro Plus plan.
   ⚠️ **A request consumes a slot even when it is refused**, so retries starve the window
   they are waiting on (already recorded for the org-wide limit; it applies to the hourly
   one too). A **push** re-triggers a review without spending a request. And after a few
