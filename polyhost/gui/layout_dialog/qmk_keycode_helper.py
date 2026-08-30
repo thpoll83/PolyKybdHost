@@ -60,6 +60,19 @@ def parse_qmk_keycodes(header_path: Path) -> dict[str, int]:
     return parse_qmk_keycode_header(header_path, "qk_keycode_defines")
 
 
+# Values QMK gives several names for that are NOT the same key, so no choice among
+# the real names is honest. QMK defines KC_BRMD = KC_SCROLL_LOCK and KC_BRMU =
+# KC_PAUSE -- brightness down/up ARE those HID usages upstream -- so a tile saying
+# either "SCRL" or "BRMD" hides the other meaning. These composite labels are
+# DISPLAY ONLY and deliberately not real keycode names: they exist so the editor
+# states the ambiguity instead of picking a side. Never feed one back into a
+# name->value lookup (nothing does -- `name_to_keycode` is a separate map).
+DISPLAY_NAME_OVERRIDE = {
+    0x0047: "KC_SCRL_BRMD",       # KC_SCROLL_LOCK / KC_SCRL / KC_BRMD
+    0x0048: "KC_PAUS_BRK_BRMU",   # KC_PAUSE / KC_PAUS / KC_BRK / KC_BRMU
+}
+
+
 def build_keycode_to_name(name_to_keycode: dict[str, int]) -> dict[int, str]:
     """Invert the name->value map, choosing which name a tile shows for a value.
 
@@ -86,6 +99,7 @@ def build_keycode_to_name(name_to_keycode: dict[str, int]) -> dict[int, str]:
         current = picked.get(value)
         if current is None or not current.startswith("KC_") or name.startswith("KC_"):
             picked[value] = name
+    picked.update({v: n for v, n in DISPLAY_NAME_OVERRIDE.items() if v in picked})
     return picked
 
 
