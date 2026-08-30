@@ -23,7 +23,8 @@ from PyQt5.QtWidgets import QApplication
 
 from polyhost.gui.layout_dialog.keycode_composer import KeycodeComposer
 from polyhost.gui.layout_dialog.qmk_keycode_helper import (
-    HEADER_FILE, parse_qmk_keycodes, decode_for_composer)
+    HEADER_FILE, parse_qmk_keycodes, decode_for_composer,
+    decompose_keycode, build_keycode_to_name)
 
 # Owns the only Python reference to the QApplication: every widget below needs one
 # alive for its whole lifetime, so this is a held reference, not a dead assignment.
@@ -88,6 +89,34 @@ class TestComposerRoundTrip(unittest.TestCase):
     def test_decode_reports_the_zero_inner_key_it_always_did(self):
         """The decode side was already correct -- the loss was in the widget."""
         self.assertEqual(decode_for_composer(0x0F00), ("MOD", 0, 0x0F, 0x00))
+
+    def test_the_preview_never_shows_the_XXXXXXX_placeholder(self):
+        """The composer builds its OWN reverse map, so it needs the same
+        last-wins guard the browser got -- a naive inversion resolves 0x00 to
+        XXXXXXX. MT() and LT() reach that lookup with a zero inner key (the
+        QK_MODS branch does not: it short-circuits to mod_stack_name), so the
+        preview said MT(LCTL,XXXXXXX) while the tile behind it said MT(LCTL,NO).
+        """
+        c = self.c
+        offenders = []
+        for value in ([0x2000 | (m << 8) for m in range(1, 0x20)]
+                      + [0x4000 | (l << 8) for l in range(9)]):
+            shown = decompose_keycode(value, c._code_to_name)
+            if "XXXXXXX" in shown:
+                offenders.append(f"0x{value:04X} -> {shown}")
+        self.assertEqual(offenders, [], f"{len(offenders)} previews show the placeholder")
+
+    def test_the_preview_agrees_with_the_tile_behind_it(self):
+        """The whole point of sharing build_keycode_to_name: the composer preview
+        and the browser tile must name the same keycode the same way."""
+        c = self.c
+        tile_map = build_keycode_to_name(parse_qmk_keycodes(HEADER_FILE))
+        for value in ([0x2000 | (m << 8) for m in range(1, 0x20)]
+                      + [0x4000 | (l << 8) for l in range(9)]
+                      + [(m << 8) for m in range(1, 0x20)]):
+            with self.subTest(value=f"0x{value:04X}"):
+                self.assertEqual(decompose_keycode(value, c._code_to_name),
+                                 decompose_keycode(value, tile_map))
 
 
 if __name__ == "__main__":

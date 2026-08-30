@@ -19,7 +19,8 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     encode_mods, encode_layer_switch, encode_one_shot_mod,
     encode_mod_tap, encode_layer_tap, encode_modded, encode_layer_mod,
     encode_persistent_def_layer, encode_swap_hands_tap,
-    decode_for_composer, MOD_CTRL, MOD_SHIFT, MOD_ALT, MOD_GUI, MOD_RIGHT,
+    decode_for_composer, build_keycode_to_name,
+    MOD_CTRL, MOD_SHIFT, MOD_ALT, MOD_GUI, MOD_RIGHT,
 )
 
 # Behaviour definitions: key -> (label, needs_layer, needs_mods, needs_inner_key)
@@ -51,8 +52,14 @@ class KeycodeComposer(QWidget):
             ((name, kc) for name, kc in basic_keycodes.items() if 0x00 <= kc <= 0xFF),
             key=lambda nk: nk[1],
         )
-        # code -> name for verified previews of composed keycodes.
-        self._code_to_name = {kc: name for name, kc in self._basic}
+        # code -> name for verified previews of composed keycodes. This MUST go
+        # through build_keycode_to_name for the same reason keycode_browser does:
+        # a naive {kc: name} inversion is last-wins, so 0x00 resolves to XXXXXXX
+        # rather than KC_NO. MT() and LT() reach it with a zero inner key -- unlike
+        # the QK_MODS branch, which short-circuits to mod_stack_name() -- so the
+        # naive map previewed 40 composable keycodes as MT(LCTL,XXXXXXX) while the
+        # tile behind them said MT(LCTL,NO).
+        self._code_to_name = build_keycode_to_name(dict(self._basic))
         self._num_layers = max(1, num_layers)
 
         outer = QVBoxLayout(self)
