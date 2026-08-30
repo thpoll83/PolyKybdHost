@@ -149,7 +149,16 @@ class KeycodeComposer(QWidget):
             self.cb_alt.setChecked(bool(mods & MOD_ALT))
             self.cb_gui.setChecked(bool(mods & MOD_GUI))
             (self.rb_right if mods & MOD_RIGHT else self.rb_left).setChecked(True)
-            if inner:
+            # ⚠️ Honour a decoded inner key of ZERO. KC_NO is a legitimate inner
+            # key -- `Hyper` is LCTL|LSFT|LALT|LGUI over KC_NO, `Meh` is the same
+            # without GUI, and a bare `LCTL(KC_NO)` is a held modifier with no key
+            # -- so a truthiness test here silently left the combo on its KC_A
+            # default and Apply rewrote the key: 0x0F00 -> 0x0F04, i.e. loading a
+            # key and applying it unchanged wrote a DIFFERENT keycode to the
+            # device. Gate on whether the behaviour uses an inner key instead, so
+            # a layer behaviour (which decodes inner as 0 and ignores it) does not
+            # have its combo yanked to NO.
+            if next((b[4] for b in BEHAVIORS if b[0] == behavior), False):
                 inner_idx = self.inner_combo.findData(inner)
                 if inner_idx >= 0:
                     self.inner_combo.setCurrentIndex(inner_idx)
