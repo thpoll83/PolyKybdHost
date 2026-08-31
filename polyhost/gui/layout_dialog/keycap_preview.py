@@ -240,6 +240,7 @@ class KeycapPreview:
         self._reason = ""
         self._op = self._ld = self._L = self._R = self._resolver = None
         self._static: dict = {}
+        self._known: set = set()   # every name the two halves can draw
         self._custom: dict = {}           # keycode -> PolyKybd's own name
         self._macros: dict = {}           # function-like legend macros
         self._layer_tags: dict = {}       # layer index -> enum tag, e.g. 5 -> "FL"
@@ -277,11 +278,27 @@ class KeycapPreview:
             # standalone 19px HINT_MID face, without which the settings legends draw
             # both of their lines at full size, on top of each other.
             self._R = op.load_renderer(fonts_dir)
-            self._static = ld.parse_static_text_map(os.path.join(pk, "keycode_helper.c"))
+            # TWO legend seams, merged in the firmware's own precedence order.
+            # `to_static_text()` (poly_keymap.c) consults keycode_to_static_text()
+            # FIRST and only falls through to its own switch, so keycode_helper.c
+            # wins a token defined in both. Without the second one the base-layer
+            # picker (KC_L0..KC_L4), the unicode-mode keys, KC_IDDQD and the
+            # legend-size key render on the board and nowhere in the editor.
+            self._static = {
+                **ld.parse_to_static_text_map(os.path.join(pk, "poly_keymap.c")),
+                **ld.parse_static_text_map(os.path.join(pk, "keycode_helper.c")),
+            }
             self._custom = parse_custom_keycodes(_read(pk, "keycode_helper.h"))
             self._macros = parse_function_macros(
                 *(_read(pk, f) for f in ("lang/named_glyphs.h", "keycode_helper.h",
-                                         "keycode_helper.c")))
+                                         "keycode_helper.c", "poly_keymap.c")))
+            # QMK's short aliases, derived from its own headers (see
+            # lang_demo.load_qmk_aliases). Without this a keymap spelling KC_MUTE /
+            # DE_Z / RGB_M_SW misses a legend the map holds under the long name.
+            ld.load_qmk_aliases(os.path.dirname(os.path.dirname(pk)), pk)
+            # The derived aliases fold only ONTO a name we can draw (see
+            # lang_demo.normalize_kc), so it needs both halves' key sets.
+            self._known = set(self._static) | set(op.ROW)
             self._op, self._ld = op, ld
             # Resolve-only view: same class, so the codepoint tokenising stays the ONE
             # implementation that mirrors the firmware's make_key -- but built without
@@ -370,7 +387,7 @@ class KeycapPreview:
         name = name or self._custom.get(keycode) or self._layer_token(keycode)
         if not name:
             return None
-        kc = self._ld.normalize_kc(name)
+        kc = self._ld.normalize_kc(name, self._known)
         if kc not in self._op.ROW and kc not in self._static:
             alt = self._layer_token(keycode)
             if alt:

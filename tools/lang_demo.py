@@ -108,8 +108,109 @@ KC_ALIAS = {
 }
 
 
-def normalize_kc(tok: str) -> str:
-    return KC_ALIAS.get(tok, tok)
+# QMK's own alias tables, DERIVED rather than re-typed. `KC_ALIAS` above is the
+# hand-kept part -- the names this repo's own tables disagree with QMK about, plus
+# `XXXXXXX` -- while the bulk (`KC_MUTE = KC_AUDIO_MUTE`, `DE_Z KC_Y`, `RGB_M_SW`,
+# `QK_BOOT`, ...) is hundreds of entries that a second copy here could only go
+# stale against. Populated lazily by `load_qmk_aliases()`; empty until then, so a
+# caller with no firmware checkout degrades to the hand-kept table alone.
+_DERIVED_ALIAS: dict = {}
+
+
+def _parse_enum_aliases(text: str) -> dict:
+    """`NAME = OTHER,` inside an enum -- i.e. only the entries whose value is
+    another NAME. `KC_A = 0x0004,` assigns a number and is not an alias."""
+    return {m.group(1): m.group(2) for m in
+            re.finditer(r'^\s*([A-Z][A-Z0-9_]*)\s*=\s*([A-Z][A-Z0-9_]*)\s*,',
+                        text, re.M)}
+
+
+def _parse_define_aliases(text: str) -> dict:
+    """`#define DE_Z KC_Y` -- the keymap_extras form."""
+    return {m.group(1): m.group(2) for m in
+            re.finditer(r'^#define\s+([A-Z][A-Z0-9_]*)\s+([A-Z][A-Z0-9_]*)'
+                        r'\s*(?:/[/*].*)?$', text, re.M)}
+
+
+def _included_keymap_extras(fw_polykybd: str) -> list:
+    """The keymap_extras headers the FIRMWARE includes, by name.
+
+    ⚠️ Scoped deliberately, not globbed. The 2291 defines across all of
+    `quantum/keymap_extras/` carry **116 names defined differently in different
+    files** (`FR_MINS` is four different keycodes), so loading them wholesale would
+    resolve a token to whichever file happened to be read last. The firmware
+    includes exactly one today (`keymap_german.h`), and reading its own includes is
+    what keeps this correct when it includes a second.
+    """
+    names = set()
+    for root, _dirs, files in os.walk(fw_polykybd):
+        if os.sep + 'doom' + os.sep in root + os.sep:
+            continue                       # vendored tree + build output
+        for fn in files:
+            if not fn.endswith(('.c', '.h')):
+                continue
+            try:
+                with open(os.path.join(root, fn), encoding='utf-8',
+                          errors='replace') as fh:
+                    text = fh.read()
+            except OSError:
+                continue
+            names.update(re.findall(r'#include\s+"(?:.*/)?(keymap_[a-z_]+\.h)"', text))
+    return sorted(names)
+
+
+def load_qmk_aliases(qmk_root: str, fw_polykybd: str) -> dict:
+    """Populate (and return) the derived alias table. Idempotent."""
+    if _DERIVED_ALIAS:
+        return _DERIVED_ALIAS
+    raw = {}
+    kc = os.path.join(qmk_root, 'quantum', 'keycodes.h')
+    if os.path.exists(kc):
+        with open(kc, encoding='utf-8', errors='replace') as fh:
+            raw.update(_parse_enum_aliases(fh.read()))
+    for name in _included_keymap_extras(fw_polykybd):
+        path = os.path.join(qmk_root, 'quantum', 'keymap_extras', name)
+        if os.path.exists(path):
+            with open(path, encoding='utf-8', errors='replace') as fh:
+                raw.update(_parse_define_aliases(fh.read()))
+
+    # ⚠️ Stored as ONE STEP, not resolved to a fixed point. An alias chains
+    # (`DE_UDIA -> KC_LBRC -> KC_LEFT_BRACKET`) and the renderable name can be a
+    # MIDDLE hop: the language LUT keys on `KC_LBRC`, so collapsing to the endpoint
+    # walks straight past the answer. `normalize_kc` walks the chain against the
+    # caller's own key set and stops at the first hop it can draw.
+    _DERIVED_ALIAS.update(raw)
+    return _DERIVED_ALIAS
+
+
+def normalize_kc(tok: str, known=None) -> str:
+    """The canonical name this repo's tables key on.
+
+    `KC_ALIAS` always wins: it is the hand-kept exception list, and the whole reason
+    an entry is in it is that QMK's own answer is not the one these tables use.
+
+    ⚠️ The DERIVED table is applied only as a FALLBACK, and only when the caller
+    passes the set of names it can actually render. This repo's tables key on the
+    SHORT name about as often as the long one -- `keycode_helper.c` switches on
+    `KC_LSFT`, `KC_APP` and `MS_BTN1` -- so rewriting every token to QMK's canonical
+    name is not a no-op in the safe direction: it moved 24 keys that rendered fine
+    onto long names nothing has a legend for. Fold only a token we cannot draw, onto
+    a name we can.
+    """
+    if tok in KC_ALIAS:
+        return KC_ALIAS[tok]
+    if known is None or tok in known:
+        return tok
+    seen, cur = {tok}, tok
+    for _ in range(8):                     # bounded, so a cycle ends rather than hangs
+        nxt = _DERIVED_ALIAS.get(cur) or KC_ALIAS.get(cur)
+        if nxt is None or nxt in seen:
+            break
+        if nxt in known:
+            return nxt
+        seen.add(nxt)
+        cur = nxt
+    return tok
 
 
 def _is_escaped(text: str, pos: int) -> bool:
@@ -201,6 +302,11 @@ def _pick_default_branch(expr: str) -> str:
     if '!= 0' in cond:        val = False     # (state_flags & X) != 0  -> 0 != 0 -> false
     elif '== 0' in cond:      val = True
     elif cond.startswith('!'): val = True      # !state.num_lock -> !false -> true
+    # The base-layer picker (KC_L0..KC_L4) draws a switch that is ON for the layout
+    # currently in use, and a board boots on _L0 -- so Qwerty is the one key of the
+    # five whose resting legend is the ON variant. Without this every base-layer key
+    # renders OFF, i.e. the editor shows a board with no layout selected.
+    elif re.search(r'def_layer\s*==\s*_L0\b', cond): val = True
     else:                     val = False      # state.caps_lock / state.num_lock -> false
     return _pick_default_branch(a if val else b)
 
@@ -241,6 +347,94 @@ def parse_static_text_map(keycode_helper_c: str) -> dict:
     for tok, expr in list(out.items()):
         if expr in STATIC_CALL_DEFAULTS:
             out[tok] = STATIC_CALL_DEFAULTS[expr]
+    return out
+
+
+def _balanced_body(text: str, start: int) -> str:
+    """The `{...}` block at or after `start`, brace-matched."""
+    i = text.index('{', start)
+    depth = 0
+    for j in range(i, len(text)):
+        if text[j] == '{':
+            depth += 1
+        elif text[j] == '}':
+            depth -= 1
+            if depth == 0:
+                return text[i:j + 1]
+    raise ValueError('unbalanced braces')
+
+
+def _top_level_switch(fn_body: str, subject: str):
+    """Offset of `switch (<subject>)` sitting directly in `fn_body`'s own block, or
+    None. `fn_body` includes its outer braces, so the function's own statements are
+    at depth 1 and anything inside an `if`/loop is deeper."""
+    depth, inq = 0, False
+    pat = re.compile(r'switch\s*\(\s*' + re.escape(subject) + r'\s*\)\s*\{')
+    i = 0
+    while i < len(fn_body):
+        ch = fn_body[i]
+        if ch == '"' and not _is_escaped(fn_body, i):
+            inq = not inq
+        elif not inq:
+            if ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+            elif depth == 1 and ch == 's':
+                m = pat.match(fn_body, i)
+                if m:
+                    return m.end() - 1
+        i += 1
+    return None
+
+
+def parse_to_static_text_map(poly_keymap_c: str) -> dict:
+    """token -> the resting legend `to_static_text()`'s OWN switch returns.
+
+    This is the SECOND legend seam. The firmware calls `keycode_to_static_text()`
+    (keycode_helper.c) first and only falls through to this switch when that
+    returns NULL -- so on a token defined in both, keycode_helper.c wins and the
+    caller must merge in that order.
+
+    Only a plain `case <IDENT>:` whose body is a single `return <expr>;` is taken.
+    The rest of the switch is deliberately out of reach rather than approximated: a
+    GCC case RANGE (`case KC_OS_SET_AUTO ... KC_OS_SET_END - 1:`) and the block
+    cases build their legend from a runtime index or lookup table, so there is no
+    static expression to render.
+    """
+    with open(poly_keymap_c, encoding='utf-8') as fh:
+        text = strip_c_comments(fh.read())
+    m = re.search(r'\bto_static_text\s*\([^)]*\)\s*\{', text)
+    if not m:
+        return {}
+    fn = _balanced_body(text, m.end() - 1)
+    # ⚠️ Take the switch at the FUNCTION's own brace depth, not the first one in the
+    # text. `to_static_text()` opens with a nested `switch (keycode)` for the macOS
+    # numpad, guarded by `unicode_mode == UNICODE_MODE_MACOS` -- a state a resting
+    # keycap is not in. Matching the first switch silently harvested that one and
+    # returned twelve numpad digits instead of the base-layer picker.
+    sw = _top_level_switch(fn, 'keycode')
+    if sw is None:
+        return {}
+    body = _balanced_body(fn, sw)
+
+    out, pending = {}, []
+    for m in re.finditer(r'case\s+([^:]+?)\s*:|(\{)|return\s+([^;]*?);', body, re.S):
+        label, brace, ret = m.group(1), m.group(2), m.group(3)
+        if label is not None:
+            lbl = label.strip()
+            # A range or expression label has no single token to key the map on.
+            pending.append(lbl if re.fullmatch(r'[A-Za-z_]\w*', lbl) else None)
+        elif brace is not None:
+            # A block case computes its legend -- drop the labels leading into it.
+            pending = []
+        elif ret is not None:
+            expr = _pick_default_branch(ret.strip())
+            if '[' not in expr:              # `legend[shifted][size]` is not static
+                for tok in pending:
+                    if tok is not None:
+                        out[tok] = expr
+            pending = []
     return out
 
 
