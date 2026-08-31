@@ -60,6 +60,49 @@ def parse_qmk_keycodes(header_path: Path) -> dict[str, int]:
     return parse_qmk_keycode_header(header_path, "qk_keycode_defines")
 
 
+# Values QMK gives several names for that are NOT the same key, so no choice among
+# the real names is honest. QMK defines KC_BRMD = KC_SCROLL_LOCK and KC_BRMU =
+# KC_PAUSE -- brightness down/up ARE those HID usages upstream -- so a tile saying
+# either "SCRL" or "BRMD" hides the other meaning. These composite labels are
+# DISPLAY ONLY and deliberately not real keycode names: they exist so the editor
+# states the ambiguity instead of picking a side. Never feed one back into a
+# name->value lookup (nothing does -- `name_to_keycode` is a separate map).
+DISPLAY_NAME_OVERRIDE = {
+    0x0047: "KC_SCRL_BRMD",       # KC_SCROLL_LOCK / KC_SCRL / KC_BRMD
+    0x0048: "KC_PAUS_BRK_BRMU",   # KC_PAUSE / KC_PAUS / KC_BRK / KC_BRMU
+}
+
+
+def build_keycode_to_name(name_to_keycode: dict[str, int]) -> dict[int, str]:
+    """Invert the name->value map, choosing which name a tile shows for a value.
+
+    QMK gives most keycodes several names, so the inversion has to PICK one and the
+    naive ``{v: k for k, v in ...}`` picks whichever the header declared last. That
+    is right far more often than it looks -- the short aliases the tiles want
+    (``KC_ENT``, ``KC_BSPC``, ``KC_PGUP``) all follow their long canonical form -- so
+    the rule here keeps last-wins and adds ONE guard:
+
+    ⚠️ **A ``KC_`` name beats a non-``KC_`` one.** ``XXXXXXX = KC_NO`` is declared ~700
+    lines after ``KC_NO``, so last-wins made every unassigned key render as the literal
+    ``XXXXXXX``. Worse, it was not confined to blank keys: ``describe_keycode`` looks a
+    mod-combo's inner key up in this map, and Hyper/Meh are ``LCTL|LSFT|LALT[|LGUI]``
+    over ``KC_NO`` -- so both rendered as ``XXXXXXX`` too, i.e. as *nothing assigned*
+    (field, 2026-08-30).
+
+    Measured, not assumed: over the 554 values carrying more than one name, this rule
+    changes exactly ONE -- 0x0000, ``XXXXXXX`` -> ``KC_NO``. The 435 values whose only
+    short name is non-``KC_`` (``MS_UP``, ``SH_TOGG``, the RGB set) have no ``KC_`` name
+    at all, so they are untouched; ``_______`` was already losing to ``KC_TRNS``.
+    """
+    picked: dict[int, str] = {}
+    for name, value in name_to_keycode.items():
+        current = picked.get(value)
+        if current is None or not current.startswith("KC_") or name.startswith("KC_"):
+            picked[value] = name
+    picked.update({v: n for v, n in DISPLAY_NAME_OVERRIDE.items() if v in picked})
+    return picked
+
+
 def parse_layer_names(layer_names_path: Path = None) -> dict[int, str]:
     """Load layer names from the pre-generated YAML in res/layer_names.yaml.
 
@@ -155,6 +198,13 @@ def category_order() -> list[str]:
             "Midi", "Haptic", "Magic", "User / Macro", "Programmable", "Space Cadet", "Quantum"]
 
 
+# 5-bit modifier mask bits (modifiers.h). Bit 4 selects right-hand mods.
+MOD_CTRL = 0x01
+MOD_SHIFT = 0x02
+MOD_ALT = 0x04
+MOD_GUI = 0x08
+MOD_RIGHT = 0x10
+
 def _mod_str(mods: int) -> str:
     """Convert 5-bit QMK modifier mask to a human-readable string."""
     right = (mods >> 4) & 1
@@ -169,6 +219,30 @@ def _mod_str(mods: int) -> str:
     if mods & 0x08:
         parts.append(f"{prefix}GUI")
     return "+".join(parts) if parts else "MOD0"
+
+
+# QMK's names for the two mod stacks that are held as a unit with no key of their
+# own. They are NOT in res/keycodes.h -- the header carries values, and these are
+# `#define`s over MOD_MASK combinations -- so without this a Hyper key decodes as a
+# mod-combo wrapping KC_NO and shows the inner key's name (field, 2026-08-30).
+_MOD_STACK_NAMES = {
+    MOD_CTRL | MOD_SHIFT | MOD_ALT | MOD_GUI: "Hyper",
+    MOD_CTRL | MOD_SHIFT | MOD_ALT: "Meh",
+}
+
+
+def mod_stack_name(mods: int) -> str:
+    """Name for a modifier mask held with NO inner key: 'Hyper', 'Meh', else the mods.
+
+    Only the left-hand masks are named -- QMK's HYPR/MEH are left-side, and a
+    right-side stack has no established name, so it falls through to the mod string
+    rather than being called Hyper when it is not.
+    """
+    if not (mods & MOD_RIGHT):
+        named = _MOD_STACK_NAMES.get(mods & 0x0F)
+        if named:
+            return named
+    return _mod_str(mods)
 
 
 def decompose_keycode(value: int, keycode_to_name: dict) -> str:
@@ -191,6 +265,8 @@ def decompose_keycode(value: int, keycode_to_name: dict) -> str:
     if 0x0100 <= value <= 0x1FFF:
         mods = (value >> 8) & 0x1F
         key = value & 0xFF
+        if key == 0x00:                      # mods held as a unit -- Hyper / Meh
+            return mod_stack_name(mods)
         return f"{_mod_str(mods)}({basic_name(key)})"
     # QK_MOD_TAP: MT() — 0x2000–0x3FFF
     if 0x2000 <= value <= 0x3FFF:
@@ -277,13 +353,6 @@ QK_ONE_SHOT_MOD = 0x52A0
 QK_LAYER_TAP_TOGGLE = 0x52C0
 QK_PERSISTENT_DEF_LAYER = 0x52E0
 QK_SWAP_HANDS = 0x5600
-
-# 5-bit modifier mask bits (modifiers.h). Bit 4 selects right-hand mods.
-MOD_CTRL = 0x01
-MOD_SHIFT = 0x02
-MOD_ALT = 0x04
-MOD_GUI = 0x08
-MOD_RIGHT = 0x10
 
 # Layer-switch behaviours that take only a layer argument: name -> range base.
 LAYER_BEHAVIORS = {
@@ -441,7 +510,9 @@ def describe_keycode(value: int, keycode_to_name: dict):
     # Modified keycode (Ctrl+C, RShift+A, …) — main = key, badge = held mods.
     if 0x0100 <= value <= 0x1FFF:
         mods = (value >> 8) & 0x1F
-        return basic_display(value & 0xFF), _mod_symbols(mods), BADGE_COLOR_MOD
+        key = value & 0xFF
+        main = mod_stack_name(mods) if key == 0x00 else basic_display(key)
+        return main, _mod_symbols(mods), BADGE_COLOR_MOD
     # Mod-tap MT() — main = tap key, badge = held mods (cyan = tap/hold dual).
     if 0x2000 <= value <= 0x3FFF:
         mods = (value >> 8) & 0x1F

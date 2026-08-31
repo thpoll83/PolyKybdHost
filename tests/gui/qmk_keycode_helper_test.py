@@ -6,6 +6,7 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     encode_mod_tap, encode_layer_tap, encode_modded, encode_layer_mod,
     encode_persistent_def_layer, encode_swap_hands_tap,
     decompose_keycode, describe_keycode, decode_for_composer,
+    build_keycode_to_name, mod_stack_name, DISPLAY_NAME_OVERRIDE,
     BADGE_COLOR_LAYER, BADGE_COLOR_TAP, BADGE_COLOR_MOD, BADGE_COLOR_FW,
 )
 
@@ -230,6 +231,110 @@ class TestFirmwareKeycodeDisplay(unittest.TestCase):
         self.assertEqual(main, "MACRO(2)")
         self.assertEqual(badge, "")
         self.assertIsNone(color)
+
+
+
+class TestBuildKeycodeToName(unittest.TestCase):
+    """The inversion picks WHICH of a value's several names a tile shows.
+
+    Naive last-wins is right for the short aliases the tiles want, and wrong for the
+    one case where the later name is not a name for the key at all.
+    """
+
+    def test_a_KC_name_beats_a_non_KC_alias(self):
+        # XXXXXXX = KC_NO is declared later, so last-wins picked the literal.
+        self.assertEqual(build_keycode_to_name({"KC_NO": 0, "XXXXXXX": 0})[0], "KC_NO")
+
+    def test_declaration_order_does_not_matter(self):
+        self.assertEqual(build_keycode_to_name({"XXXXXXX": 0, "KC_NO": 0})[0], "KC_NO")
+
+    def test_the_LAST_KC_name_still_wins_so_short_aliases_survive(self):
+        # This is the property that makes tiles say ENT rather than ENTER; a rule of
+        # "first name wins" would read as a fix and regress 500+ keys.
+        got = build_keycode_to_name({"KC_ENTER": 0x28, "KC_ENT": 0x28})
+        self.assertEqual(got[0x28], "KC_ENT")
+
+    def test_a_value_with_no_KC_name_at_all_is_untouched(self):
+        # MS_UP / SH_TOGG / the RGB set only ever have QK_ and bare names.
+        got = build_keycode_to_name({"QK_MOUSE_CURSOR_UP": 0xCD, "MS_UP": 0xCD})
+        self.assertEqual(got[0xCD], "MS_UP")
+
+    def test_the_real_header_changes_exactly_one_value(self):
+        """Blast-radius guard: the header is the input this runs against in the app."""
+        from polyhost.gui.layout_dialog.qmk_keycode_helper import (
+            HEADER_FILE, parse_qmk_keycodes)
+        names = parse_qmk_keycodes(HEADER_FILE)
+        naive = {v: k for k, v in names.items()}
+        picked = build_keycode_to_name(names)
+        differing = {v for v in naive if naive[v] != picked[v]}
+        # The inversion rule itself moves ONE value; everything else that differs
+        # must be a deliberate composite label, never collateral.
+        self.assertEqual(differing, {0x0000} | set(DISPLAY_NAME_OVERRIDE))
+        self.assertEqual(picked[0x0000], "KC_NO")
+
+
+class TestModStackNaming(unittest.TestCase):
+    """A mod combo over KC_NO is Hyper/Meh, not 'the inner key is unassigned'."""
+
+    def test_hyper_and_meh(self):
+        self.assertEqual(mod_stack_name(MOD_CTRL | MOD_SHIFT | MOD_ALT | MOD_GUI), "Hyper")
+        self.assertEqual(mod_stack_name(MOD_CTRL | MOD_SHIFT | MOD_ALT), "Meh")
+
+    def test_a_right_hand_stack_is_NOT_called_hyper(self):
+        mods = MOD_CTRL | MOD_SHIFT | MOD_ALT | MOD_GUI | MOD_RIGHT
+        self.assertEqual(mod_stack_name(mods), "RCTL+RSFT+RALT+RGUI")
+
+    def test_an_unnamed_stack_falls_back_to_the_mod_string(self):
+        self.assertEqual(mod_stack_name(MOD_CTRL | MOD_SHIFT), "LCTL+LSFT")
+
+    def test_decompose_names_the_stack_instead_of_wrapping_the_inner_key(self):
+        self.assertEqual(decompose_keycode(0x0F00, KC), "Hyper")
+        self.assertEqual(decompose_keycode(0x0700, KC), "Meh")
+
+    def test_the_tile_says_hyper_and_keeps_the_mod_badge(self):
+        main, badge, color = describe_keycode(0x0F00, KC)
+        self.assertEqual(main, "Hyper")
+        self.assertEqual(badge, "\u2303\u21e7\u2325\u2318")
+        self.assertEqual(color, BADGE_COLOR_MOD)
+
+    def test_a_mod_combo_WITH_an_inner_key_is_unchanged(self):
+        self.assertEqual(decompose_keycode(0x0104, KC), "LCTL(A)")
+        self.assertEqual(describe_keycode(0x0104, KC)[0], "A")
+
+
+
+
+class TestDisplayNameOverride(unittest.TestCase):
+    """Values whose several names are DIFFERENT KEYS get a composite label.
+
+    QMK defines KC_BRMD = KC_SCROLL_LOCK and KC_BRMU = KC_PAUSE, so picking either
+    real name hides the other meaning; the editor states both instead.
+    """
+
+    def test_scroll_lock_and_pause_say_both_meanings(self):
+        got = build_keycode_to_name({"KC_SCROLL_LOCK": 0x47, "KC_SCRL": 0x47,
+                                     "KC_BRMD": 0x47, "KC_PAUSE": 0x48,
+                                     "KC_BRK": 0x48, "KC_BRMU": 0x48})
+        self.assertEqual(got[0x47], "KC_SCRL_BRMD")
+        self.assertEqual(got[0x48], "KC_PAUS_BRK_BRMU")
+
+    def test_the_label_becomes_a_multi_line_tile_caption(self):
+        # create_nice_name turns each underscore into a line break.
+        from polyhost.gui.layout_dialog.qmk_keycode_helper import create_nice_name
+        self.assertEqual(create_nice_name("KC_SCRL_BRMD"), "SCRL\nBRMD")
+
+    def test_an_override_for_a_value_the_header_lacks_is_ignored(self):
+        # Never invent a key: the override annotates a value that exists, it does
+        # not add one.
+        self.assertNotIn(0x47, build_keycode_to_name({"KC_A": 0x04}))
+
+    def test_overrides_are_display_only_and_not_real_keycode_names(self):
+        from polyhost.gui.layout_dialog.qmk_keycode_helper import (
+            HEADER_FILE, parse_qmk_keycodes)
+        names = parse_qmk_keycodes(HEADER_FILE)
+        for label in DISPLAY_NAME_OVERRIDE.values():
+            self.assertNotIn(label, names)
+
 
 
 if __name__ == "__main__":

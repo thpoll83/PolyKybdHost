@@ -9,7 +9,7 @@ from polyhost.gui.layout_dialog.keycode_browser_button import KeycodeBrowserButt
 from polyhost.gui.layout_dialog.keycode_composer import KeycodeComposer
 from polyhost.gui.layout_dialog.macro_tab import MacroTab
 from polyhost.gui.layout_dialog.qmk_keycode_helper import HEADER_FILE, parse_qmk_keycodes, categorize, create_nice_name, \
-    category_order, standard_category, last_key_in_standard_category
+    category_order, standard_category, last_key_in_standard_category, build_keycode_to_name
 
 
 class KeycodeBrowser(QWidget):
@@ -20,7 +20,7 @@ class KeycodeBrowser(QWidget):
         super().__init__()
 
         self.keycodes = parse_qmk_keycodes(HEADER_FILE)
-        self.codes_to_name = {self.keycodes[k]: k for k in self.keycodes}
+        self.codes_to_name = build_keycode_to_name(self.keycodes)
 
         tabs = QTabWidget()
         tabs.setTabPosition(QTabWidget.North)

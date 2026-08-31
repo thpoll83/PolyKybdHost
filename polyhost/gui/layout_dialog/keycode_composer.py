@@ -19,7 +19,8 @@ from polyhost.gui.layout_dialog.qmk_keycode_helper import (
     encode_mods, encode_layer_switch, encode_one_shot_mod,
     encode_mod_tap, encode_layer_tap, encode_modded, encode_layer_mod,
     encode_persistent_def_layer, encode_swap_hands_tap,
-    decode_for_composer, MOD_CTRL, MOD_SHIFT, MOD_ALT, MOD_GUI, MOD_RIGHT,
+    decode_for_composer, build_keycode_to_name,
+    MOD_CTRL, MOD_SHIFT, MOD_ALT, MOD_GUI, MOD_RIGHT,
 )
 
 # Behaviour definitions: key -> (label, needs_layer, needs_mods, needs_inner_key)
@@ -51,8 +52,14 @@ class KeycodeComposer(QWidget):
             ((name, kc) for name, kc in basic_keycodes.items() if 0x00 <= kc <= 0xFF),
             key=lambda nk: nk[1],
         )
-        # code -> name for verified previews of composed keycodes.
-        self._code_to_name = {kc: name for name, kc in self._basic}
+        # code -> name for verified previews of composed keycodes. This MUST go
+        # through build_keycode_to_name for the same reason keycode_browser does:
+        # a naive {kc: name} inversion is last-wins, so 0x00 resolves to XXXXXXX
+        # rather than KC_NO. MT() and LT() reach it with a zero inner key -- unlike
+        # the QK_MODS branch, which short-circuits to mod_stack_name() -- so the
+        # naive map previewed 40 composable keycodes as MT(LCTL,XXXXXXX) while the
+        # tile behind them said MT(LCTL,NO).
+        self._code_to_name = build_keycode_to_name(dict(self._basic))
         self._num_layers = max(1, num_layers)
 
         outer = QVBoxLayout(self)
@@ -149,7 +156,16 @@ class KeycodeComposer(QWidget):
             self.cb_alt.setChecked(bool(mods & MOD_ALT))
             self.cb_gui.setChecked(bool(mods & MOD_GUI))
             (self.rb_right if mods & MOD_RIGHT else self.rb_left).setChecked(True)
-            if inner:
+            # ⚠️ Honour a decoded inner key of ZERO. KC_NO is a legitimate inner
+            # key -- `Hyper` is LCTL|LSFT|LALT|LGUI over KC_NO, `Meh` is the same
+            # without GUI, and a bare `LCTL(KC_NO)` is a held modifier with no key
+            # -- so a truthiness test here silently left the combo on its KC_A
+            # default and Apply rewrote the key: 0x0F00 -> 0x0F04, i.e. loading a
+            # key and applying it unchanged wrote a DIFFERENT keycode to the
+            # device. Gate on whether the behaviour uses an inner key instead, so
+            # a layer behaviour (which decodes inner as 0 and ignores it) does not
+            # have its combo yanked to NO.
+            if next((b[4] for b in BEHAVIORS if b[0] == behavior), False):
                 inner_idx = self.inner_combo.findData(inner)
                 if inner_idx >= 0:
                     self.inner_combo.setCurrentIndex(inner_idx)
