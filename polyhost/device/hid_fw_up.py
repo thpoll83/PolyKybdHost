@@ -31,8 +31,13 @@ FW_SIG_LEN = 64
 
 FW_UP_CHUNK_SIZE  = 56
 FW_UP_VERSION_LEN = 16
-FW_UP_MAX_SIZE    = 0x1FF000      # ~2 MB hard limit (2 MB staging region minus the 4 KB header);
-                                  # must match FW_UP_MAX_SIZE in qmk .../base/fw_staging.h
+FW_UP_MAX_SIZE    = 0x1F7000      # ~2 MB hard limit: the staging region minus the 4 KB
+                                  # header AND the 32 KB self-apply progress log that sits
+                                  # at the top of it. Must match FW_UP_MAX_SIZE in qmk
+                                  # .../base/fw_staging.h, where a _Static_assert pins the
+                                  # image below the log -- an image that reached the log
+                                  # would have its source erased mid-apply, after the CRC
+                                  # had already verified it.
 
 # RP2040 memory map constants used for firmware validation
 _RP2040_BOOT2_SIZE  = 256
