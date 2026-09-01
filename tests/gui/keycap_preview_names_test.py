@@ -220,11 +220,17 @@ class LayerTagSourceTest(unittest.TestCase):
         "is it related to fontpacks", none of which points at the checkout.
         """
         self._fw()
-        with unittest.mock.patch.object(qh, "parse_layers_h", return_value=self.OLD):
-            # ⚠️ source="checkout" is REQUIRED now: with the shipped export present
-            # and current, an old checkout simply loses the version comparison and
-            # is never read -- which is the fix, not a gap. The drift warning is
-            # for the case where the checkout IS the source (no export shipped).
+        # ⚠️ BOTH mocks are required, and the second one is the whole reason this
+        # test broke once. source="checkout" makes the checkout the source at all.
+        # But the drift warning is deliberately SUPPRESSED for a checkout that won
+        # by being NEWER (a firmware developer's tree disagreeing with LAYER_TAGS is
+        # expected), and `authoritative` is computed from the AMBIENT checkout's
+        # FW_VERSION against the shipped export's. So this test's outcome tracked
+        # whichever branch ../qmk_firmware happened to be on: green all morning at
+        # 0.16.21, red the moment merges took it to 0.16.23 past the export. Pin the
+        # version too, or the test measures the environment instead of the contract.
+        with unittest.mock.patch.object(qh, "parse_layers_h", return_value=self.OLD), \
+             unittest.mock.patch.object(kp, "_checkout_version", return_value="0.0.1"):
             p = KeycapPreview(source="checkout")
             if not p._load():
                 self.skipTest(f"previews unavailable: {p.reason}")
