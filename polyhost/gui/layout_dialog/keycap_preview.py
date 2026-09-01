@@ -104,86 +104,12 @@ def parse_custom_keycodes(header: str) -> dict:
     return out
 
 
-_FUNC_MACRO_RE = re.compile(r"#define\s+(\w+)\(([^)]*)\)\s*((?:[^\n\\]|\\\n|\\)*)")
-
-
-def parse_function_macros(*texts: str) -> dict:
-    """Function-like `#define NAME(a, b) body` -> {name: (params, body)}.
-
-    The glyph loader in `oled_preview` handles only OBJECT-like macros, and says so:
-    "a macro this loader has not seen falls back to drawing its own IDENTIFIER". The
-    settings legends are built from function-like ones (`MID_TWO_LINE`,
-    `MID_WORD_OVER_ICON`, and `SETTING_LBL` which wraps them), so three keys rendered
-    the literal text `MID_T…`, `idle_s…`, `glyph…` instead of their legends.
-    """
-    out = {}
-    for text in texts:
-        for m in _FUNC_MACRO_RE.finditer(_strip_c_comments(text)):
-            params = [x.strip() for x in m.group(2).split(",") if x.strip()]
-            # ⚠️ Strip LINE CONTINUATIONS only. A blanket backslash strip also eats the
-            # escapes inside the literals -- `U"\\f\\f\\f"` became `U" f f f"` and the
-            # legend rendered the letter f four times over.
-            #
-            # ⚠️ ...and a C continuation is ONE backslash. This pattern asked for TWO
-            # (`\\\\` in a raw string), so it never matched and every multi-line legend
-            # macro kept a literal `\\` at the front -- which resolves to a real glyph, so
-            # the five settings keycaps drew a backslash before their label. It was
-            # invisible while those legends were refused for using HINT_MID.
-            body = re.sub(r"\\\s*\n\s*", " ", m.group(3)).strip()
-            if params and body:
-                out[m.group(1)] = (params, body)
-    return out
-
-
-def expand_function_macros(expr: str, macros: dict, depth: int = 6) -> str:
-    """Expand `SETTING_LBL("IDLE:", "Pulse")` down to its literals.
-
-    ⚠️ Bounded rather than recursive-until-stable: these nest (SETTING_LBL wraps
-    MID_TWO_LINE) but a macro that expanded to itself would otherwise hang the editor
-    while it painted a key.
-    """
-    for _ in range(depth):
-        m = _find_macro_call(expr, macros)
-        if m is None:
-            return expr
-        name, args, start, end = m
-        params, body = macros[name]
-        if len(args) != len(params):
-            return expr                      # arity mismatch: leave it alone
-        for param, arg in zip(params, args):
-            # `U##top` is a token paste: U + "RESET" -> U"RESET".
-            body = re.sub(r"U\s*##\s*\b" + re.escape(param) + r"\b", "U" + arg, body)
-            body = re.sub(r"\b" + re.escape(param) + r"\b", arg, body)
-        expr = expr[:start] + body + expr[end:]
-    return expr
-
-
-def _find_macro_call(expr: str, macros: dict):
-    """The first `NAME(...)` in `expr` whose NAME we know, with its split arguments."""
-    for m in re.finditer(r"\b(\w+)\s*\(", expr):
-        if m.group(1) not in macros:
-            continue
-        depth, i, args, cur = 0, m.end() - 1, [], ""
-        while i < len(expr):
-            ch = expr[i]
-            if ch == "(":
-                depth += 1
-                if depth == 1:
-                    i += 1
-                    continue
-            elif ch == ")":
-                depth -= 1
-                if depth == 0:
-                    args.append(cur.strip())
-                    return m.group(1), [a for a in args if a], m.start(), i + 1
-            elif ch == "," and depth == 1:
-                args.append(cur.strip())
-                cur = ""
-                i += 1
-                continue
-            cur += ch
-            i += 1
-    return None
+# ⚠️ `parse_function_macros` / `expand_function_macros` live in `oled_preview`, NOT
+# here. They expand the macros `named_glyphs.h` defines, so they belong beside the
+# glyph loader that reads that file -- and the loader needs them too, to resolve an
+# object macro whose body CALLS one (`ICON_CONTEXT_MENU` is
+# `U" " U"\x2630" HINT_MOVE(...) HINT_ROT(...)`). Two copies would be two things to
+# keep in step; this module reaches them through `self._op`.
 
 
 def _resolve_init(init: str, anchors: dict, seen: dict):
@@ -442,12 +368,12 @@ class KeycapPreview:
             **ld.parse_to_static_text_map(os.path.join(pk, "poly_keymap.c")),
             **ld.parse_static_text_map(os.path.join(pk, "keycode_helper.c")),
         }
-        macros = parse_function_macros(
+        macros = op.parse_function_macros(
             *(_read(pk, f) for f in ("lang/named_glyphs.h", "keycode_helper.h",
                                      "keycode_helper.c", "poly_keymap.c")))
         resolved = {}
         for token, expr in exprs.items():
-            expanded = expand_function_macros(expr, macros)
+            expanded = op.expand_function_macros(expr, macros)
             try:
                 cps = self._resolver.resolve(expanded)
                 # ⚠️ A macro this table has no glyphs for resolves to its own NAME as

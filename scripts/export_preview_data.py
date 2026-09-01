@@ -75,7 +75,7 @@ def build(pk: pathlib.Path) -> dict:
         **ld.parse_to_static_text_map(str(pk / "poly_keymap.c")),
         **ld.parse_static_text_map(str(pk / "keycode_helper.c")),
     }
-    macros = kp.parse_function_macros(*(
+    macros = op.parse_function_macros(*(
         kp._read(str(pk), f) for f in ("lang/named_glyphs.h", "keycode_helper.h",
                                        "keycode_helper.c", "poly_keymap.c")))
 
@@ -86,7 +86,7 @@ def build(pk: pathlib.Path) -> dict:
     resolver.named = named
     legends, unresolved = {}, []
     for token, expr in legends_src.items():
-        expanded = kp.expand_function_macros(expr, macros)
+        expanded = op.expand_function_macros(expr, macros)
         try:
             cps = resolver.resolve(expanded)
             # ⚠️ A macro with no glyphs resolves to its own NAME as text -- the

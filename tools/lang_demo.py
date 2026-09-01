@@ -608,8 +608,14 @@ def render_static_cps(R, cps) -> Image.Image:
     def sp(vx, vy):
         if 0 <= vx < OLED_W and 0 <= vy < OLED_H:
             px[vx, vy] = 255
+    def cp_(vx, vy):
+        # HINT_ERASE plots a HOLE, not ink -- an engaged lock badge punches its
+        # arrow back out of the solid fill, which is what makes it read as inverted
+        # rather than as a blob.
+        if 0 <= vx < OLED_W and 0 <= vy < OLED_H:
+            px[vx, vy] = 0
     if cps:
-        R.draw(sp, cps, BUFFER_X, BASELINE)
+        R.draw(sp, cps, BUFFER_X, BASELINE, clearpix=cp_)
     return img
 
 

@@ -1298,6 +1298,54 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       the moment they started rendering. Over-escaping a raw-string regex fails
       **silently**; the guard is now a unit test on the parser
       (`tests/gui/keycap_preview_macros_test.py`), not the eye.
+  - ⚠️ **The glyph loader kept only the FIRST literal of a multi-token `#define`,
+    and a TRUNCATED legend is worse than a missing one** (field, 2026-09-01). It
+    still renders, so it reads as correct-but-incomplete rather than as absent, and
+    nothing anywhere says a body was dropped. Three keycaps shipped that way:
+    `ICON_CONTEXT_MENU` collapsed to `U" "` — a SPACE — so the Context-menu key drew
+    a perfectly valid blank; `ICON_SCRLOCK_OFF/ON` to `U"Scr"`, so Scroll Lock drew
+    its letters with the lock badge gone; and `ICON_PAUSE_TEXT` to a bare cursor op,
+    which nobody had noticed. The six `HINT_POS_*` / `HINT_SZ_*` constants are
+    coordinate PAIRS and lost their y.
+    - **`load_named_glyphs` reads the whole body now** — continuations joined,
+      nested macros substituted, function-like `HINT_*()` calls expanded. The
+      expander (`parse_function_macros` / `expand_function_macros`) MOVED into
+      `oled_preview` for this: it expands the macros `named_glyphs.h` defines, so it
+      belongs beside the loader that reads that file, and the loader needs it to
+      resolve a body that calls one.
+    - ⚠️ **A `None` check cannot catch this class.** The truncated context-menu
+      legend resolved, drew, and produced a valid image — of nothing. The test
+      counts LIT PIXELS, and the scroll-lock one counts them to the right of the
+      text specifically, because "Scr" alone already clears any blank threshold.
+    - ⚠️ **`re.sub` reads a string replacement as a TEMPLATE**, so expanding an
+      argument carrying a C escape (`HINT_MOVE(HINT_POS_CTXPTR)` → `U"\x42" U"\x0C"`)
+      raised `bad escape \x` and took the entire glyph table down. Latent for as long
+      as this only expanded the settings labels ("IDLE:", "Pulse"). Use a replacement
+      FUNCTION.
+  - ✅ **MOVE / BADGE / ERASE / ROT are DRAWN now**, which is what makes those
+    keycaps render rather than merely be refused. Ported from
+    `kdisp_draw_badge_rect` + `rr_row_inset` + `kdisp_draw_glyph_rot_half_at`
+    (`base/disp_array.c`) and `kdisp_gfx_rot_half_extent` (`base/font_lookup.c`).
+    Four things that are load-bearing:
+    - **The badge is checked against FIRMWARE DATA, not against itself** — its
+      silhouette must equal the baked `ICON_CAPSLOCK_OFF` glyph, which is the claim
+      the firmware's own comment makes. That fixture is the C's, so a Bresenham arc
+      (which insets 1,0 where this must inset 2,1,0) fails in the suite rather than
+      as a keycap drawn slightly wrong.
+    - ⚠️ **ERASE must reach the TEXT paths too.** The glyph plotting went straight to
+      `setpix`, so `HINT_ERASE` covered only the composite ops and an engaged lock
+      badge drew its arrow LIT — a solid blob instead of an inverted badge. Everything
+      now goes through one `plot()`, mirroring `kdisp_plot_ink`; the C carries the
+      same scar in its own comment.
+    - ⚠️ **ROT rotates at FULL resolution and halves AFTERWARDS**, hence the 2×2 loop
+      inside the pixel loop. Halving first throws away the pixels the rotation needs
+      to rebuild an edge, and the arrowhead it exists for comes out visibly broken.
+      Screen y runs DOWN, so a visually counter-clockwise turn is a NEGATIVE angle —
+      the `(24 - step)` index. Getting that sign backwards mirrors the arrowhead,
+      which reads as a plausible glyph rather than as a bug.
+    - **`bbox` still skips them**, matching the firmware's own RELATIVE bbox form: a
+      MOVE names an absolute buffer position and BADGE/ROT plot at the cursor, so
+      none of it is knowable without the draw origin that form does not have.
   - ⚠️ **A legend whose MACRO the glyph table does not know draws the macro's own
     NAME as text, and two keycaps shipped that way** (2026-09-01): the mute key
     rendered the literal word `ICON_MUTE` and media-stop `ICON_MEDIA_STOP`. It is

@@ -167,7 +167,7 @@ class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
 
         named = op.load_named_glyphs(os.path.join(pk, "lang", "named_glyphs.h"))
         named.update(op.load_named_glyphs(os.path.join(pk, "keycode_helper.h")))
-        macros = kp.parse_function_macros(*(kp._read(pk, f) for f in (
+        macros = op.parse_function_macros(*(kp._read(pk, f) for f in (
             "lang/named_glyphs.h", "keycode_helper.h", "keycode_helper.c",
             "poly_keymap.c")))
         legends_c = {**ld.parse_to_static_text_map(os.path.join(pk, "poly_keymap.c")),
@@ -193,7 +193,7 @@ class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
                 continue
             checked += 1
             if draw(shipped, cps) != draw(
-                    checkout, resolver.resolve(kp.expand_function_macros(expr, macros))):
+                    checkout, resolver.resolve(op.expand_function_macros(expr, macros))):
                 differ.append(token)
         self.assertGreater(checked, 150, "the export lost most of its legends")
         self.assertEqual(differ, [], f"{len(differ)} legends draw differently")

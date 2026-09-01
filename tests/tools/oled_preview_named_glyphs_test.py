@@ -85,3 +85,61 @@ class UnresolvedMacroTest(unittest.TestCase):
         L = object.__new__(op.Lang)
         L.named, L.langs, L.grid = {}, ["en-US"], {(1, 2): value}
         return L
+
+
+@unittest.skipIf(TOOLS_ERR, TOOLS_ERR)
+class TruncatedBodyTest(unittest.TestCase):
+    """⚠️ The loader kept only the FIRST literal of a multi-token `#define`.
+
+    Worse than not matching at all: a truncated legend still renders, so it reads
+    as correct-but-incomplete rather than as missing, and nothing anywhere says a
+    body was dropped. Three keycaps shipped that way and two were reported from the
+    field (2026-09-01) — the Context-menu key drew NOTHING because
+    `ICON_CONTEXT_MENU` collapsed to `U" "`, and Scroll Lock drew "Scr" with its
+    lock badge gone. `ICON_PAUSE_TEXT` was truncated to a bare cursor op and nobody
+    had noticed yet.
+    """
+
+    def _named(self, text):
+        with tempfile.TemporaryDirectory() as tmp:
+            h = pathlib.Path(tmp) / "named_glyphs.h"
+            h.write_text(text, encoding="utf-8")
+            return op.load_named_glyphs(str(h))
+
+    def test_every_literal_of_a_body_survives_not_just_the_first(self):
+        n = self._named('#define A_TWO  U"\\x41" U"\\x42"\n')
+        self.assertEqual(n.get("A_TWO"), [0x41, 0x42])
+
+    def test_a_position_constant_keeps_BOTH_coordinates(self):
+        """⚠️ The quiet half of the same bug: six `HINT_POS_*` / `HINT_SZ_*`
+        constants are a coordinate PAIR, and truncation dropped the y. Anything
+        MOVE'ing by one would have landed at a wrong place rather than not at all."""
+        n = self._named('#define HINT_POS_X  U"\\x48" U"\\x06"\n')
+        self.assertEqual(n.get("HINT_POS_X"), [0x48, 0x06])
+
+    def test_a_line_continuation_does_not_end_the_body(self):
+        """Most of the interesting legends are multi-line, so a body that stopped
+        at the backslash would be truncated for exactly the macros that matter."""
+        n = self._named('#define B_ONE U"\\x41"\n'
+                        '#define A_SEQ  U"\\x42" \\\n'
+                        '               B_ONE\n')
+        self.assertEqual(n.get("A_SEQ"), [0x42, 0x41])
+
+    def test_a_function_like_call_inside_a_body_is_expanded(self):
+        """`ICON_CONTEXT_MENU` is literals + `HINT_MOVE(...)` + `HINT_ROT(...)`, so
+        a loader that could not expand a call could not resolve it at all."""
+        n = self._named('#define HINT_MOVE(p) U"\\x0E" p\n'
+                        '#define POS_A U"\\x42" U"\\x0C"\n'
+                        '#define ICON_X  U"\\x41" HINT_MOVE(POS_A)\n')
+        self.assertEqual(n.get("ICON_X"), [0x41, 0x0E, 0x42, 0x0C])
+
+    def test_an_argument_carrying_a_C_ESCAPE_does_not_crash_the_load(self):
+        """⚠️ `re.sub` reads a string replacement as a TEMPLATE, so expanding
+        `HINT_MOVE(HINT_POS_CTXPTR)` -> `U"\\x42" U"\\x0C"` raised `bad escape \\x`
+        and took the ENTIRE glyph table down with it. Harmless while this only
+        expanded the settings labels ("IDLE:", "Pulse"), which is why it surfaced
+        only when the glyph macros started coming through the same expander."""
+        n = self._named('#define M(p) U"\\x0E" p\n'
+                        '#define P U"\\x42" U"\\x0C"\n'
+                        '#define ICON_Y  M(P)\n')
+        self.assertEqual(n.get("ICON_Y"), [0x0E, 0x42, 0x0C])

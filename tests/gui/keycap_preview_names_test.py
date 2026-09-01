@@ -394,3 +394,49 @@ class DrawableFailsClosedTest(unittest.TestCase):
         everything is a preview feature that draws nothing."""
         p = self._preview(self._Clean())
         self.assertEqual(p._drawable({"KC_X": [65, 66]}), {"KC_X": [65, 66]})
+
+
+class ReportedKeycapsRenderTest(unittest.TestCase):
+    """The three keycaps the truncated glyph loader broke (field, 2026-09-01).
+
+    Two were reported — the Context-menu key drew NOTHING and Scroll Lock drew
+    "Scr" with its lock badge missing. Pause was broken the same way and nobody
+    had noticed. All three are pinned against the SHIPPED data, because that is
+    what an ordinary install draws from.
+    """
+
+    KEYS = (("KC_APP", 0x0065, "context menu"),
+            ("KC_SCROLL_LOCK", 0x0047, "scroll lock"),
+            ("KC_PAUSE", 0x0048, "pause"))
+
+    def _preview(self):
+        p = KeycapPreview(source="shipped")
+        if not p._load():
+            self.skipTest(f"no shipped preview data: {p.reason}")
+        return p
+
+    def test_each_one_draws_ink(self):
+        """⚠️ Ink, not just "an image came back". `ICON_CONTEXT_MENU` was truncated
+        to `U" "` — a SPACE — so it resolved, drew, and produced a perfectly valid
+        blank keycap. A None check would have passed throughout."""
+        p = self._preview()
+        for name, kc, label in self.KEYS:
+            with self.subTest(key=label):
+                img = p.render(kc, name)
+                self.assertIsNotNone(img, f"{label}: no preview at all")
+                lit = sum(1 for y in range(img.height()) for x in range(img.width())
+                          if img.pixel(x, y) & 0xFFFFFF != 0x080A0E)
+                self.assertGreater(lit, 20, f"{label}: only {lit} lit pixels")
+
+    def test_scroll_lock_draws_MORE_than_its_three_letters(self):
+        """The reported symptom exactly: "Scr" rendered and the badge did not. The
+        text alone is ~90px of ink, so a count that only just clears the blank
+        threshold above would still be the bug."""
+        p = self._preview()
+        img = p.render(0x0047, "KC_SCROLL_LOCK")
+        self.assertIsNotNone(img)
+        # the badge sits right of x=40 (HINT_POS_SCRBOX is x=72); "Scr" ends well
+        # before that, so ink out there IS the badge.
+        right = sum(1 for y in range(img.height()) for x in range(40, img.width())
+                    if img.pixel(x, y) & 0xFFFFFF != 0x080A0E)
+        self.assertGreater(right, 40, f"no badge beside the text ({right} px)")

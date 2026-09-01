@@ -1,11 +1,16 @@
-"""`keycap_preview`'s C-macro reader — the legend text before anything renders it.
+"""`oled_preview`'s C-macro reader — the legend text before anything renders it.
 
-Qt-free: only the parsing helpers are exercised, so this runs in the ordinary suite
-rather than needing a display.
+⚠️ These moved here from `tests/gui/` with the functions themselves: they expand the
+macros `named_glyphs.h` defines, so they belong beside the glyph loader that reads
+that file — which needs them too, to resolve an object macro whose body calls one.
 """
+import os
+import sys
 import unittest
 
-from polyhost.gui.layout_dialog.keycap_preview import (
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))), "tools"))
+from oled_preview import (                                       # noqa: E402
     expand_function_macros,
     parse_function_macros,
 )
