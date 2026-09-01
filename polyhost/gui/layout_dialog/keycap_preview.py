@@ -33,6 +33,7 @@ import sys
 from PyQt5.QtGui import QImage
 
 from polyhost.services import macro_label as ml
+from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
 from polyhost.services import runtime_legends as rl
 from polyhost.services.runtime_legends import RuntimeLegends
 from polyhost.gui.layout_dialog.lang_keycap_render import LangKeycapRenderer
@@ -248,6 +249,7 @@ class KeycapPreview:
         self._nano_R = None        # the 10px face the region tabs use
         self._flag = None          # the flag-keycap composer
         self._base_values = None   # keycode_helper.h enum, inverted
+        self._alt_names: dict = {}  # keycode -> every name the header gives it
         self._custom: dict = {}           # keycode -> PolyKybd's own name
         self._macros: dict = {}           # function-like legend macros
         self._layer_tags: dict = {}       # layer index -> enum tag, e.g. 5 -> "FL"
@@ -306,6 +308,11 @@ class KeycapPreview:
             # The derived aliases fold only ONTO a name we can draw (see
             # lang_demo.normalize_kc), so it needs both halves' key sets.
             self._known = set(self._static) | set(op.ROW)
+            # Every name the keycode header gives each value, from the SAME source
+            # the browser names tiles from -- so the two cannot drift apart.
+            self._alt_names = {}
+            for nm, val in qh.parse_qmk_keycodes(qh.HEADER_FILE).items():
+                self._alt_names.setdefault(val, []).append(nm)
             # The runtime layers -- emoji and language slots/tabs. Loaded here so a
             # failure disables only them: their legend is COMPUTED by the firmware,
             # so it is a separate prerequisite from the parsed display lists and must
@@ -398,9 +405,8 @@ class KeycapPreview:
     def render(self, keycode: int, name: str | None) -> QImage | None:
         """The keycap for `keycode`, whose keymap token is `name`, or None.
 
-        `name` comes from the browser's keycode->name mapping rather than being
-        derived here: that table is what the editor already labels tiles from, so a
-        keycode it cannot name is one the editor cannot preview either.
+        `name` is the browser's DISPLAY pick for this keycode. It is a starting
+        point, not the answer -- see `_resolve_name`.
         """
         if not self._load():
             return None
@@ -413,14 +419,9 @@ class KeycapPreview:
         img = self._runtime_image(keycode)
         if img is not None:
             return self._to_qimage(img)
-        name = name or self._custom.get(keycode) or self._layer_token(keycode)
-        if not name:
+        kc = self._resolve_name(keycode, name)
+        if kc is None:
             return None
-        kc = self._ld.normalize_kc(name, self._known)
-        if kc not in self._op.ROW and kc not in self._static:
-            alt = self._layer_token(keycode)
-            if alt:
-                kc = alt
         try:
             if kc in self._op.ROW:
                 if not self._lang_ok:
@@ -439,6 +440,40 @@ class KeycapPreview:
             self.log.debug("no preview for %s (%s: %s)", kc, type(e).__name__, e)
             return None
         return self._to_qimage(img)
+
+    def _resolve_name(self, keycode: int, name: str | None):
+        """The name to draw `keycode` by -- the first CANDIDATE we can draw, or None.
+
+        ⚠️ The browser's display pick is chosen to LABEL A TILE, not to index these
+        tables, and for three whole families it names something no table keys on --
+        so taking it and giving up left those keys blank while a perfectly good
+        legend sat under another of the keycode's own names:
+
+          * every PolyKybd custom keycode shows as `QK_KB_0`.. while
+            `keycode_helper.h` (and every legend) calls it `KC_LANG`, `KC_DMIN`, ...
+            -- 34 keys, the whole settings/brightness/layout set;
+          * `DISPLAY_NAME_OVERRIDE` invents `KC_SCRL_BRMD` and `KC_PAUS_BRK_BRMU` to
+            show both meanings of a dual-purpose key. Those are SYNTHETIC: they exist
+            in no header, so no alias table can ever contain them, and only the
+            keycode's other names (`KC_SCROLL_LOCK`, `KC_PAUSE`) resolve;
+          * a layer keycode is decoded rather than named, so it has no entry at all.
+
+        Every candidate is a name for the SAME keycode, so whichever one resolves
+        names that keycode's own legend -- there is no risk of borrowing another
+        key's. Order is most-specific first: the tile's own label, then the
+        firmware's name for it, then the header's remaining aliases, then the
+        decoded layer token.
+        """
+        for cand in (name,
+                     self._custom.get(keycode),
+                     *self._alt_names.get(keycode, ()),
+                     self._layer_token(keycode)):
+            if not cand:
+                continue
+            kc = self._ld.normalize_kc(cand, self._known)
+            if kc in self._known:
+                return kc
+        return None
 
     # -- the runtime layers -------------------------------------------------
 
