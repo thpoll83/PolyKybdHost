@@ -112,9 +112,16 @@ KC_ALIAS = {
 # hand-kept part -- the names this repo's own tables disagree with QMK about, plus
 # `XXXXXXX` -- while the bulk (`KC_MUTE = KC_AUDIO_MUTE`, `DE_Z KC_Y`, `RGB_M_SW`,
 # `QK_BOOT`, ...) is hundreds of entries that a second copy here could only go
-# stale against. Populated lazily by `load_qmk_aliases()`; empty until then, so a
-# caller with no firmware checkout degrades to the hand-kept table alone.
+# stale against. Populated by `load_qmk_aliases()`; empty until then, so a caller
+# with no firmware checkout degrades to the hand-kept table alone.
 _DERIVED_ALIAS: dict = {}
+
+# How far into a source file to look for its #include lines. They sit at the top of a
+# C file, so reading the whole tree (7.7 MB across keyboards/polykybd) to find them is
+# waste -- but the bound is MEASURED, not guessed: the deepest #include in the tree
+# today is at byte 4982, behind fontpack.h's explanatory header, so a 4 KB head would
+# already miss one. 32 KB keeps ~6x headroom over that and still reads a fraction.
+_INCLUDE_SCAN_BYTES = 32768
 
 
 def _parse_enum_aliases(text: str) -> dict:
@@ -152,7 +159,7 @@ def _included_keymap_extras(fw_polykybd: str) -> list:
             try:
                 with open(os.path.join(root, fn), encoding='utf-8',
                           errors='replace') as fh:
-                    text = fh.read()
+                    text = fh.read(_INCLUDE_SCAN_BYTES)
             except OSError:
                 continue
             names.update(re.findall(r'#include\s+"(?:.*/)?(keymap_[a-z_]+\.h)"', text))
@@ -160,9 +167,21 @@ def _included_keymap_extras(fw_polykybd: str) -> list:
 
 
 def load_qmk_aliases(qmk_root: str, fw_polykybd: str) -> dict:
-    """Populate (and return) the derived alias table. Idempotent."""
-    if _DERIVED_ALIAS:
-        return _DERIVED_ALIAS
+    """Re-read the derived alias table from `qmk_root` and return it.
+
+    ⚠️ It RE-READS on every call rather than returning an already-populated
+    process-global. Skipping the work when the map was filled looks like an obvious
+    cache, and it made this the ONE piece of preview state with a process lifetime:
+    a `KeycapPreview` is built per editor open (`KbLayoutDialog.__init__`) and
+    re-reads the legend maps, macros, fonts and runtime tables each time, so a
+    firmware checkout edited while the host runs would pair a fresh legend map with a
+    stale alias table. The inconsistency is worse than the staleness. Caught in
+    review of #207.
+
+    The early return was there for cost, and the cost was mismeasured: the include
+    scan read 7.7 MB and timed 1.6 s COLD, 0.02 s warm. Bounded to the head of each
+    file (above) it reads 0.5 MB, so there is nothing left worth caching.
+    """
     raw = {}
     kc = os.path.join(qmk_root, 'quantum', 'keycodes.h')
     if os.path.exists(kc):
@@ -179,6 +198,7 @@ def load_qmk_aliases(qmk_root: str, fw_polykybd: str) -> dict:
     # MIDDLE hop: the language LUT keys on `KC_LBRC`, so collapsing to the endpoint
     # walks straight past the answer. `normalize_kc` walks the chain against the
     # caller's own key set and stops at the first hop it can draw.
+    _DERIVED_ALIAS.clear()          # a re-read REPLACES: a stale entry must not survive
     _DERIVED_ALIAS.update(raw)
     return _DERIVED_ALIAS
 

@@ -179,6 +179,42 @@ class DerivedAliasTest(unittest.TestCase):
     def test_a_chain_reaching_nothing_renderable_is_left_alone(self):
         self.assertEqual(ld.normalize_kc("DE_UDIA", {"KC_NOPE"}), "DE_UDIA")
 
+    def test_a_second_load_re_reads_the_sources(self):
+        """⚠️ The derived table must NOT survive as a populated process-global.
+
+        A `KeycapPreview` is built per editor open and re-reads every other source it
+        uses, so an alias map that skipped the work when already filled was the one
+        piece of preview state with a process lifetime -- a checkout edited while the
+        host runs would pair a fresh legend map with a stale alias table. Caught in
+        review of #207; this fails against the early-return version.
+        """
+        qmk2 = os.path.join(self.tmp, "qmk2")
+        os.makedirs(os.path.join(qmk2, "quantum", "keymap_extras"))
+        _write(qmk2, os.path.join("quantum", "keycodes.h"), """
+            enum qk_keycode_defines {
+                KC_MUTE = KC_SOMETHING_ELSE,
+            };
+        """)
+        fw2 = os.path.join(self.tmp, "fw2")
+        os.makedirs(fw2)
+        _write(fw2, "poly_keymap.c", "\n")
+        again = ld.load_qmk_aliases(qmk2, fw2)
+        self.assertEqual(again["KC_MUTE"], "KC_SOMETHING_ELSE")
+        # and the previous checkout's entries are GONE, not merged over
+        self.assertNotIn("DE_SS", again)
+
+    def test_an_include_past_the_scan_bound_is_still_found(self):
+        """The bound is measured against the real tree (deepest #include at byte
+        4982), so a file with a long header comment must still be scanned."""
+        qmk = os.path.join(self.tmp, "qmk")
+        fw = os.path.join(self.tmp, "fw_deep")
+        os.makedirs(fw)
+        _write(fw, "poly_keymap.c",
+               "// pad\n" * 700 + '#include "quantum/keymap_extras/keymap_german.h"\n')
+        self.assertIn("keymap_german.h", ld._included_keymap_extras(fw))
+        ld._DERIVED_ALIAS.clear()
+        self.assertIn("DE_SS", ld.load_qmk_aliases(qmk, fw))
+
     def test_the_hand_kept_table_still_wins(self):
         # KC_ALIAS is the exception list precisely for names QMK answers differently.
         self.assertEqual(ld.normalize_kc("XXXXXXX", {"XXXXXXX", "KC_NO"}), "KC_NO")
