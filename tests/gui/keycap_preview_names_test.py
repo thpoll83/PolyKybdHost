@@ -3,7 +3,10 @@
 Qt-free in effect: the method touches only plain dicts, so the instance is built
 without `__init__` and its fields set directly. No firmware checkout is read.
 """
+import logging
+import tempfile
 import unittest
+import unittest.mock
 
 from polyhost.gui.layout_dialog.keycap_preview import KeycapPreview
 
@@ -103,7 +106,6 @@ class SourceInfoTest(unittest.TestCase):
     def test_a_checkout_with_no_git_still_names_the_path(self):
         """Best-effort by design: the PATH is the half that answers "whose copy is
         this", and it must survive a checkout git cannot describe."""
-        import tempfile
         d = tempfile.mkdtemp()
         p = object.__new__(KeycapPreview)
         p._loaded, p._ok, p._fw_dir = True, True, d
@@ -114,12 +116,10 @@ class SourceInfoTest(unittest.TestCase):
         still worth showing -- but a bare `pass` would hide the one thing that says
         why the commit line is missing, in the very method added to make a stale
         checkout diagnosable. Caught by CodeQL on #207."""
-        import logging
-        from unittest import mock
         p = object.__new__(KeycapPreview)
         p._loaded, p._ok, p._fw_dir = True, True, "/nowhere"
         p.log = logging.getLogger("test_source_info")
-        with mock.patch("subprocess.run", side_effect=OSError("no git")):
+        with unittest.mock.patch("subprocess.run", side_effect=OSError("no git")):
             with self.assertLogs(p.log, level="DEBUG") as caught:
                 self.assertEqual(p.source_info(), "/nowhere")
         self.assertTrue(any("no git" in m for m in caught.output), caught.output)
@@ -156,3 +156,37 @@ class LayerRangeTest(unittest.TestCase):
         p = self._p()
         p._layer_tags = {}
         self.assertIsNone(p._layer_token(0x5225))
+
+
+class LayerTagSourceTest(unittest.TestCase):
+    """Where the layer tags come from -- the firmware, not the committed yaml."""
+
+    # What res/layer_names.yaml said before it was last regenerated: the
+    # two-Fn-layer era, so index 5 is FL0 and everything above it is shifted.
+    STALE = {0: "L0", 1: "L1", 2: "L2", 3: "L3", 4: "L4", 5: "FL0", 6: "FL1",
+             7: "NL", 8: "UL", 9: "SL", 10: "LL", 11: "ADDLANG1", 12: "EMJ0",
+             13: "EMJ1"}
+
+    def test_a_stale_committed_map_is_overridden_by_the_firmware(self):
+        """⚠️ The bug this closes, reported from the field as "L5 is still missing".
+
+        layer_names.yaml is GENERATED and it rots. On a stale copy index 5 reads
+        `FL0`, so `_layer_token` builds `MO(_FL0)` -- no legend -- while the keyboard
+        draws "Fn" for that very key, because the firmware never reads the yaml. The
+        tags must match the spelling keycode_helper.c switches on, so they belong to
+        the same tree the legends came from.
+        """
+        p = KeycapPreview()
+        p.set_layer_tags(self.STALE)
+        if not p._load():
+            self.skipTest(f"no firmware checkout: {p.reason}")
+        self.assertEqual(p._layer_tags.get(5), "FL")
+        self.assertEqual(p._layer_token(0x5225), "MO(_FL)")
+
+    def test_set_layer_tags_forces_a_re_derive(self):
+        """It is called before the lazy load, so a load that had already happened
+        must not keep the tags it derived from a previous call."""
+        p = KeycapPreview()
+        p._loaded = True
+        p.set_layer_tags(self.STALE)
+        self.assertFalse(p._loaded)

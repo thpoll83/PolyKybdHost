@@ -10,6 +10,7 @@ Qt-free, and reads no firmware checkout: everything is a literal fixture.
 """
 import os
 import sys
+import tempfile
 import textwrap
 import unittest
 
@@ -62,7 +63,6 @@ class ToStaticTextMapTest(unittest.TestCase):
     '''
 
     def setUp(self):
-        import tempfile
         self.tmp = tempfile.mkdtemp()
         self.m = ld.parse_to_static_text_map(_write(self.tmp, "poly_keymap.c", self.FN))
 
@@ -113,7 +113,6 @@ class DerivedAliasTest(unittest.TestCase):
     """QMK's own alias tables, read rather than re-typed."""
 
     def setUp(self):
-        import tempfile
         self.tmp = tempfile.mkdtemp()
         ld._DERIVED_ALIAS.clear()
         qmk = os.path.join(self.tmp, "qmk")
