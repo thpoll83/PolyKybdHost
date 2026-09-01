@@ -250,6 +250,7 @@ class KeycapPreview:
         self._flag = None          # the flag-keycap composer
         self._base_values = None   # keycode_helper.h enum, inverted
         self._alt_names: dict = {}  # keycode -> every name the header gives it
+        self._fw_dir = ""          # the firmware checkout the legends came from
         self._custom: dict = {}           # keycode -> PolyKybd's own name
         self._macros: dict = {}           # function-like legend macros
         self._layer_tags: dict = {}       # layer index -> enum tag, e.g. 5 -> "FL"
@@ -328,6 +329,7 @@ class KeycapPreview:
             else:
                 self.log.debug("runtime-layer previews unavailable: %s",
                                self._runtime.reason)
+            self._fw_dir = pk
             self._op, self._ld = op, ld
             # Resolve-only view: same class, so the codepoint tokenising stays the ONE
             # implementation that mirrors the firmware's make_key -- but built without
@@ -363,6 +365,34 @@ class KeycapPreview:
         """Why a half is missing, for the tooltip. Empty when everything loaded."""
         self._load()
         return self._reason
+
+    def source_info(self) -> str:
+        """Which firmware checkout the legends came from, and at what commit.
+
+        ⚠️ Every glyph here is read from a firmware checkout beside this repo, and
+        NOTHING said which one or how old it was -- so a preview drawing legends the
+        keyboard has moved past is indistinguishable from a preview that is simply
+        wrong, and the only way to tell was to go and look at the checkout. That is
+        the same diagnosable-gap shape as a preview that cannot say why it is
+        unavailable: reported as "the brightness icons are the old ones" with no way
+        to tell whose copy was behind (2026-09-01).
+
+        Best-effort: a checkout with no git, or none at all, still returns the path.
+        """
+        if not self._load():
+            return ""
+        import subprocess
+        pk = self._fw_dir or ""
+        if not pk:
+            return ""
+        head = ""
+        try:
+            head = subprocess.run(
+                ["git", "-C", pk, "log", "-1", "--format=%h %cs %s"],
+                capture_output=True, text=True, timeout=5).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            pass
+        return f"{pk}\n{head}" if head else pk
 
     @property
     def languages(self) -> list:

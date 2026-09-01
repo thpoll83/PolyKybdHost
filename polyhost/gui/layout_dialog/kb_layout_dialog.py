@@ -248,6 +248,11 @@ class KbLayoutDialog(QMainWindow):
         why = self._preview.reason
         if why:
             tip += f"\n\nPartly unavailable — {why}"
+        # Name the checkout the legends came from. Without it, a preview drawing
+        # legends the keyboard has moved past looks the same as one that is wrong.
+        src = self._preview.source_info()
+        if src:
+            tip += f"\n\nLegends read from:\n{src}"
         self.keycap_toggle.setToolTip(tip)
         self.keycap_toggle.toggled.connect(self._on_keycap_toggle)
         return self.keycap_toggle

@@ -89,3 +89,21 @@ class ResolveNameTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SourceInfoTest(unittest.TestCase):
+    """Which checkout the legends came from -- the thing nothing used to say."""
+
+    def test_an_unloaded_preview_names_nothing(self):
+        p = object.__new__(KeycapPreview)
+        p._loaded, p._ok, p._fw_dir = True, False, ""
+        self.assertEqual(p.source_info(), "")
+
+    def test_a_checkout_with_no_git_still_names_the_path(self):
+        """Best-effort by design: the PATH is the half that answers "whose copy is
+        this", and it must survive a checkout git cannot describe."""
+        import tempfile
+        d = tempfile.mkdtemp()
+        p = object.__new__(KeycapPreview)
+        p._loaded, p._ok, p._fw_dir = True, True, d
+        self.assertEqual(p.source_info(), d)

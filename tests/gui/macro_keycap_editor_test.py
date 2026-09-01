@@ -385,6 +385,13 @@ class _DeadPreview:
     def render(self, keycode, name):
         return None
 
+    def source_info(self):
+        # No checkout to name. The docstring above is the whole point: this stub
+        # grew this method because the tooltip builder started calling it, and the
+        # missing attribute surfaced here as an AttributeError rather than as a
+        # machine with no previews.
+        return ""
+
 
 @unittest.skipIf(_IMPORT_ERR, f"PyQt5/offscreen unavailable: {_IMPORT_ERR}")
 class NoFontTest(unittest.TestCase):
