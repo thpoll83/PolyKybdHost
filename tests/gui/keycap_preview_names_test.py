@@ -28,6 +28,7 @@ def _preview(known, custom=None, alt_names=None, layer_tags=None, aliases=None):
     p._custom = custom or {}
     p._alt_names = alt_names or {}
     p._layer_tags = layer_tags or {}
+    p._ranges = None           # the layer ranges resolve lazily from the header
     p._ld = _Lang(aliases)
     return p
 
@@ -122,3 +123,36 @@ class SourceInfoTest(unittest.TestCase):
             with self.assertLogs(p.log, level="DEBUG") as caught:
                 self.assertEqual(p.source_info(), "/nowhere")
         self.assertTrue(any("no git" in m for m in caught.output), caught.output)
+
+
+class LayerRangeTest(unittest.TestCase):
+    """The layer-switch ranges, read from the header rather than hand-listed."""
+
+    def _p(self):
+        p = object.__new__(KeycapPreview)
+        p._ranges = None
+        p._layer_tags = {5: "FL"}
+        return p
+
+    def test_all_six_of_qmks_layer_switch_kinds_are_covered(self):
+        """⚠️ The bounds used to be four hand-listed pairs, and `DF` and `TT` were
+        simply absent -- `_layer_token` returned None for them, so no legend could
+        ever be found, silently and indistinguishably from "the firmware has none"."""
+        kinds = {k for _lo, _hi, k in self._p()._layer_ranges}
+        self.assertEqual(kinds, {"TO", "MO", "DF", "TG", "OSL", "TT"})
+
+    def test_each_range_decodes_its_own_layer(self):
+        p = self._p()
+        for lo, _hi, kind in p._layer_ranges:
+            self.assertEqual(p._layer_token(lo + 5), f"{kind}(_FL)")
+
+    def test_a_keycode_outside_every_range_is_not_a_layer_key(self):
+        self.assertIsNone(self._p()._layer_token(0x0004))
+
+    def test_an_untagged_layer_yields_no_token(self):
+        """The tag map comes from the firmware's own enum; without an entry there is
+        no token to look a legend up by, and inventing one would name a layer that
+        does not exist."""
+        p = self._p()
+        p._layer_tags = {}
+        self.assertIsNone(p._layer_token(0x5225))

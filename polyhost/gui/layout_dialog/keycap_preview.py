@@ -251,6 +251,7 @@ class KeycapPreview:
         self._base_values = None   # keycode_helper.h enum, inverted
         self._alt_names: dict = {}  # keycode -> every name the header gives it
         self._fw_dir = ""          # the firmware checkout the legends came from
+        self._ranges = None        # layer-switch ranges, read from the header
         self._custom: dict = {}           # keycode -> PolyKybd's own name
         self._macros: dict = {}           # function-like legend macros
         self._layer_tags: dict = {}       # layer index -> enum tag, e.g. 5 -> "FL"
@@ -424,13 +425,41 @@ class KeycapPreview:
         """
         self._layer_tags = {int(k): str(v).lstrip("_") for k, v in (tags or {}).items()}
 
-    # QMK's layer-keycode ranges, in the order keycode_helper.c spells them.
-    _LAYER_RANGES = ((0x5200, 0x521F, "TO"), (0x5220, 0x523F, "MO"),
-                     (0x5260, 0x527F, "TG"), (0x5280, 0x529F, "OSL"))
+    # The spelling `keycode_helper.c` uses for each of QMK's layer-switch ranges.
+    # ⚠️ The BOUNDS are not written here. They were, as four hand-listed pairs, and
+    # the list had gone stale in the way this repo keeps getting caught by: QMK has
+    # SIX layer-switch kinds and `DF` and `TT` were simply absent, so `_layer_token`
+    # returned None for them and no legend could ever be found -- silently, and
+    # indistinguishably from "the firmware has no legend for it". Only the NAMES are
+    # ours; the ranges come from the same header the browser decodes tiles with, so
+    # a seventh kind needs no edit here.
+    _LAYER_KINDS = (("QK_TO", "TO"), ("QK_MOMENTARY", "MO"), ("QK_DEF_LAYER", "DF"),
+                    ("QK_TOGGLE_LAYER", "TG"), ("QK_ONE_SHOT_LAYER", "OSL"),
+                    ("QK_LAYER_TAP_TOGGLE", "TT"))
+
+    @property
+    def _layer_ranges(self):
+        """`(lo, hi, kind)` per layer-switch range, read from the keycode header."""
+        if self._ranges is None:
+            # ⚠️ `qk_keycode_RANGES`, not the `qk_keycode_defines` the browser names
+            # tiles from. The ranges live in their own enum, and reading the wrong
+            # one returns an EMPTY range list -- which does not raise, it just makes
+            # every layer key un-previewable, exactly the bug this derivation is
+            # replacing. Caught by running it, not by reading it.
+            kc = qh.parse_qmk_keycode_header(qh.HEADER_FILE, "qk_keycode_ranges")
+            self._ranges = tuple(
+                (kc[sym], kc[sym + "_MAX"], kind)
+                for sym, kind in self._LAYER_KINDS
+                if sym in kc and sym + "_MAX" in kc)
+            if not self._ranges:
+                # An empty list is silent: no layer key would ever preview again.
+                self.log.warning("no layer-switch ranges in %s -- layer keys "
+                                 "will show their keycode", qh.HEADER_FILE)
+        return self._ranges
 
     def _layer_token(self, keycode: int):
         """`MO(_FL)` for a layer keycode, or None. Needs the tag map."""
-        for lo, hi, kind in self._LAYER_RANGES:
+        for lo, hi, kind in self._layer_ranges:
             if lo <= keycode <= hi:
                 tag = self._layer_tags.get(keycode - lo)
                 return f"{kind}(_{tag})" if tag else None
