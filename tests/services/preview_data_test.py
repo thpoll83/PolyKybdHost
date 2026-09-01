@@ -85,9 +85,25 @@ class ShippedDataTest(unittest.TestCase):
         self.assertEqual(idx, sorted(idx))
         self.assertGreater(len(self.d.fonts), 100)
 
-    def test_a_language_cell_reads_back(self):
+    def test_the_languages_are_all_there(self):
         self.assertIn("de-DE", self.d.langs)
-        self.assertEqual(len(self.d.cells("de-DE", "KC_Q") or []), 4)
+        self.assertGreater(len(self.d.langs), 100)
+
+    def test_the_lang_reader_is_the_REAL_Lang(self):
+        """⚠️ Not a shim. `render_key` reads letter cells AND setting cells (ints /
+        HIDE, on other rows) out of one grid; a shim that handled only the first
+        drew 628 of 686 sample keycaps wrong. Only the storage is replaced."""
+        import os
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))), "tools"))
+        try:
+            import oled_preview as op
+        except Exception as e:                       # pragma: no cover - env gate
+            self.skipTest(f"preview tools unavailable: {e}")
+        L = self.d.lang_reader()
+        self.assertIsInstance(L, op.Lang)
+        self.assertIn("de-DE", L.langs)
 
 
 class MissingDataTest(unittest.TestCase):
@@ -103,7 +119,8 @@ class MissingDataTest(unittest.TestCase):
         load and blank every keycap with no reason given."""
         with tempfile.TemporaryDirectory() as tmp:
             p = pathlib.Path(tmp)
-            for name in ("legends.json", "layers.json", "lang_lut.json"):
+            for name in ("legends.json", "layers.json", "lang_lut.json",
+                         "named_glyphs.json"):
                 (p / name).write_text(json.dumps({"fw_version": "0.0.1"}))
             d = PreviewData(tmp)
             self.assertFalse(d.load())
@@ -180,6 +197,53 @@ class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
                 differ.append(token)
         self.assertGreater(checked, 150, "the export lost most of its legends")
         self.assertEqual(differ, [], f"{len(differ)} legends draw differently")
+
+    def test_letter_keycaps_draw_the_same_pixels(self):
+        """The other half of the surface: the per-language letters, which are the
+        bulk of the working previews.
+
+        Sampled across scripts rather than exhaustive -- the full sweep is 15,680
+        keycaps over 160 languages and all of them match, but that belongs in a
+        one-off check, not in a suite that runs on every change.
+        """
+        import os
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))), "tools"))
+        try:
+            import oled_preview as op
+            from polyhost.services import macro_label as ml
+            from polyhost.services import macro_look as mkl
+        except Exception as e:                       # pragma: no cover - env gate
+            self.skipTest(f"preview tools unavailable: {e}")
+
+        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
+        if not os.path.exists(os.path.join(pk, "lang", "lang_lut.xlsx")):
+            self.skipTest("no firmware checkout beside this repo")
+
+        d = PreviewData()
+        self.assertTrue(d.load(), d.reason)
+        named = op.load_named_glyphs(os.path.join(pk, "lang", "named_glyphs.h"))
+        named.update(op.load_named_glyphs(os.path.join(pk, "keycode_helper.h")))
+        shipped = (d.lang_reader(),
+                   op.Renderer(d.fonts, mid_fonts=[d.ui_fonts[mkl.MID_FONT_SYMBOL]]))
+        checkout = (op.Lang(os.path.join(pk, "lang", "lang_lut.xlsx"), named),
+                    op.load_renderer(ml.default_font_dir()))
+
+        differ, checked = [], 0
+        # One per script family, plus the two the setting rows matter most for.
+        for lang in ("en-US", "de-DE", "fr-FR", "ru-RU", "el-GR", "ar-SA", "ja-JP"):
+            if lang not in shipped[0].langs:
+                continue
+            for kc in list(op.ROW)[:20]:
+                for shift in (False, True):
+                    checked += 1
+                    a = op.render_key(*shipped, lang, kc, shift=shift, caps=False)
+                    b = op.render_key(*checkout, lang, kc, shift=shift, caps=False)
+                    if list(a.getdata()) != list(b.getdata()):
+                        differ.append((lang, kc, shift))
+        self.assertGreater(checked, 100)
+        self.assertEqual(differ[:5], [], f"{len(differ)}/{checked} keycaps differ")
 
 
 if __name__ == "__main__":

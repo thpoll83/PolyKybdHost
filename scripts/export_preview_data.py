@@ -96,15 +96,17 @@ def build(pk: pathlib.Path) -> dict:
             unresolved.append(token)
 
     # The per-language letter table (the LUT), as the grid the renderer reads.
+    # ⚠️ The WHOLE grid, raw, plus the named-glyph table -- NOT a reimplementation.
+    # `render_key` reads two kinds of cell from it: letter cells (an implicit
+    # `U"..."` body carrying escapes and glyph macros) and SETTING cells on other
+    # rows entirely, which are integers or `HIDE` and control the shift/AltGr
+    # preview offsets. A shim that resolved the first kind and forgot the second
+    # rendered 628 of 686 sample keycaps differently from the firmware -- caught by
+    # drawing them, not by reading the code. Shipping the grid lets the host
+    # instantiate the REAL `Lang`, so every rule stays in one implementation.
     L = op.Lang(str(pk / "lang" / "lang_lut.xlsx"), named)
-    lut = {}
-    for i, lang in enumerate(L.langs):
-        cells = {kc: ["" if (c := L.cell(i, row, v)) is None else str(c)
-                      for v in range(4)]
-                 for kc, row in op.ROW.items()}
-        keep = {kc: v for kc, v in cells.items() if any(v)}
-        if keep:
-            lut[lang] = keep
+    grid = {f"{r},{c}": ("" if v is None else str(v)) for (r, c), v in L.grid.items()
+            if v is not None and str(v) != ""}
 
     # The RESIDENT fonts -- compiled into the firmware image, so they are in no
     # `.plyf` bundle and are the only glyphs the host does not already ship. Same
@@ -126,7 +128,9 @@ def build(pk: pathlib.Path) -> dict:
                         "tags": {str(k): v for k, v in
                                  qh.parse_layers_h(pk / "layers.h").items()}},
         "lang_lut.json": {"fw_version": version, "langs": list(L.langs),
-                          "cells": lut},
+                          "grid": grid},
+        "named_glyphs.json": {"fw_version": version,
+                              "named": {k: list(v) for k, v in named.items()}},
     }
 
 
@@ -211,7 +215,8 @@ def main() -> int:
                                  else {"indent": 1})) + "\n"
             blob = text.encode("utf-8")
             old = path.read_text(encoding="utf-8") if path.exists() else None
-            n = len(obj.get("legends") or obj.get("tags") or obj.get("cells") or {})
+            n = len(obj.get("legends") or obj.get("tags") or obj.get("grid")
+                    or obj.get("named") or {})
         same = old == (text if text is not None else blob)
         count = f"{n:>4} entries" if not isinstance(n, bytes) else "  resident"
         if args.check:

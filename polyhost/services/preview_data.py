@@ -70,7 +70,8 @@ class PreviewData:
         self.legends: dict[str, list[int]] = {}
         self.layer_tags: dict[int, str] = {}
         self.langs: list[str] = []
-        self._cells: dict[str, dict[str, list[str]]] = {}
+        self._grid: dict = {}      # (row, col) -> raw cell, as Lang holds it
+        self.named: dict = {}      # glyph macro -> codepoints
         self.fonts: list = []
         self.ui_fonts: dict = {}   # symbol name -> the standalone face
 
@@ -79,6 +80,7 @@ class PreviewData:
             legends = self._json("legends.json")
             layers = self._json("layers.json")
             lut = self._json("lang_lut.json")
+            names = self._json("named_glyphs.json")
         except Exception as e:
             self.reason = f"{type(e).__name__}: {e}"
             self.log.debug("no shipped preview data in %s (%s)", self.dir, self.reason)
@@ -88,7 +90,10 @@ class PreviewData:
         self.legends = {k: list(v) for k, v in legends.get("legends", {}).items()}
         self.layer_tags = {int(k): str(v) for k, v in layers.get("tags", {}).items()}
         self.langs = list(lut.get("langs", []))
-        self._cells = lut.get("cells", {})
+        self._grid = {(int(r), int(c)): v
+                      for key, v in (lut.get("grid") or {}).items()
+                      for r, c in (key.split(","),)}
+        self.named = {k: list(v) for k, v in (names.get("named") or {}).items()}
         try:
             self.fonts = self._fonts()
             self.ui_fonts = self._ui_fonts(legends.get("ui_fonts") or [])
@@ -101,9 +106,25 @@ class PreviewData:
             self.reason = "the shipped preview data is empty"
         return self.ok
 
-    def cells(self, lang: str, kc: str):
-        """The four variation columns for one key of one language, or None."""
-        return (self._cells.get(lang) or {}).get(kc)
+    def lang_reader(self):
+        """The REAL `oled_preview.Lang`, backed by the shipped grid. None if absent.
+
+        ⚠️ Built rather than reimplemented, and that is the point. `render_key()`
+        reads two unrelated kinds of cell out of this grid -- letter cells (an
+        implicit `U"..."` body carrying escapes and glyph macros) and SETTING cells
+        on entirely different rows, which are integers or `HIDE` and drive the
+        shift/AltGr preview offsets. A shim that handled the first and not the
+        second drew 628 of 686 sample keycaps differently from the firmware. Every
+        rule stays in one implementation; only the storage changes.
+        """
+        if not (self.langs and self._grid):
+            return None
+        import oled_preview as op          # the caller has already put tools/ on sys.path
+        L = object.__new__(op.Lang)
+        L.grid = dict(self._grid)
+        L.langs = list(self.langs)
+        L.named = dict(self.named)
+        return L
 
     # -- internals ----------------------------------------------------------
 

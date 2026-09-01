@@ -1,0 +1,6012 @@
+{
+ "fw_version": "0.16.20",
+ "named": {
+  "ACUTE_ACCENT": [
+   180
+  ],
+  "ARABIC_060C": [
+   1548
+  ],
+  "ARABIC_061B": [
+   1563
+  ],
+  "ARABIC_061F": [
+   1567
+  ],
+  "ARABIC_0621": [
+   1569
+  ],
+  "ARABIC_0622": [
+   1570
+  ],
+  "ARABIC_0623": [
+   1571
+  ],
+  "ARABIC_0624": [
+   1572
+  ],
+  "ARABIC_0625": [
+   1573
+  ],
+  "ARABIC_0626": [
+   1574
+  ],
+  "ARABIC_0627": [
+   1575
+  ],
+  "ARABIC_0628": [
+   1576
+  ],
+  "ARABIC_0629": [
+   1577
+  ],
+  "ARABIC_062A": [
+   1578
+  ],
+  "ARABIC_062B": [
+   1579
+  ],
+  "ARABIC_062C": [
+   1580
+  ],
+  "ARABIC_062D": [
+   1581
+  ],
+  "ARABIC_062E": [
+   1582
+  ],
+  "ARABIC_062F": [
+   1583
+  ],
+  "ARABIC_0630": [
+   1584
+  ],
+  "ARABIC_0631": [
+   1585
+  ],
+  "ARABIC_0632": [
+   1586
+  ],
+  "ARABIC_0633": [
+   1587
+  ],
+  "ARABIC_0634": [
+   1588
+  ],
+  "ARABIC_0635": [
+   1589
+  ],
+  "ARABIC_0636": [
+   1590
+  ],
+  "ARABIC_0637": [
+   1591
+  ],
+  "ARABIC_0638": [
+   1592
+  ],
+  "ARABIC_0639": [
+   1593
+  ],
+  "ARABIC_063A": [
+   1594
+  ],
+  "ARABIC_0640": [
+   1600
+  ],
+  "ARABIC_0641": [
+   1601
+  ],
+  "ARABIC_0642": [
+   1602
+  ],
+  "ARABIC_0643": [
+   1603
+  ],
+  "ARABIC_0644": [
+   1604
+  ],
+  "ARABIC_0645": [
+   1605
+  ],
+  "ARABIC_0646": [
+   1606
+  ],
+  "ARABIC_0648": [
+   1608
+  ],
+  "ARABIC_0649": [
+   1609
+  ],
+  "ARABIC_064A": [
+   1610
+  ],
+  "ARABIC_066A": [
+   1642
+  ],
+  "ARABIC_066B": [
+   1643
+  ],
+  "ARABIC_066C": [
+   1644
+  ],
+  "ARABIC_0671": [
+   1649
+  ],
+  "ARABIC_0679": [
+   1657
+  ],
+  "ARABIC_067C": [
+   1660
+  ],
+  "ARABIC_067E": [
+   1662
+  ],
+  "ARABIC_0681": [
+   1665
+  ],
+  "ARABIC_0685": [
+   1669
+  ],
+  "ARABIC_0686": [
+   1670
+  ],
+  "ARABIC_0688": [
+   1672
+  ],
+  "ARABIC_0689": [
+   1673
+  ],
+  "ARABIC_0691": [
+   1681
+  ],
+  "ARABIC_0693": [
+   1683
+  ],
+  "ARABIC_0696": [
+   1686
+  ],
+  "ARABIC_0698": [
+   1688
+  ],
+  "ARABIC_069A": [
+   1690
+  ],
+  "ARABIC_06A9": [
+   1705
+  ],
+  "ARABIC_06AB": [
+   1707
+  ],
+  "ARABIC_06AF": [
+   1711
+  ],
+  "ARABIC_06B7": [
+   1719
+  ],
+  "ARABIC_06BA": [
+   1722
+  ],
+  "ARABIC_06BC": [
+   1724
+  ],
+  "ARABIC_06C7": [
+   1735
+  ],
+  "ARABIC_06C9": [
+   1737
+  ],
+  "ARABIC_06CC": [
+   1740
+  ],
+  "ARABIC_06CD": [
+   1741
+  ],
+  "ARABIC_06D0": [
+   1744
+  ],
+  "ARABIC_06D2": [
+   1746
+  ],
+  "ARABIC_06F0": [
+   1776
+  ],
+  "ARABIC_06F1": [
+   1777
+  ],
+  "ARABIC_06F2": [
+   1778
+  ],
+  "ARABIC_06F3": [
+   1779
+  ],
+  "ARABIC_06F4": [
+   1780
+  ],
+  "ARABIC_06F5": [
+   1781
+  ],
+  "ARABIC_06F6": [
+   1782
+  ],
+  "ARABIC_06F7": [
+   1783
+  ],
+  "ARABIC_06F8": [
+   1784
+  ],
+  "ARABIC_06F9": [
+   1785
+  ],
+  "ARABIC_AE": [
+   1749
+  ],
+  "ARABIC_AIN": [
+   1593
+  ],
+  "ARABIC_ALEF": [
+   1575
+  ],
+  "ARABIC_ALEF_HAMZA_A": [
+   1571
+  ],
+  "ARABIC_ALEF_HAMZA_B": [
+   1573
+  ],
+  "ARABIC_ALEF_MADDA_A": [
+   1570
+  ],
+  "ARABIC_ALEF_MAKSURA": [
+   1609
+  ],
+  "ARABIC_BEH": [
+   1576
+  ],
+  "ARABIC_COMMA": [
+   1548
+  ],
+  "ARABIC_DAD": [
+   1590
+  ],
+  "ARABIC_DAL": [
+   1583
+  ],
+  "ARABIC_DAMMA": [
+   1615
+  ],
+  "ARABIC_DAMMATAN": [
+   1612
+  ],
+  "ARABIC_DDAL": [
+   1672
+  ],
+  "ARABIC_EXT_INDIC_0": [
+   1776
+  ],
+  "ARABIC_EXT_INDIC_1": [
+   1777
+  ],
+  "ARABIC_EXT_INDIC_2": [
+   1778
+  ],
+  "ARABIC_EXT_INDIC_3": [
+   1779
+  ],
+  "ARABIC_EXT_INDIC_4": [
+   1780
+  ],
+  "ARABIC_EXT_INDIC_5": [
+   1781
+  ],
+  "ARABIC_EXT_INDIC_6": [
+   1782
+  ],
+  "ARABIC_EXT_INDIC_7": [
+   1783
+  ],
+  "ARABIC_EXT_INDIC_8": [
+   1784
+  ],
+  "ARABIC_EXT_INDIC_9": [
+   1785
+  ],
+  "ARABIC_FARSI_YEH": [
+   1740
+  ],
+  "ARABIC_FARSI_YEH_2D_A": [
+   1598
+  ],
+  "ARABIC_FARSI_YEH_3D_A": [
+   1599
+  ],
+  "ARABIC_FARSI_YEH_INV_V": [
+   1597
+  ],
+  "ARABIC_FATHA": [
+   1614
+  ],
+  "ARABIC_FATHATAN": [
+   1611
+  ],
+  "ARABIC_FEH": [
+   1601
+  ],
+  "ARABIC_FULL_STOP": [
+   1748
+  ],
+  "ARABIC_GAF": [
+   1711
+  ],
+  "ARABIC_GHAIN": [
+   1594
+  ],
+  "ARABIC_HAH": [
+   1581
+  ],
+  "ARABIC_HAMZA": [
+   1569
+  ],
+  "ARABIC_HEH": [
+   1607
+  ],
+  "ARABIC_HEH_DOACHASHMEE": [
+   1726
+  ],
+  "ARABIC_HEH_GOAL": [
+   1729
+  ],
+  "ARABIC_HEH_GOAL_HAMZA": [
+   1730
+  ],
+  "ARABIC_INDIC_0": [
+   1632
+  ],
+  "ARABIC_INDIC_1": [
+   1633
+  ],
+  "ARABIC_INDIC_2": [
+   1634
+  ],
+  "ARABIC_INDIC_3": [
+   1635
+  ],
+  "ARABIC_INDIC_4": [
+   1636
+  ],
+  "ARABIC_INDIC_5": [
+   1637
+  ],
+  "ARABIC_INDIC_6": [
+   1638
+  ],
+  "ARABIC_INDIC_7": [
+   1639
+  ],
+  "ARABIC_INDIC_8": [
+   1640
+  ],
+  "ARABIC_INDIC_9": [
+   1641
+  ],
+  "ARABIC_JEEM": [
+   1580
+  ],
+  "ARABIC_JEH": [
+   1688
+  ],
+  "ARABIC_KAF": [
+   1603
+  ],
+  "ARABIC_KASHMIRI_YEH": [
+   1568
+  ],
+  "ARABIC_KASRA": [
+   1616
+  ],
+  "ARABIC_KASRATAN": [
+   1613
+  ],
+  "ARABIC_KEHEH": [
+   1705
+  ],
+  "ARABIC_KEHEH_2D_A": [
+   1595
+  ],
+  "ARABIC_KEHEH_3D_B": [
+   1596
+  ],
+  "ARABIC_KHAH": [
+   1582
+  ],
+  "ARABIC_LAM": [
+   1604
+  ],
+  "ARABIC_LAM_ALEF": [
+   65275
+  ],
+  "ARABIC_LAM_ALEF_MADDA": [
+   65269
+  ],
+  "ARABIC_LAM_V": [
+   1717
+  ],
+  "ARABIC_MEEM": [
+   1605
+  ],
+  "ARABIC_NOON": [
+   1606
+  ],
+  "ARABIC_NOON_GHUNNA": [
+   1722
+  ],
+  "ARABIC_OE": [
+   1734
+  ],
+  "ARABIC_PEH": [
+   1662
+  ],
+  "ARABIC_QAF": [
+   1602
+  ],
+  "ARABIC_QMARK": [
+   1567
+  ],
+  "ARABIC_REH": [
+   1585
+  ],
+  "ARABIC_REH_V": [
+   1685
+  ],
+  "ARABIC_RREH": [
+   1681
+  ],
+  "ARABIC_SAD": [
+   1589
+  ],
+  "ARABIC_SEEN": [
+   1587
+  ],
+  "ARABIC_SEMICOLON": [
+   1563
+  ],
+  "ARABIC_SHADDA": [
+   1617
+  ],
+  "ARABIC_SHEEN": [
+   1588
+  ],
+  "ARABIC_SUKUN": [
+   1618
+  ],
+  "ARABIC_TAH": [
+   1591
+  ],
+  "ARABIC_TATWEEL": [
+   1600
+  ],
+  "ARABIC_TCHEH": [
+   1670
+  ],
+  "ARABIC_TEH": [
+   1578
+  ],
+  "ARABIC_TEH_MARBUTA": [
+   1577
+  ],
+  "ARABIC_TEH_MARBUTA_GOAL": [
+   1731
+  ],
+  "ARABIC_THAL": [
+   1584
+  ],
+  "ARABIC_THEH": [
+   1579
+  ],
+  "ARABIC_TTEH": [
+   1657
+  ],
+  "ARABIC_VEH": [
+   1700
+  ],
+  "ARABIC_WAW": [
+   1608
+  ],
+  "ARABIC_WAW_HAMZA_A": [
+   1572
+  ],
+  "ARABIC_YEH": [
+   1610
+  ],
+  "ARABIC_YEH_BARREE": [
+   1746
+  ],
+  "ARABIC_YEH_BARREE_HAMZA": [
+   1747
+  ],
+  "ARABIC_YEH_HAMZA_A": [
+   1574
+  ],
+  "ARABIC_YEH_V": [
+   1742
+  ],
+  "ARABIC_ZAH": [
+   1592
+  ],
+  "ARABIC_ZAIN": [
+   1586
+  ],
+  "ARMENIAN_0531": [
+   1329
+  ],
+  "ARMENIAN_0532": [
+   1330
+  ],
+  "ARMENIAN_0533": [
+   1331
+  ],
+  "ARMENIAN_0534": [
+   1332
+  ],
+  "ARMENIAN_0535": [
+   1333
+  ],
+  "ARMENIAN_0536": [
+   1334
+  ],
+  "ARMENIAN_0537": [
+   1335
+  ],
+  "ARMENIAN_0538": [
+   1336
+  ],
+  "ARMENIAN_0539": [
+   1337
+  ],
+  "ARMENIAN_053A": [
+   1338
+  ],
+  "ARMENIAN_053B": [
+   1339
+  ],
+  "ARMENIAN_053C": [
+   1340
+  ],
+  "ARMENIAN_053D": [
+   1341
+  ],
+  "ARMENIAN_053E": [
+   1342
+  ],
+  "ARMENIAN_053F": [
+   1343
+  ],
+  "ARMENIAN_0540": [
+   1344
+  ],
+  "ARMENIAN_0541": [
+   1345
+  ],
+  "ARMENIAN_0542": [
+   1346
+  ],
+  "ARMENIAN_0543": [
+   1347
+  ],
+  "ARMENIAN_0544": [
+   1348
+  ],
+  "ARMENIAN_0545": [
+   1349
+  ],
+  "ARMENIAN_0546": [
+   1350
+  ],
+  "ARMENIAN_0547": [
+   1351
+  ],
+  "ARMENIAN_0548": [
+   1352
+  ],
+  "ARMENIAN_0549": [
+   1353
+  ],
+  "ARMENIAN_054A": [
+   1354
+  ],
+  "ARMENIAN_054B": [
+   1355
+  ],
+  "ARMENIAN_054C": [
+   1356
+  ],
+  "ARMENIAN_054D": [
+   1357
+  ],
+  "ARMENIAN_054E": [
+   1358
+  ],
+  "ARMENIAN_054F": [
+   1359
+  ],
+  "ARMENIAN_0550": [
+   1360
+  ],
+  "ARMENIAN_0551": [
+   1361
+  ],
+  "ARMENIAN_0552": [
+   1362
+  ],
+  "ARMENIAN_0553": [
+   1363
+  ],
+  "ARMENIAN_0554": [
+   1364
+  ],
+  "ARMENIAN_0555": [
+   1365
+  ],
+  "ARMENIAN_0556": [
+   1366
+  ],
+  "ARMENIAN_055A": [
+   1370
+  ],
+  "ARMENIAN_055B": [
+   1371
+  ],
+  "ARMENIAN_055C": [
+   1372
+  ],
+  "ARMENIAN_055D": [
+   1373
+  ],
+  "ARMENIAN_055E": [
+   1374
+  ],
+  "ARMENIAN_0561": [
+   1377
+  ],
+  "ARMENIAN_0562": [
+   1378
+  ],
+  "ARMENIAN_0563": [
+   1379
+  ],
+  "ARMENIAN_0564": [
+   1380
+  ],
+  "ARMENIAN_0565": [
+   1381
+  ],
+  "ARMENIAN_0566": [
+   1382
+  ],
+  "ARMENIAN_0567": [
+   1383
+  ],
+  "ARMENIAN_0568": [
+   1384
+  ],
+  "ARMENIAN_0569": [
+   1385
+  ],
+  "ARMENIAN_056A": [
+   1386
+  ],
+  "ARMENIAN_056B": [
+   1387
+  ],
+  "ARMENIAN_056C": [
+   1388
+  ],
+  "ARMENIAN_056D": [
+   1389
+  ],
+  "ARMENIAN_056E": [
+   1390
+  ],
+  "ARMENIAN_056F": [
+   1391
+  ],
+  "ARMENIAN_0570": [
+   1392
+  ],
+  "ARMENIAN_0571": [
+   1393
+  ],
+  "ARMENIAN_0572": [
+   1394
+  ],
+  "ARMENIAN_0573": [
+   1395
+  ],
+  "ARMENIAN_0574": [
+   1396
+  ],
+  "ARMENIAN_0575": [
+   1397
+  ],
+  "ARMENIAN_0576": [
+   1398
+  ],
+  "ARMENIAN_0577": [
+   1399
+  ],
+  "ARMENIAN_0578": [
+   1400
+  ],
+  "ARMENIAN_0579": [
+   1401
+  ],
+  "ARMENIAN_057A": [
+   1402
+  ],
+  "ARMENIAN_057B": [
+   1403
+  ],
+  "ARMENIAN_057C": [
+   1404
+  ],
+  "ARMENIAN_057D": [
+   1405
+  ],
+  "ARMENIAN_057E": [
+   1406
+  ],
+  "ARMENIAN_057F": [
+   1407
+  ],
+  "ARMENIAN_0580": [
+   1408
+  ],
+  "ARMENIAN_0581": [
+   1409
+  ],
+  "ARMENIAN_0582": [
+   1410
+  ],
+  "ARMENIAN_0583": [
+   1411
+  ],
+  "ARMENIAN_0584": [
+   1412
+  ],
+  "ARMENIAN_0585": [
+   1413
+  ],
+  "ARMENIAN_0586": [
+   1414
+  ],
+  "ARMENIAN_0587": [
+   1415
+  ],
+  "ARMENIAN_0589": [
+   1417
+  ],
+  "ARMENIAN_058A": [
+   1418
+  ],
+  "ARMENIAN_2014": [
+   8212
+  ],
+  "ARMENIAN_2024": [
+   8228
+  ],
+  "ARMENIAN_2026": [
+   8230
+  ],
+  "ARROWS_CIRCLE": [
+   11119
+  ],
+  "ARROWS_DOWNSTOP": [
+   11123
+  ],
+  "ARROWS_LEFTSTOP": [
+   11120
+  ],
+  "ARROWS_REDO": [
+   11150
+  ],
+  "ARROWS_RETURN": [
+   11168
+  ],
+  "ARROWS_RIGHTSTOP": [
+   11122
+  ],
+  "ARROWS_TAB": [
+   11134
+  ],
+  "ARROWS_UNDO": [
+   11148
+  ],
+  "ARROWS_UPSTOP": [
+   11121
+  ],
+  "A_WITH_ACUTE": [
+   193
+  ],
+  "A_WITH_ACUTE_SMALL": [
+   225
+  ],
+  "A_WITH_GRAVE": [
+   192
+  ],
+  "A_WITH_GRAVE_SMALL": [
+   224
+  ],
+  "BACKSLASH": [
+   92
+  ],
+  "BADGE_OFF": [
+   1
+  ],
+  "BADGE_ON": [
+   2
+  ],
+  "BENGALI_0985": [
+   2437
+  ],
+  "BENGALI_0986": [
+   2438
+  ],
+  "BENGALI_0987": [
+   2439
+  ],
+  "BENGALI_0988": [
+   2440
+  ],
+  "BENGALI_0989": [
+   2441
+  ],
+  "BENGALI_098A": [
+   2442
+  ],
+  "BENGALI_098B": [
+   2443
+  ],
+  "BENGALI_098F": [
+   2447
+  ],
+  "BENGALI_0990": [
+   2448
+  ],
+  "BENGALI_0993": [
+   2451
+  ],
+  "BENGALI_0994": [
+   2452
+  ],
+  "BENGALI_0995": [
+   2453
+  ],
+  "BENGALI_0996": [
+   2454
+  ],
+  "BENGALI_0997": [
+   2455
+  ],
+  "BENGALI_0998": [
+   2456
+  ],
+  "BENGALI_0999": [
+   2457
+  ],
+  "BENGALI_099A": [
+   2458
+  ],
+  "BENGALI_099B": [
+   2459
+  ],
+  "BENGALI_099C": [
+   2460
+  ],
+  "BENGALI_099D": [
+   2461
+  ],
+  "BENGALI_099E": [
+   2462
+  ],
+  "BENGALI_099F": [
+   2463
+  ],
+  "BENGALI_09A0": [
+   2464
+  ],
+  "BENGALI_09A1": [
+   2465
+  ],
+  "BENGALI_09A2": [
+   2466
+  ],
+  "BENGALI_09A3": [
+   2467
+  ],
+  "BENGALI_09A4": [
+   2468
+  ],
+  "BENGALI_09A5": [
+   2469
+  ],
+  "BENGALI_09A6": [
+   2470
+  ],
+  "BENGALI_09A7": [
+   2471
+  ],
+  "BENGALI_09A8": [
+   2472
+  ],
+  "BENGALI_09AA": [
+   2474
+  ],
+  "BENGALI_09AB": [
+   2475
+  ],
+  "BENGALI_09AC": [
+   2476
+  ],
+  "BENGALI_09AD": [
+   2477
+  ],
+  "BENGALI_09AE": [
+   2478
+  ],
+  "BENGALI_09AF": [
+   2479
+  ],
+  "BENGALI_09B0": [
+   2480
+  ],
+  "BENGALI_09B2": [
+   2482
+  ],
+  "BENGALI_09B6": [
+   2486
+  ],
+  "BENGALI_09B7": [
+   2487
+  ],
+  "BENGALI_09B8": [
+   2488
+  ],
+  "BENGALI_09B9": [
+   2489
+  ],
+  "BENGALI_09BD": [
+   2493
+  ],
+  "BENGALI_09CE": [
+   2510
+  ],
+  "BENGALI_09DF": [
+   2527
+  ],
+  "BENGALI_09E6": [
+   2534
+  ],
+  "BENGALI_09E7": [
+   2535
+  ],
+  "BENGALI_09E8": [
+   2536
+  ],
+  "BENGALI_09E9": [
+   2537
+  ],
+  "BENGALI_09EA": [
+   2538
+  ],
+  "BENGALI_09EB": [
+   2539
+  ],
+  "BENGALI_09EC": [
+   2540
+  ],
+  "BENGALI_09ED": [
+   2541
+  ],
+  "BENGALI_09EE": [
+   2542
+  ],
+  "BENGALI_09EF": [
+   2543
+  ],
+  "BENGALI_09F3": [
+   2547
+  ],
+  "BENG_DC_0981": [
+   57632
+  ],
+  "BENG_DC_0982": [
+   57633
+  ],
+  "BENG_DC_0983": [
+   57634
+  ],
+  "BENG_DC_09BC": [
+   57635
+  ],
+  "BENG_DC_09BE": [
+   57636
+  ],
+  "BENG_DC_09BF": [
+   57637
+  ],
+  "BENG_DC_09C0": [
+   57638
+  ],
+  "BENG_DC_09C1": [
+   57639
+  ],
+  "BENG_DC_09C2": [
+   57640
+  ],
+  "BENG_DC_09C3": [
+   57641
+  ],
+  "BENG_DC_09C7": [
+   57642
+  ],
+  "BENG_DC_09C8": [
+   57643
+  ],
+  "BENG_DC_09CB": [
+   57644
+  ],
+  "BENG_DC_09CC": [
+   57645
+  ],
+  "BENG_DC_09CD": [
+   57646
+  ],
+  "BLACK_RECTANGLE": [
+   9644
+  ],
+  "BOX_WITH_CHECK_MARK": [
+   9745
+  ],
+  "BROKEN_BAR": [
+   166
+  ],
+  "CAPITAL_SZ": [
+   7838
+  ],
+  "CEDILLA": [
+   184
+  ],
+  "CENT_SIGN": [
+   162
+  ],
+  "CHEROKEE_13A0": [
+   5024
+  ],
+  "CHEROKEE_13A1": [
+   5025
+  ],
+  "CHEROKEE_13A2": [
+   5026
+  ],
+  "CHEROKEE_13A3": [
+   5027
+  ],
+  "CHEROKEE_13A4": [
+   5028
+  ],
+  "CHEROKEE_13A5": [
+   5029
+  ],
+  "CHEROKEE_13A6": [
+   5030
+  ],
+  "CHEROKEE_13A7": [
+   5031
+  ],
+  "CHEROKEE_13A8": [
+   5032
+  ],
+  "CHEROKEE_13A9": [
+   5033
+  ],
+  "CHEROKEE_13AA": [
+   5034
+  ],
+  "CHEROKEE_13AB": [
+   5035
+  ],
+  "CHEROKEE_13AC": [
+   5036
+  ],
+  "CHEROKEE_13AD": [
+   5037
+  ],
+  "CHEROKEE_13AE": [
+   5038
+  ],
+  "CHEROKEE_13AF": [
+   5039
+  ],
+  "CHEROKEE_13B0": [
+   5040
+  ],
+  "CHEROKEE_13B1": [
+   5041
+  ],
+  "CHEROKEE_13B2": [
+   5042
+  ],
+  "CHEROKEE_13B3": [
+   5043
+  ],
+  "CHEROKEE_13B4": [
+   5044
+  ],
+  "CHEROKEE_13B5": [
+   5045
+  ],
+  "CHEROKEE_13B6": [
+   5046
+  ],
+  "CHEROKEE_13B7": [
+   5047
+  ],
+  "CHEROKEE_13B8": [
+   5048
+  ],
+  "CHEROKEE_13B9": [
+   5049
+  ],
+  "CHEROKEE_13BA": [
+   5050
+  ],
+  "CHEROKEE_13BB": [
+   5051
+  ],
+  "CHEROKEE_13BC": [
+   5052
+  ],
+  "CHEROKEE_13BD": [
+   5053
+  ],
+  "CHEROKEE_13BE": [
+   5054
+  ],
+  "CHEROKEE_13BF": [
+   5055
+  ],
+  "CHEROKEE_13C0": [
+   5056
+  ],
+  "CHEROKEE_13C1": [
+   5057
+  ],
+  "CHEROKEE_13C2": [
+   5058
+  ],
+  "CHEROKEE_13C3": [
+   5059
+  ],
+  "CHEROKEE_13C4": [
+   5060
+  ],
+  "CHEROKEE_13C5": [
+   5061
+  ],
+  "CHEROKEE_13C6": [
+   5062
+  ],
+  "CHEROKEE_13C7": [
+   5063
+  ],
+  "CHEROKEE_13C8": [
+   5064
+  ],
+  "CHEROKEE_13C9": [
+   5065
+  ],
+  "CHEROKEE_13CA": [
+   5066
+  ],
+  "CHEROKEE_13CB": [
+   5067
+  ],
+  "CHEROKEE_13CC": [
+   5068
+  ],
+  "CHEROKEE_13CD": [
+   5069
+  ],
+  "CHEROKEE_13CE": [
+   5070
+  ],
+  "CHEROKEE_13CF": [
+   5071
+  ],
+  "CHEROKEE_13D0": [
+   5072
+  ],
+  "CHEROKEE_13D1": [
+   5073
+  ],
+  "CHEROKEE_13D2": [
+   5074
+  ],
+  "CHEROKEE_13D3": [
+   5075
+  ],
+  "CHEROKEE_13D4": [
+   5076
+  ],
+  "CHEROKEE_13D5": [
+   5077
+  ],
+  "CHEROKEE_13D6": [
+   5078
+  ],
+  "CHEROKEE_13D7": [
+   5079
+  ],
+  "CHEROKEE_13D8": [
+   5080
+  ],
+  "CHEROKEE_13D9": [
+   5081
+  ],
+  "CHEROKEE_13DA": [
+   5082
+  ],
+  "CHEROKEE_13DB": [
+   5083
+  ],
+  "CHEROKEE_13DC": [
+   5084
+  ],
+  "CHEROKEE_13DD": [
+   5085
+  ],
+  "CHEROKEE_13DE": [
+   5086
+  ],
+  "CHEROKEE_13DF": [
+   5087
+  ],
+  "CHEROKEE_13E0": [
+   5088
+  ],
+  "CHEROKEE_13E1": [
+   5089
+  ],
+  "CHEROKEE_13E2": [
+   5090
+  ],
+  "CHEROKEE_13E3": [
+   5091
+  ],
+  "CHEROKEE_13E4": [
+   5092
+  ],
+  "CHEROKEE_13E5": [
+   5093
+  ],
+  "CHEROKEE_13E6": [
+   5094
+  ],
+  "CHEROKEE_13E7": [
+   5095
+  ],
+  "CHEROKEE_13E8": [
+   5096
+  ],
+  "CHEROKEE_13E9": [
+   5097
+  ],
+  "CHEROKEE_13EA": [
+   5098
+  ],
+  "CHEROKEE_13EB": [
+   5099
+  ],
+  "CHEROKEE_13EC": [
+   5100
+  ],
+  "CHEROKEE_13ED": [
+   5101
+  ],
+  "CHEROKEE_13EE": [
+   5102
+  ],
+  "CHEROKEE_13EF": [
+   5103
+  ],
+  "CHEROKEE_13F0": [
+   5104
+  ],
+  "CHEROKEE_13F1": [
+   5105
+  ],
+  "CHEROKEE_13F2": [
+   5106
+  ],
+  "CHEROKEE_13F3": [
+   5107
+  ],
+  "CHEROKEE_13F4": [
+   5108
+  ],
+  "CHESS_B_BISHOP": [
+   9821
+  ],
+  "CHESS_B_KING": [
+   9818
+  ],
+  "CHESS_B_KNIGHT": [
+   9822
+  ],
+  "CHESS_B_PAWN": [
+   9823
+  ],
+  "CHESS_B_QUEEN": [
+   9819
+  ],
+  "CHESS_B_ROOK": [
+   9820
+  ],
+  "CHESS_W_BISHOP": [
+   9815
+  ],
+  "CHESS_W_KING": [
+   9812
+  ],
+  "CHESS_W_KNIGHT": [
+   9816
+  ],
+  "CHESS_W_PAWN": [
+   9817
+  ],
+  "CHESS_W_QUEEN": [
+   9813
+  ],
+  "CHESS_W_ROOK": [
+   9814
+  ],
+  "CJK_4E2D": [
+   20013
+  ],
+  "CJK_5EFF": [
+   24319
+  ],
+  "CJK_91CD": [
+   37325
+  ],
+  "CJK_96E3": [
+   38627
+  ],
+  "CJK_IDEOG_COMMA": [
+   12289
+  ],
+  "CJK_IDEOG_FSTOP": [
+   12290
+  ],
+  "CLIPBOARD_COPY": [
+   128203
+  ],
+  "CLIPBOARD_CUT": [
+   9986
+  ],
+  "CLIPBOARD_PASTE": [
+   128458
+  ],
+  "CMB_KH_SEMI_VSOUNDM": [
+   12442
+  ],
+  "CMB_KH_VSOUNDM": [
+   12441
+  ],
+  "COMMA": [
+   44
+  ],
+  "COPYRIGHT_SIGN": [
+   174
+  ],
+  "CURRENCY_SIGN": [
+   164
+  ],
+  "CYRILLIC_A": [
+   1040
+  ],
+  "CYRILLIC_BARRED_O": [
+   1256
+  ],
+  "CYRILLIC_BE": [
+   1041
+  ],
+  "CYRILLIC_BY_YA_I": [
+   1030
+  ],
+  "CYRILLIC_CHE": [
+   1063
+  ],
+  "CYRILLIC_DE": [
+   1044
+  ],
+  "CYRILLIC_DJE": [
+   1026
+  ],
+  "CYRILLIC_DZE": [
+   1029
+  ],
+  "CYRILLIC_DZHE": [
+   1039
+  ],
+  "CYRILLIC_E": [
+   1069
+  ],
+  "CYRILLIC_EF": [
+   1060
+  ],
+  "CYRILLIC_EL": [
+   1051
+  ],
+  "CYRILLIC_EM": [
+   1052
+  ],
+  "CYRILLIC_EN": [
+   1053
+  ],
+  "CYRILLIC_EN_W_DESC": [
+   1186
+  ],
+  "CYRILLIC_ER": [
+   1056
+  ],
+  "CYRILLIC_ES": [
+   1057
+  ],
+  "CYRILLIC_GHE": [
+   1043
+  ],
+  "CYRILLIC_GHE_W_STROKE": [
+   1170
+  ],
+  "CYRILLIC_GHE_W_UPTURN": [
+   1168
+  ],
+  "CYRILLIC_GJE": [
+   1027
+  ],
+  "CYRILLIC_HA": [
+   1061
+  ],
+  "CYRILLIC_HARD_SIGN": [
+   1066
+  ],
+  "CYRILLIC_I": [
+   1048
+  ],
+  "CYRILLIC_IE": [
+   1045
+  ],
+  "CYRILLIC_IO": [
+   1025
+  ],
+  "CYRILLIC_I_W_GRAVE": [
+   1037
+  ],
+  "CYRILLIC_JE": [
+   1032
+  ],
+  "CYRILLIC_KA": [
+   1050
+  ],
+  "CYRILLIC_KA_W_DESC": [
+   1178
+  ],
+  "CYRILLIC_KJE": [
+   1036
+  ],
+  "CYRILLIC_LJE": [
+   1033
+  ],
+  "CYRILLIC_NJE": [
+   1034
+  ],
+  "CYRILLIC_O": [
+   1054
+  ],
+  "CYRILLIC_PE": [
+   1055
+  ],
+  "CYRILLIC_SCHWA": [
+   1240
+  ],
+  "CYRILLIC_SHA": [
+   1064
+  ],
+  "CYRILLIC_SHCHA": [
+   1065
+  ],
+  "CYRILLIC_SHHA": [
+   1210
+  ],
+  "CYRILLIC_SHORT_I": [
+   1049
+  ],
+  "CYRILLIC_SHORT_U": [
+   1038
+  ],
+  "CYRILLIC_SM_A": [
+   1072
+  ],
+  "CYRILLIC_SM_BARRED_O": [
+   1257
+  ],
+  "CYRILLIC_SM_BE": [
+   1073
+  ],
+  "CYRILLIC_SM_BIG_YUS": [
+   1131
+  ],
+  "CYRILLIC_SM_BY_YA_I": [
+   1110
+  ],
+  "CYRILLIC_SM_CHE": [
+   1095
+  ],
+  "CYRILLIC_SM_DE": [
+   1076
+  ],
+  "CYRILLIC_SM_DJE": [
+   1106
+  ],
+  "CYRILLIC_SM_DZE": [
+   1109
+  ],
+  "CYRILLIC_SM_DZHE": [
+   1119
+  ],
+  "CYRILLIC_SM_E": [
+   1101
+  ],
+  "CYRILLIC_SM_EF": [
+   1092
+  ],
+  "CYRILLIC_SM_EL": [
+   1083
+  ],
+  "CYRILLIC_SM_EM": [
+   1084
+  ],
+  "CYRILLIC_SM_EN": [
+   1085
+  ],
+  "CYRILLIC_SM_EN_W_DESC": [
+   1187
+  ],
+  "CYRILLIC_SM_ER": [
+   1088
+  ],
+  "CYRILLIC_SM_ES": [
+   1089
+  ],
+  "CYRILLIC_SM_GHE": [
+   1075
+  ],
+  "CYRILLIC_SM_GHE_W_STROKE": [
+   1171
+  ],
+  "CYRILLIC_SM_GHE_W_UPTURN": [
+   1169
+  ],
+  "CYRILLIC_SM_GJE": [
+   1107
+  ],
+  "CYRILLIC_SM_HA": [
+   1093
+  ],
+  "CYRILLIC_SM_HARD_SIGN": [
+   1098
+  ],
+  "CYRILLIC_SM_I": [
+   1080
+  ],
+  "CYRILLIC_SM_IE": [
+   1077
+  ],
+  "CYRILLIC_SM_IO": [
+   1105
+  ],
+  "CYRILLIC_SM_I_W_GRAVE": [
+   1117
+  ],
+  "CYRILLIC_SM_JE": [
+   1112
+  ],
+  "CYRILLIC_SM_KA": [
+   1082
+  ],
+  "CYRILLIC_SM_KA_W_DESC": [
+   1179
+  ],
+  "CYRILLIC_SM_KJE": [
+   1116
+  ],
+  "CYRILLIC_SM_LJE": [
+   1113
+  ],
+  "CYRILLIC_SM_NJE": [
+   1114
+  ],
+  "CYRILLIC_SM_O": [
+   1086
+  ],
+  "CYRILLIC_SM_PE": [
+   1087
+  ],
+  "CYRILLIC_SM_SCHWA": [
+   1241
+  ],
+  "CYRILLIC_SM_SHA": [
+   1096
+  ],
+  "CYRILLIC_SM_SHCHA": [
+   1097
+  ],
+  "CYRILLIC_SM_SHHA": [
+   1211
+  ],
+  "CYRILLIC_SM_SHORT_I": [
+   1081
+  ],
+  "CYRILLIC_SM_SHORT_U": [
+   1118
+  ],
+  "CYRILLIC_SM_SOFT_SIGN": [
+   1100
+  ],
+  "CYRILLIC_SM_STRAIGHT_U": [
+   1199
+  ],
+  "CYRILLIC_SM_STRAIGHT_U_W_STROKE": [
+   1201
+  ],
+  "CYRILLIC_SM_TE": [
+   1090
+  ],
+  "CYRILLIC_SM_TSE": [
+   1094
+  ],
+  "CYRILLIC_SM_TSHE": [
+   1115
+  ],
+  "CYRILLIC_SM_U": [
+   1091
+  ],
+  "CYRILLIC_SM_UA_IE": [
+   1108
+  ],
+  "CYRILLIC_SM_VE": [
+   1074
+  ],
+  "CYRILLIC_SM_YA": [
+   1103
+  ],
+  "CYRILLIC_SM_YAT": [
+   1123
+  ],
+  "CYRILLIC_SM_YERU": [
+   1099
+  ],
+  "CYRILLIC_SM_YI": [
+   1111
+  ],
+  "CYRILLIC_SM_YU": [
+   1102
+  ],
+  "CYRILLIC_SM_ZE": [
+   1079
+  ],
+  "CYRILLIC_SM_ZHE": [
+   1078
+  ],
+  "CYRILLIC_SOFT_SIGN": [
+   1068
+  ],
+  "CYRILLIC_STRAIGHT_U": [
+   1198
+  ],
+  "CYRILLIC_STRAIGHT_U_W_STROKE": [
+   1200
+  ],
+  "CYRILLIC_TE": [
+   1058
+  ],
+  "CYRILLIC_TSE": [
+   1062
+  ],
+  "CYRILLIC_TSHE": [
+   1035
+  ],
+  "CYRILLIC_U": [
+   1059
+  ],
+  "CYRILLIC_UA_IE": [
+   1028
+  ],
+  "CYRILLIC_VE": [
+   1042
+  ],
+  "CYRILLIC_YA": [
+   1071
+  ],
+  "CYRILLIC_YERU": [
+   1067
+  ],
+  "CYRILLIC_YI": [
+   1031
+  ],
+  "CYRILLIC_YU": [
+   1070
+  ],
+  "CYRILLIC_ZE": [
+   1047
+  ],
+  "CYRILLIC_ZHE": [
+   1046
+  ],
+  "C_WITH_CEDILLA": [
+   199
+  ],
+  "C_WITH_CEDILLA_SMALL": [
+   231
+  ],
+  "DBL_ANGLE_QMARK_L": [
+   171
+  ],
+  "DBL_ANGLE_QMARK_R": [
+   187
+  ],
+  "DEGREE": [
+   176
+  ],
+  "DEVANAGARI_0901": [
+   2305
+  ],
+  "DEVANAGARI_0902": [
+   2306
+  ],
+  "DEVANAGARI_0903": [
+   2307
+  ],
+  "DEVANAGARI_0905": [
+   2309
+  ],
+  "DEVANAGARI_0906": [
+   2310
+  ],
+  "DEVANAGARI_0907": [
+   2311
+  ],
+  "DEVANAGARI_0908": [
+   2312
+  ],
+  "DEVANAGARI_0909": [
+   2313
+  ],
+  "DEVANAGARI_090A": [
+   2314
+  ],
+  "DEVANAGARI_090B": [
+   2315
+  ],
+  "DEVANAGARI_090D": [
+   2317
+  ],
+  "DEVANAGARI_090E": [
+   2318
+  ],
+  "DEVANAGARI_090F": [
+   2319
+  ],
+  "DEVANAGARI_0910": [
+   2320
+  ],
+  "DEVANAGARI_0911": [
+   2321
+  ],
+  "DEVANAGARI_0912": [
+   2322
+  ],
+  "DEVANAGARI_0913": [
+   2323
+  ],
+  "DEVANAGARI_0914": [
+   2324
+  ],
+  "DEVANAGARI_0915": [
+   2325
+  ],
+  "DEVANAGARI_0916": [
+   2326
+  ],
+  "DEVANAGARI_0917": [
+   2327
+  ],
+  "DEVANAGARI_0918": [
+   2328
+  ],
+  "DEVANAGARI_0919": [
+   2329
+  ],
+  "DEVANAGARI_091A": [
+   2330
+  ],
+  "DEVANAGARI_091B": [
+   2331
+  ],
+  "DEVANAGARI_091C": [
+   2332
+  ],
+  "DEVANAGARI_091D": [
+   2333
+  ],
+  "DEVANAGARI_091E": [
+   2334
+  ],
+  "DEVANAGARI_091F": [
+   2335
+  ],
+  "DEVANAGARI_0920": [
+   2336
+  ],
+  "DEVANAGARI_0921": [
+   2337
+  ],
+  "DEVANAGARI_0922": [
+   2338
+  ],
+  "DEVANAGARI_0923": [
+   2339
+  ],
+  "DEVANAGARI_0924": [
+   2340
+  ],
+  "DEVANAGARI_0925": [
+   2341
+  ],
+  "DEVANAGARI_0926": [
+   2342
+  ],
+  "DEVANAGARI_0927": [
+   2343
+  ],
+  "DEVANAGARI_0928": [
+   2344
+  ],
+  "DEVANAGARI_0929": [
+   2345
+  ],
+  "DEVANAGARI_092A": [
+   2346
+  ],
+  "DEVANAGARI_092B": [
+   2347
+  ],
+  "DEVANAGARI_092C": [
+   2348
+  ],
+  "DEVANAGARI_092D": [
+   2349
+  ],
+  "DEVANAGARI_092E": [
+   2350
+  ],
+  "DEVANAGARI_092F": [
+   2351
+  ],
+  "DEVANAGARI_0930": [
+   2352
+  ],
+  "DEVANAGARI_0931": [
+   2353
+  ],
+  "DEVANAGARI_0932": [
+   2354
+  ],
+  "DEVANAGARI_0933": [
+   2355
+  ],
+  "DEVANAGARI_0934": [
+   2356
+  ],
+  "DEVANAGARI_0935": [
+   2357
+  ],
+  "DEVANAGARI_0936": [
+   2358
+  ],
+  "DEVANAGARI_0937": [
+   2359
+  ],
+  "DEVANAGARI_0938": [
+   2360
+  ],
+  "DEVANAGARI_0939": [
+   2361
+  ],
+  "DEVANAGARI_093C": [
+   2364
+  ],
+  "DEVANAGARI_093E": [
+   2366
+  ],
+  "DEVANAGARI_093F": [
+   2367
+  ],
+  "DEVANAGARI_0940": [
+   2368
+  ],
+  "DEVANAGARI_0941": [
+   2369
+  ],
+  "DEVANAGARI_0942": [
+   2370
+  ],
+  "DEVANAGARI_0943": [
+   2371
+  ],
+  "DEVANAGARI_0945": [
+   2373
+  ],
+  "DEVANAGARI_0946": [
+   2374
+  ],
+  "DEVANAGARI_0947": [
+   2375
+  ],
+  "DEVANAGARI_0948": [
+   2376
+  ],
+  "DEVANAGARI_0949": [
+   2377
+  ],
+  "DEVANAGARI_094A": [
+   2378
+  ],
+  "DEVANAGARI_094B": [
+   2379
+  ],
+  "DEVANAGARI_094C": [
+   2380
+  ],
+  "DEVANAGARI_094D": [
+   2381
+  ],
+  "DEVANAGARI_0950": [
+   2384
+  ],
+  "DEVANAGARI_0958": [
+   2392
+  ],
+  "DEVANAGARI_095A": [
+   2394
+  ],
+  "DEVANAGARI_095B": [
+   2395
+  ],
+  "DEVANAGARI_095C": [
+   2396
+  ],
+  "DEVANAGARI_095E": [
+   2398
+  ],
+  "DEVANAGARI_095F": [
+   2399
+  ],
+  "DEVANAGARI_0964": [
+   2404
+  ],
+  "DEVANAGARI_0966": [
+   2406
+  ],
+  "DEVANAGARI_0967": [
+   2407
+  ],
+  "DEVANAGARI_0968": [
+   2408
+  ],
+  "DEVANAGARI_0969": [
+   2409
+  ],
+  "DEVANAGARI_096A": [
+   2410
+  ],
+  "DEVANAGARI_096B": [
+   2411
+  ],
+  "DEVANAGARI_096C": [
+   2412
+  ],
+  "DEVANAGARI_096D": [
+   2413
+  ],
+  "DEVANAGARI_096E": [
+   2414
+  ],
+  "DEVANAGARI_096F": [
+   2415
+  ],
+  "DEVANAGARI_0972": [
+   2418
+  ],
+  "DEVA_DC_0901": [
+   57600
+  ],
+  "DEVA_DC_0902": [
+   57601
+  ],
+  "DEVA_DC_0903": [
+   57602
+  ],
+  "DEVA_DC_093C": [
+   57603
+  ],
+  "DEVA_DC_093E": [
+   57604
+  ],
+  "DEVA_DC_093F": [
+   57605
+  ],
+  "DEVA_DC_0940": [
+   57606
+  ],
+  "DEVA_DC_0941": [
+   57607
+  ],
+  "DEVA_DC_0942": [
+   57608
+  ],
+  "DEVA_DC_0943": [
+   57609
+  ],
+  "DEVA_DC_0944": [
+   57610
+  ],
+  "DEVA_DC_0945": [
+   57611
+  ],
+  "DEVA_DC_0946": [
+   57612
+  ],
+  "DEVA_DC_0947": [
+   57613
+  ],
+  "DEVA_DC_0948": [
+   57614
+  ],
+  "DEVA_DC_0949": [
+   57615
+  ],
+  "DEVA_DC_094A": [
+   57616
+  ],
+  "DEVA_DC_094B": [
+   57617
+  ],
+  "DEVA_DC_094C": [
+   57618
+  ],
+  "DEVA_DC_094D": [
+   57619
+  ],
+  "DEVISION_SIGN": [
+   247
+  ],
+  "DIAERESIS": [
+   168
+  ],
+  "DINGBAT_BLACK_DIA_X": [
+   10070
+  ],
+  "DONG_SIGN": [
+   8363
+  ],
+  "EQUALS": [
+   61
+  ],
+  "ESZETT": [
+   223
+  ],
+  "ETHIOPIC_1200": [
+   4608
+  ],
+  "ETHIOPIC_1208": [
+   4616
+  ],
+  "ETHIOPIC_1210": [
+   4624
+  ],
+  "ETHIOPIC_1218": [
+   4632
+  ],
+  "ETHIOPIC_1220": [
+   4640
+  ],
+  "ETHIOPIC_1228": [
+   4648
+  ],
+  "ETHIOPIC_1230": [
+   4656
+  ],
+  "ETHIOPIC_1238": [
+   4664
+  ],
+  "ETHIOPIC_1240": [
+   4672
+  ],
+  "ETHIOPIC_1250": [
+   4688
+  ],
+  "ETHIOPIC_1260": [
+   4704
+  ],
+  "ETHIOPIC_1268": [
+   4712
+  ],
+  "ETHIOPIC_1270": [
+   4720
+  ],
+  "ETHIOPIC_1278": [
+   4728
+  ],
+  "ETHIOPIC_1280": [
+   4736
+  ],
+  "ETHIOPIC_1290": [
+   4752
+  ],
+  "ETHIOPIC_1298": [
+   4760
+  ],
+  "ETHIOPIC_12A0": [
+   4768
+  ],
+  "ETHIOPIC_12A1": [
+   4769
+  ],
+  "ETHIOPIC_12A2": [
+   4770
+  ],
+  "ETHIOPIC_12A4": [
+   4772
+  ],
+  "ETHIOPIC_12A6": [
+   4774
+  ],
+  "ETHIOPIC_12A8": [
+   4776
+  ],
+  "ETHIOPIC_12B8": [
+   4792
+  ],
+  "ETHIOPIC_12C8": [
+   4808
+  ],
+  "ETHIOPIC_12D0": [
+   4816
+  ],
+  "ETHIOPIC_12D8": [
+   4824
+  ],
+  "ETHIOPIC_12E0": [
+   4832
+  ],
+  "ETHIOPIC_12E8": [
+   4840
+  ],
+  "ETHIOPIC_12F0": [
+   4848
+  ],
+  "ETHIOPIC_12F8": [
+   4856
+  ],
+  "ETHIOPIC_1300": [
+   4864
+  ],
+  "ETHIOPIC_1308": [
+   4872
+  ],
+  "ETHIOPIC_1318": [
+   4888
+  ],
+  "ETHIOPIC_1320": [
+   4896
+  ],
+  "ETHIOPIC_1328": [
+   4904
+  ],
+  "ETHIOPIC_1330": [
+   4912
+  ],
+  "ETHIOPIC_1338": [
+   4920
+  ],
+  "ETHIOPIC_1340": [
+   4928
+  ],
+  "ETHIOPIC_1348": [
+   4936
+  ],
+  "ETHIOPIC_1350": [
+   4944
+  ],
+  "ETHIOPIC_1361": [
+   4961
+  ],
+  "ETHIOPIC_1362": [
+   4962
+  ],
+  "ETHIOPIC_1363": [
+   4963
+  ],
+  "ETHIOPIC_1364": [
+   4964
+  ],
+  "ETHIOPIC_1365": [
+   4965
+  ],
+  "ETHIOPIC_1366": [
+   4966
+  ],
+  "ETHIOPIC_1367": [
+   4967
+  ],
+  "ETHIOPIC_1369": [
+   4969
+  ],
+  "ETHIOPIC_136A": [
+   4970
+  ],
+  "ETHIOPIC_136B": [
+   4971
+  ],
+  "ETHIOPIC_136C": [
+   4972
+  ],
+  "ETHIOPIC_136D": [
+   4973
+  ],
+  "ETHIOPIC_136E": [
+   4974
+  ],
+  "ETHIOPIC_136F": [
+   4975
+  ],
+  "ETHIOPIC_1370": [
+   4976
+  ],
+  "ETHIOPIC_1371": [
+   4977
+  ],
+  "ETHIOPIC_137B": [
+   4987
+  ],
+  "EURO_SIGN": [
+   8364
+  ],
+  "E_WITH_ACUTE": [
+   201
+  ],
+  "E_WITH_ACUTE_SMALL": [
+   233
+  ],
+  "E_WITH_GRAVE": [
+   200
+  ],
+  "E_WITH_GRAVE_SMALL": [
+   232
+  ],
+  "FEM_ORDINAL_IND": [
+   170
+  ],
+  "FILE_OPEN": [
+   128194
+  ],
+  "GEORGIAN_10D0": [
+   4304
+  ],
+  "GEORGIAN_10D1": [
+   4305
+  ],
+  "GEORGIAN_10D2": [
+   4306
+  ],
+  "GEORGIAN_10D3": [
+   4307
+  ],
+  "GEORGIAN_10D4": [
+   4308
+  ],
+  "GEORGIAN_10D5": [
+   4309
+  ],
+  "GEORGIAN_10D6": [
+   4310
+  ],
+  "GEORGIAN_10D7": [
+   4311
+  ],
+  "GEORGIAN_10D8": [
+   4312
+  ],
+  "GEORGIAN_10D9": [
+   4313
+  ],
+  "GEORGIAN_10DA": [
+   4314
+  ],
+  "GEORGIAN_10DB": [
+   4315
+  ],
+  "GEORGIAN_10DC": [
+   4316
+  ],
+  "GEORGIAN_10DD": [
+   4317
+  ],
+  "GEORGIAN_10DE": [
+   4318
+  ],
+  "GEORGIAN_10DF": [
+   4319
+  ],
+  "GEORGIAN_10E0": [
+   4320
+  ],
+  "GEORGIAN_10E1": [
+   4321
+  ],
+  "GEORGIAN_10E2": [
+   4322
+  ],
+  "GEORGIAN_10E3": [
+   4323
+  ],
+  "GEORGIAN_10E4": [
+   4324
+  ],
+  "GEORGIAN_10E5": [
+   4325
+  ],
+  "GEORGIAN_10E6": [
+   4326
+  ],
+  "GEORGIAN_10E7": [
+   4327
+  ],
+  "GEORGIAN_10E8": [
+   4328
+  ],
+  "GEORGIAN_10E9": [
+   4329
+  ],
+  "GEORGIAN_10EA": [
+   4330
+  ],
+  "GEORGIAN_10EB": [
+   4331
+  ],
+  "GEORGIAN_10EC": [
+   4332
+  ],
+  "GEORGIAN_10ED": [
+   4333
+  ],
+  "GEORGIAN_10EE": [
+   4334
+  ],
+  "GEORGIAN_10EF": [
+   4335
+  ],
+  "GEORGIAN_10F0": [
+   4336
+  ],
+  "GEORGIAN_10F1": [
+   4337
+  ],
+  "GEORGIAN_10F2": [
+   4338
+  ],
+  "GEORGIAN_10F3": [
+   4339
+  ],
+  "GEORGIAN_10F4": [
+   4340
+  ],
+  "GEORGIAN_10F5": [
+   4341
+  ],
+  "GEORGIAN_10F6": [
+   4342
+  ],
+  "GRAVE_ACCENT": [
+   96
+  ],
+  "GREEK_ALPHA": [
+   913
+  ],
+  "GREEK_BETA": [
+   914
+  ],
+  "GREEK_CHI": [
+   935
+  ],
+  "GREEK_DELTA": [
+   916
+  ],
+  "GREEK_DIALYTIKA": [
+   168
+  ],
+  "GREEK_DIALYTIKA_TONOS": [
+   901
+  ],
+  "GREEK_EPSILON": [
+   917
+  ],
+  "GREEK_ETA": [
+   919
+  ],
+  "GREEK_GAMMA": [
+   915
+  ],
+  "GREEK_IOTA": [
+   921
+  ],
+  "GREEK_KAPPA": [
+   922
+  ],
+  "GREEK_LAMDA": [
+   923
+  ],
+  "GREEK_MU": [
+   924
+  ],
+  "GREEK_NU": [
+   925
+  ],
+  "GREEK_OMEGA": [
+   937
+  ],
+  "GREEK_OMICRON": [
+   927
+  ],
+  "GREEK_PHI": [
+   934
+  ],
+  "GREEK_PI": [
+   928
+  ],
+  "GREEK_PSI": [
+   936
+  ],
+  "GREEK_RHO": [
+   929
+  ],
+  "GREEK_SIGMA": [
+   931
+  ],
+  "GREEK_SM_ALPHA": [
+   945
+  ],
+  "GREEK_SM_BETA": [
+   946
+  ],
+  "GREEK_SM_CHI": [
+   967
+  ],
+  "GREEK_SM_DELTA": [
+   948
+  ],
+  "GREEK_SM_EPSILON": [
+   949
+  ],
+  "GREEK_SM_ETA": [
+   951
+  ],
+  "GREEK_SM_FINAL_SIGMA": [
+   962
+  ],
+  "GREEK_SM_GAMMA": [
+   947
+  ],
+  "GREEK_SM_IOTA": [
+   953
+  ],
+  "GREEK_SM_KAPPA": [
+   954
+  ],
+  "GREEK_SM_LAMDA": [
+   955
+  ],
+  "GREEK_SM_MU": [
+   956
+  ],
+  "GREEK_SM_NU": [
+   957
+  ],
+  "GREEK_SM_OMEGA": [
+   969
+  ],
+  "GREEK_SM_OMICRON": [
+   959
+  ],
+  "GREEK_SM_PHI": [
+   966
+  ],
+  "GREEK_SM_PI": [
+   960
+  ],
+  "GREEK_SM_PSI": [
+   968
+  ],
+  "GREEK_SM_RHO": [
+   961
+  ],
+  "GREEK_SM_SIGMA": [
+   963
+  ],
+  "GREEK_SM_TAU": [
+   964
+  ],
+  "GREEK_SM_THETA": [
+   952
+  ],
+  "GREEK_SM_UPSILON": [
+   965
+  ],
+  "GREEK_SM_XI": [
+   958
+  ],
+  "GREEK_SM_ZETA": [
+   950
+  ],
+  "GREEK_TAU": [
+   932
+  ],
+  "GREEK_THETA": [
+   920
+  ],
+  "GREEK_TONOS": [
+   900
+  ],
+  "GREEK_UPSILON": [
+   933
+  ],
+  "GREEK_XI": [
+   926
+  ],
+  "GREEK_ZETA": [
+   918
+  ],
+  "G_WITH_BREVE": [
+   286
+  ],
+  "G_WITH_BREVE_SMALL": [
+   287
+  ],
+  "HALF_SIGN": [
+   189
+  ],
+  "HANGEUL_A": [
+   4449
+  ],
+  "HANGEUL_AE": [
+   4450
+  ],
+  "HANGEUL_CHIEUCH": [
+   4366
+  ],
+  "HANGEUL_CIEUC": [
+   4364
+  ],
+  "HANGEUL_E": [
+   4454
+  ],
+  "HANGEUL_EO": [
+   4453
+  ],
+  "HANGEUL_EU": [
+   4467
+  ],
+  "HANGEUL_HIEUH": [
+   4370
+  ],
+  "HANGEUL_I": [
+   4469
+  ],
+  "HANGEUL_IEUNG": [
+   4363
+  ],
+  "HANGEUL_KHIEUKH": [
+   4367
+  ],
+  "HANGEUL_KIYEOK": [
+   4352
+  ],
+  "HANGEUL_MIEUM": [
+   4358
+  ],
+  "HANGEUL_NIEUN": [
+   4354
+  ],
+  "HANGEUL_O": [
+   4457
+  ],
+  "HANGEUL_PHIEUPH": [
+   4369
+  ],
+  "HANGEUL_PIEUP": [
+   4359
+  ],
+  "HANGEUL_RIEUL": [
+   4357
+  ],
+  "HANGEUL_SIOS": [
+   4361
+  ],
+  "HANGEUL_SSANGCIEUC": [
+   4365
+  ],
+  "HANGEUL_SSANGKIYEOK": [
+   4353
+  ],
+  "HANGEUL_SSANGPIEUP": [
+   4360
+  ],
+  "HANGEUL_SSANGSIOS": [
+   4362
+  ],
+  "HANGEUL_SSANGTIKEUT": [
+   4356
+  ],
+  "HANGEUL_THIEUTH": [
+   4368
+  ],
+  "HANGEUL_TIKEUT": [
+   4355
+  ],
+  "HANGEUL_U": [
+   4462
+  ],
+  "HANGEUL_YA": [
+   4451
+  ],
+  "HANGEUL_YAE": [
+   4452
+  ],
+  "HANGEUL_YE": [
+   4456
+  ],
+  "HANGEUL_YEO": [
+   4455
+  ],
+  "HANGEUL_YO": [
+   4461
+  ],
+  "HANGEUL_YU": [
+   4466
+  ],
+  "HEBREW_ALEF": [
+   1488
+  ],
+  "HEBREW_AYIN": [
+   1506
+  ],
+  "HEBREW_BET": [
+   1489
+  ],
+  "HEBREW_DAGESH": [
+   1468
+  ],
+  "HEBREW_DALET": [
+   1491
+  ],
+  "HEBREW_GERESH": [
+   1523
+  ],
+  "HEBREW_GERESHAYIM": [
+   1524
+  ],
+  "HEBREW_GIMEL": [
+   1490
+  ],
+  "HEBREW_HATAF_PATAH": [
+   1458
+  ],
+  "HEBREW_HATAF_QAMATS": [
+   1459
+  ],
+  "HEBREW_HATAF_SEGOL": [
+   1457
+  ],
+  "HEBREW_HE": [
+   1492
+  ],
+  "HEBREW_HET": [
+   1495
+  ],
+  "HEBREW_HIRIQ": [
+   1460
+  ],
+  "HEBREW_HOLAM": [
+   1465
+  ],
+  "HEBREW_HOLAM_HASER": [
+   1466
+  ],
+  "HEBREW_KAF": [
+   1499
+  ],
+  "HEBREW_KAF_FINAL": [
+   1498
+  ],
+  "HEBREW_LAMED": [
+   1500
+  ],
+  "HEBREW_LOWER_DOT": [
+   1477
+  ],
+  "HEBREW_MAQAF": [
+   1470
+  ],
+  "HEBREW_MEM": [
+   1502
+  ],
+  "HEBREW_MEM_FINAL": [
+   1501
+  ],
+  "HEBREW_METEG": [
+   1469
+  ],
+  "HEBREW_NUN": [
+   1504
+  ],
+  "HEBREW_NUNHAFUKHA": [
+   1478
+  ],
+  "HEBREW_NUN_FINAL": [
+   1503
+  ],
+  "HEBREW_PASEQ": [
+   1472
+  ],
+  "HEBREW_PATAH": [
+   1463
+  ],
+  "HEBREW_PE": [
+   1508
+  ],
+  "HEBREW_PE_FINAL": [
+   1507
+  ],
+  "HEBREW_QAMATS": [
+   1464
+  ],
+  "HEBREW_QAMATS_QATAN": [
+   1479
+  ],
+  "HEBREW_QOF": [
+   1511
+  ],
+  "HEBREW_QUBUTS": [
+   1467
+  ],
+  "HEBREW_RAFE": [
+   1471
+  ],
+  "HEBREW_RESH": [
+   1512
+  ],
+  "HEBREW_SAMEKH": [
+   1505
+  ],
+  "HEBREW_SEGOL": [
+   1462
+  ],
+  "HEBREW_SHEVA": [
+   1456
+  ],
+  "HEBREW_SHIN": [
+   1513
+  ],
+  "HEBREW_SHIN_DOT": [
+   1473
+  ],
+  "HEBREW_SIN_DOT": [
+   1474
+  ],
+  "HEBREW_SOFPASUQ": [
+   1475
+  ],
+  "HEBREW_TAV": [
+   1514
+  ],
+  "HEBREW_TET": [
+   1496
+  ],
+  "HEBREW_TSADI": [
+   1510
+  ],
+  "HEBREW_TSADI_FINAL": [
+   1509
+  ],
+  "HEBREW_TSERE": [
+   1461
+  ],
+  "HEBREW_UPPER_DOT": [
+   1476
+  ],
+  "HEBREW_VAV": [
+   1493
+  ],
+  "HEBREW_YOD": [
+   1497
+  ],
+  "HEBREW_ZAYIN": [
+   1494
+  ],
+  "HINT_ERASE": [
+   20
+  ],
+  "HINT_HALF": [
+   15
+  ],
+  "HINT_MID": [
+   22
+  ],
+  "HINT_POS_CTXPTR": [
+   66
+  ],
+  "HINT_POS_RUNBOX": [
+   54,
+   1
+  ],
+  "HINT_POS_SCRARROW": [
+   78
+  ],
+  "HINT_POS_SCRBOX": [
+   72
+  ],
+  "HINT_POS_SCREEN": [
+   70,
+   7
+  ],
+  "HINT_POS_SIZENUM": [
+   85,
+   25
+  ],
+  "HINT_POS_STOPSQ": [
+   57
+  ],
+  "HINT_POS_ZOOMIN": [
+   59,
+   25
+  ],
+  "HINT_POS_ZOOMOUT": [
+   62,
+   22
+  ],
+  "HINT_RESET": [
+   24
+  ],
+  "HINT_SMALL": [
+   16
+  ],
+  "HINT_SZ_RUNBOX": [
+   33,
+   27
+  ],
+  "HINT_SZ_SCRBOX": [
+   19
+  ],
+  "HINT_SZ_STOPSQ": [
+   15
+  ],
+  "HINT_THIN": [
+   17
+  ],
+  "HIRAGANA_A": [
+   12354
+  ],
+  "HIRAGANA_BA": [
+   12400
+  ],
+  "HIRAGANA_BE": [
+   12409
+  ],
+  "HIRAGANA_BI": [
+   12403
+  ],
+  "HIRAGANA_BO": [
+   12412
+  ],
+  "HIRAGANA_BU": [
+   12406
+  ],
+  "HIRAGANA_DA": [
+   12384
+  ],
+  "HIRAGANA_DE": [
+   12391
+  ],
+  "HIRAGANA_DI": [
+   12386
+  ],
+  "HIRAGANA_DIGRAPH_YORI": [
+   12447
+  ],
+  "HIRAGANA_DO": [
+   12393
+  ],
+  "HIRAGANA_DU": [
+   12389
+  ],
+  "HIRAGANA_E": [
+   12360
+  ],
+  "HIRAGANA_GA": [
+   12364
+  ],
+  "HIRAGANA_GE": [
+   12370
+  ],
+  "HIRAGANA_GI": [
+   12366
+  ],
+  "HIRAGANA_GO": [
+   12372
+  ],
+  "HIRAGANA_GU": [
+   12368
+  ],
+  "HIRAGANA_HA": [
+   12399
+  ],
+  "HIRAGANA_HE": [
+   12408
+  ],
+  "HIRAGANA_HI": [
+   12402
+  ],
+  "HIRAGANA_HO": [
+   12411
+  ],
+  "HIRAGANA_HU": [
+   12405
+  ],
+  "HIRAGANA_I": [
+   12356
+  ],
+  "HIRAGANA_ITERATIONM": [
+   12445
+  ],
+  "HIRAGANA_KA": [
+   12363
+  ],
+  "HIRAGANA_KE": [
+   12369
+  ],
+  "HIRAGANA_KI": [
+   12365
+  ],
+  "HIRAGANA_KO": [
+   12371
+  ],
+  "HIRAGANA_KU": [
+   12367
+  ],
+  "HIRAGANA_MA": [
+   12414
+  ],
+  "HIRAGANA_ME": [
+   12417
+  ],
+  "HIRAGANA_MI": [
+   12415
+  ],
+  "HIRAGANA_MO": [
+   12418
+  ],
+  "HIRAGANA_MU": [
+   12416
+  ],
+  "HIRAGANA_N": [
+   12435
+  ],
+  "HIRAGANA_NA": [
+   12394
+  ],
+  "HIRAGANA_NE": [
+   12397
+  ],
+  "HIRAGANA_NI": [
+   12395
+  ],
+  "HIRAGANA_NO": [
+   12398
+  ],
+  "HIRAGANA_NU": [
+   12396
+  ],
+  "HIRAGANA_O": [
+   12362
+  ],
+  "HIRAGANA_PA": [
+   12401
+  ],
+  "HIRAGANA_PE": [
+   12410
+  ],
+  "HIRAGANA_PI": [
+   12404
+  ],
+  "HIRAGANA_PO": [
+   12413
+  ],
+  "HIRAGANA_PU": [
+   12407
+  ],
+  "HIRAGANA_RA": [
+   12425
+  ],
+  "HIRAGANA_RE": [
+   12428
+  ],
+  "HIRAGANA_RI": [
+   12426
+  ],
+  "HIRAGANA_RO": [
+   12429
+  ],
+  "HIRAGANA_RU": [
+   12427
+  ],
+  "HIRAGANA_SA": [
+   12373
+  ],
+  "HIRAGANA_SE": [
+   12379
+  ],
+  "HIRAGANA_SI": [
+   12375
+  ],
+  "HIRAGANA_SMALL_A": [
+   12353
+  ],
+  "HIRAGANA_SMALL_E": [
+   12359
+  ],
+  "HIRAGANA_SMALL_I": [
+   12355
+  ],
+  "HIRAGANA_SMALL_KA": [
+   12437
+  ],
+  "HIRAGANA_SMALL_KE": [
+   12438
+  ],
+  "HIRAGANA_SMALL_O": [
+   12361
+  ],
+  "HIRAGANA_SMALL_TU": [
+   12387
+  ],
+  "HIRAGANA_SMALL_U": [
+   12357
+  ],
+  "HIRAGANA_SMALL_WA": [
+   12430
+  ],
+  "HIRAGANA_SMALL_YA": [
+   12419
+  ],
+  "HIRAGANA_SMALL_YO": [
+   12423
+  ],
+  "HIRAGANA_SMALL_YU": [
+   12421
+  ],
+  "HIRAGANA_SO": [
+   12381
+  ],
+  "HIRAGANA_SU": [
+   12377
+  ],
+  "HIRAGANA_TA": [
+   12383
+  ],
+  "HIRAGANA_TE": [
+   12390
+  ],
+  "HIRAGANA_TI": [
+   12385
+  ],
+  "HIRAGANA_TO": [
+   12392
+  ],
+  "HIRAGANA_TU": [
+   12388
+  ],
+  "HIRAGANA_U": [
+   12358
+  ],
+  "HIRAGANA_VITERATIONM": [
+   12446
+  ],
+  "HIRAGANA_VU": [
+   12436
+  ],
+  "HIRAGANA_WA": [
+   12431
+  ],
+  "HIRAGANA_WE": [
+   12433
+  ],
+  "HIRAGANA_WI": [
+   12432
+  ],
+  "HIRAGANA_WO": [
+   12434
+  ],
+  "HIRAGANA_YA": [
+   12420
+  ],
+  "HIRAGANA_YO": [
+   12424
+  ],
+  "HIRAGANA_YU": [
+   12422
+  ],
+  "HIRAGANA_ZA": [
+   12374
+  ],
+  "HIRAGANA_ZE": [
+   12380
+  ],
+  "HIRAGANA_ZI": [
+   12376
+  ],
+  "HIRAGANA_ZO": [
+   12382
+  ],
+  "HIRAGANA_ZU": [
+   12378
+  ],
+  "HRYVNIA_SIGN": [
+   8372
+  ],
+  "ICON_ACCESSIBILITY": [
+   9855
+  ],
+  "ICON_APP_SWITCH": [
+   128468
+  ],
+  "ICON_BACKSPACE": [
+   139
+  ],
+  "ICON_BRIGHT_0": [
+   137
+  ],
+  "ICON_BRIGHT_1": [
+   138
+  ],
+  "ICON_BRIGHT_2": [
+   139
+  ],
+  "ICON_BRIGHT_3": [
+   147
+  ],
+  "ICON_BRIGHT_4": [
+   154
+  ],
+  "ICON_BRIGHT_AUTO": [
+   158
+  ],
+  "ICON_BRIGHT_DOWN": [
+   155
+  ],
+  "ICON_BRIGHT_MAN": [
+   159
+  ],
+  "ICON_BRIGHT_UP": [
+   157
+  ],
+  "ICON_CANCEL_X": [
+   128473
+  ],
+  "ICON_CAPSLOCK_OFF": [
+   142
+  ],
+  "ICON_CAPSLOCK_ON": [
+   143
+  ],
+  "ICON_CAST": [
+   128246
+  ],
+  "ICON_CLIP_HISTORY": [
+   128220
+  ],
+  "ICON_CLOSE": [
+   8864
+  ],
+  "ICON_CONTEXT_MENU": [
+   32
+  ],
+  "ICON_COPILOT": [
+   129302
+  ],
+  "ICON_DICTATION": [
+   128483
+  ],
+  "ICON_DOWN": [
+   130
+  ],
+  "ICON_EXPLORER": [
+   156
+  ],
+  "ICON_FEEDBACK": [
+   128227
+  ],
+  "ICON_FOCUS_WINDOW": [
+   10066
+  ],
+  "ICON_FONT_BIGGER": [
+   128474
+  ],
+  "ICON_FONT_SMALLER": [
+   128475
+  ],
+  "ICON_GAME_BAR": [
+   127918
+  ],
+  "ICON_GFX_RELOAD": [
+   128472
+  ],
+  "ICON_GFX_RESTART": [
+   128437
+  ],
+  "ICON_GIF": [
+   127916
+  ],
+  "ICON_LAUNCHER": [
+   9776
+  ],
+  "ICON_LAYER": [
+   128
+  ],
+  "ICON_LEFT": [
+   131
+  ],
+  "ICON_LIGHTNING": [
+   9889
+  ],
+  "ICON_LMB": [
+   134
+  ],
+  "ICON_MAC_CONTROL": [
+   151
+  ],
+  "ICON_MAGNIFIER": [
+   128269
+  ],
+  "ICON_MMB": [
+   135
+  ],
+  "ICON_NARRATOR": [
+   128066
+  ],
+  "ICON_NET": [
+   128423
+  ],
+  "ICON_NUMLOCK_OFF": [
+   140
+  ],
+  "ICON_NUMLOCK_ON": [
+   141
+  ],
+  "ICON_OS_ANDROID": [
+   150
+  ],
+  "ICON_OS_GNOME": [
+   152
+  ],
+  "ICON_OS_KDE": [
+   153
+  ],
+  "ICON_OS_LINUX": [
+   149
+  ],
+  "ICON_OS_WINDOWS": [
+   148
+  ],
+  "ICON_PAUSE_TEXT": [
+   32,
+   5
+  ],
+  "ICON_PEEK": [
+   128065
+  ],
+  "ICON_QUICK_ASSIST": [
+   129309
+  ],
+  "ICON_QUICK_MENU": [
+   128209
+  ],
+  "ICON_RIGHT": [
+   132
+  ],
+  "ICON_RMB": [
+   136
+  ],
+  "ICON_SCREENSHOT": [
+   128247
+  ],
+  "ICON_SCREEN_RECORD": [
+   128249
+  ],
+  "ICON_SCRLOCK_OFF": [
+   83,
+   99,
+   114
+  ],
+  "ICON_SCRLOCK_ON": [
+   83,
+   99,
+   114
+  ],
+  "ICON_SETTINGS": [
+   9881
+  ],
+  "ICON_SHIFT": [
+   144
+  ],
+  "ICON_SLIDERS": [
+   127899
+  ],
+  "ICON_SNAP_LEFT": [
+   9031
+  ],
+  "ICON_SNAP_RIGHT": [
+   9032
+  ],
+  "ICON_SNIP": [
+   128248
+  ],
+  "ICON_SPACE": [
+   133
+  ],
+  "ICON_SPEECH_REC": [
+   127908
+  ],
+  "ICON_SWITCH_OFF": [
+   146
+  ],
+  "ICON_SWITCH_ON": [
+   145
+  ],
+  "ICON_TASK_CYCLE": [
+   128260
+  ],
+  "ICON_TEXT_RECOG": [
+   128292
+  ],
+  "ICON_UP": [
+   129
+  ],
+  "ICON_VOLUME_MIXER": [
+   128266
+  ],
+  "ICON_WINDOW_SWITCH": [
+   128445
+  ],
+  "ICON_WORD_LEFT": [
+   8672
+  ],
+  "ICON_WORD_RIGHT": [
+   8674
+  ],
+  "INTL_LAYER_LEGEND": [
+   304,
+   241,
+   539,
+   322
+  ],
+  "INTL_PICKER_LEGEND": [
+   193,
+   187,
+   198
+  ],
+  "INTL_REMAP_LEGEND": [
+   224,
+   187,
+   241
+  ],
+  "INVERTED_EMARK": [
+   161
+  ],
+  "INVERTED_QMARK": [
+   191
+  ],
+  "I_DOTLESS_SMALL": [
+   305
+  ],
+  "I_WITH_ACUTE": [
+   205
+  ],
+  "I_WITH_ACUTE_SMALL": [
+   237
+  ],
+  "I_WITH_CIRCUMF": [
+   206
+  ],
+  "I_WITH_CIRCUMF_SMALL": [
+   238
+  ],
+  "I_WITH_DOT": [
+   304
+  ],
+  "I_WITH_GRAVE": [
+   205
+  ],
+  "I_WITH_GRAVE_SMALL": [
+   236
+  ],
+  "KANGXI_RADICAL_BAMBOO": [
+   12149
+  ],
+  "KANGXI_RADICAL_BIG": [
+   12068
+  ],
+  "KANGXI_RADICAL_BOW": [
+   12088
+  ],
+  "KANGXI_RADICAL_CORPSE": [
+   12075
+  ],
+  "KANGXI_RADICAL_DIVINATION": [
+   12056
+  ],
+  "KANGXI_RADICAL_EARTH": [
+   12064
+  ],
+  "KANGXI_RADICAL_FIELD": [
+   12133
+  ],
+  "KANGXI_RADICAL_FIRE": [
+   12117
+  ],
+  "KANGXI_RADICAL_GOLD": [
+   12198
+  ],
+  "KANGXI_RADICAL_HALBERD": [
+   12093
+  ],
+  "KANGXI_RADICAL_HAND": [
+   12095
+  ],
+  "KANGXI_RADICAL_HEART": [
+   12092
+  ],
+  "KANGXI_RADICAL_MAN": [
+   12040
+  ],
+  "KANGXI_RADICAL_MOON": [
+   12105
+  ],
+  "KANGXI_RADICAL_MOUNTAIN": [
+   12077
+  ],
+  "KANGXI_RADICAL_MOUTH": [
+   12061
+  ],
+  "KANGXI_RADICAL_ONE": [
+   12032
+  ],
+  "KANGXI_RADICAL_SUN": [
+   12103
+  ],
+  "KANGXI_RADICAL_TEN": [
+   12055
+  ],
+  "KANGXI_RADICAL_TREE": [
+   12106
+  ],
+  "KANGXI_RADICAL_WATER": [
+   12116
+  ],
+  "KANGXI_RADICAL_WOMAN": [
+   12069
+  ],
+  "KATAKANA_MIDDLE_DOT": [
+   12539
+  ],
+  "KH_PSOUNDM": [
+   12540
+  ],
+  "KH_SEMI_VSOUNDM": [
+   12444
+  ],
+  "KH_VSOUNDM": [
+   12443
+  ],
+  "LANGLE_BRACKET": [
+   12296
+  ],
+  "LANGLE_BRACKET_DBL": [
+   12298
+  ],
+  "LATIN_00C0": [
+   192
+  ],
+  "LATIN_00C1": [
+   193
+  ],
+  "LATIN_00C2": [
+   194
+  ],
+  "LATIN_00C3": [
+   195
+  ],
+  "LATIN_00C4": [
+   196
+  ],
+  "LATIN_00C5": [
+   197
+  ],
+  "LATIN_00C6": [
+   198
+  ],
+  "LATIN_00C7": [
+   199
+  ],
+  "LATIN_00C8": [
+   200
+  ],
+  "LATIN_00C9": [
+   201
+  ],
+  "LATIN_00CA": [
+   202
+  ],
+  "LATIN_00CB": [
+   203
+  ],
+  "LATIN_00CC": [
+   204
+  ],
+  "LATIN_00CD": [
+   205
+  ],
+  "LATIN_00CE": [
+   206
+  ],
+  "LATIN_00CF": [
+   207
+  ],
+  "LATIN_00D0": [
+   208
+  ],
+  "LATIN_00D1": [
+   209
+  ],
+  "LATIN_00D2": [
+   210
+  ],
+  "LATIN_00D3": [
+   211
+  ],
+  "LATIN_00D4": [
+   212
+  ],
+  "LATIN_00D5": [
+   213
+  ],
+  "LATIN_00D6": [
+   214
+  ],
+  "LATIN_00D7": [
+   215
+  ],
+  "LATIN_00D8": [
+   216
+  ],
+  "LATIN_00D9": [
+   217
+  ],
+  "LATIN_00DA": [
+   218
+  ],
+  "LATIN_00DB": [
+   219
+  ],
+  "LATIN_00DC": [
+   220
+  ],
+  "LATIN_00DD": [
+   221
+  ],
+  "LATIN_00DE": [
+   222
+  ],
+  "LATIN_00DF": [
+   223
+  ],
+  "LATIN_00E0": [
+   224
+  ],
+  "LATIN_00E1": [
+   225
+  ],
+  "LATIN_00E2": [
+   226
+  ],
+  "LATIN_00E3": [
+   227
+  ],
+  "LATIN_00E4": [
+   228
+  ],
+  "LATIN_00E5": [
+   229
+  ],
+  "LATIN_00E6": [
+   230
+  ],
+  "LATIN_00E7": [
+   231
+  ],
+  "LATIN_00E8": [
+   232
+  ],
+  "LATIN_00E9": [
+   233
+  ],
+  "LATIN_00EA": [
+   234
+  ],
+  "LATIN_00EB": [
+   235
+  ],
+  "LATIN_00EC": [
+   236
+  ],
+  "LATIN_00ED": [
+   237
+  ],
+  "LATIN_00EE": [
+   238
+  ],
+  "LATIN_00EF": [
+   239
+  ],
+  "LATIN_00F0": [
+   240
+  ],
+  "LATIN_00F1": [
+   241
+  ],
+  "LATIN_00F2": [
+   242
+  ],
+  "LATIN_00F3": [
+   243
+  ],
+  "LATIN_00F4": [
+   244
+  ],
+  "LATIN_00F5": [
+   245
+  ],
+  "LATIN_00F6": [
+   246
+  ],
+  "LATIN_00F7": [
+   247
+  ],
+  "LATIN_00F8": [
+   248
+  ],
+  "LATIN_00F9": [
+   249
+  ],
+  "LATIN_00FA": [
+   250
+  ],
+  "LATIN_00FB": [
+   251
+  ],
+  "LATIN_00FC": [
+   252
+  ],
+  "LATIN_00FD": [
+   253
+  ],
+  "LATIN_00FE": [
+   254
+  ],
+  "LATIN_00FF": [
+   255
+  ],
+  "LATIN_0100": [
+   256
+  ],
+  "LATIN_0101": [
+   257
+  ],
+  "LATIN_0102": [
+   258
+  ],
+  "LATIN_0103": [
+   259
+  ],
+  "LATIN_0104": [
+   260
+  ],
+  "LATIN_0105": [
+   261
+  ],
+  "LATIN_0106": [
+   262
+  ],
+  "LATIN_0107": [
+   263
+  ],
+  "LATIN_0108": [
+   264
+  ],
+  "LATIN_0109": [
+   265
+  ],
+  "LATIN_010A": [
+   266
+  ],
+  "LATIN_010B": [
+   267
+  ],
+  "LATIN_010C": [
+   268
+  ],
+  "LATIN_010D": [
+   269
+  ],
+  "LATIN_010E": [
+   270
+  ],
+  "LATIN_010F": [
+   271
+  ],
+  "LATIN_0110": [
+   272
+  ],
+  "LATIN_0111": [
+   273
+  ],
+  "LATIN_0112": [
+   274
+  ],
+  "LATIN_0113": [
+   275
+  ],
+  "LATIN_0114": [
+   276
+  ],
+  "LATIN_0115": [
+   277
+  ],
+  "LATIN_0116": [
+   278
+  ],
+  "LATIN_0117": [
+   279
+  ],
+  "LATIN_0118": [
+   280
+  ],
+  "LATIN_0119": [
+   281
+  ],
+  "LATIN_011A": [
+   282
+  ],
+  "LATIN_011B": [
+   283
+  ],
+  "LATIN_011C": [
+   284
+  ],
+  "LATIN_011D": [
+   285
+  ],
+  "LATIN_011E": [
+   286
+  ],
+  "LATIN_011F": [
+   287
+  ],
+  "LATIN_0120": [
+   288
+  ],
+  "LATIN_0121": [
+   289
+  ],
+  "LATIN_0122": [
+   290
+  ],
+  "LATIN_0123": [
+   291
+  ],
+  "LATIN_0124": [
+   292
+  ],
+  "LATIN_0125": [
+   293
+  ],
+  "LATIN_0126": [
+   294
+  ],
+  "LATIN_0127": [
+   295
+  ],
+  "LATIN_0128": [
+   296
+  ],
+  "LATIN_0129": [
+   297
+  ],
+  "LATIN_012A": [
+   298
+  ],
+  "LATIN_012B": [
+   299
+  ],
+  "LATIN_012C": [
+   300
+  ],
+  "LATIN_012D": [
+   301
+  ],
+  "LATIN_012E": [
+   302
+  ],
+  "LATIN_012F": [
+   303
+  ],
+  "LATIN_0130": [
+   304
+  ],
+  "LATIN_0131": [
+   305
+  ],
+  "LATIN_0132": [
+   306
+  ],
+  "LATIN_0133": [
+   307
+  ],
+  "LATIN_0134": [
+   308
+  ],
+  "LATIN_0135": [
+   309
+  ],
+  "LATIN_0136": [
+   310
+  ],
+  "LATIN_0137": [
+   311
+  ],
+  "LATIN_0138": [
+   312
+  ],
+  "LATIN_0139": [
+   313
+  ],
+  "LATIN_013A": [
+   314
+  ],
+  "LATIN_013B": [
+   315
+  ],
+  "LATIN_013C": [
+   316
+  ],
+  "LATIN_013D": [
+   317
+  ],
+  "LATIN_013E": [
+   318
+  ],
+  "LATIN_013F": [
+   319
+  ],
+  "LATIN_0140": [
+   320
+  ],
+  "LATIN_0141": [
+   321
+  ],
+  "LATIN_0142": [
+   322
+  ],
+  "LATIN_0143": [
+   323
+  ],
+  "LATIN_0144": [
+   324
+  ],
+  "LATIN_0145": [
+   325
+  ],
+  "LATIN_0146": [
+   326
+  ],
+  "LATIN_0147": [
+   327
+  ],
+  "LATIN_0148": [
+   328
+  ],
+  "LATIN_0149": [
+   329
+  ],
+  "LATIN_014A": [
+   330
+  ],
+  "LATIN_014B": [
+   331
+  ],
+  "LATIN_014C": [
+   332
+  ],
+  "LATIN_014D": [
+   333
+  ],
+  "LATIN_014E": [
+   334
+  ],
+  "LATIN_014F": [
+   335
+  ],
+  "LATIN_0150": [
+   336
+  ],
+  "LATIN_0151": [
+   337
+  ],
+  "LATIN_0152": [
+   338
+  ],
+  "LATIN_0153": [
+   339
+  ],
+  "LATIN_0154": [
+   340
+  ],
+  "LATIN_0155": [
+   341
+  ],
+  "LATIN_0156": [
+   342
+  ],
+  "LATIN_0157": [
+   343
+  ],
+  "LATIN_0158": [
+   344
+  ],
+  "LATIN_0159": [
+   345
+  ],
+  "LATIN_015A": [
+   346
+  ],
+  "LATIN_015B": [
+   347
+  ],
+  "LATIN_015C": [
+   348
+  ],
+  "LATIN_015D": [
+   349
+  ],
+  "LATIN_015E": [
+   350
+  ],
+  "LATIN_015F": [
+   351
+  ],
+  "LATIN_0160": [
+   352
+  ],
+  "LATIN_0161": [
+   353
+  ],
+  "LATIN_0162": [
+   354
+  ],
+  "LATIN_0163": [
+   355
+  ],
+  "LATIN_0164": [
+   356
+  ],
+  "LATIN_0165": [
+   357
+  ],
+  "LATIN_0166": [
+   358
+  ],
+  "LATIN_0167": [
+   359
+  ],
+  "LATIN_0168": [
+   360
+  ],
+  "LATIN_0169": [
+   361
+  ],
+  "LATIN_016A": [
+   362
+  ],
+  "LATIN_016B": [
+   363
+  ],
+  "LATIN_016C": [
+   364
+  ],
+  "LATIN_016D": [
+   365
+  ],
+  "LATIN_016E": [
+   366
+  ],
+  "LATIN_016F": [
+   367
+  ],
+  "LATIN_0170": [
+   368
+  ],
+  "LATIN_0171": [
+   369
+  ],
+  "LATIN_0172": [
+   370
+  ],
+  "LATIN_0173": [
+   371
+  ],
+  "LATIN_0174": [
+   372
+  ],
+  "LATIN_0175": [
+   373
+  ],
+  "LATIN_0176": [
+   374
+  ],
+  "LATIN_0177": [
+   375
+  ],
+  "LATIN_0178": [
+   376
+  ],
+  "LATIN_0179": [
+   377
+  ],
+  "LATIN_017A": [
+   378
+  ],
+  "LATIN_017B": [
+   379
+  ],
+  "LATIN_017C": [
+   380
+  ],
+  "LATIN_017D": [
+   381
+  ],
+  "LATIN_017E": [
+   382
+  ],
+  "LATIN_018F": [
+   399
+  ],
+  "LATIN_01A0": [
+   416
+  ],
+  "LATIN_01A1": [
+   417
+  ],
+  "LATIN_01AF": [
+   431
+  ],
+  "LATIN_01B0": [
+   432
+  ],
+  "LATIN_01E5": [
+   485
+  ],
+  "LATIN_01E9": [
+   489
+  ],
+  "LATIN_01EA": [
+   490
+  ],
+  "LATIN_01EB": [
+   491
+  ],
+  "LATIN_01EF": [
+   495
+  ],
+  "LATIN_0259": [
+   601
+  ],
+  "LATIN_1E62": [
+   7778
+  ],
+  "LATIN_1E63": [
+   7779
+  ],
+  "LATIN_1EB8": [
+   7864
+  ],
+  "LATIN_1EB9": [
+   7865
+  ],
+  "LATIN_1EBD": [
+   7869
+  ],
+  "LATIN_1ECC": [
+   7884
+  ],
+  "LATIN_1ECD": [
+   7885
+  ],
+  "LATIN_1EF9": [
+   7929
+  ],
+  "LCORNER_BRKT": [
+   12300
+  ],
+  "LETTER_AE_SMALL": [
+   230
+  ],
+  "LLENTICULAR_BRACKET": [
+   12304
+  ],
+  "LWCORNER_BRACKET": [
+   12302
+  ],
+  "MANAT_SIGN": [
+   8380
+  ],
+  "MASC_ORDINAL_IND": [
+   186
+  ],
+  "MICRO_SIGN": [
+   181
+  ],
+  "MIDDLE_DOT": [
+   183
+  ],
+  "MOD_BREVE": [
+   728
+  ],
+  "MOD_CARON": [
+   711
+  ],
+  "MOD_CIRCUMFLEX": [
+   710
+  ],
+  "MOD_DOT_ACCENT": [
+   729
+  ],
+  "MOD_HUNGARUMLAUT": [
+   733
+  ],
+  "MOD_MACRON": [
+   713
+  ],
+  "MOD_OGONEK": [
+   731
+  ],
+  "MOD_RING": [
+   730
+  ],
+  "MOD_TILDE": [
+   732
+  ],
+  "MTB_ALT_LB": [
+   56,
+   31
+  ],
+  "MTB_ALT_LT": [
+   56,
+   1
+  ],
+  "MTB_ALT_RB": [
+   79,
+   31
+  ],
+  "MTB_ALT_RT": [
+   79,
+   1
+  ],
+  "MTB_CTRL_LB": [
+   57,
+   21
+  ],
+  "MTB_CTRL_LT": [
+   57,
+   1
+  ],
+  "MTB_CTRL_RB": [
+   80,
+   21
+  ],
+  "MTB_CTRL_RT": [
+   80,
+   1
+  ],
+  "MTB_GUI_ANDROID_RB": [
+   78,
+   28
+  ],
+  "MTB_GUI_GNOME_RB": [
+   86,
+   25
+  ],
+  "MTB_GUI_KDE_RB": [
+   83,
+   25
+  ],
+  "MTB_GUI_LINUX_RB": [
+   85,
+   21
+  ],
+  "MTB_GUI_MACOS_RB": [
+   84,
+   26
+  ],
+  "MTB_GUI_OTHER_RB": [
+   78,
+   20
+  ],
+  "MTB_GUI_WINDOWS_RB": [
+   84,
+   26
+  ],
+  "MTB_SHIFT_LB": [
+   60,
+   40
+  ],
+  "MTB_SHIFT_LT": [
+   60,
+   17
+  ],
+  "MTB_SHIFT_RB": [
+   83,
+   40
+  ],
+  "MTB_SHIFT_RT": [
+   83,
+   17
+  ],
+  "MUL_SIGN": [
+   215
+  ],
+  "NAIRA_SIGN": [
+   8358
+  ],
+  "NEW_SHEQEL_SIGN": [
+   8362
+  ],
+  "NOT_SIGN": [
+   172
+  ],
+  "NUMERO_SIGN": [
+   8470
+  ],
+  "N_WITH_TILDE": [
+   209
+  ],
+  "N_WITH_TILDE_SMALL": [
+   241
+  ],
+  "OKINA": [
+   699
+  ],
+  "O_WITH_ACUTE": [
+   211
+  ],
+  "O_WITH_ACUTE_SMALL": [
+   243
+  ],
+  "O_WITH_GRAVE": [
+   210
+  ],
+  "O_WITH_GRAVE_SMALL": [
+   242
+  ],
+  "PESO_SIGN": [
+   8369
+  ],
+  "PILCROW": [
+   182
+  ],
+  "PLUS_MINUS": [
+   177
+  ],
+  "POUND_SIGN": [
+   163
+  ],
+  "PRINT_SCREEN": [
+   9113
+  ],
+  "PRIVATE_AI": [
+   127744
+  ],
+  "PRIVATE_CALC": [
+   128425
+  ],
+  "PRIVATE_CD": [
+   128440
+  ],
+  "PRIVATE_DELETE": [
+   128473
+  ],
+  "PRIVATE_DISP_BRIGHT": [
+   127761
+  ],
+  "PRIVATE_DISP_BRIGHTER": [
+   127768
+  ],
+  "PRIVATE_DISP_DARK": [
+   127765
+  ],
+  "PRIVATE_DISP_DARKER": [
+   127766
+  ],
+  "PRIVATE_DISP_HALF": [
+   127767
+  ],
+  "PRIVATE_DOCUMENT": [
+   128441
+  ],
+  "PRIVATE_EMOJI_1F440": [
+   128064
+  ],
+  "PRIVATE_EMOJI_1F441": [
+   128065
+  ],
+  "PRIVATE_EMOJI_1F442": [
+   128066
+  ],
+  "PRIVATE_EMOJI_1F443": [
+   128067
+  ],
+  "PRIVATE_EMOJI_1F444": [
+   128068
+  ],
+  "PRIVATE_EMOJI_1F445": [
+   128069
+  ],
+  "PRIVATE_EMOJI_1F446": [
+   128070
+  ],
+  "PRIVATE_EMOJI_1F447": [
+   128071
+  ],
+  "PRIVATE_EMOJI_1F448": [
+   128072
+  ],
+  "PRIVATE_EMOJI_1F449": [
+   128073
+  ],
+  "PRIVATE_EMOJI_1F44A": [
+   128074
+  ],
+  "PRIVATE_EMOJI_1F44B": [
+   128075
+  ],
+  "PRIVATE_EMOJI_1F44C": [
+   128076
+  ],
+  "PRIVATE_EMOJI_1F44D": [
+   128077
+  ],
+  "PRIVATE_EMOJI_1F44E": [
+   128078
+  ],
+  "PRIVATE_EMOJI_1F44F": [
+   128079
+  ],
+  "PRIVATE_EMOJI_1F450": [
+   128080
+  ],
+  "PRIVATE_EMOJI_1F451": [
+   128081
+  ],
+  "PRIVATE_EMOJI_1F452": [
+   128082
+  ],
+  "PRIVATE_EMOJI_1F453": [
+   128083
+  ],
+  "PRIVATE_EMOJI_1F47B": [
+   128123
+  ],
+  "PRIVATE_EMOJI_1F47C": [
+   128124
+  ],
+  "PRIVATE_EMOJI_1F47D": [
+   128125
+  ],
+  "PRIVATE_EMOJI_1F47E": [
+   128126
+  ],
+  "PRIVATE_EMOJI_1F47F": [
+   128127
+  ],
+  "PRIVATE_EMOJI_1F480": [
+   128128
+  ],
+  "PRIVATE_EMOJI_1F481": [
+   128129
+  ],
+  "PRIVATE_EMOJI_1F482": [
+   128130
+  ],
+  "PRIVATE_EMOJI_1F483": [
+   128131
+  ],
+  "PRIVATE_EMOJI_1F484": [
+   128132
+  ],
+  "PRIVATE_EMOJI_1F485": [
+   128133
+  ],
+  "PRIVATE_EMOJI_1F489": [
+   128137
+  ],
+  "PRIVATE_EMOJI_1F48A": [
+   128138
+  ],
+  "PRIVATE_EMOJI_1F48B": [
+   128139
+  ],
+  "PRIVATE_EMOJI_1F48C": [
+   128140
+  ],
+  "PRIVATE_EMOJI_1F48D": [
+   128141
+  ],
+  "PRIVATE_EMOJI_1F48E": [
+   128142
+  ],
+  "PRIVATE_EMOJI_1F48F": [
+   128143
+  ],
+  "PRIVATE_EMOJI_1F490": [
+   128144
+  ],
+  "PRIVATE_EMOJI_1F491": [
+   128145
+  ],
+  "PRIVATE_EMOJI_1F492": [
+   128146
+  ],
+  "PRIVATE_EMOJI_1F493": [
+   128147
+  ],
+  "PRIVATE_EMOJI_1F494": [
+   128148
+  ],
+  "PRIVATE_EMOJI_1F495": [
+   128149
+  ],
+  "PRIVATE_EMOJI_1F496": [
+   128150
+  ],
+  "PRIVATE_EMOJI_1F4A1": [
+   128161
+  ],
+  "PRIVATE_EMOJI_1F4A2": [
+   128162
+  ],
+  "PRIVATE_EMOJI_1F4A3": [
+   128163
+  ],
+  "PRIVATE_EMOJI_1F4A4": [
+   128164
+  ],
+  "PRIVATE_EMOJI_1F4A5": [
+   128165
+  ],
+  "PRIVATE_EMOJI_1F4A6": [
+   128166
+  ],
+  "PRIVATE_EMOJI_1F4A7": [
+   128167
+  ],
+  "PRIVATE_EMOJI_1F4A8": [
+   128168
+  ],
+  "PRIVATE_EMOJI_1F4A9": [
+   128169
+  ],
+  "PRIVATE_EMOJI_1F4AA": [
+   128170
+  ],
+  "PRIVATE_EMOJI_1F4AB": [
+   128171
+  ],
+  "PRIVATE_EMOJI_1F4AC": [
+   128172
+  ],
+  "PRIVATE_EMOJI_1F4AD": [
+   128173
+  ],
+  "PRIVATE_EMOJI_1F4AE": [
+   128174
+  ],
+  "PRIVATE_EMOJI_1F4AF": [
+   128175
+  ],
+  "PRIVATE_EMOJI_1F4B0": [
+   128176
+  ],
+  "PRIVATE_EMOJI_1F4B1": [
+   128177
+  ],
+  "PRIVATE_EMOJI_1F600": [
+   128512
+  ],
+  "PRIVATE_EMOJI_1F601": [
+   128513
+  ],
+  "PRIVATE_EMOJI_1F602": [
+   128514
+  ],
+  "PRIVATE_EMOJI_1F603": [
+   128515
+  ],
+  "PRIVATE_EMOJI_1F604": [
+   128516
+  ],
+  "PRIVATE_EMOJI_1F605": [
+   128517
+  ],
+  "PRIVATE_EMOJI_1F606": [
+   128518
+  ],
+  "PRIVATE_EMOJI_1F607": [
+   128519
+  ],
+  "PRIVATE_EMOJI_1F608": [
+   128520
+  ],
+  "PRIVATE_EMOJI_1F609": [
+   128521
+  ],
+  "PRIVATE_EMOJI_1F60A": [
+   128522
+  ],
+  "PRIVATE_EMOJI_1F60B": [
+   128523
+  ],
+  "PRIVATE_EMOJI_1F60C": [
+   128524
+  ],
+  "PRIVATE_EMOJI_1F60D": [
+   128525
+  ],
+  "PRIVATE_EMOJI_1F60E": [
+   128526
+  ],
+  "PRIVATE_EMOJI_1F60F": [
+   128527
+  ],
+  "PRIVATE_EMOJI_1F610": [
+   128528
+  ],
+  "PRIVATE_EMOJI_1F611": [
+   128529
+  ],
+  "PRIVATE_EMOJI_1F612": [
+   128530
+  ],
+  "PRIVATE_EMOJI_1F613": [
+   128531
+  ],
+  "PRIVATE_EMOJI_1F614": [
+   128532
+  ],
+  "PRIVATE_EMOJI_1F615": [
+   128533
+  ],
+  "PRIVATE_EMOJI_1F616": [
+   128534
+  ],
+  "PRIVATE_EMOJI_1F617": [
+   128535
+  ],
+  "PRIVATE_EMOJI_1F618": [
+   128536
+  ],
+  "PRIVATE_EMOJI_1F619": [
+   128537
+  ],
+  "PRIVATE_EMOJI_1F61A": [
+   128538
+  ],
+  "PRIVATE_EMOJI_1F61B": [
+   128539
+  ],
+  "PRIVATE_EMOJI_1F61C": [
+   128540
+  ],
+  "PRIVATE_EMOJI_1F61D": [
+   128541
+  ],
+  "PRIVATE_EMOJI_1F61E": [
+   128542
+  ],
+  "PRIVATE_EMOJI_1F61F": [
+   128543
+  ],
+  "PRIVATE_EMOJI_1F620": [
+   128544
+  ],
+  "PRIVATE_EMOJI_1F621": [
+   128545
+  ],
+  "PRIVATE_EMOJI_1F622": [
+   128546
+  ],
+  "PRIVATE_EMOJI_1F623": [
+   128547
+  ],
+  "PRIVATE_EMOJI_1F624": [
+   128548
+  ],
+  "PRIVATE_EMOJI_1F625": [
+   128549
+  ],
+  "PRIVATE_EMOJI_1F626": [
+   128550
+  ],
+  "PRIVATE_EMOJI_1F627": [
+   128551
+  ],
+  "PRIVATE_EMOJI_1F628": [
+   128552
+  ],
+  "PRIVATE_EMOJI_1F629": [
+   128553
+  ],
+  "PRIVATE_EMOJI_1F62A": [
+   128554
+  ],
+  "PRIVATE_EMOJI_1F62B": [
+   128555
+  ],
+  "PRIVATE_EMOJI_1F62C": [
+   128556
+  ],
+  "PRIVATE_EMOJI_1F62D": [
+   128557
+  ],
+  "PRIVATE_EMOJI_1F62E": [
+   128558
+  ],
+  "PRIVATE_EMOJI_1F62F": [
+   128559
+  ],
+  "PRIVATE_EMOJI_1F630": [
+   128560
+  ],
+  "PRIVATE_EMOJI_1F631": [
+   128561
+  ],
+  "PRIVATE_EMOJI_1F632": [
+   128562
+  ],
+  "PRIVATE_EMOJI_1F633": [
+   128563
+  ],
+  "PRIVATE_EMOJI_1F634": [
+   128564
+  ],
+  "PRIVATE_EMOJI_1F635": [
+   128565
+  ],
+  "PRIVATE_EMOJI_1F636": [
+   128566
+  ],
+  "PRIVATE_EMOJI_1F637": [
+   128567
+  ],
+  "PRIVATE_EMOJI_1F638": [
+   128568
+  ],
+  "PRIVATE_EMOJI_1F639": [
+   128569
+  ],
+  "PRIVATE_EMOJI_1F644": [
+   128580
+  ],
+  "PRIVATE_EMOJI_1F645": [
+   128581
+  ],
+  "PRIVATE_EMOJI_1F646": [
+   128582
+  ],
+  "PRIVATE_EMOJI_1F647": [
+   128583
+  ],
+  "PRIVATE_EMOJI_1F648": [
+   128584
+  ],
+  "PRIVATE_EMOJI_1F649": [
+   128585
+  ],
+  "PRIVATE_EMOJI_1F64A": [
+   128586
+  ],
+  "PRIVATE_EMOJI_1F64B": [
+   128587
+  ],
+  "PRIVATE_EMOJI_1F64C": [
+   128588
+  ],
+  "PRIVATE_EMOJI_1F64D": [
+   128589
+  ],
+  "PRIVATE_EMOJI_1F64E": [
+   128590
+  ],
+  "PRIVATE_EMOJI_1F64F": [
+   128591
+  ],
+  "PRIVATE_EMOJI_1F912": [
+   129298
+  ],
+  "PRIVATE_EMOJI_1F913": [
+   129299
+  ],
+  "PRIVATE_EMOJI_1F914": [
+   129300
+  ],
+  "PRIVATE_EMOJI_1F915": [
+   129301
+  ],
+  "PRIVATE_EMOJI_1F916": [
+   129302
+  ],
+  "PRIVATE_EMOJI_1F917": [
+   129303
+  ],
+  "PRIVATE_EMOJI_1F918": [
+   129304
+  ],
+  "PRIVATE_EMOJI_1F919": [
+   129305
+  ],
+  "PRIVATE_FAX": [
+   128439
+  ],
+  "PRIVATE_FIND": [
+   128270
+  ],
+  "PRIVATE_FLOPPY": [
+   128427
+  ],
+  "PRIVATE_FONT_DEC": [
+   128475
+  ],
+  "PRIVATE_FONT_INC": [
+   128474
+  ],
+  "PRIVATE_HDD": [
+   128436
+  ],
+  "PRIVATE_HOME": [
+   127968
+  ],
+  "PRIVATE_HYPER": [
+   128171
+  ],
+  "PRIVATE_IMAGE": [
+   128444
+  ],
+  "PRIVATE_IMAGE_DOCUMENT": [
+   128443
+  ],
+  "PRIVATE_LIGHT": [
+   128161
+  ],
+  "PRIVATE_LOCK": [
+   128274
+  ],
+  "PRIVATE_MAXIMIZE": [
+   128470
+  ],
+  "PRIVATE_MEH": [
+   128016
+  ],
+  "PRIVATE_MINIMIZE": [
+   128469
+  ],
+  "PRIVATE_MIXED_DOCUMENT": [
+   128442
+  ],
+  "PRIVATE_MUTE": [
+   128360
+  ],
+  "PRIVATE_NOTE": [
+   128221
+  ],
+  "PRIVATE_PC": [
+   128435
+  ],
+  "PRIVATE_PRINTER": [
+   128438
+  ],
+  "PRIVATE_RELOAD": [
+   128472
+  ],
+  "PRIVATE_SCREEN": [
+   128437
+  ],
+  "PRIVATE_SETTINGS": [
+   128295
+  ],
+  "PRIVATE_VOL_DOWN": [
+   128361
+  ],
+  "PRIVATE_VOL_UP": [
+   128362
+  ],
+  "PRIVATE_WINDOW": [
+   128471
+  ],
+  "PRIVATE_WORLD": [
+   127760
+  ],
+  "QUATER_SIGN": [
+   188
+  ],
+  "QUOTE": [
+   34
+  ],
+  "RANGLE_BRACKET": [
+   12297
+  ],
+  "RANGLE_BRACKET_DBL": [
+   12299
+  ],
+  "RCORNER_BRKT": [
+   12301
+  ],
+  "REGISTERED_SIGN": [
+   169
+  ],
+  "RLENTICULAR_BRACKET": [
+   12305
+  ],
+  "ROT_CCW_120": [
+   8
+  ],
+  "RUBLE_SIGN": [
+   8381
+  ],
+  "RWCORNER_BRACKET": [
+   12303
+  ],
+  "SECTION": [
+   167
+  ],
+  "SPACE": [
+   32
+  ],
+  "SUPER_SCRIPT_1": [
+   185
+  ],
+  "SUPER_SCRIPT_2": [
+   178
+  ],
+  "SUPER_SCRIPT_3": [
+   179
+  ],
+  "S_WITH_CEDILLA": [
+   350
+  ],
+  "S_WITH_CEDILLA_SMALL": [
+   351
+  ],
+  "TAMIL_0B85": [
+   2949
+  ],
+  "TAMIL_0B86": [
+   2950
+  ],
+  "TAMIL_0B87": [
+   2951
+  ],
+  "TAMIL_0B88": [
+   2952
+  ],
+  "TAMIL_0B89": [
+   2953
+  ],
+  "TAMIL_0B8A": [
+   2954
+  ],
+  "TAMIL_0B8E": [
+   2958
+  ],
+  "TAMIL_0B8F": [
+   2959
+  ],
+  "TAMIL_0B90": [
+   2960
+  ],
+  "TAMIL_0B92": [
+   2962
+  ],
+  "TAMIL_0B93": [
+   2963
+  ],
+  "TAMIL_0B94": [
+   2964
+  ],
+  "TAMIL_0B95": [
+   2965
+  ],
+  "TAMIL_0B99": [
+   2969
+  ],
+  "TAMIL_0B9A": [
+   2970
+  ],
+  "TAMIL_0B9C": [
+   2972
+  ],
+  "TAMIL_0B9E": [
+   2974
+  ],
+  "TAMIL_0B9F": [
+   2975
+  ],
+  "TAMIL_0BA3": [
+   2979
+  ],
+  "TAMIL_0BA4": [
+   2980
+  ],
+  "TAMIL_0BA8": [
+   2984
+  ],
+  "TAMIL_0BA9": [
+   2985
+  ],
+  "TAMIL_0BAA": [
+   2986
+  ],
+  "TAMIL_0BAE": [
+   2990
+  ],
+  "TAMIL_0BAF": [
+   2991
+  ],
+  "TAMIL_0BB0": [
+   2992
+  ],
+  "TAMIL_0BB1": [
+   2993
+  ],
+  "TAMIL_0BB2": [
+   2994
+  ],
+  "TAMIL_0BB3": [
+   2995
+  ],
+  "TAMIL_0BB4": [
+   2996
+  ],
+  "TAMIL_0BB5": [
+   2997
+  ],
+  "TAMIL_0BB6": [
+   2998
+  ],
+  "TAMIL_0BB7": [
+   2999
+  ],
+  "TAMIL_0BB8": [
+   3000
+  ],
+  "TAMIL_0BB9": [
+   3001
+  ],
+  "TAMIL_0BE6": [
+   3046
+  ],
+  "TAMIL_0BE7": [
+   3047
+  ],
+  "TAMIL_0BE8": [
+   3048
+  ],
+  "TAMIL_0BE9": [
+   3049
+  ],
+  "TAMIL_0BEA": [
+   3050
+  ],
+  "TAMIL_0BEB": [
+   3051
+  ],
+  "TAMIL_0BEC": [
+   3052
+  ],
+  "TAMIL_0BED": [
+   3053
+  ],
+  "TAMIL_0BEE": [
+   3054
+  ],
+  "TAMIL_0BEF": [
+   3055
+  ],
+  "TAML_DC_0B82": [
+   57696
+  ],
+  "TAML_DC_0B83": [
+   57697
+  ],
+  "TAML_DC_0BBE": [
+   57698
+  ],
+  "TAML_DC_0BBF": [
+   57699
+  ],
+  "TAML_DC_0BC0": [
+   57700
+  ],
+  "TAML_DC_0BC1": [
+   57701
+  ],
+  "TAML_DC_0BC2": [
+   57702
+  ],
+  "TAML_DC_0BC6": [
+   57703
+  ],
+  "TAML_DC_0BC7": [
+   57704
+  ],
+  "TAML_DC_0BC8": [
+   57705
+  ],
+  "TAML_DC_0BCA": [
+   57706
+  ],
+  "TAML_DC_0BCB": [
+   57707
+  ],
+  "TAML_DC_0BCC": [
+   57708
+  ],
+  "TAML_DC_0BCD": [
+   57709
+  ],
+  "TECHNICAL_ALTERNATIVE": [
+   9095
+  ],
+  "TECHNICAL_COMMAND": [
+   8984
+  ],
+  "TECHNICAL_CONTROL": [
+   9096
+  ],
+  "TECHNICAL_ERASELEFT": [
+   9003
+  ],
+  "TECHNICAL_ERASERIGHT": [
+   8998
+  ],
+  "TECHNICAL_ESCAPE": [
+   9099
+  ],
+  "TECHNICAL_OPTION": [
+   8997
+  ],
+  "TELUGU_0C05": [
+   3077
+  ],
+  "TELUGU_0C06": [
+   3078
+  ],
+  "TELUGU_0C07": [
+   3079
+  ],
+  "TELUGU_0C08": [
+   3080
+  ],
+  "TELUGU_0C09": [
+   3081
+  ],
+  "TELUGU_0C0A": [
+   3082
+  ],
+  "TELUGU_0C0B": [
+   3083
+  ],
+  "TELUGU_0C0E": [
+   3086
+  ],
+  "TELUGU_0C0F": [
+   3087
+  ],
+  "TELUGU_0C10": [
+   3088
+  ],
+  "TELUGU_0C12": [
+   3090
+  ],
+  "TELUGU_0C13": [
+   3091
+  ],
+  "TELUGU_0C14": [
+   3092
+  ],
+  "TELUGU_0C15": [
+   3093
+  ],
+  "TELUGU_0C16": [
+   3094
+  ],
+  "TELUGU_0C17": [
+   3095
+  ],
+  "TELUGU_0C18": [
+   3096
+  ],
+  "TELUGU_0C19": [
+   3097
+  ],
+  "TELUGU_0C1A": [
+   3098
+  ],
+  "TELUGU_0C1B": [
+   3099
+  ],
+  "TELUGU_0C1C": [
+   3100
+  ],
+  "TELUGU_0C1D": [
+   3101
+  ],
+  "TELUGU_0C1E": [
+   3102
+  ],
+  "TELUGU_0C1F": [
+   3103
+  ],
+  "TELUGU_0C20": [
+   3104
+  ],
+  "TELUGU_0C21": [
+   3105
+  ],
+  "TELUGU_0C22": [
+   3106
+  ],
+  "TELUGU_0C23": [
+   3107
+  ],
+  "TELUGU_0C24": [
+   3108
+  ],
+  "TELUGU_0C25": [
+   3109
+  ],
+  "TELUGU_0C26": [
+   3110
+  ],
+  "TELUGU_0C27": [
+   3111
+  ],
+  "TELUGU_0C28": [
+   3112
+  ],
+  "TELUGU_0C2A": [
+   3114
+  ],
+  "TELUGU_0C2B": [
+   3115
+  ],
+  "TELUGU_0C2C": [
+   3116
+  ],
+  "TELUGU_0C2D": [
+   3117
+  ],
+  "TELUGU_0C2E": [
+   3118
+  ],
+  "TELUGU_0C2F": [
+   3119
+  ],
+  "TELUGU_0C30": [
+   3120
+  ],
+  "TELUGU_0C31": [
+   3121
+  ],
+  "TELUGU_0C32": [
+   3122
+  ],
+  "TELUGU_0C33": [
+   3123
+  ],
+  "TELUGU_0C34": [
+   3124
+  ],
+  "TELUGU_0C35": [
+   3125
+  ],
+  "TELUGU_0C36": [
+   3126
+  ],
+  "TELUGU_0C37": [
+   3127
+  ],
+  "TELUGU_0C38": [
+   3128
+  ],
+  "TELUGU_0C39": [
+   3129
+  ],
+  "TELUGU_0C66": [
+   3174
+  ],
+  "TELUGU_0C67": [
+   3175
+  ],
+  "TELUGU_0C68": [
+   3176
+  ],
+  "TELUGU_0C69": [
+   3177
+  ],
+  "TELUGU_0C6A": [
+   3178
+  ],
+  "TELUGU_0C6B": [
+   3179
+  ],
+  "TELUGU_0C6C": [
+   3180
+  ],
+  "TELUGU_0C6D": [
+   3181
+  ],
+  "TELUGU_0C6E": [
+   3182
+  ],
+  "TELUGU_0C6F": [
+   3183
+  ],
+  "TELU_DC_0C01": [
+   57664
+  ],
+  "TELU_DC_0C02": [
+   57665
+  ],
+  "TELU_DC_0C03": [
+   57666
+  ],
+  "TELU_DC_0C3C": [
+   57667
+  ],
+  "TELU_DC_0C3E": [
+   57668
+  ],
+  "TELU_DC_0C3F": [
+   57669
+  ],
+  "TELU_DC_0C40": [
+   57670
+  ],
+  "TELU_DC_0C41": [
+   57671
+  ],
+  "TELU_DC_0C42": [
+   57672
+  ],
+  "TELU_DC_0C43": [
+   57673
+  ],
+  "TELU_DC_0C46": [
+   57674
+  ],
+  "TELU_DC_0C47": [
+   57675
+  ],
+  "TELU_DC_0C48": [
+   57676
+  ],
+  "TELU_DC_0C4A": [
+   57677
+  ],
+  "TELU_DC_0C4B": [
+   57678
+  ],
+  "TELU_DC_0C4C": [
+   57679
+  ],
+  "TELU_DC_0C4D": [
+   57680
+  ],
+  "THAI_0E01": [
+   3585
+  ],
+  "THAI_0E02": [
+   3586
+  ],
+  "THAI_0E03": [
+   3587
+  ],
+  "THAI_0E04": [
+   3588
+  ],
+  "THAI_0E05": [
+   3589
+  ],
+  "THAI_0E06": [
+   3590
+  ],
+  "THAI_0E07": [
+   3591
+  ],
+  "THAI_0E08": [
+   3592
+  ],
+  "THAI_0E09": [
+   3593
+  ],
+  "THAI_0E0A": [
+   3594
+  ],
+  "THAI_0E0B": [
+   3595
+  ],
+  "THAI_0E0C": [
+   3596
+  ],
+  "THAI_0E0D": [
+   3597
+  ],
+  "THAI_0E0E": [
+   3598
+  ],
+  "THAI_0E0F": [
+   3599
+  ],
+  "THAI_0E10": [
+   3600
+  ],
+  "THAI_0E11": [
+   3601
+  ],
+  "THAI_0E12": [
+   3602
+  ],
+  "THAI_0E13": [
+   3603
+  ],
+  "THAI_0E14": [
+   3604
+  ],
+  "THAI_0E15": [
+   3605
+  ],
+  "THAI_0E16": [
+   3606
+  ],
+  "THAI_0E17": [
+   3607
+  ],
+  "THAI_0E18": [
+   3608
+  ],
+  "THAI_0E19": [
+   3609
+  ],
+  "THAI_0E1A": [
+   3610
+  ],
+  "THAI_0E1B": [
+   3611
+  ],
+  "THAI_0E1C": [
+   3612
+  ],
+  "THAI_0E1D": [
+   3613
+  ],
+  "THAI_0E1E": [
+   3614
+  ],
+  "THAI_0E1F": [
+   3615
+  ],
+  "THAI_0E20": [
+   3616
+  ],
+  "THAI_0E21": [
+   3617
+  ],
+  "THAI_0E22": [
+   3618
+  ],
+  "THAI_0E23": [
+   3619
+  ],
+  "THAI_0E24": [
+   3620
+  ],
+  "THAI_0E25": [
+   3621
+  ],
+  "THAI_0E26": [
+   3622
+  ],
+  "THAI_0E27": [
+   3623
+  ],
+  "THAI_0E28": [
+   3624
+  ],
+  "THAI_0E29": [
+   3625
+  ],
+  "THAI_0E2A": [
+   3626
+  ],
+  "THAI_0E2B": [
+   3627
+  ],
+  "THAI_0E2C": [
+   3628
+  ],
+  "THAI_0E2D": [
+   3629
+  ],
+  "THAI_0E2E": [
+   3630
+  ],
+  "THAI_0E2F": [
+   3631
+  ],
+  "THAI_0E30": [
+   3632
+  ],
+  "THAI_0E32": [
+   3634
+  ],
+  "THAI_0E33": [
+   3635
+  ],
+  "THAI_0E3F": [
+   3647
+  ],
+  "THAI_0E40": [
+   3648
+  ],
+  "THAI_0E41": [
+   3649
+  ],
+  "THAI_0E42": [
+   3650
+  ],
+  "THAI_0E43": [
+   3651
+  ],
+  "THAI_0E44": [
+   3652
+  ],
+  "THAI_0E45": [
+   3653
+  ],
+  "THAI_0E46": [
+   3654
+  ],
+  "THAI_0E50": [
+   3664
+  ],
+  "THAI_0E51": [
+   3665
+  ],
+  "THAI_0E52": [
+   3666
+  ],
+  "THAI_0E53": [
+   3667
+  ],
+  "THAI_0E54": [
+   3668
+  ],
+  "THAI_0E55": [
+   3669
+  ],
+  "THAI_0E56": [
+   3670
+  ],
+  "THAI_0E57": [
+   3671
+  ],
+  "THAI_0E58": [
+   3672
+  ],
+  "THAI_0E59": [
+   3673
+  ],
+  "THAI_DC_0E31": [
+   57728
+  ],
+  "THAI_DC_0E34": [
+   57729
+  ],
+  "THAI_DC_0E35": [
+   57730
+  ],
+  "THAI_DC_0E36": [
+   57731
+  ],
+  "THAI_DC_0E37": [
+   57732
+  ],
+  "THAI_DC_0E38": [
+   57733
+  ],
+  "THAI_DC_0E39": [
+   57734
+  ],
+  "THAI_DC_0E3A": [
+   57735
+  ],
+  "THAI_DC_0E47": [
+   57736
+  ],
+  "THAI_DC_0E48": [
+   57737
+  ],
+  "THAI_DC_0E49": [
+   57738
+  ],
+  "THAI_DC_0E4A": [
+   57739
+  ],
+  "THAI_DC_0E4B": [
+   57740
+  ],
+  "THAI_DC_0E4C": [
+   57741
+  ],
+  "THAI_DC_0E4D": [
+   57742
+  ],
+  "THREE_QUATER_SIGN": [
+   190
+  ],
+  "UCAS_1401": [
+   5121
+  ],
+  "UCAS_1403": [
+   5123
+  ],
+  "UCAS_1405": [
+   5125
+  ],
+  "UCAS_140A": [
+   5130
+  ],
+  "UCAS_1417": [
+   5143
+  ],
+  "UCAS_141E": [
+   5150
+  ],
+  "UCAS_1431": [
+   5169
+  ],
+  "UCAS_1433": [
+   5171
+  ],
+  "UCAS_1438": [
+   5176
+  ],
+  "UCAS_1449": [
+   5193
+  ],
+  "UCAS_144E": [
+   5198
+  ],
+  "UCAS_1450": [
+   5200
+  ],
+  "UCAS_1455": [
+   5205
+  ],
+  "UCAS_1466": [
+   5222
+  ],
+  "UCAS_146D": [
+   5229
+  ],
+  "UCAS_146F": [
+   5231
+  ],
+  "UCAS_1472": [
+   5234
+  ],
+  "UCAS_1483": [
+   5251
+  ],
+  "UCAS_148B": [
+   5259
+  ],
+  "UCAS_148D": [
+   5261
+  ],
+  "UCAS_1490": [
+   5264
+  ],
+  "UCAS_14A1": [
+   5281
+  ],
+  "UCAS_14A5": [
+   5285
+  ],
+  "UCAS_14A7": [
+   5287
+  ],
+  "UCAS_14AA": [
+   5290
+  ],
+  "UCAS_14BB": [
+   5307
+  ],
+  "UCAS_14C2": [
+   5314
+  ],
+  "UCAS_14C4": [
+   5316
+  ],
+  "UCAS_14C7": [
+   5319
+  ],
+  "UCAS_14D0": [
+   5328
+  ],
+  "UCAS_14D5": [
+   5333
+  ],
+  "UCAS_14D7": [
+   5335
+  ],
+  "UCAS_14DA": [
+   5338
+  ],
+  "UCAS_14EA": [
+   5354
+  ],
+  "UCAS_14EF": [
+   5359
+  ],
+  "UCAS_14F1": [
+   5361
+  ],
+  "UCAS_14F4": [
+   5364
+  ],
+  "UCAS_1505": [
+   5381
+  ],
+  "UCAS_1528": [
+   5416
+  ],
+  "UCAS_152A": [
+   5418
+  ],
+  "UCAS_152D": [
+   5421
+  ],
+  "UCAS_153E": [
+   5438
+  ],
+  "UCAS_1546": [
+   5446
+  ],
+  "UCAS_1548": [
+   5448
+  ],
+  "UCAS_154B": [
+   5451
+  ],
+  "UCAS_1550": [
+   5456
+  ],
+  "UCAS_1555": [
+   5461
+  ],
+  "UCAS_1557": [
+   5463
+  ],
+  "UCAS_1559": [
+   5465
+  ],
+  "UCAS_155D": [
+   5469
+  ],
+  "UCAS_1575": [
+   5493
+  ],
+  "UCAS_1577": [
+   5495
+  ],
+  "UCAS_1579": [
+   5497
+  ],
+  "UCAS_157B": [
+   5499
+  ],
+  "UCAS_157C": [
+   5500
+  ],
+  "UCAS_157F": [
+   5503
+  ],
+  "UCAS_1581": [
+   5505
+  ],
+  "UCAS_1583": [
+   5507
+  ],
+  "UCAS_1585": [
+   5509
+  ],
+  "UCAS_158F": [
+   5519
+  ],
+  "UCAS_1591": [
+   5521
+  ],
+  "UCAS_1593": [
+   5523
+  ],
+  "UCAS_1595": [
+   5525
+  ],
+  "UCAS_1596": [
+   5526
+  ],
+  "UCAS_15A0": [
+   5536
+  ],
+  "UCAS_15A2": [
+   5538
+  ],
+  "UCAS_15A4": [
+   5540
+  ],
+  "UCAS_15A6": [
+   5542
+  ],
+  "UCAS_1671": [
+   5745
+  ],
+  "UCAS_1673": [
+   5747
+  ],
+  "UCAS_1675": [
+   5749
+  ],
+  "UMLAUT_A": [
+   196
+  ],
+  "UMLAUT_A_SMALL": [
+   228
+  ],
+  "UMLAUT_O": [
+   214
+  ],
+  "UMLAUT_O_SMALL": [
+   246
+  ],
+  "UMLAUT_U": [
+   220
+  ],
+  "UMLAUT_U_SMALL": [
+   252
+  ],
+  "U_WITH_ACUTE": [
+   218
+  ],
+  "U_WITH_ACUTE_SMALL": [
+   250
+  ],
+  "U_WITH_GRAVE": [
+   217
+  ],
+  "U_WITH_GRAVE_SMALL": [
+   249
+  ],
+  "VIET_DC_0300": [
+   57760
+  ],
+  "VIET_DC_0301": [
+   57761
+  ],
+  "VIET_DC_0303": [
+   57762
+  ],
+  "VIET_DC_0309": [
+   57763
+  ],
+  "VIET_DC_0323": [
+   57764
+  ],
+  "YEN_SIGN": [
+   165
+  ],
+  "YIDDISH_VAV_DBL": [
+   1520
+  ],
+  "YIDDISH_VAV_YOD": [
+   1521
+  ],
+  "YIDDISH_YOD_DBL": [
+   1522
+  ],
+  "ZERO": [
+   48
+  ],
+  "ZHUYIN_02C7": [
+   711
+  ],
+  "ZHUYIN_02CA": [
+   714
+  ],
+  "ZHUYIN_02CB": [
+   715
+  ],
+  "ZHUYIN_02D9": [
+   729
+  ],
+  "ZHUYIN_3105": [
+   12549
+  ],
+  "ZHUYIN_3106": [
+   12550
+  ],
+  "ZHUYIN_3107": [
+   12551
+  ],
+  "ZHUYIN_3108": [
+   12552
+  ],
+  "ZHUYIN_3109": [
+   12553
+  ],
+  "ZHUYIN_310A": [
+   12554
+  ],
+  "ZHUYIN_310B": [
+   12555
+  ],
+  "ZHUYIN_310C": [
+   12556
+  ],
+  "ZHUYIN_310D": [
+   12557
+  ],
+  "ZHUYIN_310E": [
+   12558
+  ],
+  "ZHUYIN_310F": [
+   12559
+  ],
+  "ZHUYIN_3110": [
+   12560
+  ],
+  "ZHUYIN_3111": [
+   12561
+  ],
+  "ZHUYIN_3112": [
+   12562
+  ],
+  "ZHUYIN_3113": [
+   12563
+  ],
+  "ZHUYIN_3114": [
+   12564
+  ],
+  "ZHUYIN_3115": [
+   12565
+  ],
+  "ZHUYIN_3116": [
+   12566
+  ],
+  "ZHUYIN_3117": [
+   12567
+  ],
+  "ZHUYIN_3118": [
+   12568
+  ],
+  "ZHUYIN_3119": [
+   12569
+  ],
+  "ZHUYIN_311A": [
+   12570
+  ],
+  "ZHUYIN_311B": [
+   12571
+  ],
+  "ZHUYIN_311C": [
+   12572
+  ],
+  "ZHUYIN_311D": [
+   12573
+  ],
+  "ZHUYIN_311E": [
+   12574
+  ],
+  "ZHUYIN_311F": [
+   12575
+  ],
+  "ZHUYIN_3120": [
+   12576
+  ],
+  "ZHUYIN_3121": [
+   12577
+  ],
+  "ZHUYIN_3122": [
+   12578
+  ],
+  "ZHUYIN_3123": [
+   12579
+  ],
+  "ZHUYIN_3124": [
+   12580
+  ],
+  "ZHUYIN_3125": [
+   12581
+  ],
+  "ZHUYIN_3126": [
+   12582
+  ],
+  "ZHUYIN_3127": [
+   12583
+  ],
+  "ZHUYIN_3128": [
+   12584
+  ],
+  "ZHUYIN_3129": [
+   12585
+  ]
+ }
+}
