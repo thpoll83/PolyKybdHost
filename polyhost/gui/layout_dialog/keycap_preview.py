@@ -447,8 +447,15 @@ class KeycapPreview:
                                      "keycode_helper.c", "poly_keymap.c")))
         resolved = {}
         for token, expr in exprs.items():
+            expanded = expand_function_macros(expr, macros)
             try:
-                cps = self._resolver.resolve(expand_function_macros(expr, macros))
+                cps = self._resolver.resolve(expanded)
+                # ⚠️ A macro this table has no glyphs for resolves to its own NAME as
+                # text, so the keycap draws the word `ICON_MEDIA_STOP`. The legend
+                # parses, every op in it is supported, and the picture is a line of
+                # capitals -- refuse it instead (see `Lang.unresolved_tokens`).
+                if cps and self._resolver.unresolved_tokens(expanded):
+                    cps = None
             except Exception:
                 cps = None
             if cps:

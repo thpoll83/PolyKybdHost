@@ -1298,6 +1298,22 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       the moment they started rendering. Over-escaping a raw-string regex fails
       **silently**; the guard is now a unit test on the parser
       (`tests/gui/keycap_preview_macros_test.py`), not the eye.
+  - ⚠️ **A legend whose MACRO the glyph table does not know draws the macro's own
+    NAME as text, and two keycaps shipped that way** (2026-09-01): the mute key
+    rendered the literal word `ICON_MUTE` and media-stop `ICON_MEDIA_STOP`. It is
+    invisible from the code — `resolve_token` falls back to parsing an unknown token
+    as the body of an implicit `U"..."`, which is right for a bare LUT cell and wrong
+    for a macro name, so the legend resolves, every op in it is supported, and the
+    picture is a line of capitals. **Two separate fixes, and both are needed:**
+    - `load_named_glyphs` only matched `#define NAME U"…"`, i.e. a SINGLE literal, so
+      a macro built from other macros (`#define ICON_MUTE  PRIVATE_MUTE U"\f\f"
+      ICON_CANCEL_X`) was skipped entirely. It now collects those bodies and expands
+      them afterwards, so header order does not decide it.
+    - What still cannot be expanded (a body of function-like calls) is **refused**,
+      via `Lang.unresolved_tokens()` — the sibling of `Renderer.unsupported_ops()`,
+      with the same rule: refusing is honest, drawing capitals is not. ⚠️ Ask it
+      about a LEGEND, never a setting cell — `HIDE` is a legitimate setting value
+      and looks exactly like an unresolved macro.
   - **A legend using an op the renderer lacks is REFUSED, not drawn — and the
     RENDERER answers that question now, not a list in `keycap_preview`.**
     `oled_preview.Renderer.unsupported_ops(cps)` returns the ops it cannot follow;

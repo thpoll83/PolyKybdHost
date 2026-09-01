@@ -191,6 +191,7 @@ def load_named_glyphs(path: str, *extra: str) -> dict[str, list[int]]:
                            'keycode_helper.h')
     if not extra and os.path.exists(sibling):
         paths.append(sibling)
+    bodies = {}
     for p in paths:
         if not os.path.exists(p):
             continue
@@ -198,7 +199,50 @@ def load_named_glyphs(path: str, *extra: str) -> dict[str, list[int]]:
             text = fh.read()
         for m in re.finditer(r'#define\s+(\w+)\s+[uU]"((?:\\.|[^"\\])*)"', text):
             out[m.group(1)] = parse_u_string(m.group(2))
+        # ⚠️ A macro can be a SEQUENCE of other macros and literals, and the
+        # single-literal pattern above skips it -- so it falls through to
+        # `resolve_token`, which parses the identifier as text and draws the keycap
+        # as the literal word "ICON_MUTE". Real, and shipped: the mute key drew its
+        # own macro name (found 2026-09-01). Collected here and resolved below, once
+        # every single-literal macro is known, so order in the header does not matter.
+        for m in re.finditer(r'#define\s+([A-Z][A-Z0-9_]*)\s+((?:[uU]"(?:\\.|[^"\\])*"'
+                             r'|[A-Z][A-Z0-9_]*)(?:[ \t]+(?:[uU]"(?:\\.|[^"\\])*"'
+                             r'|[A-Z][A-Z0-9_]*))+)[ \t]*$', text, re.M):
+            bodies.setdefault(m.group(1), m.group(2))
+    _resolve_macro_sequences(out, bodies)
     return out
+
+
+def _resolve_macro_sequences(out: dict, bodies: dict) -> None:
+    """Expand `#define A  B U"x" C` into codepoints, in `out`.
+
+    Bounded rather than iterate-until-stable: these nest one level in practice and
+    a macro that referenced itself would otherwise spin while the editor paints a
+    key. A body still holding an unknown name after the passes is LEFT OUT -- it is
+    then reported by `unresolved_tokens` and the legend is refused, which is the
+    honest outcome; inventing a partial expansion would draw a keycap missing a
+    glyph with nothing to say so.
+    """
+    for _ in range(4):
+        progressed = False
+        for name, body in list(bodies.items()):
+            if name in out:
+                continue
+            cps, ok = [], True
+            for tok in re.finditer(r'[uU]"(?:\\.|[^"\\])*"|[A-Z][A-Z0-9_]*', body):
+                t = tok.group(0)
+                if t[0] in 'uU' and t[1:2] == '"':
+                    cps += parse_u_string(t[2:-1])
+                elif t in out:
+                    cps += list(out[t])
+                else:
+                    ok = False
+                    break
+            if ok and cps:
+                out[name] = cps
+                progressed = True
+        if not progressed:
+            break
 
 
 class Lang:
@@ -242,6 +286,31 @@ class Lang:
         for m in re.finditer(r'[uU]"(?:\\.|[^"\\])*"|\S+', s):
             cps += self.resolve_token(m.group(0))
         return cps or None
+
+    def unresolved_tokens(self, val) -> list:
+        """The MACRO-looking tokens in `val` that this table has no glyphs for.
+
+        ⚠️ `resolve_token` falls back to parsing an unknown token as the body of an
+        implicit `U"..."`, which is right for a bare cell and WRONG for a macro name:
+        the keycap then draws the literal word `ICON_MEDIA_STOP`. That shipped
+        (2026-09-01), and it is invisible from the code -- the legend resolves, the
+        renderer supports every op in it, and the picture is a line of text.
+
+        So a caller that shows the result as if it were the keyboard should refuse a
+        legend this reports on, exactly as it refuses one `Renderer.unsupported_ops`
+        reports on. A token is macro-looking only if it is ALL-CAPS with no lowercase
+        and at least two characters -- an ordinary legend body is a `U"..."` literal
+        or lowercase text, so this cannot fire on real content.
+        """
+        if val is None or val == '' or isinstance(val, (int, float)):
+            return []
+        out = []
+        for m in re.finditer(r'[uU]"(?:\\.|[^"\\])*"|\S+', str(val).strip()):
+            t = m.group(0)
+            if t in self.named or not re.fullmatch(r'[A-Z][A-Z0-9_]+', t):
+                continue
+            out.append(t)
+        return out
 
     def resolve_token(self, t: str) -> list[int]:
         if t in self.named: return list(self.named[t])

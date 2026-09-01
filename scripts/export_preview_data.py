@@ -86,8 +86,14 @@ def build(pk: pathlib.Path) -> dict:
     resolver.named = named
     legends, unresolved = {}, []
     for token, expr in legends_src.items():
+        expanded = kp.expand_function_macros(expr, macros)
         try:
-            cps = resolver.resolve(kp.expand_function_macros(expr, macros))
+            cps = resolver.resolve(expanded)
+            # ⚠️ A macro with no glyphs resolves to its own NAME as text -- the
+            # keycap then draws the word `ICON_MEDIA_STOP`. Omit it rather than
+            # ship a legend that renders as a line of capitals.
+            if cps and resolver.unresolved_tokens(expanded):
+                cps = None
         except Exception:
             cps = None
         if cps:
