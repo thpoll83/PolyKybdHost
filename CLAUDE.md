@@ -313,6 +313,17 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       test**, with the reasoning in the docstring, so the next reader (or the next
       bot) does not re-raise it — and to say on the thread where the real fix
       belongs. Declining without that just resets the clock.
+    - ✅ **And that is what closed it: the real fix landed upstream (qmk#252,
+      2026-09-01), so the pin has been INVERTED here.** `Renderer.bbox()` now skips
+      an unresolvable glyph in a `HINT_SMALL` run instead of substituting `'!'`,
+      matching `kdisp_gfx_text_bbox_in`; the test that pinned the old behaviour is
+      `test_small_skips_a_missing_glyph_instead_of_substituting_bang`, ported from
+      the C's own new case. **The lesson is unchanged and this is its payoff** —
+      declining a correct finding on parity grounds only holds while somebody
+      carries it to the end the contract points at. ⚠️ It also means a parity pin
+      is a LIABILITY the moment the other side moves: nothing here would have
+      failed, so the divergence would simply have flipped direction in silence.
+      When you pin one, name the upstream change that would invalidate it.
 
 - ⚠️ **Sourcery refuses in TWO different ways, and only one of them is the weekly
   budget.** Both arrive as a `COMMENTED` review whose entire body is the notice, so
@@ -330,7 +341,15 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     08:58:18 and Sourcery submitted a real **`APPROVED`** review on its next
     commit at **09:02:21, three minutes later**. The other three pushed follow-up
     commits too and got nothing, so this is neither reliable nor universal —
-    **1 of 4**. Treat the countdown as an upper bound of unknown tightness, keep
+    **1 of 4**. ⚠️ **Reproduced 2026-09-01 on docs#69, and the second instance names
+    the trigger: a PUSH.** Refused on `76716da` at 12:44:37 quoting *"1 day and 21
+    hours"*, then `APPROVED` on `fa641b1` at **12:48:41 — four minutes later**, with
+    nothing in between but a commit. So the countdown tracks the PR state it was
+    computed against, not a clock you can wait out, and a push is what re-tries it —
+    the same shape as CodeRabbit's "a push re-triggers a review without spending a
+    request" above. Both reviews carried the right head sha, so the standing
+    `commit_id`-plus-body check reads them correctly.
+    Treat the countdown as an upper bound of unknown tightness, keep
     pushing, and check `get_reviews` rather than waiting out the clock.
   - **Diff too large** — *"Sorry, we are unable to review this pull request. The
     GitHub API does not allow us to fetch diffs exceeding 20000 lines"*. A hard
@@ -485,6 +504,18 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     scores 0 against a line reading ``` `crash_summary()` puts the crash counts ```
     — a false "note lost" scare mid-resolution (2026-08-18). Pick a distinctive
     run of plain words, or include the backticks.
+  - ⚠️ **The same grep-back is the check for a SCRIPTED edit, not just a merge —
+    and there it catches a different cause.** Editing this file with a
+    `s.replace(anchor, new)` drops whatever sits between the two when the
+    replacement does not repeat the anchor's opening lines verbatim: python does
+    exactly what it was told, nothing errors, and the file reads fine because the
+    surviving text still forms a sentence. That is how a line vanished on
+    2026-09-01 — the anchor began *"bot) does not re-raise it…"* and the
+    replacement began one line lower, so that clause was silently deleted from a
+    note being extended, not rewritten. Assert the anchor count before writing
+    (`assert s.count(anchor) == 1`), then grep each note back by name afterwards.
+    The merge case and this one share nothing but the remedy, which is the reason
+    to state it once for both.
 
 ## Commands
 
