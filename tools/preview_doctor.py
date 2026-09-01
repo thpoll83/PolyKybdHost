@@ -10,7 +10,6 @@ else's disk. Run it and paste the output.
     python tools/preview_doctor.py
 """
 import os
-import pathlib
 import subprocess
 import sys
 
@@ -78,4 +77,9 @@ def main():
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except BrokenPipeError:
+        # This exists to be piped into `head` / `tail` / a paste buffer, and a
+        # traceback there is one more confusing thing to report.
+        os._exit(0)
