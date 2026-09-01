@@ -122,6 +122,32 @@ def build_keycode_to_name(name_to_keycode: dict[str, int]) -> dict[int, str]:
     return picked
 
 
+def parse_layers_h(path: Path) -> dict[int, str]:
+    """`enum kb_layers` from a firmware checkout's layers.h, as index -> tag.
+
+    Handles the two forms the enum actually uses: an explicit value (`_BL = 0x00`)
+    sets the running index, and an alias (`_L0 = _BL`) names the SAME index rather
+    than advancing it.
+    """
+    m = re.search(r"enum\s+kb_layers\s*\{(.*?)\}", path.read_text(encoding="utf-8"), re.S)
+    if not m:
+        return {}
+    idx, tags = 0, {}
+    for tok in (t.strip() for t in m.group(1).split(",")):
+        name = tok.split("=")[0].strip()
+        if not name.startswith("_"):
+            continue
+        if "=" in tok:
+            val = tok.split("=", 1)[1].strip()
+            if val.startswith("_"):        # an alias keeps the index just used
+                tags[idx - 1] = name.lstrip("_")
+                continue
+            idx = int(val, 0)
+        tags[idx] = name.lstrip("_")
+        idx += 1
+    return tags
+
+
 def parse_layer_names() -> dict[int, str]:
     """The firmware layer enum tags by index -- see `LAYER_TAGS`.
 

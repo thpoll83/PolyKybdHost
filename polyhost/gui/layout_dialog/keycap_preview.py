@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import logging
 import os
+import pathlib
 import re
 import sys
 
@@ -257,6 +258,7 @@ class KeycapPreview:
         # layer index -> enum tag, e.g. 5 -> "FL". Seeded from the shipped map so a
         # preview built without a dialog still decodes layer keys.
         self._layer_tags: dict = dict(qh.LAYER_TAGS)
+        self._tag_drift = ""       # set when the checkout disagrees with LAYER_TAGS
 
     # -- loading ------------------------------------------------------------
 
@@ -333,6 +335,38 @@ class KeycapPreview:
                 self.log.debug("runtime-layer previews unavailable: %s",
                                self._runtime.reason)
             self._fw_dir = pk
+            # ⚠️ The tags come from THIS checkout's layers.h, not from the shipped
+            # LAYER_TAGS -- because they must match the spelling the SAME tree's
+            # keycode_helper.c switches on. A tree from before the Fn merge has no
+            # `case MO(_FL)` at all; it switches on `MO(_FL0)`/`MO(_FL1)`, so a
+            # constant saying `5 -> FL` builds a token that tree cannot match and
+            # the key goes blank. Hardcoding was tried for one commit and did
+            # exactly that in the field.
+            #
+            # The constant is the fallback for a checkout whose enum will not parse,
+            # and the YARDSTICK: when the two disagree, this checkout is not the
+            # firmware this host was released against, so previews can name the
+            # WRONG layer (the device's index 6 is `_NL`, an old tree's is `_FL1`)
+            # and every legend beside them may be stale too. That is not something
+            # the preview can fix -- but it must not hide it either, hence the
+            # warning threaded out through `source_info()` into the tooltip.
+            try:
+                derived = qh.parse_layers_h(pathlib.Path(pk) / "layers.h")
+            except Exception as e:
+                derived = {}
+                self.log.debug("layers.h unreadable (%s: %s)", type(e).__name__, e)
+            if derived:
+                self._layer_tags = derived
+                drift = sorted(i for i in set(derived) | set(qh.LAYER_TAGS)
+                               if derived.get(i) != qh.LAYER_TAGS.get(i))
+                if drift:
+                    self._tag_drift = (
+                        f"this checkout's layer enum differs from the one this host "
+                        f"expects at index {drift[0]}+ "
+                        f"({derived.get(drift[0])!r} vs {qh.LAYER_TAGS.get(drift[0])!r}) "
+                        f"-- it is out of step with the keyboard, so previews can be "
+                        f"wrong or missing. Update the firmware checkout.")
+                    self.log.warning("key previews: %s", self._tag_drift)
             self._op, self._ld = op, ld
             # Resolve-only view: same class, so the codepoint tokenising stays the ONE
             # implementation that mirrors the firmware's make_key -- but built without
@@ -401,7 +435,10 @@ class KeycapPreview:
             # tells you why the commit line is absent (CodeQL, #207).
             self.log.debug("no git description for %s (%s: %s)",
                            pk, type(e).__name__, e)
-        return f"{pk}\n{head}" if head else pk
+        out = f"{pk}\n{head}" if head else pk
+        # The drift line is the ACTIONABLE half: the path and commit only help
+        # someone who already knows which commit to expect.
+        return f"{out}\n\n\u26a0 {self._tag_drift}" if self._tag_drift else out
 
     @property
     def languages(self) -> list:

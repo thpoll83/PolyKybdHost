@@ -6,7 +6,6 @@ without `__init__` and its fields set directly. No firmware checkout is read.
 import logging
 import os
 import pathlib
-import re
 import tempfile
 import unittest
 import unittest.mock
@@ -113,7 +112,7 @@ class SourceInfoTest(unittest.TestCase):
         this", and it must survive a checkout git cannot describe."""
         d = tempfile.mkdtemp()
         p = object.__new__(KeycapPreview)
-        p._loaded, p._ok, p._fw_dir = True, True, d
+        p._loaded, p._ok, p._fw_dir, p._tag_drift = True, True, d, ""
         self.assertEqual(p.source_info(), d)
 
     def test_a_failing_git_is_logged_not_swallowed_silently(self):
@@ -122,7 +121,7 @@ class SourceInfoTest(unittest.TestCase):
         why the commit line is missing, in the very method added to make a stale
         checkout diagnosable. Caught by CodeQL on #207."""
         p = object.__new__(KeycapPreview)
-        p._loaded, p._ok, p._fw_dir = True, True, "/nowhere"
+        p._loaded, p._ok, p._fw_dir, p._tag_drift = True, True, "/nowhere", ""
         p.log = logging.getLogger("test_source_info")
         with unittest.mock.patch("subprocess.run", side_effect=OSError("no git")):
             with self.assertLogs(p.log, level="DEBUG") as caught:
@@ -164,52 +163,73 @@ class LayerRangeTest(unittest.TestCase):
 
 
 class LayerTagSourceTest(unittest.TestCase):
-    """Where the layer tags come from -- one shipped constant, checked against the
-    firmware by this suite rather than read from anywhere at runtime."""
+    """Where the layer tags come from, and what happens when that source is stale.
 
-    def test_the_shipped_tags_decode_the_layer_keys_the_keymap_binds(self):
-        """No dialog, no checkout read: a bare preview names the base layer's three
-        layer keys, which is what the editor draws them by."""
+    ⚠️ They come from the firmware CHECKOUT's `layers.h`, not from the shipped
+    `LAYER_TAGS` -- because the token they build has to match the spelling the SAME
+    tree's `keycode_helper.c` switches on. Hardcoding was tried for one commit and
+    broke every layer key on an older checkout, which has no `case MO(_FL)` at all.
+    """
+
+    # The enum from before the Fn merge (2026-08-26): two function layers, so every
+    # index from 5 up names a different layer than the current firmware does.
+    OLD = {0: "L0", 1: "L1", 2: "L2", 3: "L3", 4: "L4", 5: "FL0", 6: "FL1",
+           7: "NL", 8: "UL", 9: "SL", 10: "LL", 11: "ADDLANG1", 12: "EMJ"}
+
+    def _fw(self):
+        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
+        if not os.path.exists(os.path.join(pk, "layers.h")):
+            self.skipTest("no firmware checkout beside this repo")
+        return pk
+
+    def test_the_tags_decode_the_layer_keys_the_keymap_binds(self):
+        """The end result, on a checkout that is in step: the base layer's layer
+        keys resolve to tokens the legends actually carry."""
+        self._fw()
         p = KeycapPreview()
-        self.assertEqual(p._layer_token(0x5225), "MO(_FL)")        # QK_MOMENTARY + 5
-        self.assertEqual(p._layer_token(0x5226), "MO(_NL)")        # + 6
-        self.assertEqual(p._layer_token(0x522A), "MO(_ADDLANG1)")  # + 10
-        self.assertEqual(p._layer_token(0x520B), "TO(_EMJ)")       # QK_TO + 11
+        if not p._load():
+            self.skipTest(f"previews unavailable: {p.reason}")
+        for kc, tok in ((0x5225, "MO(_FL)"), (0x5226, "MO(_NL)"),
+                        (0x522A, "MO(_ADDLANG1)"), (0x520B, "TO(_EMJ)")):
+            self.assertEqual(p._layer_token(kc), tok)
+            self.assertIn(tok, p._known)
 
     def test_the_shipped_tags_match_the_firmware_enum(self):
-        """⚠️ The guard that makes hardcoding safe -- and the one thing neither
-        earlier scheme had.
-
-        `LAYER_TAGS` is a constant precisely so a stale artifact or a stale checkout
-        cannot rename the connected keyboard's layers under the editor; the cost is
-        that it can itself fall behind `layers.h`. Nothing at runtime can notice
-        that, so the suite does: when a firmware checkout is present, the two must
-        agree exactly. A skip here means no checkout, not agreement.
+        """`LAYER_TAGS` is the fallback AND the yardstick the drift warning measures
+        against, so it has to describe the current firmware. Nothing at runtime can
+        notice it falling behind; this does. A skip means no checkout, not agreement.
         """
-        # Resolved the way the preview itself does -- <fw>/base/fonts -> <fw>/
-        # keyboards/polykybd -- so the test reads the same enum the legends came
-        # from rather than a path of its own that can quietly miss.
-        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
-        fw = os.path.join(pk, "layers.h")
-        if not os.path.exists(fw):
-            self.skipTest("no firmware checkout beside this repo")
-        text = pathlib.Path(fw).read_text(encoding="utf-8")
-        body = re.search(r"enum\s+kb_layers\s*\{(.*?)\}", text, re.S).group(1)
-        idx, tags = 0, {}
-        for tok in (t.strip() for t in body.split(",")):
-            name = tok.split("=")[0].strip()
-            if not name.startswith("_"):
-                continue
-            if "=" in tok:                       # `_BL = 0x00` / the `_L0 = _BL` alias
-                val = tok.split("=", 1)[1].strip()
-                if val.startswith("_"):          # an alias keeps the current index
-                    tags.setdefault(idx - 1, name.lstrip("_"))
-                    continue
-                idx = int(val, 0)
-            tags[idx] = name.lstrip("_")
-            idx += 1
-        # `_L0 = _BL` aliases index 0; the editor wants the tag the legends use.
-        tags[0] = "L0"
-        self.assertEqual(qh.LAYER_TAGS, tags)
+        pk = self._fw()
+        self.assertEqual(
+            qh.LAYER_TAGS,
+            qh.parse_layers_h(pathlib.Path(pk) / "layers.h"))
+
+    def test_a_checkout_out_of_step_with_the_host_is_REPORTED(self):
+        """⚠️ The part that was missing, and it cost three rounds of guessing.
+
+        An old checkout cannot be made to preview correctly -- its legends are old
+        too -- but the preview must not present that as its own failure. Reported
+        from the field as "L5 is gone", "the brightness icons are the old ones" and
+        "is it related to fontpacks", none of which points at the checkout.
+        """
+        self._fw()
+        with unittest.mock.patch.object(qh, "parse_layers_h", return_value=self.OLD):
+            p = KeycapPreview()
+            if not p._load():
+                self.skipTest(f"previews unavailable: {p.reason}")
+            self.assertEqual(p._layer_tags, self.OLD)      # the tree's, not ours
+            self.assertIn("index 5", p._tag_drift)
+            self.assertIn("FL0", p._tag_drift)
+            self.assertIn(p._tag_drift, p.source_info())   # reaches the tooltip
+
+    def test_an_in_step_checkout_reports_no_drift(self):
+        """The warning must stay silent on a healthy install, or it is one more
+        banner people learn to scroll past."""
+        self._fw()
+        p = KeycapPreview()
+        if not p._load():
+            self.skipTest(f"previews unavailable: {p.reason}")
+        self.assertEqual(p._tag_drift, "")
+        self.assertNotIn("\u26a0", p.source_info())
 
 

@@ -1071,33 +1071,37 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     names: a tag map can only ever carry `L0`, `FL`, …, while the firmware answers
     with what each layer actually is (`Qwerty`, `Stag!`, `ColemkDH`, …, `Fn`,
     `Numpad`, `Utility`).
-  - ⚠️ **`layer_names.yaml` AND its generator are GONE (2026-09-01) — the fallback is
-    the hardcoded `qmk_keycode_helper.LAYER_TAGS`, and an earlier version of this note
-    said "do not delete them".** Deriving the map went wrong twice, in opposite
-    directions, and the second attempt is the instructive one:
-    - **Generated file** — the rot above: a dead generator input, nothing notices.
-    - **Read `layers.h` LIVE at preview time** (the obvious fix, shipped briefly):
-      strictly worse. The KEYCODES come from the **connected keyboard** while the
-      enum came from **whatever the local firmware checkout happens to be**, so an old
-      checkout silently RENAMES the device's layers — `MO(_NL)` decoded as `MO(_FL1)`,
-      which matches no legend. Reported from the field within the hour as four layer
-      keys losing their preview at once (L6, L7, Intl, emoji) while Fn — the one index
-      the two enums happened to agree on — kept working. **A live read is not
-      automatically fresher than a constant; it is fresh with respect to whatever it
-      reads, and here that was the wrong machine's idea of the firmware.**
-    - **The constant is versioned with the host and reviewed with it**, so it cannot
-      be poisoned at runtime by either source. Its own staleness is caught where a
-      constant's staleness *can* be caught — in the suite:
-      `LayerTagSourceTest.test_the_shipped_tags_match_the_firmware_enum` parses
-      `layers.h` (resolved the way the preview resolves it) and requires exact
-      agreement, skipping only when there is no checkout. Mutation-checked by moving
-      one tag back to `FL0`.
-    - ⚠️ **The LEGENDS still come from the local checkout**, so a stale tree shows
-      stale keycaps — the tell in the field was the brightness keys drawing the old
-      MOON glyphs, which the firmware replaced with the sun family on 2026-08-25.
-      The "Key previews" checkbox tooltip names the checkout path and its HEAD
-      commit + date (`source_info()`) precisely so this is a five-second check rather
-      than a guess; `git pull` in `qmk_firmware` is the fix.
+  - ⚠️ **`layer_names.yaml` and its generator are GONE (2026-09-01), and the layer
+    tags now come from the firmware CHECKOUT's `layers.h` — the same tree the legends
+    come from.** That pairing is the whole rule, and it took three tries to see it:
+    - **A generated file** — the rot above: a dead generator input, nothing notices.
+    - **A hardcoded constant** (tried for exactly one commit, and it is what this
+      note used to recommend): worse. The tag has to match the spelling
+      `keycode_helper.c` **switches on**, and a checkout from before the Fn merge has
+      no `case MO(_FL)` at all — it switches on `MO(_FL0)`/`MO(_FL1)`. So a constant
+      saying `5 -> FL` builds a token that tree cannot match and the key goes blank.
+      Reported within the hour as "L5 is gone again".
+    - **The checkout's own `layers.h`**: correct, because tags and legends then agree
+      by construction. `qmk_keycode_helper.parse_layers_h()`; `LAYER_TAGS` remains
+      only as the no-checkout fallback and as the yardstick below.
+  - ⚠️ **But an out-of-step checkout still previews WRONG, and that is not fixable
+    from the host — so it is REPORTED instead.** The keycodes come from the connected
+    keyboard while every legend comes from the local clone, so an old clone renames
+    the device's layers under the editor (device index 6 is `_NL`; a pre-merge tree's
+    is `_FL1`) *and* draws retired glyphs beside them. `_load()` diffs the checkout's
+    enum against `LAYER_TAGS` and, on any disagreement, logs a warning and appends it
+    to `source_info()` → the "Key previews" tooltip. `test_the_shipped_tags_match_the_firmware_enum`
+    keeps that yardstick honest; both drift tests are mutation-checked.
+    - **The tell that a clone is behind, in one line: the brightness keys.** They
+      became a sun family on 2026-08-25 (`9f4fa686e5`); before that
+      `keycode_helper.c` returned `PRIVATE_DISP_*`, which are MOON glyphs. Moons in
+      the editor mean the clone predates that commit, full stop.
+    - ⚠️ **THREE separate reports — a blank L5, missing emoji/Intl keys, and the old
+      brightness icons — were ONE stale clone**, and none of them points at it. Two
+      rounds were spent inferring which end was stale from the symptoms, wrongly.
+      **`python tools/preview_doctor.py` answers it instead**: host + firmware
+      commits, the enum diff, every layer key's resolved token, and the brightness
+      legend expressions. Ask for its output before theorising.
   - ⚠️ **The reply is `[total][count]` then NUL-terminated names, and the TOTAL is
     what makes it decodable.** `total` is the whole payload length, that byte
     included; the host reads it from the first report, keeps reading until it holds
