@@ -341,7 +341,15 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     08:58:18 and Sourcery submitted a real **`APPROVED`** review on its next
     commit at **09:02:21, three minutes later**. The other three pushed follow-up
     commits too and got nothing, so this is neither reliable nor universal —
-    **1 of 4**. Treat the countdown as an upper bound of unknown tightness, keep
+    **1 of 4**. ⚠️ **Reproduced 2026-09-01 on docs#69, and the second instance names
+    the trigger: a PUSH.** Refused on `76716da` at 12:44:37 quoting *"1 day and 21
+    hours"*, then `APPROVED` on `fa641b1` at **12:48:41 — four minutes later**, with
+    nothing in between but a commit. So the countdown tracks the PR state it was
+    computed against, not a clock you can wait out, and a push is what re-tries it —
+    the same shape as CodeRabbit's "a push re-triggers a review without spending a
+    request" above. Both reviews carried the right head sha, so the standing
+    `commit_id`-plus-body check reads them correctly.
+    Treat the countdown as an upper bound of unknown tightness, keep
     pushing, and check `get_reviews` rather than waiting out the clock.
   - **Diff too large** — *"Sorry, we are unable to review this pull request. The
     GitHub API does not allow us to fetch diffs exceeding 20000 lines"*. A hard
