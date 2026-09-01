@@ -35,9 +35,6 @@ from PyQt5.QtGui import QImage
 
 from polyhost.services import macro_label as ml
 from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
-from polyhost.services import runtime_legends as rl
-from polyhost.services.runtime_legends import RuntimeLegends
-from polyhost.gui.layout_dialog.lang_keycap_render import LangKeycapRenderer
 
 # The editor's tile shows the resting legend, so no modifier is held.
 DEFAULT_LANG = "en-US"
@@ -246,10 +243,6 @@ class KeycapPreview:
         self._op = self._ld = self._L = self._R = self._resolver = None
         self._static: dict = {}
         self._known: set = set()   # every name the two halves can draw
-        self._runtime = None       # emoji/language layers (computed legends)
-        self._nano_R = None        # the 10px face the region tabs use
-        self._flag = None          # the flag-keycap composer
-        self._base_values = None   # keycode_helper.h enum, inverted
         self._alt_names: dict = {}  # keycode -> every name the header gives it
         self._fw_dir = ""          # the firmware checkout the legends came from
         self._ranges = None        # layer-switch ranges, read from the header
@@ -319,21 +312,6 @@ class KeycapPreview:
             self._alt_names = {}
             for nm, val in qh.parse_qmk_keycodes(qh.HEADER_FILE).items():
                 self._alt_names.setdefault(val, []).append(nm)
-            # The runtime layers -- emoji and language slots/tabs. Loaded here so a
-            # failure disables only them: their legend is COMPUTED by the firmware,
-            # so it is a separate prerequisite from the parsed display lists and must
-            # not take those down with it (the same independence the language LUT and
-            # the static map already have).
-            self._runtime = RuntimeLegends()
-            if self._runtime.load(pk):
-                from tools.gfx_font import OLED_W, OLED_H, BUFFER_X
-                nano = ml.load_nano_font(fonts_dir)
-                self._nano_R = op.Renderer([nano]) if nano else None
-                self._flag = LangKeycapRenderer(op.load_all_fonts(fonts_dir), nano,
-                                                OLED_W, OLED_H, BUFFER_X)
-            else:
-                self.log.debug("runtime-layer previews unavailable: %s",
-                               self._runtime.reason)
             self._fw_dir = pk
             # ⚠️ The tags come from THIS checkout's layers.h, not from the shipped
             # LAYER_TAGS -- because they must match the spelling the SAME tree's
@@ -503,15 +481,6 @@ class KeycapPreview:
         """
         if not self._load():
             return None
-        # A layer key has no entry in the browser's name table at all -- it is decoded,
-        # not looked up -- so the token is synthesised from the keycode.
-        # ⚠️ BEFORE the name lookup, because these keycodes HAVE no name: only the
-        # range's base is in the enum, so `ESLOT(7)` resolves to nothing and the
-        # editor drew a bare keycode for two entire layers. They are resolved by
-        # keycode RANGE, which is what the firmware does too.
-        img = self._runtime_image(keycode)
-        if img is not None:
-            return self._to_qimage(img)
         kc = self._resolve_name(keycode, name)
         if kc is None:
             return None
@@ -567,109 +536,6 @@ class KeycapPreview:
             if kc in self._known:
                 return kc
         return None
-
-    # -- the runtime layers -------------------------------------------------
-
-    def _base(self, name: str):
-        """The value of a `keycode_helper.h` enum entry, or None."""
-        if self._base_values is None:
-            self._base_values = {v: k for k, v in self._custom.items()}
-        return self._base_values.get(name)
-
-    def _runtime_image(self, keycode: int):
-        """The emoji/language keycap for `keycode` as a resting board draws it.
-
-        Returns None for anything outside those four ranges -- and for the MRU rows
-        inside them, which hold per-device history no static preview can know.
-        """
-        if not self._runtime or not self._runtime.usable:
-            return None
-        try:
-            # ⚠️ EVERY range needs a real upper bound. The slot ranges are the last
-            # entries of their enum block, so it is tempting to leave them open --
-            # but KC_LANG_* sits ABOVE KC_EMJ_*, so an unbounded emoji-slot range
-            # swallowed every language keycode and answered None for it. A wrong
-            # match here does not fall through to the next candidate; it ends the
-            # scan with the wrong drawer's answer.
-            for base, end, draw in (
-                ("KC_EMJ_CAT_BASE",   self._base("KC_EMJ_PAGE_PREV"),  self._emoji_cat),
-                ("KC_EMJ_SLOT_BASE",  rl.EMJ_SLOTS_PER_PAGE,           self._emoji_slot),
-                ("KC_LANG_CAT_BASE",  self._base("KC_LANG_PAGE_PREV"), self._region_tab),
-                ("KC_LANG_SLOT_BASE", rl.LANG_SLOTS_PER_PAGE,          self._lang_slot),
-            ):
-                lo = self._base(base)
-                if lo is None or keycode < lo:
-                    continue
-                # An absolute end comes from the next enum entry; a small one is a
-                # COUNT, since the slot ranges have no named end to read.
-                hi = end if (end is None or end > lo) else lo + end
-                if hi is not None and keycode >= hi:
-                    continue
-                return draw(keycode - lo)
-        except Exception as e:
-            self.log.debug("no runtime preview for %#x (%s: %s)",
-                           keycode, type(e).__name__, e)
-        return None
-
-    def _emoji_expr(self, cp: int | None):
-        """`make_emoji_str()`: two pad spaces then the codepoint.
-
-        ⚠️ Drawn from a CODEPOINT LIST, not by formatting a `U"  \\U0001F600"` literal
-        and handing it to the resolver. That looked tidier and rendered the escape as
-        the literal text "U000..." on every emoji key -- the resolver reads the C the
-        firmware WROTE, and nothing in the firmware spells an emoji that way. The two
-        pads are the firmware's own horizontal offset, not formatting.
-        """
-        if cp is None:
-            return None
-        from PIL import Image
-        from tools.gfx_font import OLED_W, OLED_H, BUFFER_X, BASELINE
-        img = Image.new("L", (OLED_W, OLED_H), 0)
-        px = img.load()
-
-        def sp(x, y):
-            if 0 <= x < OLED_W and 0 <= y < OLED_H:
-                px[x, y] = 255
-
-        self._R.draw(sp, [0x20, 0x20, cp], BUFFER_X, BASELINE)
-        return img
-
-    def _emoji_cat(self, n: int):
-        return self._emoji_expr(self._runtime.emoji_category_cp(n))
-
-    def _emoji_slot(self, n: int):
-        return self._emoji_expr(self._runtime.emoji_slot_cp(n))
-
-    def _region_tab(self, n: int):
-        """The continent name, centred -- `render_lang_region_tab()`.
-
-        Drawn through the 10px face ALONE, not ALL_FONTS: that face is standalone (no
-        codepoint reaches it through the pool), and it is the only one a name like
-        "Mid East" fits the 72px panel in.
-        """
-        label = self._runtime.region_label(n)
-        if label is None or self._nano_R is None:
-            return None
-        from PIL import Image
-        from tools.gfx_font import OLED_W, OLED_H, BUFFER_X
-        cps = [ord(c) for c in label]
-        lo, hi = self._nano_R.bounds(cps)
-        img = Image.new("L", (OLED_W, OLED_H), 0)
-        px = img.load()
-
-        def sp(x, y):
-            if 0 <= x < OLED_W and 0 <= y < OLED_H:
-                px[x, y] = 255
-
-        self._nano_R.draw(sp, cps, BUFFER_X + (OLED_W - (hi - lo)) // 2 - lo, 22)
-        return img
-
-    def _lang_slot(self, n: int):
-        idx = self._runtime.lang_slot_index(n)
-        code = self._runtime.lang_code(idx) if idx is not None else None
-        if idx is None or code is None or self._flag is None or not self._flag.usable:
-            return None
-        return self._flag.render(self._runtime.flag_codepoint(idx), code)
 
     def _uses_unsupported_op(self, expr: str) -> bool:
         """True when the legend needs a display-list op the renderer cannot follow."""

@@ -48,8 +48,6 @@ def main():
     print(f"            {_git(pk, 'log', '-1', '--format=%h %cs %s') or '(not a git checkout)'}")
     print(f"legends   : {len(p._known)} known tokens"
           f"{'' if p._lang_ok else '  [no workbook: letters fall back to text]'}")
-    print(f"runtime   : {'ok' if p._runtime and p._runtime.usable else 'unavailable'}"
-          f"{'' if not p._runtime else '  ' + (p._runtime.reason or '')}")
 
     print("\nlayer enum (this checkout vs the one this host expects)")
     derived = p._layer_tags
