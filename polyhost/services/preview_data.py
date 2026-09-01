@@ -72,6 +72,7 @@ class PreviewData:
         self.langs: list[str] = []
         self._cells: dict[str, dict[str, list[str]]] = {}
         self.fonts: list = []
+        self.ui_fonts: dict = {}   # symbol name -> the standalone face
 
     def load(self) -> bool:
         try:
@@ -90,6 +91,7 @@ class PreviewData:
         self._cells = lut.get("cells", {})
         try:
             self.fonts = self._fonts()
+            self.ui_fonts = self._ui_fonts(legends.get("ui_fonts") or [])
         except Exception as e:
             self.reason = f"fonts: {type(e).__name__}: {e}"
             self.log.debug("shipped preview fonts unreadable (%s)", self.reason)
@@ -107,6 +109,21 @@ class PreviewData:
 
     def _json(self, name: str):
         return json.loads((self.dir / name).read_text(encoding="utf-8"))
+
+    def _ui_fonts(self, names) -> dict:
+        """The standalone UI faces, by symbol name.
+
+        ⚠️ Reached by NAME, not by codepoint -- no codepoint can route to them,
+        which is exactly why the firmware draws each through a single-font array.
+        The `.plyf` carries no names, so the export lists them alongside.
+        """
+        from polyhost.services import fontpack_reader as fr
+
+        path = self.dir / "ui_fonts.plyf"
+        if not (names and path.exists()):
+            return {}
+        fonts = fr.decode_pack_file(str(path), "ui").fonts
+        return {n: f for n, f in zip(names, fonts)}
 
     def _fonts(self) -> list:
         """Resident + every shipped bundle, in ALL_FONTS priority order.

@@ -110,11 +110,17 @@ def build(pk: pathlib.Path) -> dict:
     # `.plyf` bundle and are the only glyphs the host does not already ship. Same
     # container as the bundles, so the shipped decoder reads them unchanged.
     resident = _resident_pack(pk, fonts_dir, op)
+    ui, ui_names = _ui_pack(fonts_dir)
 
     version = fw_version(pk)
     return {
         "resident.plyf": resident,
+        "ui_fonts.plyf": ui,
+        # `ui_fonts` names what ui_fonts.plyf holds, in its order: a .plyf carries
+        # no font names, and these two are reached BY NAME rather than by codepoint,
+        # so without this the loader would rest on an undocumented ordering.
         "legends.json": {"fw_version": version, "legends": legends,
+                         "ui_fonts": ui_names,
                          "unresolved": sorted(unresolved)},
         "layers.json": {"fw_version": version,
                         "tags": {str(k): v for k, v in
@@ -122,6 +128,32 @@ def build(pk: pathlib.Path) -> dict:
         "lang_lut.json": {"fw_version": version, "langs": list(L.langs),
                           "cells": lut},
     }
+
+
+def _ui_pack(fonts_dir: str) -> bytes:
+    """The three standalone UI faces, which are NOT in ALL_FONTS.
+
+    ⚠️ No codepoint can reach these through the font pool -- that is the whole
+    point of them (the firmware draws each through a single-font array so the
+    baseline align is a no-op). They are reached by NAME instead: `_Mid_` backs
+    the HINT_MID op, `_Nano_` draws a macro keycap's label. Miss them and \x16
+    legends silently render full size, stacking two lines of text on one keycap.
+    """
+    from polyhost.services import fontpack_reader as fr
+    from polyhost.services import macro_label as ml
+    from polyhost.services import macro_look as mkl
+
+    faces, names = [], []
+    for i, (loader, args) in enumerate((
+            (ml.load_nano_font, (fonts_dir,)),
+            (mkl.load_ui_font, (fonts_dir, "util_font.h", mkl.MID_FONT_SYMBOL)),
+    )):
+        f = loader(*args)
+        names.append(f.name)
+        faces.append(fr.PackFont(name=f.name, bitmap=bytes(f.bitmap),
+                                 glyphs=list(f.glyphs), first=f.first, last=f.last,
+                                 yAdvance=f.yAdvance, global_index=i))
+    return fr.encode_pack(faces), names
 
 
 def _resident_pack(pk: pathlib.Path, fonts_dir: str, op) -> bytes:

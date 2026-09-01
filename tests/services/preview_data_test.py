@@ -110,5 +110,77 @@ class MissingDataTest(unittest.TestCase):
             self.assertIn("empty", d.reason)
 
 
+class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
+    """⚠️ The guarantee the whole export rests on, checked by DRAWING.
+
+    Everything else here compares counts and keys; this renders every legend twice
+    -- once from the shipped codepoints through the shipped fonts, once from the
+    firmware's own C through the headers -- and requires the pixels to match. A
+    faithful-looking export that resolved one macro differently, or assembled the
+    font pool in the wrong priority, would pass every other test in this file and
+    draw a subtly wrong keycap.
+
+    Skips without a firmware checkout, which is the only way to obtain the
+    second opinion.
+    """
+
+    def test_every_shipped_legend_draws_the_same_pixels(self):
+        import os
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))), "tools"))
+        try:
+            from PIL import Image
+            import lang_demo as ld
+            import oled_preview as op
+            from polyhost.services import macro_label as ml
+            from polyhost.services import macro_look as mkl
+            from polyhost.gui.layout_dialog import keycap_preview as kp
+        except Exception as e:                       # pragma: no cover - env gate
+            self.skipTest(f"preview tools unavailable: {e}")
+
+        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
+        if not os.path.exists(os.path.join(pk, "keycode_helper.c")):
+            self.skipTest("no firmware checkout beside this repo")
+
+        d = PreviewData()
+        self.assertTrue(d.load(), d.reason)
+        shipped = op.Renderer(d.fonts, mid_fonts=[d.ui_fonts[mkl.MID_FONT_SYMBOL]])
+        checkout = op.load_renderer(ml.default_font_dir())
+
+        named = op.load_named_glyphs(os.path.join(pk, "lang", "named_glyphs.h"))
+        named.update(op.load_named_glyphs(os.path.join(pk, "keycode_helper.h")))
+        macros = kp.parse_function_macros(*(kp._read(pk, f) for f in (
+            "lang/named_glyphs.h", "keycode_helper.h", "keycode_helper.c",
+            "poly_keymap.c")))
+        legends_c = {**ld.parse_to_static_text_map(os.path.join(pk, "poly_keymap.c")),
+                     **ld.parse_static_text_map(os.path.join(pk, "keycode_helper.c"))}
+        resolver = object.__new__(op.Lang)
+        resolver.named = named
+
+        def draw(renderer, cps):
+            img = Image.new("L", (op.OLED_W, op.OLED_H), 0)
+            px = img.load()
+
+            def sp(x, y):
+                if 0 <= x < op.OLED_W and 0 <= y < op.OLED_H:
+                    px[x, y] = 255
+
+            renderer.draw(sp, cps, op.BUFFER_X, op.BASELINE)
+            return list(img.getdata())
+
+        checked, differ = 0, []
+        for token, cps in d.legends.items():
+            expr = legends_c.get(token)
+            if expr is None:
+                continue
+            checked += 1
+            if draw(shipped, cps) != draw(
+                    checkout, resolver.resolve(kp.expand_function_macros(expr, macros))):
+                differ.append(token)
+        self.assertGreater(checked, 150, "the export lost most of its legends")
+        self.assertEqual(differ, [], f"{len(differ)} legends draw differently")
+
+
 if __name__ == "__main__":
     unittest.main()
