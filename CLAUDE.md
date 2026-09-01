@@ -87,6 +87,19 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         **read the range line, and settle it against the PR's actual head sha
         from the API.** Full case in the CodeRabbit sub-note under Sourcery's
         `✅ Addressed in <sha>` entry below.
+      - ⚠️ **And a MATCHING sha does not make the prose beside it current either —
+        it dates the COVERAGE, not the text.** On qmk#259 (2026-09-01) the block
+        read `up to 7dd4c`, the actual head, on a review that had genuinely just
+        read that commit — while its risk prose re-raised two findings settled the
+        round before, both of which **CodeRabbit had itself withdrawn and recorded
+        repo learnings about** (a `config.h DESCRIPTION`/`config_common.h` request
+        it agreed was wrong after its own `fd`/`rg` sweep, and a persist-the-
+        migrated-idle-style ask it accepted as deliberate design). So the sha is
+        only ever evidence about *which commit was read*; whether the summary text
+        reflects the thread history is a separate question it cannot answer. The
+        practical rule: **the Merge Risk prose is not a merge gate** — check it
+        against the resolved threads before letting it hold up a PR, and expect it
+        to re-litigate anything you settled by argument rather than by a code change.
     - ⚠️ **The limit is per-developer across the ORG, so pushes to a trivial PR
       starve the one that needs review.** Docs pushes on #42 consumed the window
       #159 was waiting for. When two PRs are open and one is real code, stop
