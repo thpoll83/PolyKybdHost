@@ -1066,14 +1066,48 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     committed artifact before debugging either.
   - ✅ **RESOLVED for firmware v14+ (2026-08-26): the names come off the wire too.**
     `PolyKybd.get_layer_names()` (cmd 35, `FEATURE_MIN_PROTOCOL["layer_names"]`) asks
-    the keyboard, and `KbLayoutDialog._layer_names()` prefers that over the file — so
-    both halves of the editor's layer list are now live and the generated artifact is
-    only the fallback for older boards. It also gets *better* names: the yaml could
-    only ever carry the enum tags (`L0`, `FL`, …), while the firmware answers with
-    what each layer actually is (`Qwerty`, `Stag!`, `ColemkDH`, …, `Fn`, `Numpad`,
-    `Utility`). **`layer_names.yaml` and its generator stay** — do not delete them,
-    they are what a pre-v14 keyboard falls back to — but they are no longer the only
-    source, so the rot above can no longer reach a current board.
+    the keyboard, and `KbLayoutDialog._layer_names()` prefers that over the fallback —
+    so both halves of the editor's layer list are now live. It also gets *better*
+    names: a tag map can only ever carry `L0`, `FL`, …, while the firmware answers
+    with what each layer actually is (`Qwerty`, `Stag!`, `ColemkDH`, …, `Fn`,
+    `Numpad`, `Utility`).
+  - ⚠️ **`layer_names.yaml` and its generator are GONE (2026-09-01), and the layer
+    tags come from the SAME source as the legends — `res/preview/layers.json` when the
+    shipped data is in use, the checkout's own `layers.h` when it is.** That pairing
+    is the whole rule, and it took three tries to see it:
+    - **A generated file** — the rot above: a dead generator input, nothing notices.
+    - **A hardcoded constant** (tried for exactly one commit, and it is what this
+      note used to recommend): worse. The tag has to match the spelling
+      `keycode_helper.c` **switches on**, and a checkout from before the Fn merge has
+      no `case MO(_FL)` at all — it switches on `MO(_FL0)`/`MO(_FL1)`. So a constant
+      saying `5 -> FL` builds a token that tree cannot match and the key goes blank.
+      Reported within the hour as "L5 is gone again".
+    - **The checkout's own `layers.h`**: correct, because tags and legends then agree
+      by construction. `qmk_keycode_helper.parse_layers_h()`; `LAYER_TAGS` remains
+      only as the no-checkout fallback and as the yardstick below.
+  - ⚠️ **An out-of-step checkout previews WRONG, which is why it now has to WIN a
+    version comparison to be read at all** (above). The keycodes come from the
+    connected keyboard while every legend comes from the data source, so an old clone
+    renames the device's layers under the editor (device index 6 is `_NL`; a pre-merge
+    tree's is `_FL1`) *and* draws retired glyphs beside them. When the checkout IS the
+    source, `_load_checkout()` diffs its enum against `LAYER_TAGS` and, on any
+    disagreement, logs a warning and appends it to `source_info()` → the "Key previews"
+    tooltip. ⚠️ **That warning is suppressed for a checkout that won by being NEWER** —
+    a newer tree disagreeing with the host's constant is expected, so reporting it
+    would fire on every firmware developer's machine and become one more banner people
+    scroll past. It is for the fallback case: a checkout read because no export
+    shipped. `test_the_shipped_tags_match_the_firmware_enum` keeps the yardstick
+    honest; both drift tests are mutation-checked.
+    - **The tell that a clone is behind, in one line: the brightness keys.** They
+      became a sun family on 2026-08-25 (`9f4fa686e5`); before that
+      `keycode_helper.c` returned `PRIVATE_DISP_*`, which are MOON glyphs. Moons in
+      the editor mean the clone predates that commit, full stop.
+    - ⚠️ **THREE separate reports — a blank L5, missing emoji/Intl keys, and the old
+      brightness icons — were ONE stale clone**, and none of them points at it. Two
+      rounds were spent inferring which end was stale from the symptoms, wrongly.
+      **`python tools/preview_doctor.py` answers it instead**: host + firmware
+      commits, the enum diff, every layer key's resolved token, and the brightness
+      legend expressions. Ask for its output before theorising.
   - ⚠️ **The reply is `[total][count]` then NUL-terminated names, and the TOTAL is
     what makes it decodable.** `total` is the whole payload length, that byte
     included; the host reads it from the first report, keeps reading until it holds
@@ -1197,17 +1231,51 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
   for the language LUT and `tools/lang_demo.py` for the `keycode_helper.c` static-text
   map; macros go through the host's own composer). Off is the default, and off means
-  each key shows its keycode text. ⚠️ **Both halves need the firmware checkout beside
-  this repo, and the LUT half additionally needs `openpyxl`** — so on an ordinary
-  install the box is DISABLED with a tooltip saying why, rather than toggling something
-  that would silently do nothing. Six traps and a design note:
+  each key shows its keycode text.
+  - ✅ **The DATA ships with the host now (2026-09-01) — `polyhost/res/preview/`,
+    written by `scripts/export_preview_data.py`, loaded by
+    `polyhost/services/preview_data.py`.** Until then both halves read a
+    `qmk_firmware` clone beside the install and the LUT half needed `openpyxl`, so
+    the feature was unavailable to anyone who is not a firmware developer **and
+    silently wrong for anyone whose clone had drifted** — a blank Fn key, blank
+    emoji/Intl keys and retired moon brightness icons were all ONE clone that was
+    months behind the connected keyboard. 420 KB: `resident.plyf` (the fonts
+    compiled into the firmware, so in no bundle) + `ui_fonts.plyf` (the standalone
+    faces no codepoint can reach) + the legends **resolved to codepoints**, the raw
+    LUT grid, the named glyphs and the layer enum. `openpyxl` left
+    `requirements.txt` with it; it is a dev dependency (`tools/requirements.txt`).
+  - ⚠️ **A firmware checkout still wins, but ONLY by being strictly newer**
+    (`preview_data.choose_source`) — a developer's tree is ahead of the last release
+    and previewing it is the whole point, while a clone that is merely old is the
+    case above. **EQUAL versions take the shipped copy**: it is the one that was
+    tested, and re-parsing the same firmware twice cannot do better. When a checkout
+    loses, `source_info()` says so ("a firmware checkout is present but is not
+    newer") — silence there reads as "my clone is being used" and sends the next
+    round after the clone.
+  - ⚠️ **The two sources are pinned to draw IDENTICALLY, by rendering, not by
+    comparing structures.** `test_the_two_sources_draw_the_SAME_keycaps` renders
+    every keycode the editor can show from both and requires the pixels to match
+    (measured: 211 static keycaps + 7,840 letter keycaps across 160 languages, zero
+    differences, zero coverage gaps either way). The export resolves legends with
+    the same code the checkout path does, so any comparison of the DATA would agree
+    by construction — the pixels are the only claim worth making.
+    - ⚠️ **`KeycapPreview(source=…)` forces a source and deliberately does NOT fall
+      back**, because a comparison that silently substituted one source for the
+      other would report them identical for the least interesting reason.
+    - ⚠️ **A skip the code under test can CAUSE is not a gate.** The
+      checkout-is-unused test first skipped whenever the source was not "shipped",
+      so a mutation pinning the pick to `"checkout"` — i.e. reinstating the field
+      bug exactly — made it SKIP rather than fail. It now DERIVES the expected
+      source from the two versions and asserts it; mutation-checked in both states.
+  - Six traps and a design note:
   - ⚠️ **Load the two halves INDEPENDENTLY.** Coupling them shipped once: `openpyxl`
     was undeclared in `requirements.txt`, so on the author's machine the letters *and*
     the modifiers/custom keys both went dark and **only macros previewed** — reported
     as "I can only see the M0 key with a preview render". Each half now reports its own
     `reason` and the tooltip names the missing one, because a partly-loaded preview
     (macros and modifiers drawn, every letter falling back to text) reads as "broken"
-    with nothing anywhere to explain it.
+    with nothing anywhere to explain it. (Shipped data has no such split — the LUT is
+    in the export — so this applies to the checkout path only.)
   - ⚠️ **The missing dependency failed SILENTLY** — `usable` read False in 0.00 s,
     indistinguishable from "no firmware checkout". A preview that cannot say *why* it
     is unavailable is a preview nobody can fix.
@@ -1230,6 +1298,70 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       the moment they started rendering. Over-escaping a raw-string regex fails
       **silently**; the guard is now a unit test on the parser
       (`tests/gui/keycap_preview_macros_test.py`), not the eye.
+  - ⚠️ **The glyph loader kept only the FIRST literal of a multi-token `#define`,
+    and a TRUNCATED legend is worse than a missing one** (field, 2026-09-01). It
+    still renders, so it reads as correct-but-incomplete rather than as absent, and
+    nothing anywhere says a body was dropped. Three keycaps shipped that way:
+    `ICON_CONTEXT_MENU` collapsed to `U" "` — a SPACE — so the Context-menu key drew
+    a perfectly valid blank; `ICON_SCRLOCK_OFF/ON` to `U"Scr"`, so Scroll Lock drew
+    its letters with the lock badge gone; and `ICON_PAUSE_TEXT` to a bare cursor op,
+    which nobody had noticed. The six `HINT_POS_*` / `HINT_SZ_*` constants are
+    coordinate PAIRS and lost their y.
+    - **`load_named_glyphs` reads the whole body now** — continuations joined,
+      nested macros substituted, function-like `HINT_*()` calls expanded. The
+      expander (`parse_function_macros` / `expand_function_macros`) MOVED into
+      `oled_preview` for this: it expands the macros `named_glyphs.h` defines, so it
+      belongs beside the loader that reads that file, and the loader needs it to
+      resolve a body that calls one.
+    - ⚠️ **A `None` check cannot catch this class.** The truncated context-menu
+      legend resolved, drew, and produced a valid image — of nothing. The test
+      counts LIT PIXELS, and the scroll-lock one counts them to the right of the
+      text specifically, because "Scr" alone already clears any blank threshold.
+    - ⚠️ **`re.sub` reads a string replacement as a TEMPLATE**, so expanding an
+      argument carrying a C escape (`HINT_MOVE(HINT_POS_CTXPTR)` → `U"\x42" U"\x0C"`)
+      raised `bad escape \x` and took the entire glyph table down. Latent for as long
+      as this only expanded the settings labels ("IDLE:", "Pulse"). Use a replacement
+      FUNCTION.
+  - ✅ **MOVE / BADGE / ERASE / ROT are DRAWN now**, which is what makes those
+    keycaps render rather than merely be refused. Ported from
+    `kdisp_draw_badge_rect` + `rr_row_inset` + `kdisp_draw_glyph_rot_half_at`
+    (`base/disp_array.c`) and `kdisp_gfx_rot_half_extent` (`base/font_lookup.c`).
+    Four things that are load-bearing:
+    - **The badge is checked against FIRMWARE DATA, not against itself** — its
+      silhouette must equal the baked `ICON_CAPSLOCK_OFF` glyph, which is the claim
+      the firmware's own comment makes. That fixture is the C's, so a Bresenham arc
+      (which insets 1,0 where this must inset 2,1,0) fails in the suite rather than
+      as a keycap drawn slightly wrong.
+    - ⚠️ **ERASE must reach the TEXT paths too.** The glyph plotting went straight to
+      `setpix`, so `HINT_ERASE` covered only the composite ops and an engaged lock
+      badge drew its arrow LIT — a solid blob instead of an inverted badge. Everything
+      now goes through one `plot()`, mirroring `kdisp_plot_ink`; the C carries the
+      same scar in its own comment.
+    - ⚠️ **ROT rotates at FULL resolution and halves AFTERWARDS**, hence the 2×2 loop
+      inside the pixel loop. Halving first throws away the pixels the rotation needs
+      to rebuild an edge, and the arrowhead it exists for comes out visibly broken.
+      Screen y runs DOWN, so a visually counter-clockwise turn is a NEGATIVE angle —
+      the `(24 - step)` index. Getting that sign backwards mirrors the arrowhead,
+      which reads as a plausible glyph rather than as a bug.
+    - **`bbox` still skips them**, matching the firmware's own RELATIVE bbox form: a
+      MOVE names an absolute buffer position and BADGE/ROT plot at the cursor, so
+      none of it is knowable without the draw origin that form does not have.
+  - ⚠️ **A legend whose MACRO the glyph table does not know draws the macro's own
+    NAME as text, and two keycaps shipped that way** (2026-09-01): the mute key
+    rendered the literal word `ICON_MUTE` and media-stop `ICON_MEDIA_STOP`. It is
+    invisible from the code — `resolve_token` falls back to parsing an unknown token
+    as the body of an implicit `U"..."`, which is right for a bare LUT cell and wrong
+    for a macro name, so the legend resolves, every op in it is supported, and the
+    picture is a line of capitals. **Two separate fixes, and both are needed:**
+    - `load_named_glyphs` only matched `#define NAME U"…"`, i.e. a SINGLE literal, so
+      a macro built from other macros (`#define ICON_MUTE  PRIVATE_MUTE U"\f\f"
+      ICON_CANCEL_X`) was skipped entirely. It now collects those bodies and expands
+      them afterwards, so header order does not decide it.
+    - What still cannot be expanded (a body of function-like calls) is **refused**,
+      via `Lang.unresolved_tokens()` — the sibling of `Renderer.unsupported_ops()`,
+      with the same rule: refusing is honest, drawing capitals is not. ⚠️ Ask it
+      about a LEGEND, never a setting cell — `HIDE` is a legitimate setting value
+      and looks exactly like an unresolved macro.
   - **A legend using an op the renderer lacks is REFUSED, not drawn — and the
     RENDERER answers that question now, not a list in `keycap_preview`.**
     `oled_preview.Renderer.unsupported_ops(cps)` returns the ops it cannot follow;

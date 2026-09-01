@@ -1278,7 +1278,7 @@ class PolyCore(Observable):
         """Names for the host-remappable layers, straight from the keyboard (v14+).
 
         Empty list on firmware too old to answer; the layout editor then falls back
-        to the shipped res/layer_names.yaml."""
+        to the shipped LAYER_TAGS fallback."""
         return self._device_call(
             "keymap_layer_names", lambda c: self.keeb.get_layer_names())
 

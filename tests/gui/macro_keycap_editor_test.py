@@ -356,9 +356,16 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         """
         R = _editor()._preview._R
         self.assertEqual(R.unsupported_ops([0x10, 0x16, ord("a")]), set())
-        for op_cp in (0x0E, 0x0F, 0x11, 0x12, 0x13, 0x14, 0x15):
+        # ⚠️ The set SHRANK on 2026-09-01: MOVE/BADGE/ERASE/ROT are drawn now, which
+        # is what made the Context-menu and Scroll-Lock keycaps render. What remains
+        # is HALF/THIN (composite one glyph at the cursor) and FRAME (a rounded rect
+        # at a different radius) — still no primitive here.
+        for op_cp in (0x0F, 0x11, 0x12):
             with self.subTest(op=hex(op_cp)):
                 self.assertIn(op_cp, R.unsupported_ops([op_cp, 1, 2, 3]))
+        for op_cp in (0x0E, 0x13, 0x14, 0x15):
+            with self.subTest(drawn=hex(op_cp)):
+                self.assertNotIn(op_cp, R.unsupported_ops([op_cp, 1, 2, 3]))
 
     def test_previews_are_OFF_when_the_dialog_opens(self):
         """The editor is for assigning keycodes; a wall of keycaps makes the code you
@@ -384,6 +391,13 @@ class _DeadPreview:
 
     def render(self, keycode, name):
         return None
+
+    def source_info(self):
+        # No checkout to name. The docstring above is the whole point: this stub
+        # grew this method because the tooltip builder started calling it, and the
+        # missing attribute surfaced here as an AttributeError rather than as a
+        # machine with no previews.
+        return ""
 
 
 @unittest.skipIf(_IMPORT_ERR, f"PyQt5/offscreen unavailable: {_IMPORT_ERR}")

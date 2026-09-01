@@ -215,7 +215,12 @@ class FontBboxTest(unittest.TestCase):
     # -- what the caller is allowed to draw --------------------------------
     def test_unsupported_ops_names_only_what_the_renderer_cannot_follow(self):
         self.assertEqual(self.Rm.unsupported_ops([0x10, 0x16, A]), set())
-        self.assertEqual(self.Rm.unsupported_ops([0x13, 1, 2, 3]), {0x13})
+        # MOVE / BADGE / ERASE / ROT are DRAWN now (2026-09-01), so the only ops
+        # left are the ones still needing a primitive this model lacks.
+        self.assertEqual(self.Rm.unsupported_ops([0x0E, 1, 2]), set())
+        self.assertEqual(self.Rm.unsupported_ops([0x13, 1, 2, 3]), set())
+        self.assertEqual(self.Rm.unsupported_ops([0x12, 1, 2]), {0x12})   # FRAME
+        self.assertEqual(self.Rm.unsupported_ops([0x0F, A]), {0x0F})      # HALF
         # ...and HINT_MID counts as unsupported with no mid face loaded, since the
         # run would silently render at full size instead.
         self.assertEqual(self.R.unsupported_ops([0x16, A]), {0x16})

@@ -1,7 +1,7 @@
 """Tests for GET_LAYER_NAMES (cmd 35, protocol v14+).
 
 The keyboard reports what its host-remappable layers are called so the layout
-editor stops labelling tabs from res/layer_names.yaml — a build-time artifact
+editor stops labelling tabs from the shipped LAYER_TAGS map — a hardcoded fallback
 generated from the firmware's layers.h, which silently went stale for two renames
 of its source path and described an enum the firmware no longer had.
 

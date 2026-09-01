@@ -99,9 +99,6 @@ class KbLayoutDialog(QMainWindow):
         # Everything that is NOT a macro: the firmware composes those legends, so
         # this drives the firmware-side renderers rather than reimplementing them.
         self._preview = KeycapPreview()
-        # Layer keys are decoded rather than named, so the preview needs the enum tags
-        # to rebuild the `MO(_FL)` token keycode_helper.c switches on.
-        self._preview.set_layer_tags(parse_layer_names())
         # Drives the header toggle. A plain flag rather than reading the checkbox back,
         # so `_keycap_for` does not depend on a widget that init_ui has not built yet.
         # OFF by default: the editor's job is assigning keycodes, and a board of
@@ -125,12 +122,11 @@ class KbLayoutDialog(QMainWindow):
         return self.selected_key
 
     def _layer_names(self) -> dict[int, str]:
-        """Layer labels, preferring what the keyboard says over the shipped file.
+        """Layer labels, preferring what the keyboard says over the shipped map.
 
-        res/layer_names.yaml is generated from the firmware's layers.h at BUILD time,
-        so it can describe an enum the connected keyboard no longer has — it silently
-        did, for two renames of its source path. Firmware v14+ answers cmd 35 with its
-        own names, which cannot drift; the file stays as the fallback for older boards.
+        Firmware v14+ answers cmd 35 with its own names — `Qwerty`, `Fn`, `Numpad` —
+        which cannot drift from the board and read better than an enum tag. The
+        shipped `LAYER_TAGS` is the fallback for older boards, and gives `FL`/`NL`.
         """
         try:
             ok, names = self.core.keymap_layer_names()
@@ -226,11 +222,11 @@ class KbLayoutDialog(QMainWindow):
         PolyKybd keys). Off, every key falls back to its keycode text.
 
         ⚠️ Coverage is NOT total and the label must not imply it is: a keycode neither
-        table names simply keeps its text, mixed in with the previewed keys. Both
-        sources also need the firmware checkout beside this repo (and `openpyxl` for
-        the .xlsx), so on an ordinary install nothing here is available -- the box is
-        then DISABLED and its tooltip says so, rather than toggling something that
-        would silently do nothing.
+        table names simply keeps its text, mixed in with the previewed keys. The data
+        SHIPS with the host (`res/preview/`), so this works on an ordinary install; a
+        firmware checkout beside the repo overrides it only when it is newer. When
+        neither loads the box is DISABLED and its tooltip says why, rather than
+        toggling something that would silently do nothing.
         """
         self.keycap_toggle = QCheckBox("Key previews")
         macro_ok = self._keycap_render is not None and self._keycap_render.usable
@@ -240,7 +236,9 @@ class KbLayoutDialog(QMainWindow):
         # ⚠️ Say WHY when a half is missing. A partly-loaded preview renders macros and
         # modifiers while every letter falls back to text, which reads as "broken" with
         # nothing anywhere to explain it -- the shape that shipped once already, when a
-        # missing openpyxl silently disabled everything but the macros.
+        # missing openpyxl silently disabled everything but the macros. `source_info()`
+        # below then names WHICH data drew them, which is the other half of the same
+        # question: a legend can be perfectly rendered and still be the wrong vintage.
         tip = ("Draw each key as the keycap the keyboard shows. A key whose legend is "
                "not modelled here keeps its keycode text.") if usable else (
               "Unavailable: the keycap fonts and layout tables could not be loaded, so "
@@ -248,6 +246,11 @@ class KbLayoutDialog(QMainWindow):
         why = self._preview.reason
         if why:
             tip += f"\n\nPartly unavailable — {why}"
+        # Name the checkout the legends came from. Without it, a preview drawing
+        # legends the keyboard has moved past looks the same as one that is wrong.
+        src = self._preview.source_info()
+        if src:
+            tip += f"\n\nLegends read from:\n{src}"
         self.keycap_toggle.setToolTip(tip)
         self.keycap_toggle.toggled.connect(self._on_keycap_toggle)
         return self.keycap_toggle

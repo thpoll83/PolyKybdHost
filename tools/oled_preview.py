@@ -48,7 +48,11 @@ OVERSHOOT = 2
 HINT_SMALL = 0x10      # rest of the run at half scale (kdisp_write_gfx_char_half)
 HINT_MID = 0x16        # rest of the run from the standalone 19px UI face
 CURSOR_OPS = frozenset({0x05, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x18})
-SUPPORTED_OPS = CURSOR_OPS | {HINT_SMALL, HINT_MID}
+SUPPORTED_OPS = CURSOR_OPS | {HINT_SMALL, HINT_MID,
+                              0x0E,   # MOVE  - absolute buffer position
+                              0x13,   # BADGE - the lock-indicator box
+                              0x14,   # ERASE - plot as a hole
+                              0x15}   # ROT   - rotated, halved glyph
 # op -> how many following codepoints are its arguments.
 OP_ARGS = {0x0E: 2,    # MOVE (x, y)  - an ABSOLUTE buffer position
            0x0F: 1,    # HALF    (glyph) - composite at the cursor, no advance
@@ -102,11 +106,127 @@ def _walk_ops(cps):
             continue
         if cp in OP_ARGS:
             n = OP_ARGS[cp]
+            args = ()
             if n and len(cps) - i - 1 >= n:
                 skip = n
-            yield True, cp
+                args = tuple(cps[i + 1:i + 1 + n])
+            yield True, cp, args
             continue
-        yield cp < 0x20, cp
+        yield cp < 0x20, cp, ()
+
+
+# ---- composite-op primitives, ported from the firmware --------------------------
+# base/disp_array.c (kdisp_draw_badge_rect / rr_row_inset /
+# kdisp_draw_glyph_rot_half_at) and base/font_lookup.c (kdisp_gfx_rot_half_extent).
+# Ported rather than approximated because these draw the LOCK BADGES and the context
+# -menu pointer, and a keycap that is nearly right is the failure this whole module
+# exists to avoid.
+KDISP_BADGE_RADIUS = 2
+KDISP_BADGE_BORDER = 2      # the released badge's stroke, matching the baked glyphs
+
+# sin(15 deg * i) in 8.8 fixed point, i = 0..23 — the firmware's s_sin15 verbatim.
+_SIN15 = (0, 66, 128, 181, 222, 247, 256, 247,
+          222, 181, 128, 66, 0, -66, -128, -181,
+          -222, -247, -256, -247, -222, -181, -128, -66)
+
+
+def _rr_row_inset(j, top, bot, r):
+    """How far row `j` is inset by a corner radius `r` — the firmware's rr_row_inset.
+
+    ⚠️ This scanline formula, NOT a Bresenham arc: the two disagree about what
+    "r = 2" looks like (Bresenham insets 1,0 where this gives 2,1,0), and the badge
+    has to match the baked ICON_CAPSLOCK_* corners, which inset 2,1,0.
+    """
+    d = (top + r - j) if j < top + r else ((j - (bot - r)) if j > bot - r else 0)
+    if d <= 0:
+        return 0
+    rem = r * r - d * d
+    k = 0
+    while (k + 1) * (k + 1) <= rem:
+        k += 1
+    return r - k
+
+
+def draw_badge_rect(plot, x, y, width, height, r, border):
+    """A rounded lock badge: `border` 0 fills it solid, else strokes a ring that thick.
+
+    ⚠️ The hole is NOT a true concentric offset. That would imply an inner radius of
+    `r - border`, which at `r == border` is a perfectly square inner corner — one
+    pixel short of the baked ICON_CAPSLOCK_OFF, whose hole still insets 1 on its
+    first row. Reported from hardware as "it misses a single pixel on the inside
+    corner", so the radius is floored at 1 whenever the outer corner is rounded.
+    """
+    if width < 2 or height < 2:
+        return
+    r = max(0, min(r, (width - 1) // 2, (height - 1) // 2))
+    border = max(0, border)
+    x0, y0 = x, y
+    x1, y1 = x + width - 1, y + height - 1
+    hx0, hy0, hx1, hy1 = x0 + border, y0 + border, x1 - border, y1 - border
+    hr = r - border
+    if hr < 1:
+        hr = 1 if r > 0 else 0
+    for j in range(y0, y1 + 1):
+        ins = _rr_row_inset(j, y0, y1, r)
+        a, b = x0 + ins, x1 - ins
+        if border > 0 and hy0 <= j <= hy1 and hx0 <= hx1:
+            hins = _rr_row_inset(j, hy0, hy1, hr)
+            ha, hb = hx0 + hins, hx1 - hins
+            for i in range(a, b + 1):
+                if i < ha or i > hb:
+                    plot(i, j)
+            continue
+        for i in range(a, b + 1):
+            plot(i, j)
+
+
+def rot_half_extent(w, h, step):
+    """The rotated-and-halved frame for a glyph — kdisp_gfx_rot_half_extent.
+
+    Returns `(ct, st, cx, cy, x0, y0, out_w, out_h)` in the firmware's 8.8 fixed
+    point. It lives beside the bbox interpreter in the firmware for the same reason
+    it is one function here: the measure and the draw must agree about exactly what
+    is plotted, or a MOVE'd mark is clamped against the wrong box.
+    """
+    # Screen y runs DOWN, so a visually counter-clockwise turn is a NEGATIVE angle in
+    # this arithmetic — hence the (24 - step) index. The op's argument is stated in
+    # the direction a reader means by "counter-clockwise", not the sign the maths uses.
+    idx = (24 - (step % 24)) % 24
+    ct = _SIN15[(idx + 6) % 24]
+    st = _SIN15[idx]
+    cx = ((w - 1) << 8) // 2
+    cy = ((h - 1) << 8) // 2
+    xs, ys = [], []
+    for c in range(4):
+        sx = cx if (c & 1) else -cx
+        sy = cy if (c & 2) else -cy
+        xs.append(_asr8(sx * ct - sy * st))
+        ys.append(_asr8(sx * st + sy * ct))
+    x0, x1 = min(xs), max(xs)
+    y0, y1 = min(ys), max(ys)
+    return (ct, st, cx, cy, x0, y0,
+            ((_asr8(x1 - x0) + 1) + 1) // 2,
+            ((_asr8(y1 - y0) + 1) + 1) // 2)
+
+
+def _int8(v):
+    """A codepoint argument read as the firmware reads it: `(int8_t)text[n]`.
+
+    The coordinates are written as `U"\\x48"`-style bytes, so anything above 127 is
+    a NEGATIVE position. Reading them unsigned puts the mark off the panel.
+    """
+    v &= 0xFF
+    return v - 256 if v > 127 else v
+
+
+def _asr8(v):
+    """`v >> 8` with C's arithmetic shift on a negative value.
+
+    Python's `>>` already floors, which is what an arithmetic shift does — this
+    exists to say so, because `//` would be wrong for the // 2 divisions above and
+    it is easy to reach for the same operator twice.
+    """
+    return v >> 8
 
 
 def load_renderer(font_dir: str) -> "Renderer":
@@ -175,6 +295,108 @@ def parse_u_string(content: str) -> list[int]:
     return cps
 
 
+# ---- C macro reading (shared with keycap_preview, which re-exports these) --------
+# These live HERE, beside the glyph loader, because the macros they expand are the
+# ones `named_glyphs.h` defines. keycap_preview needs the same expander for the
+# legend switch in `keycode_helper.c`, and the lower layer is the one that can be
+# imported by both.
+
+
+def _strip_c_comments(s: str) -> str:
+    s = re.sub(r"/\*.*?\*/", "", s, flags=re.S)
+    return re.sub(r"//[^\n]*", "", s)
+
+
+_FUNC_MACRO_RE = re.compile(r"#define\s+(\w+)\(([^)]*)\)\s*((?:[^\n\\]|\\\n|\\)*)")
+
+
+def parse_function_macros(*texts: str) -> dict:
+    """Function-like `#define NAME(a, b) body` -> {name: (params, body)}.
+
+    The glyph loader in `oled_preview` handles only OBJECT-like macros, and says so:
+    "a macro this loader has not seen falls back to drawing its own IDENTIFIER". The
+    settings legends are built from function-like ones (`MID_TWO_LINE`,
+    `MID_WORD_OVER_ICON`, and `SETTING_LBL` which wraps them), so three keys rendered
+    the literal text `MID_T…`, `idle_s…`, `glyph…` instead of their legends.
+    """
+    out = {}
+    for text in texts:
+        for m in _FUNC_MACRO_RE.finditer(_strip_c_comments(text)):
+            params = [x.strip() for x in m.group(2).split(",") if x.strip()]
+            # ⚠️ Strip LINE CONTINUATIONS only. A blanket backslash strip also eats the
+            # escapes inside the literals -- `U"\\f\\f\\f"` became `U" f f f"` and the
+            # legend rendered the letter f four times over.
+            #
+            # ⚠️ ...and a C continuation is ONE backslash. This pattern asked for TWO
+            # (`\\\\` in a raw string), so it never matched and every multi-line legend
+            # macro kept a literal `\\` at the front -- which resolves to a real glyph, so
+            # the five settings keycaps drew a backslash before their label. It was
+            # invisible while those legends were refused for using HINT_MID.
+            body = re.sub(r"\\\s*\n\s*", " ", m.group(3)).strip()
+            if params and body:
+                out[m.group(1)] = (params, body)
+    return out
+
+
+def expand_function_macros(expr: str, macros: dict, depth: int = 6) -> str:
+    """Expand `SETTING_LBL("IDLE:", "Pulse")` down to its literals.
+
+    ⚠️ Bounded rather than recursive-until-stable: these nest (SETTING_LBL wraps
+    MID_TWO_LINE) but a macro that expanded to itself would otherwise hang the editor
+    while it painted a key.
+    """
+    for _ in range(depth):
+        m = _find_macro_call(expr, macros)
+        if m is None:
+            return expr
+        name, args, start, end = m
+        params, body = macros[name]
+        if len(args) != len(params):
+            return expr                      # arity mismatch: leave it alone
+        for param, arg in zip(params, args):
+            # ⚠️ The replacement is a FUNCTION, not a string. `re.sub` reads a string
+            # replacement as a TEMPLATE, so an argument carrying a C escape --
+            # `HINT_MOVE(HINT_POS_CTXPTR)` expands to `U"\x42" U"\x0C"` -- raised
+            # `bad escape \x` and took the whole glyph load down with it. Harmless
+            # while this only ever expanded the settings labels ("IDLE:", "Pulse"),
+            # which is why it went unnoticed until the glyph macros came through here.
+            paste = "U" + arg
+            body = re.sub(r"U\s*##\s*\b" + re.escape(param) + r"\b",
+                          lambda _m, r=paste: r, body)
+            body = re.sub(r"\b" + re.escape(param) + r"\b",
+                          lambda _m, r=arg: r, body)
+        expr = expr[:start] + body + expr[end:]
+    return expr
+
+
+def _find_macro_call(expr: str, macros: dict):
+    """The first `NAME(...)` in `expr` whose NAME we know, with its split arguments."""
+    for m in re.finditer(r"\b(\w+)\s*\(", expr):
+        if m.group(1) not in macros:
+            continue
+        depth, i, args, cur = 0, m.end() - 1, [], ""
+        while i < len(expr):
+            ch = expr[i]
+            if ch == "(":
+                depth += 1
+                if depth == 1:
+                    i += 1
+                    continue
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    args.append(cur.strip())
+                    return m.group(1), [a for a in args if a], m.start(), i + 1
+            elif ch == "," and depth == 1:
+                args.append(cur.strip())
+                cur = ""
+                i += 1
+                continue
+            cur += ch
+            i += 1
+    return None
+
+
 def load_named_glyphs(path: str, *extra: str) -> dict[str, list[int]]:
     """Named-glyph macros, merged over every header given (later files win).
 
@@ -184,6 +406,16 @@ def load_named_glyphs(path: str, *extra: str) -> dict[str, list[int]]:
     seen falls back to drawing its own IDENTIFIER, so the Intl key rendered as the
     text "INTL_" on every board preview instead of İñțł. Sibling headers are picked
     up automatically below; pass more explicitly if a legend ever moves again.
+
+    ⚠️ The body is read WHOLE — every literal, every nested macro, every
+    function-like `HINT_*()` call. It used to be matched with a single-literal
+    pattern that stopped at the first `U"..."`, which is worse than not matching at
+    all: a truncated legend still renders, so it reads as correct-but-incomplete
+    rather than as missing. Three keycaps shipped that way (2026-09-01) —
+    `ICON_CONTEXT_MENU` collapsed to `U" "` and drew nothing, `ICON_SCRLOCK_OFF/ON`
+    to `U"Scr"` so the lock badge vanished, and `ICON_PAUSE_TEXT` to a bare cursor
+    op. The six `HINT_POS_*` / `HINT_SZ_*` constants were truncated to their x with
+    the y dropped, which would have mis-placed anything that used them.
     """
     out = {}
     paths = [path, *extra]
@@ -191,14 +423,71 @@ def load_named_glyphs(path: str, *extra: str) -> dict[str, list[int]]:
                            'keycode_helper.h')
     if not extra and os.path.exists(sibling):
         paths.append(sibling)
+    texts = []
     for p in paths:
         if not os.path.exists(p):
             continue
         with open(p, encoding='utf-8') as fh:
-            text = fh.read()
-        for m in re.finditer(r'#define\s+(\w+)\s+[uU]"((?:\\.|[^"\\])*)"', text):
-            out[m.group(1)] = parse_u_string(m.group(2))
+            texts.append(fh.read())
+    if not texts:
+        return out
+
+    # Function-like macros first: an object macro's body can CALL one
+    # (`HINT_MOVE(HINT_POS_CTXPTR)`), so they have to be expandable before any body
+    # is resolved.
+    calls = parse_function_macros(*texts)
+    bodies = {}
+    for text in texts:
+        # ⚠️ Join C line continuations before matching. Every multi-line legend macro
+        # -- which is most of the interesting ones -- otherwise presents as a body
+        # that ends mid-expression.
+        joined = re.sub(r'\\\s*\n\s*', ' ', _strip_c_comments(text))
+        for m in re.finditer(r'^[ \t]*#define[ \t]+([A-Za-z_]\w*)[ \t]+(\S.*?)[ \t]*$',
+                             joined, re.M):
+            bodies[m.group(1)] = m.group(2).strip()
+    _resolve_macro_bodies(out, bodies, calls)
     return out
+
+
+_LITERAL_OR_NAME = re.compile(r'[uU]"(?:\\.|[^"\\])*"|[A-Za-z_]\w*')
+
+
+def _resolve_macro_bodies(out: dict, bodies: dict, calls: dict) -> None:
+    """Expand each `#define` body down to codepoints, in `out`.
+
+    A body is a sequence of `U"..."` literals and other macro names, possibly with
+    function-like calls mixed in. Expanded in bounded passes rather than
+    iterate-until-stable: they nest a level or two in practice, and a macro that
+    referenced itself would otherwise spin while the editor paints a key.
+
+    A body still holding an unknown name after the passes is LEFT OUT, so
+    `unresolved_tokens` reports it and the legend is refused. That is the honest
+    outcome: a partial expansion draws a keycap missing a glyph with nothing to say
+    so, which is the very defect this function exists to close.
+    """
+    for _ in range(6):
+        progressed = False
+        for name, body in bodies.items():
+            if name in out:
+                continue
+            expanded = expand_function_macros(body, calls) if calls else body
+            if '(' in expanded and re.search(r'\b[A-Za-z_]\w*\s*\(', expanded):
+                continue                 # an unexpanded call: try again next pass
+            cps, ok = [], True
+            for tok in _LITERAL_OR_NAME.finditer(expanded):
+                t = tok.group(0)
+                if t[0] in 'uU' and t[1:2] == '"':
+                    cps += parse_u_string(t[2:-1])
+                elif t in out:
+                    cps += list(out[t])
+                else:
+                    ok = False
+                    break
+            if ok and cps:
+                out[name] = cps
+                progressed = True
+        if not progressed:
+            break
 
 
 class Lang:
@@ -242,6 +531,31 @@ class Lang:
         for m in re.finditer(r'[uU]"(?:\\.|[^"\\])*"|\S+', s):
             cps += self.resolve_token(m.group(0))
         return cps or None
+
+    def unresolved_tokens(self, val) -> list:
+        """The MACRO-looking tokens in `val` that this table has no glyphs for.
+
+        ⚠️ `resolve_token` falls back to parsing an unknown token as the body of an
+        implicit `U"..."`, which is right for a bare cell and WRONG for a macro name:
+        the keycap then draws the literal word `ICON_MEDIA_STOP`. That shipped
+        (2026-09-01), and it is invisible from the code -- the legend resolves, the
+        renderer supports every op in it, and the picture is a line of text.
+
+        So a caller that shows the result as if it were the keyboard should refuse a
+        legend this reports on, exactly as it refuses one `Renderer.unsupported_ops`
+        reports on. A token is macro-looking only if it is ALL-CAPS with no lowercase
+        and at least two characters -- an ordinary legend body is a `U"..."` literal
+        or lowercase text, so this cannot fire on real content.
+        """
+        if val is None or val == '' or isinstance(val, (int, float)):
+            return []
+        out = []
+        for m in re.finditer(r'[uU]"(?:\\.|[^"\\])*"|\S+', str(val).strip()):
+            t = m.group(0)
+            if t in self.named or not re.fullmatch(r'[A-Z][A-Z0-9_]+', t):
+                continue
+            out.append(t)
+        return out
 
     def resolve_token(self, t: str) -> list[int]:
         if t in self.named: return list(self.named[t])
@@ -312,6 +626,47 @@ class Renderer:
             return self.mid_fonts, self.mid_fonts[0].yAdvance
         return self.fonts, self.base_yadv
 
+    def _draw_glyph_rot_half(self, plot, x, y, ch, step):
+        """Rotate a glyph counter-clockwise by step*15 deg, halve it, plot at (x, y).
+
+        Mirrors kdisp_draw_glyph_rot_half_at: no baseline align, no xOffset, no
+        cursor advance — the same "composite one icon into a hint" contract HALF has.
+
+        ⚠️ It rotates at FULL resolution and halves afterwards, which is why the 2x2
+        loop is INSIDE the pixel loop rather than rotating an already-halved glyph.
+        Halving first throws away the very pixels the rotation needs to reconstruct
+        an edge, and the arrowhead this exists for came out visibly broken that way.
+        """
+        f = self._font(ch)
+        if f is None or not (f.first <= ch <= f.last):
+            return
+        g = f.glyphs[ch - f.first]
+        w, h = g['width'], g['height']
+        if w <= 0 or h <= 0:
+            return
+        cb = (h + 7) >> 3
+        bo = g['bitmapOffset']
+        ct, st, cx, cy, x0, y0, ow, oh = rot_half_extent(w, h, step)
+        for dy in range(oh):
+            for dx in range(ow):
+                lit = False
+                for o in range(4):
+                    # The full-resolution destination pixel this quarter stands for,
+                    # centre-relative so the inverse rotation is a pure rotate.
+                    fx = ((dx * 2 + (o & 1)) << 8) + x0
+                    fy = ((dy * 2 + (o >> 1)) << 8) + y0
+                    sx = _asr8(fx * ct + fy * st) + cx
+                    sy = _asr8(-fx * st + fy * ct) + cy
+                    ix, iy = _asr8(sx + 128), _asr8(sy + 128)
+                    if ix < 0 or ix >= w or iy < 0 or iy >= h:
+                        continue
+                    if f.bitmap[bo + ix * cb + (iy >> 3)] & (1 << (iy & 7)):
+                        lit = True
+                        break
+                if lit:
+                    plot(x + dx, y + dy)
+
+
     def unsupported_ops(self, cps) -> set:
         """The ops in `cps` this renderer cannot follow — empty means it can draw it.
 
@@ -320,7 +675,8 @@ class Renderer:
         a badge or a MOVE'd mark. HINT_MID counts as unsupported when no mid face was
         loaded, since the run would then silently render at full size.
         """
-        bad = {cp for is_op, cp in _walk_ops(cps) if is_op and cp not in SUPPORTED_OPS}
+        bad = {cp for is_op, cp, _a in _walk_ops(cps)
+               if is_op and cp not in SUPPORTED_OPS}
         if self.mid_fonts is None and HINT_MID in cps:
             bad.add(HINT_MID)
         return bad
@@ -346,8 +702,7 @@ class Renderer:
         xmn = ymn = 127
         xmx = ymx = -128
         small = mid = False
-        for is_op, cp in _walk_ops(cps):
-            if is_op and cp in OP_ARGS: continue   # nothing this model can measure
+        for is_op, cp, args in _walk_ops(cps):
             if cp == 0x05: y += 2; continue
             if cp == 0x06: x += 2; continue
             if cp == 0x18: x = y = 0; continue
@@ -359,6 +714,14 @@ class Renderer:
             if cp == 0x0d: x = 0; continue
             if cp == HINT_SMALL: small = True; continue
             if cp == HINT_MID: mid = True; continue
+            # ⚠️ The composite ops are NOT measured, matching the firmware's own
+            # RELATIVE bbox form (`bbox_walk` with resolve=false): MOVE names an
+            # ABSOLUTE buffer position, and BADGE/ROT plot AT the cursor through
+            # primitives of their own — none of it is knowable without the draw
+            # origin the relative form does not have. They are skipped here and
+            # drawn in draw(), which does have it, so a MOVE'd mark falls outside
+            # the box this reports exactly as it does on the keyboard.
+            if is_op and cp in OP_ARGS: continue
             pool, base_yadv = self._pool(cp, mid)
             f = self._font_in(pool, cp); ch = cp
             if f is None: f = pool[0]; ch = ord('!')
@@ -409,18 +772,36 @@ class Renderer:
             out.append(rel)
         return out or None
 
-    def draw(self, setpix, cps, x, y):
+    def draw(self, setpix, cps, x, y, clearpix=None):
+        """Draw a display list. `clearpix` enables HINT_ERASE (\\x14).
+
+        ⚠️ Without a `clearpix` the erase ops plot NOTHING rather than plotting ink:
+        an engaged lock badge punches its arrow back out of the solid fill, and
+        drawing that as ink would fill the hole in instead of cutting it. Silently
+        wrong beats missing here, so it degrades to missing.
+        """
         xc, yc = x, y
+        erase = False
+
+        def plot(bx, by):
+            """Buffer coords -> the caller's pixel space. Mirrors kdisp_plot_ink:
+            ONE choke point that every op and the glyph path go through, so the
+            erase mode covers the composite ops too. It used to cover the text
+            paths only, and a HINT_ERASE before a HALF/BADGE silently drew it lit."""
+            vx, vy = bx - BUFFER_X, by
+            if not (-OVERSHOOT <= vx < OLED_W + OVERSHOOT
+                    and -OVERSHOOT <= vy < OLED_H + OVERSHOOT):
+                return
+            if erase:
+                if clearpix is not None:
+                    clearpix(vx, vy)
+            else:
+                setpix(vx, vy)
         # HINT_SMALL / HINT_MID latch for the REST of the run — there is no "back to
         # full size" op, and \x18 (reset) does not clear them either; it resets the
         # cursor only. The two compose: \x10 after \x16 half-scales the 19px face.
         small = mid = False
-        for is_op, cp in _walk_ops(cps):
-            # An op needing a primitive this model does not have draws NOTHING rather
-            # than falling through to the glyph path, where it (and each of its
-            # arguments) would render a substituted '!'. Callers that must not show a
-            # legend with a hole in it ask unsupported_ops() first.
-            if is_op and cp in OP_ARGS: continue
+        for is_op, cp, args in _walk_ops(cps):
             if cp == 0x05: yc += 2; continue
             if cp == 0x06: xc += 2; continue
             if cp == 0x18: xc, yc = x, y; continue
@@ -432,6 +813,29 @@ class Renderer:
             if cp == 0x0d: xc = x; continue
             if cp == HINT_SMALL: small = True; continue
             if cp == HINT_MID: mid = True; continue
+            # ⚠️ MOVE is an ABSOLUTE buffer position, so it is an assignment, not an
+            # offset -- and the firmware re-applies its jitter offset here, which is
+            # 0 in a preview because nothing jitters a static render.
+            if cp == 0x0E:
+                if args: xc, yc = _int8(args[0]), _int8(args[1])
+                continue
+            if cp == 0x13:
+                if args:
+                    # style 2 = solid (engaged); anything else strokes the released
+                    # ring. The radius is FIXED, not an argument: the whole point is
+                    # to match the baked ICON_CAPSLOCK_* corners.
+                    draw_badge_rect(plot, xc, yc, _int8(args[0]), _int8(args[1]),
+                                    KDISP_BADGE_RADIUS,
+                                    0 if args[2] == 2 else KDISP_BADGE_BORDER)
+                continue
+            if cp == 0x14: erase = True; continue
+            if cp == 0x15:
+                if args: self._draw_glyph_rot_half(plot, xc, yc, args[1], args[0])
+                continue
+            # An op still needing a primitive this model lacks draws NOTHING rather
+            # than falling through to the glyph path, where it (and each argument)
+            # would render a substituted '!'. unsupported_ops() names them.
+            if is_op and cp in OP_ARGS: continue
             pool, base_yadv = self._pool(cp, mid)
             f = self._font_in(pool, cp); ch = cp
             if f is None:
@@ -463,9 +867,7 @@ class Renderer:
                                     lit = True; break
                             if lit: break
                         if not lit: continue
-                        vx, vy = gx0 + dx - BUFFER_X, gy0 + dy
-                        if -OVERSHOOT <= vx < OLED_W + OVERSHOOT and -OVERSHOOT <= vy < OLED_H + OVERSHOOT:
-                            setpix(vx, vy)
+                        plot(gx0 + dx, gy0 + dy)
                 xc += (g['xAdvance'] + 1) // 2
                 continue
             gy = yc + gyadj
@@ -473,13 +875,13 @@ class Renderer:
                 col = bo + xx * cb
                 for yy in range(h):
                     if f.bitmap[col + (yy >> 3)] & (1 << (yy & 7)):
-                        vx = xc + g['xOffset'] + xx - BUFFER_X
-                        vy = gy + g['yOffset'] + yy
-                        # keep up to OVERSHOOT px outside the viewport so clipped glyph
-                        # pixels stay visible (oled_to_rgb flags that margin). setpix
-                        # receives viewport coords; it owns the OVERSHOOT offset + target.
-                        if -OVERSHOOT <= vx < OLED_W + OVERSHOOT and -OVERSHOOT <= vy < OLED_H + OVERSHOOT:
-                            setpix(vx, vy)
+                        # ⚠️ Through plot(), NOT setpix, so HINT_ERASE reaches the TEXT
+                        # too. The firmware routes every path through kdisp_plot_ink for
+                        # exactly this reason, and the C carries the scar: erase used to
+                        # cover the text paths only, and an engaged lock badge then drew
+                        # its arrow lit instead of punching it out -- a solid blob rather
+                        # than an inverted badge.
+                        plot(xc + g['xOffset'] + xx, gy + g['yOffset'] + yy)
             xc += g['xAdvance']
 
 
