@@ -19,6 +19,3 @@ fonttools
 pyserial
 packaging
 jeepney; sys_platform == "linux"
-# Optional: the keymap editor's key previews read the firmware's lang_lut.xlsx.
-# Without it the letter/digit legends fall back to keycode text; modifiers still draw.
-openpyxl>=3

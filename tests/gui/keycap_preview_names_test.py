@@ -11,7 +11,9 @@ import unittest
 import unittest.mock
 
 from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
+from polyhost.services import preview_data as pdata
 from polyhost.services import macro_label as ml
+from polyhost.gui.layout_dialog import keycap_preview as kp
 from polyhost.gui.layout_dialog.keycap_preview import KeycapPreview
 
 
@@ -104,7 +106,7 @@ class SourceInfoTest(unittest.TestCase):
 
     def test_an_unloaded_preview_names_nothing(self):
         p = object.__new__(KeycapPreview)
-        p._loaded, p._ok, p._fw_dir = True, False, ""
+        p._loaded, p._ok, p._fw_dir, p._source = True, False, "", ""
         self.assertEqual(p.source_info(), "")
 
     def test_a_checkout_with_no_git_still_names_the_path(self):
@@ -112,7 +114,11 @@ class SourceInfoTest(unittest.TestCase):
         this", and it must survive a checkout git cannot describe."""
         d = tempfile.mkdtemp()
         p = object.__new__(KeycapPreview)
+        # ⚠️ `_source` is set explicitly rather than left to a getattr default:
+        # a fixture that tolerates a missing attribute would keep passing if the
+        # loader stopped setting it, which is the state that decides the branch.
         p._loaded, p._ok, p._fw_dir, p._tag_drift = True, True, d, ""
+        p._source = "checkout"
         self.assertEqual(p.source_info(), d)
 
     def test_a_failing_git_is_logged_not_swallowed_silently(self):
@@ -122,6 +128,7 @@ class SourceInfoTest(unittest.TestCase):
         checkout diagnosable. Caught by CodeQL on #207."""
         p = object.__new__(KeycapPreview)
         p._loaded, p._ok, p._fw_dir, p._tag_drift = True, True, "/nowhere", ""
+        p._source = "checkout"
         p.log = logging.getLogger("test_source_info")
         with unittest.mock.patch("subprocess.run", side_effect=OSError("no git")):
             with self.assertLogs(p.log, level="DEBUG") as caught:
@@ -214,7 +221,11 @@ class LayerTagSourceTest(unittest.TestCase):
         """
         self._fw()
         with unittest.mock.patch.object(qh, "parse_layers_h", return_value=self.OLD):
-            p = KeycapPreview()
+            # ⚠️ source="checkout" is REQUIRED now: with the shipped export present
+            # and current, an old checkout simply loses the version comparison and
+            # is never read -- which is the fix, not a gap. The drift warning is
+            # for the case where the checkout IS the source (no export shipped).
+            p = KeycapPreview(source="checkout")
             if not p._load():
                 self.skipTest(f"previews unavailable: {p.reason}")
             self.assertEqual(p._layer_tags, self.OLD)      # the tree's, not ours
@@ -233,3 +244,117 @@ class LayerTagSourceTest(unittest.TestCase):
         self.assertNotIn("\u26a0", p.source_info())
 
 
+
+
+class PreviewSourceTest(unittest.TestCase):
+    """WHICH data the previews draw from -- the fix for the whole field report.
+
+    Until 2026-09-01 the only source was a firmware clone beside the install, so
+    the feature was unavailable to anyone who is not a firmware developer and
+    silently WRONG for anyone whose clone had drifted: a blank Fn key, blank
+    emoji/Intl keys and retired moon brightness icons, all one stale clone.
+    """
+
+    def test_the_shipped_data_alone_previews_the_whole_board(self):
+        """The deliverable: no firmware checkout, no openpyxl, previews anyway.
+
+        ⚠️ Forced to "shipped" rather than hiding the checkout, because the point
+        is what the shipped data can do ON ITS OWN. A test that merely let the
+        version comparison pick would pass on a machine with no clone and prove
+        nothing on the one that has one.
+        """
+        p = KeycapPreview(source="shipped")
+        if not p._load():
+            self.skipTest(f"no shipped preview data: {p.reason}")
+        self.assertEqual(p.source, "shipped")
+        self.assertGreater(len(p._legends), 150)
+        self.assertTrue(p._lang_ok)
+        self.assertGreater(len(p.languages), 100)
+        # a custom PolyKybd keycode (the browser names it QK_KB_0), a decoded layer
+        # key, and a letter -- the three families that each need a different table
+        for kc, nm in ((0x7E00, "QK_KB_0"), (0x5225, None), (0x0004, "KC_A")):
+            self.assertIsNotNone(p.render(kc, nm), f"no preview for {kc:#06x}")
+
+    def test_a_forced_source_does_NOT_fall_back(self):
+        """⚠️ The fallback is right for the automatic pick and wrong here: a
+        comparison of the two sources that silently substituted one for the other
+        would report them identical for the least interesting reason."""
+        p = KeycapPreview(source="checkout")
+        p._load()
+        self.assertIn(p.source, ("checkout", ""))
+
+    def test_source_info_names_the_shipped_data_and_its_firmware(self):
+        """A preview that cannot say where its legends came from is one nobody can
+        diagnose -- the gap that cost three rounds of guessing."""
+        p = KeycapPreview(source="shipped")
+        if not p._load():
+            self.skipTest(f"no shipped preview data: {p.reason}")
+        info = p.source_info()
+        self.assertIn("shipped with this host", info)
+        self.assertIn(p._fw_version, info)
+
+    def test_the_automatic_pick_IS_the_version_comparison(self):
+        """⚠️ THE regression test for the field bug: a clone that is not newer must
+        not be read. Reading it unconditionally is what produced a blank Fn key,
+        blank emoji/Intl keys and moon brightness icons off one stale clone.
+
+        ⚠️ The expected source is DERIVED here from the two versions rather than
+        skipped past. An earlier version of this test skipped whenever the source
+        was not "shipped" -- so a mutation pinning the pick to "checkout" made it
+        SKIP instead of fail, i.e. the one test guarding the bug passed against the
+        bug (mutation-checked, 2026-09-01). A skip that the code under test can
+        cause is not a gate.
+        """
+        p = KeycapPreview()
+        if not p._load():
+            self.skipTest(f"previews unavailable: {p.reason}")
+        shipped = pdata.PreviewData()
+        shipped_v = shipped.fw_version if shipped.load() else ""
+        pk = kp._checkout_dir()
+        checkout_v = kp._checkout_version(pk) if pk else ""
+        if not (shipped_v or checkout_v):
+            self.skipTest("neither source is present")
+        self.assertEqual(p.source, pdata.choose_source(shipped_v, checkout_v))
+        if p.source == "shipped" and checkout_v:
+            # Silence here reads as "my clone is being used" and sends the next
+            # round after the clone. EQUAL versions lose too -- the shipped export
+            # is the copy that was tested.
+            self.assertTrue(p._checkout_unused)
+            self.assertIn("not newer", p.source_info())
+
+    def test_the_two_sources_draw_the_SAME_keycaps(self):
+        """⚠️ Checked by DRAWING, over every keycode the editor can show.
+
+        The export resolves legends with the same code the checkout path does, so
+        a comparison of the two data structures would agree by construction. The
+        pixels are the only claim worth making, and they are what a user sees.
+        """
+        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
+        if not os.path.exists(os.path.join(pk, "keycode_helper.c")):
+            self.skipTest("no firmware checkout beside this repo")
+        a, b = KeycapPreview(source="shipped"), KeycapPreview(source="checkout")
+        if not (a._load() and b._load()):
+            self.skipTest(f"a source would not load: {a.reason or b.reason}")
+
+        by_val = {}
+        for nm, val in qh.parse_qmk_keycodes(qh.HEADER_FILE).items():
+            by_val.setdefault(val, nm)
+        codes = set(by_val)
+        for lo, _hi, _kind in b._layer_ranges:
+            codes.update(range(lo, lo + 12))       # the layer keys are decoded
+
+        def raw(img):
+            return None if img is None else img.bits().asstring(img.byteCount())
+
+        drawn, mismatch = 0, []
+        for kc in sorted(codes):
+            ia, ib = a.render(kc, by_val.get(kc)), b.render(kc, by_val.get(kc))
+            if ia is None and ib is None:
+                continue
+            drawn += 1
+            if raw(ia) != raw(ib):
+                mismatch.append((hex(kc), by_val.get(kc),
+                                 "shipped-only" if ib is None else
+                                 "checkout-only" if ia is None else "differs"))
+        self.assertGreater(drawn, 150, "nothing was compared")
+        self.assertEqual(mismatch, [], f"{len(mismatch)} of {drawn} keycaps differ")

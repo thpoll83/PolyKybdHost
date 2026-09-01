@@ -11,11 +11,20 @@ module drives rather than reimplements:
   whose legend is a fixed mini display list: modifiers, arrows, Esc/Tab/Enter, the
   layer keys, the custom PolyKybd keycodes.
 
-⚠️ Both read the FIRMWARE checkout beside this repo (`macro_label.default_font_dir`
-resolves the same way), and the LUT needs `openpyxl` to open the .xlsx. Neither
-ships with the host, so on an ordinary install `usable` is False and the editor
-keeps drawing keycode text -- exactly what it did before previews existed. This is
-the same limitation the macro keycap preview already has; it is not new here.
+The DATA both of them read -- legends, the language table, the layer enum, the
+glyph bitmaps -- SHIPS with the host, exported by `scripts/export_preview_data.py`
+into `res/preview/` and loaded by `polyhost.services.preview_data`. Reading it
+live from a firmware clone beside the install (which is what this did until
+2026-09-01) made the feature unavailable to anyone who is not a firmware
+developer, and silently WRONG for anyone whose clone had drifted from the keyboard
+in front of them -- a blank Fn key, blank emoji/Intl keys and retired moon
+brightness icons, all one clone that was months behind.
+
+⚠️ A firmware checkout still wins, but only by being strictly NEWER
+(`preview_data.choose_source`): a developer's tree is ahead of the last release
+and previewing it is the whole point, while a clone that is merely old is exactly
+the case above. The checkout half additionally needs `openpyxl` for the .xlsx; the
+shipped half needs nothing beyond this repo.
 
 ⚠️ These are a PYTHON MODEL of the C and can drift from it. That is the standing
 caveat on `oled_preview.py` and `glyph_size_preview.py`, and it applies with more
@@ -34,6 +43,8 @@ import sys
 from PyQt5.QtGui import QImage
 
 from polyhost.services import macro_label as ml
+from polyhost.services import macro_look as mkl
+from polyhost.services import preview_data as pdata
 from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
 
 # The editor's tile shows the resting legend, so no modifier is held.
@@ -224,6 +235,45 @@ def _tools_dir() -> str:
     return os.path.join(here, "tools")
 
 
+def _checkout_dir() -> str:
+    """<fw>/keyboards/polykybd beside this repo, or "" when there is none.
+
+    Resolved through `macro_label.default_font_dir()` so the preview, the macro
+    label meter and `scripts/export_preview_data.py` all look in the same place.
+    """
+    try:
+        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
+    except Exception:
+        return ""
+    return pk if os.path.isdir(pk) else ""
+
+
+_FW_VERSION_RE = re.compile(r'#define\s+FW_VERSION\s+"([^"]+)"')
+
+
+def _checkout_version(pk: str) -> str:
+    """The checkout's FW_VERSION, for the source comparison. "" if unreadable --
+    which sorts oldest, so an unparseable tree never beats the shipped export."""
+    try:
+        with open(os.path.join(pk, "config.h"), encoding="utf-8",
+                  errors="ignore") as fh:
+            m = _FW_VERSION_RE.search(fh.read())
+        return m.group(1) if m else ""
+    except OSError:
+        return ""
+
+
+def _mid_pool(pd):
+    """The standalone HINT_MID face as a one-font pool, or None.
+
+    ⚠️ None is a supported state, not a failure: `Renderer` reports `\x16` through
+    `unsupported_ops` when it has no mid face, so those legends are refused rather
+    than drawn with both lines at full size on top of each other.
+    """
+    face = pd.ui_fonts.get(mkl.MID_FONT_SYMBOL) if pd.ui_fonts else None
+    return [face] if face else None
+
+
 class KeycapPreview:
     """Keycode -> the 72x40 keycap, or None when this keycode has no preview.
 
@@ -232,39 +282,50 @@ class KeycapPreview:
     toggle is off or the firmware checkout is absent.
     """
 
-    def __init__(self, lang: str = DEFAULT_LANG):
+    def __init__(self, lang: str = DEFAULT_LANG, source: str | None = None):
+        """`source` forces "shipped" or "checkout" instead of the version compare.
+
+        Only for the doctor and the tests -- comparing the two sources needs each
+        one on its own terms, and a comparison that could not pin the source would
+        be comparing whatever the version happened to pick, twice.
+        """
         self.log = logging.getLogger("Preview")
         self._lang = lang
+        self._forced = source
         self._loaded = False
         self._ok = False
         self._static_ok = False
         self._lang_ok = False
         self._reason = ""
         self._op = self._ld = self._L = self._R = self._resolver = None
-        self._static: dict = {}
+        self._legends: dict = {}   # renderable token -> resolved codepoints
         self._known: set = set()   # every name the two halves can draw
         self._alt_names: dict = {}  # keycode -> every name the header gives it
-        self._fw_dir = ""          # the firmware checkout the legends came from
+        self._source = ""          # "shipped" or "checkout"
+        self._fw_version = ""      # the firmware the loaded data came from
+        self._checkout_unused = False  # a checkout exists but did not win the compare
+        self._fw_dir = ""          # the firmware checkout, when that is the source
         self._ranges = None        # layer-switch ranges, read from the header
         self._custom: dict = {}           # keycode -> PolyKybd's own name
-        self._macros: dict = {}           # function-like legend macros
         # layer index -> enum tag, e.g. 5 -> "FL". Seeded from the shipped map so a
-        # preview built without a dialog still decodes layer keys.
+        # preview built before either source loads still decodes layer keys.
         self._layer_tags: dict = dict(qh.LAYER_TAGS)
         self._tag_drift = ""       # set when the checkout disagrees with LAYER_TAGS
 
     # -- loading ------------------------------------------------------------
 
     def _load(self):
-        """Load the two halves INDEPENDENTLY, and report which ones came up.
+        """Pick a data source, load it, and fall back to the other one if it fails.
 
-        ⚠️ They have different prerequisites and one used to take the other down with
-        it: the language LUT needs `openpyxl` to open the .xlsx, the static-text half
-        needs only the named-glyph map -- `Lang.resolve()` reads `self.named` and never
-        touches the workbook grid. Loading them in one try meant a machine without
-        openpyxl rendered NOTHING but macros, when it could have drawn every modifier,
-        arrow and Esc/Tab on the board (field, 2026-08-28: "I can only see the M0 key
-        with a preview render").
+        ⚠️ The PICK is a version comparison, not a preference -- see
+        `preview_data.choose_source`. The shipped export is self-consistent by
+        construction (legends, layer enum and glyphs all came from one firmware
+        tree); a checkout is whatever happens to be on disk, and wins only by being
+        strictly newer, which is the case a firmware developer needs.
+
+        The FALLBACK matters as much as the pick: a source that loses the comparison
+        is still better than no previews at all, so a missing export falls through to
+        an older checkout and an unreadable checkout falls back to the export.
         """
         if self._loaded:
             return self._ok
@@ -275,91 +336,167 @@ class KeycapPreview:
                 sys.path.insert(0, tools)
             import oled_preview as op
             import lang_demo as ld
-
-            fonts_dir = ml.default_font_dir()                  # <fw>/base/fonts
-            pk = os.path.dirname(os.path.dirname(fonts_dir))   # <fw>/keyboards/polykybd
-            named = op.load_named_glyphs(os.path.join(pk, "lang", "named_glyphs.h"))
-            # keycode_helper.h carries the names the static-text switch returns; without
-            # it those legends resolve to nothing and the key silently renders blank.
-            named.update(op.load_named_glyphs(os.path.join(pk, "keycode_helper.h")))
-            # load_renderer, not Renderer(load_all_fonts(...)): it also binds the
-            # standalone 19px HINT_MID face, without which the settings legends draw
-            # both of their lines at full size, on top of each other.
-            self._R = op.load_renderer(fonts_dir)
-            # TWO legend seams, merged in the firmware's own precedence order.
-            # `to_static_text()` (poly_keymap.c) consults keycode_to_static_text()
-            # FIRST and only falls through to its own switch, so keycode_helper.c
-            # wins a token defined in both. Without the second one the base-layer
-            # picker (KC_L0..KC_L4), the unicode-mode keys, KC_IDDQD and the
-            # legend-size key render on the board and nowhere in the editor.
-            self._static = {
-                **ld.parse_to_static_text_map(os.path.join(pk, "poly_keymap.c")),
-                **ld.parse_static_text_map(os.path.join(pk, "keycode_helper.c")),
-            }
-            self._custom = parse_custom_keycodes(_read(pk, "keycode_helper.h"))
-            self._macros = parse_function_macros(
-                *(_read(pk, f) for f in ("lang/named_glyphs.h", "keycode_helper.h",
-                                         "keycode_helper.c", "poly_keymap.c")))
-            # QMK's short aliases, derived from its own headers (see
-            # lang_demo.load_qmk_aliases). Without this a keymap spelling KC_MUTE /
-            # DE_Z / RGB_M_SW misses a legend the map holds under the long name.
-            ld.load_qmk_aliases(os.path.dirname(os.path.dirname(pk)), pk)
-            # The derived aliases fold only ONTO a name we can draw (see
-            # lang_demo.normalize_kc), so it needs both halves' key sets.
-            self._known = set(self._static) | set(op.ROW)
-            # Every name the keycode header gives each value, from the SAME source
-            # the browser names tiles from -- so the two cannot drift apart.
-            self._alt_names = {}
-            for nm, val in qh.parse_qmk_keycodes(qh.HEADER_FILE).items():
-                self._alt_names.setdefault(val, []).append(nm)
-            self._fw_dir = pk
-            # ⚠️ The tags come from THIS checkout's layers.h, not from the shipped
-            # LAYER_TAGS -- because they must match the spelling the SAME tree's
-            # keycode_helper.c switches on. A tree from before the Fn merge has no
-            # `case MO(_FL)` at all; it switches on `MO(_FL0)`/`MO(_FL1)`, so a
-            # constant saying `5 -> FL` builds a token that tree cannot match and
-            # the key goes blank. Hardcoding was tried for one commit and did
-            # exactly that in the field.
-            #
-            # The constant is the fallback for a checkout whose enum will not parse,
-            # and the YARDSTICK: when the two disagree, this checkout is not the
-            # firmware this host was released against, so previews can name the
-            # WRONG layer (the device's index 6 is `_NL`, an old tree's is `_FL1`)
-            # and every legend beside them may be stale too. That is not something
-            # the preview can fix -- but it must not hide it either, hence the
-            # warning threaded out through `source_info()` into the tooltip.
-            try:
-                derived = qh.parse_layers_h(pathlib.Path(pk) / "layers.h")
-            except Exception as e:
-                derived = {}
-                self.log.debug("layers.h unreadable (%s: %s)", type(e).__name__, e)
-            if derived:
-                self._layer_tags = derived
-                drift = sorted(i for i in set(derived) | set(qh.LAYER_TAGS)
-                               if derived.get(i) != qh.LAYER_TAGS.get(i))
-                if drift:
-                    self._tag_drift = (
-                        f"this checkout's layer enum differs from the one this host "
-                        f"expects at index {drift[0]}+ "
-                        f"({derived.get(drift[0])!r} vs {qh.LAYER_TAGS.get(drift[0])!r}) "
-                        f"-- it is out of step with the keyboard, so previews can be "
-                        f"wrong or missing. Update the firmware checkout.")
-                    self.log.warning("key previews: %s", self._tag_drift)
             self._op, self._ld = op, ld
-            # Resolve-only view: same class, so the codepoint tokenising stays the ONE
-            # implementation that mirrors the firmware's make_key -- but built without
-            # the workbook, which is the part that needs openpyxl.
-            self._resolver = object.__new__(op.Lang)
-            self._resolver.named = named
-            self._static_ok = True
         except Exception as e:
             self._reason = f"{type(e).__name__}: {e}"
             self.log.warning("key previews unavailable: %s", self._reason)
-            self._ok = False
             return False
 
+        shipped = pdata.PreviewData()
+        shipped_ok = shipped.load()
+        pk = _checkout_dir()
+        checkout_version = _checkout_version(pk) if pk else ""
+        shipped_version = shipped.fw_version if shipped_ok else ""
+        first = self._forced or pdata.choose_source(shipped_version, checkout_version)
+        self._checkout_unused = (not self._forced and bool(checkout_version)
+                                 and first == "shipped")
+        order = ((first,) if self._forced
+                 else (first, "checkout" if first == "shipped" else "shipped"))
+        for cand in order:
+            try:
+                if cand == "shipped":
+                    if not shipped_ok:
+                        continue
+                    self._load_shipped(shipped)
+                else:
+                    if not pk:
+                        continue
+                    # ⚠️ A checkout that WON the comparison is newer than this host,
+                    # so disagreeing with `LAYER_TAGS` is expected and reporting it
+                    # would fire on every firmware developer's tree. The warning is
+                    # for the other case: a checkout used because there was no
+                    # shipped export, where an old enum really does break previews.
+                    newer = (checkout_version and shipped_version
+                             and pdata.parse_version(checkout_version)
+                             > pdata.parse_version(shipped_version))
+                    self._load_checkout(pk, authoritative=bool(newer))
+            except Exception as e:
+                self._reason = f"{type(e).__name__}: {e}"
+                self.log.warning("key previews: the %s data would not load (%s)",
+                                 cand, self._reason)
+                continue
+            self._source = cand
+            self._fw_version = shipped_version if cand == "shipped" else checkout_version
+            self._static_ok = True
+            break
+        else:
+            self._reason = self._reason or "no preview data (shipped or checkout)"
+            self.log.warning("key previews unavailable: %s", self._reason)
+            return False
+
+        # Every name the keycode header gives each value, from the SAME source the
+        # browser names tiles from -- so the two cannot drift apart.
+        self._alt_names = {}
+        for nm, val in qh.parse_qmk_keycodes(qh.HEADER_FILE).items():
+            self._alt_names.setdefault(val, []).append(nm)
+        # The derived aliases fold only ONTO a name we can draw, so this needs the
+        # legend tokens AND the LUT's own key set.
+        self._known = set(self._legends) | set(self._op.ROW)
+        self._ok = self._static_ok or self._lang_ok
+        return self._ok
+
+    def _load_shipped(self, pd):
+        """Draw from `res/preview/` -- no firmware checkout, no openpyxl."""
+        op = self._op
+        self._R = op.Renderer(pd.fonts, mid_fonts=_mid_pool(pd))
+        self._resolver = object.__new__(op.Lang)
+        self._resolver.named = dict(pd.named)
+        self._legends = self._drawable(pd.legends)
+        self._custom = dict(pd.custom)
+        self._layer_tags = dict(pd.layer_tags) or dict(qh.LAYER_TAGS)
+        self._ld.set_qmk_aliases(pd.aliases)
+        self._L = pd.lang_reader() or self._resolver
+        self._lang_ok = self._L is not self._resolver
+        if not self._lang_ok:
+            self._reason = "the shipped language table is missing"
+
+    def _load_checkout(self, pk: str, authoritative: bool = False):
+        """Draw from a firmware checkout -- the developer path.
+
+        Kept because a firmware tree is the only place a legend that has not been
+        released yet exists. It resolves the SAME things the export resolves, in the
+        same order, so the two produce the same keycaps for the same firmware.
+        """
+        op, ld = self._op, self._ld
+        fonts_dir = os.path.join(pk, "base", "fonts")
+        named = op.load_named_glyphs(os.path.join(pk, "lang", "named_glyphs.h"))
+        # keycode_helper.h carries the names the static-text switch returns; without
+        # it those legends resolve to nothing and the key silently renders blank.
+        named.update(op.load_named_glyphs(os.path.join(pk, "keycode_helper.h")))
+        # load_renderer, not Renderer(load_all_fonts(...)): it also binds the
+        # standalone 19px HINT_MID face, without which the settings legends draw
+        # both of their lines at full size, on top of each other.
+        self._R = op.load_renderer(fonts_dir)
+        # Resolve-only view: same class, so the codepoint tokenising stays the ONE
+        # implementation that mirrors the firmware's make_key -- but built without
+        # the workbook, which is the part that needs openpyxl.
+        self._resolver = object.__new__(op.Lang)
+        self._resolver.named = named
+        # TWO legend seams, merged in the firmware's own precedence order.
+        # `to_static_text()` (poly_keymap.c) consults keycode_to_static_text()
+        # FIRST and only falls through to its own switch, so keycode_helper.c
+        # wins a token defined in both. Without the second one the base-layer
+        # picker (KC_L0..KC_L4), the unicode-mode keys, KC_IDDQD and the
+        # legend-size key render on the board and nowhere in the editor.
+        exprs = {
+            **ld.parse_to_static_text_map(os.path.join(pk, "poly_keymap.c")),
+            **ld.parse_static_text_map(os.path.join(pk, "keycode_helper.c")),
+        }
+        macros = parse_function_macros(
+            *(_read(pk, f) for f in ("lang/named_glyphs.h", "keycode_helper.h",
+                                     "keycode_helper.c", "poly_keymap.c")))
+        resolved = {}
+        for token, expr in exprs.items():
+            try:
+                cps = self._resolver.resolve(expand_function_macros(expr, macros))
+            except Exception:
+                cps = None
+            if cps:
+                resolved[token] = list(cps)
+        self._legends = self._drawable(resolved)
+        self._custom = parse_custom_keycodes(_read(pk, "keycode_helper.h"))
+        # QMK's short aliases, derived from its own headers (see
+        # lang_demo.load_qmk_aliases). Without this a keymap spelling KC_MUTE /
+        # DE_Z / RGB_M_SW misses a legend the map holds under the long name.
+        ld.load_qmk_aliases(os.path.dirname(os.path.dirname(pk)), pk)
+        self._fw_dir = pk
+        # ⚠️ The tags come from THIS checkout's layers.h, not from the shipped
+        # LAYER_TAGS -- because they must match the spelling the SAME tree's
+        # keycode_helper.c switches on. A tree from before the Fn merge has no
+        # `case MO(_FL)` at all; it switches on `MO(_FL0)`/`MO(_FL1)`, so a
+        # constant saying `5 -> FL` builds a token that tree cannot match and
+        # the key goes blank. Hardcoding was tried for one commit and did
+        # exactly that in the field.
+        #
+        # The constant is the fallback for a checkout whose enum will not parse,
+        # and the YARDSTICK: when the two disagree, this checkout is not the
+        # firmware this host was released against, so previews can name the
+        # WRONG layer (the device's index 6 is `_NL`, an old tree's is `_FL1`)
+        # and every legend beside them may be stale too. That is not something
+        # the preview can fix -- but it must not hide it either, hence the
+        # warning threaded out through `source_info()` into the tooltip.
         try:
-            self._L = self._op.Lang(os.path.join(pk, "lang", "lang_lut.xlsx"), named)
+            derived = qh.parse_layers_h(pathlib.Path(pk) / "layers.h")
+        except Exception as e:
+            derived = {}
+            self.log.debug("layers.h unreadable (%s: %s)", type(e).__name__, e)
+        if derived:
+            self._layer_tags = derived
+            drift = sorted(i for i in set(derived) | set(qh.LAYER_TAGS)
+                           if derived.get(i) != qh.LAYER_TAGS.get(i))
+            if drift and authoritative:
+                self.log.debug("checkout layer enum is ahead of this host at "
+                               "index %d -- expected on a newer tree", drift[0])
+            elif drift:
+                self._tag_drift = (
+                    f"this checkout's layer enum differs from the one this host "
+                    f"expects at index {drift[0]}+ "
+                    f"({derived.get(drift[0])!r} vs {qh.LAYER_TAGS.get(drift[0])!r}) "
+                    f"-- it is out of step with the keyboard, so previews can be "
+                    f"wrong or missing. Update the firmware checkout.")
+                self.log.warning("key previews: %s", self._tag_drift)
+        try:
+            self._L = op.Lang(os.path.join(pk, "lang", "lang_lut.xlsx"), named)
             self._lang_ok = True
         except Exception as e:
             self._L = self._resolver
@@ -368,8 +505,22 @@ class KeycapPreview:
             self.log.warning("key previews: %s -- modifiers and arrows still render",
                              self._reason)
 
-        self._ok = self._static_ok or self._lang_ok
-        return self._ok
+    def _drawable(self, legends: dict) -> dict:
+        """Drop the legends this renderer cannot follow, ONCE, at load time.
+
+        Both sources go through here so they agree about what is previewable, and
+        the check leaves the per-keycap render path -- it was running
+        `unsupported_ops` on every paint of every key.
+        """
+        out = {}
+        for token, cps in legends.items():
+            try:
+                if self._R.unsupported_ops(cps):
+                    continue
+            except Exception:
+                pass
+            out[token] = list(cps)
+        return out
 
     @property
     def usable(self) -> bool:
@@ -381,25 +532,37 @@ class KeycapPreview:
         self._load()
         return self._reason
 
-    def source_info(self) -> str:
-        """Which firmware checkout the legends came from, and at what commit.
+    @property
+    def source(self) -> str:
+        """"shipped" or "checkout" -- which data the keycaps are drawn from."""
+        self._load()
+        return self._source
 
-        ⚠️ Every glyph here is read from a firmware checkout beside this repo, and
-        NOTHING said which one or how old it was -- so a preview drawing legends the
-        keyboard has moved past is indistinguishable from a preview that is simply
-        wrong, and the only way to tell was to go and look at the checkout. That is
-        the same diagnosable-gap shape as a preview that cannot say why it is
-        unavailable: reported as "the brightness icons are the old ones" with no way
-        to tell whose copy was behind (2026-09-01).
+    def source_info(self) -> str:
+        """Where the legends came from, and how old they are.
+
+        ⚠️ NOTHING used to say this, so a preview drawing legends the keyboard has
+        moved past was indistinguishable from a preview that is simply wrong, and
+        the only way to tell was to go and look at the checkout. Reported as "the
+        brightness icons are the old ones" with no way to tell whose copy was
+        behind (2026-09-01).
 
         Best-effort: a checkout with no git, or none at all, still returns the path.
         """
         if not self._load():
             return ""
-        import subprocess
+        if self._source == "shipped":
+            v = self._fw_version or "unknown"
+            out = f"shipped with this host\nfirmware {v}"
+            # A checkout that did not win is NOT an error -- it just lost the
+            # comparison, EQUAL included -- but saying so is what stops the next
+            # round being "why is my clone being ignored?".
+            return f"{out}\n(a firmware checkout is present but is not newer)" \
+                if self._checkout_unused else out
         pk = self._fw_dir or ""
         if not pk:
             return ""
+        import subprocess
         head = ""
         try:
             head = subprocess.run(
@@ -487,17 +650,14 @@ class KeycapPreview:
         try:
             if kc in self._op.ROW:
                 if not self._lang_ok:
-                    return None          # a letter needs the workbook; a modifier does not
+                    return None          # a letter needs the LUT; a modifier does not
                 img = self._op.render_key(self._L, self._R, self._lang, kc,
                                           shift=False, caps=False)
             else:
-                expr = self._static.get(kc)
-                if expr is None:
+                cps = self._legends.get(kc)
+                if cps is None:
                     return None
-                expr = expand_function_macros(expr, self._macros)
-                if self._uses_unsupported_op(expr):
-                    return None
-                img = self._ld.render_static(self._resolver, self._R, expr)
+                img = self._ld.render_static_cps(self._R, cps)
         except Exception as e:
             self.log.debug("no preview for %s (%s: %s)", kc, type(e).__name__, e)
             return None
@@ -536,14 +696,6 @@ class KeycapPreview:
             if kc in self._known:
                 return kc
         return None
-
-    def _uses_unsupported_op(self, expr: str) -> bool:
-        """True when the legend needs a display-list op the renderer cannot follow."""
-        try:
-            cps = self._resolver.resolve(expr) or []
-        except Exception:
-            return False
-        return bool(self._R.unsupported_ops(cps))
 
     @staticmethod
     def _to_qimage(img) -> QImage | None:

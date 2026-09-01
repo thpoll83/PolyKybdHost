@@ -114,6 +114,19 @@ def build(pk: pathlib.Path) -> dict:
     resident = _resident_pack(pk, fonts_dir, op)
     ui, ui_names = _ui_pack(fonts_dir)
 
+    # PolyKybd's OWN keycode names. The shipped `res/keycodes.h` is QMK's, so it
+    # has no name for `QK_KB_0`+n -- and every legend on the settings, brightness
+    # and layout keys is keyed by the firmware's name for it (`KC_DMIN`, `KC_LANG`).
+    # Without this the host can find 34 legends it cannot address.
+    custom = kp.parse_custom_keycodes(kp._read(str(pk), "keycode_helper.h"))
+
+    # QMK's own alias tables, derived from the tree rather than re-typed -- see
+    # `lang_demo.load_qmk_aliases`. Mostly redundant with the shipped keycode
+    # header (which gives every name of a keycode), but it also carries the
+    # keymap_extras the FIRMWARE includes (`DE_Z -> KC_Y`), which no host-side
+    # table has.
+    aliases = dict(ld.load_qmk_aliases(str(pk.parent.parent), str(pk)))
+
     version = fw_version(pk)
     return {
         "resident.plyf": resident,
@@ -123,6 +136,8 @@ def build(pk: pathlib.Path) -> dict:
         # so without this the loader would rest on an undocumented ordering.
         "legends.json": {"fw_version": version, "legends": legends,
                          "ui_fonts": ui_names,
+                         "custom": {str(k): v for k, v in custom.items()},
+                         "aliases": aliases,
                          "unresolved": sorted(unresolved)},
         "layers.json": {"fw_version": version,
                         "tags": {str(k): v for k, v in

@@ -198,8 +198,18 @@ def load_qmk_aliases(qmk_root: str, fw_polykybd: str) -> dict:
     # MIDDLE hop: the language LUT keys on `KC_LBRC`, so collapsing to the endpoint
     # walks straight past the answer. `normalize_kc` walks the chain against the
     # caller's own key set and stops at the first hop it can draw.
-    _DERIVED_ALIAS.clear()          # a re-read REPLACES: a stale entry must not survive
-    _DERIVED_ALIAS.update(raw)
+    return set_qmk_aliases(raw)
+
+
+def set_qmk_aliases(mapping: dict) -> dict:
+    """Install an already-derived alias table (the shipped preview export carries
+    one, so a host with no firmware checkout still folds `KC_MUTE` and `DE_Z`).
+
+    REPLACES rather than merges, for the same reason `load_qmk_aliases` re-reads:
+    a stale entry from a previous load must not survive into a fresh one.
+    """
+    _DERIVED_ALIAS.clear()
+    _DERIVED_ALIAS.update(mapping)
     return _DERIVED_ALIAS
 
 
@@ -586,19 +596,28 @@ class LangBoard(KleRenderer):
         return tile
 
 
-def render_static(L, R, expr) -> Image.Image:
-    """Draw a keycode_to_static_text() expression (icons + control codes) into a
-    72x40 'L' image at the firmware's BUFFER_X / baseline origin (poly_keymap.c
-    draws static text at `BUFFER_X, 23`; the strings carry their own offsets)."""
+def render_static_cps(R, cps) -> Image.Image:
+    """Draw an already-resolved legend (a codepoint list) into the 72x40 keycap.
+
+    Split out of `render_static` so a caller that HAS the codepoints -- the host's
+    shipped preview export resolves every legend at build time -- needs neither a
+    `Lang` nor the C macro table to draw one.
+    """
     img = Image.new('L', (OLED_W, OLED_H), 0)
     px = img.load()
     def sp(vx, vy):
         if 0 <= vx < OLED_W and 0 <= vy < OLED_H:
             px[vx, vy] = 255
-    cps = L.resolve(expr)
     if cps:
         R.draw(sp, cps, BUFFER_X, BASELINE)
     return img
+
+
+def render_static(L, R, expr) -> Image.Image:
+    """Draw a keycode_to_static_text() expression (icons + control codes) into a
+    72x40 'L' image at the firmware's BUFFER_X / baseline origin (poly_keymap.c
+    draws static text at `BUFFER_X, 23`; the strings carry their own offsets)."""
+    return render_static_cps(R, L.resolve(expr))
 
 
 def build_frame(L, R, matrix_kc, lang, static_map, size: int = 0,

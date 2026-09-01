@@ -1072,8 +1072,9 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     with what each layer actually is (`Qwerty`, `Stag!`, `ColemkDH`, …, `Fn`,
     `Numpad`, `Utility`).
   - ⚠️ **`layer_names.yaml` and its generator are GONE (2026-09-01), and the layer
-    tags now come from the firmware CHECKOUT's `layers.h` — the same tree the legends
-    come from.** That pairing is the whole rule, and it took three tries to see it:
+    tags come from the SAME source as the legends — `res/preview/layers.json` when the
+    shipped data is in use, the checkout's own `layers.h` when it is.** That pairing
+    is the whole rule, and it took three tries to see it:
     - **A generated file** — the rot above: a dead generator input, nothing notices.
     - **A hardcoded constant** (tried for exactly one commit, and it is what this
       note used to recommend): worse. The tag has to match the spelling
@@ -1084,14 +1085,19 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     - **The checkout's own `layers.h`**: correct, because tags and legends then agree
       by construction. `qmk_keycode_helper.parse_layers_h()`; `LAYER_TAGS` remains
       only as the no-checkout fallback and as the yardstick below.
-  - ⚠️ **But an out-of-step checkout still previews WRONG, and that is not fixable
-    from the host — so it is REPORTED instead.** The keycodes come from the connected
-    keyboard while every legend comes from the local clone, so an old clone renames
-    the device's layers under the editor (device index 6 is `_NL`; a pre-merge tree's
-    is `_FL1`) *and* draws retired glyphs beside them. `_load()` diffs the checkout's
-    enum against `LAYER_TAGS` and, on any disagreement, logs a warning and appends it
-    to `source_info()` → the "Key previews" tooltip. `test_the_shipped_tags_match_the_firmware_enum`
-    keeps that yardstick honest; both drift tests are mutation-checked.
+  - ⚠️ **An out-of-step checkout previews WRONG, which is why it now has to WIN a
+    version comparison to be read at all** (above). The keycodes come from the
+    connected keyboard while every legend comes from the data source, so an old clone
+    renames the device's layers under the editor (device index 6 is `_NL`; a pre-merge
+    tree's is `_FL1`) *and* draws retired glyphs beside them. When the checkout IS the
+    source, `_load_checkout()` diffs its enum against `LAYER_TAGS` and, on any
+    disagreement, logs a warning and appends it to `source_info()` → the "Key previews"
+    tooltip. ⚠️ **That warning is suppressed for a checkout that won by being NEWER** —
+    a newer tree disagreeing with the host's constant is expected, so reporting it
+    would fire on every firmware developer's machine and become one more banner people
+    scroll past. It is for the fallback case: a checkout read because no export
+    shipped. `test_the_shipped_tags_match_the_firmware_enum` keeps the yardstick
+    honest; both drift tests are mutation-checked.
     - **The tell that a clone is behind, in one line: the brightness keys.** They
       became a sun family on 2026-08-25 (`9f4fa686e5`); before that
       `keycode_helper.c` returned `PRIVATE_DISP_*`, which are MOON glyphs. Moons in
@@ -1225,17 +1231,51 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
   for the language LUT and `tools/lang_demo.py` for the `keycode_helper.c` static-text
   map; macros go through the host's own composer). Off is the default, and off means
-  each key shows its keycode text. ⚠️ **Both halves need the firmware checkout beside
-  this repo, and the LUT half additionally needs `openpyxl`** — so on an ordinary
-  install the box is DISABLED with a tooltip saying why, rather than toggling something
-  that would silently do nothing. Six traps and a design note:
+  each key shows its keycode text.
+  - ✅ **The DATA ships with the host now (2026-09-01) — `polyhost/res/preview/`,
+    written by `scripts/export_preview_data.py`, loaded by
+    `polyhost/services/preview_data.py`.** Until then both halves read a
+    `qmk_firmware` clone beside the install and the LUT half needed `openpyxl`, so
+    the feature was unavailable to anyone who is not a firmware developer **and
+    silently wrong for anyone whose clone had drifted** — a blank Fn key, blank
+    emoji/Intl keys and retired moon brightness icons were all ONE clone that was
+    months behind the connected keyboard. 420 KB: `resident.plyf` (the fonts
+    compiled into the firmware, so in no bundle) + `ui_fonts.plyf` (the standalone
+    faces no codepoint can reach) + the legends **resolved to codepoints**, the raw
+    LUT grid, the named glyphs and the layer enum. `openpyxl` left
+    `requirements.txt` with it; it is a dev dependency (`tools/requirements.txt`).
+  - ⚠️ **A firmware checkout still wins, but ONLY by being strictly newer**
+    (`preview_data.choose_source`) — a developer's tree is ahead of the last release
+    and previewing it is the whole point, while a clone that is merely old is the
+    case above. **EQUAL versions take the shipped copy**: it is the one that was
+    tested, and re-parsing the same firmware twice cannot do better. When a checkout
+    loses, `source_info()` says so ("a firmware checkout is present but is not
+    newer") — silence there reads as "my clone is being used" and sends the next
+    round after the clone.
+  - ⚠️ **The two sources are pinned to draw IDENTICALLY, by rendering, not by
+    comparing structures.** `test_the_two_sources_draw_the_SAME_keycaps` renders
+    every keycode the editor can show from both and requires the pixels to match
+    (measured: 211 static keycaps + 7,840 letter keycaps across 160 languages, zero
+    differences, zero coverage gaps either way). The export resolves legends with
+    the same code the checkout path does, so any comparison of the DATA would agree
+    by construction — the pixels are the only claim worth making.
+    - ⚠️ **`KeycapPreview(source=…)` forces a source and deliberately does NOT fall
+      back**, because a comparison that silently substituted one source for the
+      other would report them identical for the least interesting reason.
+    - ⚠️ **A skip the code under test can CAUSE is not a gate.** The
+      checkout-is-unused test first skipped whenever the source was not "shipped",
+      so a mutation pinning the pick to `"checkout"` — i.e. reinstating the field
+      bug exactly — made it SKIP rather than fail. It now DERIVES the expected
+      source from the two versions and asserts it; mutation-checked in both states.
+  - Six traps and a design note:
   - ⚠️ **Load the two halves INDEPENDENTLY.** Coupling them shipped once: `openpyxl`
     was undeclared in `requirements.txt`, so on the author's machine the letters *and*
     the modifiers/custom keys both went dark and **only macros previewed** — reported
     as "I can only see the M0 key with a preview render". Each half now reports its own
     `reason` and the tooltip names the missing one, because a partly-loaded preview
     (macros and modifiers drawn, every letter falling back to text) reads as "broken"
-    with nothing anywhere to explain it.
+    with nothing anywhere to explain it. (Shipped data has no such split — the LUT is
+    in the export — so this applies to the checkout path only.)
   - ⚠️ **The missing dependency failed SILENTLY** — `usable` read False in 0.00 s,
     indistinguishable from "no firmware checkout". A preview that cannot say *why* it
     is unavailable is a preview nobody can fix.

@@ -222,11 +222,11 @@ class KbLayoutDialog(QMainWindow):
         PolyKybd keys). Off, every key falls back to its keycode text.
 
         ⚠️ Coverage is NOT total and the label must not imply it is: a keycode neither
-        table names simply keeps its text, mixed in with the previewed keys. Both
-        sources also need the firmware checkout beside this repo (and `openpyxl` for
-        the .xlsx), so on an ordinary install nothing here is available -- the box is
-        then DISABLED and its tooltip says so, rather than toggling something that
-        would silently do nothing.
+        table names simply keeps its text, mixed in with the previewed keys. The data
+        SHIPS with the host (`res/preview/`), so this works on an ordinary install; a
+        firmware checkout beside the repo overrides it only when it is newer. When
+        neither loads the box is DISABLED and its tooltip says why, rather than
+        toggling something that would silently do nothing.
         """
         self.keycap_toggle = QCheckBox("Key previews")
         macro_ok = self._keycap_render is not None and self._keycap_render.usable
@@ -236,7 +236,9 @@ class KbLayoutDialog(QMainWindow):
         # ⚠️ Say WHY when a half is missing. A partly-loaded preview renders macros and
         # modifiers while every letter falls back to text, which reads as "broken" with
         # nothing anywhere to explain it -- the shape that shipped once already, when a
-        # missing openpyxl silently disabled everything but the macros.
+        # missing openpyxl silently disabled everything but the macros. `source_info()`
+        # below then names WHICH data drew them, which is the other half of the same
+        # question: a legend can be perfectly rendered and still be the wrong vintage.
         tip = ("Draw each key as the keycap the keyboard shows. A key whose legend is "
                "not modelled here keeps its keycode text.") if usable else (
               "Unavailable: the keycap fonts and layout tables could not be loaded, so "
