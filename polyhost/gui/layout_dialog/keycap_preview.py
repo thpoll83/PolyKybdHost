@@ -390,8 +390,14 @@ class KeycapPreview:
             head = subprocess.run(
                 ["git", "-C", pk, "log", "-1", "--format=%h %cs %s"],
                 capture_output=True, text=True, timeout=5).stdout.strip()
-        except (OSError, subprocess.SubprocessError):
-            pass
+        except (OSError, subprocess.SubprocessError) as e:
+            # Swallowed on purpose -- git missing, or a directory that is not a
+            # checkout, still leaves the PATH worth showing, and a tooltip must not
+            # fail. But LOG it: this method exists so a stale checkout is
+            # diagnosable, and a silent `pass` here would hide the one thing that
+            # tells you why the commit line is absent (CodeQL, #207).
+            self.log.debug("no git description for %s (%s: %s)",
+                           pk, type(e).__name__, e)
         return f"{pk}\n{head}" if head else pk
 
     @property

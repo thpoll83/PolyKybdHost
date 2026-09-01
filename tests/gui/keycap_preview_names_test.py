@@ -107,3 +107,18 @@ class SourceInfoTest(unittest.TestCase):
         p = object.__new__(KeycapPreview)
         p._loaded, p._ok, p._fw_dir = True, True, d
         self.assertEqual(p.source_info(), d)
+
+    def test_a_failing_git_is_logged_not_swallowed_silently(self):
+        """⚠️ The `except` is deliberate -- a tooltip must not fail, and the PATH is
+        still worth showing -- but a bare `pass` would hide the one thing that says
+        why the commit line is missing, in the very method added to make a stale
+        checkout diagnosable. Caught by CodeQL on #207."""
+        import logging
+        from unittest import mock
+        p = object.__new__(KeycapPreview)
+        p._loaded, p._ok, p._fw_dir = True, True, "/nowhere"
+        p.log = logging.getLogger("test_source_info")
+        with mock.patch("subprocess.run", side_effect=OSError("no git")):
+            with self.assertLogs(p.log, level="DEBUG") as caught:
+                self.assertEqual(p.source_info(), "/nowhere")
+        self.assertTrue(any("no git" in m for m in caught.output), caught.output)
