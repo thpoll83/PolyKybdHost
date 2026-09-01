@@ -724,7 +724,14 @@ class Renderer:
             if is_op and cp in OP_ARGS: continue
             pool, base_yadv = self._pool(cp, mid)
             f = self._font_in(pool, cp); ch = cp
-            if f is None: f = pool[0]; ch = ord('!')
+            if f is None:
+                # Nothing covers it. The full-size writer substitutes '!' from
+                # pool[0] and advances, so the box must too - but the SMALL draw
+                # (kdisp_write_gfx_char_half) returns 0: no ink and NO advance.
+                # Substituting in a SMALL run would invent both, shifting every
+                # following glyph. Skip it, as font_lookup.c does since qmk#252.
+                if small: continue
+                f = pool[0]; ch = ord('!')
             if not (f.first <= ch <= f.last): continue
             g = f.glyphs[ch - f.first]
             gyadj = f.yAdvance - base_yadv

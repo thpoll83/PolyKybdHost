@@ -169,23 +169,22 @@ class FontBboxTest(unittest.TestCase):
     def test_small_latches_for_the_rest_of_the_run(self):
         self.assertEqual(self.measure([0x10, A, 0x18, A]), (0, 2, -5, -1))
 
-    def test_a_small_run_STILL_substitutes_bang_for_a_missing_glyph(self):
-        """⚠️ Deliberate, and it looks like a bug — it is the FIRMWARE's asymmetry.
+    def test_small_skips_a_missing_glyph_instead_of_substituting_bang(self):
+        """Ported from the C's SmallSkipsAMissingGlyphInsteadOfSubstitutingBang.
 
-        `kdisp_gfx_text_bbox_in` substitutes `'!'` from `pool[0]` with no `small`
-        guard, while `kdisp_write_gfx_char_half` returns 0 for a glyph it cannot
-        find and draws nothing. So in a SMALL run the C measures a glyph it will
-        not draw, and this model reproduces that rather than quietly diverging from
-        the thing it exists to mirror (flagged by Greptile on #200; declined here,
-        worth fixing in `base/font_lookup.c` where both ends would move together).
-
-        Nothing in the host measures a SMALL legend today — `render_static` only
-        draws, and the LUT path's legends carry no ops — so the divergence is
-        unreachable from the preview.
+        The one place the measure and the draw used to disagree by construction:
+        the half writer returns 0 for a glyph it cannot find -- no ink, no advance --
+        while the measure substituted `'!'` unconditionally, so a SMALL run with an
+        uncovered codepoint measured a half-`'!'` AND spent its advance, putting every
+        following glyph at the wrong x. Fixed in `base/font_lookup.c` (qmk#252) and
+        mirrored here; this file used to pin the OLD behaviour as deliberate C parity.
         """
-        self.assertEqual(self.measure([0x10, 0x4000]),
-                         (0, 0, -6, -1))          # half of '!': 2x12 at yo -12
-        # ...whereas the DRAW skips it, so the run stays at the cursor.
+        self.assertEqual(self.measure([0x10, 0x4000]), (0, 0, 0, 0))
+        # ...and the phantom advance is gone too: it measures as if it weren't there.
+        self.assertEqual(self.measure([0x10, 0x4000, A]), self.measure([0x10, A]))
+        # FULL size still substitutes, because kdisp_write_gfx_char does.
+        self.assertEqual(self.measure([0x4000]), self.measure([BANG]))
+        # ...and the DRAW skips it in a SMALL run, which is the half the box now matches.
         drawn = []
         self.R.draw(lambda vx, vy: drawn.append((vx, vy)), [0x10, 0x4000], 0, 0)
         self.assertEqual(drawn, [])

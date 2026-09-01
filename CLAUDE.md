@@ -313,6 +313,17 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       test**, with the reasoning in the docstring, so the next reader (or the next
       bot) does not re-raise it — and to say on the thread where the real fix
       belongs. Declining without that just resets the clock.
+    - ✅ **And that is what closed it: the real fix landed upstream (qmk#252,
+      2026-09-01), so the pin has been INVERTED here.** `Renderer.bbox()` now skips
+      an unresolvable glyph in a `HINT_SMALL` run instead of substituting `'!'`,
+      matching `kdisp_gfx_text_bbox_in`; the test that pinned the old behaviour is
+      `test_small_skips_a_missing_glyph_instead_of_substituting_bang`, ported from
+      the C's own new case. **The lesson is unchanged and this is its payoff** —
+      declining a correct finding on parity grounds only holds while somebody
+      carries it to the end the contract points at. ⚠️ It also means a parity pin
+      is a LIABILITY the moment the other side moves: nothing here would have
+      failed, so the divergence would simply have flipped direction in silence.
+      When you pin one, name the upstream change that would invalidate it.
 
 - ⚠️ **Sourcery refuses in TWO different ways, and only one of them is the weekly
   budget.** Both arrive as a `COMMENTED` review whose entire body is the notice, so
