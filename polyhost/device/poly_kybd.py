@@ -47,7 +47,7 @@ GLYPH_SCRIPT_MIN_PROTOCOL = 9
 
 # Minimum firmware PROTOCOL_VERSION for GET_LAYER_NAMES (cmd 35) — the keyboard
 # reporting what each host-remappable layer is called. Below this the layout editor
-# falls back to res/layer_names.yaml, which is a build-time artifact and can be stale.
+# falls back to the shipped LAYER_TAGS map, which carries enum tags rather than names.
 LAYER_NAMES_MIN_PROTOCOL = 14
 
 # Minimum firmware PROTOCOL_VERSION for the packed plain-overlay header (cmd 0x0A:
@@ -583,10 +583,11 @@ class PolyKybd:
         get_dynamic_layer_count() reports, because the firmware answers both from the
         same constant.
 
-        Prefer this over res/layer_names.yaml: that file is generated from the
-        firmware's layers.h at build time and silently went stale for two renames of
-        its source path, so the editor was labelling tabs from an enum the firmware no
-        longer had. A name the keyboard states itself cannot drift from the keyboard.
+        Prefer this over the shipped LAYER_TAGS fallback: that map is a constant in
+        this repo, so it describes the firmware this host was released against rather
+        than the board in front of it — and it carries enum tags (`FL`, `NL`) where
+        this answers with what the layer IS (`Fn`, `Numpad`). A name the keyboard
+        states itself cannot drift from the keyboard.
         """
         if not self.supports("layer_names"):
             return False, []

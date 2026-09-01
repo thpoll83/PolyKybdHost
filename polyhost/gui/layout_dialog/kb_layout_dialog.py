@@ -99,9 +99,6 @@ class KbLayoutDialog(QMainWindow):
         # Everything that is NOT a macro: the firmware composes those legends, so
         # this drives the firmware-side renderers rather than reimplementing them.
         self._preview = KeycapPreview()
-        # Layer keys are decoded rather than named, so the preview needs the enum tags
-        # to rebuild the `MO(_FL)` token keycode_helper.c switches on.
-        self._preview.set_layer_tags(parse_layer_names())
         # Drives the header toggle. A plain flag rather than reading the checkbox back,
         # so `_keycap_for` does not depend on a widget that init_ui has not built yet.
         # OFF by default: the editor's job is assigning keycodes, and a board of
@@ -125,12 +122,11 @@ class KbLayoutDialog(QMainWindow):
         return self.selected_key
 
     def _layer_names(self) -> dict[int, str]:
-        """Layer labels, preferring what the keyboard says over the shipped file.
+        """Layer labels, preferring what the keyboard says over the shipped map.
 
-        res/layer_names.yaml is generated from the firmware's layers.h at BUILD time,
-        so it can describe an enum the connected keyboard no longer has — it silently
-        did, for two renames of its source path. Firmware v14+ answers cmd 35 with its
-        own names, which cannot drift; the file stays as the fallback for older boards.
+        Firmware v14+ answers cmd 35 with its own names — `Qwerty`, `Fn`, `Numpad` —
+        which cannot drift from the board and read better than an enum tag. The
+        shipped `LAYER_TAGS` is the fallback for older boards, and gives `FL`/`NL`.
         """
         try:
             ok, names = self.core.keymap_layer_names()

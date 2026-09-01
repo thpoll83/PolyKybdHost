@@ -4,10 +4,15 @@ Qt-free in effect: the method touches only plain dicts, so the instance is built
 without `__init__` and its fields set directly. No firmware checkout is read.
 """
 import logging
+import os
+import pathlib
+import re
 import tempfile
 import unittest
 import unittest.mock
 
+from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
+from polyhost.services import macro_label as ml
 from polyhost.gui.layout_dialog.keycap_preview import KeycapPreview
 
 
@@ -159,34 +164,52 @@ class LayerRangeTest(unittest.TestCase):
 
 
 class LayerTagSourceTest(unittest.TestCase):
-    """Where the layer tags come from -- the firmware, not the committed yaml."""
+    """Where the layer tags come from -- one shipped constant, checked against the
+    firmware by this suite rather than read from anywhere at runtime."""
 
-    # What res/layer_names.yaml said before it was last regenerated: the
-    # two-Fn-layer era, so index 5 is FL0 and everything above it is shifted.
-    STALE = {0: "L0", 1: "L1", 2: "L2", 3: "L3", 4: "L4", 5: "FL0", 6: "FL1",
-             7: "NL", 8: "UL", 9: "SL", 10: "LL", 11: "ADDLANG1", 12: "EMJ0",
-             13: "EMJ1"}
+    def test_the_shipped_tags_decode_the_layer_keys_the_keymap_binds(self):
+        """No dialog, no checkout read: a bare preview names the base layer's three
+        layer keys, which is what the editor draws them by."""
+        p = KeycapPreview()
+        self.assertEqual(p._layer_token(0x5225), "MO(_FL)")        # QK_MOMENTARY + 5
+        self.assertEqual(p._layer_token(0x5226), "MO(_NL)")        # + 6
+        self.assertEqual(p._layer_token(0x522A), "MO(_ADDLANG1)")  # + 10
+        self.assertEqual(p._layer_token(0x520B), "TO(_EMJ)")       # QK_TO + 11
 
-    def test_a_stale_committed_map_is_overridden_by_the_firmware(self):
-        """⚠️ The bug this closes, reported from the field as "L5 is still missing".
+    def test_the_shipped_tags_match_the_firmware_enum(self):
+        """⚠️ The guard that makes hardcoding safe -- and the one thing neither
+        earlier scheme had.
 
-        layer_names.yaml is GENERATED and it rots. On a stale copy index 5 reads
-        `FL0`, so `_layer_token` builds `MO(_FL0)` -- no legend -- while the keyboard
-        draws "Fn" for that very key, because the firmware never reads the yaml. The
-        tags must match the spelling keycode_helper.c switches on, so they belong to
-        the same tree the legends came from.
+        `LAYER_TAGS` is a constant precisely so a stale artifact or a stale checkout
+        cannot rename the connected keyboard's layers under the editor; the cost is
+        that it can itself fall behind `layers.h`. Nothing at runtime can notice
+        that, so the suite does: when a firmware checkout is present, the two must
+        agree exactly. A skip here means no checkout, not agreement.
         """
-        p = KeycapPreview()
-        p.set_layer_tags(self.STALE)
-        if not p._load():
-            self.skipTest(f"no firmware checkout: {p.reason}")
-        self.assertEqual(p._layer_tags.get(5), "FL")
-        self.assertEqual(p._layer_token(0x5225), "MO(_FL)")
+        # Resolved the way the preview itself does -- <fw>/base/fonts -> <fw>/
+        # keyboards/polykybd -- so the test reads the same enum the legends came
+        # from rather than a path of its own that can quietly miss.
+        pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
+        fw = os.path.join(pk, "layers.h")
+        if not os.path.exists(fw):
+            self.skipTest("no firmware checkout beside this repo")
+        text = pathlib.Path(fw).read_text(encoding="utf-8")
+        body = re.search(r"enum\s+kb_layers\s*\{(.*?)\}", text, re.S).group(1)
+        idx, tags = 0, {}
+        for tok in (t.strip() for t in body.split(",")):
+            name = tok.split("=")[0].strip()
+            if not name.startswith("_"):
+                continue
+            if "=" in tok:                       # `_BL = 0x00` / the `_L0 = _BL` alias
+                val = tok.split("=", 1)[1].strip()
+                if val.startswith("_"):          # an alias keeps the current index
+                    tags.setdefault(idx - 1, name.lstrip("_"))
+                    continue
+                idx = int(val, 0)
+            tags[idx] = name.lstrip("_")
+            idx += 1
+        # `_L0 = _BL` aliases index 0; the editor wants the tag the legends use.
+        tags[0] = "L0"
+        self.assertEqual(qh.LAYER_TAGS, tags)
 
-    def test_set_layer_tags_forces_a_re_derive(self):
-        """It is called before the lazy load, so a load that had already happened
-        must not keep the tags it derived from a previous call."""
-        p = KeycapPreview()
-        p._loaded = True
-        p.set_layer_tags(self.STALE)
-        self.assertFalse(p._loaded)
+

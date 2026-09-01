@@ -254,7 +254,9 @@ class KeycapPreview:
         self._ranges = None        # layer-switch ranges, read from the header
         self._custom: dict = {}           # keycode -> PolyKybd's own name
         self._macros: dict = {}           # function-like legend macros
-        self._layer_tags: dict = {}       # layer index -> enum tag, e.g. 5 -> "FL"
+        # layer index -> enum tag, e.g. 5 -> "FL". Seeded from the shipped map so a
+        # preview built without a dialog still decodes layer keys.
+        self._layer_tags: dict = dict(qh.LAYER_TAGS)
 
     # -- loading ------------------------------------------------------------
 
@@ -331,30 +333,6 @@ class KeycapPreview:
                 self.log.debug("runtime-layer previews unavailable: %s",
                                self._runtime.reason)
             self._fw_dir = pk
-            # ⚠️ Take the layer tags from the FIRMWARE's own enum, not from the
-            # committed layer_names.yaml the dialog hands us. That file is a
-            # GENERATED artifact and it rots: before it was last regenerated it
-            # still described the two-Fn-layer era, so index 5 read `FL0` and the
-            # token came out `MO(_FL0)` -- no legend, and every layer above 5 was
-            # shifted as well. The keyboard draws "Fn" for that key perfectly well,
-            # because the firmware never reads the yaml; only the editor was wrong,
-            # and the two disagreeing is exactly what a stale generated file buys.
-            # These tags MUST match the spelling keycode_helper.c switches on, so
-            # they belong to the same tree the legends came from. The yaml stays as
-            # the fallback for a host with no checkout -- which cannot preview
-            # anyway, so in practice the tags are now always current.
-            try:
-                import pathlib
-                import scripts.generate_layer_names as gln
-                # parse_layers_h() calls Path.read_text(), so it needs a real Path --
-                # a str fails with an AttributeError the fallback would swallow.
-                tags = gln.parse_layers_h(pathlib.Path(pk) / "layers.h")
-                if tags:
-                    self._layer_tags = {int(k): str(v).lstrip("_")
-                                        for k, v in tags.items()}
-            except Exception as e:
-                self.log.debug("layer tags: keeping the committed map (%s: %s)",
-                               type(e).__name__, e)
             self._op, self._ld = op, ld
             # Resolve-only view: same class, so the codepoint tokenising stays the ONE
             # implementation that mirrors the firmware's make_key -- but built without
@@ -437,18 +415,6 @@ class KeycapPreview:
             return False
         self._lang = lang
         return True
-
-    def set_layer_tags(self, tags: dict):
-        """Layer index -> enum tag (5 -> "FL"), so a layer key can be named.
-
-        `keycode_helper.c` switches on the SOURCE token -- `MO(_FL)`, `OSL(_UL)` --
-        while the editor decodes the keycode to `MO(5)`. Without the tag the two never
-        meet and every layer key falls back to text, which is a shame because those
-        legends carry the firmware's own convention: the layer name, `!` while it is
-        only held, `*` for a one-shot, then the layer icon underneath.
-        """
-        self._layer_tags = {int(k): str(v).lstrip("_") for k, v in (tags or {}).items()}
-        self._loaded = False       # re-derive from the firmware on the next _load()
 
     # The spelling `keycode_helper.c` uses for each of QMK's layer-switch ranges.
     # ⚠️ The BOUNDS are not written here. They were, as four hand-listed pairs, and

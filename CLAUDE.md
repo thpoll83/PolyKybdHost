@@ -1066,14 +1066,38 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     committed artifact before debugging either.
   - ✅ **RESOLVED for firmware v14+ (2026-08-26): the names come off the wire too.**
     `PolyKybd.get_layer_names()` (cmd 35, `FEATURE_MIN_PROTOCOL["layer_names"]`) asks
-    the keyboard, and `KbLayoutDialog._layer_names()` prefers that over the file — so
-    both halves of the editor's layer list are now live and the generated artifact is
-    only the fallback for older boards. It also gets *better* names: the yaml could
-    only ever carry the enum tags (`L0`, `FL`, …), while the firmware answers with
-    what each layer actually is (`Qwerty`, `Stag!`, `ColemkDH`, …, `Fn`, `Numpad`,
-    `Utility`). **`layer_names.yaml` and its generator stay** — do not delete them,
-    they are what a pre-v14 keyboard falls back to — but they are no longer the only
-    source, so the rot above can no longer reach a current board.
+    the keyboard, and `KbLayoutDialog._layer_names()` prefers that over the fallback —
+    so both halves of the editor's layer list are now live. It also gets *better*
+    names: a tag map can only ever carry `L0`, `FL`, …, while the firmware answers
+    with what each layer actually is (`Qwerty`, `Stag!`, `ColemkDH`, …, `Fn`,
+    `Numpad`, `Utility`).
+  - ⚠️ **`layer_names.yaml` AND its generator are GONE (2026-09-01) — the fallback is
+    the hardcoded `qmk_keycode_helper.LAYER_TAGS`, and an earlier version of this note
+    said "do not delete them".** Deriving the map went wrong twice, in opposite
+    directions, and the second attempt is the instructive one:
+    - **Generated file** — the rot above: a dead generator input, nothing notices.
+    - **Read `layers.h` LIVE at preview time** (the obvious fix, shipped briefly):
+      strictly worse. The KEYCODES come from the **connected keyboard** while the
+      enum came from **whatever the local firmware checkout happens to be**, so an old
+      checkout silently RENAMES the device's layers — `MO(_NL)` decoded as `MO(_FL1)`,
+      which matches no legend. Reported from the field within the hour as four layer
+      keys losing their preview at once (L6, L7, Intl, emoji) while Fn — the one index
+      the two enums happened to agree on — kept working. **A live read is not
+      automatically fresher than a constant; it is fresh with respect to whatever it
+      reads, and here that was the wrong machine's idea of the firmware.**
+    - **The constant is versioned with the host and reviewed with it**, so it cannot
+      be poisoned at runtime by either source. Its own staleness is caught where a
+      constant's staleness *can* be caught — in the suite:
+      `LayerTagSourceTest.test_the_shipped_tags_match_the_firmware_enum` parses
+      `layers.h` (resolved the way the preview resolves it) and requires exact
+      agreement, skipping only when there is no checkout. Mutation-checked by moving
+      one tag back to `FL0`.
+    - ⚠️ **The LEGENDS still come from the local checkout**, so a stale tree shows
+      stale keycaps — the tell in the field was the brightness keys drawing the old
+      MOON glyphs, which the firmware replaced with the sun family on 2026-08-25.
+      The "Key previews" checkbox tooltip names the checkout path and its HEAD
+      commit + date (`source_info()`) precisely so this is a five-second check rather
+      than a guess; `git pull` in `qmk_firmware` is the fix.
   - ⚠️ **The reply is `[total][count]` then NUL-terminated names, and the TOTAL is
     what makes it decodable.** `total` is the whole payload length, that byte
     included; the host reads it from the first report, keeps reading until it holds

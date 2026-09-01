@@ -3,7 +3,26 @@ import re
 from pathlib import Path
 
 HEADER_FILE = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "keycodes.h"
-LAYER_NAMES_FILE = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "layer_names.yaml"
+# The firmware's `enum kb_layers` (qmk_firmware keyboards/polykybd/layers.h), by
+# index. These are ENUM TAGS, not display labels: the preview rebuilds the token
+# `keycode_helper.c` switches on (`MO(_FL)`, `TO(_EMJ)`) from them, so the spelling
+# has to be the firmware's own. The tab LABELS come off the wire instead (cmd 35).
+#
+# ⚠️ Hardcoded on purpose, after two goes at deriving it both went stale in their
+# own way. It began as `res/layer_names.yaml`, generated from `layers.h` -- whose
+# generator's default input path had been dead through two renames, so the file
+# still described the two-Fn-layer era and every layer key from index 5 up resolved
+# to a token that does not exist. Reading `layers.h` LIVE fixed that and introduced
+# a worse one: the keycodes come from the CONNECTED KEYBOARD while the enum came
+# from whatever the local firmware checkout happened to be, so an old checkout
+# renamed the device's layers under it -- `MO(_NL)` read as `MO(_FL1)` and drew
+# nothing. Neither source is versioned with this file; this constant is, and it is
+# reviewed with the host release that ships it.
+LAYER_TAGS: dict[int, str] = {
+    0: "L0", 1: "L1", 2: "L2", 3: "L3", 4: "L4",
+    5: "FL", 6: "NL", 7: "UL", 8: "SL", 9: "LL",
+    10: "ADDLANG1", 11: "EMJ",
+}
 
 
 def parse_qmk_keycode_header(header_path: Path, enum_to_parse: str) -> dict[str, int]:
@@ -103,22 +122,13 @@ def build_keycode_to_name(name_to_keycode: dict[str, int]) -> dict[int, str]:
     return picked
 
 
-def parse_layer_names(layer_names_path: Path = None) -> dict[int, str]:
-    """Load layer names from the pre-generated YAML in res/layer_names.yaml.
+def parse_layer_names() -> dict[int, str]:
+    """The firmware layer enum tags by index -- see `LAYER_TAGS`.
 
-    Generate or update the file with:
-        python scripts/generate_layer_names.py
+    Kept as a function because it is the FALLBACK behind the keyboard's own layer
+    names (cmd 35, firmware v14+); callers should prefer those.
     """
-    import yaml
-    if layer_names_path is None:
-        layer_names_path = LAYER_NAMES_FILE
-    try:
-        data = yaml.safe_load(layer_names_path.read_text(encoding="utf-8"))
-        if isinstance(data, dict):
-            return {int(k): str(v) for k, v in data.items()}
-    except Exception:
-        pass
-    return {}
+    return dict(LAYER_TAGS)
 
 
 def categorize(key_name: str) -> str:
