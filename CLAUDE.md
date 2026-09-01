@@ -496,6 +496,18 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
     scores 0 against a line reading ``` `crash_summary()` puts the crash counts ```
     — a false "note lost" scare mid-resolution (2026-08-18). Pick a distinctive
     run of plain words, or include the backticks.
+  - ⚠️ **The same grep-back is the check for a SCRIPTED edit, not just a merge —
+    and there it catches a different cause.** Editing this file with a
+    `s.replace(anchor, new)` drops whatever sits between the two when the
+    replacement does not repeat the anchor's opening lines verbatim: python does
+    exactly what it was told, nothing errors, and the file reads fine because the
+    surviving text still forms a sentence. That is how a line vanished on
+    2026-09-01 — the anchor began *"bot) does not re-raise it…"* and the
+    replacement began one line lower, so that clause was silently deleted from a
+    note being extended, not rewritten. Assert the anchor count before writing
+    (`assert s.count(anchor) == 1`), then grep each note back by name afterwards.
+    The merge case and this one share nothing but the remedy, which is the reason
+    to state it once for both.
 
 ## Commands
 
