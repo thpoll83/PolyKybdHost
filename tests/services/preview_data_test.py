@@ -1,8 +1,27 @@
 """The shipped preview data, and which source wins over a firmware checkout."""
 import json
+import os
 import pathlib
+import sys
 import tempfile
 import unittest
+
+# The preview renderers live in this repo's tools/, which is not a package.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__)))), "tools"))
+try:
+    import lang_demo as ld
+    import oled_preview as op
+    from PIL import Image
+
+    from polyhost.gui.layout_dialog import keycap_preview as kp
+    from polyhost.services import macro_label as ml
+    from polyhost.services import macro_look as mkl
+
+    TOOLS_ERR = ""
+except Exception as exc:                              # pragma: no cover - env gate
+    ld = op = Image = kp = ml = mkl = None
+    TOOLS_ERR = f"preview tools unavailable: {type(exc).__name__}: {exc}"
 
 from polyhost.services.preview_data import (PreviewData, choose_source,
                                             parse_version)
@@ -89,18 +108,11 @@ class ShippedDataTest(unittest.TestCase):
         self.assertIn("de-DE", self.d.langs)
         self.assertGreater(len(self.d.langs), 100)
 
+    @unittest.skipIf(TOOLS_ERR, TOOLS_ERR)
     def test_the_lang_reader_is_the_REAL_Lang(self):
         """⚠️ Not a shim. `render_key` reads letter cells AND setting cells (ints /
         HIDE, on other rows) out of one grid; a shim that handled only the first
         drew 628 of 686 sample keycaps wrong. Only the storage is replaced."""
-        import os
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__)))), "tools"))
-        try:
-            import oled_preview as op
-        except Exception as e:                       # pragma: no cover - env gate
-            self.skipTest(f"preview tools unavailable: {e}")
         L = self.d.lang_reader()
         self.assertIsInstance(L, op.Lang)
         self.assertIn("de-DE", L.langs)
@@ -127,6 +139,7 @@ class MissingDataTest(unittest.TestCase):
             self.assertIn("empty", d.reason)
 
 
+@unittest.skipIf(TOOLS_ERR, TOOLS_ERR)
 class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
     """⚠️ The guarantee the whole export rests on, checked by DRAWING.
 
@@ -142,19 +155,6 @@ class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
     """
 
     def test_every_shipped_legend_draws_the_same_pixels(self):
-        import os
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__)))), "tools"))
-        try:
-            from PIL import Image
-            import lang_demo as ld
-            import oled_preview as op
-            from polyhost.services import macro_label as ml
-            from polyhost.services import macro_look as mkl
-            from polyhost.gui.layout_dialog import keycap_preview as kp
-        except Exception as e:                       # pragma: no cover - env gate
-            self.skipTest(f"preview tools unavailable: {e}")
 
         pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
         if not os.path.exists(os.path.join(pk, "keycode_helper.c")):
@@ -206,16 +206,6 @@ class ShippedRendersLikeTheCheckoutTest(unittest.TestCase):
         keycaps over 160 languages and all of them match, but that belongs in a
         one-off check, not in a suite that runs on every change.
         """
-        import os
-        import sys
-        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__)))), "tools"))
-        try:
-            import oled_preview as op
-            from polyhost.services import macro_label as ml
-            from polyhost.services import macro_look as mkl
-        except Exception as e:                       # pragma: no cover - env gate
-            self.skipTest(f"preview tools unavailable: {e}")
 
         pk = os.path.dirname(os.path.dirname(ml.default_font_dir()))
         if not os.path.exists(os.path.join(pk, "lang", "lang_lut.xlsx")):
