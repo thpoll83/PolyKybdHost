@@ -358,3 +358,39 @@ class PreviewSourceTest(unittest.TestCase):
                                  "checkout-only" if ia is None else "differs"))
         self.assertGreater(drawn, 150, "nothing was compared")
         self.assertEqual(mismatch, [], f"{len(mismatch)} of {drawn} keycaps differ")
+
+
+class DrawableFailsClosedTest(unittest.TestCase):
+    """⚠️ The op check must refuse what it could not verify, not keep it.
+
+    It was `except Exception: pass`, so a raising `unsupported_ops` KEPT the
+    legend -- the one check whose job is to refuse what would render wrong let it
+    through silently, which is the outcome the check exists to prevent (CodeQL,
+    #207). A refused keycap falls back to keycode text, which is honest.
+    """
+
+    class _Raises:
+        def unsupported_ops(self, cps):
+            raise RuntimeError("boom")
+
+    class _Clean:
+        def unsupported_ops(self, cps):
+            return set()
+
+    def _preview(self, renderer):
+        p = object.__new__(KeycapPreview)
+        p.log = logging.getLogger("test_drawable")
+        p._R = renderer
+        return p
+
+    def test_a_legend_the_check_could_not_read_is_DROPPED(self):
+        p = self._preview(self._Raises())
+        with self.assertLogs(p.log, level="WARNING") as caught:
+            self.assertEqual(p._drawable({"KC_X": [65]}), {})
+        self.assertTrue(any("KC_X" in m for m in caught.output), caught.output)
+
+    def test_a_clean_legend_still_survives(self):
+        """⚠️ The other direction matters as much: fail-closed that refuses
+        everything is a preview feature that draws nothing."""
+        p = self._preview(self._Clean())
+        self.assertEqual(p._drawable({"KC_X": [65, 66]}), {"KC_X": [65, 66]})

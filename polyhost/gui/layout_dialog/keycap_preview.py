@@ -522,10 +522,20 @@ class KeycapPreview:
         out = {}
         for token, cps in legends.items():
             try:
-                if self._R.unsupported_ops(cps):
-                    continue
-            except Exception:
-                pass
+                unsupported = self._R.unsupported_ops(cps)
+            except Exception as e:
+                # ⚠️ FAIL CLOSED, and say so. A bare `except: pass` here kept the
+                # legend -- i.e. the one check whose job is to refuse what would
+                # render wrong silently let it through, which is the outcome the
+                # check exists to prevent (CodeQL, #207). Refusing costs a keycap
+                # its picture and it falls back to keycode text, which is honest;
+                # drawing a legend nothing verified is not. And an exception here
+                # is itself a bug worth finding, so it warns rather than debugs.
+                self.log.warning("key previews: cannot check %s (%s: %s) -- refused",
+                                 token, type(e).__name__, e)
+                continue
+            if unsupported:
+                continue
             out[token] = list(cps)
         return out
 
