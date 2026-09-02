@@ -941,8 +941,17 @@ def shift_preview_rule(L: Lang):
       checkout to import from (the same shape as the firmware's own build-time
       bitmap, and for the same reason);
     * a `Lang` that knows its workbook path -- import the module beside it;
-    * anything else -- keep every preview, the fail-safe direction the rule itself
-      takes.
+    * anything else -- `_NO_SHIFT_RULE`, which keeps every preview: the fail-safe
+      direction the rule itself takes.
+
+    ⚠️ The "no rule" case is a FALSY CALLABLE, not `False`. Every call site already
+    reads it both ways -- `if rule` asks "did a rule resolve?" (one of them raises on
+    no), and `rule(base, shift)` asks the question -- and returning a bool for one
+    and a function for the other makes the union `bool | Callable`, which is a real
+    smell and not just a static-analysis complaint: CodeQL flagged seven `rule(...)`
+    calls as "call to a non-callable of builtin-class bool" on #210. A sentinel that
+    is callable AND falsy answers both without a cast or a suppression, and leaves
+    every caller byte-for-byte unchanged.
 
     ⚠️ The answer is cached ON THE `Lang`, never in a module global. Two `Lang`
     objects legitimately disagree here (a checkout one resolves, a bare one cannot),
@@ -954,7 +963,7 @@ def shift_preview_rule(L: Lang):
     cached = getattr(L, "_shift_rule", None)
     if cached is not None:
         return cached
-    rule = False
+    rule = _NO_SHIFT_RULE
     baked = getattr(L, "shift_suppressed", None)
     if baked is not None:
         rule = _BakedShiftRule(baked)
@@ -972,6 +981,20 @@ def shift_preview_rule(L: Lang):
     except AttributeError:                 # a Lang that refuses attributes
         pass
     return rule
+
+
+class _NoShiftRule:
+    """Callable so a caller can always ask; falsy so it can also ask whether asking
+    is worth anything. Answers "not redundant", i.e. keep the preview."""
+
+    def __bool__(self):
+        return False
+
+    def __call__(self, base_cell, shift_cell):
+        return False
+
+
+_NO_SHIFT_RULE = _NoShiftRule()
 
 
 class _BakedShiftRule:

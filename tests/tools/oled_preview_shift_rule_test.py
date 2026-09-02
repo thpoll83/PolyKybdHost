@@ -45,6 +45,21 @@ class ShiftPreviewRuleTest(unittest.TestCase):
         L = _bare_lang()
         self.assertFalse(op.shift_preview_rule(L))
 
+    def test_the_no_rule_answer_is_callable_as_well_as_falsy(self):
+        """Both questions, one object -- see the ⚠️ in `shift_preview_rule`.
+
+        Call sites read the result two ways: `if rule` ("did one resolve?", which
+        `shift_suppressed_pairs` raises on) and `rule(base, shift)` ("is this preview
+        redundant?"). Returning a bare `False` for the first makes the return type
+        `bool | Callable`, and CodeQL rightly called seven of the calls below "a call
+        to a non-callable of builtin-class bool" (#210). Do not simplify this back:
+        the sentinel has to keep BOTH properties.
+        """
+        rule = op.shift_preview_rule(_bare_lang())
+        self.assertFalse(rule, "no rule resolved, so it must read falsy")
+        self.assertTrue(callable(rule), "and it must still be callable")
+        self.assertFalse(rule("a", "A"), "answering 'keep the preview' -- the fail-safe way")
+
     def test_an_unresolvable_lang_does_not_poison_a_resolvable_one(self):
         """THE regression. The cache is per-`Lang`, never a module global.
 
