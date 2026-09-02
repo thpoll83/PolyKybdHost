@@ -23,7 +23,10 @@ cells, the exact glyph bitmaps it uses (any script), the category offsets, and t
 en-US fallback glyphs, and embeds them in the page.
 
 `--all` bakes **every** layout into one file behind a **push-button layout bar** at
-the top — one button per layout; click to switch. The glyph bitmaps are stored once
+the top — one row per **region**, in the same order and grouping the keyboard's own
+language layer uses (Americas, Europe, Middle East & Caucasus, Africa, Asia, Oceania),
+alphabetical within each; click to switch. The grouping is read from the host's
+`polyhost/services/lang_regions.py`, not re-typed here. The glyph bitmaps are stored once
 in a **shared pool keyed by codepoint** (Latin layouts reuse the same a/b/c bitmaps),
 so the page stays a few MB even with every script. Switching keeps each layout's edits
 alive, and an edited layout's button turns **amber** (the current one is highlighted).
@@ -65,14 +68,18 @@ button); both share the same render mirror and page code.
   AltGr-held view (`VAR_SMALL`); the unshifted **base** is never hidden (it always
   draws), so hiding **small** only affects the AltGr-held view — in the tuner's
   unshifted preview it just pushes the base off-keycap (flagged out-of-bounds).
-- Top-right of that panel: **½ AltGr on letters** — the `{letter.altgrhalf}` opt-in.
-  Tick it and every LETTER key of this layout redraws its AltGr hint at half size, so
-  "should this layout halve?" is a question you answer by looking. It is per **layout**
-  and letters only; the digit and symbol rows never halve. A glyph whose ink is
+- Top-right of that panel: **½ AltGr hint · letter · num · sym** — the
+  `{letter|num|sym.altgrhalf}` opt-in, one checkbox per category. Tick one and every
+  key of that category redraws its AltGr hint at half size, so "should this layout
+  halve?" is a question you answer by looking. It is per **layout** *and* per
+  **category**, the same three-way split the H/V offsets use. A glyph whose ink is
   `ALTGR_HALF_MIN_INK_H` (7) px tall or less stays full size — halving a 2×3 px Hebrew
   nikud makes it a dot — so on the Indic layouts most letter hints do not change even
-  with the box ticked, because they are bare combining marks. The label turns amber
-  when you have changed it, and it exports as `[altgrhalf] = 0|1`.
+  with the box ticked, because they are bare combining marks. A changed box is marked
+  with an amber `*`, and it exports as `[altgrhalf] <cat> = 0|1`.
+  ⚠️ **Only `{letter.…}` is set in the spreadsheet today** (the 22 Arabic-script and 7
+  Indic layouts); `num` and `sym` exist so the choice can be made, and no layout uses
+  them yet.
 - **Export changes** → paste the box back to whoever applies it.
 
 ## Export format → how to apply
@@ -82,7 +89,7 @@ button); both share the same render mirror and page code.
 KC_Q base: U"\f\f" ARABIC_DAD          # a cell value -> lang_lut.xlsx (var base/shift/altgr)
 KC_D altgr: <drop / empty>             # clear that cell
 [offset] letter shift H = 44           # a settings value -> the SET[cat] offset rows
-[altgrhalf] = 1                        # {letter.altgrhalf} (row 62); 0 CLEARS the cell
+[altgrhalf] letter = 1                 # {<cat>.altgrhalf} rows 62/63/64; 0 CLEARS it
 ```
 
 **Apply it automatically** — `apply_tuner.py` parses exactly this format and writes the

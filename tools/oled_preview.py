@@ -275,10 +275,12 @@ GLYPH_SIZE_BASELINE = {0: 21, 1: 25, 2: 28}   # [0] unused: size S keeps the lan
 GLYPH_SIZE_MAX_LEN  = 4                        # glyph_size_remap()'s length guard
 GLYPH_SIZE_NAMES    = {0: "small", 1: "medium", 2: "large"}
 SET = {"letter": (57, 56), "num": (59, 58), "sym": (61, 60)}   # (voffset_row, hoffset_row)
-# {letter.altgrhalf} -- per-LAYOUT opt-in to the half-size AltGr hint, read from
-# the VAR_ALTGR sub-column. A settings row like the six above, so `Lang` needs no
-# special case; only this row number and the gate in render_key() know about it.
-ALTGR_HALF_ROW = 62
+# {letter|num|sym.altgrhalf} -- the per-LAYOUT opt-in to the half-size AltGr hint,
+# read from the VAR_ALTGR sub-column. Three rows, the same category split the H/V
+# offsets above already use, so a layout can halve its letters while its digit and
+# symbol rows keep full-size hints. Ordinary settings rows, so `Lang` needs no
+# special case; only these row numbers and the gate in render_key() know about them.
+ALTGR_HALF = {"letter": 62, "num": 63, "sym": 64}
 
 
 # ---- named glyphs + cell resolution ---------------------------------------
@@ -1003,7 +1005,8 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                 # letters against 21 px on Latin. What differs is that on those
                 # layouts the base and Shift are wide too, so the row reads crowded --
                 # a per-LAYOUT judgement no glyph measurement can make. It lives in
-                # `{letter.altgrhalf}` in lang_lut.xlsx, one cell per language.
+                # `{letter|num|sym.altgrhalf}` in lang_lut.xlsx, one cell per language
+                # PER CATEGORY; only the letter row is set today.
                 #
                 # ⚠️ The size test that REMAINS is only the mark guard: a glyph that is
                 # already tiny is destroyed by halving (a Hebrew nikud is 2x3 px and
@@ -1012,7 +1015,7 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                 # below it and letterforms from 9 px up -- and it carries most of the
                 # Indic layouts, whose letter AltGr hints are mostly bare combining
                 # marks at a median 4 px.
-                if (is_letter and get_setting(L, ALTGR_HALF_ROW, li, VAR_ALTGR)
+                if (get_setting(L, ALTGR_HALF[cat], li, VAR_ALTGR)
                         and aymx - aymn + 1 > ALTGR_HALF_MIN_INK_H and alt[0] != HINT_SMALL):
                     alt = (HINT_SMALL,) + tuple(alt)
                     amin, amax, aymn, aymx = R.bbox(alt)

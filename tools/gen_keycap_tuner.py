@@ -24,7 +24,21 @@ KEYCAP_TUNER.md). Verify with the headless diff documented there after any chang
 import sys, json, math, os, argparse
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.dirname(HERE))          # the host package, for lang_regions
 import oled_preview as op
+# The layout bar groups by the SAME regions the keyboard's language menu uses. Read
+# from the host's table rather than re-typed here -- a second copy is a second thing
+# to keep in step, and this one already says "keep in sync with REGION_LANGS".
+from polyhost.services.lang_regions import (          # noqa: E402
+    LANG_REGION, LANG_REGION_ORDER, LANG_REGION_OVERRIDE)
+
+
+def region_of(code: str) -> str:
+    """`xx-YY` -> its display region. Mirrors host.py's language-submenu lookup:
+    the per-language override first (Hawaiian is Polynesian, not Americas), then the
+    country code."""
+    flat = code.replace("-", "")
+    return LANG_REGION_OVERRIDE.get(flat, LANG_REGION.get(code[-2:].upper(), "Other"))
 
 CTRL = {0x05, 0x06, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x18}   # cursor / positioning control codes
 
@@ -132,14 +146,18 @@ def build_data(qmk: str, codes=None) -> dict:
     for c in order:
         li = L.langs.index(c)
         keys, offsets, u = extract_lang(L, li, tok_for)
-        # {letter.altgrhalf} -- the per-layout opt-in to the half-size AltGr hint.
-        # A plain settings cell, so the tuner can round-trip it like an offset.
-        langs[c] = {"keys": keys, "offsets": offsets,
-                    "altgrhalf": 1 if op.get_setting(L, op.ALTGR_HALF_ROW, li, op.VAR_ALTGR) else 0}
+        # {letter|num|sym.altgrhalf} -- the per-layout, per-CATEGORY opt-in to the
+        # half-size AltGr hint. Plain settings cells, so the tuner round-trips them
+        # like an offset. `region` groups the layout bar the way the keyboard's own
+        # language menu does; it comes from the host's table rather than a second copy.
+        langs[c] = {"keys": keys, "offsets": offsets, "region": region_of(c),
+                    "altgrhalf": {cat: (1 if op.get_setting(L, row, li, op.VAR_ALTGR) else 0)
+                                  for cat, row in op.ALTGR_HALF.items()}}
         used |= u
 
     return {"order": order, "langs": langs, "glyphs": glyph_pool(R, used), "rows": op.SHEET,
             "base_yadv": R.fonts[0].yAdvance, "HIDE": op.HIDE,
+            "regions": LANG_REGION_ORDER + ["Other"],
             "consts": {"BASELINE": op.BASELINE, "BUFFER_X": op.BUFFER_X, "OLED_W": op.OLED_W,
                        "OLED_H": op.OLED_H, "SCREEN_WIDTH": op.SCREEN_WIDTH,
                        "ALTGR_HALF_MIN_INK_H": op.ALTGR_HALF_MIN_INK_H}}

@@ -12,7 +12,10 @@
  .key .fb{position:absolute;top:1px;right:3px;font-size:8px;color:#a85;pointer-events:none}
  .key .seq{font-size:9px;font-family:monospace;line-height:1.15;text-align:center;min-height:10px;word-break:break-all;overflow-wrap:anywhere;margin-top:1px}
  .key.sel canvas{cursor:move}
- #langbar{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;max-width:1500px}
+ #langbar{margin-bottom:6px;max-width:1500px}
+ .langrow{display:flex;align-items:baseline;margin-bottom:3px}
+ .langreg{font-size:10px;color:#7a7a7a;flex:0 0 132px;text-transform:uppercase;letter-spacing:.5px}
+ .langbtns{display:flex;flex-wrap:wrap;gap:3px;flex:1 1 auto}
  .langbtn{background:#2a2a2a;color:#bbb;border:1px solid #444;border-radius:3px;font-size:10px;font-family:monospace;padding:2px 4px;cursor:pointer;line-height:1.1}
  .langbtn:hover{background:#383838} .langbtn.mod{background:#5a4a1e;color:#fd8;border-color:#a85}
  .langbtn.cur{border-color:#4af;color:#fff;background:#243a4a} .langbtn.cur.mod{border-color:#4af;background:#4a3a14}
@@ -95,8 +98,9 @@ function buildSt(keys){const s={};
    s[kc][el]={dx,dy,struct,glyph:sp.glyph,tok:sp.tok,fb:!!sp.fb,odx:dx,ody:dy,drop:false,odrop:false};}}
  return s;}
 function loadLang(code){LANG=code;
- if(!STATE[code]){const off=DATA.langs[code].offsets,ah=DATA.langs[code].altgrhalf|0;
-  STATE[code]={st:buildSt(DATA.langs[code].keys),off:JSON.parse(JSON.stringify(off)),o0:JSON.parse(JSON.stringify(off)),ah:ah,ah0:ah};}
+ if(!STATE[code]){const off=DATA.langs[code].offsets,ah=DATA.langs[code].altgrhalf;
+  STATE[code]={st:buildSt(DATA.langs[code].keys),off:JSON.parse(JSON.stringify(off)),o0:JSON.parse(JSON.stringify(off)),
+   ah:JSON.parse(JSON.stringify(ah)),ah0:JSON.parse(JSON.stringify(ah))};}
  const S=STATE[code];st=S.st;OFF=S.off;O0=S.o0;selected=null;activeEl=null;}
 function gen(dx,dy){const e=[];if(dy<0)for(let i=0;i<-dy/2;i++)e.push(12);if(dy>0)for(let i=0;i<dy/2;i++)e.push(5);
  if(dx<0)for(let i=0;i<-dx/2;i++)e.push(8);if(dx>0)for(let i=0;i<dx/2;i++)e.push(6);return e;}
@@ -164,10 +168,10 @@ function renderKey(kc){const cat=catOf(kc),o=OFF[cat],K=st[kc];const base=cpsOf(
  let acps=null,axx=0,av=0,amin=0,amax=0,aymn=0,aymx=0,ahalf=false;
  if(K.altgr&&!K.altgr.drop&&o.altgr.H!==HIDE&&o.altgr.V!==HIDE){acps=cpsOf(K.altgr);
   [amin,amax,aymn,aymx]=bbox(acps);
-  // {letter.altgrhalf}: the AltGr glyph is a HINT, so on an opted-in layout its
-  // LETTER keys draw it half size. The remaining size test is only the mark guard --
-  // halving a 2x3px nikud makes it a dot. Mirrors render_key() in poly_keymap.c.
-  if(STATE[LANG].ah&&cat==="letter"&&(aymx-aymn+1)>HALF_MIN_INK_H&&acps[0]!==HINT_SMALL){
+  // {letter|num|sym.altgrhalf}: the AltGr glyph is a HINT, so on an opted-in layout
+  // the keys of that CATEGORY draw it half size. The remaining size test is only the
+  // mark guard -- halving a 2x3px nikud makes it a dot. Mirrors poly_keymap.c.
+  if(STATE[LANG].ah[cat]&&(aymx-aymn+1)>HALF_MIN_INK_H&&acps[0]!==HINT_SMALL){
    ahalf=true;acps=[HINT_SMALL].concat(acps);[amin,amax,aymn,aymx]=bbox(acps);}
   axx=28+o.altgr.H;if(axx+amax>BX+SW-1)axx=(BX+SW-1)-amax;av=o.altgr.V;
   // Keep the two hints off EACH OTHER: when their ink boxes intersect in BOTH axes,
@@ -237,15 +241,18 @@ function offCtl(c,t){const o=OFF[c][t];const hid=(o.H===HIDE||o.V===HIDE);
  return`<div class="offdpad${hid?' hidden':''}"><span class="vn ${t}">${t}</span>
   <div class="offpad"><span class="sp"></span>${f('V',-1,'▲')}<span class="sp"></span>${f('H',-1,'◀')}${H}${f('H',1,'▶')}<span class="sp"></span>${f('V',1,'▼')}<span class="sp"></span></div>
   <div class="offins">H${ip('H')} V${ip('V')}</div></div>`;}
-// {letter.altgrhalf} -- per-layout, letters only. Toggling re-renders every keycap,
-// so "should this layout halve?" is a question you answer by looking rather than by
-// flashing. Exported as `[altgrhalf] = 0|1`; apply_tuner.py writes row 62.
-function toggleAltgrHalf(){const S=STATE[LANG];S.ah=S.ah?0:1;buildOffPanel();buildGrid();buildKeyCtrl();refreshLangBar();}
-function buildOffPanel(){const S=STATE[LANG],on=!!S.ah;
+// {letter|num|sym.altgrhalf} -- per-layout, PER CATEGORY. Toggling re-renders every
+// keycap, so "should this layout halve?" is a question you answer by looking rather
+// than by flashing. Exported as `[altgrhalf] <cat> = 0|1`; apply_tuner.py writes rows
+// 62/63/64. Only the letter row is set in the spreadsheet today.
+function toggleAltgrHalf(c){const S=STATE[LANG];S.ah[c]=S.ah[c]?0:1;buildOffPanel();buildGrid();buildKeyCtrl();refreshLangBar();}
+function halfChk(c){const S=STATE[LANG],on=!!S.ah[c],ed=S.ah[c]!==S.ah0[c];
+ return `<label style="cursor:pointer;margin-left:9px;color:${on?'#f66':'#888'}" title="{${c}.altgrhalf}: draw the AltGr hint at half size on the ${c} keys. A glyph inking ${HALF_MIN_INK_H}px tall or less stays full size — halving a nikud makes it a dot.">`
+  + `<input type="checkbox" ${on?'checked':''} onchange="toggleAltgrHalf('${c}')"> ${c}${ed?' <span style="color:#fc0">*</span>':''}</label>`;}
+function buildOffPanel(){const S=STATE[LANG];
  let h=`<div class="offhdr">layout offsets (whole ${LANG}) — click a category to frame its keys`
-  + `<label style="float:right;cursor:pointer;color:${on?'#f66':'#888'}" title="{letter.altgrhalf}: draw the AltGr hint at half size on LETTER keys. Glyphs at or under ${HALF_MIN_INK_H}px of ink stay full size — halving a nikud makes it a dot.">`
-  + `<input type="checkbox" ${on?'checked':''} onchange="toggleAltgrHalf()"> ½ AltGr on letters`
-  + (S.ah!==S.ah0?' <span style="color:#fc0">(edited)</span>':'') + `</label></div><div class="offgroups">`;
+  + `<span style="float:right">½ AltGr hint: ${['letter','num','sym'].map(halfChk).join('')}</span>`
+  + `</div><div class="offgroups">`;
  for(const c of['letter','num','sym']){const hl=hlCat===c?`box-shadow:0 0 0 2px ${CATCOL[c]} inset;`:'';
   h+=`<div class="offgroup" style="border-color:${CATCOL[c]};${hl}"><span class="gname" style="color:${CATCOL[c]}" onclick="toggleCat('${c}')">${c}: <span class="ex">${CATEX[c]}</span></span><div class="offrow">`;
   for(const t of['small','shift','altgr'])h+=offCtl(c,t);h+='</div></div>';}
@@ -295,7 +302,7 @@ function exportLang(S){const out=[];
   if(E.dx!==E.odx||E.dy!==E.ody)out.push(`${kc} ${el}: ${cellFor(E)}`);}
  for(const c in S.off)for(const t in S.off[c])for(const ax of["H","V"])
   if(S.off[c][t][ax]!==S.o0[c][t][ax])out.push(`[offset] ${c} ${t} ${ax} = ${S.off[c][t][ax]}`);
- if(S.ah!==S.ah0)out.push(`[altgrhalf] = ${S.ah}`);
+ for(const c of ['letter','num','sym'])if(S.ah[c]!==S.ah0[c])out.push(`[altgrhalf] ${c} = ${S.ah[c]}`);
  return out;}
 function exportAll(){const out=[];
  for(const code of DATA.order){const S=STATE[code];if(!S)continue;
@@ -307,13 +314,25 @@ function switchLang(code){loadLang(code);document.getElementById("langname").tex
 function resetLayout(){const S=STATE[LANG];if(!S)return;
  for(const kc in S.st)for(const el of["base","shift","altgr"]){const E=S.st[kc][el];if(E){E.dx=E.odx;E.dy=E.ody;E.drop=E.odrop;}}
  for(const c in S.off)for(const t in S.off[c])for(const ax of["H","V"])S.off[c][t][ax]=S.o0[c][t][ax];
- S.ah=S.ah0;
+ S.ah=JSON.parse(JSON.stringify(S.ah0));
  selected=null;activeEl=null;buildOffPanel();buildGrid();buildKeyCtrl();}
-// push-button matrix of every layout; buttons of edited layouts go amber (.mod),
-// the current one is highlighted (.cur). refreshLangBar only re-tags existing buttons.
+// One row per REGION, in the keyboard's own menu order (Americas, Europe, Middle East
+// & Caucasus, Africa, Asia, Oceania, then Other), alphabetical within each -- so the
+// bar reads like the language layer on the board rather than like the spreadsheet's
+// column order. Buttons of edited layouts go amber (.mod), the current one is
+// highlighted (.cur); refreshLangBar only re-tags existing buttons.
 function buildLangBar(){const bar=document.getElementById("langbar");bar.innerHTML="";
- for(const code of DATA.order){const b=document.createElement("button");b.id="lb_"+code;b.className="langbtn";b.textContent=code;
-  b.onclick=()=>switchLang(code);bar.appendChild(b);}
+ const by={};for(const code of DATA.order)(by[DATA.langs[code].region||"Other"] ||= []).push(code);
+ for(const reg of DATA.regions){const codes=by[reg];if(!codes||!codes.length)continue;
+  codes.sort();
+  const row=document.createElement("div");row.className="langrow";
+  const lbl=document.createElement("span");lbl.className="langreg";lbl.textContent=reg;row.appendChild(lbl);
+  // ⚠️ The buttons wrap inside their OWN box, not as flex items of the row: Europe is
+  // ~60 layouts, and a row that wraps as a whole leaves its second line unlabelled.
+  const box=document.createElement("div");box.className="langbtns";
+  for(const code of codes){const b=document.createElement("button");b.id="lb_"+code;b.className="langbtn";b.textContent=code;
+   b.onclick=()=>switchLang(code);box.appendChild(b);}
+  row.appendChild(box);bar.appendChild(row);}
  refreshLangBar();}
 function refreshLangBar(){for(const code of DATA.order){const b=document.getElementById("lb_"+code);if(!b)continue;
  b.classList.toggle("cur",code===LANG);

@@ -192,8 +192,10 @@ class HalfSizeAltGrTest(HintPairTest):
                 self._assert_full_size(lang, kc)
 
     def test_a_NON_letter_key_is_untouched_even_on_an_opted_in_layout(self):
-        """`{letter.altgrhalf}` names the letter category, so the digit and symbol
-        rows of the same layout keep their full-size hints."""
+        """The opt-in is per CATEGORY -- `{letter|num|sym.altgrhalf}` are three rows --
+        and only the letter one is set in the spreadsheet today, so the digit and
+        symbol rows of the same layout keep their full-size hints. The num/sym rows
+        exist so the choice can be made per layout in the keycap tuner."""
         for lang, kc in self.NOT_A_LETTER:
             with self.subTest(lang=lang, kc=kc):
                 self._assert_full_size(lang, kc)
@@ -220,17 +222,33 @@ class HalfSizeAltGrTest(HintPairTest):
                 heights.add(self._full_height(lang, kc))
         self.assertNotIn(op.ALTGR_HALF_MIN_INK_H + 1, heights)
 
+    @staticmethod
+    def _flag(L, cat, i):
+        return op.get_setting(L, op.ALTGR_HALF[cat], i, op.VAR_ALTGR)
+
     def test_the_opted_in_set_is_the_scripts_it_claims(self):
         """The spreadsheet column, read back: every layout that opted in is an
         Arabic-script or Indic one. A stray 1 on a Latin layout is exactly the kind
         of thing a 160-column row invites, and nothing else would catch it."""
-        from oled_preview import get_setting, VAR_ALTGR
         want = {"ar", "fa", "ur", "ku", "ps",            # Arabic script
                 "hi", "mr", "ne", "bn", "te", "ta"}      # Indic
         on = {lang for i, lang in enumerate(self.L.langs)
-              if get_setting(self.L, op.ALTGR_HALF_ROW, i, VAR_ALTGR)}
+              if self._flag(self.L, "letter", i)}
         self.assertTrue(on, "nothing opted in -- the row is missing or empty")
         self.assertEqual({l for l in on if l[:2] not in want}, set())
+
+    def test_the_num_and_sym_rows_exist_and_are_unset(self):
+        """Both rows must EXIST -- the tuner can only offer a setting the spreadsheet
+        carries -- and must be empty, because no layout has opted in yet. A row that
+        silently went missing would make the tuner's checkbox a no-op."""
+        for cat in ("num", "sym"):
+            with self.subTest(cat=cat):
+                self.assertIn(cat, op.ALTGR_HALF)
+                key = self.L.grid.get((op.ALTGR_HALF[cat], 1))
+                self.assertEqual(key, "{%s.altgrhalf}" % cat, "settings row missing")
+                on = [lang for i, lang in enumerate(self.L.langs)
+                      if self._flag(self.L, cat, i)]
+                self.assertEqual(on, [])
 
 
 if __name__ == "__main__":
