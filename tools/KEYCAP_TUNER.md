@@ -32,7 +32,16 @@ so the page stays a few MB even with every script. Switching keeps each layout's
 alive, and an edited layout's button turns **amber** (the current one is highlighted).
 **Reset layout** reverts every edit of the current layout; **Export** emits one
 `=== code ===` block per edited layout — feed the whole box straight to `apply_tuner.py`
-(below). `--lang X` is just `--all` restricted to one layout (the bar then has a single
+(below). **Copy positions** / **Paste positions** carry a layout's *settings* to
+another one — the 18 H/V offsets plus the three ½-AltGr flags, i.e. exactly the
+`[offset]` / `[altgrhalf]` lines Export emits — which is what makes the ~22 `ar-*`
+clones and the `es-*` / `en-*` folds cheap to tune. The Paste button names its source
+so a stale clipboard is visible; **Reset layout** undoes a paste.
+
+⚠️ **Per-key nudges are deliberately NOT copied.** A nudge is tuned against the GLYPH
+in that cell, and two layouts sharing an offset scheme routinely disagree about which
+key carries which glyph — pasting them would move ink for reasons the target layout's
+own data cannot explain. `--lang X` is just `--all` restricted to one layout (the bar then has a single
 button); both share the same render mirror and page code.
 
 ## Using it
@@ -173,6 +182,12 @@ collect `keyWarn(renderKey(k))` for every key, against the same sweep through
 `oled_preview.render_key(..., report=…)`. This is the check that proved the
 column-native fix: **421 flagged keys, byte-identical in both**. A single-layout run
 can agree by luck; the full sweep cannot.
+
+⚠️ **The expected count MOVES with the render logic — re-run it, don't compare against
+a number written here.** After the four-edge panel clamp + the relative-bbox
+`saturate` fix (2026-09-02) the same sweep flags **2** keys (`he-IL KC_BACKSLASH A:9`,
+a 43 px glyph in a 40 px panel, and `ta-IN KC_T ov:2`), still byte-identical in both.
+What the check asserts is JS == Python, not any particular total.
 
 
 ## Notes / limits

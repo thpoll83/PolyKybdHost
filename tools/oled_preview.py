@@ -713,8 +713,15 @@ class Renderer:
             if cp == 0x05: y += 2; continue
             if cp == 0x06: x += 2; continue
             if cp == 0x18: x = y = 0; continue
-            if cp == 0x08: x = x - 2 if x > 1 else 0; continue
-            if cp == 0x0c: y = y - 2 if y > 1 else 0; continue
+            # ⚠️ The draw clamps its cursor at buffer 0; a RELATIVE walk starts at 0,
+            # where that clamp would swallow the nudge entirely and report `\f` as a
+            # no-op. 73 legends across the 160 layouts open with one to six of these
+            # (`é è ç à` on AZERTY are `\f\f <letter>`), so the measured box sat up
+            # to 12 px below its own ink and render_key()'s panel clamp could not see
+            # the overrun. Mirrors font_lookup.c's `saturate` flag, which is false for
+            # the relative walk and true for the absolute one.
+            if cp == 0x08: x -= 2; continue
+            if cp == 0x0c: y -= 2; continue
             if cp == 0x09: x += (_trunc_div(x, 36) + 1) * 36; continue
             if cp == 0x0a: y += self.base_yadv; x = 0; continue
             if cp == 0x0b: y += (_trunc_div(y, 15) + 1) * 15; continue
@@ -899,6 +906,22 @@ class Renderer:
             xc += g['xAdvance']
 
 
+def clamp_legend(x, y, xmn, xmx, ymn, ymx):
+    """legend_plan_clamp() -- slide a draw origin so a measured ink box lands on the
+    panel. ONE definition of the edge for all three elements (base / Shift / AltGr).
+
+    ⚠️ Order is load-bearing: E before W means the WEST edge wins an over-wide glyph,
+    N before S means the SOUTH edge wins an over-tall one. Measured across all 160
+    layouts exactly one element is ever over-size (he-IL's 43 px standalone nikud on
+    KC_BACKSLASH), so this only decides where those 3 px go.
+    """
+    if x + xmx > BUFFER_X + SCREEN_WIDTH - 1: x = BUFFER_X + SCREEN_WIDTH - 1 - xmx
+    if x + xmn < BUFFER_X:                    x = BUFFER_X - xmn
+    if y + ymn < 0:                           y = -ymn
+    if y + ymx > OLED_H - 1:                  y = OLED_H - 1 - ymx
+    return x, y
+
+
 def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool,
                channels: bool = False, report: dict | None = None,
                size: int = 0) -> Image.Image:
@@ -948,19 +971,22 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     big = R.relocate(base, size)
     if big is not None:
         xmn, xmx, ymn, ymx = R.bbox(big)
-        big_x = base_x
-        if big_x + xmx > BUFFER_X + SCREEN_WIDTH - 1: big_x = BUFFER_X + SCREEN_WIDTH - 1 - xmx
-        if big_x + xmn < BUFFER_X:                    big_x = BUFFER_X - xmn
-        big_y = GLYPH_SIZE_BASELINE[size]
-        if big_y + ymn < 0:          big_y = -ymn
-        if big_y + ymx > OLED_H - 1: big_y = OLED_H - 1 - ymx
+        big_x, big_y = clamp_legend(base_x, GLYPH_SIZE_BASELINE[size], xmn, xmx, ymn, ymx)
         big_plan = (big_x, big_y)
         base_ink_max = big_x + xmx
     else:
-        _bmn, _bmx = R.bounds(base)
-        base_ink_max = base_x + _bmx
+        # The small face keeps the language's own origin AND is clamped onto the panel
+        # exactly as the bigger tiers are (legend_plan_main's small path). It was not,
+        # for a long time: 305 of the 420 clipped elements measured across all 160
+        # layouts were small base legends sliding off the north or west edge by up to
+        # 8 px, because a per-language offset tuned for one script's glyph heights
+        # applies to every key of the layout.
+        _bxmn, _bxmx, _bymn, _bymx = R.bbox(base)
+        base_x, base_v = clamp_legend(base_x, BASELINE + base_v, _bxmn, _bxmx, _bymn, _bymx)
+        base_v -= BASELINE
+        base_ink_max = base_x + _bxmx
 
-    shift_letter = None; preview_x = preview_v = 0
+    shift_letter = None; preview_x = 0; preview_y = BASELINE
     if not shift and not caps:
         v_pv = get_setting(L, vrow, li, VAR_SHIFT); h_pv = get_setting(L, hrow, li, VAR_SHIFT)
         if v_pv != HIDE and h_pv != HIDE:
@@ -976,17 +1002,22 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                 pmin, pmax, pymn, pymx = R.bbox(shift_letter)
                 preview_x = 28 + h_pv
                 if preview_x + pmin < base_ink_max + 2: preview_x = base_ink_max + 2 - pmin
-                if preview_x + pmax > BUFFER_X + SCREEN_WIDTH - 1: preview_x = (BUFFER_X + SCREEN_WIDTH - 1) - pmax
-                preview_v = v_pv
+                preview_y = BASELINE + v_pv
+                preview_x, preview_y = clamp_legend(preview_x, preview_y, pmin, pmax, pymn, pymx)
                 if preview_x + pmin <= base_ink_max:
-                    # Only a SMALL base can be lifted: a big one was already clamped
-                    # to the panel, so a 6 px lift pushes its ink off the top.
-                    if big is None: base_v -= 6
-                    preview_v += 4
+                    # Both moves are re-clamped: the panel edge wins over the stagger,
+                    # which is a readability nicety and not worth a clipped glyph.
+                    if big is None:
+                        base_x, base_v = clamp_legend(base_x, BASELINE + base_v - 6,
+                                                      _bxmn, _bxmx, _bymn, _bymx)
+                        base_v -= BASELINE
+                        base_ink_max = base_x + _bxmx
+                    preview_y += 4
+                    preview_x, preview_y = clamp_legend(preview_x, preview_y, pmin, pmax, pymn, pymx)
 
     # Resolve the AltGr hint BEFORE anything is drawn, for the same reason the Shift
     # preview above is resolved first: the two hints have to be laid out as a pair.
-    alt = None; alt_x = 0; v_off = 0
+    alt = None; alt_x = 0; alt_y = BASELINE
     if not shift and not caps:
         v_off = get_setting(L, vrow, li, VAR_ALTGR); h_off = get_setting(L, hrow, li, VAR_ALTGR)
         if v_off != HIDE and h_off != HIDE:
@@ -1019,15 +1050,13 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                         and aymx - aymn + 1 > ALTGR_HALF_MIN_INK_H and alt[0] != HINT_SMALL):
                     alt = (HINT_SMALL,) + tuple(alt)
                     amin, amax, aymn, aymx = R.bbox(alt)
-                # mirror the firmware's right-edge clamp (keymap.c altgr preview)
                 alt_x = 28 + h_off
                 # At the small size this mark is kept off the legend by its VERTICAL
                 # offset; a big legend fills that height, so there the only separation
                 # left is horizontal (keymap.c does the same).
                 if big is not None and alt_x + amin < base_ink_max + 2:
                     alt_x = base_ink_max + 2 - amin
-                if alt_x + amax > BUFFER_X + SCREEN_WIDTH - 1:
-                    alt_x = (BUFFER_X + SCREEN_WIDTH - 1) - amax
+                alt_x, alt_y = clamp_legend(alt_x, BASELINE + v_off, amin, amax, aymn, aymx)
 
     # --- keep the two hints off EACH OTHER ---------------------------------
     # Both sit right of the base -- Shift upper, AltGr lower -- and it is their
@@ -1045,14 +1074,17 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     # the pull still shrinks the overlap rather than removing it.
     if shift_letter is not None and alt is not None:
         sx0, sx1 = preview_x + pmin, preview_x + pmax
-        sy0, sy1 = BASELINE + preview_v + pymn, BASELINE + preview_v + pymx
+        sy0, sy1 = preview_y + pymn, preview_y + pymx
         ax0, ax1 = alt_x + amin, alt_x + amax
-        ay0, ay1 = BASELINE + v_off + aymn, BASELINE + v_off + aymx
+        ay0, ay1 = alt_y + aymn, alt_y + aymx
         if sx0 <= ax1 and ax0 <= sx1 and sy0 <= ay1 and ay0 <= sy1:
             want = ax0 - 2 - pmax
             floor = base_ink_max + 2 - pmin
             if want < floor: want = floor
             if want < preview_x: preview_x = want
+            # The pull only moves LEFT, so only the west edge can be violated -- but
+            # re-clamp through the shared helper rather than open-coding that test.
+            preview_x, preview_y = clamp_legend(preview_x, preview_y, pmin, pmax, pymn, pymx)
 
     EXP = OVERSHOOT
     # report: per-element pixel sets so callers can flag out-of-bounds (a pixel the
@@ -1073,9 +1105,9 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     else:
         R.draw(sp_base, base, base_x, BASELINE + base_v)
     if shift_letter is not None:
-        R.draw(sp_shift, shift_letter, preview_x, BASELINE + preview_v)
+        R.draw(sp_shift, shift_letter, preview_x, preview_y)
     if alt is not None:
-        R.draw(sp_alt, alt, alt_x, BASELINE + v_off)
+        R.draw(sp_alt, alt, alt_x, alt_y)
     if report is not None:
         def _oob(s): return sum(1 for (vx, vy) in s if vx < 0 or vx >= OLED_W or vy < 0 or vy >= OLED_H)
         report['oob'] = {k: _oob(v) for k, v in rpx.items()}

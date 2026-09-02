@@ -107,12 +107,17 @@ class FontBboxTest(unittest.TestCase):
     # -- cursor ops --------------------------------------------------------
     def test_vertical_nudges_move_the_baseline(self):
         self.assertEqual(self.measure([0x05, A]), (1, 6, -8, 1))
-        self.assertEqual(self.measure([0x0C, A]), self.measure([A]))
+        # Ported with the C (font_bbox_tests.cpp): up 2 really moves the RELATIVE box
+        # up 2. The draw clamps its cursor at buffer 0, which in a relative walk
+        # starting at 0 would swallow the lift and make \f a no-op -- the disagreement
+        # that had 73 layout legends (`\f\f <letter>` on AZERTY) measuring up to 12 px
+        # below their own ink, invisible to render_key()'s panel clamp.
+        self.assertEqual(self.measure([0x0C, A]), (1, 6, -12, -3))
         self.assertEqual(self.measure([0x05, 0x05, 0x0C, A]), (1, 6, -8, 1))
 
     def test_horizontal_nudges_move_the_cursor(self):
         self.assertEqual(self.measure([0x06, A]), (3, 8, -10, -1))
-        self.assertEqual(self.measure([0x08, A]), self.measure([A]))
+        self.assertEqual(self.measure([0x08, A]), (-1, 4, -10, -1))   # same rule as \f
         self.assertEqual(self.measure([A, 0x08, A]), (1, 12, -10, -1))
 
     def test_carriage_return_restarts_x_only(self):
