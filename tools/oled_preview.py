@@ -275,6 +275,10 @@ GLYPH_SIZE_BASELINE = {0: 21, 1: 25, 2: 28}   # [0] unused: size S keeps the lan
 GLYPH_SIZE_MAX_LEN  = 4                        # glyph_size_remap()'s length guard
 GLYPH_SIZE_NAMES    = {0: "small", 1: "medium", 2: "large"}
 SET = {"letter": (57, 56), "num": (59, 58), "sym": (61, 60)}   # (voffset_row, hoffset_row)
+# {letter.altgrhalf} -- per-LAYOUT opt-in to the half-size AltGr hint, read from
+# the VAR_ALTGR sub-column. A settings row like the six above, so `Lang` needs no
+# special case; only this row number and the gate in render_key() know about it.
+ALTGR_HALF_ROW = 62
 
 
 # ---- named glyphs + cell resolution ---------------------------------------
@@ -988,17 +992,28 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
             if alt is not None:
                 amin, amax, aymn, aymx = R.bbox(alt)
                 # The AltGr glyph is a HINT -- what this key would type with a
-                # modifier nobody is holding -- so it is drawn at HALF size, both to
-                # read as subordinate to the base legend and because a full-size
-                # script glyph is what made the two hints collide at all.
+                # modifier nobody is holding -- so on a script whose letters fill the
+                # keycap it is drawn at HALF size: subordinate to the base legend, and
+                # a full-size script glyph is most of what made the two hints fight
+                # over the right-hand side.
                 #
-                # ⚠️ Except when it is already tiny, which halving destroys: a Hebrew
-                # nikud is 2x3 px and comes out a dot. The threshold is MEASURED, not
-                # chosen -- over the 318 distinct AltGr cells the ink-height histogram
-                # has an EMPTY BIN at 8 px, marks below it (44 cells: nikud, diaeresis,
-                # middle dot, hyphen) and letterforms from 9 px up (274 cells). So the
-                # data separates itself and 7 is the gap, not a taste call.
-                if aymx - aymn + 1 > ALTGR_HALF_MIN_INK_H and alt[0] != HINT_SMALL:
+                # ⚠️ WHICH layouts is DATA, not a size test, and the measurement is
+                # why. The intuition is "Arabic and Indic have very large glyphs", but
+                # AltGr ink HEIGHT does not separate them: median 20 px on Arabic
+                # letters against 21 px on Latin. What differs is that on those
+                # layouts the base and Shift are wide too, so the row reads crowded --
+                # a per-LAYOUT judgement no glyph measurement can make. It lives in
+                # `{letter.altgrhalf}` in lang_lut.xlsx, one cell per language.
+                #
+                # ⚠️ The size test that REMAINS is only the mark guard: a glyph that is
+                # already tiny is destroyed by halving (a Hebrew nikud is 2x3 px and
+                # comes out a dot). THAT threshold is measured -- over the 318 distinct
+                # AltGr cells the ink-height histogram has an EMPTY BIN at 8 px, marks
+                # below it and letterforms from 9 px up -- and it carries most of the
+                # Indic layouts, whose letter AltGr hints are mostly bare combining
+                # marks at a median 4 px.
+                if (is_letter and get_setting(L, ALTGR_HALF_ROW, li, VAR_ALTGR)
+                        and aymx - aymn + 1 > ALTGR_HALF_MIN_INK_H and alt[0] != HINT_SMALL):
                     alt = (HINT_SMALL,) + tuple(alt)
                     amin, amax, aymn, aymx = R.bbox(alt)
                 # mirror the firmware's right-edge clamp (keymap.c altgr preview)

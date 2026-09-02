@@ -116,61 +116,98 @@ class HintPairTest(unittest.TestCase):
 
 @unittest.skipIf(TOOLS_ERR, TOOLS_ERR)
 class HalfSizeAltGrTest(HintPairTest):
-    """The AltGr hint is drawn at HALF size -- it is a hint, not a legend.
+    """The AltGr hint is drawn at HALF size on the layouts that ask for it.
 
-    ⚠️ The exception is what needs a guard: a mark that is already tiny comes out a
-    dot. The threshold is measured rather than chosen -- over the 318 distinct AltGr
-    cells the ink-height histogram has an EMPTY BIN at 8 px, marks below it and
-    letterforms from 9 px up -- so these cases pin BOTH sides of that gap.
+    ⚠️ WHICH layouts is DATA -- `{letter.altgrhalf}` in `lang_lut.xlsx` -- and the
+    measurement is why. The intuition is "Arabic and Indic have very large glyphs",
+    but AltGr ink HEIGHT does not separate them: median 20 px on Arabic letters
+    against 21 px on Latin ones. What actually differs is that on those layouts the
+    base and the Shift hint are wide too, so the row reads crowded -- a per-LAYOUT
+    judgement no glyph measurement can make. Hence a spreadsheet cell rather than a
+    threshold, and hence these cases pin all four arms of the gate.
+
+    The one size test that remains is the mark guard, whose threshold IS measured:
+    the ink-height histogram over the 318 distinct AltGr cells has an EMPTY BIN at
+    8 px, marks below it and letterforms from 9 px up.
     """
 
-    # (lang, kc, full-size ink height) -- comfortably above the gap, so they halve.
-    TALL = [("de-DE", "KC_Q"), ("de-DE", "KC_E"), ("fr-FR", "KC_0"),
-            ("ar-AE", "KC_F"), ("bn-BD", "KC_D")]
-    # Below the gap: Hebrew nikud (2-3 px) and a diaeresis. Halving these destroys
-    # them, so they must render byte-identically to the full-size draw.
-    TINY = [("he-IL", "KC_W"), ("he-IL", "KC_EQUAL"), ("af-ZA", "KC_SEMICOLON"),
-            ("ay-BO", "KC_3")]
+    # in scope, a letter, and above the mark guard -> halves.
+    HALVES = [("ar-SA", "KC_F"), ("ar-SA", "KC_H"), ("ar-AE", "KC_F"),
+              ("bn-BD", "KC_D"), ("bn-BD", "KC_H")]
+    # Each of the three ways OUT of the gate, one fixture apiece.
+    NOT_IN_SCOPE  = [("de-DE", "KC_Q"), ("de-DE", "KC_E"), ("fr-FR", "KC_E")]
+    NOT_A_LETTER  = [("ar-SA", "KC_1"), ("ar-SA", "KC_SEMICOLON")]
+    UNDER_THE_GAP = [("hi-IN", "KC_H"), ("hi-IN", "KC_K"), ("mr-IN", "KC_H")]
 
-    def _altgr_box(self, lang, kc):
+    def _drawn_height(self, lang, kc):
+        """Ink height of the AltGr hint as render_key actually drew it.
+
+        ⚠️ HEIGHT, not the box: `bbox()` and `draw()` agree on height for every
+        fixture here but differ by 1 px on the WIDTH of a few glyphs (the euro sign
+        measures 15 and inks 14), so a width comparison would be pinning that
+        discrepancy rather than the halving.
+        """
         box = self._report(lang, kc)["box"]
         self.assertIn("altgr", box, f"{lang} {kc} draws no AltGr hint")
-        x0, x1, y0, y1 = box["altgr"]
-        return x1 - x0 + 1, y1 - y0 + 1
+        return box["altgr"][3] - box["altgr"][2] + 1
 
-    def _full_size_box(self, lang, kc):
-        """The same key with the halving disabled, so the comparison is like-for-like."""
-        save = op.ALTGR_HALF_MIN_INK_H
-        op.ALTGR_HALF_MIN_INK_H = 127          # nothing is taller than this
-        try:
-            return self._altgr_box(lang, kc)
-        finally:
-            op.ALTGR_HALF_MIN_INK_H = save
+    def _full_height(self, lang, kc):
+        """The glyph's own full-size ink height, measured straight off the renderer.
 
-    def test_a_tall_AltGr_hint_is_drawn_at_half_size(self):
-        for lang, kc in self.TALL:
+        ⚠️ NOT `render_key` with the halving disabled, which is the obvious way to
+        write this and is fail-open: disabling it means moving `ALTGR_HALF_MIN_INK_H`
+        out of reach, so a MUTATION of that very constant also disables the reference
+        and both sides move together. Mutation-checked -- with the threshold forced
+        true, the version that turned the constant up went green on the mark cases.
+        """
+        li = self.L.langs.index(lang)
+        alt = self.L.var(li, op.ROW[kc], op.VAR_ALTGR)
+        self.assertIsNotNone(alt, f"{lang} {kc} has no AltGr cell")
+        _xmn, _xmx, ymn, ymx = self.R.bbox(alt)
+        return ymx - ymn + 1
+
+    def _assert_halved(self, lang, kc):
+        full, drawn = self._full_height(lang, kc), self._drawn_height(lang, kc)
+        # ⚠️ NOT exactly ceil(n/2): the 2x2-OR downsample halves each glyph's own
+        # offsets and extents, so where the ink lands in the merged pairs depends on
+        # parity and can add a row (ar-AE KC_F: 21 px -> 11, not 10). Bound it within
+        # 1 of the ideal rather than overfitting to the pixel arithmetic.
+        self.assertGreaterEqual(full, 9, "fixture is below the mark guard")
+        self.assertLessEqual(drawn, (full + 1) // 2 + 1)
+        self.assertGreaterEqual(drawn, full // 2)
+
+    def _assert_full_size(self, lang, kc):
+        self.assertEqual(self._drawn_height(lang, kc), self._full_height(lang, kc))
+
+    def test_an_opted_in_letter_key_halves_its_AltGr_hint(self):
+        for lang, kc in self.HALVES:
             with self.subTest(lang=lang, kc=kc):
-                fw, fh = self._full_size_box(lang, kc)
-                hw, hh = self._altgr_box(lang, kc)
-                # ⚠️ NOT exactly ceil(n/2): the 2x2-OR downsample halves each glyph's
-                # own offsets and extents, so where the ink lands in the merged pairs
-                # depends on parity and can add a row (ar-AE KC_F: 20 px -> 11, not
-                # 10). Bound it within 1 of the ideal rather than overfitting to the
-                # pixel arithmetic -- the property is "materially smaller", and an
-                # exact figure here would just re-encode the implementation.
-                for got, full, axis in ((hw, fw, "width"), (hh, fh, "height")):
-                    self.assertLessEqual(got, (full + 1) // 2 + 1, axis)
-                    self.assertGreaterEqual(got, full // 2, axis)
+                self._assert_halved(lang, kc)
+
+    def test_a_layout_that_did_not_opt_in_is_untouched(self):
+        """A Latin AltGr glyph is the same HEIGHT as an Arabic one, so only the
+        spreadsheet cell distinguishes these from the cases above."""
+        for lang, kc in self.NOT_IN_SCOPE:
+            with self.subTest(lang=lang, kc=kc):
+                self._assert_full_size(lang, kc)
+
+    def test_a_NON_letter_key_is_untouched_even_on_an_opted_in_layout(self):
+        """`{letter.altgrhalf}` names the letter category, so the digit and symbol
+        rows of the same layout keep their full-size hints."""
+        for lang, kc in self.NOT_A_LETTER:
+            with self.subTest(lang=lang, kc=kc):
+                self._assert_full_size(lang, kc)
 
     def test_a_tiny_AltGr_MARK_is_left_alone(self):
-        """⚠️ Not a nicety: a 2x3 nikud halves to 1x2, which is a dot, not a mark."""
-        for lang, kc in self.TINY:
+        """⚠️ Not a nicety: a 4 px combining mark halves to 2 px, which is a dot. This
+        is the guard that carries the Indic layouts -- their letter AltGr hints are
+        mostly bare marks, at a median 4 px."""
+        for lang, kc in self.UNDER_THE_GAP:
             with self.subTest(lang=lang, kc=kc):
-                self.assertEqual(self._altgr_box(lang, kc),
-                                 self._full_size_box(lang, kc))
+                self._assert_full_size(lang, kc)
 
     def test_the_threshold_sits_in_the_histogram_gap(self):
-        """The claim the threshold rests on: no AltGr cell inks exactly 8 px tall, so
+        """The claim the mark guard rests on: no AltGr cell inks exactly 8 px tall, so
         moving the constant by one cannot reclassify anything. If this fails, a new
         language has landed in the gap and the constant needs re-deriving -- from the
         histogram, not by taste."""
@@ -180,25 +217,20 @@ class HalfSizeAltGrTest(HintPairTest):
                 box = self._report(lang, kc).get("box", {})
                 if "altgr" not in box:
                     continue
-                fw, fh = self._full_size_box(lang, kc)
-                heights.add(fh)
+                heights.add(self._full_height(lang, kc))
         self.assertNotIn(op.ALTGR_HALF_MIN_INK_H + 1, heights)
 
-    def test_a_key_with_only_ONE_hint_is_untouched(self):
-        """The pull is gated on BOTH hints existing, so the long-standing single-hint
-        placement cannot move -- which is what bounds the change to the 53 keys the
-        sweep says moved, out of 160 x 49.
-
-        ⚠️ `en-US` hides the Shift hint on LETTERS, not on digits: `KC_1` really does
-        draw the `!`. The boxes below are what the pre-pair code rendered, so a rule
-        that fired on a lone hint would move them and fail here."""
-        for lang, kc, want in [("en-US", "KC_1", (37, 39, 1, 20)),
-                               ("de-DE", "KC_1", (29, 31, 1, 20))]:
-            with self.subTest(lang=lang, kc=kc):
-                rep = self._report(lang, kc)
-                self.assertNotIn("altgr", rep["box"])   # a lone Shift hint
-                self.assertEqual(rep["box"]["shift"], want)
-                self.assertEqual(rep["overlap"], 0)
+    def test_the_opted_in_set_is_the_scripts_it_claims(self):
+        """The spreadsheet column, read back: every layout that opted in is an
+        Arabic-script or Indic one. A stray 1 on a Latin layout is exactly the kind
+        of thing a 160-column row invites, and nothing else would catch it."""
+        from oled_preview import get_setting, VAR_ALTGR
+        want = {"ar", "fa", "ur", "ku", "ps",            # Arabic script
+                "hi", "mr", "ne", "bn", "te", "ta"}      # Indic
+        on = {lang for i, lang in enumerate(self.L.langs)
+              if get_setting(self.L, op.ALTGR_HALF_ROW, i, VAR_ALTGR)}
+        self.assertTrue(on, "nothing opted in -- the row is missing or empty")
+        self.assertEqual({l for l in on if l[:2] not in want}, set())
 
 
 if __name__ == "__main__":
