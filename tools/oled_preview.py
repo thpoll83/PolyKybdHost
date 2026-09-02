@@ -46,6 +46,7 @@ OVERSHOOT = 2
 # old fall-through, which measured and drew the op byte AND each of its arguments as
 # a substituted '!'.
 HINT_SMALL = 0x10      # rest of the run at half scale (kdisp_write_gfx_char_half)
+ALTGR_HALF_MIN_INK_H = 7   # halve the AltGr hint only when its ink is taller than this
 HINT_MID = 0x16        # rest of the run from the standalone 19px UI face
 CURSOR_OPS = frozenset({0x05, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x18})
 SUPPORTED_OPS = CURSOR_OPS | {HINT_SMALL, HINT_MID,
@@ -985,8 +986,22 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
         if v_off != HIDE and h_off != HIDE:
             alt = L.var(li, row, VAR_ALTGR)
             if alt is not None:
-                # mirror the firmware's right-edge clamp (keymap.c altgr preview)
                 amin, amax, aymn, aymx = R.bbox(alt)
+                # The AltGr glyph is a HINT -- what this key would type with a
+                # modifier nobody is holding -- so it is drawn at HALF size, both to
+                # read as subordinate to the base legend and because a full-size
+                # script glyph is what made the two hints collide at all.
+                #
+                # ⚠️ Except when it is already tiny, which halving destroys: a Hebrew
+                # nikud is 2x3 px and comes out a dot. The threshold is MEASURED, not
+                # chosen -- over the 318 distinct AltGr cells the ink-height histogram
+                # has an EMPTY BIN at 8 px, marks below it (44 cells: nikud, diaeresis,
+                # middle dot, hyphen) and letterforms from 9 px up (274 cells). So the
+                # data separates itself and 7 is the gap, not a taste call.
+                if aymx - aymn + 1 > ALTGR_HALF_MIN_INK_H and alt[0] != HINT_SMALL:
+                    alt = (HINT_SMALL,) + tuple(alt)
+                    amin, amax, aymn, aymx = R.bbox(alt)
+                # mirror the firmware's right-edge clamp (keymap.c altgr preview)
                 alt_x = 28 + h_off
                 # At the small size this mark is kept off the legend by its VERTICAL
                 # offset; a big legend fills that height, so there the only separation

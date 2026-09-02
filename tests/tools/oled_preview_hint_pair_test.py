@@ -53,10 +53,10 @@ class HintPairTest(unittest.TestCase):
                 ("bn-BD", "KC_D"), ("bn-BD", "KC_S"), ("bn-BD", "KC_K"),
                 ("bn-BD", "KC_I"), ("bn-BD", "KC_C")]
 
-    # ⚠️ The one that does NOT come clean, and it is not a bug in the rule: base 22 px
-    # + Shift 27 px + AltGr 37 px cannot be laid out on a 72 px panel at all. The pull
-    # shrinks it (29 -> 22 px) and stops there. Listed so a future change that "fixes"
-    # it has to explain what it dropped.
+    # ⚠️ The one the PULL ALONE could not fix: base 22 px + Shift 27 px + AltGr 37 px
+    # will not fit a 72 px panel at full size, and the pull could only shrink it
+    # (29 -> 22 px). Halving the AltGr hint is what closes it. Kept as its own case
+    # so a change that reverted the halving would fail here and nowhere else.
     CANNOT_FIT = [("bn-BD", "KC_H")]
 
     @classmethod
@@ -107,11 +107,82 @@ class HintPairTest(unittest.TestCase):
                 rep = self._report(lang, kc)
                 self.assertEqual(rep["oob"]["shift"], 0)
 
-    def test_the_unfixable_key_is_only_IMPROVED(self):
-        """bn-BD KC_H cannot fit; the rule must still not make it worse. 29 px was
-        the overlap before the pair rule."""
+    def test_the_key_the_pull_alone_could_not_fix(self):
+        """bn-BD KC_H: 29 px of overlap before the pair rule, 22 px after the pull
+        alone, 0 once the AltGr hint is halved."""
         rep = self._report(*self.CANNOT_FIT[0])
-        self.assertLess(rep["overlap_detail"]["shift^altgr"], 29)
+        self.assertEqual(rep["overlap_detail"]["shift^altgr"], 0)
+
+
+@unittest.skipIf(TOOLS_ERR, TOOLS_ERR)
+class HalfSizeAltGrTest(HintPairTest):
+    """The AltGr hint is drawn at HALF size -- it is a hint, not a legend.
+
+    ⚠️ The exception is what needs a guard: a mark that is already tiny comes out a
+    dot. The threshold is measured rather than chosen -- over the 318 distinct AltGr
+    cells the ink-height histogram has an EMPTY BIN at 8 px, marks below it and
+    letterforms from 9 px up -- so these cases pin BOTH sides of that gap.
+    """
+
+    # (lang, kc, full-size ink height) -- comfortably above the gap, so they halve.
+    TALL = [("de-DE", "KC_Q"), ("de-DE", "KC_E"), ("fr-FR", "KC_0"),
+            ("ar-AE", "KC_F"), ("bn-BD", "KC_D")]
+    # Below the gap: Hebrew nikud (2-3 px) and a diaeresis. Halving these destroys
+    # them, so they must render byte-identically to the full-size draw.
+    TINY = [("he-IL", "KC_W"), ("he-IL", "KC_EQUAL"), ("af-ZA", "KC_SEMICOLON"),
+            ("ay-BO", "KC_3")]
+
+    def _altgr_box(self, lang, kc):
+        box = self._report(lang, kc)["box"]
+        self.assertIn("altgr", box, f"{lang} {kc} draws no AltGr hint")
+        x0, x1, y0, y1 = box["altgr"]
+        return x1 - x0 + 1, y1 - y0 + 1
+
+    def _full_size_box(self, lang, kc):
+        """The same key with the halving disabled, so the comparison is like-for-like."""
+        save = op.ALTGR_HALF_MIN_INK_H
+        op.ALTGR_HALF_MIN_INK_H = 127          # nothing is taller than this
+        try:
+            return self._altgr_box(lang, kc)
+        finally:
+            op.ALTGR_HALF_MIN_INK_H = save
+
+    def test_a_tall_AltGr_hint_is_drawn_at_half_size(self):
+        for lang, kc in self.TALL:
+            with self.subTest(lang=lang, kc=kc):
+                fw, fh = self._full_size_box(lang, kc)
+                hw, hh = self._altgr_box(lang, kc)
+                # ⚠️ NOT exactly ceil(n/2): the 2x2-OR downsample halves each glyph's
+                # own offsets and extents, so where the ink lands in the merged pairs
+                # depends on parity and can add a row (ar-AE KC_F: 20 px -> 11, not
+                # 10). Bound it within 1 of the ideal rather than overfitting to the
+                # pixel arithmetic -- the property is "materially smaller", and an
+                # exact figure here would just re-encode the implementation.
+                for got, full, axis in ((hw, fw, "width"), (hh, fh, "height")):
+                    self.assertLessEqual(got, (full + 1) // 2 + 1, axis)
+                    self.assertGreaterEqual(got, full // 2, axis)
+
+    def test_a_tiny_AltGr_MARK_is_left_alone(self):
+        """⚠️ Not a nicety: a 2x3 nikud halves to 1x2, which is a dot, not a mark."""
+        for lang, kc in self.TINY:
+            with self.subTest(lang=lang, kc=kc):
+                self.assertEqual(self._altgr_box(lang, kc),
+                                 self._full_size_box(lang, kc))
+
+    def test_the_threshold_sits_in_the_histogram_gap(self):
+        """The claim the threshold rests on: no AltGr cell inks exactly 8 px tall, so
+        moving the constant by one cannot reclassify anything. If this fails, a new
+        language has landed in the gap and the constant needs re-deriving -- from the
+        histogram, not by taste."""
+        heights = set()
+        for lang in self.L.langs:
+            for kc in op.ROW:
+                box = self._report(lang, kc).get("box", {})
+                if "altgr" not in box:
+                    continue
+                fw, fh = self._full_size_box(lang, kc)
+                heights.add(fh)
+        self.assertNotIn(op.ALTGR_HALF_MIN_INK_H + 1, heights)
 
     def test_a_key_with_only_ONE_hint_is_untouched(self):
         """The pull is gated on BOTH hints existing, so the long-standing single-hint
