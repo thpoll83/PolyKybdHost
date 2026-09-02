@@ -91,6 +91,14 @@ def extract_lang(L: "op.Lang", li: int, tok_for) -> tuple:
             scps = L.var(li, row, op.VAR_SHIFT)                 # shift: fallback only if no own shift+base
             if scps is None and L.cell(li, row, op.VAR_SMALL) is None:
                 scps = L.var(0, row, op.VAR_SHIFT)
+            # The firmware drops a preview that only repeats the base legend's own
+            # letter in the other case (shift_preview_redundant, built from the same
+            # rule) — so the tuner must not show one either, or the offsets get tuned
+            # against a glyph the keycap never draws. Takes the RAW cells, like the
+            # build-time emitter.
+            rule = op.shift_preview_rule(L)
+            if rule and scps is not None and rule(*op.shift_preview_cells(L, li, row)):
+                scps = None
             e["shift"] = split_cps(scps, tok_for)
             e["altgr"] = split_cps(L.var(li, row, op.VAR_ALTGR), tok_for)   # altgr: no fallback
             keys[kc] = e

@@ -500,6 +500,7 @@ def _resolve_macro_bodies(out: dict, bodies: dict, calls: dict) -> None:
 class Lang:
     def __init__(self, xlsx: str, named: dict):
         from openpyxl import load_workbook
+        self.xlsx = xlsx          # so shift_preview.py can be found beside it
         wb = load_workbook(xlsx, data_only=True, read_only=True)
         ws = wb['key_lut']
         self.named = named
@@ -922,6 +923,51 @@ def clamp_legend(x, y, xmn, xmx, ymn, ymx):
     return x, y
 
 
+_SHIFT_PREVIEW = None
+
+
+def shift_preview_rule(L: Lang):
+    """`preview_is_redundant` out of the FIRMWARE's own lang/shift_preview.py, bound
+    to this workbook's named-glyph table. Call it with the two RAW key_lut cells.
+
+    ⚠️ Imported, not re-implemented, and fed RAW cells rather than this module's own
+    codepoints. That file is what cog turns into the `shift_preview_redundant` bitmap
+    the keycap consults, so sharing BOTH the rule and its resolver is the only way
+    this picture and the panel cannot disagree about which Shift previews the board
+    suppresses -- measured, two resolvers disagreed on 59 of ~3300 keys. If the module
+    is missing (a preview run with no firmware checkout beside the workbook) every
+    preview is kept: the same fail-safe direction the rule itself takes.
+    """
+    global _SHIFT_PREVIEW
+    if _SHIFT_PREVIEW is None:
+        _SHIFT_PREVIEW = False
+        path = os.path.join(os.path.dirname(os.path.abspath(L.xlsx)), 'shift_preview.py')
+        if os.path.exists(path):
+            import importlib.util
+            spec = importlib.util.spec_from_file_location('shift_preview', path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            _SHIFT_PREVIEW = lambda base, shift, _m=mod, _n=L.named: \
+                _m.preview_is_redundant(base, shift, _n)
+    return _SHIFT_PREVIEW
+
+
+def shift_preview_cells(L: Lang, li: int, row: int):
+    """The RAW (base, shift) cells the keycap actually DRAWS for this key.
+
+    Mirrors the pair the firmware judges: `translate_keycode()` falls back to the
+    en-US base whenever the layout has none, while `translate_keycode_only_shift()`
+    falls back to the en-US Shift only when the layout has neither of its own.
+    """
+    base = L.cell(li, row, VAR_SMALL)
+    shift = L.cell(li, row, VAR_SHIFT)
+    if base is None and shift is None:
+        shift = L.cell(0, row, VAR_SHIFT)
+    if base is None:
+        base = L.cell(0, row, VAR_SMALL)
+    return base, shift
+
+
 def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool,
                channels: bool = False, report: dict | None = None,
                size: int = 0) -> Image.Image:
@@ -998,6 +1044,13 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
             shift_letter = L.var(li, row, VAR_SHIFT)
             if shift_letter is None and L.cell(li, row, VAR_SMALL) is None:
                 shift_letter = L.var(0, row, VAR_SHIFT)
+            # Drop a preview that would only repeat the base legend's own letter in
+            # the other case -- ä/Ä, ç/Ç, ł/Ł. The firmware does the same from a
+            # build-time bitmap; the RULE and its resolver are shared, see
+            # shift_preview_rule().
+            rule = shift_preview_rule(L)
+            if rule and shift_letter is not None and rule(*shift_preview_cells(L, li, row)):
+                shift_letter = None
             if shift_letter is not None:
                 pmin, pmax, pymn, pymx = R.bbox(shift_letter)
                 preview_x = 28 + h_pv

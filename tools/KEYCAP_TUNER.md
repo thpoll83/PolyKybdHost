@@ -213,3 +213,13 @@ What the check asserts is JS == Python, not any particular total.
   layout; the tuner shows what `lang_lut.xlsx` has.
 - A key with no own glyph renders the **en-US** fallback (tagged); nudging it exports a
   real per-lang cell that overrides the fallback — leave it alone to keep the fallback.
+- ⚠️ **A key whose Shift form is just its base letter in the other case shows NO Shift
+  preview here, because the keyboard draws none.** `ä`/`Ä`, `ç`/`Ç`, `ł`/`Ł` and the
+  Cyrillic pairs are suppressed by the firmware's `shift_preview_redundant` bitmap;
+  the generator imports the same rule (`qmk_firmware/keyboards/polykybd/lang/
+  shift_preview.py`, via `oled_preview.shift_preview_rule`) so the tuner cannot offer
+  offsets for a glyph the panel never draws. 236 keys across 75 layouts.
+- ⚠️ **Do NOT hide such a preview by emptying the Shift cell instead** — that cell is
+  also the legend drawn while Shift is HELD, so clearing it leaves the keycap showing
+  the lowercase under Shift (field, 2026-09-02, 164 cells). If a preview you think is
+  redundant still shows, it is not a case pair by the rule; fix the rule, not the cell.
