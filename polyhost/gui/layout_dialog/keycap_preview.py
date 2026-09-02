@@ -617,7 +617,7 @@ class KeycapPreview:
           * every PolyKybd custom keycode shows as `QK_KB_0`.. while
             `keycode_helper.h` (and every legend) calls it `KC_LANG`, `KC_DMIN`, ...
             -- 34 keys, the whole settings/brightness/layout set;
-          * `DISPLAY_NAME_OVERRIDE` invents `KC_SCRL_BRMD` and `KC_PAUS_BRK_BRMU` to
+          * `DISPLAY_NAME_OVERRIDE` invents `KC_SCRL_BRMD` and `KC_BRMU_PAUSE` to
             show both meanings of a dual-purpose key. Those are SYNTHETIC: they exist
             in no header, so no alias table can ever contain them, and only the
             keycode's other names (`KC_SCROLL_LOCK`, `KC_PAUSE`) resolve;
