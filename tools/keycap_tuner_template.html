@@ -19,6 +19,10 @@
  .langbtn{background:#2a2a2a;color:#bbb;border:1px solid #444;border-radius:3px;font-size:10px;font-family:monospace;padding:2px 4px;cursor:pointer;line-height:1.1}
  .langbtn:hover{background:#383838} .langbtn.mod{background:#5a4a1e;color:#fd8;border-color:#a85}
  .langbtn.cur{border-color:#4af;color:#fff;background:#243a4a} .langbtn.cur.mod{border-color:#4af;background:#4a3a14}
+ /* a layout whose keys still flag something. The marker is a SUFFIX as well as a
+    colour, so it reads on a button that is already .mod (amber) or .cur (blue). */
+ .langbtn.woob{box-shadow:inset -3px 0 0 #f55} .langbtn.wov{box-shadow:inset -3px 0 0 #fa4}
+ .langbtn.wscan{opacity:.55}
  #panel{position:fixed;left:0;right:0;bottom:0;height:198px;background:#242424;border-top:2px solid #444;
    padding:6px 10px;display:flex;gap:16px;box-sizing:border-box;overflow-x:auto}
  #keyctrl{display:flex;gap:10px;align-items:flex-start;min-width:480px}
@@ -61,6 +65,7 @@
  <span class="hint">…then paste the box back to Claude (or feed it to apply_tuner.py)</span></div>
 <textarea id="exp" placeholder="changed cells + offsets appear here on Export"></textarea>
 <div id="warnsum"></div>
+<div id="scanmsg" style="font-size:12px;color:#888;margin:2px 0 4px">scanning every layout…</div>
 <div id="grid"></div>
 <div id="panel"><div id="keyctrl"><span class="hint">click a key to edit</span></div><div id="offctrl"></div></div>
 <script>
@@ -87,7 +92,10 @@ function orderedRows(){const flat=[];for(const r of DATA.rows)for(const k of r)i
 // st (per-key nudge state), OFF (mutable offsets) and O0 (pristine offsets) are
 // repointed at the current layout by loadLang(); STATE keeps each layout's edits
 // alive while you switch the dropdown so nothing is lost.
-let LANG=DATA.order[0],st,OFF,O0;
+// st/OFF/O0/AH are live ALIASES into STATE[LANG]; the render path reads them every
+// frame. ⚠️ Anything that "resets" a layout must assign INTO these objects, never
+// replace them, or the keycaps keep drawing the old values (see resetLayout).
+let LANG=DATA.order[0],st,OFF,O0,AH;
 const STATE={};
 function buildSt(keys){const s={};
  for(const kc in keys){s[kc]={};const K=keys[kc];
@@ -103,7 +111,7 @@ function loadLang(code){LANG=code;
  if(!STATE[code]){const off=DATA.langs[code].offsets,ah=DATA.langs[code].altgrhalf;
   STATE[code]={st:buildSt(DATA.langs[code].keys),off:JSON.parse(JSON.stringify(off)),o0:JSON.parse(JSON.stringify(off)),
    ah:JSON.parse(JSON.stringify(ah)),ah0:JSON.parse(JSON.stringify(ah))};}
- const S=STATE[code];st=S.st;OFF=S.off;O0=S.o0;selected=null;activeEl=null;}
+ const S=STATE[code];st=S.st;OFF=S.off;O0=S.o0;AH=S.ah;selected=null;activeEl=null;}
 function gen(dx,dy){const e=[];if(dy<0)for(let i=0;i<-dy/2;i++)e.push(12);if(dy>0)for(let i=0;i<dy/2;i++)e.push(5);
  if(dx<0)for(let i=0;i<-dx/2;i++)e.push(8);if(dx>0)for(let i=0;i<dx/2;i++)e.push(6);return e;}
 function glyphOf(cp){return DATA.glyphs[cp]||null;}
@@ -192,7 +200,7 @@ function renderKey(kc){const cat=catOf(kc),o=OFF[cat],K=st[kc];const base=cpsOf(
   // {letter|num|sym.altgrhalf}: the AltGr glyph is a HINT, so on an opted-in layout
   // the keys of that CATEGORY draw it half size. The remaining size test is only the
   // mark guard -- halving a 2x3px nikud makes it a dot. Mirrors poly_keymap.c.
-  if(STATE[LANG].ah[cat]&&(aymx-aymn+1)>HALF_MIN_INK_H&&acps[0]!==HINT_SMALL){
+  if(AH[cat]&&(aymx-aymn+1)>HALF_MIN_INK_H&&acps[0]!==HINT_SMALL){
    ahalf=true;acps=[HINT_SMALL].concat(acps);[amin,amax,aymn,aymx]=bbox(acps);}
   axx=28+o.altgr.H;[axx,ay]=clampLegend(axx,BL+o.altgr.V,amin,amax,aymn,aymx);
   // Keep the two hints off EACH OTHER: when their ink boxes intersect in BOTH axes,
@@ -228,7 +236,12 @@ function paintR(cv,kc){const r=renderKey(kc),ctx=cv.getContext("2d");ctx.fillSty
   ctx.fillRect(MARG*SCALE,MARG*SCALE,ox*SCALE,oy*SCALE);}               // left of origin, above it -> top-right stays clear
  return r;}
 let selected=null,activeEl=null;
+// ⚠️ This sweep IS the current layout's scan — every edit path calls buildGrid(), so
+// WARN[LANG] cannot go stale behind an offset change, a nudge, a paste or a reset.
+// Re-scanning here rather than from each caller is the same choke-point argument the
+// firmware's clamp uses: a list of call sites to remember is a list that goes stale.
 function buildGrid(){const g=document.getElementById("grid");g.innerHTML="";let warnN=0;
+ let woob=0,wov=0;const wkeys=[];
  for(const row of orderedRows()){const rd=document.createElement("div");rd.style.display="flex";rd.style.flexWrap="wrap";rd.style.gap="4px";rd.style.flexBasis="100%";
   for(const kc of row){if(!(kc in st))continue;const d=document.createElement("div");d.className="key"+(kc===selected?" sel":"");
    if(hlCat&&catOf(kc)===hlCat){d.style.outline="2px solid "+CATCOL[hlCat];d.style.outlineOffset="1px";}
@@ -237,11 +250,13 @@ function buildGrid(){const g=document.getElementById("grid");g.innerHTML="";let 
    const lab=document.createElement("div");lab.className="lab";lab.textContent=kc.replace("KC_","");d.appendChild(lab);
    if(st[kc].base&&st[kc].base.fb){const fb=document.createElement("div");fb.className="fb";fb.textContent="en-US";d.appendChild(fb);}
    const r=paintR(cv,kc),w=keyWarn(r);
-   if(w){d.classList.add("warn");const wl=document.createElement("div");wl.className="wl";wl.textContent=w;d.appendChild(wl);warnN++;}
+   if(w){d.classList.add("warn");const wl=document.createElement("div");wl.className="wl";wl.textContent=w;d.appendChild(wl);warnN++;
+    wkeys.push(kc.replace("KC_","")+" "+w);woob+=r.oob.base+r.oob.shift+r.oob.altgr;wov+=r.overlap;}
    const sq=document.createElement("div");sq.className="seq";sq.innerHTML=seqLine(kc);d.appendChild(sq);
    if(kc===selected)cv.addEventListener("mousedown",e=>startDrag(e,kc,cv));   // drag the active glyph (2px snap)
    d.onclick=()=>{if(selected!==kc){selected=kc;activeEl=(st[kc].base?"base":(st[kc].shift?"shift":(st[kc].altgr?"altgr":null)));}buildGrid();buildKeyCtrl();};rd.appendChild(d);}g.appendChild(rd);}
  document.getElementById("warnsum").textContent=warnN?(warnN+" key(s) flag out-of-bounds / overlap"):"no out-of-bounds or overlap ✓";
+ WARN[LANG]={oob:woob,ov:wov,keys:wkeys};
  refreshLangBar();}
 function dpad(kc,el){const b=(dx,dy,t)=>`<button onclick="event.stopPropagation();nudge('${kc}','${el}',${dx},${dy})">${t}</button>`;
  return`<div class="dpad"><span class="sp"></span>${b(0,-2,"↑")}<span class="sp"></span>${b(-2,0,"←")}<button onclick="event.stopPropagation();reset1('${kc}','${el}')">·</button>${b(2,0,"→")}<span class="sp"></span>${b(0,2,"↓")}<span class="sp"></span></div>`;}
@@ -359,7 +374,9 @@ function switchLang(code){loadLang(code);document.getElementById("langname").tex
 function resetLayout(){const S=STATE[LANG];if(!S)return;
  for(const kc in S.st)for(const el of["base","shift","altgr"]){const E=S.st[kc][el];if(E){E.dx=E.odx;E.dy=E.ody;E.drop=E.odrop;}}
  for(const c in S.off)for(const t in S.off[c])for(const ax of["H","V"])S.off[c][t][ax]=S.o0[c][t][ax];
- S.ah=JSON.parse(JSON.stringify(S.ah0));
+ // ⚠️ in place — `AH` is a live alias, so replacing the object would leave every
+ // keycap drawing the pre-reset ½-AltGr flags (the same trap pasteLayout avoids).
+ for(const c of ['letter','num','sym'])S.ah[c]=S.ah0[c];
  selected=null;activeEl=null;buildOffPanel();buildGrid();buildKeyCtrl();}
 // One row per REGION, in the keyboard's own menu order (Americas, Europe, Middle East
 // & Caucasus, Africa, Asia, Oceania, then Other), alphabetical within each -- so the
@@ -379,10 +396,56 @@ function buildLangBar(){const bar=document.getElementById("langbar");bar.innerHT
    b.onclick=()=>switchLang(code);box.appendChild(b);}
   row.appendChild(box);bar.appendChild(row);}
  refreshLangBar();}
+// ── per-layout warning scan ────────────────────────────────────────────────────
+// WARN[code] = {oob, ov, keys:[...]} — what that layout's keys flag, so the layout
+// BAR says where to look instead of making you visit all 160.
+//
+// ⚠️ Out-of-bounds is now nearly extinct and, more to the point, NOT TUNABLE:
+// legend_plan_clamp() slides every element back onto the panel, so an offset can no
+// longer push ink off it. What is left is a glyph genuinely bigger than the 72x40
+// window (measured over every layout: exactly one, he-IL KC_BACKSLASH's 43px nikud),
+// which no offset can fix. OVERLAP is the live signal — it is still entirely a
+// function of the offsets, which is what this tuner exists to move. Both are shown,
+// and they are coloured apart on purpose: red = look, but you probably cannot fix it;
+// amber = look, this one is yours.
+const WARN={};
+// Render one layout's keys WITHOUT persisting it into STATE. An unvisited layout is
+// built into a scratch, scanned and dropped, so scanning all 160 does not permanently
+// hold 160 layouts' worth of per-key state (and does not make every later
+// refreshLangBar run exportLang over all of them).
+function scanLayout(code){
+ const S=STATE[code]||{st:buildSt(DATA.langs[code].keys),off:DATA.langs[code].offsets,
+                       ah:DATA.langs[code].altgrhalf};
+ const sv={LANG:LANG,st:st,OFF:OFF,AH:AH};
+ LANG=code;st=S.st;OFF=S.off;AH=S.ah;
+ let oob=0,ov=0;const keys=[];
+ try{for(const row of DATA.rows)for(const kc of row){if(!(kc in st))continue;
+  const r=renderKey(kc);if(r.empty)continue;
+  const o=r.oob.base+r.oob.shift+r.oob.altgr;
+  if(o||r.overlap){keys.push(kc.replace("KC_","")+" "+keyWarn(r));oob+=o;ov+=r.overlap;}}}
+ finally{LANG=sv.LANG;st=sv.st;OFF=sv.OFF;AH=sv.AH;}
+ WARN[code]={oob:oob,ov:ov,keys:keys};return WARN[code];}
+// Deferred + chunked so the page paints first and stays responsive; the bar fills in
+// as it goes. Layouts not yet scanned render dimmed (.wscan).
+function scanAll(){let i=0;const step=()=>{
+  const t0=Date.now();
+  while(i<DATA.order.length&&Date.now()-t0<40){scanLayout(DATA.order[i++]);}
+  refreshLangBar();
+  if(i<DATA.order.length)setTimeout(step,0);
+  else document.getElementById("scanmsg").textContent=
+   (()=>{const bad=DATA.order.filter(c=>WARN[c]&&(WARN[c].oob||WARN[c].ov));
+    return bad.length?`${bad.length} layout(s) flagged: ${bad.join(" ")}`:"all layouts clean ✓";})();};
+ setTimeout(step,0);}
 function refreshLangBar(){for(const code of DATA.order){const b=document.getElementById("lb_"+code);if(!b)continue;
  b.classList.toggle("cur",code===LANG);
- b.classList.toggle("mod",!!STATE[code]&&exportLang(STATE[code]).length>0);}}
+ b.classList.toggle("mod",!!STATE[code]&&exportLang(STATE[code]).length>0);
+ const w=WARN[code];
+ b.classList.toggle("wscan",!w);
+ b.classList.toggle("woob",!!w&&w.oob>0);
+ b.classList.toggle("wov",!!w&&!w.oob&&w.ov>0);
+ b.textContent=code+(w&&w.oob?" ●":(w&&w.ov?" ○":""));
+ b.title=w?(w.keys.length?w.keys.join("\n"):"clean"):"not scanned yet";}}
 buildLangBar();
 loadLang(DATA.order[0]);document.getElementById("langname").textContent=LANG;
-buildOffPanel();buildGrid();refreshClip();
+buildOffPanel();buildGrid();refreshClip();scanAll();
 </script></body></html>

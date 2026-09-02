@@ -30,6 +30,21 @@ alphabetical within each; click to switch. The grouping is read from the host's
 in a **shared pool keyed by codepoint** (Latin layouts reuse the same a/b/c bitmaps),
 so the page stays a few MB even with every script. Switching keeps each layout's edits
 alive, and an edited layout's button turns **amber** (the current one is highlighted).
+
+Every layout is **scanned at load** (~1 s for all 160, chunked so the page stays
+responsive) and a button carrying a flagged key gets a marker on its right edge, plus
+the key list in its tooltip: **red `●`** = ink outside the 72×40 window, **amber `○`**
+= two elements overlapping. The line under the Export box names the flagged layouts,
+so you can see where to look without visiting all 160.
+
+⚠️ **The two markers mean very different things, which is why they are coloured
+apart.** Out-of-bounds is no longer TUNABLE: `legend_plan_clamp()` slides every
+element back onto the panel, so an offset cannot push ink off it any more. What red
+means is a glyph genuinely bigger than the panel — measured over every layout, exactly
+one (`he-IL KC_BACKSLASH`'s 43 px standalone nikud in a 40 px window) — which no
+offset can fix. **Amber is the live signal**: overlap is still entirely a function of
+the offsets, which is what this tool exists to move. So red = look, but it is probably
+not yours; amber = look, this one is.
 **Reset layout** reverts every edit of the current layout; **Export** emits one
 `=== code ===` block per edited layout — feed the whole box straight to `apply_tuner.py`
 (below). **Copy positions** / **Paste positions** carry a layout's *settings* to
