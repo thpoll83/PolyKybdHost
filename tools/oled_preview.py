@@ -923,9 +923,6 @@ def clamp_legend(x, y, xmn, xmx, ymn, ymx):
     return x, y
 
 
-_SHIFT_PREVIEW = None
-
-
 def shift_preview_rule(L: Lang):
     """`preview_is_redundant` out of the FIRMWARE's own lang/shift_preview.py, bound
     to this workbook's named-glyph table. Call it with the two RAW key_lut cells.
@@ -934,22 +931,93 @@ def shift_preview_rule(L: Lang):
     codepoints. That file is what cog turns into the `shift_preview_redundant` bitmap
     the keycap consults, so sharing BOTH the rule and its resolver is the only way
     this picture and the panel cannot disagree about which Shift previews the board
-    suppresses -- measured, two resolvers disagreed on 59 of ~3300 keys. If the module
-    is missing (a preview run with no firmware checkout beside the workbook) every
-    preview is kept: the same fail-safe direction the rule itself takes.
+    suppresses -- measured, two resolvers disagreed on 59 of ~3300 keys.
+
+    Three sources, in order, so every caller gets the SAME answer from the one
+    implementation:
+
+    * a `Lang` carrying `shift_suppressed` -- the decision baked at export time by
+      this very module, which is how the SHIPPED preview reaches it with no firmware
+      checkout to import from (the same shape as the firmware's own build-time
+      bitmap, and for the same reason);
+    * a `Lang` that knows its workbook path -- import the module beside it;
+    * anything else -- keep every preview, the fail-safe direction the rule itself
+      takes.
+
+    ⚠️ The answer is cached ON THE `Lang`, never in a module global. Two `Lang`
+    objects legitimately disagree here (a checkout one resolves, a bare one cannot),
+    so a shared global lets whichever loads first decide for the other -- and a
+    global assigned BEFORE the lookup that can fail poisons itself into "no
+    suppression" for the whole process. That shipped for one commit; Greptile caught
+    it on #210.
     """
-    global _SHIFT_PREVIEW
-    if _SHIFT_PREVIEW is None:
-        _SHIFT_PREVIEW = False
+    cached = getattr(L, "_shift_rule", None)
+    if cached is not None:
+        return cached
+    rule = False
+    baked = getattr(L, "shift_suppressed", None)
+    if baked is not None:
+        rule = _BakedShiftRule(baked)
+    elif getattr(L, "xlsx", None):
         path = os.path.join(os.path.dirname(os.path.abspath(L.xlsx)), 'shift_preview.py')
         if os.path.exists(path):
             import importlib.util
             spec = importlib.util.spec_from_file_location('shift_preview', path)
             mod = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mod)
-            _SHIFT_PREVIEW = lambda base, shift, _m=mod, _n=L.named: \
+            rule = lambda base, shift, _m=mod, _n=L.named: \
                 _m.preview_is_redundant(base, shift, _n)
-    return _SHIFT_PREVIEW
+    try:
+        L._shift_rule = rule
+    except AttributeError:                 # a Lang that refuses attributes
+        pass
+    return rule
+
+
+class _BakedShiftRule:
+    """The exported decision, answering the same `(base_cell, shift_cell)` call.
+
+    ⚠️ It matches on the CELLS rather than on (lang, key) because that is the only
+    thing the call site hands over -- and it is sound for the same reason the rule
+    is: the verdict depends on nothing but those two cells. Identical cells anywhere
+    in the sheet are the same verdict.
+    """
+
+    def __init__(self, pairs):
+        self.pairs = {(_cell_key(b), _cell_key(s)) for b, s in pairs}
+
+    def __call__(self, base, shift):
+        return (_cell_key(base), _cell_key(shift)) in self.pairs
+
+
+def _cell_key(v):
+    """A raw key_lut cell as the one string form both sides agree on.
+
+    openpyxl hands back an int for a bare numeric cell and the JSON round-trip makes
+    it a string, so the two sides must normalise identically or the baked set never
+    matches. `None` stays distinct from the empty string: "no cell" and "an empty
+    cell" are different inputs to the rule.
+    """
+    return None if v is None else str(v).strip()
+
+
+def shift_suppressed_pairs(L: Lang):
+    """Every distinct (base, shift) CELL pair the rule suppresses, for the export.
+
+    Built with the real module (so it cannot drift from the firmware bitmap) and
+    emitted as pairs rather than as (lang, key) indices, so the shipped set stays
+    valid if a layout is inserted.
+    """
+    rule = shift_preview_rule(L)
+    if not rule:
+        raise RuntimeError("shift_preview.py not reachable -- cannot bake the rule")
+    out = set()
+    for li in range(len(L.langs)):
+        for kc, row in ROW.items():
+            base, shift = shift_preview_cells(L, li, row)
+            if rule(base, shift):
+                out.add((_cell_key(base), _cell_key(shift)))
+    return sorted(out)
 
 
 def shift_preview_cells(L: Lang, li: int, row: int):

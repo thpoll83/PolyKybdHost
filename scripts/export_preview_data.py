@@ -148,8 +148,17 @@ def build(pk: pathlib.Path) -> dict:
         "layers.json": {"fw_version": version,
                         "tags": {str(k): v for k, v in
                                  qh.parse_layers_h(pk / "layers.h").items()}},
+        # ⚠️ The Shift-preview suppression is BAKED here, not left to the host.
+        # The rule lives in the firmware tree (`lang/shift_preview.py`) and is what
+        # cog turns into the keycap's own bitmap -- so a host with no checkout
+        # cannot import it, and without this it would draw 236 previews across 75
+        # layouts that the keyboard suppresses. Baking the decision at export time
+        # is the same move the firmware makes for the same reason: one
+        # implementation, its verdict shipped as data.
         "lang_lut.json": {"fw_version": version, "langs": list(L.langs),
-                          "grid": grid},
+                          "grid": grid,
+                          "shift_suppressed": [list(p) for p in
+                                               op.shift_suppressed_pairs(L)]},
         "named_glyphs.json": {"fw_version": version,
                               "named": {k: list(v) for k, v in named.items()}},
     }

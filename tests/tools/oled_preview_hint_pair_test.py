@@ -136,7 +136,11 @@ class HalfSizeAltGrTest(HintPairTest):
               ("bn-BD", "KC_D"), ("bn-BD", "KC_H")]
     # Each of the three ways OUT of the gate, one fixture apiece.
     NOT_IN_SCOPE  = [("de-DE", "KC_Q"), ("de-DE", "KC_E"), ("fr-FR", "KC_E")]
-    NOT_A_LETTER  = [("ar-SA", "KC_1"), ("ar-SA", "KC_SEMICOLON")]
+    # ⚠️ DERIVED, not hardcoded. This used to be `ar-SA`, which opted in for
+    # letters only -- until a tuning pass turned its SYMBOL row on too and the
+    # fixture started asserting the opposite of the shipped data. The layout has
+    # to be chosen from the spreadsheet at run time, or the test pins a snapshot.
+    NOT_A_LETTER_KEYS = ["KC_1", "KC_SEMICOLON"]
     UNDER_THE_GAP = [("hi-IN", "KC_H"), ("hi-IN", "KC_K"), ("mr-IN", "KC_H")]
 
     def _drawn_height(self, lang, kc):
@@ -193,12 +197,32 @@ class HalfSizeAltGrTest(HintPairTest):
 
     def test_a_NON_letter_key_is_untouched_even_on_an_opted_in_layout(self):
         """The opt-in is per CATEGORY -- `{letter|num|sym.altgrhalf}` are three rows --
-        and only the letter one is set in the spreadsheet today, so the digit and
-        symbol rows of the same layout keep their full-size hints. The num/sym rows
-        exist so the choice can be made per layout in the keycap tuner."""
-        for lang, kc in self.NOT_A_LETTER:
-            with self.subTest(lang=lang, kc=kc):
+        so a layout that opted its LETTERS in keeps full-size hints on the digit and
+        symbol rows it did not. The layout is looked up rather than named: which ones
+        opt in is a per-layout judgement that moves with each tuning pass.
+        """
+        for cat, kc in zip(("num", "sym"), self.NOT_A_LETTER_KEYS):
+            lang = self._opted_in_for_letters_only(cat)
+            if lang is None:                       # every letter layout opted in too
+                continue                           # -- nothing left to assert
+            with self.subTest(lang=lang, cat=cat, kc=kc):
                 self._assert_full_size(lang, kc)
+
+    def _opted_in_for_letters_only(self, cat):
+        """A layout whose LETTER row is on, this category's row off, and whose key
+        actually draws an AltGr hint tall enough for the mark guard to leave alone --
+        otherwise `_assert_full_size` would pass for the wrong reason."""
+        kc = dict(zip(("num", "sym"), self.NOT_A_LETTER_KEYS))[cat]
+        for i, lang in enumerate(self.L.langs):
+            if not self._flag(self.L, "letter", i) or self._flag(self.L, cat, i):
+                continue
+            alt = self.L.var(i, op.ROW[kc], op.VAR_ALTGR)
+            if alt is None:
+                continue
+            _xmn, _xmx, ymn, ymx = self.R.bbox(alt)
+            if ymx - ymn + 1 > op.ALTGR_HALF_MIN_INK_H:
+                return lang
+        return None
 
     def test_a_tiny_AltGr_MARK_is_left_alone(self):
         """⚠️ Not a nicety: a 4 px combining mark halves to 2 px, which is a dot. This
@@ -237,18 +261,34 @@ class HalfSizeAltGrTest(HintPairTest):
         self.assertTrue(on, "nothing opted in -- the row is missing or empty")
         self.assertEqual({l for l in on if l[:2] not in want}, set())
 
-    def test_the_num_and_sym_rows_exist_and_are_unset(self):
-        """Both rows must EXIST -- the tuner can only offer a setting the spreadsheet
-        carries -- and must be empty, because no layout has opted in yet. A row that
-        silently went missing would make the tuner's checkbox a no-op."""
-        for cat in ("num", "sym"):
+    def test_all_three_rows_EXIST_even_the_one_nothing_uses(self):
+        """⚠️ A row nothing has opted into still has to be in the spreadsheet -- the
+        tuner can only offer a setting the sheet carries, so a row that silently went
+        missing would make its checkbox a no-op. `{num.altgrhalf}` is exactly that
+        case today, which is why this asserts EXISTENCE and not emptiness: an earlier
+        version pinned "no layout has opted in yet", and the first tuning pass to set
+        the symbol row turned that into a test asserting the opposite of the shipped
+        data.
+        """
+        for cat in ("letter", "num", "sym"):
             with self.subTest(cat=cat):
                 self.assertIn(cat, op.ALTGR_HALF)
                 key = self.L.grid.get((op.ALTGR_HALF[cat], 1))
                 self.assertEqual(key, "{%s.altgrhalf}" % cat, "settings row missing")
-                on = [lang for i, lang in enumerate(self.L.langs)
-                      if self._flag(self.L, cat, i)]
-                self.assertEqual(on, [])
+
+    def test_a_symbol_row_only_opts_in_where_the_letters_did(self):
+        """The invariant behind the per-category split, rather than a snapshot of it:
+        the symbol row is opted in because that layout's whole right-hand side is
+        crowded, so it cannot be set on a layout whose letters are roomy enough to
+        leave full size. A stray flag on a Latin layout would show up here.
+        """
+        letters = {lang for i, lang in enumerate(self.L.langs)
+                   if self._flag(self.L, "letter", i)}
+        for cat in ("num", "sym"):
+            on = {lang for i, lang in enumerate(self.L.langs)
+                  if self._flag(self.L, cat, i)}
+            with self.subTest(cat=cat):
+                self.assertEqual(on - letters, set())
 
 
 if __name__ == "__main__":

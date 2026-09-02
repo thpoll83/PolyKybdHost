@@ -73,6 +73,7 @@ class PreviewData:
         self.layer_tags: dict[int, str] = {}
         self.langs: list[str] = []
         self._grid: dict = {}      # (row, col) -> raw cell, as Lang holds it
+        self.shift_suppressed: list = []   # (base, shift) cell pairs the board hides
         self.named: dict = {}      # glyph macro -> codepoints
         self.fonts: list = []
         self.ui_fonts: dict = {}   # symbol name -> the standalone face
@@ -98,6 +99,11 @@ class PreviewData:
                       for key, v in (lut.get("grid") or {}).items()
                       for r, c in (key.split(","),)}
         self.named = {k: list(v) for k, v in (names.get("named") or {}).items()}
+        # The Shift previews the keyboard suppresses, decided at export time by the
+        # firmware's own rule (see export_preview_data.py). An older export has no
+        # such key -- then `lang_reader` leaves the attribute off and the preview
+        # keeps every Shift preview, which is the fail-safe direction.
+        self.shift_suppressed = [tuple(p) for p in (lut.get("shift_suppressed") or [])]
         try:
             self.fonts = self._fonts()
             self.ui_fonts = self._ui_fonts(legends.get("ui_fonts") or [])
@@ -128,6 +134,8 @@ class PreviewData:
         L.grid = dict(self._grid)
         L.langs = list(self.langs)
         L.named = dict(self.named)
+        if self.shift_suppressed:
+            L.shift_suppressed = list(self.shift_suppressed)
         return L
 
     # -- internals ----------------------------------------------------------
