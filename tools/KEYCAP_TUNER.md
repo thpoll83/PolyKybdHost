@@ -104,6 +104,33 @@ button); both share the same render mirror and page code.
   ⚠️ **Only `{letter.…}` is set in the spreadsheet today** (the 22 Arabic-script and 7
   Indic layouts); `num` and `sym` exist so the choice can be made, and no layout uses
   them yet.
+- **view: resting · Shift held · AltGr held** — the three states a keycap can be in.
+  These are separate branches of the firmware's `render_key()`, not a re-tint of the
+  resting one, so they are **rendered** rather than annotated:
+  - **resting** — the legend plus its two hints. This is the view the offsets are
+    tuned against, and the only one that feeds the layout bar's warning badges (a
+    held view has different offsets, so folding its clip count in would quietly
+    change what "N clipped keys" means).
+  - **Shift held** — `translate_keycode(shift=true)`: the **Shift cell becomes the
+    legend**, and where the layout has none it falls back to the base. The legend is
+    coloured by provenance — **blue** from the Shift cell, **green** fallen back —
+    so "does this key have a real uppercase?" reads at a glance. There is no preview
+    (`if(!shift && !caps_lock)`), and the AltGr hint stays. ⚠️ Note the shifted
+    glyph is drawn at the **`VAR_SMALL`** offsets, not the `VAR_SHIFT` ones the
+    preview uses.
+  - **AltGr held** — the AltGr cell **is** the legend, full size. Three things
+    differ from the hint drawn in the resting view, and all three are deliberate in
+    the firmware: the offsets are the **num-or-sym** ones *even on a letter key*; V
+    is `min(VAR_SMALL, VAR_ALTGR)` while H is `VAR_SMALL`; and it is **not clamped**.
+    A key with no AltGr cell, or a `HIDE` on either V, falls through to the resting
+    legend — so this view always shows what the key would actually type. A bare
+    nukta (U+093C / U+09BC) is composed onto the base consonant, as the firmware does.
+- ⚠️ A key whose Shift preview the firmware **suppresses** as a case pair carries a
+  blue **`sup`** badge in the Shift-held view, and a `no preview` label in its
+  editor block. The cell is still live — it is the uppercase — it is just not
+  previewed. That distinction is the whole point of the two views: emptying such a
+  cell in the spreadsheet to hide a redundant preview also destroys the uppercase,
+  which is exactly what shipped once and was reported from hardware.
 - **Export changes** → paste the box back to whoever applies it.
 
 ## Export format → how to apply

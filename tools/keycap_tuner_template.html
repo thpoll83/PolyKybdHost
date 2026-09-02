@@ -54,6 +54,8 @@
  button.act{background:#264;color:#cfc;border:1px solid #485;border-radius:4px;padding:5px 9px;cursor:pointer}
  #exp{width:100%;max-width:1150px;height:80px;background:#111;color:#9f9;font-family:monospace;font-size:11px;border:1px solid #444;margin-top:4px}
  .hint{font-size:12px;color:#888;align-self:center}
+ .vw{background:#222}
+ .vw.on{background:#2c5aa0;border-color:#4a8; color:#fff}
 </style></head><body>
 <h1>PolyKybd · <span id="langname"></span> keycap tuner</h1>
 <div class="sub">base=<span style="color:#4f4">green</span> · Shift=<span style="color:#6af">blue</span> · AltGr=<span style="color:#f66">red</span> · overlaps mix · faded = clipped off-keycap · faint crosshair = each element's offset <b>origin</b>. <span style="color:#a85">en-US</span>=Latin fallback. The line under each preview is its positioning <b>control-char sequence</b> (\f up · \x05 down · \b left · \x06 right). Click a key; <b>drag</b> the active glyph in the preview to move it (snaps to 2px), or nudge it (bottom-left) / the whole-layout offsets (bottom-right).</div>
@@ -63,6 +65,11 @@
  <button class="act" id="copybtn" onclick="copyLayout()">Copy positions</button>
  <button class="act" id="pastebtn" onclick="pasteLayout()" disabled>Paste positions</button>
  <span class="hint">…then paste the box back to Claude (or feed it to apply_tuner.py)</span></div>
+<div class="top"><span class="hint">view:</span>
+ <button class="act vw on" id="vw_normal" onclick="setView('normal')">resting</button>
+ <button class="act vw" id="vw_shift" onclick="setView('shift')">Shift held</button>
+ <button class="act vw" id="vw_altgr" onclick="setView('altgr')">AltGr held</button>
+ <span class="hint" id="viewhint"></span></div>
 <textarea id="exp" placeholder="changed cells + offsets appear here on Export"></textarea>
 <div id="warnsum"></div>
 <div id="scanmsg" style="font-size:12px;color:#888;margin:2px 0 4px">scanning every layout…</div>
@@ -105,7 +112,8 @@ function buildSt(keys){const s={};
    // or glyphs like the Arabic 0x0b-prefixed shift legends render at the wrong place.
    let dx=0,dy=0;const struct=[];
    for(const cp of sp.esc){if(cp===6)dx+=2;else if(cp===8)dx-=2;else if(cp===5)dy+=2;else if(cp===12)dy-=2;else struct.push(cp);}
-   s[kc][el]={dx,dy,struct,glyph:sp.glyph,tok:sp.tok,fb:!!sp.fb,odx:dx,ody:dy,drop:false,odrop:false};}}
+   s[kc][el]={dx,dy,struct,glyph:sp.glyph,tok:sp.tok,fb:!!sp.fb,sup:!!sp.sup,
+              odx:dx,ody:dy,drop:false,odrop:false};}}
  return s;}
 function loadLang(code){LANG=code;
  if(!STATE[code]){const off=DATA.langs[code].offsets,ah=DATA.langs[code].altgrhalf;
@@ -179,7 +187,65 @@ function draw(cps,x,y,plot){let xc=x,yc=y,small=false;
    if(g.bits[xx*cb+(yy>>3)]&(1<<(yy&7)))plot(xc+g.xo+xx-BX,gy+g.yo+yy);
   xc+=g.xadv;}}
 function cpsOf(e){return e&&!e.drop?e.struct.concat(gen(e.dx,e.dy)).concat(e.glyph):null;}
-function renderKey(kc){const cat=catOf(kc),o=OFF[cat],K=st[kc];const base=cpsOf(K.base);if(!base)return{empty:true};
+// The three states a keycap can be in. "resting" is the legend plus its two hints;
+// the other two are what the panel ACTUALLY draws while that modifier is held. They
+// are separate branches of the firmware's render_key(), not a re-tint of the resting
+// one -- so they are RENDERED here rather than annotated, which is the only way to
+// see e.g. that the Shift-held glyph sits at the VAR_SMALL offsets and not the
+// VAR_SHIFT ones the preview uses.
+let VIEW="normal";
+const VIEWHINT={
+ normal:"legend + Shift preview (blue) + AltGr hint (red) — what the resting keycap shows.",
+ shift:"Shift held: the Shift cell becomes the legend (blue) — or the base (green) where the layout has none — at the VAR_SMALL offsets. No preview; the AltGr hint stays.",
+ altgr:"AltGr held: the AltGr cell IS the legend, full size at the NUM/SYM VAR_SMALL H and min(VAR_SMALL,VAR_ALTGR) V — never the letter offsets, and never clamped. A key with no AltGr cell shows its resting legend."};
+function setView(v){VIEW=v;
+ for(const k of["normal","shift","altgr"])document.getElementById("vw_"+k).classList.toggle("on",k===v);
+ document.getElementById("viewhint").textContent=VIEWHINT[v];
+ buildGrid();buildKeyCtrl();}
+function finishKey(map,sets,origins,ahalf){
+ const oob={base:0,shift:0,altgr:0};
+ for(const nm in sets)for(const k of sets[nm]){const[vx,vy]=k.split(",").map(Number);if(vx<0||vx>=OW||vy<0||vy>=OH)oob[nm]++;}
+ const ov=new Set();for(const k of sets.base)if(sets.shift.has(k)||sets.altgr.has(k))ov.add(k);for(const k of sets.shift)if(sets.altgr.has(k))ov.add(k);
+ return{map,oob,overlap:ov.size,origins,ahalf};}
+function newSets(){return{base:new Set(),shift:new Set(),altgr:new Set()};}
+// ⚠️ `view` DEFAULTS to "normal" rather than reading VIEW, so the cross-layout scan
+// (scanLayout) keeps measuring the resting view by construction. The offsets are
+// tuned against that view; a held-view clip count would silently redefine what the
+// layout bar's warning badges mean.
+function renderKey(kc,view){view=view||"normal";
+ const cat=catOf(kc),o=OFF[cat],K=st[kc];
+ // ── AltGr HELD ────────────────────────────────────────────────────────────
+ // poly_keymap.c render_key(), the `mods & MOD_RALT` branch: the AltGr cell IS the
+ // legend. Three things differ from the hint drawn in the resting view, and all
+ // three are deliberate over there:
+ //   * the offsets are the NUM-or-SYM ones even on a LETTER key (`is_num ? NUM : SYM`);
+ //   * V is min(VAR_SMALL, VAR_ALTGR) and H is VAR_SMALL -- HIDE is -128, so a HIDE
+ //     on either V propagates through the min and falls THROUGH to the resting legend;
+ //   * it is drawn with no clamp, no half-size and no hints beside it.
+ if(view==="altgr"&&K.altgr&&!K.altgr.drop){
+  const ao=OFF[cat==="num"?"num":"sym"],vh=Math.min(ao.small.V,ao.altgr.V);
+  if(vh!==HIDE&&ao.small.H!==HIDE){
+   let acps=cpsOf(K.altgr);
+   // A bare nukta is invisible on its own, so the held view composes it onto the
+   // base consonant the way the firmware does. Same two codepoints it tests.
+   const vis=acps.filter(c=>c>=0x20);
+   if(vis.length===1&&(vis[0]===0x093C||vis[0]===0x09BC)){
+    const b=cpsOf(K.base);if(b)acps=b.concat(vis);}
+   const ax=28+ao.small.H,ay=BL+vh,map={},sets=newSets();
+   const mk=(vx,vy)=>{const k=vx+","+vy;map[k]=(map[k]||0)|1;sets.altgr.add(k);};
+   draw(acps,ax,ay,mk);
+   return finishKey(map,sets,{base:null,shift:null,altgr:[ax-BX,ay]},false);}}
+ // ── resting / Shift HELD ──────────────────────────────────────────────────
+ // Shift held is the SAME path with translate_keycode(shift=true): the Shift cell
+ // becomes the legend (falling back to the base where the layout has none), the
+ // preview is gone -- `if(!shift && !caps_lock)` -- and the AltGr hint stays. This
+ // is why a SUPPRESSED preview still has to be carried rather than dropped: the
+ // cell it suppresses is exactly what this view draws.
+ const held=(view==="shift");
+ const sEl=(K.shift&&!K.shift.drop)?K.shift:null;
+ const mainIsShift=held&&!!sEl;
+ const mainNm=mainIsShift?"shift":"base",mainCh=mainIsShift?4:2;
+ const base=cpsOf(mainIsShift?sEl:K.base);if(!base)return{empty:true};
  let bx=28+o.small.H,by=BL+o.small.V;
  let scps=null,px2=0,py=BL,pmin=0,pmax=0,pymn=0,pymx=0;
  const[bxmn,bmax,bymn,bymx]=bbox(base);
@@ -187,7 +253,7 @@ function renderKey(kc){const cat=catOf(kc),o=OFF[cat],K=st[kc];const base=cpsOf(
  // (legend_plan_main's small path). It was not, for years: 305 of 420 clipped
  // elements were small base legends sliding off the north or west edge.
  [bx,by]=clampLegend(bx,by,bxmn,bmax,bymn,bymx);
- if(K.shift&&!K.shift.drop&&o.shift.H!==HIDE&&o.shift.V!==HIDE){scps=cpsOf(K.shift);
+ if(!held&&sEl&&!sEl.sup&&o.shift.H!==HIDE&&o.shift.V!==HIDE){scps=cpsOf(sEl);
   [pmin,pmax,pymn,pymx]=bbox(scps);px2=28+o.shift.H;
   if(px2+pmin<bx+bmax+2)px2=bx+bmax+2-pmin;
   py=BL+o.shift.V;[px2,py]=clampLegend(px2,py,pmin,pmax,pymn,pymx);
@@ -211,18 +277,20 @@ function renderKey(kc){const cat=catOf(kc),o=OFF[cat],K=st[kc];const base=cpsOf(
     let want=axx+amin-2-pmax;const floorX=bx+bmax+2-pmin;
     if(want<floorX)want=floorX;if(want<px2)px2=want;
     [px2,py]=clampLegend(px2,py,pmin,pmax,pymn,pymx);}}}
- const map={},sets={base:new Set(),shift:new Set(),altgr:new Set()};
+ const map={},sets=newSets();
  const mk=(ch,nm)=>(vx,vy)=>{const k=vx+","+vy;map[k]=(map[k]||0)|ch;sets[nm].add(k);};
- draw(base,bx,by,mk(2,"base"));if(scps)draw(scps,px2,py,mk(4,"shift"));if(acps)draw(acps,axx,ay,mk(1,"altgr"));
- const oob={base:0,shift:0,altgr:0};
- for(const nm in sets)for(const k of sets[nm]){const[vx,vy]=k.split(",").map(Number);if(vx<0||vx>=OW||vy<0||vy>=OH)oob[nm]++;}
- const ov=new Set();for(const k of sets.base)if(sets.shift.has(k)||sets.altgr.has(k))ov.add(k);for(const k of sets.shift)if(sets.altgr.has(k))ov.add(k);
- const origins={base:[bx-BX,by],shift:scps?[px2-BX,py]:null,altgr:acps?[axx-BX,ay]:null};
- return{map,oob,overlap:ov.size,origins,ahalf};}
+ // In the Shift-held view the legend is coloured by PROVENANCE -- blue when it came
+ // from the Shift cell, green when the layout has none and it fell back to the base.
+ // That answers "does this key have a real uppercase?" at a glance, which is the
+ // question the suppression bug was about.
+ draw(base,bx,by,mk(mainCh,mainNm));if(scps)draw(scps,px2,py,mk(4,"shift"));if(acps)draw(acps,axx,ay,mk(1,"altgr"));
+ const origins={base:null,shift:null,altgr:acps?[axx-BX,ay]:null};
+ origins[mainNm]=[bx-BX,by];if(scps)origins.shift=[px2-BX,py];
+ return finishKey(map,sets,origins,ahalf);}
 function keyWarn(r){if(r.empty)return"";const o=r.oob,w=[];for(const nm of["base","shift","altgr"])if(o[nm])w.push(nm[0].toUpperCase()+":"+o[nm]);if(r.overlap)w.push("ov:"+r.overlap);return w.join(" ");}
 const COL={1:[255,80,80],2:[80,255,80],4:[100,170,255],3:[255,255,80],5:[255,170,80],6:[120,255,255],7:[255,255,255]};
 const GC={base:[80,255,80],shift:[100,170,255],altgr:[255,80,80]};
-function paintR(cv,kc){const r=renderKey(kc),ctx=cv.getContext("2d");ctx.fillStyle="#000";ctx.fillRect(0,0,cv.width,cv.height);
+function paintR(cv,kc){const r=renderKey(kc,VIEW),ctx=cv.getContext("2d");ctx.fillStyle="#000";ctx.fillRect(0,0,cv.width,cv.height);
  ctx.strokeStyle="#333";ctx.strokeRect(MARG*SCALE-0.5,MARG*SCALE-0.5,OW*SCALE,OH*SCALE);if(r.empty)return r;
  for(const nm of["base","shift","altgr"]){const o=r.origins[nm];if(!o)continue;const[ox,oy]=o;const g=GC[nm];
   ctx.fillStyle=`rgba(${g[0]},${g[1]},${g[2]},0.32)`;
@@ -252,11 +320,20 @@ function buildGrid(){const g=document.getElementById("grid");g.innerHTML="";let 
    const r=paintR(cv,kc),w=keyWarn(r);
    if(w){d.classList.add("warn");const wl=document.createElement("div");wl.className="wl";wl.textContent=w;d.appendChild(wl);warnN++;
     wkeys.push(kc.replace("KC_","")+" "+w);woob+=r.oob.base+r.oob.shift+r.oob.altgr;wov+=r.overlap;}
+   if(VIEW==="shift"&&st[kc].shift&&st[kc].shift.sup){const sp=document.createElement("div");
+    sp.className="fb";sp.style.color="#6af";sp.style.right="2px";sp.style.left="auto";
+    sp.title="preview suppressed as a case pair — this is the uppercase the keycap draws";
+    sp.textContent="sup";d.appendChild(sp);}
    const sq=document.createElement("div");sq.className="seq";sq.innerHTML=seqLine(kc);d.appendChild(sq);
    if(kc===selected)cv.addEventListener("mousedown",e=>startDrag(e,kc,cv));   // drag the active glyph (2px snap)
    d.onclick=()=>{if(selected!==kc){selected=kc;activeEl=(st[kc].base?"base":(st[kc].shift?"shift":(st[kc].altgr?"altgr":null)));}buildGrid();buildKeyCtrl();};rd.appendChild(d);}g.appendChild(rd);}
- document.getElementById("warnsum").textContent=warnN?(warnN+" key(s) flag out-of-bounds / overlap"):"no out-of-bounds or overlap ✓";
- WARN[LANG]={oob:woob,ov:wov,keys:wkeys};
+ document.getElementById("warnsum").textContent=
+  (VIEW==="normal"?"":"["+VIEW+" held] ")+
+  (warnN?(warnN+" key(s) flag out-of-bounds / overlap"):"no out-of-bounds or overlap ✓");
+ // ⚠️ Only the resting view feeds WARN[] / the layout bar's badges. A held view is a
+ // different code path with different offsets, so folding its clip count in here
+ // would quietly change what "this layout has N clipped keys" means.
+ if(VIEW==="normal")WARN[LANG]={oob:woob,ov:wov,keys:wkeys};
  refreshLangBar();}
 function dpad(kc,el){const b=(dx,dy,t)=>`<button onclick="event.stopPropagation();nudge('${kc}','${el}',${dx},${dy})">${t}</button>`;
  return`<div class="dpad"><span class="sp"></span>${b(0,-2,"↑")}<span class="sp"></span>${b(-2,0,"←")}<button onclick="event.stopPropagation();reset1('${kc}','${el}')">·</button>${b(2,0,"→")}<span class="sp"></span>${b(0,2,"↓")}<span class="sp"></span></div>`;}
@@ -265,6 +342,9 @@ function buildKeyCtrl(){const p=document.getElementById("keyctrl");if(!selected)
  // the whole .el block is clickable to activate that element (show its tint) without
  // editing; the inner buttons/checkbox stopPropagation so they don't double-fire.
  for(const el of["base","shift","altgr"]){const E=K[el];h+=`<div class="el ${el}${el===activeEl?' active':''}" style="cursor:pointer" onclick="setActive('${el}')"><span class="nm">${el}</span>`;
+  // A suppressed Shift cell is still LIVE -- it is the uppercase, it is just not
+  // previewed. Say so, or the tuner reads as "this cell does nothing".
+  if(el==="shift"&&E&&E.sup)h+=`<span class="nm" style="color:#6af" title="the firmware hides this preview as a case pair; the cell is still what Shift draws">no preview</span>`;
   if(!E){h+=` <span class='hint'>none</span></div>`;continue;}
   h+=`<span class="tok">${escHtml(E.tok)}${E.fb?' <span class=fbm>(en-US)</span>':''}</span>${dpad(selected,el)}<span class="off">dx=${E.dx} dy=${E.dy}</span>
    <label class="drop"><input type="checkbox" ${E.drop?"checked":""} onclick="event.stopPropagation()" onchange="setdrop('${selected}','${el}',this.checked)">drop</label></div>`;}
@@ -447,5 +527,6 @@ function refreshLangBar(){for(const code of DATA.order){const b=document.getElem
  b.title=w?(w.keys.length?w.keys.join("\n"):"clean"):"not scanned yet";}}
 buildLangBar();
 loadLang(DATA.order[0]);document.getElementById("langname").textContent=LANG;
+document.getElementById("viewhint").textContent=VIEWHINT[VIEW];
 buildOffPanel();buildGrid();refreshClip();scanAll();
 </script></body></html>

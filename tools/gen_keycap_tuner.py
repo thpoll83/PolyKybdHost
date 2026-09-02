@@ -69,7 +69,7 @@ def split_cps(cps, tok_for):
     esc, i = [], 0
     while i < len(cps) and cps[i] in CTRL:
         esc.append(cps[i]); i += 1
-    return {"esc": esc, "glyph": cps[i:], "tok": tok_for(cps[i:]), "fb": False}
+    return {"esc": esc, "glyph": cps[i:], "tok": tok_for(cps[i:]), "fb": False, "sup": False}
 
 
 def extract_lang(L: "op.Lang", li: int, tok_for) -> tuple:
@@ -91,15 +91,22 @@ def extract_lang(L: "op.Lang", li: int, tok_for) -> tuple:
             scps = L.var(li, row, op.VAR_SHIFT)                 # shift: fallback only if no own shift+base
             if scps is None and L.cell(li, row, op.VAR_SMALL) is None:
                 scps = L.var(0, row, op.VAR_SHIFT)
-            # The firmware drops a preview that only repeats the base legend's own
+            e["shift"] = split_cps(scps, tok_for)
+            # The firmware drops a PREVIEW that only repeats the base legend's own
             # letter in the other case (shift_preview_redundant, built from the same
             # rule) — so the tuner must not show one either, or the offsets get tuned
             # against a glyph the keycap never draws. Takes the RAW cells, like the
             # build-time emitter.
+            #
+            # ⚠️ Flagged, NOT dropped. The cell has two jobs: the preview in the
+            # resting view AND the legend the keycap draws while Shift is actually
+            # held. Emptying it here is the same mistake that emptying it in the
+            # spreadsheet was — the preview would go away and so would the uppercase.
+            # The template hides it from the resting view and draws it in the
+            # Shift-held one.
             rule = op.shift_preview_rule(L)
-            if rule and scps is not None and rule(*op.shift_preview_cells(L, li, row)):
-                scps = None
-            e["shift"] = split_cps(scps, tok_for)
+            if e["shift"] and rule and rule(*op.shift_preview_cells(L, li, row)):
+                e["shift"]["sup"] = True
             e["altgr"] = split_cps(L.var(li, row, op.VAR_ALTGR), tok_for)   # altgr: no fallback
             keys[kc] = e
             for el in e.values():
