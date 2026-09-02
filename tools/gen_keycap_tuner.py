@@ -101,9 +101,17 @@ def glyph_pool(R: "op.Renderer", used: set) -> dict:
         if not f or not (f.first <= cp <= f.last):
             continue
         g = f.glyphs[cp - f.first]; w, h = g['width'], g['height']
-        nb = math.ceil(w * h / 8) if w > 0 and h > 0 else 0
-        glyphs[str(cp)] = {"w": w, "h": h, "xadv": g['xAdvance'], "xo": g['xOffset'], "yo": g['yOffset'],
-                           "yadv": f.yAdvance, "bits": list(f.bitmap[g['bitmapOffset']:g['bitmapOffset'] + nb])}
+        # ⚠️ COLUMN-NATIVE (OLED page format): one byte = 8 VERTICAL pixels, so a
+        # glyph is `w * cb` WHOLE bytes -- not the row-major ceil(w*h/8) this used to
+        # slice. Both are plausible byte counts for the same glyph, which is why the
+        # mistake rendered noise instead of failing: the page came up, every keycap
+        # was scrambled, and nothing said why. Keep this paired with the reader in
+        # keycap_tuner_template.html `draw`.
+        cb = (h + 7) >> 3 if h > 0 else 0
+        nb = w * cb if w > 0 and h > 0 else 0
+        glyphs[str(cp)] = {"w": w, "h": h, "cb": cb, "xadv": g['xAdvance'], "xo": g['xOffset'],
+                           "yo": g['yOffset'], "yadv": f.yAdvance,
+                           "bits": list(f.bitmap[g['bitmapOffset']:g['bitmapOffset'] + nb])}
     return glyphs
 
 
@@ -122,14 +130,19 @@ def build_data(qmk: str, codes=None) -> dict:
 
     langs, used = {}, set()
     for c in order:
-        keys, offsets, u = extract_lang(L, L.langs.index(c), tok_for)
-        langs[c] = {"keys": keys, "offsets": offsets}
+        li = L.langs.index(c)
+        keys, offsets, u = extract_lang(L, li, tok_for)
+        # {letter.altgrhalf} -- the per-layout opt-in to the half-size AltGr hint.
+        # A plain settings cell, so the tuner can round-trip it like an offset.
+        langs[c] = {"keys": keys, "offsets": offsets,
+                    "altgrhalf": 1 if op.get_setting(L, op.ALTGR_HALF_ROW, li, op.VAR_ALTGR) else 0}
         used |= u
 
     return {"order": order, "langs": langs, "glyphs": glyph_pool(R, used), "rows": op.SHEET,
             "base_yadv": R.fonts[0].yAdvance, "HIDE": op.HIDE,
             "consts": {"BASELINE": op.BASELINE, "BUFFER_X": op.BUFFER_X, "OLED_W": op.OLED_W,
-                       "OLED_H": op.OLED_H, "SCREEN_WIDTH": op.SCREEN_WIDTH}}
+                       "OLED_H": op.OLED_H, "SCREEN_WIDTH": op.SCREEN_WIDTH,
+                       "ALTGR_HALF_MIN_INK_H": op.ALTGR_HALF_MIN_INK_H}}
 
 
 def main():

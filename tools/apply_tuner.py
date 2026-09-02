@@ -19,6 +19,7 @@ Export format (exactly what the tuner's Export box emits):
     KC_Q base: U"\\f\\f" ARABIC_DAD       # set key_lut cell (var base/shift/altgr)
     KC_D altgr: <drop / empty>            # clear that cell
     [offset] letter shift H = 44          # set a category-offset cell
+    [altgrhalf] = 1                       # {letter.altgrhalf}: half-size AltGr hint
 
 After applying, regenerate + rebuild:
     cd <qmk>/keyboards/polykybd/lang && cog -r lang_lut.c
@@ -38,6 +39,7 @@ ROW.update({"KC_MINUS": 43, "KC_EQUAL": 44, "KC_LBRC": 45, "KC_RBRC": 46,
             "KC_QUOTE": 50, "KC_GRAVE": 51, "KC_COMMA": 52, "KC_DOT": 53,
             "KC_SLASH": 54, "KC_NONUS_BACKSLASH": 55})
 SET = {"letter": (57, 56), "num": (59, 58), "sym": (61, 60)}   # (voffset_row, hoffset_row)
+ALTGR_HALF_ROW = 62            # {letter.altgrhalf}, read from the VAR_ALTGR sub-column
 VAR = {"base": 0, "small": 0, "shift": 1, "caps": 2, "altgr": 3}
 HIDE = -128
 
@@ -79,6 +81,15 @@ def parse_export(text):
         m = re.match(r'^===\s*(\S+)\s*===$', line)
         if m:
             lang = m.group(1); edits.setdefault(lang, []); continue
+        mh = re.match(r'^\[altgrhalf\]\s*=\s*([01])$', line)
+        if mh:
+            if lang is None: sys.exit("altgrhalf line before any === code === header")
+            # 1 -> the flag; 0 -> CLEAR the cell rather than write a literal 0, so an
+            # opted-out layout looks the same as one that never opted in (cog emits 0
+            # for an empty cell either way, and a blank column reads as "not set").
+            v = int(mh.group(1))
+            edits[lang].append((ALTGR_HALF_ROW, VAR["altgr"], 1 if v else None))
+            continue
         mo = re.match(r'^\[offset\]\s+(letter|num|sym)\s+(small|shift|altgr)\s+([HV])\s*=\s*(-?\d+)$', line)
         if mo:
             if lang is None: sys.exit("offset line before any === code === header")

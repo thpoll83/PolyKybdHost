@@ -65,6 +65,14 @@ button); both share the same render mirror and page code.
   AltGr-held view (`VAR_SMALL`); the unshifted **base** is never hidden (it always
   draws), so hiding **small** only affects the AltGr-held view — in the tuner's
   unshifted preview it just pushes the base off-keycap (flagged out-of-bounds).
+- Top-right of that panel: **½ AltGr on letters** — the `{letter.altgrhalf}` opt-in.
+  Tick it and every LETTER key of this layout redraws its AltGr hint at half size, so
+  "should this layout halve?" is a question you answer by looking. It is per **layout**
+  and letters only; the digit and symbol rows never halve. A glyph whose ink is
+  `ALTGR_HALF_MIN_INK_H` (7) px tall or less stays full size — halving a 2×3 px Hebrew
+  nikud makes it a dot — so on the Indic layouts most letter hints do not change even
+  with the box ticked, because they are bare combining marks. The label turns amber
+  when you have changed it, and it exports as `[altgrhalf] = 0|1`.
 - **Export changes** → paste the box back to whoever applies it.
 
 ## Export format → how to apply
@@ -74,6 +82,7 @@ button); both share the same render mirror and page code.
 KC_Q base: U"\f\f" ARABIC_DAD          # a cell value -> lang_lut.xlsx (var base/shift/altgr)
 KC_D altgr: <drop / empty>             # clear that cell
 [offset] letter shift H = 44           # a settings value -> the SET[cat] offset rows
+[altgrhalf] = 1                        # {letter.altgrhalf} (row 62); 0 CLEARS the cell
 ```
 
 **Apply it automatically** — `apply_tuner.py` parses exactly this format and writes the
@@ -122,8 +131,20 @@ sync with three things, which all already mirror `keymap.c render_key` +
 - **the control codes** in `Renderer.draw` / `bounds`.
 
 If you change any of those, mirror the change in `keycap_tuner_template.html`
-(functions `bounds`, `draw`, `renderKey`) and **re-verify** with a headless diff —
-the JS must agree with the firmware-faithful `oled_preview.warn_key` for every key:
+(functions `bbox`, `bounds`, `draw`, `renderKey`) and **re-verify** with a headless
+diff — the JS must agree with the firmware-faithful `oled_preview.warn_key` for every
+key.
+
+⚠️ **The glyph bitmaps are COLUMN-NATIVE** (OLED page format: one byte = 8 *vertical*
+pixels, `cb = (h+7)>>3` bytes per column, LSB = top). `glyph_pool()` slices `w * cb`
+whole bytes and the JS `draw` indexes `bits[xx*cb + (yy>>3)]`; the two are a pair.
+This was row-major MSB-first over a `ceil(w*h/8)` slice until 2026-09-02 — both are
+plausible byte counts for the same glyph, so it did not fail, it drew **noise on every
+keycap** while the page came up looking fine. The parity diff below is what catches
+that class; run it, don't eyeball the render.
+
+⚠️ **Compare more than one layout.** The diff is cheap over all 160 (`--all`, then loop
+`loadLang`), and a single-layout run can agree by luck:
 
 ```bash
 # render the JS render logic in node and diff its per-key out-of-bounds/overlap
@@ -139,6 +160,13 @@ PY
 )
 python oled_preview.py --lang ps-AF --check-bounds
 ```
+
+All 160 at once — generate with `--all`, then loop `loadLang` over `DATA.order` and
+collect `keyWarn(renderKey(k))` for every key, against the same sweep through
+`oled_preview.render_key(..., report=…)`. This is the check that proved the
+column-native fix: **421 flagged keys, byte-identical in both**. A single-layout run
+can agree by luck; the full sweep cannot.
+
 
 ## Notes / limits
 
