@@ -119,21 +119,28 @@ button); both share the same render mirror and page code.
     glyph is drawn at the **`VAR_SMALL`** offsets, not the `VAR_SHIFT` ones the
     preview uses.
   - **AltGr held** — the AltGr cell **is** the legend, full size. Three things
-    differ from the hint drawn in the resting view, and all three are deliberate in
-    the firmware: the offsets are the **num-or-sym** ones *even on a letter key*; V
-    is `min(VAR_SMALL, VAR_ALTGR)` while H is `VAR_SMALL`; and only the *cell* is
-    the AltGr one. A key with no AltGr cell, or a `HIDE` on either V, falls through
-    to the resting legend — so this view always shows what the key would actually
-    type. A bare nukta (U+093C / U+09BC) is composed onto the base consonant, as the
-    firmware does.
-    ⚠️ It **is** clamped onto the panel, as of qmk_firmware#268 — it was the one
-    element that was not, and the mismatch between "offsets tuned for the num/sym
-    glyphs" and "the AltGr cell's glyph is what gets drawn" cost **191 keys / 1528 px**
-    of ink across 69 layouts, invisible in the resting view because that view puts the
-    same glyph somewhere else. Nudging the AltGr H/V sliders therefore shapes the
-    **hint** only; if the held glyph is mispositioned the lever is `sym.small` (or
-    `num.small` on a digit key), which also moves every resting base legend of that
-    category — there is no way to move the held AltGr glyph alone.
+    is drawn at **exactly the offsets the resting view puts the hint at** — this
+    key's own category, `VAR_ALTGR` — so holding AltGr enlarges the glyph *in place*
+    rather than moving it. It differs from the hint only in being full size (never
+    the ½-AltGr), alone on the keycap, and clamped as a legend rather than laid out
+    around the base. A key with no AltGr cell, or a `HIDE` on either axis, falls
+    through to the resting legend — so this view always shows what the key would
+    actually type. A bare nukta (U+093C / U+09BC) is composed onto the base
+    consonant, as the firmware does.
+    **So the AltGr H/V sliders move the hint and the held glyph together**, which is
+    the point: tune the hint and you have tuned both.
+    ⚠️ Both of those properties are new in qmk_firmware#268 and they had to land in
+    that order. Before it, this branch was drawn at a **raw origin** (no clamp) using
+    the **num/sym `VAR_SMALL`** offsets with `V = min(VAR_SMALL, VAR_ALTGR)` — a
+    defensive mixture that kept the glyph near the base legend where it could not
+    fall off, at the cost of positioning it with offsets belonging to a different
+    category and a different variation than the glyph being drawn. That cost
+    **191 keys / 1528 px** of ink across 69 layouts, invisible in the resting view
+    because that view puts the same glyph somewhere else entirely. With the clamp in
+    place the honest offsets became safe to use: measured over the 1719 AltGr cells,
+    **1148 (67%)** now land exactly on the hint's position and the rest are pulled
+    back a median **5 px**, worst the `ar-*` `KC_F` letters at 34–38 px where a wide
+    script glyph cannot fit at `x=+55`.
 - ⚠️ A key whose Shift preview the firmware **suppresses** as a case pair carries a
   blue **`sup`** badge in the Shift-held view, and a `no preview` label in its
   editor block. The cell is still live — it is the uppercase — it is just not

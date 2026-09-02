@@ -197,7 +197,7 @@ let VIEW="normal";
 const VIEWHINT={
  normal:"legend + Shift preview (blue) + AltGr hint (red) — what the resting keycap shows.",
  shift:"Shift held: the Shift cell becomes the legend (blue) — or the base (green) where the layout has none — at the VAR_SMALL offsets. No preview; the AltGr hint stays.",
- altgr:"AltGr held: the AltGr cell IS the legend, full size at the NUM/SYM VAR_SMALL H and min(VAR_SMALL,VAR_ALTGR) V — never the letter offsets — then clamped onto the panel. A key with no AltGr cell shows its resting legend."};
+ altgr:"AltGr held: the AltGr cell IS the legend — full size, at the same offsets the resting view puts the hint at, then clamped onto the panel. So the glyph grows in place instead of moving. A key with no AltGr cell shows its resting legend."};
 function setView(v){VIEW=v;
  for(const k of["normal","shift","altgr"])document.getElementById("vw_"+k).classList.toggle("on",k===v);
  document.getElementById("viewhint").textContent=VIEWHINT[v];
@@ -216,15 +216,14 @@ function renderKey(kc,view){view=view||"normal";
  const cat=catOf(kc),o=OFF[cat],K=st[kc];
  // ── AltGr HELD ────────────────────────────────────────────────────────────
  // poly_keymap.c render_key(), the `mods & MOD_RALT` branch: the AltGr cell IS the
- // legend. Three things differ from the hint drawn in the resting view, and all
- // three are deliberate over there:
- //   * the offsets are the NUM-or-SYM ones even on a LETTER key (`is_num ? NUM : SYM`);
- //   * V is min(VAR_SMALL, VAR_ALTGR) and H is VAR_SMALL -- HIDE is -128, so a HIDE
- //     on either V propagates through the min and falls THROUGH to the resting legend;
- //   * it is drawn with no clamp, no half-size and no hints beside it.
+ // legend, drawn at the SAME place the resting view draws the hint -- this key's own
+ // category, its VAR_ALTGR offsets -- so holding AltGr enlarges the glyph in place
+ // rather than teleporting it. It differs from the hint only in being FULL size
+ // (never the ALTGR_HALF), alone on the keycap, and clamped as a legend rather than
+ // laid out around the base. HIDE on either axis falls through to the resting legend.
  if(view==="altgr"&&K.altgr&&!K.altgr.drop){
-  const ao=OFF[cat==="num"?"num":"sym"],vh=Math.min(ao.small.V,ao.altgr.V);
-  if(vh!==HIDE&&ao.small.H!==HIDE){
+  const ao=OFF[cat],vh=ao.altgr.V;
+  if(vh!==HIDE&&ao.altgr.H!==HIDE){
    let acps=cpsOf(K.altgr);
    // A bare nukta is invisible on its own, so the held view composes it onto the
    // base consonant the way the firmware does. Same two codepoints it tests.
@@ -236,7 +235,7 @@ function renderKey(kc,view){view=view||"normal";
    // NUM/SYM ones tuned against those categories' glyphs, not the AltGr cell's, so
    // ink went off an edge with nothing to report it: 191 keys / 1528 px over 69
    // layouts, down to one physically-oversize he-IL glyph.
-   let ax=28+ao.small.H,ay=BL+vh;
+   let ax=28+ao.altgr.H,ay=BL+vh;
    const [axmn,axmx,aymn,aymx]=bbox(acps);
    [ax,ay]=clampLegend(ax,ay,axmn,axmx,aymn,aymx);
    const map={},sets=newSets();
