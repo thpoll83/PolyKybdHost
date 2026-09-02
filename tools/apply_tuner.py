@@ -19,6 +19,7 @@ Export format (exactly what the tuner's Export box emits):
     KC_Q base: U"\\f\\f" ARABIC_DAD       # set key_lut cell (var base/shift/altgr)
     KC_D altgr: <drop / empty>            # clear that cell
     [offset] letter shift H = 44          # set a category-offset cell
+    [offset] sym held V = -4              # {sym.heldvoffset}: nudge the AltGr-HELD glyph
     [altgrhalf] letter = 1                # {letter.altgrhalf}: half-size AltGr hint
 
 After applying, regenerate + rebuild:
@@ -39,6 +40,11 @@ ROW.update({"KC_MINUS": 43, "KC_EQUAL": 44, "KC_LBRC": 45, "KC_RBRC": 46,
             "KC_QUOTE": 50, "KC_GRAVE": 51, "KC_COMMA": 52, "KC_DOT": 53,
             "KC_SLASH": 54, "KC_NONUS_BACKSLASH": 55})
 SET = {"letter": (57, 56), "num": (59, 58), "sym": (61, 60)}   # (voffset_row, hoffset_row)
+# {letter|num|sym.heldhoffset|heldvoffset} -- the DELTA from the AltGr hint's
+# position used when AltGr is HELD. Its own rows rather than a fourth sub-column,
+# because the four are lower/upper/caps/ALT Gr and none of them means "held";
+# the value is read from the VAR_ALTGR sub-column of these rows.
+HELD = {"letter": (66, 65), "num": (68, 67), "sym": (70, 69)}  # (voffset_row, hoffset_row)
 # {letter|num|sym.altgrhalf}, read from the VAR_ALTGR sub-column. Same category split
 # as SET above, so a layout can halve its letters and leave its digits alone.
 ALTGR_HALF = {"letter": 62, "num": 63, "sym": 64}
@@ -92,13 +98,16 @@ def parse_export(text):
             cat, v = mh.group(1), int(mh.group(2))
             edits[lang].append((ALTGR_HALF[cat], VAR["altgr"], 1 if v else None))
             continue
-        mo = re.match(r'^\[offset\]\s+(letter|num|sym)\s+(small|shift|altgr)\s+([HV])\s*=\s*(-?\d+)$', line)
+        mo = re.match(r'^\[offset\]\s+(letter|num|sym)\s+(small|shift|altgr|held)\s+([HV])\s*=\s*(-?\d+)$', line)
         if mo:
             if lang is None: sys.exit("offset line before any === code === header")
             cat, var, ax, val = mo.group(1), mo.group(2), mo.group(3), int(mo.group(4))
-            vrow, hrow = SET[cat]
+            # `held` is the odd one out: its own PAIR OF ROWS, always the VAR_ALTGR
+            # sub-column -- the other three select a sub-column of one shared row.
+            vrow, hrow = (HELD if var == "held" else SET)[cat]
             row = hrow if ax == "H" else vrow
-            edits[lang].append((row, VAR[var], "HIDE" if val == HIDE else val))
+            col = VAR["altgr"] if var == "held" else VAR[var]
+            edits[lang].append((row, col, "HIDE" if val == HIDE else val))
             continue
         mk = re.match(r'^(KC_\w+)\s+(base|shift|altgr):\s*(.*)$', line)
         if mk:

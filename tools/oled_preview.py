@@ -281,6 +281,42 @@ SET = {"letter": (57, 56), "num": (59, 58), "sym": (61, 60)}   # (voffset_row, h
 # symbol rows keep full-size hints. Ordinary settings rows, so `Lang` needs no
 # special case; only these row numbers and the gate in render_key() know about them.
 ALTGR_HALF = {"letter": 62, "num": 63, "sym": 64}
+# {letter|num|sym.heldhoffset|heldvoffset} -- the DELTA applied to the AltGr hint's
+# position when AltGr is actually HELD. Default 0, so nothing moves until a layout is
+# tuned; the held view otherwise lands exactly on the hint (poly_keymap.c's MOD_RALT
+# branch). Read from VAR_ALTGR like the rows above.
+HELD = {"letter": (66, 65), "num": (68, 67), "sym": (70, 69)}   # (voffset_row, hoffset_row)
+
+# ⚠️ Every row number above is HARDCODED, and a settings row inserted ABOVE one of
+# them silently re-points it at the wrong row -- the firmware's own generator was bitten
+# by exactly this (it sized the Shift-suppression bitmap from a leftover cog cursor, so
+# adding six rows widened it 8 -> 9 bytes). Nothing here can detect that on its own, so
+# check the labels against the sheet whenever a Lang is built from the workbook.
+SETTING_ROW_LABELS = {
+    56: "{letter.hoffset}",     57: "{letter.voffset}",
+    58: "{num.hoffset}",        59: "{num.voffset}",
+    60: "{sym.hoffset}",        61: "{sym.voffset}",
+    62: "{letter.altgrhalf}",   63: "{num.altgrhalf}",   64: "{sym.altgrhalf}",
+    65: "{letter.heldhoffset}", 66: "{letter.heldvoffset}",
+    67: "{num.heldhoffset}",    68: "{num.heldvoffset}",
+    69: "{sym.heldhoffset}",    70: "{sym.heldvoffset}",
+}
+
+
+def verify_setting_rows(L: "Lang") -> None:
+    """Raise if a hardcoded settings row no longer holds the key it is meant to.
+
+    Cheap insurance against the one edit that breaks every offset silently: inserting
+    a settings row shifts the ones below it, and each of the tables above would then
+    read a neighbouring row's numbers with no error anywhere.
+    """
+    wrong = {r: L.grid.get((r, 1)) for r, want in SETTING_ROW_LABELS.items()
+             if L.grid.get((r, 1)) != want}
+    if wrong:
+        raise RuntimeError(
+            "settings rows moved -- these hardcoded row numbers no longer match the "
+            "sheet: " + ", ".join(f"row {r} holds {got!r}, expected "
+                                  f"{SETTING_ROW_LABELS[r]!r}" for r, got in wrong.items()))
 
 
 # ---- named glyphs + cell resolution ---------------------------------------

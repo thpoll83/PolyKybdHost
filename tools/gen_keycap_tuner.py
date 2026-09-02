@@ -117,7 +117,14 @@ def extract_lang(L: "op.Lang", li: int, tok_for) -> tuple:
         vrow, hrow = op.SET[cat]
         return {"H": op.get_setting(L, hrow, li, var), "V": op.get_setting(L, vrow, li, var)}
 
-    offsets = {c: {v: off(c, getattr(op, f"VAR_{v.upper()}")) for v in ["small", "shift", "altgr"]}
+    def held(cat):
+        """{<cat>.heldhoffset|heldvoffset} -- its own PAIR of rows, always VAR_ALTGR."""
+        vrow, hrow = op.HELD[cat]
+        return {"H": op.get_setting(L, hrow, li, op.VAR_ALTGR),
+                "V": op.get_setting(L, vrow, li, op.VAR_ALTGR)}
+
+    offsets = {c: dict({v: off(c, getattr(op, f"VAR_{v.upper()}"))
+                        for v in ["small", "shift", "altgr"]}, held=held(c))
                for c in ["letter", "num", "sym"]}
     return keys, offsets, used
 
@@ -149,6 +156,10 @@ def build_data(qmk: str, codes=None) -> dict:
     pk = os.path.join(qmk, 'keyboards', 'polykybd')
     named = op.load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = op.Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
+    # Fail loudly if a settings row moved -- every offset the tuner shows is read from a
+    # hardcoded row number, so an insert above one of them would silently mis-tune a
+    # whole category rather than error.
+    op.verify_setting_rows(L)
     R = op.Renderer(op.load_all_fonts(os.path.join(pk, 'base', 'fonts')))
     tok_for = make_tok_for(reverse_named(named))
 

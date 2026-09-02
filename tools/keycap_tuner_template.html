@@ -235,7 +235,13 @@ function renderKey(kc,view){view=view||"normal";
    // NUM/SYM ones tuned against those categories' glyphs, not the AltGr cell's, so
    // ink went off an edge with nothing to report it: 191 keys / 1528 px over 69
    // layouts, down to one physically-oversize he-IL glyph.
-   let ax=28+ao.altgr.H,ay=BL+vh;
+   // {<cat>.heldhoffset|heldvoffset}: a per-layout DELTA from the hint position,
+   // default 0. HIDE is the "hide this variation" sentinel and is meaningless for a
+   // delta -- taken literally it would fling the glyph 128px off the panel -- so it
+   // reads as 0 here, exactly as the firmware does.
+   const hd=ao.held||{H:0,V:0};
+   const hdH=hd.H===HIDE?0:hd.H, hdV=hd.V===HIDE?0:hd.V;
+   let ax=28+ao.altgr.H+hdH,ay=BL+vh+hdV;
    const [axmn,axmx,aymn,aymx]=bbox(acps);
    [ax,ay]=clampLegend(ax,ay,axmn,axmx,aymn,aymx);
    const map={},sets=newSets();
@@ -379,7 +385,7 @@ function buildOffPanel(){const S=STATE[LANG];
   + `</div><div class="offgroups">`;
  for(const c of['letter','num','sym']){const hl=hlCat===c?`box-shadow:0 0 0 2px ${CATCOL[c]} inset;`:'';
   h+=`<div class="offgroup" style="border-color:${CATCOL[c]};${hl}"><span class="gname" style="color:${CATCOL[c]}" onclick="toggleCat('${c}')">${c}: <span class="ex">${CATEX[c]}</span></span><div class="offrow">`;
-  for(const t of['small','shift','altgr'])h+=offCtl(c,t);h+='</div></div>';}
+  for(const t of['small','shift','altgr','held'])h+=offCtl(c,t);h+='</div></div>';}
  document.getElementById("offctrl").innerHTML=h+'</div>';}
 // HIDE_KEY (-128) is the firmware "do not show" sentinel; we treat any negative the
 // same. A step out of a hidden/negative state wakes both axes to 0; a step (or typed

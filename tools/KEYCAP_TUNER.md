@@ -128,7 +128,14 @@ button); both share the same render mirror and page code.
     actually type. A bare nukta (U+093C / U+09BC) is composed onto the base
     consonant, as the firmware does.
     **So the AltGr H/V sliders move the hint and the held glyph together**, which is
-    the point: tune the hint and you have tuned both.
+    the point: tune the hint and you have tuned both. When the two want different
+    places — the hint shares the keycap with the base legend and the Shift preview
+    while the held view has the panel to itself — the **`held`** column in the
+    offsets panel is a per-layout, per-category **delta from the hint's position**,
+    default 0. It exports as `[offset] <cat> held <H|V> = <n>` and writes
+    `{<cat>.heldhoffset|heldvoffset}`. ⚠️ Its **H** button is a no-op by design:
+    `HIDE` is meaningless for a delta and reads as 0 in both the firmware and here,
+    since hiding the held view is what the AltGr offsets already do.
     ⚠️ Both of those properties are new in qmk_firmware#268 and they had to land in
     that order. Before it, this branch was drawn at a **raw origin** (no clamp) using
     the **num/sym `VAR_SMALL`** offsets with `V = min(VAR_SMALL, VAR_ALTGR)` — a
