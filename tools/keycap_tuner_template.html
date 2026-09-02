@@ -197,7 +197,7 @@ let VIEW="normal";
 const VIEWHINT={
  normal:"legend + Shift preview (blue) + AltGr hint (red) — what the resting keycap shows.",
  shift:"Shift held: the Shift cell becomes the legend (blue) — or the base (green) where the layout has none — at the VAR_SMALL offsets. No preview; the AltGr hint stays.",
- altgr:"AltGr held: the AltGr cell IS the legend, full size at the NUM/SYM VAR_SMALL H and min(VAR_SMALL,VAR_ALTGR) V — never the letter offsets, and never clamped. A key with no AltGr cell shows its resting legend."};
+ altgr:"AltGr held: the AltGr cell IS the legend, full size at the NUM/SYM VAR_SMALL H and min(VAR_SMALL,VAR_ALTGR) V — never the letter offsets — then clamped onto the panel. A key with no AltGr cell shows its resting legend."};
 function setView(v){VIEW=v;
  for(const k of["normal","shift","altgr"])document.getElementById("vw_"+k).classList.toggle("on",k===v);
  document.getElementById("viewhint").textContent=VIEWHINT[v];
@@ -231,7 +231,15 @@ function renderKey(kc,view){view=view||"normal";
    const vis=acps.filter(c=>c>=0x20);
    if(vis.length===1&&(vis[0]===0x093C||vis[0]===0x09BC)){
     const b=cpsOf(K.base);if(b)acps=b.concat(vis);}
-   const ax=28+ao.small.H,ay=BL+vh,map={},sets=newSets();
+   // Clamped onto the panel like every other element. This branch used to draw at
+   // its raw origin -- the ONE element that did -- and the offsets it uses are the
+   // NUM/SYM ones tuned against those categories' glyphs, not the AltGr cell's, so
+   // ink went off an edge with nothing to report it: 191 keys / 1528 px over 69
+   // layouts, down to one physically-oversize he-IL glyph.
+   let ax=28+ao.small.H,ay=BL+vh;
+   const [axmn,axmx,aymn,aymx]=bbox(acps);
+   [ax,ay]=clampLegend(ax,ay,axmn,axmx,aymn,aymx);
+   const map={},sets=newSets();
    const mk=(vx,vy)=>{const k=vx+","+vy;map[k]=(map[k]||0)|1;sets.altgr.add(k);};
    draw(acps,ax,ay,mk);
    return finishKey(map,sets,{base:null,shift:null,altgr:[ax-BX,ay]},false);}}

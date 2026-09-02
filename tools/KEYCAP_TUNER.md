@@ -121,10 +121,19 @@ button); both share the same render mirror and page code.
   - **AltGr held** — the AltGr cell **is** the legend, full size. Three things
     differ from the hint drawn in the resting view, and all three are deliberate in
     the firmware: the offsets are the **num-or-sym** ones *even on a letter key*; V
-    is `min(VAR_SMALL, VAR_ALTGR)` while H is `VAR_SMALL`; and it is **not clamped**.
-    A key with no AltGr cell, or a `HIDE` on either V, falls through to the resting
-    legend — so this view always shows what the key would actually type. A bare
-    nukta (U+093C / U+09BC) is composed onto the base consonant, as the firmware does.
+    is `min(VAR_SMALL, VAR_ALTGR)` while H is `VAR_SMALL`; and only the *cell* is
+    the AltGr one. A key with no AltGr cell, or a `HIDE` on either V, falls through
+    to the resting legend — so this view always shows what the key would actually
+    type. A bare nukta (U+093C / U+09BC) is composed onto the base consonant, as the
+    firmware does.
+    ⚠️ It **is** clamped onto the panel, as of qmk_firmware#268 — it was the one
+    element that was not, and the mismatch between "offsets tuned for the num/sym
+    glyphs" and "the AltGr cell's glyph is what gets drawn" cost **191 keys / 1528 px**
+    of ink across 69 layouts, invisible in the resting view because that view puts the
+    same glyph somewhere else. Nudging the AltGr H/V sliders therefore shapes the
+    **hint** only; if the held glyph is mispositioned the lever is `sym.small` (or
+    `num.small` on a digit key), which also moves every resting base legend of that
+    category — there is no way to move the held AltGr glyph alone.
 - ⚠️ A key whose Shift preview the firmware **suppresses** as a case pair carries a
   blue **`sup`** badge in the Shift-held view, and a `no preview` label in its
   editor block. The cell is still live — it is the uppercase — it is just not
