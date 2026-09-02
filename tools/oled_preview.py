@@ -966,7 +966,7 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
             if shift_letter is None and L.cell(li, row, VAR_SMALL) is None:
                 shift_letter = L.var(0, row, VAR_SHIFT)
             if shift_letter is not None:
-                pmin, pmax = R.bounds(shift_letter)
+                pmin, pmax, pymn, pymx = R.bbox(shift_letter)
                 preview_x = 28 + h_pv
                 if preview_x + pmin < base_ink_max + 2: preview_x = base_ink_max + 2 - pmin
                 if preview_x + pmax > BUFFER_X + SCREEN_WIDTH - 1: preview_x = (BUFFER_X + SCREEN_WIDTH - 1) - pmax
@@ -976,6 +976,50 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
                     # to the panel, so a 6 px lift pushes its ink off the top.
                     if big is None: base_v -= 6
                     preview_v += 4
+
+    # Resolve the AltGr hint BEFORE anything is drawn, for the same reason the Shift
+    # preview above is resolved first: the two hints have to be laid out as a pair.
+    alt = None; alt_x = 0; v_off = 0
+    if not shift and not caps:
+        v_off = get_setting(L, vrow, li, VAR_ALTGR); h_off = get_setting(L, hrow, li, VAR_ALTGR)
+        if v_off != HIDE and h_off != HIDE:
+            alt = L.var(li, row, VAR_ALTGR)
+            if alt is not None:
+                # mirror the firmware's right-edge clamp (keymap.c altgr preview)
+                amin, amax, aymn, aymx = R.bbox(alt)
+                alt_x = 28 + h_off
+                # At the small size this mark is kept off the legend by its VERTICAL
+                # offset; a big legend fills that height, so there the only separation
+                # left is horizontal (keymap.c does the same).
+                if big is not None and alt_x + amin < base_ink_max + 2:
+                    alt_x = base_ink_max + 2 - amin
+                if alt_x + amax > BUFFER_X + SCREEN_WIDTH - 1:
+                    alt_x = (BUFFER_X + SCREEN_WIDTH - 1) - amax
+
+    # --- keep the two hints off EACH OTHER ---------------------------------
+    # Both sit right of the base -- Shift upper, AltGr lower -- and it is their
+    # VERTICAL offsets that hold them apart. True for a narrow Latin pair, false for
+    # a tall script: on every ar-* KC_F the Shift tick lands inside the AltGr's 29 px
+    # box, and bn-BD KC_D shares 57 px. A per-language offset cannot fix that -- the
+    # room left over is decided by the WIDTH of this key's three glyphs, so a single
+    # number per language would have to satisfy the worst key and would crush the
+    # rest into the base.
+    #
+    # The base is bottom-left and narrow on exactly these keys, so the free space is
+    # between it and the (right-clamped) AltGr: pull the Shift LEFT into that gap,
+    # never past the base's own 2 px margin, and never to the right (which could only
+    # walk it into the clamp). Where three wide glyphs genuinely do not fit on 72 px
+    # the pull still shrinks the overlap rather than removing it.
+    if shift_letter is not None and alt is not None:
+        sx0, sx1 = preview_x + pmin, preview_x + pmax
+        sy0, sy1 = BASELINE + preview_v + pymn, BASELINE + preview_v + pymx
+        ax0, ax1 = alt_x + amin, alt_x + amax
+        ay0, ay1 = BASELINE + v_off + aymn, BASELINE + v_off + aymx
+        if sx0 <= ax1 and ax0 <= sx1 and sy0 <= ay1 and ay0 <= sy1:
+            want = ax0 - 2 - pmax
+            floor = base_ink_max + 2 - pmin
+            if want < floor: want = floor
+            if want < preview_x: preview_x = want
 
     EXP = OVERSHOOT
     # report: per-element pixel sets so callers can flag out-of-bounds (a pixel the
@@ -997,22 +1041,8 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
         R.draw(sp_base, base, base_x, BASELINE + base_v)
     if shift_letter is not None:
         R.draw(sp_shift, shift_letter, preview_x, BASELINE + preview_v)
-    if not shift and not caps:
-        v_off = get_setting(L, vrow, li, VAR_ALTGR); h_off = get_setting(L, hrow, li, VAR_ALTGR)
-        if v_off != HIDE and h_off != HIDE:
-            alt = L.var(li, row, VAR_ALTGR)
-            if alt is not None:
-                # mirror the firmware's right-edge clamp (keymap.c altgr preview)
-                amin, amax = R.bounds(alt)
-                alt_x = 28 + h_off
-                # At the small size this mark is kept off the legend by its VERTICAL
-                # offset; a big legend fills that height, so there the only separation
-                # left is horizontal (keymap.c does the same).
-                if big is not None and alt_x + amin < base_ink_max + 2:
-                    alt_x = base_ink_max + 2 - amin
-                if alt_x + amax > BUFFER_X + SCREEN_WIDTH - 1:
-                    alt_x = (BUFFER_X + SCREEN_WIDTH - 1) - amax
-                R.draw(sp_alt, alt, alt_x, BASELINE + v_off)
+    if alt is not None:
+        R.draw(sp_alt, alt, alt_x, BASELINE + v_off)
     if report is not None:
         def _oob(s): return sum(1 for (vx, vy) in s if vx < 0 or vx >= OLED_W or vy < 0 or vy >= OLED_H)
         report['oob'] = {k: _oob(v) for k, v in rpx.items()}
