@@ -268,9 +268,11 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   - **The standing check is the same one every failure mode above is caught by**
     and it is two seconds: `pull_request_read` `get_reviews`, then **for each
     review, both** (a) its `commit_id` equals the PR's head sha, **and** (b) its
-    body is not a refusal notice. Nothing outside that pair distinguishes
-    "reviewed and clean" from "never read" — not a green check run, not the
-    presence of bot output, not a walkthrough.
+    body is not a refusal notice. No *check run*, bot comment or walkthrough adds
+    anything to that pair — but ⚠️ **the pair alone is NOT sufficient either**: a
+    clean CodeRabbit review leaves no review object at all, so it reads as "never
+    read" (see the false-negative bullet below, which is the other half of this
+    check). Run both together.
     - ⚠️ **(b) is not a refinement, it is half the check — a REFUSAL IS A REVIEW
       OBJECT, and it carries the head sha.** Sourcery's budget and diff-too-large
       notices arrive as `COMMENTED` reviews stamped with the current head, so a
@@ -1273,7 +1275,13 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   the LUT's four sub-columns are lower/upper/**caps**/AltGr. A bulk edit that touches
   caps cells therefore cannot go through the CLI: **import the module and call its
   `set_cell()` / `str_cell()`** so the surgical `sheet2.xml` path (which preserves the
-  other sheets' formula caches) is still the same tested code. Hit on 2026-09-03,
+  other sheets' formula caches) is still the same tested code. ⚠️ Those two are only
+  the XML edit — `set_cell()` RETURNS the modified sheet and persists nothing, so the
+  caller still owns the language-column arithmetic (`base = 2 + langs.index(lang)*4`,
+  `+0/1/2/3` for base/shift/caps/AltGr), rewriting the zip entry, and the `cog -r
+  lang_lut.c` afterwards. The whole loop, with its verification steps, is the
+  firmware repo's `tune-lang-lut-cells` skill; this note is only about which half
+  the CLI cannot do. Hit on 2026-09-03,
   where 14 of the 117 cells drawing `§ £ ± µ` were caps. Widening the regex is a
   bigger change than it looks — the tuner never emits `caps`, so the grammar would
   gain an arm nothing exercises.
