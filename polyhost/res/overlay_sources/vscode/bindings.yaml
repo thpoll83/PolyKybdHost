@@ -43,6 +43,8 @@ title: .* Visual Studio Code
 output: vscode_template
 # Follow the sublime_mac_template naming rather than the default `_mac` suffix.
 output_macos: vscode_mac_template
+# Follow the same naming for the Linux set (default would be `vscode_template_linux`).
+output_linux: vscode_linux_template
 icon_dir: icons
 fit: contain
 anchor: bottom-right
@@ -114,7 +116,11 @@ bindings:
   - { key: X, mods: [CMDCTRL, SHIFT], icon: extensions.png,     label: Extensions,         source: "ms-fluent/Puzzle Piece (MIT)" }
   - { key: D, mods: [CMDCTRL, SHIFT], icon: debugview.png,      label: "Run and debug",    source: "ms-fluent/Bug (MIT)" }
   - { key: M, mods: [CMDCTRL, SHIFT], icon: problems.png,       label: Problems,           source: "ms-fluent/Warning (MIT)" }
-  - { key: U, mods: [CMDCTRL, SHIFT], icon: output.png,         label: Output,             source: "ms-fluent/Document Text (MIT)" }
+  # ⚠️ Windows `Ctrl+Shift+U` and macOS `⇧⌘U`, but Linux moves this to the
+  # two-stroke chord `Ctrl+K Ctrl+H` (Ubuntu reserves Ctrl+Shift+U for unicode
+  # input), which a keycap cannot draw at all — so it is scoped out there rather
+  # than dropped, which would cost the two correct cells as well. See SOURCES.md.
+  - { key: U, mods: [CMDCTRL, SHIFT], icon: output.png,         label: Output,             source: "ms-fluent/Document Text (MIT)", except: [linux] }
 
   # -- literal Ctrl (⌃` on macOS too) --
   - { key: "`", mods: [CTRL], icon: terminal.png, label: "Toggle terminal", source: "ms-fluent/Window Console (MIT)" }
