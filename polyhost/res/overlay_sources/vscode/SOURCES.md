@@ -110,10 +110,27 @@ linux:   { primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | Key
 
 So `CMDCTRL`+`SHIFT`+`U` is right on Windows (`Ctrl+Shift+U`) and right on macOS
 (`⇧⌘U`), but on Linux the action moved to the **chord** `Ctrl+K Ctrl+H` — Ubuntu
-reserves `Ctrl+Shift+U` for its own unicode input. It is kept because two of the three
-platforms are correct and the overlay format cannot draw a two-stroke chord at all, so
-dropping the binding would lose the Windows and macOS cells without gaining a Linux one.
-This is the mirror of Go Back / Go Forward, where the Linux chord is the drawable one.
+reserves `Ctrl+Shift+U` for its own unicode input.
+
+✅ **Resolved by scoping, not by dropping the binding.** It now carries
+`except: [linux]`, so the generator emits a third artwork set
+(`vscode_linux_template.*`) plus an `os: linux:` mapping branch. Windows and macOS
+keep their correct cells; Linux gets a blank key instead of a wrong one. Dropping the
+binding — the other obvious fix — would have cost all three, since the overlay format
+cannot draw a two-stroke chord at all and there was never a Linux cell to be gained.
+
+The Linux set differs from the default set by **exactly this one cell** (45 cells vs
+44, sole difference `CTRL_SHIFT` on `KC_U`); everything else is generated from the same
+bindings file, so the three sets cannot drift. See "Per-binding platform scoping" in
+[`../../overlay_specification.md`](../../overlay_specification.md).
+
+⚠️ **Go Back / Go Forward are the remaining case of this shape and are NOT yet fixed.**
+They are still the **Linux** chords on every platform (Windows binds `Alt+←/→`, macOS
+`⌃-` / `⌃⇧-`), i.e. wrong on two platforms rather than one. The scoping mechanism now
+exists to fix them — the same icon written twice with disjoint `only:` lists — but doing
+so needs the per-platform chords confirmed against the vscode source first, and the
+published docs table disagrees with the snippet quoted above. Left as-is deliberately:
+a wrong overlay is worse than a missing one, and that applies to a *re-chorded* one too.
 
 ⚠️ **`Close editor` is NOT such a case, despite the docs table.** The Windows column
 lists `Ctrl+F4`, but `Ctrl+W` is registered there too, as a *secondary*:
