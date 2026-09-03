@@ -82,11 +82,18 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         On qmk#250 (2026-08-29) the sha read `up to b6c1b` while the **📥 Commits**
         line in the *same comment* correctly said *"between `b6c1b7f` and
         `386d74f`"* — i.e. the review genuinely covered the newer head and only
-        the risk block lagged. Measured across both incidents, the reviewed-range
-        line was accurate every time and the Merge Risk sha only sometimes, so
-        **read the range line, and settle it against the PR's actual head sha
-        from the API.** Full case in the CodeRabbit sub-note under Sourcery's
-        `✅ Addressed in <sha>` entry below.
+        the risk block lagged. So **read the range line, and settle it against the
+        PR's actual head sha from the API.** Full case in the CodeRabbit sub-note
+        under Sourcery's `✅ Addressed in <sha>` entry below.
+        - ⚠️ **This used to say the reviewed-range line "was accurate every time".
+          It is NOT — measured 2026-09-03 on qmk#268.** The range line advanced to
+          `68e30d18..d03a1107` inside a summary re-render whose own body said
+          *"Review skipped"*, i.e. it named a head range that no review had read.
+          So the range line reports **what the render was scoped to**, not what was
+          reviewed, and neither it nor the Merge Risk sha stands alone. The only
+          thing either supports is *which* commit is being discussed; whether a
+          review RAN is answered by `get_reviews` plus the body text, and by
+          nothing else in the summary comment.
       - ⚠️ **And a MATCHING sha does not make the prose beside it current either —
         it dates the COVERAGE, not the text.** On qmk#259 (2026-09-01) the block
         read `up to 7dd4c`, the actual head, on a review that had genuinely just
@@ -164,6 +171,14 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         lines of git post-job cleanup, and a failing tool often dumps
         diagnostics *after* its own error, so a smaller tail lands squarely in
         the noise.
+      - ⚠️ **`pull_request_read` STRIPS HTML-like tags out of a PR body, so a body
+        that reads as corrupted through the MCP is usually fine on GitHub.** A body
+        naming XML elements (`<sheetData>`, `<mergeCell ref>`, `<hyperlink ref>`)
+        came back with those collapsed to empty backticks, which looks exactly like
+        a body mangled at write time. **Verify with WebFetch against the rendered
+        page before "fixing" it** — 2026-09-03 cost an edit that repaired nothing.
+        Note also that editing a PR body **re-renders the CodeRabbit summary**, which
+        is its own source of confusion (see the sticky-walkthrough notes above).
   - ⚠️ **A review that DID run, on the right commit, with an accurate walkthrough,
     can still have SKIPPED the file you care about — read the "Files skipped from
     review" list before trusting a clean verdict.** On qmk PR #198 (2026-08-11)
@@ -267,6 +282,25 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       text (caught by Greptile in review, 2026-08-30). **A check that contradicts
       another entry in the same file is the failure mode this section keeps
       producing; grep for the sibling note before writing the rule.**
+  - ⚠️ **The standing `get_reviews` check has a FALSE NEGATIVE pointing the OPPOSITE
+    way from the refusal case: a CLEAN CodeRabbit review creates NO REVIEW OBJECT AT
+    ALL.** It reports *"No actionable comments were generated 🎉"* by **editing its
+    existing summary comment**, so `get_reviews` returns nothing for that head and
+    the pair-check above reads a clean pass as "never reviewed". Measured on qmk#268
+    (2026-09-03). The two failure modes therefore point in opposite directions — a
+    refusal IS an object and means nothing, a clean pass is NO object and means
+    everything — so **neither signal decides it alone**: read the summary comment's
+    own body (its `📥 Commits` range, and whether it says *skipped* or *no actionable
+    comments*) alongside `get_reviews`.
+  - ⚠️ **A commit whose only reviewable file is GENERATED is skipped outright, which
+    on a data change is every commit.** *"Review skipped as selected files did not
+    have any reviewable changes"* — twice on qmk#268, where the diff was `lang_lut.c`
+    (a cog-generated table) plus `lang_lut.xlsx`, and the workbook is excluded by
+    CodeRabbit's own `!**/*.xlsx` path filter. So a per-language data pass is
+    **structurally unreviewable** by it: no banner, no rate limit, nothing wrong —
+    just no review, ever. Plan the verification accordingly (assert the generated
+    diff is confined to what you meant, and measure the rendered result) rather than
+    expecting a reviewer to catch a wrong cell.
   - ⚠️ **This entry has now been wrong THREE times, and every correction came
     from the API rather than from thinking harder.** The first draft claimed
     Greptile had reviewed all six PRs — it was 2. The second claimed it emits "no
@@ -1234,6 +1268,15 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     coordinate. `--check` is the gate to re-run after any change to the firmware's
     `latinbig` entries; `--out` writes the contact sheet the docs page uses. Same
     caveat as `oled_preview.py`: it is a Python model of the C and can drift.
+- ⚠️ **`tools/apply_tuner.py`'s export grammar CANNOT express the `caps` column** —
+  its key-line regex is `base|shift|altgr`, matching what the keycap tuner emits, and
+  the LUT's four sub-columns are lower/upper/**caps**/AltGr. A bulk edit that touches
+  caps cells therefore cannot go through the CLI: **import the module and call its
+  `set_cell()` / `str_cell()`** so the surgical `sheet2.xml` path (which preserves the
+  other sheets' formula caches) is still the same tested code. Hit on 2026-09-03,
+  where 14 of the 117 cells drawing `§ £ ± µ` were caps. Widening the regex is a
+  bigger change than it looks — the tuner never emits `caps`, so the grammar would
+  gain an arm nothing exercises.
 - **Macros (protocol 15+)**: HID cmds 36/37/38 behind ONE `"macros"`
   `FEATURE_MIN_PROTOCOL` entry — splitting the gate would let the editor load a list
   from a keyboard that cannot save it. `PolyKybd.get_macro_info` /
