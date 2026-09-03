@@ -316,12 +316,21 @@ class TestDisplayNameOverride(unittest.TestCase):
                                      "KC_BRMD": 0x47, "KC_PAUSE": 0x48,
                                      "KC_BRK": 0x48, "KC_BRMU": 0x48})
         self.assertEqual(got[0x47], "KC_SCRL_BRMD")
-        self.assertEqual(got[0x48], "KC_PAUS_BRK_BRMU")
+        self.assertEqual(got[0x48], "KC_BRMU_PAUSE")
 
     def test_the_label_becomes_a_multi_line_tile_caption(self):
         # create_nice_name turns each underscore into a line break.
         from polyhost.gui.layout_dialog.qmk_keycode_helper import create_nice_name
         self.assertEqual(create_nice_name("KC_SCRL_BRMD"), "SCRL\nBRMD")
+        self.assertEqual(create_nice_name("KC_BRMU_PAUSE"), "BRMU\nPAUSE")
+
+    def test_no_label_needs_a_third_line(self):
+        """The tile is sized for two rows, and an underscore IS a line break -- so a
+        three-part label (0x48 was `KC_PAUS_BRK_BRMU`) overflows it. A label names
+        the MEANINGS; `KC_BRK` is a second spelling of Pause, not a second key."""
+        from polyhost.gui.layout_dialog.qmk_keycode_helper import create_nice_name
+        for label in DISPLAY_NAME_OVERRIDE.values():
+            self.assertEqual(create_nice_name(label).count("\n"), 1, label)
 
     def test_an_override_for_a_value_the_header_lacks_is_ignored(self):
         # Never invent a key: the override annotates a value that exists, it does

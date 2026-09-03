@@ -23,13 +23,40 @@ cells, the exact glyph bitmaps it uses (any script), the category offsets, and t
 en-US fallback glyphs, and embeds them in the page.
 
 `--all` bakes **every** layout into one file behind a **push-button layout bar** at
-the top — one button per layout; click to switch. The glyph bitmaps are stored once
+the top — one row per **region**, in the same order and grouping the keyboard's own
+language layer uses (Americas, Europe, Middle East & Caucasus, Africa, Asia, Oceania),
+alphabetical within each; click to switch. The grouping is read from the host's
+`polyhost/services/lang_regions.py`, not re-typed here. The glyph bitmaps are stored once
 in a **shared pool keyed by codepoint** (Latin layouts reuse the same a/b/c bitmaps),
 so the page stays a few MB even with every script. Switching keeps each layout's edits
 alive, and an edited layout's button turns **amber** (the current one is highlighted).
+
+Every layout is **scanned at load** (~1 s for all 160, chunked so the page stays
+responsive) and a button carrying a flagged key gets a marker on its right edge, plus
+the key list in its tooltip: **red `●`** = ink outside the 72×40 window, **amber `○`**
+= two elements overlapping. The line under the Export box names the flagged layouts,
+so you can see where to look without visiting all 160.
+
+⚠️ **The two markers mean very different things, which is why they are coloured
+apart.** Out-of-bounds is no longer TUNABLE: `legend_plan_clamp()` slides every
+element back onto the panel, so an offset cannot push ink off it any more. What red
+means is a glyph genuinely bigger than the panel — measured over every layout, exactly
+one (`he-IL KC_BACKSLASH`'s 43 px standalone nikud in a 40 px window) — which no
+offset can fix. **Amber is the live signal**: overlap is still entirely a function of
+the offsets, which is what this tool exists to move. So red = look, but it is probably
+not yours; amber = look, this one is.
 **Reset layout** reverts every edit of the current layout; **Export** emits one
 `=== code ===` block per edited layout — feed the whole box straight to `apply_tuner.py`
-(below). `--lang X` is just `--all` restricted to one layout (the bar then has a single
+(below). **Copy positions** / **Paste positions** carry a layout's *settings* to
+another one — the 18 H/V offsets plus the three ½-AltGr flags, i.e. exactly the
+`[offset]` / `[altgrhalf]` lines Export emits — which is what makes the ~22 `ar-*`
+clones and the `es-*` / `en-*` folds cheap to tune. The Paste button names its source
+so a stale clipboard is visible; **Reset layout** undoes a paste.
+
+⚠️ **Per-key nudges are deliberately NOT copied.** A nudge is tuned against the GLYPH
+in that cell, and two layouts sharing an offset scheme routinely disagree about which
+key carries which glyph — pasting them would move ink for reasons the target layout's
+own data cannot explain. `--lang X` is just `--all` restricted to one layout (the bar then has a single
 button); both share the same render mirror and page code.
 
 ## Using it
@@ -65,6 +92,68 @@ button); both share the same render mirror and page code.
   AltGr-held view (`VAR_SMALL`); the unshifted **base** is never hidden (it always
   draws), so hiding **small** only affects the AltGr-held view — in the tuner's
   unshifted preview it just pushes the base off-keycap (flagged out-of-bounds).
+- Top-right of that panel: **½ AltGr hint · letter · num · sym** — the
+  `{letter|num|sym.altgrhalf}` opt-in, one checkbox per category. Tick one and every
+  key of that category redraws its AltGr hint at half size, so "should this layout
+  halve?" is a question you answer by looking. It is per **layout** *and* per
+  **category**, the same three-way split the H/V offsets use. A glyph whose ink is
+  `ALTGR_HALF_MIN_INK_H` (7) px tall or less stays full size — halving a 2×3 px Hebrew
+  nikud makes it a dot — so on the Indic layouts most letter hints do not change even
+  with the box ticked, because they are bare combining marks. A changed box is marked
+  with an amber `*`, and it exports as `[altgrhalf] <cat> = 0|1`.
+  ⚠️ **Only `{letter.…}` is set in the spreadsheet today** (the 22 Arabic-script and 7
+  Indic layouts); `num` and `sym` exist so the choice can be made, and no layout uses
+  them yet.
+- **view: resting · Shift held · AltGr held** — the three states a keycap can be in.
+  These are separate branches of the firmware's `render_key()`, not a re-tint of the
+  resting one, so they are **rendered** rather than annotated:
+  - **resting** — the legend plus its two hints. This is the view the offsets are
+    tuned against, and the only one that feeds the layout bar's warning badges (a
+    held view has different offsets, so folding its clip count in would quietly
+    change what "N clipped keys" means).
+  - **Shift held** — `translate_keycode(shift=true)`: the **Shift cell becomes the
+    legend**, and where the layout has none it falls back to the base. The legend is
+    coloured by provenance — **blue** from the Shift cell, **green** fallen back —
+    so "does this key have a real uppercase?" reads at a glance. There is no preview
+    (`if(!shift && !caps_lock)`), and the AltGr hint stays. ⚠️ Note the shifted
+    glyph is drawn at the **`VAR_SMALL`** offsets, not the `VAR_SHIFT` ones the
+    preview uses.
+  - **AltGr held** — the AltGr cell **is** the legend, full size. Three things
+    is drawn at **exactly the offsets the resting view puts the hint at** — this
+    key's own category, `VAR_ALTGR` — so holding AltGr enlarges the glyph *in place*
+    rather than moving it. It differs from the hint only in being full size (never
+    the ½-AltGr), alone on the keycap, and clamped as a legend rather than laid out
+    around the base. A key with no AltGr cell, or a `HIDE` on either axis, falls
+    through to the resting legend — so this view always shows what the key would
+    actually type. A bare nukta (U+093C / U+09BC) is composed onto the base
+    consonant, as the firmware does.
+    **So the AltGr H/V sliders move the hint and the held glyph together**, which is
+    the point: tune the hint and you have tuned both. When the two want different
+    places — the hint shares the keycap with the base legend and the Shift preview
+    while the held view has the panel to itself — the **`held`** column in the
+    offsets panel is a per-layout, per-category **delta from the hint's position**,
+    default 0. It exports as `[offset] <cat> held <H|V> = <n>` and writes
+    `{<cat>.heldhoffset|heldvoffset}`. ⚠️ Its **H** button is a no-op by design:
+    `HIDE` is meaningless for a delta and reads as 0 in both the firmware and here,
+    since hiding the held view is what the AltGr offsets already do.
+    ⚠️ Both of those properties are new in qmk_firmware#268 and they had to land in
+    that order. Before it, this branch was drawn at a **raw origin** (no clamp) using
+    the **num/sym `VAR_SMALL`** offsets with `V = min(VAR_SMALL, VAR_ALTGR)` — a
+    defensive mixture that kept the glyph near the base legend where it could not
+    fall off, at the cost of positioning it with offsets belonging to a different
+    category and a different variation than the glyph being drawn. That cost
+    **191 keys / 1528 px** of ink across 69 layouts, invisible in the resting view
+    because that view puts the same glyph somewhere else entirely. With the clamp in
+    place the honest offsets became safe to use: measured over the 1719 AltGr cells,
+    **1148 (67%)** now land exactly on the hint's position and the rest are pulled
+    back a median **5 px**, worst the `ar-*` `KC_F` letters at 34–38 px where a wide
+    script glyph cannot fit at `x=+55`.
+- ⚠️ A key whose Shift preview the firmware **suppresses** as a case pair carries a
+  blue **`sup`** badge in the Shift-held view, and a `no preview` label in its
+  editor block. The cell is still live — it is the uppercase — it is just not
+  previewed. That distinction is the whole point of the two views: emptying such a
+  cell in the spreadsheet to hide a redundant preview also destroys the uppercase,
+  which is exactly what shipped once and was reported from hardware.
 - **Export changes** → paste the box back to whoever applies it.
 
 ## Export format → how to apply
@@ -74,6 +163,7 @@ button); both share the same render mirror and page code.
 KC_Q base: U"\f\f" ARABIC_DAD          # a cell value -> lang_lut.xlsx (var base/shift/altgr)
 KC_D altgr: <drop / empty>             # clear that cell
 [offset] letter shift H = 44           # a settings value -> the SET[cat] offset rows
+[altgrhalf] letter = 1                 # {<cat>.altgrhalf} rows 62/63/64; 0 CLEARS it
 ```
 
 **Apply it automatically** — `apply_tuner.py` parses exactly this format and writes the
@@ -122,8 +212,20 @@ sync with three things, which all already mirror `keymap.c render_key` +
 - **the control codes** in `Renderer.draw` / `bounds`.
 
 If you change any of those, mirror the change in `keycap_tuner_template.html`
-(functions `bounds`, `draw`, `renderKey`) and **re-verify** with a headless diff —
-the JS must agree with the firmware-faithful `oled_preview.warn_key` for every key:
+(functions `bbox`, `bounds`, `draw`, `renderKey`) and **re-verify** with a headless
+diff — the JS must agree with the firmware-faithful `oled_preview.warn_key` for every
+key.
+
+⚠️ **The glyph bitmaps are COLUMN-NATIVE** (OLED page format: one byte = 8 *vertical*
+pixels, `cb = (h+7)>>3` bytes per column, LSB = top). `glyph_pool()` slices `w * cb`
+whole bytes and the JS `draw` indexes `bits[xx*cb + (yy>>3)]`; the two are a pair.
+This was row-major MSB-first over a `ceil(w*h/8)` slice until 2026-09-02 — both are
+plausible byte counts for the same glyph, so it did not fail, it drew **noise on every
+keycap** while the page came up looking fine. The parity diff below is what catches
+that class; run it, don't eyeball the render.
+
+⚠️ **Compare more than one layout.** The diff is cheap over all 160 (`--all`, then loop
+`loadLang`), and a single-layout run can agree by luck:
 
 ```bash
 # render the JS render logic in node and diff its per-key out-of-bounds/overlap
@@ -140,6 +242,19 @@ PY
 python oled_preview.py --lang ps-AF --check-bounds
 ```
 
+All 160 at once — generate with `--all`, then loop `loadLang` over `DATA.order` and
+collect `keyWarn(renderKey(k))` for every key, against the same sweep through
+`oled_preview.render_key(..., report=…)`. This is the check that proved the
+column-native fix: **421 flagged keys, byte-identical in both**. A single-layout run
+can agree by luck; the full sweep cannot.
+
+⚠️ **The expected count MOVES with the render logic — re-run it, don't compare against
+a number written here.** After the four-edge panel clamp + the relative-bbox
+`saturate` fix (2026-09-02) the same sweep flags **2** keys (`he-IL KC_BACKSLASH A:9`,
+a 43 px glyph in a 40 px panel, and `ta-IN KC_T ov:2`), still byte-identical in both.
+What the check asserts is JS == Python, not any particular total.
+
+
 ## Notes / limits
 
 - `--lang` is one layout per file; `--all` puts every layout in one file behind the
@@ -148,3 +263,13 @@ python oled_preview.py --lang ps-AF --check-bounds
   layout; the tuner shows what `lang_lut.xlsx` has.
 - A key with no own glyph renders the **en-US** fallback (tagged); nudging it exports a
   real per-lang cell that overrides the fallback — leave it alone to keep the fallback.
+- ⚠️ **A key whose Shift form is just its base letter in the other case shows NO Shift
+  preview here, because the keyboard draws none.** `ä`/`Ä`, `ç`/`Ç`, `ł`/`Ł` and the
+  Cyrillic pairs are suppressed by the firmware's `shift_preview_redundant` bitmap;
+  the generator imports the same rule (`qmk_firmware/keyboards/polykybd/lang/
+  shift_preview.py`, via `oled_preview.shift_preview_rule`) so the tuner cannot offer
+  offsets for a glyph the panel never draws. 236 keys across 75 layouts.
+- ⚠️ **Do NOT hide such a preview by emptying the Shift cell instead** — that cell is
+  also the legend drawn while Shift is HELD, so clearing it leaves the keycap showing
+  the lowercase under Shift (field, 2026-09-02, 164 cells). If a preview you think is
+  redundant still shows, it is not a case pair by the rule; fix the rule, not the cell.

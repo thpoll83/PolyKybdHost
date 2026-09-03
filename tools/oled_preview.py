@@ -46,6 +46,7 @@ OVERSHOOT = 2
 # old fall-through, which measured and drew the op byte AND each of its arguments as
 # a substituted '!'.
 HINT_SMALL = 0x10      # rest of the run at half scale (kdisp_write_gfx_char_half)
+ALTGR_HALF_MIN_INK_H = 7   # halve the AltGr hint only when its ink is taller than this
 HINT_MID = 0x16        # rest of the run from the standalone 19px UI face
 CURSOR_OPS = frozenset({0x05, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x18})
 SUPPORTED_OPS = CURSOR_OPS | {HINT_SMALL, HINT_MID,
@@ -274,6 +275,48 @@ GLYPH_SIZE_BASELINE = {0: 21, 1: 25, 2: 28}   # [0] unused: size S keeps the lan
 GLYPH_SIZE_MAX_LEN  = 4                        # glyph_size_remap()'s length guard
 GLYPH_SIZE_NAMES    = {0: "small", 1: "medium", 2: "large"}
 SET = {"letter": (57, 56), "num": (59, 58), "sym": (61, 60)}   # (voffset_row, hoffset_row)
+# {letter|num|sym.altgrhalf} -- the per-LAYOUT opt-in to the half-size AltGr hint,
+# read from the VAR_ALTGR sub-column. Three rows, the same category split the H/V
+# offsets above already use, so a layout can halve its letters while its digit and
+# symbol rows keep full-size hints. Ordinary settings rows, so `Lang` needs no
+# special case; only these row numbers and the gate in render_key() know about them.
+ALTGR_HALF = {"letter": 62, "num": 63, "sym": 64}
+# {letter|num|sym.heldhoffset|heldvoffset} -- the DELTA applied to the AltGr hint's
+# position when AltGr is actually HELD. Default 0, so nothing moves until a layout is
+# tuned; the held view otherwise lands exactly on the hint (poly_keymap.c's MOD_RALT
+# branch). Read from VAR_ALTGR like the rows above.
+HELD = {"letter": (66, 65), "num": (68, 67), "sym": (70, 69)}   # (voffset_row, hoffset_row)
+
+# ⚠️ Every row number above is HARDCODED, and a settings row inserted ABOVE one of
+# them silently re-points it at the wrong row -- the firmware's own generator was bitten
+# by exactly this (it sized the Shift-suppression bitmap from a leftover cog cursor, so
+# adding six rows widened it 8 -> 9 bytes). Nothing here can detect that on its own, so
+# check the labels against the sheet whenever a Lang is built from the workbook.
+SETTING_ROW_LABELS = {
+    56: "{letter.hoffset}",     57: "{letter.voffset}",
+    58: "{num.hoffset}",        59: "{num.voffset}",
+    60: "{sym.hoffset}",        61: "{sym.voffset}",
+    62: "{letter.altgrhalf}",   63: "{num.altgrhalf}",   64: "{sym.altgrhalf}",
+    65: "{letter.heldhoffset}", 66: "{letter.heldvoffset}",
+    67: "{num.heldhoffset}",    68: "{num.heldvoffset}",
+    69: "{sym.heldhoffset}",    70: "{sym.heldvoffset}",
+}
+
+
+def verify_setting_rows(L: "Lang") -> None:
+    """Raise if a hardcoded settings row no longer holds the key it is meant to.
+
+    Cheap insurance against the one edit that breaks every offset silently: inserting
+    a settings row shifts the ones below it, and each of the tables above would then
+    read a neighbouring row's numbers with no error anywhere.
+    """
+    wrong = {r: L.grid.get((r, 1)) for r, want in SETTING_ROW_LABELS.items()
+             if L.grid.get((r, 1)) != want}
+    if wrong:
+        raise RuntimeError(
+            "settings rows moved -- these hardcoded row numbers no longer match the "
+            "sheet: " + ", ".join(f"row {r} holds {got!r}, expected "
+                                  f"{SETTING_ROW_LABELS[r]!r}" for r, got in wrong.items()))
 
 
 # ---- named glyphs + cell resolution ---------------------------------------
@@ -493,6 +536,7 @@ def _resolve_macro_bodies(out: dict, bodies: dict, calls: dict) -> None:
 class Lang:
     def __init__(self, xlsx: str, named: dict):
         from openpyxl import load_workbook
+        self.xlsx = xlsx          # so shift_preview.py can be found beside it
         wb = load_workbook(xlsx, data_only=True, read_only=True)
         ws = wb['key_lut']
         self.named = named
@@ -706,8 +750,15 @@ class Renderer:
             if cp == 0x05: y += 2; continue
             if cp == 0x06: x += 2; continue
             if cp == 0x18: x = y = 0; continue
-            if cp == 0x08: x = x - 2 if x > 1 else 0; continue
-            if cp == 0x0c: y = y - 2 if y > 1 else 0; continue
+            # ⚠️ The draw clamps its cursor at buffer 0; a RELATIVE walk starts at 0,
+            # where that clamp would swallow the nudge entirely and report `\f` as a
+            # no-op. 73 legends across the 160 layouts open with one to six of these
+            # (`é è ç à` on AZERTY are `\f\f <letter>`), so the measured box sat up
+            # to 12 px below its own ink and render_key()'s panel clamp could not see
+            # the overrun. Mirrors font_lookup.c's `saturate` flag, which is false for
+            # the relative walk and true for the absolute one.
+            if cp == 0x08: x -= 2; continue
+            if cp == 0x0c: y -= 2; continue
             if cp == 0x09: x += (_trunc_div(x, 36) + 1) * 36; continue
             if cp == 0x0a: y += self.base_yadv; x = 0; continue
             if cp == 0x0b: y += (_trunc_div(y, 15) + 1) * 15; continue
@@ -892,6 +943,158 @@ class Renderer:
             xc += g['xAdvance']
 
 
+def clamp_legend(x, y, xmn, xmx, ymn, ymx):
+    """legend_plan_clamp() -- slide a draw origin so a measured ink box lands on the
+    panel. ONE definition of the edge for all three elements (base / Shift / AltGr).
+
+    ⚠️ Order is load-bearing: E before W means the WEST edge wins an over-wide glyph,
+    N before S means the SOUTH edge wins an over-tall one. Measured across all 160
+    layouts exactly one element is ever over-size (he-IL's 43 px standalone nikud on
+    KC_BACKSLASH), so this only decides where those 3 px go.
+    """
+    if x + xmx > BUFFER_X + SCREEN_WIDTH - 1: x = BUFFER_X + SCREEN_WIDTH - 1 - xmx
+    if x + xmn < BUFFER_X:                    x = BUFFER_X - xmn
+    if y + ymn < 0:                           y = -ymn
+    if y + ymx > OLED_H - 1:                  y = OLED_H - 1 - ymx
+    return x, y
+
+
+def shift_preview_rule(L: Lang):
+    """`preview_is_redundant` out of the FIRMWARE's own lang/shift_preview.py, bound
+    to this workbook's named-glyph table. Call it with the two RAW key_lut cells.
+
+    ⚠️ Imported, not re-implemented, and fed RAW cells rather than this module's own
+    codepoints. That file is what cog turns into the `shift_preview_redundant` bitmap
+    the keycap consults, so sharing BOTH the rule and its resolver is the only way
+    this picture and the panel cannot disagree about which Shift previews the board
+    suppresses -- measured, two resolvers disagreed on 59 of ~3300 keys.
+
+    Three sources, in order, so every caller gets the SAME answer from the one
+    implementation:
+
+    * a `Lang` carrying `shift_suppressed` -- the decision baked at export time by
+      this very module, which is how the SHIPPED preview reaches it with no firmware
+      checkout to import from (the same shape as the firmware's own build-time
+      bitmap, and for the same reason);
+    * a `Lang` that knows its workbook path -- import the module beside it;
+    * anything else -- `_NO_SHIFT_RULE`, which keeps every preview: the fail-safe
+      direction the rule itself takes.
+
+    ⚠️ The "no rule" case is a FALSY CALLABLE, not `False`. Every call site already
+    reads it both ways -- `if rule` asks "did a rule resolve?" (one of them raises on
+    no), and `rule(base, shift)` asks the question -- and returning a bool for one
+    and a function for the other makes the union `bool | Callable`, which is a real
+    smell and not just a static-analysis complaint: CodeQL flagged seven `rule(...)`
+    calls as "call to a non-callable of builtin-class bool" on #210. A sentinel that
+    is callable AND falsy answers both without a cast or a suppression, and leaves
+    every caller byte-for-byte unchanged.
+
+    ⚠️ The answer is cached ON THE `Lang`, never in a module global. Two `Lang`
+    objects legitimately disagree here (a checkout one resolves, a bare one cannot),
+    so a shared global lets whichever loads first decide for the other -- and a
+    global assigned BEFORE the lookup that can fail poisons itself into "no
+    suppression" for the whole process. That shipped for one commit; Greptile caught
+    it on #210.
+    """
+    cached = getattr(L, "_shift_rule", None)
+    if cached is not None:
+        return cached
+    rule = _NO_SHIFT_RULE
+    baked = getattr(L, "shift_suppressed", None)
+    if baked is not None:
+        rule = _BakedShiftRule(baked)
+    elif getattr(L, "xlsx", None):
+        path = os.path.join(os.path.dirname(os.path.abspath(L.xlsx)), 'shift_preview.py')
+        if os.path.exists(path):
+            import importlib.util
+            spec = importlib.util.spec_from_file_location('shift_preview', path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            rule = lambda base, shift, _m=mod, _n=L.named: \
+                _m.preview_is_redundant(base, shift, _n)
+    try:
+        L._shift_rule = rule
+    except AttributeError:                 # a Lang that refuses attributes
+        pass
+    return rule
+
+
+class _NoShiftRule:
+    """Callable so a caller can always ask; falsy so it can also ask whether asking
+    is worth anything. Answers "not redundant", i.e. keep the preview."""
+
+    def __bool__(self):
+        return False
+
+    def __call__(self, base_cell, shift_cell):
+        return False
+
+
+_NO_SHIFT_RULE = _NoShiftRule()
+
+
+class _BakedShiftRule:
+    """The exported decision, answering the same `(base_cell, shift_cell)` call.
+
+    ⚠️ It matches on the CELLS rather than on (lang, key) because that is the only
+    thing the call site hands over -- and it is sound for the same reason the rule
+    is: the verdict depends on nothing but those two cells. Identical cells anywhere
+    in the sheet are the same verdict.
+    """
+
+    def __init__(self, pairs):
+        self.pairs = {(_cell_key(b), _cell_key(s)) for b, s in pairs}
+
+    def __call__(self, base, shift):
+        return (_cell_key(base), _cell_key(shift)) in self.pairs
+
+
+def _cell_key(v):
+    """A raw key_lut cell as the one string form both sides agree on.
+
+    openpyxl hands back an int for a bare numeric cell and the JSON round-trip makes
+    it a string, so the two sides must normalise identically or the baked set never
+    matches. `None` stays distinct from the empty string: "no cell" and "an empty
+    cell" are different inputs to the rule.
+    """
+    return None if v is None else str(v).strip()
+
+
+def shift_suppressed_pairs(L: Lang):
+    """Every distinct (base, shift) CELL pair the rule suppresses, for the export.
+
+    Built with the real module (so it cannot drift from the firmware bitmap) and
+    emitted as pairs rather than as (lang, key) indices, so the shipped set stays
+    valid if a layout is inserted.
+    """
+    rule = shift_preview_rule(L)
+    if not rule:
+        raise RuntimeError("shift_preview.py not reachable -- cannot bake the rule")
+    out = set()
+    for li in range(len(L.langs)):
+        for kc, row in ROW.items():
+            base, shift = shift_preview_cells(L, li, row)
+            if rule(base, shift):
+                out.add((_cell_key(base), _cell_key(shift)))
+    return sorted(out)
+
+
+def shift_preview_cells(L: Lang, li: int, row: int):
+    """The RAW (base, shift) cells the keycap actually DRAWS for this key.
+
+    Mirrors the pair the firmware judges: `translate_keycode()` falls back to the
+    en-US base whenever the layout has none, while `translate_keycode_only_shift()`
+    falls back to the en-US Shift only when the layout has neither of its own.
+    """
+    base = L.cell(li, row, VAR_SMALL)
+    shift = L.cell(li, row, VAR_SHIFT)
+    if base is None and shift is None:
+        shift = L.cell(0, row, VAR_SHIFT)
+    if base is None:
+        base = L.cell(0, row, VAR_SMALL)
+    return base, shift
+
+
 def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool,
                channels: bool = False, report: dict | None = None,
                size: int = 0) -> Image.Image:
@@ -941,19 +1144,22 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     big = R.relocate(base, size)
     if big is not None:
         xmn, xmx, ymn, ymx = R.bbox(big)
-        big_x = base_x
-        if big_x + xmx > BUFFER_X + SCREEN_WIDTH - 1: big_x = BUFFER_X + SCREEN_WIDTH - 1 - xmx
-        if big_x + xmn < BUFFER_X:                    big_x = BUFFER_X - xmn
-        big_y = GLYPH_SIZE_BASELINE[size]
-        if big_y + ymn < 0:          big_y = -ymn
-        if big_y + ymx > OLED_H - 1: big_y = OLED_H - 1 - ymx
+        big_x, big_y = clamp_legend(base_x, GLYPH_SIZE_BASELINE[size], xmn, xmx, ymn, ymx)
         big_plan = (big_x, big_y)
         base_ink_max = big_x + xmx
     else:
-        _bmn, _bmx = R.bounds(base)
-        base_ink_max = base_x + _bmx
+        # The small face keeps the language's own origin AND is clamped onto the panel
+        # exactly as the bigger tiers are (legend_plan_main's small path). It was not,
+        # for a long time: 305 of the 420 clipped elements measured across all 160
+        # layouts were small base legends sliding off the north or west edge by up to
+        # 8 px, because a per-language offset tuned for one script's glyph heights
+        # applies to every key of the layout.
+        _bxmn, _bxmx, _bymn, _bymx = R.bbox(base)
+        base_x, base_v = clamp_legend(base_x, BASELINE + base_v, _bxmn, _bxmx, _bymn, _bymx)
+        base_v -= BASELINE
+        base_ink_max = base_x + _bxmx
 
-    shift_letter = None; preview_x = preview_v = 0
+    shift_letter = None; preview_x = 0; preview_y = BASELINE
     if not shift and not caps:
         v_pv = get_setting(L, vrow, li, VAR_SHIFT); h_pv = get_setting(L, hrow, li, VAR_SHIFT)
         if v_pv != HIDE and h_pv != HIDE:
@@ -965,17 +1171,100 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
             shift_letter = L.var(li, row, VAR_SHIFT)
             if shift_letter is None and L.cell(li, row, VAR_SMALL) is None:
                 shift_letter = L.var(0, row, VAR_SHIFT)
+            # Drop a preview that would only repeat the base legend's own letter in
+            # the other case -- ä/Ä, ç/Ç, ł/Ł. The firmware does the same from a
+            # build-time bitmap; the RULE and its resolver are shared, see
+            # shift_preview_rule().
+            rule = shift_preview_rule(L)
+            if rule and shift_letter is not None and rule(*shift_preview_cells(L, li, row)):
+                shift_letter = None
             if shift_letter is not None:
-                pmin, pmax = R.bounds(shift_letter)
+                pmin, pmax, pymn, pymx = R.bbox(shift_letter)
                 preview_x = 28 + h_pv
                 if preview_x + pmin < base_ink_max + 2: preview_x = base_ink_max + 2 - pmin
-                if preview_x + pmax > BUFFER_X + SCREEN_WIDTH - 1: preview_x = (BUFFER_X + SCREEN_WIDTH - 1) - pmax
-                preview_v = v_pv
+                preview_y = BASELINE + v_pv
+                preview_x, preview_y = clamp_legend(preview_x, preview_y, pmin, pmax, pymn, pymx)
                 if preview_x + pmin <= base_ink_max:
-                    # Only a SMALL base can be lifted: a big one was already clamped
-                    # to the panel, so a 6 px lift pushes its ink off the top.
-                    if big is None: base_v -= 6
-                    preview_v += 4
+                    # Both moves are re-clamped: the panel edge wins over the stagger,
+                    # which is a readability nicety and not worth a clipped glyph.
+                    if big is None:
+                        base_x, base_v = clamp_legend(base_x, BASELINE + base_v - 6,
+                                                      _bxmn, _bxmx, _bymn, _bymx)
+                        base_v -= BASELINE
+                        base_ink_max = base_x + _bxmx
+                    preview_y += 4
+                    preview_x, preview_y = clamp_legend(preview_x, preview_y, pmin, pmax, pymn, pymx)
+
+    # Resolve the AltGr hint BEFORE anything is drawn, for the same reason the Shift
+    # preview above is resolved first: the two hints have to be laid out as a pair.
+    alt = None; alt_x = 0; alt_y = BASELINE
+    if not shift and not caps:
+        v_off = get_setting(L, vrow, li, VAR_ALTGR); h_off = get_setting(L, hrow, li, VAR_ALTGR)
+        if v_off != HIDE and h_off != HIDE:
+            alt = L.var(li, row, VAR_ALTGR)
+            if alt is not None:
+                amin, amax, aymn, aymx = R.bbox(alt)
+                # The AltGr glyph is a HINT -- what this key would type with a
+                # modifier nobody is holding -- so on a script whose letters fill the
+                # keycap it is drawn at HALF size: subordinate to the base legend, and
+                # a full-size script glyph is most of what made the two hints fight
+                # over the right-hand side.
+                #
+                # ⚠️ WHICH layouts is DATA, not a size test, and the measurement is
+                # why. The intuition is "Arabic and Indic have very large glyphs", but
+                # AltGr ink HEIGHT does not separate them: median 20 px on Arabic
+                # letters against 21 px on Latin. What differs is that on those
+                # layouts the base and Shift are wide too, so the row reads crowded --
+                # a per-LAYOUT judgement no glyph measurement can make. It lives in
+                # `{letter|num|sym.altgrhalf}` in lang_lut.xlsx, one cell per language
+                # PER CATEGORY; only the letter row is set today.
+                #
+                # ⚠️ The size test that REMAINS is only the mark guard: a glyph that is
+                # already tiny is destroyed by halving (a Hebrew nikud is 2x3 px and
+                # comes out a dot). THAT threshold is measured -- over the 318 distinct
+                # AltGr cells the ink-height histogram has an EMPTY BIN at 8 px, marks
+                # below it and letterforms from 9 px up -- and it carries most of the
+                # Indic layouts, whose letter AltGr hints are mostly bare combining
+                # marks at a median 4 px.
+                if (get_setting(L, ALTGR_HALF[cat], li, VAR_ALTGR)
+                        and aymx - aymn + 1 > ALTGR_HALF_MIN_INK_H and alt[0] != HINT_SMALL):
+                    alt = (HINT_SMALL,) + tuple(alt)
+                    amin, amax, aymn, aymx = R.bbox(alt)
+                alt_x = 28 + h_off
+                # At the small size this mark is kept off the legend by its VERTICAL
+                # offset; a big legend fills that height, so there the only separation
+                # left is horizontal (keymap.c does the same).
+                if big is not None and alt_x + amin < base_ink_max + 2:
+                    alt_x = base_ink_max + 2 - amin
+                alt_x, alt_y = clamp_legend(alt_x, BASELINE + v_off, amin, amax, aymn, aymx)
+
+    # --- keep the two hints off EACH OTHER ---------------------------------
+    # Both sit right of the base -- Shift upper, AltGr lower -- and it is their
+    # VERTICAL offsets that hold them apart. True for a narrow Latin pair, false for
+    # a tall script: on every ar-* KC_F the Shift tick lands inside the AltGr's 29 px
+    # box, and bn-BD KC_D shares 57 px. A per-language offset cannot fix that -- the
+    # room left over is decided by the WIDTH of this key's three glyphs, so a single
+    # number per language would have to satisfy the worst key and would crush the
+    # rest into the base.
+    #
+    # The base is bottom-left and narrow on exactly these keys, so the free space is
+    # between it and the (right-clamped) AltGr: pull the Shift LEFT into that gap,
+    # never past the base's own 2 px margin, and never to the right (which could only
+    # walk it into the clamp). Where three wide glyphs genuinely do not fit on 72 px
+    # the pull still shrinks the overlap rather than removing it.
+    if shift_letter is not None and alt is not None:
+        sx0, sx1 = preview_x + pmin, preview_x + pmax
+        sy0, sy1 = preview_y + pymn, preview_y + pymx
+        ax0, ax1 = alt_x + amin, alt_x + amax
+        ay0, ay1 = alt_y + aymn, alt_y + aymx
+        if sx0 <= ax1 and ax0 <= sx1 and sy0 <= ay1 and ay0 <= sy1:
+            want = ax0 - 2 - pmax
+            floor = base_ink_max + 2 - pmin
+            if want < floor: want = floor
+            if want < preview_x: preview_x = want
+            # The pull only moves LEFT, so only the west edge can be violated -- but
+            # re-clamp through the shared helper rather than open-coding that test.
+            preview_x, preview_y = clamp_legend(preview_x, preview_y, pmin, pmax, pymn, pymx)
 
     EXP = OVERSHOOT
     # report: per-element pixel sets so callers can flag out-of-bounds (a pixel the
@@ -996,23 +1285,9 @@ def render_key(L: Lang, R: Renderer, lang: str, kc: str, shift: bool, caps: bool
     else:
         R.draw(sp_base, base, base_x, BASELINE + base_v)
     if shift_letter is not None:
-        R.draw(sp_shift, shift_letter, preview_x, BASELINE + preview_v)
-    if not shift and not caps:
-        v_off = get_setting(L, vrow, li, VAR_ALTGR); h_off = get_setting(L, hrow, li, VAR_ALTGR)
-        if v_off != HIDE and h_off != HIDE:
-            alt = L.var(li, row, VAR_ALTGR)
-            if alt is not None:
-                # mirror the firmware's right-edge clamp (keymap.c altgr preview)
-                amin, amax = R.bounds(alt)
-                alt_x = 28 + h_off
-                # At the small size this mark is kept off the legend by its VERTICAL
-                # offset; a big legend fills that height, so there the only separation
-                # left is horizontal (keymap.c does the same).
-                if big is not None and alt_x + amin < base_ink_max + 2:
-                    alt_x = base_ink_max + 2 - amin
-                if alt_x + amax > BUFFER_X + SCREEN_WIDTH - 1:
-                    alt_x = (BUFFER_X + SCREEN_WIDTH - 1) - amax
-                R.draw(sp_alt, alt, alt_x, BASELINE + v_off)
+        R.draw(sp_shift, shift_letter, preview_x, preview_y)
+    if alt is not None:
+        R.draw(sp_alt, alt, alt_x, alt_y)
     if report is not None:
         def _oob(s): return sum(1 for (vx, vy) in s if vx < 0 or vx >= OLED_W or vy < 0 or vy >= OLED_H)
         report['oob'] = {k: _oob(v) for k, v in rpx.items()}

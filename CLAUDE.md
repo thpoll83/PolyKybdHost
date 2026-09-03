@@ -1449,6 +1449,30 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     draws the layer below, so a preview here would invent a legend the key does not
     have) and the two keys with no OLED behind them (matrix `(3,7)` and `(8,0)` — the
     inner keys documented in the firmware's non-rectangular display grid).
+  - ⚠️ **A `Lang` from the SHIPPED export is built with `object.__new__` — it has
+    the grid and the names and NOTHING `__init__` would have set.** Both
+    `preview_data.lang_reader()` and `KeycapPreview._load_shipped` do this
+    deliberately (the storage changes, the rules stay in one implementation), so any
+    helper reaching for an attribute `Lang.__init__` assigns must use `getattr`. The
+    Shift-preview rule read `L.xlsx` to find the firmware module beside the workbook;
+    on the shipped path that raised `AttributeError` inside `render_key`, the caller's
+    handler dropped that keycap, and the resolver's **module-global cache had already
+    been written** — so every LATER preview silently lost its suppression too. Caught
+    by Greptile on host#210, and both halves are one root cause.
+    - **Cache the resolution ON the `Lang`, never in a module global.** Two `Lang`
+      objects legitimately disagree here — a checkout one resolves, a shipped one
+      cannot — so a shared global lets whichever loads first answer for the other. A
+      global assigned *before* the lookup that can fail is worse still: it poisons
+      itself into "no suppression" for the process.
+    - ⚠️ **Anything the preview needs from the FIRMWARE tree has to be BAKED into the
+      export, or the shipped path is silently less correct than the developer one.**
+      The rule lives in `qmk_firmware/.../lang/shift_preview.py`; a host with no
+      checkout cannot import it, so `export_preview_data.py` runs it and ships the
+      verdict as data (`lang_lut.json` `shift_suppressed`) — the same move the
+      firmware makes for the same reason, one implementation with its answer shipped.
+      Without it the shipped preview drew 236 previews across 75 layouts the keyboard
+      suppresses. `test_letter_keycaps_draw_the_same_pixels` is what proves the two
+      sources agree, and it is why that test renders rather than compares structures.
 - **Tray/menu icons (`polyhost/res/icons/`) are Material Symbols at optical size
   48 — fetch the `_48px` cut, never `_24px`.** The optical-size axis changes the
   **geometry**, not just the header: the same symbol at opsz24 is drawn with

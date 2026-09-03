@@ -24,7 +24,21 @@ KEYCAP_TUNER.md). Verify with the headless diff documented there after any chang
 import sys, json, math, os, argparse
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.dirname(HERE))          # the host package, for lang_regions
 import oled_preview as op
+# The layout bar groups by the SAME regions the keyboard's language menu uses. Read
+# from the host's table rather than re-typed here -- a second copy is a second thing
+# to keep in step, and this one already says "keep in sync with REGION_LANGS".
+from polyhost.services.lang_regions import (          # noqa: E402
+    LANG_REGION, LANG_REGION_ORDER, LANG_REGION_OVERRIDE)
+
+
+def region_of(code: str) -> str:
+    """`xx-YY` -> its display region. Mirrors host.py's language-submenu lookup:
+    the per-language override first (Hawaiian is Polynesian, not Americas), then the
+    country code."""
+    flat = code.replace("-", "")
+    return LANG_REGION_OVERRIDE.get(flat, LANG_REGION.get(code[-2:].upper(), "Other"))
 
 CTRL = {0x05, 0x06, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x18}   # cursor / positioning control codes
 
@@ -55,7 +69,7 @@ def split_cps(cps, tok_for):
     esc, i = [], 0
     while i < len(cps) and cps[i] in CTRL:
         esc.append(cps[i]); i += 1
-    return {"esc": esc, "glyph": cps[i:], "tok": tok_for(cps[i:]), "fb": False}
+    return {"esc": esc, "glyph": cps[i:], "tok": tok_for(cps[i:]), "fb": False, "sup": False}
 
 
 def extract_lang(L: "op.Lang", li: int, tok_for) -> tuple:
@@ -78,6 +92,21 @@ def extract_lang(L: "op.Lang", li: int, tok_for) -> tuple:
             if scps is None and L.cell(li, row, op.VAR_SMALL) is None:
                 scps = L.var(0, row, op.VAR_SHIFT)
             e["shift"] = split_cps(scps, tok_for)
+            # The firmware drops a PREVIEW that only repeats the base legend's own
+            # letter in the other case (shift_preview_redundant, built from the same
+            # rule) — so the tuner must not show one either, or the offsets get tuned
+            # against a glyph the keycap never draws. Takes the RAW cells, like the
+            # build-time emitter.
+            #
+            # ⚠️ Flagged, NOT dropped. The cell has two jobs: the preview in the
+            # resting view AND the legend the keycap draws while Shift is actually
+            # held. Emptying it here is the same mistake that emptying it in the
+            # spreadsheet was — the preview would go away and so would the uppercase.
+            # The template hides it from the resting view and draws it in the
+            # Shift-held one.
+            rule = op.shift_preview_rule(L)
+            if e["shift"] and rule and rule(*op.shift_preview_cells(L, li, row)):
+                e["shift"]["sup"] = True
             e["altgr"] = split_cps(L.var(li, row, op.VAR_ALTGR), tok_for)   # altgr: no fallback
             keys[kc] = e
             for el in e.values():
@@ -88,7 +117,14 @@ def extract_lang(L: "op.Lang", li: int, tok_for) -> tuple:
         vrow, hrow = op.SET[cat]
         return {"H": op.get_setting(L, hrow, li, var), "V": op.get_setting(L, vrow, li, var)}
 
-    offsets = {c: {v: off(c, getattr(op, f"VAR_{v.upper()}")) for v in ["small", "shift", "altgr"]}
+    def held(cat):
+        """{<cat>.heldhoffset|heldvoffset} -- its own PAIR of rows, always VAR_ALTGR."""
+        vrow, hrow = op.HELD[cat]
+        return {"H": op.get_setting(L, hrow, li, op.VAR_ALTGR),
+                "V": op.get_setting(L, vrow, li, op.VAR_ALTGR)}
+
+    offsets = {c: dict({v: off(c, getattr(op, f"VAR_{v.upper()}"))
+                        for v in ["small", "shift", "altgr"]}, held=held(c))
                for c in ["letter", "num", "sym"]}
     return keys, offsets, used
 
@@ -101,9 +137,17 @@ def glyph_pool(R: "op.Renderer", used: set) -> dict:
         if not f or not (f.first <= cp <= f.last):
             continue
         g = f.glyphs[cp - f.first]; w, h = g['width'], g['height']
-        nb = math.ceil(w * h / 8) if w > 0 and h > 0 else 0
-        glyphs[str(cp)] = {"w": w, "h": h, "xadv": g['xAdvance'], "xo": g['xOffset'], "yo": g['yOffset'],
-                           "yadv": f.yAdvance, "bits": list(f.bitmap[g['bitmapOffset']:g['bitmapOffset'] + nb])}
+        # ⚠️ COLUMN-NATIVE (OLED page format): one byte = 8 VERTICAL pixels, so a
+        # glyph is `w * cb` WHOLE bytes -- not the row-major ceil(w*h/8) this used to
+        # slice. Both are plausible byte counts for the same glyph, which is why the
+        # mistake rendered noise instead of failing: the page came up, every keycap
+        # was scrambled, and nothing said why. Keep this paired with the reader in
+        # keycap_tuner_template.html `draw`.
+        cb = (h + 7) >> 3 if h > 0 else 0
+        nb = w * cb if w > 0 and h > 0 else 0
+        glyphs[str(cp)] = {"w": w, "h": h, "cb": cb, "xadv": g['xAdvance'], "xo": g['xOffset'],
+                           "yo": g['yOffset'], "yadv": f.yAdvance,
+                           "bits": list(f.bitmap[g['bitmapOffset']:g['bitmapOffset'] + nb])}
     return glyphs
 
 
@@ -112,6 +156,10 @@ def build_data(qmk: str, codes=None) -> dict:
     pk = os.path.join(qmk, 'keyboards', 'polykybd')
     named = op.load_named_glyphs(os.path.join(pk, 'lang', 'named_glyphs.h'))
     L = op.Lang(os.path.join(pk, 'lang', 'lang_lut.xlsx'), named)
+    # Fail loudly if a settings row moved -- every offset the tuner shows is read from a
+    # hardcoded row number, so an insert above one of them would silently mis-tune a
+    # whole category rather than error.
+    op.verify_setting_rows(L)
     R = op.Renderer(op.load_all_fonts(os.path.join(pk, 'base', 'fonts')))
     tok_for = make_tok_for(reverse_named(named))
 
@@ -122,14 +170,23 @@ def build_data(qmk: str, codes=None) -> dict:
 
     langs, used = {}, set()
     for c in order:
-        keys, offsets, u = extract_lang(L, L.langs.index(c), tok_for)
-        langs[c] = {"keys": keys, "offsets": offsets}
+        li = L.langs.index(c)
+        keys, offsets, u = extract_lang(L, li, tok_for)
+        # {letter|num|sym.altgrhalf} -- the per-layout, per-CATEGORY opt-in to the
+        # half-size AltGr hint. Plain settings cells, so the tuner round-trips them
+        # like an offset. `region` groups the layout bar the way the keyboard's own
+        # language menu does; it comes from the host's table rather than a second copy.
+        langs[c] = {"keys": keys, "offsets": offsets, "region": region_of(c),
+                    "altgrhalf": {cat: (1 if op.get_setting(L, row, li, op.VAR_ALTGR) else 0)
+                                  for cat, row in op.ALTGR_HALF.items()}}
         used |= u
 
     return {"order": order, "langs": langs, "glyphs": glyph_pool(R, used), "rows": op.SHEET,
             "base_yadv": R.fonts[0].yAdvance, "HIDE": op.HIDE,
+            "regions": LANG_REGION_ORDER + ["Other"],
             "consts": {"BASELINE": op.BASELINE, "BUFFER_X": op.BUFFER_X, "OLED_W": op.OLED_W,
-                       "OLED_H": op.OLED_H, "SCREEN_WIDTH": op.SCREEN_WIDTH}}
+                       "OLED_H": op.OLED_H, "SCREEN_WIDTH": op.SCREEN_WIDTH,
+                       "ALTGR_HALF_MIN_INK_H": op.ALTGR_HALF_MIN_INK_H}}
 
 
 def main():

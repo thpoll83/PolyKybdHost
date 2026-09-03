@@ -86,9 +86,17 @@ def parse_qmk_keycodes(header_path: Path) -> dict[str, int]:
 # DISPLAY ONLY and deliberately not real keycode names: they exist so the editor
 # states the ambiguity instead of picking a side. Never feed one back into a
 # name->value lookup (nothing does -- `name_to_keycode` is a separate map).
+#
+# Each label names the MEANINGS, not every alias: `create_nice_name` turns each
+# underscore into a line break, and the tile is sized for two. So 0x48 is
+# `KC_BRMU_PAUSE` and not `KC_PAUS_BRK_BRMU` -- `KC_BRK` is a second spelling of
+# Pause, not a second key, so the third line cost a row and carried nothing. Both
+# tiles now read <this key> / <the brightness key>, which is the whole point of
+# the override. Keep it to two: a new alias for one of these values belongs in the
+# trailing comment, never in the label.
 DISPLAY_NAME_OVERRIDE = {
     0x0047: "KC_SCRL_BRMD",       # KC_SCROLL_LOCK / KC_SCRL / KC_BRMD
-    0x0048: "KC_PAUS_BRK_BRMU",   # KC_PAUSE / KC_PAUS / KC_BRK / KC_BRMU
+    0x0048: "KC_BRMU_PAUSE",      # KC_PAUSE / KC_PAUS / KC_BRK / KC_BRMU
 }
 
 
