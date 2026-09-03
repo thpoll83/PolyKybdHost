@@ -41,6 +41,7 @@ class ReportProblemDialog(QDialog):
         self._diagnostics_cb = diagnostics_cb
         self._worker = None
         self._bundle_path = None
+        self._title_override = None   # set by set_description(); default_title otherwise
 
         self.setWindowTitle("Report a Problem")
         self.setMinimumWidth(620)
@@ -110,6 +111,15 @@ class ReportProblemDialog(QDialog):
         self._refresh_enabled()
 
     # -- helpers ---------------------------------------------------------
+    def set_description(self, text: str, title: str | None = None) -> None:
+        """Pre-fill the report (the crash alert hands over what the keyboard said).
+
+        A caller that supplies a title gets it verbatim; otherwise the issue title
+        is still derived from the description's first line at submit time."""
+        self.description.setPlainText(text or "")
+        self._title_override = title or None
+        self._refresh_enabled()
+
     def _update_privacy_note(self, masked: bool):
         if masked:
             self.privacy.setText(
@@ -197,7 +207,7 @@ class ReportProblemDialog(QDialog):
             description, expected, diagnostics,
             bundle_name=problem_report.bundle_display_name(self._bundle_path),
             redacted=redact)
-        title = problem_report.default_title(description)
+        title = self._title_override or problem_report.default_title(description)
         url, prefilled = problem_report.issue_url_for(title, body)
 
         # The body goes on the clipboard either way: it is the fallback when the

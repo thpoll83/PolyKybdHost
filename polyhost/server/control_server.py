@@ -205,6 +205,8 @@ class ControlServer(MpcListenerServer):
             p.M_GLYPH_SIZE_SET: lambda conn, params: _unwrap(c.set_glyph_size(params["value"])),
             p.M_GLYPH_SIZE_GET: lambda conn, params: _unwrap(c.get_glyph_size()),
             p.M_REPLAY_ANIM: lambda conn, params: _unwrap(c.replay_startup_anim()),
+            p.M_CRASH_GET: lambda conn, params: _unwrap(c.get_crash_record(params.get("which", 0))),
+            p.M_CRASH_CLEAR: lambda conn, params: _unwrap(c.clear_crash_record()),
             p.M_UNICODE_MODE_REFRESH: lambda conn, params: _unwrap(c.refresh_unicode_mode()),
             p.M_DAYLIGHT_REFRESH: lambda conn, params: _unwrap(c.refresh_daylight_brightness()),
             p.M_OVERLAY_SEND: lambda conn, params: {"queued": c.send_overlay_data(params["files"])},

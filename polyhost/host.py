@@ -433,6 +433,7 @@ class PolyHost(QApplication):
         # noinspection PyUnresolvedReferences
         self.report_problem_action.triggered.connect(self.open_report_problem)
         self.report_problem_dialog = None
+        self.crash_alert_dialog = None
 
         # "Send me your log" is otherwise a request nobody can satisfy: the logs
         # are five rotating files in the working directory, and in daemon mode
@@ -1505,6 +1506,36 @@ class PolyHost(QApplication):
         self.report_problem_dialog.show()
         self.report_problem_dialog.raise_()
         self.report_problem_dialog.activateWindow()
+
+    def _on_crash_detected(self, payload):
+        """The core found a firmware crash record in the keyboard's console.
+
+        One modeless dialog per session, retained on self for the same reason as
+        the report dialog; a further record (the other half, or a second crash)
+        is appended to the open one rather than stacking windows."""
+        from polyhost.services.crash_report import CrashRecord
+        from polyhost.gui.crash_alert_dialog import CrashAlertDialog
+        try:
+            rec = CrashRecord.from_dict(payload or {})
+        except Exception:  # noqa: BLE001 — a malformed payload must not take the tray down
+            self.log.warning("Ignoring an unreadable crash record: %r", payload, exc_info=True)
+            return
+        self.log.warning("Keyboard crash record: %s", rec.as_console_line())
+        if self.crash_alert_dialog is None:
+            self.crash_alert_dialog = CrashAlertDialog(
+                parent=None,
+                diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()),
+                report_cb=self._open_report_with_crash,
+                host_version=__version__)
+        self.crash_alert_dialog.add_record(rec)
+        self.crash_alert_dialog.show()
+        self.crash_alert_dialog.raise_()
+        self.crash_alert_dialog.activateWindow()
+
+    def _open_report_with_crash(self, description: str, title: str) -> None:
+        """Open Report-a-Problem with the crash written into the description."""
+        self.open_report_problem()
+        self.report_problem_dialog.set_description(description, title)
 
     def open_log_bundle(self):
         """Open the log-collection dialog (bundle .zip / clipboard).
@@ -2738,6 +2769,8 @@ class PolyHost(QApplication):
             # A control client (polyctl shutdown) asked the app to quit; the
             # request arrived on a server thread and was hopped here.
             self.quit_app()
+        elif name == "crash_detected":
+            self._on_crash_detected(result)
         elif name == "console":
             kb_serial, kb_log = result
             if kb_serial:

@@ -1965,6 +1965,30 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     either way, so the fallback costs a paste rather than the report. A test
     pins that a *realistic* report still prefills — otherwise the fallback
     quietly becomes the normal path.
+- **A firmware crash is ALERTED, not merely logged — `services/crash_report.py` +
+  `gui/crash_alert_dialog.py` (firmware crash record, protocol 16+).** The keyboard
+  prints `crash: side=… kind=… pc=… … fw=…` with its boot banner after a HardFault /
+  unhandled exception / watchdog reboot (qmk `base/crash_record.*`); the console
+  read on the HID worker feeds `CrashScanner`, `PolyCore` emits **`crash_detected`**
+  (a `CrashRecord.to_dict()`), and the tray shows one modeless dialog with two ways
+  out: **Report on GitHub…** (opens Report-a-Problem with the crash pre-filled via
+  `ReportProblemDialog.set_description(text, title)` — bundle, redaction and the
+  issue URL all as before) or **Copy to Clipboard** (`compose_report_text`, the same
+  text `polyctl crash show` prints). `polyctl crash show [--slave] [--json] | clear`
+  is the CLI over **cmd 39** (`M_CRASH_GET/CLEAR`, `FEATURE_MIN_PROTOCOL["crash_record"]`
+  = 16). Three things that are easy to get wrong:
+  - ⚠️ **A console read is a report-sized FRAGMENT, not a line** — the scanner
+    reassembles across the 250 ms reads and only classifies `\n`-terminated lines,
+    and it **dedupes by the line itself** because the boot banner re-emits for
+    ~30 s. `clear_crash_record()` calls `forget()` so the next boot's line is
+    reported again. Same trap the rig's `ConsoleTap` documents.
+  - ⚠️ **The console is starved during a flash** (see the threading notes above),
+    so a crash line printed while the host is flashing is lost to the scanner —
+    the record is still on the keyboard: `polyctl crash show` reads it over HID,
+    where `fresh` says whether it belongs to the boot before this one.
+  - `PHASE_NAMES` / `RECORD_STRUCT` mirror the firmware enum and struct
+    (`_Static_assert(sizeof == 48)` on that side); a phase added there needs a
+    name here or the summary reads `phase N`.
 - ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
   `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
   menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
