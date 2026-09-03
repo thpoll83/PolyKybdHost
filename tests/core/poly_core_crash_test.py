@@ -52,6 +52,15 @@ class ConsoleCrashScanTest(unittest.TestCase):
         core._console_periodic(MagicMock())
         self.assertEqual([n for n, _ in events].count("crash_detected"), 2)
 
+    def test_a_refused_clear_does_not_forget(self):
+        core, events = _core_with_console(LINE + "\n", LINE + "\n")
+        core.worker.run_sync.return_value = (False, "refused")
+        core._console_periodic(MagicMock())
+        ok, _ = core.clear_crash_record()
+        self.assertFalse(ok)
+        core._console_periodic(MagicMock())
+        self.assertEqual([n for n, _ in events].count("crash_detected"), 1)
+
     def test_get_crash_record_validates_the_half(self):
         core, _ = _core_with_console("")
         ok, msg = core.get_crash_record(2)

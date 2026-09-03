@@ -610,8 +610,15 @@ class PolyKybd:
                 f"Firmware protocol too old for the crash-record command "
                 f"(need v{CRASH_RECORD_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
         self.log.info("Clearing the keyboard's crash archive...")
-        return self.hid.send_and_read_validate(
-            compose_cmd(Cmd.CRASH_RECORD, 2), 500, expect(Cmd.CRASH_RECORD))
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.CRASH_RECORD, 2), 500, expect(Cmd.CRASH_RECORD))
+        except Exception as e:  # noqa: BLE001 — surfaced as a plain failure
+            return False, f"Crash record clear failed: {e}"
+        # The prefix check alone accepts a NACK (`P\x27!`); the '.' is the ACK.
+        if not result or len(reply) < 3 or reply[2:3] != b'.':
+            return False, "Crash record clear was refused by the keyboard."
+        return True, "cleared"
 
     def get_layer_names(self) -> tuple[bool, list[str]]:
         """Ask the keyboard what its host-remappable layers are called (cmd 35, v14+).

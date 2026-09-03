@@ -278,8 +278,9 @@ def compose_report_text(records: list[CrashRecord], diagnostics: str = "",
 
 def issue_description(records: list[CrashRecord]) -> str:
     """The pre-filled 'What happened' for the Report-a-Problem dialog."""
-    lines = ["The keyboard firmware crashed and restarted itself. PolyKybdHost "
-             "read this record from the keyboard's console:", ""]
+    intro = ("The keyboard firmware crashed and restarted itself. PolyKybdHost "
+             "read this record from the keyboard's console:")
+    lines = [intro, ""]
     for rec in records:
         lines.append(summarize(rec))
         lines.append("")

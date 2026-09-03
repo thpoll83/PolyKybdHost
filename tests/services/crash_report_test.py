@@ -1,6 +1,5 @@
 """crash_report — parsing the firmware's console line, decoding the HID record,
 reassembling report-sized console fragments, and the text handed to humans."""
-import struct
 import unittest
 
 from polyhost.services import crash_report as cr

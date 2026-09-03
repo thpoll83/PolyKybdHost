@@ -71,6 +71,15 @@ class CrashRecordCommandTest(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(device.last_payload()[:3], bytes([POLY, 39, 2]))
 
+    def test_a_nacked_clear_is_a_failure(self):
+        # The reply prefix alone matches a NACK too; only the '.' is an ACK. A
+        # refused clear reported as success would reset the host's dedupe while
+        # the record stays on the keyboard.
+        keeb, _ = make_keeb(replies=[nack(39)])
+        ok, msg = keeb.clear_crash_record()
+        self.assertFalse(ok)
+        self.assertIn("refused", msg)
+
 
 if __name__ == "__main__":
     unittest.main()
