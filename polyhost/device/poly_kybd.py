@@ -64,6 +64,11 @@ GUI_COMBO_MODIFIERS_MIN_PROTOCOL = 12
 # Minimum firmware PROTOCOL_VERSION for the keycap legend-size command (cmd 34).
 GLYPH_SIZE_MIN_PROTOCOL = 13
 MACRO_MIN_PROTOCOL = 15
+# Minimum firmware PROTOCOL_VERSION for the crash-record command (cmd 39): read the
+# archived crash of either half, or clear the archive. The crash *alert* does not
+# depend on this — it reads the console line, which any firmware that records
+# crashes prints — only the fetch/clear path is gated.
+CRASH_RECORD_MIN_PROTOCOL = 16
 
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
@@ -82,6 +87,7 @@ FEATURE_MIN_PROTOCOL = {
     "glyph_size": GLYPH_SIZE_MIN_PROTOCOL,
     "layer_names": LAYER_NAMES_MIN_PROTOCOL,
     "macros": MACRO_MIN_PROTOCOL,
+    "crash_record": CRASH_RECORD_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -574,6 +580,45 @@ class PolyKybd:
         except Exception:
             pass
         return False, 0
+
+    # --- crash record (cmd 39, protocol v16+) --------------------------------
+    def get_crash_record(self, which: int = 0) -> tuple[bool, Any]:
+        """Read the archived crash record (cmd 39): which 0 = this half, 1 = the slave's.
+
+        Returns (True, dict-or-None): the decoded record (crash_report.CrashRecord
+        .to_dict()) or None when the keyboard has none archived. (False, message)
+        when the firmware is too old or did not answer."""
+        if not self.supports("crash_record"):
+            return False, (
+                f"Firmware protocol too old for the crash-record command "
+                f"(need v{CRASH_RECORD_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.CRASH_RECORD, int(which)), 100, expect(Cmd.CRASH_RECORD))
+        except Exception as e:  # noqa: BLE001 — surfaced as a plain failure
+            return False, f"Crash record read failed: {e}"
+        if not result or len(reply) < 3 or reply[2:3] != b'.':
+            return False, "Crash record read was refused by the keyboard."
+        from polyhost.services.crash_report import decode_record
+        rec = decode_record(bytes(reply[3:]), "slave" if which == 1 else "master")
+        return True, (rec.to_dict() if rec else None)
+
+    def clear_crash_record(self) -> tuple[bool, Any]:
+        """Erase the keyboard's crash archive (cmd 39 sub-op 2)."""
+        if not self.supports("crash_record"):
+            return False, (
+                f"Firmware protocol too old for the crash-record command "
+                f"(need v{CRASH_RECORD_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        self.log.info("Clearing the keyboard's crash archive...")
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.CRASH_RECORD, 2), 500, expect(Cmd.CRASH_RECORD))
+        except Exception as e:  # noqa: BLE001 — surfaced as a plain failure
+            return False, f"Crash record clear failed: {e}"
+        # The prefix check alone accepts a NACK (`P\x27!`); the '.' is the ACK.
+        if not result or len(reply) < 3 or reply[2:3] != b'.':
+            return False, "Crash record clear was refused by the keyboard."
+        return True, "cleared"
 
     def get_layer_names(self) -> tuple[bool, list[str]]:
         """Ask the keyboard what its host-remappable layers are called (cmd 35, v14+).

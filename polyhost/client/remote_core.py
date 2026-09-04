@@ -358,6 +358,12 @@ class RemoteCore(Observable):
     def replay_startup_anim(self):
         return self._device(p.M_REPLAY_ANIM)
 
+    def get_crash_record(self, which=0):
+        return self._device(p.M_CRASH_GET, {"which": which})
+
+    def clear_crash_record(self):
+        return self._device(p.M_CRASH_CLEAR)
+
     # -- overlays -----------------------------------------------------------
     def send_overlay_data(self, files):
         try:

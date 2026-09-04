@@ -70,6 +70,10 @@ class Cmd(Enum):
     MACRO_INFO = 36   # count, label stride, capacity, bytes in use
     MACRO_BODY = 37   # windowed read/write of the shared body buffer
     MACRO_LABEL = 38  # get/set one macro's whole keycap look (caption+style+icon)
+    # Crash record (protocol v16+): data[2] 0 = this half's archived record,
+    # 1 = the slave's last pulled record, 2 = clear the archive. Reply body is
+    # [flags][48-byte poly_crash_record_t] — see services/crash_report.py.
+    CRASH_RECORD = 39
 
 
 

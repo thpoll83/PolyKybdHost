@@ -69,6 +69,10 @@ M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
 M_GLYPH_SIZE_SET = "glyph.size.set"      # {"value": 0|1|2} -> (ok, payload)
 M_GLYPH_SIZE_GET = "glyph.size.get"      # {} -> (ok, value)
 M_REPLAY_ANIM = "anim.replay"            # {} -> (ok, payload)  replay the startup ("Eden") animation
+# Firmware crash records (protocol v16+). GET returns the archived record of one half
+# as crash_report.CrashRecord.to_dict() (or None); CLEAR erases the keyboard's archive.
+M_CRASH_GET = "crash.get"                # {"which": 0|1} -> (ok, record|None)
+M_CRASH_CLEAR = "crash.clear"            # {} -> (ok, payload)
 # Re-detect the host unicode input method (WinCompose vs native) and push it to the
 # keyboard. Normally sent once per connect; needed when WinCompose is installed or
 # quit mid-session. {} -> (ok, {"mode": "WinCompose"|"Windows"|...})

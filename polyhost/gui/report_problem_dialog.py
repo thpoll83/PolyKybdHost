@@ -41,6 +41,8 @@ class ReportProblemDialog(QDialog):
         self._diagnostics_cb = diagnostics_cb
         self._worker = None
         self._bundle_path = None
+        self._title_override = None   # set by set_description(); default_title otherwise
+        self._prefilled_text = ""     # what set_description() put in; the override rides on it
 
         self.setWindowTitle("Report a Problem")
         self.setMinimumWidth(620)
@@ -110,6 +112,16 @@ class ReportProblemDialog(QDialog):
         self._refresh_enabled()
 
     # -- helpers ---------------------------------------------------------
+    def set_description(self, text: str, title: str | None = None) -> None:
+        """Pre-fill the report (the crash alert hands over what the keyboard said).
+
+        A caller that supplies a title gets it verbatim; otherwise the issue title
+        is still derived from the description's first line at submit time."""
+        self.description.setPlainText(text or "")
+        self._prefilled_text = text or ""
+        self._title_override = title or None
+        self._refresh_enabled()
+
     def _update_privacy_note(self, masked: bool):
         if masked:
             self.privacy.setText(
@@ -125,7 +137,15 @@ class ReportProblemDialog(QDialog):
 
     def _refresh_enabled(self):
         """An empty report helps nobody — require a description."""
-        has_text = bool(self.description.toPlainText().strip())
+        text = self.description.toPlainText()
+        # The pre-filled title belongs to the pre-filled text. The dialog is
+        # retained between uses, so once the crash text is gone (the user cleared
+        # it for an unrelated report) the title must go with it, or the next
+        # report ships under a stale "Firmware crash" heading.
+        if self._title_override and self._prefilled_text not in text:
+            self._title_override = None
+            self._prefilled_text = ""
+        has_text = bool(text.strip())
         self.create_btn.setEnabled(has_text and self._worker is None)
 
     def _diagnostics(self):
@@ -197,7 +217,10 @@ class ReportProblemDialog(QDialog):
             description, expected, diagnostics,
             bundle_name=problem_report.bundle_display_name(self._bundle_path),
             redacted=redact)
-        title = problem_report.default_title(description)
+        title = self._title_override or problem_report.default_title(description)
+        # One report per pre-fill: the next one derives its own title again.
+        self._title_override = None
+        self._prefilled_text = ""
         url, prefilled = problem_report.issue_url_for(title, body)
 
         # The body goes on the clipboard either way: it is the fallback when the

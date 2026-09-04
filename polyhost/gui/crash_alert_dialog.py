@@ -1,0 +1,125 @@
+"""The "your keyboard crashed" alert.
+
+Raised by the tray when the keyboard's console reports a crash record (see
+:mod:`polyhost.services.crash_report`). Two ways out, both one click: open the
+guided *Report a Problem* dialog with the crash already written into the
+description (it builds the log bundle and pre-fills the GitHub issue), or copy
+the crash text plus the host diagnostics to the clipboard to paste into a chat
+or an existing issue. Dismissing keeps nothing — the record is still on the
+keyboard (``polyctl crash show``) and in the console log.
+
+Qt is only the widget; the text comes from the Qt-free service module so it is
+unit-tested there and identical on the clipboard, in the issue and in polyctl.
+"""
+
+import logging
+
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
+                             QPlainTextEdit, QPushButton, QVBoxLayout)
+
+from polyhost.services import crash_report
+
+
+class CrashAlertDialog(QDialog):
+    """Modeless; a second record arriving while it is open is appended."""
+
+    def __init__(self, parent=None, diagnostics_cb=None, report_cb=None,
+                 host_version=None):
+        super().__init__(parent)
+        self.log = logging.getLogger("PolyHost")
+        self._diagnostics_cb = diagnostics_cb
+        self._report_cb = report_cb
+        self._host_version = host_version
+        self.records: list[crash_report.CrashRecord] = []
+
+        self.setWindowTitle("PolyKybd — the keyboard firmware crashed")
+        self.setMinimumWidth(640)
+        layout = QVBoxLayout(self)
+
+        self.headline = QLabel()
+        self.headline.setWordWrap(True)
+        self.headline.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        layout.addWidget(self.headline)
+
+        layout.addWidget(QLabel("<b>What the keyboard reported</b>"))
+        self.detail = QPlainTextEdit(self)
+        self.detail.setReadOnly(True)
+        self.detail.setMinimumHeight(120)
+        self.detail.setLineWrapMode(QPlainTextEdit.NoWrap)
+        layout.addWidget(self.detail)
+
+        hint = QLabel(
+            "The keyboard restarted on its own and is working again. To help fix "
+            "the cause, either open a bug report (this collects the logs and "
+            "pre-fills a GitHub issue — nothing is sent until you press Submit "
+            "there), or copy the details to paste wherever you are discussing it.")
+        hint.setWordWrap(True)
+        layout.addWidget(hint)
+
+        self.status = QLabel("")
+        self.status.setWordWrap(True)
+        layout.addWidget(self.status)
+
+        buttons = QHBoxLayout()
+        self.report_btn = QPushButton("Report on GitHub…", self)
+        self.report_btn.setDefault(True)
+        self.report_btn.clicked.connect(self._report)
+        buttons.addWidget(self.report_btn)
+
+        self.copy_btn = QPushButton("Copy to Clipboard", self)
+        self.copy_btn.clicked.connect(self._copy)
+        buttons.addWidget(self.copy_btn)
+
+        buttons.addStretch(1)
+        dismiss = QPushButton("Dismiss", self)
+        dismiss.clicked.connect(self.reject)
+        buttons.addWidget(dismiss)
+        layout.addLayout(buttons)
+
+    # -- content -------------------------------------------------------------
+    def add_record(self, rec: crash_report.CrashRecord) -> None:
+        if any(r.line == rec.line and r.side == rec.side for r in self.records):
+            return
+        self.records.append(rec)
+        self._render()
+
+    def _render(self) -> None:
+        if not self.records:
+            return
+        first = self.records[0]
+        n = len(self.records)
+        which = "Both keyboard halves" if n > 1 and {r.side for r in self.records} == {"master", "slave"} \
+            else ("The keyboard" if first.side == "master" else "The link-side keyboard half")
+        self.headline.setText(
+            f"<b>{which} crashed and restarted</b> "
+            f"(firmware {first.fw}, {first.kind} while in {first.phase_name}).")
+        self.detail.setPlainText(
+            "\n\n".join(crash_report.summarize(r) + "\n" + r.as_console_line()
+                        for r in self.records))
+
+    def _text(self) -> str:
+        diagnostics = ""
+        if self._diagnostics_cb:
+            try:
+                diagnostics = self._diagnostics_cb() or ""
+            except Exception:  # noqa: BLE001 — diagnostics are a courtesy
+                self.log.warning("Could not gather diagnostics for the crash text", exc_info=True)
+        return crash_report.compose_report_text(self.records, diagnostics, self._host_version)
+
+    # -- actions -------------------------------------------------------------
+    def _copy(self) -> None:
+        QApplication.clipboard().setText(self._text())
+        self.status.setText("Copied to the clipboard.")
+
+    def _report(self) -> None:
+        if self._report_cb is None:
+            self._copy()
+            return
+        try:
+            self._report_cb(crash_report.issue_description(self.records),
+                            crash_report.issue_title(self.records))
+            self.status.setText("Opened the problem report with the crash filled in.")
+        except Exception:  # noqa: BLE001 — never lose the record over a dialog error
+            self.log.warning("Could not open the problem report", exc_info=True)
+            self._copy()

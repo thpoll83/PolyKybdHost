@@ -43,6 +43,7 @@ from polyhost.services import telemetry as telemetry_svc
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
+from polyhost.services.crash_report import CrashScanner
 from polyhost.util.observable import Observable
 
 RECONNECT_CYCLE_MSEC = 1000
@@ -225,6 +226,7 @@ class PolyCore(Observable):
         self.worker = HidWorker(log=self.log)
         self.worker.add_periodic("reconnect", RECONNECT_CYCLE_MSEC / 1000.0,
                                  self._reconnect_periodic)
+        self._crash_scanner = CrashScanner()   # firmware crash lines in the console stream
         self.worker.add_periodic("console", UPDATE_CYCLE_MSEC / 1000.0,
                                  self._console_periodic)
         self.worker.add_periodic("brightness", PERIODIC_10MIN_CYCLE_MSEC / 1000.0,
@@ -919,6 +921,26 @@ class PolyCore(Observable):
         kb_log = self.keeb.get_console_output()
         if kb_serial or kb_log:
             self.emit("console", (kb_serial, kb_log))
+        if kb_log:
+            self._scan_console_for_crashes(kb_log)
+
+    def _scan_console_for_crashes(self, chunk):
+        """Watch the console stream for the firmware's crash line and alert once.
+
+        The keyboard prints `crash: side=… kind=…` with its boot banner when the
+        previous run ended in a fault or a watchdog timeout (and again, as
+        `side=slave`, for the other half). Reading the log by hand is how it would
+        otherwise be found — so it is surfaced as an event the tray turns into a
+        dialog and `polyctl watch` prints. The scanner reassembles report-sized
+        fragments into lines and dedupes the banner's own re-emits."""
+        try:
+            records = self._crash_scanner.feed(chunk)
+        except Exception:  # noqa: BLE001 — a scanner bug must not kill the console read
+            self.log.warning("Crash-record scan failed", exc_info=True)
+            return
+        for rec in records:
+            self.log.warning("Keyboard firmware crash record: %s", rec.line)
+            self.emit("crash_detected", rec.to_dict())
 
     # HID SET_BRIGHTNESS flag bits — mirror firmware base/com.h (protocol >= 5).
     # On older firmware the flags byte is ignored (plain persisted set), so we
@@ -1146,6 +1168,26 @@ class PolyCore(Observable):
     def get_glyph_size(self):
         return self._device_call(
             "glyph_size_get", lambda c: self.keeb.get_glyph_size())
+
+    # --- firmware crash records ----------------------------------------------
+    def get_crash_record(self, which=0):
+        """The archived crash record of one half (0 master, 1 slave), or None."""
+        try:
+            w = int(which)
+        except (TypeError, ValueError):
+            return False, f"Invalid half: {which!r}"
+        if w not in (0, 1):
+            return False, f"Invalid half: {which!r} (0 = master, 1 = slave)"
+        return self._device_call(
+            "crash_get", lambda c, w=w: self.keeb.get_crash_record(w))
+
+    def clear_crash_record(self):
+        """Erase the keyboard's crash archive; a cleared record can be reported again."""
+        ok, payload = self._device_call(
+            "crash_clear", lambda c: self.keeb.clear_crash_record())
+        if ok:
+            self._crash_scanner.forget()
+        return ok, payload
 
     # --- dynamic macros ---------------------------------------------------
     #

@@ -469,6 +469,30 @@ def _cmd_unicode_mode(client, args):
     return 0
 
 
+def _cmd_crash(client, args):
+    """Read (or clear) the firmware crash record over HID cmd 39 (firmware v16+)."""
+    if args.crash_action == "clear":
+        client.call(protocol.M_CRASH_CLEAR, {})
+        print("crash record cleared")
+        return 0
+    which = 1 if args.slave else 0
+    rec = client.call(protocol.M_CRASH_GET, {"which": which})
+    side = "slave" if args.slave else "master"
+    if not rec:
+        print(f"no crash record on the {side} half")
+        return 0
+    if args.json:
+        print(json.dumps(rec, indent=2))
+        return 0
+    from polyhost.services.crash_report import CrashRecord, summarize  # stdlib-only module
+    r = CrashRecord.from_dict(rec)
+    print(summarize(r))
+    print(f"  {r.as_console_line()}")
+    print(f"  reset reason: {r.reset_reason_text}; exception vector: {r.vector}; "
+          f"{'fresh (from the boot before this one)' if r.fresh else 'archived (older)'}")
+    return 0
+
+
 def _cmd_replay_anim(client, args):
     client.call(protocol.M_REPLAY_ANIM, {})
     print("replaying startup animation")
@@ -947,6 +971,17 @@ def build_parser():
     sub.add_parser(
         "replay-anim", help="replay the one-time startup (Eden) animation on the keycaps"
     ).set_defaults(func=_cmd_replay_anim)
+
+    p_crash = sub.add_parser(
+        "crash", help="show or clear the keyboard's last firmware crash record (firmware v16+)")
+    crash_sub = p_crash.add_subparsers(dest="crash_action", required=True)
+    p_crash_show = crash_sub.add_parser(
+        "show", help="print the record the keyboard holds (empty when it never crashed)")
+    p_crash_show.add_argument("--slave", action="store_true",
+                              help="the link-side half's record, as pulled by the master")
+    p_crash_show.add_argument("--json", action="store_true", help="raw fields as JSON")
+    crash_sub.add_parser("clear", help="discard the record so the next boot reports nothing")
+    p_crash.set_defaults(func=_cmd_crash)
 
     p_ov = sub.add_parser("overlay", help="overlay control")
     ov_sub = p_ov.add_subparsers(dest="overlay_action", required=True)

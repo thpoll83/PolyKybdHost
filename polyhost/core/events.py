@@ -89,3 +89,10 @@ UPDATE_RELAY_NEEDED = "update_relay_needed"
 UPDATE_FAILED = "update_failed"
 FW_DOWNLOAD_PROGRESS = "fw_download_progress"
 FW_DOWNLOAD_DONE = "fw_download_done"
+
+# The keyboard's console reported a firmware crash record (its boot banner
+# carries one `crash: side=… kind=…` line per crash, once per boot; the master
+# also relays the slave's). Payload: crash_report.CrashRecord.to_dict() — the
+# parsed fields plus the raw line. Emitted once per distinct record; the GUI
+# raises the crash alert dialog, polyctl watch prints it.
+CRASH_DETECTED = "crash_detected"
