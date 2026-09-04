@@ -1553,6 +1553,33 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     had missed. The measurement also overruled three name-based picks: the
     `brightness_*` family is not a coherent ramp (the `backlight_*` family is),
     and `bedtime`/`bedtime_off` beat a sun for idle start/stop.
+- ⚠️ **The WINDOW icon and the TASKBAR BUTTON icon are answered by different
+  questions, and `setWindowIcon()` only answers the first.** Windows groups
+  taskbar buttons by **AppUserModelID**, and a process that never sets one is
+  identified by its host executable — `pythonw.exe` — so the button showed the
+  **Python** icon while every title bar was correct (field, 2026-09-04: *"for
+  all these dialogs the program icon is not shown in the task bar"*).
+  - **It was never a missing icon**, which is why chasing `setWindowIcon` call
+    sites finds nothing: `IconStateManager.__init__` runs `update()` with
+    `dirty_flag` already set, so `QApplication.setWindowIcon` is called at
+    startup and every dialog inherits a real `p*.png`. Four dialogs additionally
+    override it with `pcolor.png`; that is cosmetic, not the fix.
+  - **The Linux half had been solved all along, three lines away** —
+    `QApplication.setDesktopFileName('PolyHost')` in `main_app.py`, commented
+    *"important for XWayland icon matching"*, i.e. the same question with the
+    same failure mode. `set_windows_app_id()` is its counterpart and sits in the
+    same `if/elif`, so the two are read together.
+  - ⚠️ **It must run BEFORE the first window exists** — a window keeps the
+    identity it was born with — and it must never raise: this is cosmetic, and an
+    exception there kills the tray before it appears. One call in `main_app`
+    covers the **forwarder** too, which is the second tray app that otherwise
+    gets forgotten.
+  - ⚠️ **`WINDOWS_APP_ID` is STABLE, not a name to tidy.** Windows keys pinned
+    buttons and jump lists off that string, so renaming it orphans a user's
+    pinned icon. A test pins the literal for that reason.
+  - **Not verifiable from this container** — the code path is `win32`-only, so
+    the tests cover the wiring (asked for on Windows, nowhere else, a failure
+    swallowed and logged) and hardware confirms the icon.
 - **The font-pack flash events carry a `kind` — label UIs from it, not the event name.**
   The doom easter egg's game data (`.whx`) and executable engine pack (`.plyx`) ride the
   **font-pack transport**, so `PolyCore.install_doomwad`/`install_doompack` emit the same
@@ -1989,6 +2016,39 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   - `PHASE_NAMES` / `RECORD_STRUCT` mirror the firmware enum and struct
     (`_Static_assert(sizeof == 48)` on that side); a phase added there needs a
     name here or the summary reads `phase N`.
+  - ⚠️ **The dialog is retained for the LIFE OF THE TRAY and only ever appends —
+    "Dismiss" hides the window, it does not forget.** So a crash from an hour ago
+    rides along in the report about the one that just happened; a test session
+    that fired seven triggers left all seven in every later problem report
+    (field, 2026-09-04, which is how this was found). Three places hold state and
+    they had no single gesture that agreed: the dialog's `records` list (nothing
+    cleared it — only quitting the GUI), `CrashScanner._seen` (the dedupe, cleared
+    by `forget()`), and the keyboard's own 4 KB flash archive (HID cmd 39 sub-op
+    2). **`Clear` on the dialog now does all three**, wired to
+    `core.clear_crash_record()` — which is `forget()` plus the erase — so a record
+    cannot come back from one layer after being dropped from another.
+    - It is **confirmed** because the keyboard's archive is the only durable copy:
+      after Clear there is nothing left but the console log.
+    - ⚠️ **A device that refuses still drops the host-side list**, deliberately.
+      Keeping it because the keyboard was paused or mid-flash is exactly the
+      complaint — stale records in every later report — so the failure is
+      reported in the status line instead.
+    - The button is absent when there is no `clear_cb`, since clearing here while
+      the keyboard still held the record is the out-of-step state it prevents.
+      `polyctl crash clear` remains the CLI route and covers the same three.
+    - ⚠️ **The `except` around the device call is broad because an exception
+      escaping a Qt SLOT takes the TRAY DOWN, not just the action** — PyQt calls
+      the excepthook and then `qFatal`. Measured while mutation-testing: narrowing
+      it to `OSError` **aborts the interpreter mid-suite**. It is the same abort
+      `util/crash_log.py` exists to capture, so this is not defensive style.
+    - ⚠️ **That also breaks the mutation harness in a NEW way: a mutation that
+      ABORTS the process reads exactly like one that was not caught.** The run
+      dies before unittest prints anything, so a `grep '^(FAIL|ERROR): '` finds
+      nothing and the harness reports an empty "caught-by" — the result that means
+      *your tests are worthless*. Same family as the ANSI-escape and
+      mutation-never-applied traps in `qmk_firmware/CLAUDE.md`, and the same
+      remedy applies one level up: **judge the run by the `Ran N tests` summary
+      line existing**, not by the absence of failures.
 - ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
   `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
   menu and its own `forwarder_log.txt` — so a user-facing tray feature added to

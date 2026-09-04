@@ -8,8 +8,11 @@ root logger that ``logging.basicConfig`` configures later.
 """
 import logging
 import os
+import sys
 import tempfile
+import types
 import unittest
+from unittest import mock
 
 from polyhost import main_app
 
@@ -139,6 +142,60 @@ class SpawnedDaemonFlagsTest(unittest.TestCase):
         self.assertEqual(
             main_app._spawned_daemon_flags(self._Args(dev=1, ignore_version=True), 1),
             ["--no-autostart", "--dev", "1", "--ignore-version"])
+
+
+class WindowsAppIdTest(unittest.TestCase):
+    """The taskbar identity — the Windows counterpart of setDesktopFileName().
+
+    Windows groups taskbar buttons by AppUserModelID and identifies a process that
+    never sets one by its HOST EXECUTABLE, so the button showed pythonw.exe's Python
+    icon no matter what the window icon was (field, 2026-09-04). It is not reachable
+    from Linux, so what is testable here is the wiring: that it is asked for on
+    Windows, asked for nowhere else, and cannot take the tray down when it fails.
+    """
+
+    def _fake_ctypes(self, recorder, boom=False):
+        mod = types.ModuleType("ctypes")
+
+        class _Shell:
+            @staticmethod
+            def SetCurrentProcessExplicitAppUserModelID(app_id):  # noqa: N802 - Win32 name
+                if boom:
+                    raise OSError("no shell32 here")
+                recorder.append(app_id)
+
+        mod.windll = types.SimpleNamespace(shell32=_Shell)
+        return mod
+
+    def test_sets_the_id_on_windows(self):
+        seen = []
+        with mock.patch.object(main_app.sys, "platform", "win32"), \
+             mock.patch.dict(sys.modules, {"ctypes": self._fake_ctypes(seen)}):
+            self.assertTrue(main_app.set_windows_app_id())
+        self.assertEqual(seen, [main_app.WINDOWS_APP_ID])
+
+    def test_does_nothing_off_windows(self):
+        seen = []
+        for plat in ("linux", "darwin"):
+            with mock.patch.object(main_app.sys, "platform", plat), \
+                 mock.patch.dict(sys.modules, {"ctypes": self._fake_ctypes(seen)}):
+                self.assertFalse(main_app.set_windows_app_id(), plat)
+        self.assertEqual(seen, [], "must not touch shell32 off Windows")
+
+    def test_a_failure_is_swallowed_and_logged(self):
+        # Cosmetic: an exception here would take the tray down before it appeared.
+        log = mock.Mock()
+        with mock.patch.object(main_app.sys, "platform", "win32"), \
+             mock.patch.dict(sys.modules, {"ctypes": self._fake_ctypes([], boom=True)}):
+            self.assertFalse(main_app.set_windows_app_id(log))
+        self.assertTrue(log.debug.called, "a swallowed failure must still be traceable")
+
+    def test_the_id_is_stable_and_well_formed(self):
+        # Windows keys pinned buttons and jump lists off this string, so renaming it
+        # orphans a user's pinned icon. Pinned deliberately, not as a style check.
+        self.assertEqual(main_app.WINDOWS_APP_ID, "PolyTasten.PolyKybd.PolyHost.1")
+        self.assertLessEqual(len(main_app.WINDOWS_APP_ID), 128)   # Win32 limit
+        self.assertNotIn(" ", main_app.WINDOWS_APP_ID)
 
 
 if __name__ == "__main__":

@@ -1526,7 +1526,8 @@ class PolyHost(QApplication):
                 parent=None,
                 diagnostics_cb=lambda: self._diagnostics_text(self._gather_about_info()),
                 report_cb=self._open_report_with_crash,
-                host_version=__version__)
+                host_version=__version__,
+                clear_cb=self.core.clear_crash_record)
         self.crash_alert_dialog.add_record(rec)
         self.crash_alert_dialog.show()
         self.crash_alert_dialog.raise_()

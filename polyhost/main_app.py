@@ -80,6 +80,37 @@ def _setup_startup_logging(debug=0):
         slog.addHandler(sh)
     return slog
 
+# The taskbar groups buttons by AppUserModelID, and a process that never sets one
+# is identified by its host executable instead -- pythonw.exe -- so the button shows
+# the PYTHON icon however good the window icon is. That is why this is not fixed by
+# setWindowIcon(): IconStateManager already sets a real app icon at startup (its
+# constructor runs update() with dirty_flag set), and the title bar is correct; only
+# the taskbar button was wrong. The Linux half of the same question has been answered
+# by setDesktopFileName() all along -- this is its Windows counterpart.
+#
+# Reverse-DNS-ish, four fields, and STABLE: Windows keys pinned buttons and jump
+# lists off this string, so changing it later orphans a user's pinned icon.
+WINDOWS_APP_ID = "PolyTasten.PolyKybd.PolyHost.1"
+
+
+def set_windows_app_id(log=None, app_id=WINDOWS_APP_ID):
+    """Claim a taskbar identity on Windows. Returns True when it was set.
+
+    Must run before the first window is created; a window already on screen keeps
+    the identity it was born with. Never raises: this is cosmetic, and an exception
+    here would take the tray down before it ever appeared."""
+    if sys.platform != 'win32':
+        return False
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+        return True
+    except Exception as e:  # noqa: BLE001 - a wrong taskbar icon must not be fatal
+        if log is not None:
+            log.debug("Could not set the Windows AppUserModelID (%s): %s", app_id, e)
+        return False
+
+
 def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     parser = argparse.ArgumentParser(
                     prog='PolyHost',
@@ -318,6 +349,11 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
 
     # GUI / forwarder paths: import Qt lazily, only here.
     from PyQt5.QtWidgets import QApplication
+    # Tell the desktop shell who this process is, BEFORE the first window exists.
+    # Both branches answer the same question -- "which application do these windows
+    # belong to?" -- and the answer is not the window icon: a shell that cannot
+    # identify the app falls back to the icon of the executable hosting it, which
+    # for us is pythonw.exe.
     # Important for XWayland icon matching
     if sys.platform.startswith('linux'):
         QApplication.setDesktopFileName('PolyHost')
@@ -326,6 +362,8 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         # Must run before the QApplication instance below reads the env.
         from polyhost.gui import file_dialogs
         file_dialogs.maybe_set_portal_platformtheme()
+    elif sys.platform == 'win32':
+        set_windows_app_id(slog)
 
     if args.host or args.host_file:
         from polyhost.forwarder import PolyForwarder
