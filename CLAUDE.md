@@ -2306,6 +2306,11 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 - **Version bump is label-driven**: the merged PR's `bump:major`/`bump:minor`/
   `bump:protocol` label (else patch) drives `bump-version.yml`. Bump `__protocol__` in
   lockstep with the firmware (see the connect-gate note above).
+  - ⚠️ **Set the label when the PR is OPENED (`issue_write`, `labels:`), never
+    only ask for it in the body.** #212 (2026-09-04) asked for `bump:minor` in its
+    body, was merged without it, and the label applied as the merge was happening
+    landed 12 s too late — host went to **0.14.17**, not 0.15.0. Full note in
+    `qmk_firmware/CLAUDE.md` § Releases ("Before the merge means AT OPEN").
 - ⚠️ **From Claude Code on the web you can neither push tags (git proxy 403 on
   `refs/tags/*`) nor create a release (no `gh`, no create-release MCP tool)** — stage the
   notes on the branch and hand the user `python scripts/publish_release.py`.
