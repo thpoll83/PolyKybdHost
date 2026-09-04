@@ -1553,6 +1553,33 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     had missed. The measurement also overruled three name-based picks: the
     `brightness_*` family is not a coherent ramp (the `backlight_*` family is),
     and `bedtime`/`bedtime_off` beat a sun for idle start/stop.
+- ⚠️ **The WINDOW icon and the TASKBAR BUTTON icon are answered by different
+  questions, and `setWindowIcon()` only answers the first.** Windows groups
+  taskbar buttons by **AppUserModelID**, and a process that never sets one is
+  identified by its host executable — `pythonw.exe` — so the button showed the
+  **Python** icon while every title bar was correct (field, 2026-09-04: *"for
+  all these dialogs the program icon is not shown in the task bar"*).
+  - **It was never a missing icon**, which is why chasing `setWindowIcon` call
+    sites finds nothing: `IconStateManager.__init__` runs `update()` with
+    `dirty_flag` already set, so `QApplication.setWindowIcon` is called at
+    startup and every dialog inherits a real `p*.png`. Four dialogs additionally
+    override it with `pcolor.png`; that is cosmetic, not the fix.
+  - **The Linux half had been solved all along, three lines away** —
+    `QApplication.setDesktopFileName('PolyHost')` in `main_app.py`, commented
+    *"important for XWayland icon matching"*, i.e. the same question with the
+    same failure mode. `set_windows_app_id()` is its counterpart and sits in the
+    same `if/elif`, so the two are read together.
+  - ⚠️ **It must run BEFORE the first window exists** — a window keeps the
+    identity it was born with — and it must never raise: this is cosmetic, and an
+    exception there kills the tray before it appears. One call in `main_app`
+    covers the **forwarder** too, which is the second tray app that otherwise
+    gets forgotten.
+  - ⚠️ **`WINDOWS_APP_ID` is STABLE, not a name to tidy.** Windows keys pinned
+    buttons and jump lists off that string, so renaming it orphans a user's
+    pinned icon. A test pins the literal for that reason.
+  - **Not verifiable from this container** — the code path is `win32`-only, so
+    the tests cover the wiring (asked for on Windows, nowhere else, a failure
+    swallowed and logged) and hardware confirms the icon.
 - **The font-pack flash events carry a `kind` — label UIs from it, not the event name.**
   The doom easter egg's game data (`.whx`) and executable engine pack (`.plyx`) ride the
   **font-pack transport**, so `PolyCore.install_doomwad`/`install_doompack` emit the same
