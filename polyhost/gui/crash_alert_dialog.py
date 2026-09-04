@@ -138,7 +138,18 @@ class CrashAlertDialog(QDialog):
                 f"if you still need them.",
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
             return
-        ok, payload = True, ""
+        # No pre-assignment: both arms below bind the pair, and CodeQL flags a dead
+        # one (a "defined multiple times" finding on this very line). The tuple
+        # unpack raising -- a callback that returns something other than a pair --
+        # lands in the same except as a device error, which is the right answer for
+        # both: the dialog must not be stranded either way.
+        #
+        # ⚠️ The except is broad because an exception escaping a Qt SLOT does not
+        # merely fail the action -- PyQt calls the excepthook and then qFatal, so
+        # it takes the whole tray down. Measured: narrowing this to OSError and
+        # running the tests ABORTS the interpreter mid-suite. That is the same
+        # abort util/crash_log.py exists to capture, and it is why this is not
+        # defensive style.
         try:
             ok, payload = self._clear_cb()
         except Exception as e:  # noqa: BLE001 — a device error must not strand the dialog

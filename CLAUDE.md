@@ -2036,6 +2036,19 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     - The button is absent when there is no `clear_cb`, since clearing here while
       the keyboard still held the record is the out-of-step state it prevents.
       `polyctl crash clear` remains the CLI route and covers the same three.
+    - ⚠️ **The `except` around the device call is broad because an exception
+      escaping a Qt SLOT takes the TRAY DOWN, not just the action** — PyQt calls
+      the excepthook and then `qFatal`. Measured while mutation-testing: narrowing
+      it to `OSError` **aborts the interpreter mid-suite**. It is the same abort
+      `util/crash_log.py` exists to capture, so this is not defensive style.
+    - ⚠️ **That also breaks the mutation harness in a NEW way: a mutation that
+      ABORTS the process reads exactly like one that was not caught.** The run
+      dies before unittest prints anything, so a `grep '^(FAIL|ERROR): '` finds
+      nothing and the harness reports an empty "caught-by" — the result that means
+      *your tests are worthless*. Same family as the ANSI-escape and
+      mutation-never-applied traps in `qmk_firmware/CLAUDE.md`, and the same
+      remedy applies one level up: **judge the run by the `Ran N tests` summary
+      line existing**, not by the absence of failures.
 - ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
   `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
   menu and its own `forwarder_log.txt` — so a user-facing tray feature added to

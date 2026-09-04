@@ -89,6 +89,15 @@ class CrashAlertClearTest(unittest.TestCase):
         self.assertEqual(d.records, [])
         self.assertIn("no device", d.status.text())
 
+    def test_a_callback_returning_a_non_pair_is_handled_like_any_device_error(self):
+        # There is no pre-assignment of (ok, payload) -- CodeQL flags a dead one --
+        # so the tuple unpack is what would raise here. It lands in the same except
+        # as a device error, which is the right answer for both.
+        d = self._dialog(clear_cb=lambda: None)
+        d.clear_btn.click()
+        self.assertEqual(d.records, [])
+        self.assertIn("Error", d.status.text())
+
     def test_declining_the_confirmation_changes_nothing(self):
         calls = []
         self._answer = QMessageBox.No
