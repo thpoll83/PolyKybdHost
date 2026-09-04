@@ -1989,6 +1989,26 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   - `PHASE_NAMES` / `RECORD_STRUCT` mirror the firmware enum and struct
     (`_Static_assert(sizeof == 48)` on that side); a phase added there needs a
     name here or the summary reads `phase N`.
+  - ⚠️ **The dialog is retained for the LIFE OF THE TRAY and only ever appends —
+    "Dismiss" hides the window, it does not forget.** So a crash from an hour ago
+    rides along in the report about the one that just happened; a test session
+    that fired seven triggers left all seven in every later problem report
+    (field, 2026-09-04, which is how this was found). Three places hold state and
+    they had no single gesture that agreed: the dialog's `records` list (nothing
+    cleared it — only quitting the GUI), `CrashScanner._seen` (the dedupe, cleared
+    by `forget()`), and the keyboard's own 4 KB flash archive (HID cmd 39 sub-op
+    2). **`Clear` on the dialog now does all three**, wired to
+    `core.clear_crash_record()` — which is `forget()` plus the erase — so a record
+    cannot come back from one layer after being dropped from another.
+    - It is **confirmed** because the keyboard's archive is the only durable copy:
+      after Clear there is nothing left but the console log.
+    - ⚠️ **A device that refuses still drops the host-side list**, deliberately.
+      Keeping it because the keyboard was paused or mid-flash is exactly the
+      complaint — stale records in every later report — so the failure is
+      reported in the status line instead.
+    - The button is absent when there is no `clear_cb`, since clearing here while
+      the keyboard still held the record is the out-of-step state it prevents.
+      `polyctl crash clear` remains the CLI route and covers the same three.
 - ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
   `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
   menu and its own `forwarder_log.txt` — so a user-facing tray feature added to

@@ -5,8 +5,14 @@ Raised by the tray when the keyboard's console reports a crash record (see
 guided *Report a Problem* dialog with the crash already written into the
 description (it builds the log bundle and pre-fills the GitHub issue), or copy
 the crash text plus the host diagnostics to the clipboard to paste into a chat
-or an existing issue. Dismissing keeps nothing — the record is still on the
-keyboard (``polyctl crash show``) and in the console log.
+or an existing issue.
+
+⚠️ **Dismissing HIDES this window, it does not forget.** The dialog is retained
+for the life of the tray and every later record is appended, so a crash from an
+hour ago rides along in the report about the one that just happened. *Clear* is
+the only thing that forgets, and it clears all three places at once: this list,
+the keyboard's own flash archive (HID cmd 39), and the scanner's dedupe set, so
+a record cannot come back from one of them after being dropped from another.
 
 Qt is only the widget; the text comes from the Qt-free service module so it is
 unit-tested there and identical on the clipboard, in the issue and in polyctl.
@@ -16,7 +22,7 @@ import logging
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QDialog, QHBoxLayout, QLabel,
-                             QPlainTextEdit, QPushButton, QVBoxLayout)
+                             QMessageBox, QPlainTextEdit, QPushButton, QVBoxLayout)
 
 from polyhost.services import crash_report
 
@@ -25,11 +31,12 @@ class CrashAlertDialog(QDialog):
     """Modeless; a second record arriving while it is open is appended."""
 
     def __init__(self, parent=None, diagnostics_cb=None, report_cb=None,
-                 host_version=None):
+                 host_version=None, clear_cb=None):
         super().__init__(parent)
         self.log = logging.getLogger("PolyHost")
         self._diagnostics_cb = diagnostics_cb
         self._report_cb = report_cb
+        self._clear_cb = clear_cb
         self._host_version = host_version
         self.records: list[crash_report.CrashRecord] = []
 
@@ -72,6 +79,16 @@ class CrashAlertDialog(QDialog):
         buttons.addWidget(self.copy_btn)
 
         buttons.addStretch(1)
+        # Only offered when the tray can actually reach the keyboard: clearing the
+        # host's list while the keyboard still holds the record would put the two
+        # out of step, which is the state this button exists to prevent.
+        if self._clear_cb is not None:
+            self.clear_btn = QPushButton("Clear", self)
+            self.clear_btn.setToolTip(
+                "Forget these records here AND erase the keyboard's crash archive.")
+            self.clear_btn.clicked.connect(self._clear)
+            buttons.addWidget(self.clear_btn)
+
         dismiss = QPushButton("Dismiss", self)
         dismiss.clicked.connect(self.reject)
         buttons.addWidget(dismiss)
@@ -108,6 +125,36 @@ class CrashAlertDialog(QDialog):
         return crash_report.compose_report_text(self.records, diagnostics, self._host_version)
 
     # -- actions -------------------------------------------------------------
+    def _clear(self) -> None:
+        """Forget the records here and on the keyboard.
+
+        Confirmed because the keyboard's archive is the only durable copy: once
+        this runs there is nothing left to report but the console log."""
+        n = len(self.records)
+        if QMessageBox.question(
+                self, "Clear crash records",
+                f"Discard {n} crash record(s) here and erase the keyboard's "
+                f"crash archive?\n\nThis cannot be undone — report or copy them first "
+                f"if you still need them.",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+            return
+        ok, payload = True, ""
+        try:
+            ok, payload = self._clear_cb()
+        except Exception as e:  # noqa: BLE001 — a device error must not strand the dialog
+            self.log.warning("Could not clear the keyboard crash record", exc_info=True)
+            ok, payload = False, f"{type(e).__name__}: {e}"
+        # The host-side list is dropped either way. Leaving it because the device
+        # call failed would mean a keyboard that is unreachable (paused, mid-flash)
+        # keeps stale records in every later report, which is the complaint.
+        self.records.clear()
+        if ok:
+            self.accept()
+            return
+        self.status.setText(f"Cleared here, but the keyboard did not: {payload}")
+        self.detail.setPlainText("")
+        self.headline.setText("<b>No crash records held.</b>")
+
     def _copy(self) -> None:
         QApplication.clipboard().setText(self._text())
         self.status.setText("Copied to the clipboard.")
