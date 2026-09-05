@@ -28,9 +28,38 @@ _ICON_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res" / "icons"
 _cache = {}   # name -> QIcon
 
 
+# The brand mark (p{color,gray,think,warn}) ships a ladder of purpose-rendered
+# sizes beside the canonical file -- pcolor.png plus pcolor_16.png, _24, _32 ...
+# A tray at 16 px otherwise gets a 256 px master smoothly downscaled, which
+# blurs a mark made of hard-edged squares. Everything under res/icons named
+# p*.png/.ico/.icns/.svg is written by tools/gen_brand_icons.py; edit that.
+_LADDER = (16, 24, 32, 48, 64, 128, 256)
+
+
+def icon_files(name, icon_dir=_ICON_DIR):
+    """The file(s) QIcon should be built from, most specific first.
+
+    Split out from get_icon() so the filename arithmetic is testable without Qt:
+    a wrong stem yields an EMPTY QIcon rather than an error, which is the silent
+    failure tests/gui/icon_assets_test.py exists to prevent.
+    """
+    path = pathlib.Path(icon_dir) / name
+    if path.suffix == ".png":
+        sized = [
+            path.with_name(f"{path.stem}_{size}.png")
+            for size in _LADDER
+        ]
+        sized = [p for p in sized if p.exists()]
+        if sized:
+            return sized
+    return [path]
+
+
 def get_icon(name):
     icon = _cache.get(name)
     if icon is None:
-        icon = QIcon(str(_ICON_DIR / name))
+        icon = QIcon()
+        for path in icon_files(name):
+            icon.addFile(str(path))
         _cache[name] = icon
     return icon
