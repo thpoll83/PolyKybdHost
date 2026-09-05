@@ -4,3 +4,4 @@
 Pillow>=12.3.0   # CVE-2026-54058 (out-of-bounds read, McIdas AREA)
 fonttools>=4
 openpyxl>=3   # lang_demo.py / oled_preview.py read lang/lang_lut.xlsx
+cairosvg>=2.7   # gen_brand_icons.py rasterises the brand-mark SVG masters

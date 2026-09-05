@@ -1524,6 +1524,45 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       Without it the shipped preview drew 236 previews across 75 layouts the keyboard
       suppresses. `test_letter_keycaps_draw_the_same_pixels` is what proves the two
       sources agree, and it is why that test renders rather than compares structures.
+- **The brand mark (`p{color,gray,think,warn}.*`) is GENERATED — edit
+  `tools/gen_brand_icons.py`, never the PNGs.** It draws a 6x6 keycap grid whose
+  UNLIT keys spell a "P" in negative space, on a 1024-unit viewBox (the 64px
+  original's proportions scaled up), and writes the whole set per variant: an SVG
+  master, `p<v>.png` (256, the canonical file `add_to_startup` and the About dialog
+  use), `p<v>@1024.png` for docs/store, the `p<v>_<n>.png` size ladder, `.ico` and
+  `.icns`. Redesigned 2026-09-05 from a six-hue rainbow to one blue -> cyan sweep,
+  with "HOST" stamped out of the bottom row's four rightmost keys.
+  - **`get_icon()` feeds QIcon the LADDER, not the 256 master.** The mark is hard-
+    edged squares, so Qt smoothly downscaling 256 -> 16 for a tray blurs exactly the
+    thing that carries the shape. `BrandMarkTest` (tests/gui/icon_assets_test.py)
+    asserts the set is complete AND that each ladder PNG's pixels match its name —
+    a ladder built by copying one file is as blurry as no ladder, and looks fine
+    until it is on somebody else's taskbar.
+  - ⚠️ **cairosvg does NOT honour `<mask>`** — the stamp is punched by redrawing the
+    body fill over the key instead, which is why the body gradient is
+    `gradientUnits="userSpaceOnUse"`: the punched pixels then match the body around
+    them exactly. A mask renders as a silent no-op (the key just draws whole), so
+    check the render, not the SVG source.
+  - **The stamp is rendered only at 128 px and up** (`STAMP_MIN_SIZE`); the smaller
+    renders come from an unstamped master, so a tray icon stays a clean grid instead
+    of carrying four keys of mush. Measured: clean at 128+, legible at 96,
+    unreadable at 64.
+  - ⚠️ **Pillow's ICO writer SKIPS every requested size LARGER than the base image,
+    silently.** Handing it the 16 px render first (natural, when the entries are
+    rendered per size and iterated small-to-large) writes a **single-entry 16x16
+    `.ico`** that Windows then upscales into a blur — no error, no warning, and the
+    file opens fine. The base must be the LARGEST; the rest go in `append_images`.
+    `test_every_ico_carries_the_whole_size_set` reads the ICONDIR count with
+    `struct` so it needs no image library.
+  - ⚠️ **Abutting rects leave a hairline seam once antialiased.** The stamp's pixel
+    cells are inflated 6% so neighbours overlap; without it every letter shows faint
+    grid lines through it at 1024.
+  - The brand `.svg` files are excluded from the Material-Symbols format tests
+    (`BRAND_SVG`): they are multi-layer generated artwork with many fills, not
+    single-fill menu glyphs, and no `get_icon()` call names them.
+  - **Downstream generators re-run from `pgray.png`** — `browser-extension/generate_icons.py`
+    and `browser-extension/store/make_promo.py`. Run both after regenerating.
+
 - **Tray/menu icons (`polyhost/res/icons/`) are Material Symbols at optical size
   48 — fetch the `_48px` cut, never `_24px`.** The optical-size axis changes the
   **geometry**, not just the header: the same symbol at opsz24 is drawn with
