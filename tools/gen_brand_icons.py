@@ -164,21 +164,26 @@ def svg(variant="color", style="engraved", diagonal=True, stamp=True, body_r=Non
         body, rim = "#0B1220", None
 
     a0, a1 = AREA_INSET, S - AREA_INSET
+    # Each entry is ONE SVG element, joined with an explicit `+`. Bare adjacent
+    # literals inside a list are indistinguishable from a forgotten comma --
+    # to a reader and to CodeQL's py/implicit-string-concatenation-in-list --
+    # and here a missing comma would silently merge two <defs> entries into one
+    # string that still renders, just wrongly.
     out = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {S} {S}" width="{S}" height="{S}">',
         "<defs>",
         f'<linearGradient id="keys" gradientUnits="userSpaceOnUse" '
-        f'x1="{a0}" y1="{a0 if diagonal else 0}" x2="{a1}" y2="{a1 if diagonal else 0}">'
-        f'<stop offset="0" stop-color="{g0}"/><stop offset="1" stop-color="{g1}"/></linearGradient>',
+        + f'x1="{a0}" y1="{a0 if diagonal else 0}" x2="{a1}" y2="{a1 if diagonal else 0}">'
+        + f'<stop offset="0" stop-color="{g0}"/><stop offset="1" stop-color="{g1}"/></linearGradient>',
         '<linearGradient id="cap" x1="0" y1="0" x2="0" y2="1">'
-        '<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.34"/>'
-        '<stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.04"/>'
-        '<stop offset="1" stop-color="#000018" stop-opacity="0.22"/></linearGradient>',
+        + '<stop offset="0" stop-color="#FFFFFF" stop-opacity="0.34"/>'
+        + '<stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0.04"/>'
+        + '<stop offset="1" stop-color="#000018" stop-opacity="0.22"/></linearGradient>',
         f'<linearGradient id="rim" gradientUnits="userSpaceOnUse" x1="{a0}" y1="0" x2="{a1}" y2="0">'
-        f'<stop offset="0" stop-color="{g0}"/><stop offset="1" stop-color="{g1}"/></linearGradient>',
+        + f'<stop offset="0" stop-color="{g0}"/><stop offset="1" stop-color="{g1}"/></linearGradient>',
         f'<linearGradient id="body" gradientUnits="userSpaceOnUse" x1="0" y1="{BODY_INSET}" '
-        f'x2="0" y2="{S - BODY_INSET}">'
-        '<stop offset="0" stop-color="#182135"/><stop offset="1" stop-color="#080C16"/></linearGradient>',
+        + f'x2="0" y2="{S - BODY_INSET}">'
+        + '<stop offset="0" stop-color="#182135"/><stop offset="1" stop-color="#080C16"/></linearGradient>',
     ]
 
     out.append("</defs>")
