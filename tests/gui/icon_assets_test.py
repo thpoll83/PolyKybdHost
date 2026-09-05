@@ -172,6 +172,55 @@ class BrandMarkTest(unittest.TestCase):
                 wrong.append((f"{v}.ico", sizes))
         self.assertEqual(wrong, [], "ICOs missing sizes -- see the Pillow base-image trap")
 
+    def test_the_state_variants_draw_the_RING_ONLY(self):
+        """pthink/pwarn clear every inner key -- both the lit ones and the faint
+        engraved ghosts -- so the glyph sits in real space. Counted in the SVG
+        master rather than in pixels: the sand is the same cyan as a lit key, so
+        no colour test can separate glyph ink from a key it happens to cover."""
+        counts = {}
+        for v in BRAND_VARIANTS:
+            text = (ICON_DIR / f"{v}.svg").read_text(encoding="utf-8")
+            counts[v] = (
+                text.count("url(#keys)"),
+                text.count('fill-opacity="0.05"'),
+            )
+        # the full mark: 25 lit keys, 11 engraved ghosts. The ring: 20 and none.
+        self.assertEqual(counts["pcolor"], (25, 11))
+        self.assertEqual(counts["pgray"], (25, 11))
+        self.assertEqual(counts["pthink"], (20, 0))
+        self.assertEqual(counts["pwarn"], (20, 0))
+
+    def test_the_state_glyph_stays_inside_the_cleared_middle(self):
+        """pthink/pwarn drop every inner key so the glyph sits in real space --
+        which only holds while the glyph FITS. The warning triangle is stroked,
+        so its nominal width understates it by half the stroke on each side, and
+        an unshrunk one overlaps the ring keys. Each variant is measured by an
+        ink colour the ring cannot produce: the ring is blue/cyan (low red), the
+        hourglass glass near-white and the warning amber."""
+        from PIL import Image
+
+        # the cleared middle: keys 1..4 of the 6x6 grid, in the 1024 master
+        LO, HI = 245, 779
+        checks = {
+            "pthink": lambda r, g, b: r > 180 and g > 180 and b > 180,
+            "pwarn": lambda r, g, b: r > 180 and 100 < g < 210 and b < 120,
+        }
+        stray = {}
+        for name, is_glyph in checks.items():
+            im = Image.open(ICON_DIR / f"{name}@1024.png").convert("RGBA")
+            px = im.load()
+            n = 0
+            for y in range(0, 1024, 2):
+                for x in range(0, 1024, 2):
+                    if LO <= x <= HI and LO <= y <= HI:
+                        continue
+                    r, g, b, a = px[x, y]
+                    if a > 128 and is_glyph(r, g, b):
+                        n += 1
+            if n:
+                stray[name] = n
+        self.assertEqual(stray, {}, "state glyph ink landing on the keycap ring")
+
     def test_the_stamp_appears_only_where_it_can_be_read(self):
         """Below 128 px the stamped letters are mush, so those renders come from
         the unstamped master. Measured as dark pixels inside a LIT bottom-row

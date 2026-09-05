@@ -1543,6 +1543,24 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `gradientUnits="userSpaceOnUse"`: the punched pixels then match the body around
     them exactly. A mask renders as a silent no-op (the key just draws whole), so
     check the render, not the SVG source.
+  - **The busy and warning states draw the RING ONLY** (`RING`, and the engraved
+    ghosts are skipped there too), so the hourglass / warning triangle sits in
+    cleared space instead of over a dimmed grid — which is also why neither
+    carries a dimming overlay any more. The P goes with the inner keys; a
+    transient state reads by its glyph, and the ring plus the HOST stamp still
+    names the app. ⚠️ The triangle is STROKED, so its nominal width understates
+    it by half the stroke on each side — an unshrunk one overlaps the ring keys.
+  - ⚠️ **Whether the inner keys are cleared cannot be tested in PIXELS** — the
+    hourglass sand is the same cyan as a lit key, so no colour predicate
+    separates glyph ink from a key it covers. `test_the_state_variants_draw_the_RING_ONLY`
+    counts `url(#keys)` and the ghost rects in the SVG master instead (25/11 for
+    the full mark, 20/0 for the ring). The pixel test beside it answers a
+    different question — that the glyph stays inside the cleared middle — and it
+    does NOT catch a variant that kept its inner keys.
+  - **The hourglass glass is ONE path.** Drawing the two bulbs as separate
+    shapes leaves a gap at the neck that reads as broken glass; and it is filled
+    shapes throughout, never strokes, because an outline fills in at 16 px and
+    becomes a blob.
   - **The stamp is rendered only at 128 px and up** (`STAMP_MIN_SIZE`); the smaller
     renders come from an unstamped master, so a tray icon stays a clean grid instead
     of carrying four keys of mush. Measured: clean at 128+, legible at 96,

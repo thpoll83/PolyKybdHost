@@ -13,28 +13,12 @@
 <rect x="653.7" y="120.3" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="653.7" y="120.3" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
 <rect x="787.0" y="120.3" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="787.0" y="120.3" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
 <rect x="120.3" y="253.7" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="120.3" y="253.7" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
-<rect x="253.7" y="253.7" width="116.7" height="116.7" rx="14.0" fill="#FFFFFF" fill-opacity="0.05"/>
-<rect x="387.0" y="253.7" width="116.7" height="116.7" rx="14.0" fill="#FFFFFF" fill-opacity="0.05"/>
-<rect x="520.3" y="253.7" width="116.7" height="116.7" rx="14.0" fill="#FFFFFF" fill-opacity="0.05"/>
-<rect x="653.7" y="253.7" width="116.7" height="116.7" rx="14.0" fill="#FFFFFF" fill-opacity="0.05"/>
 <rect x="787.0" y="253.7" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="787.0" y="253.7" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
 <rect x="120.3" y="387.0" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="120.3" y="387.0" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
-<rect x="253.7" y="387.0" width="116.7" height="116.7" rx="14.0" fill="#FFFFFF" fill-opacity="0.05"/>
-<rect x="387.0" y="387.0" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="387.0" y="387.0" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
-<rect x="520.3" y="387.0" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="520.3" y="387.0" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
-<rect x="653.7" y="387.0" width="116.7" height="116.7" rx="14.0" fill="#FFFFFF" fill-opacity="0.05"/>
 <rect x="787.0" y="387.0" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="787.0" y="387.0" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
 <rect x="120.3" y="520.3" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="120.3" y="520.3" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
-<rect x="253.7" y="520.3" width="116.7" height="116.7" rx="14.0" fill="#FFFFFF" fill-opacity="0.05"/>
-<rect x="387.0" y="520.3" width="116.7" height="116.7" rx="14.0" fill="#FFFFFF" fill-opacity="0.05"/>
-<rect x="520.3" y="520.3" width="116.7" height="116.7" rx="14.0" fill="#FFFFFF" fill-opacity="0.05"/>
-<rect x="653.7" y="520.3" width="116.7" height="116.7" rx="14.0" fill="#FFFFFF" fill-opacity="0.05"/>
 <rect x="787.0" y="520.3" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="787.0" y="520.3" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
 <rect x="120.3" y="653.7" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="120.3" y="653.7" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
-<rect x="253.7" y="653.7" width="116.7" height="116.7" rx="14.0" fill="#FFFFFF" fill-opacity="0.05"/>
-<rect x="387.0" y="653.7" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="387.0" y="653.7" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
-<rect x="520.3" y="653.7" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="520.3" y="653.7" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
-<rect x="653.7" y="653.7" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="653.7" y="653.7" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
 <rect x="787.0" y="653.7" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="787.0" y="653.7" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
 <rect x="120.3" y="787.0" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="120.3" y="787.0" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
 <rect x="253.7" y="787.0" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="253.7" y="787.0" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
@@ -46,7 +30,6 @@
 <rect x="689.43" y="808.30" width="16.20" height="16.20" fill="url(#body)"/><rect x="703.90" y="808.30" width="16.20" height="16.20" fill="url(#body)"/><rect x="718.37" y="808.30" width="16.20" height="16.20" fill="url(#body)"/><rect x="689.43" y="822.77" width="16.20" height="16.20" fill="url(#body)"/><rect x="689.43" y="837.23" width="16.20" height="16.20" fill="url(#body)"/><rect x="703.90" y="837.23" width="16.20" height="16.20" fill="url(#body)"/><rect x="718.37" y="837.23" width="16.20" height="16.20" fill="url(#body)"/><rect x="718.37" y="851.70" width="16.20" height="16.20" fill="url(#body)"/><rect x="689.43" y="866.17" width="16.20" height="16.20" fill="url(#body)"/><rect x="703.90" y="866.17" width="16.20" height="16.20" fill="url(#body)"/><rect x="718.37" y="866.17" width="16.20" height="16.20" fill="url(#body)"/>
 <rect x="787.0" y="787.0" width="116.7" height="116.7" rx="14.0" fill="url(#keys)"/><rect x="787.0" y="787.0" width="116.7" height="116.7" rx="14.0" fill="url(#cap)"/>
 <rect x="822.77" y="808.30" width="16.20" height="16.20" fill="url(#body)"/><rect x="837.23" y="808.30" width="16.20" height="16.20" fill="url(#body)"/><rect x="851.70" y="808.30" width="16.20" height="16.20" fill="url(#body)"/><rect x="837.23" y="822.77" width="16.20" height="16.20" fill="url(#body)"/><rect x="837.23" y="837.23" width="16.20" height="16.20" fill="url(#body)"/><rect x="837.23" y="851.70" width="16.20" height="16.20" fill="url(#body)"/><rect x="837.23" y="866.17" width="16.20" height="16.20" fill="url(#body)"/>
-<rect x="16" y="16" width="992" height="992" rx="48" fill="#070B14" fill-opacity="0.62"/>
-<path d="M 512 285 L 758 717 L 266 717 Z" fill="#F2A93B" stroke="#F2A93B" stroke-width="77" stroke-linejoin="round"/>
-<rect x="479" y="423" width="66" height="182" rx="33" fill="#1A1206"/><circle cx="512" cy="657" r="41" fill="#1A1206"/>
+<path d="M 512 335 L 717 695 L 307 695 Z" fill="#F2A93B" stroke="#F2A93B" stroke-width="77" stroke-linejoin="round"/>
+<rect x="479" y="450" width="66" height="151" rx="33" fill="#1A1206"/><circle cx="512" cy="645" r="41" fill="#1A1206"/>
 </svg>

@@ -41,6 +41,19 @@ GRID = [
     "111111",
 ]
 
+# The busy and warning states drop every INNER key, so their glyph sits in real
+# space rather than over a dimmed grid. The P goes with them -- deliberate: a
+# transient state reads by its glyph, and the ring plus the HOST stamp still
+# says which app it belongs to.
+RING = [
+    "111111",
+    "100001",
+    "100001",
+    "100001",
+    "100001",
+    "111111",
+]
+
 # "HOST" stamped out of the four rightmost keys of the bottom row, as a 3x5
 # pixel font so it needs no typeface and matches the keycap grid it sits in.
 STAMP_ROW = 5
@@ -64,8 +77,8 @@ LADDER_SIZES = (16, 24, 32, 48, 64, 128, 256)
 STAMP_MIN_SIZE = 128
 
 
-def _keys():
-    for r, row in enumerate(GRID):
+def _keys(grid=GRID):
+    for r, row in enumerate(grid):
         for c, ch in enumerate(row):
             x = AREA_INSET + c * PITCH + (PITCH - KEY) / 2
             y = AREA_INSET + r * PITCH + (PITCH - KEY) / 2
@@ -94,17 +107,57 @@ def _stamp_path(letter, kx, ky, scale=0.62, fill="#000"):
     return "".join(out)
 
 
-def _hourglass(cx, cy, w, h, col):
-    """A flat hourglass glyph, drawn as two triangles plus caps."""
-    x0, x1 = cx - w / 2, cx + w / 2
-    y0, y1 = cy - h / 2, cy + h / 2
-    t = h * 0.10
+def _hourglass(cx, cy, w, h, glass, sand):
+    """An hourglass: one continuous glass silhouette plus the sand inside it.
+
+    Drawn as filled shapes, never strokes -- the icon has to survive being
+    rasterised at 16 px, where an outline fills in and reads as a blob. The
+    glass is ONE path so the two bulbs meet at a real waist; drawing them as
+    separate shapes leaves a gap that reads as broken glass.
+    """
+    cap = h * 0.075                       # the two end caps
+    bw = w * 0.88                         # bulb width, inset from the caps
+    bx0, bx1 = cx - bw / 2, cx + bw / 2
+    ty = cy - h / 2 + cap                 # where the top bulb starts
+    by = cy + h / 2 - cap                 # where the bottom bulb ends
+    waist = w * 0.05
+    wx0, wx1 = cx - waist / 2, cx + waist / 2
+    # control points close to the axis make the wall bow INWARD into the waist
+    kx = cx + waist * 0.9
+    ky_t, ky_b = cy - (cy - ty) * 0.30, cy + (by - cy) * 0.30
+
+    glass_path = (
+        f'M {bx0:.1f} {ty:.1f} L {bx1:.1f} {ty:.1f} '
+        f'Q {2*cx - kx:.1f} {ky_t:.1f} {wx1:.1f} {cy:.1f} '          # mirrored: kx right
+        f'Q {2*cx - kx:.1f} {ky_b:.1f} {bx1:.1f} {by:.1f} '
+        f'L {bx0:.1f} {by:.1f} '
+        f'Q {kx - 2*(kx-cx):.1f} {ky_b:.1f} {wx0:.1f} {cy:.1f} '
+        f'Q {kx - 2*(kx-cx):.1f} {ky_t:.1f} {bx0:.1f} {ty:.1f} Z'
+    )
+
+    # sand: what is left in the top bulb drains onto a mound in the bottom one
+    top_y = ty + (cy - ty) * 0.46
+    tw = bw * 0.50
+    mound = by - (by - cy) * 0.34
+    mw = bw * 0.94
+    grain = w * 0.05
+
     return (
-        f'<rect x="{x0:.1f}" y="{y0:.1f}" width="{w:.1f}" height="{t:.1f}" rx="{t/2:.1f}" fill="{col}"/>'
-        f'<rect x="{x0:.1f}" y="{y1-t:.1f}" width="{w:.1f}" height="{t:.1f}" rx="{t/2:.1f}" fill="{col}"/>'
-        f'<path d="M {x0+w*0.10:.1f} {y0+t:.1f} L {x1-w*0.10:.1f} {y0+t:.1f} '
-        f'L {cx:.1f} {cy:.1f} L {x1-w*0.10:.1f} {y1-t:.1f} L {x0+w*0.10:.1f} {y1-t:.1f} '
-        f'L {cx:.1f} {cy:.1f} Z" fill="{col}"/>'
+        f'<rect x="{cx - w/2:.1f}" y="{cy - h/2:.1f}" width="{w:.1f}" height="{cap:.1f}" '
+        f'rx="{cap/2:.1f}" fill="{glass}"/>'
+        f'<rect x="{cx - w/2:.1f}" y="{cy + h/2 - cap:.1f}" width="{w:.1f}" height="{cap:.1f}" '
+        f'rx="{cap/2:.1f}" fill="{glass}"/>'
+        f'<path d="{glass_path}" fill="{glass}"/>'
+        f'<path d="M {cx - tw/2:.1f} {top_y:.1f} L {cx + tw/2:.1f} {top_y:.1f} '
+        f'Q {cx + waist*0.9:.1f} {top_y + (cy-top_y)*0.45:.1f} {wx1:.1f} {cy:.1f} '
+        f'L {wx0:.1f} {cy:.1f} '
+        f'Q {cx - waist*0.9:.1f} {top_y + (cy-top_y)*0.45:.1f} {cx - tw/2:.1f} {top_y:.1f} Z" '
+        f'fill="{sand}"/>'
+        f'<rect x="{cx - grain/2:.1f}" y="{cy:.1f}" width="{grain:.1f}" '
+        f'height="{mound - cy:.1f}" fill="{sand}"/>'
+        f'<path d="M {cx - mw/2:.1f} {by:.1f} L {cx + mw/2:.1f} {by:.1f} '
+        f'L {cx + mw/2*0.78:.1f} {mound:.1f} '
+        f'Q {cx:.1f} {mound - h*0.05:.1f} {cx - mw/2*0.78:.1f} {mound:.1f} Z" fill="{sand}"/>'
     )
 
 
@@ -156,9 +209,12 @@ def svg(variant="color", style="engraved", diagonal=True, stamp=True, body_r=Non
             f'fill="none" stroke="{stroke}" stroke-width="18" stroke-opacity="0.9"/>'
         )
 
-    for r, c, x, y, lit in _keys():
+    ring_only = variant in ("think", "warn")
+    for r, c, x, y, lit in _keys(RING if ring_only else GRID):
         if not lit:
-            if style in ("engraved", "both"):
+            # the engraved ghosts are skipped on a ring-only variant: "cleared"
+            # has to mean cleared, or the glyph still sits over a grid
+            if style in ("engraved", "both") and not ring_only:
                 out.append(
                     f'<rect x="{x:.1f}" y="{y:.1f}" width="{KEY:.1f}" height="{KEY:.1f}" '
                     f'rx="{KEY_R:.1f}" fill="#FFFFFF" fill-opacity="0.05"/>'
@@ -175,11 +231,11 @@ def svg(variant="color", style="engraved", diagonal=True, stamp=True, body_r=Non
             out.append(_stamp_path(letter, x, y, fill=body_fill))
 
     if variant == "think":
-        out.append(f'<rect x="{bi}" y="{bi}" width="{bw}" height="{bw}" rx="{br}" fill="#070B14" fill-opacity="0.62"/>')
-        out.append(_hourglass(S / 2, S / 2, S * 0.30, S * 0.40, "#E6F6FF"))
+        out.append(_hourglass(S / 2, S / 2, S * 0.30, S * 0.44, "#E8F4FF", "#22D3EE"))
     elif variant == "warn":
-        out.append(f'<rect x="{bi}" y="{bi}" width="{bw}" height="{bw}" rx="{br}" fill="#070B14" fill-opacity="0.62"/>')
-        cx, cy, w = S / 2, S * 0.54, S * 0.48
+        # the stroke widens the triangle by half its width on each side, so the
+        # nominal w has to leave room for it inside the cleared middle
+        cx, cy, w = S / 2, S * 0.545, S * 0.40
         h = w * 0.88
         out.append(
             f'<path d="M {cx:.0f} {cy-h*0.62:.0f} L {cx+w/2:.0f} {cy+h*0.38:.0f} '
