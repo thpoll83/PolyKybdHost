@@ -107,7 +107,7 @@ def _stamp_path(letter, kx, ky, scale=0.62, fill="#000"):
     return "".join(out)
 
 
-def _hourglass(cx, cy, w, h, glass, base=0.36):
+def _hourglass(cx, cy, w, h, glass, base=0.36, wall=0.32):
     """An hourglass silhouette: two end caps and one continuous glass body.
 
     Filled shapes, never strokes -- the icon has to survive being rasterised at
@@ -118,6 +118,11 @@ def _hourglass(cx, cy, w, h, glass, base=0.36):
     `base` is the straight-sided section under each cap, as a fraction of the
     body height. Without it the taper starts at the cap and the shape reads as
     a bare bowtie; the straight run gives each bulb a base to sit on.
+
+    `wall` places the curve's control point between the axis (0) and the bulb
+    edge (1). Around 0.53 the wall is straight; below that it bows INWARD
+    (concave, a pinched waist) and above it bows OUTWARD (convex, a rounded
+    bulb).
     """
     cap = h * 0.075                       # the two end caps
     bw = w * 0.88                         # body width, inset from the caps
@@ -127,8 +132,8 @@ def _hourglass(cx, cy, w, h, glass, base=0.36):
     tb, bb = ty + (cy - ty) * base, by - (by - cy) * base   # end of each base
     waist = w * 0.05
     wx0, wx1 = cx - waist / 2, cx + waist / 2
-    # control points close to the axis make the wall bow INWARD into the waist
-    kx0, kx1 = cx - waist * 0.9, cx + waist * 0.9
+    kdx = (bx1 - cx) * wall
+    kx0, kx1 = cx - kdx, cx + kdx
     ky_t, ky_b = cy - (cy - tb) * 0.30, cy + (bb - cy) * 0.30
 
     body = (

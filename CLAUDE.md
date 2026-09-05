@@ -1561,10 +1561,12 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     that gap was found by mutation-testing, not by reading the tests.
   - **The hourglass is a plain silhouette: two caps and ONE body path**, with a
     straight-sided `base` run (0.36 of the bulb height) under each cap before
-    the taper starts — without it the shape reads as a bare bowtie. Drawing the
-    bulbs as separate shapes leaves a gap at the neck that reads as broken
-    glass, and it is filled shapes throughout, never strokes, because an outline
-    fills in at 16 px and becomes a blob.
+    the taper starts — without it the shape reads as a bare bowtie. `wall`
+    places the taper's control point between the axis and the bulb edge: ~0.53
+    is a straight wall, below it bows inward (concave) and above it outward
+    (convex); 0.32 ships. Drawing the bulbs as separate shapes leaves a gap at
+    the neck that reads as broken glass, and it is filled shapes throughout,
+    never strokes, because an outline fills in at 16 px and becomes a blob.
   - **The stamp is rendered only at 128 px and up** (`STAMP_MIN_SIZE`); the smaller
     renders come from an unstamped master, so a tray icon stays a clean grid instead
     of carrying four keys of mush. Measured: clean at 128+, legible at 96,
