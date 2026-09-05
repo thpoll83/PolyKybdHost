@@ -1550,17 +1550,21 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     transient state reads by its glyph, and the ring plus the HOST stamp still
     names the app. ⚠️ The triangle is STROKED, so its nominal width understates
     it by half the stroke on each side — an unshrunk one overlaps the ring keys.
-  - ⚠️ **Whether the inner keys are cleared cannot be tested in PIXELS** — the
-    hourglass sand is the same cyan as a lit key, so no colour predicate
-    separates glyph ink from a key it covers. `test_the_state_variants_draw_the_RING_ONLY`
-    counts `url(#keys)` and the ghost rects in the SVG master instead (25/11 for
-    the full mark, 20/0 for the ring). The pixel test beside it answers a
-    different question — that the glyph stays inside the cleared middle — and it
-    does NOT catch a variant that kept its inner keys.
-  - **The hourglass glass is ONE path.** Drawing the two bulbs as separate
-    shapes leaves a gap at the neck that reads as broken glass; and it is filled
-    shapes throughout, never strokes, because an outline fills in at 16 px and
-    becomes a blob.
+  - ⚠️ **Whether the inner keys are cleared is counted in the SVG master, not in
+    pixels** — the engraved ghosts are white at 5% opacity over the body, a
+    couple of levels of difference, so a pixel threshold for them would be
+    fragile in exactly the direction that matters.
+    `test_the_state_variants_draw_the_RING_ONLY` counts `url(#keys)` and the
+    ghost rects instead (25/11 for the full mark, 20/0 for the ring). The pixel
+    test beside it answers a DIFFERENT question — that the glyph stays inside
+    the cleared middle — and does NOT catch a variant that kept its inner keys;
+    that gap was found by mutation-testing, not by reading the tests.
+  - **The hourglass is a plain silhouette: two caps and ONE body path**, with a
+    straight-sided `base` run (0.22 of the bulb height) under each cap before
+    the taper starts — without it the shape reads as a bare bowtie. Drawing the
+    bulbs as separate shapes leaves a gap at the neck that reads as broken
+    glass, and it is filled shapes throughout, never strokes, because an outline
+    fills in at 16 px and becomes a blob.
   - **The stamp is rendered only at 128 px and up** (`STAMP_MIN_SIZE`); the smaller
     renders come from an unstamped master, so a tray icon stays a clean grid instead
     of carrying four keys of mush. Measured: clean at 128+, legible at 96,

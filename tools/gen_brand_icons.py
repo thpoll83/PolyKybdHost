@@ -107,57 +107,45 @@ def _stamp_path(letter, kx, ky, scale=0.62, fill="#000"):
     return "".join(out)
 
 
-def _hourglass(cx, cy, w, h, glass, sand):
-    """An hourglass: one continuous glass silhouette plus the sand inside it.
+def _hourglass(cx, cy, w, h, glass, base=0.22):
+    """An hourglass silhouette: two end caps and one continuous glass body.
 
-    Drawn as filled shapes, never strokes -- the icon has to survive being
-    rasterised at 16 px, where an outline fills in and reads as a blob. The
-    glass is ONE path so the two bulbs meet at a real waist; drawing them as
-    separate shapes leaves a gap that reads as broken glass.
+    Filled shapes, never strokes -- the icon has to survive being rasterised at
+    16 px, where an outline fills in and reads as a blob. The body is ONE path
+    so the bulbs meet at a real waist; as separate shapes they leave a gap at
+    the neck that reads as broken glass.
+
+    `base` is the straight-sided section under each cap, as a fraction of the
+    body height. Without it the taper starts at the cap and the shape reads as
+    a bare bowtie; the straight run gives each bulb a base to sit on.
     """
     cap = h * 0.075                       # the two end caps
-    bw = w * 0.88                         # bulb width, inset from the caps
+    bw = w * 0.88                         # body width, inset from the caps
     bx0, bx1 = cx - bw / 2, cx + bw / 2
     ty = cy - h / 2 + cap                 # where the top bulb starts
     by = cy + h / 2 - cap                 # where the bottom bulb ends
+    tb, bb = ty + (cy - ty) * base, by - (by - cy) * base   # end of each base
     waist = w * 0.05
     wx0, wx1 = cx - waist / 2, cx + waist / 2
     # control points close to the axis make the wall bow INWARD into the waist
-    kx = cx + waist * 0.9
-    ky_t, ky_b = cy - (cy - ty) * 0.30, cy + (by - cy) * 0.30
+    kx0, kx1 = cx - waist * 0.9, cx + waist * 0.9
+    ky_t, ky_b = cy - (cy - tb) * 0.30, cy + (bb - cy) * 0.30
 
-    glass_path = (
-        f'M {bx0:.1f} {ty:.1f} L {bx1:.1f} {ty:.1f} '
-        f'Q {2*cx - kx:.1f} {ky_t:.1f} {wx1:.1f} {cy:.1f} '          # mirrored: kx right
-        f'Q {2*cx - kx:.1f} {ky_b:.1f} {bx1:.1f} {by:.1f} '
-        f'L {bx0:.1f} {by:.1f} '
-        f'Q {kx - 2*(kx-cx):.1f} {ky_b:.1f} {wx0:.1f} {cy:.1f} '
-        f'Q {kx - 2*(kx-cx):.1f} {ky_t:.1f} {bx0:.1f} {ty:.1f} Z'
+    body = (
+        f'M {bx0:.1f} {ty:.1f} L {bx1:.1f} {ty:.1f} L {bx1:.1f} {tb:.1f} '
+        f'Q {kx1:.1f} {ky_t:.1f} {wx1:.1f} {cy:.1f} '
+        f'Q {kx1:.1f} {ky_b:.1f} {bx1:.1f} {bb:.1f} '
+        f'L {bx1:.1f} {by:.1f} L {bx0:.1f} {by:.1f} L {bx0:.1f} {bb:.1f} '
+        f'Q {kx0:.1f} {ky_b:.1f} {wx0:.1f} {cy:.1f} '
+        f'Q {kx0:.1f} {ky_t:.1f} {bx0:.1f} {tb:.1f} Z'
     )
-
-    # sand: what is left in the top bulb drains onto a mound in the bottom one
-    top_y = ty + (cy - ty) * 0.46
-    tw = bw * 0.50
-    mound = by - (by - cy) * 0.34
-    mw = bw * 0.94
-    grain = w * 0.05
 
     return (
         f'<rect x="{cx - w/2:.1f}" y="{cy - h/2:.1f}" width="{w:.1f}" height="{cap:.1f}" '
         f'rx="{cap/2:.1f}" fill="{glass}"/>'
         f'<rect x="{cx - w/2:.1f}" y="{cy + h/2 - cap:.1f}" width="{w:.1f}" height="{cap:.1f}" '
         f'rx="{cap/2:.1f}" fill="{glass}"/>'
-        f'<path d="{glass_path}" fill="{glass}"/>'
-        f'<path d="M {cx - tw/2:.1f} {top_y:.1f} L {cx + tw/2:.1f} {top_y:.1f} '
-        f'Q {cx + waist*0.9:.1f} {top_y + (cy-top_y)*0.45:.1f} {wx1:.1f} {cy:.1f} '
-        f'L {wx0:.1f} {cy:.1f} '
-        f'Q {cx - waist*0.9:.1f} {top_y + (cy-top_y)*0.45:.1f} {cx - tw/2:.1f} {top_y:.1f} Z" '
-        f'fill="{sand}"/>'
-        f'<rect x="{cx - grain/2:.1f}" y="{cy:.1f}" width="{grain:.1f}" '
-        f'height="{mound - cy:.1f}" fill="{sand}"/>'
-        f'<path d="M {cx - mw/2:.1f} {by:.1f} L {cx + mw/2:.1f} {by:.1f} '
-        f'L {cx + mw/2*0.78:.1f} {mound:.1f} '
-        f'Q {cx:.1f} {mound - h*0.05:.1f} {cx - mw/2*0.78:.1f} {mound:.1f} Z" fill="{sand}"/>'
+        f'<path d="{body}" fill="{glass}"/>'
     )
 
 
@@ -231,7 +219,7 @@ def svg(variant="color", style="engraved", diagonal=True, stamp=True, body_r=Non
             out.append(_stamp_path(letter, x, y, fill=body_fill))
 
     if variant == "think":
-        out.append(_hourglass(S / 2, S / 2, S * 0.30, S * 0.44, "#E8F4FF", "#22D3EE"))
+        out.append(_hourglass(S / 2, S / 2, S * 0.30, S * 0.44, "#E8F4FF"))
     elif variant == "warn":
         # the stroke widens the triangle by half its width on each side, so the
         # nominal w has to leave room for it inside the cleared middle
