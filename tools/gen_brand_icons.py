@@ -107,7 +107,7 @@ def _stamp_path(letter, kx, ky, scale=0.62, fill="#000"):
     return "".join(out)
 
 
-def _hourglass(cx, cy, w, h, glass, base=0.22):
+def _hourglass(cx, cy, w, h, glass, base=0.36):
     """An hourglass silhouette: two end caps and one continuous glass body.
 
     Filled shapes, never strokes -- the icon has to survive being rasterised at

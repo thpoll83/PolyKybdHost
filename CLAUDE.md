@@ -1560,7 +1560,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the cleared middle — and does NOT catch a variant that kept its inner keys;
     that gap was found by mutation-testing, not by reading the tests.
   - **The hourglass is a plain silhouette: two caps and ONE body path**, with a
-    straight-sided `base` run (0.22 of the bulb height) under each cap before
+    straight-sided `base` run (0.36 of the bulb height) under each cap before
     the taper starts — without it the shape reads as a bare bowtie. Drawing the
     bulbs as separate shapes leaves a gap at the neck that reads as broken
     glass, and it is filled shapes throughout, never strokes, because an outline
