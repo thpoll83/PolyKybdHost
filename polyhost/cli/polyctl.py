@@ -493,6 +493,49 @@ def _cmd_crash(client, args):
     return 0
 
 
+# The words a hook or a person can pass, and the wire value each means. Kept as plain
+# strings rather than importing the device enum, because polyctl never imports the
+# device layer -- the daemon parses the alias set (AiState.parse), so a hook may also
+# use its own vocabulary ("done", "waiting", ...) that is not listed here.
+_AI_STATES = ["off", "idle", "working", "attention"]
+
+
+def _cmd_ai(client, args):
+    """The agent status light and the window its key raises (firmware v17+)."""
+    if args.ai_action == "state":
+        if args.value is None:
+            value = client.call(protocol.M_AI_STATE_GET, {})
+            name = _AI_STATES[value] if 0 <= value < len(_AI_STATES) else str(value)
+            print(f"ai state: {name} ({value})")
+            return 0
+        client.call(protocol.M_AI_STATE_SET, {"value": args.value})
+        print(f"ai state set to {args.value}")
+        return 0
+    if args.ai_action == "target":
+        if args.value is None:
+            info = client.call(protocol.M_AI_STATUS, {})
+            print(info.get("target") or "(no target set)")
+            return 0
+        client.call(protocol.M_AI_TARGET_SET, {"pattern": args.value})
+        print(f"ai window target set to {args.value!r}")
+        return 0
+    info = client.call(protocol.M_AI_STATUS, {})
+    if args.json:
+        print(json.dumps(info, indent=2))
+        return 0
+    print(f"state:     {info.get('name')} ({info.get('state')})")
+    print(f"target:    {info.get('target') or '(none set)'}")
+    matches = info.get("matches") or []
+    if info.get("target"):
+        print(f"matches:   {len(matches)} window(s)")
+        for title in matches:
+            print(f"  - {title}")
+    if not info.get("supported"):
+        print("note:      this keyboard's firmware is too old for the status light "
+              "(needs protocol v17+); the key press still works.")
+    return 0
+
+
 def _cmd_replay_anim(client, args):
     client.call(protocol.M_REPLAY_ANIM, {})
     print("replaying startup animation")
@@ -923,6 +966,21 @@ def build_parser():
              "'medium'/'large' draw a key's main legend bigger (latin only, and "
              "they need the latinbig font-pack bundle)")
     p_glyph_size.set_defaults(func=_cmd_glyph_size)
+
+    p_ai = sub.add_parser(
+        "ai", help="the agent status light and the window its key raises (firmware v17+)")
+    p_ai.add_argument(
+        "ai_action", nargs="?", choices=["status", "state", "target"], default="status",
+        help="'state' sets what the AI key shows, 'target' sets which window it "
+             "raises, 'status' (default) prints both")
+    p_ai.add_argument(
+        "value", nargs="?", default=None,
+        help="for 'state': off | idle | working | attention (aliases like 'busy', "
+             "'done' and 'waiting' work too). For 'target': part of the window "
+             "title, or /a regex/. Omit either to print the current value")
+    p_ai.add_argument("--json", action="store_true",
+                      help="print the status as JSON (for scripts)")
+    p_ai.set_defaults(func=_cmd_ai)
 
     p_macro = sub.add_parser(
         "macro", help="list, read, write or clear the keyboard's macros (firmware v15+)")

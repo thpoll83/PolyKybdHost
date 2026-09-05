@@ -13,7 +13,8 @@ from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import (pack_report, pairs_per_report,
                                          plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
-from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType, GlyphScript, GlyphSize
+from polyhost.device.command_ids import (Cmd, HidId, IdleStyle, OsType, GlyphScript,
+                                         GlyphSize, AiState)
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block
 from polyhost.device.im_converter import ImageConverter
@@ -69,6 +70,11 @@ MACRO_MIN_PROTOCOL = 15
 # depend on this — it reads the console line, which any firmware that records
 # crashes prints — only the fetch/clear path is gated.
 CRASH_RECORD_MIN_PROTOCOL = 16
+# Minimum firmware PROTOCOL_VERSION for the agent status light (cmd 40): the state
+# the AI key shows, and the key press that asks us to raise the agent's window. The
+# PRESS does not depend on this -- it arrives as a console line, which any firmware
+# carrying the key prints -- only the status push is gated.
+AI_STATE_MIN_PROTOCOL = 17
 
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
@@ -88,6 +94,7 @@ FEATURE_MIN_PROTOCOL = {
     "layer_names": LAYER_NAMES_MIN_PROTOCOL,
     "macros": MACRO_MIN_PROTOCOL,
     "crash_record": CRASH_RECORD_MIN_PROTOCOL,
+    "ai_state": AI_STATE_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -575,6 +582,37 @@ class PolyKybd:
         try:
             result, reply = self.hid.send_and_read_validate(
                 compose_cmd(Cmd.GLYPH_SIZE, 0xFF), 100, expect(Cmd.GLYPH_SIZE))
+            if result and len(reply) > 3 and reply[2:3] == b'.':
+                return True, reply[3]
+        except Exception:
+            pass
+        return False, 0
+
+    # --- agent status light (cmd 40, protocol v17+) --------------------------
+    def set_ai_state(self, state: "AiState | int") -> tuple[bool, Any]:
+        """Set what the AI key shows (cmd 40, protocol v17+).
+
+        RAM only on the keyboard: the status describes a process on THIS machine, so
+        it is meaningless after a reboot and the host re-pushes it on connect.
+
+        ⚠️ The firmware NACKs a value outside its enum — see AiState — so pass an
+        AiState, not an arbitrary int from a newer host."""
+        value = state.value if isinstance(state, AiState) else int(state)
+        if not self.supports("ai_state"):
+            return False, (
+                f"Firmware protocol too old for the agent status light "
+                f"(need v{AI_STATE_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        self.log.info("Setting AI state to %d...", value)
+        return self.hid.send_and_read_validate(
+            compose_cmd(Cmd.AI_STATE, value), 100, expect(Cmd.AI_STATE))
+
+    def get_ai_state(self) -> tuple[bool, int]:
+        """Read what the AI key is showing (raw enum value, 0 = off)."""
+        if not self.supports("ai_state"):
+            return False, 0
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.AI_STATE, 0xFF), 100, expect(Cmd.AI_STATE))
             if result and len(reply) > 3 and reply[2:3] == b'.':
                 return True, reply[3]
         except Exception:

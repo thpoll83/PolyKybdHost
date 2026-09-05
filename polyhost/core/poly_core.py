@@ -44,6 +44,7 @@ from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
 from polyhost.services.crash_report import CrashScanner
+from polyhost.services.ai_link import AiScanner, WindowRaiser
 from polyhost.util.observable import Observable
 
 RECONNECT_CYCLE_MSEC = 1000
@@ -227,6 +228,9 @@ class PolyCore(Observable):
         self.worker.add_periodic("reconnect", RECONNECT_CYCLE_MSEC / 1000.0,
                                  self._reconnect_periodic)
         self._crash_scanner = CrashScanner()   # firmware crash lines in the console stream
+        self._ai_scanner = AiScanner()         # ...and the AI key's press line
+        self._ai_raiser = WindowRaiser(self._enumerate_windows, self._activate_window)
+        self._ai_state = 0                     # what we last pushed (AiState value)
         self.worker.add_periodic("console", UPDATE_CYCLE_MSEC / 1000.0,
                                  self._console_periodic)
         self.worker.add_periodic("brightness", PERIODIC_10MIN_CYCLE_MSEC / 1000.0,
@@ -840,6 +844,16 @@ class PolyCore(Observable):
                 # blindly mass-flash it now that we connect across protocols.
                 if self.keeb.supports("fontpack"):
                     self._maybe_auto_flash_fontpack()
+                # Re-push the agent status: the keyboard holds it in RAM only (a
+                # status about a host process is a lie after a reboot), so a
+                # reconnect would otherwise leave the key dark while an agent is
+                # still working. Self-gated on protocol v17+, and skipped when
+                # nothing has reported — pushing OFF to a key that is already off
+                # buys nothing.
+                if connected_now and self._ai_state:
+                    self.worker.submit(
+                        "ai_state_resync",
+                        lambda c, v=self._ai_state: self.keeb.set_ai_state(v))
 
         # The applying client owns the applied-connection state the worker reads.
         self.last_applied_connected = self.connected
@@ -923,6 +937,7 @@ class PolyCore(Observable):
             self.emit("console", (kb_serial, kb_log))
         if kb_log:
             self._scan_console_for_crashes(kb_log)
+            self._scan_console_for_ai_key(kb_log)
 
     def _scan_console_for_crashes(self, chunk):
         """Watch the console stream for the firmware's crash line and alert once.
@@ -941,6 +956,93 @@ class PolyCore(Observable):
         for rec in records:
             self.log.warning("Keyboard firmware crash record: %s", rec.line)
             self.emit("crash_detected", rec.to_dict())
+
+    # --- the AI key: its press, and the window it raises ----------------------
+    def _scan_console_for_ai_key(self, chunk):
+        """Watch the console stream for the AI key's press line and act on it.
+
+        The firmware prints `ai: open` on the release edge — see services/ai_link.py
+        for why a console line is the whole channel. Each press raises the NEXT window
+        matching the stored target, so repeated presses walk through several agent
+        sessions instead of fighting over one.
+        """
+        try:
+            presses = self._ai_scanner.feed(chunk)
+        except Exception:  # noqa: BLE001 — a scanner bug must not kill the console read
+            self.log.warning("AI key scan failed", exc_info=True)
+            return
+        for _ in range(presses):
+            target = self.poly_settings.get("ai_window_target") or ""
+            ok, msg = self._ai_raiser.raise_next(target)
+            self.log.info("AI key pressed: %s", msg)
+            self.emit(events.AI_KEY_PRESSED, {"ok": ok, "msg": msg, "target": target})
+
+    @staticmethod
+    def _enumerate_windows():
+        """(title, window) for every window on this machine, in the backend's order.
+
+        pywinctl is imported HERE rather than at module scope: poly_core must stay
+        importable with no display and no pywinctl (tests/core/import_guard_test.py),
+        and on a machine with neither the AI key should report that it cannot raise
+        anything rather than take the core down.
+        """
+        import pywinctl as pwc   # noqa: PLC0415 — deliberately lazy, see above
+        return [(w.title, w) for w in pwc.getAllWindows()]
+
+    @staticmethod
+    def _activate_window(window):
+        """Raise one window. False when the window manager refused (native Wayland
+        has no client-callable activation — the same limitation window TRACKING has
+        there), which the caller turns into a message rather than a silent no-op."""
+        return bool(window.activate(wait=False))
+
+    def set_ai_state(self, value):
+        """Push what the AI key shows (HID cmd 40). Accepts an AiState value or one of
+        the words AiState.parse knows, so a hook can pass its own vocabulary."""
+        from polyhost.device.command_ids import AiState   # noqa: PLC0415 — cheap, no Qt
+        if isinstance(value, str):
+            parsed = AiState.parse(value)
+            if parsed is None:
+                return False, (f"Unknown AI state: {value!r} "
+                               f"(off | idle | working | attention)")
+            v = parsed.value
+        else:
+            try:
+                v = int(value)
+            except (TypeError, ValueError):
+                return False, f"Invalid AI state: {value!r}"
+            if v not in {st.value for st in AiState}:
+                return False, f"Invalid AI state: {value!r} (0 off .. 3 attention)"
+        self._ai_state = v
+        self.emit(events.AI_STATE_CHANGED, {"state": v, "name": AiState(v).name.lower()})
+        return self._device_call("ai_state_set", lambda c, v=v: self.keeb.set_ai_state(v))
+
+    def get_ai_state(self):
+        return self._device_call("ai_state_get", lambda c: self.keeb.get_ai_state())
+
+    def ai_status(self):
+        """Everything `polyctl ai status` and the tray need, with no device I/O:
+        the last state we pushed, the window target, and what it matches right now."""
+        from polyhost.device.command_ids import AiState   # noqa: PLC0415
+        target = self.poly_settings.get("ai_window_target") or ""
+        titles = []
+        if target:
+            try:
+                from polyhost.services.ai_link import match_windows  # noqa: PLC0415
+                titles = [m.title for m in match_windows(self._enumerate_windows(), target)]
+            except Exception:  # noqa: BLE001 — no window backend is a fact, not a failure
+                titles = []
+        return True, {
+            "state": self._ai_state,
+            "name": AiState(self._ai_state).name.lower(),
+            "target": target,
+            "matches": titles,
+            "supported": bool(self.keeb.supports("ai_state")),
+        }
+
+    def set_ai_target(self, pattern):
+        """Store which window the AI key raises (a title substring, or /regex/)."""
+        return self.settings_set("ai_window_target", str(pattern or ""))
 
     # HID SET_BRIGHTNESS flag bits — mirror firmware base/com.h (protocol >= 5).
     # On older firmware the flags byte is ignored (plain persisted set), so we

@@ -96,3 +96,14 @@ FW_DOWNLOAD_DONE = "fw_download_done"
 # parsed fields plus the raw line. Emitted once per distinct record; the GUI
 # raises the crash alert dialog, polyctl watch prints it.
 CRASH_DETECTED = "crash_detected"
+
+# The AI key was pressed on the keyboard and the core acted on it. The press itself
+# arrives as a console line (the firmware has no reply channel for a swallowed
+# keycode); the payload reports what raising the agent's window did, so the tray can
+# say something when the target is unset or matched nothing.
+# Payload: {"ok": bool, "msg": str, "target": str}
+AI_KEY_PRESSED = "ai_key_pressed"
+
+# The agent status the keyboard is showing changed (host push over HID cmd 40).
+# Payload: {"state": int, "name": str}
+AI_STATE_CHANGED = "ai_state_changed"

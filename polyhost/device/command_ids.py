@@ -74,7 +74,46 @@ class Cmd(Enum):
     # 1 = the slave's last pulled record, 2 = clear the archive. Reply body is
     # [flags][48-byte poly_crash_record_t] — see services/crash_report.py.
     CRASH_RECORD = 39
+    # Agent ("AI") status light (protocol v17+): data[2] 0xFF queries, otherwise the
+    # AiState to show on the AI key. RAM only on the keyboard -- a status about a host
+    # process means nothing after a reboot -- so the host re-pushes it on connect.
+    AI_STATE = 40
 
+
+
+
+class AiState(Enum):
+    """What the AI key shows -- byte-identical to the firmware's `poly_ai_state`.
+
+    OFF is not a colour: it hands the key's LED back to the running RGB effect, so a
+    keyboard with no agent reporting lights exactly as it did before. The other three
+    are read across a desk at a glance -- green quiet, amber busy, red waiting on you
+    -- and only ATTENTION blinks, because a light that blinks in every state is just a
+    light.
+
+    ⚠️ CLOSED range, like GlyphSize and unlike GlyphScript: the firmware NACKs a value
+    it does not know, because every value names a colour it has to paint and a word the
+    keycap has to spell. Do not send anything outside this enum.
+    """
+
+    OFF = 0
+    IDLE = 1
+    WORKING = 2
+    ATTENTION = 3
+
+    @classmethod
+    def parse(cls, name: str) -> "AiState | None":
+        """Map a CLI/hook word to a state, or None. Accepts the enum names plus the
+        aliases the hook adapters emit, so a caller never has to know our spelling."""
+        alias = {
+            "off": cls.OFF, "none": cls.OFF, "stop": cls.OFF,
+            "idle": cls.IDLE, "done": cls.IDLE, "ready": cls.IDLE, "green": cls.IDLE,
+            "working": cls.WORKING, "busy": cls.WORKING, "run": cls.WORKING,
+            "running": cls.WORKING, "amber": cls.WORKING, "yellow": cls.WORKING,
+            "attention": cls.ATTENTION, "waiting": cls.ATTENTION, "ask": cls.ATTENTION,
+            "input": cls.ATTENTION, "red": cls.ATTENTION,
+        }
+        return alias.get(str(name).strip().lower())
 
 
 class MacroStyle(Enum):

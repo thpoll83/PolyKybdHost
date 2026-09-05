@@ -129,6 +129,11 @@ class PolySettings:
             # --no-daemon (or this setting) opts out — e.g. for development, where
             # in-process keeps your code edits in the same process as the GUI.
             "daemon_mode": True,
+            # Which window the AI key raises: a case-insensitive substring of the
+            # window title, or a regex written as /.../ . Empty = the key reports the
+            # press and raises nothing (it says so rather than failing silently).
+            # Set it with `polyctl ai target "<part of the title>"`.
+            "ai_window_target": "",
             # Window-report network endpoint (headless-core H4d): when True the
             # daemon/host opens a separate, auth-gated AF_INET listener that
             # serves ONLY `window.report` (port WINDOW_REPORT_PORT), so a remote

@@ -31,6 +31,7 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core.kb_sw_version = None
     core.needs_overlay_reset = False
     core._probe_fail_streak = 0
+    core._ai_state = 0          # what the AI key was last told to show
     core._last_overlay_activity = 0.0
     core._observers = []
     import threading
@@ -73,6 +74,28 @@ def connect_snapshot(**over):
     }
     snap.update(over)
     return snap
+
+
+class TestAiStateResync(unittest.TestCase):
+    """The keyboard holds the agent status in RAM only, so a reconnect has to
+    re-push it — otherwise the key goes dark while the agent is still working."""
+
+    def _submitted(self, core):
+        return [c.args[0] for c in core.worker.submit.call_args_list]
+
+    def test_a_reconnect_re_pushes_a_live_status(self):
+        core = make_core(connected=False)
+        core._ai_state = 2                      # WORKING
+        core.apply_reconnect(connect_snapshot())
+        self.assertIn("ai_state_resync", self._submitted(core))
+
+    def test_nothing_is_pushed_when_no_agent_has_reported(self):
+        # Pushing OFF to a key that is already off buys nothing and costs a job on
+        # the worker that owns the device during the busiest moment it has.
+        core = make_core(connected=False)
+        core._ai_state = 0
+        core.apply_reconnect(connect_snapshot())
+        self.assertNotIn("ai_state_resync", self._submitted(core))
 
 
 class TestReportWindow(unittest.TestCase):

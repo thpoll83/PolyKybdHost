@@ -2772,6 +2772,13 @@ class PolyHost(QApplication):
             self.quit_app()
         elif name == "crash_detected":
             self._on_crash_detected(result)
+        elif name == "ai_key_pressed":
+            # The AI key was pressed and the core acted. Only SAY something when it
+            # could not raise anything — a working press speaks for itself (the window
+            # comes up), and a notification per press would be noise.
+            if isinstance(result, dict) and not result.get("ok"):
+                self.log.info("AI key: %s", result.get("msg"))
+                self.show_balloon("PolyKybd AI key", result.get("msg") or "")
         elif name == "console":
             kb_serial, kb_log = result
             if kb_serial:

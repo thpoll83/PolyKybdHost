@@ -14,10 +14,10 @@ from unittest.mock import MagicMock
 from polyhost.device.poly_kybd import (
     PolyKybd, protocol_supports, FEATURE_MIN_PROTOCOL, MIN_SUPPORTED_PROTOCOL,
     OVERLAY_PACKED_HEADER_MIN_PROTOCOL, GLYPH_SIZE_MIN_PROTOCOL,
-    MACRO_MIN_PROTOCOL,
+    MACRO_MIN_PROTOCOL, AI_STATE_MIN_PROTOCOL,
 )
 from polyhost.device.device_settings import DeviceSettings
-from polyhost.device.command_ids import HidId, Cmd, GlyphScript, GlyphSize
+from polyhost.device.command_ids import HidId, Cmd, GlyphScript, GlyphSize, AiState
 from polyhost.device.keys import Modifier, LEGACY_MAX_MODIFIER_VALUE
 from polyhost.settings import PolySettings
 
@@ -230,6 +230,87 @@ class TestGlyphSize(unittest.TestCase):
         self.assertEqual(GlyphSize.SMALL.value, 0)
         self.assertEqual(GlyphScript.STANDARD.value, 0)
         self.assertEqual(max(s.value for s in GlyphSize), 2)
+
+
+class TestAiState(unittest.TestCase):
+    """The agent status light (cmd 40, protocol v17+).
+
+    Same shape as the legend size one command over, and deliberately so: the range
+    is CLOSED, because every value names a colour the firmware paints and a word the
+    keycap spells. What it adds is the alias vocabulary — a hook script says "done" or
+    "waiting", not "IDLE", and forcing every integration to learn our spelling is the
+    kind of friction that makes an MVP unused.
+    """
+
+    def _keeb(self, protocol):
+        keeb = PolyKybd(DeviceSettings(), PolySettings())
+        keeb.protocol_version = protocol
+        keeb.hid = MagicMock()
+        return keeb
+
+    def test_feature_threshold(self):
+        self.assertEqual(FEATURE_MIN_PROTOCOL["ai_state"], AI_STATE_MIN_PROTOCOL)
+        self.assertFalse(protocol_supports(AI_STATE_MIN_PROTOCOL - 1, "ai_state"))
+        self.assertTrue(protocol_supports(AI_STATE_MIN_PROTOCOL, "ai_state"))
+
+    def test_old_firmware_refuses_without_touching_the_device(self):
+        keeb = self._keeb(AI_STATE_MIN_PROTOCOL - 1)
+        ok, msg = keeb.set_ai_state(AiState.WORKING)
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        keeb.hid.send_and_read_validate.assert_not_called()
+        ok, value = keeb.get_ai_state()
+        self.assertFalse(ok)
+        self.assertEqual(value, 0)
+        keeb.hid.send_and_read_validate.assert_not_called()
+
+    def test_set_sends_the_enum_value_on_cmd_40(self):
+        keeb = self._keeb(AI_STATE_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (True, b"P\x28.")
+        ok, _ = keeb.set_ai_state(AiState.ATTENTION)
+        self.assertTrue(ok)
+        report = keeb.hid.send_and_read_validate.call_args.args[0]
+        self.assertEqual(report[1], Cmd.AI_STATE.value)
+        self.assertEqual(report[2], AiState.ATTENTION.value)
+
+    def test_get_queries_with_the_0xff_sentinel_and_reads_data3(self):
+        keeb = self._keeb(AI_STATE_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.AI_STATE.value, ord("."), AiState.WORKING.value]))
+        ok, value = keeb.get_ai_state()
+        self.assertTrue(ok)
+        self.assertEqual(value, AiState.WORKING.value)
+        self.assertEqual(keeb.hid.send_and_read_validate.call_args.args[0][2], 0xFF)
+
+    def test_a_nacked_reply_is_not_read_as_a_state(self):
+        keeb = self._keeb(AI_STATE_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.AI_STATE.value, ord("!"), 9]))
+        ok, value = keeb.get_ai_state()
+        self.assertFalse(ok)
+        self.assertEqual(value, 0)
+
+    def test_command_id_and_enum_match_the_firmware(self):
+        self.assertEqual(Cmd.AI_STATE.value, 40)
+        # poly_ai_state in the firmware's state.h — append-only, never reordered.
+        self.assertEqual([(s.name, s.value) for s in AiState],
+                         [("OFF", 0), ("IDLE", 1), ("WORKING", 2), ("ATTENTION", 3)])
+
+    def test_the_range_is_closed_like_the_size_and_unlike_the_script(self):
+        self.assertEqual(AiState.OFF.value, 0)
+        self.assertEqual(max(s.value for s in AiState), 3)
+
+    def test_the_alias_vocabulary_covers_what_hooks_actually_say(self):
+        for word, expected in [("busy", AiState.WORKING), ("running", AiState.WORKING),
+                               ("done", AiState.IDLE), ("ready", AiState.IDLE),
+                               ("waiting", AiState.ATTENTION), ("input", AiState.ATTENTION),
+                               ("stop", AiState.OFF)]:
+            self.assertEqual(AiState.parse(word), expected, word)
+
+    def test_parse_is_case_and_space_insensitive_and_rejects_junk(self):
+        self.assertEqual(AiState.parse("  ATTENTION "), AiState.ATTENTION)
+        self.assertIsNone(AiState.parse("purple"))
+        self.assertIsNone(AiState.parse(""))
 
 
 class MacroCapabilityTest(unittest.TestCase):
