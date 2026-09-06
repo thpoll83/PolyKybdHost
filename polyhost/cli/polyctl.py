@@ -523,7 +523,10 @@ def _cmd_ai(client, args):
     if args.json:
         print(json.dumps(info, indent=2))
         return 0
-    print(f"state:     {info.get('name')} ({info.get('state')})")
+    state_line = f"{info.get('name')} ({info.get('state')})"
+    if info.get("state") and not info.get("pushed", True):
+        state_line += "  -- NOT on the keyboard (the last push did not land)"
+    print(f"state:     {state_line}")
     print(f"target:    {info.get('target') or '(none set)'}")
     matches = info.get("matches") or []
     if info.get("target"):

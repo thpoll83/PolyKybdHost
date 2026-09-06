@@ -230,7 +230,8 @@ class PolyCore(Observable):
         self._crash_scanner = CrashScanner()   # firmware crash lines in the console stream
         self._ai_scanner = AiScanner()         # ...and the AI key's press line
         self._ai_raiser = WindowRaiser(self._enumerate_windows, self._activate_window)
-        self._ai_state = 0                     # what we last pushed (AiState value)
+        self._ai_state = 0                     # what the agent says it is doing
+        self._ai_pushed = False                # ...and whether the keyboard took it
         self.worker.add_periodic("console", UPDATE_CYCLE_MSEC / 1000.0,
                                  self._console_periodic)
         self.worker.add_periodic("brightness", PERIODIC_10MIN_CYCLE_MSEC / 1000.0,
@@ -853,7 +854,8 @@ class PolyCore(Observable):
                 if connected_now and self._ai_state:
                     self.worker.submit(
                         "ai_state_resync",
-                        lambda c, v=self._ai_state: self.keeb.set_ai_state(v))
+                        lambda c, v=self._ai_state: self.keeb.set_ai_state(v),
+                        on_done=self._note_ai_push)
 
         # The applying client owns the applied-connection state the worker reads.
         self.last_applied_connected = self.connected
@@ -1013,16 +1015,30 @@ class PolyCore(Observable):
                 return False, f"Invalid AI state: {value!r}"
             if v not in {st.value for st in AiState}:
                 return False, f"Invalid AI state: {value!r} (0 off .. 3 attention)"
-        self._ai_state = v
-        self.emit(events.AI_STATE_CHANGED, {"state": v, "name": AiState(v).name.lower()})
-        return self._device_call("ai_state_set", lambda c, v=v: self.keeb.set_ai_state(v))
+        ok, payload = self._device_call(
+            "ai_state_set", lambda c, v=v: self.keeb.set_ai_state(v))
+        # The DESIRED state is recorded either way -- it is a fact about the agent, not
+        # about the keyboard, so a paused worker or an unplugged board must not lose it
+        # (that is what the reconnect re-push above exists for). Whether the keyboard is
+        # actually SHOWING it is the separate `pushed` flag, so `ai status` cannot claim
+        # a light that never lit.
+        self._ai_state  = v
+        self._ai_pushed = bool(ok)
+        self.emit(events.AI_STATE_CHANGED,
+                  {"state": v, "name": AiState(v).name.lower(), "pushed": self._ai_pushed})
+        return ok, payload
+
+    def _note_ai_push(self, _name, result):
+        """on_done for the reconnect re-push: record whether the keyboard took it."""
+        self._ai_pushed = bool(isinstance(result, tuple) and result and result[0])
 
     def get_ai_state(self):
         return self._device_call("ai_state_get", lambda c: self.keeb.get_ai_state())
 
     def ai_status(self):
         """Everything `polyctl ai status` and the tray need, with no device I/O:
-        the last state we pushed, the window target, and what it matches right now."""
+        the state an agent last reported (and whether the keyboard took it), the
+        window target, and what it matches right now."""
         from polyhost.device.command_ids import AiState   # noqa: PLC0415
         target = self.poly_settings.get("ai_window_target") or ""
         titles = []
@@ -1035,6 +1051,7 @@ class PolyCore(Observable):
         return True, {
             "state": self._ai_state,
             "name": AiState(self._ai_state).name.lower(),
+            "pushed": self._ai_pushed,
             "target": target,
             "matches": titles,
             "supported": bool(self.keeb.supports("ai_state")),

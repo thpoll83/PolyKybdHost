@@ -32,6 +32,7 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core.needs_overlay_reset = False
     core._probe_fail_streak = 0
     core._ai_state = 0          # what the AI key was last told to show
+    core._ai_pushed = False     # ...and whether that push reached the keyboard
     core._last_overlay_activity = 0.0
     core._observers = []
     import threading
@@ -96,6 +97,65 @@ class TestAiStateResync(unittest.TestCase):
         core._ai_state = 0
         core.apply_reconnect(connect_snapshot())
         self.assertNotIn("ai_state_resync", self._submitted(core))
+
+    def test_the_re_push_records_whether_the_keyboard_took_it(self):
+        # `pushed` is what stops `ai status` claiming a light that never lit, so the
+        # resync has to report its own outcome rather than leaving the flag as the
+        # failed set_ai_state left it.
+        core = make_core(connected=False)
+        core._ai_state = 2
+        core.apply_reconnect(connect_snapshot())
+        on_done = core.worker.submit.call_args_list[-1].kwargs["on_done"]
+        on_done("ai_state_resync", (True, b"ok"))
+        self.assertTrue(core._ai_pushed)
+        on_done("ai_state_resync", (False, "no device"))
+        self.assertFalse(core._ai_pushed)
+        on_done("ai_state_resync", RuntimeError("worker suspended"))
+        self.assertFalse(core._ai_pushed)
+
+
+class TestSetAiState(unittest.TestCase):
+    """The DESIRED state and whether the KEYBOARD took it are two different facts.
+
+    Conflating them made `ai status` report a light that never lit: a paused worker,
+    an unplugged board or a pre-v17 firmware all left the requested state recorded as
+    though it had been pushed."""
+
+    def _core(self, device_result):
+        core = make_core()
+        core.worker.run_sync.return_value = device_result
+        core.keeb.supports.return_value = True
+        core.seen = []
+        core.subscribe(lambda name, payload: core.seen.append((name, payload)))
+        return core
+
+    def test_a_successful_push_is_reported_as_shown(self):
+        core = self._core((True, b"P\x28."))
+        ok, _ = core.set_ai_state("working")
+        self.assertTrue(ok)
+        self.assertEqual(core._ai_state, 2)
+        self.assertTrue(core._ai_pushed)
+        self.assertTrue(core.ai_status()[1]["pushed"])
+        self.assertTrue(core.seen[-1][1]["pushed"])
+
+    def test_a_refused_push_keeps_the_state_but_not_the_claim(self):
+        core = self._core((False, "firmware protocol too old"))
+        ok, _ = core.set_ai_state("working")
+        self.assertFalse(ok)
+        # The agent IS working — that is a fact about the host, and it is what the
+        # reconnect re-push replays — but the keyboard is not showing it.
+        self.assertEqual(core._ai_state, 2)
+        self.assertFalse(core._ai_pushed)
+        self.assertFalse(core.ai_status()[1]["pushed"])
+        self.assertFalse(core.seen[-1][1]["pushed"])
+
+    def test_an_unknown_state_word_never_reaches_the_device(self):
+        core = self._core((True, b"."))
+        ok, msg = core.set_ai_state("banana")
+        self.assertFalse(ok)
+        self.assertIn("Unknown AI state", msg)
+        core.worker.run_sync.assert_not_called()
+        self.assertEqual(core._ai_state, 0)
 
 
 class TestReportWindow(unittest.TestCase):

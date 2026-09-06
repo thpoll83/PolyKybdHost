@@ -616,6 +616,9 @@ class PolyKybd:
             if result and len(reply) > 3 and reply[2:3] == b'.':
                 return True, reply[3]
         except Exception:
+            # A read of a status light is never worth raising through: any HID
+            # failure (unplugged mid-query, a short/NACK reply) is reported the same
+            # way an unsupported firmware is -- (False, 0), "we do not know".
             pass
         return False, 0
 

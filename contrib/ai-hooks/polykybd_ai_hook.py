@@ -113,7 +113,14 @@ def main():
     if not state:
         return 0   # an event we have no opinion about is not an error
     cmd = polyctl() + ["ai", "state", state]
+    # Audited for Sourcery/opengrep's dangerous-subprocess-use rule: `cmd` is an argv
+    # LIST run with the default shell=False, so there is no shell to inject through.
+    # Its elements are this file's own literals plus `state`, which decide_state()
+    # returns only from a fixed table, and the interpreter/executable chosen by
+    # polyctl() ($POLYCTL, shutil.which, or sys.executable). shlex.quote is NOT the
+    # remedy here -- it escapes for a shell STRING and would corrupt an argv element.
     try:
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
     except FileNotFoundError:
         _warn("polyctl not found — set $POLYCTL or put it on PATH")
