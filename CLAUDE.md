@@ -129,7 +129,10 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         obvious from either one: on `qmk_firmware` a push is the cheap way to get
         another look, and on `PolyKybdHost` / `polykybd-docs` a push buys nothing
         at all. Every review here costs a quota slot, so spend it on the commit
-        you actually want read.
+        you actually want read. **Observed, not inferred** (host#218,
+        2026-09-07): two pushes after the review each re-rendered the summary as
+        *"This repository does not receive automatic reviews because it has fewer
+        than 10 stars"* with a Trigger-review checkbox — a SKIP, not a review.
       - ⚠️ **A push mid-run did NOT abort the review (host#218, 2026-09-07) — but
         the review stayed pinned to the PRE-PUSH head, which is the outcome that
         matters and is quieter than an abort.** `qmk_firmware/CLAUDE.md` records
