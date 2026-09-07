@@ -10,13 +10,21 @@ from PyQt5.QtGui import QIcon
 #   #5985E1  blue    object / configuration      (keyboard, language, settings)
 #   #78A75A  green   enabled / ok                (toggle_on, select_all, sync)
 #   #999999  grey    off / cleared               (toggle_off, deselect)
-#   #DA954B  amber   caution, staged             (usb, bug_report, deployed_code)
-#   #D16D6A  red     destructive, reboots        (power, deployed_code_update)
+#   #DA954B  amber   caution, staged             (usb, bug_report, sync_problem)
+#   #D16D6A  red     destructive, reboots        (power, delete)
 #   #8B7DBE  purple  overlay domain              (overlays, layers_clear)
-#   #FFFF55  yellow  brightness ramp             (backlight_*)
+#   #B59D24  gold    brightness                  (backlight_*, brightness_auto)
 #
 # One glyph should mean one thing: before reusing an icon for a second action,
 # check it is not already spoken for elsewhere in the tray menu.
+#
+# ⚠️ A tint is drawn on BOTH theme grounds — the apps follow the OS light/dark
+# setting — so it has to read on the dark chrome (#505050) and on the light one
+# (#F0F0F0) alike. Every colour above sits between 2.2:1 and 3.2:1 on both;
+# `IconContrastTest` holds a 2.0 floor. The brightness family was `#FFFF55`
+# until 2026-09-07, which is 7.6:1 on dark and **1.07:1 on light**, i.e. yellow
+# on white: a colour chosen against one ground can vanish against the other, and
+# the glyph (not the tint) is what carries a ramp.
 _ICON_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res" / "icons"
 
 # Icons are immutable on disk, so cache the QIcon per name. Without this,

@@ -1642,6 +1642,21 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     every name resolves, that no shipped `.svg` is unreferenced (11 orphans had
     accumulated), and that the opsz48/single-fill format holds. It is Qt-free, so
     it runs in the normal suite rather than only under xvfb.
+  - ⚠️ **A tint is drawn on BOTH theme grounds now, so a colour picked against
+    one can vanish against the other — measured, the brightness family did.**
+    The apps follow the OS light/dark setting (see the theme note below), and
+    `#FFFF55` is 7.6:1 on the dark chrome (#505050) and **1.07:1 on the light
+    one** (#F0F0F0): yellow on white, reported from the field 2026-09-07. It is
+    `#B59D24` gold now (3.00 / 2.36), and the three other off-palette one-offs
+    went with it — `sync_problem` was `#A96424`, 1.74:1 on DARK (the same fault
+    the other way), and `delete` `#F19E39`; both adopted the palette colour
+    their meaning already had. Every colour in the set now sits between 2.20:1
+    and 3.22:1 on both grounds, and `IconContrastTest` holds a 2.0 floor.
+    - **The GLYPH carries a ramp, not the tint.** The four brightness entries
+      were a yellow ramp (a paler `#F9DB78` for 1%); they are one gold now, and
+      the Material glyphs (fewer rays, outline vs filled) still read as a ramp.
+      A pale tint is the worst case on a light ground, so a ramp expressed in
+      lightness cannot survive both themes.
   - **Judge a candidate glyph by rendering and measuring it, not by its name.**
     Rasterise to a fixed canvas (`cairosvg` + PIL) and compare **ink coverage**
     and **glyph bounding height** against the set (baseline ≈19% ink, ≈34px tall

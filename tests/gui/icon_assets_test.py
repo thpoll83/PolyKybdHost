@@ -116,6 +116,75 @@ class IconFormatTest(unittest.TestCase):
         self.assertEqual(wrong, [], "icons without exactly one fill on <svg>")
 
 
+class IconContrastTest(unittest.TestCase):
+    """Every menu icon has to be legible on BOTH theme grounds.
+
+    The apps follow the OS light/dark setting, so one tint is drawn on the dark
+    chrome (#505050) and on the light one (#F0F0F0) alike — and a colour picked
+    against only one of them can vanish against the other. That is not
+    hypothetical: the brightness family was `#FFFF55`, a 7.6:1 contrast on the
+    dark menu and **1.07:1 on the light one**, i.e. yellow on white (field,
+    2026-09-07). It is now a gold at 3.00 / 2.36.
+
+    The floor is 2.0 against the measured set, whose worst is 2.20 — an icon is
+    a shape, not body text, so this is a "can you see it at all" bar rather than
+    a WCAG one. Contrast is the standard WCAG ratio, which needs no library.
+    """
+
+    FLOOR = 2.0
+    DARK_GROUND = (80, 80, 80)      # theme.WINDOW_COLOR
+    LIGHT_GROUND = (240, 240, 240)  # theme.LIGHT_WINDOW_COLOR
+
+    @staticmethod
+    def _luminance(rgb):
+        def channel(value):
+            value /= 255
+            return value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+        r, g, b = (channel(c) for c in rgb)
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+    @classmethod
+    def _contrast(cls, a, b):
+        la, lb = cls._luminance(a), cls._luminance(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+    @staticmethod
+    def _rgb(text):
+        text = text.lstrip("#")
+        return tuple(int(text[i:i + 2], 16) for i in (0, 2, 4))
+
+    def test_the_grounds_match_the_shipped_palettes(self):
+        """These constants are a copy of the two palettes' Window colour; a theme
+        change that moved either would leave this test measuring a ground nothing
+        renders on."""
+        from PyQt5.QtGui import QPalette
+        from polyhost.gui import theme
+        for palette, ground in ((theme.dark_palette(), self.DARK_GROUND),
+                                (theme.light_palette(), self.LIGHT_GROUND)):
+            colour = palette.color(QPalette.Window)
+            self.assertEqual((colour.red(), colour.green(), colour.blue()), ground)
+
+    def test_every_icon_reads_on_both_theme_grounds(self):
+        weak = []
+        for path in sorted(ICON_DIR.glob("*.svg")):
+            if path.name in BRAND_SVG:
+                continue                      # artwork on its own ground
+            for fill in set(re.findall(r'fill="(#[0-9A-Fa-f]{6})"',
+                                       path.read_text(encoding="utf-8"))):
+                rgb = self._rgb(fill)
+                dark = self._contrast(rgb, self.DARK_GROUND)
+                light = self._contrast(rgb, self.LIGHT_GROUND)
+                if min(dark, light) < self.FLOOR:
+                    weak.append(f"{path.name} {fill} dark={dark:.2f} light={light:.2f}")
+        self.assertEqual(weak, [], "icon tints that disappear on one of the themes")
+
+    def test_the_floor_is_not_vacuous(self):
+        """A floor below every plausible colour would pass forever. Yellow on
+        white — the tint this test was written for — must still fail it."""
+        self.assertLess(self._contrast(self._rgb("#FFFF55"), self.LIGHT_GROUND),
+                        self.FLOOR)
+
+
 class BrandMarkTest(unittest.TestCase):
     """The tray/app mark is generated as a set -- an SVG master, a canonical
     PNG, the size ladder get_icon() feeds to QIcon, and the packaging formats.
