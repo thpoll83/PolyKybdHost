@@ -826,6 +826,30 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   range-connect model exists to prevent, and the kind of gate that "has been forgotten
   twice". The capability tests in `tests/device/poly_kybd_capabilities_test.py` are the
   pattern to extend.
+- **When the BOARD changes something the host caches, the answer is a counter on a
+  reply the host ALREADY polls — not a new poll, and not a push.** The reconnect probe
+  sends GET_ID + GET_LANG every second (`RECONNECT_CYCLE_MSEC`), so the firmware's
+  `['G'][u16 state_generation]` block in the GET_ID reply reaches the host within ~1 s
+  at zero additional reports; the host re-reads whatever view is open when the value
+  moves. Worst case is a few seconds, not one — the probe skips inside
+  `OVERLAY_PROBE_COOLDOWN_S` and `decide_probe_publish` debounces three strikes — which
+  is irrelevant for a UI refresh. Full rationale, including why the console and an
+  unsolicited raw report both lose, is in `qmk_firmware/CLAUDE.md` § *Telling the host
+  something changed ON THE BOARD*.
+  - ⚠️ **`parse_id_version_block` finds the font-pack block POSITIONALLY** — it requires
+    `'V'` at exactly `nul + 1` (`device/hid_fontpack.py`) — so anything the firmware
+    adds to the GET_ID reply has to go AFTER it. Prepending would make every deployed
+    host read "no bundles on the device" and re-flash all eight bundles on every
+    connect. Parse tag-led blocks in order; never assume a fixed offset for the second
+    one.
+  - ⚠️ **The raw channel is strictly request/response, and `send_and_read_validate`'s
+    drain depends on it.** Its comment carries the invariant — *"Since protocol v3 the
+    firmware sends no unsolicited replies, so a stale reply here means one thing only"*
+    — so an unsolicited report from the keyboard is discarded by the next probe, and
+    making it work means framing plus routing in exactly the code path that stale-reply
+    bugs live in. That invariant is a design decision, not an accident: v3 made
+    `SEND_OVERLAY_MAPPING` silent to REDUCE escaped ACKs.
+
 - **Wire-format-divergent commands are ENCODED for the device's protocol, not blocked.**
   The only core command whose wire format ever changed is the **plain-overlay upload**
   (P11 packed the modifier+segment into one header byte). `send_overlay_for_keycode`
