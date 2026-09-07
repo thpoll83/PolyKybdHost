@@ -1,9 +1,14 @@
-"""apply_dark_palette — the one dark Fusion theme shared by both QApplications.
+"""theme — the one Fusion theme shared by both QApplications, dark or light.
 
 PolyHost (tray) and PolyForwarder (remote reporter) each carried a
 byte-identical 22-line ``set_style``. These pin the palette so the extracted
 helper cannot drift from what both apps rendered before, and assert both
 entry points route through it.
+
+The apps follow the OS now (`apply_theme`), so the tests also cover the light
+palette and the `is_dark` predicate the glyph-script previews pick their ink
+from — an always-True `is_dark` would make every preview near-white, which on a
+light menu is an invisible icon.
 """
 import unittest
 
@@ -96,12 +101,127 @@ class TestBothAppsUseTheSharedTheme(unittest.TestCase):
     def test_host_does_not_build_its_own_palette(self):
         src = self._source("host.py")
         self.assertNotIn("QPalette.HighlightedText", src)
-        self.assertIn("apply_dark_palette", src)
+        self.assertIn("apply_theme", src)
 
     def test_forwarder_does_not_build_its_own_palette(self):
         src = self._source("forwarder.py")
         self.assertNotIn("QPalette.HighlightedText", src)
-        self.assertIn("apply_dark_palette", src)
+        self.assertIn("apply_theme", src)
+
+    def test_neither_app_pins_itself_to_dark(self):
+        """`apply_dark_palette` survives for the dialogs\' dev launchers; an app
+        calling it would ignore the desktop, which is the bug this replaced."""
+        for module in ("host.py", "forwarder.py"):
+            self.assertNotIn("apply_dark_palette", self._source(module), module)
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
+class TestLightTheme(unittest.TestCase):
+    """The light half, and the predicate that reads a palette back."""
+
+    def test_the_light_palette_is_actually_light(self):
+        palette = theme.light_palette()
+        self.assertGreater(palette.color(QPalette.Window).lightness(), 200)
+        self.assertLess(palette.color(QPalette.WindowText).lightness(), 60)
+
+    def test_the_light_palette_sets_every_role_the_dark_one_does(self):
+        # A role the light palette forgot falls back to Qt's default, which can
+        # be the wrong side of the theme (near-white text on white). `isBrushSet`
+        # is the question — several roles (the accent, BrightText) are the same
+        # colour in both ON PURPOSE, so comparing values would not answer it.
+        dark, light = theme.dark_palette(), theme.light_palette()
+        for role in range(QPalette.NColorRoles):
+            if dark.isBrushSet(QPalette.Active, role):
+                self.assertTrue(light.isBrushSet(QPalette.Active, role),
+                                f"the light palette leaves role {role} unset")
+
+    def test_text_and_ground_contrast_in_both(self):
+        for name, palette in (("dark", theme.dark_palette()),
+                              ("light", theme.light_palette())):
+            window = palette.color(QPalette.Window).lightness()
+            text = palette.color(QPalette.WindowText).lightness()
+            self.assertGreater(abs(window - text), 80, name)
+
+    def test_is_dark_reads_the_palette_it_is_given(self):
+        self.assertTrue(theme.is_dark(theme.dark_palette()))
+        self.assertFalse(theme.is_dark(theme.light_palette()))
+
+    def test_palette_for_picks_by_name(self):
+        self.assertTrue(theme.is_dark(theme.palette_for(theme.THEME_DARK)))
+        self.assertFalse(theme.is_dark(theme.palette_for(theme.THEME_LIGHT)))
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
+class TestApplyTheme(unittest.TestCase):
+    """What both apps call at startup: the palette that reaches the application
+    has to be the one the setting and the desktop resolve to — an `apply_theme`
+    that always applied dark would pass every palette test above."""
+
+    def setUp(self):
+        from unittest import mock
+        self.mock = mock
+        self.applied = None
+        self.styles = []
+
+        class _FakeApp:
+            def __init__(self, outer):
+                self._outer = outer
+
+            def setStyle(self, name):
+                self._outer.styles.append(name)
+
+            def setPalette(self, palette):
+                self._outer.applied = palette
+
+        self.app = _FakeApp(self)
+
+    def _apply(self, setting, detected):
+        with self.mock.patch.object(theme, "detect_os_theme", return_value=detected):
+            return theme.apply_theme(self.app, setting)
+
+    def test_auto_applies_what_the_desktop_says(self):
+        for detected, dark in ((theme.THEME_LIGHT, False), (theme.THEME_DARK, True)):
+            with self.subTest(detected=detected):
+                self.assertEqual(self._apply(theme.THEME_AUTO, detected), detected)
+                self.assertEqual(theme.is_dark(self.applied), dark)
+
+    def test_an_explicit_setting_overrides_the_desktop(self):
+        self.assertEqual(self._apply(theme.THEME_LIGHT, theme.THEME_DARK),
+                         theme.THEME_LIGHT)
+        self.assertFalse(theme.is_dark(self.applied))
+        self.assertEqual(self._apply(theme.THEME_DARK, theme.THEME_LIGHT),
+                         theme.THEME_DARK)
+        self.assertTrue(theme.is_dark(self.applied))
+
+    def test_a_silent_desktop_keeps_the_historical_look(self):
+        self.assertEqual(self._apply(theme.THEME_AUTO, None), theme.THEME_DARK)
+        self.assertTrue(theme.is_dark(self.applied))
+
+    def test_the_style_is_fusion_in_both_themes(self):
+        self._apply(theme.THEME_LIGHT, None)
+        self._apply(theme.THEME_DARK, None)
+        self.assertEqual(self.styles, ["Fusion", "Fusion"])
+
+    def test_a_pinned_theme_does_not_ask_the_desktop(self):
+        # Detection is a subprocess on macOS and Linux, and `_refresh_theme`
+        # drops the cache and re-applies on EVERY tray-menu open — so asking
+        # when the setting already decides is a subprocess per open for an
+        # answer that is then discarded.
+        with self.mock.patch.object(theme, "detect_os_theme") as detect:
+            for setting in (theme.THEME_LIGHT, theme.THEME_DARK, " Dark "):
+                theme.apply_theme(self.app, setting)
+            detect.assert_not_called()
+
+    def test_auto_and_a_nonsense_setting_still_ask(self):
+        # The skip must be narrow: anything that does NOT decide on its own has
+        # to fall through to the desktop, or "auto" silently stops following it.
+        for setting in (theme.THEME_AUTO, None, "", "sepia"):
+            with self.subTest(setting=setting):
+                with self.mock.patch.object(theme, "detect_os_theme",
+                                            return_value=theme.THEME_LIGHT) as detect:
+                    self.assertEqual(theme.apply_theme(self.app, setting),
+                                     theme.THEME_LIGHT)
+                    detect.assert_called_once()
 
 
 if __name__ == "__main__":

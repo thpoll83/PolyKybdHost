@@ -156,6 +156,8 @@ def _render(developer, out_dir, log):
         # grab() does not trigger.
         app._refresh_fontpack_action()
         app.cmdMenu._refresh_auto_brightness_action()
+        # Same reason: the Keycap Script previews are built on first show.
+        app._build_glyph_script_previews()
 
         suffix = "-developer" if developer else ""
         path = os.path.join(out_dir, f"tray-menu{suffix}.png")

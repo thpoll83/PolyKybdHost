@@ -122,6 +122,33 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       outright — *"Your plan includes up to 1 review per rolling hour; 0 remain
       after this review"* — which is the number to plan around when a PR needs a
       re-review after a fix.
+      - ⚠️ **On such a repo there is NO free retry, because the "a push
+        re-triggers a review without spending a request" escape hatch recorded
+        below relies on AUTO-review — which is exactly what being under 10 stars
+        turns off.** So the two notes interact badly and the interaction is not
+        obvious from either one: on `qmk_firmware` a push is the cheap way to get
+        another look, and on `PolyKybdHost` / `polykybd-docs` a push buys nothing
+        at all. Every review here costs a quota slot, so spend it on the commit
+        you actually want read. **Observed, not inferred** (host#218,
+        2026-09-07): two pushes after the review each re-rendered the summary as
+        *"This repository does not receive automatic reviews because it has fewer
+        than 10 stars"* with a Trigger-review checkbox — a SKIP, not a review.
+      - ⚠️ **A push mid-run did NOT abort the review (host#218, 2026-09-07) — but
+        the review stayed pinned to the PRE-PUSH head, which is the outcome that
+        matters and is quieter than an abort.** `qmk_firmware/CLAUDE.md` records
+        that a push while a review is in flight aborts it, erasing its own
+        evidence. Measured here: the run started 10:16:08, a push landed 10:18:57,
+        and the review completed normally at 10:25:04 — full walkthrough, 3
+        findings, pre-merge checks. What it did **not** do is notice the new
+        commit: its `📥 Commits` range read `c02a1fa..be78692` throughout and the
+        review object carries `commit_id: be78692`, so the pushed commit was
+        never read. Under this file's own standing check — a review counts only
+        when its `commit_id` equals the PR head — **that review is not cover for
+        the head it appears under**, and on an under-10-stars repo re-reading the
+        new commit costs the hour's only slot. One observation is not a base rate,
+        so do not read this as "the abort does not happen"; read it as **the
+        failure can be silent non-coverage rather than a visible abort**, which
+        the range line and `commit_id` will tell you and nothing else will.
     - ⚠️ **All THREE bots can be unavailable at once, each in its own disguise —
       #172 (2026-08-18) collected a full page of bot output and not one review.**
       CodeRabbit posted the under-10-stars "Review available on request" box;
@@ -655,11 +682,15 @@ or was one edit away from it, so reaching for the shared piece is the point:
   `PolyHost._update_progress` is a **property** over the controller's dialog so the
   controller is the single owner and the two can't disagree about whether a dialog
   is up.
-- **`polyhost/gui/theme.py` — `apply_dark_palette(app)` / `dark_palette()`.** The
-  dark Fusion theme both `QApplication`s wear; they had a byte-identical 22-line
-  `set_style`. It is an explicit palette (not a stylesheet) because the palette is
-  what propagates into the stock `QMessageBox`/`QProgressDialog`/file pickers
-  neither app styles by hand.
+- **`polyhost/gui/theme.py` — `apply_theme(app, setting)` / `dark_palette()` /
+  `light_palette()`.** The Fusion theme both `QApplication`s wear; they had a
+  byte-identical 22-line `set_style`. It is an explicit palette (not a stylesheet)
+  because the palette is what propagates into the stock
+  `QMessageBox`/`QProgressDialog`/file pickers neither app styles by hand — and
+  that is also why light is a second explicit palette rather than
+  `standardPalette()`. `apply_dark_palette` survives for the dialogs' `main()` dev
+  launchers; **an app calling it would ignore the desktop**, which is the bug the
+  OS-theme note below replaced.
 - **`polyhost/util/observable.py` — `Observable`.** The `subscribe`/`emit` seam
   `PolyCore` and `RemoteCore` both expose (and both duplicated). Two properties are
   load-bearing and easy to drop when re-typing: `emit` **snapshots under the lock
@@ -1248,6 +1279,36 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   range-connect note above), so the Glyph-Script menu is disabled on a pre-v9 keyboard but
   the rest of the app still connects; within a glyph-script-capable device the script set is
   free to grow.
+  - **Each menu entry PREVIEWS its script** (2026-09-07): the icon is a two-glyph
+    sample and the tooltip a longer one, drawn offline from the shipped
+    `fantasy.plyf` by `services/glyph_script_preview.py` (Qt-free) and turned into
+    a `QIcon` by `gui/glyph_script_icon.py`. STANDARD previews the normal Latin
+    face from `res/preview/resident.plyf`, so the column reads as a comparison.
+    Built on the submenu's first `aboutToShow` (30 ms for all 11), never at
+    startup; a missing or malformed bundle leaves the menu exactly as it was.
+    Four things were decided by rendering the real menu
+    (`tools/render_tray_menu.py`, which now calls `_build_glyph_script_previews()`
+    for the same reason it calls `_refresh_fontpack_action()` — a `grab()` fires no
+    `aboutToShow`):
+    - ⚠️ **The icon is TWO glyphs because a menu icon is a ~16 px SQUARE.** `QIcon`
+      scales a pixmap to *fit*, so the six-glyph sample arrives about five pixels
+      tall and reads as a smudge. The tooltip carries the rest.
+    - ⚠️ **A glyph is scaled against the ALPHABET's ink box, not its own.** Braille
+      'a' is a single dot; measured against itself it fills the icon as a solid
+      white square. `ink_extent()` over `a..z` keeps the dot a dot — and keeps
+      every entry of one script at one scale whatever sample it draws.
+    - **The script's font is found by BLOCK BASE, not by position in the pack.**
+      `0xE800 + (value-1)*0x40`, mirroring the firmware's `glyph_script_blocks[]`
+      (`tools/glyph_script_demo.py` assumes pack ORDER instead — weaker). A pack
+      that reorders or lacks a block then yields no preview rather than a preview
+      of the neighbouring script; the firmware table is pinned in
+      `tests/services/glyph_script_preview_test.py`.
+    - **The tooltip image rides in the HTML as a base64 `data:` URI** — Qt's rich
+      text loads those, so there is no temp file to write or clean up. The test
+      draws it through a `QTextDocument` and counts lit pixels, because a tooltip
+      whose image Qt cannot load renders as an empty box and says nothing.
+      ⚠️ `QMenu.setToolTipsVisible(True)` is required — action tooltips are off by
+      default, so without it the whole tooltip half is a silent no-op.
 - **Keycap legend size (protocol 13+)**: HID cmd 34 sets how large a key's MAIN
   legend is drawn — `GlyphSize.SMALL` (the original face), `MEDIUM`, `LARGE`. Wired
   exactly like the glyph script: `PolyKybd.get/set_glyph_size` behind a
@@ -1608,6 +1669,26 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     every name resolves, that no shipped `.svg` is unreferenced (11 orphans had
     accumulated), and that the opsz48/single-fill format holds. It is Qt-free, so
     it runs in the normal suite rather than only under xvfb.
+  - ⚠️ **A tint is drawn on BOTH theme grounds now, so a colour picked against
+    one can vanish against the other — measured, the brightness family did.**
+    The apps follow the OS light/dark setting (see the theme note below), and
+    `#FFFF55` is 7.6:1 on the dark chrome (#505050) and **1.07:1 on the light
+    one** (#F0F0F0): yellow on white, reported from the field 2026-09-07. It is
+    `#B59D24` gold now (3.00 / 2.36), and the three other off-palette one-offs
+    went with it — `sync_problem` was `#A96424`, 1.74:1 on DARK (the same fault
+    the other way), and `delete` `#F19E39`; both adopted the palette colour
+    their meaning already had. Every colour in the set now sits between 2.20:1
+    and 3.22:1 on both grounds, and `IconContrastTest` holds a 2.0 floor.
+    - ⚠️ **A ramp cannot be expressed in LIGHTNESS — that is what made the old
+      one unfixable rather than merely wrong.** The four brightness entries were
+      shades of one yellow (a paler `#F9DB78` for 1%), and a pale tint is the
+      worst case of all on a light ground. The ramp is across the palette now:
+      grey off, **amber** at 1%, gold at 50/100% (the Material glyphs carry the
+      rest — fewer rays, outline vs filled), and **green** for "back to
+      automatic", which is the palette's enabled/ok rather than a brightness
+      level. So amber means caution *and* the dim end, and green means ok *and*
+      automatic; the alternative was two more one-off colours, and the set only
+      just stopped having those.
   - **Judge a candidate glyph by rendering and measuring it, not by its name.**
     Rasterise to a fixed canvas (`cairosvg` + PIL) and compare **ink coverage**
     and **glyph bounding height** against the set (baseline ≈19% ink, ≈34px tall
@@ -2126,6 +2207,49 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   like a report from the keyboard machine, which is a different failure domain
   entirely. `tests/gui/host_client_test.py` has a `forwarder` smoke mode; it
   **skips** without `pywinctl`, which `forwarder.py` imports at module load.
+- **Both tray apps FOLLOW THE OS light/dark setting (2026-09-07) —
+  `services/os_theme.py` (Qt-free reader + rule) + `gui/theme.apply_theme`.**
+  They wore the dark palette unconditionally, so a light Windows desktop got a
+  dark tray menu and dark dialogs against light windows (field). `ui_theme`
+  ('auto' default, or 'light'/'dark') overrides the desktop; the settings dialog
+  renders it as a **dropdown** via `settings_dialog.CHOICES`, the one place a
+  fixed value set gets a combo instead of the free-text fallback.
+  - **Detection is per platform and never raises**: Windows reads
+    `AppsUseLightTheme` (the APP one — `SystemUsesLightTheme` is the
+    taskbar/Start colour and can differ) with `winreg`, macOS `defaults read -g
+    AppleInterfaceStyle` (⚠️ the key only EXISTS in dark mode, so a failed read
+    means light), Linux `gsettings` `color-scheme` then the gtk-theme name. A
+    desktop that does not answer reports None and `resolve_theme` falls back to
+    **dark** — the historical look, so a failed detection changes nothing rather
+    than flipping somebody's tray.
+  - ⚠️ **The STYLE stays Fusion in both themes; only the palette changes.** Qt 5's
+    native Windows style has no dark mode, so dark must be Fusion, and switching
+    style by theme would make the app look like two different programs depending
+    on a system setting — with the Fusion-shaped bits (`cmd_menu`'s proxy style,
+    the inspectors) only ever checked in one of them. This follows the OS's
+    light/dark CHOICE, not the platform's native chrome.
+  - **The tray re-follows on `menu.aboutToShow`** (`PolyHost._refresh_theme`), so
+    switching the desktop needs no restart; the detection is cached 5 s because on
+    macOS/Linux it is a subprocess. The **forwarder reads it once at startup** — it
+    has no such hook, and its dialogs are short-lived.
+  - ⚠️ **A rendered pixmap does NOT follow a palette change, so the glyph-script
+    previews are dropped and rebuilt** — their ink is picked from the palette
+    (`glyph_script_icon.preview_ink`: the OLED cool white on dark, the palette's
+    own text colour on light), and near-white ink on a light menu is an invisible
+    icon.
+  - ⚠️ **Some developer dialogs hardcode dark colours** (`mru_inspector_dialog`,
+    `fontpack_inspector_dialog`, `fontpack_extend_dialog`) — mostly around OLED
+    previews, where a black ground is the content rather than chrome. Left alone
+    deliberately; every surface a normal user sees draws from the palette.
+  - **Verified by rendering the real menu in both themes**
+    (`ui_theme` in `settings.yaml` + `tools/render_tray_menu.py`), which is also
+    what showed the Material menu icons read on white — they are mid-tone.
+  - ⚠️ **A Linux tray menu can look light while the app palette is dark, and that
+    is NOT evidence the palette applied** — reported from a Linux desktop while the
+    apps were still unconditionally dark. The likely mechanism is that the menu is
+    exported to the shell (StatusNotifier/DBusMenu) and drawn with the system
+    theme rather than by Qt, but that is **unverified here**. The way to tell them
+    apart is a real window: open Settings, which Qt certainly draws.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
