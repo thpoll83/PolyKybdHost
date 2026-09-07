@@ -45,6 +45,7 @@ from PyQt5.QtGui import QImage
 from polyhost.services import macro_label as ml
 from polyhost.services import macro_look as mkl
 from polyhost.services import preview_data as pdata
+from polyhost.services import custom_keycodes as _ck
 from polyhost.gui.layout_dialog import qmk_keycode_helper as qh
 
 # The editor's tile shows the resting legend, so no modifier is held.
@@ -64,44 +65,13 @@ KC_NO = 0x0000
 # QMK's keyboard/user keycode anchors (quantum/keycodes.h). The firmware's enums are
 # `KC_LANG = QK_KB_0, ...` and `KCL_ENUS = QK_USER_0, ...`, so a member's value is its
 # anchor plus its position.
-_KEYCODE_ANCHORS = {"QK_KB_0": 0x7E00, "QK_USER_0": 0x7E40}
-_ENUM_RE = re.compile(r"enum\s+\w+\s*\{(.*?)\n\};", re.S)
-
-
-def parse_custom_keycodes(header: str) -> dict:
-    """`keycode_helper.h`'s enums -> {value: name}.
-
-    The editor's keycode table is QMK's, which knows nothing about PolyKybd's own
-    keycodes -- so `KC_BASE`, `KC_EDEN`, every brightness preset and the whole
-    settings layer arrive UNNAMED and the preview has no token to look up, even
-    though keycode_helper.c has a legend for each of them. This is the missing half.
-
-    ⚠️ Parsed positionally, so a member with an explicit `= something` other than a
-    known anchor would desynchronise every name after it. There is no such member
-    today; the two that exist (`= QK_KB_0`, `= QK_USER_0`) are the anchors, and an
-    unrecognised initialiser abandons the rest of that enum rather than guessing.
-    """
-    out, text = {}, _strip_c_comments(header)
-    for body in _ENUM_RE.findall(text):
-        value = None
-        for member in body.split(","):
-            member = member.strip()
-            if not member:
-                continue
-            if "=" in member:
-                name, _, init = (x.strip() for x in member.partition("="))
-                resolved = _resolve_init(init, _KEYCODE_ANCHORS, out)
-                if resolved is None:
-                    break          # unknown initialiser: the rest would be a guess
-                value = resolved
-            else:
-                name = member
-                if value is None:
-                    break          # enum with no anchor we understand
-                value += 1
-            if name.isidentifier():
-                out[value] = name
-    return out
+# `parse_custom_keycodes` and its helpers MOVED to
+# `polyhost.services.custom_keycodes`: the keycode browser needs the same names to
+# make PolyKybd's own keycodes assignable, and must be able to get them WITHOUT
+# this module's rendering pipeline (PIL, the font pack, oled_preview) having
+# loaded. Re-exported here because this module and `scripts/export_preview_data`
+# both still call it by this name.
+parse_custom_keycodes = _ck.parse_custom_keycodes
 
 
 # ⚠️ `parse_function_macros` / `expand_function_macros` live in `oled_preview`, NOT
@@ -110,29 +80,6 @@ def parse_custom_keycodes(header: str) -> dict:
 # object macro whose body CALLS one (`ICON_CONTEXT_MENU` is
 # `U" " U"\x2630" HINT_MOVE(...) HINT_ROT(...)`). Two copies would be two things to
 # keep in step; this module reaches them through `self._op`.
-
-
-def _resolve_init(init: str, anchors: dict, seen: dict):
-    """An enum initialiser -> its value, or None if we cannot be sure.
-
-    Handles the three forms the firmware actually uses: an anchor (`QK_KB_0`), an
-    integer, and `<earlier member> + <n>` -- the emoji/language block is laid out with
-    `KC_EMJ_PAGE_PREV = KC_EMJ_CAT_BASE + 12`. Bailing on those cost every keycode
-    AFTER them, which is most of the settings layer.
-    """
-    init = init.strip()
-    if init in anchors:
-        return anchors[init]
-    by_name = {n: v for v, n in seen.items()}
-    m = re.fullmatch(r"(\w+)\s*\+\s*(\d+)", init)
-    if m and m.group(1) in by_name:
-        return by_name[m.group(1)] + int(m.group(2))
-    if init in by_name:
-        return by_name[init]
-    try:
-        return int(init, 0)
-    except ValueError:
-        return None
 
 
 def _read(base: str, name: str) -> str:
