@@ -119,6 +119,30 @@ class RunTest(unittest.TestCase):
         self.assertEqual(proc.returncode, 0)
         self.assertIn("polykybd-ai-hook", proc.stderr)
 
+    def test_the_checkout_fallback_works_from_another_directory(self):
+        """No $POLYCTL, no polyctl on PATH, not installed — the regression CodeRabbit
+        found on #216. The fallback runs `python -m polyhost.cli.polyctl`, and `-m`
+        resolves against the CWD, so from anywhere but the checkout root it could not
+        import at all. A hook runs from wherever the agent happens to be, which is
+        essentially never the checkout, so this is the NORMAL case for that path."""
+        import os
+        import tempfile
+        env = dict(os.environ)
+        env.pop("POLYCTL", None)
+        env.pop("PYTHONPATH", None)
+        # An empty PATH is what "polyctl is not installed" looks like to shutil.which.
+        env["PATH"] = ""
+        with tempfile.TemporaryDirectory() as elsewhere:
+            proc = subprocess.run(
+                [sys.executable, str(HOOK)],
+                input=json.dumps({"hook_event_name": "Stop"}),
+                text=True, capture_output=True, env=env, cwd=elsewhere, timeout=30)
+        self.assertEqual(proc.returncode, 0)
+        # It cannot reach a real daemon here, so it must fail on the CONNECTION and
+        # not on the import — an ImportError/"No module named" would be the bug.
+        self.assertNotIn("No module named", proc.stderr)
+        self.assertNotIn("ModuleNotFoundError", proc.stderr)
+
     def test_garbage_on_stdin_never_fails_the_agent(self):
         proc, _ = self._run("not json at all")
         self.assertEqual(proc.returncode, 0)

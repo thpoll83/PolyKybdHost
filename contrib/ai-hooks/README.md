@@ -13,7 +13,18 @@ that can run a command can drive them.
 
 ## Set it up
 
-1. Tell the host which window the key should raise. The pattern is a
+1. Turn the feature on. It ships **off**, so until this the key's light stays dark
+   and a press raises nothing:
+
+   ```
+   polyctl settings set ai_key_enabled true
+   ```
+
+   On a multi-machine setup, set it on **both** machines — the keyboard machine
+   needs it for the light and the press, the machine your agent runs on needs it
+   for the window the press raises.
+
+2. Tell the host which window the key should raise. The pattern is a
    case-insensitive part of the window title, or a regex written as `/.../`:
 
    ```
@@ -21,7 +32,7 @@ that can run a command can drive them.
    polyctl ai status            # what it matches right now
    ```
 
-2. Point your agent at the hook adapter. It reads whichever shape your tool sends
+3. Point your agent at the hook adapter. It reads whichever shape your tool sends
    and never fails the tool it is hooked into.
 
    **Claude Code** — in `~/.claude/settings.json`:
@@ -75,7 +86,7 @@ that can run a command can drive them.
 | The key, its light and the press | firmware, `keyboards/polykybd/poly_keymap.c` (`KC_AI`) |
 | The status command | firmware HID cmd 40, protocol v17+ |
 | Reading the press | host, `polyhost/services/ai_link.py` (the firmware console) |
-| The commands | `polyctl ai state|target|status` |
+| The commands | `polyctl ai state` / `target` / `status` |
 
 ## Notes
 

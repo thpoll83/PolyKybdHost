@@ -181,12 +181,20 @@ class AiRelayFollowerTest(unittest.TestCase):
             self.follower.observe({"raise_seq": 42})
         self.assertEqual(self.raises, 1)
 
-    def test_several_presses_between_reports_still_raise_once(self):
-        # A poll cannot see the presses it missed, and raising the window twice for
-        # two presses of a key whose whole job is "show me the window" buys nothing.
+    def test_presses_missed_between_reports_are_all_applied(self):
+        # The forwarder polls, so several presses can land inside one window — and
+        # the second press of this key means "the NEXT matching window", so
+        # collapsing them drops exactly the cycling repeated presses exist for.
         self.follower.observe({"raise_seq": 1})
         self.follower.observe({"raise_seq": 4})
-        self.assertEqual(self.raises, 1)
+        self.assertEqual(self.raises, 3)
+
+    def test_an_implausible_jump_is_bounded_rather_than_cycled(self):
+        # Not a person tapping a key; cycling through windows dozens of times would
+        # be worse than the single raise that says "something happened".
+        self.follower.observe({"raise_seq": 1})
+        self.follower.observe({"raise_seq": 5000})
+        self.assertEqual(self.raises, AiRelayFollower.MAX_CATCH_UP)
 
     def test_a_counter_going_backwards_re_baselines_instead_of_raising(self):
         # The daemon over there restarted; nobody pressed anything.
@@ -201,6 +209,17 @@ class AiRelayFollowerTest(unittest.TestCase):
         self.follower.observe({"raise_seq": 5})
         self.follower.observe({"raise_seq": 0})
         self.assertEqual(self.raises, 0)
+
+    def test_switching_the_feature_back_on_over_there_is_not_a_press(self):
+        # Disabling does not reset the host's counter, so the first reply after it
+        # is re-enabled carries whatever it had reached before. Treating that as an
+        # advance raises a window nobody asked for (CodeRabbit, #216).
+        self.follower.observe({"raise_seq": 3})     # enabled, three presses ago
+        self.follower.observe({"raise_seq": 0})     # ...turned off over there
+        self.follower.observe({"raise_seq": 3})     # ...and back on: same counter
+        self.assertEqual(self.raises, 0)
+        self.follower.observe({"raise_seq": 4})     # NOW someone pressed it
+        self.assertEqual(self.raises, 1)
 
     def test_active_tracks_the_reply_and_starts_false(self):
         # The forwarder shortens its heartbeat off this, so it must not latch on.

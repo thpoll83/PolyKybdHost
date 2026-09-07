@@ -96,15 +96,32 @@ def decide_state(event):
     return EVENT_STATE.get(str(name).strip().lower())
 
 
+def checkout_root():
+    """The repo root this hook lives in — `<root>/contrib/ai-hooks/<this file>`."""
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
 def polyctl():
-    """The polyctl to run: $POLYCTL, one on PATH, or this checkout's own module."""
+    """(argv, env) for running polyctl: $POLYCTL, one on PATH, or this checkout.
+
+    The third form runs `python -m polyhost.cli.polyctl`, and `-m` resolves against
+    the CWD, not against this file — so a hook fired from anywhere but the checkout
+    root would fail to import it. A hook runs from wherever the agent happens to be,
+    which is essentially never the checkout, so that fallback needs the root on
+    PYTHONPATH to work at all (CodeRabbit, #216). Only the fallback gets it: an
+    installed polyctl or a $POLYCTL override runs with the environment untouched.
+    """
     override = os.environ.get("POLYCTL")
     if override:
-        return [override]
+        return [override], None
     found = shutil.which("polyctl")
     if found:
-        return [found]
-    return [sys.executable, "-m", "polyhost.cli.polyctl"]
+        return [found], None
+    root = checkout_root()
+    env = dict(os.environ)
+    existing = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = root + os.pathsep + existing if existing else root
+    return [sys.executable, "-m", "polyhost.cli.polyctl"], env
 
 
 def main():
@@ -112,7 +129,8 @@ def main():
     state = decide_state(event)
     if not state:
         return 0   # an event we have no opinion about is not an error
-    cmd = polyctl() + ["ai", "state", state]
+    argv, env = polyctl()
+    cmd = argv + ["ai", "state", state]
     # Audited for Sourcery/opengrep's dangerous-subprocess-use rule: `cmd` is an argv
     # LIST run with the default shell=False, so there is no shell to inject through.
     # Its elements are this file's own literals plus `state`, which decide_state()
@@ -121,7 +139,7 @@ def main():
     # remedy here -- it escapes for a shell STRING and would corrupt an argv element.
     try:
         # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=5, env=env)
     except FileNotFoundError:
         _warn("polyctl not found — set $POLYCTL or put it on PATH")
         return 0

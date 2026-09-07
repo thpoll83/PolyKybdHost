@@ -237,15 +237,31 @@ class AiRelayFollower:
     so acting when it *advances* is exactly once per press however often a reply
     repeats or a report is dropped.
 
-    Three cases that are deliberately NOT a raise, because each would fire on
+    An advance of N counts N presses and raises N times, because the second press
+    of this key means *the next matching window* — collapsing them would silently
+    drop the cycling that repeated presses exist for, in exactly the case it is
+    wanted (several agent sessions open). Bounded by ``MAX_CATCH_UP``: past that
+    the counter did not get there by someone tapping a key.
+
+    Four cases that are deliberately NOT a raise, because each would fire on
     something that is not a keypress:
 
     * the **first** reply — the host's counter is whatever it was before this
       forwarder connected, and a process starting is not a press;
     * the counter going **backwards** — the daemon restarted, so re-baseline;
     * a counter of **0** — the host reports that while the feature is off, so it
-      is "nothing is armed", not "press zero".
+      is "nothing is armed", not "press zero";
+    * a counter last seen as **0** — i.e. the feature was off over there and has
+      just been switched on. The host's counter is not reset by disabling, so the
+      first reply after re-enabling carries whatever it had reached before, and
+      treating that as an advance raises a window nobody asked for (CodeRabbit,
+      #216). It is the same "establish a baseline" case as the first reply.
     """
+
+    # A jump larger than this is not a person pressing a key — a host that ran for
+    # a while before this forwarder saw a non-zero counter, most likely. Raise once
+    # and re-baseline rather than cycling through windows dozens of times.
+    MAX_CATCH_UP = 8
 
     def __init__(self, raise_cb, log=None):
         self._raise = raise_cb
@@ -273,8 +289,13 @@ class AiRelayFollower:
         except (TypeError, ValueError):
             return False
         previous, self._seq = self._seq, seq
-        if previous is None or seq <= 0 or seq < previous:
-            return False   # baseline / feature off / host restarted — see the docstring
+        if previous is None or previous <= 0 or seq <= 0 or seq < previous:
+            # baseline / feature off / just switched on / host restarted — see the
+            # docstring. Each of these has a NEW baseline, not a press to act on.
+            return False
         if seq == previous:
             return False
-        return bool(self._raise())
+        raised = False
+        for _ in range(min(seq - previous, self.MAX_CATCH_UP)):
+            raised = bool(self._raise()) or raised
+        return raised
