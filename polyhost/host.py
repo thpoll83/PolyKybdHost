@@ -8,7 +8,7 @@ import threading
 import time
 
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QIcon, QPalette, QColor
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QApplication,
     QSystemTrayIcon,

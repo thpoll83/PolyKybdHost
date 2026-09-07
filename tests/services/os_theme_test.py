@@ -9,7 +9,7 @@ detection changes nothing rather than flipping somebody's tray.
 """
 import subprocess
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from polyhost.services import os_theme
 from polyhost.services.os_theme import THEME_AUTO, THEME_DARK, THEME_LIGHT

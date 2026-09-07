@@ -28,9 +28,24 @@ user sees draws from the palette.
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPalette
 
-from polyhost.services.os_theme import (  # re-exported: one import for a caller
+from polyhost.services.os_theme import (
     THEME_AUTO, THEME_DARK, THEME_LIGHT, THEMES, detect_os_theme, resolve_theme,
 )
+
+# The Qt-facing front door: a caller that already imports this module for
+# `apply_theme` should not need a second import for the names that go with it.
+# Declared rather than merely imported because a bare re-export reads as dead
+# code to anything that only looks within this file — CodeQL flagged exactly
+# that, and `THEME_DARK` is genuinely used (through the module, from the tests).
+__all__ = [
+    "THEME_AUTO", "THEME_DARK", "THEME_LIGHT", "THEMES",
+    "detect_os_theme", "resolve_theme",
+    "dark_palette", "light_palette", "palette_for",
+    "apply_theme", "apply_dark_palette", "is_dark",
+    "WINDOW_COLOR", "BASE_COLOR", "TEXT_COLOR", "HIGHLIGHT_TEXT_COLOR",
+    "ACCENT_COLOR", "LIGHT_WINDOW_COLOR", "LIGHT_BASE_COLOR",
+    "LIGHT_ALTERNATE_COLOR", "LIGHT_TEXT_COLOR",
+]
 
 #: Panel/window chrome, and the ground for buttons and alternating rows.
 WINDOW_COLOR = QColor(80, 80, 80)
