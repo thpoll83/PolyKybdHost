@@ -181,6 +181,40 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         conclusion, it sharpens it: on 2026-08-29 three of six PRs really were
         reviewed by nobody, and Greptile's silence is the one that leaves no
         trace to notice.
+      - ⚠️ **On THIS repo "reviewed by nobody" is too strong, because CodeQL runs
+        on every PR and nothing in this section said so** — `.github/workflows/
+        codeql.yml`, `pull_request: [main]`, check name **Analyze Python**. Its own
+        header comment states the reason it exists: the LLM reviewers "are all LLMs
+        trained on much the same public code, so their blind spots overlap", while
+        it "is also free on public repos with no quota, so unlike every bot on this
+        PR it cannot go quiet at the moment it is needed". That is the exact gap the
+        four preceding notes catalogue, and the remedy was already installed. It is
+        the sibling of the firmware repo's cppcheck (`qmk_firmware/CLAUDE.md` even
+        says *"The host repo runs CodeQL instead"*) — so the fact was written down,
+        just not in the file describing this repo's own board.
+        - It **earns the slot**: on host#218 (2026-09-07) it produced three findings
+          before any bot had run, and the PR carried a green Sourcery-skipped board
+          at the time. Judge it by the **`Analyze Python` job**, not the `CodeQL`
+          check run, and read its findings as inline review comments from
+          `github-advanced-security[bot]` plus a review object — i.e. `get_reviews`
+          sees it, which the five-reviewer check below has to account for.
+        - ⚠️ It is **not** an answer to a design question and does not read prose;
+          it finds the class of defect dataflow finds. "CodeQL was green" is not
+          review cover for a refactor, only for what its queries cover.
+        - ⚠️ **`py/unused-import` on a RE-EXPORT module is right about the file and
+          wrong about the remedy — declare `__all__`, never delete the name.**
+          CodeQL reasons within one module, so a name re-exported for other callers
+          reads as dead to it, and it cannot see attribute access from elsewhere:
+          on host#218 it flagged `THEME_DARK`/`THEMES` in `polyhost/gui/theme.py`,
+          and `THEME_DARK` is genuinely used — as `theme.THEME_DARK`, from
+          `tests/gui/theme_test.py`. Deleting the names to clear the alert would
+          have broken the tests while the alert went green, which is the worst
+          available outcome. `__all__` silences it AND states the surface honestly;
+          verified by re-scan (the next run posted nothing). Make the `__all__`
+          complete while you are there — an `__all__` that omits real public names
+          is a new false claim in place of the old one. This repo has several such
+          front doors (`gui/theme.py`, `core/events.py`, the `server/` package), so
+          expect it again.
       - ⚠️ **`actions_list` blows the tool token cap — 130–220 KB per call, even
         at `per_page: 3`** (kept from the above, because it applies to reading
         *any* workflow run). It saves the JSON to a file and tells you the path;
@@ -524,6 +558,38 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   the call. Leaving the check red instead is the worse option: an always-red
   check is one people learn to scroll past, and the next real finding rides in
   behind it.
+
+## Mirrored skills (`qmk_firmware` ↔ `PolyKybdHost`)
+
+Four skills exist in **both** repos and are kept **byte-identical**:
+`mutation-test-suite`, `polykybd-github-release`, `session-retro`,
+`update-polykybd-docs`. A skill loads only from the repos a session has attached,
+so one that describes cross-repo work is unreachable from a session opened on the
+other repo alone — which is what happened to `mutation-test-suite`, extended to
+cover Python/unittest suites while living only in the firmware repo.
+
+⚠️ **They had already drifted, and every difference was pure loss — not repo-specific
+tailoring.** Measured 2026-09-07 before harmonising: `session-retro` lacked the whole
+open-PR-sweep section on the host side, `update-polykybd-docs` lacked its Images
+section there, and `polykybd-github-release` was missing the shallow-clone warning on
+the host side and the corrected WinCompose `status.txt` ordering on the firmware side —
+i.e. each copy was the newer one for a different note. Nothing anywhere flagged it,
+because a skill has no build, no test and no reviewer.
+
+**So the rule is copy, never fork**: edit one, `cp` it to the other, and check with
+
+```bash
+for s in mutation-test-suite polykybd-github-release session-retro update-polykybd-docs; do
+    cmp -s /home/user/qmk_firmware/.claude/skills/$s/SKILL.md \
+           /home/user/PolyKybdHost/.claude/skills/$s/SKILL.md \
+      && echo "$s: ok" || echo "$s: DRIFTED"
+done
+```
+
+A firmware-specific section in the host's copy (or the reverse) costs a reader one
+skipped paragraph; a fork costs a note that only one repo ever sees. Take the first.
+If a skill ever genuinely needs to differ per repo, split the differing part into a
+separate skill rather than forking the shared one.
 
 ## Branching (all PolyKybd repos)
 
@@ -2321,8 +2387,13 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `find . -name __pycache__ -path "*/polyhost/*" -exec rm -rf {} +`. Suspect it
   whenever a fix "doesn't take" — especially after a `cp`/restore, which sets a
   fresh mtime but can land in the same second.
-- **No *test* CI**: no workflow runs the unit tests. (The repo *does* have two
-  workflows — `bump-version.yml` + `release.yml`; see **Releases** below.)
+- **No *test* CI**: no workflow runs the unit tests — but the repo is **not**
+  CI-less, and this line said "two workflows" while there were four. They are
+  `bump-version.yml` + `release.yml` (see **Releases** below), `deploy-telemetry.yml`
+  (the Cloudflare Worker), and **`codeql.yml`, which analyses every PR** and is the
+  one automated reviewer here that cannot go quiet — see the CodeQL note in the
+  code-review conventions above. So a PR gets static analysis and no unit-test run;
+  the suite is yours to run locally (`scripts/run_tests.py`).
 - **GUI tests need a display**: `tests/gui/host_client_test.py` constructs the real `PolyHost` (default + `--connect` client mode) in a subprocess (one `QApplication`/process; `pynput` needs X) with Qt forced to `offscreen`. They **skip unless `DISPLAY` is set** — run them under a virtual X server: `xvfb-run -a .venv/bin/python -m unittest tests.gui.host_client_test`. `host.py` can't even be *imported* without an X server (pynput at module load), so plain `unittest discover` skips them. Installing `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too (pywinctl/pymonctl `sys.exit(1)` without it).
   - ⚠️ **Do not chain two `xvfb-run -a` invocations in one shell command** — the
     second one hangs (observed ~10 min at 0.7% CPU / 4 s CPU time, on a suite
