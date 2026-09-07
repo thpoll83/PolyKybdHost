@@ -122,6 +122,30 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       outright — *"Your plan includes up to 1 review per rolling hour; 0 remain
       after this review"* — which is the number to plan around when a PR needs a
       re-review after a fix.
+      - ⚠️ **On such a repo there is NO free retry, because the "a push
+        re-triggers a review without spending a request" escape hatch recorded
+        below relies on AUTO-review — which is exactly what being under 10 stars
+        turns off.** So the two notes interact badly and the interaction is not
+        obvious from either one: on `qmk_firmware` a push is the cheap way to get
+        another look, and on `PolyKybdHost` / `polykybd-docs` a push buys nothing
+        at all. Every review here costs a quota slot, so spend it on the commit
+        you actually want read.
+      - ⚠️ **A push mid-run did NOT abort the review (host#218, 2026-09-07) — but
+        the review stayed pinned to the PRE-PUSH head, which is the outcome that
+        matters and is quieter than an abort.** `qmk_firmware/CLAUDE.md` records
+        that a push while a review is in flight aborts it, erasing its own
+        evidence. Measured here: the run started 10:16:08, a push landed 10:18:57,
+        and the review completed normally at 10:25:04 — full walkthrough, 3
+        findings, pre-merge checks. What it did **not** do is notice the new
+        commit: its `📥 Commits` range read `c02a1fa..be78692` throughout and the
+        review object carries `commit_id: be78692`, so the pushed commit was
+        never read. Under this file's own standing check — a review counts only
+        when its `commit_id` equals the PR head — **that review is not cover for
+        the head it appears under**, and on an under-10-stars repo re-reading the
+        new commit costs the hour's only slot. One observation is not a base rate,
+        so do not read this as "the abort does not happen"; read it as **the
+        failure can be silent non-coverage rather than a visible abort**, which
+        the range line and `commit_id` will tell you and nothing else will.
     - ⚠️ **All THREE bots can be unavailable at once, each in its own disguise —
       #172 (2026-08-18) collected a full page of bot output and not one review.**
       CodeRabbit posted the under-10-stars "Review available on request" box;
