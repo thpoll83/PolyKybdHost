@@ -190,3 +190,91 @@ class WindowRaiser:
                            f"(a native Wayland session cannot be driven this way).")
         which = f" ({idx + 1} of {len(matches)})" if len(matches) > 1 else ""
         return True, f"Raised {target.title!r}{which}."
+
+
+def enumerate_windows():
+    """(title, window) for every window on this machine, in the backend's order.
+
+    pywinctl is imported HERE rather than at module scope so this module stays
+    importable with no display and no pywinctl — `poly_core` is guarded by
+    tests/core/import_guard_test.py, and on a machine with neither the AI key
+    should report that it cannot raise anything rather than take the core down.
+
+    ⚠️ The KDE / GNOME-Wayland window reporters expose only `getActiveWindow`,
+    so this always goes to pywinctl: on a native Wayland session it lists the
+    XWayland windows and nothing else, which is the same ceiling the raise
+    itself has there.
+    """
+    import pywinctl as pwc   # noqa: PLC0415 — deliberately lazy, see above
+    return [(w.title, w) for w in pwc.getAllWindows()]
+
+
+def activate_window(window):
+    """Raise one window. False when the window manager refused (native Wayland has
+    no client-callable activation), which the caller turns into a message rather
+    than a silent no-op."""
+    return bool(window.activate(wait=False))
+
+
+def local_raiser():
+    """A :class:`WindowRaiser` over this machine's own windows.
+
+    One implementation for both roles on purpose: the host raises the agent window
+    when the agent runs beside the keyboard, and the forwarder raises it when the
+    agent runs on the far machine. Two hand-written pywinctl pairs would drift, and
+    the one that drifts is the one nobody runs.
+    """
+    return WindowRaiser(enumerate_windows, activate_window)
+
+
+class AiRelayFollower:
+    """Act on the AI relay that rides a window-report reply (the forwarder half).
+
+    The forwarder is a CLIENT: it has no listener, so the keyboard machine cannot
+    call it, and the press has to travel back on the reply to a report the
+    forwarder was sending anyway. That makes this a poll, and the only thing that
+    makes a poll idempotent is a monotonic counter — ``raise_seq`` counts presses,
+    so acting when it *advances* is exactly once per press however often a reply
+    repeats or a report is dropped.
+
+    Three cases that are deliberately NOT a raise, because each would fire on
+    something that is not a keypress:
+
+    * the **first** reply — the host's counter is whatever it was before this
+      forwarder connected, and a process starting is not a press;
+    * the counter going **backwards** — the daemon restarted, so re-baseline;
+    * a counter of **0** — the host reports that while the feature is off, so it
+      is "nothing is armed", not "press zero".
+    """
+
+    def __init__(self, raise_cb, log=None):
+        self._raise = raise_cb
+        self._log = log
+        self._seq = None
+        self._active = False
+
+    @property
+    def active(self) -> bool:
+        """Whether an agent is currently reporting a state on the keyboard machine.
+
+        The forwarder polls faster while this is true, so a press is acted on in
+        about a second instead of up to a heartbeat — and pays nothing the rest of
+        the time, which is almost all of it.
+        """
+        return self._active
+
+    def observe(self, relay) -> bool:
+        """Feed one reply's ``ai`` dict. Returns True when it raised something."""
+        if not isinstance(relay, dict):
+            return False
+        self._active = bool(relay.get("active"))
+        try:
+            seq = int(relay.get("raise_seq") or 0)
+        except (TypeError, ValueError):
+            return False
+        previous, self._seq = self._seq, seq
+        if previous is None or seq <= 0 or seq < previous:
+            return False   # baseline / feature off / host restarted — see the docstring
+        if seq == previous:
+            return False
+        return bool(self._raise())

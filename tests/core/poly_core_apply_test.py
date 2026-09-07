@@ -16,7 +16,7 @@ from polyhost._version import __protocol__
 from polyhost.core.poly_core import PolyCore
 
 
-def make_core(*, paused=False, connected=False, unicode_mode=False):
+def make_core(*, paused=False, connected=False, unicode_mode=False, ai_key=False):
     core = PolyCore.__new__(PolyCore)
     core.log = logging.getLogger("test.polycore")
     core.ignore_version = False
@@ -33,13 +33,17 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core._probe_fail_streak = 0
     core._ai_state = 0          # what the AI key was last told to show
     core._ai_pushed = False     # ...and whether that push reached the keyboard
+    core._ai_press_seq = 0      # presses relayed to a forwarder
     core._last_overlay_activity = 0.0
     core._observers = []
     import threading
     core._observers_lock = threading.Lock()
     core.poly_settings = MagicMock()
     core.poly_settings.get.side_effect = lambda k: {
-        "unicode_send_composition_mode": unicode_mode}.get(k, False)
+        "unicode_send_composition_mode": unicode_mode,
+        # OFF by default here as in production, so a test that wants the AI key
+        # has to say so — and the gate tests get the real default for free.
+        "ai_key_enabled": ai_key}.get(k, False)
     core.worker = MagicMock()
     core.device_mgr = MagicMock()
     core.overlay_handler = MagicMock()
@@ -85,7 +89,7 @@ class TestAiStateResync(unittest.TestCase):
         return [c.args[0] for c in core.worker.submit.call_args_list]
 
     def test_a_reconnect_re_pushes_a_live_status(self):
-        core = make_core(connected=False)
+        core = make_core(connected=False, ai_key=True)
         core._ai_state = 2                      # WORKING
         core.apply_reconnect(connect_snapshot())
         self.assertIn("ai_state_resync", self._submitted(core))
@@ -93,7 +97,7 @@ class TestAiStateResync(unittest.TestCase):
     def test_nothing_is_pushed_when_no_agent_has_reported(self):
         # Pushing OFF to a key that is already off buys nothing and costs a job on
         # the worker that owns the device during the busiest moment it has.
-        core = make_core(connected=False)
+        core = make_core(connected=False, ai_key=True)
         core._ai_state = 0
         core.apply_reconnect(connect_snapshot())
         self.assertNotIn("ai_state_resync", self._submitted(core))
@@ -102,7 +106,7 @@ class TestAiStateResync(unittest.TestCase):
         # `pushed` is what stops `ai status` claiming a light that never lit, so the
         # resync has to report its own outcome rather than leaving the flag as the
         # failed set_ai_state left it.
-        core = make_core(connected=False)
+        core = make_core(connected=False, ai_key=True)
         core._ai_state = 2
         core.apply_reconnect(connect_snapshot())
         on_done = core.worker.submit.call_args_list[-1].kwargs["on_done"]
@@ -122,7 +126,7 @@ class TestSetAiState(unittest.TestCase):
     though it had been pushed."""
 
     def _core(self, device_result):
-        core = make_core()
+        core = make_core(ai_key=True)
         core.worker.run_sync.return_value = device_result
         core.keeb.supports.return_value = True
         core.seen = []
@@ -156,6 +160,97 @@ class TestSetAiState(unittest.TestCase):
         self.assertIn("Unknown AI state", msg)
         core.worker.run_sync.assert_not_called()
         self.assertEqual(core._ai_state, 0)
+
+
+class TestAiKeyDisabled(unittest.TestCase):
+    """`ai_key_enabled` is OFF by default and has to gate the WHOLE feature.
+
+    It gates four separate things — the state push, the reconnect re-push, the press
+    that raises a window, and the relay a remote forwarder reads — and a flag that
+    gates three of four is not off. Each is asserted here rather than trusting the one
+    reader, because each is a different call path into the same setting.
+    """
+
+    def test_a_state_push_is_refused_and_not_even_recorded(self):
+        # Recording it would leave `ai status` reporting a state nothing will ever
+        # show: with the feature off there is no reconnect re-push to carry it.
+        core = make_core()
+        core.keeb.supports.return_value = True
+        ok, msg = core.set_ai_state("working")
+        self.assertFalse(ok)
+        self.assertIn("ai_key_enabled", msg)
+        self.assertEqual(core._ai_state, 0)
+        core.worker.run_sync.assert_not_called()
+
+    def test_a_reconnect_does_not_re_push_a_state(self):
+        core = make_core(connected=False)
+        core._ai_state = 2      # as if it had been set while the flag was on
+        core.apply_reconnect(connect_snapshot())
+        submitted = [c.args[0] for c in core.worker.submit.call_args_list]
+        self.assertNotIn("ai_state_resync", submitted)
+
+    def test_a_press_raises_nothing(self):
+        core = make_core()
+        core._ai_scanner = _ScannerSaying(1)
+        core._ai_raiser = MagicMock()
+        core._scan_console_for_ai_key(b"ai: open\n")
+        core._ai_raiser.raise_next.assert_not_called()
+        self.assertEqual(core._ai_press_seq, 0)
+
+    def test_the_forwarder_relay_reports_nothing_armed(self):
+        # A forwarder must not act on a counter from a feature that is off — and 0
+        # is exactly what AiRelayFollower treats as "nothing armed".
+        core = make_core()
+        core._ai_press_seq = 7
+        core._ai_state = 2
+        self.assertEqual(core.ai_relay_state(), {"raise_seq": 0, "active": False})
+
+    def test_status_says_so(self):
+        core = make_core()
+        self.assertFalse(core.ai_status()[1]["enabled"])
+
+
+class _ScannerSaying:
+    """Stands in for AiScanner: reports N presses for whatever it is fed."""
+
+    def __init__(self, presses):
+        self._presses = presses
+
+    def feed(self, _chunk):
+        return self._presses
+
+
+class TestAiPressRelay(unittest.TestCase):
+    """A press has to reach a forwarder whose machine runs the agent."""
+
+    def _core(self):
+        core = make_core(ai_key=True)
+        core._ai_scanner = _ScannerSaying(1)
+        core._ai_raiser = MagicMock()
+        core._ai_raiser.raise_next.return_value = (False, "No window matches")
+        return core
+
+    def test_the_counter_advances_even_when_nothing_matches_here(self):
+        # The normal multi-machine case: the agent runs on the forwarder's machine,
+        # so only ITS target matches. Bumping only on a successful local raise would
+        # mean the press never leaves this machine.
+        core = self._core()
+        core._scan_console_for_ai_key(b"ai: open\n")
+        self.assertEqual(core.ai_relay_state()["raise_seq"], 1)
+
+    def test_active_follows_the_state_an_agent_reported(self):
+        # What lets the forwarder poll faster only while an agent is running.
+        core = self._core()
+        self.assertFalse(core.ai_relay_state()["active"])
+        core._ai_state = 2
+        self.assertTrue(core.ai_relay_state()["active"])
+
+    def test_the_relay_names_no_window(self):
+        # It crosses the network endpoint, which must not become a place that can
+        # learn anything about this machine.
+        core = self._core()
+        core._scan_console_for_ai_key(b"ai: open\n")
+        self.assertEqual(set(core.ai_relay_state()), {"raise_seq", "active"})
 
 
 class TestReportWindow(unittest.TestCase):

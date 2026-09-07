@@ -129,10 +129,22 @@ class PolySettings:
             # --no-daemon (or this setting) opts out — e.g. for development, where
             # in-process keeps your code edits in the same process as the GUI.
             "daemon_mode": True,
+            # The AI key: OFF BY DEFAULT, and the flag gates the whole feature —
+            # the status light, the press that raises a window, and the `ai.state`
+            # method on the network endpoint. With it False nothing pushes a state
+            # (so the key's LED stays dark and its keycap reads OFF), a press is
+            # noted in the log and raises nothing, and a remote push is refused
+            # even when the network listener is up. It is off because the feature
+            # only means anything once an agent is wired to drive it: a light that
+            # can never change is worse than no light.
+            # Turn it on with `polyctl settings set ai_key_enabled true`.
+            "ai_key_enabled": False,
             # Which window the AI key raises: a case-insensitive substring of the
             # window title, or a regex written as /.../ . Empty = the key reports the
             # press and raises nothing (it says so rather than failing silently).
             # Set it with `polyctl ai target "<part of the title>"`.
+            # ⚠️ On the FORWARDER this names a window on the forwarder's OWN machine —
+            # that is the whole point of the remote path, since the agent runs there.
             "ai_window_target": "",
             # Window-report network endpoint (headless-core H4d): when True the
             # daemon/host opens a separate, auth-gated AF_INET listener that

@@ -44,7 +44,10 @@ from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
 from polyhost.services.crash_report import CrashScanner
-from polyhost.services.ai_link import AiScanner, WindowRaiser
+from polyhost.services.ai_link import (
+    AiScanner, WindowRaiser,
+    activate_window as ai_link_activate_window,
+    enumerate_windows as ai_link_enumerate_windows)
 from polyhost.util.observable import Observable
 
 RECONNECT_CYCLE_MSEC = 1000
@@ -231,6 +234,12 @@ class PolyCore(Observable):
         self._ai_scanner = AiScanner()         # ...and the AI key's press line
         self._ai_raiser = WindowRaiser(self._enumerate_windows, self._activate_window)
         self._ai_state = 0                     # what the agent says it is doing
+        # Presses counted since this core started, for the FORWARDER relay. A press
+        # is relayed as a monotonic sequence number rather than a "raise now" flag
+        # because the forwarder polls: a counter is idempotent (a reply seen twice
+        # raises once) and needs no per-forwarder acknowledgement here — each
+        # forwarder just remembers the last number it acted on.
+        self._ai_press_seq = 0
         self._ai_pushed = False                # ...and whether the keyboard took it
         self.worker.add_periodic("console", UPDATE_CYCLE_MSEC / 1000.0,
                                  self._console_periodic)
@@ -851,7 +860,7 @@ class PolyCore(Observable):
                 # still working. Self-gated on protocol v17+, and skipped when
                 # nothing has reported — pushing OFF to a key that is already off
                 # buys nothing.
-                if connected_now and self._ai_state:
+                if connected_now and self._ai_state and self.ai_key_enabled():
                     self.worker.submit(
                         "ai_state_resync",
                         lambda c, v=self._ai_state: self.keeb.set_ai_state(v),
@@ -973,35 +982,53 @@ class PolyCore(Observable):
         except Exception:  # noqa: BLE001 — a scanner bug must not kill the console read
             self.log.warning("AI key scan failed", exc_info=True)
             return
+        if presses and not self.ai_key_enabled():
+            # Feed the scanner either way so its line buffer never grows unbounded,
+            # then stop here. Logged rather than silent: a user who mapped KC_AI and
+            # forgot the flag should find out from the log, not from a dead key.
+            self.log.info("AI key pressed, but the AI key is off (ai_key_enabled)")
+            return
         for _ in range(presses):
+            # Bump BEFORE the local raise: the relay must fire even when this machine
+            # has no matching window, which is the normal multi-machine case (the
+            # agent runs on the forwarder's machine, so only its target matches).
+            self._ai_press_seq += 1
             target = self.poly_settings.get("ai_window_target") or ""
             ok, msg = self._ai_raiser.raise_next(target)
             self.log.info("AI key pressed: %s", msg)
             self.emit(events.AI_KEY_PRESSED, {"ok": ok, "msg": msg, "target": target})
 
-    @staticmethod
-    def _enumerate_windows():
-        """(title, window) for every window on this machine, in the backend's order.
+    # The window pair lives in services/ai_link.py, not here, because the FORWARDER
+    # needs the same two functions: it raises the agent window on its own machine
+    # when a press relays across. Two hand-written pywinctl pairs would drift, and
+    # the one that drifts is the one nobody runs. Both stay lazy about pywinctl —
+    # poly_core must import with no display (tests/core/import_guard_test.py).
+    _enumerate_windows = staticmethod(ai_link_enumerate_windows)
+    _activate_window = staticmethod(ai_link_activate_window)
 
-        pywinctl is imported HERE rather than at module scope: poly_core must stay
-        importable with no display and no pywinctl (tests/core/import_guard_test.py),
-        and on a machine with neither the AI key should report that it cannot raise
-        anything rather than take the core down.
+    AI_DISABLED_MSG = ("The AI key is off. Turn it on with "
+                       "`polyctl settings set ai_key_enabled true`.")
+
+    def ai_key_enabled(self):
+        """Whether the AI key feature is switched on (settings, default False).
+
+        ONE reader for the flag, because it has to gate four separate things — the
+        state push, the reconnect re-push, the press that raises a window, and the
+        `ai.state` method on the network endpoint — and a flag that gates three of
+        four is not off. It is read live rather than cached at construction so
+        flipping the setting takes effect without restarting the daemon.
         """
-        import pywinctl as pwc   # noqa: PLC0415 — deliberately lazy, see above
-        return [(w.title, w) for w in pwc.getAllWindows()]
-
-    @staticmethod
-    def _activate_window(window):
-        """Raise one window. False when the window manager refused (native Wayland
-        has no client-callable activation — the same limitation window TRACKING has
-        there), which the caller turns into a message rather than a silent no-op."""
-        return bool(window.activate(wait=False))
+        return bool(self.poly_settings.get("ai_key_enabled"))
 
     def set_ai_state(self, value):
         """Push what the AI key shows (HID cmd 40). Accepts an AiState value or one of
         the words AiState.parse knows, so a hook can pass its own vocabulary."""
         from polyhost.device.command_ids import AiState   # noqa: PLC0415 — cheap, no Qt
+        if not self.ai_key_enabled():
+            # Refuse BEFORE recording the state: with the feature off there is no
+            # reconnect re-push to carry it later, so storing it would leave
+            # `ai status` reporting a state nothing will ever show.
+            return False, self.AI_DISABLED_MSG
         if isinstance(value, str):
             parsed = AiState.parse(value)
             if parsed is None:
@@ -1049,6 +1076,7 @@ class PolyCore(Observable):
             except Exception:  # noqa: BLE001 — no window backend is a fact, not a failure
                 titles = []
         return True, {
+            "enabled": self.ai_key_enabled(),
             "state": self._ai_state,
             "name": AiState(self._ai_state).name.lower(),
             "pushed": self._ai_pushed,
@@ -1056,6 +1084,19 @@ class PolyCore(Observable):
             "matches": titles,
             "supported": bool(self.keeb.supports("ai_state")),
         }
+
+    def ai_relay_state(self):
+        """What a remote forwarder needs on the back of its window report.
+
+        Deliberately tiny and read-only — it names no window and carries no title,
+        so the network endpoint stays a place that cannot learn anything about this
+        machine. ``raise_seq`` counts presses; ``active`` says an agent is currently
+        reporting something, which is what lets the forwarder poll faster only while
+        that is true instead of all the time.
+        """
+        if not self.ai_key_enabled():
+            return {"raise_seq": 0, "active": False}
+        return {"raise_seq": self._ai_press_seq, "active": bool(self._ai_state)}
 
     def set_ai_target(self, pattern):
         """Store which window the AI key raises (a title substring, or /regex/)."""

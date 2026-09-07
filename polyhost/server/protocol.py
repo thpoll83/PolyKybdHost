@@ -140,6 +140,16 @@ M_HOST_SHUTDOWN = "host.shutdown"      # {} -> {"shutting_down": True}
 # existing remote path.
 M_WINDOW_REPORT = "window.report"
 
+# The AI key's remote half, served on the SAME auth-gated network endpoint as
+# window.report so a forwarder machine can drive the key on the keyboard machine.
+#   * ai.state — the agent runs on the forwarder's machine, so its hook pushes the
+#     state here instead of to a local polyctl. One integer, nothing else.
+#   * the PRESS travels the other way, riding the window.report REPLY (see
+#     WindowReportServer.dispatch) rather than a method: the forwarder is a client
+#     with no listener of its own, so a reply is the only channel that needs no
+#     inbound port on the forwarder's machine.
+M_AI_STATE = "ai.state"                  # {"value": 0..3 | "working"} -> {"ok": true}
+
 # Anonymous usage census (polyhost/services/telemetry.py). Status/preview are
 # reads; enabling is just the settings key, exposed separately so `polyctl
 # telemetry` reads as one feature rather than three settings pokes.

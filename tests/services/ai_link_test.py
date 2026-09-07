@@ -6,8 +6,9 @@ so both are driven directly rather than mocked away.
 """
 import unittest
 
-from polyhost.services.ai_link import (AiScanner, WindowRaiser, match_windows,
-                                       next_index, PRESS_DEBOUNCE_S)
+from polyhost.services.ai_link import (AiRelayFollower, AiScanner, WindowRaiser,
+                                       match_windows, next_index,
+                                       PRESS_DEBOUNCE_S)
 
 
 class FakeClock:
@@ -144,6 +145,75 @@ class WindowRaiserTest(unittest.TestCase):
         ok, _ = self.raiser.raise_next("claude")
         self.assertTrue(ok)
         self.assertEqual(self.raised[-1], "h2")
+
+
+class AiRelayFollowerTest(unittest.TestCase):
+    """The forwarder half: a press arrives as a COUNTER on a reply it polls.
+
+    Everything here is about the poll being idempotent — the forwarder sends a
+    report every window change and every heartbeat, so the same relay is seen many
+    times and a raise must happen once per press, not once per reply.
+    """
+
+    def setUp(self):
+        self.raises = 0
+        self.follower = AiRelayFollower(self._raise)
+
+    def _raise(self):
+        self.raises += 1
+        return True
+
+    def test_the_first_reply_is_only_a_baseline(self):
+        # The host's counter is whatever it was before this forwarder connected —
+        # starting a forwarder is not a keypress.
+        self.follower.observe({"raise_seq": 41, "active": True})
+        self.assertEqual(self.raises, 0)
+
+    def test_an_advance_raises_once(self):
+        self.follower.observe({"raise_seq": 41})
+        self.follower.observe({"raise_seq": 42})
+        self.assertEqual(self.raises, 1)
+
+    def test_the_same_reply_seen_again_raises_nothing(self):
+        self.follower.observe({"raise_seq": 41})
+        self.follower.observe({"raise_seq": 42})
+        for _ in range(5):          # heartbeats carrying the same counter
+            self.follower.observe({"raise_seq": 42})
+        self.assertEqual(self.raises, 1)
+
+    def test_several_presses_between_reports_still_raise_once(self):
+        # A poll cannot see the presses it missed, and raising the window twice for
+        # two presses of a key whose whole job is "show me the window" buys nothing.
+        self.follower.observe({"raise_seq": 1})
+        self.follower.observe({"raise_seq": 4})
+        self.assertEqual(self.raises, 1)
+
+    def test_a_counter_going_backwards_re_baselines_instead_of_raising(self):
+        # The daemon over there restarted; nobody pressed anything.
+        self.follower.observe({"raise_seq": 9})
+        self.follower.observe({"raise_seq": 2})
+        self.assertEqual(self.raises, 0)
+        self.follower.observe({"raise_seq": 3})
+        self.assertEqual(self.raises, 1)
+
+    def test_zero_means_nothing_armed_not_press_zero(self):
+        # What the host reports while its own ai_key_enabled is off.
+        self.follower.observe({"raise_seq": 5})
+        self.follower.observe({"raise_seq": 0})
+        self.assertEqual(self.raises, 0)
+
+    def test_active_tracks_the_reply_and_starts_false(self):
+        # The forwarder shortens its heartbeat off this, so it must not latch on.
+        self.assertFalse(self.follower.active)
+        self.follower.observe({"raise_seq": 1, "active": True})
+        self.assertTrue(self.follower.active)
+        self.follower.observe({"raise_seq": 1, "active": False})
+        self.assertFalse(self.follower.active)
+
+    def test_a_missing_or_malformed_relay_is_ignored(self):
+        for relay in (None, {}, "nonsense", {"raise_seq": "many"}):
+            self.follower.observe(relay)
+        self.assertEqual(self.raises, 0)
 
 
 if __name__ == "__main__":

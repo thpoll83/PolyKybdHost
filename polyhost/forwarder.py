@@ -45,6 +45,12 @@ else:
 UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
+# While an agent is reporting a state, the reply to each report is also how an AI
+# key press reaches this machine (see _apply_ai_relay), so the heartbeat doubles as
+# the press poll and 15 s of latency would make the key feel broken. It drops to
+# this only while the host says an agent is active, which is almost never — an idle
+# forwarder still sends four reports a minute, not sixty.
+AI_ACTIVE_HEARTBEAT_MSEC = 1000
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
@@ -122,6 +128,16 @@ class PolyForwarder(QApplication):
             self._report_session = WindowReportSession(
                 self._report_port, self._report_authkey)
             self.log.info("Forwarder using the authenticated window-report endpoint (H4d).")
+
+        # The AI key, cross-machine: the agent runs on THIS machine while the
+        # keyboard is plugged into another, so a press has to travel here. It rides
+        # the reply to the window report we are already sending (the forwarder has
+        # no listener, so nothing can call us), and `AiRelayFollower` turns that
+        # poll into exactly one raise per press. RPC only — the legacy plaintext
+        # relay has no reply at all.
+        self._ai_follower = None
+        self._ai_raiser = None
+        self._ai_off_logged = False
 
         # Browser-URL feed for THIS machine. The extension is already willing to
         # report here — it POSTs to 127.0.0.1 on whatever machine it runs on —
@@ -262,12 +278,61 @@ class PolyForwarder(QApplication):
                 self._report_session.close()
             return False
         try:
-            self._report_session.report(
+            result = self._report_session.report(
                 host, handle, name, title, os=self._os_value, url=url)
-            return True
         except Exception as e:
             self.log.error("Window-report RPC to %s failed: %s", host, e)
             return False
+        # The reply may carry an AI key press. Deliberately AFTER the report is
+        # counted a success: a fault raising a window must not make the forwarder
+        # think its window report failed and reconnect.
+        try:
+            self._apply_ai_relay((result or {}).get("ai"))
+        except Exception:  # noqa: BLE001
+            self.log.warning("AI relay handling failed", exc_info=True)
+        return True
+
+    def _apply_ai_relay(self, relay):
+        """Act on the `ai` block of a window-report reply.
+
+        Older daemons send no such block, so `relay` is normally None and this is a
+        no-op — the whole path costs nothing until both ends are new AND the feature
+        is switched on over there.
+        """
+        if not relay:
+            return
+        if self._ai_follower is None:
+            from polyhost.services.ai_link import AiRelayFollower  # noqa: PLC0415
+            self._ai_follower = AiRelayFollower(self._raise_ai_window)
+        self._ai_follower.observe(relay)
+
+    def _raise_ai_window(self):
+        """Raise the agent window on THIS machine — the forwarder's own target.
+
+        Both settings are read here rather than cached at startup: this runs once
+        per press, which is rare, so a live read costs nothing and means changing
+        the target takes effect without restarting the forwarder.
+        """
+        from polyhost import settings as _settings   # noqa: PLC0415
+        if not _settings.read_setting("ai_key_enabled", False):
+            # Reachable only when the keyboard machine has the feature on and this
+            # one does not. Say so once, with the fix in the line: a press that
+            # silently does nothing on the machine the agent runs on is exactly the
+            # failure the multi-machine page exists to prevent.
+            if not self._ai_off_logged:
+                self._ai_off_logged = True
+                self.log.info(
+                    "AI key pressed on the keyboard machine, but this forwarder has "
+                    "the AI key off. Turn it on here with "
+                    "`polyctl settings set ai_key_enabled true`.")
+            return False
+        target = _settings.read_setting("ai_window_target", "") or ""
+        if self._ai_raiser is None:
+            from polyhost.services.ai_link import local_raiser  # noqa: PLC0415
+            self._ai_raiser = local_raiser()
+        ok, msg = self._ai_raiser.raise_next(target)
+        self.log.info("AI key pressed (relayed): %s", msg)
+        return ok
 
     def send_to_host(self, handle, title, name, url=None):
         # ⚠️ `url` rides the authenticated RPC path ONLY. The legacy relay's
@@ -473,6 +538,16 @@ class PolyForwarder(QApplication):
             pass
         self.quit()
 
+    def _heartbeat_limit(self):
+        """How long the forwarder may sit quiet before re-sending the same window.
+
+        Short while an agent is active, because the reply to that resend is the only
+        way an AI key press reaches this machine (see `_apply_ai_relay`).
+        """
+        if self._ai_follower is not None and self._ai_follower.active:
+            return AI_ACTIVE_HEARTBEAT_MSEC
+        return HEARTBEAT_MSEC
+
     def active_window_reporter(self):
         self.last_update_msec += UPDATE_CYCLE_MSEC
         self.heartbeat_msec += UPDATE_CYCLE_MSEC
@@ -496,7 +571,7 @@ class PolyForwarder(QApplication):
                         or win.title != self.title
                         or self._url_dirty
                     )
-                    if changed or self.heartbeat_msec >= HEARTBEAT_MSEC:
+                    if changed or self.heartbeat_msec >= self._heartbeat_limit():
                         self.win = win
                         self.title = win.title
                         self._url_dirty = False

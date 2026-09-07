@@ -500,6 +500,48 @@ def _cmd_crash(client, args):
 _AI_STATES = ["off", "idle", "working", "attention"]
 
 
+def _ai_push_remote(args):
+    """`ai state <value> --host X` — push a state to a keyboard on ANOTHER machine.
+
+    This is the multi-machine half of the AI key: the agent runs here, the keyboard
+    is plugged in over there, so a hook here has to reach the daemon over there. It
+    goes straight to that daemon's window-report endpoint (`ai.state`) rather than
+    through this machine's control socket, because on a forwarder machine there is
+    normally no local daemon at all — the forwarder is not one.
+
+    The press travels the other way on the reply to a window report, so nothing here
+    needs a listener; see `polyhost/forwarder.py` `_apply_ai_relay`.
+    """
+    if args.ai_action != "state" or args.value is None:
+        print("error: --host only applies to `ai state <value>` — the remote endpoint "
+              "serves the state push and nothing else.", file=sys.stderr)
+        return 1
+    from polyhost.server.window_report_client import connect as wr_connect
+    authkey = None
+    if args.authkey_file:
+        try:
+            with open(args.authkey_file, "rb") as f:
+                authkey = f.read().strip()
+        except OSError as exc:
+            print(f"error: cannot read {args.authkey_file}: {exc}", file=sys.stderr)
+            return 1
+    try:
+        client = wr_connect(args.host, args.port, authkey)
+    except Exception as exc:  # noqa: BLE001 — connect/handshake failures are all "cannot reach"
+        print(f"error: cannot reach the keyboard machine at {args.host} ({exc}). Is its "
+              f"window_report_network_enabled setting on?", file=sys.stderr)
+        return 1
+    try:
+        client.ai_state(args.value)
+    except Exception as exc:  # noqa: BLE001
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        client.close()
+    print(f"ai state set to {args.value} on {args.host}")
+    return 0
+
+
 def _cmd_ai(client, args):
     """The agent status light and the window its key raises (firmware v17+)."""
     if args.ai_action == "state":
@@ -983,6 +1025,19 @@ def build_parser():
              "title, or /a regex/. Omit either to print the current value")
     p_ai.add_argument("--json", action="store_true",
                       help="print the status as JSON (for scripts)")
+    # Multi-machine: with --host, `ai state <value>` goes straight to that machine's
+    # window-report endpoint instead of this machine's control socket, so a hook on
+    # a forwarder box can drive a keyboard plugged into another one.
+    p_ai.add_argument("--host", default=None,
+                      help="push the state to the PolyKybdHost on ANOTHER machine "
+                           "(the one the keyboard is plugged into). Needs that host's "
+                           "window_report_network_enabled setting on")
+    p_ai.add_argument("--port", type=int, default=None,
+                      help="port of the remote window-report endpoint (default "
+                           f"{protocol.WINDOW_REPORT_PORT})")
+    p_ai.add_argument("--authkey-file", default=None,
+                      help="the remote machine's polykybd-winreport.authkey; omit to "
+                           "use this machine's own copy of it")
     p_ai.set_defaults(func=_cmd_ai)
 
     p_macro = sub.add_parser(
@@ -1233,6 +1288,11 @@ def _is_offline_command(args) -> bool:
 def main(argv=None):
     # Parse first so --help / bad args exit before we open a socket.
     args = build_parser().parse_args(argv)
+
+    if getattr(args, "command", None) == "ai" and getattr(args, "host", None):
+        # Aimed at another machine's endpoint, so this machine's daemon is not in
+        # the path at all — and on a forwarder box there usually is not one.
+        return _ai_push_remote(args)
 
     if _is_offline_command(args):
         # Still try to attach, so a bundle picks up live daemon status — but a

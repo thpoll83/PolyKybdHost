@@ -445,5 +445,80 @@ class MacroScriptTest(unittest.TestCase):
         self.assertIn("down", out)      # the rows are still there
 
 
+class PolyctlAiRemoteTest(unittest.TestCase):
+    """`ai state <value> --host X` pushes to ANOTHER machine's window-report endpoint.
+
+    This is the multi-machine half: the agent runs on the forwarder's box and the
+    keyboard is plugged into a different one, so a hook here has to reach the daemon
+    over there. On a forwarder box there is normally no local daemon at all, which is
+    why this must not touch the local control socket.
+    """
+
+    def setUp(self):
+        self.pushed = []
+        self.closed = []
+        self.connects = []
+        test = self
+
+        class _Client:
+            def ai_state(self, value):
+                test.pushed.append(value)
+                return {"ok": True}
+
+            def close(self):
+                test.closed.append(True)
+
+        def _connect(host, port=None, authkey=None):
+            test.connects.append((host, port, authkey))
+            if host == "unreachable":
+                raise OSError("no route to host")
+            return _Client()
+
+        import polyhost.server.window_report_client as wrc
+        self._real_connect = wrc.connect
+        wrc.connect = _connect
+        self._real_local_connect = polyctl.connect
+        polyctl.connect = self._never_local
+
+    def tearDown(self):
+        import polyhost.server.window_report_client as wrc
+        wrc.connect = self._real_connect
+        polyctl.connect = self._real_local_connect
+
+    @staticmethod
+    def _never_local(*a, **k):
+        raise AssertionError("a --host push must not open the LOCAL control socket")
+
+    def _run(self, argv):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = polyctl.main(argv)
+        return rc, out.getvalue(), err.getvalue()
+
+    def test_the_state_goes_to_the_named_machine(self):
+        rc, out, _ = self._run(["ai", "state", "working", "--host", "keeb-box"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(self.pushed, ["working"])
+        self.assertEqual(self.connects[0][0], "keeb-box")
+        self.assertIn("keeb-box", out)
+
+    def test_the_connection_is_closed_even_when_the_push_fails(self):
+        rc, _, err = self._run(["ai", "state", "working", "--host", "unreachable"])
+        self.assertEqual(rc, 1)
+        self.assertIn("cannot reach", err)
+
+    def test_a_port_override_is_passed_through(self):
+        self._run(["ai", "state", "idle", "--host", "keeb-box", "--port", "50999"])
+        self.assertEqual(self.connects[0][1], 50999)
+
+    def test_only_the_state_push_is_remote(self):
+        # The endpoint serves ai.state and nothing else, so `ai status --host` would
+        # otherwise fail with something that reads like a network problem.
+        rc, _, err = self._run(["ai", "status", "--host", "keeb-box"])
+        self.assertEqual(rc, 1)
+        self.assertIn("only applies to", err)
+        self.assertEqual(self.connects, [])
+
+
 if __name__ == "__main__":
     unittest.main()
