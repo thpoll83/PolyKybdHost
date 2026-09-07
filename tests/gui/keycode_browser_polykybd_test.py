@@ -15,6 +15,11 @@ try:
     from polyhost.gui.layout_dialog.qmk_keycode_helper import (
         category_order, polykybd_category)
     from polyhost.services import custom_keycodes as ck
+    # ⚠️ The BINDING is load-bearing, whatever a scanner says about the name never
+    # being read: PyQt owns the C++ QApplication when it is constructed from Python,
+    # so dropping the only reference collects it and the next QWidget ABORTS the
+    # interpreter ("Must construct a QApplication before a QWidget", SIGABRT --
+    # measured, not assumed). Nine sibling test files carry the same line.
     _APP = QApplication.instance() or QApplication([])
     _IMPORT_ERR = None
 except Exception as e:  # pragma: no cover
