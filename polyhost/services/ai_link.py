@@ -259,8 +259,9 @@ class AiRelayFollower:
     """
 
     # A jump larger than this is not a person pressing a key — a host that ran for
-    # a while before this forwarder saw a non-zero counter, most likely. Raise once
-    # and re-baseline rather than cycling through windows dozens of times.
+    # a while before this forwarder saw a non-zero counter, most likely. Raise ONCE
+    # rather than cycling through that many agent windows: something happened, but
+    # the count is not evidence of how many times.
     MAX_CATCH_UP = 8
 
     def __init__(self, raise_cb, log=None):
@@ -295,7 +296,12 @@ class AiRelayFollower:
             return False
         if seq == previous:
             return False
+        delta = seq - previous
+        if delta > self.MAX_CATCH_UP:
+            # Clamping to MAX_CATCH_UP would still cycle eight windows for a number
+            # nobody pressed — the bound exists to stop that, not to cap it.
+            delta = 1
         raised = False
-        for _ in range(min(seq - previous, self.MAX_CATCH_UP)):
+        for _ in range(delta):
             raised = bool(self._raise()) or raised
         return raised

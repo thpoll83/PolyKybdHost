@@ -189,11 +189,19 @@ class AiRelayFollowerTest(unittest.TestCase):
         self.follower.observe({"raise_seq": 4})
         self.assertEqual(self.raises, 3)
 
-    def test_an_implausible_jump_is_bounded_rather_than_cycled(self):
-        # Not a person tapping a key; cycling through windows dozens of times would
-        # be worse than the single raise that says "something happened".
+    def test_an_implausible_jump_raises_once_rather_than_cycling(self):
+        # Not a person tapping a key, so the count is not evidence of how many
+        # times. Cycling MAX_CATCH_UP windows for it would be the same mistake as
+        # cycling 5000 — smaller, and still not what anyone asked for.
         self.follower.observe({"raise_seq": 1})
         self.follower.observe({"raise_seq": 5000})
+        self.assertEqual(self.raises, 1)
+
+    def test_the_largest_plausible_burst_is_still_applied_in_full(self):
+        # The boundary the clamp turns on: at MAX_CATCH_UP it is still a burst of
+        # presses, one past it is not.
+        self.follower.observe({"raise_seq": 1})
+        self.follower.observe({"raise_seq": 1 + AiRelayFollower.MAX_CATCH_UP})
         self.assertEqual(self.raises, AiRelayFollower.MAX_CATCH_UP)
 
     def test_a_counter_going_backwards_re_baselines_instead_of_raising(self):
