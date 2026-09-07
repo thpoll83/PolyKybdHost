@@ -8,12 +8,16 @@ from PyQt5.QtGui import QIcon
 # palette:
 #
 #   #5985E1  blue    object / configuration      (keyboard, language, settings)
-#   #78A75A  green   enabled / ok                (toggle_on, select_all, sync)
-#   #999999  grey    off / cleared               (toggle_off, deselect)
-#   #DA954B  amber   caution, staged             (usb, bug_report, sync_problem)
+#   #78A75A  green   enabled / ok                (toggle_on, sync, brightness_auto)
+#   #999999  grey    off / cleared               (toggle_off, deselect, backlight_high_off)
+#   #DA954B  amber   caution, staged; dim light  (usb, bug_report, backlight_low)
 #   #D16D6A  red     destructive, reboots        (power, delete)
 #   #8B7DBE  purple  overlay domain              (overlays, layers_clear)
-#   #B59D24  gold    brightness                  (backlight_*, brightness_auto)
+#   #B59D24  gold    brightness                  (backlight_high, backlight_high_fill)
+#
+# The Brightness submenu reads as a ramp across four of those rather than one
+# colour: grey off, amber at 1%, gold at 50/100%, and green for "back to
+# automatic" — automatic is the palette's enabled/ok, not a brightness level.
 #
 # One glyph should mean one thing: before reusing an icon for a second action,
 # check it is not already spoken for elsewhere in the tray menu.
