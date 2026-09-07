@@ -1248,6 +1248,36 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   range-connect note above), so the Glyph-Script menu is disabled on a pre-v9 keyboard but
   the rest of the app still connects; within a glyph-script-capable device the script set is
   free to grow.
+  - **Each menu entry PREVIEWS its script** (2026-09-07): the icon is a two-glyph
+    sample and the tooltip a longer one, drawn offline from the shipped
+    `fantasy.plyf` by `services/glyph_script_preview.py` (Qt-free) and turned into
+    a `QIcon` by `gui/glyph_script_icon.py`. STANDARD previews the normal Latin
+    face from `res/preview/resident.plyf`, so the column reads as a comparison.
+    Built on the submenu's first `aboutToShow` (30 ms for all 11), never at
+    startup; a missing or malformed bundle leaves the menu exactly as it was.
+    Four things were decided by rendering the real menu
+    (`tools/render_tray_menu.py`, which now calls `_build_glyph_script_previews()`
+    for the same reason it calls `_refresh_fontpack_action()` — a `grab()` fires no
+    `aboutToShow`):
+    - ⚠️ **The icon is TWO glyphs because a menu icon is a ~16 px SQUARE.** `QIcon`
+      scales a pixmap to *fit*, so the six-glyph sample arrives about five pixels
+      tall and reads as a smudge. The tooltip carries the rest.
+    - ⚠️ **A glyph is scaled against the ALPHABET's ink box, not its own.** Braille
+      'a' is a single dot; measured against itself it fills the icon as a solid
+      white square. `ink_extent()` over `a..z` keeps the dot a dot — and keeps
+      every entry of one script at one scale whatever sample it draws.
+    - **The script's font is found by BLOCK BASE, not by position in the pack.**
+      `0xE800 + (value-1)*0x40`, mirroring the firmware's `glyph_script_blocks[]`
+      (`tools/glyph_script_demo.py` assumes pack ORDER instead — weaker). A pack
+      that reorders or lacks a block then yields no preview rather than a preview
+      of the neighbouring script; the firmware table is pinned in
+      `tests/services/glyph_script_preview_test.py`.
+    - **The tooltip image rides in the HTML as a base64 `data:` URI** — Qt's rich
+      text loads those, so there is no temp file to write or clean up. The test
+      draws it through a `QTextDocument` and counts lit pixels, because a tooltip
+      whose image Qt cannot load renders as an empty box and says nothing.
+      ⚠️ `QMenu.setToolTipsVisible(True)` is required — action tooltips are off by
+      default, so without it the whole tooltip half is a silent no-op.
 - **Keycap legend size (protocol 13+)**: HID cmd 34 sets how large a key's MAIN
   legend is drawn — `GlyphSize.SMALL` (the original face), `MEDIUM`, `LARGE`. Wired
   exactly like the glyph script: `PolyKybd.get/set_glyph_size` behind a

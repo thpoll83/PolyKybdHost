@@ -550,6 +550,11 @@ class PolyHost(QApplication):
             self.glyph_actions[script.value] = act
             if script is GlyphScript.STANDARD:
                 self.glyph_script_menu.addSeparator()
+        # Each entry previews its own script (icon + a bigger sample on hover),
+        # drawn from the shipped fantasy bundle — built on the first show, not
+        # here, so a user who never opens the submenu pays nothing at startup.
+        self.glyph_script_menu.setToolTipsVisible(True)
+        self._glyph_previews_built = False
         # noinspection PyUnresolvedReferences
         self.glyph_script_menu.aboutToShow.connect(self.refresh_glyph_script_menu)
 
@@ -1957,7 +1962,29 @@ class PolyHost(QApplication):
             self.report_device_result("Error", f"Could not set idle style: {msg}")
             self.refresh_idle_style_menu()
 
+    def _build_glyph_script_previews(self):
+        # Give each entry a preview of its own script, rendered from the shipped
+        # fantasy bundle (STANDARD previews the normal Latin face) — the icon is
+        # two glyphs, which is all a 16 px menu icon can carry, and the tooltip a
+        # longer sample. Built once, on the first show; a bundle that is missing
+        # or unreadable just leaves the menu as it was.
+        if self._glyph_previews_built:
+            return
+        self._glyph_previews_built = True
+        try:
+            from polyhost.gui.glyph_script_icon import glyph_script_icon, glyph_script_tooltip
+            for value, act in self.glyph_actions.items():
+                icon = glyph_script_icon(value)
+                if icon is not None:
+                    act.setIcon(icon)
+                tip = glyph_script_tooltip(value)
+                if tip:
+                    act.setToolTip(tip)
+        except Exception as e:  # noqa: BLE001 - a preview must never cost the menu
+            self.log.debug("No glyph-script previews: %s", e)
+
     def refresh_glyph_script_menu(self):
+        self._build_glyph_script_previews()
         # Read the active glyph script from the device and tick the matching entry;
         # on failure (old firmware / disconnected) leave all unchecked.
         ok, value = self.core.get_glyph_script()
