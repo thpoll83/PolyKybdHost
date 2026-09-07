@@ -196,6 +196,16 @@ class AiRelayFollowerTest(unittest.TestCase):
         self.follower.observe({"raise_seq": 1})
         self.follower.observe({"raise_seq": 5000})
         self.assertEqual(self.raises, 1)
+        # ...and it RE-BASELINES at the jumped-to value, so the follower is back in
+        # ordinary delta mode: three more presses raise three times, not once more
+        # as they would if 5000 were still the baseline and every later reply
+        # measured an over-limit delta from 1 (CodeRabbit, #216).
+        #
+        # ⚠️ 5001 does NOT test this — one raise either way, since an over-limit
+        # delta collapses to one. Only a delta above 1 tells the two apart, which a
+        # mutation that skips the re-baseline proves.
+        self.follower.observe({"raise_seq": 5003})
+        self.assertEqual(self.raises, 4)
 
     def test_the_largest_plausible_burst_is_still_applied_in_full(self):
         # The boundary the clamp turns on: at MAX_CATCH_UP it is still a burst of
