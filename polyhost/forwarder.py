@@ -20,7 +20,9 @@ from polyhost._version import __version__
 from polyhost.services import problem_report
 from polyhost.gui.get_icon import get_icon
 from polyhost.services import log_bundle
-from polyhost.gui.theme import apply_dark_palette
+from polyhost.gui.theme import apply_theme
+from polyhost.services.os_theme import THEME_AUTO
+from polyhost.settings import read_setting
 from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.icon_state_manager import IconStateManager
 from polyhost.gui.qt_crash import install_qt_message_handler
@@ -225,8 +227,11 @@ class PolyForwarder(QApplication):
         QTimer.singleShot(1000, self.active_window_reporter)
 
     def set_style(self):
-        """Dark Fusion theme — shared with PolyHost (gui/theme.py)."""
-        apply_dark_palette(self)
+        """Fusion, dark or light per the OS — shared with PolyHost
+        (gui/theme.py). Read once at startup: unlike the tray app this menu has
+        no aboutToShow hook to re-follow from, and the forwarder's few dialogs
+        are short-lived."""
+        apply_theme(self, read_setting("ui_theme", THEME_AUTO))
 
     def _on_browser_url_changed(self):
         """A tab switch / SPA navigation changed the URL. The window-change test

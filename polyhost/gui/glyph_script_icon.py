@@ -12,19 +12,23 @@ rather than by reasoning about it (`tools/render_tray_menu.py`):
   scales a pixmap to *fit* — so a six-glyph strip arrives about five pixels tall
   and reads as a smudge.  Two glyphs at half the box height still read, and they
   are enough to tell the scripts apart at a glance; the tooltip carries the rest.
-* **Lit pixels only, on transparency.**  The ink is the OLED's cool white
-  (`fontpack_render.OLED_TINT`), so the entry previews the keycap; the background
-  stays transparent so the menu's own colour shows through.  Both tray apps wear
-  the dark Fusion palette (`polyhost.gui.theme`), which is what makes near-white
-  ink the right choice.
+* **Lit pixels only, on transparency, in the PALETTE's ink.**  The background
+  stays transparent so the menu's own colour shows through, and on a dark menu
+  the ink is the OLED's cool white (`fontpack_render.OLED_TINT`) so the entry
+  previews the keycap.  ⚠️ That is not a constant: the apps follow the OS theme
+  now, and near-white ink on a light menu is an invisible icon — so a light
+  palette draws the previews in its own text colour instead, and the tray drops
+  the built icons when the theme changes (`PolyHost._refresh_theme`).
 """
 from __future__ import annotations
 
 import base64
 import io
 
-from PyQt5.QtGui import QIcon, QImage, QPixmap
+from PyQt5.QtGui import QIcon, QImage, QPalette, QPixmap
+from PyQt5.QtWidgets import QApplication
 
+from polyhost.gui.theme import is_dark
 from polyhost.services import glyph_script_preview as gsp
 from polyhost.services.fontpack_render import OLED_TINT
 
@@ -39,18 +43,30 @@ ICON_SIZES = (16, 24, 32, 48)
 TOOLTIP_HEIGHT = 34
 
 
-def _tinted_rgba(img, tint=OLED_TINT):
-    """PIL 'L' image -> RGBA: `tint` ink, alpha from the pixel value, so an unlit
-    pixel is transparent rather than black and the menu's own colour shows."""
+def preview_ink():
+    """The colour to draw a preview in, for the palette the app is wearing."""
+    app = QApplication.instance()
+    palette = app.palette() if app is not None else None
+    if palette is None or is_dark(palette):
+        return OLED_TINT
+    colour = palette.color(QPalette.WindowText)
+    return colour.red(), colour.green(), colour.blue()
+
+
+def _tinted_rgba(img, tint=None):
+    """PIL 'L' image -> RGBA: `tint` ink (the palette's, by default), alpha from
+    the pixel value, so an unlit pixel is transparent rather than black and the
+    menu's own colour shows."""
     from PIL import Image
 
+    tint = tint or preview_ink()
     if img.mode != "L":
         img = img.convert("L")
     flat = [Image.new("L", img.size, c) for c in tint]
     return Image.merge("RGBA", (*flat, img))
 
 
-def _tinted_pixmap(img, tint=OLED_TINT) -> QPixmap:
+def _tinted_pixmap(img, tint=None) -> QPixmap:
     """PIL 'L' image -> QPixmap with `tint` ink on transparency."""
     rgba = _tinted_rgba(img, tint)
     data = rgba.tobytes()

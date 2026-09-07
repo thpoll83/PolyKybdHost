@@ -8,7 +8,7 @@ import threading
 import time
 
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtGui import QIcon, QPalette, QColor
 from PyQt5.QtWidgets import (
     QApplication,
     QSystemTrayIcon,
@@ -30,7 +30,10 @@ from polyhost.device.command_ids import IdleStyle, GlyphScript, GlyphSize
 from polyhost.gui.file_dialogs import get_open_file_name
 from polyhost.gui.get_icon import get_icon
 from polyhost.services import log_bundle
-from polyhost.gui.theme import apply_dark_palette
+from polyhost.gui.theme import apply_theme
+from polyhost.services import os_theme
+from polyhost.services.os_theme import THEME_AUTO
+from polyhost.settings import read_setting
 from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.update_dialog import confirm_update
 
@@ -663,6 +666,12 @@ class PolyHost(QApplication):
             # noinspection PyUnresolvedReferences
             self.menu.aboutToShow.connect(self._refresh_wincompose_action)
 
+        # The OS theme can change while the tray sits there for weeks, so
+        # re-follow it whenever the menu opens — that is when a mismatch is on
+        # screen, and the check is a registry read (a cached one elsewhere).
+        # noinspection PyUnresolvedReferences
+        self.menu.aboutToShow.connect(self._refresh_theme)
+
         # --- Maintenance: the rare-but-legitimate repair actions ---------------
         self.cmdMenu.build_maintenance_menu(self.menu)
 
@@ -883,8 +892,27 @@ class PolyHost(QApplication):
         return self.core.kb_sw_version
 
     def set_style(self):
-        """Dark Fusion theme — shared with PolyForwarder (gui/theme.py)."""
-        apply_dark_palette(self)
+        """Fusion, dark or light per the OS — shared with PolyForwarder
+        (gui/theme.py). `ui_theme` ('auto' by default) overrides the desktop."""
+        self._theme = apply_theme(self, read_setting("ui_theme", THEME_AUTO))
+
+    def _refresh_theme(self):
+        """Re-follow the OS theme, so switching the desktop to light does not
+        need a restart. Called when the tray menu opens (the moment a mismatch
+        is visible) and after the settings dialog, which can change `ui_theme`.
+
+        A palette change propagates to the open widgets by itself; the
+        glyph-script previews do not, because they are rendered pixmaps whose
+        ink was picked for the old palette — so drop them and let the submenu
+        rebuild them on its next show."""
+        os_theme.forget_detected()
+        theme = apply_theme(self, read_setting("ui_theme", THEME_AUTO))
+        if theme != getattr(self, "_theme", None):
+            self.log.info("Switched to the %s theme.", theme)
+            self._theme = theme
+            self._glyph_previews_built = False
+            for act in self.glyph_actions.values():
+                act.setIcon(QIcon())
 
     @property
     def _update_progress(self):
@@ -1481,6 +1509,9 @@ class PolyHost(QApplication):
                 # core.settings_set), so nudge the core to recompute + push the
                 # daylight brightness now rather than waiting for the next cycle.
                 self.core.refresh_daylight_brightness()
+            # `ui_theme` may be among them — apply it now rather than at the
+            # next restart.
+            self._refresh_theme()
         dlg.close()
 
     def open_log(self):
