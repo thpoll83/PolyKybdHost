@@ -29,7 +29,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPalette
 
 from polyhost.services.os_theme import (
-    THEME_AUTO, THEME_DARK, THEME_LIGHT, THEMES, detect_os_theme, resolve_theme,
+    THEME_AUTO, THEME_DARK, THEME_LIGHT, THEMES,
+    detect_os_theme, is_explicit, resolve_theme,
 )
 
 # The Qt-facing front door: a caller that already imports this module for
@@ -39,7 +40,7 @@ from polyhost.services.os_theme import (
 # that, and `THEME_DARK` is genuinely used (through the module, from the tests).
 __all__ = [
     "THEME_AUTO", "THEME_DARK", "THEME_LIGHT", "THEMES",
-    "detect_os_theme", "resolve_theme",
+    "detect_os_theme", "is_explicit", "resolve_theme",
     "dark_palette", "light_palette", "palette_for",
     "apply_theme", "apply_dark_palette", "is_dark",
     "WINDOW_COLOR", "BASE_COLOR", "TEXT_COLOR", "HIGHLIGHT_TEXT_COLOR",
@@ -113,7 +114,12 @@ def palette_for(theme):
 def apply_theme(app, setting=THEME_AUTO):
     """Dress ``app`` for `setting` ('auto' / 'light' / 'dark') and say which one
     it settled on, so a caller can tell whether the theme actually changed."""
-    theme = resolve_theme(setting, detect_os_theme())
+    # Only ask the OS when the setting does not already decide: detection is a
+    # subprocess on macOS and Linux, and the tray re-applies the theme on EVERY
+    # menu open (`PolyHost._refresh_theme`, which drops the cache first), so a
+    # pinned theme would otherwise pay for an answer that is thrown away.
+    detected = None if is_explicit(setting) else detect_os_theme()
+    theme = resolve_theme(setting, detected)
     app.setStyle("Fusion")
     app.setPalette(palette_for(theme))
     return theme

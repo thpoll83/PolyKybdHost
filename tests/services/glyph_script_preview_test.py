@@ -57,6 +57,21 @@ class TestCodepoints(unittest.TestCase):
         for ch in ("A", "!", " ", "", "ab"):
             self.assertIsNone(gsp.glyph_index(ch), repr(ch))
 
+    def test_a_non_ascii_digit_is_not_a_key_on_this_keyboard(self):
+        # The index mirrors the firmware's KEYCODE arithmetic, and there is no
+        # Arabic-Indic digit key. `str.isdigit()` is true for all of these:
+        # \u0661 would have mapped to '1', and int('\u00b2') RAISES, escaping a
+        # `preview()` whose contract is to return None when it cannot draw.
+        for ch in ("\u0661", "\u0663", "\u06f5", "\u00b2", "\u2081"):
+            self.assertTrue(ch.isdigit(), f"fixture {ch!r} no longer tests this")
+            self.assertIsNone(gsp.glyph_index(ch), repr(ch))
+
+    def test_preview_returns_none_rather_than_raising_on_such_text(self):
+        from polyhost.device.command_ids import GlyphScript
+        if gsp.load_pack() is None:
+            self.skipTest("fantasy.plyf is not shipped in this tree")
+        self.assertIsNone(gsp.preview(GlyphScript.RUNES.value, "\u00b2"))
+
 
 class TestShippedBundle(unittest.TestCase):
     """Against the real polyhost/res/fontpack/fantasy.plyf."""

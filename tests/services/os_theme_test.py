@@ -37,6 +37,28 @@ class TestResolve(unittest.TestCase):
         self.assertEqual(os_theme.resolve_theme(" Light ", THEME_DARK), THEME_LIGHT)
 
 
+class TestIsExplicit(unittest.TestCase):
+    """`apply_theme` skips the (subprocess) detection when this says the setting
+    already decides, so a value misread as explicit would pin the theme against
+    the desktop, and one misread as auto costs a subprocess per menu open."""
+
+    def test_only_light_and_dark_decide_on_their_own(self):
+        for value in (THEME_LIGHT, THEME_DARK, " Light ", "DARK"):
+            self.assertTrue(os_theme.is_explicit(value), repr(value))
+        for value in (THEME_AUTO, None, "", "  ", "Auto", "sepia", 7):
+            self.assertFalse(os_theme.is_explicit(value), repr(value))
+
+    def test_it_agrees_with_what_resolve_actually_does(self):
+        # The two must not drift: whenever this reports explicit, resolve_theme
+        # has to return that value no matter what the desktop said.
+        for value in (THEME_LIGHT, THEME_DARK, THEME_AUTO, "", "sepia"):
+            with self.subTest(value=value):
+                if os_theme.is_explicit(value):
+                    for detected in (THEME_LIGHT, THEME_DARK, None):
+                        self.assertEqual(os_theme.resolve_theme(value, detected),
+                                         str(value).strip().lower())
+
+
 class TestDetectionShape(unittest.TestCase):
     def setUp(self):
         os_theme.forget_detected()
@@ -88,15 +110,37 @@ class TestCommandRunner(unittest.TestCase):
 
 
 class TestMacos(unittest.TestCase):
+    """⚠️ Two DIFFERENT failures both make `defaults` produce no value, and only
+    one of them is an answer: the key is absent in light mode (so a non-zero exit
+    means light), while `defaults` failing to run at all means we do not know.
+    Folding them together — which `_run` alone cannot avoid, since it reports
+    None for both — reports a Mac whose `defaults` timed out as light."""
+
+    def _proc(self, returncode, stdout=""):
+        return subprocess.CompletedProcess(args=[], returncode=returncode,
+                                           stdout=stdout, stderr="")
+
     def test_the_key_being_absent_means_light(self):
-        # `defaults read -g AppleInterfaceStyle` FAILS in light mode — the key
-        # only exists while dark mode is on, so a None here is an answer.
-        with mock.patch.object(os_theme, "_run", return_value=None):
+        with mock.patch.object(os_theme.subprocess, "run",
+                               return_value=self._proc(1)):
             self.assertEqual(os_theme._detect_macos(), THEME_LIGHT)
 
     def test_dark_is_dark(self):
-        with mock.patch.object(os_theme, "_run", return_value="Dark"):
+        with mock.patch.object(os_theme.subprocess, "run",
+                               return_value=self._proc(0, "Dark\n")):
             self.assertEqual(os_theme._detect_macos(), THEME_DARK)
+
+    def test_defaults_failing_to_RUN_is_unknown_not_light(self):
+        for err in (OSError("no defaults binary"),
+                    subprocess.TimeoutExpired(cmd="defaults", timeout=2)):
+            with self.subTest(err=type(err).__name__):
+                with mock.patch.object(os_theme.subprocess, "run", side_effect=err):
+                    self.assertIsNone(os_theme._detect_macos())
+
+    def test_an_unknown_style_value_is_not_read_as_dark(self):
+        with mock.patch.object(os_theme.subprocess, "run",
+                               return_value=self._proc(0, "Graphite")):
+            self.assertEqual(os_theme._detect_macos(), THEME_LIGHT)
 
 
 class TestLinux(unittest.TestCase):

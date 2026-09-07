@@ -64,10 +64,30 @@ def _detect_windows():
     return THEME_LIGHT if value else THEME_DARK
 
 
+def _defaults_read(key):
+    """The macOS ``defaults`` answer for `key`: its value, ``""`` when the key is
+    absent, or None when ``defaults`` could not be run at all.
+
+    ⚠️ Those last two are DIFFERENT and `_run` cannot tell them apart — it
+    reports None for both.  Only the second is "unknown"; an absent key is a real
+    answer (see `_detect_macos`), so folding them together reports a Mac whose
+    `defaults` timed out as being in light mode.
+    """
+    try:
+        proc = subprocess.run(["defaults", "read", "-g", key],
+                              capture_output=True, text=True, timeout=2)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
 def _detect_macos():
-    # The key only EXISTS while dark mode is on, so a failed read means light.
-    out = _run(["defaults", "read", "-g", "AppleInterfaceStyle"])
+    # The key only EXISTS while dark mode is on, so a key that is ABSENT means
+    # light — but `defaults` failing to run at all means we do not know.
+    out = _defaults_read("AppleInterfaceStyle")
     if out is None:
+        return None
+    if not out:
         return THEME_LIGHT
     return THEME_DARK if "dark" in out.lower() else THEME_LIGHT
 
@@ -116,12 +136,20 @@ def forget_detected():
     _cache["at"], _cache["value"] = 0.0, None
 
 
+def is_explicit(setting) -> bool:
+    """Whether `setting` decides the theme on its own, so the OS need not be
+    asked.  `detect_os_theme` is a subprocess on macOS and Linux and the tray
+    re-applies the theme on every menu open, so a pinned theme should not pay
+    for an answer that is then discarded."""
+    return str(setting or "").strip().lower() in (THEME_LIGHT, THEME_DARK)
+
+
 def resolve_theme(setting, detected=None) -> str:
     """The theme to apply: the user's explicit choice, else what the OS says,
     else `FALLBACK`.  Pure — `detected` is passed in so the rule is testable
     without a desktop."""
     choice = str(setting or "").strip().lower()
-    if choice in (THEME_LIGHT, THEME_DARK):
+    if is_explicit(choice):
         return choice
     if choice and choice != THEME_AUTO:
         _log.warning("Unknown ui_theme %r — treating it as %r", setting, THEME_AUTO)

@@ -63,7 +63,11 @@ def glyph_index(ch: str) -> int | None:
         return None
     if "a" <= ch <= "z":
         return ord(ch) - ord("a")
-    if ch.isdigit():
+    # ASCII only, deliberately: this mirrors the firmware's KEYCODE arithmetic,
+    # and a keyboard has no Arabic-Indic digit key. `str.isdigit()` is true for
+    # '\u0661' and '\u00b2' alike, which would map the first to '1' and raise
+    # ValueError on the second, out of a `preview()` documented to return None.
+    if "0" <= ch <= "9":
         # KC_1..KC_0 are contiguous with 0 LAST, so '1'->26 ... '9'->34, '0'->35.
         return DIGIT_FIRST_INDEX + (int(ch) + 9) % 10
     return None

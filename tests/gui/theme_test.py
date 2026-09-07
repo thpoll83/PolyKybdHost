@@ -202,6 +202,27 @@ class TestApplyTheme(unittest.TestCase):
         self._apply(theme.THEME_DARK, None)
         self.assertEqual(self.styles, ["Fusion", "Fusion"])
 
+    def test_a_pinned_theme_does_not_ask_the_desktop(self):
+        # Detection is a subprocess on macOS and Linux, and `_refresh_theme`
+        # drops the cache and re-applies on EVERY tray-menu open — so asking
+        # when the setting already decides is a subprocess per open for an
+        # answer that is then discarded.
+        with self.mock.patch.object(theme, "detect_os_theme") as detect:
+            for setting in (theme.THEME_LIGHT, theme.THEME_DARK, " Dark "):
+                theme.apply_theme(self.app, setting)
+            detect.assert_not_called()
+
+    def test_auto_and_a_nonsense_setting_still_ask(self):
+        # The skip must be narrow: anything that does NOT decide on its own has
+        # to fall through to the desktop, or "auto" silently stops following it.
+        for setting in (theme.THEME_AUTO, None, "", "sepia"):
+            with self.subTest(setting=setting):
+                with self.mock.patch.object(theme, "detect_os_theme",
+                                            return_value=theme.THEME_LIGHT) as detect:
+                    self.assertEqual(theme.apply_theme(self.app, setting),
+                                     theme.THEME_LIGHT)
+                    detect.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()
