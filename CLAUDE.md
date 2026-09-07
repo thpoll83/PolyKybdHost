@@ -1322,6 +1322,49 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `render_macro_key()` composes it and counts pixels outside the 72×40 window (320
     cells, 0 clipped) — the same "verify by rendering" rule as `glyph_size_preview.py`,
     with the same caveat that it is a Python model of the C and can drift.
+- **PolyKybd's OWN keycodes reach the browser through
+  `polyhost/services/custom_keycodes.py`, and it is deliberately NOT hung off
+  `KeycapPreview`.** The browser's table is QMK's (`res/keycodes.h`), which names
+  `QK_KB_0`..`QK_KB_31` and stops; the firmware uses 39 slots, so `KC_AI`
+  (`0x7E26` = `QK_KB_38`) had **no tile at all** and could not be assigned by any
+  route the app offers, while the 32 below it were reachable only under QMK's
+  placeholder name. Four things about the shape:
+  - **Two layers, and the second is the guarantee.** `names()` resolves PolyKybd's
+    real names by `preview_data.choose_source` (a firmware checkout wins ONLY by
+    being strictly newer than the shipped export — the same stale-clone rule the
+    previews use); `slots()` then covers the WHOLE `QK_KB` block with `QK_KB_<n>`
+    placeholders, so the key stays assignable with no export and no checkout. That
+    is the half that does not depend on any data being current.
+  - **It reads nothing but JSON and a C header.** Reaching the same names through
+    `KeycapPreview` would tie *whether a key can be assigned* to *whether its
+    picture can be drawn*, and the preview carries PIL, the font packs and
+    `oled_preview` — several documented ways to be unavailable. Hence `_shipped()`
+    pulls the one key it needs out of `legends.json` rather than going through
+    `PreviewData.load()`, which loads the font packs and fails as a unit. Same
+    reasoning as "load the two halves independently", one level out.
+  - ⚠️ **Keys are routed to the tab by VALUE, not by name.** `categorize()` reads
+    name spelling and files `KC_AI` under "Additional"; and QMK's placeholder names
+    for the block must be **deleted before** PolyKybd's are merged, or the tab
+    renders 96 tiles for 64 keys. The tab is appended to `category_order()` so no
+    existing tab moves — same muscle-memory invariant as the tray's developer
+    submenu, and pinned by a test.
+  - ⚠️ **Assert the keys are ON the tab, positively.** The first test only checked
+    they were ABSENT from "User / Macro", which passes vacuously once the
+    placeholders are dropped — so it could not catch routing them by name, the one
+    bug it was written for.
+- ⚠️ **Moving a helper OUT of a module takes anything else in that module that used
+  it, and here the failure surfaced as a WRONG SOURCE PICK rather than a
+  NameError.** Extracting `parse_custom_keycodes` from `keycap_preview.py` took
+  `_read` with it — an unrelated file-reading helper that module still calls twice.
+  The checkout load then raised, `KeycapPreview`'s own `except` swallowed it, and
+  the preview silently fell back to the shipped export: the visible failure was
+  `test_the_automatic_pick_IS_the_version_comparison` reporting `'shipped' !=
+  'checkout'`, which reads as a bug in the source-precedence logic and is nowhere
+  near the edit. **A module with a broad fallback converts a missing symbol into a
+  plausible wrong answer.** Two cheap guards, in order: grep the moved name across
+  the repo *including the file you moved it out of*, and run the FULL suite rather
+  than the new tests — the two new suites were green throughout.
+
 - **The editor's "Key previews" toggle draws every key through the FIRMWARE's own
   renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
   for the language LUT and `tools/lang_demo.py` for the `keycode_helper.c` static-text
