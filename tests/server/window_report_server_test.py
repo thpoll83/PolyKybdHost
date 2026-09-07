@@ -52,11 +52,11 @@ class WindowReportServerTest(unittest.TestCase):
             try:
                 c.close()
             except Exception:
-                pass
+                pass    # teardown: a client already dropped by the test is fine
         try:
             self.server.stop()
         except Exception:
-            pass
+            pass        # ...and a stop that raises must not mask the real failure
 
     def _on_report(self, handle, name, title, os=None, url=None):
         self.reports.append((handle, name, title))
@@ -177,11 +177,11 @@ class WindowReportAiTest(unittest.TestCase):
             try:
                 c.close()
             except Exception:
-                pass
+                pass    # teardown: a client already dropped by the test is fine
         try:
             self.server.stop()
         except Exception:
-            pass
+            pass        # ...and a stop that raises must not mask the real failure
 
     def _on_report(self, handle, name, title, os=None, url=None):
         self.reports.append((handle, name, title))
@@ -260,7 +260,7 @@ class WindowReportWithoutAiTest(unittest.TestCase):
         try:
             self.server.stop()
         except Exception:
-            pass
+            pass        # teardown: a stop that raises must not mask the real failure
 
     def test_ai_state_is_method_not_found(self):
         c = wrc.connect("127.0.0.1", self.port, authkey=self.authkey)
