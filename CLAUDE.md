@@ -561,9 +561,9 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
 
 ## Mirrored skills (`qmk_firmware` ↔ `PolyKybdHost`)
 
-Four skills exist in **both** repos and are kept **byte-identical**:
-`mutation-test-suite`, `polykybd-github-release`, `session-retro`,
-`update-polykybd-docs`. A skill loads only from the repos a session has attached,
+Five skills exist in **both** repos and are kept **byte-identical**:
+`add-gated-hid-command`, `mutation-test-suite`, `polykybd-github-release`,
+`session-retro`, `update-polykybd-docs`. A skill loads only from the repos a session has attached,
 so one that describes cross-repo work is unreachable from a session opened on the
 other repo alone — which is what happened to `mutation-test-suite`, extended to
 cover Python/unittest suites while living only in the firmware repo.
@@ -579,7 +579,7 @@ because a skill has no build, no test and no reviewer.
 **So the rule is copy, never fork**: edit one, `cp` it to the other, and check with
 
 ```bash
-for s in mutation-test-suite polykybd-github-release session-retro update-polykybd-docs; do
+for s in add-gated-hid-command mutation-test-suite polykybd-github-release session-retro update-polykybd-docs; do
     cmp -s /home/user/qmk_firmware/.claude/skills/$s/SKILL.md \
            /home/user/PolyKybdHost/.claude/skills/$s/SKILL.md \
       && echo "$s: ok" || echo "$s: DRIFTED"
@@ -1827,6 +1827,70 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `process_exists()` runs TASKLIST with **`CREATE_NO_WINDOW`** (else a console flashes under
   the `pythonw`/`.vbs` autostart chain) and **never raises** — it sits on the post-connect
   path, where an exception would abort the whole connect flow over a cosmetic detection.
+- **The unicode input method is WATCHED for the life of the core, and an
+  ambiguous reading is applied WITHOUT being stored** (`PolyCore`
+  `_start_wincompose_settle` / `_wincompose_settle_loop` / `_apply_unicode_mode`,
+  firmware protocol 17). It used to be detected exactly once, in the post-connect
+  flow — and at Windows logon autostart brings PolyKybdHost up **before**
+  WinCompose, so `get_input_method()` found no `wincompose.exe`, pushed plain
+  `Windows`, and the keyboard typed Alt+numpad sequences (which cannot produce an
+  emoji) for the rest of the session. Nothing corrected it: the tray probe needs
+  the user to open the menu and deliberately skipped its FIRST look, and a
+  headless daemon has no tray at all. Field report 2026-09-08, and the firmware
+  half of the same bug is in `qmk_firmware/CLAUDE.md` (cmd 20 called QMK's
+  notification callback rather than the setter, so the legend moved and the mode
+  did not). What is load-bearing:
+  - ⚠️ **A plain-`Windows` reading is an ABSENCE, not an observation.** Every other
+    reading is positive — the process is running, or the platform is not Windows.
+    Just after logon, "no wincompose.exe" is equally consistent with "it has not
+    started yet", which is the whole reason the watcher exists. So ambiguity does
+    **not** decide whether to push, it decides whether the push is **stored**:
+    the mode is applied VOLATILE (cmd 20 `data[3]`, protocol 17) — while WinCompose
+    is absent, `Windows` genuinely IS how the keyboard should type — and re-asserted
+    persistently on the first pass after the window closes. If WinCompose turns up
+    first, the stored mode was never disturbed, and the firmware's
+    `eeprom_update_byte` skips the write for a value it already holds. On firmware
+    older than 17 there is no way to apply without storing, so the reading is
+    **held** instead: the alternatives are a wrong stored value and a delay, and
+    the delay is recoverable.
+  - ⚠️ **The window is measured from the PROCESS start, not the connect.**
+    WinCompose races the logon; it does not race a replug three hours later, where
+    treating the reading as ambiguous would only postpone the re-assert that exists
+    to catch a *different* keyboard being plugged in.
+  - ⚠️ **The push dedupe is over (mode, persist), not the mode alone.** Re-asserting
+    the same mode to make a volatile one stick is the entire point of the window
+    closing; a mode-only dedupe swallows it and the keyboard loses the setting at
+    the next power cycle. Mutation-checked.
+  - ⚠️ **The watcher thread must never touch the device.** `_apply_unicode_mode`
+    reads the CACHED protocol via `protocol_supports(self.keeb.protocol_version, …)`
+    rather than `keeb.supports()`, which lazily calls `query_version_info()` — HID
+    I/O, which belongs on the worker. Same reason the TASKLIST probe is on its own
+    thread rather than a worker periodic: ~50 ms must not sit between the reconnect
+    probe and the console read.
+  - **The watch is permanent and bidirectional, with no deadline.** Stopping when
+    WinCompose appears would catch a late start and never notice it being *quit*,
+    which leaves the keyboard emitting compose sequences that produce nothing —
+    and only the tray covered that, which a daemon does not have. 10 s probes for
+    the first 10 minutes after a connect, then one a minute. A cut-off would just
+    be another guess at how slow a logon can be.
+  - **A mode counts as pushed only when the device confirms it** — `worker.submit`
+    only QUEUES the command, so recording at submit time records a mode the device
+    may never have taken (paused, mid-flash, unplugged) and the dedupe then
+    suppresses the retry, which is the very failure the watcher exists to fix.
+  - ⚠️ **`shutdown()` and `_start_wincompose_settle` share a lock plus a one-way
+    flag**, or a reconnect landing concurrently clears the stop Event and starts a
+    fresh watcher holding the core after its worker has stopped.
+- **A settings change applies its device side effects through ONE core hook —
+  `PolyCore.note_settings_changed(keys=None)`.** There are exactly two settings
+  writers: `settings_set` (polyctl and the client-mode dialog) and the in-process
+  settings dialog, which writes the file directly. The dialog already carried a
+  hand-written "nudge the core" line for the daylight brightness, so a second side
+  effect meant a second copy — and that is how enabling
+  `unicode_send_composition_mode` mid-session came to do nothing at all until the
+  next reconnect (the watcher is armed only in the post-connect flow, and only when
+  the setting was already on). `keys=None` means "anything in the dialog may have
+  changed", which is all a whole-file write knows. Add the side effect to the hook,
+  never to a caller.
 - **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
   that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
   PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal
@@ -2366,6 +2430,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   A test gated on both `DISPLAY` and pywinctl would be permanently skipped, which
   is worse than none: it reads as coverage.
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
+  - ⚠️ **`patch.object(Class, "method")` does NOT reach a fixture that already
+    BOUND that method** — and the repo's own fixture idiom is what creates the
+    trap. Several suites deliberately bind the real implementation onto a
+    `SimpleNamespace` stand-in (`functools.partial(PolyCore._x, core)`, or a
+    lambda) so the shipped bookkeeping is what runs; that partial captures the
+    function object at fixture-build time, so a later `patch.object` on the class
+    rebinds the attribute the partial no longer consults. The patch is a silent
+    no-op and the test fails for a reason that has nothing to do with the code
+    (2026-09-08, the volatile-mode re-assert test). Either drive the real input —
+    for a time-based rule, move the clock (`core._started_at = time.monotonic() -
+    601`) — or override the attribute **on the instance**, which is what the code
+    actually calls.
   - ⚠️ **Appending test methods after a file's trailing `if __name__ ==
     "__main__":` block registers NOTHING, and the suite stays green.** The
     indented `def`s become part of the `if` body, so they parse, never run, and
@@ -2417,20 +2493,27 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       silently cropped. The developer-mode menu lost its last row that way, with no
       warning and no error; only looking at the PNG caught it.
 - **Use `scripts/run_tests.py` when a run might hang — it has a stall watchdog.**
-  The suite is **~25 s** (~27 s under xvfb, where the 11 GUI-subprocess tests run
-  instead of skipping). Twice on 2026-08-03 it instead wedged past a 200 s
-  timeout with **no output at all** — and a bare `timeout` kill discards exactly
-  the information you need. The runner arms
-  `faulthandler.dump_traceback_later(..., exit=True)`, so a stall prints every
-  thread's stack and fails the command:
-  `python scripts/run_tests.py [--timeout 180] [-s tests/device]`.
-  ⚠️ **Set `--timeout` BELOW whatever will kill the shell, or the dump is lost.**
-  `--timeout 240` under a 120 s tool timeout means the outer kill lands first:
-  SIGTERM, exit 143, **no traceback**. That cost three losses of the one
-  artifact that identifies a stall. `--timeout 60` is plenty for a 25–28 s suite
-  and fires well inside any shell limit. Redirect to a file
-  (`> /tmp/tr.log 2>&1`) and read the whole thing; do **not** pipe it through
-  `tail`, which has eaten the dump before.
+  Twice on 2026-08-03 the suite wedged past a 200 s timeout with **no output at
+  all** — and a bare `timeout` kill discards exactly the information you need. The
+  runner arms `faulthandler.dump_traceback_later(..., exit=True)`, so a stall
+  prints every thread's stack and fails the command:
+  `python scripts/run_tests.py [--timeout 240] [-s tests/device]`.
+  ⚠️ **Set `--timeout` BELOW whatever will kill the shell, or the dump is lost** —
+  under a 120 s tool timeout an outer kill lands first: SIGTERM, exit 143, **no
+  traceback**. Raise the Bash tool's own timeout past it (`timeout: 400000`).
+  Redirect to a file (`> /tmp/tr.log 2>&1`) and read the whole thing; do **not**
+  pipe it through `tail`, which has eaten the dump before.
+  - ⚠️ **The suite is NOT ~25 s any more, and this note used to say it was — it is
+    2354 tests and 65–90 s under xvfb, so the `--timeout 60` this file recommended
+    now fires on a HEALTHY run.** Measured 2026-09-08 across three runs (65 s,
+    75 s, 90 s) in the same container; the figure drifts with load, so treat 240 as
+    the floor rather than tuning it down. Worse than a wasted run: at 60 s the dump
+    lands wherever teardown happens to be, and on the run that produced this note
+    that was the main thread in `PolyCore.shutdown` → `worker.run_sync` — i.e. an
+    almost exact match for the `ControlServer.stop()` deadlock documented as FIXED
+    below, complete with ~20 threads parked in `recv_message`. **A watchdog dump is
+    only evidence of a stall if the run actually exceeded a realistic budget**;
+    check the wall clock before reading the stack.
 - **✅ The intermittent test-suite stall is FIXED (2026-08-11): it was a deadlock in
   `ControlServer.stop()`, not environment flakiness.** It had gone unexplained
   across ~3 sessions and 20+ non-reproducing runs; the watchdog dump (finally
