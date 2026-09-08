@@ -1473,6 +1473,27 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `render_macro_key()` composes it and counts pixels outside the 72×40 window (320
     cells, 0 clipped) — the same "verify by rendering" rule as `glyph_size_preview.py`,
     with the same caveat that it is a Python model of the C and can drift.
+  - ⚠️ **The macro ICON lookup (`macro_look.load_render_fonts`) UNIONS the firmware
+    headers with the shipped `.plyf` bundles — it must not choose between them, and
+    that is the OPPOSITE remedy from `preview_data.choose_source` one section below.**
+    Both face the same hazard (a checkout beside this repo is a working tree at
+    whatever branch it is on), but the pairs differ: there, two renderings of the SAME
+    data, so the newer wins; here, the headers carry the resident half and the bundles
+    are what the host actually flashes, and either can be ahead. Preferring the
+    headers alone previewed the stale set — a slot's Mayan numeral drew as `M3`
+    because `symbol.plyf` v9 ships that font while a clone on `PolyKybd` has no such
+    header, and the keyboard drew it perfectly well (field, 2026-09-08). The union is
+    safe by construction: `find_glyph` stops at the first font covering the codepoint,
+    so appending can only ADD hits. **It fixes the icon PICKER for the same reason** —
+    it enumerates candidates from the bundles and then looks each one up, so a glyph
+    the headers lacked was dropped from the grid and could not be chosen at all.
+    ⚠️ The `(no glyph)` warning still rests on the source being `"headers"`, i.e. on
+    the RESIDENT faces having been visible; keep that meaning if the value is reworked.
+  - ⚠️ **The CAPTION half of that preview has no such fallback: `_Small_` is NOT in
+    `res/preview/ui_fonts.plyf`** (it ships `_Nano_` and `_Mid_` only), so
+    `load_caption_faces()` still needs a firmware checkout and an install without one
+    renders "no font — preview unavailable" rather than a keycap. Closing that means
+    exporting the third face, not another fallback path.
 - **The editor's "Key previews" toggle draws every key through the FIRMWARE's own
   renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
   for the language LUT and `tools/lang_demo.py` for the `keycode_helper.c` static-text
