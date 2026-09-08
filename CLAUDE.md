@@ -2773,6 +2773,47 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `y_cursor` only advances at end-of-row when `current_rotation == 0`, which is
     what lets the rotated thumb clusters sit outside the row flow.
 
+- **The board the keys sit on is GENERATED from the KiCad boards —
+  `polyhost/res/board_outline.json`, written by `scripts/export_board_outline.py`,
+  drawn by `gui/layout_dialog/board_plate.py`.** It carries each half's
+  `Edge.Cuts` polygon and the two optional 0.96" status panels, in the same key
+  units as the KLE, so the editor shows which half a key is on and where the
+  screens are instead of 74 tiles floating in space. It is decoration and fails
+  soft: no file, no picture, unchanged editor.
+  - **The mm → key-unit transform is a pure translation at 19.05 mm/U** — the
+    boards carry no rotation, so scale is the pitch and the only unknown is the
+    origin. The exporter fits it by trying every (switch, key) pairing and keeping
+    the one that explains all 37 switches, then refuses to write unless the fit is
+    a **bijection** within bounds. Measured: 31 of 37 land exactly, the outer column
+    is out by 0.125U and the outer thumbs by up to 0.24U — the KLE's stylisation
+    (see the outer-column note above), not drift.
+  - ⚠️ **A containment test cannot catch a wrong offset, and that is not obvious.**
+    "Every key is inside the outline" passes with the whole board shifted **0.25U**
+    (4.8 mm) inward, because the inner edge has that much slack — measured, after
+    writing exactly that test and watching the mutation escape. What catches it is
+    the opposite property: a plate **hugs** its keys, so
+    `test_the_board_HUGS_the_keys_on_every_side` bounds the margin at each edge
+    (0.10U–0.38U as shipped). Seven translate/scale/mirror mutations are caught.
+  - ⚠️ **Restore the baseline before EACH mutation in a sweep, or a `+x`/`-x` pair
+    CANCELS and reads as ESCAPED.** The first harness here re-read the file it had
+    just mutated, so mutation 2 landed on top of mutation 1 and reported the tests
+    as worthless when they were fine. Same family as the ANSI-escape and
+    never-applied traps in `qmk_firmware/CLAUDE.md`: every one of them fails toward
+    "your tests caught nothing", which is the reading that makes you stop trusting a
+    suite that works.
+  - **The status panels are placed on `J39`**, the 30-pin FPC each half carries for
+    the display (the schematic's *"Optional OLED Status Display"*). Both sit at the
+    same height, mirrored about the layout centre line, and a 0.96" panel lands
+    exactly in the free corner between the top rows and the inner edge — which is
+    presumably why the board reserves that corner. ⚠️ The display itself hangs off a
+    ~40 mm cable, so where it ends up in the CASE is not in any repo file; if it
+    should sit elsewhere, move it by re-anchoring in the exporter, not by nudging
+    the JSON.
+  - ⚠️ **The tiles are dark in BOTH themes** (`RenderableKey` hardcodes its greys),
+    so the plate has to work under dark keys either way, and the `STATUS` caption is
+    drawn ON the glass — dark in both themes — so its light-theme ink is light too.
+    Taking it from the light palette put grey-blue text on a near-black panel.
+
 ## Releases
 
 Host releases are **GitHub Releases** (tag `vX.Y.Z`; version in `polyhost/_version.py`),

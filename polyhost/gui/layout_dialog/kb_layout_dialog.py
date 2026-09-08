@@ -17,8 +17,10 @@ from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
 from polyhost.gui.layout_dialog.keycap_preview import KeycapPreview
 from polyhost.gui import oled_look
+from polyhost.gui import theme as gui_theme
 from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
 from polyhost.gui.layout_dialog.macro_tab import QK_MACRO
+from polyhost.gui.layout_dialog.board_plate import add_board
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
 from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
@@ -596,7 +598,12 @@ class KbLayoutDialog(QMainWindow):
         
         minx = min(p['x'] for p in self.key_matrix.values())
         miny = min(p['y'] for p in self.key_matrix.values())
-        
+
+        # The board the keys are mounted on, behind them. Decoration only, and
+        # it fails soft -- see `board_plate`. Added FIRST so the plate is under
+        # every key even before Z-values are considered.
+        self._add_board(minx, miny)
+
         for name, info in self.key_matrix.items():
             # Get key properties
             x = info['x'] - minx
@@ -636,5 +643,18 @@ class KbLayoutDialog(QMainWindow):
             self.scene.addItem(item)
         
         self.view.setSceneRect(self.scene.itemsBoundingRect())
+
+    def _add_board(self, minx, miny):
+        """Draw the board outline + status screens under the keys.
+
+        Reads the theme from the live palette rather than the `ui_theme`
+        setting: the setting is `auto` on most installs and does not move when
+        Windows flips, while the palette is what was actually applied.
+        """
+        try:
+            dark = gui_theme.is_dark(self.palette())
+            add_board(self.scene, KEY_SCALE, minx, miny, dark=dark)
+        except Exception:
+            self.log.debug("board outline not drawn", exc_info=True)
 
 
