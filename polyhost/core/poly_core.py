@@ -31,7 +31,7 @@ from polyhost._version import __version__, __protocol__
 import polyhost.util.log_util  # noqa: F401
 from polyhost.core import events
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
-from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL
+from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL, protocol_supports
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device import hid_fw_up
@@ -162,6 +162,11 @@ class PolyCore(Observable):
         # Separate from _last_pushed_unicode_mode so a FAILED push does not stay
         # deduped: only a confirmed one suppresses a retry.
         self._queued_unicode_mode = None
+        # Whether the last confirmed / in-flight push was RAM-only. A volatile
+        # push has to be re-asserted persistently once the logon window closes,
+        # so "same mode" alone cannot decide whether a push is a duplicate.
+        self._last_push_was_volatile = False
+        self._queued_push_is_volatile = False
         self._wincompose_shutting_down = False
         self._wincompose_stop = threading.Event()
         self._wincompose_thread = None
@@ -561,11 +566,15 @@ class PolyCore(Observable):
     WINCOMPOSE_FAST_INTERVAL = 10
     WINCOMPOSE_SLOW_INTERVAL = 60
 
-    def _push_unicode_mode(self, mode):
+    def _push_unicode_mode(self, mode, persist=True):
         """Submit a unicode-input-method push (HID cmd 20), deduped.
 
         Device I/O, so it goes on the worker — which means ``submit`` only
         QUEUES it and the result arrives later.
+
+        ``persist=False`` applies the mode in RAM only (firmware protocol 17+),
+        for a reading the host is not yet sure of — see
+        ``_unicode_mode_is_ambiguous``.
 
         ⚠️ The mode is recorded as pushed in ``on_done``, only when the keyboard
         reports success. Recording it here would dedupe a push the device never
@@ -573,18 +582,28 @@ class PolyCore(Observable):
         skip the retry and exit as soon as it saw WinCompose — leaving the
         keyboard on the wrong mode for the session, which is the very bug this
         watcher exists to fix. ``_queued_unicode_mode`` suppresses a duplicate
-        submission while one is in flight and is cleared either way."""
-        if mode in (self._last_pushed_unicode_mode, self._queued_unicode_mode):
+        submission while one is in flight and is cleared either way.
+
+        ⚠️ The dedupe is over (mode, persist), not the mode alone: re-asserting
+        the SAME mode to make a volatile one stick is the whole point of the
+        window closing, and a mode-only dedupe would swallow it."""
+        if ((mode, persist) in ((self._last_pushed_unicode_mode,
+                                 not self._last_push_was_volatile),
+                                (self._queued_unicode_mode,
+                                 not self._queued_push_is_volatile))):
             return False
         self._queued_unicode_mode = mode
-        self.log.info("Pushing unicode input mode %s to keyboard.", mode.name)
+        self._queued_push_is_volatile = not persist
+        self.log.info("Pushing unicode input mode %s to keyboard (%s).", mode.name,
+                      "persist" if persist else "volatile")
         self.worker.submit(
             "set_unicode_mode",
-            lambda c, m=mode: self.keeb.set_unicode_mode(m),
-            on_done=lambda _name, result, m=mode: self._unicode_mode_pushed(m, result))
+            lambda c, m=mode, p=persist: self.keeb.set_unicode_mode(m, persist=p),
+            on_done=lambda _name, result, m=mode, p=persist:
+                self._unicode_mode_pushed(m, result, p))
         return True
 
-    def _unicode_mode_pushed(self, mode, result):
+    def _unicode_mode_pushed(self, mode, result, persist=True):
         """HID-worker callback: record the push only if the device took it.
 
         ``result`` is the job's return value — the device layer's ``(ok, msg)``
@@ -592,9 +611,11 @@ class PolyCore(Observable):
         rather than re-raising."""
         if self._queued_unicode_mode == mode:
             self._queued_unicode_mode = None
+            self._queued_push_is_volatile = False
         ok = isinstance(result, tuple) and len(result) == 2 and bool(result[0])
         if ok:
             self._last_pushed_unicode_mode = mode
+            self._last_push_was_volatile = not persist
         else:
             self.log.warning(
                 "Unicode input mode %s was not applied (%r); it will be retried "
@@ -621,6 +642,36 @@ class PolyCore(Observable):
         from polyhost.input.unicode_input import InputMethod
         return (sys.platform == "win32" and mode is InputMethod.Windows
                 and time.monotonic() - self._started_at < self.WINCOMPOSE_FAST_SECONDS)
+
+    def _apply_unicode_mode(self, mode):
+        """Push ``mode``, letting the ambiguity rule decide whether it is STORED.
+
+        Three outcomes, and the middle one is why the volatile flag exists:
+
+        * unambiguous -> push and persist, as always;
+        * ambiguous, firmware protocol 17+ -> push VOLATILE. While WinCompose is
+          not running, plain ``Windows`` is genuinely how the keyboard should
+          type, so applying it is correct; what would be wrong is *storing* a
+          reading that may just mean "WinCompose has not started yet". The
+          re-assert once the window closes then persists it, and if WinCompose
+          turns up first the keyboard's stored mode was never disturbed
+          (``eeprom_update_byte`` skips a write when the value is unchanged, so
+          re-asserting the mode it already had costs nothing);
+        * ambiguous, older firmware -> HOLD it. There is no way to apply without
+          storing, so the choice is between a wrong stored value and a delay,
+          and the delay is recoverable.
+
+        Reads the CACHED protocol (``protocol_supports``) rather than
+        ``keeb.supports()``, which lazily does device I/O — this runs on the
+        settle watcher's own thread, which must never touch the device."""
+        if not self._unicode_mode_is_ambiguous(mode):
+            return self._push_unicode_mode(mode, persist=True)
+        if protocol_supports(self.keeb.protocol_version, "unicode_mode_volatile"):
+            return self._push_unicode_mode(mode, persist=False)
+        self.log.debug("Holding back the %s unicode mode: the reading is ambiguous "
+                       "and this firmware cannot apply one without storing it.",
+                       mode.name)
+        return False
 
     def _start_wincompose_settle(self):
         """Re-probe the unicode input method for a bounded window after a connect.
@@ -687,15 +738,10 @@ class PolyCore(Observable):
             except Exception:
                 self.log.debug("WinCompose probe failed", exc_info=True)
                 continue
-            if mode == self._last_pushed_unicode_mode:
-                continue
-            if self._unicode_mode_is_ambiguous(mode):
-                # Not "WinCompose is gone" yet — see _unicode_mode_is_ambiguous.
-                # The push happens on the first pass after the window closes.
-                continue
-            self.log.info("Unicode input method is now %s — re-applying.",
-                          mode.name)
-            self._push_unicode_mode(mode)
+            # Deduped inside _push_unicode_mode over (mode, persist), so a
+            # steady state is silent AND the volatile push made during the logon
+            # window is re-asserted persistently on the first pass after it closes.
+            self._apply_unicode_mode(mode)
 
     def report_window(self, handle, name, title, os=None, url=None):
         """Inject an external active-window report into remote window tracking
@@ -993,14 +1039,7 @@ class PolyCore(Observable):
                     # Armed FIRST: at logon this detection races WinCompose's own
                     # autostart and usually loses, and the watcher is what corrects it.
                     self._start_wincompose_settle()
-                    mode = get_input_method()
-                    if self._unicode_mode_is_ambiguous(mode):
-                        self.log.info(
-                            "WinCompose is not running yet; holding off on the "
-                            "Windows unicode input mode until the logon window "
-                            "closes (see _unicode_mode_is_ambiguous).")
-                    else:
-                        self._push_unicode_mode(mode)
+                    self._apply_unicode_mode(get_input_method())
                 if connected_now:
                     # Push the host OS (independent of the unicode mode). The keyboard
                     # applies it only in auto mode (a manual pin / Android wins), and
@@ -1338,6 +1377,9 @@ class PolyCore(Observable):
         # asking for the mode to be re-asserted, so it always reaches the device.
         # Recording it keeps the watcher's dedupe honest.
         self._last_pushed_unicode_mode = mode
+        # An explicit refresh always persists, so it also clears a volatile push
+        # the watcher would otherwise still be waiting to make stick.
+        self._last_push_was_volatile = False
         return True, {"mode": mode.name}
 
     def set_glyph_script(self, value):
@@ -1632,9 +1674,7 @@ class PolyCore(Observable):
         if not self.connected:
             return   # the post-connect flow will assert it
         from polyhost.input.unicode_input import get_input_method
-        mode = get_input_method()
-        if not self._unicode_mode_is_ambiguous(mode):
-            self._push_unicode_mode(mode)
+        self._apply_unicode_mode(get_input_method())
 
     # ------------------------------------------------------------------
     # Telemetry (anonymous usage census)

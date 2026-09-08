@@ -8,6 +8,7 @@ The settle watcher covers the case the once-per-connect push gets WRONG: at logo
 autostart brings PolyKybdHost up before WinCompose, so the connect-time probe finds
 no wincompose.exe and pushes plain Windows for the rest of the session.
 """
+import functools
 import threading
 import time
 import types
@@ -114,16 +115,28 @@ class _StopAfter:
         self.rounds = -1
 
 
-def _watcher_core(modes, send_mode=True, connected=True, rounds=None):
-    """Stand-in for the watcher: `modes` is consumed one probe at a time."""
+def _watcher_core(modes, send_mode=True, connected=True, rounds=None,
+                  protocol=17):
+    """Stand-in for the watcher: `modes` is consumed one probe at a time.
+
+    The push path is the REAL `_push_unicode_mode` / `_apply_unicode_mode`, over a
+    worker that completes each job synchronously and successfully — so the dedupe
+    and the volatile-vs-persist choice under test are the shipped ones, not a
+    second implementation living in this file. `_pushed` records what reached the
+    device: a bare mode for a persisting push, `(mode, "volatile")` for a RAM-only
+    one."""
     pushed = []
     probes = []
     seq = list(modes)
 
-    def _push(mode):
-        core._last_pushed_unicode_mode = mode
-        pushed.append(mode)
-        return True
+    def _set_unicode_mode(mode, persist=True):
+        pushed.append(mode if persist else (mode, "volatile"))
+        return True, "ok"
+
+    def _submit(name, fn, on_done=None):
+        result = fn(None)
+        if on_done is not None:
+            on_done(name, result)
 
     def _probe():
         probes.append(1)
@@ -132,21 +145,29 @@ def _watcher_core(modes, send_mode=True, connected=True, rounds=None):
     core = types.SimpleNamespace(
         WINCOMPOSE_FAST_INTERVAL=10,
         WINCOMPOSE_SLOW_INTERVAL=60,
+        WINCOMPOSE_FAST_SECONDS=600,
         _wincompose_fast_until=time.monotonic() + 600,
         _wincompose_stop=_StopAfter(len(modes) if rounds is None else rounds),
         _last_pushed_unicode_mode=InputMethod.Windows,
+        _queued_unicode_mode=None,
+        _last_push_was_volatile=False,
+        _queued_push_is_volatile=False,
+        _started_at=time.monotonic(),
         connected=connected,
         poly_settings=types.SimpleNamespace(
             get=lambda k: {"unicode_send_composition_mode": send_mode}[k]),
         log=types.SimpleNamespace(info=lambda *a, **k: None,
-                                  debug=lambda *a, **k: None),
-        _push_unicode_mode=_push,
-        WINCOMPOSE_FAST_SECONDS=600,
-        _started_at=time.monotonic(),
+                                  debug=lambda *a, **k: None,
+                                  warning=lambda *a, **k: None),
+        worker=types.SimpleNamespace(submit=_submit),
+        # Protocol 17 is where the firmware can apply a mode without storing it;
+        # 16 is the older behaviour, where an ambiguous reading can only be held.
+        keeb=types.SimpleNamespace(protocol_version=protocol,
+                                   set_unicode_mode=_set_unicode_mode),
     )
-    # The real rule, so the loop is tested against the shipped one.
-    core._unicode_mode_is_ambiguous = (
-        lambda mode: PolyCore._unicode_mode_is_ambiguous(core, mode))
+    for name in ("_unicode_mode_is_ambiguous", "_apply_unicode_mode",
+                 "_push_unicode_mode", "_unicode_mode_pushed"):
+        setattr(core, name, functools.partial(getattr(PolyCore, name), core))
     core._pushed = pushed
     core._probes = probes
     core._probe = _probe
@@ -277,34 +298,60 @@ class AmbiguousWindowsModeTest(unittest.TestCase):
 
 
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
-class WatcherHoldsOffTheAmbiguousModeTest(unittest.TestCase):
-    """The loop half of the rule above."""
+class AmbiguousModeIsAppliedButNotStoredTest(unittest.TestCase):
+    """The loop half of the ambiguity rule.
+
+    An ambiguous reading is not withheld — while WinCompose is not running,
+    plain Windows IS how the keyboard should type. What is withheld is the
+    EEPROM write, because the reading may just mean "not started yet"."""
 
     def _run(self, core):
         with patch("polyhost.input.unicode_input.get_input_method",
                    side_effect=lambda: core._probe()):
             PolyCore._wincompose_settle_loop(core)
 
-    def test_a_windows_reading_is_HELD_during_the_logon_window(self):
+    def test_a_windows_reading_is_applied_VOLATILE_inside_the_window(self):
         core = _watcher_core([InputMethod.Windows] * 3)
-        core._last_pushed_unicode_mode = None      # nothing pushed at connect
+        core._last_pushed_unicode_mode = None
+        with patch("polyhost.core.poly_core.sys.platform", "win32"):
+            self._run(core)
+        # Applied once, RAM-only, and not re-sent while nothing changes.
+        self.assertEqual(core._pushed, [(InputMethod.Windows, "volatile")])
+        self.assertEqual(len(core._probes), 3, "it stopped probing")
+
+    def test_it_is_RE_ASSERTED_persistently_once_the_window_closes(self):
+        """The dedupe is over (mode, persist), so the same mode is sent again to
+        make it stick — a mode-only dedupe would swallow this and the keyboard
+        would lose the setting at the next power cycle."""
+        core = _watcher_core([InputMethod.Windows] * 4, rounds=4)
+        core._last_pushed_unicode_mode = None
+        inner = core._probe
+
+        def _probe_then_age():
+            mode = inner()
+            if len(core._probes) == 2:      # the logon window closes here
+                core._started_at = time.monotonic() - 601
+            return mode
+
+        core._probe = _probe_then_age
+        with patch("polyhost.core.poly_core.sys.platform", "win32"):
+            self._run(core)
+        self.assertEqual(core._pushed, [(InputMethod.Windows, "volatile"),
+                                        InputMethod.Windows])
+
+    def test_older_firmware_HOLDS_it_instead(self):
+        """Protocol 16 cannot apply a mode without storing it, so the choice is
+        between a wrong stored value and a delay — take the delay."""
+        core = _watcher_core([InputMethod.Windows] * 3, protocol=16)
+        core._last_pushed_unicode_mode = None
         with patch("polyhost.core.poly_core.sys.platform", "win32"):
             self._run(core)
         self.assertEqual(core._pushed, [])
-        self.assertEqual(len(core._probes), 3, "it stopped probing")
 
-    def test_it_is_pushed_once_the_window_CLOSES(self):
-        """The hold is a delay, not a refusal — a machine without WinCompose
-        still gets its mode."""
-        core = _watcher_core([InputMethod.Windows] * 2)
-        core._last_pushed_unicode_mode = None
-        core._started_at = time.monotonic() - 601
-        with patch("polyhost.core.poly_core.sys.platform", "win32"):
-            self._run(core)
-        self.assertEqual(core._pushed, [InputMethod.Windows])
-
-    def test_wincompose_is_pushed_IMMEDIATELY_inside_the_window(self):
-        """The hold must not delay the observation it is waiting for."""
+    def test_wincompose_is_pushed_and_STORED_immediately(self):
+        """Seeing the process is unambiguous at any moment, so it persists —
+        and on a keyboard already in that mode the firmware's eeprom_update
+        skips the write, so this costs nothing."""
         core = _watcher_core([InputMethod.WinCompose])
         core._last_pushed_unicode_mode = None
         with patch("polyhost.core.poly_core.sys.platform", "win32"):
@@ -326,8 +373,7 @@ class SettingsChangedTest(unittest.TestCase):
                 get=lambda k: {"unicode_send_composition_mode": send_mode}[k]),
             refresh_daylight_brightness=lambda: core._did.append("brightness"),
             _start_wincompose_settle=lambda: core._did.append("watcher"),
-            _push_unicode_mode=lambda mode: core._did.append(("push", mode)),
-            _unicode_mode_is_ambiguous=lambda mode: ambiguous,
+            _apply_unicode_mode=lambda mode: core._did.append(("apply", mode)),
         )
         core._did = []
         core._refresh_unicode_watch = lambda: PolyCore._refresh_unicode_watch(core)
@@ -342,7 +388,7 @@ class SettingsChangedTest(unittest.TestCase):
         core = self._core()
         self._run(core, ["unicode_send_composition_mode"])
         self.assertEqual(core._did,
-                         ["watcher", ("push", InputMethod.WinCompose)])
+                         ["watcher", ("apply", InputMethod.WinCompose)])
 
     def test_it_does_nothing_while_the_setting_is_OFF(self):
         core = self._core(send_mode=False)
@@ -355,12 +401,12 @@ class SettingsChangedTest(unittest.TestCase):
         self._run(core, ["unicode_send_composition_mode"])
         self.assertEqual(core._did, ["watcher"])
 
-    def test_an_ambiguous_mode_is_still_HELD(self):
-        """Enabling the setting during the logon window must not push the plain
-        Windows reading the watcher exists to second-guess."""
-        core = self._core(ambiguous=True)
+    def test_the_volatile_vs_persist_choice_is_NOT_made_here(self):
+        """It belongs to _apply_unicode_mode, which every caller shares — this
+        hook only decides THAT the mode is re-asserted."""
+        core = self._core()
         self._run(core, ["unicode_send_composition_mode"], InputMethod.Windows)
-        self.assertEqual(core._did, ["watcher"])
+        self.assertEqual(core._did, ["watcher", ("apply", InputMethod.Windows)])
 
     def test_an_unrelated_key_touches_neither_side_effect(self):
         core = self._core()
@@ -379,7 +425,7 @@ class SettingsChangedTest(unittest.TestCase):
         core = self._core()
         self._run(core, None)
         self.assertEqual(core._did,
-                         ["brightness", "watcher", ("push", InputMethod.WinCompose)])
+                         ["brightness", "watcher", ("apply", InputMethod.WinCompose)])
 
 
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
@@ -396,6 +442,8 @@ class PushUnicodeModeTest(unittest.TestCase):
         core = types.SimpleNamespace(
             _last_pushed_unicode_mode=None,
             _queued_unicode_mode=None,
+            _last_push_was_volatile=False,
+            _queued_push_is_volatile=False,
             log=types.SimpleNamespace(info=lambda *a, **k: None,
                                       warning=lambda *a, **k: None),
             worker=types.SimpleNamespace(submit=_submit),
@@ -403,8 +451,8 @@ class PushUnicodeModeTest(unittest.TestCase):
         core._submitted = submitted
         # The push's on_done calls back into the core; bind the REAL method so
         # the confirm/fail bookkeeping under test is the shipped one.
-        core._unicode_mode_pushed = (
-            lambda mode, result: PolyCore._unicode_mode_pushed(core, mode, result))
+        core._unicode_mode_pushed = functools.partial(
+            PolyCore._unicode_mode_pushed, core)
         return core
 
     def _finish(self, core, result):

@@ -69,6 +69,11 @@ MACRO_MIN_PROTOCOL = 15
 # depend on this — it reads the console line, which any firmware that records
 # crashes prints — only the fetch/clear path is gated.
 CRASH_RECORD_MIN_PROTOCOL = 16
+# Minimum firmware PROTOCOL_VERSION for the VOLATILE flag on the unicode-mode
+# command (cmd 20, data[3]): apply the mode in RAM without writing it to EEPROM.
+# Used at Windows logon, where an absent wincompose.exe cannot yet be told apart
+# from one that has not started — see PolyCore._unicode_mode_is_ambiguous.
+UNICODE_MODE_VOLATILE_MIN_PROTOCOL = 17
 
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
@@ -88,6 +93,7 @@ FEATURE_MIN_PROTOCOL = {
     "layer_names": LAYER_NAMES_MIN_PROTOCOL,
     "macros": MACRO_MIN_PROTOCOL,
     "crash_record": CRASH_RECORD_MIN_PROTOCOL,
+    "unicode_mode_volatile": UNICODE_MODE_VOLATILE_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -428,9 +434,24 @@ class PolyKybd:
         self.log.info("Disable Overlays...")
         return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
 
-    def set_unicode_mode(self, mode: InputMethod) -> tuple[bool, Any]:
-        self.log.info("Setting unicode mode to %d", mode.value)
-        return self.hid.send_and_read_validate(compose_cmd(Cmd.SET_UNICODE_MODE, mode.value))
+    def set_unicode_mode(self, mode: InputMethod,
+                         persist: bool = True) -> tuple[bool, Any]:
+        """Set the keyboard's unicode input method (cmd 20).
+
+        ``persist=False`` sets it in RAM only (protocol 17+, the VOLATILE flag in
+        data[3]) — for a reading the host is not yet sure of, so a transient value
+        is never written to EEPROM. A zero-padded report means data[3] == 0 on an
+        older host, i.e. persist, so the flag is backwards-compatible on the wire;
+        it is still gated, because an older FIRMWARE would silently PERSIST a mode
+        the caller explicitly asked not to store."""
+        if not persist and not self.supports("unicode_mode_volatile"):
+            return False, ("The keyboard firmware is too old for a volatile unicode "
+                           "mode (needs protocol "
+                           f"{UNICODE_MODE_VOLATILE_MIN_PROTOCOL}).")
+        self.log.info("Setting unicode mode to %d (%s)", mode.value,
+                      "persist" if persist else "volatile")
+        return self.hid.send_and_read_validate(
+            compose_cmd(Cmd.SET_UNICODE_MODE, mode.value, 0 if persist else 1))
 
     def set_brightness(self, brightness: int, flags: int = 0) -> tuple[bool, Any]:
         # flags (protocol >= 5, firmware base/com.h): bit0 VOLATILE (daylight,
