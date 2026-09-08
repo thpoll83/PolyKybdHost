@@ -2458,6 +2458,75 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       mutation-never-applied traps in `qmk_firmware/CLAUDE.md`, and the same
       remedy applies one level up: **judge the run by the `Ran N tests` summary
       line existing**, not by the absence of failures.
+- **The AI key — a status light the host drives, and a key press that comes back on
+  the CONSOLE (`services/ai_link.py`, HID cmd 40, protocol v18+).** One key wears an
+  agent's status (`off` / `idle` / `working` / `attention`) and, pressed, raises that
+  agent's window. `PolyCore.set_ai_state` pushes; `AiScanner` reads the press back.
+  What is worth knowing is why the two directions use two different channels, and the
+  four traps underneath:
+  - ⚠️ **The press CANNOT ride HID, and this is structural rather than an omission.**
+    `KC_AI` is a custom keycode the firmware swallows, so it emits no HID traffic of
+    its own, and nothing in the protocol lets the keyboard call the host — every
+    command is host-initiated. The firmware prints `ai: open` instead, which the
+    250 ms console periodic already drains for crash records, so the press costs **no
+    new transport at all**. Consequence that will read as a bug: console output is
+    dropped while a firmware or font-pack flash streams (§ threading model), so a
+    press during a flash is simply lost. Press it again.
+  - ⚠️ **`AiScanner` does NOT dedupe by line content, unlike `CrashScanner` one file
+    over — and the difference is the whole point.** Every press prints the same text,
+    so content-dedupe would report the first press of a session and never another. It
+    debounces on TIME (`PRESS_DEBOUNCE_S`) instead, which is what a re-emitted
+    fragment would trip. Both still reassemble report-sized fragments into lines
+    (`feed`), because a console read is a fragment and not a line.
+  - **The window cycle stores the HANDLE it last raised, never an index**
+    (`next_index`). Windows come and go between presses, so a stored index points at
+    a *different* window as soon as one closes — and off the end when several do.
+    Advancing past the handle also gives the right answer for the first press and for
+    "every match disappeared", so there is no special case for either.
+  - ⚠️ **Across the forwarder the press rides the window-report REPLY, which makes it
+    a POLL — and `AiRelayFollower` is what makes a poll idempotent.** The forwarder is
+    a client with no listener, so a reply is the only channel needing no inbound port
+    on its machine, and it is free (those reports are being sent anyway). A monotonic
+    `raise_seq` counts presses, so acting when it *advances* is exactly once per press
+    however often a reply repeats. **Four states are deliberately not a press**, and
+    each would otherwise raise a window nobody asked for: the first reply (a process
+    starting is not a press), a counter going backwards (the daemon restarted —
+    re-baseline), a counter of 0 (what the host reports while the feature is off), and
+    a counter last seen as 0 (the feature was off and has just been re-enabled — the
+    host's counter is **not** reset by disabling, so the first reply after carries
+    whatever it had reached). The last one was CodeRabbit's, on this PR.
+  - ⚠️ **An advance of N raises N times, bounded by `MAX_CATCH_UP`.** Collapsing them
+    would silently drop the cycling that repeated presses exist for, in precisely the
+    case it is wanted. Past the bound something happened but the count is not evidence
+    of how many times, so it raises **once** and re-baselines.
+  - **The feature ships OFF (`ai_key_enabled`), with ONE live reader**
+    (`PolyCore.ai_key_enabled`) gating all four sites: the state push, the reconnect
+    re-push, the press, and the `ai.state` method on the network endpoint. A flag that
+    gates three of four is not off. `set_ai_state` refuses **before** recording the
+    state — with the feature off there is no reconnect re-push to carry it, so storing
+    it would leave `ai status` reporting a light nothing will ever show.
+  - **The status is re-pushed on reconnect**, because the keyboard holds it in RAM
+    only; otherwise the key goes dark while the agent is still working. Nothing is
+    pushed when no agent has reported — pushing OFF to a key that is already off costs
+    a job on the worker that owns the device at its busiest moment.
+  - ⚠️ **`ai.state` is a second hand-listed method on the EXISTING window-report
+    listener, not a registry and not a second port** — injected callbacks, no
+    `PolyCore` reference, no method naming a file, a device or a window, and the relay
+    it returns carries a counter and a bool, never a title. A sibling server would
+    have doubled the network surface for the same already-authenticated peer. With no
+    AI callbacks injected the endpoint is byte-for-byte what it was, which a test pins.
+  - ⚠️ **Native Wayland cannot be driven this way** — no client-callable activation
+    API, the same limit window *tracking* has there. The press is reported and nothing
+    is raised, and the app says so: silently doing nothing reads as a broken key.
+  - **`contrib/ai-hooks/polykybd_ai_hook.py` is one adapter for every agent** (Claude
+    Code hooks read JSON on stdin, the Codex notify program takes it as the last
+    argv, anything else can call `polyctl ai state <word>`). ⚠️ It **never exits
+    non-zero** — a hook that fails can block the agent, and a keyboard light is not
+    worth that.
+  - ⚠️ **An agent living in a BROWSER TAB is out of reach**, and that is stated on the
+    docs page rather than left to be discovered: a tab is not a window, so a press
+    brings the browser forward and stops, and a hook inside a hosted container has no
+    route back to the keyboard at all.
 - ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
   `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
   menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
