@@ -90,8 +90,32 @@ class RefreshUnicodeModeTest(unittest.TestCase):
         self.assertEqual(core._last_pushed_unicode_mode, InputMethod.Windows)
 
 
-def _watcher_core(modes, send_mode=True):
-    """Stand-in for the settle watcher: `modes` is consumed one probe at a time."""
+class _StopAfter:
+    """Stand-in for the watcher's stop Event: records each wait interval and
+    ends the loop after `rounds` of them.
+
+    The real loop never returns on its own — that is the point of the design —
+    so a test must supply the stop. Doing it by count rather than by wall clock
+    keeps the tests deterministic AND means a loop that lost its exit fails
+    rather than hanging the suite."""
+
+    def __init__(self, rounds):
+        self.rounds = rounds
+        self.waits = []
+
+    def wait(self, interval):
+        if self.rounds <= 0:
+            return True          # stopped; this round does no work
+        self.waits.append(interval)
+        self.rounds -= 1
+        return False
+
+    def set(self):
+        self.rounds = -1
+
+
+def _watcher_core(modes, send_mode=True, connected=True, rounds=None):
+    """Stand-in for the watcher: `modes` is consumed one probe at a time."""
     pushed = []
     probes = []
     seq = list(modes)
@@ -101,15 +125,17 @@ def _watcher_core(modes, send_mode=True):
         pushed.append(mode)
         return True
 
+    def _probe():
+        probes.append(1)
+        return seq.pop(0) if seq else InputMethod.Windows
+
     core = types.SimpleNamespace(
-        WINCOMPOSE_SETTLE_INTERVAL=0.001,
-        WINCOMPOSE_SETTLE_SLOW_INTERVAL=0.002,
-        _wincompose_fast_until=time.monotonic() + 1.0,
-        _wincompose_stop=threading.Event(),
-        # A real (short) deadline, not inf: a regression that fails to stop on
-        # WinCompose must FAIL this suite, not hang it.
-        _wincompose_deadline=time.monotonic() + 1.0,
+        WINCOMPOSE_FAST_INTERVAL=10,
+        WINCOMPOSE_SLOW_INTERVAL=60,
+        _wincompose_fast_until=time.monotonic() + 600,
+        _wincompose_stop=_StopAfter(len(modes) if rounds is None else rounds),
         _last_pushed_unicode_mode=InputMethod.Windows,
+        connected=connected,
         poly_settings=types.SimpleNamespace(
             get=lambda k: {"unicode_send_composition_mode": send_mode}[k]),
         log=types.SimpleNamespace(info=lambda *a, **k: None,
@@ -118,11 +144,6 @@ def _watcher_core(modes, send_mode=True):
     )
     core._pushed = pushed
     core._probes = probes
-
-    def _probe():
-        probes.append(1)
-        return seq.pop(0) if seq else InputMethod.Windows
-
     core._probe = _probe
     return core
 
@@ -132,80 +153,71 @@ class WinComposeSettleTest(unittest.TestCase):
     """The startup race: the connect-time probe ran before WinCompose was up."""
 
     def _run(self, core, probe=None):
-        # A loop that lost its exit conditions would otherwise HANG the suite
-        # rather than fail it — the deadline test in particular drives exactly
-        # that mutation. The timer bounds every case; the assertions below still
-        # distinguish "returned on its own" from "was stopped".
-        guard = threading.Timer(3.0, core._wincompose_stop.set)
-        guard.start()
-        try:
-            with patch("polyhost.input.unicode_input.get_input_method",
-                       side_effect=probe or (lambda: core._probe())):
-                PolyCore._wincompose_settle_loop(core)
-        finally:
-            guard.cancel()
+        with patch("polyhost.input.unicode_input.get_input_method",
+                   side_effect=probe or (lambda: core._probe())):
+            PolyCore._wincompose_settle_loop(core)
 
     def test_pushes_when_wincompose_appears_late(self):
         core = _watcher_core([InputMethod.Windows, InputMethod.WinCompose])
         self._run(core)
         self.assertEqual(core._pushed, [InputMethod.WinCompose])
 
-    def test_stops_once_wincompose_is_seen(self):
-        """It must not keep spawning TASKLIST for the rest of the window — and it
-        must not re-push the same mode. The list is longer than the loop should
-        consume, so a runaway loop shows up as extra pushes."""
-        core = _watcher_core([InputMethod.WinCompose] + [InputMethod.Windows] * 5)
+    def test_KEEPS_watching_after_wincompose_is_seen(self):
+        """It must not stop on the state it was waiting for: that would make the
+        watch one-directional and miss WinCompose being quit later — which a
+        headless daemon has no other way to notice."""
+        core = _watcher_core([InputMethod.WinCompose, InputMethod.WinCompose,
+                              InputMethod.Windows])
+        self._run(core)
+        self.assertEqual(core._pushed, [InputMethod.WinCompose, InputMethod.Windows])
+        self.assertEqual(len(core._probes), 3, "the loop stopped early")
+
+    def test_does_not_re_push_an_unchanged_mode(self):
+        core = _watcher_core([InputMethod.WinCompose] * 4)
         self._run(core)
         self.assertEqual(core._pushed, [InputMethod.WinCompose])
 
-    def test_the_deadline_ends_it_when_wincompose_never_starts(self):
-        """WinCompose simply not installed: the loop must terminate on its own.
+    def test_runs_until_it_is_STOPPED(self):
+        """No deadline: WinCompose installed an hour in must still be caught."""
+        core = _watcher_core([InputMethod.Windows] * 20, rounds=20)
+        self._run(core)
+        self.assertEqual(len(core._probes), 20)
 
-        Asserted as ZERO probes, not as an empty push list: with the deadline
-        already expired the loop must return before spawning a single TASKLIST,
-        whereas "nothing was pushed" is also true of a loop that never stops."""
-        core = _watcher_core([InputMethod.Windows] * 50)
-        core._wincompose_deadline = 0.0    # already expired
+    def test_skips_while_the_keyboard_is_DISCONNECTED(self):
+        """Nothing to push to, and the post-connect flow re-asserts the mode —
+        so probing would only log a failed push once a minute."""
+        core = _watcher_core([InputMethod.WinCompose] * 3, connected=False)
         self._run(core)
         self.assertEqual(core._probes, [])
         self.assertEqual(core._pushed, [])
 
-    def test_respects_the_disabled_setting(self):
-        core = _watcher_core([InputMethod.WinCompose], send_mode=False)
+    def test_the_probe_interval_BACKS_OFF_after_the_boot_window(self):
+        """10 minutes at 10 s covers the logon race; a permanent watch at that
+        rate would be 8,640 TASKLIST spawns a day."""
+        core = _watcher_core([InputMethod.Windows] * 3)
+        core._wincompose_fast_until = time.monotonic() - 1.0   # window already over
+        self._run(core)
+        self.assertEqual(set(core._wincompose_stop.waits),
+                         {core.WINCOMPOSE_SLOW_INTERVAL})
+
+    def test_the_fast_interval_is_used_inside_the_boot_window(self):
+        core = _watcher_core([InputMethod.Windows] * 3)
+        self._run(core)
+        self.assertEqual(set(core._wincompose_stop.waits),
+                         {core.WINCOMPOSE_FAST_INTERVAL})
+
+    def test_a_disabled_setting_is_re_checked_rather_than_ending_the_watch(self):
+        """The setting can be turned back on while the app runs, so the loop
+        skips the round instead of returning."""
+        core = _watcher_core([InputMethod.WinCompose] * 3, send_mode=False)
         self._run(core)
         self.assertEqual(core._pushed, [])
-
-    def test_the_probe_interval_BACKS_OFF_after_the_fast_phase(self):
-        """WinCompose's start time at logon is unknown, so the window is 15 min —
-        but 15 minutes at the 5 s interval would be 180 TASKLIST spawns. The fast
-        phase covers the likely case, then the watch drops to a slow tail."""
-        core = _watcher_core([InputMethod.Windows] * 4)
-        core._wincompose_fast_until = time.monotonic() - 1.0   # fast phase already over
-        waits = []
-        real_wait = core._wincompose_stop.wait
-
-        def _record(interval):
-            waits.append(interval)
-            return real_wait(0)
-        core._wincompose_stop = types.SimpleNamespace(wait=_record, set=lambda: None)
-        core._wincompose_deadline = time.monotonic() + 0.05
-        self._run(core)
-        self.assertTrue(waits, "the loop never waited")
-        self.assertEqual(set(waits), {core.WINCOMPOSE_SETTLE_SLOW_INTERVAL})
-
-    def test_the_fast_interval_is_used_inside_the_fast_phase(self):
-        core = _watcher_core([InputMethod.Windows] * 4)
-        waits = []
-        core._wincompose_stop = types.SimpleNamespace(
-            wait=lambda i: (waits.append(i), False)[1], set=lambda: None)
-        core._wincompose_deadline = time.monotonic() + 0.05
-        self._run(core)
-        self.assertTrue(waits, "the loop never waited")
-        self.assertEqual(set(waits), {core.WINCOMPOSE_SETTLE_INTERVAL})
+        self.assertEqual(len(core._wincompose_stop.waits), 3,
+                         "the loop returned instead of skipping the round")
 
     def test_a_probe_failure_does_not_kill_the_watcher(self):
         """TASKLIST can fail transiently; the next probe must still get its turn."""
-        core = _watcher_core([InputMethod.Windows, InputMethod.WinCompose])
+        core = _watcher_core([InputMethod.WinCompose], rounds=2)
         calls = []
 
         def _probe():

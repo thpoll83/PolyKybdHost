@@ -165,7 +165,6 @@ class PolyCore(Observable):
         self._wincompose_shutting_down = False
         self._wincompose_stop = threading.Event()
         self._wincompose_thread = None
-        self._wincompose_deadline = 0.0
         self._wincompose_fast_until = 0.0
         self._wincompose_lock = threading.Lock()
         # Re-entrancy guard for the font-pack auto-flash: True only while a flash
@@ -549,17 +548,15 @@ class PolyCore(Observable):
     # Unicode input method
     # ------------------------------------------------------------------
 
-    # How long after a connect to keep re-probing for WinCompose, and how often.
-    # Two phases, because WinCompose's own start time at logon is unknown and
-    # machine-dependent ("sometimes it needs a while", field): probe briskly
-    # while it is most likely to appear, then keep a slow watch going for a
-    # quarter of an hour rather than guessing one cut-off. The slow tail costs
-    # ~26 TASKLIST calls on a background thread and only runs on a machine where
-    # WinCompose is NOT up — the loop returns the moment it is.
-    WINCOMPOSE_SETTLE_SECONDS = 900       # total window
-    WINCOMPOSE_SETTLE_FAST_SECONDS = 120  # …of which this much is at the short interval
-    WINCOMPOSE_SETTLE_INTERVAL = 5
-    WINCOMPOSE_SETTLE_SLOW_INTERVAL = 30
+    # WinCompose's start time at logon is unknown and machine-dependent
+    # ("sometimes it needs a while", field), so rather than guess a cut-off the
+    # watch simply never ends: 10 s probes for the first 10 minutes after a
+    # connect, then one a minute for as long as the core lives. A TASKLIST spawn
+    # is ~50 ms on a background thread, so the steady state is well under a
+    # tenth of a percent of one core.
+    WINCOMPOSE_FAST_SECONDS = 600   # the boot window, at the short interval
+    WINCOMPOSE_FAST_INTERVAL = 10
+    WINCOMPOSE_SLOW_INTERVAL = 60
 
     def _push_unicode_mode(self, mode):
         """Submit a unicode-input-method push (HID cmd 20), deduped.
@@ -623,9 +620,10 @@ class PolyCore(Observable):
         with self._wincompose_lock:
             if self._wincompose_shutting_down:
                 return   # shutdown() already set the stop Event — see below
-            now = time.monotonic()
-            self._wincompose_deadline = now + self.WINCOMPOSE_SETTLE_SECONDS
-            self._wincompose_fast_until = now + self.WINCOMPOSE_SETTLE_FAST_SECONDS
+            # A reconnect re-opens the boot window: it may be a replug on a
+            # machine that has just come up, and the probes are cheap.
+            self._wincompose_fast_until = (
+                time.monotonic() + self.WINCOMPOSE_FAST_SECONDS)
             if self._wincompose_thread is not None and self._wincompose_thread.is_alive():
                 return   # already watching; the deadline above extends it
             self._wincompose_stop.clear()
@@ -635,31 +633,39 @@ class PolyCore(Observable):
             self._wincompose_thread.start()
 
     def _wincompose_settle_loop(self):
-        from polyhost.input.unicode_input import get_input_method, InputMethod
+        """Watch the unicode input method for the life of the core.
+
+        ⚠️ It deliberately does NOT stop once WinCompose is seen, and has no
+        deadline. Stopping there would make the watch one-directional — it would
+        catch WinCompose starting late and never notice it being QUIT, which
+        leaves the keyboard emitting compose sequences that produce nothing.
+        Only the tray's menu-open probe covers that today, and a headless daemon
+        has no tray. A deadline would just be another guess at how slow a logon
+        can be."""
+        from polyhost.input.unicode_input import get_input_method
         while True:
-            # Re-read the phase each pass: a reconnect extends both marks, which
-            # puts the watch back on the short interval as well as the long window.
-            fast = time.monotonic() < self._wincompose_fast_until
-            interval = (self.WINCOMPOSE_SETTLE_INTERVAL if fast
-                        else self.WINCOMPOSE_SETTLE_SLOW_INTERVAL)
+            # Re-read the phase each pass: a reconnect re-opens the boot window.
+            interval = (self.WINCOMPOSE_FAST_INTERVAL
+                        if time.monotonic() < self._wincompose_fast_until
+                        else self.WINCOMPOSE_SLOW_INTERVAL)
             if self._wincompose_stop.wait(interval):
                 return
-            if time.monotonic() >= self._wincompose_deadline:
-                return
             if not self.poly_settings.get("unicode_send_composition_mode"):
-                return
+                continue   # re-check: the setting can be turned back on
+            if not self.connected:
+                # Nothing to push to, and the post-connect flow re-asserts the
+                # mode anyway — so a disconnected keyboard is not a reason to
+                # log a failed push once a minute.
+                continue
             try:
                 mode = get_input_method()
             except Exception:
-                self.log.debug("WinCompose settle probe failed", exc_info=True)
+                self.log.debug("WinCompose probe failed", exc_info=True)
                 continue
             if mode != self._last_pushed_unicode_mode:
-                self.log.info(
-                    "Unicode input method changed to %s after the connect "
-                    "(WinCompose started late?) — re-applying.", mode.name)
+                self.log.info("Unicode input method is now %s — re-applying.",
+                              mode.name)
                 self._push_unicode_mode(mode)
-            if mode == InputMethod.WinCompose:
-                return   # settled on the state we were waiting for
 
     def report_window(self, handle, name, title, os=None, url=None):
         """Inject an external active-window report into remote window tracking
