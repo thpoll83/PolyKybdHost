@@ -161,6 +161,7 @@ class PolyCore(Observable):
         self._wincompose_stop = threading.Event()
         self._wincompose_thread = None
         self._wincompose_deadline = 0.0
+        self._wincompose_fast_until = 0.0
         self._wincompose_lock = threading.Lock()
         # Re-entrancy guard for the font-pack auto-flash: True only while a flash
         # is actually running, so a connection flap mid-flash can't start a second
@@ -537,8 +538,16 @@ class PolyCore(Observable):
     # ------------------------------------------------------------------
 
     # How long after a connect to keep re-probing for WinCompose, and how often.
-    WINCOMPOSE_SETTLE_SECONDS = 120
+    # Two phases, because WinCompose's own start time at logon is unknown and
+    # machine-dependent ("sometimes it needs a while", field): probe briskly
+    # while it is most likely to appear, then keep a slow watch going for a
+    # quarter of an hour rather than guessing one cut-off. The slow tail costs
+    # ~26 TASKLIST calls on a background thread and only runs on a machine where
+    # WinCompose is NOT up — the loop returns the moment it is.
+    WINCOMPOSE_SETTLE_SECONDS = 900       # total window
+    WINCOMPOSE_SETTLE_FAST_SECONDS = 120  # …of which this much is at the short interval
     WINCOMPOSE_SETTLE_INTERVAL = 5
+    WINCOMPOSE_SETTLE_SLOW_INTERVAL = 30
 
     def _push_unicode_mode(self, mode):
         """Submit a unicode-input-method push (HID cmd 20), deduped.
@@ -574,7 +583,9 @@ class PolyCore(Observable):
         if sys.platform != "win32":
             return
         with self._wincompose_lock:
-            self._wincompose_deadline = time.monotonic() + self.WINCOMPOSE_SETTLE_SECONDS
+            now = time.monotonic()
+            self._wincompose_deadline = now + self.WINCOMPOSE_SETTLE_SECONDS
+            self._wincompose_fast_until = now + self.WINCOMPOSE_SETTLE_FAST_SECONDS
             if self._wincompose_thread is not None and self._wincompose_thread.is_alive():
                 return   # already watching; the deadline above extends it
             self._wincompose_stop.clear()
@@ -585,7 +596,14 @@ class PolyCore(Observable):
 
     def _wincompose_settle_loop(self):
         from polyhost.input.unicode_input import get_input_method, InputMethod
-        while not self._wincompose_stop.wait(self.WINCOMPOSE_SETTLE_INTERVAL):
+        while True:
+            # Re-read the phase each pass: a reconnect extends both marks, which
+            # puts the watch back on the short interval as well as the long window.
+            fast = time.monotonic() < self._wincompose_fast_until
+            interval = (self.WINCOMPOSE_SETTLE_INTERVAL if fast
+                        else self.WINCOMPOSE_SETTLE_SLOW_INTERVAL)
+            if self._wincompose_stop.wait(interval):
+                return
             if time.monotonic() >= self._wincompose_deadline:
                 return
             if not self.poly_settings.get("unicode_send_composition_mode"):

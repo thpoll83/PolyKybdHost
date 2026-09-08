@@ -2651,15 +2651,23 @@ class PolyHost(QApplication):
         then the first chance to notice, and the old guard threw it away, so the
         keyboard stayed on Windows sequences (no emoji) for the whole session.
         Re-applying costs one HID command, and the firmware only touches EEPROM
-        when the mode actually changes, so a redundant push is free."""
+        when the mode actually changes, so a redundant push is free.
+
+        ⚠️ It fires in BOTH directions. refresh_unicode_mode's own docstring has
+        always said it covers "installing (or quitting) WinCompose", but the
+        guard here only ever fired on appear — so quitting WinCompose left the
+        keyboard emitting WinCompose sequences, which produce nothing once the
+        composer is gone. Same silent-until-you-need-it shape as the appear case,
+        just less common."""
         if self.wincompose_action is None:
             return
         running = wincompose_running()
         self.wincompose_action.setVisible(not running)
-        # `!=` rather than `is False`, so the first probe (was_running is None)
-        # also re-applies — see the note above.
-        if running and self._wincompose_was_running != running:
-            self.log.info("WinCompose is running — re-applying the unicode input mode.")
+        # Any change of state, including the first probe (was_running is None) —
+        # see the two notes above.
+        if self._wincompose_was_running != running:
+            self.log.info("WinCompose is %srunning — re-applying the unicode input mode.",
+                          "" if running else "no longer ")
             try:
                 ok, payload = self.core.refresh_unicode_mode()
             except Exception as e:  # noqa: BLE001 — no keyboard / daemon not up yet

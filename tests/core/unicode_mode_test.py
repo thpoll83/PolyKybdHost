@@ -103,6 +103,8 @@ def _watcher_core(modes, send_mode=True):
 
     core = types.SimpleNamespace(
         WINCOMPOSE_SETTLE_INTERVAL=0.001,
+        WINCOMPOSE_SETTLE_SLOW_INTERVAL=0.002,
+        _wincompose_fast_until=time.monotonic() + 1.0,
         _wincompose_stop=threading.Event(),
         # A real (short) deadline, not inf: a regression that fails to stop on
         # WinCompose must FAIL this suite, not hang it.
@@ -172,6 +174,34 @@ class WinComposeSettleTest(unittest.TestCase):
         core = _watcher_core([InputMethod.WinCompose], send_mode=False)
         self._run(core)
         self.assertEqual(core._pushed, [])
+
+    def test_the_probe_interval_BACKS_OFF_after_the_fast_phase(self):
+        """WinCompose's start time at logon is unknown, so the window is 15 min —
+        but 15 minutes at the 5 s interval would be 180 TASKLIST spawns. The fast
+        phase covers the likely case, then the watch drops to a slow tail."""
+        core = _watcher_core([InputMethod.Windows] * 4)
+        core._wincompose_fast_until = time.monotonic() - 1.0   # fast phase already over
+        waits = []
+        real_wait = core._wincompose_stop.wait
+
+        def _record(interval):
+            waits.append(interval)
+            return real_wait(0)
+        core._wincompose_stop = types.SimpleNamespace(wait=_record, set=lambda: None)
+        core._wincompose_deadline = time.monotonic() + 0.05
+        self._run(core)
+        self.assertTrue(waits, "the loop never waited")
+        self.assertEqual(set(waits), {core.WINCOMPOSE_SETTLE_SLOW_INTERVAL})
+
+    def test_the_fast_interval_is_used_inside_the_fast_phase(self):
+        core = _watcher_core([InputMethod.Windows] * 4)
+        waits = []
+        core._wincompose_stop = types.SimpleNamespace(
+            wait=lambda i: (waits.append(i), False)[1], set=lambda: None)
+        core._wincompose_deadline = time.monotonic() + 0.05
+        self._run(core)
+        self.assertTrue(waits, "the loop never waited")
+        self.assertEqual(set(waits), {core.WINCOMPOSE_SETTLE_INTERVAL})
 
     def test_a_probe_failure_does_not_kill_the_watcher(self):
         """TASKLIST can fail transiently; the next probe must still get its turn."""
