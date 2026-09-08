@@ -1519,6 +1519,27 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     loses, `source_info()` says so ("a firmware checkout is present but is not
     newer") — silence there reads as "my clone is being used" and sends the next
     round after the clone.
+  - ⚠️ **A STALE export costs a KEYCODE ITS PREVIEW, and it reads as a rendered
+    keycap rather than a missing one — the key falls back to its keycode TEXT.** The
+    shipped copy carries a `fw_version`, so a keycode added since the last
+    regeneration has no name and no legend in it: `KC_MACRO_REC` shipped at export
+    0.17.2 against firmware 0.19.1 and the REC key drew its token, reported as *"the
+    rec button has no preview"* (field, 2026-09-08). `scripts/export_preview_data.py
+    --check` names every stale file; regenerating writes all four (they are one
+    snapshot — leaving them at different `fw_version`s is worse than the staleness).
+    - ⚠️ **A DEVELOPER CANNOT SEE THIS**, which is why it needed a test that pins
+      the source. A firmware checkout that is newer wins the compare above, so the
+      editor draws the clone's legends and the stale export is invisible on the very
+      machine that would regenerate it. `test_a_STATE_DEPENDENT_legend_previews_too`
+      builds `KeycapPreview(source="shipped")` for exactly that reason — confirmed by
+      running it against the pre-regeneration export: green through the checkout, red
+      against the shipped copy.
+    - **Regenerating catches up on everything else too, so expect a wide diff.** The
+      0.17.2 → 0.19.1 pass moved ~200 `lang_lut` grid cells: the workbook had gained
+      the `altgrhalf` settings rows (which renumber every row under them) and the
+      2026-09-03 cursor-nudge tuning. That is the export doing its job; the pixel
+      parity test above is what says the result is right.
+
   - ⚠️ **The two sources are pinned to draw IDENTICALLY, by rendering, not by
     comparing structures.** `test_the_two_sources_draw_the_SAME_keycaps` renders
     every keycode the editor can show from both and requires the pixels to match

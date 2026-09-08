@@ -20,7 +20,7 @@ try:
     from polyhost.device.device_settings import DeviceSettings
     from polyhost.gui.layout_dialog.kb_layout_dialog import (
         KEYCAP_PREVIEW, KEYCAP_REAL, KEYCAP_SYMBOL, KbLayoutDialog)
-    from polyhost.gui.layout_dialog.keycap_preview import KC_TRANSPARENT
+    from polyhost.gui.layout_dialog.keycap_preview import KC_TRANSPARENT, KeycapPreview
     from polyhost.gui.layout_dialog.macro_tab import MacroTab, QK_MACRO
     from polyhost.services import macro_label as ml
     _APP = QApplication.instance() or QApplication([])
@@ -85,6 +85,19 @@ def _editor(core=None, previews=True):
     if previews:
         dlg.set_keycap_mode(KEYCAP_PREVIEW)
     return dlg
+
+
+def _ink(img) -> int:
+    """Lit pixels in a rendered keycap.
+
+    ⚠️ NOT `pixel & 0xFFFFFF` -- the tile is drawn in the panel's own colours (a dark
+    ground, a lit foreground), never pure black on white, so masking against 0 counts
+    EVERY pixel and a blank keycap passes. Ink is whatever is not the darkest value
+    present, which needs no constant and survives a palette change.
+    """
+    vals = [img.pixel(x, y) for x in range(img.width()) for y in range(img.height())]
+    ground = min(vals)
+    return sum(1 for v in vals if v != ground)
 
 
 class EightLayerCore(FakeCore):
@@ -404,6 +417,48 @@ class MacroKeycapInEditorTest(unittest.TestCase):
             with self.subTest(keycode=n):
                 self.assertIn(n, names, "not parsed out of keycode_helper.h")
                 self.assertIsNotNone(p.render(names[n], None), f"{n} drew nothing")
+
+    def test_a_STATE_DEPENDENT_legend_previews_too(self):
+        """A whole family of legends lives in `to_static_text()` (poly_keymap.c) rather
+        than in `keycode_helper.c`, because they read SYNCED state the other function
+        never receives -- the record key states whether it will start or stop, the
+        layout keys carry their own on/off switch, the unicode-mode keys likewise.
+
+        The export reads both switches, so these preview like any other key. What they
+        catch that the neighbouring test does not is a STALE `res/preview/` export: it
+        is generated from a firmware checkout, so a keycode added after the last
+        regeneration has no legend and its key silently keeps its keycode TEXT -- which
+        looks like a rendered keycap, not like a missing one (field, 2026-09-08: the REC
+        key drew nothing because the shipped export was still fw 0.17.2).
+
+        ⚠️ Addressed by NAME, not through `_custom`: that map is parsed out of
+        `keycode_helper.h` and so holds PolyKybd's own keycodes only, while
+        `QK_UNICODE_MODE_WINDOWS` is a stock QMK one whose legend lives in
+        `to_static_text()` all the same. `render()` resolves the name first, so a name
+        is the one address that reaches every shape here.
+
+        ⚠️ And it pins `source="shipped"`, or it cannot fail at all on a developer's
+        machine: a firmware checkout that is NEWER wins the version compare, so the
+        editor draws the clone's legends and a stale export sails through. Confirmed by
+        running this against the pre-regeneration export -- green with the checkout,
+        red without it. The shipped copy is what an install without a clone renders,
+        which is the thing being asserted.
+        """
+        p = KeycapPreview(source="shipped")
+        self.assertTrue(p._load(), "the shipped preview data did not load")
+        kc_of = {n: v for v, n in p._custom.items()}
+        for n in ("KC_MACRO_REC",                 # synced rec_state
+                  "KC_L0",                        # synced def_layer
+                  "QK_UNICODE_MODE_WINDOWS"):     # stock QMK keycode, poly legend
+            with self.subTest(keycode=n):
+                # assertTrue, not assertIn: the container is every shipped legend,
+                # and dumping ~180 of them buries the one name that is missing.
+                self.assertTrue(n in p._legends,
+                                f"{n} is missing from res/preview/ -- regenerate the "
+                                f"export (scripts/export_preview_data.py)")
+                img = p.render(kc_of.get(n, 0), n)
+                self.assertIsNotNone(img, f"{n} drew nothing")
+                self.assertGreater(_ink(img), 0, f"{n} drew an EMPTY keycap")
 
     def test_a_legend_that_CHANGES_FONT_SIZE_now_RENDERS(self):
         """`HINT_MID` / `HINT_SMALL` switch to a smaller face for the rest of the
