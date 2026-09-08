@@ -172,6 +172,45 @@ def _abort_cleanup(hid) -> None:
         pass
 
 
+# The GET_ID (cmd 6) reply carries TAG-LED blocks after the NUL-terminated id string:
+#
+#   ['V'][count][u16 little-endian content_version x count]   font-pack bundle versions
+#   ['G'][u16 little-endian generation]                       "something changed on the
+#                                                              board" -- see the firmware
+#                                                              CLAUDE.md note
+#
+# ⚠️ The blocks are APPEND-ONLY and a reader STOPS at the first tag it does not know:
+# an unknown block carries no length, so it cannot be stepped over. Firmware must append
+# a new block AFTER the existing ones. Inserting one would hide every block behind it
+# from every deployed host -- and prepending one before 'V' is worse still, because a
+# host older than the change reads "no bundles on the device" and re-flashes all of them
+# on every connect.
+def _find_id_block(reply, tag: int):
+    """Offset of `tag`'s payload within a GET_ID reply, or None when it is absent,
+    truncated, or sits behind a block this host does not know how to step over."""
+    raw = bytes(reply)
+    nul = raw.find(b"\x00", 3)            # id string starts at offset 3 ("P\x06.")
+    if nul < 0:
+        return None
+    p = nul + 1
+    while p < len(raw):
+        t = raw[p]
+        if t == ord("V"):
+            if p + 2 > len(raw):
+                return None
+            size = 2 + raw[p + 1] * 2
+        elif t == ord("G"):
+            size = 3
+        else:
+            return None                   # unknown tag, or the report's zero fill
+        if p + size > len(raw):
+            return None                   # the block runs past the report
+        if t == tag:
+            return p + 1
+        p += size
+    return None
+
+
 def parse_id_version_block(reply) -> dict:
     """Parse the per-bundle font-pack version block from a GET_ID (cmd 6) reply.
 
@@ -179,18 +218,33 @@ def parse_id_version_block(reply) -> dict:
     ['V'][count][u16 little-endian content_version x count] in bundle-id order.
     Returns {bundle_index: content_version} ({} if the block is absent/malformed,
     e.g. pre-v6 firmware whose reply has no block)."""
+    p = _find_id_block(reply, ord("V"))
+    if p is None:
+        return {}
     raw = bytes(reply)
-    nul = raw.find(b"\x00", 3)            # id string starts at offset 3 ("P\x06.")
-    if nul < 0:
-        return {}
-    p = nul + 1
-    if p + 2 > len(raw) or raw[p] != ord("V"):
-        return {}
-    count = raw[p + 1]
-    p += 2
-    if p + count * 2 > len(raw):
-        return {}
+    count = raw[p]
+    p += 1
     return {i: int.from_bytes(raw[p + i * 2:p + i * 2 + 2], "little") for i in range(count)}
+
+
+def parse_id_state_generation(reply):
+    """The board's state generation from a GET_ID reply, or None when it has no block.
+
+    The firmware bumps this whenever the BOARD changes something the host may be
+    caching -- a setting changed with a keycode, a macro recorded, a key reassigned.
+    The reconnect probe already fetches GET_ID every second, so a host that watches
+    this value learns about such a change within ~1 s without a second command and
+    without the firmware pushing anything.
+
+    None means "this firmware has no block", NOT "nothing has changed": a caller must
+    fall back to whatever refresh it did before (reload on view-open) rather than
+    concluding the board is idle. A real generation legitimately starts at 0.
+    """
+    p = _find_id_block(reply, ord("G"))
+    if p is None:
+        return None
+    raw = bytes(reply)
+    return int.from_bytes(raw[p:p + 2], "little")
 
 
 def decide_stale_bundles(device_versions: dict, shipped: list) -> list:

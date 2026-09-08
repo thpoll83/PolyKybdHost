@@ -16,7 +16,7 @@ from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, c
 from polyhost.device.command_ids import (Cmd, HidId, IdleStyle, OsType, GlyphScript,
                                          GlyphSize, AiState)
 from polyhost.device.hid_helper import HidHelper
-from polyhost.device.hid_fontpack import parse_id_version_block
+from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE
 from polyhost.device.overlay_cache import OverlayMRUCache
@@ -74,7 +74,12 @@ CRASH_RECORD_MIN_PROTOCOL = 16
 # the AI key shows, and the key press that asks us to raise the agent's window. The
 # PRESS does not depend on this -- it arrives as a console line, which any firmware
 # carrying the key prints -- only the status push is gated.
-AI_STATE_MIN_PROTOCOL = 17
+AI_STATE_MIN_PROTOCOL = 18
+# Minimum firmware PROTOCOL_VERSION for the VOLATILE flag on the unicode-mode
+# command (cmd 20, data[3]): apply the mode in RAM without writing it to EEPROM.
+# Used at Windows logon, where an absent wincompose.exe cannot yet be told apart
+# from one that has not started — see PolyCore._unicode_mode_is_ambiguous.
+UNICODE_MODE_VOLATILE_MIN_PROTOCOL = 17
 
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
@@ -95,6 +100,7 @@ FEATURE_MIN_PROTOCOL = {
     "macros": MACRO_MIN_PROTOCOL,
     "crash_record": CRASH_RECORD_MIN_PROTOCOL,
     "ai_state": AI_STATE_MIN_PROTOCOL,
+    "unicode_mode_volatile": UNICODE_MODE_VOLATILE_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -189,6 +195,8 @@ class PolyKybd:
         # {bundle_index: content_version} from the last GET_ID (protocol >= 6); empty
         # on older firmware. Drives auto-flashing of stale/missing font-pack bundles.
         self.fontpack_bundle_versions = {}
+        # None until a GET_ID lands, and None forever on firmware with no 'G' block.
+        self.state_generation = None
 
         # Statistics
         self.stat_plain = 0
@@ -300,6 +308,12 @@ class PolyKybd:
             # RAW reply before decoding — it lives in binary after the string's NUL.
             if result:
                 self.fontpack_bundle_versions = parse_id_version_block(msg)
+                # "Something changed on the board." The probe fetches GET_ID every
+                # second, so watching this is how the host learns about a setting
+                # changed with a keycode, a macro recorded, or a key reassigned --
+                # with no extra command and nothing pushed from the firmware.
+                # None = this firmware has no block; do NOT read that as "unchanged".
+                self.state_generation = parse_id_state_generation(msg)
             msg = msg.decode().strip('\x00')
             if not result:
                 return False, msg
@@ -435,9 +449,24 @@ class PolyKybd:
         self.log.info("Disable Overlays...")
         return self.hid.send_and_read_validate(compose_cmd(Cmd.OVERLAY_FLAGS_OFF, 0x01))
 
-    def set_unicode_mode(self, mode: InputMethod) -> tuple[bool, Any]:
-        self.log.info("Setting unicode mode to %d", mode.value)
-        return self.hid.send_and_read_validate(compose_cmd(Cmd.SET_UNICODE_MODE, mode.value))
+    def set_unicode_mode(self, mode: InputMethod,
+                         persist: bool = True) -> tuple[bool, Any]:
+        """Set the keyboard's unicode input method (cmd 20).
+
+        ``persist=False`` sets it in RAM only (protocol 17+, the VOLATILE flag in
+        data[3]) — for a reading the host is not yet sure of, so a transient value
+        is never written to EEPROM. A zero-padded report means data[3] == 0 on an
+        older host, i.e. persist, so the flag is backwards-compatible on the wire;
+        it is still gated, because an older FIRMWARE would silently PERSIST a mode
+        the caller explicitly asked not to store."""
+        if not persist and not self.supports("unicode_mode_volatile"):
+            return False, ("The keyboard firmware is too old for a volatile unicode "
+                           "mode (needs protocol "
+                           f"{UNICODE_MODE_VOLATILE_MIN_PROTOCOL}).")
+        self.log.info("Setting unicode mode to %d (%s)", mode.value,
+                      "persist" if persist else "volatile")
+        return self.hid.send_and_read_validate(
+            compose_cmd(Cmd.SET_UNICODE_MODE, mode.value, 0 if persist else 1))
 
     def set_brightness(self, brightness: int, flags: int = 0) -> tuple[bool, Any]:
         # flags (protocol >= 5, firmware base/com.h): bit0 VOLATILE (daylight,
@@ -588,9 +617,9 @@ class PolyKybd:
             pass
         return False, 0
 
-    # --- agent status light (cmd 40, protocol v17+) --------------------------
+    # --- agent status light (cmd 40, protocol v18+) --------------------------
     def set_ai_state(self, state: "AiState | int") -> tuple[bool, Any]:
-        """Set what the AI key shows (cmd 40, protocol v17+).
+        """Set what the AI key shows (cmd 40, protocol v18+).
 
         RAM only on the keyboard: the status describes a process on THIS machine, so
         it is meaningless after a reboot and the host re-pushes it on connect.

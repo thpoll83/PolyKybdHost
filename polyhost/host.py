@@ -8,7 +8,7 @@ import threading
 import time
 
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtGui import QPalette, QColor
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QApplication,
     QSystemTrayIcon,
@@ -30,7 +30,10 @@ from polyhost.device.command_ids import IdleStyle, GlyphScript, GlyphSize
 from polyhost.gui.file_dialogs import get_open_file_name
 from polyhost.gui.get_icon import get_icon
 from polyhost.services import log_bundle
-from polyhost.gui.theme import apply_dark_palette
+from polyhost.gui.theme import apply_theme
+from polyhost.services import os_theme
+from polyhost.services.os_theme import THEME_AUTO
+from polyhost.settings import read_setting
 from polyhost.gui.update_ui import UpdateProgressController
 from polyhost.gui.update_dialog import confirm_update
 
@@ -550,6 +553,11 @@ class PolyHost(QApplication):
             self.glyph_actions[script.value] = act
             if script is GlyphScript.STANDARD:
                 self.glyph_script_menu.addSeparator()
+        # Each entry previews its own script (icon + a bigger sample on hover),
+        # drawn from the shipped fantasy bundle — built on the first show, not
+        # here, so a user who never opens the submenu pays nothing at startup.
+        self.glyph_script_menu.setToolTipsVisible(True)
+        self._glyph_previews_built = False
         # noinspection PyUnresolvedReferences
         self.glyph_script_menu.aboutToShow.connect(self.refresh_glyph_script_menu)
 
@@ -657,6 +665,12 @@ class PolyHost(QApplication):
             # quit), without polling in the background.
             # noinspection PyUnresolvedReferences
             self.menu.aboutToShow.connect(self._refresh_wincompose_action)
+
+        # The OS theme can change while the tray sits there for weeks, so
+        # re-follow it whenever the menu opens — that is when a mismatch is on
+        # screen, and the check is a registry read (a cached one elsewhere).
+        # noinspection PyUnresolvedReferences
+        self.menu.aboutToShow.connect(self._refresh_theme)
 
         # --- Maintenance: the rare-but-legitimate repair actions ---------------
         self.cmdMenu.build_maintenance_menu(self.menu)
@@ -878,8 +892,27 @@ class PolyHost(QApplication):
         return self.core.kb_sw_version
 
     def set_style(self):
-        """Dark Fusion theme — shared with PolyForwarder (gui/theme.py)."""
-        apply_dark_palette(self)
+        """Fusion, dark or light per the OS — shared with PolyForwarder
+        (gui/theme.py). `ui_theme` ('auto' by default) overrides the desktop."""
+        self._theme = apply_theme(self, read_setting("ui_theme", THEME_AUTO))
+
+    def _refresh_theme(self):
+        """Re-follow the OS theme, so switching the desktop to light does not
+        need a restart. Called when the tray menu opens (the moment a mismatch
+        is visible) and after the settings dialog, which can change `ui_theme`.
+
+        A palette change propagates to the open widgets by itself; the
+        glyph-script previews do not, because they are rendered pixmaps whose
+        ink was picked for the old palette — so drop them and let the submenu
+        rebuild them on its next show."""
+        os_theme.forget_detected()
+        theme = apply_theme(self, read_setting("ui_theme", THEME_AUTO))
+        if theme != getattr(self, "_theme", None):
+            self.log.info("Switched to the %s theme.", theme)
+            self._theme = theme
+            self._glyph_previews_built = False
+            for act in self.glyph_actions.values():
+                act.setIcon(QIcon())
 
     @property
     def _update_progress(self):
@@ -1473,9 +1506,14 @@ class PolyHost(QApplication):
             else:
                 self.poly_settings.set_all(updated)
                 # In-process mode writes settings directly (bypassing
-                # core.settings_set), so nudge the core to recompute + push the
-                # daylight brightness now rather than waiting for the next cycle.
-                self.core.refresh_daylight_brightness()
+                # core.settings_set), so the core has to be told: it owns every
+                # side effect a setting has on the live device — the daylight
+                # brightness push, the unicode settle watcher — and which ones
+                # exist is its business, not the dialog's.
+                self.core.note_settings_changed()
+            # `ui_theme` may be among them — apply it now rather than at the
+            # next restart.
+            self._refresh_theme()
         dlg.close()
 
     def open_log(self):
@@ -1957,7 +1995,29 @@ class PolyHost(QApplication):
             self.report_device_result("Error", f"Could not set idle style: {msg}")
             self.refresh_idle_style_menu()
 
+    def _build_glyph_script_previews(self):
+        # Give each entry a preview of its own script, rendered from the shipped
+        # fantasy bundle (STANDARD previews the normal Latin face) — the icon is
+        # two glyphs, which is all a 16 px menu icon can carry, and the tooltip a
+        # longer sample. Built once, on the first show; a bundle that is missing
+        # or unreadable just leaves the menu as it was.
+        if self._glyph_previews_built:
+            return
+        self._glyph_previews_built = True
+        try:
+            from polyhost.gui.glyph_script_icon import glyph_script_icon, glyph_script_tooltip
+            for value, act in self.glyph_actions.items():
+                icon = glyph_script_icon(value)
+                if icon is not None:
+                    act.setIcon(icon)
+                tip = glyph_script_tooltip(value)
+                if tip:
+                    act.setToolTip(tip)
+        except Exception as e:  # noqa: BLE001 - a preview must never cost the menu
+            self.log.debug("No glyph-script previews: %s", e)
+
     def refresh_glyph_script_menu(self):
+        self._build_glyph_script_previews()
         # Read the active glyph script from the device and tick the matching entry;
         # on failure (old firmware / disconnected) leave all unchecked.
         ok, value = self.core.get_glyph_script()
@@ -2584,22 +2644,51 @@ class PolyHost(QApplication):
         fine and always current — no background polling). When WinCompose has
         appeared since the last look, re-push the unicode input mode: the core
         only sends it on connect, so a fresh install would otherwise not reach
-        the keyboard until the next replug."""
+        the keyboard until the next replug.
+
+        ⚠️ The FIRST probe counts too. This used to skip it on the reasoning that
+        "startup already pushed the mode on connect" — but the bug worth catching
+        is precisely that that push was WRONG: at logon the core probes before
+        WinCompose has started and pushes plain Windows. The first menu open is
+        then the first chance to notice, and the old guard threw it away, so the
+        keyboard stayed on Windows sequences (no emoji) for the whole session.
+        Re-applying costs one HID command, and the firmware only touches EEPROM
+        when the mode actually changes, so a redundant push is free.
+
+        ⚠️ It fires in BOTH directions. refresh_unicode_mode's own docstring has
+        always said it covers "installing (or quitting) WinCompose", but the
+        guard here only ever fired on appear — so quitting WinCompose left the
+        keyboard emitting WinCompose sequences, which produce nothing once the
+        composer is gone. Same silent-until-you-need-it shape as the appear case,
+        just less common."""
         if self.wincompose_action is None:
             return
         running = wincompose_running()
         self.wincompose_action.setVisible(not running)
-        # Don't re-apply on the first probe (startup already pushed the mode on
-        # connect) — only on a False → True transition observed by this GUI.
-        if running and self._wincompose_was_running is False:
-            self.log.info("WinCompose is now running — re-applying the unicode input mode.")
-            try:
-                ok, payload = self.core.refresh_unicode_mode()
-            except Exception as e:  # noqa: BLE001 — no keyboard / daemon not up yet
-                ok, payload = False, e
-            if not ok:
-                self.log.warning("Could not re-apply the unicode input mode: %s", payload)
+        # Any change of state, including the first probe (was_running is None) —
+        # see the two notes above.
+        if self._wincompose_was_running != running:
+            self.log.info("WinCompose is %srunning — re-applying the unicode input mode.",
+                          "" if running else "no longer ")
+            # ⚠️ OFF the Qt main thread. refresh_unicode_mode bottoms out in a
+            # bounded run_sync (PolyCore.DEVICE_CALL_TIMEOUT, 5 s) — and in
+            # client mode in an RPC to the daemon that does the same — so a
+            # paused or mid-flash keyboard would freeze the tray for seconds
+            # while the menu is trying to open. Nothing renders from the result,
+            # so it only needs to be logged; RemoteCore takes its own _rpc_lock,
+            # which is what makes calling it off-main-thread safe.
+            threading.Thread(target=self._reapply_unicode_mode,
+                             name="poly-unicode-refresh", daemon=True).start()
         self._wincompose_was_running = running
+
+    def _reapply_unicode_mode(self):
+        """Re-push the unicode input mode; runs on its own thread (see caller)."""
+        try:
+            ok, payload = self.core.refresh_unicode_mode()
+        except Exception as e:  # noqa: BLE001 — no keyboard / daemon not up yet
+            ok, payload = False, e
+        if not ok:
+            self.log.warning("Could not re-apply the unicode input mode: %s", payload)
 
     def _on_install_wincompose_clicked(self):
         """Explain what WinCompose is, then download + start its installer.

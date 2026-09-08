@@ -5,13 +5,29 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import (
     QDialog, QFormLayout, QDialogButtonBox,
     QLabel, QLineEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QSizePolicy,
-    QScrollArea, QPushButton
+    QScrollArea, QPushButton, QComboBox
 )
 
 from polyhost.gui.get_icon import get_icon
+from polyhost.services.os_theme import THEMES
+
+# Settings whose value is one of a fixed set get a dropdown rather than the
+# free-text fallback: `ui_theme` is the first one a normal user is expected to
+# touch, and a typo there silently falls back to "auto" instead of doing what
+# they asked.
+CHOICES = {
+    "ui_theme": THEMES,
+}
 
 
-def create_editor(value):
+def create_editor(value, key=None):
+    choices = CHOICES.get(key)
+    if choices:
+        combo = QComboBox()
+        combo.addItems(choices)
+        index = combo.findText(str(value))
+        combo.setCurrentIndex(index if index >= 0 else 0)
+        return combo
     if isinstance(value, bool):
         checkbox = QCheckBox()
         checkbox.setChecked(value)
@@ -87,7 +103,7 @@ class SettingsDialog(QDialog):
                 parts = cap.split(" ",1)
                 label = QLabel(parts[1])
                 label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-                widget = create_editor(value)
+                widget = create_editor(value, full_key)
 
                 field_container = QWidget()
                 field_layout = QHBoxLayout()
@@ -135,6 +151,8 @@ class SettingsDialog(QDialog):
                 updated[key] = widget.value()
             elif isinstance(widget, QDoubleSpinBox):
                 updated[key] = widget.value()
+            elif isinstance(widget, QComboBox):
+                updated[key] = widget.currentText()
             elif isinstance(widget, QLineEdit):
                 updated[key] = widget.text()
         return updated

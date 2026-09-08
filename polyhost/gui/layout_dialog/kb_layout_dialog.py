@@ -6,7 +6,8 @@ import traceback
 from PyQt5.QtGui import QTransform, QGuiApplication, QCursor, QPixmap
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox, QCheckBox,
+    QPushButton, QLabel, QLineEdit, QTextEdit, QMessageBox,
+    QToolButton, QButtonGroup,
     QGraphicsScene, QDialog, QFormLayout
 )
 
@@ -15,6 +16,7 @@ from polyhost.gui.button_array import ButtonArray
 from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
 from polyhost.gui.layout_dialog.keycap_preview import KeycapPreview
+from polyhost.gui import oled_look
 from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
 from polyhost.gui.layout_dialog.macro_tab import QK_MACRO
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
@@ -23,6 +25,21 @@ from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
 from polyhost.kle.kle_praser import parse_kle
 from polyhost.services import macro_label as ml
 from polyhost.services import macro_look as mkl
+
+# How a key is drawn. SYMBOL is the keycode text, PREVIEW the flat 72x40 keycap the
+# keyboard composes, REAL that keycap through the panel simulation the font-pack
+# inspector uses -- emissive pixels, bloom, the staggered grid and the diffusion of
+# the clear cover. Three modes rather than a checkbox because REAL answers a question
+# PREVIEW cannot: whether a legend still READS once the cover has softened it.
+KEYCAP_SYMBOL = "symbol"
+KEYCAP_PREVIEW = "preview"
+KEYCAP_REAL = "real"
+
+# Output pixels per logical OLED pixel for REAL. The grid, the bloom radius and the
+# per-pixel jitter are all sized from it, so at 1 there is nothing to see; the tile
+# then scales the larger image down, and zooming the view in reveals more of the panel
+# rather than a bigger flat bitmap.
+KEYCAP_REAL_SCALE = 3
 
 KEY_SCALE = 80.0
 KLE_DEFINITION = pathlib.Path(__file__).parent.parent.parent.resolve() / "res" / "polykybd-split72.json"
@@ -104,15 +121,21 @@ class KbLayoutDialog(QMainWindow):
         # OFF by default: the editor's job is assigning keycodes, and a board of
         # pictures makes the keycode you are about to change harder to read, not
         # easier. The previews are the thing you turn ON to check your work.
-        self._show_keycaps = False
+        # SYMBOL / PREVIEW / REAL, driving the header's button group. A plain field
+        # rather than reading a widget back, so `_keycap_for` does not depend on one
+        # init_ui has not built yet. SYMBOL by default: the editor's job is assigning
+        # keycodes, and a board of pictures makes the keycode you are about to change
+        # harder to read, not easier. The pictures are what you turn ON to check work.
+        self._keycap_mode = KEYCAP_SYMBOL
         try:
-            nano = ml.load_nano_font(ml.default_font_dir())
+            faces = ml.load_caption_faces(ml.default_font_dir())
+            nano = faces[-1]
             mid = mkl.load_ui_font(ml.default_font_dir(), "util_font.h",
                                    mkl.MID_FONT_SYMBOL)
             fonts, _src = mkl.load_render_fonts()
             ladder = mkl.caption_ladder(mkl.load_pack_fonts(), mid_font=mid,
                                         nano_font=nano)
-            self._keycap_render = MacroKeycapRenderer(fonts, nano, mid, ladder)
+            self._keycap_render = MacroKeycapRenderer(fonts, nano, mid, ladder, faces)
         except Exception:
             self.log.debug("macro keycap fonts unavailable; keys show their keycode")
 
@@ -179,7 +202,7 @@ class KbLayoutDialog(QMainWindow):
         # the cap hides all but the FIRST: eight layers render as one, with nothing
         # clipped-looking to give it away.
         header_layout.addWidget(self.layers, 1)
-        header_layout.addWidget(self._build_keycap_toggle())
+        header_layout.addWidget(self._build_keycap_modes())
         main_layout.addLayout(header_layout)
         main_layout.addWidget(self.view)
         main_layout.addWidget(self.keycode_browser)
@@ -212,27 +235,29 @@ class KbLayoutDialog(QMainWindow):
     
     # -- macro keycaps ------------------------------------------------------
 
-    def _build_keycap_toggle(self):
-        """The header's "Key previews" switch.
+    def _build_keycap_modes(self):
+        """The header's Symbol / Preview / Real group.
 
-        On, every key draws the keycap the KEYBOARD draws: macros through the host's
-        own composer, and everything else through the firmware-side renderers in
-        `keycap_preview` (the language LUT for letters/digits/punctuation, the
-        `keycode_helper.c` static-text map for modifiers, arrows and the custom
-        PolyKybd keys). Off, every key falls back to its keycode text.
+        SYMBOL is the keycode text. PREVIEW draws the keycap the KEYBOARD draws:
+        macros through the host's own composer, everything else through the
+        firmware-side renderers in `keycap_preview` (the language LUT for
+        letters/digits/punctuation, the `keycode_helper.c` static-text map for
+        modifiers, arrows and the custom PolyKybd keys). REAL puts that same keycap
+        through the panel simulation -- the one the font-pack inspector offers -- so
+        the board shows what the glyphs look like through the clear cover rather than
+        as a crisp bitmap, which is the difference that decides whether a small legend
+        is actually readable.
 
-        ⚠️ Coverage is NOT total and the label must not imply it is: a keycode neither
+        ⚠️ Coverage is NOT total and the labels must not imply it is: a keycode neither
         table names simply keeps its text, mixed in with the previewed keys. The data
         SHIPS with the host (`res/preview/`), so this works on an ordinary install; a
         firmware checkout beside the repo overrides it only when it is newer. When
-        neither loads the box is DISABLED and its tooltip says why, rather than
-        toggling something that would silently do nothing.
+        neither loads, PREVIEW and REAL are DISABLED and say why -- but SYMBOL stays
+        enabled, because it is the fallback every other mode degrades to and a group
+        with nothing selectable is worse than a group with one choice.
         """
-        self.keycap_toggle = QCheckBox("Key previews")
         macro_ok = self._keycap_render is not None and self._keycap_render.usable
         usable = macro_ok or self._preview.usable
-        self.keycap_toggle.setChecked(usable and self._show_keycaps)
-        self.keycap_toggle.setEnabled(usable)
         # ⚠️ Say WHY when a half is missing. A partly-loaded preview renders macros and
         # modifiers while every letter falls back to text, which reads as "broken" with
         # nothing anywhere to explain it -- the shape that shipped once already, when a
@@ -251,14 +276,86 @@ class KbLayoutDialog(QMainWindow):
         src = self._preview.source_info()
         if src:
             tip += f"\n\nLegends read from:\n{src}"
-        self.keycap_toggle.setToolTip(tip)
-        self.keycap_toggle.toggled.connect(self._on_keycap_toggle)
-        return self.keycap_toggle
+        # One exclusive group of push buttons rather than three checkboxes: the modes
+        # are alternatives, and a segmented control says so where three ticks would
+        # invite the reader to look for a combination that does not exist.
+        # ⚠️ Parented to the ROW, not to the dialog: a test builds this through
+        # __new__ to check the no-fonts state, and a QObject parented to a QWidget
+        # whose super().__init__ never ran raises rather than being disabled.
+        row = QWidget()
+        self.keycap_group = QButtonGroup(row)
+        self.keycap_group.setExclusive(True)
+        self.keycap_buttons = {}
+        lay = QHBoxLayout(row)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(0)
+        real_ok = usable and oled_look.available()
+        for mode, text, hint in (
+            (KEYCAP_SYMBOL, "Symbol", "Every key shows its keycode."),
+            (KEYCAP_PREVIEW, "Preview", tip),
+            (KEYCAP_REAL, "Real", tip + "\n\nThrough the panel simulation: emissive "
+                                        "pixels, bloom and the diffusion of the clear "
+                                        "keycap cover — how the key actually reads."),
+        ):
+            b = QToolButton(row)
+            b.setText(text)
+            b.setCheckable(True)
+            b.setToolTip(hint if mode == KEYCAP_SYMBOL or usable else tip)
+            # ⚠️ Symbol stays available even with no fonts: it is the FALLBACK, so
+            # disabling it would leave the group with nothing selectable at all.
+            b.setEnabled(True if mode == KEYCAP_SYMBOL
+                         else (real_ok if mode == KEYCAP_REAL else usable))
+            b.setChecked(mode == self._keycap_mode)
+            self.keycap_group.addButton(b)
+            self.keycap_buttons[mode] = b
+            lay.addWidget(b)
+        if not oled_look.available():
+            self.keycap_buttons[KEYCAP_REAL].setToolTip(
+                f"Unavailable: {oled_look.reason()}")
+        self.keycap_group.buttonClicked.connect(self._on_keycap_button)
+        self.keycap_modes = row
+        return row
 
-    def _on_keycap_toggle(self, on):
-        self._show_keycaps = bool(on)
+    def _on_keycap_button(self, button):
+        for mode, b in self.keycap_buttons.items():
+            if b is button:
+                self.set_keycap_mode(mode)
+                return
+
+    def set_keycap_mode(self, mode):
+        """Switch how every key is drawn, and repaint.
+
+        ⚠️ Both caches hold PIXMAPS, so they have to be dropped here -- a mode change
+        is exactly the thing they cannot represent, and keeping them would leave the
+        board showing the previous mode until something else happened to invalidate it.
+        """
+        if mode == self._keycap_mode:
+            return
+        self._keycap_mode = mode
+        self._keycap_cache.clear()
+        self._key_cache.clear()
+        btn = self.keycap_buttons.get(mode) if hasattr(self, "keycap_buttons") else None
+        if btn is not None and not btn.isChecked():
+            btn.setChecked(True)
         if self.key_buffer is not None:
             self.set_keycodes_for_layer(self.current_layer)
+
+    def _pixmap(self, img):
+        """One QImage -> QPixmap step for BOTH halves of the preview.
+
+        The macro keycaps and the firmware-composed legends are rendered by different
+        code and used to convert separately, which is how a board could end up half
+        simulated. Routing both through here means a mode can only ever apply to all
+        of it. A failed simulation falls back to the flat keycap rather than to a
+        blank key.
+        """
+        if img is None:
+            return None
+        if self._keycap_mode == KEYCAP_REAL:
+            lit = oled_look.render(img, "keycap", KEYCAP_REAL_SCALE)
+            if lit is not None:
+                return QPixmap.fromImage(lit)
+        return QPixmap.fromImage(img)
 
     def _tile_main(self, keycode, main):
         """The tile caption for a macro key, when no keycap is drawn over it.
@@ -303,7 +400,7 @@ class KbLayoutDialog(QMainWindow):
         layer switch, and re-composing a 72x40 keycap glyph-by-glyph per key per switch
         is real work for a picture that only changes when the macro does.
         """
-        if not self._show_keycaps:
+        if self._keycap_mode == KEYCAP_SYMBOL:
             return None
         idx = self._macro_index(keycode)
         if idx is None:
@@ -316,7 +413,7 @@ class KbLayoutDialog(QMainWindow):
             m = self._macros[idx]
             img = self._keycap_render.render(m.get("label", ""), m.get("style", 0),
                                              icon=m.get("icon", 0), index=m.get("id", idx))
-            hit = QPixmap.fromImage(img)
+            hit = self._pixmap(img)
             self._keycap_cache[idx] = hit
         return hit
 
@@ -345,7 +442,7 @@ class KbLayoutDialog(QMainWindow):
             return self._key_cache[keycode]
         name = self.keycode_browser.get_keycode_to_name_mapping().get(keycode)
         img = self._preview.render(keycode, name)
-        pm = QPixmap.fromImage(img) if img is not None else None
+        pm = self._pixmap(img)
         self._key_cache[keycode] = pm
         return pm
 

@@ -62,6 +62,7 @@ class MacroTab(QWidget):
         self._macros: list[dict] = []
         self._current = 0
         self._font = None
+        self._faces: list = []
         self._mid = None
         self._fonts: list = []
         self._font_source = "packs"
@@ -77,7 +78,8 @@ class MacroTab(QWidget):
         # machine without the firmware checkout beside it. The packs ship with this
         # repo, so the icon half survives even when the firmware headers do not.
         try:
-            self._font = ml.load_nano_font(ml.default_font_dir())
+            self._faces = ml.load_caption_faces(ml.default_font_dir())
+            self._font = self._faces[-1]
         except Exception:
             self._font = None
         try:
@@ -93,7 +95,8 @@ class MacroTab(QWidget):
             self._fonts, self._ladder = [], []
             self._font_source = "none"
         # One renderer for the tab; the editor builds its own from the same fonts.
-        self._keycap = MacroKeycapRenderer(self._fonts, self._font, self._mid, self._ladder)
+        self._keycap = MacroKeycapRenderer(self._fonts, self._font, self._mid,
+                                           self._ladder, self._faces)
 
         # The actions live OUTSIDE the scrolled column, in a fixed footer: the column
         # can be taller than the page is ever given (see the scroll note below), and
@@ -440,7 +443,10 @@ class MacroTab(QWidget):
             self.width_meter.setFormat("no font — preview unavailable")
             self.width_meter.setValue(0)
             return
-        r = ml.fit(text, self._font)
+        # Measure against the face the KEYCAP will use, not always the floor face --
+        # otherwise the meter reports a short label as using a third of the panel
+        # while the key draws it at half again the size.
+        r = ml.fit(text, ml.pick_face(text, self._faces or [self._font]))
         self.width_meter.setValue(min(r.full_width, ml.PANEL_W))
         self.width_meter.setFormat(f"{r.full_width} / {ml.PANEL_W} px")
         # Amber past the panel: the label is still accepted, it is just cut.

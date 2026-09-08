@@ -32,6 +32,7 @@ PANEL_H = 40
 LABEL_MAX_CHARS = 12
 
 NANO_FONT_SYMBOL = "NotoSans_Regular_Nano_10px7b"
+SMALL_FONT_SYMBOL = "NotoSans_Regular_Small_15px7b"
 
 
 @dataclass(frozen=True)
@@ -101,6 +102,35 @@ def fit(text: str, font, width: int = PANEL_W) -> LabelFit:
     return LabelFit(text=kept, dropped=text[len(kept):], width=measure(kept, font), full_width=full)
 
 
+def load_caption_faces(font_dir: str) -> list:
+    """The macro caption band's faces, largest first — the firmware's own ladder.
+
+    ``render_macro_key()`` draws the caption in ``_Small_`` 15px when the WHOLE label
+    fits the panel and drops to ``_Nano_`` 10px otherwise, so a short label is legible
+    and a long one keeps its characters. Measured: "Macro 0" is 40px at _Nano_ and
+    57px at _Small_, in a 72px panel.
+
+    Returns the two faces rather than a decision, because the caller needs the chosen
+    face to DRAW with as well as to measure — see ``pick_face()``.
+    """
+    return [_load_ui_face(font_dir, "NotoSans_Medium_Base_8pt.h", SMALL_FONT_SYMBOL),
+            _load_ui_face(font_dir, "nano_font.h", NANO_FONT_SYMBOL)]
+
+
+def pick_face(text: str, faces: list, width: int = PANEL_W):
+    """The face the keyboard would draw `text` in: the first whose whole run fits.
+
+    Mirrors the firmware exactly, including the last-resort: when nothing fits, the
+    FLOOR face is returned and the caller truncates against it. Truncating at a bigger
+    face instead would lose characters to gain size, which is the wrong trade for a
+    label whose job is to say what the macro does.
+    """
+    for f in faces[:-1]:
+        if measure(text, f) <= width:
+            return f
+    return faces[-1]
+
+
 def load_nano_font(font_dir: str):
     """Parse the nano face out of the firmware's committed header.
 
@@ -112,19 +142,24 @@ def load_nano_font(font_dir: str):
     (_Small_, _Mid_, _Nano_) are deliberately not in it -- no codepoint can reach them,
     which is exactly why the firmware draws a label through a single-font array.
     """
+    return _load_ui_face(font_dir, "nano_font.h", NANO_FONT_SYMBOL)
+
+
+def _load_ui_face(font_dir: str, filename: str, symbol: str):
+    """One standalone UI face out of its committed header."""
     from tools.gfx_font import GfxFont, _parse_header  # the header parser
 
-    path = os.path.join(font_dir, "nano_font.h")
+    path = os.path.join(font_dir, filename)
     bitmaps: dict = {}
     glyph_arrays: dict = {}
     fonts: dict = {}
     with open(path, encoding="utf-8", errors="replace") as fh:
         _parse_header(fh.read(), bitmaps, glyph_arrays, fonts)
-    raw = fonts.get(NANO_FONT_SYMBOL)
+    raw = fonts.get(symbol)
     if raw is None:
-        raise RuntimeError(f"{NANO_FONT_SYMBOL} not found in {path}")
+        raise RuntimeError(f"{symbol} not found in {path}")
     return GfxFont(
-        name=NANO_FONT_SYMBOL,
+        name=symbol,
         bitmap=bitmaps[raw["bmp"]],
         glyphs=glyph_arrays[raw["gly"]],
         first=raw["first"],

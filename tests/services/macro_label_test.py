@@ -91,3 +91,52 @@ class FitTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(HAVE_FONT, f"firmware fonts not found at {FONT_DIR}")
+class CaptionFaceLadderTest(unittest.TestCase):
+    """The caption band picks the largest face whose WHOLE label fits.
+
+    Mirrors render_macro_key()'s ladder. The numbers are measured against the
+    committed headers, so a regenerated face moves them and this notices.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.faces = ml.load_caption_faces(FONT_DIR)
+
+    def test_the_ladder_is_largest_first_and_ends_at_the_floor(self):
+        self.assertEqual(len(self.faces), 2)
+        self.assertEqual(self.faces[0].name, ml.SMALL_FONT_SYMBOL)
+        self.assertEqual(self.faces[-1].name, ml.NANO_FONT_SYMBOL)
+        # Largest first is the contract pick_face() walks, so assert the ORDER by
+        # measurement rather than by the names above -- a renamed face must not be
+        # able to reverse it silently.
+        self.assertGreater(ml.measure("Macro 0", self.faces[0]),
+                           ml.measure("Macro 0", self.faces[-1]))
+
+    def test_a_stock_caption_gets_the_bigger_face(self):
+        # Every seeded caption, M0..M15 -- the whole point of the ladder.
+        for i in range(16):
+            f = ml.pick_face(f"Macro {i}", self.faces)
+            self.assertEqual(f.name, ml.SMALL_FONT_SYMBOL, f"Macro {i}")
+            self.assertLessEqual(ml.measure(f"Macro {i}", f), ml.PANEL_W)
+
+    def test_a_label_too_wide_for_the_big_face_drops_to_the_floor(self):
+        # 'WWWWWWWW' is exactly the panel width at _Nano_ and far past it at _Small_.
+        self.assertGreater(ml.measure("WWWWWWWW", self.faces[0]), ml.PANEL_W)
+        self.assertEqual(ml.pick_face("WWWWWWWW", self.faces).name, ml.NANO_FONT_SYMBOL)
+
+    def test_dropping_to_the_floor_keeps_every_character(self):
+        # The trade the ladder makes: lose size, never characters. A label that does
+        # not fit the big face must come back INTACT from the floor face's fit().
+        text = "WWWWWWWW"
+        r = ml.fit(text, ml.pick_face(text, self.faces))
+        self.assertEqual(r.text, text)
+        self.assertEqual(r.dropped, "")
+
+    def test_the_floor_face_still_truncates_what_it_cannot_fit(self):
+        text = "WWWWWWWWWWWW"
+        r = ml.fit(text, ml.pick_face(text, self.faces))
+        self.assertNotEqual(r.dropped, "")
+        self.assertLessEqual(r.width, ml.PANEL_W)

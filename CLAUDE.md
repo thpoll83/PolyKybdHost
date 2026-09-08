@@ -122,6 +122,33 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       outright — *"Your plan includes up to 1 review per rolling hour; 0 remain
       after this review"* — which is the number to plan around when a PR needs a
       re-review after a fix.
+      - ⚠️ **On such a repo there is NO free retry, because the "a push
+        re-triggers a review without spending a request" escape hatch recorded
+        below relies on AUTO-review — which is exactly what being under 10 stars
+        turns off.** So the two notes interact badly and the interaction is not
+        obvious from either one: on `qmk_firmware` a push is the cheap way to get
+        another look, and on `PolyKybdHost` / `polykybd-docs` a push buys nothing
+        at all. Every review here costs a quota slot, so spend it on the commit
+        you actually want read. **Observed, not inferred** (host#218,
+        2026-09-07): two pushes after the review each re-rendered the summary as
+        *"This repository does not receive automatic reviews because it has fewer
+        than 10 stars"* with a Trigger-review checkbox — a SKIP, not a review.
+      - ⚠️ **A push mid-run did NOT abort the review (host#218, 2026-09-07) — but
+        the review stayed pinned to the PRE-PUSH head, which is the outcome that
+        matters and is quieter than an abort.** `qmk_firmware/CLAUDE.md` records
+        that a push while a review is in flight aborts it, erasing its own
+        evidence. Measured here: the run started 10:16:08, a push landed 10:18:57,
+        and the review completed normally at 10:25:04 — full walkthrough, 3
+        findings, pre-merge checks. What it did **not** do is notice the new
+        commit: its `📥 Commits` range read `c02a1fa..be78692` throughout and the
+        review object carries `commit_id: be78692`, so the pushed commit was
+        never read. Under this file's own standing check — a review counts only
+        when its `commit_id` equals the PR head — **that review is not cover for
+        the head it appears under**, and on an under-10-stars repo re-reading the
+        new commit costs the hour's only slot. One observation is not a base rate,
+        so do not read this as "the abort does not happen"; read it as **the
+        failure can be silent non-coverage rather than a visible abort**, which
+        the range line and `commit_id` will tell you and nothing else will.
     - ⚠️ **All THREE bots can be unavailable at once, each in its own disguise —
       #172 (2026-08-18) collected a full page of bot output and not one review.**
       CodeRabbit posted the under-10-stars "Review available on request" box;
@@ -154,6 +181,40 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         conclusion, it sharpens it: on 2026-08-29 three of six PRs really were
         reviewed by nobody, and Greptile's silence is the one that leaves no
         trace to notice.
+      - ⚠️ **On THIS repo "reviewed by nobody" is too strong, because CodeQL runs
+        on every PR and nothing in this section said so** — `.github/workflows/
+        codeql.yml`, `pull_request: [main]`, check name **Analyze Python**. Its own
+        header comment states the reason it exists: the LLM reviewers "are all LLMs
+        trained on much the same public code, so their blind spots overlap", while
+        it "is also free on public repos with no quota, so unlike every bot on this
+        PR it cannot go quiet at the moment it is needed". That is the exact gap the
+        four preceding notes catalogue, and the remedy was already installed. It is
+        the sibling of the firmware repo's cppcheck (`qmk_firmware/CLAUDE.md` even
+        says *"The host repo runs CodeQL instead"*) — so the fact was written down,
+        just not in the file describing this repo's own board.
+        - It **earns the slot**: on host#218 (2026-09-07) it produced three findings
+          before any bot had run, and the PR carried a green Sourcery-skipped board
+          at the time. Judge it by the **`Analyze Python` job**, not the `CodeQL`
+          check run, and read its findings as inline review comments from
+          `github-advanced-security[bot]` plus a review object — i.e. `get_reviews`
+          sees it, which the five-reviewer check below has to account for.
+        - ⚠️ It is **not** an answer to a design question and does not read prose;
+          it finds the class of defect dataflow finds. "CodeQL was green" is not
+          review cover for a refactor, only for what its queries cover.
+        - ⚠️ **`py/unused-import` on a RE-EXPORT module is right about the file and
+          wrong about the remedy — declare `__all__`, never delete the name.**
+          CodeQL reasons within one module, so a name re-exported for other callers
+          reads as dead to it, and it cannot see attribute access from elsewhere:
+          on host#218 it flagged `THEME_DARK`/`THEMES` in `polyhost/gui/theme.py`,
+          and `THEME_DARK` is genuinely used — as `theme.THEME_DARK`, from
+          `tests/gui/theme_test.py`. Deleting the names to clear the alert would
+          have broken the tests while the alert went green, which is the worst
+          available outcome. `__all__` silences it AND states the surface honestly;
+          verified by re-scan (the next run posted nothing). Make the `__all__`
+          complete while you are there — an `__all__` that omits real public names
+          is a new false claim in place of the old one. This repo has several such
+          front doors (`gui/theme.py`, `core/events.py`, the `server/` package), so
+          expect it again.
       - ⚠️ **`actions_list` blows the tool token cap — 130–220 KB per call, even
         at `per_page: 3`** (kept from the above, because it applies to reading
         *any* workflow run). It saves the JSON to a file and tells you the path;
@@ -498,6 +559,38 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   check is one people learn to scroll past, and the next real finding rides in
   behind it.
 
+## Mirrored skills (`qmk_firmware` ↔ `PolyKybdHost`)
+
+Five skills exist in **both** repos and are kept **byte-identical**:
+`add-gated-hid-command`, `mutation-test-suite`, `polykybd-github-release`,
+`session-retro`, `update-polykybd-docs`. A skill loads only from the repos a session has attached,
+so one that describes cross-repo work is unreachable from a session opened on the
+other repo alone — which is what happened to `mutation-test-suite`, extended to
+cover Python/unittest suites while living only in the firmware repo.
+
+⚠️ **They had already drifted, and every difference was pure loss — not repo-specific
+tailoring.** Measured 2026-09-07 before harmonising: `session-retro` lacked the whole
+open-PR-sweep section on the host side, `update-polykybd-docs` lacked its Images
+section there, and `polykybd-github-release` was missing the shallow-clone warning on
+the host side and the corrected WinCompose `status.txt` ordering on the firmware side —
+i.e. each copy was the newer one for a different note. Nothing anywhere flagged it,
+because a skill has no build, no test and no reviewer.
+
+**So the rule is copy, never fork**: edit one, `cp` it to the other, and check with
+
+```bash
+for s in add-gated-hid-command mutation-test-suite polykybd-github-release session-retro update-polykybd-docs; do
+    cmp -s /home/user/qmk_firmware/.claude/skills/$s/SKILL.md \
+           /home/user/PolyKybdHost/.claude/skills/$s/SKILL.md \
+      && echo "$s: ok" || echo "$s: DRIFTED"
+done
+```
+
+A firmware-specific section in the host's copy (or the reverse) costs a reader one
+skipped paragraph; a fork costs a note that only one repo ever sees. Take the first.
+If a skill ever genuinely needs to differ per repo, split the differing part into a
+separate skill rather than forking the shared one.
+
 ## Branching (all PolyKybd repos)
 
 - **Give every branch a name that hints at its content.** When creating a branch, append a short, descriptive slug describing the change (e.g. `claude/fix-firmware-update-menu-daemon-mode`, not just the auto-generated `claude/<random-scientist>-<id>`). The random scientist/id suffix from Claude Code on the web is auto-assigned server-side and can't always be overridden mid-session, but whenever a branch name is chosen by us, make it self-explanatory so the branch list reads as a changelog.
@@ -655,11 +748,15 @@ or was one edit away from it, so reaching for the shared piece is the point:
   `PolyHost._update_progress` is a **property** over the controller's dialog so the
   controller is the single owner and the two can't disagree about whether a dialog
   is up.
-- **`polyhost/gui/theme.py` — `apply_dark_palette(app)` / `dark_palette()`.** The
-  dark Fusion theme both `QApplication`s wear; they had a byte-identical 22-line
-  `set_style`. It is an explicit palette (not a stylesheet) because the palette is
-  what propagates into the stock `QMessageBox`/`QProgressDialog`/file pickers
-  neither app styles by hand.
+- **`polyhost/gui/theme.py` — `apply_theme(app, setting)` / `dark_palette()` /
+  `light_palette()`.** The Fusion theme both `QApplication`s wear; they had a
+  byte-identical 22-line `set_style`. It is an explicit palette (not a stylesheet)
+  because the palette is what propagates into the stock
+  `QMessageBox`/`QProgressDialog`/file pickers neither app styles by hand — and
+  that is also why light is a second explicit palette rather than
+  `standardPalette()`. `apply_dark_palette` survives for the dialogs' `main()` dev
+  launchers; **an app calling it would ignore the desktop**, which is the bug the
+  OS-theme note below replaced.
 - **`polyhost/util/observable.py` — `Observable`.** The `subscribe`/`emit` seam
   `PolyCore` and `RemoteCore` both expose (and both duplicated). Two properties are
   load-bearing and easy to drop when re-typing: `emit` **snapshots under the lock
@@ -826,6 +923,30 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   range-connect model exists to prevent, and the kind of gate that "has been forgotten
   twice". The capability tests in `tests/device/poly_kybd_capabilities_test.py` are the
   pattern to extend.
+- **When the BOARD changes something the host caches, the answer is a counter on a
+  reply the host ALREADY polls — not a new poll, and not a push.** The reconnect probe
+  sends GET_ID + GET_LANG every second (`RECONNECT_CYCLE_MSEC`), so the firmware's
+  `['G'][u16 state_generation]` block in the GET_ID reply reaches the host within ~1 s
+  at zero additional reports; the host re-reads whatever view is open when the value
+  moves. Worst case is a few seconds, not one — the probe skips inside
+  `OVERLAY_PROBE_COOLDOWN_S` and `decide_probe_publish` debounces three strikes — which
+  is irrelevant for a UI refresh. Full rationale, including why the console and an
+  unsolicited raw report both lose, is in `qmk_firmware/CLAUDE.md` § *Telling the host
+  something changed ON THE BOARD*.
+  - ⚠️ **`parse_id_version_block` finds the font-pack block POSITIONALLY** — it requires
+    `'V'` at exactly `nul + 1` (`device/hid_fontpack.py`) — so anything the firmware
+    adds to the GET_ID reply has to go AFTER it. Prepending would make every deployed
+    host read "no bundles on the device" and re-flash all eight bundles on every
+    connect. Parse tag-led blocks in order; never assume a fixed offset for the second
+    one.
+  - ⚠️ **The raw channel is strictly request/response, and `send_and_read_validate`'s
+    drain depends on it.** Its comment carries the invariant — *"Since protocol v3 the
+    firmware sends no unsolicited replies, so a stale reply here means one thing only"*
+    — so an unsolicited report from the keyboard is discarded by the next probe, and
+    making it work means framing plus routing in exactly the code path that stale-reply
+    bugs live in. That invariant is a design decision, not an accident: v3 made
+    `SEND_OVERLAY_MAPPING` silent to REDUCE escaped ACKs.
+
 - **Wire-format-divergent commands are ENCODED for the device's protocol, not blocked.**
   The only core command whose wire format ever changed is the **plain-overlay upload**
   (P11 packed the modifier+segment into one header byte). `send_overlay_for_keycode`
@@ -1248,6 +1369,36 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   range-connect note above), so the Glyph-Script menu is disabled on a pre-v9 keyboard but
   the rest of the app still connects; within a glyph-script-capable device the script set is
   free to grow.
+  - **Each menu entry PREVIEWS its script** (2026-09-07): the icon is a two-glyph
+    sample and the tooltip a longer one, drawn offline from the shipped
+    `fantasy.plyf` by `services/glyph_script_preview.py` (Qt-free) and turned into
+    a `QIcon` by `gui/glyph_script_icon.py`. STANDARD previews the normal Latin
+    face from `res/preview/resident.plyf`, so the column reads as a comparison.
+    Built on the submenu's first `aboutToShow` (30 ms for all 11), never at
+    startup; a missing or malformed bundle leaves the menu exactly as it was.
+    Four things were decided by rendering the real menu
+    (`tools/render_tray_menu.py`, which now calls `_build_glyph_script_previews()`
+    for the same reason it calls `_refresh_fontpack_action()` — a `grab()` fires no
+    `aboutToShow`):
+    - ⚠️ **The icon is TWO glyphs because a menu icon is a ~16 px SQUARE.** `QIcon`
+      scales a pixmap to *fit*, so the six-glyph sample arrives about five pixels
+      tall and reads as a smudge. The tooltip carries the rest.
+    - ⚠️ **A glyph is scaled against the ALPHABET's ink box, not its own.** Braille
+      'a' is a single dot; measured against itself it fills the icon as a solid
+      white square. `ink_extent()` over `a..z` keeps the dot a dot — and keeps
+      every entry of one script at one scale whatever sample it draws.
+    - **The script's font is found by BLOCK BASE, not by position in the pack.**
+      `0xE800 + (value-1)*0x40`, mirroring the firmware's `glyph_script_blocks[]`
+      (`tools/glyph_script_demo.py` assumes pack ORDER instead — weaker). A pack
+      that reorders or lacks a block then yields no preview rather than a preview
+      of the neighbouring script; the firmware table is pinned in
+      `tests/services/glyph_script_preview_test.py`.
+    - **The tooltip image rides in the HTML as a base64 `data:` URI** — Qt's rich
+      text loads those, so there is no temp file to write or clean up. The test
+      draws it through a `QTextDocument` and counts lit pixels, because a tooltip
+      whose image Qt cannot load renders as an empty box and says nothing.
+      ⚠️ `QMenu.setToolTipsVisible(True)` is required — action tooltips are off by
+      default, so without it the whole tooltip half is a silent no-op.
 - **Keycap legend size (protocol 13+)**: HID cmd 34 sets how large a key's MAIN
   legend is drawn — `GlyphSize.SMALL` (the original face), `MEDIUM`, `LARGE`. Wired
   exactly like the glyph script: `PolyKybd.get/set_glyph_size` behind a
@@ -1365,8 +1516,29 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   the repo *including the file you moved it out of*, and run the FULL suite rather
   than the new tests — the two new suites were green throughout.
 
-- **The editor's "Key previews" toggle draws every key through the FIRMWARE's own
-  renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
+  - ⚠️ **The macro ICON lookup (`macro_look.load_render_fonts`) UNIONS the firmware
+    headers with the shipped `.plyf` bundles — it must not choose between them, and
+    that is the OPPOSITE remedy from `preview_data.choose_source` one section below.**
+    Both face the same hazard (a checkout beside this repo is a working tree at
+    whatever branch it is on), but the pairs differ: there, two renderings of the SAME
+    data, so the newer wins; here, the headers carry the resident half and the bundles
+    are what the host actually flashes, and either can be ahead. Preferring the
+    headers alone previewed the stale set — a slot's Mayan numeral drew as `M3`
+    because `symbol.plyf` v9 ships that font while a clone on `PolyKybd` has no such
+    header, and the keyboard drew it perfectly well (field, 2026-09-08). The union is
+    safe by construction: `find_glyph` stops at the first font covering the codepoint,
+    so appending can only ADD hits. **It fixes the icon PICKER for the same reason** —
+    it enumerates candidates from the bundles and then looks each one up, so a glyph
+    the headers lacked was dropped from the grid and could not be chosen at all.
+    ⚠️ The `(no glyph)` warning still rests on the source being `"headers"`, i.e. on
+    the RESIDENT faces having been visible; keep that meaning if the value is reworked.
+  - ⚠️ **The CAPTION half of that preview has no such fallback: `_Small_` is NOT in
+    `res/preview/ui_fonts.plyf`** (it ships `_Nano_` and `_Mid_` only), so
+    `load_caption_faces()` still needs a firmware checkout and an install without one
+    renders "no font — preview unavailable" rather than a keycap. Closing that means
+    exporting the third face, not another fallback path.
+- **The editor's key pictures are a THREE-way group — Symbol / Preview / Real —
+  drawing every key through the FIRMWARE's own renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
   for the language LUT and `tools/lang_demo.py` for the `keycode_helper.c` static-text
   map; macros go through the host's own composer). Off is the default, and off means
   each key shows its keycode text.
@@ -1390,6 +1562,27 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     loses, `source_info()` says so ("a firmware checkout is present but is not
     newer") — silence there reads as "my clone is being used" and sends the next
     round after the clone.
+  - ⚠️ **A STALE export costs a KEYCODE ITS PREVIEW, and it reads as a rendered
+    keycap rather than a missing one — the key falls back to its keycode TEXT.** The
+    shipped copy carries a `fw_version`, so a keycode added since the last
+    regeneration has no name and no legend in it: `KC_MACRO_REC` shipped at export
+    0.17.2 against firmware 0.19.1 and the REC key drew its token, reported as *"the
+    rec button has no preview"* (field, 2026-09-08). `scripts/export_preview_data.py
+    --check` names every stale file; regenerating writes all four (they are one
+    snapshot — leaving them at different `fw_version`s is worse than the staleness).
+    - ⚠️ **A DEVELOPER CANNOT SEE THIS**, which is why it needed a test that pins
+      the source. A firmware checkout that is newer wins the compare above, so the
+      editor draws the clone's legends and the stale export is invisible on the very
+      machine that would regenerate it. `test_a_STATE_DEPENDENT_legend_previews_too`
+      builds `KeycapPreview(source="shipped")` for exactly that reason — confirmed by
+      running it against the pre-regeneration export: green through the checkout, red
+      against the shipped copy.
+    - **Regenerating catches up on everything else too, so expect a wide diff.** The
+      0.17.2 → 0.19.1 pass moved ~200 `lang_lut` grid cells: the workbook had gained
+      the `altgrhalf` settings rows (which renumber every row under them) and the
+      2026-09-03 cursor-nudge tuning. That is the export doing its job; the pixel
+      parity test above is what says the result is right.
+
   - ⚠️ **The two sources are pinned to draw IDENTICALLY, by rendering, not by
     comparing structures.** `test_the_two_sources_draw_the_SAME_keycaps` renders
     every keycode the editor can show from both and requires the pixels to match
@@ -1539,6 +1732,32 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     itself proves nothing; these fixtures are the C's, so a divergence fails in the
     host suite rather than showing up as a keycap drawn slightly wrong. Keep the two
     in step when either side gains a case.
+  - ⚠️ **REAL puts the same keycap through `fontpack_render.apply_oled_style`, and
+    that preset is SHARED with the font-pack inspector on purpose.** Both surfaces
+    offer "how it really looks"; the knobs (`simulate_oled`'s jitter, diffusion,
+    stagger, brightness) inlined per call site would give one physical panel two
+    different-looking previews with nothing to say which was right. `"normal"` returns
+    the image untouched so a caller routes every mode through one call.
+  - ⚠️ **REAL is rendered at `KEYCAP_REAL_SCALE` (3) output pixels per OLED pixel, not
+    at 1:1 — the scale is not cosmetic.** The pixel grid, the bloom radius and the
+    per-pixel jitter are all sized from it, so at 1 there is literally nothing to see.
+    The tile then scales the larger image down, which is also why zooming the view in
+    reveals more of the panel instead of a bigger flat bitmap.
+  - ⚠️ **Both halves go through ONE `_pixmap()`**, because the macro keycaps and the
+    firmware-composed legends are rendered by different code and used to become
+    pixmaps separately — the shape that would leave a board half simulated. Both
+    caches hold PIXMAPS, so a mode change has to DROP them; keeping them leaves the
+    previous mode on screen until something else invalidates it, which reads as a
+    dead button.
+  - ⚠️ **SYMBOL stays enabled when the fonts are missing** — it is the fallback the
+    other two degrade to, so disabling the whole group would leave nothing selectable.
+    REAL additionally needs Pillow (`gui/oled_look.available()`); it is a hard
+    requirement, but a broken install must cost the picture, not the editor.
+  - **The tile draws a keycap with `SmoothPixmapTransform`.** It is always a
+    DOWNSCALE — a 72x40 keycap lands in a tile about 50px wide — and Qt's default
+    nearest-neighbour drops whole pixel rows, which was enough to break a small
+    glyph's stems: the editor showed a mangled letter the keyboard draws cleanly.
+    Found by rendering the two modes side by side, not by reading the paint code.
   - **Two things are deliberately never previewed**: a `KC_TRNS` slot (the keyboard
     draws the layer below, so a preview here would invent a legend the key does not
     have) and the two keys with no OLED behind them (matrix `(3,7)` and `(8,0)` — the
@@ -1651,6 +1870,26 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     every name resolves, that no shipped `.svg` is unreferenced (11 orphans had
     accumulated), and that the opsz48/single-fill format holds. It is Qt-free, so
     it runs in the normal suite rather than only under xvfb.
+  - ⚠️ **A tint is drawn on BOTH theme grounds now, so a colour picked against
+    one can vanish against the other — measured, the brightness family did.**
+    The apps follow the OS light/dark setting (see the theme note below), and
+    `#FFFF55` is 7.6:1 on the dark chrome (#505050) and **1.07:1 on the light
+    one** (#F0F0F0): yellow on white, reported from the field 2026-09-07. It is
+    `#B59D24` gold now (3.00 / 2.36), and the three other off-palette one-offs
+    went with it — `sync_problem` was `#A96424`, 1.74:1 on DARK (the same fault
+    the other way), and `delete` `#F19E39`; both adopted the palette colour
+    their meaning already had. Every colour in the set now sits between 2.20:1
+    and 3.22:1 on both grounds, and `IconContrastTest` holds a 2.0 floor.
+    - ⚠️ **A ramp cannot be expressed in LIGHTNESS — that is what made the old
+      one unfixable rather than merely wrong.** The four brightness entries were
+      shades of one yellow (a paler `#F9DB78` for 1%), and a pale tint is the
+      worst case of all on a light ground. The ramp is across the palette now:
+      grey off, **amber** at 1%, gold at 50/100% (the Material glyphs carry the
+      rest — fewer rays, outline vs filled), and **green** for "back to
+      automatic", which is the palette's enabled/ok rather than a brightness
+      level. So amber means caution *and* the dim end, and green means ok *and*
+      automatic; the alternative was two more one-off colours, and the set only
+      just stopped having those.
   - **Judge a candidate glyph by rendering and measuring it, not by its name.**
     Rasterise to a fixed canvas (`cairosvg` + PIL) and compare **ink coverage**
     and **glyph bounding height** against the set (baseline ≈19% ink, ≈34px tall
@@ -1723,6 +1962,70 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `process_exists()` runs TASKLIST with **`CREATE_NO_WINDOW`** (else a console flashes under
   the `pythonw`/`.vbs` autostart chain) and **never raises** — it sits on the post-connect
   path, where an exception would abort the whole connect flow over a cosmetic detection.
+- **The unicode input method is WATCHED for the life of the core, and an
+  ambiguous reading is applied WITHOUT being stored** (`PolyCore`
+  `_start_wincompose_settle` / `_wincompose_settle_loop` / `_apply_unicode_mode`,
+  firmware protocol 17). It used to be detected exactly once, in the post-connect
+  flow — and at Windows logon autostart brings PolyKybdHost up **before**
+  WinCompose, so `get_input_method()` found no `wincompose.exe`, pushed plain
+  `Windows`, and the keyboard typed Alt+numpad sequences (which cannot produce an
+  emoji) for the rest of the session. Nothing corrected it: the tray probe needs
+  the user to open the menu and deliberately skipped its FIRST look, and a
+  headless daemon has no tray at all. Field report 2026-09-08, and the firmware
+  half of the same bug is in `qmk_firmware/CLAUDE.md` (cmd 20 called QMK's
+  notification callback rather than the setter, so the legend moved and the mode
+  did not). What is load-bearing:
+  - ⚠️ **A plain-`Windows` reading is an ABSENCE, not an observation.** Every other
+    reading is positive — the process is running, or the platform is not Windows.
+    Just after logon, "no wincompose.exe" is equally consistent with "it has not
+    started yet", which is the whole reason the watcher exists. So ambiguity does
+    **not** decide whether to push, it decides whether the push is **stored**:
+    the mode is applied VOLATILE (cmd 20 `data[3]`, protocol 17) — while WinCompose
+    is absent, `Windows` genuinely IS how the keyboard should type — and re-asserted
+    persistently on the first pass after the window closes. If WinCompose turns up
+    first, the stored mode was never disturbed, and the firmware's
+    `eeprom_update_byte` skips the write for a value it already holds. On firmware
+    older than 17 there is no way to apply without storing, so the reading is
+    **held** instead: the alternatives are a wrong stored value and a delay, and
+    the delay is recoverable.
+  - ⚠️ **The window is measured from the PROCESS start, not the connect.**
+    WinCompose races the logon; it does not race a replug three hours later, where
+    treating the reading as ambiguous would only postpone the re-assert that exists
+    to catch a *different* keyboard being plugged in.
+  - ⚠️ **The push dedupe is over (mode, persist), not the mode alone.** Re-asserting
+    the same mode to make a volatile one stick is the entire point of the window
+    closing; a mode-only dedupe swallows it and the keyboard loses the setting at
+    the next power cycle. Mutation-checked.
+  - ⚠️ **The watcher thread must never touch the device.** `_apply_unicode_mode`
+    reads the CACHED protocol via `protocol_supports(self.keeb.protocol_version, …)`
+    rather than `keeb.supports()`, which lazily calls `query_version_info()` — HID
+    I/O, which belongs on the worker. Same reason the TASKLIST probe is on its own
+    thread rather than a worker periodic: ~50 ms must not sit between the reconnect
+    probe and the console read.
+  - **The watch is permanent and bidirectional, with no deadline.** Stopping when
+    WinCompose appears would catch a late start and never notice it being *quit*,
+    which leaves the keyboard emitting compose sequences that produce nothing —
+    and only the tray covered that, which a daemon does not have. 10 s probes for
+    the first 10 minutes after a connect, then one a minute. A cut-off would just
+    be another guess at how slow a logon can be.
+  - **A mode counts as pushed only when the device confirms it** — `worker.submit`
+    only QUEUES the command, so recording at submit time records a mode the device
+    may never have taken (paused, mid-flash, unplugged) and the dedupe then
+    suppresses the retry, which is the very failure the watcher exists to fix.
+  - ⚠️ **`shutdown()` and `_start_wincompose_settle` share a lock plus a one-way
+    flag**, or a reconnect landing concurrently clears the stop Event and starts a
+    fresh watcher holding the core after its worker has stopped.
+- **A settings change applies its device side effects through ONE core hook —
+  `PolyCore.note_settings_changed(keys=None)`.** There are exactly two settings
+  writers: `settings_set` (polyctl and the client-mode dialog) and the in-process
+  settings dialog, which writes the file directly. The dialog already carried a
+  hand-written "nudge the core" line for the daylight brightness, so a second side
+  effect meant a second copy — and that is how enabling
+  `unicode_send_composition_mode` mid-session came to do nothing at all until the
+  next reconnect (the watcher is armed only in the post-connect flow, and only when
+  the setting was already on). `keys=None` means "anything in the dialog may have
+  changed", which is all a whole-file write knows. Add the side effect to the hook,
+  never to a caller.
 - **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
   that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
   PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal
@@ -2169,6 +2472,49 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   like a report from the keyboard machine, which is a different failure domain
   entirely. `tests/gui/host_client_test.py` has a `forwarder` smoke mode; it
   **skips** without `pywinctl`, which `forwarder.py` imports at module load.
+- **Both tray apps FOLLOW THE OS light/dark setting (2026-09-07) —
+  `services/os_theme.py` (Qt-free reader + rule) + `gui/theme.apply_theme`.**
+  They wore the dark palette unconditionally, so a light Windows desktop got a
+  dark tray menu and dark dialogs against light windows (field). `ui_theme`
+  ('auto' default, or 'light'/'dark') overrides the desktop; the settings dialog
+  renders it as a **dropdown** via `settings_dialog.CHOICES`, the one place a
+  fixed value set gets a combo instead of the free-text fallback.
+  - **Detection is per platform and never raises**: Windows reads
+    `AppsUseLightTheme` (the APP one — `SystemUsesLightTheme` is the
+    taskbar/Start colour and can differ) with `winreg`, macOS `defaults read -g
+    AppleInterfaceStyle` (⚠️ the key only EXISTS in dark mode, so a failed read
+    means light), Linux `gsettings` `color-scheme` then the gtk-theme name. A
+    desktop that does not answer reports None and `resolve_theme` falls back to
+    **dark** — the historical look, so a failed detection changes nothing rather
+    than flipping somebody's tray.
+  - ⚠️ **The STYLE stays Fusion in both themes; only the palette changes.** Qt 5's
+    native Windows style has no dark mode, so dark must be Fusion, and switching
+    style by theme would make the app look like two different programs depending
+    on a system setting — with the Fusion-shaped bits (`cmd_menu`'s proxy style,
+    the inspectors) only ever checked in one of them. This follows the OS's
+    light/dark CHOICE, not the platform's native chrome.
+  - **The tray re-follows on `menu.aboutToShow`** (`PolyHost._refresh_theme`), so
+    switching the desktop needs no restart; the detection is cached 5 s because on
+    macOS/Linux it is a subprocess. The **forwarder reads it once at startup** — it
+    has no such hook, and its dialogs are short-lived.
+  - ⚠️ **A rendered pixmap does NOT follow a palette change, so the glyph-script
+    previews are dropped and rebuilt** — their ink is picked from the palette
+    (`glyph_script_icon.preview_ink`: the OLED cool white on dark, the palette's
+    own text colour on light), and near-white ink on a light menu is an invisible
+    icon.
+  - ⚠️ **Some developer dialogs hardcode dark colours** (`mru_inspector_dialog`,
+    `fontpack_inspector_dialog`, `fontpack_extend_dialog`) — mostly around OLED
+    previews, where a black ground is the content rather than chrome. Left alone
+    deliberately; every surface a normal user sees draws from the palette.
+  - **Verified by rendering the real menu in both themes**
+    (`ui_theme` in `settings.yaml` + `tools/render_tray_menu.py`), which is also
+    what showed the Material menu icons read on white — they are mid-tone.
+  - ⚠️ **A Linux tray menu can look light while the app palette is dark, and that
+    is NOT evidence the palette applied** — reported from a Linux desktop while the
+    apps were still unconditionally dark. The likely mechanism is that the menu is
+    exported to the shell (StatusNotifier/DBusMenu) and drawn with the system
+    theme rather than by Qt, but that is **unverified here**. The way to tell them
+    apart is a real window: open Settings, which Qt certainly draws.
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
@@ -2219,6 +2565,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   A test gated on both `DISPLAY` and pywinctl would be permanently skipped, which
   is worse than none: it reads as coverage.
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
+  - ⚠️ **`patch.object(Class, "method")` does NOT reach a fixture that already
+    BOUND that method** — and the repo's own fixture idiom is what creates the
+    trap. Several suites deliberately bind the real implementation onto a
+    `SimpleNamespace` stand-in (`functools.partial(PolyCore._x, core)`, or a
+    lambda) so the shipped bookkeeping is what runs; that partial captures the
+    function object at fixture-build time, so a later `patch.object` on the class
+    rebinds the attribute the partial no longer consults. The patch is a silent
+    no-op and the test fails for a reason that has nothing to do with the code
+    (2026-09-08, the volatile-mode re-assert test). Either drive the real input —
+    for a time-based rule, move the clock (`core._started_at = time.monotonic() -
+    601`) — or override the attribute **on the instance**, which is what the code
+    actually calls.
   - ⚠️ **Appending test methods after a file's trailing `if __name__ ==
     "__main__":` block registers NOTHING, and the suite stays green.** The
     indented `def`s become part of the `if` body, so they parse, never run, and
@@ -2240,8 +2598,21 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `find . -name __pycache__ -path "*/polyhost/*" -exec rm -rf {} +`. Suspect it
   whenever a fix "doesn't take" — especially after a `cp`/restore, which sets a
   fresh mtime but can land in the same second.
-- **No *test* CI**: no workflow runs the unit tests. (The repo *does* have two
-  workflows — `bump-version.yml` + `release.yml`; see **Releases** below.)
+  - ⚠️ **A mutation-test harness hits this on the RESTORE, where it corrupts the
+    VERIFICATION rather than the fix** — the worse direction, because the natural
+    reading is "my change broke something". Measured 2026-09-08: after three
+    mutations of `macro_label.py`, `diff` reported the file byte-identical to the
+    baseline while the suite still failed all three mutants' tests, the interpreter
+    having loaded bytecode compiled from the last mutant. **Clear `__pycache__`
+    after restoring, not only after editing**, then re-run — the confirmation run
+    at the end of a mutation sweep is exactly where this lands.
+- **No *test* CI**: no workflow runs the unit tests — but the repo is **not**
+  CI-less, and this line said "two workflows" while there were four. They are
+  `bump-version.yml` + `release.yml` (see **Releases** below), `deploy-telemetry.yml`
+  (the Cloudflare Worker), and **`codeql.yml`, which analyses every PR** and is the
+  one automated reviewer here that cannot go quiet — see the CodeQL note in the
+  code-review conventions above. So a PR gets static analysis and no unit-test run;
+  the suite is yours to run locally (`scripts/run_tests.py`).
 - **GUI tests need a display**: `tests/gui/host_client_test.py` constructs the real `PolyHost` (default + `--connect` client mode) in a subprocess (one `QApplication`/process; `pynput` needs X) with Qt forced to `offscreen`. They **skip unless `DISPLAY` is set** — run them under a virtual X server: `xvfb-run -a .venv/bin/python -m unittest tests.gui.host_client_test`. `host.py` can't even be *imported* without an X server (pynput at module load), so plain `unittest discover` skips them. Installing `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too (pywinctl/pymonctl `sys.exit(1)` without it).
   - ⚠️ **Do not chain two `xvfb-run -a` invocations in one shell command** — the
     second one hangs (observed ~10 min at 0.7% CPU / 4 s CPU time, on a suite
@@ -2265,20 +2636,27 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       silently cropped. The developer-mode menu lost its last row that way, with no
       warning and no error; only looking at the PNG caught it.
 - **Use `scripts/run_tests.py` when a run might hang — it has a stall watchdog.**
-  The suite is **~25 s** (~27 s under xvfb, where the 11 GUI-subprocess tests run
-  instead of skipping). Twice on 2026-08-03 it instead wedged past a 200 s
-  timeout with **no output at all** — and a bare `timeout` kill discards exactly
-  the information you need. The runner arms
-  `faulthandler.dump_traceback_later(..., exit=True)`, so a stall prints every
-  thread's stack and fails the command:
-  `python scripts/run_tests.py [--timeout 180] [-s tests/device]`.
-  ⚠️ **Set `--timeout` BELOW whatever will kill the shell, or the dump is lost.**
-  `--timeout 240` under a 120 s tool timeout means the outer kill lands first:
-  SIGTERM, exit 143, **no traceback**. That cost three losses of the one
-  artifact that identifies a stall. `--timeout 60` is plenty for a 25–28 s suite
-  and fires well inside any shell limit. Redirect to a file
-  (`> /tmp/tr.log 2>&1`) and read the whole thing; do **not** pipe it through
-  `tail`, which has eaten the dump before.
+  Twice on 2026-08-03 the suite wedged past a 200 s timeout with **no output at
+  all** — and a bare `timeout` kill discards exactly the information you need. The
+  runner arms `faulthandler.dump_traceback_later(..., exit=True)`, so a stall
+  prints every thread's stack and fails the command:
+  `python scripts/run_tests.py [--timeout 240] [-s tests/device]`.
+  ⚠️ **Set `--timeout` BELOW whatever will kill the shell, or the dump is lost** —
+  under a 120 s tool timeout an outer kill lands first: SIGTERM, exit 143, **no
+  traceback**. Raise the Bash tool's own timeout past it (`timeout: 400000`).
+  Redirect to a file (`> /tmp/tr.log 2>&1`) and read the whole thing; do **not**
+  pipe it through `tail`, which has eaten the dump before.
+  - ⚠️ **The suite is NOT ~25 s any more, and this note used to say it was — it is
+    2354 tests and 65–90 s under xvfb, so the `--timeout 60` this file recommended
+    now fires on a HEALTHY run.** Measured 2026-09-08 across three runs (65 s,
+    75 s, 90 s) in the same container; the figure drifts with load, so treat 240 as
+    the floor rather than tuning it down. Worse than a wasted run: at 60 s the dump
+    lands wherever teardown happens to be, and on the run that produced this note
+    that was the main thread in `PolyCore.shutdown` → `worker.run_sync` — i.e. an
+    almost exact match for the `ControlServer.stop()` deadlock documented as FIXED
+    below, complete with ~20 threads parked in `recv_message`. **A watchdog dump is
+    only evidence of a stall if the run actually exceeded a realistic budget**;
+    check the wall clock before reading the stack.
 - **✅ The intermittent test-suite stall is FIXED (2026-08-11): it was a deadlock in
   `ControlServer.stop()`, not environment flakiness.** It had gone unexplained
   across ~3 sessions and 20+ non-reproducing runs; the watchdog dump (finally

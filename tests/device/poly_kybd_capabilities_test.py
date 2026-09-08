@@ -15,10 +15,12 @@ from polyhost.device.poly_kybd import (
     PolyKybd, protocol_supports, FEATURE_MIN_PROTOCOL, MIN_SUPPORTED_PROTOCOL,
     OVERLAY_PACKED_HEADER_MIN_PROTOCOL, GLYPH_SIZE_MIN_PROTOCOL,
     MACRO_MIN_PROTOCOL, AI_STATE_MIN_PROTOCOL,
+    UNICODE_MODE_VOLATILE_MIN_PROTOCOL,
 )
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.command_ids import HidId, Cmd, GlyphScript, GlyphSize, AiState
 from polyhost.device.keys import Modifier, LEGACY_MAX_MODIFIER_VALUE
+from polyhost.input.unicode_input import InputMethod
 from polyhost.settings import PolySettings
 
 
@@ -151,6 +153,53 @@ class TestGuiComboModifierGate(unittest.TestCase):
 
     def test_legacy_ceiling_is_the_bare_gui_variant(self):
         self.assertEqual(LEGACY_MAX_MODIFIER_VALUE, Modifier.GUI_KEY.value)
+
+
+class TestUnicodeModeVolatile(unittest.TestCase):
+    """The VOLATILE flag on cmd 20 (protocol v17+): apply the mode in RAM only.
+
+    The flag itself is backwards-compatible on the wire — an older host sends a
+    zero-padded report, so data[3] reads 0 = persist. It is gated anyway, because
+    the failure mode runs the OTHER way: an older FIRMWARE ignores data[3] and
+    would silently STORE a mode the caller explicitly asked not to store, which is
+    exactly the transient value the flag exists to keep out of EEPROM."""
+
+    def _keeb(self, protocol):
+        keeb = PolyKybd(DeviceSettings(), PolySettings())
+        keeb.protocol_version = protocol
+        keeb.hid = MagicMock()
+        keeb.hid.send_and_read_validate.return_value = (True, "ok")
+        return keeb
+
+    def test_feature_threshold(self):
+        self.assertEqual(FEATURE_MIN_PROTOCOL["unicode_mode_volatile"],
+                         UNICODE_MODE_VOLATILE_MIN_PROTOCOL)
+        self.assertFalse(protocol_supports(UNICODE_MODE_VOLATILE_MIN_PROTOCOL - 1,
+                                           "unicode_mode_volatile"))
+        self.assertTrue(protocol_supports(UNICODE_MODE_VOLATILE_MIN_PROTOCOL,
+                                          "unicode_mode_volatile"))
+
+    def test_a_volatile_set_is_REFUSED_on_older_firmware(self):
+        keeb = self._keeb(UNICODE_MODE_VOLATILE_MIN_PROTOCOL - 1)
+        ok, msg = keeb.set_unicode_mode(InputMethod.Windows, persist=False)
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        keeb.hid.send_and_read_validate.assert_not_called()
+
+    def test_a_PERSISTING_set_still_works_on_older_firmware(self):
+        """The gate is on the flag, not on the command — cmd 20 itself is ancient."""
+        keeb = self._keeb(UNICODE_MODE_VOLATILE_MIN_PROTOCOL - 1)
+        ok, _ = keeb.set_unicode_mode(InputMethod.Windows)
+        self.assertTrue(ok)
+        payload = keeb.hid.send_and_read_validate.call_args.args[0]
+        self.assertEqual(payload[3], 0)
+
+    def test_the_flag_byte_is_sent_when_supported(self):
+        keeb = self._keeb(UNICODE_MODE_VOLATILE_MIN_PROTOCOL)
+        ok, _ = keeb.set_unicode_mode(InputMethod.Windows, persist=False)
+        self.assertTrue(ok)
+        payload = keeb.hid.send_and_read_validate.call_args.args[0]
+        self.assertEqual(payload[3], 1)
 
 
 class TestGlyphSize(unittest.TestCase):

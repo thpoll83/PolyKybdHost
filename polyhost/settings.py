@@ -101,6 +101,12 @@ class PolySettings:
             # flags, so there was no way to reach the developer tools without
             # starting the app by hand. `--dev N` overrides it for one run (in
             # both directions — `--dev 0` forces it off).
+            # Tray/dialog theme: "auto" follows the desktop's own light/dark
+            # setting (see services/os_theme), "light"/"dark" pin it. Before this
+            # the apps were dark unconditionally, so a light Windows desktop got a
+            # dark tray menu against light windows. A desktop that does not answer
+            # falls back to dark, which is what the app has always looked like.
+            "ui_theme": "auto",
             "developer_mode": False,
             "dev_mock_enabled": False,
             "dev_run_window_detection_if_not_connected_to_poly_kybd": False,

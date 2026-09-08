@@ -31,7 +31,7 @@ from polyhost._version import __version__, __protocol__
 import polyhost.util.log_util  # noqa: F401
 from polyhost.core import events
 from polyhost.core.decisions import decide_probe_publish, decide_reconnect_apply
-from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL
+from polyhost.device.poly_kybd import MIN_SUPPORTED_PROTOCOL, protocol_supports
 from polyhost.device.device_manager import DeviceManager
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device import hid_fw_up
@@ -158,6 +158,27 @@ class PolyCore(Observable):
         # display and the forwarder's OS when a remote-forwarded window is active,
         # deduped against this so set_os only fires on an actual change.
         self._last_pushed_os = None
+        # Last unicode input method pushed to the keyboard (an InputMethod, or
+        # None). The WinCompose settle watcher re-probes after a connect and pushes
+        # only on a real change; see _start_wincompose_settle.
+        self._last_pushed_unicode_mode = None
+        # The mode of a push that is queued but whose device result is not in yet.
+        # Separate from _last_pushed_unicode_mode so a FAILED push does not stay
+        # deduped: only a confirmed one suppresses a retry.
+        self._queued_unicode_mode = None
+        # Whether the last confirmed / in-flight push was RAM-only. A volatile
+        # push has to be re-asserted persistently once the logon window closes,
+        # so "same mode" alone cannot decide whether a push is a duplicate.
+        self._last_push_was_volatile = False
+        self._queued_push_is_volatile = False
+        self._wincompose_shutting_down = False
+        self._wincompose_stop = threading.Event()
+        self._wincompose_thread = None
+        self._wincompose_fast_until = 0.0
+        self._wincompose_lock = threading.Lock()
+        # When THIS PROCESS started, which is what the logon race is measured
+        # against — not when the keyboard connected. See _unicode_mode_is_ambiguous.
+        self._started_at = time.monotonic()
         # Re-entrancy guard for the font-pack auto-flash: True only while a flash
         # is actually running, so a connection flap mid-flash can't start a second
         # one — but it is cleared on completion, so each fresh connect (e.g. a
@@ -374,6 +395,17 @@ class PolyCore(Observable):
         if self._tick_thread is not None:
             self._tick_thread.join(timeout=1)
             self._tick_thread = None
+        # Under the same lock as _start_wincompose_settle, and with a one-way
+        # flag: otherwise a reconnect landing here concurrently would clear the
+        # stop Event and start a fresh watcher AFTER shutdown, which would then
+        # hold the core and submit to a stopped worker for up to 15 minutes.
+        with self._wincompose_lock:
+            self._wincompose_shutting_down = True
+            self._wincompose_stop.set()
+            wincompose_thread = self._wincompose_thread
+            self._wincompose_thread = None
+        if wincompose_thread is not None:
+            wincompose_thread.join(timeout=1)
         try:
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
@@ -533,6 +565,197 @@ class PolyCore(Observable):
         self._last_pushed_os = value
         self.log.info("Pushing OS %s to keyboard.", _OsType(value))
         self.worker.submit("set_os", lambda c, v=value: self.keeb.set_os(v))
+
+    # ------------------------------------------------------------------
+    # Unicode input method
+    # ------------------------------------------------------------------
+
+    # WinCompose's start time at logon is unknown and machine-dependent
+    # ("sometimes it needs a while", field), so rather than guess a cut-off the
+    # watch simply never ends: 10 s probes for the first 10 minutes after a
+    # connect, then one a minute for as long as the core lives. A TASKLIST spawn
+    # is ~50 ms on a background thread, so the steady state is well under a
+    # tenth of a percent of one core.
+    WINCOMPOSE_FAST_SECONDS = 600   # the boot window, at the short interval
+    WINCOMPOSE_FAST_INTERVAL = 10
+    WINCOMPOSE_SLOW_INTERVAL = 60
+
+    def _push_unicode_mode(self, mode, persist=True):
+        """Submit a unicode-input-method push (HID cmd 20), deduped.
+
+        Device I/O, so it goes on the worker — which means ``submit`` only
+        QUEUES it and the result arrives later.
+
+        ``persist=False`` applies the mode in RAM only (firmware protocol 17+),
+        for a reading the host is not yet sure of — see
+        ``_unicode_mode_is_ambiguous``.
+
+        ⚠️ The mode is recorded as pushed in ``on_done``, only when the keyboard
+        reports success. Recording it here would dedupe a push the device never
+        took (paused, mid-flash, unplugged), and the settle watcher would then
+        skip the retry and exit as soon as it saw WinCompose — leaving the
+        keyboard on the wrong mode for the session, which is the very bug this
+        watcher exists to fix. ``_queued_unicode_mode`` suppresses a duplicate
+        submission while one is in flight and is cleared either way.
+
+        ⚠️ The dedupe is over (mode, persist), not the mode alone: re-asserting
+        the SAME mode to make a volatile one stick is the whole point of the
+        window closing, and a mode-only dedupe would swallow it."""
+        if ((mode, persist) in ((self._last_pushed_unicode_mode,
+                                 not self._last_push_was_volatile),
+                                (self._queued_unicode_mode,
+                                 not self._queued_push_is_volatile))):
+            return False
+        self._queued_unicode_mode = mode
+        self._queued_push_is_volatile = not persist
+        self.log.info("Pushing unicode input mode %s to keyboard (%s).", mode.name,
+                      "persist" if persist else "volatile")
+        self.worker.submit(
+            "set_unicode_mode",
+            lambda c, m=mode, p=persist: self.keeb.set_unicode_mode(m, persist=p),
+            on_done=lambda _name, result, m=mode, p=persist:
+                self._unicode_mode_pushed(m, result, p))
+        return True
+
+    def _unicode_mode_pushed(self, mode, result, persist=True):
+        """HID-worker callback: record the push only if the device took it.
+
+        ``result`` is the job's return value — the device layer's ``(ok, msg)``
+        — or the exception the job raised, which the worker catches and stores
+        rather than re-raising."""
+        if self._queued_unicode_mode == mode:
+            self._queued_unicode_mode = None
+            self._queued_push_is_volatile = False
+        ok = isinstance(result, tuple) and len(result) == 2 and bool(result[0])
+        if ok:
+            self._last_pushed_unicode_mode = mode
+            self._last_push_was_volatile = not persist
+        else:
+            self.log.warning(
+                "Unicode input mode %s was not applied (%r); it will be retried "
+                "while the settle watcher is running.", mode.name, result)
+
+    def _unicode_mode_is_ambiguous(self, mode):
+        """True while a plain-``Windows`` reading cannot yet be believed.
+
+        Every other reading is a positive observation — wincompose.exe is
+        running, or the platform is not Windows at all. A plain ``Windows`` is
+        the one that is an ABSENCE, and just after logon "no wincompose.exe" is
+        equally consistent with "WinCompose has not finished starting", which is
+        the race this whole watcher exists for. Pushing it anyway costs every
+        WinCompose user a wrong mode plus a keycap flicker on every single
+        logon, and two EEPROM writes, to correct a state the keyboard was
+        already in. Waiting costs a keyboard whose stored mode is stale (moved
+        machines, or WinCompose uninstalled) up to one window — ONCE, since the
+        push at the end of the window persists.
+
+        ⚠️ Measured from the PROCESS start, not from the connect. WinCompose
+        races the logon; it does not race a replug three hours later, and
+        treating a reconnect as ambiguous would delay the re-assert that exists
+        to catch a different keyboard being plugged in."""
+        from polyhost.input.unicode_input import InputMethod
+        return (sys.platform == "win32" and mode is InputMethod.Windows
+                and time.monotonic() - self._started_at < self.WINCOMPOSE_FAST_SECONDS)
+
+    def _apply_unicode_mode(self, mode):
+        """Push ``mode``, letting the ambiguity rule decide whether it is STORED.
+
+        Three outcomes, and the middle one is why the volatile flag exists:
+
+        * unambiguous -> push and persist, as always;
+        * ambiguous, firmware protocol 17+ -> push VOLATILE. While WinCompose is
+          not running, plain ``Windows`` is genuinely how the keyboard should
+          type, so applying it is correct; what would be wrong is *storing* a
+          reading that may just mean "WinCompose has not started yet". The
+          re-assert once the window closes then persists it, and if WinCompose
+          turns up first the keyboard's stored mode was never disturbed
+          (``eeprom_update_byte`` skips a write when the value is unchanged, so
+          re-asserting the mode it already had costs nothing);
+        * ambiguous, older firmware -> HOLD it. There is no way to apply without
+          storing, so the choice is between a wrong stored value and a delay,
+          and the delay is recoverable.
+
+        Reads the CACHED protocol (``protocol_supports``) rather than
+        ``keeb.supports()``, which lazily does device I/O — this runs on the
+        settle watcher's own thread, which must never touch the device."""
+        if not self._unicode_mode_is_ambiguous(mode):
+            return self._push_unicode_mode(mode, persist=True)
+        if protocol_supports(self.keeb.protocol_version, "unicode_mode_volatile"):
+            return self._push_unicode_mode(mode, persist=False)
+        self.log.debug("Holding back the %s unicode mode: the reading is ambiguous "
+                       "and this firmware cannot apply one without storing it.",
+                       mode.name)
+        return False
+
+    def _start_wincompose_settle(self):
+        """Re-probe the unicode input method for a bounded window after a connect.
+
+        The mode is otherwise detected exactly once, in the post-connect flow —
+        and at logon that lands in a race the host usually loses: autostart brings
+        PolyKybdHost up before WinCompose, so ``get_input_method()`` sees no
+        wincompose.exe and reports plain ``Windows``. The keyboard is then told to
+        type Windows-style Alt+numpad sequences for the rest of the session, which
+        cannot produce an emoji. The only existing correction is the tray's
+        menu-open probe, which needs the user to open the menu; a headless daemon
+        has none at all.
+
+        Windows-only: everywhere else ``get_input_method()`` is a constant
+        function of ``sys.platform`` and cannot change under us. Runs on its own
+        thread because the probe shells out to TASKLIST (~50 ms), which must not
+        sit on the HID worker between the reconnect probe and the console read.
+        Runs for the life of the core once started; a later connect only re-opens
+        the fast-probe window (see _wincompose_settle_loop)."""
+        if sys.platform != "win32":
+            return
+        with self._wincompose_lock:
+            if self._wincompose_shutting_down:
+                return   # shutdown() already set the stop Event — see below
+            # A reconnect re-opens the boot window: it may be a replug on a
+            # machine that has just come up, and the probes are cheap.
+            self._wincompose_fast_until = (
+                time.monotonic() + self.WINCOMPOSE_FAST_SECONDS)
+            if self._wincompose_thread is not None and self._wincompose_thread.is_alive():
+                return   # already watching; the deadline above extends it
+            self._wincompose_stop.clear()
+            self._wincompose_thread = threading.Thread(
+                target=self._wincompose_settle_loop, name="poly-wincompose-settle",
+                daemon=True)
+            self._wincompose_thread.start()
+
+    def _wincompose_settle_loop(self):
+        """Watch the unicode input method for the life of the core.
+
+        ⚠️ It deliberately does NOT stop once WinCompose is seen, and has no
+        deadline. Stopping there would make the watch one-directional — it would
+        catch WinCompose starting late and never notice it being QUIT, which
+        leaves the keyboard emitting compose sequences that produce nothing.
+        Only the tray's menu-open probe covers that today, and a headless daemon
+        has no tray. A deadline would just be another guess at how slow a logon
+        can be."""
+        from polyhost.input.unicode_input import get_input_method
+        while True:
+            # Re-read the phase each pass: a reconnect re-opens the boot window.
+            interval = (self.WINCOMPOSE_FAST_INTERVAL
+                        if time.monotonic() < self._wincompose_fast_until
+                        else self.WINCOMPOSE_SLOW_INTERVAL)
+            if self._wincompose_stop.wait(interval):
+                return
+            if not self.poly_settings.get("unicode_send_composition_mode"):
+                continue   # re-check: the setting can be turned back on
+            if not self.connected:
+                # Nothing to push to, and the post-connect flow re-asserts the
+                # mode anyway — so a disconnected keyboard is not a reason to
+                # log a failed push once a minute.
+                continue
+            try:
+                mode = get_input_method()
+            except Exception:
+                self.log.debug("WinCompose probe failed", exc_info=True)
+                continue
+            # Deduped inside _push_unicode_mode over (mode, persist), so a
+            # steady state is silent AND the volatile push made during the logon
+            # window is re-asserted persistently on the first pass after it closes.
+            self._apply_unicode_mode(mode)
 
     def report_window(self, handle, name, title, os=None, url=None):
         """Inject an external active-window report into remote window tracking
@@ -822,11 +1045,15 @@ class PolyCore(Observable):
             if decision["do_post_connect"]:
                 if connected_now and self.poly_settings.get("unicode_send_composition_mode"):
                     from polyhost.input.unicode_input import get_input_method
-                    mode = get_input_method()
-                    self.log.info("Setting unicode mode to str %s", mode)
-                    # set_unicode_mode is device I/O -> worker job.
-                    self.worker.submit("set_unicode_mode",
-                                       lambda c, m=mode: self.keeb.set_unicode_mode(m))
+                    # Force the push (last_pushed reset) so a reconnect always
+                    # re-asserts — this may be a different keyboard, or one whose
+                    # EEPROM was reset since. Same idiom as _push_os below.
+                    self._last_pushed_unicode_mode = None
+                    self._queued_unicode_mode = None
+                    # Armed FIRST: at logon this detection races WinCompose's own
+                    # autostart and usually loses, and the watcher is what corrects it.
+                    self._start_wincompose_settle()
+                    self._apply_unicode_mode(get_input_method())
                 if connected_now:
                     # Push the host OS (independent of the unicode mode). The keyboard
                     # applies it only in auto mode (a manual pin / Android wins), and
@@ -1302,7 +1529,17 @@ class PolyCore(Observable):
         ok, payload = self._device_call(
             "set_unicode_mode", lambda c, m=mode: self.keeb.set_unicode_mode(m))
         if not ok:
+            # Don't record a push the keyboard never took, or the settle watcher
+            # (and the next explicit refresh) would dedupe against a mode that
+            # never landed.
             return False, payload
+        # Unconditional, unlike _push_unicode_mode: an explicit refresh is a user
+        # asking for the mode to be re-asserted, so it always reaches the device.
+        # Recording it keeps the watcher's dedupe honest.
+        self._last_pushed_unicode_mode = mode
+        # An explicit refresh always persists, so it also clears a volatile push
+        # the watcher would otherwise still be waiting to make stick.
+        self._last_push_was_volatile = False
         return True, {"mode": mode.name}
 
     def set_glyph_script(self, value):
@@ -1559,11 +1796,45 @@ class PolyCore(Observable):
             return False, f"Unknown setting '{key}'"
         alls[key] = value
         self.poly_settings.set_all(alls)
-        # A brightness/daylight setting change takes effect immediately instead
-        # of on the next 10-min cycle (covers polyctl + the client-mode dialog).
-        if key in self._BRIGHTNESS_SETTING_KEYS:
-            self.refresh_daylight_brightness()
+        self.note_settings_changed([key])
         return True, key
+
+    def note_settings_changed(self, keys=None):
+        """Apply the side effects a settings change has on the live device.
+
+        ⚠️ Both writers land here, and there are exactly two: ``settings_set``
+        (polyctl and the client-mode dialog) and the in-process settings dialog,
+        which writes the file directly and then calls this. A side effect added
+        to only one of them is a setting that behaves differently depending on
+        whether the GUI happens to be a daemon client — which is how enabling
+        ``unicode_send_composition_mode`` mid-session came to do nothing at all
+        until the next reconnect.
+
+        ``keys`` None means "anything in the dialog may have changed", which is
+        all the in-process dialog knows."""
+        if keys is None or self._BRIGHTNESS_SETTING_KEYS.intersection(keys):
+            # Takes effect now instead of on the next 10-min cycle.
+            self.refresh_daylight_brightness()
+        if keys is None or "unicode_send_composition_mode" in keys:
+            self._refresh_unicode_watch()
+
+    def _refresh_unicode_watch(self):
+        """Start the settle watcher and re-assert the mode after the setting was
+        turned on mid-session.
+
+        The watcher is otherwise armed only in the post-connect flow, and only
+        when the setting was already on — so a user who connects with it off and
+        enables it later had no watcher, and the keyboard kept whatever unicode
+        mode it was last told, indefinitely. Turning it OFF stops nothing on
+        purpose: the watcher re-reads the setting every pass (it can be turned
+        back on) and pushes nothing while it is off."""
+        if not self.poly_settings.get("unicode_send_composition_mode"):
+            return
+        self._start_wincompose_settle()
+        if not self.connected:
+            return   # the post-connect flow will assert it
+        from polyhost.input.unicode_input import get_input_method
+        self._apply_unicode_mode(get_input_method())
 
     # ------------------------------------------------------------------
     # Telemetry (anonymous usage census)
