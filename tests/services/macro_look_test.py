@@ -93,6 +93,50 @@ class IconLookupTest(unittest.TestCase):
         has to be able to tell the difference rather than showing an empty mark."""
         self.assertIsNone(mk.find_glyph(_FONTS, 0x10FFFD))
 
+    def test_the_stock_look_glyphs_all_resolve(self):
+        """A slot nobody has claimed draws the Mayan numeral for its own index, so all
+        POLY_MACRO_COUNT of them have to be findable -- one that is not falls back to
+        the index and the keycap says nothing the number does not."""
+        for i in range(16):
+            cp = 0x1D2E0 + i
+            self.assertIsNotNone(mk.find_glyph(_FONTS, cp), f"M{i} at {cp:#x}")
+
+    def test_a_glyph_the_CHECKOUT_lacks_still_resolves_from_the_shipped_packs(self):
+        """The clone beside this repo is a working tree at some branch, and the bundles
+        this host ships can be ahead of it. The keyboard has them -- the host flashed
+        them on connect -- so previewing only what the headers know showed the index
+        where the keycap draws a glyph (field, 2026-09-08, the Mayan numerals)."""
+        import tools.gfx_font as gf
+
+        cp = 0x1D2E0
+        stale = [f for f in _FONTS if not (f.first <= cp <= f.last)]
+        self.assertIsNone(mk.find_glyph(stale, cp), "fixture still covers the glyph")
+        real = gf.load_all_fonts
+        gf.load_all_fonts = lambda *_a, **_k: stale
+        try:
+            fonts, source = mk.load_render_fonts()
+        finally:
+            gf.load_all_fonts = real
+        self.assertEqual(source, "headers")
+        self.assertIsNotNone(mk.find_glyph(fonts, cp))
+
+    def test_the_headers_still_WIN_where_both_cover_a_codepoint(self):
+        """Appending must not reorder anything: a resident face deliberately shadows a
+        pack copy of the same glyph, and the union is only safe because find_glyph
+        stops at the first font that covers the codepoint."""
+        import tools.gfx_font as gf
+
+        cp = ord("A")
+        head = mk.find_glyph(_FONTS, cp)
+        self.assertIsNotNone(head)
+        real = gf.load_all_fonts
+        gf.load_all_fonts = lambda *_a, **_k: list(_FONTS)
+        try:
+            fonts, _ = mk.load_render_fonts()
+        finally:
+            gf.load_all_fonts = real
+        self.assertIs(mk.find_glyph(fonts, cp)[0], head[0])
+
     def test_a_gap_record_is_not_a_hit(self):
         """The build empties any pack glyph a higher-priority font already draws
         identically. A gap is all-zero, and reading it as a hit would render nothing
