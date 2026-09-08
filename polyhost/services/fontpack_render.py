@@ -270,11 +270,9 @@ def glyph_cell(font, cp: int, cell_w: int, cell_h: int, scale: int = 2,
     if oled:
         # Post-process the keycap the way the physical OLED shows it, then composite
         # the RGB result into an RGB cell (label stays a neutral grey).
-        if mode == "oled":                              # raw crisp pixels
-            cimg = simulate_oled(cimg, scale=scale, jitter=0.0, diffusion=0.0,
-                                 stagger=False, brightness=1.18)
-        else:                                           # through the clear cover
-            cimg = simulate_oled(cimg, scale=scale, jitter=0.22, brightness=1.25)
+        # Through the shared preset, never inlined knobs: this surface and the keymap
+        # editor both claim to show the same physical panel (see `apply_oled_style`).
+        cimg = apply_oled_style(cimg, "oled" if mode == "oled" else "keycap", scale)
         out = Image.new("RGB", (cell_w, cell_h + lab_h), (0, 0, 0))
         out.paste(cimg, (max(0, (cell_w - cimg.width) // 2),
                          max(0, (cell_h - cimg.height) // 2)))

@@ -5,6 +5,7 @@ positions are predictable, plus a truncated-bitmap case to prove the inspector
 won't crash on a corrupt pack.
 """
 import unittest
+from unittest import mock
 
 from polyhost.services import fontpack_reader as fpr
 from polyhost.services import fontpack_render as rd
@@ -327,6 +328,28 @@ class GlyphCellOledModeTest(unittest.TestCase):
         for mode in ("glyph", "keycap"):
             img = rd.glyph_cell(f, 0x41, 72 * 3, 40 * 3, scale=3, mode=mode)
             self.assertEqual(img.mode, "L", mode)
+
+    def test_the_oled_modes_go_THROUGH_the_shared_preset(self):
+        """`glyph_cell` had its own copy of both presets, byte for byte the same
+        numbers as `apply_oled_style` -- so the inspector and the keymap editor would
+        have shown one physical panel two different ways the moment either copy was
+        tuned (CodeRabbit, #221). Pinning the ROUTING rather than the pixels is what
+        catches a re-inlining: identical output is exactly what a fresh duplicate
+        produces, which is how this got past review the first time.
+        """
+        f = self._font()
+        seen = []
+        real = rd.apply_oled_style
+
+        def spy(img, style, scale):
+            seen.append(style)
+            return real(img, style, scale)
+
+        with mock.patch.object(rd, "apply_oled_style", spy):
+            for mode in ("oled", "keycap_cover"):
+                rd.glyph_cell(f, 0x41, 72 * 3, 40 * 3, scale=3, mode=mode)
+        # `keycap_cover` is this module's name for what the preset calls `keycap`.
+        self.assertEqual(seen, ["oled", "keycap"])
 
 
 class GlyphCellTest(unittest.TestCase):
