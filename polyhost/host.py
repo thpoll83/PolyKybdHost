@@ -2668,13 +2668,25 @@ class PolyHost(QApplication):
         if self._wincompose_was_running != running:
             self.log.info("WinCompose is %srunning — re-applying the unicode input mode.",
                           "" if running else "no longer ")
-            try:
-                ok, payload = self.core.refresh_unicode_mode()
-            except Exception as e:  # noqa: BLE001 — no keyboard / daemon not up yet
-                ok, payload = False, e
-            if not ok:
-                self.log.warning("Could not re-apply the unicode input mode: %s", payload)
+            # ⚠️ OFF the Qt main thread. refresh_unicode_mode bottoms out in a
+            # bounded run_sync (PolyCore.DEVICE_CALL_TIMEOUT, 5 s) — and in
+            # client mode in an RPC to the daemon that does the same — so a
+            # paused or mid-flash keyboard would freeze the tray for seconds
+            # while the menu is trying to open. Nothing renders from the result,
+            # so it only needs to be logged; RemoteCore takes its own _rpc_lock,
+            # which is what makes calling it off-main-thread safe.
+            threading.Thread(target=self._reapply_unicode_mode,
+                             name="poly-unicode-refresh", daemon=True).start()
         self._wincompose_was_running = running
+
+    def _reapply_unicode_mode(self):
+        """Re-push the unicode input mode; runs on its own thread (see caller)."""
+        try:
+            ok, payload = self.core.refresh_unicode_mode()
+        except Exception as e:  # noqa: BLE001 — no keyboard / daemon not up yet
+            ok, payload = False, e
+        if not ok:
+            self.log.warning("Could not re-apply the unicode input mode: %s", payload)
 
     def _on_install_wincompose_clicked(self):
         """Explain what WinCompose is, then download + start its installer.

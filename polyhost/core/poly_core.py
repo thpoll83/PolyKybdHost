@@ -158,6 +158,11 @@ class PolyCore(Observable):
         # None). The WinCompose settle watcher re-probes after a connect and pushes
         # only on a real change; see _start_wincompose_settle.
         self._last_pushed_unicode_mode = None
+        # The mode of a push that is queued but whose device result is not in yet.
+        # Separate from _last_pushed_unicode_mode so a FAILED push does not stay
+        # deduped: only a confirmed one suppresses a retry.
+        self._queued_unicode_mode = None
+        self._wincompose_shutting_down = False
         self._wincompose_stop = threading.Event()
         self._wincompose_thread = None
         self._wincompose_deadline = 0.0
@@ -369,10 +374,17 @@ class PolyCore(Observable):
         if self._tick_thread is not None:
             self._tick_thread.join(timeout=1)
             self._tick_thread = None
-        self._wincompose_stop.set()
-        if self._wincompose_thread is not None:
-            self._wincompose_thread.join(timeout=1)
+        # Under the same lock as _start_wincompose_settle, and with a one-way
+        # flag: otherwise a reconnect landing here concurrently would clear the
+        # stop Event and start a fresh watcher AFTER shutdown, which would then
+        # hold the core and submit to a stopped worker for up to 15 minutes.
+        with self._wincompose_lock:
+            self._wincompose_shutting_down = True
+            self._wincompose_stop.set()
+            wincompose_thread = self._wincompose_thread
             self._wincompose_thread = None
+        if wincompose_thread is not None:
+            wincompose_thread.join(timeout=1)
         try:
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
@@ -552,15 +564,41 @@ class PolyCore(Observable):
     def _push_unicode_mode(self, mode):
         """Submit a unicode-input-method push (HID cmd 20), deduped.
 
-        Records what was last sent so the settle watcher below can re-probe
-        cheaply. Device I/O, so it goes on the worker."""
-        if mode == self._last_pushed_unicode_mode:
+        Device I/O, so it goes on the worker — which means ``submit`` only
+        QUEUES it and the result arrives later.
+
+        ⚠️ The mode is recorded as pushed in ``on_done``, only when the keyboard
+        reports success. Recording it here would dedupe a push the device never
+        took (paused, mid-flash, unplugged), and the settle watcher would then
+        skip the retry and exit as soon as it saw WinCompose — leaving the
+        keyboard on the wrong mode for the session, which is the very bug this
+        watcher exists to fix. ``_queued_unicode_mode`` suppresses a duplicate
+        submission while one is in flight and is cleared either way."""
+        if mode in (self._last_pushed_unicode_mode, self._queued_unicode_mode):
             return False
-        self._last_pushed_unicode_mode = mode
+        self._queued_unicode_mode = mode
         self.log.info("Pushing unicode input mode %s to keyboard.", mode.name)
-        self.worker.submit("set_unicode_mode",
-                           lambda c, m=mode: self.keeb.set_unicode_mode(m))
+        self.worker.submit(
+            "set_unicode_mode",
+            lambda c, m=mode: self.keeb.set_unicode_mode(m),
+            on_done=lambda _name, result, m=mode: self._unicode_mode_pushed(m, result))
         return True
+
+    def _unicode_mode_pushed(self, mode, result):
+        """HID-worker callback: record the push only if the device took it.
+
+        ``result`` is the job's return value — the device layer's ``(ok, msg)``
+        — or the exception the job raised, which the worker catches and stores
+        rather than re-raising."""
+        if self._queued_unicode_mode == mode:
+            self._queued_unicode_mode = None
+        ok = isinstance(result, tuple) and len(result) == 2 and bool(result[0])
+        if ok:
+            self._last_pushed_unicode_mode = mode
+        else:
+            self.log.warning(
+                "Unicode input mode %s was not applied (%r); it will be retried "
+                "while the settle watcher is running.", mode.name, result)
 
     def _start_wincompose_settle(self):
         """Re-probe the unicode input method for a bounded window after a connect.
@@ -583,6 +621,8 @@ class PolyCore(Observable):
         if sys.platform != "win32":
             return
         with self._wincompose_lock:
+            if self._wincompose_shutting_down:
+                return   # shutdown() already set the stop Event — see below
             now = time.monotonic()
             self._wincompose_deadline = now + self.WINCOMPOSE_SETTLE_SECONDS
             self._wincompose_fast_until = now + self.WINCOMPOSE_SETTLE_FAST_SECONDS
@@ -913,6 +953,7 @@ class PolyCore(Observable):
                     # re-asserts — this may be a different keyboard, or one whose
                     # EEPROM was reset since. Same idiom as _push_os below.
                     self._last_pushed_unicode_mode = None
+                    self._queued_unicode_mode = None
                     self._push_unicode_mode(get_input_method())
                     # At logon this detection races WinCompose's own autostart and
                     # usually loses, so re-probe for a bounded window afterwards.

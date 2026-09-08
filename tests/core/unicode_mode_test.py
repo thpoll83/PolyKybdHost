@@ -220,30 +220,105 @@ class WinComposeSettleTest(unittest.TestCase):
 
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
 class PushUnicodeModeTest(unittest.TestCase):
+    """`submit` only QUEUES the HID command, so the result lands later — these
+    pin that a mode counts as pushed only once the keyboard says it took it."""
 
     def _core(self):
         submitted = []
+
+        def _submit(name, fn, on_done=None):
+            submitted.append((name, on_done))
+
         core = types.SimpleNamespace(
             _last_pushed_unicode_mode=None,
-            log=types.SimpleNamespace(info=lambda *a, **k: None),
-            worker=types.SimpleNamespace(
-                submit=lambda name, fn: submitted.append(name)),
+            _queued_unicode_mode=None,
+            log=types.SimpleNamespace(info=lambda *a, **k: None,
+                                      warning=lambda *a, **k: None),
+            worker=types.SimpleNamespace(submit=_submit),
         )
         core._submitted = submitted
+        # The push's on_done calls back into the core; bind the REAL method so
+        # the confirm/fail bookkeeping under test is the shipped one.
+        core._unicode_mode_pushed = (
+            lambda mode, result: PolyCore._unicode_mode_pushed(core, mode, result))
         return core
+
+    def _finish(self, core, result):
+        """Fire the on_done of the most recent submission, as the worker would."""
+        _name, on_done = core._submitted[-1]
+        on_done("set_unicode_mode", result)
 
     def test_pushes_a_new_mode(self):
         core = self._core()
         self.assertTrue(PolyCore._push_unicode_mode(core, InputMethod.WinCompose))
-        self.assertEqual(core._submitted, ["set_unicode_mode"])
+        self.assertEqual([n for n, _ in core._submitted], ["set_unicode_mode"])
+
+    def test_the_mode_is_recorded_only_after_the_device_CONFIRMS(self):
+        core = self._core()
+        PolyCore._push_unicode_mode(core, InputMethod.WinCompose)
+        self.assertIsNone(core._last_pushed_unicode_mode)   # queued, not confirmed
+        self._finish(core, (True, "ok"))
         self.assertEqual(core._last_pushed_unicode_mode, InputMethod.WinCompose)
 
-    def test_dedupes_an_unchanged_mode(self):
+    def test_a_FAILED_push_is_retried_rather_than_deduped(self):
+        """The whole point of the watcher is to retry. A push the keyboard
+        refused (paused, mid-flash, unplugged) must not suppress the next one."""
+        core = self._core()
+        PolyCore._push_unicode_mode(core, InputMethod.WinCompose)
+        self._finish(core, (False, "suspended"))
+        self.assertIsNone(core._last_pushed_unicode_mode)
+        self.assertTrue(PolyCore._push_unicode_mode(core, InputMethod.WinCompose))
+        self.assertEqual(len(core._submitted), 2)
+
+    def test_an_EXCEPTION_result_counts_as_a_failure(self):
+        """The worker catches a raising job and stores the exception as the
+        result rather than re-raising, so on_done sees it in place of a tuple."""
+        core = self._core()
+        PolyCore._push_unicode_mode(core, InputMethod.WinCompose)
+        self._finish(core, OSError("device went away"))
+        self.assertIsNone(core._last_pushed_unicode_mode)
+        self.assertTrue(PolyCore._push_unicode_mode(core, InputMethod.WinCompose))
+
+    def test_dedupes_a_confirmed_mode(self):
         """The watcher probes every few seconds — it must not re-send each time."""
         core = self._core()
         PolyCore._push_unicode_mode(core, InputMethod.WinCompose)
+        self._finish(core, (True, "ok"))
         self.assertFalse(PolyCore._push_unicode_mode(core, InputMethod.WinCompose))
-        self.assertEqual(core._submitted, ["set_unicode_mode"])
+        self.assertEqual(len(core._submitted), 1)
+
+    def test_does_not_submit_twice_while_one_is_IN_FLIGHT(self):
+        core = self._core()
+        PolyCore._push_unicode_mode(core, InputMethod.WinCompose)
+        self.assertFalse(PolyCore._push_unicode_mode(core, InputMethod.WinCompose))
+        self.assertEqual(len(core._submitted), 1)
+
+
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class WinComposeShutdownTest(unittest.TestCase):
+    """shutdown() and _start_wincompose_settle race: a reconnect must not be
+    able to start a fresh 15-minute watcher after the core has begun stopping."""
+
+    def _core(self):
+        return types.SimpleNamespace(
+            _wincompose_shutting_down=True,
+            _wincompose_lock=threading.Lock(),
+            _wincompose_stop=threading.Event(),
+            _wincompose_thread=None,
+            _wincompose_deadline=0.0,
+            _wincompose_fast_until=0.0,
+            WINCOMPOSE_SETTLE_SECONDS=900,
+            WINCOMPOSE_SETTLE_FAST_SECONDS=120,
+        )
+
+    def test_a_reconnect_after_shutdown_does_not_re_arm_the_watcher(self):
+        core = self._core()
+        core._wincompose_stop.set()          # as shutdown() left it
+        with patch("sys.platform", "win32"):
+            PolyCore._start_wincompose_settle(core)
+        self.assertIsNone(core._wincompose_thread)
+        self.assertTrue(core._wincompose_stop.is_set(),
+                        "the stop Event was cleared after shutdown")
 
 
 if __name__ == "__main__":
