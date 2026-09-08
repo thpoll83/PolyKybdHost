@@ -195,9 +195,9 @@ class TestLanguageCommands(unittest.TestCase, LockCheckMixin):
 class TestSimpleCommandPayloads(unittest.TestCase, LockCheckMixin):
     """Pin the exact bytes each command puts on the wire."""
 
-    def _payload(self, call, *args):
+    def _payload(self, call, *args, **kwargs):
         keeb, device = make_keeb(auto_ack=True)
-        ok, _ = getattr(keeb, call)(*args)
+        ok, _ = getattr(keeb, call)(*args, **kwargs)
         self.assertTrue(ok)
         self.assert_lock_free(keeb)
         return device.payloads()[0]
@@ -236,8 +236,14 @@ class TestSimpleCommandPayloads(unittest.TestCase, LockCheckMixin):
         self.assertEqual(self._payload('set_mirror_overlays', False)[:3], bytes([POLY, 12, 0x04]))
 
     def test_set_unicode_mode(self):
-        self.assertEqual(self._payload('set_unicode_mode', InputMethod.WinCompose)[:3],
-                         bytes([POLY, 20, 3]))
+        self.assertEqual(self._payload('set_unicode_mode', InputMethod.WinCompose)[:4],
+                         bytes([POLY, 20, 3, 0]))
+
+    def test_set_unicode_mode_volatile_sets_the_flag_byte(self):
+        """data[3] (protocol 17+): apply in RAM, do not write EEPROM."""
+        self.assertEqual(
+            self._payload('set_unicode_mode', InputMethod.Windows, persist=False)[:4],
+            bytes([POLY, 20, 2, 1]))
 
     def test_set_idle_on_off(self):
         self.assertEqual(self._payload('set_idle', True)[:3], bytes([POLY, 15, 1]))
