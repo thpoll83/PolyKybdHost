@@ -1,14 +1,20 @@
 ---
 name: triage-pr-review
-description: Triage the review feedback on a PolyKybd pull request and drive it to a resolution — fetch the comments and reviews, work out which bots actually reviewed (several post long comments without reviewing), verify every finding against the real code before acting, fix the true ones, decline the false ones with evidence, and post a single reply. Use when asked to "check the PR for feedback / comments / reviews", "what did CodeRabbit say", "address the review", or after opening a PR and waiting for the bots. NOT for CI failures (that's diagnose-hil-failure for HIL, or the build job's own log).
+description: Triage the review feedback on a PolyKybd pull request and drive it to a resolution — fetch the comments and reviews, work out which of the five reviewers actually reviewed and whether any of them read the CURRENT head (several post long comments without reviewing; a completed review can be pinned to a pre-push commit), verify every finding against the real code before acting, fix the true ones, decline the false ones with evidence, and post a single reply. Use when asked to "check the PR for feedback / comments / reviews", "what did CodeRabbit / Sourcery / Greptile / Qodo / CodeQL say", "address the review", "was this PR actually reviewed", or after opening a PR and waiting for the bots. NOT for CI failures (that's diagnose-hil-failure for HIL, or the build job's own log).
 ---
 
 # Triage PR review feedback
 
-Three bots review PolyKybd PRs — **CodeRabbit**, **Sourcery** and **Qodo** — and
-their output is *not* uniformly trustworthy or even uniformly a review. This skill
-is the loop: find out what actually ran, verify each finding against the code, act,
-and reply once.
+**Five** reviewers can post on a PolyKybd PR — four LLM bots (**CodeRabbit**,
+**Sourcery**, **Qodo**, **Greptile**) and one static analyser (**CodeQL**, on the
+host repo; **cppcheck** on the firmware) — and their output is *not* uniformly
+trustworthy or even uniformly a review. This skill is the loop: find out what
+actually ran, verify each finding against the code, act, and reply once.
+
+⚠️ **This skill said "three bots" long after there were five.** Greptile was
+installed later, and CodeQL/cppcheck were never counted at all — so the roster
+below is the part most likely to be stale again. Check `CLAUDE.md`'s code-review
+conventions before trusting it, and update both when a reviewer is added or dies.
 
 The standing repo rule is **verify, not dismiss**: on one PR, 3 of 7 CodeRabbit
 findings were false and two were refuted by their own evidence — but the same round
@@ -49,10 +55,42 @@ Check each:
 | **CodeRabbit** | body contains **`Actionable comments posted: N`** | `> [!WARNING] Review limit reached … next review in N minutes`; a "Reviews paused … under active development" note (auto-pause) |
 | **Sourcery** | a review with per-comment findings ("Hey - I've found N issues") | its **review object's body is the rate-limit notice** (`you have reached your weekly rate limit of 500000 diff characters`) while its *Reviewer's Guide comment still renders in full* and looks like a review |
 | **Qodo** | a comment headed **`Code Review by Qodo`** with a bug count | only `PR Summary by Qodo` — that is a description, never a review |
+| **Greptile** | a review object with findings | **announces a skip NOWHERE** — silence is indistinguishable from "no findings". Its `Greptile Review` **check run is anti-correlated with reality** (measured: a green one over no review at all), so it proves nothing. Account-wide refusals arrive as a review whose body is *"reached the 50-credit limit for trial accounts"* |
+| **CodeQL** (host) | inline comments from **`github-advanced-security[bot]`** + a review object | judge the **`Analyze Python` job**, not the `CodeQL` check run. Absent on a PR that changed no analysed code |
 
 The findings live in **`get_reviews`**, not only in `get_comments` — CodeRabbit's
 actionable list is the review body, and Sourcery's rate-limit notice arrives as a
 review too. Always pull both.
+
+### 2b. A review only counts for the commit it READ — check the sha
+
+The standing check is **two conditions together**, and each alone points the wrong
+way:
+
+1. the review's **`commit_id` equals the PR's head sha**, AND
+2. its **body is not a refusal notice**.
+
+Neither is sufficient. A **refusal is a review object carrying the head sha**
+(Sourcery's budget notice, Greptile's credit limit), so a `commit_id`-only rule
+marks the PR reviewed by a bot that read nothing. And a **clean CodeRabbit pass
+creates no review object at all** — it reports *"No actionable comments were
+generated 🎉"* by editing its summary comment — so a body-only rule reads a clean
+pass as never reviewed. Run both, and when `get_reviews` is empty read the summary
+comment's own text (`📥 Commits` range; *skipped* vs *no actionable comments*).
+
+⚠️ **A completed review can still be pinned to a PRE-PUSH head, which is quieter
+than the documented abort.** Measured on host#218 (2026-09-07): a push landed
+inside a running review; the review finished normally — full walkthrough, three
+findings, pre-merge checks — but its range read `c02a1fa..be78692` throughout and
+its `commit_id` was the pre-push commit, so the pushed commit was never read. The
+PR then carries a real review that does not cover its head. Two consequences:
+
+- **Hold pushes while a review is in flight.** On an **under-10-stars repo**
+  (`PolyKybdHost`, `polykybd-docs`) this is not a free mistake: auto-review is off
+  there, so a push re-triggers **nothing** (observed — the summary re-renders as the
+  under-10-stars skip), and re-reading the new commit spends the hour's only slot.
+- **Say so in the PR body** when the fixes end up unreviewed. A green board plus a
+  real-looking review is exactly what this skill exists to see through.
 
 If nothing actually reviewed and it matters, comment `@coderabbitai review` (and
 `@coderabbitai full review` after an aborted run) rather than merging on the
