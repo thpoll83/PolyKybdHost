@@ -181,13 +181,28 @@ def load_render_fonts(font_dir: str | None = None, pack_dir: str | None = None):
 
     Prefer the first, fall back to the second, and say which came back so a caller can
     be honest about it rather than quietly previewing the wrong face.
+
+    ⚠️ The two are UNIONED, not chosen between: the headers come first (so their
+    priority, resident faces included, decides every codepoint they cover) and the
+    shipped bundles are appended behind them. A checkout is a working tree at some
+    branch, and the bundles this host ships can be AHEAD of it -- a glyph added to a
+    bundle on a firmware branch the clone does not have is then absent from the
+    headers while the keyboard draws it perfectly well, because the host flashed that
+    very bundle on connect. Headers-only previewed the stale set and silently fell
+    back to the index (field, 2026-09-08: the Mayan numerals a fresh macro slot draws
+    were missing from the editor). Appending can only ADD hits -- find_glyph returns
+    the first font covering the codepoint -- so nothing the headers resolve changes.
     """
     font_dir = font_dir or ml.default_font_dir()
+    packs = load_pack_fonts(pack_dir)
     try:
         from tools.gfx_font import load_all_fonts
         fonts = load_all_fonts(font_dir)
         if fonts:
-            return fonts, "headers"
+            # Still "headers": the value tells the caller the RESIDENT faces were
+            # visible, which is what makes a "no glyph" warning safe to show. The
+            # appended bundles only widen what was found, never what was shadowed.
+            return fonts + packs, "headers"
     except Exception:
         # Deliberately swallowed: no qmk_firmware checkout beside this repo is the
         # NORMAL case for an installed host, and the pack fallback below covers it.
@@ -195,4 +210,4 @@ def load_render_fonts(font_dir: str | None = None, pack_dir: str | None = None):
         # there is nothing to distinguish here -- the caller is told which source it
         # got and can be honest about the difference.
         pass
-    return load_pack_fonts(pack_dir), "packs"
+    return packs, "packs"

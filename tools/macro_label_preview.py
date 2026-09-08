@@ -24,7 +24,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from polyhost.services.macro_label import (  # noqa: E402
-    PANEL_H, PANEL_W, default_font_dir, fit, load_nano_font,
+    PANEL_H, PANEL_W, default_font_dir, fit, load_caption_faces, pick_face,
 )
 from tools.gfx_font import GfxFont, _parse_header  # noqa: E402
 
@@ -95,8 +95,13 @@ def draw(px, text: str, font: GfxFont, x0: int, baseline: int) -> int:
     return clipped
 
 
-def render(label: str, macro_id: int, nano: GfxFont, mid: GfxFont):
-    """Returns (pixel grid, clipped count, the label text actually drawn)."""
+def render(label: str, macro_id: int, faces, mid: GfxFont):
+    """Returns (pixel grid, clipped count, the label text actually drawn).
+
+    `faces` is the caption ladder, largest first — render_macro_key() picks the largest
+    whose whole label fits and drops to the floor face otherwise, so a short caption is
+    drawn half again as large as it used to be and the mark gets the rows that are left.
+    """
     px = [[0] * PANEL_W for _ in range(PANEL_H)]
     index_text = f"M{macro_id}"
     clipped = 0
@@ -108,14 +113,15 @@ def render(label: str, macro_id: int, nano: GfxFont, mid: GfxFont):
                         (PANEL_H - (iymax - iymin + 1)) // 2 - iymin)
         return px, clipped, ""
 
-    kept = fit(label, nano).text
+    face = pick_face(label, faces)
+    kept = fit(label, face).text
     if not kept:
         return px, 0, ""
 
-    lxmin, lxmax, lymin, lymax = bbox(kept, nano)
+    lxmin, lxmax, lymin, lymax = bbox(kept, face)
     cap_base = PANEL_H - 1 - lymax
     free_rows = cap_base + lymin
-    clipped += draw(px, kept, nano,
+    clipped += draw(px, kept, face,
                     (PANEL_W - (lxmax - lxmin + 1)) // 2 - lxmin, cap_base)
 
     ixmin, ixmax, iymin, iymax = bbox(index_text, mid)
@@ -152,14 +158,14 @@ def main() -> int:
                     help="sweep every id x a worst-case label set; fail on any clipped pixel")
     args = ap.parse_args()
 
-    nano = load_nano_font(args.font_dir)
+    faces = load_caption_faces(args.font_dir)
     mid = _load(args.font_dir, "util_font.h", MID_FONT_SYMBOL)
 
     if args.check:
         bad = 0
         for macro_id in range(16):
             for label in CHECK_LABELS:
-                px, clipped, kept = render(label, macro_id, nano, mid)
+                px, clipped, kept = render(label, macro_id, faces, mid)
                 if clipped:
                     bad += 1
                     print(f"CLIPPED {clipped:3d}px  M{macro_id} {label!r} -> {kept!r}")
@@ -174,7 +180,7 @@ def main() -> int:
         return 1 if bad else 0
 
     for label in (args.labels or ["work mail"]):
-        px, clipped, kept = render(label, args.id, nano, mid)
+        px, clipped, kept = render(label, args.id, faces, mid)
         print(f"\nM{args.id}  {label!r}" +
               (f"  (truncated to {kept!r})" if kept != label else "") +
               (f"  CLIPPED {clipped}px" if clipped else ""))

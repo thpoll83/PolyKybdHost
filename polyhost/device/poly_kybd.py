@@ -15,7 +15,7 @@ from polyhost.device.bit_packing import (pack_report, pairs_per_report,
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
 from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType, GlyphScript, GlyphSize
 from polyhost.device.hid_helper import HidHelper
-from polyhost.device.hid_fontpack import parse_id_version_block
+from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE
 from polyhost.device.overlay_cache import OverlayMRUCache
@@ -188,6 +188,8 @@ class PolyKybd:
         # {bundle_index: content_version} from the last GET_ID (protocol >= 6); empty
         # on older firmware. Drives auto-flashing of stale/missing font-pack bundles.
         self.fontpack_bundle_versions = {}
+        # None until a GET_ID lands, and None forever on firmware with no 'G' block.
+        self.state_generation = None
 
         # Statistics
         self.stat_plain = 0
@@ -299,6 +301,12 @@ class PolyKybd:
             # RAW reply before decoding — it lives in binary after the string's NUL.
             if result:
                 self.fontpack_bundle_versions = parse_id_version_block(msg)
+                # "Something changed on the board." The probe fetches GET_ID every
+                # second, so watching this is how the host learns about a setting
+                # changed with a keycode, a macro recorded, or a key reassigned --
+                # with no extra command and nothing pushed from the firmware.
+                # None = this firmware has no block; do NOT read that as "unchanged".
+                self.state_generation = parse_id_state_generation(msg)
             msg = msg.decode().strip('\x00')
             if not result:
                 return False, msg

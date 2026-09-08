@@ -923,6 +923,30 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   range-connect model exists to prevent, and the kind of gate that "has been forgotten
   twice". The capability tests in `tests/device/poly_kybd_capabilities_test.py` are the
   pattern to extend.
+- **When the BOARD changes something the host caches, the answer is a counter on a
+  reply the host ALREADY polls — not a new poll, and not a push.** The reconnect probe
+  sends GET_ID + GET_LANG every second (`RECONNECT_CYCLE_MSEC`), so the firmware's
+  `['G'][u16 state_generation]` block in the GET_ID reply reaches the host within ~1 s
+  at zero additional reports; the host re-reads whatever view is open when the value
+  moves. Worst case is a few seconds, not one — the probe skips inside
+  `OVERLAY_PROBE_COOLDOWN_S` and `decide_probe_publish` debounces three strikes — which
+  is irrelevant for a UI refresh. Full rationale, including why the console and an
+  unsolicited raw report both lose, is in `qmk_firmware/CLAUDE.md` § *Telling the host
+  something changed ON THE BOARD*.
+  - ⚠️ **`parse_id_version_block` finds the font-pack block POSITIONALLY** — it requires
+    `'V'` at exactly `nul + 1` (`device/hid_fontpack.py`) — so anything the firmware
+    adds to the GET_ID reply has to go AFTER it. Prepending would make every deployed
+    host read "no bundles on the device" and re-flash all eight bundles on every
+    connect. Parse tag-led blocks in order; never assume a fixed offset for the second
+    one.
+  - ⚠️ **The raw channel is strictly request/response, and `send_and_read_validate`'s
+    drain depends on it.** Its comment carries the invariant — *"Since protocol v3 the
+    firmware sends no unsolicited replies, so a stale reply here means one thing only"*
+    — so an unsolicited report from the keyboard is discarded by the next probe, and
+    making it work means framing plus routing in exactly the code path that stale-reply
+    bugs live in. That invariant is a design decision, not an accident: v3 made
+    `SEND_OVERLAY_MAPPING` silent to REDUCE escaped ACKs.
+
 - **Wire-format-divergent commands are ENCODED for the device's protocol, not blocked.**
   The only core command whose wire format ever changed is the **plain-overlay upload**
   (P11 packed the modifier+segment into one header byte). `send_overlay_for_keycode`
@@ -1449,8 +1473,29 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `render_macro_key()` composes it and counts pixels outside the 72×40 window (320
     cells, 0 clipped) — the same "verify by rendering" rule as `glyph_size_preview.py`,
     with the same caveat that it is a Python model of the C and can drift.
-- **The editor's "Key previews" toggle draws every key through the FIRMWARE's own
-  renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
+  - ⚠️ **The macro ICON lookup (`macro_look.load_render_fonts`) UNIONS the firmware
+    headers with the shipped `.plyf` bundles — it must not choose between them, and
+    that is the OPPOSITE remedy from `preview_data.choose_source` one section below.**
+    Both face the same hazard (a checkout beside this repo is a working tree at
+    whatever branch it is on), but the pairs differ: there, two renderings of the SAME
+    data, so the newer wins; here, the headers carry the resident half and the bundles
+    are what the host actually flashes, and either can be ahead. Preferring the
+    headers alone previewed the stale set — a slot's Mayan numeral drew as `M3`
+    because `symbol.plyf` v9 ships that font while a clone on `PolyKybd` has no such
+    header, and the keyboard drew it perfectly well (field, 2026-09-08). The union is
+    safe by construction: `find_glyph` stops at the first font covering the codepoint,
+    so appending can only ADD hits. **It fixes the icon PICKER for the same reason** —
+    it enumerates candidates from the bundles and then looks each one up, so a glyph
+    the headers lacked was dropped from the grid and could not be chosen at all.
+    ⚠️ The `(no glyph)` warning still rests on the source being `"headers"`, i.e. on
+    the RESIDENT faces having been visible; keep that meaning if the value is reworked.
+  - ⚠️ **The CAPTION half of that preview has no such fallback: `_Small_` is NOT in
+    `res/preview/ui_fonts.plyf`** (it ships `_Nano_` and `_Mid_` only), so
+    `load_caption_faces()` still needs a firmware checkout and an install without one
+    renders "no font — preview unavailable" rather than a keycap. Closing that means
+    exporting the third face, not another fallback path.
+- **The editor's key pictures are a THREE-way group — Symbol / Preview / Real —
+  drawing every key through the FIRMWARE's own renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
   for the language LUT and `tools/lang_demo.py` for the `keycode_helper.c` static-text
   map; macros go through the host's own composer). Off is the default, and off means
   each key shows its keycode text.
@@ -1474,6 +1519,27 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     loses, `source_info()` says so ("a firmware checkout is present but is not
     newer") — silence there reads as "my clone is being used" and sends the next
     round after the clone.
+  - ⚠️ **A STALE export costs a KEYCODE ITS PREVIEW, and it reads as a rendered
+    keycap rather than a missing one — the key falls back to its keycode TEXT.** The
+    shipped copy carries a `fw_version`, so a keycode added since the last
+    regeneration has no name and no legend in it: `KC_MACRO_REC` shipped at export
+    0.17.2 against firmware 0.19.1 and the REC key drew its token, reported as *"the
+    rec button has no preview"* (field, 2026-09-08). `scripts/export_preview_data.py
+    --check` names every stale file; regenerating writes all four (they are one
+    snapshot — leaving them at different `fw_version`s is worse than the staleness).
+    - ⚠️ **A DEVELOPER CANNOT SEE THIS**, which is why it needed a test that pins
+      the source. A firmware checkout that is newer wins the compare above, so the
+      editor draws the clone's legends and the stale export is invisible on the very
+      machine that would regenerate it. `test_a_STATE_DEPENDENT_legend_previews_too`
+      builds `KeycapPreview(source="shipped")` for exactly that reason — confirmed by
+      running it against the pre-regeneration export: green through the checkout, red
+      against the shipped copy.
+    - **Regenerating catches up on everything else too, so expect a wide diff.** The
+      0.17.2 → 0.19.1 pass moved ~200 `lang_lut` grid cells: the workbook had gained
+      the `altgrhalf` settings rows (which renumber every row under them) and the
+      2026-09-03 cursor-nudge tuning. That is the export doing its job; the pixel
+      parity test above is what says the result is right.
+
   - ⚠️ **The two sources are pinned to draw IDENTICALLY, by rendering, not by
     comparing structures.** `test_the_two_sources_draw_the_SAME_keycaps` renders
     every keycode the editor can show from both and requires the pixels to match
@@ -1623,6 +1689,32 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     itself proves nothing; these fixtures are the C's, so a divergence fails in the
     host suite rather than showing up as a keycap drawn slightly wrong. Keep the two
     in step when either side gains a case.
+  - ⚠️ **REAL puts the same keycap through `fontpack_render.apply_oled_style`, and
+    that preset is SHARED with the font-pack inspector on purpose.** Both surfaces
+    offer "how it really looks"; the knobs (`simulate_oled`'s jitter, diffusion,
+    stagger, brightness) inlined per call site would give one physical panel two
+    different-looking previews with nothing to say which was right. `"normal"` returns
+    the image untouched so a caller routes every mode through one call.
+  - ⚠️ **REAL is rendered at `KEYCAP_REAL_SCALE` (3) output pixels per OLED pixel, not
+    at 1:1 — the scale is not cosmetic.** The pixel grid, the bloom radius and the
+    per-pixel jitter are all sized from it, so at 1 there is literally nothing to see.
+    The tile then scales the larger image down, which is also why zooming the view in
+    reveals more of the panel instead of a bigger flat bitmap.
+  - ⚠️ **Both halves go through ONE `_pixmap()`**, because the macro keycaps and the
+    firmware-composed legends are rendered by different code and used to become
+    pixmaps separately — the shape that would leave a board half simulated. Both
+    caches hold PIXMAPS, so a mode change has to DROP them; keeping them leaves the
+    previous mode on screen until something else invalidates it, which reads as a
+    dead button.
+  - ⚠️ **SYMBOL stays enabled when the fonts are missing** — it is the fallback the
+    other two degrade to, so disabling the whole group would leave nothing selectable.
+    REAL additionally needs Pillow (`gui/oled_look.available()`); it is a hard
+    requirement, but a broken install must cost the picture, not the editor.
+  - **The tile draws a keycap with `SmoothPixmapTransform`.** It is always a
+    DOWNSCALE — a 72x40 keycap lands in a tile about 50px wide — and Qt's default
+    nearest-neighbour drops whole pixel rows, which was enough to break a small
+    glyph's stems: the editor showed a mangled letter the keyboard draws cleanly.
+    Found by rendering the two modes side by side, not by reading the paint code.
   - **Two things are deliberately never previewed**: a `KC_TRNS` slot (the keyboard
     draws the layer below, so a preview here would invent a legend the key does not
     have) and the two keys with no OLED behind them (matrix `(3,7)` and `(8,0)` — the
@@ -2463,6 +2555,14 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `find . -name __pycache__ -path "*/polyhost/*" -exec rm -rf {} +`. Suspect it
   whenever a fix "doesn't take" — especially after a `cp`/restore, which sets a
   fresh mtime but can land in the same second.
+  - ⚠️ **A mutation-test harness hits this on the RESTORE, where it corrupts the
+    VERIFICATION rather than the fix** — the worse direction, because the natural
+    reading is "my change broke something". Measured 2026-09-08: after three
+    mutations of `macro_label.py`, `diff` reported the file byte-identical to the
+    baseline while the suite still failed all three mutants' tests, the interpreter
+    having loaded bytecode compiled from the last mutant. **Clear `__pycache__`
+    after restoring, not only after editing**, then re-run — the confirmation run
+    at the end of a mutation sweep is exactly where this lands.
 - **No *test* CI**: no workflow runs the unit tests — but the repo is **not**
   CI-less, and this line said "two workflows" while there were four. They are
   `bump-version.yml` + `release.yml` (see **Releases** below), `deploy-telemetry.yml`
