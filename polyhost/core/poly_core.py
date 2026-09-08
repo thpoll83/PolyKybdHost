@@ -154,6 +154,14 @@ class PolyCore(Observable):
         # display and the forwarder's OS when a remote-forwarded window is active,
         # deduped against this so set_os only fires on an actual change.
         self._last_pushed_os = None
+        # Last unicode input method pushed to the keyboard (an InputMethod, or
+        # None). The WinCompose settle watcher re-probes after a connect and pushes
+        # only on a real change; see _start_wincompose_settle.
+        self._last_pushed_unicode_mode = None
+        self._wincompose_stop = threading.Event()
+        self._wincompose_thread = None
+        self._wincompose_deadline = 0.0
+        self._wincompose_lock = threading.Lock()
         # Re-entrancy guard for the font-pack auto-flash: True only while a flash
         # is actually running, so a connection flap mid-flash can't start a second
         # one — but it is cleared on completion, so each fresh connect (e.g. a
@@ -360,6 +368,10 @@ class PolyCore(Observable):
         if self._tick_thread is not None:
             self._tick_thread.join(timeout=1)
             self._tick_thread = None
+        self._wincompose_stop.set()
+        if self._wincompose_thread is not None:
+            self._wincompose_thread.join(timeout=1)
+            self._wincompose_thread = None
         try:
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
@@ -519,6 +531,77 @@ class PolyCore(Observable):
         self._last_pushed_os = value
         self.log.info("Pushing OS %s to keyboard.", _OsType(value))
         self.worker.submit("set_os", lambda c, v=value: self.keeb.set_os(v))
+
+    # ------------------------------------------------------------------
+    # Unicode input method
+    # ------------------------------------------------------------------
+
+    # How long after a connect to keep re-probing for WinCompose, and how often.
+    WINCOMPOSE_SETTLE_SECONDS = 120
+    WINCOMPOSE_SETTLE_INTERVAL = 5
+
+    def _push_unicode_mode(self, mode):
+        """Submit a unicode-input-method push (HID cmd 20), deduped.
+
+        Records what was last sent so the settle watcher below can re-probe
+        cheaply. Device I/O, so it goes on the worker."""
+        if mode == self._last_pushed_unicode_mode:
+            return False
+        self._last_pushed_unicode_mode = mode
+        self.log.info("Pushing unicode input mode %s to keyboard.", mode.name)
+        self.worker.submit("set_unicode_mode",
+                           lambda c, m=mode: self.keeb.set_unicode_mode(m))
+        return True
+
+    def _start_wincompose_settle(self):
+        """Re-probe the unicode input method for a bounded window after a connect.
+
+        The mode is otherwise detected exactly once, in the post-connect flow —
+        and at logon that lands in a race the host usually loses: autostart brings
+        PolyKybdHost up before WinCompose, so ``get_input_method()`` sees no
+        wincompose.exe and reports plain ``Windows``. The keyboard is then told to
+        type Windows-style Alt+numpad sequences for the rest of the session, which
+        cannot produce an emoji. The only existing correction is the tray's
+        menu-open probe, which needs the user to open the menu; a headless daemon
+        has none at all.
+
+        Windows-only: everywhere else ``get_input_method()`` is a constant
+        function of ``sys.platform`` and cannot change under us. Runs on its own
+        thread because the probe shells out to TASKLIST (~50 ms), which must not
+        sit on the HID worker between the reconnect probe and the console read.
+        Stops as soon as WinCompose is seen (the state it is waiting for) or the
+        deadline passes; a later connect re-arms it."""
+        if sys.platform != "win32":
+            return
+        with self._wincompose_lock:
+            self._wincompose_deadline = time.monotonic() + self.WINCOMPOSE_SETTLE_SECONDS
+            if self._wincompose_thread is not None and self._wincompose_thread.is_alive():
+                return   # already watching; the deadline above extends it
+            self._wincompose_stop.clear()
+            self._wincompose_thread = threading.Thread(
+                target=self._wincompose_settle_loop, name="poly-wincompose-settle",
+                daemon=True)
+            self._wincompose_thread.start()
+
+    def _wincompose_settle_loop(self):
+        from polyhost.input.unicode_input import get_input_method, InputMethod
+        while not self._wincompose_stop.wait(self.WINCOMPOSE_SETTLE_INTERVAL):
+            if time.monotonic() >= self._wincompose_deadline:
+                return
+            if not self.poly_settings.get("unicode_send_composition_mode"):
+                return
+            try:
+                mode = get_input_method()
+            except Exception:
+                self.log.debug("WinCompose settle probe failed", exc_info=True)
+                continue
+            if mode != self._last_pushed_unicode_mode:
+                self.log.info(
+                    "Unicode input method changed to %s after the connect "
+                    "(WinCompose started late?) — re-applying.", mode.name)
+                self._push_unicode_mode(mode)
+            if mode == InputMethod.WinCompose:
+                return   # settled on the state we were waiting for
 
     def report_window(self, handle, name, title, os=None, url=None):
         """Inject an external active-window report into remote window tracking
@@ -808,11 +891,14 @@ class PolyCore(Observable):
             if decision["do_post_connect"]:
                 if connected_now and self.poly_settings.get("unicode_send_composition_mode"):
                     from polyhost.input.unicode_input import get_input_method
-                    mode = get_input_method()
-                    self.log.info("Setting unicode mode to str %s", mode)
-                    # set_unicode_mode is device I/O -> worker job.
-                    self.worker.submit("set_unicode_mode",
-                                       lambda c, m=mode: self.keeb.set_unicode_mode(m))
+                    # Force the push (last_pushed reset) so a reconnect always
+                    # re-asserts — this may be a different keyboard, or one whose
+                    # EEPROM was reset since. Same idiom as _push_os below.
+                    self._last_pushed_unicode_mode = None
+                    self._push_unicode_mode(get_input_method())
+                    # At logon this detection races WinCompose's own autostart and
+                    # usually loses, so re-probe for a bounded window afterwards.
+                    self._start_wincompose_settle()
                 if connected_now:
                     # Push the host OS (independent of the unicode mode). The keyboard
                     # applies it only in auto mode (a manual pin / Android wins), and
@@ -1142,7 +1228,14 @@ class PolyCore(Observable):
         ok, payload = self._device_call(
             "set_unicode_mode", lambda c, m=mode: self.keeb.set_unicode_mode(m))
         if not ok:
+            # Don't record a push the keyboard never took, or the settle watcher
+            # (and the next explicit refresh) would dedupe against a mode that
+            # never landed.
             return False, payload
+        # Unconditional, unlike _push_unicode_mode: an explicit refresh is a user
+        # asking for the mode to be re-asserted, so it always reaches the device.
+        # Recording it keeps the watcher's dedupe honest.
+        self._last_pushed_unicode_mode = mode
         return True, {"mode": mode.name}
 
     def set_glyph_script(self, value):

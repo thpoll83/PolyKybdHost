@@ -2642,15 +2642,24 @@ class PolyHost(QApplication):
         fine and always current — no background polling). When WinCompose has
         appeared since the last look, re-push the unicode input mode: the core
         only sends it on connect, so a fresh install would otherwise not reach
-        the keyboard until the next replug."""
+        the keyboard until the next replug.
+
+        ⚠️ The FIRST probe counts too. This used to skip it on the reasoning that
+        "startup already pushed the mode on connect" — but the bug worth catching
+        is precisely that that push was WRONG: at logon the core probes before
+        WinCompose has started and pushes plain Windows. The first menu open is
+        then the first chance to notice, and the old guard threw it away, so the
+        keyboard stayed on Windows sequences (no emoji) for the whole session.
+        Re-applying costs one HID command, and the firmware only touches EEPROM
+        when the mode actually changes, so a redundant push is free."""
         if self.wincompose_action is None:
             return
         running = wincompose_running()
         self.wincompose_action.setVisible(not running)
-        # Don't re-apply on the first probe (startup already pushed the mode on
-        # connect) — only on a False → True transition observed by this GUI.
-        if running and self._wincompose_was_running is False:
-            self.log.info("WinCompose is now running — re-applying the unicode input mode.")
+        # `!=` rather than `is False`, so the first probe (was_running is None)
+        # also re-applies — see the note above.
+        if running and self._wincompose_was_running != running:
+            self.log.info("WinCompose is running — re-applying the unicode input mode.")
             try:
                 ok, payload = self.core.refresh_unicode_mode()
             except Exception as e:  # noqa: BLE001 — no keyboard / daemon not up yet
