@@ -2776,10 +2776,23 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
 - **The board the keys sit on is GENERATED from the KiCad boards —
   `polyhost/res/board_outline.json`, written by `scripts/export_board_outline.py`,
   drawn by `gui/layout_dialog/board_plate.py`.** It carries each half's
-  `Edge.Cuts` polygon and the two optional 0.96" status panels, in the same key
+  case contour and the two optional 0.96" status panels, in the same key
   units as the KLE, so the editor shows which half a key is on and where the
   screens are instead of 74 tiles floating in space. It is decoration and fails
   soft: no file, no picture, unchanged editor.
+  - ⚠️ **The outline is the CASE, not the board — `parts/case/outline_polykybd_split72_*.svg`,
+    which is `Edge.Cuts` grown by `case_wall_thickness + pcb_clearance` = 1.65 mm.**
+    Drawing `Edge.Cuts` itself makes the plate 1.65 mm too small on every side, and
+    the visible symptom is at the thumbs: keycaps overhang the plate there (worst
+    0.10U = 1.9 mm) where on the real keyboard they do not. The shipped SVG is used
+    verbatim rather than re-deriving the offset — it IS the extruded contour, rounded
+    corners and all — placed by a translation fitted to the board's bounding box and
+    then CHECKED, by requiring every one of its 149 points to sit 1.65 mm outside
+    `Edge.Cuts` (measured 1.647–1.654, the spread being the polygon approximation of
+    the corners). That check is what proves the SVG belongs to this board; a swapped
+    left/right pair misses by 18 mm, the spacer outline by 3.8 mm. ⚠️ **1.65 is the
+    split72 left+right case specifically** — `case_polysplit72_right2` and
+    `right_side` use a 0.25 clearance, i.e. 1.75.
   - **The mm → key-unit transform is a pure translation at 19.05 mm/U** — the
     boards carry no rotation, so scale is the pitch and the only unknown is the
     origin. The exporter fits it by trying every (switch, key) pairing and keeping
@@ -2793,7 +2806,8 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     writing exactly that test and watching the mutation escape. What catches it is
     the opposite property: a plate **hugs** its keys, so
     `test_the_board_HUGS_the_keys_on_every_side` bounds the margin at each edge
-    (0.10U–0.38U as shipped). Seven translate/scale/mirror mutations are caught.
+    (0.19U–0.46U as shipped). Eight mutations are caught — translate, scale, mirror,
+    and shrinking the case back to the bare PCB edge.
   - ⚠️ **Restore the baseline before EACH mutation in a sweep, or a `+x`/`-x` pair
     CANCELS and reads as ESCAPED.** The first harness here re-read the file it had
     just mutated, so mutation 2 landed on top of mutation 1 and reported the tests

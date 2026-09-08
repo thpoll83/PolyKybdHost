@@ -13,8 +13,18 @@ stale silently -- the same failure `export_preview_data.py` exists to avoid.
 
 What comes out of the boards, and why each is trustworthy:
 
-* **The outline** is the `Edge.Cuts` layer -- 16 segments per half, chained into
-  one closed polygon.
+* **The outline is the CASE, not the board** -- `parts/case/outline_polykybd_split72_*.svg`,
+  the contour `case_polykybd_split72_lr.scad` extrudes, which is the `Edge.Cuts`
+  polygon offset outward by `case_wall_thickness + pcb_clearance` = 1.65 mm with
+  rounded corners. Taking the board instead drew the plate 1.65 mm too small on
+  every side, which is most visible at the thumbs, where the keycaps overhang a
+  bare PCB edge and do not overhang the case. The shipped SVG is used verbatim
+  rather than re-deriving the offset: it IS the extruded contour, rounded corners
+  and all. It is placed by a translation fitted to the board's own bounding box,
+  and then every one of its points is checked to sit `CASE_OFFSET_MM` outside the
+  `Edge.Cuts` polygon -- which is what proves the SVG belongs to this board and
+  that the translation is right. `Edge.Cuts` (16 segments per half, chained into
+  one closed polygon) is still read, as the yardstick for that check.
 * **The mm -> key-unit transform** is a pure translation at 19.05 mm/U (the boards
   lay their switches on that pitch with no board rotation). The offset is fitted
   by trying every (switch, KLE key) pairing and keeping the one that lines up all
@@ -47,6 +57,18 @@ KLE = pathlib.Path(__file__).resolve().parent.parent / "polyhost" / "res" / "pol
 #: Key pitch. 1U on every PolyKybd board, and the whole mm <-> unit conversion.
 UNIT_MM = 19.05
 
+#: How far the case wall stands proud of the board: `case_wall_thickness`
+#: (1.5) + `pcb_clearance` (0.15), from `parts/case/case_polykybd_split72_lr.scad`.
+#: ⚠️ The other case variants are NOT all this number -- `case_polysplit72_right2`
+#: and `right_side` use a 0.25 clearance, i.e. 1.75 -- so this tracks the split72
+#: left+right case specifically, which is the one the shipped SVGs come from.
+CASE_OFFSET_MM = 1.65
+
+#: How far a point of the shipped case outline may sit from `CASE_OFFSET_MM`
+#: before the fit is refused. Measured on the shipped SVGs: 1.647..1.654, the
+#: spread being the polygon approximation of the rounded corners.
+CASE_OFFSET_TOL_MM = 0.05
+
 #: 0.96" 128x64 status panel (FPW096W001Z0 and pin-compatible parts): glass
 #: extent and lit area, in mm. Drawn as two rectangles so the editor shows the
 #: module AND the part of it that actually displays anything.
@@ -56,6 +78,11 @@ ACTIVE_MM = (21.74, 10.86)
 #: Rows 0-4 are the left half, 5-9 the right -- the split the KLE and the two
 #: board files share.
 LEFT_ROWS = range(0, 5)
+
+#: The extruded case contour per half, as shipped by `case_polykybd_split72_lr.scad`.
+#: ⚠️ The left file really is spelled `leftt`.
+CASE_SVG = {"left": "outline_polykybd_split72_leftt.svg",
+            "right": "outline_polykybd_split72_right.svg"}
 
 #: A fit is only believable if it lines the switches up, so these bound it.
 #: Measured on the shipped boards: 31 of 37 switches per half land EXACTLY on
@@ -147,6 +174,70 @@ def edge_polygon(text):
     return ring[:-1]
 
 
+def svg_polygon(path):
+    """The single closed path of an OpenSCAD-exported 2D outline, in its own mm."""
+    text = path.read_text(encoding="utf-8")
+    try:
+        d = text.split('\n<path d="', 1)[1].split('"', 1)[0]
+    except IndexError:
+        raise SystemExit("%s carries no <path d=...>" % path)
+    pts = [(float(a), float(b))
+           for a, b in re.findall(r"([-\d.]+),([-\d.]+)", d)]
+    if len(pts) < 3:
+        raise SystemExit("%s: %d-point outline" % (path, len(pts)))
+    return pts
+
+
+def _edge_distance(poly, pt):
+    """Shortest distance from `pt` to the polygon boundary."""
+    best = float("inf")
+    for i in range(len(poly)):
+        ax, ay = poly[i]
+        bx, by = poly[(i + 1) % len(poly)]
+        dx, dy = bx - ax, by - ay
+        if dx == 0.0 and dy == 0.0:
+            t = 0.0
+        else:
+            t = max(0.0, min(1.0, ((pt[0] - ax) * dx + (pt[1] - ay) * dy)
+                             / (dx * dx + dy * dy)))
+        best = min(best, math.hypot(pt[0] - (ax + t * dx), pt[1] - (ay + t * dy)))
+    return best
+
+
+def place_case_outline(case_pts, edge_poly, side):
+    """Move the case SVG into the board's frame, and prove it belongs there.
+
+    The SVG is drawn in OpenSCAD's own coordinates, so it needs a translation --
+    fitted from the bounding boxes, since the case is the board grown uniformly
+    by `CASE_OFFSET_MM`. The fit is then CHECKED rather than trusted: every point
+    must sit that far outside `Edge.Cuts`. A wrong translation, a mirrored SVG or
+    the outline of a different board all fail it by millimetres.
+    """
+    ex = [p[0] for p in edge_poly]
+    ey = [p[1] for p in edge_poly]
+    sx = [p[0] for p in case_pts]
+    sy = [p[1] for p in case_pts]
+    tx = (min(ex) - CASE_OFFSET_MM) - min(sx)
+    ty = (min(ey) - CASE_OFFSET_MM) - min(sy)
+    moved = [(x + tx, y + ty) for x, y in case_pts]
+
+    span = ((max(sx) - min(sx)) - (max(ex) - min(ex)),
+            (max(sy) - min(sy)) - (max(ey) - min(ey)))
+    for grew in span:
+        if abs(grew - 2 * CASE_OFFSET_MM) > CASE_OFFSET_TOL_MM:
+            raise SystemExit("%s: the case outline is %.3f mm wider than the board, "
+                             "expected %.3f -- wrong SVG, or the case grew"
+                             % (side, grew, 2 * CASE_OFFSET_MM))
+
+    dists = [_edge_distance(edge_poly, p) for p in moved]
+    worst = max(abs(d - CASE_OFFSET_MM) for d in dists)
+    if worst > CASE_OFFSET_TOL_MM:
+        raise SystemExit("%s: a case outline point sits %.3f mm off the expected "
+                         "%.2f mm offset -- the SVG does not match this board"
+                         % (side, worst, CASE_OFFSET_MM))
+    return moved, (min(dists), max(dists))
+
+
 def kle_centres(key_matrix, rows):
     """Centre of every key of one half, in key units, rotation applied."""
     out = {}
@@ -226,7 +317,10 @@ def build(hw):
         def to_u(x, y):
             return [round(x / UNIT_MM + ox, 4), round(y / UNIT_MM + oy, 4)]
 
-        outline = [to_u(x, y) for x, y in edge_polygon(text)]
+        edge = edge_polygon(text)
+        case_svg = hw / "parts" / "case" / CASE_SVG[side]
+        case_mm, case_fit = place_case_outline(svg_polygon(case_svg), edge, side)
+        outline = [to_u(x, y) for x, y in case_mm]
 
         j39 = [(x, y) for lib, ref, x, y, _r in fps if ref == "J39"]
         if len(j39) != 1:
@@ -245,15 +339,19 @@ def build(hw):
             "displays": displays,
             "fit": {"worst_residual_u": round(worst, 4),
                     "mean_residual_u": round(mean, 4),
-                    "switches": len(switches)},
+                    "switches": len(switches),
+                    "case_offset_mm": [round(case_fit[0], 4), round(case_fit[1], 4)]},
         })
 
     return {
         "board": "split72",
         "unit_mm": UNIT_MM,
+        "case_offset_mm": CASE_OFFSET_MM,
         "source": _source(hw),
-        "note": ("Derived from the PolyKybd KiCad boards by "
-                 "scripts/export_board_outline.py -- do not hand-edit. "
+        "note": ("Derived from the PolyKybd hardware repo by "
+                 "scripts/export_board_outline.py -- do not hand-edit. The "
+                 "outline is the CASE contour (the board grown by "
+                 "case_wall_thickness + pcb_clearance), not the bare PCB edge. "
                  "Coordinates are key units in the same frame as "
                  "res/polykybd-split72.json."),
         "halves": halves,

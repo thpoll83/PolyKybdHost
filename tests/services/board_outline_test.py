@@ -112,10 +112,15 @@ class KeysSitOnTheBoardTest(unittest.TestCase):
         """Corners get a tolerance, because a few genuinely do overhang.
 
         The KLE draws the thumb clusters in whole key units where the board
-        rotates them by measured angles, so six corners of the four outermost
-        thumbs sit outside the real edge -- worst 0.10U (1.9 mm), measured. The
-        bound is set just above that: it still fails on a wrong offset, which
-        moves every key at once and by far more.
+        rotates them by measured angles, so two corners of the outermost thumbs
+        sit outside the case edge -- worst 0.014U (0.27 mm), measured. The bound
+        is set just above that: it still fails on a wrong offset, which moves
+        every key at once and by far more.
+
+        ⚠️ It was 0.10U against the bare PCB edge. Drawing the CASE (the board
+        grown by 1.65 mm) is what shrank it, and that is the whole visible
+        symptom of getting this wrong: keycaps overhanging the plate at the
+        thumbs, which they do not do on the real keyboard.
         """
         for name, k in self.keys.items():
             side = "left" if k["row"] in LEFT_ROWS else "right"
@@ -123,7 +128,7 @@ class KeysSitOnTheBoardTest(unittest.TestCase):
                 if inside(self.poly[side], corner):
                     continue
                 over = edge_distance(self.poly[side], corner)
-                self.assertLessEqual(over, 0.15,
+                self.assertLessEqual(over, 0.05,
                                      "key %s corner %s hangs %.3fU off the %s board"
                                      % (name, tuple(round(c, 2) for c in corner), over, side))
 
@@ -134,8 +139,8 @@ class KeysSitOnTheBoardTest(unittest.TestCase):
         translated -- measured, shifting both outlines 0.25U inward still
         passes containment, because the inner edge has that much slack. A real
         plate hugs its keys, so the margin from the outermost key to the edge
-        is bounded on both ends: measured 0.10U to 0.38U on the shipped
-        boards, and a translation pushes one side out of that immediately.
+        is bounded on both ends: measured 0.19U to 0.46U on the shipped case,
+        and a translation pushes one side out of that immediately.
         """
         for half in self.board.halves:
             rows = LEFT_ROWS if half.side == "left" else range(5, 10)
@@ -148,13 +153,31 @@ class KeysSitOnTheBoardTest(unittest.TestCase):
             margins = {"left": min(kx) - min(ox), "right": max(ox) - max(kx),
                        "top": min(ky) - min(oy), "bottom": max(oy) - max(ky)}
             for side, margin in margins.items():
-                self.assertGreaterEqual(margin, -0.05,
-                                        "%s board: keys run %.3fU past the %s edge"
-                                        % (half.side, -margin, side))
-                self.assertLessEqual(margin, 0.45,
+                self.assertGreaterEqual(margin, 0.10,
+                                        "%s board: only %.3fU of case at the %s edge"
+                                        % (half.side, margin, side))
+                self.assertLessEqual(margin, 0.55,
                                      "%s board: %.3fU of slack at the %s edge -- the "
                                      "outline is not where the keys are"
                                      % (half.side, margin, side))
+
+    def test_the_outline_is_the_CASE_not_the_bare_board(self):
+        """Pins the one number that separates the two.
+
+        `Edge.Cuts` measures 182.0 x 129.0 mm; the case that
+        `case_polykybd_split72_lr.scad` extrudes is that grown by
+        `case_wall_thickness + pcb_clearance` on every side, so 185.3 x 132.3.
+        Reverting to the board edge fails this by 3.3 mm in both axes -- which
+        is otherwise a subtle-looking picture, since the shape is identical.
+        """
+        for half in self.board.halves:
+            xs = [p[0] for p in half.outline]
+            ys = [p[1] for p in half.outline]
+            for got, want, axis in ((max(xs) - min(xs), 185.30, "width"),
+                                    (max(ys) - min(ys), 132.30, "height")):
+                self.assertAlmostEqual(got * self.board.unit_mm, want, delta=0.05,
+                                       msg="%s board %s is %.2f mm, expected %.2f"
+                                       % (half.side, axis, got * self.board.unit_mm, want))
 
     def test_no_key_strays_onto_the_other_half(self):
         other = {"left": "right", "right": "left"}
