@@ -167,6 +167,9 @@ class PolyCore(Observable):
         self._wincompose_thread = None
         self._wincompose_fast_until = 0.0
         self._wincompose_lock = threading.Lock()
+        # When THIS PROCESS started, which is what the logon race is measured
+        # against — not when the keyboard connected. See _unicode_mode_is_ambiguous.
+        self._started_at = time.monotonic()
         # Re-entrancy guard for the font-pack auto-flash: True only while a flash
         # is actually running, so a connection flap mid-flash can't start a second
         # one — but it is cleared on completion, so each fresh connect (e.g. a
@@ -597,6 +600,28 @@ class PolyCore(Observable):
                 "Unicode input mode %s was not applied (%r); it will be retried "
                 "while the settle watcher is running.", mode.name, result)
 
+    def _unicode_mode_is_ambiguous(self, mode):
+        """True while a plain-``Windows`` reading cannot yet be believed.
+
+        Every other reading is a positive observation — wincompose.exe is
+        running, or the platform is not Windows at all. A plain ``Windows`` is
+        the one that is an ABSENCE, and just after logon "no wincompose.exe" is
+        equally consistent with "WinCompose has not finished starting", which is
+        the race this whole watcher exists for. Pushing it anyway costs every
+        WinCompose user a wrong mode plus a keycap flicker on every single
+        logon, and two EEPROM writes, to correct a state the keyboard was
+        already in. Waiting costs a keyboard whose stored mode is stale (moved
+        machines, or WinCompose uninstalled) up to one window — ONCE, since the
+        push at the end of the window persists.
+
+        ⚠️ Measured from the PROCESS start, not from the connect. WinCompose
+        races the logon; it does not race a replug three hours later, and
+        treating a reconnect as ambiguous would delay the re-assert that exists
+        to catch a different keyboard being plugged in."""
+        from polyhost.input.unicode_input import InputMethod
+        return (sys.platform == "win32" and mode is InputMethod.Windows
+                and time.monotonic() - self._started_at < self.WINCOMPOSE_FAST_SECONDS)
+
     def _start_wincompose_settle(self):
         """Re-probe the unicode input method for a bounded window after a connect.
 
@@ -613,8 +638,8 @@ class PolyCore(Observable):
         function of ``sys.platform`` and cannot change under us. Runs on its own
         thread because the probe shells out to TASKLIST (~50 ms), which must not
         sit on the HID worker between the reconnect probe and the console read.
-        Stops as soon as WinCompose is seen (the state it is waiting for) or the
-        deadline passes; a later connect re-arms it."""
+        Runs for the life of the core once started; a later connect only re-opens
+        the fast-probe window (see _wincompose_settle_loop)."""
         if sys.platform != "win32":
             return
         with self._wincompose_lock:
@@ -662,10 +687,15 @@ class PolyCore(Observable):
             except Exception:
                 self.log.debug("WinCompose probe failed", exc_info=True)
                 continue
-            if mode != self._last_pushed_unicode_mode:
-                self.log.info("Unicode input method is now %s — re-applying.",
-                              mode.name)
-                self._push_unicode_mode(mode)
+            if mode == self._last_pushed_unicode_mode:
+                continue
+            if self._unicode_mode_is_ambiguous(mode):
+                # Not "WinCompose is gone" yet — see _unicode_mode_is_ambiguous.
+                # The push happens on the first pass after the window closes.
+                continue
+            self.log.info("Unicode input method is now %s — re-applying.",
+                          mode.name)
+            self._push_unicode_mode(mode)
 
     def report_window(self, handle, name, title, os=None, url=None):
         """Inject an external active-window report into remote window tracking
@@ -960,10 +990,17 @@ class PolyCore(Observable):
                     # EEPROM was reset since. Same idiom as _push_os below.
                     self._last_pushed_unicode_mode = None
                     self._queued_unicode_mode = None
-                    self._push_unicode_mode(get_input_method())
-                    # At logon this detection races WinCompose's own autostart and
-                    # usually loses, so re-probe for a bounded window afterwards.
+                    # Armed FIRST: at logon this detection races WinCompose's own
+                    # autostart and usually loses, and the watcher is what corrects it.
                     self._start_wincompose_settle()
+                    mode = get_input_method()
+                    if self._unicode_mode_is_ambiguous(mode):
+                        self.log.info(
+                            "WinCompose is not running yet; holding off on the "
+                            "Windows unicode input mode until the logon window "
+                            "closes (see _unicode_mode_is_ambiguous).")
+                    else:
+                        self._push_unicode_mode(mode)
                 if connected_now:
                     # Push the host OS (independent of the unicode mode). The keyboard
                     # applies it only in auto mode (a manual pin / Android wins), and

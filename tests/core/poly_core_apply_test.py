@@ -100,6 +100,22 @@ class TestReportWindow(unittest.TestCase):
 
 class TestApplyReconnect(unittest.TestCase):
 
+    def test_an_ambiguous_unicode_mode_is_NOT_pushed_on_connect(self):
+        """At logon a plain-Windows reading may just mean WinCompose has not
+        started yet; pushing it would cost every WinCompose user a wrong mode
+        and a keycap flicker on every boot. The settle watcher pushes it once
+        the window closes instead (see PolyCore._unicode_mode_is_ambiguous)."""
+        core = make_core(unicode_mode=True)
+        core._start_wincompose_settle = MagicMock()
+        core._unicode_mode_is_ambiguous = MagicMock(return_value=True)
+
+        core.apply_reconnect(connect_snapshot())
+
+        names = [c.args[0] for c in core.worker.submit.call_args_list]
+        self.assertNotIn("set_unicode_mode", names)
+        # …but the watcher that will push it later must still be armed.
+        core._start_wincompose_settle.assert_called_once()
+
     def test_paused_returns_none(self):
         core = make_core(paused=True)
         self.assertIsNone(core.apply_reconnect(connect_snapshot()))

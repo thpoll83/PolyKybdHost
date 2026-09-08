@@ -141,7 +141,12 @@ def _watcher_core(modes, send_mode=True, connected=True, rounds=None):
         log=types.SimpleNamespace(info=lambda *a, **k: None,
                                   debug=lambda *a, **k: None),
         _push_unicode_mode=_push,
+        WINCOMPOSE_FAST_SECONDS=600,
+        _started_at=time.monotonic(),
     )
+    # The real rule, so the loop is tested against the shipped one.
+    core._unicode_mode_is_ambiguous = (
+        lambda mode: PolyCore._unicode_mode_is_ambiguous(core, mode))
     core._pushed = pushed
     core._probes = probes
     core._probe = _probe
@@ -227,6 +232,83 @@ class WinComposeSettleTest(unittest.TestCase):
             return core._probe()
 
         self._run(core, probe=_probe)
+        self.assertEqual(core._pushed, [InputMethod.WinCompose])
+
+
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class AmbiguousWindowsModeTest(unittest.TestCase):
+    """A plain-Windows reading is an ABSENCE of wincompose.exe, and just after
+    logon that is indistinguishable from "it has not started yet"."""
+
+    def _core(self, age=0.0):
+        return types.SimpleNamespace(
+            WINCOMPOSE_FAST_SECONDS=600,
+            _started_at=time.monotonic() - age)
+
+    def _ask(self, core, mode, platform="win32"):
+        with patch("polyhost.core.poly_core.sys.platform", platform):
+            return PolyCore._unicode_mode_is_ambiguous(core, mode)
+
+    def test_windows_inside_the_logon_window_is_ambiguous(self):
+        self.assertTrue(self._ask(self._core(), InputMethod.Windows))
+
+    def test_windows_after_the_logon_window_is_believed(self):
+        """Otherwise a machine that simply has no WinCompose could never be
+        told the mode at all."""
+        self.assertFalse(self._ask(self._core(age=601), InputMethod.Windows))
+
+    def test_wincompose_is_never_ambiguous(self):
+        """Seeing the process is a positive observation at any age."""
+        self.assertFalse(self._ask(self._core(), InputMethod.WinCompose))
+
+    def test_nothing_is_ambiguous_off_windows(self):
+        """get_input_method() is a constant function of sys.platform there, so
+        a Linux/Mac reading can never be a race."""
+        self.assertFalse(
+            self._ask(self._core(), InputMethod.Windows, platform="linux"))
+
+    def test_it_is_measured_from_the_PROCESS_start_not_the_connect(self):
+        """WinCompose races the logon, not a replug three hours in — where the
+        delay would only postpone the re-assert that catches a DIFFERENT
+        keyboard being plugged in."""
+        core = self._core(age=3600)
+        core._wincompose_fast_until = time.monotonic() + 600   # a fresh connect
+        self.assertFalse(self._ask(core, InputMethod.Windows))
+
+
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class WatcherHoldsOffTheAmbiguousModeTest(unittest.TestCase):
+    """The loop half of the rule above."""
+
+    def _run(self, core):
+        with patch("polyhost.input.unicode_input.get_input_method",
+                   side_effect=lambda: core._probe()):
+            PolyCore._wincompose_settle_loop(core)
+
+    def test_a_windows_reading_is_HELD_during_the_logon_window(self):
+        core = _watcher_core([InputMethod.Windows] * 3)
+        core._last_pushed_unicode_mode = None      # nothing pushed at connect
+        with patch("polyhost.core.poly_core.sys.platform", "win32"):
+            self._run(core)
+        self.assertEqual(core._pushed, [])
+        self.assertEqual(len(core._probes), 3, "it stopped probing")
+
+    def test_it_is_pushed_once_the_window_CLOSES(self):
+        """The hold is a delay, not a refusal — a machine without WinCompose
+        still gets its mode."""
+        core = _watcher_core([InputMethod.Windows] * 2)
+        core._last_pushed_unicode_mode = None
+        core._started_at = time.monotonic() - 601
+        with patch("polyhost.core.poly_core.sys.platform", "win32"):
+            self._run(core)
+        self.assertEqual(core._pushed, [InputMethod.Windows])
+
+    def test_wincompose_is_pushed_IMMEDIATELY_inside_the_window(self):
+        """The hold must not delay the observation it is waiting for."""
+        core = _watcher_core([InputMethod.WinCompose])
+        core._last_pushed_unicode_mode = None
+        with patch("polyhost.core.poly_core.sys.platform", "win32"):
+            self._run(core)
         self.assertEqual(core._pushed, [InputMethod.WinCompose])
 
 
