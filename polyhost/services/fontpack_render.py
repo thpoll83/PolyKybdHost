@@ -410,6 +410,27 @@ def reference_sequence_image(font_path: str, group: str, opts, fit_h: int | None
     return img
 
 
+OLED_STYLES = ("normal", "oled", "keycap")
+
+
+def apply_oled_style(img, style: str, scale: float):
+    """One definition of the two OLED presets over `simulate_oled`'s knobs.
+
+    ⚠️ Shared rather than inlined per caller: the font-pack inspector and the keymap
+    editor both offer "how it really looks", and two copies of these numbers would
+    drift into two different-looking previews of the same panel. `"normal"` returns
+    the image untouched, so a caller can route every mode through here.
+    """
+    if style == "oled":                                 # raw crisp pixels, no cover
+        return simulate_oled(img, scale=scale, jitter=0.0, diffusion=0.0,
+                             stagger=False, brightness=1.18)
+    if style == "keycap":                               # through the clear cover
+        # brightness matched to OLED (not higher) so the gain doesn't clamp the lit
+        # pixels to flat white; stronger jitter keeps the shimmer visible.
+        return simulate_oled(img, scale=scale, jitter=0.22, brightness=1.25)
+    return img
+
+
 def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
                   scale: int = 3, pad: int = 6, title: str = "",
                   base_yadv: int = BASE_YADV, sequence: str = None,
@@ -478,13 +499,7 @@ def preview_sheet(pack, source_path: str = None, opts=None, cols: int = 12,
         y0 = head_h + r * ch
         kc = keycap_image(font, cp, base_yadv=base_yadv_for(font, cp, base_yadv),
                           scale=scale, fg=255, bg=0)
-        if style == "oled":                             # raw crisp pixels, no cover
-            kc = simulate_oled(kc, scale=scale, jitter=0.0, diffusion=0.0,
-                               stagger=False, brightness=1.18)
-        elif style == "keycap":                         # through the clear cover
-            # brightness matched to OLED (not higher) so the gain doesn't clamp the
-            # lit pixels to flat white; stronger jitter keeps the shimmer visible.
-            kc = simulate_oled(kc, scale=scale, jitter=0.22, brightness=1.25)
+        kc = apply_oled_style(kc, style, scale)
         sheet.paste(kc, (x0, y0))
         draw.rectangle([x0, y0, x0 + kc_w - 1, y0 + kc_h - 1], outline=c_kcborder)
         ri = refs[i]

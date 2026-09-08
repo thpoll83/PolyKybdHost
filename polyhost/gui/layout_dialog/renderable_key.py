@@ -123,7 +123,15 @@ class RenderableKey(QGraphicsObject):
         # reserved a 72:40 box for a mock panel, so the picture goes exactly where the
         # placeholder was -- no layout change, and a non-macro key is untouched.
         if self._keycap is not None and inner_w > 0 and h > 0:
+            # ⚠️ Smoothed, because this is always a DOWNSCALE: a 72x40 keycap lands in
+            # a tile roughly 50px wide, and Qt's default nearest-neighbour drops whole
+            # pixel rows -- enough to break a small glyph's stems, so the editor showed
+            # a mangled letter the keyboard draws cleanly. It matters more again for
+            # the OLED simulation, which is rendered several times larger still.
+            painter.save()
+            painter.setRenderHint(QPainter.SmoothPixmapTransform, True)
             painter.drawPixmap(QRect(x, y, inner_w, h), self._keycap)
+            painter.restore()
         painter.setBrush(self.display_attachment)
         painter.drawRoundedRect(x, y+h, inner_w, int(h/2), 0.05, 0.05)
 

@@ -1494,8 +1494,8 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `load_caption_faces()` still needs a firmware checkout and an install without one
     renders "no font — preview unavailable" rather than a keycap. Closing that means
     exporting the third face, not another fallback path.
-- **The editor's "Key previews" toggle draws every key through the FIRMWARE's own
-  renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
+- **The editor's key pictures are a THREE-way group — Symbol / Preview / Real —
+  drawing every key through the FIRMWARE's own renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
   for the language LUT and `tools/lang_demo.py` for the `keycode_helper.c` static-text
   map; macros go through the host's own composer). Off is the default, and off means
   each key shows its keycode text.
@@ -1668,6 +1668,32 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     itself proves nothing; these fixtures are the C's, so a divergence fails in the
     host suite rather than showing up as a keycap drawn slightly wrong. Keep the two
     in step when either side gains a case.
+  - ⚠️ **REAL puts the same keycap through `fontpack_render.apply_oled_style`, and
+    that preset is SHARED with the font-pack inspector on purpose.** Both surfaces
+    offer "how it really looks"; the knobs (`simulate_oled`'s jitter, diffusion,
+    stagger, brightness) inlined per call site would give one physical panel two
+    different-looking previews with nothing to say which was right. `"normal"` returns
+    the image untouched so a caller routes every mode through one call.
+  - ⚠️ **REAL is rendered at `KEYCAP_REAL_SCALE` (3) output pixels per OLED pixel, not
+    at 1:1 — the scale is not cosmetic.** The pixel grid, the bloom radius and the
+    per-pixel jitter are all sized from it, so at 1 there is literally nothing to see.
+    The tile then scales the larger image down, which is also why zooming the view in
+    reveals more of the panel instead of a bigger flat bitmap.
+  - ⚠️ **Both halves go through ONE `_pixmap()`**, because the macro keycaps and the
+    firmware-composed legends are rendered by different code and used to become
+    pixmaps separately — the shape that would leave a board half simulated. Both
+    caches hold PIXMAPS, so a mode change has to DROP them; keeping them leaves the
+    previous mode on screen until something else invalidates it, which reads as a
+    dead button.
+  - ⚠️ **SYMBOL stays enabled when the fonts are missing** — it is the fallback the
+    other two degrade to, so disabling the whole group would leave nothing selectable.
+    REAL additionally needs Pillow (`gui/oled_look.available()`); it is a hard
+    requirement, but a broken install must cost the picture, not the editor.
+  - **The tile draws a keycap with `SmoothPixmapTransform`.** It is always a
+    DOWNSCALE — a 72x40 keycap lands in a tile about 50px wide — and Qt's default
+    nearest-neighbour drops whole pixel rows, which was enough to break a small
+    glyph's stems: the editor showed a mangled letter the keyboard draws cleanly.
+    Found by rendering the two modes side by side, not by reading the paint code.
   - **Two things are deliberately never previewed**: a `KC_TRNS` slot (the keyboard
     draws the layer below, so a preview here would invent a legend the key does not
     have) and the two keys with no OLED behind them (matrix `(3,7)` and `(8,0)` — the

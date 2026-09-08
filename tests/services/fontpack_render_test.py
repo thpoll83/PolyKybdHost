@@ -353,5 +353,43 @@ class GlyphCellTest(unittest.TestCase):
         self.assertLess(max(empty_bytes), 255)
 
 
+class OledStyleTest(unittest.TestCase):
+    """The two panel presets are SHARED, so two surfaces cannot drift.
+
+    The font-pack inspector and the keymap editor both offer "how it really looks".
+    Inlining the knobs at each call site would give one panel two different-looking
+    previews, with nothing to say which was right.
+    """
+
+    def _keycap(self):
+        from PIL import Image
+        img = Image.new("L", (24, 16), 0)
+        for x in range(6, 18):
+            for y in range(4, 12):
+                img.putpixel((x, y), 255)
+        return img
+
+    def test_normal_is_the_image_UNTOUCHED(self):
+        """So a caller can route every mode through one call instead of branching."""
+        src = self._keycap()
+        self.assertIs(rd.apply_oled_style(src, "normal", 3), src)
+
+    def test_the_two_styles_do_not_render_the_same(self):
+        """`oled` is the raw emissive pixel look and `keycap` is that through the
+        clear cover -- if they matched, one of the two buttons would be decoration."""
+        src = self._keycap()
+        a = rd.apply_oled_style(src, "oled", 3)
+        b = rd.apply_oled_style(src, "keycap", 3)
+        self.assertNotEqual(a.tobytes(), b.tobytes())
+
+    def test_a_style_turns_the_greyscale_keycap_into_EMISSIVE_colour(self):
+        src = self._keycap()
+        out = rd.apply_oled_style(src, "keycap", 3)
+        self.assertEqual(out.mode, "RGB")
+        # A cool white, not the flat 255,255,255 of the bitmap it came from.
+        px = out.getpixel((out.width // 2, out.height // 2))
+        self.assertGreater(px[2], px[0], "the lit pixels should be the cooler tint")
+
+
 if __name__ == "__main__":
     unittest.main()

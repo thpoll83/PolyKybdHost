@@ -18,7 +18,8 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 try:
     from PyQt5.QtWidgets import QApplication
     from polyhost.device.device_settings import DeviceSettings
-    from polyhost.gui.layout_dialog.kb_layout_dialog import KbLayoutDialog
+    from polyhost.gui.layout_dialog.kb_layout_dialog import (
+        KEYCAP_PREVIEW, KEYCAP_REAL, KEYCAP_SYMBOL, KbLayoutDialog)
     from polyhost.gui.layout_dialog.keycap_preview import KC_TRANSPARENT
     from polyhost.gui.layout_dialog.macro_tab import MacroTab, QK_MACRO
     from polyhost.services import macro_label as ml
@@ -82,7 +83,7 @@ def _editor(core=None, previews=True):
     """
     dlg = KbLayoutDialog(core or FakeCore(), DeviceSettings())
     if previews:
-        dlg.keycap_toggle.setChecked(True)
+        dlg.set_keycap_mode(KEYCAP_PREVIEW)
     return dlg
 
 
@@ -227,6 +228,55 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         self.assertLess(len(kept), len(wide), "the fixture label fits; pick a wider one")
         self.assertEqual(r.render(wide, 0, index=0), r.render(kept, 0, index=0))
 
+    def test_REAL_draws_the_panel_simulation_not_the_flat_bitmap(self):
+        """The whole point of the third mode: a legend that is crisp as a bitmap can
+        still be unreadable once the cover has diffused it, and PREVIEW cannot show
+        that. If the two modes drew the same pixels the button would be decoration.
+        """
+        dlg = _editor()
+        first = sorted(dlg.keys)[0]
+        _assign(dlg, first, QK_MACRO + 0)
+        flat = dlg.keys[first]._keycap.toImage()
+        dlg.set_keycap_mode(KEYCAP_REAL)
+        real = dlg.keys[first]._keycap.toImage()
+        self.assertNotEqual(flat, real)
+        # Rendered LARGER than the logical panel: the grid, the bloom and the jitter
+        # are all sized from the scale, so at 1:1 there would be nothing to see.
+        self.assertGreater(real.width(), flat.width())
+        # ...and it is emissive colour, not the flat two-tone bitmap.
+        self.assertGreater(len({real.pixel(x, y) for x in range(real.width())
+                                for y in range(real.height())}), 2)
+
+    def test_REAL_applies_to_BOTH_halves_of_the_board(self):
+        """Macro keycaps and firmware-composed legends are rendered by different code
+        and used to become pixmaps separately, which is how a board could end up half
+        simulated. Both go through one factory now, so a mode reaches all of it.
+        """
+        dlg = _editor()
+        keys = sorted(dlg.keys)
+        macro_key, plain_key = keys[0], keys[1]
+        _assign(dlg, macro_key, QK_MACRO + 0)
+        _assign(dlg, plain_key, 0x0004)          # KC_A -- the firmware composes this
+        flat = {k: dlg.keys[k]._keycap.toImage() for k in (macro_key, plain_key)}
+        self.assertTrue(all(v is not None for v in flat.values()))
+        dlg.set_keycap_mode(KEYCAP_REAL)
+        for k in (macro_key, plain_key):
+            with self.subTest(key=k):
+                self.assertNotEqual(flat[k], dlg.keys[k]._keycap.toImage())
+
+    def test_switching_modes_REPAINTS_rather_than_serving_the_cache(self):
+        """Both caches hold PIXMAPS, so a mode is exactly what they cannot represent.
+        Without dropping them the board keeps the previous mode until something else
+        happens to invalidate it -- which reads as a dead button."""
+        dlg = _editor()
+        first = sorted(dlg.keys)[0]
+        _assign(dlg, first, QK_MACRO + 0)
+        flat = dlg.keys[first]._keycap.toImage()
+        dlg.set_keycap_mode(KEYCAP_REAL)
+        self.assertNotEqual(flat, dlg.keys[first]._keycap.toImage())
+        dlg.set_keycap_mode(KEYCAP_PREVIEW)
+        self.assertEqual(flat, dlg.keys[first]._keycap.toImage())
+
     def test_the_toggle_turns_the_keycaps_off_and_back_on(self):
         """Off is not "blank": the key falls back to the keycode text it had before
         keycaps existed, so the editor is never less usable with the box unticked."""
@@ -237,11 +287,11 @@ class MacroKeycapInEditorTest(unittest.TestCase):
 
         # Nothing else redraws here: the toggle has to repaint the CURRENT layer
         # itself, or it reads as a dead switch until the next layer change.
-        dlg.keycap_toggle.setChecked(False)
+        dlg.set_keycap_mode(KEYCAP_SYMBOL)
         self.assertIsNone(dlg.keys[first]._keycap)
         self.assertTrue(dlg.keys[first].text.isVisible())
 
-        dlg.keycap_toggle.setChecked(True)
+        dlg.set_keycap_mode(KEYCAP_PREVIEW)
         self.assertIsNotNone(dlg.keys[first]._keycap)
 
     def test_a_macro_tile_falls_back_to_M0_not_to_MACRO_0(self):
@@ -252,7 +302,7 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         """
         dlg = _editor()
         first = sorted(dlg.keys)[0]
-        dlg.keycap_toggle.setChecked(False)
+        dlg.set_keycap_mode(KEYCAP_SYMBOL)
         _assign(dlg, first, QK_MACRO + 0)
         self.assertEqual(dlg.keys[first].text.document().toPlainText(), "M0")
 
@@ -299,8 +349,9 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         dlg.show()
         _APP.processEvents()
         last = max(b.mapTo(dlg, b.rect().topRight()).x() for b in dlg.layers.group.buttons())
-        toggle_x = dlg.keycap_toggle.mapTo(dlg, dlg.keycap_toggle.rect().topLeft()).x()
-        self.assertGreater(toggle_x, last)
+        modes = dlg.keycap_modes
+        modes_x = modes.mapTo(dlg, modes.rect().topLeft()).x()
+        self.assertGreater(modes_x, last)
 
     def test_a_TRANSPARENT_slot_previews_NOTHING(self):
         """The keyboard follows a transparent slot down to the layer below, and this
@@ -396,8 +447,10 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         are about to change harder to read. Previews are what you switch ON to check
         the result, so the box starts clear even when everything loaded fine."""
         dlg = _editor(previews=False)
-        self.assertFalse(dlg.keycap_toggle.isChecked())
-        self.assertTrue(dlg.keycap_toggle.isEnabled(), "…but still available")
+        self.assertTrue(dlg.keycap_buttons[KEYCAP_SYMBOL].isChecked())
+        self.assertFalse(dlg.keycap_buttons[KEYCAP_PREVIEW].isChecked())
+        self.assertTrue(dlg.keycap_buttons[KEYCAP_PREVIEW].isEnabled(),
+                        "…but still available")
         first = sorted(dlg.keys)[0]
         _assign(dlg, first, QK_MACRO + 0)
         self.assertIsNone(dlg.keys[first]._keycap)
@@ -436,17 +489,26 @@ class NoFontTest(unittest.TestCase):
         self.assertIsNone(dlg._keycap_for(QK_MACRO + 0))
         self.assertIsNone(dlg._keycap_for(0x0004))
 
-    def test_the_toggle_is_DISABLED_rather_than_silently_inert(self):
-        """A tickable box that draws nothing is worse than a greyed-out one: the
-        tooltip is the only place that can say the fonts are missing."""
+    def test_the_picture_modes_are_DISABLED_rather_than_silently_inert(self):
+        """A pressable button that draws nothing is worse than a greyed-out one: the
+        tooltip is the only place that can say the fonts are missing.
+
+        ⚠️ SYMBOL stays enabled. It is the fallback every other mode degrades to, so
+        disabling the whole group would leave nothing selectable at all.
+        """
         dlg = KbLayoutDialog.__new__(KbLayoutDialog)
         dlg._keycap_render = None
         dlg._preview = _DeadPreview()
-        dlg._show_keycaps = True
-        box = KbLayoutDialog._build_keycap_toggle(dlg)
-        self.assertFalse(box.isEnabled())
-        self.assertFalse(box.isChecked())
-        self.assertIn("Unavailable", box.toolTip())
+        dlg._keycap_mode = KEYCAP_SYMBOL
+        KbLayoutDialog._build_keycap_modes(dlg)
+        for mode in (KEYCAP_PREVIEW, KEYCAP_REAL):
+            b = dlg.keycap_buttons[mode]
+            self.assertFalse(b.isEnabled(), mode)
+            self.assertFalse(b.isChecked(), mode)
+            self.assertIn("Unavailable", b.toolTip(), mode)
+        sym = dlg.keycap_buttons[KEYCAP_SYMBOL]
+        self.assertTrue(sym.isEnabled())
+        self.assertTrue(sym.isChecked())
 
 
 if __name__ == "__main__":
