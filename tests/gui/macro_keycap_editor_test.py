@@ -203,6 +203,30 @@ class MacroKeycapInEditorTest(unittest.TestCase):
                                                         icon=m["icon"], index=m["id"])
                 self.assertEqual(from_tab, from_editor)
 
+    def test_an_OVER_WIDE_label_is_truncated_the_way_the_keyboard_truncates_it(self):
+        """The keycap keeps the LEADING run; centring the full box loses both ends.
+
+        A label wider than the 72px panel used to be measured and drawn in full, so
+        _plot() clipped it at both edges — the preview dropped leading characters the
+        keyboard draws, and disagreed with the tab's own width meter, which fits first.
+        Reachable with a label the device can store: 12 chars is inside the firmware's
+        stride and twelve W's measure 108px.
+        """
+        dlg = _editor()
+        r = dlg._keycap_render
+        # ⚠️ NOT a repeating glyph. "WWWWWWWWWWWW" overflows by exactly four W's, so
+        # centring it puts the clipped draw back on the same 9px grid as the fitted
+        # eight -- the two are pixel-identical and the test pins NOTHING. Caught by
+        # mutation-testing, which passed with the fix removed. A mixed run at the
+        # device's own 12-char stride is both realistic and discriminating.
+        wide = "MACRO NAME X"
+        self.assertLessEqual(len(wide), ml.LABEL_MAX_CHARS, "the device could not store it")
+        face = ml.pick_face(wide, r._faces)
+        kept = ml.fit(wide, face).text
+        # The fixture has to actually overflow, or this test pins nothing.
+        self.assertLess(len(kept), len(wide), "the fixture label fits; pick a wider one")
+        self.assertEqual(r.render(wide, 0, index=0), r.render(kept, 0, index=0))
+
     def test_the_toggle_turns_the_keycaps_off_and_back_on(self):
         """Off is not "blank": the key falls back to the keycode text it had before
         keycaps existed, so the editor is never less usable with the box unticked."""

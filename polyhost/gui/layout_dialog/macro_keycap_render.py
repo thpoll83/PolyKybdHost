@@ -63,6 +63,18 @@ class MacroKeycapRenderer:
             # style rather than drawing an empty keycap, so the preview does too.
 
         mark, mark_fonts, mark_base, mark_glyph = self._mark(style)
+        # The caption face is chosen per label, exactly as render_macro_key() does:
+        # the largest whose whole run fits, else the floor face -- which TRUNCATES.
+        # ⚠️ Truncate here, with the face that was chosen, and never re-pick afterwards:
+        # pick_face() returns the largest face whose WHOLE run fits, so re-running it on
+        # the shortened text can promote the label to the bigger face and overflow again.
+        # Without the fit, a label wider than the panel was centred on its full box and
+        # clipped by _plot() at BOTH edges, losing leading characters the keyboard keeps
+        # -- reachable with a label the device can store, since 12 chars is within the
+        # firmware's stride and "WWWWWWWWWWWW" measures 108px in a 72px panel.
+        face = ml.pick_face(label, self._faces) if label else None
+        if label:
+            label = ml.fit(label, face).text
         # ICON_ONLY draws the icon alone in the whole cell -- the caption is kept in
         # storage but not drawn, so it takes the same branch an uncaptioned key does.
         # A missing glyph leaves mark_glyph None and falls back to the captioned index.
@@ -77,9 +89,6 @@ class MacroKeycapRenderer:
                                baseline=(ml.PANEL_H - (box[3] - box[2] + 1)) // 2 - box[2])
             return img
 
-        # The caption face is chosen per label, exactly as render_macro_key() does:
-        # the largest whose whole run fits, else the floor face (which truncates).
-        face = ml.pick_face(label, self._faces)
         cap = mk.bbox(label, [face], 0)
         if cap is None:
             return img
