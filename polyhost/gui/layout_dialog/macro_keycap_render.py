@@ -28,9 +28,12 @@ from polyhost.services import macro_label as ml
 class MacroKeycapRenderer:
     """Holds the loaded fonts; renders one 72x40 keycap per call."""
 
-    def __init__(self, fonts, nano, mid, ladder):
+    def __init__(self, fonts, nano, mid, ladder, caption_faces=None):
         self._fonts = fonts or []
-        self._font = nano          # the caption face
+        # The caption band's faces, largest first. `nano` alone is the floor, kept as
+        # the fallback so a caller that cannot load the bigger face still renders.
+        self._faces = caption_faces or [nano]
+        self._font = nano          # the caption floor face
         self._mid = mid            # the fallback "M3" face
         self._ladder = ladder or []
         self._icon = 0
@@ -74,12 +77,15 @@ class MacroKeycapRenderer:
                                baseline=(ml.PANEL_H - (box[3] - box[2] + 1)) // 2 - box[2])
             return img
 
-        cap = mk.bbox(label, [self._font], 0)
+        # The caption face is chosen per label, exactly as render_macro_key() does:
+        # the largest whose whole run fits, else the floor face (which truncates).
+        face = ml.pick_face(label, self._faces)
+        cap = mk.bbox(label, [face], 0)
         if cap is None:
             return img
         cap_base = ml.PANEL_H - 1 - cap[3]
         free_rows = cap_base + cap[2]
-        self._plot(img, label, [self._font], 0, lit,
+        self._plot(img, label, [face], 0, lit,
                    x0=(ml.PANEL_W - (cap[1] - cap[0] + 1)) // 2 - cap[0],
                    baseline=cap_base)
 

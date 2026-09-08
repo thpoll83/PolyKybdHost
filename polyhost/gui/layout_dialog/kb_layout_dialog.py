@@ -106,13 +106,14 @@ class KbLayoutDialog(QMainWindow):
         # easier. The previews are the thing you turn ON to check your work.
         self._show_keycaps = False
         try:
-            nano = ml.load_nano_font(ml.default_font_dir())
+            faces = ml.load_caption_faces(ml.default_font_dir())
+            nano = faces[-1]
             mid = mkl.load_ui_font(ml.default_font_dir(), "util_font.h",
                                    mkl.MID_FONT_SYMBOL)
             fonts, _src = mkl.load_render_fonts()
             ladder = mkl.caption_ladder(mkl.load_pack_fonts(), mid_font=mid,
                                         nano_font=nano)
-            self._keycap_render = MacroKeycapRenderer(fonts, nano, mid, ladder)
+            self._keycap_render = MacroKeycapRenderer(fonts, nano, mid, ladder, faces)
         except Exception:
             self.log.debug("macro keycap fonts unavailable; keys show their keycode")
 

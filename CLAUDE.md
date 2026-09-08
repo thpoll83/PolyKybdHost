@@ -2221,6 +2221,14 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `find . -name __pycache__ -path "*/polyhost/*" -exec rm -rf {} +`. Suspect it
   whenever a fix "doesn't take" — especially after a `cp`/restore, which sets a
   fresh mtime but can land in the same second.
+  - ⚠️ **A mutation-test harness hits this on the RESTORE, where it corrupts the
+    VERIFICATION rather than the fix** — the worse direction, because the natural
+    reading is "my change broke something". Measured 2026-09-08: after three
+    mutations of `macro_label.py`, `diff` reported the file byte-identical to the
+    baseline while the suite still failed all three mutants' tests, the interpreter
+    having loaded bytecode compiled from the last mutant. **Clear `__pycache__`
+    after restoring, not only after editing**, then re-run — the confirmation run
+    at the end of a mutation sweep is exactly where this lands.
 - **No *test* CI**: no workflow runs the unit tests. (The repo *does* have two
   workflows — `bump-version.yml` + `release.yml`; see **Releases** below.)
 - **GUI tests need a display**: `tests/gui/host_client_test.py` constructs the real `PolyHost` (default + `--connect` client mode) in a subprocess (one `QApplication`/process; `pynput` needs X) with Qt forced to `offscreen`. They **skip unless `DISPLAY` is set** — run them under a virtual X server: `xvfb-run -a .venv/bin/python -m unittest tests.gui.host_client_test`. `host.py` can't even be *imported* without an X server (pynput at module load), so plain `unittest discover` skips them. Installing `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too (pywinctl/pymonctl `sys.exit(1)` without it).

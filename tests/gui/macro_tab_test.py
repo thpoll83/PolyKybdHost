@@ -259,12 +259,22 @@ class MacroTabPreviewTest(unittest.TestCase):
         return tab
 
     def test_the_meter_is_in_pixels(self):
+        """And in the pixels of the face the KEYCAP will use, not always the floor one.
+
+        "work mail" fits _Small_ 15px at 71 px, so that is what the key draws it in and
+        what the meter must report. Measuring at _Nano_ regardless would say 48 -- a
+        third of the panel free where there are really 1 px -- so the meter would
+        promise room the keycap does not have. Both numbers are measured against the
+        committed headers; see macro_label_test.
+        """
         tab = self._tab()
         tab.label_edit.setText("work mail")
         tab._repaint_preview()
         self.assertEqual(tab.width_meter.maximum(), ml.PANEL_W)
-        self.assertEqual(tab.width_meter.value(), 48)     # measured, see macro_label_test
-        self.assertIn("48 / 72 px", tab.width_meter.format())
+        self.assertEqual(tab.width_meter.value(), 71)
+        self.assertIn("71 / 72 px", tab.width_meter.format())
+        # …and the smaller number is the one the ladder rejected, not a stale constant.
+        self.assertEqual(ml.measure("work mail", ml.load_nano_font(ml.default_font_dir())), 48)
 
     def test_an_overlong_label_is_flagged_rather_than_refused(self):
         """The label is still accepted -- it is just cut -- so the meter goes amber
