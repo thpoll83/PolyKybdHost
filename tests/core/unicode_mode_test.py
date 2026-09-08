@@ -313,6 +313,76 @@ class WatcherHoldsOffTheAmbiguousModeTest(unittest.TestCase):
 
 
 @unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
+class SettingsChangedTest(unittest.TestCase):
+    """Turning the setting on mid-session used to do nothing until the next
+    reconnect: the watcher is armed in the post-connect flow, and only when the
+    setting was already on."""
+
+    def _core(self, send_mode=True, connected=True, ambiguous=False):
+        core = types.SimpleNamespace(
+            _BRIGHTNESS_SETTING_KEYS=PolyCore._BRIGHTNESS_SETTING_KEYS,
+            connected=connected,
+            poly_settings=types.SimpleNamespace(
+                get=lambda k: {"unicode_send_composition_mode": send_mode}[k]),
+            refresh_daylight_brightness=lambda: core._did.append("brightness"),
+            _start_wincompose_settle=lambda: core._did.append("watcher"),
+            _push_unicode_mode=lambda mode: core._did.append(("push", mode)),
+            _unicode_mode_is_ambiguous=lambda mode: ambiguous,
+        )
+        core._did = []
+        core._refresh_unicode_watch = lambda: PolyCore._refresh_unicode_watch(core)
+        return core
+
+    def _run(self, core, keys, mode=InputMethod.WinCompose):
+        with patch("polyhost.input.unicode_input.get_input_method",
+                   return_value=mode):
+            PolyCore.note_settings_changed(core, keys)
+
+    def test_enabling_the_setting_ARMS_the_watcher_and_pushes(self):
+        core = self._core()
+        self._run(core, ["unicode_send_composition_mode"])
+        self.assertEqual(core._did,
+                         ["watcher", ("push", InputMethod.WinCompose)])
+
+    def test_it_does_nothing_while_the_setting_is_OFF(self):
+        core = self._core(send_mode=False)
+        self._run(core, ["unicode_send_composition_mode"])
+        self.assertEqual(core._did, [])
+
+    def test_a_disconnected_keyboard_arms_the_watcher_but_pushes_NOTHING(self):
+        """There is nothing to push to, and the post-connect flow asserts it."""
+        core = self._core(connected=False)
+        self._run(core, ["unicode_send_composition_mode"])
+        self.assertEqual(core._did, ["watcher"])
+
+    def test_an_ambiguous_mode_is_still_HELD(self):
+        """Enabling the setting during the logon window must not push the plain
+        Windows reading the watcher exists to second-guess."""
+        core = self._core(ambiguous=True)
+        self._run(core, ["unicode_send_composition_mode"], InputMethod.Windows)
+        self.assertEqual(core._did, ["watcher"])
+
+    def test_an_unrelated_key_touches_neither_side_effect(self):
+        core = self._core()
+        self._run(core, ["ui_theme"])
+        self.assertEqual(core._did, [])
+
+    def test_a_brightness_key_still_refreshes_the_daylight_push(self):
+        """The pre-existing side effect this hook absorbed."""
+        core = self._core()
+        key = sorted(PolyCore._BRIGHTNESS_SETTING_KEYS)[0]
+        self._run(core, [key])
+        self.assertEqual(core._did, ["brightness"])
+
+    def test_None_means_ANY_key_may_have_changed(self):
+        """What the in-process settings dialog knows: it writes the file whole."""
+        core = self._core()
+        self._run(core, None)
+        self.assertEqual(core._did,
+                         ["brightness", "watcher", ("push", InputMethod.WinCompose)])
+
+
+@unittest.skipUnless(_HAVE_CORE, "PolyCore deps not installed")
 class PushUnicodeModeTest(unittest.TestCase):
     """`submit` only QUEUES the HID command, so the result lands later — these
     pin that a mode counts as pushed only once the keyboard says it took it."""

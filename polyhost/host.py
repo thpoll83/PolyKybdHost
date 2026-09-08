@@ -1506,9 +1506,11 @@ class PolyHost(QApplication):
             else:
                 self.poly_settings.set_all(updated)
                 # In-process mode writes settings directly (bypassing
-                # core.settings_set), so nudge the core to recompute + push the
-                # daylight brightness now rather than waiting for the next cycle.
-                self.core.refresh_daylight_brightness()
+                # core.settings_set), so the core has to be told: it owns every
+                # side effect a setting has on the live device — the daylight
+                # brightness push, the unicode settle watcher — and which ones
+                # exist is its business, not the dialog's.
+                self.core.note_settings_changed()
             # `ui_theme` may be among them — apply it now rather than at the
             # next restart.
             self._refresh_theme()

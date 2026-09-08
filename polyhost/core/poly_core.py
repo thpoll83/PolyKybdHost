@@ -1594,11 +1594,47 @@ class PolyCore(Observable):
             return False, f"Unknown setting '{key}'"
         alls[key] = value
         self.poly_settings.set_all(alls)
-        # A brightness/daylight setting change takes effect immediately instead
-        # of on the next 10-min cycle (covers polyctl + the client-mode dialog).
-        if key in self._BRIGHTNESS_SETTING_KEYS:
-            self.refresh_daylight_brightness()
+        self.note_settings_changed([key])
         return True, key
+
+    def note_settings_changed(self, keys=None):
+        """Apply the side effects a settings change has on the live device.
+
+        ⚠️ Both writers land here, and there are exactly two: ``settings_set``
+        (polyctl and the client-mode dialog) and the in-process settings dialog,
+        which writes the file directly and then calls this. A side effect added
+        to only one of them is a setting that behaves differently depending on
+        whether the GUI happens to be a daemon client — which is how enabling
+        ``unicode_send_composition_mode`` mid-session came to do nothing at all
+        until the next reconnect.
+
+        ``keys`` None means "anything in the dialog may have changed", which is
+        all the in-process dialog knows."""
+        if keys is None or self._BRIGHTNESS_SETTING_KEYS.intersection(keys):
+            # Takes effect now instead of on the next 10-min cycle.
+            self.refresh_daylight_brightness()
+        if keys is None or "unicode_send_composition_mode" in keys:
+            self._refresh_unicode_watch()
+
+    def _refresh_unicode_watch(self):
+        """Start the settle watcher and re-assert the mode after the setting was
+        turned on mid-session.
+
+        The watcher is otherwise armed only in the post-connect flow, and only
+        when the setting was already on — so a user who connects with it off and
+        enables it later had no watcher, and the keyboard kept whatever unicode
+        mode it was last told, indefinitely. Turning it OFF stops nothing on
+        purpose: the watcher re-reads the setting every pass (it can be turned
+        back on) and pushes nothing while it is off."""
+        if not self.poly_settings.get("unicode_send_composition_mode"):
+            return
+        self._start_wincompose_settle()
+        if not self.connected:
+            return   # the post-connect flow will assert it
+        from polyhost.input.unicode_input import get_input_method
+        mode = get_input_method()
+        if not self._unicode_mode_is_ambiguous(mode):
+            self._push_unicode_mode(mode)
 
     # ------------------------------------------------------------------
     # Telemetry (anonymous usage census)
