@@ -50,11 +50,12 @@ def inside(poly, pt):
     return hit
 
 
-#: The 0.96" module the exporter draws, in mm -- glass height and lit height. The
-#: WIDTHS are deliberately absent: the panel drops its side bezel, so its width is
-#: whatever its corner is and only the vertical proportion survives.
-PANEL_H_MM = 19.26
-ACTIVE_H_MM = 10.86
+#: The 0.96" module the exporter draws, in mm: the glass, then the lit screen
+#: inside it. `PANEL_W_MM` is here only so a test can prove it is NOT what gets
+#: drawn -- dropping the side bezel narrows the GLASS to the screen, it does not
+#: widen the screen to the glass.
+PANEL_W_MM, PANEL_H_MM = 26.70, 19.26
+ACTIVE_W_MM, ACTIVE_H_MM = 21.74, 10.86
 
 #: The corner search's grid step in `scripts/export_board_outline.py`; nothing
 #: placed from it can be pinned finer than this.
@@ -255,6 +256,26 @@ class StatusDisplayTest(unittest.TestCase):
                     (d.h - d.ah) / d.h, want, delta=0.01,
                     msg="%s panel's glass is %.1f%% of its height, expected %.1f%%"
                         % (side, (d.h - d.ah) / d.h * 100.0, want * 100.0))
+
+    def test_dropping_the_side_bezel_did_NOT_enlarge_the_screen(self):
+        """The screen keeps the size the uniform fit gave it; the GLASS narrows to
+        meet it.
+
+        ⚠️ `w == aw` above is true of both readings, so it cannot pin this. The
+        aspect can: the panel is `active_w x panel_h`, so w/h is 21.74/19.26 =
+        1.129. Widening the screen to fill the glass instead gives 26.70/19.26 =
+        1.386 -- a 23% larger screen, which is the mistake this pins.
+        """
+        narrowed = ACTIVE_W_MM / PANEL_H_MM
+        widened = PANEL_W_MM / PANEL_H_MM
+        for side, half in self.by_side.items():
+            for d in half.displays:
+                got = d.w / d.h
+                self.assertAlmostEqual(
+                    got, narrowed, delta=0.01,
+                    msg="%s panel is %.3f wide per unit tall; narrowed-glass is "
+                        "%.3f and screen-filling-the-glass is %.3f"
+                        % (side, got, narrowed, widened))
 
     def test_a_panel_TOUCHES_the_case_edge_beside_it(self):
         """It is grown to span its corner, so its inner edge meets the outline.

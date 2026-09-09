@@ -2843,20 +2843,26 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the corner, so the panel reads as having slipped, and at its real 26.7 mm it
     leaves a gap on both sides. ⚠️ The display hangs off a ~40 mm cable, so where it
     ends up in the CASE is in no repo file — this is a layout rule, not a measurement.
-    - ⚠️ **The panel is grown UNIFORMLY to span its corner, and then its SIDE bezel is
-      dropped — `aw == w`.** The screen therefore runs the full width of the glass
-      and meets the housing, with glass only above and below, which is what the
-      module does mounted to a case wall. That drops the screen's 2:1 aspect on
-      purpose: it is the one thing about the panel that is not the module's own
-      proportion, and the envelope, the scale and the position are all left as the
-      uniform fit put them (37.6 x 27.1 mm on the left half). There is no caption on
-      it — a lit rectangle in a dark frame is already a screen.
-    - ⚠️ **Two other readings were built and are wrong, and each looked like the
-      ask.** Scaling the SCREEN to span the corner instead of the module drags the
-      whole panel up to ~1.7x life size (33 mm of mostly-dark glass, a band two key
-      rows tall). Placing the module at its REAL size and moving it flush is the
-      opposite error — it satisfies "touching" and reads as a stamp on a large plate.
-      Grown uniformly, side bezel removed, is the one that is both.
+    - ⚠️ **Removing the side bezel NARROWS THE GLASS to the screen — it does not
+      widen the screen to the glass, and `aw == w` is true of both.** The MODULE is
+      scaled uniformly to span its corner, and that fit is what sets the screen's
+      size (30.6 x 15.3 mm on the left half); the drawn glass is then exactly the
+      screen's width and the panel is moved flush against the housing. Widening the
+      screen instead keeps the 37.6 mm envelope and grows the lit area by 23% — i.e.
+      it adds the bezel to the display rather than deleting it, which is the opposite
+      of the point. Glass survives above and below in the module's own proportion, so
+      the screen's 2:1 aspect is deliberately gone. There is no caption on it — a lit
+      rectangle in a dark frame is already a screen.
+      - **The discriminator is the panel's ASPECT, and `w == aw` is not it.** Narrowed
+        glass is `active_w / panel_h` = 21.74/19.26 = 1.129; a screen filled out to
+        the glass is 26.70/19.26 = 1.386. `test_dropping_the_side_bezel_did_NOT_enlarge_the_screen`
+        pins that number, because every other property the two readings share.
+    - ⚠️ **Three other readings were built and are wrong, and each looked like the
+      ask.** Growing the whole MODULE until the bezel closed just enlarges the bezel
+      with everything else. Scaling the SCREEN to span the corner drags the panel to
+      ~1.7x life size (33 mm of mostly-dark glass, a band two key rows tall). Placing
+      the module at its REAL size and moving it flush is the opposite error — it
+      satisfies "touching" and reads as a stamp on a large plate.
     - **The vertical glass is therefore pinned as a RATIO, not in mm** (8.4 of the
       module's 19.26, whatever the scale). A test in millimetres would encode the
       corner's width, which is geometry rather than intent.
