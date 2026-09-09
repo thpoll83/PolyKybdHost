@@ -677,6 +677,10 @@ class KbLayoutDialog(QMainWindow):
         no keycap over a status display, so the cover's diffusion would be modelling
         something that is not there.
 
+        The layer being edited goes in the LAYOUT-name slot. On hardware that row
+        names the base layout; here it names the layer, which is what an editor
+        wants and is the one place this panel departs from the firmware's.
+
         Decoration, so it fails soft the same way the plate does: a renderer that
         cannot load leaves the rectangles plain and the editor unchanged.
         """
@@ -694,7 +698,7 @@ class KbLayoutDialog(QMainWindow):
             name = self._layer_name(layer)
             shots = {}
             for side in ("left", "right"):
-                img = self._status_render.render(layer, name, side)
+                img = self._status_render.render(side, layer, name)
                 if self._keycap_mode == KEYCAP_REAL:
                     img = oled_look.render(img, "oled", ssr.REAL_SCALE) or img
                 shots[side] = img
@@ -703,7 +707,7 @@ class KbLayoutDialog(QMainWindow):
             self.log.debug("status screens not drawn", exc_info=True)
 
     def _pixmaps_possible(self) -> bool:
-        """Whether the status panels can be drawn at all (the three faces loaded).
+        """Whether the status panels can be drawn at all (the UI faces loaded).
 
         Exists so a test can SKIP rather than assert a blank board on an install
         without the preview export -- the editor itself just leaves them flat.

@@ -2878,18 +2878,49 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     - **The screen carries a PICTURE, following the same Symbol/Preview/Real control
       the keys do** — `services/status_screen.py` composes it (Qt-free, lit pixels),
       `gui/layout_dialog/status_screen_render.py` makes the QImage, and
-      `board_plate.set_screen_images` paints it into the lit rectangle. Five things
-      are decided, not incidental:
-      - ⚠️ **It is a SUBSET of `oled_update_buffer`, deliberately.** It draws the top
-        row (`ICON_LAYER` + the layer's hex digit), the L/R side marker and — on the
-        layout panel only — the layer's name. The RGB effect, WPM, brightness and
-        language are live DEVICE state the editor does not have, so those rows stay
-        dark: a placeholder there would be a number that is true of nothing. The
-        firmware's own whole-panel renderer is `qmk_firmware/keyboards/polykybd/
-        tools/status_oled_preview.py` — check against it, don't grow into it.
+      `board_plate.set_screen_images` paints it into the lit rectangle. What is
+      decided, not incidental:
+      - **It draws the WHOLE panel — it is a PORT of the firmware's own preview tool**
+        (`qmk_firmware/keyboards/polykybd/tools/status_oled_preview.py`, itself a
+        mirror of `split72/status_oled.c` `oled_update_buffer`), function for function
+        and coordinate for coordinate, so the two files diff line for line. It shipped
+        as a hand-written subset first — top row, side marker, layout name, every other
+        row dark — on the reasoning that the RGB effect, WPM, brightness and language
+        are live DEVICE state the editor does not have and a placeholder is a number
+        true of nothing. ⚠️ **That reasoning was rejected in review**: a status panel
+        showing three of its eight rows reads as broken, not as honest, and the
+        firmware tool has carried representative values for exactly this purpose all
+        along. So the editor uses the tool's own placeholders and the module says
+        plainly that they are not measurements — **do not wire a UI readout to them.**
+      - ⚠️ **A PORT DRIFTS, and nothing in this repo can see the firmware move — so it
+        is pinned to a GOLDEN FIXTURE**, `tests/services/status_panel_golden.json`,
+        generated from the firmware tool by `scripts/gen_status_panel_golden.py` and
+        compared PIXEL FOR PIXEL. Two halves, and each covers what the other cannot:
+        the fixture comparison runs with **no checkout**, so the port cannot drift from
+        what was frozen; a second, checkout-gated test re-derives the fixture live, so
+        `status_oled.c` moving a row is caught on the machine that moved it. A
+        structural comparison would be worthless — both sides are Python read from the
+        same constants and would agree by construction.
+      - ⚠️ **A fixture at the firmware's DEFAULT values pins only the easy half.**
+        Those defaults saturate: `brightness=50` IS `FULL_BRIGHT`, so every gauge
+        segment is lit and no unlit one exists to keep its documented 1px foot, and
+        `sat=255`/`val=100` round identically with and without the `+127`. Measured —
+        three mutations of the port (drop the foot, drop the percent rounding, swap the
+        gauge fill) **all ESCAPED** against the four default cases and are caught by
+        the two non-saturating ones added beside them. Same family as the status-OLED
+        layout rule in `qmk_firmware/CLAUDE.md`: check the worst case, not the default
+        fixture. Nine of ten mutations are caught; the tenth (deleting
+        `brightness_to_level`'s outer `min`) is **inert by construction** — `contrast`
+        is clamped a line above, so no input reaches it — and is kept because the
+        firmware's expression is the same and a port that tidies a redundancy stops
+        diffing against what it mirrors.
       - **One honest departure**: hardware names the BASE layout on that row and this
         names the layer being edited. Identical for layers 0..4; above them it says
         `Fn` / `Numpad` / `Utility`, which is what an editor wants.
+      - ⚠️ **A missing face SUBTRACTS, it is never a precondition** — and expecting an
+        empty panel from no faces at all was wrong: the role icons, the brightness
+        gauge and the speed box are bitmaps and drawn rectangles, so they survive every
+        missing font. That is what the degradation test pins.
       - ⚠️ **The Real filter is the `oled` preset, NOT `keycap`.** There is no keycap
         over a status display — it is a bare panel behind a window — so the cover's
         diffusion and jitter would model a light guide that is not there. The keys and
@@ -2900,6 +2931,13 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
         firmware and screens from another. That needed `_Small_` 15px added to the
         export's `ui_fonts.plyf` — the third standalone face, which the macro-caption
         note already said was the right fix rather than another fallback path.
+        ⚠️ Five faces are wanted, not three, and **two of them are found by COVERAGE
+        rather than by name**: the firmware tool names `IconsFont` and
+        `NotoEmoji_Medium_World_20pt16b` out of its parsed headers, and the host has no
+        names for pack fonts at all — so the icon face is the first pool font covering
+        `0x80` and the globe the first covering `U+1F310`. Front-to-back precedence
+        makes both exact today (the World face covers that one codepoint alone), and a
+        renamed header cannot quietly cost the panel a row.
       - ⚠️ **`_refresh_screens` swallows its exceptions (decoration must not take the
         editor down), so a plain `AttributeError` in the Real branch cost nothing but
         a `log.debug` and the panel just stayed flat.** That shipped for the length of

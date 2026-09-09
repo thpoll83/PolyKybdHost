@@ -49,17 +49,27 @@ class StatusScreenRenderTest(unittest.TestCase):
                    if img.pixel(x, y) != ground)
 
     def test_it_renders_a_panel_sized_image_with_ink_on_it(self):
-        img = self.r.render(0, "Qwerty", "left")
+        img = self.r.render("left", 0, "Qwerty")
         self.assertEqual((img.width(), img.height()), (ss.PANEL_W, ss.PANEL_H))
         self.assertGreater(self.lit(img), 50)
 
     def test_the_layer_changes_what_is_drawn(self):
         """The panel names the layer being edited, so it has to follow it -- a cached
         picture that does not is the same defect the keycap caches drop on a switch."""
-        self.assertNotEqual(self.r.render(0, "Qwerty", "left").constBits().asstring(
+        self.assertNotEqual(self.r.render("left", 0, "Qwerty").constBits().asstring(
                                 ss.PANEL_W * ss.PANEL_H * 4),
-                            self.r.render(1, "Fn", "left").constBits().asstring(
+                            self.r.render("left", 1, "Fn").constBits().asstring(
                                 ss.PANEL_W * ss.PANEL_H * 4))
+
+    def test_the_two_halves_draw_DIFFERENT_panels(self):
+        """Left carries the layout name and the lock LEDs, right the RGB readout --
+        so a `side` that is not threaded through renders one screen twice, which
+        looks perfectly plausible on a board whose halves are small and far apart."""
+        def bits(side):
+            return self.r.render(side, 0, "Qwerty").constBits().asstring(
+                ss.PANEL_W * ss.PANEL_H * 4)
+
+        self.assertNotEqual(bits("left"), bits("right"))
 
     def test_from_preview_data_without_data_is_UNUSABLE_not_broken(self):
         """No export means no faces; the caller must get a renderer that says so
@@ -74,7 +84,7 @@ class StatusScreenRenderTest(unittest.TestCase):
         `except` logged it, and the panel silently kept the Preview picture. Size is
         the cheap half of the check and difference is the real one -- a filter that
         only resized would pass on size alone."""
-        plain = self.r.render(0, "Qwerty", "left")
+        plain = self.r.render("left", 0, "Qwerty")
         real = oled_look.render(plain, "oled", ssr.REAL_SCALE)
         self.assertIsNotNone(real)
         self.assertEqual(real.width(), plain.width() * ssr.REAL_SCALE)

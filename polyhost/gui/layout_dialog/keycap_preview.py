@@ -189,17 +189,21 @@ def _checkout_version(pk: str) -> str:
         return ""
 
 
-def _status_faces_from(pool, mid, small):
+def _status_faces_from(pool, mid, small, tiny):
     """The faces `services.status_screen` draws the status panel with.
 
-    The icon face is found by COVERAGE, not by name: IconsFont is the firmware's
-    `g_all_fonts[0]` and the C1 band is its alone, so the first font in the pool
-    covering `ICON_LAYER` is it -- and a renamed header cannot quietly cost the panel
-    its layer icon. A face that will not load is left None; the renderer then draws
-    what it can rather than nothing.
+    Two of them are found by COVERAGE rather than by name, which is how the firmware
+    tool picks the icon face and how the renderer picks the globe: IconsFont is
+    `g_all_fonts[0]` and the C1 band is its alone, and the World face is the only
+    resident font covering U+1F310, so the first pool font covering each is it -- and
+    a renamed header cannot quietly cost the panel its layer icon. A face that will
+    not load is left None; the renderer then draws what it can rather than nothing.
     """
-    icons = next((f for f in (pool or []) if f.first <= 0x80 <= f.last), None)
-    return {"icons": icons, "mid": mid, "small": small}
+    def covering(cp):
+        return next((f for f in (pool or []) if f.first <= cp <= f.last), None)
+
+    return {"icons": covering(0x80), "globe": covering(0x1F310),
+            "mid": mid, "small": small, "tiny": tiny}
 
 
 def _ui_face(fonts_dir: str, filename: str, symbol: str):
@@ -359,9 +363,10 @@ class KeycapPreview:
         """Draw from `res/preview/` -- no firmware checkout, no openpyxl."""
         op = self._op
         self._R = op.Renderer(pd.fonts, mid_fonts=_mid_pool(pd))
+        ui = pd.ui_fonts or {}
         self._status_faces = _status_faces_from(
-            pd.fonts, (pd.ui_fonts or {}).get(mkl.MID_FONT_SYMBOL),
-            (pd.ui_fonts or {}).get(ml.SMALL_FONT_SYMBOL))
+            pd.fonts, ui.get(mkl.MID_FONT_SYMBOL), ui.get(ml.SMALL_FONT_SYMBOL),
+            ui.get(ml.NANO_FONT_SYMBOL))
         self._resolver = object.__new__(op.Lang)
         self._resolver.named = dict(pd.named)
         self._legends = self._drawable(pd.legends)
@@ -392,7 +397,8 @@ class KeycapPreview:
         self._R = op.load_renderer(fonts_dir)
         self._status_faces = _status_faces_from(
             self._R.fonts, _ui_face(fonts_dir, "util_font.h", mkl.MID_FONT_SYMBOL),
-            _ui_face(fonts_dir, "NotoSans_Medium_Base_8pt.h", ml.SMALL_FONT_SYMBOL))
+            _ui_face(fonts_dir, "NotoSans_Medium_Base_8pt.h", ml.SMALL_FONT_SYMBOL),
+            _ui_face(fonts_dir, "nano_font.h", ml.NANO_FONT_SYMBOL))
         # Resolve-only view: same class, so the codepoint tokenising stays the ONE
         # implementation that mirrors the firmware's make_key -- but built without
         # the workbook, which is the part that needs openpyxl.
