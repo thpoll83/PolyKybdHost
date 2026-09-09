@@ -167,9 +167,13 @@ class RenderTest(unittest.TestCase):
             with self.subTest(missing=drop):
                 less = ss.render("left", dict(self.faces, **{drop: None}), layer=2,
                                  layout="Qwerty")
-                self.assertTrue(less < whole, "dropping %s changed other rows" % drop)
+                self.assertLess(len(less), len(whole),
+                                "dropping %s drew nothing away" % drop)
+                self.assertTrue(less.issubset(whole),
+                                "dropping %s changed other rows" % drop)
         bare = ss.render("left", {}, layer=2, layout="Qwerty")
-        self.assertTrue(bare < whole)
+        self.assertTrue(bare.issubset(whole) and bare != whole,
+                        "no faces at all is not a strict subtraction")
         self.assertTrue(bare, "the drawn chrome does not depend on a font")
 
     def test_an_unknown_side_draws_the_LAYOUT_panel_rather_than_raising(self):

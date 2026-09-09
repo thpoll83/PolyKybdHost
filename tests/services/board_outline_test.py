@@ -119,7 +119,8 @@ class KeysSitOnTheBoardTest(unittest.TestCase):
         cls.board = bo.load()
         if cls.board is None:
             raise unittest.SkipTest("no board outline shipped")
-        _rows, _cols, cls.keys = parse_kle(json.loads(KLE.read_text(encoding="utf-8")))
+        # [2] is the key map; the row/column counts are not used here.
+        cls.keys = parse_kle(json.loads(KLE.read_text(encoding="utf-8")))[2]
         cls.poly = {h.side: h.outline for h in cls.board.halves}
 
     def test_every_key_CENTRE_is_on_its_own_half(self):

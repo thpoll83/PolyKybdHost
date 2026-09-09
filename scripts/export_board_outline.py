@@ -357,7 +357,8 @@ def free_rect_at(anchor, outline, blockers):
     the hardware still decides WHERE the panel goes and this only decides how much
     room it has there. Returns (x0, y0, x1, y1) or None when the anchor is covered.
     """
-    ox0, ox1 = min(p[0] for p in outline), max(p[0] for p in outline)
+    # Only the Y extent is needed: the scan walks rows and `exact_span` re-measures
+    # each row's free X interval off the polygon itself.
     oy0, oy1 = min(p[1] for p in outline), max(p[1] for p in outline)
     rows = int((oy1 - oy0) / FREE_STEP_U)
     if rows < 3:
@@ -460,7 +461,7 @@ def fit_offset(switches_mm, centres_u):
         i = min(range(len(targets)),
                 key=lambda k: (u - targets[k][0]) ** 2 + (v - targets[k][1]) ** 2)
         ax, ay = targets[i]
-        resid.append(math.sqrt((u - ax) ** 2 + (v - ay) ** 2))
+        resid.append(math.hypot(u - ax, v - ay))
         matched.append(i)
     return ox, oy, resid, matched
 
