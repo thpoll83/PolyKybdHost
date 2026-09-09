@@ -14,11 +14,19 @@ leaves the process. AT-SPI's org.a11y.atspi.Action.GetKeyBinding() carries the
 binding explicitly, works under X11 and Wayland, and covers Qt/LibreOffice/
 Electron as well as GTK.
 
-Run it against a running app:
+There are two backends behind one model: AT-SPI on Linux, UI Automation on
+Windows. Only discovery and the accelerator STRING FORMAT differ -- Accel,
+displayable_hid(), the HID tables and the report are shared.
 
-    python3.12 tools/shortcut_probe.py --list
-    python3.12 tools/shortcut_probe.py --app mousepad --json /tmp/mousepad.json
-    python3.12 tools/shortcut_probe.py --all
+    # Linux
+    python3 tools/shortcut_probe.py --list
+    python3 tools/shortcut_probe.py --app mousepad --json /tmp/mousepad.json
+
+    # Windows (pip install comtypes)
+    python tools/shortcut_probe.py --list
+    python tools/shortcut_probe.py --focused --json shortcuts.json
+
+    python tools/shortcut_probe.py --selftest      # pure parsers, runs anywhere
 
 Needs the accessibility bus up (org.a11y.Bus) and the app running with its
 toolkit bridge active; GTK3 needs libatk-adaptor installed.
@@ -36,8 +44,17 @@ exposes nothing: gedit's tree has no accelerator at all (its real Ctrl+S/Ctrl+O
 are absent), and GTK4 answers "<VoidSymbol>" -- X11's "no key" -- for all 84
 keybindings across 61 of its 65 nodes, with no menu-role node anywhere.
 
-So this discovers shortcuts for legacy-menubar apps only. Treat that as the
-ceiling when deciding whether it is worth a HID command.
+So on Linux this discovers shortcuts for legacy-menubar apps only. Treat that
+as the ceiling when deciding whether it is worth a HID command.
+
+WINDOWS IS UNMEASURED AND THE UIA BACKEND IS UNRUN. It was written without a
+Windows machine to test on, so the pure parsers below are selftested (46 cases,
+including real localized strings) but uia_shortcuts()/main_uia() have never
+executed. Expect to debug them on first contact. There are two reasons to think
+Windows scores better than the Linux numbers above -- classic menubars are far
+more common, and UIA exposes AcceleratorKey on toolbar and ribbon controls
+rather than only on menus -- but that is an expectation, not a measurement, and
+Windows is the platform that decides this feature.
 """
 
 from __future__ import annotations
@@ -249,6 +266,37 @@ def selftest() -> int:
     check("unknown keysym has no hid", parse_accel("<Control>Ediacaran").hid, None)
     check("pretty", parse_accel("<Control><Alt>Delete").pretty(), "Ctrl+Alt+Delete")
 
+    # --- Windows / UIA parser -------------------------------------------------
+    w = parse_win_accel("Ctrl+Shift+S")
+    check("win ctrl+shift", w.mods, MOD_CTRL | MOD_SHIFT)
+    check("win ctrl+shift key", w.hid, 0x16)
+    check("win function key", parse_win_accel("F5").hid, 0x3E)
+    check("win alt+f4", parse_win_accel("Alt+F4").mods, MOD_ALT)
+    # The case that rules out splitting on "+": zoom-in is genuinely Ctrl++.
+    check("win ctrl++ key", parse_win_accel("Ctrl++").keysym, "+")
+    check("win ctrl++ mods", parse_win_accel("Ctrl++").mods, MOD_CTRL)
+    check("win ctrl++ hid", parse_win_accel("Ctrl++").hid, 0x2E)
+    check("win german", parse_win_accel("Strg+Umschalt+S").mods, MOD_CTRL | MOD_SHIFT)
+    check("win french", parse_win_accel("Ctrl+Maj+S").mods, MOD_CTRL | MOD_SHIFT)
+    check("win german key name", parse_win_accel("Strg+Entf").hid, 0x4C)
+    check("win altgr is ctrl+alt", parse_win_accel("AltGr+E").mods, MOD_CTRL | MOD_ALT)
+    check("win pgup", parse_win_accel("Ctrl+PgUp").hid, 0x4B)
+    check("win win key", parse_win_accel("Win+V").mods, MOD_GUI)
+    check("win bare modifier refused", parse_win_accel("Ctrl+Alt"), None)
+    check("win trailing separator refused", parse_win_accel("Ctrl+"), None)
+    check("win unknown localization refused", parse_win_accel("Ctrl+Grupp+S"), None)
+    check("win empty", parse_win_accel(""), None)
+    check("win unknown key has no hid", parse_win_accel("Ctrl+Ediacaran").hid, None)
+
+    check("uia accelerator wins", pick_win_binding("Ctrl+S", "Alt+F", 50000),
+          ("Ctrl+S", "accelerator"))
+    check("uia menubar access key kept", pick_win_binding("", "Alt+F", 50011),
+          ("Alt+F", "menu"))
+    # The gedit lesson, on the other platform: a button mnemonic is not a shortcut.
+    check("uia button mnemonic dropped", pick_win_binding("", "Alt+S", 50000),
+          (None, ""))
+    check("uia nothing", pick_win_binding("", "", 50011), (None, ""))
+
     check("letter displayable", displayable_hid(0x04), True)
     check("gap not displayable", displayable_hid(0x60), False)
     check("modifier slot displayable", displayable_hid(0xE3), True)
@@ -372,27 +420,14 @@ def report(name: str, shortcuts: list[Shortcut], nodes_used: int) -> dict:
     }
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--app", help="application name to probe (substring match)")
-    ap.add_argument("--all", action="store_true", help="probe every application")
-    ap.add_argument("--list", action="store_true", help="list applications and exit")
-    ap.add_argument("--json", help="write the full result to this path")
-    ap.add_argument("--max-nodes", type=int, default=20000,
-                    help="node budget per application (default 20000)")
-    ap.add_argument("--selftest", action="store_true", help="run the pure-parser tests")
-    args = ap.parse_args()
-
-    if args.selftest:
-        return selftest()
-
+def main_atspi(args) -> list[dict] | None:
     try:
         atspi = _atspi()
     except Exception as exc:
         print(f"AT-SPI unavailable: {exc}", file=sys.stderr)
         print("Needs python3-gi + gir1.2-atspi-2.0, and the a11y bus running.",
               file=sys.stderr)
-        return 2
+        return None
 
     atspi.init()
     apps = list_apps(atspi)
@@ -402,7 +437,7 @@ def main() -> int:
             print(f"  [{i}] {name}")
         if not args.list:
             print("\nPass --app NAME or --all to probe.")
-        return 0
+        return []
 
     desktop = atspi.get_desktop(0)
     targets = []
@@ -411,7 +446,7 @@ def main() -> int:
             targets.append((i, name))
     if not targets:
         print(f"no application matching {args.app!r}; try --list", file=sys.stderr)
-        return 1
+        return None
 
     results = []
     for i, name in targets:
@@ -419,10 +454,344 @@ def main() -> int:
         budget = [args.max_nodes]
         found = shortcuts_for(app, atspi, budget)
         results.append(report(name, found, args.max_nodes - budget[0]))
+    return results
+
+# ---------------------------------------------------------------------------
+# Windows backend (UI Automation)
+# ---------------------------------------------------------------------------
+#
+# UIA differs from AT-SPI in three ways that matter here:
+#
+#  1. AcceleratorKey is a DISPLAY STRING the app authored, not a structured
+#     binding -- "Ctrl+Shift+S", and localized ("Strg+Umschalt+S" on a German
+#     Windows). So parsing is a heuristic, where the AT-SPI side was exact.
+#  2. It is NOT restricted to menus. Toolbar buttons, split buttons and ribbon
+#     controls carry it too, so Windows may well beat the Linux menubar ceiling.
+#  3. Every property read is a cross-process call. Reading them one at a time
+#     over a few thousand elements is seconds of latency, so the whole subtree is
+#     fetched with ONE FindAllBuildCache() and read back out of the cache.
+
+# Property ids from UIAutomationClient.h. Read via GetCachedPropertyValue rather
+# than the generated Cached* accessors, whose availability depends on the typelib
+# comtypes happens to generate on the machine.
+UIA_PROP_PROCESS_ID = 30002
+UIA_PROP_CONTROL_TYPE = 30003
+UIA_PROP_NAME = 30005
+UIA_PROP_ACCELERATOR = 30006
+UIA_PROP_ACCESS_KEY = 30007
+UIA_PROP_CLASS_NAME = 30012
+
+TREESCOPE_SUBTREE = 7
+
+UIA_CONTROL_TYPES = {
+    50000: "button", 50001: "calendar", 50002: "check box", 50003: "combo box",
+    50004: "edit", 50005: "hyperlink", 50006: "image", 50007: "list item",
+    50008: "list", 50009: "menu", 50010: "menu bar", 50011: "menu item",
+    50012: "progress bar", 50013: "radio button", 50014: "scroll bar",
+    50015: "slider", 50016: "spinner", 50017: "status bar", 50018: "tab",
+    50019: "tab item", 50020: "text", 50021: "tool bar", 50022: "tool tip",
+    50023: "tree", 50024: "tree item", 50025: "custom", 50026: "group",
+    50027: "thumb", 50028: "data grid", 50029: "data item", 50030: "document",
+    50031: "split button", 50032: "window", 50033: "pane", 50034: "header",
+    50035: "header item", 50036: "table", 50037: "title bar", 50038: "separator",
+}
+
+# Control types whose AccessKey is a real one-press binding rather than a
+# mnemonic that needs its container already open. Same gate as the AT-SPI
+# `role == "menu"` rule, and for the same reason -- see pick_binding().
+UIA_MENU_TYPES = {50009, 50010, 50011}
+
+# Modifier names as Windows applications spell them, lower-cased. Longest match
+# wins, so "alt gr" is tried before "alt".
+WIN_MOD_TOKENS = {
+    "ctrl": MOD_CTRL, "control": MOD_CTRL, "ctl": MOD_CTRL,
+    "strg": MOD_CTRL,            # de
+    "ctrl droite": MOD_CTRL,     # fr
+    "shift": MOD_SHIFT, "shft": MOD_SHIFT,
+    "umschalt": MOD_SHIFT,       # de
+    "maj": MOD_SHIFT,            # fr
+    "mayus": MOD_SHIFT, "mayús": MOD_SHIFT,   # es
+    "maiusc": MOD_SHIFT,         # it
+    "skift": MOD_SHIFT,          # da/no/sv
+    "alt": MOD_ALT,
+    "win": MOD_GUI, "windows": MOD_GUI, "super": MOD_GUI, "meta": MOD_GUI,
+    # AltGr IS Ctrl+Alt on Windows, so it decodes to both bits.
+    "alt gr": MOD_CTRL | MOD_ALT, "altgr": MOD_CTRL | MOD_ALT,
+    "alt graph": MOD_CTRL | MOD_ALT,
+}
+
+WIN_SEPARATORS = "+-"
+
+# Windows key display names -> HID usage. Localized spellings are included where
+# they are common; an unknown name simply yields no HID id and is reported as
+# undisplayable rather than guessed at.
+WINKEY_TO_HID: dict[str, int] = {}
+for _i, _c in enumerate("abcdefghijklmnopqrstuvwxyz"):
+    WINKEY_TO_HID[_c] = 0x04 + _i
+for _i, _c in enumerate("1234567890"):
+    WINKEY_TO_HID[_c] = 0x1E + _i
+for _i in range(1, 13):
+    WINKEY_TO_HID[f"f{_i}"] = 0x3A + _i - 1
+WINKEY_TO_HID.update({
+    "enter": 0x28, "return": 0x28, "eingabe": 0x28, "entrar": 0x28,
+    "esc": 0x29, "escape": 0x29, "echap": 0x29,
+    "backspace": 0x2A, "bksp": 0x2A, "back": 0x2A, "rücktaste": 0x2A,
+    "tab": 0x2B, "tabulator": 0x2B,
+    "space": 0x2C, "spacebar": 0x2C, "leertaste": 0x2C, "espace": 0x2C,
+    "-": 0x2D, "minus": 0x2D, "_": 0x2D,
+    "=": 0x2E, "+": 0x2E, "plus": 0x2E,
+    "[": 0x2F, "]": 0x30, "\\": 0x31, ";": 0x33, "'": 0x34, "`": 0x35,
+    ",": 0x36, "comma": 0x36, ".": 0x37, "period": 0x37,
+    "/": 0x38, "slash": 0x38,
+    "prtscn": 0x46, "print screen": 0x46, "printscreen": 0x46, "druck": 0x46,
+    "scroll lock": 0x47, "rollen": 0x47,
+    "pause": 0x48, "break": 0x48,
+    "ins": 0x49, "insert": 0x49, "einfg": 0x49,
+    "home": 0x4A, "pos1": 0x4A,
+    "pgup": 0x4B, "page up": 0x4B, "pageup": 0x4B, "bild auf": 0x4B,
+    "del": 0x4C, "delete": 0x4C, "entf": 0x4C, "suppr": 0x4C,
+    "end": 0x4D, "ende": 0x4D, "fin": 0x4D,
+    "pgdn": 0x4E, "page down": 0x4E, "pagedown": 0x4E, "bild ab": 0x4E,
+    "right": 0x4F, "→": 0x4F, "rechts": 0x4F,
+    "left": 0x50, "←": 0x50, "links": 0x50,
+    "down": 0x51, "↓": 0x51, "unten": 0x51,
+    "up": 0x52, "↑": 0x52, "oben": 0x52,
+    "num lock": 0x53, "numlock": 0x53,
+    "menu": 0x65, "apps": 0x65,
+})
+
+_WIN_MODS_BY_LEN = sorted(WIN_MOD_TOKENS, key=len, reverse=True)
+
+
+def parse_win_accel(text: str) -> Accel | None:
+    """Parse a Windows UIA AcceleratorKey display string such as 'Ctrl+Shift+S'.
+
+    Consumes known modifier tokens from the left, each followed by a separator;
+    whatever is left is the key. Doing it that way rather than splitting on '+'
+    is what makes 'Ctrl++' work -- split() would hand back an empty final field
+    and lose the key, and '+' is a real accelerator (zoom in) in a lot of apps.
+
+    Unlike the AT-SPI side this is a HEURISTIC: the string is authored by the
+    application and localized by it, so an unrecognised modifier means the whole
+    string is refused rather than silently parsed as a bare key. Reporting
+    'Strg+S' as the single key "Strg+S" would be worse than reporting nothing.
+    """
+    if not text:
+        return None
+    rest = text.strip()
+    if not rest:
+        return None
+    mods = 0
+    matched_any = True
+    while matched_any and rest:
+        matched_any = False
+        low = rest.lower()
+        for token in _WIN_MODS_BY_LEN:
+            if not low.startswith(token):
+                continue
+            after = rest[len(token):]
+            if after[:1] in WIN_SEPARATORS and len(after) > 1:
+                mods |= WIN_MOD_TOKENS[token]
+                rest = after[1:].strip()
+                matched_any = True
+                break
+    if not rest:
+        return None
+    key = rest.strip()
+    # "Ctrl+Alt" -- the leftover is itself a modifier, so there is no key.
+    if key.lower() in WIN_MOD_TOKENS:
+        return None
+    # "Ctrl+" -- trailing separator, nothing after it. Length guards the case
+    # where the key IS the separator, which "Ctrl++" (zoom in) really is.
+    if len(key) > 1 and key[-1] in WIN_SEPARATORS:
+        return None
+    # A leftover that still looks like "Word+Word" carries a modifier this table
+    # does not know -- most likely a localization. Refuse it.
+    if len(key) > 1 and any(sep in key[:-1] for sep in WIN_SEPARATORS) and " " not in key:
+        head = key.split("+")[0].split("-")[0]
+        if head and head.lower() not in WINKEY_TO_HID:
+            return None
+    low = key.lower()
+    hid = WINKEY_TO_HID.get(low)
+    return Accel(mods=mods, keysym=key, hid=hid)
+
+
+def pick_win_binding(accelerator: str, access_key: str,
+                     control_type: int) -> tuple[str | None, str]:
+    """Choose between an element's AcceleratorKey and its AccessKey.
+
+    AcceleratorKey is the real shortcut and always wins. AccessKey is the
+    mnemonic, and is only a one-press binding on a menu-ish control -- exactly
+    the distinction the AT-SPI backend draws by role, and the one that stopped
+    gedit reporting 13 popover mnemonics as shortcuts.
+    """
+    if accelerator and accelerator.strip():
+        return accelerator.strip(), "accelerator"
+    if access_key and access_key.strip() and control_type in UIA_MENU_TYPES:
+        return access_key.strip(), "menu"
+    return None, ""
+
+
+def _uia():
+    import comtypes.client
+    module = comtypes.client.GetModule("UIAutomationCore.dll")
+    iuia = comtypes.client.CreateObject(
+        "{ff48dba4-60ef-4201-aa87-54103eef594e}",  # CLSID_CUIAutomation
+        interface=module.IUIAutomation,
+    )
+    return module, iuia
+
+
+def _cached(element, prop_id, default=""):
+    try:
+        value = element.GetCachedPropertyValue(prop_id)
+    except Exception:
+        return default
+    return default if value is None else value
+
+
+def uia_shortcuts(iuia, root, cache_request) -> tuple[list[Shortcut], int]:
+    """Fetch the whole subtree in ONE cross-process call, then read the cache."""
+    found: list[Shortcut] = []
+    seen: set[tuple[int, str]] = set()
+    elements = root.FindAllBuildCache(
+        TREESCOPE_SUBTREE, iuia.CreateTrueCondition(), cache_request)
+    count = elements.Length
+    for i in range(count):
+        el = elements.GetElement(i)
+        accel_raw = str(_cached(el, UIA_PROP_ACCELERATOR))
+        access_raw = str(_cached(el, UIA_PROP_ACCESS_KEY))
+        if not accel_raw.strip() and not access_raw.strip():
+            continue
+        ctype = int(_cached(el, UIA_PROP_CONTROL_TYPE, 0) or 0)
+        text, kind = pick_win_binding(accel_raw, access_raw, ctype)
+        if not text:
+            continue
+        accel = parse_win_accel(text)
+        if accel is None:
+            continue
+        key = (accel.mods, accel.keysym.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        found.append(Shortcut(
+            label=str(_cached(el, UIA_PROP_NAME)).strip(),
+            role=UIA_CONTROL_TYPES.get(ctype, f"type {ctype}"),
+            accel=accel.pretty(), mods=accel.mods, keysym=accel.keysym,
+            hid=accel.hid, displayable=accel.displayable, kind=kind,
+            raw=accel_raw or access_raw,
+        ))
+    return found, count
+
+
+def main_uia(args) -> list[dict] | None:
+    try:
+        module, iuia = _uia()
+    except Exception as exc:
+        print(f"UI Automation unavailable: {exc}", file=sys.stderr)
+        print("Needs Windows and `pip install comtypes`.", file=sys.stderr)
+        return None
+
+    cache_request = iuia.CreateCacheRequest()
+    for prop in (UIA_PROP_NAME, UIA_PROP_CONTROL_TYPE, UIA_PROP_ACCELERATOR,
+                 UIA_PROP_ACCESS_KEY, UIA_PROP_PROCESS_ID):
+        cache_request.AddProperty(prop)
+
+    desktop = iuia.GetRootElement()
+    walker = iuia.ControlViewWalker
+    windows = []
+    child = walker.GetFirstChildElement(desktop)
+    while child:
+        name = ""
+        try:
+            name = child.CurrentName or ""
+        except Exception:
+            pass
+        if name.strip():
+            windows.append((name, child))
+        child = walker.GetNextSiblingElement(child)
+
+    if args.list or (not args.app and not args.all and not args.focused):
+        print(f"{len(windows)} top-level window(s):")
+        for i, (name, _) in enumerate(windows):
+            print(f"  [{i}] {name}")
+        if not args.list:
+            print("\nPass --app NAME, --focused or --all to probe.")
+        return []
+
+    if args.focused:
+        try:
+            el = iuia.GetFocusedElement()
+        except Exception as exc:
+            print(f"cannot read the focused element: {exc}", file=sys.stderr)
+            return None
+        # Walk up to the top-level window that owns the focus.
+        top = el
+        while True:
+            parent = walker.GetParentElement(top)
+            if parent is None or iuia.CompareElements(parent, desktop):
+                break
+            top = parent
+        targets = [(str(getattr(top, "CurrentName", "") or "<focused>"), top)]
+    else:
+        targets = [(n, e) for n, e in windows
+                   if args.all or (args.app and args.app.lower() in n.lower())]
+
+    if not targets:
+        print(f"no window matching {args.app!r}; try --list", file=sys.stderr)
+        return None
+
+    results = []
+    for name, element in targets:
+        try:
+            found, count = uia_shortcuts(iuia, element, cache_request)
+        except Exception as exc:
+            print(f"  {name}: subtree fetch failed ({exc})", file=sys.stderr)
+            continue
+        results.append(report(name, found, count))
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Entry point -- picks the backend for the platform
+# ---------------------------------------------------------------------------
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--app", help="application/window name to probe (substring match)")
+    ap.add_argument("--all", action="store_true", help="probe every application")
+    ap.add_argument("--focused", action="store_true",
+                    help="probe the focused window (Windows backend only)")
+    ap.add_argument("--list", action="store_true", help="list targets and exit")
+    ap.add_argument("--json", help="write the full result to this path")
+    ap.add_argument("--max-nodes", type=int, default=20000,
+                    help="AT-SPI node budget per application (default 20000)")
+    ap.add_argument("--backend", choices=("auto", "atspi", "uia"), default="auto",
+                    help="force a backend instead of choosing by platform")
+    ap.add_argument("--selftest", action="store_true", help="run the pure-parser tests")
+    args = ap.parse_args()
+
+    if args.selftest:
+        return selftest()
+
+    backend = args.backend
+    if backend == "auto":
+        backend = "uia" if sys.platform == "win32" else "atspi"
+    if args.focused and backend != "uia":
+        print("--focused is only implemented for the UIA backend", file=sys.stderr)
+        return 2
+
+    results = main_uia(args) if backend == "uia" else main_atspi(args)
+    if results is None:
+        return 1
+    if not results:
+        return 0
 
     total = sum(r["total"] for r in results)
     usable = sum(r["displayable"] for r in results)
-    print(f"\nTOTAL: {total} shortcut(s), {usable} displayable on the keycaps")
+    accels = sum(r["accelerators"] for r in results)
+    print(f"\nTOTAL: {total} shortcut(s) ({accels} real accelerators), "
+          f"{usable} displayable on the keycaps  [backend: {backend}]")
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as fh:
