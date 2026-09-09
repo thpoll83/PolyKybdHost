@@ -2917,6 +2917,28 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       - **One honest departure**: hardware names the BASE layout on that row and this
         names the layer being edited. Identical for layers 0..4; above them it says
         `Fn` / `Numpad` / `Utility`, which is what an editor wants.
+      - ⚠️ **`set_keycodes_for_layer` OWNS `current_layer`, and it did not.** That
+        attribute was written only by the layer-button handler, so calling the method
+        directly left the two disagreeing — and the next MODE change repaints with
+        `current_layer`, silently putting the board and both panels back on the last
+        *clicked* layer. Measured: show layer 5, toggle Symbol → Preview, get layer 0.
+        The layer that ends up on screen is what everything else means by "the layer
+        being edited" (the keycode assignment indexes the buffer with it), so the one
+        method that draws it is the right writer.
+        - ⚠️ **Drive that test through `set_keycodes_for_layer`, not the button** — the
+          button sets `current_layer` on the way past and hides exactly this.
+      - ⚠️ **A failed keymap read used to take the panels with it.** The mode switch's
+        repaint sat inside `if self.key_buffer is not None`, so with the keys locked
+        down the panels never followed the mode at all. They carry the LAYER, not the
+        keymap; a board that cannot be edited still says which layer is selected.
+      - ⚠️ **"The panels open on the keyboard's default layer" is NOT pinned by the
+        test that says so, and the first draft claimed it was.** `_add_board` does draw
+        them before the default layer is read, but the default mode is Symbol — so they
+        are blank until the user picks Preview, and that pick repaints at
+        `current_layer` regardless. Measured: deleting the startup
+        `set_keycodes_for_layer` outright leaves the test green. What that actually
+        breaks is the KEYS (layer 0's keycodes under a layer-3 tab), which is a keycap
+        claim and belongs in a keycap test.
       - ⚠️ **A missing face SUBTRACTS, it is never a precondition** — and expecting an
         empty panel from no faces at all was wrong: the role icons, the brightness
         gauge and the speed box are bitmaps and drawn rectangles, so they survive every

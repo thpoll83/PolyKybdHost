@@ -347,6 +347,12 @@ class KbLayoutDialog(QMainWindow):
             btn.setChecked(True)
         if self.key_buffer is not None:
             self.set_keycodes_for_layer(self.current_layer)
+        else:
+            # ⚠️ The panels carry the LAYER, not the keymap, so they follow a mode
+            # change even when the keycodes could not be read -- the branch above is
+            # the only reason they did not, and a board whose keys are locked down
+            # still says which layer is selected.
+            self._refresh_screens(self.current_layer)
 
     def _pixmap(self, img):
         """One QImage -> QPixmap step for BOTH halves of the preview.
@@ -476,6 +482,18 @@ class KbLayoutDialog(QMainWindow):
             self.set_keycodes_for_layer(self.current_layer)
 
     def set_keycodes_for_layer(self, layer):
+        """Draw `layer` on every key, and on the two status panels.
+
+        ⚠️ It ADOPTS the layer as `current_layer`, because it is the one that ends up
+        on screen and everything else reads that attribute to mean "the layer being
+        edited" -- the keycode assignment indexes the buffer with it, and a mode
+        change repaints with it. It used to be written only by `layerChanged`, so
+        calling this directly left the two disagreeing and the next mode switch
+        silently reverted the board and both panels to whatever the last BUTTON
+        click had said (measured: switch to layer 5, toggle Symbol -> Preview, get
+        layer 0 back).
+        """
+        self.current_layer = layer
         mapping = self.keycode_browser.get_keycode_to_name_mapping()
         num_keys = len(self.keys)
         max_idx = self.settings.MATRIX_COLUMNS*self.settings.MATRIX_ROWS

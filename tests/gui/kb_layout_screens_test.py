@@ -33,6 +33,9 @@ def setUpModule():
 class _Core:
     """Enough of PolyCore for the dialog to build a board and four layers."""
 
+    def __init__(self, default_layer=0, buffer_ok=True):
+        self._default, self._buffer_ok = default_layer, buffer_ok
+
     def keymap_layer_names(self):
         return True, list(LAYERS)
 
@@ -40,10 +43,12 @@ class _Core:
         return True, len(LAYERS)
 
     def keymap_buffer(self, *a, **k):
+        if not self._buffer_ok:
+            return False, None
         return True, [0] * (8 * 10 * len(LAYERS))
 
     def keymap_default_layer(self):
-        return True, 0
+        return True, self._default
 
     def macro_list(self):
         return True, {"macros": [], "count": 0}
@@ -110,6 +115,91 @@ class ScreenPaintingTest(unittest.TestCase):
         for p in self.pixmaps():
             self.assertFalse(p.isNull())
             self.assertEqual(p.width(), 128 * kb.ssr.REAL_SCALE)
+
+    def _which_layer(self, dlg, side="left"):
+        """Which layer the `side` panel is drawing, by comparing it to each.
+
+        Rendering the candidates rather than reading a label back: the panel is a
+        picture, and the only claim worth making about it is that it is the picture
+        that layer produces.
+        """
+        from polyhost.gui.layout_dialog import status_screen_render as ssr
+
+        def lit(img):
+            return {(x, y) for y in range(img.height()) for x in range(img.width())
+                    if img.pixel(x, y) != ssr.GROUND.rgb()}
+
+        for item in dlg._board_items:
+            if item.data(bp.SCREEN_SIDE) != side:
+                continue
+            pm = item.pixmap()
+            if pm.isNull():
+                return "BLANK"
+            got = lit(pm.toImage())
+            r = ssr.StatusScreenRenderer(dlg._preview.status_faces())
+            for n in range(len(LAYERS)):
+                if lit(r.render(side, n, dlg._layer_name(n))) == got:
+                    return n
+            return "NONE"
+        return "NO PANEL"
+
+    def _dialog(self, **kw):
+        dlg = kb.KbLayoutDialog(_Core(**kw), _Settings())
+        if not dlg._board_items:
+            self.skipTest("no board outline shipped")
+        if not dlg._pixmaps_possible():
+            self.skipTest("the status faces are unavailable")
+        dlg.set_keycap_mode(kb.KEYCAP_PREVIEW)
+        return dlg
+
+    def test_the_panels_open_on_the_KEYBOARDS_default_layer(self):
+        """Turning previews on shows the layer the KEYBOARD is on, not layer 0.
+
+        ⚠️ It does NOT pin the startup paint, and saying so was the first draft's
+        mistake. `_add_board` really does draw the panels before the default layer is
+        read, but the default mode is Symbol -- so the panels are blank until the user
+        picks Preview, and that pick repaints at `current_layer` anyway. Measured:
+        deleting the startup `set_keycodes_for_layer` entirely leaves this green. What
+        that mutation really breaks is the KEYS, which show layer 0's keycodes until
+        something else refreshes them; that belongs to a keycap test, not here.
+        """
+        for default in (0, 2, 3):
+            dlg = self._dialog(default_layer=default)
+            for side in ("left", "right"):
+                with self.subTest(default=default, side=side):
+                    self.assertEqual(self._which_layer(dlg, side), default)
+
+    def test_a_MODE_change_keeps_the_layer_rather_than_reverting_it(self):
+        """The bug this pair exists for: `current_layer` was written ONLY by the
+        button handler, so calling `set_keycodes_for_layer` directly left the two
+        disagreeing -- and the next mode switch repainted `current_layer`, silently
+        putting the board and both panels back on the last CLICKED layer.
+
+        Driven through `set_keycodes_for_layer`, deliberately: going through the
+        button would set `current_layer` on the way past and hide exactly this.
+        """
+        dlg = self._dialog()
+        dlg.set_keycodes_for_layer(3)
+        self.assertEqual(dlg.current_layer, 3, "the shown layer was not adopted")
+        for mode in (kb.KEYCAP_SYMBOL, kb.KEYCAP_PREVIEW):
+            dlg.set_keycap_mode(mode)
+        for side in ("left", "right"):
+            with self.subTest(side=side):
+                self.assertEqual(self._which_layer(dlg, side), 3)
+
+    def test_the_panels_follow_the_mode_with_NO_KEY_BUFFER(self):
+        """A failed keymap read locks the keys down, and the panels used to go with
+        them -- the mode switch's repaint sat inside that guard. They carry the
+        LAYER, not the keymap, so a board that cannot be edited still says which
+        layer is selected."""
+        dlg = kb.KbLayoutDialog(_Core(buffer_ok=False), _Settings())
+        if not dlg._board_items or not dlg._pixmaps_possible():
+            self.skipTest("no board outline / status faces")
+        self.assertIsNone(dlg.key_buffer)
+        dlg.set_keycap_mode(kb.KEYCAP_PREVIEW)
+        for side in ("left", "right"):
+            with self.subTest(side=side):
+                self.assertEqual(self._which_layer(dlg, side), 0)
 
     def test_the_panel_FOLLOWS_the_layer(self):
         """It names the layer being edited, so switching has to repaint it.
