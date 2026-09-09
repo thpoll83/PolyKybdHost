@@ -20,7 +20,9 @@ from polyhost.gui import oled_look
 from polyhost.gui import theme as gui_theme
 from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
 from polyhost.gui.layout_dialog.macro_tab import QK_MACRO
-from polyhost.gui.layout_dialog.board_plate import add_board
+from polyhost.gui.layout_dialog.board_plate import add_board, set_screen_images
+from polyhost.gui.layout_dialog import status_screen_render as ssr
+from polyhost.gui.layout_dialog.status_screen_render import StatusScreenRenderer
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
 from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
@@ -118,6 +120,10 @@ class KbLayoutDialog(QMainWindow):
         # Everything that is NOT a macro: the firmware composes those legends, so
         # this drives the firmware-side renderers rather than reimplementing them.
         self._preview = KeycapPreview()
+        # The status panels on the board plate. Built from the SAME source the
+        # keycaps came from, so one board cannot show two firmwares.
+        self._status_render = None
+        self._board_items: list = []
         # Drives the header toggle. A plain flag rather than reading the checkbox back,
         # so `_keycap_for` does not depend on a widget that init_ui has not built yet.
         # OFF by default: the editor's job is assigning keycodes, and a board of
@@ -490,6 +496,9 @@ class KbLayoutDialog(QMainWindow):
                 self._keycap_for(self._resolve(idx, layer)) if self._has_display(idx)
                 else None)
             idx += 1
+        # The status panels name the layer, so they follow it -- and this is the one
+        # path both a layer change and a mode change go through.
+        self._refresh_screens(layer)
 
     def layerChanged(self, button):
         self.current_layer = self.layers.group.id(button)
@@ -651,10 +660,71 @@ class KbLayoutDialog(QMainWindow):
         setting: the setting is `auto` on most installs and does not move when
         Windows flips, while the palette is what was actually applied.
         """
+        self._board_items = []
         try:
             dark = gui_theme.is_dark(self.palette())
-            add_board(self.scene, KEY_SCALE, minx, miny, dark=dark)
+            self._board_items = add_board(self.scene, KEY_SCALE, minx, miny, dark=dark)
+            self._refresh_screens(self.current_layer)
         except Exception:
             self.log.debug("board outline not drawn", exc_info=True)
+
+    def _refresh_screens(self, layer):
+        """Paint the layer being edited onto the two status panels.
+
+        Follows the SAME Symbol / Preview / Real control the keys do: Symbol clears
+        them back to the plain lit rectangle, Preview draws the panel, Real puts it
+        through the simulation. ⚠️ With the **`oled`** preset, not `keycap` -- there is
+        no keycap over a status display, so the cover's diffusion would be modelling
+        something that is not there.
+
+        Decoration, so it fails soft the same way the plate does: a renderer that
+        cannot load leaves the rectangles plain and the editor unchanged.
+        """
+        if not self._board_items:
+            return
+        try:
+            if self._keycap_mode == KEYCAP_SYMBOL:
+                set_screen_images(self._board_items, {})
+                return
+            if self._status_render is None:
+                self._status_render = StatusScreenRenderer(self._preview.status_faces())
+            if not self._status_render.usable:
+                set_screen_images(self._board_items, {})
+                return
+            name = self._layer_name(layer)
+            shots = {}
+            for side in ("left", "right"):
+                img = self._status_render.render(layer, name, side)
+                if self._keycap_mode == KEYCAP_REAL:
+                    img = oled_look.render(img, "oled", ssr.REAL_SCALE) or img
+                shots[side] = img
+            set_screen_images(self._board_items, shots)
+        except Exception:
+            self.log.debug("status screens not drawn", exc_info=True)
+
+    def _pixmaps_possible(self) -> bool:
+        """Whether the status panels can be drawn at all (the three faces loaded).
+
+        Exists so a test can SKIP rather than assert a blank board on an install
+        without the preview export -- the editor itself just leaves them flat.
+        """
+        if self._status_render is None:
+            self._status_render = StatusScreenRenderer(self._preview.status_faces())
+        return self._status_render.usable
+
+    def _layer_name(self, layer):
+        """What the panel calls this layer -- the same string the layer tab shows.
+
+        Cached: `_layer_names` asks the KEYBOARD (cmd 35), and a layer change must
+        not cost an HID round trip to relabel a decoration.
+        """
+        names = getattr(self, "_layer_name_cache", None)
+        if names is None:
+            try:
+                names = self._layer_names()
+            except Exception:
+                names = {}
+            self._layer_name_cache = names
+        return names.get(layer, "")
 
 

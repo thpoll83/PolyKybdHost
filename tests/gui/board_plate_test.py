@@ -10,7 +10,7 @@ import unittest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
-    from PyQt5.QtGui import QColor
+    from PyQt5.QtGui import QColor, QImage
     from PyQt5.QtWidgets import QApplication, QGraphicsScene
 except ImportError as e:  # pragma: no cover - PyQt5 not installed
     _IMPORT_ERR = e
@@ -40,9 +40,61 @@ class AddBoardTest(unittest.TestCase):
             self.skipTest("no board outline shipped")
         items = bp.add_board(self.scene, 80.0, dark=True)
         panels = sum(len(h.displays) for h in board.halves)
-        # plate per half + (glass, lit area) per panel -- no caption
-        self.assertEqual(len(board.halves) + panels * 2, len(items))
+        # plate per half + (glass, lit area, screen) per panel -- no caption
+        self.assertEqual(len(board.halves) + panels * 3, len(items))
         self.assertEqual(len(items), len(self.scene.items()))
+
+    def test_a_screen_item_is_TAGGED_with_its_half(self):
+        """`add_board` hands back one flat list, so the tag is the only thing that
+        can route a repaint to the right panel -- and an untagged item is skipped
+        entirely by `set_screen_images`, which fails as a picture that never
+        appears rather than as an error."""
+        board = bo.load()
+        if board is None:
+            self.skipTest("no board outline shipped")
+        items = bp.add_board(self.scene, 80.0, dark=True)
+        tagged = [i.data(bp.SCREEN_SIDE) for i in items
+                  if i.data(bp.SCREEN_SIDE) is not None]
+        self.assertEqual(sorted(tagged),
+                         sorted(h.side for h in board.halves for _ in h.displays))
+
+    def test_a_screen_image_is_SCALED_to_the_lit_rectangle(self):
+        """The pixmap stays at its native 128x64 and the ITEM scales, so zooming in
+        resolves more panel; the check is that what lands on screen is the lit
+        rectangle either way."""
+        board = bo.load()
+        if board is None:
+            self.skipTest("no board outline shipped")
+        items = bp.add_board(self.scene, 80.0, dark=True)
+        img = QImage(128, 64, QImage.Format_RGB32)
+        img.fill(0)
+        bp.set_screen_images(items, {h.side: img for h in board.halves})
+        lit = {h.side: h.displays[0].active_rect for h in board.halves
+               if h.displays}
+        for item in items:
+            side = item.data(bp.SCREEN_SIDE)
+            if side is None:
+                continue
+            self.assertFalse(item.pixmap().isNull(), "%s screen is blank" % side)
+            x, _y, w, _h = lit[side]
+            got = item.sceneBoundingRect()
+            self.assertAlmostEqual(got.x(), x * 80.0, places=3)
+            self.assertAlmostEqual(got.width(), w * 80.0, places=2)
+
+    def test_a_side_with_NO_image_is_cleared_rather_than_left_stale(self):
+        """A mode switch back to Symbol has to take the picture away; leaving the
+        last one is the same defect the keycap caches have to drop on a mode
+        change."""
+        items = bp.add_board(self.scene, 80.0, dark=True)
+        if not items:
+            self.skipTest("no board outline shipped")
+        img = QImage(128, 64, QImage.Format_RGB32)
+        img.fill(0)
+        bp.set_screen_images(items, {"left": img, "right": img})
+        bp.set_screen_images(items, {})
+        for item in items:
+            if item.data(bp.SCREEN_SIDE) is not None:
+                self.assertTrue(item.pixmap().isNull())
 
     def test_every_item_sits_behind_the_keys(self):
         items = bp.add_board(self.scene, 80.0, dark=True)

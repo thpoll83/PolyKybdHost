@@ -860,7 +860,7 @@
   "32675": "KC_SETTINGS_MORE",
   "32676": "KC_MACRO_REC"
  },
- "fw_version": "0.19.1",
+ "fw_version": "0.21.0",
  "legends": {
   "DE_GRV": [
    96
@@ -2320,7 +2320,8 @@
  },
  "ui_fonts": [
   "NotoSans_Regular_Nano_10px7b",
-  "NotoSans_Regular_Mid_19px7b"
+  "NotoSans_Regular_Mid_19px7b",
+  "NotoSans_Regular_Small_15px7b"
  ],
  "unresolved": [
   "KC_IDDQD",

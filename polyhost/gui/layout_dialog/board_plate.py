@@ -15,9 +15,15 @@ Two things it deliberately is NOT:
 * **not a source of truth.** It is decoration, so `add_board` returns quietly
   when the shipped description is missing -- see `services.board_outline`.
 
-⚠️ The status panel has NO side bezel: its screen spans the corner and meets the
-housing left and right, so `w == aw` and only the height carries glass. That comes
-out of the exporter, not from here.
+⚠️ The status panel's side bezel is NOT DRAWN -- the glass is exactly as wide as the
+screen, so `w == aw` and only the height carries glass -- and the panel therefore stops
+one module bezel short of the housing rather than meeting it. That comes out of the
+exporter, not from here.
+
+The screen itself can carry a picture: `set_screen_images` paints a rendered panel into
+the lit rectangle (see `status_screen_render`), which is how the editor shows the layer
+being edited on the board rather than on a flat teal rectangle. It is optional -- with
+no image the lit rectangle is drawn plain, as it always was.
 
 ⚠️ The tiles are drawn dark in BOTH themes (`RenderableKey` hardcodes its
 greys), so the plate has to work under dark keys either way: a graphite-blue
@@ -26,14 +32,23 @@ cyan sweep the brand mark uses.
 """
 from PyQt5.QtCore import QPointF, QRectF, Qt
 from PyQt5.QtGui import QBrush, QColor, QLinearGradient, QPainterPath, QPen, QPolygonF
-from PyQt5.QtWidgets import QGraphicsPathItem, QGraphicsRectItem
+from PyQt5.QtWidgets import (QGraphicsPathItem, QGraphicsPixmapItem,
+                             QGraphicsRectItem)
 
 from polyhost.services import board_outline as bo
 
 #: Behind every key (which sit at the default Z of 0), and the plate behind the
-#: screens that stand on it.
+#: screens that stand on it. The rendered screen sits above its own glass.
 Z_PLATE = -20
 Z_DISPLAY = -10
+Z_SCREEN = -9
+
+#: Qt item data slots on a screen item: which half it belongs to, and the lit
+#: rectangle it has to fill. The items are handed back as one flat list, so the tag is
+#: what lets a caller repaint the right panel later -- a mode or layer change must not
+#: have to rebuild the whole board. The box is carried too because the item's own
+#: geometry is the PIXMAP's once one is set, not the rectangle it was placed in.
+SCREEN_SIDE, SCREEN_BOX = 0, 1
 
 #: Scene ground, plate, edge, screen glass and lit area -- dark theme then light.
 #: A `scene` of None leaves the view's own background alone.
@@ -49,7 +64,7 @@ DARK = {
 }
 LIGHT = {
     "scene": "#D9E5ED",
-    "plate_top": "#C4C4C4", "plate_bottom": "#A8A8A8", "edge": "#5E8AA1",
+    "plate_top": "#ADADAD", "plate_bottom": "#909090", "edge": "#5E8AA1",
     "glass": "#2A343A", "glass_edge": "#8AA3B0", "active": "#111C21",
     "active_edge": "#4E9FB2",
 }
@@ -72,8 +87,37 @@ def add_board(scene, scale, offset_x=0.0, offset_y=0.0, dark=True, board=None):
     for half in board.halves:
         items.append(_plate(scene, half, scale, offset_x, offset_y, ink))
         for display in half.displays:
-            items.extend(_display(scene, display, scale, offset_x, offset_y, ink))
+            items.extend(_display(scene, display, scale, offset_x, offset_y, ink,
+                                  half.side))
     return items
+
+
+def set_screen_images(items, images):
+    """Paint `images` (side -> QImage or None) into the screens among `items`.
+
+    Separate from `add_board` because the picture changes far more often than the
+    board does: the layer being edited and the Symbol/Preview/Real mode both move it,
+    and rebuilding 74 keys and two outlines to repaint two rectangles would be absurd.
+    A side with no image is cleared back to the plain lit rectangle.
+
+    ⚠️ The pixmap is left at its NATIVE size and scaled by the item, so zooming the
+    view in resolves more of the panel instead of enlarging a blurred copy -- the same
+    reason the keycaps render larger than their tile.
+    """
+    from PyQt5.QtGui import QPixmap
+
+    for item in items:
+        side = item.data(SCREEN_SIDE)
+        if side is None:
+            continue
+        img = (images or {}).get(side)
+        if img is None:
+            item.setPixmap(QPixmap())
+            continue
+        item.setPixmap(QPixmap.fromImage(img))
+        box = item.data(SCREEN_BOX)
+        item.setScale(box[2] / img.width() if img.width() else 1.0)
+        item.setPos(box[0], box[1])
 
 
 def _plate(scene, half, scale, ox, oy, ink):
@@ -100,7 +144,7 @@ def _plate(scene, half, scale, ox, oy, ink):
     return item
 
 
-def _display(scene, display, scale, ox, oy, ink):
+def _display(scene, display, scale, ox, oy, ink, side=None):
     def rect(r):
         x, y, w, h = r
         return QRectF((x - ox) * scale, (y - oy) * scale, w * scale, h * scale)
@@ -111,10 +155,21 @@ def _display(scene, display, scale, ox, oy, ink):
     glass.setZValue(Z_DISPLAY)
     scene.addItem(glass)
 
-    active = QGraphicsRectItem(rect(display.active_rect))
+    lit = rect(display.active_rect)
+    active = QGraphicsRectItem(lit)
     active.setBrush(QBrush(QColor(ink["active"])))
     active.setPen(QPen(QColor(ink["active_edge"]), 1.0))
     active.setZValue(Z_DISPLAY)
     scene.addItem(active)
 
-    return [glass, active]
+    # Always created, even with nothing to show: `set_screen_images` needs something
+    # to paint into, and an empty pixmap draws nothing at all.
+    shot = QGraphicsPixmapItem()
+    shot.setTransformationMode(Qt.SmoothTransformation)
+    shot.setData(SCREEN_SIDE, side)
+    shot.setData(SCREEN_BOX, (lit.x(), lit.y(), lit.width()))
+    shot.setPos(lit.x(), lit.y())
+    shot.setZValue(Z_SCREEN)
+    scene.addItem(shot)
+
+    return [glass, active, shot]

@@ -189,6 +189,31 @@ def _checkout_version(pk: str) -> str:
         return ""
 
 
+def _status_faces_from(pool, mid, small):
+    """The faces `services.status_screen` draws the status panel with.
+
+    The icon face is found by COVERAGE, not by name: IconsFont is the firmware's
+    `g_all_fonts[0]` and the C1 band is its alone, so the first font in the pool
+    covering `ICON_LAYER` is it -- and a renamed header cannot quietly cost the panel
+    its layer icon. A face that will not load is left None; the renderer then draws
+    what it can rather than nothing.
+    """
+    icons = next((f for f in (pool or []) if f.first <= 0x80 <= f.last), None)
+    return {"icons": icons, "mid": mid, "small": small}
+
+
+def _ui_face(fonts_dir: str, filename: str, symbol: str):
+    """One standalone UI face out of a checkout, or None -- never raising.
+
+    These are decoration for the status panel; a header a firmware tree happens not
+    to have must cost that row, not every keycap on the board.
+    """
+    try:
+        return mkl.load_ui_font(fonts_dir, filename, symbol)
+    except Exception:
+        return None
+
+
 def _mid_pool(pd):
     """The standalone HINT_MID face as a one-font pool, or None.
 
@@ -225,6 +250,10 @@ class KeycapPreview:
         self._reason = ""
         self._op = self._ld = self._L = self._R = self._resolver = None
         self._legends: dict = {}   # renderable token -> resolved codepoints
+        # The three standalone UI faces the STATUS OLED draws with, from whichever
+        # source won below. Kept here rather than loaded again by the caller so the
+        # keys and the screens on one board can never come from two firmwares.
+        self._status_faces: dict = {}
         self._known: set = set()   # every name the two halves can draw
         self._alt_names: dict = {}  # keycode -> every name the header gives it
         self._source = ""          # "shipped" or "checkout"
@@ -321,10 +350,18 @@ class KeycapPreview:
         self._ok = self._static_ok or self._lang_ok
         return self._ok
 
+    def status_faces(self) -> dict:
+        """The status panel's faces, from the source the keycaps came from."""
+        self._load()
+        return dict(self._status_faces)
+
     def _load_shipped(self, pd):
         """Draw from `res/preview/` -- no firmware checkout, no openpyxl."""
         op = self._op
         self._R = op.Renderer(pd.fonts, mid_fonts=_mid_pool(pd))
+        self._status_faces = _status_faces_from(
+            pd.fonts, (pd.ui_fonts or {}).get(mkl.MID_FONT_SYMBOL),
+            (pd.ui_fonts or {}).get(ml.SMALL_FONT_SYMBOL))
         self._resolver = object.__new__(op.Lang)
         self._resolver.named = dict(pd.named)
         self._legends = self._drawable(pd.legends)
@@ -353,6 +390,9 @@ class KeycapPreview:
         # standalone 19px HINT_MID face, without which the settings legends draw
         # both of their lines at full size, on top of each other.
         self._R = op.load_renderer(fonts_dir)
+        self._status_faces = _status_faces_from(
+            self._R.fonts, _ui_face(fonts_dir, "util_font.h", mkl.MID_FONT_SYMBOL),
+            _ui_face(fonts_dir, "NotoSans_Medium_Base_8pt.h", ml.SMALL_FONT_SYMBOL))
         # Resolve-only view: same class, so the codepoint tokenising stays the ONE
         # implementation that mirrors the firmware's make_key -- but built without
         # the workbook, which is the part that needs openpyxl.

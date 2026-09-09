@@ -170,8 +170,10 @@ def _ui_pack(fonts_dir: str) -> bytes:
     ⚠️ No codepoint can reach these through the font pool -- that is the whole
     point of them (the firmware draws each through a single-font array so the
     baseline align is a no-op). They are reached by NAME instead: `_Mid_` backs
-    the HINT_MID op, `_Nano_` draws a macro keycap's label. Miss them and \x16
-    legends silently render full size, stacking two lines of text on one keycap.
+    the HINT_MID op, `_Nano_` draws a macro keycap's label and `_Small_` its
+    caption band and every row of the status OLED. Miss one and the surface that
+    needs it degrades silently -- `\x16` legends render full size, stacking two
+    lines of text on one keycap, and the status-screen preview does not draw.
     """
     from polyhost.services import fontpack_reader as fr
     from polyhost.services import macro_label as ml
@@ -181,6 +183,8 @@ def _ui_pack(fonts_dir: str) -> bytes:
     for i, (loader, args) in enumerate((
             (ml.load_nano_font, (fonts_dir,)),
             (mkl.load_ui_font, (fonts_dir, "util_font.h", mkl.MID_FONT_SYMBOL)),
+            (mkl.load_ui_font,
+             (fonts_dir, "NotoSans_Medium_Base_8pt.h", ml.SMALL_FONT_SYMBOL)),
     )):
         f = loader(*args)
         names.append(f.name)

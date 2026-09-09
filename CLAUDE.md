@@ -1489,11 +1489,13 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the headers lacked was dropped from the grid and could not be chosen at all.
     ⚠️ The `(no glyph)` warning still rests on the source being `"headers"`, i.e. on
     the RESIDENT faces having been visible; keep that meaning if the value is reworked.
-  - ⚠️ **The CAPTION half of that preview has no such fallback: `_Small_` is NOT in
-    `res/preview/ui_fonts.plyf`** (it ships `_Nano_` and `_Mid_` only), so
-    `load_caption_faces()` still needs a firmware checkout and an install without one
-    renders "no font — preview unavailable" rather than a keycap. Closing that means
-    exporting the third face, not another fallback path.
+  - ✅ **The CAPTION half of that preview used to have no such fallback — `_Small_`
+    was NOT in `res/preview/ui_fonts.plyf` (it shipped `_Nano_` and `_Mid_` only), so
+    `load_caption_faces()` needed a firmware checkout. FIXED by exporting the third
+    face**, which is what this note already said the right answer was ("exporting the
+    third face, not another fallback path"). It landed for a different consumer — the
+    status-screen preview draws every row with it — which is the usual way a
+    long-standing gap gets closed.
 - **The editor's key pictures are a THREE-way group — Symbol / Preview / Real —
   drawing every key through the FIRMWARE's own renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
   for the language LUT and `tools/lang_demo.py` for the `keycode_helper.c` static-text
@@ -2873,6 +2875,37 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     - **The vertical glass is therefore pinned as a RATIO, not in mm** (8.4 of the
       module's 19.26, whatever the scale). A test in millimetres would encode the
       corner's width, which is geometry rather than intent.
+    - **The screen carries a PICTURE, following the same Symbol/Preview/Real control
+      the keys do** — `services/status_screen.py` composes it (Qt-free, lit pixels),
+      `gui/layout_dialog/status_screen_render.py` makes the QImage, and
+      `board_plate.set_screen_images` paints it into the lit rectangle. Five things
+      are decided, not incidental:
+      - ⚠️ **It is a SUBSET of `oled_update_buffer`, deliberately.** It draws the top
+        row (`ICON_LAYER` + the layer's hex digit), the L/R side marker and — on the
+        layout panel only — the layer's name. The RGB effect, WPM, brightness and
+        language are live DEVICE state the editor does not have, so those rows stay
+        dark: a placeholder there would be a number that is true of nothing. The
+        firmware's own whole-panel renderer is `qmk_firmware/keyboards/polykybd/
+        tools/status_oled_preview.py` — check against it, don't grow into it.
+      - **One honest departure**: hardware names the BASE layout on that row and this
+        names the layer being edited. Identical for layers 0..4; above them it says
+        `Fn` / `Numpad` / `Utility`, which is what an editor wants.
+      - ⚠️ **The Real filter is the `oled` preset, NOT `keycap`.** There is no keycap
+        over a status display — it is a bare panel behind a window — so the cover's
+        diffusion and jitter would model a light guide that is not there. The keys and
+        the screens therefore use different presets on purpose, both out of
+        `fontpack_render.apply_oled_style` so neither is a second set of numbers.
+      - **The faces come from `KeycapPreview.status_faces()`**, i.e. whichever source
+        won the shipped-vs-checkout compare, so one board cannot draw keys from one
+        firmware and screens from another. That needed `_Small_` 15px added to the
+        export's `ui_fonts.plyf` — the third standalone face, which the macro-caption
+        note already said was the right fix rather than another fallback path.
+      - ⚠️ **`_refresh_screens` swallows its exceptions (decoration must not take the
+        editor down), so a plain `AttributeError` in the Real branch cost nothing but
+        a `log.debug` and the panel just stayed flat.** That shipped for the length of
+        one test run. `tests/gui/kb_layout_screens_test.py` drives the real dialog for
+        exactly that reason — a renderer-level test cannot see wiring that is never
+        reached, and the fail-soft `except` is what makes the wiring invisible.
   - ⚠️ **The grid search resolves the corner to 0.05U, and that millimetre is a
       millimetre of SCREEN** — the corner's width is what the module is scaled
       against — so `exact_span` re-measures the one band the panel occupies off the
