@@ -91,6 +91,11 @@ class AddBoardTest(unittest.TestCase):
                          "the light plate is not grey: %s" % bp.LIGHT["plate_top"])
         self.assertGreater(ground.blue() - ground.red(), 8,
                            "the light ground is not blue: %s" % bp.LIGHT["scene"])
+        # And the plate is the DARKER of the two, by enough to read as an object
+        # sitting on the ground rather than as a slightly different white.
+        self.assertGreater(ground.lightness() - plate.lightness(), 15,
+                           "the light plate (%s) is not darker than its ground (%s)"
+                           % (bp.LIGHT["plate_top"], bp.LIGHT["scene"]))
 
     def test_the_offset_moves_the_plate_by_exactly_that_much(self):
         """The keys are shifted by the layout origin; the board must follow, or

@@ -2843,34 +2843,42 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the corner, so the panel reads as having slipped, and at its real 26.7 mm it
     leaves a gap on both sides. ⚠️ The display hangs off a ~40 mm cable, so where it
     ends up in the CASE is in no repo file — this is a layout rule, not a measurement.
-    - ⚠️ **Removing the side bezel NARROWS THE GLASS to the screen — it does not
-      widen the screen to the glass, and `aw == w` is true of both.** The MODULE is
-      scaled uniformly to span its corner, and that fit is what sets the screen's
-      size (30.6 x 15.3 mm on the left half); the drawn glass is then exactly the
-      screen's width and the panel is moved flush against the housing. Widening the
-      screen instead keeps the 37.6 mm envelope and grows the lit area by 23% — i.e.
-      it adds the bezel to the display rather than deleting it, which is the opposite
-      of the point. Glass survives above and below in the module's own proportion, so
-      the screen's 2:1 aspect is deliberately gone. There is no caption on it — a lit
+    - ⚠️ **The side bezel is simply NOT DRAWN — which changes the GLASS and nothing
+      else. The screen keeps the size AND the position the uniform fit gave it, so
+      the panel now stops one module bezel (3.5 mm) short of the housing rather than
+      meeting it.** The MODULE is scaled to span the corner, that fit sets the
+      screen's size (30.6 x 15.3 mm on the left half), and the module's side bezel is
+      symmetric — so not drawing it leaves exactly half a bezel of air at each end of
+      the span. Glass survives above and below in the module's own proportion, so the
+      screen's 2:1 aspect is deliberately gone. There is no caption on it — a lit
       rectangle in a dark frame is already a screen.
-      - **The discriminator is the panel's ASPECT, and `w == aw` is not it.** Narrowed
-        glass is `active_w / panel_h` = 21.74/19.26 = 1.129; a screen filled out to
-        the glass is 26.70/19.26 = 1.386. `test_dropping_the_side_bezel_did_NOT_enlarge_the_screen`
-        pins that number, because every other property the two readings share.
-    - ⚠️ **Three other readings were built and are wrong, and each looked like the
-      ask.** Growing the whole MODULE until the bezel closed just enlarges the bezel
-      with everything else. Scaling the SCREEN to span the corner drags the panel to
-      ~1.7x life size (33 mm of mostly-dark glass, a band two key rows tall). Placing
-      the module at its REAL size and moving it flush is the opposite error — it
-      satisfies "touching" and reads as a stamp on a large plate.
+      - ⚠️ **FOUR readings of "remove the bezel" were built and three are wrong; the
+        picture cannot tell them apart and `w == aw` is true of all four.** They are
+        (1) grow the whole MODULE until the bezel closes — that enlarges the bezel
+        along with everything else; (2) widen the SCREEN to fill the glass — same
+        envelope, 23% more lit area, i.e. it adds the bezel to the display rather
+        than deleting it; (3) narrow the glass and slide it FLUSH — correct size,
+        but it moves a screen that was already placed; (4) narrow the glass and
+        leave it where it is, which is the one that ships.
+      - **Two tests separate the four, and they pin different things.**
+        `test_dropping_the_side_bezel_did_NOT_enlarge_the_screen` pins the panel's
+        ASPECT — 21.74/19.26 = 1.129 narrowed against 26.70/19.26 = 1.386 filled —
+        which catches (1) and (2).
+        `test_a_panel_STOPS_ONE_MODULE_BEZEL_SHORT_of_the_case` pins the gap to the
+        housing, which catches (3): a flush panel measures 0. Neither is redundant
+        and neither alone is enough.
+      - **The gap is derived, not hardcoded**: half a module bezel times the scale
+        the panel itself reports (`d.h / panel_h`), because a literal would pin
+        today's corner width rather than the intent.
     - **The vertical glass is therefore pinned as a RATIO, not in mm** (8.4 of the
       module's 19.26, whatever the scale). A test in millimetres would encode the
       corner's width, which is geometry rather than intent.
-  - ⚠️ **The grid search resolves the corner to 0.05U, which leaves the panel ~1 mm
-      short of the case it is meant to meet** — so `exact_span` re-measures the one
-      band the panel occupies off the polygon rather than off the grid. The inner edge
-      then sits exactly ON the boundary, which is why the containment test needs a
-      tolerance: a ray-cast answers arbitrarily for a point on the line.
+  - ⚠️ **The grid search resolves the corner to 0.05U, and that millimetre is a
+      millimetre of SCREEN** — the corner's width is what the module is scaled
+      against — so `exact_span` re-measures the one band the panel occupies off the
+      polygon rather than off the grid. The containment test still needs a tolerance:
+      the outline is fitted, so a point can land on the boundary, and a ray-cast
+      answers arbitrarily there.
     - ⚠️ **`_top_at` at the polygon's EXTREME x lands on a vertex and returns the
       corner rather than the top edge.** That put one half's panel 0.085U below the
       other's, on two boards that are mirror images — so `case_top_over` insets 0.4 mm
@@ -2885,6 +2893,9 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     blue moved to the background so the board reads as the object rather than as the
     biggest coloured shape on screen. `DARK["scene"]` is None, which must stay a
     no-op: dark's ground is the palette's and nothing here should second-guess it.
+    The light plate is deliberately the DARKER of the two (pinned as a relation, not
+    a literal): a plate a shade off white reads as a differently-coloured page rather
+    than as a board lying on one.
 
 ## Releases
 

@@ -277,23 +277,33 @@ class StatusDisplayTest(unittest.TestCase):
                         "%.3f and screen-filling-the-glass is %.3f"
                         % (side, got, narrowed, widened))
 
-    def test_a_panel_TOUCHES_the_case_edge_beside_it(self):
-        """It is grown to span its corner, so its inner edge meets the outline.
+    def test_a_panel_STOPS_ONE_MODULE_BEZEL_SHORT_of_the_case(self):
+        """It does NOT touch the housing -- dropping the side bezel from the picture
+        must not move what is left of it.
 
-        Only that edge -- the one facing the layout's centre line -- has a wall to
-        meet; the other stops one clearance short of a keycap. `GRID_U` is the corner
-        search's own step, so this is "touching" to the resolution the corner was
-        measured at.
+        The MODULE spans the corner, and its side bezel is symmetric, so the screen
+        sits half a bezel in from each end of that span. Not drawing the bezel leaves
+        exactly that gap. Sliding the narrowed panel flush instead is the third wrong
+        reading of "remove the bezel" (the other two are in the aspect test above):
+        it satisfies "no bezel" by moving a screen that was already placed, and it is
+        what this pins against -- a flush panel measures 0.
         """
+        want = (PANEL_W_MM - ACTIVE_W_MM) / 2.0 / self.board.unit_mm   # half a bezel, in U
         for side, half in self.by_side.items():
             for d in half.displays:
                 x, y, w, h = d.rect
                 inner = x + w if side == "left" else x
                 gaps = [edge_distance(half.outline, (inner, y + h * t))
-                        for t in (0.0, 0.25, 0.5, 0.75, 1.0)]
-                self.assertLessEqual(min(gaps), GRID_U,
-                                     "%s panel's inner edge is %.3fU short of the case"
-                                     % (side, min(gaps)))
+                        for t in (0.25, 0.5, 0.75)]
+                # The module is scaled up to span the corner, so the drawn gap is
+                # that bezel times the same scale -- derive the scale from the panel
+                # rather than hardcoding it, or this pins today's corner width.
+                scale = d.h / (PANEL_H_MM / self.board.unit_mm)
+                self.assertAlmostEqual(
+                    min(gaps), want * scale, delta=0.02,
+                    msg="%s panel's inner edge is %.3fU from the case, expected "
+                        "%.3fU (one module side bezel at scale %.3f)"
+                        % (side, min(gaps), want * scale, scale))
 
     def test_a_panel_HANGS_from_the_top_of_its_corner(self):
         """Not centred in it -- the corner runs all the way down to the thumb

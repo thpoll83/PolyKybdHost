@@ -496,12 +496,13 @@ def place_display(anchor, outline, blockers, side):
     """Size and position one status panel in the free corner its FPC sits in.
 
     The MODULE is scaled to span that corner -- that is what sets the screen's size
-    -- and then its SIDE BEZEL IS REMOVED, so the drawn panel is exactly as wide as
-    the screen and meets the housing. ⚠️ Removing it narrows the panel; it does NOT
-    widen the screen. Widening the screen to fill the glass keeps the same envelope
-    and enlarges the display area by the bezel it was supposed to delete, which is
-    the opposite of the point. Glass survives above and below, in the module's own
-    proportion.
+    and where it sits -- and then its SIDE BEZEL IS SIMPLY NOT DRAWN. ⚠️ Removing it
+    changes the GLASS only: the screen keeps the size AND the position the uniform
+    fit gave it, so the panel now stops one module bezel short of the housing rather
+    than meeting it. Two things that both look like the same instruction and are not:
+    widening the screen to fill the glass grows the lit area by the bezel it was
+    meant to delete, and sliding the narrowed panel flush moves a screen that was
+    already placed. Glass survives above and below, in the module's own proportion.
 
     Position comes from the corner too, not from the connector: the FPC is at the
     BOARD's height, low in the corner, which leaves the panel looking dropped. It
@@ -518,16 +519,10 @@ def place_display(anchor, outline, blockers, side):
               % side)
     else:
         rx0, ry0, rx1, ry1 = rect
-        # Which side has a wall to meet. Each half's corner is bounded by the case
-        # towards the layout's centre line and by keycaps away from it.
-        inner_is_max = side == "left"
 
         def fit(lo, hi):
             """The scale the MODULE would need to span [lo, hi]."""
             return min((hi - lo) / panel[0], (ry1 - ry0) / panel[1])
-
-        def flush(lo, hi, width):
-            return (hi - width, hi) if inner_is_max else (lo, lo + width)
 
         def hang(x_lo, x_hi, tall):
             """Top edge for a panel spanning [x_lo, x_hi].
@@ -547,22 +542,28 @@ def place_display(anchor, outline, blockers, side):
             return min(y, ry1 - tall)
 
         def lay_out(lo, hi):
+            """The screen's own span, CENTRED in the corner the module spans.
+
+            The module's side bezel is symmetric, so this is exactly where the
+            screen sat when the whole module was drawn -- dropping the bezel from
+            the picture must not move what is left of it.
+            """
             k = fit(lo, hi)
             tall = panel[1] * k
-            x_lo, x_hi = flush(lo, hi, active[0] * k)
-            return k, tall, x_lo, x_hi, hang(x_lo, x_hi, tall)
+            mid, half = (lo + hi) / 2.0, active[0] * k / 2.0
+            return k, tall, mid - half, mid + half, hang(mid - half, mid + half, tall)
 
         scale, height, x0, x1, y_top = lay_out(rx0, rx1)
         # The grid search resolves the corner to FREE_STEP_U, about a millimetre, so
-        # re-measure the band the panel actually occupies before going flush against
-        # it -- otherwise "touching the housing" is a millimetre short of it.
+        # re-measure the band the panel actually occupies -- that is what the module
+        # is sized against, and a millimetre of it is a millimetre of screen.
         refined = exact_span(anchor[0], outline, blockers, y_top, y_top + height)
         if refined is not None:
             scale, height, x0, x1, y_top = lay_out(*refined)
         cx, cy = (x0 + x1) / 2.0, y_top + height / 2.0
 
-    # `w == aw`: no side bezel, so the glass is exactly as wide as the screen. `h`
-    # and `ah` keep the module's own vertical proportion.
+    # `w == aw`: the side bezel is not drawn, so the glass is exactly as wide as the
+    # screen. `h` and `ah` keep the module's own vertical proportion.
     return {
         "cx": round(cx, 4), "cy": round(cy, 4),
         "w": round(active[0] * scale, 4), "h": round(panel[1] * scale, 4),
