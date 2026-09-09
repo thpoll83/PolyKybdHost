@@ -221,6 +221,10 @@ class Shortcut:
     hid: int | None
     displayable: bool
     kind: str = "accelerator"
+    icon: int | None = None
+    icon_concept: str = ""
+    icon_rule: str = ""
+    icon_confidence: float = 0.0
     path: list[str] = field(default_factory=list)
     raw: str = ""
 
@@ -389,7 +393,21 @@ def list_apps(atspi) -> list[tuple[int, str]]:
     return out
 
 
-def report(name: str, shortcuts: list[Shortcut], nodes_used: int) -> dict:
+def _icon_matcher():
+    """polyhost.services.shortcut_icons, if this checkout has it."""
+    try:
+        import os
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from polyhost.services import shortcut_icons
+        return shortcut_icons
+    except Exception:
+        return None
+
+
+def report(name: str, shortcuts: list[Shortcut], nodes_used: int,
+           icons=None) -> dict:
     usable = [s for s in shortcuts if s.displayable]
     accels = [s for s in shortcuts if s.kind == "accelerator"]
     menus = [s for s in shortcuts if s.kind == "menu"]
@@ -398,13 +416,27 @@ def report(name: str, shortcuts: list[Shortcut], nodes_used: int) -> dict:
     print(f"{len(accels)} accelerator(s) + {len(menus)} menu post(s) "
           f"= {len(shortcuts)} total; {len(usable)} displayable "
           f"({len(ok_accels)} of them real accelerators)  [{nodes_used} nodes]")
+    matched = 0
     if shortcuts:
         width = max(len(s.accel) for s in shortcuts)
         print()
         for s in sorted(shortcuts, key=lambda s: (not s.displayable, s.accel)):
             mark = " " if s.displayable else "x"
             hid = f"0x{s.hid:02X}" if s.hid is not None else "  -- "
-            print(f" {mark} {s.accel:<{width}}  {hid}  {s.label[:40]:<40} [{s.role}]")
+            icon = ""
+            if icons is not None:
+                m = icons.match(s.label)
+                if m is not None:
+                    matched += 1
+                    s.icon = m.codepoint
+                    s.icon_concept = m.concept
+                    s.icon_rule = m.rule
+                    s.icon_confidence = m.confidence
+                    icon = f"  {m.char} U+{m.codepoint:04X} {m.concept}/{m.rule}"
+                else:
+                    icon = "  -"
+            print(f" {mark} {s.accel:<{width}}  {hid}  "
+                  f"{s.label[:34]:<34} [{s.role}]{icon}")
         undisplayable = [s for s in shortcuts if not s.displayable]
         if undisplayable:
             print(f"\n  x = no keycap slot: {', '.join(sorted({s.keysym for s in undisplayable}))}")
@@ -414,6 +446,7 @@ def report(name: str, shortcuts: list[Shortcut], nodes_used: int) -> dict:
         "accelerators": len(accels),
         "menu_posts": len(menus),
         "displayable_accelerators": len(ok_accels),
+        "icon_matches": matched,
         "displayable": len(usable),
         "nodes_walked": nodes_used,
         "shortcuts": [asdict(s) for s in shortcuts],
@@ -453,7 +486,8 @@ def main_atspi(args) -> list[dict] | None:
         app = desktop.get_child_at_index(i)
         budget = [args.max_nodes]
         found = shortcuts_for(app, atspi, budget)
-        results.append(report(name, found, args.max_nodes - budget[0]))
+        results.append(report(name, found, args.max_nodes - budget[0],
+                              icons=_icon_matcher() if args.icons else None))
     return results
 
 # ---------------------------------------------------------------------------
@@ -748,7 +782,8 @@ def main_uia(args) -> list[dict] | None:
         except Exception as exc:
             print(f"  {name}: subtree fetch failed ({exc})", file=sys.stderr)
             continue
-        results.append(report(name, found, count))
+        results.append(report(name, found, count,
+                              icons=_icon_matcher() if args.icons else None))
     return results
 
 
@@ -768,6 +803,8 @@ def main() -> int:
                     help="AT-SPI node budget per application (default 20000)")
     ap.add_argument("--backend", choices=("auto", "atspi", "uia"), default="auto",
                     help="force a backend instead of choosing by platform")
+    ap.add_argument("--icons", action="store_true",
+                    help="map each label to a keycap glyph via shortcut_icons")
     ap.add_argument("--selftest", action="store_true", help="run the pure-parser tests")
     args = ap.parse_args()
 
@@ -792,6 +829,11 @@ def main() -> int:
     accels = sum(r["accelerators"] for r in results)
     print(f"\nTOTAL: {total} shortcut(s) ({accels} real accelerators), "
           f"{usable} displayable on the keycaps  [backend: {backend}]")
+    if args.icons:
+        icons_hit = sum(r.get("icon_matches", 0) for r in results)
+        pct = (100.0 * icons_hit / total) if total else 0.0
+        print(f"ICONS: {icons_hit}/{total} labels mapped to a glyph ({pct:.0f}%); "
+              f"the rest would draw their label text")
 
     if args.json:
         with open(args.json, "w", encoding="utf-8") as fh:
