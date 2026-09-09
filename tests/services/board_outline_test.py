@@ -50,6 +50,12 @@ def inside(poly, pt):
     return hit
 
 
+#: The 0.96" module the exporter draws, in mm -- glass height and lit height. The
+#: WIDTHS are deliberately absent: the panel drops its side bezel, so its width is
+#: whatever its corner is and only the vertical proportion survives.
+PANEL_H_MM = 19.26
+ACTIVE_H_MM = 10.86
+
 #: The corner search's grid step in `scripts/export_board_outline.py`; nothing
 #: placed from it can be pinned finer than this.
 GRID_U = 0.06
@@ -231,29 +237,32 @@ class StatusDisplayTest(unittest.TestCase):
         self.assertAlmostEqual(centre - left.cx, right.cx - centre, delta=0.03)
 
     def test_the_screen_has_NO_side_bezel_but_keeps_its_vertical_one(self):
-        """The panel IS the screen edge to edge -- it meets the housing with no side
-        bezel, and glass shows only above and below.
+        """The screen runs the full width of the glass and meets the housing; glass
+        shows only above and below.
 
-        Keeping the module's side bezel leaves the screen stopping short of the case,
-        which is the picture this replaced.
+        ⚠️ That drops the screen's 2:1 aspect, deliberately -- it is the ONE thing
+        here that is not the module's own proportion. The vertical glass is checked
+        as a RATIO rather than in mm, because the panel is scaled to its corner and
+        everything except the side bezel is left as the uniform fit put it: 8.4 of
+        the module's 19.26 mm, whatever the scale.
         """
+        want = (PANEL_H_MM - ACTIVE_H_MM) / PANEL_H_MM
         for side, half in self.by_side.items():
             for d in half.displays:
                 self.assertAlmostEqual(d.w, d.aw, delta=1e-4,
                                        msg="%s panel has a side bezel" % side)
-                self.assertAlmostEqual((d.h - d.ah) * self.board.unit_mm, 8.4,
-                                       delta=0.1,
-                                       msg="%s panel's glass is %.2f mm taller than "
-                                           "its screen, expected 8.40"
-                                           % (side, (d.h - d.ah) * self.board.unit_mm))
+                self.assertAlmostEqual(
+                    (d.h - d.ah) / d.h, want, delta=0.01,
+                    msg="%s panel's glass is %.1f%% of its height, expected %.1f%%"
+                        % (side, (d.h - d.ah) / d.h * 100.0, want * 100.0))
 
     def test_a_panel_TOUCHES_the_case_edge_beside_it(self):
-        """It is placed flush against the housing, so its inner edge meets the outline.
+        """It is grown to span its corner, so its inner edge meets the outline.
 
         Only that edge -- the one facing the layout's centre line -- has a wall to
-        meet; the other faces keycaps. The panel is NOT grown to reach it (see the
-        size test below), it is moved. `GRID_U` is the corner search's own step, so
-        this is "touching" to the resolution the corner was measured at.
+        meet; the other stops one clearance short of a keycap. `GRID_U` is the corner
+        search's own step, so this is "touching" to the resolution the corner was
+        measured at.
         """
         for side, half in self.by_side.items():
             for d in half.displays:
@@ -304,23 +313,6 @@ class StatusDisplayTest(unittest.TestCase):
                     self.assertLessEqual(off, 1e-3,   # the JSON rounds to 4 dp
                                          "%s panel corner %s is %.4fU outside the case"
                                          % (side, tuple(round(c, 3) for c in corner), off))
-
-    def test_a_panel_is_drawn_at_its_REAL_size(self):
-        """Not grown to fill its corner.
-
-        The corner is 37.6 mm wide and the module's screen 21.7, so spanning it drew
-        the panel about 1.7x life size -- a dark band two key rows tall where the
-        keyboard has something the size of one key. Only a corner narrower than the
-        module may shrink it, so this is an upper bound with an exact target.
-        """
-        for side, half in self.by_side.items():
-            for d in half.displays:
-                self.assertAlmostEqual(d.aw * self.board.unit_mm, 21.74, delta=0.1,
-                                       msg="%s screen is %.1f mm wide, expected 21.7"
-                                           % (side, d.aw * self.board.unit_mm))
-                self.assertAlmostEqual(d.h * self.board.unit_mm, 19.26, delta=0.1,
-                                       msg="%s panel is %.1f mm tall, expected 19.3"
-                                           % (side, d.h * self.board.unit_mm))
 
     def test_a_panel_does_not_overlap_any_key(self):
         for side, half in self.by_side.items():

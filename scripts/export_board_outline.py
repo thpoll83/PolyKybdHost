@@ -493,28 +493,24 @@ def exact_span(anchor_x, outline, blockers, y0, y1, samples=41):
 
 
 def place_display(anchor, outline, blockers, side):
-    """Position one status panel in the free corner its FPC sits in.
+    """Size and position one status panel in the free corner its FPC sits in.
 
-    ⚠️ **Drawn at its REAL size, not grown to fill the corner.** The corner measures
-    37.6 mm and the module's screen 21.7, so spanning it drew the panel about 1.7x
-    life size -- a dark band two key rows tall where the keyboard has something
-    about the size of one key. What it IS flush against is the case: the screen's
-    inner edge meets the housing, with no side bezel, and glass shows only above and
-    below. Only a corner narrower than the module shrinks it.
+    The panel is grown to span that corner's full width -- so it meets the case on
+    the outer side and stops one clearance short of the nearest keycap -- and
+    centred in it, rather than pinned to the connector. The connector is at the
+    BOARD's height, which is low in the corner and leaves the panel looking dropped;
+    it says which corner, not where in it. Falls back to the real module at the
+    connector when the corner cannot be measured.
 
-    Position comes from the corner too, not from the connector: the FPC is at the
-    BOARD's height, low in the corner, which leaves the panel looking dropped. It
-    says which corner, not where in it. Falls back to the module at the connector
-    when the corner cannot be measured.
+    ⚠️ **The SIDE bezel is then dropped: `aw == w`.** The screen runs the full width
+    of the glass and meets the housing, which is what the module does mounted to a
+    case wall; glass shows only above and below. That drops the screen's 2:1 aspect
+    on purpose -- it is the one thing here that is not the module's own proportion,
+    and everything else about the panel (its envelope, its scale, its position) is
+    left exactly as the uniform fit put it.
     """
     panel = (PANEL_MM[0] / UNIT_MM, PANEL_MM[1] / UNIT_MM)
     active = (ACTIVE_MM[0] / UNIT_MM, ACTIVE_MM[1] / UNIT_MM)
-    #: The glass above and below the screen -- the module's own 8.4 mm, kept whole.
-    v_bezel = panel[1] - active[1]
-
-    def glass_height(k):
-        return active[1] * k + v_bezel
-
     cx, cy, scale = anchor[0], anchor[1], 1.0
 
     rect = free_rect_at(anchor, outline, blockers)
@@ -522,51 +518,45 @@ def place_display(anchor, outline, blockers, side):
         print("%-5s no free corner measured at J39 -- panel left at the connector"
               % side)
     else:
-        rx0, ry0, rx1, ry1 = rect
-        # Which side of the panel the housing is on. Each half's corner is bounded by
-        # the case towards the layout's centre line and by keycaps away from it, so
-        # only one edge has a wall to be flush against.
-        inner_is_max = side == "left"
-        scale = min(1.0, (rx1 - rx0) / active[0], (ry1 - ry0 - v_bezel) / active[1])
-        width, height = active[0] * scale, glass_height(scale)
+        x0, y0, x1, y1 = rect
+        # Uniform, so the glass keeps the module's real 26.7:19.26 proportion and
+        # the lit area keeps its share of it. Width is what "grow until it touches"
+        # asks for; the height cap is what stops a wide corner overflowing a short one.
+        scale = min((x1 - x0) / panel[0], (y1 - y0) / panel[1])
+        height = panel[1] * scale
+        cx = (x0 + x1) / 2.0
+        # Hung one bezel under the CASE's top edge, not centred in the corner: the
+        # corner runs all the way down to the thumb cluster, so centring drops the
+        # panel below the top key row and it reads as having slipped. One bezel is
+        # the gap the plate keeps everywhere else, so the panel lines up with it.
+        top = case_top_over(outline, x0, x1)
+        if top is None:
+            cy = (y0 + y1) / 2.0
+        else:
+            def hang(x_lo, x_hi):
+                """Top edge and height for a panel spanning [x_lo, x_hi]."""
+                tall = panel[1] * min((x_hi - x_lo) / panel[0], (y1 - y0) / panel[1])
+                y = case_top_over(outline, x_lo, x_hi) + BEZEL_U
+                for bx0, by0, bx1, by1 in blockers:      # never into a keycap
+                    if bx1 > x_lo and bx0 < x_hi and by1 > y and by0 < y + tall:
+                        y = max(y, by1)
+                return min(y, y1 - tall), tall
 
-        def flush(lo, hi):
-            return (hi - width, hi) if inner_is_max else (lo, lo + width)
+            y_top, height = hang(x0, x1)
+            refined = exact_span(anchor[0], outline, blockers, y_top, y_top + height)
+            if refined is not None:
+                x0, x1 = refined
+                y_top, height = hang(x0, x1)
+                scale = height / panel[1]
+                cx = (x0 + x1) / 2.0
+            cy = y_top + height / 2.0
 
-        def hang(x_lo, x_hi):
-            """Top edge for a panel spanning [x_lo, x_hi].
-
-            One bezel under the CASE's top edge, not centred in the corner: the
-            corner runs all the way down to the thumb cluster, so centring drops the
-            panel below the top key row and it reads as having slipped. One bezel is
-            the gap the plate keeps everywhere else, so the panel lines up with it.
-            """
-            top = case_top_over(outline, x_lo, x_hi)
-            if top is None:
-                return (ry0 + ry1 - height) / 2.0
-            y = top + BEZEL_U
-            for bx0, by0, bx1, by1 in blockers:      # never into a keycap
-                if bx1 > x_lo and bx0 < x_hi and by1 > y and by0 < y + height:
-                    y = max(y, by1)
-            return min(y, ry1 - height)
-
-        x0, x1 = flush(rx0, rx1)
-        y_top = hang(x0, x1)
-        # The grid search resolves the corner to FREE_STEP_U, about a millimetre, so
-        # re-measure the band the panel actually occupies before going flush against
-        # it -- otherwise "touching the housing" is a millimetre short of it.
-        refined = exact_span(anchor[0], outline, blockers, y_top, y_top + height)
-        if refined is not None:
-            x0, x1 = flush(*refined)
-            y_top = hang(x0, x1)
-        cx, cy = (x0 + x1) / 2.0, y_top + height / 2.0
-
-    # `w == aw` on purpose: no side bezel, so the glass is exactly as wide as the
-    # screen and only its height carries the module's own margin.
     return {
         "cx": round(cx, 4), "cy": round(cy, 4),
-        "w": round(active[0] * scale, 4), "h": round(glass_height(scale), 4),
-        "aw": round(active[0] * scale, 4), "ah": round(active[1] * scale, 4),
+        "w": round(panel[0] * scale, 4), "h": round(panel[1] * scale, 4),
+        # `aw == w`: no side bezel. `ah` keeps the module's share of the height, so
+        # the glass above and below stays in proportion with the rest of the panel.
+        "aw": round(panel[0] * scale, 4), "ah": round(active[1] * scale, 4),
     }
 
 
