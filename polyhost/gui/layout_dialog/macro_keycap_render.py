@@ -28,9 +28,12 @@ from polyhost.services import macro_label as ml
 class MacroKeycapRenderer:
     """Holds the loaded fonts; renders one 72x40 keycap per call."""
 
-    def __init__(self, fonts, nano, mid, ladder):
+    def __init__(self, fonts, nano, mid, ladder, caption_faces=None):
         self._fonts = fonts or []
-        self._font = nano          # the caption face
+        # The caption band's faces, largest first. `nano` alone is the floor, kept as
+        # the fallback so a caller that cannot load the bigger face still renders.
+        self._faces = caption_faces or [nano]
+        self._font = nano          # the caption floor face
         self._mid = mid            # the fallback "M3" face
         self._ladder = ladder or []
         self._icon = 0
@@ -60,6 +63,18 @@ class MacroKeycapRenderer:
             # style rather than drawing an empty keycap, so the preview does too.
 
         mark, mark_fonts, mark_base, mark_glyph = self._mark(style)
+        # The caption face is chosen per label, exactly as render_macro_key() does:
+        # the largest whose whole run fits, else the floor face -- which TRUNCATES.
+        # ⚠️ Truncate here, with the face that was chosen, and never re-pick afterwards:
+        # pick_face() returns the largest face whose WHOLE run fits, so re-running it on
+        # the shortened text can promote the label to the bigger face and overflow again.
+        # Without the fit, a label wider than the panel was centred on its full box and
+        # clipped by _plot() at BOTH edges, losing leading characters the keyboard keeps
+        # -- reachable with a label the device can store, since 12 chars is within the
+        # firmware's stride and "WWWWWWWWWWWW" measures 108px in a 72px panel.
+        face = ml.pick_face(label, self._faces) if label else None
+        if label:
+            label = ml.fit(label, face).text
         # ICON_ONLY draws the icon alone in the whole cell -- the caption is kept in
         # storage but not drawn, so it takes the same branch an uncaptioned key does.
         # A missing glyph leaves mark_glyph None and falls back to the captioned index.
@@ -74,12 +89,12 @@ class MacroKeycapRenderer:
                                baseline=(ml.PANEL_H - (box[3] - box[2] + 1)) // 2 - box[2])
             return img
 
-        cap = mk.bbox(label, [self._font], 0)
+        cap = mk.bbox(label, [face], 0)
         if cap is None:
             return img
         cap_base = ml.PANEL_H - 1 - cap[3]
         free_rows = cap_base + cap[2]
-        self._plot(img, label, [self._font], 0, lit,
+        self._plot(img, label, [face], 0, lit,
                    x0=(ml.PANEL_W - (cap[1] - cap[0] + 1)) // 2 - cap[0],
                    baseline=cap_base)
 

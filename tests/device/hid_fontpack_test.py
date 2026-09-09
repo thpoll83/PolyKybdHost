@@ -20,6 +20,7 @@ from polyhost.device.hid_fontpack import (
     get_fontpack_status,
     flash_fontpack,
     parse_id_version_block,
+    parse_id_state_generation,
     decide_stale_bundles,
     classify_commit_reply,
     commit_error_text,
@@ -667,6 +668,79 @@ class TestIdVersionBlock(unittest.TestCase):
     def test_truncated_block_is_empty(self):         # count says 4 but bytes run out
         raw = b"P\x06.Split72 0.8.50 P6 HW2 \x00V\x04\x01\x00"
         self.assertEqual(parse_id_version_block(raw), {})
+
+
+class TestIdStateGenerationBlock(unittest.TestCase):
+    """parse_id_state_generation: the ['G'][u16] block appended to GET_ID (cmd 6)."""
+
+    @staticmethod
+    def _reply(name=b"P\x06.Split72 0.19.1 P16 HW0x0320 ", versions=None, gen=None,
+               gen_first=False, pad_to=64):
+        """Build a GET_ID reply. `gen_first` deliberately builds the WRONG order, so a
+        test can pin that the firmware must not emit it that way."""
+        raw = bytearray(name) + b"\x00"
+        g = b"" if gen is None else b"G" + struct.pack("<H", gen)
+        v = b""
+        if versions is not None:
+            v = b"V" + bytes([len(versions)]) + b"".join(struct.pack("<H", x) for x in versions)
+        raw += (g + v) if gen_first else (v + g)
+        raw += b"\x00" * max(0, pad_to - len(raw))
+        return bytes(raw)
+
+    def test_parses_the_generation_after_the_version_block(self):
+        r = self._reply(versions=[1, 2, 3, 4, 5, 6, 7, 8], gen=1234)
+        self.assertEqual(parse_id_state_generation(r), 1234)
+
+    def test_absent_block_is_none_not_zero(self):
+        # Older firmware has no block at all. None must stay distinguishable from a
+        # real generation of 0, or a caller reads "no support" as "nothing changed".
+        self.assertIsNone(parse_id_state_generation(self._reply(versions=[1, 2])))
+        self.assertEqual(parse_id_state_generation(self._reply(versions=[1, 2], gen=0)), 0)
+
+    def test_found_even_when_the_version_block_is_absent(self):
+        # The firmware drops the 'V' block rather than truncating if it does not fit.
+        self.assertEqual(parse_id_state_generation(self._reply(gen=7)), 7)
+
+    def test_the_version_block_still_parses_with_a_generation_appended(self):
+        r = self._reply(versions=[1, 0, 3], gen=99)
+        self.assertEqual(parse_id_version_block(r), {0: 1, 1: 0, 2: 3})
+
+    def test_the_generation_block_must_not_be_PREPENDED(self):
+        """⚠️ The regression this ordering exists to prevent.
+
+        A host older than the 'G' block finds the font-pack versions POSITIONALLY --
+        'V' at exactly nul+1 -- so a firmware that emitted G first would make every
+        deployed host read "no bundles on the device" and re-flash all eight on every
+        connect. Asserting the BYTE LAYOUT pins that for readers this suite cannot
+        import.
+        """
+        good = self._reply(versions=[1, 2], gen=5)
+        nul = good.index(b"\x00", 3)
+        self.assertEqual(good[nul + 1], ord("V"))
+
+        bad = self._reply(versions=[1, 2], gen=5, gen_first=True)
+        nul = bad.index(b"\x00", 3)
+        self.assertEqual(bad[nul + 1], ord("G"))
+        # This host walks the blocks and so survives either order...
+        self.assertEqual(parse_id_state_generation(bad), 5)
+        # ...which is exactly why the layout, not the parser, is what has to be pinned.
+
+    def test_a_truncated_generation_block_is_none(self):
+        raw = b"P\x06.Split72 0.19.1 P16 HW0x0320 \x00G\x01"   # one byte short
+        self.assertIsNone(parse_id_state_generation(raw))
+
+    def test_an_unknown_block_stops_the_walk(self):
+        # Unknown tags carry no length, so nothing behind one is reachable. This is
+        # why the blocks are append-only.
+        raw = bytearray(b"P\x06.Split72 0.19.1 P16 HW0x0320 \x00")
+        raw += b"Z\x01\x02" + b"G" + struct.pack("<H", 42)
+        raw += b"\x00" * (64 - len(raw))
+        self.assertIsNone(parse_id_state_generation(bytes(raw)))
+
+    def test_the_fresh_boot_marker_does_not_disturb_the_block(self):
+        r = bytearray(self._reply(versions=[5, 6], gen=11))
+        r[2] = ord("*")
+        self.assertEqual(parse_id_state_generation(bytes(r)), 11)
 
 
 class TestDecideStaleBundles(unittest.TestCase):

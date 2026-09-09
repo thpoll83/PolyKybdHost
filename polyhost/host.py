@@ -1506,9 +1506,11 @@ class PolyHost(QApplication):
             else:
                 self.poly_settings.set_all(updated)
                 # In-process mode writes settings directly (bypassing
-                # core.settings_set), so nudge the core to recompute + push the
-                # daylight brightness now rather than waiting for the next cycle.
-                self.core.refresh_daylight_brightness()
+                # core.settings_set), so the core has to be told: it owns every
+                # side effect a setting has on the live device — the daylight
+                # brightness push, the unicode settle watcher — and which ones
+                # exist is its business, not the dialog's.
+                self.core.note_settings_changed()
             # `ui_theme` may be among them — apply it now rather than at the
             # next restart.
             self._refresh_theme()
@@ -2642,22 +2644,51 @@ class PolyHost(QApplication):
         fine and always current — no background polling). When WinCompose has
         appeared since the last look, re-push the unicode input mode: the core
         only sends it on connect, so a fresh install would otherwise not reach
-        the keyboard until the next replug."""
+        the keyboard until the next replug.
+
+        ⚠️ The FIRST probe counts too. This used to skip it on the reasoning that
+        "startup already pushed the mode on connect" — but the bug worth catching
+        is precisely that that push was WRONG: at logon the core probes before
+        WinCompose has started and pushes plain Windows. The first menu open is
+        then the first chance to notice, and the old guard threw it away, so the
+        keyboard stayed on Windows sequences (no emoji) for the whole session.
+        Re-applying costs one HID command, and the firmware only touches EEPROM
+        when the mode actually changes, so a redundant push is free.
+
+        ⚠️ It fires in BOTH directions. refresh_unicode_mode's own docstring has
+        always said it covers "installing (or quitting) WinCompose", but the
+        guard here only ever fired on appear — so quitting WinCompose left the
+        keyboard emitting WinCompose sequences, which produce nothing once the
+        composer is gone. Same silent-until-you-need-it shape as the appear case,
+        just less common."""
         if self.wincompose_action is None:
             return
         running = wincompose_running()
         self.wincompose_action.setVisible(not running)
-        # Don't re-apply on the first probe (startup already pushed the mode on
-        # connect) — only on a False → True transition observed by this GUI.
-        if running and self._wincompose_was_running is False:
-            self.log.info("WinCompose is now running — re-applying the unicode input mode.")
-            try:
-                ok, payload = self.core.refresh_unicode_mode()
-            except Exception as e:  # noqa: BLE001 — no keyboard / daemon not up yet
-                ok, payload = False, e
-            if not ok:
-                self.log.warning("Could not re-apply the unicode input mode: %s", payload)
+        # Any change of state, including the first probe (was_running is None) —
+        # see the two notes above.
+        if self._wincompose_was_running != running:
+            self.log.info("WinCompose is %srunning — re-applying the unicode input mode.",
+                          "" if running else "no longer ")
+            # ⚠️ OFF the Qt main thread. refresh_unicode_mode bottoms out in a
+            # bounded run_sync (PolyCore.DEVICE_CALL_TIMEOUT, 5 s) — and in
+            # client mode in an RPC to the daemon that does the same — so a
+            # paused or mid-flash keyboard would freeze the tray for seconds
+            # while the menu is trying to open. Nothing renders from the result,
+            # so it only needs to be logged; RemoteCore takes its own _rpc_lock,
+            # which is what makes calling it off-main-thread safe.
+            threading.Thread(target=self._reapply_unicode_mode,
+                             name="poly-unicode-refresh", daemon=True).start()
         self._wincompose_was_running = running
+
+    def _reapply_unicode_mode(self):
+        """Re-push the unicode input mode; runs on its own thread (see caller)."""
+        try:
+            ok, payload = self.core.refresh_unicode_mode()
+        except Exception as e:  # noqa: BLE001 — no keyboard / daemon not up yet
+            ok, payload = False, e
+        if not ok:
+            self.log.warning("Could not re-apply the unicode input mode: %s", payload)
 
     def _on_install_wincompose_clicked(self):
         """Explain what WinCompose is, then download + start its installer.

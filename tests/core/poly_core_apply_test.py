@@ -14,6 +14,7 @@ from unittest.mock import MagicMock
 
 from polyhost._version import __protocol__
 from polyhost.core.poly_core import PolyCore
+from polyhost.device.poly_kybd import UNICODE_MODE_VOLATILE_MIN_PROTOCOL
 
 
 def make_core(*, paused=False, connected=False, unicode_mode=False):
@@ -31,6 +32,11 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core.kb_sw_version = None
     core.needs_overlay_reset = False
     core._probe_fail_streak = 0
+    core._last_pushed_unicode_mode = None
+    core._queued_unicode_mode = None
+    core._last_push_was_volatile = False
+    core._queued_push_is_volatile = False
+    core._started_at = 0.0
     core._last_overlay_activity = 0.0
     core._observers = []
     import threading
@@ -42,6 +48,9 @@ def make_core(*, paused=False, connected=False, unicode_mode=False):
     core.device_mgr = MagicMock()
     core.overlay_handler = MagicMock()
     core.keeb = MagicMock()
+    # A real protocol number: _apply_unicode_mode reads the CACHED one to decide
+    # whether the firmware can apply a mode without storing it.
+    core.keeb.protocol_version = __protocol__
     # Real dict so _reported_capabilities can mask it to all-False in safe mode.
     core.keeb.capabilities.return_value = {
         "idle_style": True, "glyph_script": True, "os": True}
@@ -99,6 +108,40 @@ class TestReportWindow(unittest.TestCase):
 
 
 class TestApplyReconnect(unittest.TestCase):
+
+    def test_an_ambiguous_unicode_mode_is_pushed_VOLATILE_on_connect(self):
+        """At logon a plain-Windows reading may just mean WinCompose has not
+        started yet. It is still applied — that IS how the keyboard should type
+        while WinCompose is absent — but RAM-only, so a reading the host cannot
+        yet trust is never written to EEPROM."""
+        core = make_core(unicode_mode=True)
+        core._start_wincompose_settle = MagicMock()
+        core._unicode_mode_is_ambiguous = MagicMock(return_value=True)
+
+        core.apply_reconnect(connect_snapshot())
+
+        jobs = [c for c in core.worker.submit.call_args_list
+                if c.args[0] == "set_unicode_mode"]
+        self.assertEqual(len(jobs), 1)
+        jobs[0].args[1](None)     # run the job as the worker would
+        self.assertEqual(core.keeb.set_unicode_mode.call_args.kwargs["persist"],
+                         False)
+        # …and the watcher that will make it stick must be armed.
+        core._start_wincompose_settle.assert_called_once()
+
+    def test_an_ambiguous_mode_is_HELD_on_firmware_without_the_volatile_flag(self):
+        """Protocol 16 cannot apply without storing, so the only alternatives are
+        a wrong stored value and a delay — the delay is recoverable."""
+        core = make_core(unicode_mode=True)
+        core.keeb.protocol_version = UNICODE_MODE_VOLATILE_MIN_PROTOCOL - 1
+        core._start_wincompose_settle = MagicMock()
+        core._unicode_mode_is_ambiguous = MagicMock(return_value=True)
+
+        core.apply_reconnect(connect_snapshot())
+
+        names = [c.args[0] for c in core.worker.submit.call_args_list]
+        self.assertNotIn("set_unicode_mode", names)
+        core._start_wincompose_settle.assert_called_once()
 
     def test_paused_returns_none(self):
         core = make_core(paused=True)

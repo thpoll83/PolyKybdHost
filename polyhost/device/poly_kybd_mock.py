@@ -301,8 +301,9 @@ class PolyKybdMock:
         self._log_call("replay_startup_anim")
         return True, ""
 
-    def set_unicode_mode(self, mode: InputMethod) -> tuple[bool, str]:
-        self._log_call("set_unicode_mode", mode)
+    def set_unicode_mode(self, mode: InputMethod,
+                         persist: bool = True) -> tuple[bool, str]:
+        self._log_call("set_unicode_mode", mode, persist)
         self._unicode_mode = mode
         self.log.info("Setting unicode mode to %d", mode.value)
         return True, ""

@@ -5,6 +5,7 @@ positions are predictable, plus a truncated-bitmap case to prove the inspector
 won't crash on a corrupt pack.
 """
 import unittest
+from unittest import mock
 
 from polyhost.services import fontpack_reader as fpr
 from polyhost.services import fontpack_render as rd
@@ -328,6 +329,28 @@ class GlyphCellOledModeTest(unittest.TestCase):
             img = rd.glyph_cell(f, 0x41, 72 * 3, 40 * 3, scale=3, mode=mode)
             self.assertEqual(img.mode, "L", mode)
 
+    def test_the_oled_modes_go_THROUGH_the_shared_preset(self):
+        """`glyph_cell` had its own copy of both presets, byte for byte the same
+        numbers as `apply_oled_style` -- so the inspector and the keymap editor would
+        have shown one physical panel two different ways the moment either copy was
+        tuned (CodeRabbit, #221). Pinning the ROUTING rather than the pixels is what
+        catches a re-inlining: identical output is exactly what a fresh duplicate
+        produces, which is how this got past review the first time.
+        """
+        f = self._font()
+        seen = []
+        real = rd.apply_oled_style
+
+        def spy(img, style, scale):
+            seen.append(style)
+            return real(img, style, scale)
+
+        with mock.patch.object(rd, "apply_oled_style", spy):
+            for mode in ("oled", "keycap_cover"):
+                rd.glyph_cell(f, 0x41, 72 * 3, 40 * 3, scale=3, mode=mode)
+        # `keycap_cover` is this module's name for what the preset calls `keycap`.
+        self.assertEqual(seen, ["oled", "keycap"])
+
 
 class GlyphCellTest(unittest.TestCase):
     def _font(self):
@@ -351,6 +374,44 @@ class GlyphCellTest(unittest.TestCase):
         empty_bytes = empty.tobytes()
         self.assertTrue(any(empty_bytes))
         self.assertLess(max(empty_bytes), 255)
+
+
+class OledStyleTest(unittest.TestCase):
+    """The two panel presets are SHARED, so two surfaces cannot drift.
+
+    The font-pack inspector and the keymap editor both offer "how it really looks".
+    Inlining the knobs at each call site would give one panel two different-looking
+    previews, with nothing to say which was right.
+    """
+
+    def _keycap(self):
+        from PIL import Image
+        img = Image.new("L", (24, 16), 0)
+        for x in range(6, 18):
+            for y in range(4, 12):
+                img.putpixel((x, y), 255)
+        return img
+
+    def test_normal_is_the_image_UNTOUCHED(self):
+        """So a caller can route every mode through one call instead of branching."""
+        src = self._keycap()
+        self.assertIs(rd.apply_oled_style(src, "normal", 3), src)
+
+    def test_the_two_styles_do_not_render_the_same(self):
+        """`oled` is the raw emissive pixel look and `keycap` is that through the
+        clear cover -- if they matched, one of the two buttons would be decoration."""
+        src = self._keycap()
+        a = rd.apply_oled_style(src, "oled", 3)
+        b = rd.apply_oled_style(src, "keycap", 3)
+        self.assertNotEqual(a.tobytes(), b.tobytes())
+
+    def test_a_style_turns_the_greyscale_keycap_into_EMISSIVE_colour(self):
+        src = self._keycap()
+        out = rd.apply_oled_style(src, "keycap", 3)
+        self.assertEqual(out.mode, "RGB")
+        # A cool white, not the flat 255,255,255 of the bitmap it came from.
+        px = out.getpixel((out.width // 2, out.height // 2))
+        self.assertGreater(px[2], px[0], "the lit pixels should be the cooler tint")
 
 
 if __name__ == "__main__":
