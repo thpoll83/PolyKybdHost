@@ -201,7 +201,10 @@ class KbLayoutDialog(QMainWindow):
         self.layers.setMaximumHeight(40)
         self.layers.connect(self.layerChanged)
         label = QLabel("Layers:")
-        label.setMaximumWidth(50)
+        # ⚠️ NO width cap here. It carried setMaximumWidth(50) and the string needs
+        # 62 px, so the header read "Layer:" -- clipped in the app itself, and in
+        # every docs screenshot of it. The cap was there to stop the label eating
+        # width, which the stretch factor on the ButtonArray below already does.
         header_layout.addWidget(label)
         # ⚠️ The stretch factor goes ON the ButtonArray -- do NOT push the toggle
         # right with an addStretch() between them. `self.layers` holds a FlowLayout

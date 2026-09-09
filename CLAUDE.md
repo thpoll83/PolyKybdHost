@@ -2640,6 +2640,29 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       platform reports an 800×600 screen — so anything taller than 400 px is
       silently cropped. The developer-mode menu lost its last row that way, with no
       warning and no error; only looking at the PNG caught it.
+    - **`tools/render_layout_editor.py` is the same trick for the LAYOUT EDITOR**,
+      and the docs site's `using/keymap-editor` screenshots come out of it. It
+      builds the real `KbLayoutDialog` against a fake core whose keymap is parsed
+      from the FIRMWARE — the `LAYOUT_*` macro bodies zipped against
+      `keyboard.json`'s matrix positions — so every key shows what the keyboard
+      really has there. `--compare` additionally writes a Symbol/Preview/Real
+      close-up.
+      - ⚠️ **The layer TABS come from `layer_names.c`, not from `layers.h`.** A
+        real editor draws `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT` (8) tabs named
+        `Qwerty`/`ColemkDH`/`Fn`; the enum has 12 entries named `_L0`/`_ADDLANG1`.
+        Rendering from the enum therefore produces a screenshot with four tabs too
+        many that **contradicts the docs page describing the real names** — which
+        is what the first cut did.
+      - ⚠️ **`show()` it before the first `fitInView`, even offscreen.** An unshown
+        widget has not laid out, so the view still reports its pre-resize size and
+        the FIRST mode captured renders a postage-stamp keyboard in a full-size
+        panel while every later one is correct. That reads as a mode-specific bug
+        rather than a layout race.
+      - ⚠️ **At board scale Preview and Real are indistinguishable** — a keycap
+        lands in ~50 px, far too small for the OLED simulation's bloom and pixel
+        grid to survive. Only a magnified CROP shows the difference, which is why
+        `--compare` exists and why the docs figure is a close-up rather than three
+        whole boards.
 - **Use `scripts/run_tests.py` when a run might hang — it has a stall watchdog.**
   Twice on 2026-08-03 the suite wedged past a 200 s timeout with **no output at
   all** — and a bare `timeout` kill discards exactly the information you need. The
