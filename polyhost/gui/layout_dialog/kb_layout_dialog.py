@@ -17,8 +17,12 @@ from polyhost.gui.get_icon import get_icon
 from polyhost.gui.layout_dialog.qmk_keycode_helper import describe_keycode, parse_layer_names
 from polyhost.gui.layout_dialog.keycap_preview import KeycapPreview
 from polyhost.gui import oled_look
+from polyhost.gui import theme as gui_theme
 from polyhost.gui.layout_dialog.macro_keycap_render import MacroKeycapRenderer
 from polyhost.gui.layout_dialog.macro_tab import QK_MACRO
+from polyhost.gui.layout_dialog.board_plate import add_board, set_screen_images
+from polyhost.gui.layout_dialog import status_screen_render as ssr
+from polyhost.gui.layout_dialog.status_screen_render import StatusScreenRenderer
 from polyhost.gui.layout_dialog.renderable_key import RenderableKey
 from polyhost.gui.layout_dialog.keycode_browser import KeycodeBrowser
 from polyhost.gui.zoomable_graphics_view import ZoomableGraphicsView
@@ -116,6 +120,10 @@ class KbLayoutDialog(QMainWindow):
         # Everything that is NOT a macro: the firmware composes those legends, so
         # this drives the firmware-side renderers rather than reimplementing them.
         self._preview = KeycapPreview()
+        # The status panels on the board plate. Built from the SAME source the
+        # keycaps came from, so one board cannot show two firmwares.
+        self._status_render = None
+        self._board_items: list = []
         # Drives the header toggle. A plain flag rather than reading the checkbox back,
         # so `_keycap_for` does not depend on a widget that init_ui has not built yet.
         # OFF by default: the editor's job is assigning keycodes, and a board of
@@ -339,6 +347,12 @@ class KbLayoutDialog(QMainWindow):
             btn.setChecked(True)
         if self.key_buffer is not None:
             self.set_keycodes_for_layer(self.current_layer)
+        else:
+            # ⚠️ The panels carry the LAYER, not the keymap, so they follow a mode
+            # change even when the keycodes could not be read -- the branch above is
+            # the only reason they did not, and a board whose keys are locked down
+            # still says which layer is selected.
+            self._refresh_screens(self.current_layer)
 
     def _pixmap(self, img):
         """One QImage -> QPixmap step for BOTH halves of the preview.
@@ -468,6 +482,18 @@ class KbLayoutDialog(QMainWindow):
             self.set_keycodes_for_layer(self.current_layer)
 
     def set_keycodes_for_layer(self, layer):
+        """Draw `layer` on every key, and on the two status panels.
+
+        ⚠️ It ADOPTS the layer as `current_layer`, because it is the one that ends up
+        on screen and everything else reads that attribute to mean "the layer being
+        edited" -- the keycode assignment indexes the buffer with it, and a mode
+        change repaints with it. It used to be written only by `layerChanged`, so
+        calling this directly left the two disagreeing and the next mode switch
+        silently reverted the board and both panels to whatever the last BUTTON
+        click had said (measured: switch to layer 5, toggle Symbol -> Preview, get
+        layer 0 back).
+        """
+        self.current_layer = layer
         mapping = self.keycode_browser.get_keycode_to_name_mapping()
         num_keys = len(self.keys)
         max_idx = self.settings.MATRIX_COLUMNS*self.settings.MATRIX_ROWS
@@ -488,6 +514,9 @@ class KbLayoutDialog(QMainWindow):
                 self._keycap_for(self._resolve(idx, layer)) if self._has_display(idx)
                 else None)
             idx += 1
+        # The status panels name the layer, so they follow it -- and this is the one
+        # path both a layer change and a mode change go through.
+        self._refresh_screens(layer)
 
     def layerChanged(self, button):
         self.current_layer = self.layers.group.id(button)
@@ -596,7 +625,12 @@ class KbLayoutDialog(QMainWindow):
         
         minx = min(p['x'] for p in self.key_matrix.values())
         miny = min(p['y'] for p in self.key_matrix.values())
-        
+
+        # The board the keys are mounted on, behind them. Decoration only, and
+        # it fails soft -- see `board_plate`. Added FIRST so the plate is under
+        # every key even before Z-values are considered.
+        self._add_board(minx, miny)
+
         for name, info in self.key_matrix.items():
             # Get key properties
             x = info['x'] - minx
@@ -636,5 +670,83 @@ class KbLayoutDialog(QMainWindow):
             self.scene.addItem(item)
         
         self.view.setSceneRect(self.scene.itemsBoundingRect())
+
+    def _add_board(self, minx, miny):
+        """Draw the board outline + status screens under the keys.
+
+        Reads the theme from the live palette rather than the `ui_theme`
+        setting: the setting is `auto` on most installs and does not move when
+        Windows flips, while the palette is what was actually applied.
+        """
+        self._board_items = []
+        try:
+            dark = gui_theme.is_dark(self.palette())
+            self._board_items = add_board(self.scene, KEY_SCALE, minx, miny, dark=dark)
+            self._refresh_screens(self.current_layer)
+        except Exception:
+            self.log.debug("board outline not drawn", exc_info=True)
+
+    def _refresh_screens(self, layer):
+        """Paint the layer being edited onto the two status panels.
+
+        Follows the SAME Symbol / Preview / Real control the keys do: Symbol clears
+        them back to the plain lit rectangle, Preview draws the panel, Real puts it
+        through the simulation. ⚠️ With the **`oled`** preset, not `keycap` -- there is
+        no keycap over a status display, so the cover's diffusion would be modelling
+        something that is not there.
+
+        The layer being edited goes in the LAYOUT-name slot. On hardware that row
+        names the base layout; here it names the layer, which is what an editor
+        wants and is the one place this panel departs from the firmware's.
+
+        Decoration, so it fails soft the same way the plate does: a renderer that
+        cannot load leaves the rectangles plain and the editor unchanged.
+        """
+        if not self._board_items:
+            return
+        try:
+            if self._keycap_mode == KEYCAP_SYMBOL:
+                set_screen_images(self._board_items, {})
+                return
+            if self._status_render is None:
+                self._status_render = StatusScreenRenderer(self._preview.status_faces())
+            if not self._status_render.usable:
+                set_screen_images(self._board_items, {})
+                return
+            name = self._layer_name(layer)
+            shots = {}
+            for side in ("left", "right"):
+                img = self._status_render.render(side, layer, name)
+                if self._keycap_mode == KEYCAP_REAL:
+                    img = oled_look.render(img, "oled", ssr.REAL_SCALE) or img
+                shots[side] = img
+            set_screen_images(self._board_items, shots)
+        except Exception:
+            self.log.debug("status screens not drawn", exc_info=True)
+
+    def _pixmaps_possible(self) -> bool:
+        """Whether the status panels can be drawn at all (the UI faces loaded).
+
+        Exists so a test can SKIP rather than assert a blank board on an install
+        without the preview export -- the editor itself just leaves them flat.
+        """
+        if self._status_render is None:
+            self._status_render = StatusScreenRenderer(self._preview.status_faces())
+        return self._status_render.usable
+
+    def _layer_name(self, layer):
+        """What the panel calls this layer -- the same string the layer tab shows.
+
+        Cached: `_layer_names` asks the KEYBOARD (cmd 35), and a layer change must
+        not cost an HID round trip to relabel a decoration.
+        """
+        names = getattr(self, "_layer_name_cache", None)
+        if names is None:
+            try:
+                names = self._layer_names()
+            except Exception:
+                names = {}
+            self._layer_name_cache = names
+        return names.get(layer, "")
 
 
