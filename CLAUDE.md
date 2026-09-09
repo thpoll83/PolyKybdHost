@@ -194,10 +194,23 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         just not in the file describing this repo's own board.
         - It **earns the slot**: on host#218 (2026-09-07) it produced three findings
           before any bot had run, and the PR carried a green Sourcery-skipped board
-          at the time. Judge it by the **`Analyze Python` job**, not the `CodeQL`
-          check run, and read its findings as inline review comments from
+          at the time. Its findings arrive as inline review comments from
           `github-advanced-security[bot]` plus a review object — i.e. `get_reviews`
           sees it, which the five-reviewer check below has to account for.
+        - ⚠️ **NEITHER of its two green ticks means "no findings" — this line used to
+          say "judge it by the `Analyze Python` JOB, not the `CodeQL` check run", and
+          that is WRONG.** The job reports whether the ANALYSIS ran, not what it
+          found, so it concludes `success` either way: measured on host#226
+          (2026-09-09), run 204 concluded `success` while carrying all **12** alerts,
+          and runs 207/208 concluded `success` carrying none. Nothing in
+          `get_check_runs` separates those.
+          - **What DOES answer it is `get_review_comments`.** Every alert is a review
+            thread, and GitHub flips the thread to `is_resolved: true` +
+            `is_outdated: true` once the alert is fixed — so twelve resolved threads
+            is POSITIVE evidence the round is closed, where "no new review object on
+            the new head" is only the absence of evidence (and is exactly the
+            false-negative the clean-CodeRabbit note below warns about). Read the
+            threads, not the ticks.
         - ⚠️ It is **not** an answer to a design question and does not read prose;
           it finds the class of defect dataflow finds. "CodeQL was green" is not
           review cover for a refactor, only for what its queries cover.
