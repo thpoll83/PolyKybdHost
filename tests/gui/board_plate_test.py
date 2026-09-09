@@ -10,6 +10,7 @@ import unittest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
+    from PyQt5.QtGui import QColor
     from PyQt5.QtWidgets import QApplication, QGraphicsScene
 except ImportError as e:  # pragma: no cover - PyQt5 not installed
     _IMPORT_ERR = e
@@ -39,8 +40,8 @@ class AddBoardTest(unittest.TestCase):
             self.skipTest("no board outline shipped")
         items = bp.add_board(self.scene, 80.0, dark=True)
         panels = sum(len(h.displays) for h in board.halves)
-        # plate + (glass, active area, caption) per panel
-        self.assertEqual(len(board.halves) + panels * 3, len(items))
+        # plate per half + (glass, lit area) per panel -- no caption
+        self.assertEqual(len(board.halves) + panels * 2, len(items))
         self.assertEqual(len(items), len(self.scene.items()))
 
     def test_every_item_sits_behind_the_keys(self):
@@ -68,6 +69,28 @@ class AddBoardTest(unittest.TestCase):
     def test_the_two_themes_differ_and_both_are_complete(self):
         self.assertEqual(set(bp.DARK), set(bp.LIGHT))
         self.assertNotEqual(bp.DARK, bp.LIGHT)
+
+    def test_only_the_LIGHT_theme_repaints_the_scene_ground(self):
+        """Dark leaves the view's own background alone; light moves the blue there
+        and takes the plate to grey, so a `scene` of None must stay a no-op."""
+        before = QGraphicsScene().backgroundBrush()
+        for dark, expect_default in ((True, True), (False, False)):
+            scene = QGraphicsScene()
+            if not bp.add_board(scene, 80.0, dark=dark):
+                self.skipTest("no board outline shipped")
+            self.assertEqual(scene.backgroundBrush() == before, expect_default,
+                             "dark=%s repainted the ground the wrong way" % dark)
+
+    def test_the_light_plate_is_GREY_and_its_ground_is_the_blue(self):
+        """The swap, pinned as a relation rather than as two literals: a plate whose
+        channels differ is not grey, and a ground that is not bluer than the plate
+        has not taken the colour over."""
+        plate = QColor(bp.LIGHT["plate_top"])
+        ground = QColor(bp.LIGHT["scene"])
+        self.assertEqual((plate.red(), plate.green()), (plate.green(), plate.blue()),
+                         "the light plate is not grey: %s" % bp.LIGHT["plate_top"])
+        self.assertGreater(ground.blue() - ground.red(), 8,
+                           "the light ground is not blue: %s" % bp.LIGHT["scene"])
 
     def test_the_offset_moves_the_plate_by_exactly_that_much(self):
         """The keys are shifted by the layout origin; the board must follow, or

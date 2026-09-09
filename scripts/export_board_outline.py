@@ -495,15 +495,28 @@ def exact_span(anchor_x, outline, blockers, y0, y1, samples=41):
 def place_display(anchor, outline, blockers, side):
     """Size and position one status panel in the free corner its FPC sits in.
 
-    The panel is grown to span that corner's full width -- so it meets the case on
-    the outer side and stops one clearance short of the nearest keycap -- and
-    centred in it, rather than pinned to the connector. The connector is at the
-    BOARD's height, which is low in the corner and leaves the panel looking dropped;
-    it says which corner, not where in it. Falls back to the real module at the
+    ⚠️ It is the LIT AREA that is grown to span that corner, not the module: the
+    screen meets the case on the outer side and stops one clearance short of the
+    nearest keycap, so there is no side bezel at all and glass shows only above and
+    below. Growing the whole module instead keeps a side bezel and the screen then
+    stops short of the housing, which is the wrong picture.
+
+    Position comes from the corner too, not from the connector: the FPC is at the
+    BOARD's height, low in the corner, which leaves the panel looking dropped. It
+    says which corner, not where in it. Falls back to the real module at the
     connector when the corner cannot be measured.
     """
     panel = (PANEL_MM[0] / UNIT_MM, PANEL_MM[1] / UNIT_MM)
     active = (ACTIVE_MM[0] / UNIT_MM, ACTIVE_MM[1] / UNIT_MM)
+    # ⚠️ The glass above and below the screen stays at its REAL 8.4 mm total and is
+    # NOT scaled with it. The screen is drawn ~1.7x life size to span the corner;
+    # scaling the margin too made the panel 33 mm of mostly-dark glass, which reads
+    # as a band rather than as a display.
+    v_bezel = panel[1] - active[1]
+
+    def glass_height(k):
+        return active[1] * k + v_bezel
+
     cx, cy, scale = anchor[0], anchor[1], 1.0
 
     rect = free_rect_at(anchor, outline, blockers)
@@ -515,8 +528,9 @@ def place_display(anchor, outline, blockers, side):
         # Uniform, so the glass keeps the module's real 26.7:19.26 proportion and
         # the lit area keeps its share of it. Width is what "grow until it touches"
         # asks for; the height cap is what stops a wide corner overflowing a short one.
-        scale = min((x1 - x0) / panel[0], (y1 - y0) / panel[1])
-        height = panel[1] * scale
+        # Scaled off the LIT AREA's width, so the screen is what spans the corner.
+        scale = min((x1 - x0) / active[0], (y1 - y0 - v_bezel) / active[1])
+        height = glass_height(scale)
         cx = (x0 + x1) / 2.0
         # Hung one bezel under the CASE's top edge, not centred in the corner: the
         # corner runs all the way down to the thumb cluster, so centring drops the
@@ -527,26 +541,29 @@ def place_display(anchor, outline, blockers, side):
             cy = (y0 + y1) / 2.0
         else:
             def hang(x_lo, x_hi):
-                """Top edge and height for a panel spanning [x_lo, x_hi]."""
-                tall = panel[1] * min((x_hi - x_lo) / panel[0], (y1 - y0) / panel[1])
+                """Top edge and SCALE for a panel whose screen spans [x_lo, x_hi]."""
+                k = min((x_hi - x_lo) / active[0], (y1 - y0 - v_bezel) / active[1])
+                tall = glass_height(k)
                 y = case_top_over(outline, x_lo, x_hi) + BEZEL_U
                 for bx0, by0, bx1, by1 in blockers:      # never into a keycap
                     if bx1 > x_lo and bx0 < x_hi and by1 > y and by0 < y + tall:
                         y = max(y, by1)
-                return min(y, y1 - tall), tall
+                return min(y, y1 - tall), k
 
-            y_top, height = hang(x0, x1)
-            refined = exact_span(anchor[0], outline, blockers, y_top, y_top + height)
+            y_top, scale = hang(x0, x1)
+            refined = exact_span(anchor[0], outline, blockers,
+                                 y_top, y_top + glass_height(scale))
             if refined is not None:
                 x0, x1 = refined
-                y_top, height = hang(x0, x1)
-                scale = height / panel[1]
+                y_top, scale = hang(x0, x1)
                 cx = (x0 + x1) / 2.0
-            cy = y_top + height / 2.0
+            cy = y_top + glass_height(scale) / 2.0
 
+    # `w == aw` on purpose: no side bezel, so the glass is exactly as wide as the
+    # screen and only its height carries the module's own margin.
     return {
         "cx": round(cx, 4), "cy": round(cy, 4),
-        "w": round(panel[0] * scale, 4), "h": round(panel[1] * scale, 4),
+        "w": round(active[0] * scale, 4), "h": round(glass_height(scale), 4),
         "aw": round(active[0] * scale, 4), "ah": round(active[1] * scale, 4),
     }
 

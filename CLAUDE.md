@@ -2843,7 +2843,16 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the corner, so the panel reads as having slipped, and at its real 26.7 mm it
     leaves a gap on both sides. ⚠️ The display hangs off a ~40 mm cable, so where it
     ends up in the CASE is in no repo file — this is a layout rule, not a measurement.
-    - ⚠️ **The grid search resolves the corner to 0.05U, which leaves the panel ~1 mm
+    - ⚠️ **It is the SCREEN that spans the corner, not the module — `w == aw`, no side
+      bezel at all.** The lit area meets the housing left and right and glass shows
+      only above and below, because that is what the module does when it is mounted
+      to the case wall. Growing the whole module keeps a side bezel and the screen
+      then stops short of the housing, which is the wrong picture. ⚠️ **The vertical
+      glass stays at its real 8.4 mm total and is NOT scaled with the screen**: the
+      screen is drawn ~1.7x life size to span the corner, and scaling the margin too
+      made the panel 33 mm of mostly-dark glass that read as a band. There is no
+      caption on it — a lit rectangle in a dark frame is already a screen.
+  - ⚠️ **The grid search resolves the corner to 0.05U, which leaves the panel ~1 mm
       short of the case it is meant to meet** — so `exact_span` re-measures the one
       band the panel occupies off the polygon rather than off the grid. The inner edge
       then sits exactly ON the boundary, which is why the containment test needs a
@@ -2855,9 +2864,13 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       the case by less than a bezel (0.28U measured), which is why the placement test
       bounds the tightest gap across the width instead of asserting one bezel.
   - ⚠️ **The tiles are dark in BOTH themes** (`RenderableKey` hardcodes its greys),
-    so the plate has to work under dark keys either way, and the `STATUS` caption is
-    drawn ON the glass — dark in both themes — so its light-theme ink is light too.
-    Taking it from the light palette put grey-blue text on a near-black panel.
+    so the plate has to work under dark keys either way.
+  - **The two themes are NOT one palette at two lightnesses.** Dark draws a
+    graphite-blue board on the view's own ground; light draws a GREY board on a blue
+    ground (`LIGHT["scene"]`, painted by `add_board` via `setBackgroundBrush`) — the
+    blue moved to the background so the board reads as the object rather than as the
+    biggest coloured shape on screen. `DARK["scene"]` is None, which must stay a
+    no-op: dark's ground is the palette's and nothing here should second-guess it.
 
 ## Releases
 

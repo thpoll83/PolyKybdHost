@@ -230,6 +230,26 @@ class StatusDisplayTest(unittest.TestCase):
         centre = (min(xs) + max(widths)) / 2.0
         self.assertAlmostEqual(centre - left.cx, right.cx - centre, delta=0.03)
 
+    def test_the_screen_has_NO_side_bezel_but_keeps_its_vertical_one(self):
+        """The panel is the SCREEN edge to edge: it meets the housing left and right,
+        and glass shows only above and below.
+
+        Growing the whole module instead leaves a side bezel and the screen then
+        stops short of the case, which is the picture this replaced. The vertical
+        margin stays at its real 8.4 mm total even though the screen is drawn ~1.7x
+        life size -- scaled with it, the panel became 33 mm of mostly-dark glass and
+        read as a band rather than a display.
+        """
+        for side, half in self.by_side.items():
+            for d in half.displays:
+                self.assertAlmostEqual(d.w, d.aw, delta=1e-4,
+                                       msg="%s panel has a side bezel" % side)
+                self.assertAlmostEqual((d.h - d.ah) * self.board.unit_mm, 8.4,
+                                       delta=0.1,
+                                       msg="%s panel's glass is %.2f mm taller than "
+                                           "its screen, expected 8.40"
+                                           % (side, (d.h - d.ah) * self.board.unit_mm))
+
     def test_a_panel_TOUCHES_the_case_edge_beside_it(self):
         """It is grown to span its corner, so its inner edge meets the outline.
 

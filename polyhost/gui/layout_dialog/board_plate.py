@@ -15,18 +15,18 @@ Two things it deliberately is NOT:
 * **not a source of truth.** It is decoration, so `add_board` returns quietly
   when the shipped description is missing -- see `services.board_outline`.
 
+⚠️ The status panel has NO side bezel: its screen spans the corner and meets the
+housing left and right, so `w == aw` and only the height carries glass. That comes
+out of the exporter, not from here.
+
 ⚠️ The tiles are drawn dark in BOTH themes (`RenderableKey` hardcodes its
 greys), so the plate has to work under dark keys either way: a graphite-blue
 board in the dark theme, a pale one in the light theme, keeping the same blue ->
 cyan sweep the brand mark uses.
 """
 from PyQt5.QtCore import QPointF, QRectF, Qt
-from PyQt5.QtGui import (
-    QBrush, QColor, QFont, QLinearGradient, QPainterPath, QPen, QPolygonF,
-)
-from PyQt5.QtWidgets import (
-    QGraphicsPathItem, QGraphicsRectItem, QGraphicsSimpleTextItem,
-)
+from PyQt5.QtGui import QBrush, QColor, QLinearGradient, QPainterPath, QPen, QPolygonF
+from PyQt5.QtWidgets import QGraphicsPathItem, QGraphicsRectItem
 
 from polyhost.services import board_outline as bo
 
@@ -35,24 +35,24 @@ from polyhost.services import board_outline as bo
 Z_PLATE = -20
 Z_DISPLAY = -10
 
-#: Plate, edge, screen glass, lit area, caption -- dark theme then light.
-#: ⚠️ `caption` is drawn ON the glass, which is dark in BOTH themes, so the
-#: light row's caption is light too -- taking it from the light palette's ink
-#: put grey-blue text on a near-black panel.
+#: Scene ground, plate, edge, screen glass and lit area -- dark theme then light.
+#: A `scene` of None leaves the view's own background alone.
+#: ⚠️ The two themes are NOT the same palette at different lightnesses. Dark puts a
+#: graphite-blue board on the view's default ground; light puts a GREY board on a
+#: blue ground -- the blue moved to the background so the board reads as the object
+#: rather than as the biggest coloured shape on screen.
 DARK = {
+    "scene": None,
     "plate_top": "#26333D", "plate_bottom": "#1B2429", "edge": "#4E869F",
     "glass": "#0E1417", "glass_edge": "#3E525C", "active": "#0B2A31",
-    "active_edge": "#2E7F91", "caption": "#7FA8B8",
+    "active_edge": "#2E7F91",
 }
 LIGHT = {
-    "plate_top": "#E2ECF2", "plate_bottom": "#C6D6DF", "edge": "#5E8AA1",
+    "scene": "#D9E5ED",
+    "plate_top": "#ECECEC", "plate_bottom": "#D6D6D6", "edge": "#5E8AA1",
     "glass": "#2A343A", "glass_edge": "#8AA3B0", "active": "#111C21",
-    "active_edge": "#4E9FB2", "caption": "#93AEBB",
+    "active_edge": "#4E9FB2",
 }
-
-#: Drawn in the glass margin under the lit area, so a screen reads as a screen
-#: rather than as a stray rectangle.
-CAPTION = "STATUS"
 
 
 def add_board(scene, scale, offset_x=0.0, offset_y=0.0, dark=True, board=None):
@@ -66,6 +66,8 @@ def add_board(scene, scale, offset_x=0.0, offset_y=0.0, dark=True, board=None):
         return []
 
     ink = DARK if dark else LIGHT
+    if ink["scene"]:
+        scene.setBackgroundBrush(QBrush(QColor(ink["scene"])))
     items = []
     for half in board.halves:
         items.append(_plate(scene, half, scale, offset_x, offset_y, ink))
@@ -115,27 +117,4 @@ def _display(scene, display, scale, ox, oy, ink):
     active.setZValue(Z_DISPLAY)
     scene.addItem(active)
 
-    out = [glass, active]
-    caption = _caption(rect(display.rect), rect(display.active_rect), ink)
-    if caption is not None:
-        caption.setZValue(Z_DISPLAY)
-        scene.addItem(caption)
-        out.append(caption)
-    return out
-
-
-def _caption(glass, active, ink):
-    """`STATUS` in the glass margin below the lit area -- omitted when it would
-    not fit, so a smaller panel loses the word rather than overprinting it."""
-    item = QGraphicsSimpleTextItem(CAPTION)
-    font = QFont("Arial", 7)
-    font.setLetterSpacing(QFont.PercentageSpacing, 130)
-    item.setFont(font)
-    item.setBrush(QBrush(QColor(ink["caption"])))
-    bounds = item.boundingRect()
-    gap = glass.bottom() - active.bottom()
-    if bounds.width() > glass.width() or bounds.height() > gap:
-        return None
-    item.setPos(glass.center().x() - bounds.width() / 2.0,
-                active.bottom() + (gap - bounds.height()) / 2.0)
-    return item
+    return [glass, active]
