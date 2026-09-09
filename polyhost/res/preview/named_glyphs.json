@@ -1,5 +1,5 @@
 {
- "fw_version": "0.19.1",
+ "fw_version": "0.21.0",
  "named": {
   "ACUTE_ACCENT": [
    180
@@ -4960,6 +4960,42 @@
   ],
   "REGISTERED_SIGN": [
    169
+  ],
+  "RIGHT_12PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_18PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_20PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_6PX": [
+   6,
+   6,
+   6
   ],
   "RLENTICULAR_BRACKET": [
    12305
