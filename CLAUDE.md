@@ -215,6 +215,20 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
           is a new false claim in place of the old one. This repo has several such
           front doors (`gui/theme.py`, `core/events.py`, the `server/` package), so
           expect it again.
+        - ⚠️ **`py/unused-global-variable` on a Qt `_APP` keepalive is the SAME
+          family and the remedy is NOT to decline it — the repo already carries the
+          form that satisfies it.** Fifteen test modules hold a QApplication alive so
+          Qt's runtime is not garbage-collected out from under the next widget; twelve
+          assign it at module level, and `tests/gui/macro_tab_test.py` pairs that with a
+          `setUpModule` asserting `_APP is not None`, whose docstring says it is there
+          *"to a reader and to a static analyser alike"*. The three files CodeQL flagged
+          on #226 had deferred the construction into `setUpModule` with a `global` write
+          nothing ever read — which is precisely the shape the query looks for. **So a
+          finding on an established idiom is worth one grep before it is worth a reply:**
+          `grep -rn "QApplication.instance() or QApplication" tests/` would have shown
+          twelve siblings the alert does not fire on, and the difference between them and
+          mine WAS the bug. Same lesson as the ControlServer deadlock — the remedy was in
+          the tree and the failure was search.
       - ⚠️ **`actions_list` blows the tool token cap — 130–220 KB per call, even
         at `per_page: 3`** (kept from the above, because it applies to reading
         *any* workflow run). It saves the JSON to a file and tells you the path;
@@ -427,9 +441,10 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   the tell is the body text, not the presence of a review:
   - **Budget** — *"you've used your own review budget of 250,000 diff characters
     for the last 7 days ... You can request another review in 1 day and 16 hours by
-    commenting `@sourcery-ai review`"*. ⚠️ Note **250,000, per USER, rolling 7
-    days** — `qmk_firmware/CLAUDE.md` quotes 500,000 from an older notice, so take
-    the figure from the message in front of you. ⚠️ **The countdown is NOT "come
+    commenting `@sourcery-ai review`"*. ⚠️ Note the FIGURE MOVES — 250,000 here,
+    500,000 in an older notice `qmk_firmware/CLAUDE.md` quotes, and **150,000** on
+    host#226 (2026-09-08) — so it is per user and rolling 7 days, but the number is
+    only ever the one in the message in front of you. ⚠️ **The countdown is NOT "come
     back then" — do not plan around it.** Measured across the four PRs of
     2026-08-30, four refusals issued **within 61 seconds of each other** quoted
     four different waits — 4 days, 1 day 3 hours, 1 day 3 hours, 19 hours 41
