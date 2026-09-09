@@ -10,6 +10,7 @@ import unittest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
+    from PyQt5.QtCore import QRectF
     from PyQt5.QtGui import QColor, QImage
     from PyQt5.QtWidgets import QApplication, QGraphicsScene
 except ImportError as e:  # pragma: no cover - PyQt5 not installed
@@ -58,10 +59,18 @@ class AddBoardTest(unittest.TestCase):
         self.assertEqual(sorted(tagged),
                          sorted(h.side for h in board.halves for _ in h.displays))
 
-    def test_a_screen_image_is_SCALED_to_the_lit_rectangle(self):
+    def test_a_screen_image_FILLS_the_lit_rectangle_but_for_the_stroke(self):
         """The pixmap stays at its native 128x64 and the ITEM scales, so zooming in
         resolves more panel; the check is that what lands on screen is the lit
-        rectangle either way."""
+        rectangle, less the frame's stroke, and centred in it.
+
+        ⚠️ This used to assert the picture filled the rectangle EXACTLY, which is the
+        defect it now guards: the frame's pen is centred on the edge, so half of it
+        lies inside, and a picture that reaches the edge covers that half and reads as
+        bleeding over the bezel. The near-miss is what makes it worth pinning both
+        ways -- an inset that grew to swallow the picture would be just as wrong, so
+        the width is bounded above AND below.
+        """
         board = bo.load()
         if board is None:
             self.skipTest("no board outline shipped")
@@ -77,9 +86,21 @@ class AddBoardTest(unittest.TestCase):
                 continue
             self.assertFalse(item.pixmap().isNull(), "%s screen is blank" % side)
             x, _y, w, _h = lit[side]
+            lit_x, lit_w = x * 80.0, w * 80.0
             got = item.sceneBoundingRect()
-            self.assertAlmostEqual(got.x(), x * 80.0, places=3)
-            self.assertAlmostEqual(got.width(), w * 80.0, places=2)
+            with self.subTest(side=side):
+                self.assertLessEqual(got.width(), lit_w - bp.ACTIVE_PEN + 0.01,
+                                     "the picture reaches the frame")
+                # 2 px of slack, not 0: the lit rectangle's aspect (2.002) is a
+                # hair wider than the panel's (2.000), so HEIGHT binds and the
+                # width comes out a fraction under the inset one. Tight enough to
+                # catch an inset that ran away, loose enough not to encode which
+                # axis happens to bind for today's geometry.
+                self.assertGreater(got.width(), lit_w - bp.ACTIVE_PEN - 2.0,
+                                   "the picture no longer fills the screen")
+                self.assertAlmostEqual(got.left() - lit_x,
+                                       (lit_x + lit_w) - got.right(), places=3,
+                                       msg="the picture is not centred")
 
     def test_a_side_with_NO_image_is_cleared_rather_than_left_stale(self):
         """A mode switch back to Symbol has to take the picture away; leaving the
@@ -148,6 +169,99 @@ class AddBoardTest(unittest.TestCase):
         self.assertGreater(ground.lightness() - plate.lightness(), 15,
                            "the light plate (%s) is not darker than its ground (%s)"
                            % (bp.LIGHT["plate_top"], bp.LIGHT["scene"]))
+
+    def test_the_board_and_its_outlines_are_NEUTRAL(self):
+        """Every colour but the light theme's GROUND is grey.
+
+        The board wore the brand's blue -> cyan sweep -- plate, screen bezel and all
+        three strokes -- which on a picture of a keyboard reads as a lit edge rather
+        than as a case. Pinned as a channel-spread bound rather than as literals, so a
+        re-tint is caught while a lightness tweak is not; `scene` is exempt because
+        the blue deliberately lives there and one test above requires it.
+        """
+        for name, ink in (("DARK", bp.DARK), ("LIGHT", bp.LIGHT)):
+            for key, value in ink.items():
+                if key == "scene" or value is None:
+                    continue
+                c = QColor(value)
+                with self.subTest(theme=name, key=key):
+                    self.assertLessEqual(
+                        max(c.red(), c.green(), c.blue())
+                        - min(c.red(), c.green(), c.blue()), 4,
+                        "%s[%r] = %s is not neutral" % (name, key, value))
+
+    def test_every_OUTLINE_is_DARK(self):
+        """"Dark grey or black", which is what was asked for and what the cyan
+        strokes were not.
+
+        ⚠️ Bounded, NOT stated as "darker than its fill" -- that rule was written
+        first and is wrong for the screen: the bezel is the darkest thing on the
+        board, so a stroke darker than it would be invisible and `glass_edge` is
+        deliberately the lighter of the two, separating the bezel from the plate. The
+        property that holds for all three is simply that none of them is bright.
+        """
+        for name, ink in (("DARK", bp.DARK), ("LIGHT", bp.LIGHT)):
+            for stroke in ("edge", "glass_edge", "active_edge"):
+                with self.subTest(theme=name, stroke=stroke):
+                    self.assertLessEqual(QColor(ink[stroke]).lightness(), 90,
+                                         "%s[%r] = %s is not a dark outline"
+                                         % (name, stroke, ink[stroke]))
+        # The plate's own edge additionally has to READ as an edge against it.
+        for name, ink in (("DARK", bp.DARK), ("LIGHT", bp.LIGHT)):
+            with self.subTest(theme=name):
+                self.assertLess(QColor(ink["edge"]).lightness(),
+                                QColor(ink["plate_bottom"]).lightness() - 10,
+                                "%s: the plate edge does not separate it" % name)
+
+    def test_the_screen_picture_stays_INSIDE_the_lit_rectangle(self):
+        """The reported defect: the panel drew over its own bezel.
+
+        Two independent causes, so this asserts CONTAINMENT rather than either fix --
+        the picture is 2:1 while the lit rectangle need not be (dropping the side
+        bezel already reshaped it), and the frame's pen is centred on the edge, so a
+        picture that exactly fills the rectangle covers the half of the stroke that
+        lies inside it.
+
+        ⚠️ A tall image is fed deliberately. With the shipped geometry the aspects
+        very nearly agree, so a width-only scale overflows by a fraction of a pixel
+        and a test using only the real panel passes against the bug.
+        """
+        board = bo.load()
+        if board is None:
+            self.skipTest("no board outline shipped")
+        items = bp.add_board(self.scene, 80.0, dark=True)
+        screens = [i for i in items if i.data(bp.SCREEN_SIDE) is not None]
+        self.assertTrue(screens)
+        # ⚠️ The rectangle is derived from the DESCRIPTION, never read back off the
+        # item. Taking it from `SCREEN_BOX` makes the check self-consistent with
+        # whatever the item cached, so a wrong box passes: measured, substituting
+        # `width/2` for the real height escaped exactly that way, because the lit
+        # rectangle's aspect (2.002) is a hair off the panel's 2.000 and the error is
+        # a fraction of a pixel. So the cache is asserted against the description too.
+        want = {h.side: h.displays[0].active_rect for h in board.halves if h.displays}
+        for item in screens:
+            x, y, w, h = [v * 80.0 for v in want[item.data(bp.SCREEN_SIDE)]]
+            self.assertEqual([round(v, 6) for v in item.data(bp.SCREEN_BOX)],
+                             [round(v, 6) for v in (x, y, w, h)],
+                             "the cached box is not the lit rectangle")
+        for shape in ((128, 64), (128, 128), (256, 64)):
+            imgs = {i.data(bp.SCREEN_SIDE): QImage(shape[0], shape[1],
+                                                   QImage.Format_RGB32)
+                    for i in screens}
+            for im in imgs.values():
+                im.fill(0xFFFFFFFF)
+            bp.set_screen_images(items, imgs)
+            for item in screens:
+                x, y, w, h = [v * 80.0 for v in want[item.data(bp.SCREEN_SIDE)]]
+                lit = QRectF(x, y, w, h)
+                got = item.sceneBoundingRect()
+                with self.subTest(side=item.data(bp.SCREEN_SIDE), image=shape):
+                    self.assertTrue(lit.contains(got),
+                                    "%s escapes the lit rect %s" % (got, lit))
+                    # …and clear of the stroke, which is centred on the edge.
+                    inset = bp.ACTIVE_PEN / 2.0
+                    self.assertGreaterEqual(got.left() - lit.left(), inset - 0.01)
+                    self.assertGreaterEqual(lit.right() - got.right(), inset - 0.01)
 
     def test_the_offset_moves_the_plate_by_exactly_that_much(self):
         """The keys are shifted by the layout origin; the board must follow, or

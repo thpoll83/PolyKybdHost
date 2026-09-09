@@ -2958,15 +2958,49 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       bounds the tightest gap across the width instead of asserting one bezel.
   - ⚠️ **The tiles are dark in BOTH themes** (`RenderableKey` hardcodes its greys),
     so the plate has to work under dark keys either way.
-  - **The two themes are NOT one palette at two lightnesses.** Dark draws a
-    graphite-blue board on the view's own ground; light draws a GREY board on a blue
-    ground (`LIGHT["scene"]`, painted by `add_board` via `setBackgroundBrush`) — the
-    blue moved to the background so the board reads as the object rather than as the
+  - **The two themes are NOT one palette at two lightnesses.** Dark draws a graphite
+    board on the view's own ground; light draws a GREY board on a blue ground
+    (`LIGHT["scene"]`, painted by `add_board` via `setBackgroundBrush`) — the blue
+    moved to the background so the board reads as the object rather than as the
     biggest coloured shape on screen. `DARK["scene"]` is None, which must stay a
     no-op: dark's ground is the palette's and nothing here should second-guess it.
     The light plate is deliberately the DARKER of the two (pinned as a relation, not
     a literal): a plate a shade off white reads as a differently-coloured page rather
     than as a board lying on one.
+  - ⚠️ **The BOARD is neutral and every stroke is near-black — the blue survives only
+    as `LIGHT["scene"]`.** The plate, the screen bezel and all three outlines carried
+    the brand mark's blue → cyan sweep, which on a picture of a keyboard reads as a
+    lit edge rather than as a case; the ground is the one place the colour describes
+    the page instead of the object. `test_the_board_and_its_outlines_are_NEUTRAL`
+    bounds the channel spread at 4 for every key but `scene`, so a re-tint fails while
+    a lightness tweak does not.
+    - ⚠️ **"Every outline is darker than its fill" was written first and is WRONG.**
+      The bezel is the darkest thing on the board, so a stroke darker than it would be
+      invisible — `glass_edge` is deliberately the *lighter* of the two, because what
+      it separates the bezel from is the PLATE. The property that actually holds for
+      all three is that none of them is bright (`test_every_OUTLINE_is_DARK` bounds
+      lightness at 90), plus the one real relation: the plate's edge must read against
+      the plate.
+  - ⚠️ **The screen picture is FITTED inside the lit rectangle and inset clear of the
+    frame — scaling it to the rectangle's WIDTH put it on top of the bezel, by two
+    independent mechanisms.** Reported as the display extending over the bezel:
+    - the panel is 2:1 and the lit rectangle no longer has to be (dropping the side
+      bezel reshaped it), so a width-derived height simply overflows; and
+    - a rect item's pen is **centred on the edge**, so half the stroke lies inside,
+      and a picture that exactly fills the rectangle covers that half.
+    So `set_screen_images` scales by `min` over both axes of the box inset by
+    `ACTIVE_PEN` and centres the result, and `SCREEN_BOX` carries the HEIGHT it had
+    been managing without. The pen widths are named constants for that reason — a
+    stroke and the inset that clears it must not drift apart.
+    - ⚠️ **The old test asserted the picture filled the rectangle EXACTLY**, i.e. it
+      had the defect as its contract; that is why nothing caught this. Its replacement
+      bounds the width from BOTH sides — an inset that ran away is as wrong as none.
+    - ⚠️ **The containment test derives the rectangle from the DESCRIPTION, never
+      from `SCREEN_BOX`.** Reading it back off the item makes the check self-consistent
+      with whatever the item cached: measured, replacing the real height with `width/2`
+      escaped exactly that way, because the lit aspect (2.002) is a hair off the
+      panel's 2.000 and the error is a fraction of a pixel. Eight mutations are caught
+      now; that one needed the box asserted against the description as well.
 
 ## Releases
 
