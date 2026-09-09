@@ -1686,11 +1686,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     - **What is still refused** is the ops needing a primitive this model does not
       have — and the set has shrunk twice, so read it off `SUPPORTED_OPS` rather
       than off this line. MOVE (`\x0E`), BADGE (`\x13`), ERASE (`\x14`) and ROT
-      (`\x15`) were implemented on 2026-09-01; **HALF (`\x0F`) on 2026-09-09**,
-      because the RGB value keycaps composite a halved droplet/sun beside a
-      full-size `+` and HINT_SMALL cannot (it latches for the rest of the run).
-      That leaves THIN (`\x11`, the decimating sibling of HALF) and FRAME
+      (`\x15`) were implemented on 2026-09-01; **HALF (`\x0F`) and BASE (`\x17`) on
+      2026-09-09** — HALF because the RGB value keycaps composite a halved droplet/sun
+      beside a full-size `+` and HINT_SMALL cannot (it latches for the rest of the
+      run), BASE because it is the way *out* of that latch and of `HINT_MID`, which
+      the RGB preset keycaps need for a half-scale `Preset:` over a mid-face effect
+      name. That leaves THIN (`\x11`, the decimating sibling of HALF) and FRAME
       (`\x12`, a rounded rect at a radius the badge drawer does not take).
+      ⚠️ **BASE has to clear the latch in BOTH walkers** (`bbox` and `draw`), like
+      every other op here — and note it is the firmware that owns the semantics:
+      `\x10` after `\x16` half-scales the *mid* face rather than returning to base,
+      so mirroring "small = mid = False" is only correct because that is what
+      `disp_array.c` does.
       ⚠️ Implementing one is TWO edits — the draw dispatch and `SUPPORTED_OPS` —
       and doing only the first leaves every legend using it still falling back to
       its keycode text, which looks exactly like the op not working.
