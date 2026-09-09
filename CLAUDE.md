@@ -2793,6 +2793,22 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     left/right pair misses by 18 mm, the spacer outline by 3.8 mm. ⚠️ **1.65 is the
     split72 left+right case specifically** — `case_polysplit72_right2` and
     `right_side` use a 0.25 clearance, i.e. 1.75.
+  - ⚠️ **The outline is then FITTED to one even bezel on all four sides
+    (`BEZEL_U`, 0.33U / 6.3 mm) — the real case is NOT even, and that is deliberate.**
+    Measured on the left half the true margins are W 6.4 / E 3.6 / N 8.8 / S 6.2 mm,
+    which reads as a crooked plate rather than as accuracy — because the KEYS are
+    stylised too: the KLE draws the outer column 1.25U wide over a 1.25U pitch where
+    the board has 1U switches, and it approximates the thumb clusters. So a
+    photographically exact case around approximated keys is the worst of both.
+    `normalise_bezel` is an axis-aligned scale + translate, so the silhouette and the
+    rounded corners survive and only the margins move; measured stretch is 1.3% in x
+    and 1.9% in y, and past `MAX_BEZEL_STRETCH` (15%) it refuses rather than reshapes.
+    Evening it also lifted the last two overhanging thumb corners inside, so the
+    overhang bound is now zero rather than a tolerance.
+    - ⚠️ **This BLINDS the even-bezel test to a revert to the bare PCB edge** — that
+      would be evened out too and measure the same. The case-vs-board pin therefore
+      reads `fit.case_mm` (185.30 x 132.30, recorded BEFORE the fit) and not the drawn
+      outline. A test that measures a fitted number cannot also police its input.
   - **The mm → key-unit transform is a pure translation at 19.05 mm/U** — the
     boards carry no rotation, so scale is the pitch and the only unknown is the
     origin. The exporter fits it by trying every (switch, key) pairing and keeping
@@ -2804,10 +2820,12 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     "Every key is inside the outline" passes with the whole board shifted **0.25U**
     (4.8 mm) inward, because the inner edge has that much slack — measured, after
     writing exactly that test and watching the mutation escape. What catches it is
-    the opposite property: a plate **hugs** its keys, so
-    `test_the_board_HUGS_the_keys_on_every_side` bounds the margin at each edge
-    (0.19U–0.46U as shipped). Eight mutations are caught — translate, scale, mirror,
-    and shrinking the case back to the bare PCB edge.
+    the opposite property: the margin at each edge is PINNED, so
+    `test_the_bezel_is_the_SAME_on_all_four_sides` fails on the first edge a
+    translation moves. Ten mutations are caught — translate, scale, mirror, an
+    uneven bezel, a revert to the bare PCB edge, and each of the three ways the
+    status panel can be misplaced (centred in its corner, left at its real width,
+    pulled off the case).
   - ⚠️ **Restore the baseline before EACH mutation in a sweep, or a `+x`/`-x` pair
     CANCELS and reads as ESCAPED.** The first harness here re-read the file it had
     just mutated, so mutation 2 landed on top of mutation 1 and reported the tests
@@ -2815,14 +2833,27 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     never-applied traps in `qmk_firmware/CLAUDE.md`: every one of them fails toward
     "your tests caught nothing", which is the reading that makes you stop trusting a
     suite that works.
-  - **The status panels are placed on `J39`**, the 30-pin FPC each half carries for
-    the display (the schematic's *"Optional OLED Status Display"*). Both sit at the
-    same height, mirrored about the layout centre line, and a 0.96" panel lands
-    exactly in the free corner between the top rows and the inner edge — which is
-    presumably why the board reserves that corner. ⚠️ The display itself hangs off a
-    ~40 mm cable, so where it ends up in the CASE is not in any repo file; if it
-    should sit elsewhere, move it by re-anchoring in the exporter, not by nudging
-    the JSON.
+  - **The status panels are ANCHORED on `J39`** — the 30-pin FPC each half carries
+    for the display (the schematic's *"Optional OLED Status Display"*) — but they are
+    not DRAWN at it. The connector says which corner; `free_rect_at` then measures the
+    largest free rectangle containing it (case polygon minus keycaps plus a 0.06U
+    clearance, on a 0.05U grid) and the panel is grown to span that corner's full
+    width and hung one bezel under the case's top edge. Drawn at the connector it is
+    both too small and too low: the FPC sits at the BOARD's height near the bottom of
+    the corner, so the panel reads as having slipped, and at its real 26.7 mm it
+    leaves a gap on both sides. ⚠️ The display hangs off a ~40 mm cable, so where it
+    ends up in the CASE is in no repo file — this is a layout rule, not a measurement.
+    - ⚠️ **The grid search resolves the corner to 0.05U, which leaves the panel ~1 mm
+      short of the case it is meant to meet** — so `exact_span` re-measures the one
+      band the panel occupies off the polygon rather than off the grid. The inner edge
+      then sits exactly ON the boundary, which is why the containment test needs a
+      tolerance: a ray-cast answers arbitrarily for a point on the line.
+    - ⚠️ **`_top_at` at the polygon's EXTREME x lands on a vertex and returns the
+      corner rather than the top edge.** That put one half's panel 0.085U below the
+      other's, on two boards that are mirror images — so `case_top_over` insets 0.4 mm
+      from both ends. Consequence worth knowing: at the very corner the panel clears
+      the case by less than a bezel (0.28U measured), which is why the placement test
+      bounds the tightest gap across the width instead of asserting one bezel.
   - ⚠️ **The tiles are dark in BOTH themes** (`RenderableKey` hardcodes its greys),
     so the plate has to work under dark keys either way, and the `STATUS` caption is
     drawn ON the glass — dark in both themes — so its light-theme ink is light too.

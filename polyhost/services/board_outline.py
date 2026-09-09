@@ -1,9 +1,11 @@
 """The split72 board shape the layout editor draws its keys on -- Qt-free.
 
-`polyhost/res/board_outline.json` is generated from the PolyKybd KiCad boards
-by `scripts/export_board_outline.py`: the `Edge.Cuts` polygon of each half and
-the placement of the optional 0.96" status display, both in the same key-unit
-frame as `res/polykybd-split72.json`.
+`polyhost/res/board_outline.json` is generated from the PolyKybd hardware repo
+by `scripts/export_board_outline.py`: the CASE contour of each half and the
+placement of the optional 0.96" status display, both in the same key-unit frame
+as `res/polykybd-split72.json`. `bezel_u` is the one key-to-case margin the
+outline is fitted to on all four sides -- see the exporter for why that is a
+deliberate stylisation rather than the case's own uneven margins.
 
 ⚠️ Everything here fails SOFT. The board shape is decoration -- it says which
 half a key is on and where the screens are, and nothing depends on it -- so a
@@ -48,10 +50,11 @@ class Half:
 
 
 class Board:
-    __slots__ = ("board", "unit_mm", "source", "halves")
+    __slots__ = ("board", "unit_mm", "bezel_u", "source", "halves")
 
-    def __init__(self, board, unit_mm, source, halves):
-        self.board, self.unit_mm, self.source, self.halves = board, unit_mm, source, halves
+    def __init__(self, board, unit_mm, bezel_u, source, halves):
+        self.board, self.unit_mm, self.bezel_u = board, unit_mm, bezel_u
+        self.source, self.halves = source, halves
 
 
 def load(path=None):
@@ -71,7 +74,7 @@ def load(path=None):
         if not halves:
             raise ValueError("no halves")
         return Board(str(data.get("board", "")), float(data.get("unit_mm", 19.05)),
-                     str(data.get("source", "")), halves)
+                     float(data.get("bezel_u", 0.0)), str(data.get("source", "")), halves)
     except Exception as exc:                                  # noqa: BLE001
         # Decoration: say why once, then let the editor draw bare keys.
         _log.debug("board outline unavailable (%s): %s", path, exc)
