@@ -20,14 +20,19 @@ else:
     from polyhost.gui.layout_dialog import board_plate as bp
     from polyhost.gui.layout_dialog.renderable_key import RenderableKey
     from polyhost.services import board_outline as bo
-
-_APP = None
+    _APP = QApplication.instance() or QApplication([])
 
 
 def setUpModule():
-    global _APP
+    """Pin the QApplication reference for the life of the module.
+
+    `_APP` looks unused -- it is not. Qt requires exactly one QApplication and it
+    must outlive every widget; letting it be garbage-collected takes the Qt runtime
+    with it and the next widget construction segfaults. Asserting it here is what
+    says so, to a reader and to a static analyser alike.
+    """
     if _IMPORT_ERR is None:
-        _APP = QApplication.instance() or QApplication([])
+        assert _APP is not None
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, "PyQt5 not installed")
