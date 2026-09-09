@@ -2110,6 +2110,24 @@
   "DONG_SIGN": [
    8363
   ],
+  "DOWN_2PX": [
+   5
+  ],
+  "DOWN_4PX": [
+   5,
+   5
+  ],
+  "DOWN_6PX": [
+   5,
+   5,
+   5
+  ],
+  "DOWN_8PX": [
+   5,
+   5,
+   5,
+   5
+  ],
   "EQUALS": [
    61
   ],
@@ -3375,6 +3393,15 @@
   ],
   "ICON_QUICK_MENU": [
    128209
+  ],
+  "ICON_RGB_SAT": [
+   128167
+  ],
+  "ICON_RGB_SPD": [
+   187
+  ],
+  "ICON_RGB_VAL": [
+   9728
   ],
   "ICON_RIGHT": [
    132
@@ -4961,7 +4988,50 @@
   "REGISTERED_SIGN": [
    169
   ],
+  "RGB_POS_SAT_ICON": [
+   48,
+   2
+  ],
+  "RGB_POS_SAT_MINS": [
+   65,
+   21
+  ],
+  "RGB_POS_SAT_PLUS": [
+   65,
+   23
+  ],
+  "RGB_POS_VAL_ICON": [
+   47,
+   3
+  ],
+  "RGB_POS_VAL_MINS": [
+   67,
+   21
+  ],
+  "RGB_POS_VAL_PLUS": [
+   67,
+   23
+  ],
   "RIGHT_12PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_14PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_16PX": [
+   6,
+   6,
    6,
    6,
    6,
@@ -4981,6 +5051,20 @@
    6
   ],
   "RIGHT_20PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_24PX": [
+   6,
+   6,
    6,
    6,
    6,
@@ -5938,6 +6022,16 @@
   ],
   "UMLAUT_U_SMALL": [
    252
+  ],
+  "UP_4PX": [
+   12,
+   12
+  ],
+  "UP_8PX": [
+   12,
+   12,
+   12,
+   12
   ],
   "U_WITH_ACUTE": [
    218

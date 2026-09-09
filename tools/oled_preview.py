@@ -51,6 +51,7 @@ HINT_MID = 0x16        # rest of the run from the standalone 19px UI face
 CURSOR_OPS = frozenset({0x05, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x18})
 SUPPORTED_OPS = CURSOR_OPS | {HINT_SMALL, HINT_MID,
                               0x0E,   # MOVE  - absolute buffer position
+                              0x0F,   # HALF  - one glyph halved, plotted at the cursor
                               0x13,   # BADGE - the lock-indicator box
                               0x14,   # ERASE - plot as a hole
                               0x15}   # ROT   - rotated, halved glyph
@@ -670,6 +671,44 @@ class Renderer:
             return self.mid_fonts, self.mid_fonts[0].yAdvance
         return self.fonts, self.base_yadv
 
+    def _draw_glyph_half(self, plot, x, y, ch):
+        """Halve a glyph (2x2-OR) and plot it with its top-left at (x, y).
+
+        Mirrors kdisp_draw_glyph_half_at: no baseline align, no xOffset, no cursor
+        advance — HALF exists to composite ONE icon at a chosen position, which is
+        what HINT_SMALL cannot do (it latches for the rest of the run, so it would
+        take the glyphs after it down with it).
+
+        ⚠️ 2x2-OR, not decimation: a destination pixel lights if ANY of its four
+        source pixels does. These faces are drawn with 1px strokes, and dropping
+        every other row breaks them — that is the whole reason HINT_THIN is a
+        separate op rather than this one.
+        """
+        f = self._font(ch)
+        if f is None or not (f.first <= ch <= f.last):
+            return
+        g = f.glyphs[ch - f.first]
+        w, h = g['width'], g['height']
+        if w <= 0 or h <= 0:
+            return
+        cb = (h + 7) >> 3
+        bo = g['bitmapOffset']
+        for dy in range((h + 1) // 2):
+            for dx in range((w + 1) // 2):
+                lit = False
+                for oy in range(2):
+                    for ox in range(2):
+                        sx, sy = dx * 2 + ox, dy * 2 + oy
+                        if sx >= w or sy >= h:
+                            continue
+                        if f.bitmap[bo + sx * cb + (sy >> 3)] & (1 << (sy & 7)):
+                            lit = True
+                            break
+                    if lit:
+                        break
+                if lit:
+                    plot(x + dx, y + dy)
+
     def _draw_glyph_rot_half(self, plot, x, y, ch, step):
         """Rotate a glyph counter-clockwise by step*15 deg, halve it, plot at (x, y).
 
@@ -885,6 +924,9 @@ class Renderer:
                     draw_badge_rect(plot, xc, yc, _int8(args[0]), _int8(args[1]),
                                     KDISP_BADGE_RADIUS,
                                     0 if args[2] == 2 else KDISP_BADGE_BORDER)
+                continue
+            if cp == 0x0F:
+                if args: self._draw_glyph_half(plot, xc, yc, args[0])
                 continue
             if cp == 0x14: erase = True; continue
             if cp == 0x15:

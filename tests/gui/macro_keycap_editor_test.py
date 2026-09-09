@@ -486,14 +486,14 @@ class MacroKeycapInEditorTest(unittest.TestCase):
         """
         R = _editor()._preview._R
         self.assertEqual(R.unsupported_ops([0x10, 0x16, ord("a")]), set())
-        # ⚠️ The set SHRANK on 2026-09-01: MOVE/BADGE/ERASE/ROT are drawn now, which
-        # is what made the Context-menu and Scroll-Lock keycaps render. What remains
-        # is HALF/THIN (composite one glyph at the cursor) and FRAME (a rounded rect
-        # at a different radius) — still no primitive here.
-        for op_cp in (0x0F, 0x11, 0x12):
+        # ⚠️ The set has SHRUNK twice: MOVE/BADGE/ERASE/ROT on 2026-09-01, which is
+        # what made the Context-menu and Scroll-Lock keycaps render, then HALF on
+        # 2026-09-09 for the RGB value keycaps. What remains is THIN (the decimating
+        # sibling of HALF) and FRAME (a rounded rect at a different radius).
+        for op_cp in (0x11, 0x12):
             with self.subTest(op=hex(op_cp)):
                 self.assertIn(op_cp, R.unsupported_ops([op_cp, 1, 2, 3]))
-        for op_cp in (0x0E, 0x13, 0x14, 0x15):
+        for op_cp in (0x0E, 0x0F, 0x13, 0x14, 0x15):
             with self.subTest(drawn=hex(op_cp)):
                 self.assertNotIn(op_cp, R.unsupported_ops([op_cp, 1, 2, 3]))
 
