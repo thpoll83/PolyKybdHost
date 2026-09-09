@@ -3063,6 +3063,25 @@ Host releases are **GitHub Releases** (tag `vX.Y.Z`; version in `polyhost/_versi
 created by **publishing** — *not* by pushing a tag. Use the `polykybd-github-release`
 skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
 
+- ⚠️ **A `PROTOCOL_VERSION` bump means BOTH artifacts get released, and the check that
+  catches it is the PUBLISHED versions, not the in-tree ones.** The existing "bump
+  `__protocol__` in lockstep with `PROTOCOL_VERSION`" rule is about the *sources*, and
+  it can be perfectly satisfied while the releases are a protocol apart. Measured
+  2026-09-09: firmware `PolyKybd` and host `main` both read protocol 17, while the
+  newest **published** host (v0.14.18) was still 16 — so a firmware-only release would
+  have shipped protocol 17 to every user's protocol-16 app. Read the sibling's newest
+  release (`list_releases`, then its `__protocol__`/`PROTOCOL_VERSION` at that tag)
+  before drafting.
+  - ⚠️ **Nothing downstream catches it, because the connect gate is NOT exact-match.**
+    The host connects to any protocol `>= MIN_SUPPORTED_PROTOCOL` and gates each
+    feature through `FEATURE_MIN_PROTOCOL`, so an old host pairs with new firmware and
+    silently leaves the new features off — quieter than a refusal, and worse to
+    diagnose. (The release skill's own pitfall claimed exact-match for a long time,
+    which made the pairing read as self-enforcing when it is not.)
+  - **Publish the host first, then the firmware** — the host is the side that has to
+    understand the new protocol, so that order never leaves a user holding firmware
+    their app cannot drive.
+
 - ⚠️ **The host and firmware version numbers were deliberately aligned at 0.11.0
   (2026-08-05) — and they are NOT kept in lockstep after that.** The two are
   independent lines, each bumped by `bump-version.yml` from the labels on its own
