@@ -1667,10 +1667,16 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       prerequisite must not take the other legends down with it) and reports `\x16`
       as unsupported in that state.
     - **What is still refused** is the ops needing a primitive this model does not
-      have: MOVE (`\x0E`, an absolute buffer position), HALF/THIN (`\x0F`/`\x11`),
-      FRAME (`\x12`), BADGE (`\x13`), ERASE (`\x14`), ROT (`\x15`). Measured over
-      `keycode_helper.c`'s 188 static legends, **none** uses one — so refusing them
-      costs no preview today and closes the class if one appears.
+      have — and the set has shrunk twice, so read it off `SUPPORTED_OPS` rather
+      than off this line. MOVE (`\x0E`), BADGE (`\x13`), ERASE (`\x14`) and ROT
+      (`\x15`) were implemented on 2026-09-01; **HALF (`\x0F`) on 2026-09-09**,
+      because the RGB value keycaps composite a halved droplet/sun beside a
+      full-size `+` and HINT_SMALL cannot (it latches for the rest of the run).
+      That leaves THIN (`\x11`, the decimating sibling of HALF) and FRAME
+      (`\x12`, a rounded rect at a radius the badge drawer does not take).
+      ⚠️ Implementing one is TWO edits — the draw dispatch and `SUPPORTED_OPS` —
+      and doing only the first leaves every legend using it still falling back to
+      its keycode text, which looks exactly like the op not working.
   - ⚠️ **The renderer's `\v` and `\t` steps need C TRUNCATING division — Python's
     `//` silently produced a ZERO step.** Both are `x += (x / N + 1) * N` on a cursor
     that can be **negative** relative to the origin: `MID_TWO_LINE` lifts the first

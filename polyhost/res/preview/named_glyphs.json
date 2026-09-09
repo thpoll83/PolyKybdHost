@@ -1,5 +1,5 @@
 {
- "fw_version": "0.19.1",
+ "fw_version": "0.21.0",
  "named": {
   "ACUTE_ACCENT": [
    180
@@ -2110,6 +2110,31 @@
   "DONG_SIGN": [
    8363
   ],
+  "DOWN_10PX": [
+   5,
+   5,
+   5,
+   5,
+   5
+  ],
+  "DOWN_2PX": [
+   5
+  ],
+  "DOWN_4PX": [
+   5,
+   5
+  ],
+  "DOWN_6PX": [
+   5,
+   5,
+   5
+  ],
+  "DOWN_8PX": [
+   5,
+   5,
+   5,
+   5
+  ],
   "EQUALS": [
    61
   ],
@@ -2854,6 +2879,9 @@
   "HEBREW_ZAYIN": [
    1494
   ],
+  "HINT_BASE": [
+   23
+  ],
   "HINT_ERASE": [
    20
   ],
@@ -3375,6 +3403,15 @@
   ],
   "ICON_QUICK_MENU": [
    128209
+  ],
+  "ICON_RGB_SAT": [
+   128167
+  ],
+  "ICON_RGB_SPD": [
+   187
+  ],
+  "ICON_RGB_VAL": [
+   9728
   ],
   "ICON_RIGHT": [
    132
@@ -4961,6 +4998,120 @@
   "REGISTERED_SIGN": [
    169
   ],
+  "RGB_POS_SATM_ICO": [
+   51,
+   1
+  ],
+  "RGB_POS_SAT_ICON": [
+   48,
+   1
+  ],
+  "RGB_POS_SAT_MINS": [
+   68,
+   17
+  ],
+  "RGB_POS_SAT_PLUS": [
+   65,
+   19
+  ],
+  "RGB_POS_VALM_ICO": [
+   50,
+   1
+  ],
+  "RGB_POS_VAL_ICON": [
+   47,
+   1
+  ],
+  "RGB_POS_VAL_MINS": [
+   70,
+   17
+  ],
+  "RGB_POS_VAL_PLUS": [
+   67,
+   19
+  ],
+  "RIGHT_12PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_14PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_16PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_18PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_20PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_24PX": [
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6,
+   6
+  ],
+  "RIGHT_2PX": [
+   6
+  ],
+  "RIGHT_4PX": [
+   6,
+   6
+  ],
+  "RIGHT_6PX": [
+   6,
+   6,
+   6
+  ],
+  "RIGHT_8PX": [
+   6,
+   6,
+   6,
+   6
+  ],
   "RLENTICULAR_BRACKET": [
    12305
   ],
@@ -5902,6 +6053,34 @@
   ],
   "UMLAUT_U_SMALL": [
    252
+  ],
+  "UP_10PX": [
+   12,
+   12,
+   12,
+   12,
+   12
+  ],
+  "UP_12PX": [
+   12,
+   12,
+   12,
+   12,
+   12,
+   12
+  ],
+  "UP_2PX": [
+   12
+  ],
+  "UP_4PX": [
+   12,
+   12
+  ],
+  "UP_8PX": [
+   12,
+   12,
+   12,
+   12
   ],
   "U_WITH_ACUTE": [
    218
