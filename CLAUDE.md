@@ -2843,15 +2843,17 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the corner, so the panel reads as having slipped, and at its real 26.7 mm it
     leaves a gap on both sides. ⚠️ The display hangs off a ~40 mm cable, so where it
     ends up in the CASE is in no repo file — this is a layout rule, not a measurement.
-    - ⚠️ **It is the SCREEN that spans the corner, not the module — `w == aw`, no side
-      bezel at all.** The lit area meets the housing left and right and glass shows
-      only above and below, because that is what the module does when it is mounted
-      to the case wall. Growing the whole module keeps a side bezel and the screen
-      then stops short of the housing, which is the wrong picture. ⚠️ **The vertical
-      glass stays at its real 8.4 mm total and is NOT scaled with the screen**: the
-      screen is drawn ~1.7x life size to span the corner, and scaling the margin too
-      made the panel 33 mm of mostly-dark glass that read as a band. There is no
-      caption on it — a lit rectangle in a dark frame is already a screen.
+    - ⚠️ **The panel is FLUSH against the housing, not GROWN to reach it — and it took
+      three passes to separate those.** `w == aw`: the screen's inner edge meets the
+      case with no side bezel, and glass shows only above and below, which is what
+      the module does mounted to a case wall. The two wrong turns are worth knowing
+      because each looked like the ask: growing the whole MODULE to span the corner
+      keeps a side bezel, so the screen still stops short of the housing; growing the
+      SCREEN to span it fixes that and draws the panel ~1.7x life size — a dark band
+      two key rows tall where the keyboard has something the size of one key (the
+      corner is 37.6 mm and the screen 21.7). Only a corner narrower than the module
+      may shrink it. There is no caption on it — a lit rectangle in a dark frame is
+      already a screen.
   - ⚠️ **The grid search resolves the corner to 0.05U, which leaves the panel ~1 mm
       short of the case it is meant to meet** — so `exact_span` re-measures the one
       band the panel occupies off the polygon rather than off the grid. The inner edge

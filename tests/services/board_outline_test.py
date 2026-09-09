@@ -231,14 +231,11 @@ class StatusDisplayTest(unittest.TestCase):
         self.assertAlmostEqual(centre - left.cx, right.cx - centre, delta=0.03)
 
     def test_the_screen_has_NO_side_bezel_but_keeps_its_vertical_one(self):
-        """The panel is the SCREEN edge to edge: it meets the housing left and right,
-        and glass shows only above and below.
+        """The panel IS the screen edge to edge -- it meets the housing with no side
+        bezel, and glass shows only above and below.
 
-        Growing the whole module instead leaves a side bezel and the screen then
-        stops short of the case, which is the picture this replaced. The vertical
-        margin stays at its real 8.4 mm total even though the screen is drawn ~1.7x
-        life size -- scaled with it, the panel became 33 mm of mostly-dark glass and
-        read as a band rather than a display.
+        Keeping the module's side bezel leaves the screen stopping short of the case,
+        which is the picture this replaced.
         """
         for side, half in self.by_side.items():
             for d in half.displays:
@@ -251,12 +248,12 @@ class StatusDisplayTest(unittest.TestCase):
                                            % (side, (d.h - d.ah) * self.board.unit_mm))
 
     def test_a_panel_TOUCHES_the_case_edge_beside_it(self):
-        """It is grown to span its corner, so its inner edge meets the outline.
+        """It is placed flush against the housing, so its inner edge meets the outline.
 
-        The one that matters is the edge facing the layout's centre line: the other
-        side stops one clearance short of a keycap. `GRID_U` is the corner search's
-        own step, so this is "touching" to the resolution it was measured at, and it
-        still fails by a wide margin on a panel left at its real 26.7 mm width.
+        Only that edge -- the one facing the layout's centre line -- has a wall to
+        meet; the other faces keycaps. The panel is NOT grown to reach it (see the
+        size test below), it is moved. `GRID_U` is the corner search's own step, so
+        this is "touching" to the resolution the corner was measured at.
         """
         for side, half in self.by_side.items():
             for d in half.displays:
@@ -307,6 +304,23 @@ class StatusDisplayTest(unittest.TestCase):
                     self.assertLessEqual(off, 1e-3,   # the JSON rounds to 4 dp
                                          "%s panel corner %s is %.4fU outside the case"
                                          % (side, tuple(round(c, 3) for c in corner), off))
+
+    def test_a_panel_is_drawn_at_its_REAL_size(self):
+        """Not grown to fill its corner.
+
+        The corner is 37.6 mm wide and the module's screen 21.7, so spanning it drew
+        the panel about 1.7x life size -- a dark band two key rows tall where the
+        keyboard has something the size of one key. Only a corner narrower than the
+        module may shrink it, so this is an upper bound with an exact target.
+        """
+        for side, half in self.by_side.items():
+            for d in half.displays:
+                self.assertAlmostEqual(d.aw * self.board.unit_mm, 21.74, delta=0.1,
+                                       msg="%s screen is %.1f mm wide, expected 21.7"
+                                           % (side, d.aw * self.board.unit_mm))
+                self.assertAlmostEqual(d.h * self.board.unit_mm, 19.26, delta=0.1,
+                                       msg="%s panel is %.1f mm tall, expected 19.3"
+                                           % (side, d.h * self.board.unit_mm))
 
     def test_a_panel_does_not_overlap_any_key(self):
         for side, half in self.by_side.items():

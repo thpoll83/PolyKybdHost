@@ -49,7 +49,7 @@ DARK = {
 }
 LIGHT = {
     "scene": "#D9E5ED",
-    "plate_top": "#ECECEC", "plate_bottom": "#D6D6D6", "edge": "#5E8AA1",
+    "plate_top": "#DCDCDC", "plate_bottom": "#C2C2C2", "edge": "#5E8AA1",
     "glass": "#2A343A", "glass_edge": "#8AA3B0", "active": "#111C21",
     "active_edge": "#4E9FB2",
 }
