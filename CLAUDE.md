@@ -2501,6 +2501,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     GUI-subprocess tests **ERROR and masquerade as failures** — they are missing-dependency
     env failures, not regressions (confirm by `git stash` + re-running on the pristine tree).
     A fully green run prints `OK (skipped=N)` with the env-gated tests skipped, not errored.
+  - ⚠️ **A missing dependency DELETES tests, and the `Ran N` line is the only thing
+    that says so — the run still looks substantial.** A module that fails to import
+    contributes exactly ONE error and ZERO tests, so 24 unimportable modules read as
+    24 errors while quietly removing **465 tests**: measured 2026-09-09, the same tree
+    ran **1982** tests with `hid`/`requests`/`pynput` absent and **2447** with them
+    installed, `OK (skipped=60)`. The trap is that comparing a failure set against a
+    baseline then confirms only that YOUR branch added nothing — both runs are missing
+    the same 465 tests, so it comes back clean for a reason that has nothing to do with
+    coverage, and the device/core half of the suite has never run against the branch at
+    all. **Install the deps and read the count**; the failure list alone cannot tell a
+    green suite from an absent one. Same rule as the appending-tests-after-`__main__`
+    note, in the opposite direction.
 - **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
 - **Chromium is available headless in the dev/remote container — use it to LOOK at
   generated HTML/SVG rather than reading the markup.**
