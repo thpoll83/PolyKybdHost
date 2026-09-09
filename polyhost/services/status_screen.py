@@ -56,6 +56,7 @@ SPEED_FILL_H = SPEED_BOX_H - 6
 #: Brightness gauge (GAUGE_* mirror status_oled.c; FULL_BRIGHT mirrors config.h).
 GAUGE_SEGMENTS, GAUGE_BAR_W, GAUGE_PITCH, GAUGE_MIN_H = 10, 4, 6, 3
 FULL_BRIGHT = 50
+MAX_BRIGHT = 100  # RGB_MATRIX_MAXIMUM_BRIGHTNESS (split72/config.h)
 
 #: Small MSB-first bitmaps the panel draws directly, out of status_oled.c.
 SUN_BMP = [0x04, 0x00, 0x44, 0x40, 0x20, 0x80, 0x0e, 0x00, 0x1f, 0x00, 0xdf, 0x60,
@@ -247,7 +248,16 @@ def hue_name(hue, sat):
 
 
 def byte_to_percent(v):
+    """A 0..255 byte as a percentage. SATURATION only -- the value has a smaller
+    ceiling and its own helper below."""
     return (v * 100 + 127) // 255
+
+
+def val_to_percent(v):
+    """Mirror of status_oled.c val_to_percent() -- the VALUE is capped at
+    RGB_MATRIX_MAXIMUM_BRIGHTNESS, not 255, so it scales against that."""
+    v = min(v, MAX_BRIGHT)
+    return (v * 100 + MAX_BRIGHT // 2) // MAX_BRIGHT
 
 
 def brightness_to_level(contrast):
@@ -390,7 +400,7 @@ def render(side, faces, layer=0, layout="Qwerty", brightness=DEFAULT_BRIGHTNESS,
         draw_bitmap(setp, DROPLET_BMP, text_x, DROPLET_Y, DROPLET_W, DROPLET_H)
         draw(setp, small, text_x + DROPLET_W + SV_ICON_GAP, RGB_ROW_D,
              _cp("%d%%" % byte_to_percent(sat)))
-        vtxt = _cp("%d%%" % byte_to_percent(val))
+        vtxt = _cp("%d%%" % val_to_percent(val))
         vx = text_r - measure_width(small, vtxt)
         draw_bitmap(setp, SUN_SMALL_BMP, vx - SV_ICON_GAP - SUN_SMALL_W, SUN_SMALL_Y,
                     SUN_SMALL_W, SUN_SMALL_H)
