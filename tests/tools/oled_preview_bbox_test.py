@@ -210,6 +210,29 @@ class FontBboxTest(unittest.TestCase):
     def test_a_null_mid_pool_makes_every_mid_glyph_fall_back(self):
         self.assertEqual(self.measure([0x16, A]), self.measure([A]))
 
+    # -- HINT_BASE (\x17): the one op that UNDOES \x10 and \x16 -----------------
+    # Ported from the C suite's BaseUndoes* cases (base/tests/font_bbox_tests.cpp).
+    # Both size ops latch for the rest of the run and \x10 after \x16 only halves
+    # the mid face, so without this a small LABEL over a bigger VALUE cannot be
+    # written — the second line always came out the smaller one.
+    def test_base_undoes_small_for_the_rest_of_the_run(self):
+        self.assertEqual(self.measure([0x10, A, 0x17, A])[2], self.measure([A])[2])
+        # ...and it starts one HALF advance (4 of the font's 8) past the origin.
+        self.assertEqual(self.measure([0x10, A, 0x17, A])[1], 4 + self.measure([A])[1])
+        # Without the reset the whole run stays halved — the state it exists to leave.
+        self.assertNotEqual(self.measure([0x10, A, A])[2], self.measure([A])[2])
+
+    def test_base_undoes_mid(self):
+        self.assertEqual(self.measure_mid([0x16, A, 0x17, A])[2], self.measure([A])[2])
+
+    def test_base_alone_changes_nothing(self):
+        self.assertEqual(self.measure([0x17, A]), self.measure([A]))
+
+    def test_small_after_mid_halves_the_mid_face_rather_than_returning_to_base(self):
+        """⚠️ The reason HINT_BASE has to exist: \x10 after \x16 is NOT the base face."""
+        self.assertNotEqual(self.measure_mid([0x16, A, 0x10, A]),
+                            self.measure_mid([0x16, A, 0x17, A]))
+
     # -- the resolver ------------------------------------------------------
     def test_gap_record_falls_through_to_the_next_font(self):
         R = op.Renderer([make_gappy(), make_gap_filler()])
@@ -225,6 +248,7 @@ class FontBboxTest(unittest.TestCase):
         self.assertEqual(self.Rm.unsupported_ops([0x0E, 1, 2]), set())
         self.assertEqual(self.Rm.unsupported_ops([0x13, 1, 2, 3]), set())
         self.assertEqual(self.Rm.unsupported_ops([0x0F, A]), set())        # HALF
+        self.assertEqual(self.Rm.unsupported_ops([0x17, A]), set())        # BASE
         self.assertEqual(self.Rm.unsupported_ops([0x12, 1, 2]), {0x12})   # FRAME
         self.assertEqual(self.Rm.unsupported_ops([0x11, A]), {0x11})      # THIN
         # ...and HINT_MID counts as unsupported with no mid face loaded, since the

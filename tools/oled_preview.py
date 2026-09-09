@@ -48,8 +48,12 @@ OVERSHOOT = 2
 HINT_SMALL = 0x10      # rest of the run at half scale (kdisp_write_gfx_char_half)
 ALTGR_HALF_MIN_INK_H = 7   # halve the AltGr hint only when its ink is taller than this
 HINT_MID = 0x16        # rest of the run from the standalone 19px UI face
+HINT_BASE = 0x17       # ...and back to the caller pool at full size — the one op that
+                       # UNDOES the two above. Both latch, and \x10 after \x16 only
+                       # halves the mid face, so a small LABEL over a bigger VALUE
+                       # cannot be written without it.
 CURSOR_OPS = frozenset({0x05, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x18})
-SUPPORTED_OPS = CURSOR_OPS | {HINT_SMALL, HINT_MID,
+SUPPORTED_OPS = CURSOR_OPS | {HINT_SMALL, HINT_MID, HINT_BASE,
                               0x0E,   # MOVE  - absolute buffer position
                               0x0F,   # HALF  - one glyph halved, plotted at the cursor
                               0x13,   # BADGE - the lock-indicator box
@@ -804,6 +808,7 @@ class Renderer:
             if cp == 0x0d: x = 0; continue
             if cp == HINT_SMALL: small = True; continue
             if cp == HINT_MID: mid = True; continue
+            if cp == HINT_BASE: small = mid = False; continue
             # ⚠️ The composite ops are NOT measured, matching the firmware's own
             # RELATIVE bbox form (`bbox_walk` with resolve=false): MOVE names an
             # ABSOLUTE buffer position, and BADGE/ROT plot AT the cursor through
@@ -910,6 +915,7 @@ class Renderer:
             if cp == 0x0d: xc = x; continue
             if cp == HINT_SMALL: small = True; continue
             if cp == HINT_MID: mid = True; continue
+            if cp == HINT_BASE: small = mid = False; continue
             # ⚠️ MOVE is an ABSOLUTE buffer position, so it is an assignment, not an
             # offset -- and the firmware re-applies its jitter offset here, which is
             # 0 in a preview because nothing jitters a static render.

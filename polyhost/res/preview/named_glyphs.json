@@ -2110,6 +2110,13 @@
   "DONG_SIGN": [
    8363
   ],
+  "DOWN_10PX": [
+   5,
+   5,
+   5,
+   5,
+   5
+  ],
   "DOWN_2PX": [
    5
   ],
@@ -2871,6 +2878,9 @@
   ],
   "HEBREW_ZAYIN": [
    1494
+  ],
+  "HINT_BASE": [
+   23
   ],
   "HINT_ERASE": [
    20
@@ -4988,29 +4998,37 @@
   "REGISTERED_SIGN": [
    169
   ],
+  "RGB_POS_SATM_ICO": [
+   51,
+   1
+  ],
   "RGB_POS_SAT_ICON": [
    48,
-   2
+   1
   ],
   "RGB_POS_SAT_MINS": [
-   65,
-   21
+   68,
+   17
   ],
   "RGB_POS_SAT_PLUS": [
    65,
-   23
+   19
+  ],
+  "RGB_POS_VALM_ICO": [
+   50,
+   1
   ],
   "RGB_POS_VAL_ICON": [
    47,
-   3
+   1
   ],
   "RGB_POS_VAL_MINS": [
-   67,
-   21
+   70,
+   17
   ],
   "RGB_POS_VAL_PLUS": [
    67,
-   23
+   19
   ],
   "RIGHT_12PX": [
    6,
@@ -5076,7 +5094,20 @@
    6,
    6
   ],
+  "RIGHT_2PX": [
+   6
+  ],
+  "RIGHT_4PX": [
+   6,
+   6
+  ],
   "RIGHT_6PX": [
+   6,
+   6,
+   6
+  ],
+  "RIGHT_8PX": [
+   6,
    6,
    6,
    6
@@ -6022,6 +6053,24 @@
   ],
   "UMLAUT_U_SMALL": [
    252
+  ],
+  "UP_10PX": [
+   12,
+   12,
+   12,
+   12,
+   12
+  ],
+  "UP_12PX": [
+   12,
+   12,
+   12,
+   12,
+   12,
+   12
+  ],
+  "UP_2PX": [
+   12
   ],
   "UP_4PX": [
    12,
