@@ -226,6 +226,24 @@ def release_asset_urls(repo: str, tag: str) -> list:
     return parse_asset_urls(resp.text)
 
 
+def firmware_uf2_for(bin_url: str, uf2_urls) -> str:
+    """The firmware .uf2 that PAIRS with ``bin_url``, or "" when there is none.
+
+    ⚠️ NOT "the first .uf2 in the release". Firmware releases ship other UF2s —
+    ``polykybd-handedness-{left,right}_vX.Y.Z.uf2``, 512 bytes each, which write
+    only the handedness stamp sector — and a suffix match would happily return one
+    of those as the firmware image. The release build emits the firmware pair from
+    one stem (``<name>.bin`` / ``<name>.uf2``), so pairing on that stem picks the
+    right one and keeps picking it however many other UF2s a release gains."""
+    # Not just "is it empty": a bin_url that does not end in .bin would yield a
+    # nonsense stem and could pair with anything. The API path can hand us None
+    # when a release shipped no .bin at all, which is the common failed-build case.
+    if not bin_url or not bin_url.endswith(".bin"):
+        return ""
+    stem = bin_url[:-len(".bin")]
+    return next((u for u in uf2_urls if u == stem + ".uf2"), "")
+
+
 def _release_assets_via_web(repo: str, tag: str) -> dict:
     """Firmware asset URLs for a release WITHOUT the API — a dict with
     'bin'/'uf2'/'sig' keys for whichever assets are present (empty on failure).
@@ -234,13 +252,17 @@ def _release_assets_via_web(repo: str, tag: str) -> dict:
     its full suffix, and reversing the order would still work today only because
     ``"x.bin.sig".endswith(".bin")`` is False — an accident, not a guarantee."""
     assets = {}
+    uf2s = []
     for full in release_asset_urls(repo, tag):
         if full.endswith(".bin.sig"):
             assets.setdefault("sig", full)
         elif full.endswith(".bin"):
             assets.setdefault("bin", full)
         elif full.endswith(".uf2"):
-            assets.setdefault("uf2", full)
+            uf2s.append(full)
+    uf2 = firmware_uf2_for(assets.get("bin", ""), uf2s)
+    if uf2:
+        assets["uf2"] = uf2
     return assets
 
 
@@ -492,7 +514,9 @@ def check_fw_latest(current_version: str) -> Optional[FwUpCheckResult]:
         raise UpdateCheckError(f"Release tag {tag!r} is not a valid version") from None
 
     bin_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".bin")), None)
-    uf2_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".uf2")), None)
+    # Paired with the .bin, not "the first .uf2" — see firmware_uf2_for().
+    uf2_url = firmware_uf2_for(
+        bin_url or "", [a["browser_download_url"] for a in assets if a["name"].endswith(".uf2")]) or None
     sig_url = next((a["browser_download_url"] for a in assets if a["name"].endswith(".bin.sig")), None)
 
     # Cache ETag and asset URLs regardless of whether an update is available,

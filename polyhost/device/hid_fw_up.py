@@ -31,9 +31,10 @@ FW_SIG_LEN = 64
 
 FW_UP_CHUNK_SIZE  = 56
 FW_UP_VERSION_LEN = 16
-FW_UP_MAX_SIZE    = 0x1F6000      # ~2 MB hard limit: the staging region minus the 4 KB
-                                  # header, the 32 KB self-apply progress log AND the 4 KB
-                                  # crash-record archive sector (FW_CRASH_LOG_OFFSET) that sit
+FW_UP_MAX_SIZE    = 0x1F5000      # ~2 MB hard limit: the staging region minus the 4 KB
+                                  # header, the 32 KB self-apply progress log, the 4 KB
+                                  # crash-record archive sector (FW_CRASH_LOG_OFFSET) and the
+                                  # 4 KB handedness stamp (FW_HAND_STAMP_OFFSET) that sit
                                   # at the top of it. Must match FW_UP_MAX_SIZE in qmk
                                   # .../base/fw_staging.h, where a _Static_assert pins the
                                   # image below the log -- an image that reached the log
