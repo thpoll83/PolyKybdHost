@@ -11,8 +11,13 @@ Two features, one mechanism:
 * **Shortcut icons** — a per-key icon derived from the app's own shortcut
   labels, only where the template does not already draw something.
 
-Status: geometry settled and measured (below). `icon_catalog.py` and
-`shortcut_icons.py` are shipped and tested. Nothing else is built yet.
+Status: **Phase 0 and Phase 1 are built, tested and pushed.** The keyboard draws
+the focused app's mark on ESC, for an app with a template and for one without.
+Phase 2 (shortcut icons on other keys) and Phase 3 (the curation file) are next.
+
+⚠️ **Read A.3 before judging what Phase 1 delivers** — the catalog carries no
+Microsoft Office, no Adobe and no VS Code, which this document previously got
+wrong.
 
 ---
 
@@ -154,37 +159,46 @@ regression test with two overlapping templates.
 
 ## Part C — work breakdown
 
-### Phase 0 — prerequisite (small)
+### Phase 0 — prerequisite (small) — ✅ DONE (`3401720`)
 
-* Fix `content_key` to use each converter's own filename.
-* Test: two synthetic templates that DO overlap on (modifier, keycode) get
-  distinct pool slots. Fails against today's code.
+* `content_key` uses each converter's own filename (`zip(filenames, converters)`).
+* The regression test drives two overlapping templates through the real send
+  path and pins all three consequences (two slots, both filenames recorded, the
+  mapping pointing at the later template's image). Confirmed to fail against the
+  pre-fix loop.
 
-### Phase 1 — program icon on ESC (self-contained, ships alone)
+### Phase 1 — program icon on ESC — ✅ DONE (`4e23c70`, `84e9223`)
 
-* ✅ **`polyhost/services/app_icons.py` + `polyhost/res/app_icons.yaml` + 38
-  offline tests (16/16 mutations caught).** Slug resolution, fetch, cache,
-  render. Verified end to end against the real pipeline: 12 marks rendered,
-  ESC untouched on **12 of 12** (100 % of the legend's 251 lit pixels survive
-  the courtyard clear).
-* `polyhost/services/app_icons.py` — slug resolution + fetch + cache, mirroring
-  `icon_catalog.py`'s shape (`fetch`, cache dir, `_is_svg` validation).
-  * app name → Simple Icons slug. Start with an explicit map in
-    `polyhost/res/app_icons.yaml` (`gimp-2.0` → `gimp`), falling back to a
-    normalised-name guess. **Not** fuzzy matching — a wrong logo is worse than
-    none.
-  * render: rasterise at the size whose *ink* fits 40×40, aspect preserved,
-    right-aligned, vertically centred → boolean mask → `OverlayData`.
-* `SyntheticConverter` — duck-typed `extract_overlays(modifier)`, returning
-  `{KC_ESCAPE: OverlayData}` for `Modifier.NO_MOD`.
-* Hook: where the app is resolved (`OverlayHandler` → `PolyCore.send_overlay_data`),
-  append the synthetic converter and a pseudo-filename (`@prog:<slug>`).
-* Settings: feature on by default; `shortcut_icon_auto_fetch` (default True)
-  gates the *network*, not the feature — off means cache-only (E.1).
-* Fetch runs on the core-owned thread of E.5, never the HID worker.
-
-**Deliverable:** focus GIMP, ESC shows Wilber. Works for an app with a template
+**Deliverable met:** focus GIMP, ESC shows Wilber — for an app with a template
 and for one without.
+
+| shipped | what it is |
+|---|---|
+| `services/app_icons.py` + `res/app_icons.yaml` | slug resolution, fetch, cache, render (38 tests, 16/16 mutations caught) |
+| `services/app_icon_fetcher.py` | the queue that keeps the fetch off the caller's thread (11 tests, 10/10) |
+| `device/synthetic_overlay.py` | the duck-typed converter + the per-device `OverlayData` factory |
+| `poly_kybd.send_overlays_mru(..., synthetic=)` | template-wins coverage rule (7 tests, 6/6) |
+| `PolyCore` + `OverlayHandler.current_app` | the wiring, incl. the no-template case (10 tests, 8/8) |
+
+Measured, not argued: ESC untouched on **12 of 12** marks (all 251 lit legend
+pixels survive the courtyard clear), and end to end on the fake device
+`org.gimp.GIMP` → `gimp` → 581 lit pixels → 8 HID reports → ESC mapped to the
+slot filed under `@prog:gimp`.
+
+Two rules turned out to be the whole contract, and both are pinned:
+
+* a **real template wins** any key the synthetic source also offers, decided
+  before the upload rather than by a later mapping write;
+* the coverage key is **(modifier, keycode)**, not keycode — a template drawing
+  ESC under Ctrl says nothing about bare ESC.
+
+⚠️ **The pseudo-filename carries the slug because it is also the CACHE KEY.** A
+fixed `@prog` would file the second app's mark under the first's key, hit the MRU
+cache, skip the upload and draw GIMP's logo on an Inkscape window.
+
+⚠️ **One bug came from running it, not reading it:** a slug is neither queued nor
+cached while in flight, so the poll loop re-queued it every tick — two fetches
+and two `on_ready`s, the second re-sending every overlay for nothing.
 
 ### Phase 2 — shortcut fallback
 
