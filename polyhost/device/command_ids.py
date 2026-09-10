@@ -74,7 +74,7 @@ class Cmd(Enum):
     # 1 = the slave's last pulled record, 2 = clear the archive. Reply body is
     # [flags][48-byte poly_crash_record_t] — see services/crash_report.py.
     CRASH_RECORD = 39
-    # Agent ("AI") status light (protocol v17+): data[2] 0xFF queries, otherwise the
+    # Agent ("AI") status light (protocol v18+): data[2] 0xFF queries, otherwise the
     # AiState to show on the AI key. RAM only on the keyboard -- a status about a host
     # process means nothing after a reboot -- so the host re-pushes it on connect.
     AI_STATE = 40

@@ -1084,7 +1084,7 @@ class PolyCore(Observable):
                 # Re-push the agent status: the keyboard holds it in RAM only (a
                 # status about a host process is a lie after a reboot), so a
                 # reconnect would otherwise leave the key dark while an agent is
-                # still working. Self-gated on protocol v17+, and skipped when
+                # still working. Self-gated on protocol v18+, and skipped when
                 # nothing has reported — pushing OFF to a key that is already off
                 # buys nothing.
                 if connected_now and self._ai_state and self.ai_key_enabled():

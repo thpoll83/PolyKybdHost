@@ -73,7 +73,7 @@ M_REPLAY_ANIM = "anim.replay"            # {} -> (ok, payload)  replay the start
 # as crash_report.CrashRecord.to_dict() (or None); CLEAR erases the keyboard's archive.
 M_CRASH_GET = "crash.get"                # {"which": 0|1} -> (ok, record|None)
 M_CRASH_CLEAR = "crash.clear"            # {} -> (ok, payload)
-# The agent status light (firmware protocol v17+) and the window its key raises.
+# The agent status light (firmware protocol v18+) and the window its key raises.
 # STATUS needs no device I/O — it answers from the last pushed state plus the stored
 # target — so a CLI call is cheap even while the worker is busy flashing.
 M_AI_STATE_SET = "ai.state.set"          # {"value": 0..3 | "busy"} -> (ok, payload)

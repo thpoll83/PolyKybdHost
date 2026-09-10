@@ -543,7 +543,7 @@ def _ai_push_remote(args):
 
 
 def _cmd_ai(client, args):
-    """The agent status light and the window its key raises (firmware v17+)."""
+    """The agent status light and the window its key raises (firmware v18+)."""
     if args.ai_action == "state":
         if args.value is None:
             value = client.call(protocol.M_AI_STATE_GET, {})
@@ -577,7 +577,7 @@ def _cmd_ai(client, args):
             print(f"  - {title}")
     if not info.get("supported"):
         print("note:      this keyboard's firmware is too old for the status light "
-              "(needs protocol v17+); the key press still works.")
+              "(needs protocol v18+); the key press still works.")
     return 0
 
 
@@ -1013,7 +1013,7 @@ def build_parser():
     p_glyph_size.set_defaults(func=_cmd_glyph_size)
 
     p_ai = sub.add_parser(
-        "ai", help="the agent status light and the window its key raises (firmware v17+)")
+        "ai", help="the agent status light and the window its key raises (firmware v18+)")
     p_ai.add_argument(
         "ai_action", nargs="?", choices=["status", "state", "target"], default="status",
         help="'state' sets what the AI key shows, 'target' sets which window it "
