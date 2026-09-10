@@ -60,11 +60,50 @@ class MatchTest(unittest.TestCase):
         """
         self.assertIsNone(si.match("Autosave Document"))
 
-    def test_fuzzy_covers_wording_drift_not_translation(self):
-        # Morphology: fuzzy earns its keep here.
+    def test_spelling_folds_are_exact_not_fuzzy(self):
+        """The small orthographic variants resolve by RULE, with no scoring.
+
+        Plural s, British -our/-ise, and the singular/plural mismatch between a
+        label and the lexicon. Each returns the "spelling" rule, which means a
+        deterministic fold landed on a real entry -- not a similarity score that
+        happened to clear a threshold.
+        """
+        for label, concept in (("Saves", "save"), ("Bookmarks", "bookmark"),
+                               ("Favourites", "bookmark"), ("Option", "settings"),
+                               ("Setting", "settings"), ("Preference", "settings")):
+            m = si.match(label)
+            self.assertIsNotNone(m, label)
+            self.assertEqual(m.concept, concept, label)
+            self.assertIn(m.rule, ("exact", "spelling"), label)
+
+    def test_folding_is_symmetric(self):
+        """Both sides are folded, or the rules only work in one direction.
+
+        The lexicon stores "preferences"; a label reading "Preference" folds to
+        itself, so without folding the TABLE too the two never meet and only a
+        similarity score could join them.
+        """
+        self.assertEqual(si.fold_spelling("preferences"),
+                         si.fold_spelling("preference"))
         self.assertIsNotNone(si.match("Preference"))
-        # Translation: it cannot, and must not pretend to. A wrong icon is worse
-        # than none, because the caller would draw it instead of the label text.
+
+    def test_folds_do_not_collide_two_concepts(self):
+        """No two lexicon phrases may fold to the same string."""
+        seen: dict[str, str] = {}
+        for phrase, concept in si._FOLDED_PHRASES:
+            if phrase in seen:
+                self.assertEqual(seen[phrase], concept,
+                                 f"{phrase!r} folds from two concepts")
+            seen[phrase] = concept
+
+    def test_short_words_keep_their_trailing_s(self):
+        """"News" must not fold to "new" and take the new-document icon."""
+        self.assertEqual(si.fold_spelling("news"), "news")
+        self.assertIsNone(si.match("News"))
+
+    def test_translation_is_not_reachable_by_any_rule(self):
+        # A wrong icon is worse than none: the caller would draw it INSTEAD of
+        # the label text, which is the correct fallback on a non-English UI.
         for foreign in ("Speichern", "Enregistrer", "Guardar", "Salva"):
             self.assertIsNone(si.match(foreign), f"{foreign} should not match")
 
@@ -95,12 +134,22 @@ class MatchTest(unittest.TestCase):
             self.assertLess(ratio(a, b), si.FUZZY_FLOOR, f"{a}~{b}")
 
     def test_short_near_miss_words_do_not_match(self):
-        # The two that shipped wrong at the old 0.72 floor.
-        self.assertIsNone(si.match("Edit"))
-        self.assertIsNone(si.match("Document"))
+        # The two that shipped wrong at the old 0.72 floor, plus News, which the
+        # fuzzy rule still caught at 0.857 after the plural guard stopped the fold.
+        for label in ("Edit", "Document", "News"):
+            self.assertIsNone(si.match(label), label)
+            self.assertIsNone(si.match(label, allow_fuzzy=True), label)
 
-    def test_min_confidence_gates_the_fuzzy_rule(self):
-        self.assertIsNone(si.match("Preference", min_confidence=0.99))
+    def test_fuzzy_is_opt_in(self):
+        """Off by default: measured, it produced 0 correct and 3 wrong matches.
+
+        The cases it was carrying -- plural s, -our/-ise -- are handled by the
+        spelling folds now, exactly and without a threshold. What is left is a
+        typo net, which the caller can switch on if it wants one.
+        """
+        self.assertIsNone(si.match("Maximiz", allow_fuzzy=False))
+        self.assertIsNotNone(si.match("Maximiz", allow_fuzzy=True))
+        self.assertIsNone(si.match("Maximiz", min_confidence=0.99, allow_fuzzy=True))
 
 
 class GlyphAvailabilityTest(unittest.TestCase):

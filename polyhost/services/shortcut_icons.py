@@ -104,6 +104,49 @@ _PHRASES: list[tuple[str, str]] = sorted(
 # morphology (>= 0.875) and false friends (<= 0.762).
 FUZZY_FLOOR = 0.85
 
+# --- spelling folds ---------------------------------------------------------
+#
+# The small, RULE-SHAPED variations between one app's wording and another's:
+# a plural s, British -our/-ise, "dialogue"/"dialog", "centre"/"center". These are
+# deterministic, so folding them and re-matching gives an EXACT hit -- no ratio, no
+# threshold, and no possibility of the near-miss nonsense a character-similarity
+# score produces ("edit" ~ "exit" at 0.75).
+#
+# ⚠️ A fold can DESTROY a word that already matched: "store" is a phrase for save,
+# and the -re/-er rule turns it into "stoer". That is safe here only because folding
+# runs AFTER the unfolded rules, never instead of them -- a fold can add a match, it
+# can never take one away. Keep that ordering.
+#
+# ⚠️ A fold is also only ever used to PROBE the lexicon. "four" -> "for" and
+# "hour" -> "hor" are wrong as English, and harmless as probes, because neither
+# result is a lexicon entry so neither produces an icon.
+_FOLDS = (
+    (re.compile(r"our\b"), "or"),        # colour -> color, favourite -> favorite
+    (re.compile(r"ise\b"), "ize"),       # maximise -> maximize
+    (re.compile(r"isation\b"), "ization"),
+    (re.compile(r"ue\b"), ""),           # dialogue -> dialog, catalogue -> catalog
+    (re.compile(r"([^aeiou])re\b"), r"\1er"),   # centre -> center, metre -> meter
+)
+
+# Below this length a trailing "s" is more likely part of the word than a plural.
+# "News" (4) must not fold to "new" and take the new-document icon; "Finds" (5) -> "find"
+# is the case worth having.
+_MIN_PLURAL_LEN = 5
+
+
+def _fold_word(word: str) -> str:
+    if len(word) >= _MIN_PLURAL_LEN and word.endswith("s") and not word.endswith("ss"):
+        word = word[:-1]
+    for pattern, repl in _FOLDS:
+        word = pattern.sub(repl, word)
+    return word
+
+
+def fold_spelling(text: str) -> str:
+    """Canonicalise the small orthographic variants, word by word."""
+    return " ".join(_fold_word(w) for w in text.split())
+
+
 _STRIP_TRAILING = re.compile(r"(\.\.\.|…)\s*$")
 _PARENTHETICAL = re.compile(r"\s*\([^)]*\)")
 _NON_WORD = re.compile(r"[^\w\s]")
@@ -124,6 +167,16 @@ def normalize(label: str) -> str:
     return _SPACES.sub(" ", s).strip().lower()
 
 
+# The lexicon folded the same way a label is, so the comparison is symmetric.
+# Without this the folds are one-sided: the table stores "preferences" and a label
+# reading "Preference" folds to itself, so the two never meet and only a similarity
+# score could join them. Built once, and ordered like _PHRASES.
+_FOLDED_PHRASES: list[tuple[str, str]] = sorted(
+    ((fold_spelling(phrase), concept) for phrase, concept in _PHRASES),
+    key=lambda pc: (-len(pc[0].split()), -len(pc[0]), pc[0]),
+)
+
+
 @dataclass(frozen=True)
 class IconMatch:
     codepoint: int
@@ -136,7 +189,8 @@ class IconMatch:
         return chr(self.codepoint)
 
 
-def match(label: str, min_confidence: float = 0.6) -> IconMatch | None:
+def match(label: str, min_confidence: float = 0.6,
+          allow_fuzzy: bool = False) -> IconMatch | None:
     """Best glyph for a label, or None when nothing clears `min_confidence`.
 
     Four rules, tried in descending confidence. The confidence is the point: a
@@ -147,24 +201,22 @@ def match(label: str, min_confidence: float = 0.6) -> IconMatch | None:
     text = normalize(label)
     if not text:
         return None
+
+    # 1-3. Exact phrase, contained phrase, then a single distinctive word.
+    hit = _literal_rules(text)
+    if hit is not None:
+        return hit
+
+    # 4. The same three rules again over the spelling-folded label, so a plural s
+    #    or a British -our/-ise still lands on an EXACT entry rather than needing a
+    #    similarity score. Deterministic, hence the high confidence.
+    folded = fold_spelling(text)
+    hit = _literal_rules(folded, _FOLDED_PHRASES)
+    if hit is not None:
+        return IconMatch(hit.codepoint, hit.concept,
+                         0.95 if hit.rule == "exact" else 0.85, "spelling")
+
     words = set(text.split())
-
-    # 1. The whole label IS a known phrase.
-    for phrase, concept in _PHRASES:
-        if text == phrase:
-            return IconMatch(LEXICON[concept][0], concept, 1.0, "exact")
-
-    # 2. The label CONTAINS a known phrase as whole words ("Find Next" in
-    #    "Find Next Occurrence"). Longest phrase first, so the most specific wins.
-    for phrase, concept in _PHRASES:
-        parts = phrase.split()
-        if len(parts) > 1 and _contains_sequence(text.split(), parts):
-            return IconMatch(LEXICON[concept][0], concept, 0.9, "phrase")
-
-    # 3. A single distinctive word ("Save" inside "Autosave Document").
-    for phrase, concept in _PHRASES:
-        if " " not in phrase and phrase in words:
-            return IconMatch(LEXICON[concept][0], concept, 0.75, "keyword")
 
     # 4. Fuzzy, for MORPHOLOGY only -- "preference" vs "preferences", "maximise"
     #    vs "maximize". Restricted to single-word labels against single-word
@@ -185,11 +237,18 @@ def match(label: str, min_confidence: float = 0.6) -> IconMatch | None:
     #    posts came back as "Document" -> help and "Edit" -> quit, both confident
     #    and both nonsense. A new word landing inside that gap means the floor has
     #    to be RE-DERIVED from the data, not nudged.
-    if len(words) != 1:
+    if not allow_fuzzy or len(words) != 1:
         return None
     best, best_ratio, best_concept = None, 0.0, ""
     for phrase, concept in _PHRASES:
         if " " in phrase:
+            continue
+        # The plural guard declined to strip this "s" (too short a word), and the
+        # fuzzy rule must not quietly undo that -- "news" scores 0.857 against
+        # "new", clearing the floor and putting a new-document icon on an RSS
+        # shortcut. A guard the next rule can defeat is not a guard.
+        if (len(text) < _MIN_PLURAL_LEN and text.endswith("s")
+                and text[:-1] == phrase):
             continue
         ratio = difflib.SequenceMatcher(None, text, phrase).ratio()
         if ratio > best_ratio:
@@ -197,6 +256,23 @@ def match(label: str, min_confidence: float = 0.6) -> IconMatch | None:
     if best is not None and best_ratio >= max(min_confidence, FUZZY_FLOOR):
         return IconMatch(LEXICON[best_concept][0], best_concept,
                          round(best_ratio, 3), "fuzzy")
+    return None
+
+
+def _literal_rules(text: str, table=None) -> IconMatch | None:
+    """Exact phrase, then contained phrase, then single keyword -- no scoring."""
+    table = _PHRASES if table is None else table
+    words = set(text.split())
+    for phrase, concept in table:
+        if text == phrase:
+            return IconMatch(LEXICON[concept][0], concept, 1.0, "exact")
+    for phrase, concept in table:
+        parts = phrase.split()
+        if len(parts) > 1 and _contains_sequence(text.split(), parts):
+            return IconMatch(LEXICON[concept][0], concept, 0.9, "phrase")
+    for phrase, concept in table:
+        if " " not in phrase and phrase in words:
+            return IconMatch(LEXICON[concept][0], concept, 0.75, "keyword")
     return None
 
 
