@@ -1,0 +1,48 @@
+# Application name -> Simple Icons slug, for the program icon drawn on ESC.
+#
+# Only consulted when the normalised executable name does NOT already equal the
+# slug: "inkscape", "gimp-2.0", "krita", "figma" and about twenty others resolve
+# on their own (see app_icons.normalise). This file is for the cases where the
+# binary and the brand disagree.
+#
+# The key may be a comma-separated list, matched against the raw app name the
+# window tracker reports and against its normalised form. A value of `null`
+# means "never guess for this one" -- the way to suppress a guess that lands on
+# the wrong brand, which is the one failure the resolver cannot detect itself.
+#
+# ⚠️ Every slug here was verified against simple-icons 15.22.0 (the pinned
+# version -- v16 REMOVED brands, see app_icons.py). Do not add one from memory:
+# a slug that does not exist costs a fetch and a curation entry on every switch
+# to that app, and a slug that exists for a DIFFERENT brand draws a wrong logo.
+#
+# ⚠️ THE CATALOG HAS NO MICROSOFT OFFICE, NO ADOBE AND NO VS CODE. winword,
+# excel, powerpnt, outlook, teams, photoshop, illustrator, afterfx, devenv and
+# code are absent by the project's own trademark policy, in every version, so
+# no entry here can fix them. They land in the curation file and stay there
+# until the program icon can also read the OS's own icon for the process.
+
+chrome: googlechrome
+vlc: vlcmediaplayer
+notepad++: notepadplusplus
+resolve: davinciresolve
+
+# LibreOffice reports its module in the title, not the executable.
+soffice, soffice.bin, startcenter: libreoffice
+
+# JetBrains ships one binary per IDE, all with a 64-bit suffix the version
+# stripper does not touch (it only removes a trailing version).
+idea: intellijidea
+jetbrains-pycharm, jetbrains-pycharm-ce, pycharm64: pycharm
+webstorm64: webstorm
+goland64: goland
+rider64: rider
+datagrip64: datagrip
+phpstorm64: phpstorm
+rubymine64: rubymine
+studio64: androidstudio
+
+obs, obs64: obsstudio
+nvim: neovim
+emacs: gnuemacs
+codium: vscodium
+thunderbird-bin: thunderbird

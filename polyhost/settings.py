@@ -109,6 +109,12 @@ class PolySettings:
             # base legend at any measured size -- but they are where the firmware
             # draws the Shift preview and the AltGr hint.
             "shortcut_icon_placement": "lower_left",
+            # May this install reach the catalog for an icon it has not cached?
+            # ⚠️ The switch is over RETRIEVING, not over the feature: off means
+            # cache-only, so apps already fetched keep their icon and only a new
+            # one goes without. Turning it off on a metered or air-gapped machine
+            # must not take away icons that are already on disk.
+            "shortcut_icon_auto_fetch": True,
             # Developer mode: reveals the tray's Developer submenu and the
             # `dev_`-prefixed settings below, and allows key injection. Formerly
             # implied by `--debug`; it is a persisted setting because under

@@ -22,7 +22,7 @@ Status: geometry settled and measured (below). `icon_catalog.py` and
 
 | property | value |
 |---|---|
-| source | [Simple Icons](https://simpleicons.org) — CC0-1.0, single-path monochrome SVG, 24×24 box |
+| source | [Simple Icons](https://simpleicons.org) **15.22.0, pinned** — CC0-1.0, single-path monochrome SVG, 24×24 box (⚠️ no Office/Adobe/VS Code — A.3) |
 | placement | **right-aligned**, vertically centred → the right-hand **40×40** square |
 | size | fitted to 40×40, aspect preserved |
 | rasteriser | `cairosvg` (today a `tools/` dep — this makes it a runtime one) |
@@ -60,15 +60,40 @@ about 42 % of the legend survives. Full table in `icon_catalog.py`.
 
 ### A.3 Measured facts worth not re-deriving
 
-* Simple Icons covers **41 of 42** probed apps (only TeXstudio missing), Office
-  included. At full height essentially all read; duds are Autodesk (generic
-  slab) and Obsidian (blob at 1-bit).
-* Lit area: median 853 px of 2880 (30 %), OBS 322 → Discord 1400.
+⚠️ **CORRECTED 2026-09-10 — the coverage claim here was WRONG, and the correction
+is the most important fact in this document.** It read *"Simple Icons covers 41 of
+42 probed apps, Office included"*. Checked against the CDN's own
+`data/simple-icons.json`, by slug **and** by title, in both versions:
+
+| probe | 15.22.0 | 16.30.0 |
+|---|---|---|
+| `microsoftexcel` / `microsoftoutlook` / `microsoftteams` | absent | absent |
+| `adobephotoshop` / `illustrator` / `aftereffects` | absent | absent |
+| `visualstudiocode` | absent | absent |
+| `slack` | **present** | **absent** |
+| `gimp` `inkscape` `kicad` `krita` `figma` `libreoffice` `obsstudio` `zoom` | present | present |
+
+So the catalog carries **no Microsoft Office, no Adobe and no VS Code, in any
+version** — the project's own trademark policy — and those are among the most
+used apps here. Measured against this repo's shipped `overlay-mapping.poly.yaml`,
+a normalised-name guess resolves **24 of 57** app names; the slug map lifts that,
+and `winword` / `excel` / `powerpnt` / `outlook` / `teams` / `photoshop` /
+`illustrator` / `afterfx` / `devenv` / `code` / `explorer` stay unreachable.
+
+**The complement that closes it is the OS's OWN icon for the running process** —
+the exe's resource icon on Windows, the `.desktop` + hicolor theme on Linux, the
+bundle's `.icns` on macOS. Always exact, no catalog, no trademark question. It is
+a per-platform lift and is **not** in this plan; the catalog is the cheap 60 %.
+
+* ⚠️ **THE VERSION IS PINNED (15.22.0) and a newer pin is NOT a superset.** v16
+  has 76 more entries and dropped Slack. `@latest` resolves to 15.22.0 today
+  (`x-jsd-version`), so leaving it unpinned works right up until npm's `latest`
+  tag moves, at which point every dropped mark vanishes with no error anywhere.
 * ⚠️ **Wordmarks survive and matter** — KiCad and Zoom read *because* the panel
   is landscape. A square scheme would have discarded them.
 * ⚠️ **The `simple-icons-font` webfont is not a shortcut.** A 1.4 MB TTF that
-  would reuse the existing `ImageFont` path with no new dependency — but at the
-  same version (16.30.0) it has **no `microsoft*` slugs**, no VS Code, no Slack.
+  would reuse the existing `ImageFont` path with no new dependency — but it is
+  the same collection, so it has the same hole.
 * Trademark: the collection is CC0, the marks are their owners'. Identifying the
   focused app is ordinary use; worth a line in the user docs, and a reason not
   to advertise a bundled logo cache.
@@ -137,6 +162,11 @@ regression test with two overlapping templates.
 
 ### Phase 1 — program icon on ESC (self-contained, ships alone)
 
+* ✅ **`polyhost/services/app_icons.py` + `polyhost/res/app_icons.yaml` + 38
+  offline tests (16/16 mutations caught).** Slug resolution, fetch, cache,
+  render. Verified end to end against the real pipeline: 12 marks rendered,
+  ESC untouched on **12 of 12** (100 % of the legend's 251 lit pixels survive
+  the courtyard clear).
 * `polyhost/services/app_icons.py` — slug resolution + fetch + cache, mirroring
   `icon_catalog.py`'s shape (`fetch`, cache dir, `_is_svg` validation).
   * app name → Simple Icons slug. Start with an explicit map in
