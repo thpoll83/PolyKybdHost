@@ -15,17 +15,26 @@ try:
     from polyhost.gui.layout_dialog.qmk_keycode_helper import (
         category_order, polykybd_category)
     from polyhost.services import custom_keycodes as ck
-    # ⚠️ The BINDING is load-bearing, whatever a scanner says about the name never
-    # being read: PyQt owns the C++ QApplication when it is constructed from Python,
-    # so dropping the only reference collects it and the next QWidget ABORTS the
-    # interpreter ("Must construct a QApplication before a QWidget", SIGABRT --
-    # measured, not assumed). Nine sibling test files carry the same line.
     _APP = QApplication.instance() or QApplication([])
     _IMPORT_ERR = None
 except Exception as e:  # pragma: no cover
     _IMPORT_ERR = e
 
 KC_AI = 0x7E26
+
+
+def setUpModule():
+    """Pin the QApplication reference for the life of the module.
+
+    `_APP` looks unused -- it is not. PyQt owns the C++ QApplication when it is
+    constructed from Python, so dropping the only reference collects it and the
+    next QWidget ABORTS the interpreter ("Must construct a QApplication before a
+    QWidget", SIGABRT -- measured, not assumed; and an abort is also how it would
+    present in a run, since the process dies before unittest prints anything).
+    Asserting it here is what says so, to a reader and to a static analyser alike.
+    """
+    if _IMPORT_ERR is None:
+        assert _APP is not None
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"Qt unavailable: {_IMPORT_ERR}")
