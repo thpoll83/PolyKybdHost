@@ -141,10 +141,22 @@ class LegendClearanceTest(unittest.TestCase):
                 self.assertLessEqual(self._left_edge(name), self.LEGEND_RIGHT)
         self.assertIn(ic.DEFAULT_PLACEMENT, ("lower_left", "upper_left"))
 
-    def test_the_default_height_stays_on_the_measured_plateau(self):
-        """16 costs 8 pairs 2 px each; 20 costs 153 pairs up to 22 px."""
-        self.assertLessEqual(ic.DEFAULT_ICON_HEIGHT, 16)
-        self.assertGreaterEqual(ic.DEFAULT_ICON_HEIGHT, 12)
+    def test_the_default_height_fits_the_panel_in_every_corner(self):
+        """The real constraint, now that overlap is not one.
+
+        The firmware clears a courtyard around the overlay, so an icon over the
+        legend reads cleanly rather than muddling -- what a bigger icon costs is
+        legend pixels, which is a judgement (32 keeps about half) rather than a
+        bound. What is NOT a judgement is fitting: an icon taller than the panel
+        would be clipped by the transport, silently.
+        """
+        h = ic.DEFAULT_ICON_HEIGHT
+        for name in ic.PLACEMENTS:
+            with self.subTest(name):
+                x, y = ic.place(h, h, name)
+                self.assertGreaterEqual(min(x, y), 0)
+                self.assertLessEqual(x + h, ic.PANEL_W)
+                self.assertLessEqual(y + h, ic.PANEL_H)
 
 
 class RenderTest(unittest.TestCase):
@@ -175,12 +187,14 @@ class RenderTest(unittest.TestCase):
         blank areas leave the legend underneath intact. A full-frame icon would
         erase the letter; a corner one punches in beside it.
         """
-        mask = self._mask(height=16)
+        mask = self._mask()                     # the SHIPPED height, not a small one
         self.assertTrue(mask.any(), "no ink drawn at all")
-        self.assertLess(mask.sum(), ic.PANEL_W * ic.PANEL_H // 4)
+        self.assertLess(mask.sum(), ic.PANEL_W * ic.PANEL_H // 2)
 
     def test_the_default_places_it_bottom_LEFT(self):
-        mask = self._mask(height=16)
+        """Drawn small on purpose: at the shipped height the icon spans more
+        than half the panel, so a quadrant test would say nothing."""
+        mask = self._mask(height=12)
         rows = mask.any(axis=1).nonzero()[0]
         cols = mask.any(axis=0).nonzero()[0]
         self.assertLess(cols.max(), ic.PANEL_W // 2, "ink in the right half")
@@ -194,7 +208,7 @@ class RenderTest(unittest.TestCase):
         }
         for name, (want_right, want_low) in quadrant.items():
             with self.subTest(name):
-                mask = self._mask(height=16, placement=name)
+                mask = self._mask(height=12, placement=name)
                 rows = mask.any(axis=1).nonzero()[0]
                 cols = mask.any(axis=0).nonzero()[0]
                 is_right = cols.min() > ic.PANEL_W // 2

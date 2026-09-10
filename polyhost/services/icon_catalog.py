@@ -55,44 +55,42 @@ HTTP_TIMEOUT = 15
 PLACEMENTS = ("lower_left", "lower_right", "upper_left", "upper_right", "right")
 DEFAULT_PLACEMENT = "lower_left"
 
-# ⚠️ THE LOWER-LEFT CORNER IS THE CONTESTED ONE, not the free one. The base
-# legend is LEFT-aligned from x~0 and descends below the baseline, so it comes
-# straight down into that corner. Measured through the shipped renderer
-# (tools/oled_preview.py against res/preview/, origin x=28 baseline=23):
+# ⚠️ AN OVERLAP IS NOT A COLLISION -- the firmware CLEARS A COURTYARD around the
+# overlay's ink before drawing it, so the icon always lands on cleared black and
+# can never merge with the letter underneath. `copy_overlay_to_buffer` calls
+# `kdisp_clear_rowmajor_courtyard(..., KDISP_CY_DEFAULT)`, a Chebyshev-3 dilation
+# of the overlay mask (per horizontal run: +-3 rows, +-3 columns).
 #
-#   plain legend   S B W M Q @    ink x 0..24, y 1..25
-#   with descender g y j p q      ink x 0..14, y 0..27
+# So the cost of a bigger icon is not muddle, it is legend PIXELS EATEN -- and it
+# starts before any ink overlaps, because the 3 px halo is cleared regardless.
+# Measured over all 47 lexicon icons x 17 letters, lower-left, with the courtyard
+# modelled (legend pixels still lit after the clear):
 #
-# then pixel against pixel, all 47 lexicon icons from one subset versus each of
-# those letters, in the lower-left corner:
+#   height   legend kept (median)   worst   icon ink
+#     16            100 %            68 %      55 px
+#     24             66 %            36 %     120 px
+#     28             57 %            23 %     168 px
+#     32             42 %             0 %     220 px
+#     36             33 %             0 %     293 px
+#     40             35 %             0 %     339 px
 #
-#   height   clashing pairs (plain)   worst   clashing (descender)   worst
-#     12          0 / 282               0 px        4 / 235           3 px
-#     14          0 / 282               0 px       83 / 235          10 px
-#     16          8 / 282               2 px      169 / 235          23 px
-#     18         22 / 282               7 px      183 / 235          22 px
-#     20        153 / 282              22 px      191 / 235          35 px
+# 32 ships: the icon is unambiguous at a glance (four times the ink of 16) and
+# about half the legend survives beside it. Losing the rest is the intended
+# trade, not damage -- the overlay is only on screen while a modifier is HELD,
+# where the shortcut is what the eye is on and the letter is already known. Set a
+# smaller height for a legend-first keycap; 16 leaves it untouched.
 #
-# 14 is the largest height that NEVER touches a plain legend; 16 costs eight
-# pairs two pixels each; 20 is the cliff. 16 ships because it is the smallest
-# size at which an icon is reliably identifiable -- rendered side by side,
-# `search` at 12 is a dot with a tail and `zoom_in` a smudge, while at 16 all
-# nine sampled icons read at a glance. Set 14 for a strictly clean plain legend.
+# For reference, raw ink-on-ink overlap in the lower-left corner (what a reader
+# might expect to matter, and what the courtyard makes cosmetic): 0 / 282 pairs
+# against a plain legend at 12 and 14 px, 8 at 16, 153 at 20. The legend itself
+# inks x 0..24, y 1..25 (S B W M Q @) and y 0..27 with a descender (g y j p q),
+# measured through tools/oled_preview.py against res/preview/.
 #
-# ⚠️ NO useful lower-left height avoids a DESCENDER. 12 nearly does (4 pairs, 3
-# px) and is unreadable; every legible size clips g/y/j/p/q. That is accepted
-# rather than solved: the icon appears while a modifier is held, where the
-# shortcut is what the eye is on, and a nicked tail costs less than an icon
-# nobody can identify.
-#
-# The three RIGHT-hand placements are clash-free with the base legend at EVERY
-# size measured -- 0 / 282 and 0 / 235 throughout, because the legend ends near
-# x=24 and they grow leftward from x=70. Their cost is the other direction: that
-# is where the firmware draws the Shift preview (upper right) and the AltGr hint
-# (lower right). upper_left is the one placement with no case at all: 279 of 282
-# plain pairs clash even at 12 px, worst 30, because it lands on the legend's
-# own cap height.
-DEFAULT_ICON_HEIGHT = 16
+# The three RIGHT-hand placements never touch the legend at any size -- it ends
+# near x=24 and they grow leftward from x=70 -- but they are where the firmware
+# draws the Shift preview (upper right) and the AltGr hint (lower right).
+# upper_left has no case at all: it lands on the legend's own cap height.
+DEFAULT_ICON_HEIGHT = 32
 MIN_ICON_HEIGHT, MAX_ICON_HEIGHT = 8, 40
 
 PANEL_W, PANEL_H = 72, 40

@@ -95,13 +95,14 @@ class PolySettings:
             "delay_time_after_max_hid_messages": 0.3,
             "hid_reconnect_retries": 5,
             # Height in pixels of a fetched shortcut icon inside the 72x40
-            # keycap. Only the icon's corner is inked, so the legend underneath
-            # survives. In the default lower-left corner the measured trade is:
-            # 14 never touches a plain legend, 16 costs one glyph pair two
-            # pixels, 18 breaks down (245 of 846 pairs, up to 18 px). No size
-            # avoids clipping a descender there. Clamped by
+            # keycap. The firmware clears a courtyard around the overlay, so the
+            # icon never merges with the legend -- the size decides how much of
+            # the legend is eaten instead. Measured in the default corner: 16
+            # leaves it untouched, 24 keeps ~66%, 32 keeps ~42% with an icon
+            # four times the ink, 40 leaves little. 32 is the default because
+            # the overlay is only up while a modifier is HELD. Clamped by
             # icon_catalog.icon_height(); the table is in that module.
-            "shortcut_icon_height": 16,
+            "shortcut_icon_height": 32,
             # Which corner a fetched shortcut icon sits in: lower_left (default),
             # lower_right, upper_left, upper_right, or right (vertically centred
             # against the right edge). The three right-hand ones never touch the
