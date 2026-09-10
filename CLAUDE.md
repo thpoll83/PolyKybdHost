@@ -204,12 +204,17 @@ proposed again, because it is an obvious-looking saving that is not one.
 - **Block-level HTML comments are STRIPPED before injection**, so `<!-- … -->` in a
   CLAUDE.md costs nothing — usable for maintainer notes, or as machine-readable
   fences round a block that is meant to stay identical across repos.
-- ⚠️ **Both files are far past the documented target of "under 200 lines"** (2026-09-10:
-  qmk 4,927, host 1,579). That is a deliberate trade — these notes are measurements
-  nobody can re-derive — but it is why EXTRACTION keeps being the right move, and it
-  is the standing argument for pushing another subsystem into `docs/` rather than
-  adding to either file. `/doctor` proposes trims, and `claudeMdExcludes` skips a
-  file wholesale if one is ever in the way.
+- ⚠️ **Both files are still past the documented target of "under 200 lines", and
+  that is the standing argument for EXTRACTION over adding.** Measured 2026-09-10,
+  before and after a deliberate pass: qmk **6,178 -> 2,296 lines (485 -> 176 KB)**,
+  host **3,198 -> 1,623 (266 -> 136 KB)**. Nothing was deleted — eighteen subsystems
+  moved WHOLE into `docs/` (host) or `keyboards/polykybd/*.md` (firmware), plus the
+  reviewer forensics into the `triage-pr-review` skill, each leaving a pointer that
+  carries only the rules binding code outside its own file. The notes are
+  measurements nobody can re-derive, so the trade is size against re-derivability;
+  extraction settles it without giving anything up. `/doctor` proposes trims, and
+  `claudeMdExcludes` skips a file wholesale if one is ever in the way.
+
 
 ## Branching (all PolyKybd repos)
 
