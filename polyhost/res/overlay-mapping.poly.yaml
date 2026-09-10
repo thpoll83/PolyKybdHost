@@ -103,6 +103,22 @@ windowsterminal,wt:
   overlay: [windowsterminal_template.mods.png, windowsterminal_template.combo.mods.png]
 notepad:
   overlay: [notepad_template.mods.png, notepad_template.combo.mods.png]
+mspaint:
+  overlay: mspaint_template.mods.png
+paintdotnet:
+  overlay: [paintdotnet_template.mods.png, paintdotnet_template.combo.mods.png]
+wordpad:
+  overlay: [wordpad_template.mods.png, wordpad_template.combo.mods.png]
+snippingtool:
+  overlay: snippingtool_template.mods.png
+taskmgr:
+  overlay: [taskmgr_template.mods.png, taskmgr_template.combo.mods.png]
+7zfm,7zg:
+  overlay: sevenzip_template.mods.png
+winscp:
+  overlay: [winscp_template.mods.png, winscp_template.combo.mods.png]
+putty:
+  overlay: putty_template.mods.png
 winword:
   overlay: [word_template.mods.png, word_template.combo.mods.png]
 excel:

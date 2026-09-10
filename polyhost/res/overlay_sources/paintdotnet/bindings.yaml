@@ -1,0 +1,136 @@
+# paint.net shortcut overlays for PolyKybd.
+#
+# Shortcuts come from paint.net's OWN documentation -- "Keyboard & Mouse
+# Commands" -- so this is the documented set rather than a third-party summary.
+# See SOURCES.md.
+#
+# ⚠️ The PLAIN-LETTER tool row is the point of this overlay. paint.net picks a
+# tool with a bare keystroke (B brush, P pencil, E eraser, F fill, G gradient,
+# K colour picker, L clone stamp, R recolor, T text, S select, M move, Z zoom,
+# H pan, O line/curve), which is exactly the class of shortcut nobody memorises
+# and a keycap can show. It fills the no-modifier layer, which most overlays
+# leave empty.
+#
+# Icons: Microsoft Fluent UI System Icons (MIT); the gradient ramp and the clone
+# stamp are drawn (Fluent has no match that says the right thing). Program mark
+# (ESC, all layers): the shared license-clean letter tile reading "PN" -- a bare
+# "P" would collide with the Microsoft Paint overlay.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/paintdotnet/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/paintdotnet/bindings.yaml --preview /tmp/pdn_preview
+app: paint.net
+match: [paintdotnet]
+output: paintdotnet_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: luma
+threshold: 150
+
+program_icon: paintdotnet.png
+program_icon_mode: alpha
+program_icon_anchor: right
+program_icon_region: [42, 34]
+program_icon_margin: 0
+
+bindings:
+  # --- no modifier: the TOOL row (primary A channel) --------------------
+  - { key: S, mods: [], icon: rectselect.png, label: "Rectangle select", source: "ms-fluent/Select Object (MIT)" }
+  - { key: M, mods: [], icon: movesel.png,    label: "Move selected",    source: "ms-fluent/Drag (MIT)" }
+  - { key: Z, mods: [], icon: zoomtool.png,   label: "Zoom tool",        source: "ms-fluent/Search (MIT)" }
+  - { key: H, mods: [], icon: pan.png,        label: "Pan tool",         source: "ms-fluent/Hand Right (MIT)" }
+  - { key: B, mods: [], icon: brush.png,      label: Paintbrush,         source: "ms-fluent/Paint Brush (MIT)" }
+  - { key: P, mods: [], icon: pencil.png,     label: Pencil,             source: "ms-fluent/Pen (MIT)" }
+  - { key: E, mods: [], icon: eraser.png,     label: Eraser,             source: "ms-fluent/Eraser (MIT)" }
+  - { key: F, mods: [], icon: bucket.png,     label: "Paint bucket",     source: "ms-fluent/Paint Bucket (MIT)" }
+  - { key: G, mods: [], icon: gradient.png,   label: Gradient,           source: "drawn (see fetch_icons.py)", mode: alpha }
+  - { key: K, mods: [], icon: picker.png,     label: "Colour picker",    source: "ms-fluent/Eyedropper (MIT)" }
+  - { key: L, mods: [], icon: clonestamp.png, label: "Clone stamp",      source: "drawn (see fetch_icons.py)", mode: alpha }
+  - { key: R, mods: [], icon: recolor.png,    label: Recolor,            source: "ms-fluent/Color Line (MIT)" }
+  - { key: T, mods: [], icon: text.png,       label: "Text tool",        source: "ms-fluent/Text T (MIT)" }
+  - { key: O, mods: [], icon: linecurve.png,  label: "Line / curve",     source: "ms-fluent/Line (MIT)" }
+  - { key: X, mods: [], icon: swapcolors.png, label: "Swap colours",     source: "ms-fluent/Arrow Swap (MIT)" }
+  - { key: LEFT_BRACKET,  mods: [], icon: brushdec1.png, label: "Brush width -1", source: "drawn (thin bar + -1)", mode: alpha }
+  - { key: RIGHT_BRACKET, mods: [], icon: brushinc1.png, label: "Brush width +1", source: "drawn (thick bar + +1)", mode: alpha }
+  # window toggles
+  - { key: F5, mods: [], icon: toolswin.png,   label: "Tools window",   source: "ms-fluent/Options (MIT)" }
+  - { key: F6, mods: [], icon: historywin.png, label: "History window", source: "ms-fluent/History (MIT)" }
+  - { key: F7, mods: [], icon: layerswin.png,  label: "Layers window",  source: "ms-fluent/Layer Diagonal (MIT)" }
+  - { key: F8, mods: [], icon: colorswin.png,  label: "Colours window", source: "ms-fluent/Color (MIT)" }
+  - { key: F4, mods: [], icon: layerprops.png, label: "Layer properties", source: "ms-fluent/Options (MIT)" }
+
+  # --- Ctrl: file (primary R channel) -----------------------------------
+  - { key: N, mods: [CTRL], icon: new.png,   label: "New image", source: "ms-fluent/Document Add (MIT)" }
+  - { key: O, mods: [CTRL], icon: open.png,  label: Open,        source: "ms-fluent/Folder Open (MIT)" }
+  - { key: S, mods: [CTRL], icon: save.png,  label: Save,        source: "ms-fluent/Save (MIT)" }
+  - { key: W, mods: [CTRL], icon: close.png, label: "Close image", source: "ms-fluent/Document Dismiss (MIT)" }
+  - { key: P, mods: [CTRL], icon: print.png, label: Print,       source: "ms-fluent/Print (MIT)" }
+
+  # --- Ctrl: edit & selection -------------------------------------------
+  - { key: Z, mods: [CTRL], icon: undo.png,      label: Undo,               source: "ms-fluent/Arrow Undo (MIT)" }
+  - { key: Y, mods: [CTRL], icon: redo.png,      label: Redo,               source: "ms-fluent/Arrow Redo (MIT)" }
+  - { key: X, mods: [CTRL], icon: cut.png,       label: Cut,                source: "ms-fluent/Cut (MIT)" }
+  - { key: C, mods: [CTRL], icon: copy.png,      label: Copy,               source: "ms-fluent/Copy (MIT)" }
+  - { key: V, mods: [CTRL], icon: paste.png,     label: Paste,              source: "ms-fluent/Clipboard Paste (MIT)" }
+  - { key: A, mods: [CTRL], icon: selectall.png, label: "Select all",       source: "ms-fluent/Select All On (MIT)" }
+  - { key: D, mods: [CTRL], icon: deselect.png,  label: Deselect,           source: "ms-fluent/Select All Off (MIT)" }
+  - { key: I, mods: [CTRL], icon: invertsel.png, label: "Invert selection", source: "ms-fluent/Border All (MIT)" }
+
+  # --- Ctrl: view, image, layers ----------------------------------------
+  # ⚠️ paint.net-specific and NOT the obvious meanings: Ctrl+B is Zoom to
+  # Window (not bold), Ctrl+H rotates 90 clockwise (not replace), Ctrl+G
+  # rotates 90 counter-clockwise (not go-to), Ctrl+M merges the layer down,
+  # Ctrl+L opens Levels, Ctrl+F repeats the last effect.
+  - { key: EQUAL, mods: [CTRL], icon: zoomin.png,     label: "Zoom in",     source: "ms-fluent/Zoom In (MIT)" }
+  - { key: MINUS, mods: [CTRL], icon: zoomout.png,    label: "Zoom out",    source: "ms-fluent/Zoom Out (MIT)" }
+  - { key: B,     mods: [CTRL], icon: zoomwindow.png, label: "Zoom to window", source: "ms-fluent/Zoom Fit (MIT)" }
+  - { key: "0",   mods: [CTRL], icon: actualsize.png, label: "Actual size", source: "ms-fluent/Ratio One To One (MIT)" }
+  - { key: R, mods: [CTRL], icon: resize.png,    label: "Resize image",       source: "ms-fluent/Resize Image (MIT)" }
+  - { key: H, mods: [CTRL], icon: rotatecw.png,  label: "Rotate 90° CW",      source: "ms-fluent/Rotate Right (MIT)" }
+  - { key: G, mods: [CTRL], icon: rotateccw.png, label: "Rotate 90° CCW",     source: "ms-fluent/Rotate Left (MIT)" }
+  - { key: M, mods: [CTRL], icon: mergedown.png, label: "Merge layer down",   source: "ms-fluent/Arrow Between Down (MIT)" }
+  - { key: L, mods: [CTRL], icon: levels.png,    label: Levels,               source: "ms-fluent/Data Histogram (MIT)" }
+  - { key: F, mods: [CTRL], icon: repeateffect.png, label: "Repeat last effect", source: "ms-fluent/Arrow Repeat All (MIT)" }
+  - { key: COMMA, mods: [CTRL], icon: layervis.png, label: "Layer visibility", source: "ms-fluent/Eye (MIT)" }
+  - { key: TAB,   mods: [CTRL], icon: nextimage.png, label: "Next image",     source: "ms-fluent/Arrow Right (MIT)" }
+  - { key: PGDN,  mods: [CTRL], icon: nextimage.png, label: "Next image",     source: "ms-fluent/Arrow Right (MIT)" }
+  - { key: PGUP,  mods: [CTRL], icon: previmage.png, label: "Previous image", source: "ms-fluent/Arrow Left (MIT)" }
+  - { key: LEFT_BRACKET,  mods: [CTRL], icon: brushdec5.png, label: "Brush width -5", source: "drawn (thin bar + -5)", mode: alpha }
+  - { key: RIGHT_BRACKET, mods: [CTRL], icon: brushinc5.png, label: "Brush width +5", source: "drawn (thick bar + +5)", mode: alpha }
+
+  # --- Alt (primary G channel) ------------------------------------------
+  - { key: PGUP, mods: [ALT], icon: layerabove.png, label: "Layer above", source: "ms-fluent/Arrow Up (MIT)" }
+  - { key: PGDN, mods: [ALT], icon: layerbelow.png, label: "Layer below", source: "ms-fluent/Arrow Down (MIT)" }
+
+  # --- Ctrl+Shift (combo R channel) -------------------------------------
+  - { key: S, mods: [CTRL, SHIFT], icon: saveas.png,    label: "Save as",             source: "ms-fluent/Save Edit (MIT)" }
+  - { key: C, mods: [CTRL, SHIFT], icon: copymerged.png, label: "Copy merged",        source: "ms-fluent/Layer Diagonal (MIT)" }
+  - { key: V, mods: [CTRL, SHIFT], icon: pastelayer.png, label: "Paste into new layer", source: "ms-fluent/Layer Diagonal Add (MIT)" }
+  - { key: X, mods: [CTRL, SHIFT], icon: crop.png,      label: "Crop to selection",   source: "ms-fluent/Crop (MIT)" }
+  - { key: N, mods: [CTRL, SHIFT], icon: newlayer.png,  label: "Add new layer",       source: "ms-fluent/Layer Diagonal Add (MIT)" }
+  - { key: D, mods: [CTRL, SHIFT], icon: duplayer.png,  label: "Duplicate layer",     source: "ms-fluent/Document Multiple (MIT)" }
+  - { key: R, mods: [CTRL, SHIFT], icon: canvas.png,    label: "Canvas size",         source: "ms-fluent/Slide Size (MIT)" }
+  - { key: F, mods: [CTRL, SHIFT], icon: flatten.png,   label: Flatten,               source: "ms-fluent/Layer (MIT)" }
+  - { key: B, mods: [CTRL, SHIFT], icon: zoomsel.png,   label: "Zoom to selection",   source: "ms-fluent/Crop Interim (MIT)" }
+  - { key: Z, mods: [CTRL, SHIFT], icon: rotatezoom.png, label: "Rotate / zoom layer", source: "ms-fluent/Arrow Rotate Clockwise (MIT)" }
+  # adjustments
+  - { key: L, mods: [CTRL, SHIFT], icon: autolevel.png,  label: "Auto-level",         source: "ms-fluent/Wand (MIT)" }
+  - { key: G, mods: [CTRL, SHIFT], icon: blackwhite.png, label: "Black & white",      source: "ms-fluent/Circle Half Fill (MIT)" }
+  - { key: T, mods: [CTRL, SHIFT], icon: brightness.png, label: "Brightness / contrast", source: "ms-fluent/Brightness High (MIT)" }
+  - { key: M, mods: [CTRL, SHIFT], icon: curves.png,     label: Curves,               source: "ms-fluent/Data Line (MIT)" }
+  - { key: U, mods: [CTRL, SHIFT], icon: huesat.png,     label: "Hue / saturation",   source: "ms-fluent/Color (MIT)" }
+  - { key: I, mods: [CTRL, SHIFT], icon: invertcolors.png, label: "Invert colours",   source: "ms-fluent/Color Background (MIT)" }
+  - { key: P, mods: [CTRL, SHIFT], icon: posterize.png,  label: Posterize,            source: "ms-fluent/Filter (MIT)" }
+  - { key: E, mods: [CTRL, SHIFT], icon: sepia.png,      label: Sepia,                source: "ms-fluent/Weather Sunny (MIT)" }
+  - { key: TAB, mods: [CTRL, SHIFT], icon: previmage.png, label: "Previous image",    source: "ms-fluent/Arrow Left (MIT)" }
+
+  # --- Ctrl+Alt (combo G channel) ---------------------------------------
+  - { key: S,    mods: [CTRL, ALT], icon: saveall.png,     label: "Save all images",     source: "ms-fluent/Save Multiple (MIT)" }
+  - { key: V,    mods: [CTRL, ALT], icon: pasteimage.png,  label: "Paste into new image", source: "ms-fluent/Image Copy (MIT)" }
+  - { key: I,    mods: [CTRL, ALT], icon: invertalpha.png, label: "Invert alpha",        source: "ms-fluent/Scan Type (MIT)" }
+  - { key: PGUP, mods: [CTRL, ALT], icon: toplayer.png,    label: "Top layer",           source: "ms-fluent/Arrow Upload (MIT)" }
+  - { key: PGDN, mods: [CTRL, ALT], icon: bottomlayer.png, label: "Bottom layer",        source: "ms-fluent/Arrow Download (MIT)" }

@@ -20,15 +20,16 @@ linework at 1-bit. Re-running reproduces icons/*.png.
 """
 from __future__ import annotations
 
-import urllib.parse
-import urllib.request
+import sys
 from pathlib import Path
 
-import cairosvg
-from PIL import Image, ImageDraw, ImageFont
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import icon_fetch  # noqa: E402
+import number_badge  # noqa: E402
+import prompt_glyph  # noqa: E402
 
 RENDER_PX = 96
-MS = "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/assets/{}"
 
 # action filename -> Microsoft Fluent System Icon folder (all MIT).
 # ⚠️ The asset path is derived, not guessed: `ic_fluent_<snake(folder)>_24_regular.svg`.
@@ -81,89 +82,23 @@ MS_ICONS = {
 }
 
 
-def _asset(folder: str) -> str:
-    snake = folder.lower().replace(" ", "_").replace("-", "_")
-    return f"{folder}/SVG/ic_fluent_{snake}_24_regular.svg"
-
-
-def _get(url: str) -> bytes:
-    return urllib.request.urlopen(
-        urllib.request.Request(url, headers={"User-Agent": "polykybd"}), timeout=30).read()
-
-
-def _draw_tab_number(base: Image.Image, digit: str, path: Path) -> None:
-    """Composite `tab<N>`: the Fluent Tab box with the tab NUMBER inside it.
-
-    ⚠️ The bare "Tab" glyph is an empty rounded box, and at 40 px on a keycap it
-    reads as nothing at all -- the whole point of Ctrl+Alt+<N> is WHICH tab, so
-    the number has to be in the picture. (Checked by rendering the overlay, not
-    by reading the glyph name.)
-
-    Composite rules, learned the hard way on the Word line-spacing set: a STATIC
-    font size (auto-fitting per value renders the same digit at different sizes)
-    and a fixed centre, so every digit in the family is placed identically.
-    """
-    img = base.copy()
-    d = ImageDraw.Draw(img)
-    # Liberation Sans is metric-compatible with Arial; real Arial is not installed.
-    font = ImageFont.truetype(
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 52)
-    # The Tab glyph's box is roughly the middle of the 96x96 canvas; centre the
-    # digit on it rather than on the canvas, which sits a little low.
-    d.text((RENDER_PX * 0.50, RENDER_PX * 0.56), digit, fill=(0, 0, 0, 255),
-           font=font, anchor="mm")
-    img.save(path)
-
-
-def _draw_prompt_mark(path: Path) -> None:
-    """Program mark: a rounded frame with a `>_` prompt inside.
-
-    Drawn rather than downloaded because Windows Terminal's own icon is Microsoft
-    trademark art. White on transparent, so the binding renders it with
-    `mode: alpha` -- the alpha IS the shape.
-    """
-    ss = 4
-    u = 256 * ss
-    img = Image.new("RGBA", (u, u), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    white = (255, 255, 255, 255)
-    frame = int(u * 0.055)
-    d.rounded_rectangle([frame // 2, u * 0.14, u - frame // 2, u * 0.86],
-                        radius=int(u * 0.10), outline=white, width=frame)
-    # ">" chevron
-    stroke = int(u * 0.065)
-    d.line([(u * 0.26, u * 0.34), (u * 0.46, u * 0.50), (u * 0.26, u * 0.66)],
-           fill=white, width=stroke, joint="curve")
-    # "_" underscore
-    d.line([(u * 0.53, u * 0.66), (u * 0.75, u * 0.66)], fill=white, width=stroke)
-    img.resize((256, 256), Image.LANCZOS).save(path)
-
 
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
 
-    for fname, folder in MS_ICONS.items():
-        asset = _asset(folder)
-        enc = "/".join(urllib.parse.quote(s) for s in asset.split("/"))
-        png = cairosvg.svg2png(bytestring=_get(MS.format(enc)),
-                               output_width=RENDER_PX, output_height=RENDER_PX)
-        (out / f"{fname}.png").write_bytes(png)
-        print(f"  {fname}.png  <- ms-fluent/{folder}")
+    icon_fetch.fluent(MS_ICONS, out)
 
-    # Ctrl+Alt+<N> switches to tab N -- one composite per digit, off the Tab glyph.
-    tab_base = Image.open(out / "tab.png").convert("RGBA")
-    for digit in "12345678":
-        _draw_tab_number(tab_base, digit, out / f"tab{digit}.png")
-    print("  tab1..tab8.png  <- composite (ms-fluent/Tab + digit)")
+    # Ctrl+Alt+<N> switches to tab N. The bare Fluent "Tab" glyph is an empty
+    # rounded box and reads as nothing at 40 px, so the NUMBER goes inside it --
+    # see number_badge for why that is one shared implementation.
+    number_badge.numbered(out / "tab.png", "12345678", out, "tab")
 
-    # ⚠️ Guarded so a re-run never clobbers a hand-tuned mark: once committed,
-    # the PNG is the source of truth (the same rule every other app here follows).
-    if (out / "wt.png").exists():
-        print("  wt.png  <- committed program mark (left as-is)")
-    else:
-        _draw_prompt_mark(out / "wt.png")
-        print("  wt.png  <- custom (drawn: `>_` prompt in a rounded frame)")
+    # The `>_` is drawn (Microsoft's own Terminal icon is trademark art) and it
+    # lives in `prompt_glyph` because WinSCP needs the same prompt for its own
+    # "open terminal" key -- see that module for why Fluent cannot supply one.
+    prompt_glyph.ensure(out / "wt.png", frame=True,
+                        what="`>_` prompt in a rounded frame")
 
     print(f"Wrote {len(MS_ICONS)} icons to {out}")
     return 0
