@@ -30,16 +30,18 @@ class FetcherTest(unittest.TestCase):
         self.threads = []
         self.gate = threading.Event()
         self.gate.set()
-        self.marks = {"gimp": "MASK"}
+        # Keyed by QUALIFIED name: an app is tried against both catalogs in
+        # order, so the fixture has to answer per candidate, not per app.
+        self.marks = {"si:gimp": "MASK"}
 
-        def fake_fetch(slug, cache_dir=None, allow_network=None):
+        def fake_fetch(name, cache_dir=None, allow_network=None):
             self.gate.wait(5)
-            self.fetched.append(slug)
+            self.fetched.append(name)
             self.threads.append(threading.current_thread().name)
-            return f"/cache/{slug}.svg" if slug in self.marks else None
+            return f"/cache/{name}" if name in self.marks else None
 
         def fake_render(path, box=40):
-            return self.marks[path.split("/")[-1][:-4]]
+            return self.marks[path[len("/cache/"):]]
 
         for name, fn in (("fetch_icon", fake_fetch), ("render_overlay", fake_render),
                          ("title_of", lambda p: "Brand")):
@@ -57,31 +59,31 @@ class FetcherTest(unittest.TestCase):
         # for nothing. Measured on the first cut, not imagined.
         self.gate.clear()
         for _ in range(20):
-            self.assertEqual(self.fetcher.overlay_for("gimp"), (None, "gimp"))
+            self.assertEqual(self.fetcher.overlay_for("gimp"), (None, "si:gimp"))
         self.gate.set()
         self.assertTrue(_wait(lambda: self.ready))
         time.sleep(0.2)
-        self.assertEqual(self.fetched, ["gimp"])
-        self.assertEqual(self.ready, ["gimp"])
+        self.assertEqual(self.fetched, ["si:gimp"])
+        self.assertEqual(self.ready, ["si:gimp"])
 
     def test_a_resolved_mark_is_served_from_memory(self):
         self.assertTrue(_wait(lambda: self.fetcher.overlay_for("gimp")[0] == "MASK"))
         self.fetched.clear()
         for _ in range(5):
-            self.assertEqual(self.fetcher.overlay_for("gimp"), ("MASK", "gimp"))
+            self.assertEqual(self.fetcher.overlay_for("gimp"), ("MASK", "si:gimp"))
         self.assertEqual(self.fetched, [])
 
     def test_a_MISS_is_cached_too(self):
         # An app the catalog does not carry is the common case (no Office, no
         # Adobe, no VS Code), so asking once per window switch would be a request
         # every few seconds for the rest of the session.
-        self.assertTrue(_wait(lambda: "winword" in self.fetched
-                              or self.fetcher.overlay_for("winword") is None))
-        self.assertTrue(_wait(lambda: self.fetched.count("winword") == 1))
+        self.fetcher.overlay_for("winword")
+        self.assertTrue(_wait(lambda: self.fetched.count("mdi:microsoft-winword") == 1))
+        before = list(self.fetched)
         for _ in range(5):
-            self.assertEqual(self.fetcher.overlay_for("winword"), (None, "winword"))
+            self.assertEqual(self.fetcher.overlay_for("winword"), (None, "si:winword"))
         time.sleep(0.2)
-        self.assertEqual(self.fetched.count("winword"), 1)
+        self.assertEqual(self.fetched, before)
 
     def test_the_lookup_runs_NO_fetch_on_the_calling_thread(self):
         # The whole reason this class exists: `fetch_icon` is an HTTP GET at a
@@ -134,9 +136,9 @@ class FetcherTest(unittest.TestCase):
         # Turning `shortcut_icon_auto_fetch` back on is worth nothing while the
         # "no mark" answers from the offline period are still cached.
         self.fetcher.overlay_for("winword")
-        self.assertTrue(_wait(lambda: "winword" in self.fetched))
-        self.marks["winword"] = "WINWORD"
-        self.assertEqual(self.fetcher.overlay_for("winword"), (None, "winword"))
+        self.assertTrue(_wait(lambda: "mdi:microsoft-winword" in self.fetched))
+        self.marks["si:winword"] = "WINWORD"
+        self.assertEqual(self.fetcher.overlay_for("winword"), (None, "si:winword"))
         self.fetcher.forget_misses()
         self.assertTrue(_wait(
             lambda: self.fetcher.overlay_for("winword")[0] == "WINWORD"))
@@ -147,7 +149,7 @@ class FetcherTest(unittest.TestCase):
         self.assertTrue(_wait(lambda: self.fetcher.overlay_for("gimp")[0] == "MASK"))
         self.fetched.clear()
         self.fetcher.forget_misses()
-        self.assertEqual(self.fetcher.overlay_for("gimp"), ("MASK", "gimp"))
+        self.assertEqual(self.fetcher.overlay_for("gimp"), ("MASK", "si:gimp"))
         time.sleep(0.2)
         self.assertEqual(self.fetched, [])
 
@@ -155,19 +157,24 @@ class FetcherTest(unittest.TestCase):
         # "still no icon, now that fetching is on" is a different fact from the
         # first line, and the only signal that turning the switch on did not help.
         self.fetcher.overlay_for("winword")
-        self.assertTrue(_wait(lambda: "winword" in self.fetched))
+        self.assertTrue(_wait(lambda: "mdi:microsoft-winword" in self.fetched))
         # ⚠️ The first line is only emitted by a lookup that SEES the cached
         # miss, so this call is what populates the dedupe -- without it the
         # assertion below passes whether or not `forget_misses` clears it.
         with self.assertLogs("PolyHost", level="INFO"):
             self.assertTrue(_wait(
-                lambda: self.fetcher.overlay_for("winword") == (None, "winword")
-                and ("winword", "the catalog has no 'winword'") in self.fetcher._told))
+                lambda: self.fetcher.overlay_for("winword") == (None, "si:winword")
+                and ("winword", "no catalog carries 'si:winword'") in self.fetcher._told))
         with self.assertLogs("PolyHost", level="INFO") as caught:
             self.fetcher.forget_misses()
             self.fetcher.overlay_for("winword")
-            self.assertTrue(_wait(lambda: self.fetched.count("winword") == 2))
-            self.fetcher.overlay_for("winword")
+            # ⚠️ Wait for the SECOND fetch: the first round already fetched this
+            # candidate once, so waiting for a count of 1 returns immediately and
+            # the lookups below see an in-flight entry and log nothing.
+            self.assertTrue(_wait(lambda: self.fetched.count("si:winword") == 2))
+            self.assertTrue(_wait(
+                lambda: self.fetcher.overlay_for("winword")[0] is None
+                and ("winword", "no catalog carries 'si:winword'") in self.fetcher._told))
             self.fetcher.overlay_for("winword")
         lines = [r for r in caught.output if "No program icon for 'winword'" in r]
         self.assertEqual(len(lines), 1, caught.output)
@@ -177,7 +184,7 @@ class FetcherTest(unittest.TestCase):
         # poll for any app with no mark, which is most of them.
         with self.assertLogs("PolyHost", level="INFO") as caught:
             self.assertTrue(_wait(lambda: self.fetcher.overlay_for("winword")[1]
-                                  and "winword" in self.fetched))
+                                  and "mdi:microsoft-winword" in self.fetched))
             for _ in range(10):
                 self.fetcher.overlay_for("winword")
         lines = [r for r in caught.output if "No program icon for 'winword'" in r]

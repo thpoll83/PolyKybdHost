@@ -27,7 +27,7 @@ wrong.
 
 | property | value |
 |---|---|
-| source | [Simple Icons](https://simpleicons.org) **15.22.0, pinned** — CC0-1.0, single-path monochrome SVG, 24×24 box (⚠️ no Office/Adobe/VS Code — A.3) |
+| source | [Simple Icons](https://simpleicons.org) **15.22.0, pinned** (CC0-1.0) first, then [Material Design Icons](https://pictogrammers.com/library/mdi/) via Iconify (Apache-2.0) — both single-path monochrome SVG on a 24×24 box |
 | placement | **right-aligned**, vertically centred → the right-hand **40×40** square |
 | size | fitted to 40×40, aspect preserved |
 | rasteriser | `cairosvg` (today a `tools/` dep — this makes it a runtime one) |
@@ -78,17 +78,41 @@ is the most important fact in this document.** It read *"Simple Icons covers 41 
 | `slack` | **present** | **absent** |
 | `gimp` `inkscape` `kicad` `krita` `figma` `libreoffice` `obsstudio` `zoom` | present | present |
 
-So the catalog carries **no Microsoft Office, no Adobe and no VS Code, in any
-version** — the project's own trademark policy — and those are among the most
-used apps here. Measured against this repo's shipped `overlay-mapping.poly.yaml`,
-a normalised-name guess resolves **24 of 57** app names; the slug map lifts that,
-and `winword` / `excel` / `powerpnt` / `outlook` / `teams` / `photoshop` /
-`illustrator` / `afterfx` / `devenv` / `code` / `explorer` stay unreachable.
+So Simple Icons carries **no Microsoft and no Adobe at all** — zero of its 3383
+entries contain "microsoft", "adobe", "photoshop", "excel" or "outlook".
 
-**The complement that closes it is the OS's OWN icon for the running process** —
-the exe's resource icon on Windows, the `.desktop` + hicolor theme on Linux, the
-bundle's `.icns` on macOS. Always exact, no catalog, no trademark question. It is
-a per-platform lift and is **not** in this plan; the catalog is the cheap 60 %.
+✅ **A SECOND SOURCE closes most of it: Material Design Icons (`mdi`,
+Apache-2.0), served by the Iconify API.** It carries the whole `microsoft-*`
+family — word, excel, powerpoint, outlook, onenote, teams, edge, visual-studio,
+visual-studio-code — as monochrome single-path 24×24 glyphs, i.e. the shape this
+renderer already consumes. Rendered at 40×40 1-bit they read *better* than
+several Simple Icons marks, being drawn for small monochrome use in the first
+place. Simple Icons is still asked first: it is the real brand mark, mdi's is an
+interpretation.
+
+**Measured over 151 realistic executable names:**
+
+| | resolved |
+|---|---|
+| guess alone, Simple Icons only | 85 (56 %) |
+| guess alone, both catalogs | 83 (54 %)¹ |
+| **both catalogs + the shipped map** | **105 (69 %)** |
+
+¹ lower on the guess alone because the **bare** mdi name is deliberately not
+tried — mdi is 7400 icons of which most are generic UI symbols, so `code` would
+resolve to a generic `</>` glyph. Only the provably-brand `microsoft-*` /
+`adobe-*` forms are guessed; the handful of real brands mdi holds under a bare
+name (`powershell`) get a map entry.
+
+⚠️ **Adobe products are deliberately left uncovered.** mdi has `adobe` and
+`adobe-acrobat` and nothing else, so Photoshop/Illustrator/Premiere could only
+share the company "A" — the right company and the wrong answer to *which program
+is this*. Same reasoning rules out `chromium → google-chrome`.
+
+**The complement for the last third is the OS's OWN icon for the running
+process** — the exe's resource icon on Windows, the `.desktop` + hicolor theme on
+Linux, the bundle's `.icns` on macOS. Always exact, no catalog. A per-platform
+lift, **not** in this plan.
 
 * ⚠️ **THE VERSION IS PINNED (15.22.0) and a newer pin is NOT a superset.** v16
   has 76 more entries and dropped Slack. `@latest` resolves to 15.22.0 today

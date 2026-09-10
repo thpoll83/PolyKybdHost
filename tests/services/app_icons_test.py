@@ -8,6 +8,7 @@ look slightly wrong on hardware with nothing failing anywhere.
 import os
 import tempfile
 import unittest
+from unittest import mock
 
 from polyhost.services import app_icons as ai
 
@@ -84,13 +85,23 @@ class SlugMapTest(unittest.TestCase):
         for key in ("soffice", "soffice.bin", "startcenter"):
             self.assertEqual(mapping[key], "libreoffice", key)
 
-    def test_every_shipped_slug_has_the_shape_a_slug_can_have(self):
-        # A slug with a capital or a dash is a URL that 404s on every switch to
-        # that app — cheap to typo, and invisible until someone watches the log.
-        for app, slug in ai.load_slug_map().items():
-            if slug is None:
+    def test_every_shipped_ENTRY_names_a_real_source_and_a_usable_name(self):
+        # A capital, a stray space or a source nobody serves is a URL that 404s
+        # on every switch to that app — cheap to typo, and invisible until
+        # someone watches the log.
+        for app, value in ai.load_slug_map().items():
+            if value is None:
                 continue
-            self.assertRegex(slug, r"^[a-z0-9]+$", f"{app} -> {slug}")
+            source, name = ai.split_name(value)
+            self.assertIn(source, ai.SOURCES, f"{app} -> {value}")
+            self.assertRegex(name, r"^[a-z0-9]+(-[a-z0-9]+)*$", f"{app} -> {value}")
+
+    def test_the_map_may_name_EITHER_catalog(self):
+        # One column, two catalogs: Simple Icons has no Microsoft at all, so the
+        # Office family can only be expressed as an mdi entry.
+        mapping = ai.load_slug_map()
+        self.assertEqual(ai.candidates("winword", mapping), ["mdi:microsoft-word"])
+        self.assertEqual(ai.candidates("chrome", mapping), ["si:googlechrome"])
 
     def test_a_missing_file_costs_the_icons_not_the_overlay(self):
         self.assertEqual(ai.load_slug_map("/nonexistent/app_icons.yaml"), {})
@@ -163,6 +174,48 @@ class SlugForTest(unittest.TestCase):
                              "notepadplusplus")
 
 
+class CandidatesTest(unittest.TestCase):
+    """Which names an app is tried under, in which order."""
+
+    def test_simple_icons_is_tried_FIRST(self):
+        # It carries the real brand mark where it has one; mdi's is an
+        # interpretation. Order is preference, not a set of equals.
+        self.assertEqual(ai.candidates("Inkscape", {})[0], "si:inkscape")
+
+    def test_the_BARE_mdi_name_is_never_tried(self):
+        # ⚠️ mdi is 7400 icons and most are generic UI symbols, so a bare hit is
+        # not evidence of a brand: `code` resolves to a generic `</>` glyph,
+        # which on VS Code is a wrong icon by this module's own rule. Measured,
+        # allowing it would gain four apps on a 151-app list and one of the four
+        # would be wrong.
+        self.assertNotIn("mdi:code", ai.candidates("code", {}))
+        self.assertNotIn("mdi:terminal", ai.candidates("terminal", {}))
+
+    def test_the_PREFIXED_mdi_names_are_tried(self):
+        # These are what reach Office at all — an executable called `word` has
+        # to become `microsoft-word`. Safe because every mdi `microsoft-*` stem
+        # is a genuine product name (measured over all 50 of them).
+        self.assertIn("mdi:microsoft-word", ai.candidates("word", {}))
+        self.assertIn("mdi:adobe-acrobat", ai.candidates("acrobat", {}))
+
+    def test_kebab_keeps_the_separators_normalise_drops(self):
+        # The catalogs name the same brand differently, so one normalised form
+        # cannot address both.
+        self.assertEqual(ai.normalise("Visual Studio Code"), "visualstudiocode")
+        self.assertEqual(ai.kebab("Visual Studio Code"), "visual-studio-code")
+        self.assertEqual(ai.kebab("org.gimp.GIMP"), "gimp")
+        self.assertEqual(ai.kebab("gimp-2.0"), "gimp")
+
+    def test_an_unqualified_map_value_means_simple_icons(self):
+        self.assertEqual(ai.qualify("gimp"), "si:gimp")
+        self.assertEqual(ai.qualify("mdi:microsoft-word"), "mdi:microsoft-word")
+        self.assertEqual(ai.split_name("gimp"), ("si", "gimp"))
+
+    def test_a_suppressed_app_has_NO_candidates_at_all(self):
+        self.assertEqual(ai.candidates("java", {"java": None}), [])
+        self.assertEqual(ai.candidates("", {}), [])
+
+
 class FormatValidationTest(unittest.TestCase):
 
     def test_only_an_svg_document_is_accepted(self):
@@ -178,6 +231,32 @@ class FormatValidationTest(unittest.TestCase):
         self.assertFalse(ai._is_svg(b""))
 
 
+class UserAgentTest(unittest.TestCase):
+
+    def test_a_user_agent_is_SENT(self):
+        # ⚠️ Load-bearing, not politeness: the Iconify API answers 403 to
+        # `Python-urllib/<v>` and 200 to anything else, so without a UA the whole
+        # second catalog is unreachable and every Office app reads as "no icon".
+        seen = {}
+
+        class FakeResponse:
+            def read(self): return b'<svg viewBox="0 0 24 24"/>'
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+
+        def fake_open(request, timeout=None):
+            seen["ua"] = request.get_header("User-agent")
+            seen["url"] = request.full_url
+            return FakeResponse()
+
+        with mock.patch("urllib.request.urlopen", fake_open), \
+                tempfile.TemporaryDirectory() as tmp:
+            ai.fetch_icon("mdi:microsoft-word", tmp, allow_network=True)
+        self.assertEqual(seen["ua"], ai.USER_AGENT)
+        self.assertNotIn("urllib", seen["ua"].lower())
+        self.assertIn("microsoft-word", seen["url"])
+
+
 class OfflineTest(unittest.TestCase):
 
     def test_an_uncached_mark_returns_none_rather_than_raising(self):
@@ -186,8 +265,30 @@ class OfflineTest(unittest.TestCase):
 
     def test_a_cached_mark_needs_no_network(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = _svg(tmp, SQUARE, "gimp.svg")
+            path = _svg(tmp, SQUARE, "si-gimp.svg")
             self.assertEqual(ai.fetch_icon("gimp", tmp, allow_network=False), path)
+
+    def test_the_cache_filename_carries_the_SOURCE(self):
+        # The catalogs share names — `mdi:slack` and `si:slack` are different
+        # drawings of the same brand — so a bare filename would let whichever was
+        # fetched first answer for both.
+        with tempfile.TemporaryDirectory() as tmp:
+            _svg(tmp, SQUARE, "mdi-slack.svg")
+            self.assertIsNone(ai.fetch_icon("si:slack", tmp, allow_network=False))
+            self.assertTrue(ai.fetch_icon("mdi:slack", tmp, allow_network=False))
+
+    def test_an_unknown_source_is_refused_rather_than_fetched(self):
+        # ⚠️ A temp cache dir, not the default one. With the real dir this test
+        # wrote `nosuchcatalog-gimp.svg` into the user cache during a mutation
+        # sweep and then PASSED FOR THE WRONG REASON on every later run — the
+        # file existed, so the cache short-circuit returned it. Same shape as the
+        # default_log_dir trap: a green test pinning the environment's accident.
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIsNone(ai.fetch_icon("nosuchcatalog:gimp", tmp,
+                                            allow_network=True))
+            _svg(tmp, SQUARE, "nosuchcatalog-gimp.svg")
+            self.assertIsNone(ai.fetch_icon("nosuchcatalog:gimp", tmp,
+                                            allow_network=False))
 
     def test_no_slug_needs_no_fetch(self):
         self.assertIsNone(ai.fetch_icon("", allow_network=False))
@@ -316,14 +417,13 @@ class RenderTest(unittest.TestCase):
 
 class ProgramOverlayTest(unittest.TestCase):
 
-    def test_the_slug_comes_back_even_when_the_catalog_lacks_the_mark(self):
-        # An unresolvable NAME and a resolvable one the catalog does not carry
-        # want different curation entries, so the caller has to be able to tell
-        # them apart.
+    def test_the_name_comes_back_even_when_no_catalog_has_the_mark(self):
+        # An unresolvable NAME and a resolvable one no catalog carries want
+        # different curation entries, so the caller has to tell them apart.
         with tempfile.TemporaryDirectory() as tmp:
-            mask, slug = ai.program_overlay("Inkscape", {}, tmp, allow_network=False)
+            mask, name = ai.program_overlay("Inkscape", {}, tmp, allow_network=False)
             self.assertIsNone(mask)
-            self.assertEqual(slug, "inkscape")
+            self.assertEqual(name, "si:inkscape")
 
     def test_a_suppressed_app_reports_no_slug_at_all(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -334,11 +434,30 @@ class ProgramOverlayTest(unittest.TestCase):
     def test_a_cached_mark_renders_with_no_network(self):
         _needs_render(self)
         with tempfile.TemporaryDirectory() as tmp:
-            _svg(tmp, SQUARE, "inkscape.svg")
-            mask, slug = ai.program_overlay("Inkscape", {}, tmp, allow_network=False)
-            self.assertEqual(slug, "inkscape")
+            _svg(tmp, SQUARE, "si-inkscape.svg")
+            mask, name = ai.program_overlay("Inkscape", {}, tmp, allow_network=False)
+            self.assertEqual(name, "si:inkscape")
             self.assertIsNotNone(mask)
             self.assertTrue(mask.any())
+
+    def test_the_SECOND_catalog_is_tried_when_the_first_has_nothing(self):
+        # The whole reason there are two: Simple Icons carries no Microsoft at
+        # all, so Word can only come from mdi.
+        _needs_render(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            _svg(tmp, SQUARE, "mdi-microsoft-word.svg")
+            mask, name = ai.program_overlay("word", {}, tmp, allow_network=False)
+            self.assertEqual(name, "mdi:microsoft-word")
+            self.assertIsNotNone(mask)
+
+    def test_the_FIRST_catalog_wins_when_both_have_the_mark(self):
+        # Simple Icons is the real brand mark; mdi's is an interpretation of it.
+        _needs_render(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            _svg(tmp, SQUARE, "si-slack.svg")
+            _svg(tmp, WIDE, "mdi-slack.svg")
+            _, name = ai.program_overlay("slack", {}, tmp, allow_network=False)
+            self.assertEqual(name, "si:slack")
 
 
 if __name__ == "__main__":

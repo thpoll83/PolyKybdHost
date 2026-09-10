@@ -70,21 +70,26 @@ class AppIconFetcher:
         not have it"; the caller does not need to tell those apart, because both
         mean *draw nothing now* and only the first will ever call `on_ready`.
         """
-        slug = app_icons.slug_for(app_name, self.slug_map())
-        if not slug:
+        names = app_icons.candidates(app_name, self.slug_map())
+        if not names:
             self._say(app_name, "no catalog name for it")
             return None, None
+        # ⚠️ Keyed on the whole CANDIDATE LIST, not on one name: an app is tried
+        # against both catalogs in order, so "what was looked up" is the list,
+        # and two apps that differ only in which candidate wins must not share
+        # an answer.
+        key = tuple(names)
         with self._lock:
-            if slug in self._masks:
-                mask = self._masks[slug]
+            if key in self._masks:
+                mask, resolved = self._masks[key]
                 if mask is None:
-                    self._say(app_name, f"the catalog has no '{slug}'")
-                return mask, slug
-            if slug not in self._queue and slug not in self._inflight:
-                self._queue.append(slug)
+                    self._say(app_name, f"no catalog carries '{names[0]}'")
+                return mask, resolved
+            if key not in self._queue and key not in self._inflight:
+                self._queue.append(key)
         self._ensure_thread()
         self._wake.set()
-        return None, slug
+        return None, names[0]
 
     def forget_misses(self):
         """Drop the negative cache, so a slug looked up while offline is retried.
@@ -99,8 +104,8 @@ class AppIconFetcher:
         did not help.
         """
         with self._lock:
-            for slug in [s for s, mask in self._masks.items() if mask is None]:
-                del self._masks[slug]
+            for key in [k for k, (mask, _) in self._masks.items() if mask is None]:
+                del self._masks[key]
         self._told.clear()
 
     def stop(self):
@@ -147,21 +152,21 @@ class AppIconFetcher:
     def _loop(self):
         while not self._stop.is_set():
             with self._lock:
-                slug = self._queue.pop(0) if self._queue else None
-                if slug is not None:
-                    self._inflight.add(slug)
-            if slug is None:
+                key = self._queue.pop(0) if self._queue else None
+                if key is not None:
+                    self._inflight.add(key)
+            if key is None:
                 self._wake.clear()
                 if not self._wake.wait(IDLE_SECONDS):
                     return          # nothing left to do; restarted on demand
                 continue
-            mask = self._resolve(slug)
+            mask, resolved = self._resolve(key)
             with self._lock:
-                self._masks[slug] = mask
-                self._inflight.discard(slug)
+                self._masks[key] = (mask, resolved)
+                self._inflight.discard(key)
             if mask is not None and self._on_ready is not None:
                 try:
-                    self._on_ready(slug)
+                    self._on_ready(resolved)
                 except Exception:
                     # ⚠️ NOT because the queue would break -- _ensure_thread
                     # restarts a dead thread on the next lookup, measured. It is
@@ -171,17 +176,19 @@ class AppIconFetcher:
                     # report.
                     self.log.debug("app-icon ready callback failed", exc_info=True)
 
-    def _resolve(self, slug: str):
-        try:
-            path = app_icons.fetch_icon(slug, self._cache_dir)
-            if not path:
-                return None
-            mask = app_icons.render_overlay(path)
-            if mask is None:
-                return None
-            title = app_icons.title_of(path)
-            self.log.info("Program icon: %s (%s)", title or slug, slug)
-            return mask
-        except Exception:
-            self.log.debug("app-icon fetch failed for '%s'", slug, exc_info=True)
-            return None
+    def _resolve(self, names):
+        """Walk the candidates in order; the first that draws something wins."""
+        for name in names:
+            try:
+                path = app_icons.fetch_icon(name, self._cache_dir)
+                if not path:
+                    continue
+                mask = app_icons.render_overlay(path)
+                if mask is None:
+                    continue
+                title = app_icons.title_of(path)
+                self.log.info("Program icon: %s (%s)", title or name, name)
+                return mask, name
+            except Exception:
+                self.log.debug("app-icon fetch failed for '%s'", name, exc_info=True)
+        return None, names[0] if names else None
