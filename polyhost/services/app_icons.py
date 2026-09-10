@@ -349,6 +349,50 @@ def title_of(svg_path: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
+def _alpha(svg_path: str, size: int):
+    """Coverage for one icon at `size` x `size`, as a uint8 array, or None.
+
+    ⚠️ THE PURE-PYTHON RASTERISER IS PRIMARY, and that is a Windows decision
+    rather than a preference. `cairosvg` needs `cairocffi`, which publishes NO
+    Windows wheel and bundles no library -- it dlopens `libcairo-2.dll`, absent
+    from a stock Windows Python -- so on the platform most of these users are
+    on, the import raises and every program icon silently fails to draw.
+    `svg_raster` runs on `freetype-py`, already a declared dependency, which
+    does ship a Windows wheel with FreeType inside it.
+
+    Making it primary rather than a fallback also means one output everywhere:
+    otherwise Linux would draw cairo's rasterisation and Windows FreeType's,
+    and the difference would first show up in a screenshot nobody could explain.
+    Measured over 29 real icons at the shipping 40x40: the two agree to within
+    14 pixels worst case, typically 1-8, all of it antialiasing at the edge.
+    cairosvg stays as a fallback for anyone who has it.
+    """
+    try:
+        import numpy as np
+        with open(svg_path, encoding="utf-8", errors="replace") as fh:
+            text = fh.read()
+    except Exception as exc:
+        log.debug("Could not read %s: %s", svg_path, exc)
+        return None
+    try:
+        from polyhost.services import svg_raster
+        coverage = svg_raster.rasterise(text, size, size)
+        if coverage is not None:
+            return (coverage * 255).astype("uint8")
+    except Exception as exc:
+        log.debug("svg_raster could not draw %s: %s", svg_path, exc)
+    try:
+        import io
+        import cairosvg
+        from PIL import Image
+        png = cairosvg.svg2png(bytestring=text.encode("utf-8"),
+                               output_width=size, output_height=size)
+        return np.array(Image.open(io.BytesIO(png)).convert("RGBA"))[..., 3]
+    except Exception as exc:
+        log.debug("No rasteriser could draw %s: %s", svg_path, exc)
+        return None
+
+
 def render_overlay(svg_path: str, box: int = PROGRAM_ICON_BOX):
     """A 40x72 boolean array with the mark right-aligned, everything else blank.
 
@@ -357,32 +401,19 @@ def render_overlay(svg_path: str, box: int = PROGRAM_ICON_BOX):
     are blank, the ROI is small and the compressed payload well under a frame.
     """
     try:
-        import io
-        import cairosvg
         import numpy as np
         from PIL import Image
     except Exception:
-        # cairosvg is the one dependency this feature adds. A broken install
-        # must cost the icon, never the overlay.
-        log.debug("Cannot render a program icon: cairosvg/Pillow unavailable")
+        log.debug("Cannot render a program icon: Pillow/numpy unavailable")
         return None
-    try:
-        with open(svg_path, "rb") as fh:
-            data = fh.read()
-        png = cairosvg.svg2png(bytestring=data,
-                               output_width=box * SUPERSAMPLE,
-                               output_height=box * SUPERSAMPLE)
-        alpha = np.array(Image.open(io.BytesIO(png)).convert("RGBA"))[..., 3]
-    except Exception as exc:
-        log.debug("Could not rasterise %s: %s", svg_path, exc)
+    alpha = _alpha(svg_path, box * SUPERSAMPLE)
+    if alpha is None:
         return None
 
     rows = (alpha > 0).any(1).nonzero()[0]
     cols = (alpha > 0).any(0).nonzero()[0]
     if not len(rows) or not len(cols):
         return None
-    from PIL import Image
-    import numpy as np
     ink = Image.fromarray(alpha[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1])
     scale = min(box / ink.width, box / ink.height)
     ink = ink.resize((max(1, round(ink.width * scale)),

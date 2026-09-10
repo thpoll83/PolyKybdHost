@@ -19,7 +19,7 @@ fonttools
 pyserial
 packaging
 jeepney; sys_platform == "linux"
-# Rasterises the program icon (a Simple Icons SVG) for the ESC keycap. Every
-# use is behind a try/import inside the render, so an install without it -- or
-# without the native cairo it binds to -- loses the icon and nothing else.
-cairosvg>=2.7
+# NOTE: the program icon does NOT need cairosvg. It is rasterised through
+# freetype-py (above) by services/svg_raster, because cairocffi publishes no
+# Windows wheel and bundles no cairo, so `import cairosvg` raises on a stock
+# Windows Python. cairosvg is used as a fallback if it happens to be installed.
