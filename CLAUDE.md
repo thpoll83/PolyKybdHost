@@ -24,384 +24,24 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   in `raw_hid_receive()`, worth seconds of blocked main loop) that was adopted.
   Reply to the false ones with the evidence so they are not re-raised.
 
-- **A bot comment is not a review — check whether one actually ran before treating
-  a PR as reviewed.** PR #127 (2026-08-01) collected four bot comments and **none
-  was a review**: CodeRabbit was rate-limited across both pushes (a `> [!WARNING]
-  Review limit reached … next review in 43 minutes` comment, re-queued and still
-  unavailable at merge time), Sourcery had hit its weekly diff-character limit so
-  it posted only its descriptive *Reviewer's Guide*, and Qodo only ever posts a
-  *PR Summary* (and, since its subscription lapsed, only a *"reviews are paused
-  because the subscription is no longer active"* notice — docs#48, 2026-08-17).
-  All three render as long, confident-looking comments with
-  walkthroughs and file tables, so the PR read as well-reviewed and merged with
-  zero findings raised against it. Tells: CodeRabbit's rate-limit notice (and the
-  "Reviews paused" one — see the same section in `qmk_firmware/CLAUDE.md`), and
-  the absence of any *Actionable comments posted: N* line. When it matters, wait
-  for the window or comment `@coderabbitai review`.
-  - ⚠️ **Both of those tells failed on #156 (2026-08-11) — the only reliable check
-    is whether the walkthrough describes the commit you are looking at.** Compare
-    its file list against the head commit's: the walkthrough named 2 files while
-    the head changed 4, and described the superseded change. Three ways it misleads:
-    - **The rate-limit banner DISAPPEARS on a re-render.** Editing the PR body
-      re-rendered the pre-merge-check block, and the `> [!WARNING] Review limit
-      reached` notice vanished with it — leaving a clean-looking walkthrough plus
-      "🚥 Pre-merge checks ✅ 5" over a commit nothing had read. A missing banner is
-      not evidence a review ran.
-    - **`@coderabbitai review` can answer WITHOUT a formal review.** The reply ran
-      a real analysis chain (diffed the 4 files, read the callers, scripted its own
-      cross-check) and returned *"I reviewed commit f14ae25 … no correctness,
-      regression, or documentation issues"* — a genuine, verifiable read. But the
-      same comment was then **edited in place** from *"Action performed: Review
-      triggered"* to *"⚠️ Action not completed — Review rate limited"*, and the
-      walkthrough stayed stale for good (an incremental system will not re-review
-      a commit it has "seen"). So a substantive verdict and a missing formal review
-      can coexist. Take the verdict, but don't expect the PR summary to describe
-      the change — put the real description in the **PR body**, which you control.
-    - **The FILE LIST is not enough on a single-file PR — compare what the
-      walkthrough SAYS.** On docs#42 (same day) a follow-up commit touched the
-      same one file the reviewed commit did, so the file-list check above passes
-      while the review is still describing the superseded diff; only the absent
-      mention of the new section gave it away. The mechanism: the walkthrough is
-      **sticky** — it survives from the last *successful* review and is not
-      refreshed by a rate-limited one, which replaces only the review-info block
-      beneath it. Note the banner behaved *correctly* here (present, with the
-      real `<old>..<new>` range), so the asymmetry is: **a banner that is present
-      is trustworthy; a banner that is absent proves nothing.**
-    - ✅ **There IS a cheap reliable tell after all: the Merge Risk block names the
-      commit it covers** — *"Merge Risk: 🟡 Moderate · up to `351b8`"*.
-      Read that sha instead of comparing walkthrough prose against the head
-      commit. On docs#48 (2026-08-17) the summary re-rendered on **three**
-      successive pushes, each time still scoped `up to 351b8` and still asserting
-      the PR was "not merge-ready" over a concern two later commits had already
-      fixed — while CodeRabbit's own chat reply confirmed the fix. Same sticky
-      mechanism as above, but self-labelling: if that sha is not the head,
-      something in the summary is stale. It is worth checking before believing
-      any *later* re-render of a summary, including a scary one.
-      - ⚠️ **But it is a POSITIVE tell only — a lagging Merge Risk sha does NOT
-        prove the whole summary is old, and this line used to say it did.**
-        On qmk#250 (2026-08-29) the sha read `up to b6c1b` while the **📥 Commits**
-        line in the *same comment* correctly said *"between `b6c1b7f` and
-        `386d74f`"* — i.e. the review genuinely covered the newer head and only
-        the risk block lagged. So **read the range line, and settle it against the
-        PR's actual head sha from the API.** Full case in the CodeRabbit sub-note
-        under Sourcery's `✅ Addressed in <sha>` entry below.
-        - ⚠️ **This used to say the reviewed-range line "was accurate every time".
-          It is NOT — measured 2026-09-03 on qmk#268.** The range line advanced to
-          `68e30d18..d03a1107` inside a summary re-render whose own body said
-          *"Review skipped"*, i.e. it named a head range that no review had read.
-          So the range line reports **what the render was scoped to**, not what was
-          reviewed, and neither it nor the Merge Risk sha stands alone. The only
-          thing either supports is *which* commit is being discussed; whether a
-          review RAN is answered by `get_reviews` plus the body text, and by
-          nothing else in the summary comment.
-      - ⚠️ **And a MATCHING sha does not make the prose beside it current either —
-        it dates the COVERAGE, not the text.** On qmk#259 (2026-09-01) the block
-        read `up to 7dd4c`, the actual head, on a review that had genuinely just
-        read that commit — while its risk prose re-raised two findings settled the
-        round before, both of which **CodeRabbit had itself withdrawn and recorded
-        repo learnings about** (a `config.h DESCRIPTION`/`config_common.h` request
-        it agreed was wrong after its own `fd`/`rg` sweep, and a persist-the-
-        migrated-idle-style ask it accepted as deliberate design). So the sha is
-        only ever evidence about *which commit was read*; whether the summary text
-        reflects the thread history is a separate question it cannot answer. The
-        practical rule: **the Merge Risk prose is not a merge gate** — check it
-        against the resolved threads before letting it hold up a PR, and expect it
-        to re-litigate anything you settled by argument rather than by a code change.
-    - ⚠️ **The limit is per-developer across the ORG, so pushes to a trivial PR
-      starve the one that needs review.** Docs pushes on #42 consumed the window
-      #159 was waiting for. When two PRs are open and one is real code, stop
-      pushing cosmetic commits to the other until the important one is reviewed.
-    - ⚠️ **A THIRD no-review mode: CodeRabbit does not auto-review a repo with
-      fewer than 10 stars at all** — *"Reviews should be triggered manually for
-      repositories with fewer than 10 stars"*, rendered as a *"Review available on
-      request"* box with a Trigger-review checkbox. This is permanent, not a
-      transient limit, so it is easy to mistake for "no findings". It applies to
-      **`polykybd-docs`** (docs#48, 2026-08-17) **and to `PolyKybdHost`** (#172,
-      2026-08-18) — i.e. do not assume the host repo auto-reviews; the fix is
-      simply to comment `@coderabbitai review`. The same reply then states the quota
-      outright — *"Your plan includes up to 1 review per rolling hour; 0 remain
-      after this review"* — which is the number to plan around when a PR needs a
-      re-review after a fix.
-      - ⚠️ **On such a repo there is NO free retry, because the "a push
-        re-triggers a review without spending a request" escape hatch recorded
-        below relies on AUTO-review — which is exactly what being under 10 stars
-        turns off.** So the two notes interact badly and the interaction is not
-        obvious from either one: on `qmk_firmware` a push is the cheap way to get
-        another look, and on `PolyKybdHost` / `polykybd-docs` a push buys nothing
-        at all. Every review here costs a quota slot, so spend it on the commit
-        you actually want read. **Observed, not inferred** (host#218,
-        2026-09-07): two pushes after the review each re-rendered the summary as
-        *"This repository does not receive automatic reviews because it has fewer
-        than 10 stars"* with a Trigger-review checkbox — a SKIP, not a review.
-      - ⚠️ **A push mid-run did NOT abort the review (host#218, 2026-09-07) — but
-        the review stayed pinned to the PRE-PUSH head, which is the outcome that
-        matters and is quieter than an abort.** `qmk_firmware/CLAUDE.md` records
-        that a push while a review is in flight aborts it, erasing its own
-        evidence. Measured here: the run started 10:16:08, a push landed 10:18:57,
-        and the review completed normally at 10:25:04 — full walkthrough, 3
-        findings, pre-merge checks. What it did **not** do is notice the new
-        commit: its `📥 Commits` range read `c02a1fa..be78692` throughout and the
-        review object carries `commit_id: be78692`, so the pushed commit was
-        never read. Under this file's own standing check — a review counts only
-        when its `commit_id` equals the PR head — **that review is not cover for
-        the head it appears under**, and on an under-10-stars repo re-reading the
-        new commit costs the hour's only slot. One observation is not a base rate,
-        so do not read this as "the abort does not happen"; read it as **the
-        failure can be silent non-coverage rather than a visible abort**, which
-        the range line and `commit_id` will tell you and nothing else will.
-    - ⚠️ **All THREE bots can be unavailable at once, each in its own disguise —
-      #172 (2026-08-18) collected a full page of bot output and not one review.**
-      CodeRabbit posted the under-10-stars "Review available on request" box;
-      Sourcery submitted a review whose entire body was its weekly rate-limit
-      notice **and a `Sourcery review` check run with conclusion `skipped`**
-      (green-adjacent, not red); Qodo posted its subscription-lapsed notice. On top
-      of that Sourcery still rendered a full *Reviewer's Guide* with two mermaid
-      sequence diagrams and a file-level change table — pure description, zero
-      findings — which is the most convincing-looking artifact of the three. Read
-      the check-run *conclusion* and the review *body*, never the presence of
-      output.
-      - ⚠️ **An on-demand Claude reviewer was tried as the remedy for all
-        three and REMOVED (2026-08-20) — don't rebuild it.** `claude-review.yml`
-        + `claude-mention.yml` ran the `code-review` plugin off a `@claude
-        review` comment, in all three repos. It published exactly **one** usable
-        review in its life (host #185) and otherwise didn't: on #181 it spent 10
-        turns and $2.76 and posted nothing, and three summonses on `polykybd-docs`
-        each went green having published nothing, with a
-        `permission_denials_count` the log would not let us identify (the action
-        prints *"full output hidden for security"* and uploads no artifact, so
-        naming the denied tool would have cost two more merge cycles per guess).
-        Roughly $4 of subscription spend for one review. The workflows and the
-        `CLAUDE_CODE_OAUTH_TOKEN` secret are gone from all three repos.
-        **When no reviewer has run, the honest answer is that the PR is
-        unreviewed** — say so in the PR rather than reaching for a bespoke
-        opinion, and lean on the HIL rig, cppcheck and the unit suites, which is
-        where the real coverage was all along. ⚠️ **It is FOUR bots now, not
-        three** — Greptile was installed later and has its own entry below; check
-        it too before concluding a PR is unreviewed. That does not weaken the
-        conclusion, it sharpens it: on 2026-08-29 three of six PRs really were
-        reviewed by nobody, and Greptile's silence is the one that leaves no
-        trace to notice.
-      - ⚠️ **On THIS repo "reviewed by nobody" is too strong, because CodeQL runs
-        on every PR and nothing in this section said so** — `.github/workflows/
-        codeql.yml`, `pull_request: [main]`, check name **Analyze Python**. Its own
-        header comment states the reason it exists: the LLM reviewers "are all LLMs
-        trained on much the same public code, so their blind spots overlap", while
-        it "is also free on public repos with no quota, so unlike every bot on this
-        PR it cannot go quiet at the moment it is needed". That is the exact gap the
-        four preceding notes catalogue, and the remedy was already installed. It is
-        the sibling of the firmware repo's cppcheck (`qmk_firmware/CLAUDE.md` even
-        says *"The host repo runs CodeQL instead"*) — so the fact was written down,
-        just not in the file describing this repo's own board.
-        - It **earns the slot**: on host#218 (2026-09-07) it produced three findings
-          before any bot had run, and the PR carried a green Sourcery-skipped board
-          at the time. Its findings arrive as inline review comments from
-          `github-advanced-security[bot]` plus a review object — i.e. `get_reviews`
-          sees it, which the five-reviewer check below has to account for.
-        - ⚠️ **NEITHER of its two green ticks means "no findings" — this line used to
-          say "judge it by the `Analyze Python` JOB, not the `CodeQL` check run", and
-          that is WRONG.** The job reports whether the ANALYSIS ran, not what it
-          found, so it concludes `success` either way: measured on host#226
-          (2026-09-09), run 204 concluded `success` while carrying all **12** alerts,
-          and runs 207/208 concluded `success` carrying none. Nothing in
-          `get_check_runs` separates those.
-          - **What DOES answer it is `get_review_comments`.** Every alert is a review
-            thread, and GitHub flips the thread to `is_resolved: true` +
-            `is_outdated: true` once the alert is fixed — so twelve resolved threads
-            is POSITIVE evidence the round is closed, where "no new review object on
-            the new head" is only the absence of evidence (and is exactly the
-            false-negative the clean-CodeRabbit note below warns about). Read the
-            threads, not the ticks.
-        - ⚠️ It is **not** an answer to a design question and does not read prose;
-          it finds the class of defect dataflow finds. "CodeQL was green" is not
-          review cover for a refactor, only for what its queries cover.
-        - ⚠️ **`py/unused-import` on a RE-EXPORT module is right about the file and
-          wrong about the remedy — declare `__all__`, never delete the name.**
-          CodeQL reasons within one module, so a name re-exported for other callers
-          reads as dead to it, and it cannot see attribute access from elsewhere:
-          on host#218 it flagged `THEME_DARK`/`THEMES` in `polyhost/gui/theme.py`,
-          and `THEME_DARK` is genuinely used — as `theme.THEME_DARK`, from
-          `tests/gui/theme_test.py`. Deleting the names to clear the alert would
-          have broken the tests while the alert went green, which is the worst
-          available outcome. `__all__` silences it AND states the surface honestly;
-          verified by re-scan (the next run posted nothing). Make the `__all__`
-          complete while you are there — an `__all__` that omits real public names
-          is a new false claim in place of the old one. This repo has several such
-          front doors (`gui/theme.py`, `core/events.py`, the `server/` package), so
-          expect it again.
-        - ⚠️ **`py/unused-global-variable` on a Qt `_APP` keepalive is the SAME
-          family and the remedy is NOT to decline it — the repo already carries the
-          form that satisfies it.** Fifteen test modules hold a QApplication alive so
-          Qt's runtime is not garbage-collected out from under the next widget; twelve
-          assign it at module level, and `tests/gui/macro_tab_test.py` pairs that with a
-          `setUpModule` asserting `_APP is not None`, whose docstring says it is there
-          *"to a reader and to a static analyser alike"*. The three files CodeQL flagged
-          on #226 had deferred the construction into `setUpModule` with a `global` write
-          nothing ever read — which is precisely the shape the query looks for. **So a
-          finding on an established idiom is worth one grep before it is worth a reply:**
-          `grep -rn "QApplication.instance() or QApplication" tests/` would have shown
-          twelve siblings the alert does not fire on, and the difference between them and
-          mine WAS the bug. Same lesson as the ControlServer deadlock — the remedy was in
-          the tree and the failure was search.
-      - ⚠️ **`actions_list` blows the tool token cap — 130–220 KB per call, even
-        at `per_page: 3`** (kept from the above, because it applies to reading
-        *any* workflow run). It saves the JSON to a file and tells you the path;
-        parse that rather than retrying with a smaller page size — it is the
-        per-run payload that is large, not the count. Hit 3× in one session.
-        ⚠️ Read the conclusion defensively — an **in-progress run has no
-        `conclusion` key at all**, so the obvious parse raises a KeyError on
-        exactly the run you are waiting for:
-        ```python
-        d = json.load(open(saved_path))
-        for r in d.get("workflow_runs", d):
-            print(r["id"], r["status"], r.get("conclusion", "<running>"))
-        ```
-      - **Reading a job log: ask for ≥300 `tail_lines`.** Every job ends in ~40
-        lines of git post-job cleanup, and a failing tool often dumps
-        diagnostics *after* its own error, so a smaller tail lands squarely in
-        the noise.
-      - ⚠️ **`pull_request_read` STRIPS HTML-like tags out of a PR body, so a body
-        that reads as corrupted through the MCP is usually fine on GitHub.** A body
-        naming XML elements (`<sheetData>`, `<mergeCell ref>`, `<hyperlink ref>`)
-        came back with those collapsed to empty backticks, which looks exactly like
-        a body mangled at write time. **Verify with WebFetch against the rendered
-        page before "fixing" it** — 2026-09-03 cost an edit that repaired nothing.
-        Note also that editing a PR body **re-renders the CodeRabbit summary**, which
-        is its own source of confusion (see the sticky-walkthrough notes above).
-  - ⚠️ **A review that DID run, on the right commit, with an accurate walkthrough,
-    can still have SKIPPED the file you care about — read the "Files skipped from
-    review" list before trusting a clean verdict.** On qmk PR #198 (2026-08-11)
-    CodeRabbit reported *"No actionable comments were generated 🎉"* against the
-    right head, and its walkthrough had correctly refreshed (it dropped a claim the
-    latest commit had deleted), so every tell above says *reviewed* — while the
-    same comment listed `poly_keymap.c` under *"🚧 Files skipped from review as they
-    are similar to previous changes"*. That file held **all** the new logic (a
-    modifier latch, an ownership-gated release swallow, an inverted render path);
-    the incremental heuristic judged it similar to its own earlier review of the
-    same file, so the green verdict covered only a header, a tool script and a
-    keymap. This is the complement of the stale-walkthrough traps above: there the
-    walkthrough lies about *which commit*, here it is honest and the **coverage** is
-    the gap. The fix is **`@coderabbitai full review`**, which re-reviews the whole
-    diff regardless of incremental state — and it worked: the full pass read the
-    file and confirmed the latch ownership and release-swallow gating specifically.
-    ⚠️ Spend the slot deliberately, per the org-wide-limit note above: each
-    `@coderabbitai review` consumes one **even when it is refused** ("⚠️ Action not
-    completed / Review rate limited"), so retries starve the window they wait on. A
-    **push** re-triggers a review without spending a request — on that PR the next
-    commit is what finally got one to run after two requests had been eaten.
-  - ⚠️ **The rate-limit wait is NOT a fixed hour — it stretches as you spend
-    requests, and the "Trigger review" checkbox spends one exactly like the chat
-    command.** On host #170 (2026-08-18) the first refusal said *"next review in
-    19 minutes"*; waiting that out and asking again returned **52 minutes**, i.e.
-    the second request pushed the window further out than the wait it was issued
-    for. So "wait for the stated time, then retry" is the one strategy that
-    reliably starves you — each retry buys a longer wait than it costs. Two
-    consequences: on an under-10-stars repo (host + docs, see below) do **not**
-    tick the box *and* comment `@coderabbitai review`, that is two slots for one
-    review; and when a review is genuinely needed, spend the slot on the final
-    commit and otherwise let a **push** trigger it (pushes don't draw on the
-    quota — the note above).
-
-- ⚠️ **There is a FOURTH reviewer — Greptile — and its failure mode is the
-  QUIETEST of the four: when it does not review, it says so NOWHERE.** Every other
-  note in this section catalogues a way CodeRabbit / Sourcery / Qodo go quiet, and
-  the set was written when those three were all there was. Greptile posts no
-  rate-limit banner and no "review skipped" box, so a PR it never looked at reads
-  exactly like one it had no findings on. CodeRabbit at least renders a notice;
-  Sourcery at least submits a review object whose body says why. **So Greptile
-  cannot be counted as cover unless you have confirmed a review object exists**,
-  and its silence must never be read as a clean bill.
-  - ⚠️ **The `Greptile Review` CHECK RUN is not that confirmation — measured, it
-    pointed the WRONG WAY every time.** It is a check run like Sourcery's, and a
-    green one is the same trap `qmk_firmware/CLAUDE.md` already records for
-    Sourcery ("goes GREEN while no review happened"). Here it is stranger: across
-    the three completed PRs of the session below, the check run and the review
-    object were **perfectly anti-correlated** — qmk#251 had a green `success`
-    check that ran two minutes and **no review object at all**, while qmk#253
-    (two reviews) and host#202 (one) had **no check run**. Four data points is
-    not a mechanism and this is deliberately not theorised into one; the
-    operative rule is simply that **the check run answers a different question
-    than "was this reviewed"**, and only `get_reviews` answers that one.
-  - **Measured over one six-PR session** (2026-08-29, across `PolyKybdHost`,
-    `qmk_firmware` and `Adafruit-GFX-Library` — `pull_request_read`
-    `get_reviews` on each): Greptile reviewed **2 of 6**. Sourcery refused all
-    six, CodeRabbit reviewed one. **Three PRs — Adafruit#11, host#201, qmk#251 —
-    were reviewed by NOBODY**, and only the Sourcery refusal notice made that
-    visible.
-  - ⚠️ **There is no size or repo pattern to predict from.** It skipped a 2-line
-    `requirements.txt` PR and a small workflow PR while reviewing a docs-only one,
-    so "it was too big / too trivial" does not explain the gaps. Do not build an
-    expectation of when it runs.
-  - ✅ **What it does well, when it runs, is the thing the others get wrong:
-    it re-reviews the follow-up commit.** On qmk#253 it reviewed `dcaaf27` and
-    then `24aa1ed` on its own, both `commit_id`s matching the head — none of the
-    stale-walkthrough / sticky-summary / false-`✅ Addressed in <sha>` bookkeeping
-    catalogued above. It also reviews **`.md`-only PRs**, which CodeRabbit's
-    incremental heuristics routinely skip, so it is often the only reviewer that
-    reads a CLAUDE.md change — and given how much load-bearing detail lives in
-    these files, that is not a lesser class of review.
-  - **Its findings get the same scrutiny as anyone's** — verify, don't defer. Its
-    one real catch that session was a *consistency* finding an LLM is well placed
-    to make and a linter is not: a note being added to this very file
-    **contradicted an entry two paragraphs above it**, which is what produced the
-    reconciliation in the Merge-Risk-sha note below.
-    - ⚠️ **It posts the SAME finding TWICE, and answering one leaves the other
-      open** — once as an issue comment (its summary, carrying a "Prompt To Fix
-      All With AI" block) and once as an inline **review thread**. They arrive as
-      separate events minutes apart, so a reply to the comment does not resolve
-      the thread. Reply on the **thread** and resolve it; the issue comment is
-      the copy that can be left. Seen on host#200 and host#204.
-    - It cites `CLAUDE.md` as "Context Used", i.e. it reads this file — which is
-      a reason to keep these notes accurate about *intent*, not only about
-      mechanism.
-  - **The standing check is the same one every failure mode above is caught by**
-    and it is two seconds: `pull_request_read` `get_reviews`, then **for each
-    review, both** (a) its `commit_id` equals the PR's head sha, **and** (b) its
-    body is not a refusal notice. No *check run*, bot comment or walkthrough adds
-    anything to that pair — but ⚠️ **the pair alone is NOT sufficient either**: a
-    clean CodeRabbit review leaves no review object at all, so it reads as "never
-    read" (see the false-negative bullet below, which is the other half of this
-    check). Run both together.
-    - ⚠️ **(b) is not a refinement, it is half the check — a REFUSAL IS A REVIEW
-      OBJECT, and it carries the head sha.** Sourcery's budget and diff-too-large
-      notices arrive as `COMMENTED` reviews stamped with the current head, so a
-      `commit_id`-only rule marks the PR reviewed. The six-PR table above proves
-      it against itself: Sourcery submitted such an object on **every** one, each
-      matching that PR's head — including the three the table records as reviewed
-      by nobody. This entry asserted the `commit_id` rule alone anyway, two
-      paragraphs below a Sourcery note that already said the tell is the body
-      text (caught by Greptile in review, 2026-08-30). **A check that contradicts
-      another entry in the same file is the failure mode this section keeps
-      producing; grep for the sibling note before writing the rule.**
-  - ⚠️ **The standing `get_reviews` check has a FALSE NEGATIVE pointing the OPPOSITE
-    way from the refusal case: a CLEAN CodeRabbit review creates NO REVIEW OBJECT AT
-    ALL.** It reports *"No actionable comments were generated 🎉"* by **editing its
-    existing summary comment**, so `get_reviews` returns nothing for that head and
-    the pair-check above reads a clean pass as "never reviewed". Measured on qmk#268
-    (2026-09-03). The two failure modes therefore point in opposite directions — a
-    refusal IS an object and means nothing, a clean pass is NO object and means
-    everything — so **neither signal decides it alone**: read the summary comment's
-    own body (its `📥 Commits` range, and whether it says *skipped* or *no actionable
-    comments*) alongside `get_reviews`.
-  - ⚠️ **A commit whose only reviewable file is GENERATED is skipped outright, which
-    on a data change is every commit.** *"Review skipped as selected files did not
-    have any reviewable changes"* — twice on qmk#268, where the diff was `lang_lut.c`
-    (a cog-generated table) plus `lang_lut.xlsx`, and the workbook is excluded by
-    CodeRabbit's own `!**/*.xlsx` path filter. So a per-language data pass is
-    **structurally unreviewable** by it: no banner, no rate limit, nothing wrong —
-    just no review, ever. Plan the verification accordingly (assert the generated
-    diff is confined to what you meant, and measure the rendered result) rather than
-    expecting a reviewer to catch a wrong cell.
-  - ⚠️ **This entry has now been wrong THREE times, and every correction came
-    from the API rather than from thinking harder.** The first draft claimed
-    Greptile had reviewed all six PRs — it was 2. The second claimed it emits "no
-    check run" — it emits one, and a green one at that. The third said Sourcery's
-    countdown "says when a review is actually available again" — one was
-    superseded three minutes later. Reviewer behaviour is exactly the kind of
-    claim that feels observed and is not: every bot posts *something* on most PRs,
-    so the impression of having been reviewed accrues without a single review, and
-    a confidently-worded notice reads as a fact about the system rather than as
-    one sample. **Nothing in this section should be written from recollection —
-    `get_reviews`, `get_check_runs`, and the timestamps, every time.**
+- ⚠️ **A green board is NOT evidence a reviewer read your code, and every bot here
+  has a way of going quiet that looks like a clean pass.** The standing check, in
+  full, is `pull_request_read` `get_reviews` plus the summary comment's body:
+  - a review counts only when its **`commit_id` equals the PR head sha** AND its
+    **body is not a refusal notice** (a quota / diff-too-large refusal is a real
+    review object carrying the head sha, so the sha alone reads as reviewed);
+  - **and the absence of a review object proves nothing either** — a CLEAN
+    CodeRabbit pass creates none, it edits its summary comment to say *"No
+    actionable comments were generated"*. So read the summary body's `📥 Commits`
+    range alongside `get_reviews`.
+  - **No check run answers this question.** A green `Sourcery review` /
+    `Greptile Review` / CodeRabbit status has accompanied a PR that nothing read,
+    measured, more than once.
+  **The full field guide — which bot goes quiet in which disguise, the sticky
+  walkthrough, the Merge Risk sha, the false `✅ Addressed in <sha>` attribution,
+  the quota shapes and the rate-limit arithmetic — is the `triage-pr-review`
+  skill**, mirrored in both repos. Load it when you are actually triaging a PR;
+  it is ~51 KB that does not belong in every session's context.
 
 - **A reviewer's CONCLUSION can be sound while its EVIDENCE is invented — and the
   evidence is worth correcting separately.** The existing rule above says verify and
@@ -448,97 +88,6 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
       is a LIABILITY the moment the other side moves: nothing here would have
       failed, so the divergence would simply have flipped direction in silence.
       When you pin one, name the upstream change that would invalidate it.
-
-- ⚠️ **Sourcery refuses in TWO different ways, and only one of them is the weekly
-  budget.** Both arrive as a `COMMENTED` review whose entire body is the notice, so
-  the tell is the body text, not the presence of a review:
-  - **Budget** — *"you've used your own review budget of 250,000 diff characters
-    for the last 7 days ... You can request another review in 1 day and 16 hours by
-    commenting `@sourcery-ai review`"*. ⚠️ Note the FIGURE MOVES — 250,000 here,
-    500,000 in an older notice `qmk_firmware/CLAUDE.md` quotes, and **150,000** on
-    host#226 (2026-09-08) — so it is per user and rolling 7 days, but the number is
-    only ever the one in the message in front of you. ⚠️ **The countdown is NOT "come
-    back then" — do not plan around it.** Measured across the four PRs of
-    2026-08-30, four refusals issued **within 61 seconds of each other** quoted
-    four different waits — 4 days, 1 day 3 hours, 1 day 3 hours, 19 hours 41
-    minutes — so it is computed per PR, not from one global clock. And one of them
-    was superseded almost immediately: qmk#255 was told *"1 day and 3 hours"* at
-    08:58:18 and Sourcery submitted a real **`APPROVED`** review on its next
-    commit at **09:02:21, three minutes later**. The other three pushed follow-up
-    commits too and got nothing, so this is neither reliable nor universal —
-    **1 of 4**. ⚠️ **Reproduced 2026-09-01 on docs#69, and the second instance names
-    the trigger: a PUSH.** Refused on `76716da` at 12:44:37 quoting *"1 day and 21
-    hours"*, then `APPROVED` on `fa641b1` at **12:48:41 — four minutes later**, with
-    nothing in between but a commit. So the countdown tracks the PR state it was
-    computed against, not a clock you can wait out, and a push is what re-tries it —
-    the same shape as CodeRabbit's "a push re-triggers a review without spending a
-    request" above. Both reviews carried the right head sha, so the standing
-    `commit_id`-plus-body check reads them correctly.
-    Treat the countdown as an upper bound of unknown tightness, keep
-    pushing, and check `get_reviews` rather than waiting out the clock.
-  - **Diff too large** — *"Sorry, we are unable to review this pull request. The
-    GitHub API does not allow us to fetch diffs exceeding 20000 lines"*. A hard
-    ceiling, not a quota, so waiting does nothing. This is Sourcery's version of
-    CodeRabbit's >100-file skip (`qmk_firmware/CLAUDE.md`), and the two land on the
-    same PRs: an upstream merge, or anything mechanical like untracking a committed
-    build directory (Adafruit#11, 5,224 files). On such a PR **both** LLM reviewers
-    are out by construction, so plan the review before opening it — split the
-    mechanical change from the reviewable one, or accept that only cppcheck, the
-    build and the rig will read it.
-
-- ⚠️ **Sourcery's `✅ Addressed in <sha>` line names the CURRENT HEAD, not the commit
-  that fixed anything — treat it as a timestamp, never as evidence.** On docs#67
-  (2026-08-27) the same two findings were re-rendered three times, credited in turn to
-  `c0f7928`, `896c3f6` and `0b859b2`. Only the first actually fixed them; the second
-  touched one unrelated file and the third added a CLI flag. The claim is generated by
-  re-checking the finding against the tree and stamping whatever head it re-checked at,
-  so it is *right about the state* and arbitrary about the cause.
-  - **Why it matters beyond tidiness:** the obvious reading is "my last push fixed
-    this", which invites either a duplicate fix or — worse — the belief that a finding
-    you have NOT addressed was handled by a commit that merely happened to land after
-    it. `git show --stat <sha>` settles it in one command; do that before believing
-    either direction.
-  - The findings themselves were both real and both worth having (a Keymap Editor page
-    contradicting the new Macros page, and a CLI reference missing a whole subcommand
-    family). This is the same "conclusion sound, evidence invented" shape recorded for
-    CodeRabbit below — take the finding, check the attribution.
-  - ⚠️ **CodeRabbit does this too, and its version is WORSE: it AUTO-RESOLVES the
-    thread on the strength of the false attribution.** On qmk#250 (2026-08-29) its one
-    inline finding was stamped `✅ Addressed in commit 9357ee4` and the thread closed —
-    but `git show 9357ee4 -- <path> | grep -c _WIN32` returns **0**: that commit never
-    touched the flagged sentence, which was still at head. The real fix landed two
-    commits later in `386d74f`. Sourcery's version merely misleads; this one *files the
-    thread away*, and a resolved thread is one nobody re-reads — so an unaddressed
-    finding can disappear silently. **Check the sha before trusting a resolution, not
-    just before trusting a claim.**
-    - **Three of its self-reports on that one PR were false, while the finding itself
-      was genuine and improved the change** (it correctly caught that `#ifndef _WIN32`
-      does not exclude an RP2040 build, so citing it as proof of "desktop-only" was bad
-      reasoning). The other two: it said *"I couldn't resolve this review thread … so it
-      remains open"* while the API reported `is_resolved: true`, and its **Merge Risk**
-      line still read `up to b6c1b` two pushes later, in the *same comment* that
-      correctly named the reviewed range `b6c1b7f..386d74f`. So the sha-in-the-Merge-Risk
-      tell recorded above is itself only as good as the render you are reading — it went
-      stale while the commit range beside it stayed accurate.
-    - ✅ **Replying with the evidence is worth it.** CodeRabbit conceded every point
-      (including "The fix belongs to `386d74f`. The previous attribution to `9357ee4`
-      was incorrect") and recorded a durable repo learning about the file. Same payoff
-      as the PolyKybd#35 stale-netlist reply — one reply, a permanent correction.
-
-- **CodeRabbit's plan is PER-REPOSITORY, and Pro Plus does NOT mean a fixed
-  number of included reviews per hour — read the figure off the run footer.**
-  Private repos here get the summary-only Free tier; public ones
-  (PolyKybd, qmk_firmware) report `Plan: Pro Plus` — but the run footer then says
-  *"Your plan provides up to N included reviews per hour; M remain after this review"*.
-  ⚠️ **Read N off the run footer rather than trusting a number written here — it is not
-  a constant.** This line said "2" for a while; the `qmk_firmware` footer on 2026-08-29
-  read **1**, on the same Pro Plus plan.
-  ⚠️ **A request consumes a slot even when it is refused**, so retries starve the window
-  they are waiting on (already recorded for the org-wide limit; it applies to the hourly
-  one too). A **push** re-triggers a review without spending a request. And after a few
-  quick commits CodeRabbit **auto-pauses** the branch — from then on nothing is reviewed
-  until you comment `@coderabbitai review`, which is easy to miss because the paused
-  comment still renders a full walkthrough and green pre-merge checks.
 
 - **When two reviewers disagree about the same code, WRITE THE TEST — it
   adjudicates, and it is faster than arguing.** On PR #154 (2026-08-07) Sourcery
@@ -589,9 +138,9 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
 
 ## Mirrored skills (`qmk_firmware` ↔ `PolyKybdHost`)
 
-Five skills exist in **both** repos and are kept **byte-identical**:
+Six skills exist in **both** repos and are kept **byte-identical**:
 `add-gated-hid-command`, `mutation-test-suite`, `polykybd-github-release`,
-`session-retro`, `update-polykybd-docs`. A skill loads only from the repos a session has attached,
+`session-retro`, `triage-pr-review`, `update-polykybd-docs`. A skill loads only from the repos a session has attached,
 so one that describes cross-repo work is unreachable from a session opened on the
 other repo alone — which is what happened to `mutation-test-suite`, extended to
 cover Python/unittest suites while living only in the firmware repo.
@@ -607,7 +156,7 @@ because a skill has no build, no test and no reviewer.
 **So the rule is copy, never fork**: edit one, `cp` it to the other, and check with
 
 ```bash
-for s in add-gated-hid-command mutation-test-suite polykybd-github-release session-retro update-polykybd-docs; do
+for s in add-gated-hid-command mutation-test-suite polykybd-github-release session-retro triage-pr-review update-polykybd-docs; do
     cmp -s /home/user/qmk_firmware/.claude/skills/$s/SKILL.md \
            /home/user/PolyKybdHost/.claude/skills/$s/SKILL.md \
       && echo "$s: ok" || echo "$s: DRIFTED"
@@ -618,6 +167,74 @@ A firmware-specific section in the host's copy (or the reverse) costs a reader o
 skipped paragraph; a fork costs a note that only one repo ever sees. Take the first.
 If a skill ever genuinely needs to differ per repo, split the differing part into a
 separate skill rather than forking the shared one.
+
+### Where shared content can live, and what actually costs context
+
+⚠️ **A shared `CLAUDE-SHARED.md` imported by both repos would NOT reduce context.**
+Claude Code's memory docs say it twice: *"imported files still load and enter the
+context window at launch"*, and *"Splitting into `@path` imports helps organization
+but doesn't reduce context, since imported files load at launch."* The same is true
+of a `.claude/rules/` file with no `paths:` frontmatter. So single-sourcing the text
+fixes **drift** and buys nothing in tokens — worth knowing before the idea is
+proposed again, because it is an obvious-looking saving that is not one.
+
+- **The prize is small in any case — measured 2026-09-10.** Across the three
+  sections headed *"(all PolyKybd repos)"*, only **2,975 B** is byte-identical
+  between `qmk_firmware` and `PolyKybdHost`: the docstring-coverage rule, the
+  verify-an-AI-finding rule and the green-board rule. Everything else under those
+  headings has diverged into genuinely repo-specific material (qmk's
+  inherited-upstream scanner note means nothing in the host repo; the host's
+  Sourcery `nosemgrep` note means nothing in the firmware), and the two branching
+  rules are the same rules written twice in different words.
+- ⚠️ **A shared file also has nowhere safe to live.** It must sit inside a repo to
+  be version-controlled, and then a session that attached only the OTHER repo cannot
+  resolve it — the same silent absence that left `mutation-test-suite` unreachable
+  from host-only sessions and the five `keyboards/**/.claude/skills/` skills
+  invisible. The docs add a second silent failure: an import resolving outside the
+  working directory raises a one-time approval dialog, and *"If you decline, the
+  imports stay disabled and the dialog doesn't appear again."*
+- ✅ **What DOES reduce context**, in increasing order of saving: a `docs/*.md` file
+  read on demand; a **path-scoped rule** (`.claude/rules/*.md` with `paths:`
+  frontmatter), which loads only when Claude reads a matching file; and a **skill**,
+  which costs nothing at all until it is invoked. The docs are explicit — *"If an
+  entry is a multi-step procedure or only matters for one part of the codebase, move
+  it to a skill or a path-scoped rule instead."* **No path-scoped rule exists in
+  either repo yet**, and it is the obvious home for anything that only matters while
+  editing one directory.
+- **Block-level HTML comments are STRIPPED before injection**, so `<!-- … -->` in a
+  CLAUDE.md costs nothing — usable for maintainer notes, or as machine-readable
+  fences round a block that is meant to stay identical across repos.
+- ⚠️ **Both files are still past the documented target of "under 200 lines", and
+  that is the standing argument for EXTRACTION over adding.** Measured 2026-09-10,
+  before and after a deliberate pass: qmk **6,178 -> 2,296 lines (485 -> 176 KB)**,
+  host **3,198 -> 1,623 (266 -> 136 KB)**. Nothing was deleted — eighteen subsystems
+  moved WHOLE into `docs/` (host) or `keyboards/polykybd/*.md` (firmware), plus the
+  reviewer forensics into the `triage-pr-review` skill, each leaving a pointer that
+  carries only the rules binding code outside its own file. The notes are
+  measurements nobody can re-derive, so the trade is size against re-derivability;
+  extraction settles it without giving anything up. `/doctor` proposes trims, and
+  `claudeMdExcludes` skips a file wholesale if one is ever in the way.
+- ⚠️ **A move RE-BASES every relative path in the moved text, and a LINK is the half
+  that breaks silently.** Same hardcoded-`../`-depth trap the five relocated skills
+  hit, except prose is worse than a script: nothing runs it, so nothing fails.
+  Measured this pass — moving the font-pack notes from the repo root to
+  `keyboards/polykybd/` turned `](../AdafruitGFX/CLAUDE.md)` into a link at
+  `keyboards/AdafruitGFX/`. Check the files you touched, never the tree (an upstream
+  fork has thousands of `.md`):
+  ```bash
+  python3 - <<'EOF'
+  import pathlib, re
+  for f in list(pathlib.Path("keyboards/polykybd").glob("*.md")) + [pathlib.Path("CLAUDE.md")]:
+      for m in re.finditer(r'\]\(([^)#][^)]*)\)', f.read_text()):
+          t = m.group(1)
+          if not t.startswith(("http", "#")) and not (f.parent / t).exists():
+              print(f, "->", t, "=>", (f.parent / t).resolve())
+  EOF
+  ```
+  ⚠️ A path into a **sibling repo** resolves outside the checkout and always reports
+  missing in a session that did not attach it — read the RESOLVED path, not the
+  exists() bit.
+
 
 ## Branching (all PolyKybd repos)
 
@@ -921,6 +538,15 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
 
 ## Key notes
 
+Nine groups, ordered roughly by how often a session needs them. Six subsystems that
+are read only while you are inside them have moved to `docs/` and are reached from a
+pointer bullet in the group they belong to — the layout editor, the font-pack
+inspect/extend dialogs, diagnostics, telemetry, icons and autostart. Each pointer
+keeps the parts of its subject that bind code *outside* it; if a rule is in a
+pointer, it applies to you even if you never open the file.
+
+### Protocol, versions and the connect gate
+
 - **Version handling is RANGE-connect + per-feature gating (not exact-match).** The
   reconnect gate (`polyhost/core/decisions.py` `decide_reconnect_apply`) connects to any
   firmware whose protocol is **≥ `MIN_SUPPORTED_PROTOCOL`** (= 2, the packed-lang-list
@@ -938,6 +564,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   lists supported/unsupported features. This replaced the old exact-match gate that greyed
   out the **whole** menu on any mismatch (which had "been forgotten twice", leaving current
   keyboards rejected).
+
 - **Every new device-facing command MUST be version-gated — no exceptions.** When you add a
   HID command that the firmware only understands from protocol **N**: add a
   `FEATURE_MIN_PROTOCOL` entry (`device/poly_kybd.py`); guard the `PolyKybd` setter with
@@ -951,6 +578,54 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   range-connect model exists to prevent, and the kind of gate that "has been forgotten
   twice". The capability tests in `tests/device/poly_kybd_capabilities_test.py` are the
   pattern to extend.
+
+- **Wire-format-divergent commands are ENCODED for the device's protocol, not blocked.**
+  The only core command whose wire format ever changed is the **plain-overlay upload**
+  (P11 packed the modifier+segment into one header byte). `send_overlay_for_keycode`
+  (`device/poly_kybd.py`) branches on `self.protocol_version`:
+  `>= OVERLAY_PACKED_HEADER_MIN_PROTOCOL (11)` sends the packed 4-byte header, below it the
+  pre-v11 5-byte `[id, cmd, keycode, modifier, segment]` form — so overlays work on an older
+  keyboard too. Compressed/ROI headers never changed. For a device **newer** than the host
+  (only reachable via the "ignore" newer-firmware choice) we send our newest-known (packed)
+  form and accept that a *future* breaking change to an existing command is unknown to us.
+  If you add another wire-format-breaking change to an existing command, add a
+  `FEATURE_MIN_PROTOCOL` entry + an encode-branch here; a *new* command just needs a
+  `supports()` gate.
+
+- **Newer firmware than the host PROMPTS the user (session policy, default safe).** When
+  `kb_proto > __protocol__`, blindly trusting a newer firmware for wire-format-sensitive
+  commands is risky, so instead of silently connecting the host asks (dialog
+  `polyhost/gui/newer_firmware_dialog.py`, three choices): **Safe mode** (connect but
+  restrict to the stable set — firmware-update + Debugging; the default and the
+  dismiss/close outcome), **Check for updates** (run the host-app update check via the
+  `_on_update_clicked` idiom with `force=True`; install if a matching release is found, else
+  fall back to safe), or **Connect anyway** (full connect, newest-known formats). The choice
+  is a **session-only** core policy `PolyCore._newer_fw_policy` (like `ignore_version`; keyed
+  to the protocol it was chosen for so a re-flash re-asks) set via
+  `set_newer_firmware_policy(choice)` → `M_SET_NEWER_FW_POLICY` (RemoteCore mirror) →
+  drops `last_applied_connected` so the next probe re-applies. Safe mode is
+  `decide_reconnect_apply`'s newer branch: `connected=True` (so the probe doesn't churn) but
+  `compatible=False`/`safe_mode=True`, `tick_window_tracking` skips overlay/OS traffic while
+  `safe_mode`, and the status carries `safe_mode` + `newer_fw_pending` (with capabilities
+  reported all-False, so feature menus grey out). The GUI drives the dialog off that status
+  seam in **both** in-process (`_apply_reconnect_result`) and `--connect` client
+  (`_render_remote_status`) paths — `_maybe_prompt_newer_firmware`, once per protocol per
+  session. `--ignore-version` still forces a full connect (wins over the safe default). A
+  headless daemon with no GUI defaults to safe; drive it with `polyctl newer-policy
+  [ignore|safe]`.
+
+- **Still bump `__protocol__` (`polyhost/_version.py`) in lockstep with the firmware
+  PROTOCOL_VERSION.** It now defines the host's *newest-known* protocol (the fully-supported
+  "match" and the newest wire format the host emits), **not** a hard connect gate. Rule of
+  thumb unchanged: when you add a firmware-protocol feature threshold (e.g.
+  `IDLE_STYLE_MIN_PROTOCOL`, `GLYPH_SCRIPT_MIN_PROTOCOL`, `OVERLAY_PACKED_HEADER_MIN_PROTOCOL`),
+  the firmware protocol advanced to **N**, so set `__protocol__` to **N** and add the feature
+  to `FEATURE_MIN_PROTOCOL` in the same change. Forgetting it now only downgrades the status
+  to "update the host app" and disables that one feature (the keyboard still connects), rather
+  than rejecting the keyboard outright.
+
+- **Firmware update survives protocol mismatches**: `PolyHost.device_present` tracks "a device answers protocol-independent queries (GET_ID/GET_LANG)" separately from `connected` (protocol/version compatible). The flash/apply/bootloader actions and the release-update flow gate on `_fw_actions_allowed()` (present, not paused) — NOT on `connected` — so a keyboard on a mismatched protocol can always be updated (`CommandsSubMenu.update_enabled` re-enables exactly those items when the rest of the menu is greyed out). The HID flash protocol (`hid_fw_up`) is dispatched independently of `PROTOCOL_VERSION` in the firmware. Don't re-gate any firmware-update path on `self.connected`.
+
 - **When the BOARD changes something the host caches, the answer is a counter on a
   reply the host ALREADY polls — not a new poll, and not a push.** The reconnect probe
   sends GET_ID + GET_LANG every second (`RECONNECT_CYCLE_MSEC`), so the firmware's
@@ -975,68 +650,12 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     bugs live in. That invariant is a design decision, not an accident: v3 made
     `SEND_OVERLAY_MAPPING` silent to REDUCE escaped ACKs.
 
-- **Wire-format-divergent commands are ENCODED for the device's protocol, not blocked.**
-  The only core command whose wire format ever changed is the **plain-overlay upload**
-  (P11 packed the modifier+segment into one header byte). `send_overlay_for_keycode`
-  (`device/poly_kybd.py`) branches on `self.protocol_version`:
-  `>= OVERLAY_PACKED_HEADER_MIN_PROTOCOL (11)` sends the packed 4-byte header, below it the
-  pre-v11 5-byte `[id, cmd, keycode, modifier, segment]` form — so overlays work on an older
-  keyboard too. Compressed/ROI headers never changed. For a device **newer** than the host
-  (only reachable via the "ignore" newer-firmware choice) we send our newest-known (packed)
-  form and accept that a *future* breaking change to an existing command is unknown to us.
-  If you add another wire-format-breaking change to an existing command, add a
-  `FEATURE_MIN_PROTOCOL` entry + an encode-branch here; a *new* command just needs a
-  `supports()` gate.
-- **Newer firmware than the host PROMPTS the user (session policy, default safe).** When
-  `kb_proto > __protocol__`, blindly trusting a newer firmware for wire-format-sensitive
-  commands is risky, so instead of silently connecting the host asks (dialog
-  `polyhost/gui/newer_firmware_dialog.py`, three choices): **Safe mode** (connect but
-  restrict to the stable set — firmware-update + Debugging; the default and the
-  dismiss/close outcome), **Check for updates** (run the host-app update check via the
-  `_on_update_clicked` idiom with `force=True`; install if a matching release is found, else
-  fall back to safe), or **Connect anyway** (full connect, newest-known formats). The choice
-  is a **session-only** core policy `PolyCore._newer_fw_policy` (like `ignore_version`; keyed
-  to the protocol it was chosen for so a re-flash re-asks) set via
-  `set_newer_firmware_policy(choice)` → `M_SET_NEWER_FW_POLICY` (RemoteCore mirror) →
-  drops `last_applied_connected` so the next probe re-applies. Safe mode is
-  `decide_reconnect_apply`'s newer branch: `connected=True` (so the probe doesn't churn) but
-  `compatible=False`/`safe_mode=True`, `tick_window_tracking` skips overlay/OS traffic while
-  `safe_mode`, and the status carries `safe_mode` + `newer_fw_pending` (with capabilities
-  reported all-False, so feature menus grey out). The GUI drives the dialog off that status
-  seam in **both** in-process (`_apply_reconnect_result`) and `--connect` client
-  (`_render_remote_status`) paths — `_maybe_prompt_newer_firmware`, once per protocol per
-  session. `--ignore-version` still forces a full connect (wins over the safe default). A
-  headless daemon with no GUI defaults to safe; drive it with `polyctl newer-policy
-  [ignore|safe]`.
-- **Still bump `__protocol__` (`polyhost/_version.py`) in lockstep with the firmware
-  PROTOCOL_VERSION.** It now defines the host's *newest-known* protocol (the fully-supported
-  "match" and the newest wire format the host emits), **not** a hard connect gate. Rule of
-  thumb unchanged: when you add a firmware-protocol feature threshold (e.g.
-  `IDLE_STYLE_MIN_PROTOCOL`, `GLYPH_SCRIPT_MIN_PROTOCOL`, `OVERLAY_PACKED_HEADER_MIN_PROTOCOL`),
-  the firmware protocol advanced to **N**, so set `__protocol__` to **N** and add the feature
-  to `FEATURE_MIN_PROTOCOL` in the same change. Forgetting it now only downgrades the status
-  to "update the host app" and disables that one feature (the keyboard still connects), rather
-  than rejecting the keyboard outright.
-- **GUI self-update must be applied by the DAEMON, not the client (daemon-by-default).**
-  In daemon mode the tray GUI is a `--connect` client and a separate `--headless`
-  daemon owns `PolyCore` — and therefore the **protocol gate** (its loaded
-  `_version.__protocol__`). So the tray's "Check for updates → install" routes the
-  install through the daemon over RPC (`RemoteCore.install_update` → `M_UPDATE_INSTALL`
-  → `PolyCore.install_update`), letting the daemon overwrite the files and **re-exec
-  itself** (`headless.py` `_on_update_event`). It must **not** run `UpdateInstaller`
-  in the GUI process: that refreshed only the client while the daemon kept running the
-  pre-update code, so the daemon stayed on the OLD `__protocol__` and its `FEATURE_MIN_PROTOCOL`
-  table (historically it *rejected* the keyboard with *"Protocol mismatch, please update"*;
-  under the range-connect model it instead keeps the keyboard on the old capability set —
-  newer features disabled, status stuck on "update the host app") until manually restarted
-  (field 2026-07). After the daemon re-execs, `PolyHost._on_update_done` (client mode)
-  waits for the control endpoint to go **down → back LIVE** (`_await_daemon_restart_then_relaunch`)
-  before relaunching the GUI — relaunching immediately would re-attach to the still-up
-  **old** daemon (the bug) or race the re-exec and spawn a second daemon. The daemon's
-  `update_*` **core events are dicts** (`{"pct","msg"}` / `{"relay_path"}` / `{"msg"}`)
-  while the legacy in-GUI `UpdateInstaller` emits tuples/strings — `_on_job_done`
-  normalizes both. The `polyctl update install` path already restarted the daemon
-  correctly; only the tray menu path was broken.
+- **Single-key keymap write**: the firmware supports `ID_DYNAMIC_KEYMAP_SET_KEYCODE` (0x05) — payload is `[layer, row, col, keycode_hi, keycode_lo]`. No need to write a full layer; `PolyKybd.set_dynamic_keycode()` wraps this.
+
+- **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
+
+### The font pack
+
 - **Font-pack bundles (protocol 6+)**: the external-flash font pack ships as **N
   per-family bundles** (`polyhost/res/fontpack/<id>.plyf` + `bundles.json`), not one
   blob. `query_id()` parses the per-bundle `content_version` block the firmware
@@ -1106,272 +725,51 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       side that breaks the mapping fails a test somewhere. **When you touch these
       status values, update BOTH suites** — and prefer adding the firmware-side
       assertion first, since that is the end a host fixture can never police.
-- **Font-pack inspect/extend tools** (`polyhost/gui/fontpack_inspector_dialog.py` +
-  `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
-  `fontgen*`): a standalone window to view every bundle glyph as
-  the keycap draws it and to build/splice new glyphs from a TTF/OTF (pure-Python
-  `fontconvert` parity). Launched from the tray's **Debugging** submenu (the
-  "Inspect Font Packs…" entry), so it is **only shown when the app runs with
-  developer mode** (`developer` in `host.py`) — it's a developer/power-user
-  tool, hidden from the default menu. Unlike the other Debugging entries it works
-  in both in-process and client mode (offline, no device needed). It loads the shipped bundles by default; **"Open .plyf…"**
-  adds any saved/exported `.plyf` as a new tab (folded into the merged ALL_FONTS view
-  + the Extend sources) so a file saved elsewhere can be re-inspected. ⚠️ **A `.plyf`
-  carries no bundle name** — the PlyF header has only abi/`content_version`/font_count
-  + per-font global ALL_FONTS index; the bundle id lives in `bundles.json`/the
-  filename, so an opened tab is named after the file (`decode_pack` synthesises font
-  names as `<filename_stem>#<gidx>`). The **View** selector offers four modes
-  (`_BundleTab._mode`): **Glyph** (native size), **Keycap** (plain 72×40 white-on-
-  black), and — matching the extend dialog — **Keycap OLED** (raw pixels) and
-  **Keycap through cover** (diffused), both routed through `fontpack_render.glyph_cell`
-  → `simulate_oled` (which returns an **RGB** cell; `_BundleTab._pm` keeps RGB via
-  `_pil_to_pixmap` and only applies the semantic tints below to the plain 'L' modes).
-  The grid shows **one cell per codepoint** (a
-  deduped, continuous range) honouring **front-to-back precedence** (the firmware
-  draws each cp from the lowest-global-index font with a glyph, `_BundleTab._stacks`):
-  each cell renders the **winner** — **white** if this bundle draws it, **cyan** if
-  it's borrowed from another bundle. When more than one font has the glyph, the
-  losers are **overdrawn**: a "**stack**" marker (solid right+bottom border whose
-  **depth = number of overdrawn glyphs**, `_stack_pixmap(depth=)`) flags it; hovering
-  the bottom-right stack corner shows the overdrawn glyph **in the slot** (dim),
-  **cycling** through them when there's more than one (`_hover`/`_cycle_advance`), and
-  **double-click there edits the first overdrawn** while a double-click elsewhere edits
-  the winner (`_edit_at`; `_on_edit`/`_bundle_of` target the clicked font's *own*
-  bundle, which may be a different tab). Overlapping `fonts.yaml` ranges from the same
-  source (e.g. a dedicated `_Light_` entry + broad `_EmjEffects_`/`_Emojis1_` all
-  covering U+1F4A1) are why a cp can have 2+ overdraws. **Selecting a glyph highlights
-  the whole range its font wins** (`_on_selection`, subtle tint), since the pack is
-  organised in ranges. A glyph **edited
-  this session** (the editor's OK committed it into the working copy) is re-rendered
-  in-place from that working copy and bordered **green** (`MODIFIED_RGB`,
-  `_BundleTab.apply_working`); "Save as… → Discard" reverts the tab to the loaded
-  bundle. Edits **propagate across tabs**: `_commit_edit` rebuilds the merged
-  ALL_FONTS view (`_rebuild_all_fonts`) and `_propagate` pushes it to every tab
-  (`set_all_fonts`), so a cell in bundle B whose winner or overdrawn (stack) glyph
-  lives in the edited bundle A re-renders from the new glyph — the visible
-  tab rebuilds immediately, the rest lazily on next show. The inspector's
-  **"Peek empty (from source)"** toggle
-  renders the *empty* slots from their source font (via `fontpack_extend.peek_source_glyph`
-  + the shipped render settings, needs the source font downloaded) as **amber
-  previews** — candidates you can then double-click to edit/take; they are not in
-  the pack. Peek **prefers a non-emoji (symbol/text) source over an emoji source**
-  when the slot's own font isn't itself emoji (`_peek_candidates` style key), so a
-  symbol codepoint that also exists in NotoEmoji/NotoColorEmoji previews from the
-  clean symbol font (NotoSansSymbols) rather than the emoji glyph — even if the
-  emoji font is lower-gidx / in-range / in-bundle. For an emoji slot the deferral is
-  a no-op (the emoji source order stands). Peek also offers, as a **last-resort
-  fallback, any downloaded catalog font that no bundle uses** (default render
-  options, `_BundleTab._catalog` from `noto-fonts.yaml`) — so adding a font to the
-  catalog (e.g. NotoSansMath) makes it usable in peek with **no code change**, even
-  though it's in no pack. The extend dialog's **Source fonts** browser (always under the
-  preview; click a font to use it, downloading first if needed) downloads/assigns
-  the Noto source fonts via `polyhost/services/font_downloader.py`, which reads the
-  catalog from **`polyhost/res/fonts/noto-fonts.yaml`**. ⚠️ That YAML is the **single
-  source of truth shared byte-identically** with the firmware's
-  `qmk_firmware/keyboards/polykybd/fonts/noto-fonts.yaml` (which `dl-fonts.sh` reads)
-  — keep both in sync (`cmp`). The host stores a *flat* cache keyed on
-  `basename(dest)`; the firmware honours the nested `dest` path.
-  The extend dialog is a focused **glyph editor** (`FontPackExtendDialog`): it builds
-  **one** glyph/font from a source + options and previews it, with just **OK / Cancel**
-  — OK exposes the built glyph via `result_font`/`result_label`/`result_edit` (Cancel
-  discards); it neither accumulates nor saves. Its preview shows each built keycap
-  **next to the smooth, undithered glyph straight from the source font**
-  (`fontpack_render.preview_sheet` → `reference_glyph_image`, always antialiased/colour
-  regardless of the grayscale toggle), so you can compare the dithered keycap output
-  against what the font actually draws while tuning. **Sequence-mode glyphs** (flags,
-  matras) have a synthetic PUA pack codepoint the source font has no glyph for, so the
-  reference is **HarfBuzz-shaped from the sequence** (`reference_sequence_image`,
-  composites the shaped group) rather than looked up by codepoint — otherwise no
-  reference showed beside a flag. **Scroll-wheel over the preview
-  zooms** it (0.5×–7.0× in 0.5 steps; the render functions take a fractional `scale`,
-  `fontpack_render._px` rounds to pixels). A **Preview** radio group (Normal · OLED ·
-  Keycap, `_preview_style`) shows the keycap the way the physical per-key OLED renders
-  it via `fontpack_render.simulate_oled` (Qt-free, NumPy/PIL) + `preview_sheet(style=)`
-  (only the keycap is post-processed; the source reference + chrome stay natural):
-  lit pixels are a **cool white** (`OLED_TINT` — a hint of blue; the strong cyan in
-  photos is a camera artifact, not what the eye sees) on true black with a slightly
-  bluer **bloom**. The two OLED styles are presets over `simulate_oled`'s knobs —
-  **OLED** = the raw pixels (crisp square grid, jitter/diffusion off) and **Keycap** =
-  as seen through the clear keycap cover (adds **per-pixel brightness jitter** — seeded
-  so the lit area shimmers without flicker — a **staggered grid** and a **diffusion**
-  blur that lets pixels bleed, modelling the cover's light-guide, not the panel; the
-  blur amount is **spatially varied** by a smooth seeded mask — a lighter/heavier blur
-  mixed per region so it isn't one uniform smear). A
-  post-blur **brightness** gain lifts both styles (higher for Keycap, since the
-  diffusion spreads/dims thin strokes);
-  `preview_sheet(oled=)` runs **only the keycap** through it (the source-font reference
-  + chrome stay natural for comparison) and returns RGB, so the preview pixmap path
-  preserves colour (`_pil_to_pixmap`). **Flag keycaps** (the PUA 0xE000 band) are
-  drawn on hardware through a **single-font array** (baseline adjustment 0), so the
-  keycap render uses the **flag's own yAdvance** as the baseline reference
-  (`fontpack_render.base_yadv_for`), NOT the `(yAdvance − IconsFont 40)` shift the
-  in-pack g_all_fonts glyphs get — without this a tall flag (yAdvance 54) was shifted
-  +14 px down and its bottom rows clipped off the 40 px keycap (the "flag preview cut
-  off at the bottom" bug). Emoji (yAdvance 48, drawn via g_all_fonts) keep the shift,
-  so the fix is gated to the flag band only. **Reset** restores the render options to
-  the values the dialog opened with (`_snapshot` taken after prefill). **Auto update**
-  (default on) re-renders on any control change (debounced). Layout niceties: each
-  float control (gamma / contrast / exposure / sharpen / saturation) is a **fixed-width
-  spin (0.1 step) with a slider beside it** (`_with_slider`, one notch = 0.1); range
-  **first–last share one row**; the four flag checkboxes (grayscale/normalize/invert/
-  edge) are a **2×2 grid**; the source-font browser's **"Download all" sits on top** of
-  the list (clear of OK/Cancel).
-  The **accumulate + save** side lives in the **inspector**, not the editor: the
-  inspector owns per-bundle in-memory **working copies** (`_work`/`_pending` keyed by
-  source index). Each editor OK calls `FontPackInspectorDialog._commit_edit` →
-  `replace_glyph` (edit mode) or `splice_font` (whole-font add) into that bundle's
-  working copy, appends a pending-edit description, and marks the tab with a "● "
-  prefix. The toolbar's **"Save as…"** opens `FontPackSaveDialog` for the current
-  bundle: metadata (abi / current content version / working fonts·glyphs·size), the
-  **pending-edits list**, an editable **content_version** spin (default current+1 —
-  **one bump for all accumulated edits**), and **Save .plyf… / Flash / Discard /
-  Close** (`encode_pack(working_fonts, version)` is what's written/flashed; Discard
-  drops that bundle's working copy). Flash is only offered when the inspector was
-  given a `flash_cb`.
-  When you **edit** a glyph, the editor pre-fills the render controls (size,
-  dither, normalize/invert/edge/outline, render size, yAdvance, …) from
-  **`polyhost/res/fontpack/fontpack_render_settings.json`** — a `global ALL_FONTS
-  index → fonts.yaml options` map emitted by the firmware's `generate_fonts.py`
-  (`RENDER_SETTINGS`) and shipped here. The `.plyf` carries only rendered bitmaps,
-  not the fontconvert options, so this manifest is the only way to recover "the
-  settings this glyph was built with". Each record also carries `source_file` (the
-  basename of the source TTF, matching `noto-fonts.yaml`), so the edit dialog
-  **auto-fills the source font from the download cache** when it's present (else it
-  names the file and points at "Download Noto…"/Browse) — the TTF itself isn't
-  bundled. Keep it in sync with the firmware copy
-  (`base/fonts/generated/fontpack_render_settings.json`).
-  **Sequence-mode glyphs** (the language-layer flags): a record with a `sequence`
-  field is a HarfBuzz-shaped font (`-S`), so the editor switches to **sequence mode**
-  and pre-fills the single group for the edited codepoint (group = `cp − font.first`,
-  seq base set to `cp` so Build emits exactly that one glyph). The **flag font is NOT
-  in fonts.yaml** (it's `pack_extra` from `gen-lang-fonts.sh`), so it has no record in
-  `fontpack_render_settings.json`; its options + `seq_first` + the per-flag
-  regional-indicator `sequence` live in **`polyhost/res/fontpack/lang_flags.json`**,
-  which the editor uses as the record when the edited cp is in the flag range. ⚠️
-  `lang_flags.json` is mirrored **byte-identically** with the firmware's
-  `base/fonts/generated/lang_flags.json` (emitted by `gen-lang-fonts.sh`) — keep both
-  in sync (`cmp`). Editing a flag needs **NotoColorEmoji** downloaded; if its cached
-  file is truncated (a bad download) FreeType fails to open it — re-download. A CBDT
-  **colour-bitmap font (NotoColorEmoji) renders whether or not grayscale is checked**:
-  it has no outlines, so `fontgen._open_color_font` decodes it via fontTools for any
-  source with bitmap strikes (`num_fixed_sizes>0`), not only in `-g` mode — otherwise
-  a mono build hit FreeType's "unimplemented feature" on the PNG-based glyph.
-  **Matra/combining-mark fonts** (Devanagari/Bengali/Telugu/Tamil/Thai/Vietnamese,
-  PUA 0xE100+) are sequence-mode **and** use fontconvert `-C` composite (each group
-  composites a mark onto the dotted circle U+25CC). The editor has a **Composite -C**
-  checkbox (enabled in sequence mode); `_setup_sequence_edit` ticks it from the
-  record's `composite` field (the `fontpack_render_settings.json` matra records now
-  carry `composite: true` + `seq_first`, emitted by `generate_fonts.py` from the
-  `-C`/`-F` extra_args), falling back to **inferring** it (every group starts with
-  `25CC` → composite; regional-indicator flag groups don't) for older manifests.
-  Host builds matras via fontgen's mono composite path.
-- ⚠️ **A GENERATOR whose default source path has gone dead fails SILENTLY, and its
-  output then rots for months with nothing to notice.** `scripts/generate_layer_names.py`
-  produces `polyhost/res/layer_names.yaml`, which is what labels each layer in the
-  layout editor. Its `DEFAULT_LAYERS_H` pointed at
-  `qmk_firmware/keyboards/handwired/polykybd/split72/keymaps/default/layers.h` — a path
-  that died **twice over**: the enum moved out of the per-keymap directory when
-  split72/split42 began sharing one keymap, and out of `keyboards/handwired/` when the
-  boards were promoted. Nothing failed, because nothing ran it. The committed file still
-  listed **14** layers ending in `EMJ0`/`EMJ1`, a split the firmware had not had in a
-  very long time, so the editor was mislabelling the tail of every layer list (found
-  2026-08-26, only because a layer merge made it *worse* and prompted a look).
-  - **This is a different failure from the mirrored-file drift already documented
-    here.** `noto-fonts.yaml`, `fontpack_render_settings.json`, `lang_flags.json` and
-    `iso_lang_country.py` are *copies*, guarded by "keep both in sync (`cmp`)" — and a
-    `cmp` genuinely catches those. `layer_names.yaml` is **generated**, so there is no
-    counterpart to compare it against; the only thing that could have caught it is
-    whether its **generator still resolves its input**, which nothing checks. When you
-    touch any of these, run the generator (or `cmp`) rather than trusting the file.
-  - **Make the provenance line machine-independent.** It recorded the absolute path of
-    whoever last ran it (`/home/thomaspollak/Repos/qmk_firmware/...`), so regenerating
-    anywhere else produced a one-line diff carrying no information — the same noise the
-    firmware's font headers get from embedding the `fontconvert` binary path. It now
-    records the `qmk_firmware`-relative path.
-  - **The layer COUNT was never affected** and needed no change: the editor reads it
-    live from the keyboard (`M_KEYMAP_LAYER_COUNT` → `PolyCore.keymap_layer_count()` →
-    the firmware's `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT`). Only the *names* were
-    stale. Worth knowing which half of an editor's layer list is live and which is a
-    committed artifact before debugging either.
-  - ✅ **RESOLVED for firmware v14+ (2026-08-26): the names come off the wire too.**
-    `PolyKybd.get_layer_names()` (cmd 35, `FEATURE_MIN_PROTOCOL["layer_names"]`) asks
-    the keyboard, and `KbLayoutDialog._layer_names()` prefers that over the fallback —
-    so both halves of the editor's layer list are now live. It also gets *better*
-    names: a tag map can only ever carry `L0`, `FL`, …, while the firmware answers
-    with what each layer actually is (`Qwerty`, `Stag!`, `ColemkDH`, …, `Fn`,
-    `Numpad`, `Utility`).
-  - ⚠️ **`layer_names.yaml` and its generator are GONE (2026-09-01), and the layer
-    tags come from the SAME source as the legends — `res/preview/layers.json` when the
-    shipped data is in use, the checkout's own `layers.h` when it is.** That pairing
-    is the whole rule, and it took three tries to see it:
-    - **A generated file** — the rot above: a dead generator input, nothing notices.
-    - **A hardcoded constant** (tried for exactly one commit, and it is what this
-      note used to recommend): worse. The tag has to match the spelling
-      `keycode_helper.c` **switches on**, and a checkout from before the Fn merge has
-      no `case MO(_FL)` at all — it switches on `MO(_FL0)`/`MO(_FL1)`. So a constant
-      saying `5 -> FL` builds a token that tree cannot match and the key goes blank.
-      Reported within the hour as "L5 is gone again".
-    - **The checkout's own `layers.h`**: correct, because tags and legends then agree
-      by construction. `qmk_keycode_helper.parse_layers_h()`; `LAYER_TAGS` remains
-      only as the no-checkout fallback and as the yardstick below.
-  - ⚠️ **An out-of-step checkout previews WRONG, which is why it now has to WIN a
-    version comparison to be read at all** (above). The keycodes come from the
-    connected keyboard while every legend comes from the data source, so an old clone
-    renames the device's layers under the editor (device index 6 is `_NL`; a pre-merge
-    tree's is `_FL1`) *and* draws retired glyphs beside them. When the checkout IS the
-    source, `_load_checkout()` diffs its enum against `LAYER_TAGS` and, on any
-    disagreement, logs a warning and appends it to `source_info()` → the "Key previews"
-    tooltip. ⚠️ **That warning is suppressed for a checkout that won by being NEWER** —
-    a newer tree disagreeing with the host's constant is expected, so reporting it
-    would fire on every firmware developer's machine and become one more banner people
-    scroll past. It is for the fallback case: a checkout read because no export
-    shipped. `test_the_shipped_tags_match_the_firmware_enum` keeps the yardstick
-    honest; both drift tests are mutation-checked.
-    - **The tell that a clone is behind, in one line: the brightness keys.** They
-      became a sun family on 2026-08-25 (`9f4fa686e5`); before that
-      `keycode_helper.c` returned `PRIVATE_DISP_*`, which are MOON glyphs. Moons in
-      the editor mean the clone predates that commit, full stop.
-    - ⚠️ **THREE separate reports — a blank L5, missing emoji/Intl keys, and the old
-      brightness icons — were ONE stale clone**, and none of them points at it. Two
-      rounds were spent inferring which end was stale from the symptoms, wrongly.
-      **`python tools/preview_doctor.py` answers it instead**: host + firmware
-      commits, the enum diff, every layer key's resolved token, and the brightness
-      legend expressions. Ask for its output before theorising.
-  - ⚠️ **The reply is `[total][count]` then NUL-terminated names, and the TOTAL is
-    what makes it decodable.** `total` is the whole payload length, that byte
-    included; the host reads it from the first report, keeps reading until it holds
-    that many bytes, and only then splits on the NULs. So termination is arithmetic
-    rather than a scan, and the report's zero fill is never examined. Two encodings
-    were built first and both are worse:
-    - **fixed-width 8-byte records** give the same arithmetic length but cost a
-      second report (65 bytes vs 54);
-    - **terminated with no total** forces the decoder to find the end by scanning,
-      and the only way to separate a real terminator from the zero fill is "an empty
-      name means padding" — which makes an **unnamed layer** (a bare terminator)
-      indistinguishable from the fill and silently truncates the list.
-  - ⚠️ **A robustness argument was asserted here on the strength of a BAD FIXTURE,
-    and it was wrong.** The test that "proved" terminated records unsafe fed the
-    decoder a **short non-final report**, which the firmware's emit loop cannot
-    produce — a short report is always the last one. Measured over every reachable
-    failure mode (last report lost, first lost, reordered, nothing arrives), all
-    three encodings behave identically, because HID delivers whole 64-byte reports
-    or nothing. **Robustness is a wash; the encoding choice is size, report count
-    and whether an unnamed layer is expressible.** Before claiming a wire format is
-    unsafe, check which scenarios the emitter can actually produce.
-  - **Mutation-tested.** The suite catches trusting the buffer length over the
-    total, dropping the implausible-total guard, slicing past the total, losing the
-    2-byte header offset, and accepting a short name list. ⚠️ The slice-past-the-total
-    mutation initially **escaped**, because `test_count_larger_than_the_body_is_incomplete`
-    used a bare payload with no report padding — so nothing supplied the empty fields
-    that a decoder ignoring the total would read. Padding the fixture to the real wire
-    is what catches it: a fixture that omits the padding cannot test the thing the
-    padding causes.
-- **Source-font download validation** (`font_downloader.py`): a download is rejected
-  (`DownloadError`, no file cached) when it's short (Content-Length mismatch) or not a
-  complete sfnt (`_validate_sfnt` checks the table directory fits the file) — this is
-  the fix for a proxy-truncated NotoColorEmoji that FreeType then refused to open.
-  `is_downloaded()` re-validates, so an already-cached corrupt file reads as missing
-  and is re-fetched (overwritten); `download_font(force=True)` always re-downloads.
+
+- **The font-pack INSPECT and EXTEND dialogs are
+  [`docs/fontpack-tools.md`](docs/fontpack-tools.md)** — a viewer for every bundle
+  glyph as the keycap draws it, and a builder for new glyphs from a TTF/OTF with
+  pure-Python `fontconvert` parity. Both are reached from the tray's **Debugging**
+  submenu, so they are developer-mode only; unlike the other Debugging entries they
+  work in client mode too, since they need no device. Three things the pointer has
+  to carry, because they are the ones that mislead from outside:
+  - **The two dialogs split accumulate from build.** The *extend* dialog builds ONE
+    glyph and previews it (OK / Cancel, nothing saved); the *inspector* owns the
+    working copies, the pending-edit list and Save as…. Looking for a save in the
+    editor finds nothing.
+  - ⚠️ **A `.plyf` carries no bundle NAME** — the PlyF header has abi /
+    `content_version` / `font_count` and a per-font global ALL_FONTS index, and the
+    id lives in `bundles.json` and the filename. So an opened file is named after
+    itself, and a glyph out of one is `<stem>#<gidx>`.
+  - ⚠️ **Editing a glyph needs the render options the `.plyf` does not carry**, which
+    is what `polyhost/res/fontpack/fontpack_render_settings.json` and
+    `lang_flags.json` are for — both mirrored byte-identically from the firmware's
+    generated copies. Keep them in sync (`cmp`); the editor silently pre-fills the
+    wrong controls otherwise.
+
+- **The font-pack flash events carry a `kind` — label UIs from it, not the event name.**
+  The doom easter egg's game data (`.whx`) and executable engine pack (`.plyx`) ride the
+  **font-pack transport**, so `PolyCore.install_doomwad`/`install_doompack` emit the same
+  `fontpack_flash_progress`/`fontpack_flash_done` events as a real bundle flash. Both
+  payloads now carry `"kind"` (`fontpack`/`doomwad`/`doompack`, `polyhost/core/events.py`
+  `FLASH_KIND_*` + `flash_kind_label()`), and `polyctl` + the tray render their wording from
+  it — a hardcoded "fontpack"/"updating keyboard fonts" reported a `.plyx` install as a font
+  pack (field 2026-08). A missing `kind` means font pack (older cores), so the fallback is
+  the previous wording.
+  - ⚠️ **`install_doompack` sends UNSIGNED EXECUTABLE CODE, and nothing on either side
+    checks a signature for it.** The `.sig` handling in `hid_fw_up` covers the *firmware*
+    image only; the font-pack transport has no equivalent, and the firmware's
+    `fw_staging_check_signature()` is reached only on the `FW_TARGET_FIRMWARE` target. The
+    keyboard then *branches into* a `.plyx` it validated with a CRC32 (no MPU on the M0+),
+    so anything that can talk raw HID can flash a crafted pack, select `IDLE_STYLE_IDDQD`
+    over cmd 28, and get code execution on the next idle. Do **not** describe the keyboard
+    as "signed firmware, so a malicious flash is covered" — it is not. Tracked as **FW-9**
+    (open, high) in `polykybd-ctnd/docs/SECURITY_AUDIT.md`; the fix is firmware-side
+    (verify the pack at load time), so there is nothing for the host to do beyond not
+    over-claiming.
+
+### Device features over HID
+
 - **Glyph-script override (protocol 9+; expanded set at v10)**: HID cmd 30
   (`GLYPH_SCRIPT`) selects a glyph-script *override* of the keycap language legends —
   `GlyphScript.STANDARD` (0, normal) or one of the fantasy/retro scripts from the
@@ -1427,6 +825,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       whose image Qt cannot load renders as an empty box and says nothing.
       ⚠️ `QMenu.setToolTipsVisible(True)` is required — action tooltips are off by
       default, so without it the whole tooltip half is a silent no-op.
+
 - **Keycap legend size (protocol 13+)**: HID cmd 34 sets how large a key's MAIN
   legend is drawn — `GlyphSize.SMALL` (the original face), `MEDIUM`, `LARGE`. Wired
   exactly like the glyph script: `PolyKybd.get/set_glyph_size` behind a
@@ -1449,21 +848,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     coordinate. `--check` is the gate to re-run after any change to the firmware's
     `latinbig` entries; `--out` writes the contact sheet the docs page uses. Same
     caveat as `oled_preview.py`: it is a Python model of the C and can drift.
-- ⚠️ **`tools/apply_tuner.py`'s export grammar CANNOT express the `caps` column** —
-  its key-line regex is `base|shift|altgr`, matching what the keycap tuner emits, and
-  the LUT's four sub-columns are lower/upper/**caps**/AltGr. A bulk edit that touches
-  caps cells therefore cannot go through the CLI: **import the module and call its
-  `set_cell()` / `str_cell()`** so the surgical `sheet2.xml` path (which preserves the
-  other sheets' formula caches) is still the same tested code. ⚠️ Those two are only
-  the XML edit — `set_cell()` RETURNS the modified sheet and persists nothing, so the
-  caller still owns the language-column arithmetic (`base = 2 + langs.index(lang)*4`,
-  `+0/1/2/3` for base/shift/caps/AltGr), rewriting the zip entry, and the `cog -r
-  lang_lut.c` afterwards. The whole loop, with its verification steps, is the
-  firmware repo's `tune-lang-lut-cells` skill; this note is only about which half
-  the CLI cannot do. Hit on 2026-09-03,
-  where 14 of the 117 cells drawing `§ £ ± µ` were caps. Widening the regex is a
-  bigger change than it looks — the tuner never emits `caps`, so the grammar would
-  gain an arm nothing exercises.
+
 - **Macros (protocol 15+)**: HID cmds 36/37/38 behind ONE `"macros"`
   `FEATURE_MIN_PROTOCOL` entry — splitting the gate would let the editor load a list
   from a keyboard that cannot save it. `PolyKybd.get_macro_info` /
@@ -1567,952 +952,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     third face, not another fallback path"). It landed for a different consumer — the
     status-screen preview draws every row with it — which is the usual way a
     long-standing gap gets closed.
-- **The editor's key pictures are a THREE-way group — Symbol / Preview / Real —
-  drawing every key through the FIRMWARE's own renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
-  for the language LUT and `tools/lang_demo.py` for the `keycode_helper.c` static-text
-  map; macros go through the host's own composer). Off is the default, and off means
-  each key shows its keycode text.
-  - ✅ **The DATA ships with the host now (2026-09-01) — `polyhost/res/preview/`,
-    written by `scripts/export_preview_data.py`, loaded by
-    `polyhost/services/preview_data.py`.** Until then both halves read a
-    `qmk_firmware` clone beside the install and the LUT half needed `openpyxl`, so
-    the feature was unavailable to anyone who is not a firmware developer **and
-    silently wrong for anyone whose clone had drifted** — a blank Fn key, blank
-    emoji/Intl keys and retired moon brightness icons were all ONE clone that was
-    months behind the connected keyboard. 420 KB: `resident.plyf` (the fonts
-    compiled into the firmware, so in no bundle) + `ui_fonts.plyf` (the standalone
-    faces no codepoint can reach) + the legends **resolved to codepoints**, the raw
-    LUT grid, the named glyphs and the layer enum. `openpyxl` left
-    `requirements.txt` with it; it is a dev dependency (`tools/requirements.txt`).
-  - ⚠️ **A firmware checkout still wins, but ONLY by being strictly newer**
-    (`preview_data.choose_source`) — a developer's tree is ahead of the last release
-    and previewing it is the whole point, while a clone that is merely old is the
-    case above. **EQUAL versions take the shipped copy**: it is the one that was
-    tested, and re-parsing the same firmware twice cannot do better. When a checkout
-    loses, `source_info()` says so ("a firmware checkout is present but is not
-    newer") — silence there reads as "my clone is being used" and sends the next
-    round after the clone.
-  - ⚠️ **A STALE export costs a KEYCODE ITS PREVIEW, and it reads as a rendered
-    keycap rather than a missing one — the key falls back to its keycode TEXT.** The
-    shipped copy carries a `fw_version`, so a keycode added since the last
-    regeneration has no name and no legend in it: `KC_MACRO_REC` shipped at export
-    0.17.2 against firmware 0.19.1 and the REC key drew its token, reported as *"the
-    rec button has no preview"* (field, 2026-09-08). `scripts/export_preview_data.py
-    --check` names every stale file; regenerating writes all four (they are one
-    snapshot — leaving them at different `fw_version`s is worse than the staleness).
-    - ⚠️ **`--check` answers against WHATEVER firmware clone sits beside the repo, so
-      a clone that is BEHIND produces a false STALE list naming the wrong files.**
-      Measured 2026-09-09: with the clone 33 commits behind (fw 0.21.0) it reported
-      `legends.json` and `named_glyphs.json` stale and `lang_lut.json`/`layers.json`
-      current. Fast-forwarding the clone to `origin/PolyKybd` (0.23.3) inverted that
-      completely — all four files' CONTENT was already byte-identical to what was
-      committed, and only the `fw_version` stamp lagged. So
-      `git -C ../qmk_firmware fetch origin PolyKybd` and confirm the checkout is not
-      behind BEFORE believing the list; the report is a COMPARISON and one of its two
-      sides is whatever you happen to have checked out. ⚠️ The sizes it prints are the
-      RE-DERIVED ones, not the committed file's, so a size shown there is not evidence
-      about what is in the repo — `git show HEAD:<path> | wc -c` is.
-    - ⚠️ **A DEVELOPER CANNOT SEE THIS**, which is why it needed a test that pins
-      the source. A firmware checkout that is newer wins the compare above, so the
-      editor draws the clone's legends and the stale export is invisible on the very
-      machine that would regenerate it. `test_a_STATE_DEPENDENT_legend_previews_too`
-      builds `KeycapPreview(source="shipped")` for exactly that reason — confirmed by
-      running it against the pre-regeneration export: green through the checkout, red
-      against the shipped copy.
-    - **Regenerating catches up on everything else too, so expect a wide diff.** The
-      0.17.2 → 0.19.1 pass moved ~200 `lang_lut` grid cells: the workbook had gained
-      the `altgrhalf` settings rows (which renumber every row under them) and the
-      2026-09-03 cursor-nudge tuning. That is the export doing its job; the pixel
-      parity test above is what says the result is right.
 
-  - ⚠️ **The two sources are pinned to draw IDENTICALLY, by rendering, not by
-    comparing structures.** `test_the_two_sources_draw_the_SAME_keycaps` renders
-    every keycode the editor can show from both and requires the pixels to match
-    (measured: 211 static keycaps + 7,840 letter keycaps across 160 languages, zero
-    differences, zero coverage gaps either way). The export resolves legends with
-    the same code the checkout path does, so any comparison of the DATA would agree
-    by construction — the pixels are the only claim worth making.
-    - ⚠️ **`KeycapPreview(source=…)` forces a source and deliberately does NOT fall
-      back**, because a comparison that silently substituted one source for the
-      other would report them identical for the least interesting reason.
-    - ⚠️ **A skip the code under test can CAUSE is not a gate.** The
-      checkout-is-unused test first skipped whenever the source was not "shipped",
-      so a mutation pinning the pick to `"checkout"` — i.e. reinstating the field
-      bug exactly — made it SKIP rather than fail. It now DERIVES the expected
-      source from the two versions and asserts it; mutation-checked in both states.
-  - Six traps and a design note:
-  - ⚠️ **Load the two halves INDEPENDENTLY.** Coupling them shipped once: `openpyxl`
-    was undeclared in `requirements.txt`, so on the author's machine the letters *and*
-    the modifiers/custom keys both went dark and **only macros previewed** — reported
-    as "I can only see the M0 key with a preview render". Each half now reports its own
-    `reason` and the tooltip names the missing one, because a partly-loaded preview
-    (macros and modifiers drawn, every letter falling back to text) reads as "broken"
-    with nothing anywhere to explain it. (Shipped data has no such split — the LUT is
-    in the export — so this applies to the checkout path only.)
-  - ⚠️ **The missing dependency failed SILENTLY** — `usable` read False in 0.00 s,
-    indistinguishable from "no firmware checkout". A preview that cannot say *why* it
-    is unavailable is a preview nobody can fix.
-  - ⚠️ **`_tools_dir()` is FOUR dirnames up, not three** — three lands on `polyhost/`
-    and finds no `tools/`, which presents as the same silent False.
-  - ⚠️ **A `FlowLayout` inside a widget capped at `setMaximumHeight(40)` swallows
-    wrapped rows with no error.** Adding the toggle with a sibling `addStretch(1)`
-    squeezed the layer strip to 118 px, it wrapped, and **seven of the eight layer tabs
-    vanished** — reported as "I can only see one layer". Give the widget a stretch
-    FACTOR (`addWidget(self.layers, 1)`); never put an `addStretch()` beside a
-    flow-laid-out widget.
-  - ⚠️ **Strip a C continuation as `re.sub(r"\\\s*\n\s*", " ", ...)`, never a blanket
-    backslash strip** — the legends are `U"…"` literals, so removing every backslash
-    turns `U"\f\f\f"` into `U" f f f"` and the keycap renders `f f f f`.
-    - ⚠️ **…and the shipped pattern asked for TWO backslashes, so it never matched
-      anything.** A C continuation is ONE. Every multi-line legend macro therefore
-      kept a literal `\` at the front of its body, which resolves to a real glyph —
-      the five settings keycaps drew a backslash before their label. It hid behind
-      the size-op refusal below (those were the only multi-line macros) and surfaced
-      the moment they started rendering. Over-escaping a raw-string regex fails
-      **silently**; the guard is now a unit test on the parser
-      (`tests/gui/keycap_preview_macros_test.py`), not the eye.
-  - ⚠️ **The glyph loader kept only the FIRST literal of a multi-token `#define`,
-    and a TRUNCATED legend is worse than a missing one** (field, 2026-09-01). It
-    still renders, so it reads as correct-but-incomplete rather than as absent, and
-    nothing anywhere says a body was dropped. Three keycaps shipped that way:
-    `ICON_CONTEXT_MENU` collapsed to `U" "` — a SPACE — so the Context-menu key drew
-    a perfectly valid blank; `ICON_SCRLOCK_OFF/ON` to `U"Scr"`, so Scroll Lock drew
-    its letters with the lock badge gone; and `ICON_PAUSE_TEXT` to a bare cursor op,
-    which nobody had noticed. The six `HINT_POS_*` / `HINT_SZ_*` constants are
-    coordinate PAIRS and lost their y.
-    - **`load_named_glyphs` reads the whole body now** — continuations joined,
-      nested macros substituted, function-like `HINT_*()` calls expanded. The
-      expander (`parse_function_macros` / `expand_function_macros`) MOVED into
-      `oled_preview` for this: it expands the macros `named_glyphs.h` defines, so it
-      belongs beside the loader that reads that file, and the loader needs it to
-      resolve a body that calls one.
-    - ⚠️ **A `None` check cannot catch this class.** The truncated context-menu
-      legend resolved, drew, and produced a valid image — of nothing. The test
-      counts LIT PIXELS, and the scroll-lock one counts them to the right of the
-      text specifically, because "Scr" alone already clears any blank threshold.
-    - ⚠️ **`re.sub` reads a string replacement as a TEMPLATE**, so expanding an
-      argument carrying a C escape (`HINT_MOVE(HINT_POS_CTXPTR)` → `U"\x42" U"\x0C"`)
-      raised `bad escape \x` and took the entire glyph table down. Latent for as long
-      as this only expanded the settings labels ("IDLE:", "Pulse"). Use a replacement
-      FUNCTION.
-  - ✅ **MOVE / BADGE / ERASE / ROT are DRAWN now**, which is what makes those
-    keycaps render rather than merely be refused. Ported from
-    `kdisp_draw_badge_rect` + `rr_row_inset` + `kdisp_draw_glyph_rot_half_at`
-    (`base/disp_array.c`) and `kdisp_gfx_rot_half_extent` (`base/font_lookup.c`).
-    Four things that are load-bearing:
-    - **The badge is checked against FIRMWARE DATA, not against itself** — its
-      silhouette must equal the baked `ICON_CAPSLOCK_OFF` glyph, which is the claim
-      the firmware's own comment makes. That fixture is the C's, so a Bresenham arc
-      (which insets 1,0 where this must inset 2,1,0) fails in the suite rather than
-      as a keycap drawn slightly wrong.
-    - ⚠️ **ERASE must reach the TEXT paths too.** The glyph plotting went straight to
-      `setpix`, so `HINT_ERASE` covered only the composite ops and an engaged lock
-      badge drew its arrow LIT — a solid blob instead of an inverted badge. Everything
-      now goes through one `plot()`, mirroring `kdisp_plot_ink`; the C carries the
-      same scar in its own comment.
-    - ⚠️ **ROT rotates at FULL resolution and halves AFTERWARDS**, hence the 2×2 loop
-      inside the pixel loop. Halving first throws away the pixels the rotation needs
-      to rebuild an edge, and the arrowhead it exists for comes out visibly broken.
-      Screen y runs DOWN, so a visually counter-clockwise turn is a NEGATIVE angle —
-      the `(24 - step)` index. Getting that sign backwards mirrors the arrowhead,
-      which reads as a plausible glyph rather than as a bug.
-    - **`bbox` still skips them**, matching the firmware's own RELATIVE bbox form: a
-      MOVE names an absolute buffer position and BADGE/ROT plot at the cursor, so
-      none of it is knowable without the draw origin that form does not have.
-  - ⚠️ **A legend whose MACRO the glyph table does not know draws the macro's own
-    NAME as text, and two keycaps shipped that way** (2026-09-01): the mute key
-    rendered the literal word `ICON_MUTE` and media-stop `ICON_MEDIA_STOP`. It is
-    invisible from the code — `resolve_token` falls back to parsing an unknown token
-    as the body of an implicit `U"..."`, which is right for a bare LUT cell and wrong
-    for a macro name, so the legend resolves, every op in it is supported, and the
-    picture is a line of capitals. **Two separate fixes, and both are needed:**
-    - `load_named_glyphs` only matched `#define NAME U"…"`, i.e. a SINGLE literal, so
-      a macro built from other macros (`#define ICON_MUTE  PRIVATE_MUTE U"\f\f"
-      ICON_CANCEL_X`) was skipped entirely. It now collects those bodies and expands
-      them afterwards, so header order does not decide it.
-    - What still cannot be expanded (a body of function-like calls) is **refused**,
-      via `Lang.unresolved_tokens()` — the sibling of `Renderer.unsupported_ops()`,
-      with the same rule: refusing is honest, drawing capitals is not. ⚠️ Ask it
-      about a LEGEND, never a setting cell — `HIDE` is a legitimate setting value
-      and looks exactly like an unresolved macro.
-  - **A legend using an op the renderer lacks is REFUSED, not drawn — and the
-    RENDERER answers that question now, not a list in `keycap_preview`.**
-    `oled_preview.Renderer.unsupported_ops(cps)` returns the ops it cannot follow;
-    empty means the legend is safe to draw. The old module-level `UNSUPPORTED_OPS`
-    named `HINT_SMALL` (`\x10`) and `HINT_MID` (`\x16`), and went stale the moment
-    both were implemented — the same enumerating-guard shape recorded in the review
-    conventions above.
-    - **Both size ops are supported now** (2026-08-29), so `KC_EDEN`,
-      `KC_GLYPH_SCRIPT`, `KC_IDLE_STYLE`, `KC_TOGMODS`/`KC_TOGTEXT` and the ten
-      half-scale two-liners (`KC_STORE_EE`, `KC_SELECT`, the `KC_OS_*` keys, …) draw
-      their real legends. `HINT_MID` needs the standalone 19px face, which is NOT in
-      `ALL_FONTS[]` — build the renderer with **`oled_preview.load_renderer(font_dir)`**
-      rather than `Renderer(load_all_fonts(d))`, or `\x16` silently renders full size.
-      It degrades rather than raising when `util_font.h` is missing (a second
-      prerequisite must not take the other legends down with it) and reports `\x16`
-      as unsupported in that state.
-    - **What is still refused** is the ops needing a primitive this model does not
-      have — and the set has shrunk twice, so read it off `SUPPORTED_OPS` rather
-      than off this line. MOVE (`\x0E`), BADGE (`\x13`), ERASE (`\x14`) and ROT
-      (`\x15`) were implemented on 2026-09-01; **HALF (`\x0F`) and BASE (`\x17`) on
-      2026-09-09** — HALF because the RGB value keycaps composite a halved droplet/sun
-      beside a full-size `+` and HINT_SMALL cannot (it latches for the rest of the
-      run), BASE because it is the way *out* of that latch and of `HINT_MID`, which
-      the RGB preset keycaps need for a half-scale `Preset:` over a mid-face effect
-      name. That leaves THIN (`\x11`, the decimating sibling of HALF) and FRAME
-      (`\x12`, a rounded rect at a radius the badge drawer does not take).
-      ⚠️ **BASE has to clear the latch in BOTH walkers** (`bbox` and `draw`), like
-      every other op here — and note it is the firmware that owns the semantics:
-      `\x10` after `\x16` half-scales the *mid* face rather than returning to base,
-      so mirroring "small = mid = False" is only correct because that is what
-      `disp_array.c` does.
-      ⚠️ Implementing one is TWO edits — the draw dispatch and `SUPPORTED_OPS` —
-      and doing only the first leaves every legend using it still falling back to
-      its keycode text, which looks exactly like the op not working.
-  - ⚠️ **The renderer's `\v` and `\t` steps need C TRUNCATING division — Python's
-    `//` silently produced a ZERO step.** Both are `x += (x / N + 1) * N` on a cursor
-    that can be **negative** relative to the origin: `MID_TWO_LINE` lifts the first
-    baseline 10px before stepping down a line. C truncates toward zero
-    (`-10/15 == 0`, step 15); Python floors (`-10//15 == -1`, step **0**), so the
-    second line landed on top of the first. Only a legend that moves the cursor up
-    before a `\v` can reach it, which is why it went unnoticed until the size ops
-    made such legends renderable. `_trunc_div` names the rule.
-    - **This is the "run it and look" rule earning its keep.** The 31 bbox cases
-      ported from the firmware's own `font_bbox_tests.cpp` all passed with the bug
-      present — the C suite has no negative-cursor `\v` case either — and one
-      contact sheet of the affected keycaps showed it immediately.
-  - **`tests/tools/oled_preview_bbox_test.py` ports the firmware's bbox expectations
-    verbatim** (same synthetic fonts, same display lists, same boxes, out of
-    `base/tests/font_bbox_tests.cpp`). A Python model of C checked only against
-    itself proves nothing; these fixtures are the C's, so a divergence fails in the
-    host suite rather than showing up as a keycap drawn slightly wrong. Keep the two
-    in step when either side gains a case.
-  - ⚠️ **REAL puts the same keycap through `fontpack_render.apply_oled_style`, and
-    that preset is SHARED with the font-pack inspector on purpose.** Both surfaces
-    offer "how it really looks"; the knobs (`simulate_oled`'s jitter, diffusion,
-    stagger, brightness) inlined per call site would give one physical panel two
-    different-looking previews with nothing to say which was right. `"normal"` returns
-    the image untouched so a caller routes every mode through one call.
-  - ⚠️ **REAL is rendered at `KEYCAP_REAL_SCALE` (3) output pixels per OLED pixel, not
-    at 1:1 — the scale is not cosmetic.** The pixel grid, the bloom radius and the
-    per-pixel jitter are all sized from it, so at 1 there is literally nothing to see.
-    The tile then scales the larger image down, which is also why zooming the view in
-    reveals more of the panel instead of a bigger flat bitmap.
-  - ⚠️ **Both halves go through ONE `_pixmap()`**, because the macro keycaps and the
-    firmware-composed legends are rendered by different code and used to become
-    pixmaps separately — the shape that would leave a board half simulated. Both
-    caches hold PIXMAPS, so a mode change has to DROP them; keeping them leaves the
-    previous mode on screen until something else invalidates it, which reads as a
-    dead button.
-  - ⚠️ **SYMBOL stays enabled when the fonts are missing** — it is the fallback the
-    other two degrade to, so disabling the whole group would leave nothing selectable.
-    REAL additionally needs Pillow (`gui/oled_look.available()`); it is a hard
-    requirement, but a broken install must cost the picture, not the editor.
-  - **The tile draws a keycap with `SmoothPixmapTransform`.** It is always a
-    DOWNSCALE — a 72x40 keycap lands in a tile about 50px wide — and Qt's default
-    nearest-neighbour drops whole pixel rows, which was enough to break a small
-    glyph's stems: the editor showed a mangled letter the keyboard draws cleanly.
-    Found by rendering the two modes side by side, not by reading the paint code.
-  - **Two things are deliberately never previewed**: a `KC_TRNS` slot (the keyboard
-    draws the layer below, so a preview here would invent a legend the key does not
-    have) and the two keys with no OLED behind them (matrix `(3,7)` and `(8,0)` — the
-    inner keys documented in the firmware's non-rectangular display grid).
-  - ⚠️ **A `Lang` from the SHIPPED export is built with `object.__new__` — it has
-    the grid and the names and NOTHING `__init__` would have set.** Both
-    `preview_data.lang_reader()` and `KeycapPreview._load_shipped` do this
-    deliberately (the storage changes, the rules stay in one implementation), so any
-    helper reaching for an attribute `Lang.__init__` assigns must use `getattr`. The
-    Shift-preview rule read `L.xlsx` to find the firmware module beside the workbook;
-    on the shipped path that raised `AttributeError` inside `render_key`, the caller's
-    handler dropped that keycap, and the resolver's **module-global cache had already
-    been written** — so every LATER preview silently lost its suppression too. Caught
-    by Greptile on host#210, and both halves are one root cause.
-    - **Cache the resolution ON the `Lang`, never in a module global.** Two `Lang`
-      objects legitimately disagree here — a checkout one resolves, a shipped one
-      cannot — so a shared global lets whichever loads first answer for the other. A
-      global assigned *before* the lookup that can fail is worse still: it poisons
-      itself into "no suppression" for the process.
-    - ⚠️ **Anything the preview needs from the FIRMWARE tree has to be BAKED into the
-      export, or the shipped path is silently less correct than the developer one.**
-      The rule lives in `qmk_firmware/.../lang/shift_preview.py`; a host with no
-      checkout cannot import it, so `export_preview_data.py` runs it and ships the
-      verdict as data (`lang_lut.json` `shift_suppressed`) — the same move the
-      firmware makes for the same reason, one implementation with its answer shipped.
-      Without it the shipped preview drew 236 previews across 75 layouts the keyboard
-      suppresses. `test_letter_keycaps_draw_the_same_pixels` is what proves the two
-      sources agree, and it is why that test renders rather than compares structures.
-- **The brand mark (`p{color,gray,think,warn}.*`) is GENERATED — edit
-  `tools/gen_brand_icons.py`, never the PNGs.** It draws a 6x6 keycap grid whose
-  UNLIT keys spell a "P" in negative space, on a 1024-unit viewBox (the 64px
-  original's proportions scaled up), and writes the whole set per variant: an SVG
-  master, `p<v>.png` (256, the canonical file `add_to_startup` and the About dialog
-  use), `p<v>@1024.png` for docs/store, the `p<v>_<n>.png` size ladder, `.ico` and
-  `.icns`. Redesigned 2026-09-05 from a six-hue rainbow to one blue -> cyan sweep,
-  with "HOST" stamped out of the bottom row's four rightmost keys.
-  - **`get_icon()` feeds QIcon the LADDER, not the 256 master.** The mark is hard-
-    edged squares, so Qt smoothly downscaling 256 -> 16 for a tray blurs exactly the
-    thing that carries the shape. `BrandMarkTest` (tests/gui/icon_assets_test.py)
-    asserts the set is complete AND that each ladder PNG's pixels match its name —
-    a ladder built by copying one file is as blurry as no ladder, and looks fine
-    until it is on somebody else's taskbar.
-  - ⚠️ **cairosvg does NOT honour `<mask>`** — the stamp is punched by redrawing the
-    body fill over the key instead, which is why the body gradient is
-    `gradientUnits="userSpaceOnUse"`: the punched pixels then match the body around
-    them exactly. A mask renders as a silent no-op (the key just draws whole), so
-    check the render, not the SVG source.
-  - **The busy and warning states draw the RING ONLY** (`RING`, and the engraved
-    ghosts are skipped there too), so the hourglass / warning triangle sits in
-    cleared space instead of over a dimmed grid — which is also why neither
-    carries a dimming overlay any more. The P goes with the inner keys; a
-    transient state reads by its glyph, and the ring plus the HOST stamp still
-    names the app. ⚠️ The triangle is STROKED, so its nominal width understates
-    it by half the stroke on each side — an unshrunk one overlaps the ring keys.
-  - ⚠️ **Whether the inner keys are cleared is counted in the SVG master, not in
-    pixels** — the engraved ghosts are white at 5% opacity over the body, a
-    couple of levels of difference, so a pixel threshold for them would be
-    fragile in exactly the direction that matters.
-    `test_the_state_variants_draw_the_RING_ONLY` counts `url(#keys)` and the
-    ghost rects instead (25/11 for the full mark, 20/0 for the ring). The pixel
-    test beside it answers a DIFFERENT question — that the glyph stays inside
-    the cleared middle — and does NOT catch a variant that kept its inner keys;
-    that gap was found by mutation-testing, not by reading the tests.
-  - **The hourglass is a plain silhouette: two caps and ONE body path**, with a
-    straight-sided `base` run (0.36 of the bulb height) under each cap before
-    the taper starts — without it the shape reads as a bare bowtie. `wall`
-    places the taper's control point between the axis and the bulb edge: ~0.53
-    is a straight wall, below it bows inward (concave) and above it outward
-    (convex); 0.32 ships. Drawing the bulbs as separate shapes leaves a gap at
-    the neck that reads as broken glass, and it is filled shapes throughout,
-    never strokes, because an outline fills in at 16 px and becomes a blob.
-  - **The stamp is rendered only at 128 px and up** (`STAMP_MIN_SIZE`); the smaller
-    renders come from an unstamped master, so a tray icon stays a clean grid instead
-    of carrying four keys of mush. Measured: clean at 128+, legible at 96,
-    unreadable at 64.
-  - ⚠️ **Pillow's ICO writer SKIPS every requested size LARGER than the base image,
-    silently.** Handing it the 16 px render first (natural, when the entries are
-    rendered per size and iterated small-to-large) writes a **single-entry 16x16
-    `.ico`** that Windows then upscales into a blur — no error, no warning, and the
-    file opens fine. The base must be the LARGEST; the rest go in `append_images`.
-    `test_every_ico_carries_the_whole_size_set` reads the ICONDIR count with
-    `struct` so it needs no image library.
-  - ⚠️ **Abutting rects leave a hairline seam once antialiased.** The stamp's pixel
-    cells are inflated 6% so neighbours overlap; without it every letter shows faint
-    grid lines through it at 1024.
-  - The brand `.svg` files are excluded from the Material-Symbols format tests
-    (`BRAND_SVG`): they are multi-layer generated artwork with many fills, not
-    single-fill menu glyphs, and no `get_icon()` call names them.
-  - **Downstream generators re-run from `pgray.png`** — `browser-extension/generate_icons.py`
-    and `browser-extension/store/make_promo.py`. Run both after regenerating.
-
-- **Tray/menu icons (`polyhost/res/icons/`) are Material Symbols at optical size
-  48 — fetch the `_48px` cut, never `_24px`.** The optical-size axis changes the
-  **geometry**, not just the header: the same symbol at opsz24 is drawn with
-  heavier strokes for a smaller render target. Measured on a 48px canvas, an
-  opsz24 file carries **~25% more ink on average (max +43%)** than its opsz48
-  twin, so a mixed-opsz set renders visibly uneven — the new icons look bolder
-  than the untouched ones sitting next to them in the same menu. This cost a
-  full re-fetch of 28 files (2026-07).
-  - Source: `https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/<name>/materialsymbolsoutlined/<name>_48px.svg`
-    (filled variant: `<name>_fill1_48px.svg` — that's how brightness 100% differs
-    from 50%). Emit as a single `<path>` under
-    `<svg height="48px" viewBox="0 -960 960 960" width="48px" fill="#RRGGBB">`,
-    one fill on the `<svg>` element, tinted from the palette documented in
-    `gui/get_icon.py`.
-  - ⚠️ **A wrong/missing filename fails SILENTLY**: `QIcon()` on a nonexistent
-    path returns an **empty** icon — nothing raises at import or at runtime, the
-    menu entry just renders without one. Icon names are plain string literals at
-    ~50 `get_icon()` call sites, so **`tests/gui/icon_assets_test.py`** asserts
-    every name resolves, that no shipped `.svg` is unreferenced (11 orphans had
-    accumulated), and that the opsz48/single-fill format holds. It is Qt-free, so
-    it runs in the normal suite rather than only under xvfb.
-  - ⚠️ **A tint is drawn on BOTH theme grounds now, so a colour picked against
-    one can vanish against the other — measured, the brightness family did.**
-    The apps follow the OS light/dark setting (see the theme note below), and
-    `#FFFF55` is 7.6:1 on the dark chrome (#505050) and **1.07:1 on the light
-    one** (#F0F0F0): yellow on white, reported from the field 2026-09-07. It is
-    `#B59D24` gold now (3.00 / 2.36), and the three other off-palette one-offs
-    went with it — `sync_problem` was `#A96424`, 1.74:1 on DARK (the same fault
-    the other way), and `delete` `#F19E39`; both adopted the palette colour
-    their meaning already had. Every colour in the set now sits between 2.20:1
-    and 3.22:1 on both grounds, and `IconContrastTest` holds a 2.0 floor.
-    - ⚠️ **A ramp cannot be expressed in LIGHTNESS — that is what made the old
-      one unfixable rather than merely wrong.** The four brightness entries were
-      shades of one yellow (a paler `#F9DB78` for 1%), and a pale tint is the
-      worst case of all on a light ground. The ramp is across the palette now:
-      grey off, **amber** at 1%, gold at 50/100% (the Material glyphs carry the
-      rest — fewer rays, outline vs filled), and **green** for "back to
-      automatic", which is the palette's enabled/ok rather than a brightness
-      level. So amber means caution *and* the dim end, and green means ok *and*
-      automatic; the alternative was two more one-off colours, and the set only
-      just stopped having those.
-  - **Judge a candidate glyph by rendering and measuring it, not by its name.**
-    Rasterise to a fixed canvas (`cairosvg` + PIL) and compare **ink coverage**
-    and **glyph bounding height** against the set (baseline ≈19% ink, ≈34px tall
-    on 48px). That is what caught both the opsz mismatch above and `abc` being
-    only 12px tall — half the next smallest icon — which eyeballing the render
-    had missed. The measurement also overruled three name-based picks: the
-    `brightness_*` family is not a coherent ramp (the `backlight_*` family is),
-    and `bedtime`/`bedtime_off` beat a sun for idle start/stop.
-- ⚠️ **The WINDOW icon and the TASKBAR BUTTON icon are answered by different
-  questions, and `setWindowIcon()` only answers the first.** Windows groups
-  taskbar buttons by **AppUserModelID**, and a process that never sets one is
-  identified by its host executable — `pythonw.exe` — so the button showed the
-  **Python** icon while every title bar was correct (field, 2026-09-04: *"for
-  all these dialogs the program icon is not shown in the task bar"*).
-  - **It was never a missing icon**, which is why chasing `setWindowIcon` call
-    sites finds nothing: `IconStateManager.__init__` runs `update()` with
-    `dirty_flag` already set, so `QApplication.setWindowIcon` is called at
-    startup and every dialog inherits a real `p*.png`. Four dialogs additionally
-    override it with `pcolor.png`; that is cosmetic, not the fix.
-  - **The Linux half had been solved all along, three lines away** —
-    `QApplication.setDesktopFileName('PolyHost')` in `main_app.py`, commented
-    *"important for XWayland icon matching"*, i.e. the same question with the
-    same failure mode. `set_windows_app_id()` is its counterpart and sits in the
-    same `if/elif`, so the two are read together.
-  - ⚠️ **It must run BEFORE the first window exists** — a window keeps the
-    identity it was born with — and it must never raise: this is cosmetic, and an
-    exception there kills the tray before it appears. One call in `main_app`
-    covers the **forwarder** too, which is the second tray app that otherwise
-    gets forgotten.
-  - ⚠️ **`WINDOWS_APP_ID` is STABLE, not a name to tidy.** Windows keys pinned
-    buttons and jump lists off that string, so renaming it orphans a user's
-    pinned icon. A test pins the literal for that reason.
-  - **Not verifiable from this container** — the code path is `win32`-only, so
-    the tests cover the wiring (asked for on Windows, nowhere else, a failure
-    swallowed and logged) and hardware confirms the icon.
-- **The font-pack flash events carry a `kind` — label UIs from it, not the event name.**
-  The doom easter egg's game data (`.whx`) and executable engine pack (`.plyx`) ride the
-  **font-pack transport**, so `PolyCore.install_doomwad`/`install_doompack` emit the same
-  `fontpack_flash_progress`/`fontpack_flash_done` events as a real bundle flash. Both
-  payloads now carry `"kind"` (`fontpack`/`doomwad`/`doompack`, `polyhost/core/events.py`
-  `FLASH_KIND_*` + `flash_kind_label()`), and `polyctl` + the tray render their wording from
-  it — a hardcoded "fontpack"/"updating keyboard fonts" reported a `.plyx` install as a font
-  pack (field 2026-08). A missing `kind` means font pack (older cores), so the fallback is
-  the previous wording.
-  - ⚠️ **`install_doompack` sends UNSIGNED EXECUTABLE CODE, and nothing on either side
-    checks a signature for it.** The `.sig` handling in `hid_fw_up` covers the *firmware*
-    image only; the font-pack transport has no equivalent, and the firmware's
-    `fw_staging_check_signature()` is reached only on the `FW_TARGET_FIRMWARE` target. The
-    keyboard then *branches into* a `.plyx` it validated with a CRC32 (no MPU on the M0+),
-    so anything that can talk raw HID can flash a crafted pack, select `IDLE_STYLE_IDDQD`
-    over cmd 28, and get code execution on the next idle. Do **not** describe the keyboard
-    as "signed firmware, so a malicious flash is covered" — it is not. Tracked as **FW-9**
-    (open, high) in `polykybd-ctnd/docs/SECURITY_AUDIT.md`; the fix is firmware-side
-    (verify the pack at load time), so there is nothing for the host to do beyond not
-    over-claiming.
-- **WinCompose install from the tray (Windows)**: WinCompose is what gives the keyboard real
-  unicode output on Windows (`polyhost/input/unicode_input.py` — `wincompose_running()` picks
-  `InputMethod.WinCompose` over the far more limited native path), so a fresh Windows box has
-  the host but no WinCompose. The tray shows **"Install WinCompose…"** exactly while it is
-  *not* running (`host.py` `_refresh_wincompose_action`, re-probed on `menu.aboutToShow` — no
-  background polling), downloading our fork's installer via `services/wincompose_install.py`
-  (Qt-free; reuses the updater's **web**, non-API release lookup so it doesn't share
-  api.github.com's 60/hour anonymous limit) and starting it with `os.startfile` so Windows
-  raises the normal UAC prompt. **No release is published on `thpoll83/wincompose` yet** —
-  `find_installer()` returns None then, and the menu falls back to opening the releases page,
-  so the entry is useful before and after the first release. Because the unicode mode is only
-  pushed on *connect*, a fresh install would otherwise not reach the keyboard until a replug:
-  the same menu-open probe fires `PolyCore.refresh_unicode_mode()` on a not-running→running
-  transition (`M_UNICODE_MODE_REFRESH` → `RemoteCore` mirror → `polyctl unicode-mode`).
-  `process_exists()` runs TASKLIST with **`CREATE_NO_WINDOW`** (else a console flashes under
-  the `pythonw`/`.vbs` autostart chain) and **never raises** — it sits on the post-connect
-  path, where an exception would abort the whole connect flow over a cosmetic detection.
-- **The unicode input method is WATCHED for the life of the core, and an
-  ambiguous reading is applied WITHOUT being stored** (`PolyCore`
-  `_start_wincompose_settle` / `_wincompose_settle_loop` / `_apply_unicode_mode`,
-  firmware protocol 17). It used to be detected exactly once, in the post-connect
-  flow — and at Windows logon autostart brings PolyKybdHost up **before**
-  WinCompose, so `get_input_method()` found no `wincompose.exe`, pushed plain
-  `Windows`, and the keyboard typed Alt+numpad sequences (which cannot produce an
-  emoji) for the rest of the session. Nothing corrected it: the tray probe needs
-  the user to open the menu and deliberately skipped its FIRST look, and a
-  headless daemon has no tray at all. Field report 2026-09-08, and the firmware
-  half of the same bug is in `qmk_firmware/CLAUDE.md` (cmd 20 called QMK's
-  notification callback rather than the setter, so the legend moved and the mode
-  did not). What is load-bearing:
-  - ⚠️ **A plain-`Windows` reading is an ABSENCE, not an observation.** Every other
-    reading is positive — the process is running, or the platform is not Windows.
-    Just after logon, "no wincompose.exe" is equally consistent with "it has not
-    started yet", which is the whole reason the watcher exists. So ambiguity does
-    **not** decide whether to push, it decides whether the push is **stored**:
-    the mode is applied VOLATILE (cmd 20 `data[3]`, protocol 17) — while WinCompose
-    is absent, `Windows` genuinely IS how the keyboard should type — and re-asserted
-    persistently on the first pass after the window closes. If WinCompose turns up
-    first, the stored mode was never disturbed, and the firmware's
-    `eeprom_update_byte` skips the write for a value it already holds. On firmware
-    older than 17 there is no way to apply without storing, so the reading is
-    **held** instead: the alternatives are a wrong stored value and a delay, and
-    the delay is recoverable.
-  - ⚠️ **The window is measured from the PROCESS start, not the connect.**
-    WinCompose races the logon; it does not race a replug three hours later, where
-    treating the reading as ambiguous would only postpone the re-assert that exists
-    to catch a *different* keyboard being plugged in.
-  - ⚠️ **The push dedupe is over (mode, persist), not the mode alone.** Re-asserting
-    the same mode to make a volatile one stick is the entire point of the window
-    closing; a mode-only dedupe swallows it and the keyboard loses the setting at
-    the next power cycle. Mutation-checked.
-  - ⚠️ **The watcher thread must never touch the device.** `_apply_unicode_mode`
-    reads the CACHED protocol via `protocol_supports(self.keeb.protocol_version, …)`
-    rather than `keeb.supports()`, which lazily calls `query_version_info()` — HID
-    I/O, which belongs on the worker. Same reason the TASKLIST probe is on its own
-    thread rather than a worker periodic: ~50 ms must not sit between the reconnect
-    probe and the console read.
-  - **The watch is permanent and bidirectional, with no deadline.** Stopping when
-    WinCompose appears would catch a late start and never notice it being *quit*,
-    which leaves the keyboard emitting compose sequences that produce nothing —
-    and only the tray covered that, which a daemon does not have. 10 s probes for
-    the first 10 minutes after a connect, then one a minute. A cut-off would just
-    be another guess at how slow a logon can be.
-  - **A mode counts as pushed only when the device confirms it** — `worker.submit`
-    only QUEUES the command, so recording at submit time records a mode the device
-    may never have taken (paused, mid-flash, unplugged) and the dedupe then
-    suppresses the retry, which is the very failure the watcher exists to fix.
-  - ⚠️ **`shutdown()` and `_start_wincompose_settle` share a lock plus a one-way
-    flag**, or a reconnect landing concurrently clears the stop Event and starts a
-    fresh watcher holding the core after its worker has stopped.
-- **A settings change applies its device side effects through ONE core hook —
-  `PolyCore.note_settings_changed(keys=None)`.** There are exactly two settings
-  writers: `settings_set` (polyctl and the client-mode dialog) and the in-process
-  settings dialog, which writes the file directly. The dialog already carried a
-  hand-written "nudge the core" line for the daylight brightness, so a second side
-  effect meant a second copy — and that is how enabling
-  `unicode_send_composition_mode` mid-session came to do nothing at all until the
-  next reconnect (the watcher is armed only in the post-connect flow, and only when
-  the setting was already on). `keys=None` means "anything in the dialog may have
-  changed", which is all a whole-file write knows. Add the side effect to the hook,
-  never to a caller.
-- **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
-  that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
-  PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal
-  user. Now: status · Pause · [Language] · Brightness · Idle Display · Keycap Script ·
-  Configure Keymap · Updates · Maintenance · Settings · Help & About · Quit, with
-  **Developer** slotted in before Settings when developer mode is on. The invariant is
-  that turning developer mode on **does not rearrange anything** (asserted by
-  `tests/gui/host_client_test.py` `test_developer_mode_only_adds_a_submenu`), so muscle
-  memory survives the toggle. `CommandsSubMenu` (`gui/cmd_menu.py`) builds Brightness +
-  Maintenance + the Developer submenus and gates them off **explicit action lists**
-  (`_device_actions` follow `connected`, `_fw_actions` follow `fw_enabled`) — it can no
-  longer walk one menu's actions, since they live under different parents. ⚠️
-  `managed_connection_status` still blanket-disables every top-level action first, so a
-  **new group parent must be re-enabled explicitly there** or its whole submenu goes
-  unreachable on a disconnect (that is why Updates / Help & About / Pause are listed).
-  Two rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
-  entry (only while `safe_mode`) and Install WinCompose (only while it isn't running).
-  The language menu is built lazily and inserts itself at `self._lang_anchor`
-  (Brightness), not at index 1.
-- **A menu row that can answer its own question should — the font-pack row is the
-  pattern.** `PolyCore.fontpack_bundle_status()` is a **local** comparison (the cached
-  `GET_ID` version block vs the shipped `bundles.json`, no device I/O on either side of
-  the RPC), so the Updates row relabels itself on `aboutToShow` — *"Keyboard fonts: up
-  to date"* (disabled) or *"Update keyboard fonts (N)…"* with the stale bundle ids in
-  its tooltip — instead of hiding the answer behind a status dialog. Same idea in
-  Brightness: *"Back to automatic"* renames itself to *"Clear manual override"* when
-  `brightness_set_daylight_dependent` is off, because that is what it would actually do.
-  Keep such refreshes to reads that are genuinely free; an `aboutToShow` that touches
-  the device would stall the menu.
-- **"Back to automatic" exists because the firmware's auto mode is a ONE-WAY DOOR from
-  the host's side.** Any manual `set_brightness` drops the keyboard out of auto mode
-  (its own LTR-559 sensor then backs off too) and nothing re-engages it until the host
-  deliberately re-asserts — so the tray's brightness presets used to strand the keyboard
-  in manual until a replug. The entry calls `PolyCore.refresh_daylight_brightness()`
-  (daylight on → `VOLATILE|AUTO_ON` + the current value; off → `AUTO_OFF`, i.e. back to
-  the keyboard's stored manual level), which is now `M_DAYLIGHT_REFRESH` + a `RemoteCore`
-  mirror + `polyctl brightness --auto`. It returns `(True, "queued")` like every other
-  command-API method — it is a `submit`, not a `run_sync`.
-- **Developer mode (`--dev`) is SEPARATE from log verbosity — and it is a persisted
-  setting, not just a flag.** `--debug N` used to conflate three things: the log level,
-  the developer/diagnostic UI surface, and `allow_key_injection`. It is now split:
-  **`--dev [0|1|2]`** (bare = 1) carries the level *and* turns developer mode on, while
-  the **`developer_mode`** setting (default False) governs the surface alone. `main_app.resolve_dev`
-  is the one pure decision point (unit-tested): flag absent → the setting decides and
-  logging stays INFO; flag present → it wins **in both directions**, so `--dev 0` forces
-  developer mode off over an enabled setting (hence `default=None` — "flag absent" must
-  stay distinguishable from `--dev 0`). The setting exists because under daemon-by-default
-  the tray GUI is launched by autostart **with no flags**, so a flag-only gate made every
-  developer tool unreachable unless you started the app by hand. `--debug N` survives as a
-  hidden deprecated alias (existing shortcuts / autostart entries) that logs a warning.
-  `PolyHost(log_level, verbosity, developer, …)`, `run_headless(..., developer=)` and
-  `SettingsDialog.setup(..., developer_mode=)` all take the two independently; the
-  GUI-spawned daemon inherits only the **resolved level** as `--dev N` (`_spawned_daemon_flags`)
-  and reads `developer_mode` from the same settings file itself. Read it at startup with
-  `settings.read_setting("developer_mode", False)` — the file-only helper — **not**
-  `PolySettings()`, which creates/rewrites the config and log-dumps every key before the
-  launch path is even known.
-- **Anonymous usage telemetry (`polyhost/services/telemetry.py` + `telemetry-collector/`)**:
-  one small JSON POST per install per day — host/protocol version, OS + coarse release,
-  arch, python, run mode, the attached keyboard's model/fw/protocol/hw/font-pack versions,
-  six counters since the last report (sessions, connects, reconnect_flaps, fw_flashes,
-  fontpack_flashes, update_installs), and a locally-generated random `install_id`. **On by
-  default**, opt out in the settings dialog or `polyctl telemetry disable`;
-  `polyctl telemetry status|preview|send` are the rest of the CLI surface. `PolyCore` owns
-  the reporter (`start_telemetry()` is called next to `worker.start()` in **both**
-  `host.py` and `headless.py` — both construct `PolyCore(start_worker=False)`, so the
-  reporter does not start itself). The endpoint is `TELEMETRY_ENDPOINT` in `settings.py`;
-  **empty disables sending entirely**, which is how it ships before a collector exists.
-  - **The payload is an ALLOW-LIST at both ends**, and that is a privacy guarantee, not a
-    style choice: `build_payload()` copies named fields (never `**status`), and the Worker
-    re-validates and rebuilds the row it stores. The host can see window titles and app
-    names — it reads them constantly for overlays — so the frozen `PAYLOAD_KEYS` test in
-    `tests/services/telemetry_test.py` exists to make an accidental widening fail loudly.
-    Never add a field by spreading a status dict.
-  - ⚠️ **There is NO in-app consent step.** The first-run dialog was removed (#153,
-    "a modal on every upgrade is a poor trade for a disclosure that arrives after the
-    install"), so the **release notes are the disclosure** and the one INFO line
-    `_log_telemetry_notice` prints at every start is the only thing a headless daemon can
-    say. Don't gate that line on an "already told them" flag, downgrade it to debug, or
-    drop it in a logging cleanup. Write the release notes *before* shipping a release that
-    sets the endpoint. Posture + residual risk: `polykybd-ctnd/docs/SECURITY_AUDIT.md`
-    **HOST-3**; user-facing page: `docs/telemetry.md` and the public
-    `software/telemetry` docs page.
-  - **Collector**: a Cloudflare Worker + D1 (`telemetry-collector/`, deployed by
-    `.github/workflows/deploy-telemetry.yml` on push to `main`). It is **write-only by
-    design** — no read route, therefore no route that can leak the dataset. Read the data
-    with `wrangler d1 execute` or **`python telemetry-collector/dashboard.py --open`**,
-    which renders a self-contained HTML dashboard locally (per-install version splits from
-    each install's *newest* report, so a long-running tester doesn't outvote a new one).
-    A hosted version is planned but unbuilt — design and its costs in
-    `telemetry-collector/HOSTED_DASHBOARD.md`. Full setup/runbook: `telemetry-collector/SETUP.md`.
-- ⚠️ **`workers.dev` is CLOUDFLARE's zone, not ours — so every zone-scoped Cloudflare
-  product is unavailable on the collector.** This has now cost a round twice: first on
-  rate limiting (WAF rate-limiting rules are zone-scoped, so the **Workers rate-limit
-  binding** in `wrangler.toml` is the mechanism that works), then again on **Cloudflare
-  Access**, the obvious way to put SSO in front of a hosted dashboard — also unavailable,
-  so that auth would have to live *inside* the Worker until a custom domain exists. Rule
-  of thumb: anything Cloudflare describes as "protect a route/hostname" needs a zone you
-  own; anything configured as a Worker **binding** works. Don't accept advice (including
-  mine) that reaches for a zone-level feature here without checking this first.
-- **`wrangler` gotchas that fail SILENTLY** (full detail in `telemetry-collector/SETUP.md`):
-  - ⚠️ **A command without `--remote` hits the LOCAL sqlite file and reports success.**
-    So a `DELETE` appears to run and the row is still there on the next `SELECT --remote`
-    — deleted three times before the cause was obvious (2026-08-07). This applies to every
-    `d1 execute`, not just the schema step.
-  - **`d1 info <name>` resolves the name through the local `wrangler.toml`**, so it 7404s
-    ("database could not be found") while the file still holds a placeholder id. Use
-    **`d1 list`** to get the real id.
-  - **The API token needs `Workers Scripts: Edit` (plus `D1: Edit`).** Without it the
-    deploy fails with `Authentication error [code: 10000]`, which names the *endpoint* it
-    could not reach and not the permission it lacked. Verify a token fix by triggering the
-    workflow (`workflow_dispatch`) rather than assuming — that is a 30 s check.
-  - **`binding = "DB"` in `wrangler.toml` must stay `DB`**: `d1 create` prints a suggested
-    binding named after the *database*, and adopting it 503s every ping.
-- ⚠️ **The telemetry collector CANNOT double as a problem-report backend — four
-  independent reasons, and the last one is a feature.** The obvious idea when
-  "Report a Problem" was designed (2026-08-18) was to POST the report to the
-  Cloudflare Worker that already exists. It doesn't fit, and each obstacle would
-  have to be removed separately: the Worker caps a request body at **8 KB** (a
-  description plus diagnostics blows past it, let alone logs); the D1 schema is
-  `UNIQUE(install_id, day)` and upserts, so a **second report the same day
-  overwrites the first** — exactly when a user is retrying because it broke
-  again; the payload is an **allow-list rebuilt server-side** (`PAYLOAD_KEYS`,
-  frozen by a test *designed* to make widening fail loudly), so free text can only
-  arrive by deliberately undoing that guarantee; and the Worker is **write-only by
-  design — there is no read route**, which is precisely what makes the dataset
-  unleakable, so retrieval would mean building the route the design exists to
-  avoid, plus auth *inside* the Worker (Cloudflare Access is zone-scoped and
-  unavailable on `workers.dev` — see the note above). Hence the shipped design is
-  a **pre-filled GitHub issue** with the bundle attached by the reporter: no
-  backend, no new data store, and the user sees what they send. Don't re-propose
-  the Worker without answering all four.
-- **Log collection is ONE Qt-free service with three front ends —
-  `polyhost/services/log_bundle.py`.** "Send me your log" used to be a request
-  nobody could satisfy: the logs are **six** files
-  (`host_log.txt`, `daemon_log.txt`, `polykybd_console.txt`, `startup_log.txt`,
-  `forwarder_log.txt`, `crash_log.txt`), the rotating ones × up to 3 backups
-  each, written **relative to the process
-  cwd**, and under daemon-by-default the half that matters is the *daemon's*, not
-  the GUI's. `build_bundle()` writes a `.zip` (logs + `diagnostics.txt` + a
-  redacted `settings.yaml` + a README stating the timeframe and redaction state);
-  `recent_text()` returns the same content for the clipboard. Front ends: the tray's
-  **Help & About → "Collect logs…"**, a **"Collect Logs…"** button in the log viewer,
-  and **`polyctl logs bundle|show|paths`**. Nine things that are load-bearing:
-  - ⚠️ **A NEW log file reaches nobody unless `LOG_SOURCES` knows about it** —
-    that is now the single declaration (filename, viewer tab `title`, and
-    whether it is time-`sliced`), and `viewer_files()` derives both tray apps'
-    log-viewer tabs from it. It used to be **four** hand-maintained lists —
-    `log_bundle.py`, the `log_files` dict in `host.py` *and* in `forwarder.py`
-    (the forwarder is a second tray app with its own viewer), and the count in
-    this paragraph — and they drifted exactly as you would expect: #172 shipped
-    `crash_log.txt`, the file whose entire purpose is proving whether the app
-    crashed, into **none** of them, so the one artifact a support round asks for
-    first could be neither collected nor viewed. Worse, the note recording that
-    said THREE, having itself missed the forwarder: the guard meant to prevent
-    the drift was one of the drifting lists. Fixed 2026-08-18 (#178) by deriving
-    instead of enumerating — same shape as the enumerating-guard trap in the
-    review conventions above. The count in this paragraph is the one hand-kept
-    number left; it is prose, so nothing can derive it.
-  - ⚠️ **Registering a source is only half of it — check its lines carry a
-    sliceable timestamp.** `slice_lines` starts `keep = False` and only flips on a
-    `[YYYY-MM-DD HH:MM:SS,mmm]` prefix, so a file the logging handlers did not
-    write is dropped **in full** and the section silently vanishes: registered,
-    and still reaching nobody. `crash_log.txt` is exactly that — its markers are
-    `=== session start | pid N | … ===` — and worse, `faulthandler` writes its
-    native dump *on the fault* with no marker of its own, so even with the marker
-    format taught to the slicer the dump would inherit the keep/drop decision of a
-    `session start` that may be hours older, dropping precisely the crash being
-    reported. Hence `LogSource.sliced=False` for it. The flag lives **on the
-    entry**, not in a lookup table beside it, so a new source has to answer the
-    question where it is declared. `_collect_source()` is the single place that
-    honours it — `collect_text` and `build_bundle` had two copies of that loop,
-    and the bundle is the copy that reaches a maintainer.
-  - **`crash_summary()` puts the crash counts in the report BODY**, since the body
-    is read long before the attachment is opened. It is deliberately **not** a
-    verdict: a `session start` with no matching `clean exit` is the crash log's
-    headline signal, but the process writing the report is itself such a session
-    (as is a live daemon), so an "it crashed" claim derived here would fire on
-    every healthy report and be learned to ignore.
-  - ⚠️ **`polyctl logs` MUST work with no host running** — `main()` routes it
-    through `_is_offline_command` *before* `connect()`, and a reachable daemon only
-    enriches the diagnostics. The moment a user most needs the logs is the one where
-    the app failed to start or the daemon died, i.e. exactly when `connect()` fails.
-    Don't "simplify" it back onto the normal connect-first path.
-  - **The rotation chain is read `.N` → `.1` → base, i.e. OLDEST first.**
-    `RotatingFileHandler` moves the live file to `.1` and shifts the rest up, so
-    reading base-first silently produces a backwards concatenation.
-  - **Continuation lines inherit their record's keep/drop decision** in
-    `slice_lines`. A traceback carries no timestamp of its own, so a naive
-    per-line time filter keeps the `ERROR` line and drops the half that says what
-    actually failed.
-  - ⚠️ **`default_log_dir()` falls back to the REPO ROOT, so a "there are no
-    logs" test passes for the wrong reason.** Logs are written relative to the
-    process cwd, so a test that runs in a temp dir does not get an empty
-    discovery — it finds the checkout's own `host_log.txt` and friends, and a
-    test asserting the no-logs failure path then passes without ever reaching it.
-    Force the failure at its source instead (make `build_bundle` raise), or the
-    branch you think you covered is untested. Same shape as the stale-guard note
-    in the review conventions above: a green test that pins the environment's
-    accident rather than the contract.
-    - ⚠️ **And do NOT reach for `mock.patch(default_log_dir)` to steady a test —
-      patching the resolver a function depends on pins the coincidence, not the
-      contract.** `build_bundle(log_dir=X)` bundles X's logs, but
-      `environment_text()` called `crash_summary()` with no directory, so
-      `diagnostics.txt` described `default_log_dir()`'s crash log instead — a
-      report whose body and attachment can describe different machines. The test
-      that was supposed to cover that line patched `default_log_dir` to point at
-      its fixture, so the two agreed *only in the test* and the mismatch shipped
-      (caught in review, #178). The test that actually holds it uses **two
-      different directories** with deliberately different contents and asserts
-      the diagnostics describe the one the zip ships. `log_dir` is now threaded
-      `build_bundle` → `environment_text` → `crash_summary`; keep it threaded.
-  - ⚠️ **If a helper resolves a directory to make a decision, what it RETURNS has
-    to carry that resolution.** `viewer_files()` tested
-    `(default_log_dir() / name).exists()` but returned the **bare** filename, and
-    `LogViewerDialog` opens the value it is given relative to the process cwd — so
-    the check and the open could resolve in different directories, showing the
-    wrong file or none. Note the code it replaced was *worse in principle but
-    self-consistent* (it checked and opened the same bare name), which is how the
-    regression got written: centralising the check moved one half and not the
-    other. It returns absolute paths now, which also makes the dialog's "open
-    containing folder" work at all — `os.path.dirname` of a bare name is `""`.
-  - ⚠️ **`crash_log.txt` is bounded by an in-place TRIM, and is the one log that
-    must never be rotated or deleted — `faulthandler` holds the file
-    DESCRIPTOR.** Three consequences that all follow from that one fact, and
-    that will each look like an arbitrary choice to whoever reads the code next:
-    - **Not a `RotatingFileHandler`.** Rotation renames the file; the fd follows
-      the *inode*, so the live process keeps dumping into `crash_log.txt.1` and
-      eventually into a deleted inode — silently. `faulthandler` also bypasses
-      `logging` entirely, so a handler would never even see the ~6 KB dumps that
-      cause the growth; it could only roll over on the marker lines.
-      `trim_if_oversized()` therefore runs inside `install()` **before** the fd
-      is created, which is the only moment with nothing to disturb.
-    - **Rewritten in place, not via `os.replace`.** A replace swaps the inode out
-      from under the *other* process's fd — the GUI and daemon share this file.
-    - **Cleared by TRUNCATION, never `unlink`.** Deleting it would leave
-      `faulthandler` writing to a deleted inode, so "clear my logs" would
-      silently disable crash capture until restart. Truncation is safe only
-      because every writer opens with mode `"a"` (**O_APPEND**), so a concurrent
-      write lands at the new end rather than behind a NUL hole — verify that
-      still holds before adding a handler. Rotated backups are nobody's open
-      file and are most of the bytes, so those *are* unlinked.
-    Size matters here beyond disk: this is the one source the bundle carries
-    **whole** (`sliced=False`), so its size is *bundle* size, and a bundle is
-    what gets attached to a public issue.
-  - **Redaction is anchored on the log message's own wording, not "anything in
-    quotes"** (`_TITLE_PATTERNS`), and masks **window titles only** — app/exe names
-    are kept, since that is what overlay-matching support rounds actually need.
-    Titles can name documents ("Q3 layoffs.xlsx"), so the dialog says so in red when
-    the box is unticked; default is OFF because a first support round with everything
-    masked usually has to be repeated. `browser_report_token` / `telemetry_install_id`
-    are masked **always**, independent of that flag.
-- **Multi-machine forwarding fails SILENTLY in three different ways, and NONE of
-  them is diagnosable from the forwarder's own log.** All three were hit on one
-  setup that had worked for weeks (field, 2026-08-17); the forwarder log showed
-  nothing but a repeating error with no cause in it. Check these before reading
-  any code:
-  - ⚠️ **A disabled relay reads as `Connection timed out`, NOT "connection
-    refused"** — so the log looks like a network problem rather than a host that
-    isn't listening. A closed port would RST, but the keyboard machine's firewall
-    silently drops SYNs to a port nothing has bound, and the old allow-rule went
-    away with the listener. The *cause* is logged once, on the **other machine**,
-    by `RemoteHandler.listen_to_forwarder` ("Remote overlay entries are configured
-    but the legacy plaintext window relay (TCP 50162) is disabled") — and only
-    when remote entries are mapped and `window_report_network_enabled` is off. In
-    daemon mode that line is in `daemon_log.txt`, not the tray log.
-  - ⚠️ **`WindowReportServer` is started ONLY by `HeadlessHost`** (`headless.py`
-    `_maybe_start_window_report_server` is its one construction site — `host.py`
-    has none). So under `--no-daemon`, `window_report_network_enabled` is a
-    **silent no-op**: the setting reads back true and nothing listens.
-  - ⚠️ **A forwarded window is used only while the keyboard machine's OWN focused
-    window is a `remote: true` mapping entry** (`active_window.py`
-    `is_remote_mapping_entry`, the `elif` in the window tick) — normally the
-    remote-desktop client you are viewing the other machine through (the shipped
-    entry is `nxplayer`/NoMachine). Without such an entry both logs look perfectly
-    healthy — the forwarder reports windows, the daemon receives them — and the
-    keycaps simply never change.
-  - The user-facing version of all three is the docs site's
-    [Multi-Machine Setup](https://www.polykybd.org/using/multi-machine/) page
-    (rewritten 2026-08-17, docs#51). ⚠️ **The relay gate that caused this shipped
-    in 0.10.5 and the docs kept recommending the dead path for six weeks** — when
-    you flip a transport off by default, move that page in the same change.
-  - **Browser-URL matching DOES cross machines — but only over the authenticated
-    RPC path** (`--report-rpc`; the forwarder gained this in 0.12.x). Three things
-    had to be true at once, so if a `url:` / `urls-contains:` entry is not firing
-    for a forwarded window, check them in this order: the forwarder runs its own
-    loopback receiver for the extension (`handler/browser_url_source.BrowserUrlSource`,
-    shared with `PolyCore` so the two roles cannot drift — the extension itself is
-    unchanged and always POSTed to `127.0.0.1` on its own machine); the report
-    carries the optional `url` param (**RPC only**); and `RemoteHandler._match_remote`
-    passes it to the matcher. ⚠️ **The legacy plaintext relay deliberately does NOT
-    carry the URL**: its framing is positional `handle;name;title;os` with the
-    free-text field in the *middle*, so a title containing `;` already truncates the
-    title and kills the `os` field — a fifth field would deepen a live bug on a
-    transport that is off by default. Two details that are easy to get backwards:
-    a **None url is STORED** (unlike a None os, which is ignored — the OS belongs to
-    the sending machine, a URL to the window in that report, so keeping the last one
-    would pin a stale site's overlay onto the next non-browser window); and the URL
-    is **part of the window's identity on both ends**, because an SPA route change
-    moves neither handle nor title — the forwarder re-sends on a URL change rather
-    than waiting out its 15 s heartbeat, and `remote_changed` re-matches.
-- ⚠️ **"The tray icon is gone" is NOT the same as "the app crashed" — check the
-  process list before diagnosing anything else.** Field, 2026-08-18: the tray
-  vanished, `startup_log.txt` and `daemon_log.txt` showed nothing wrong, the user
-  relaunched, and it read as a silent crash. `Get-Process pythonw | Select Id,
-  StartTime` settled it in one command — **the original GUI was still running**,
-  minus its icon. ⚠️ **Read that list in PAIRS: each launch showed TWO
-  `pythonw.exe` entries** with the same start time and command line (6 processes
-  for 1 daemon + 2 GUIs). Cause unestablished — so do not explain it, just don't
-  double-count it into "two daemons are fighting over the device". `Get-CimInstance
-  Win32_Process -Filter "Name='pythonw.exe'" | Select ProcessId, ParentProcessId,
-  CreationDate, CommandLine` settles it: one of each pair parenting the other is a
-  launcher stub, a shared parent would be two real instances. Three things conspired, all now fixed on this branch:
-  - **The logon race.** The autostart scheduled task starts the GUI before
-    Explorer's notification area exists; `Shell_NotifyIcon` fails and the icon
-    never appears. Qt re-adds only on Explorer's `TaskbarCreated` broadcast, which
-    it sends when it **restarts**, not when it finishes starting — so losing that
-    race is permanent for the session. `host.py` called `setVisible(True)`
-    unconditionally and nothing anywhere in the app called
-    `isSystemTrayAvailable()`. Now `gui/tray_wait.py` waits for the tray (1→15 s
-    backoff, 5 min cap) and logs both the wait and the eventual show.
-    ⚠️ That check only looks for the shell's tray window, so it can say "available"
-    while the add still fails; if this recurs *with* "icon shown" in the log, the
-    remaining lever is a forced `hide()`/`show()` re-add.
-  - **Nothing could have recorded a crash if there had been one.** Under
-    `pythonw.exe` stderr is a black hole, and the app had no `sys.excepthook`, no
-    `threading.excepthook`, no `faulthandler` and no `qInstallMessageHandler` — so
-    PyQt's abort-on-unhandled-exception-in-a-slot (it calls the excepthook, *then*
-    `qFatal`) left zero trace. `util/crash_log.py` + `gui/qt_crash.py` now capture
-    all four, into `crash_log.txt`; a `session start` line with no matching
-    `clean exit` is itself the diagnosis.
-  - **Losing the tray costs the menu, not the keyboard.** Under daemon-by-default
-    the daemon owns the device, window tracking and overlays, so it kept switching
-    overlays for 14 minutes with no GUI attached — which is *why* nothing looked
-    broken. Also note the control server logs **nothing** when a client connects or
-    disconnects, so the daemon log can never date a GUI's death.
-  - ⚠️ **A tray "Quit" and a crash were previously indistinguishable in the logs** —
-    `quit_app()` writes no line. Don't reason about whether the GUI exited on
-    purpose from `startup_log.txt`; use the crash-log markers.
-- ⚠️ **The self-updater copies release files over a git checkout — `git log -1` can
-  be months behind what is actually running.** `apply_update()` is
-  `copytree(dirs_exist_ok=True)`: it overwrites and never deletes, and `copy2`
-  preserves the *tarball's* mtime, so on-disk timestamps show the release date, not
-  the day it was installed. A field machine sat on a July feature branch (HEAD
-  0.9.47) while running v0.11.10 from the release, with 354 files showing as
-  modified and a reflog untouched for two weeks. When a report's version doesn't
-  match the branch, that is the explanation — the running code is the release, and
-  `_version.py` on disk is the only thing that says which.
-
-- **"Report a Problem" is the guided sibling of log collection —
-  `polyhost/services/problem_report.py` + `gui/report_problem_dialog.py`.** The
-  tray's **Help & About → "Report a Problem…"** takes a description, builds a log
-  bundle, puts the composed issue body on the clipboard and opens a **pre-filled
-  GitHub issue** in the browser. "Collect logs…" beside it stays the manual half,
-  for when the file is going somewhere else. Four things are deliberate:
-  - ⚠️ **Redaction defaults ON here and OFF in "Collect logs…", and that
-    asymmetry is the point.** A local bundle is a file you inspect before
-    sending; a report is aimed at a **public** tracker. Same data, different
-    destination, so the safe default flips.
-  - **The issue body carries NO log lines** — only the description, the
-    diagnostics and the bundle's *filename*, with an instruction to attach it.
-    GitHub has no API to attach a file to an issue without a token, and shipping
-    one in an open-source client is shipping a public credential; more
-    importantly, an attachment is a file the reporter can look at before
-    uploading, which pasted log text is not.
-  - **Diagnostics are path-scrubbed** (`scrub_paths`): `_diagnostics_text` ends
-    with `Config:`/`Logs:` lines, and on every platform those contain the account
-    name (`C:\Users\tom\…`, `/home/tom/…`). Home → `~`, plus a regex for any
-    *other* user directory (a daemon under another account, another drive).
-  - **A pre-filled new-issue URL is a GET**, so an oversized body is truncated or
-    refused somewhere between browser and GitHub. `issue_url_for()` falls back to
-    the blank form above `MAX_URL_BYTES` (6000); the body is on the clipboard
-    either way, so the fallback costs a paste rather than the report. A test
-    pins that a *realistic* report still prefills — otherwise the fallback
-    quietly becomes the normal path.
-- **A firmware crash is ALERTED, not merely logged — `services/crash_report.py` +
-  `gui/crash_alert_dialog.py` (firmware crash record, protocol 16+).** The keyboard
-  prints `crash: side=… kind=… pc=… … fw=…` with its boot banner after a HardFault /
-  unhandled exception / watchdog reboot (qmk `base/crash_record.*`); the console
-  read on the HID worker feeds `CrashScanner`, `PolyCore` emits **`crash_detected`**
-  (a `CrashRecord.to_dict()`), and the tray shows one modeless dialog with two ways
-  out: **Report on GitHub…** (opens Report-a-Problem with the crash pre-filled via
-  `ReportProblemDialog.set_description(text, title)` — bundle, redaction and the
-  issue URL all as before) or **Copy to Clipboard** (`compose_report_text`, the same
-  text `polyctl crash show` prints). `polyctl crash show [--slave] [--json] | clear`
-  is the CLI over **cmd 39** (`M_CRASH_GET/CLEAR`, `FEATURE_MIN_PROTOCOL["crash_record"]`
-  = 16). Three things that are easy to get wrong:
-  - ⚠️ **A console read is a report-sized FRAGMENT, not a line** — the scanner
-    reassembles across the 250 ms reads and only classifies `\n`-terminated lines,
-    and it **dedupes by the line itself** because the boot banner re-emits for
-    ~30 s. `clear_crash_record()` calls `forget()` so the next boot's line is
-    reported again. Same trap the rig's `ConsoleTap` documents.
-  - ⚠️ **The console is starved during a flash** (see the threading notes above),
-    so a crash line printed while the host is flashing is lost to the scanner —
-    the record is still on the keyboard: `polyctl crash show` reads it over HID,
-    where `fresh` says whether it belongs to the boot before this one.
-  - `PHASE_NAMES` / `RECORD_STRUCT` mirror the firmware enum and struct
-    (`_Static_assert(sizeof == 48)` on that side); a phase added there needs a
-    name here or the summary reads `phase N`.
-  - ⚠️ **The dialog is retained for the LIFE OF THE TRAY and only ever appends —
-    "Dismiss" hides the window, it does not forget.** So a crash from an hour ago
-    rides along in the report about the one that just happened; a test session
-    that fired seven triggers left all seven in every later problem report
-    (field, 2026-09-04, which is how this was found). Three places hold state and
-    they had no single gesture that agreed: the dialog's `records` list (nothing
-    cleared it — only quitting the GUI), `CrashScanner._seen` (the dedupe, cleared
-    by `forget()`), and the keyboard's own 4 KB flash archive (HID cmd 39 sub-op
-    2). **`Clear` on the dialog now does all three**, wired to
-    `core.clear_crash_record()` — which is `forget()` plus the erase — so a record
-    cannot come back from one layer after being dropped from another.
-    - It is **confirmed** because the keyboard's archive is the only durable copy:
-      after Clear there is nothing left but the console log.
-    - ⚠️ **A device that refuses still drops the host-side list**, deliberately.
-      Keeping it because the keyboard was paused or mid-flash is exactly the
-      complaint — stale records in every later report — so the failure is
-      reported in the status line instead.
-    - The button is absent when there is no `clear_cb`, since clearing here while
-      the keyboard still held the record is the out-of-step state it prevents.
-      `polyctl crash clear` remains the CLI route and covers the same three.
-    - ⚠️ **The `except` around the device call is broad because an exception
-      escaping a Qt SLOT takes the TRAY DOWN, not just the action** — PyQt calls
-      the excepthook and then `qFatal`. Measured while mutation-testing: narrowing
-      it to `OSError` **aborts the interpreter mid-suite**. It is the same abort
-      `util/crash_log.py` exists to capture, so this is not defensive style.
-    - ⚠️ **That also breaks the mutation harness in a NEW way: a mutation that
-      ABORTS the process reads exactly like one that was not caught.** The run
-      dies before unittest prints anything, so a `grep '^(FAIL|ERROR): '` finds
-      nothing and the harness reports an empty "caught-by" — the result that means
-      *your tests are worthless*. Same family as the ANSI-escape and
-      mutation-never-applied traps in `qmk_firmware/CLAUDE.md`, and the same
-      remedy applies one level up: **judge the run by the `Ran N tests` summary
-      line existing**, not by the absence of failures.
 - **The AI key — a status light the host drives, and a key press that comes back on
   the CONSOLE (`services/ai_link.py`, HID cmd 40, protocol v18+).** One key wears an
   agent's status (`off` / `idle` / `working` / `attention`) and, pressed, raises that
@@ -2582,20 +1022,116 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     docs page rather than left to be discovered: a tab is not a window, so a press
     brings the browser forward and stops, and a hook inside a hosted container has no
     route back to the keyboard at all.
-- ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
-  `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
-  menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
-  `host.py` is simply **absent** there until wired separately. It matters most
-  for support features: the forwarder runs on a **different machine** from the
-  keyboard, so its logs can never appear in a bundle collected host-side, and
-  its failure domain (which window backend that desktop selects, the report
-  transport, the authkey) is exactly the log-diagnosable kind. Both "Report a
-  Problem…" and "Collect logs…" are wired in both places, and the forwarder
-  supplies its **own** diagnostics text leading with `FORWARDER mode (no keyboard
-  attached to this machine)` — the plain version line otherwise reads exactly
-  like a report from the keyboard machine, which is a different failure domain
-  entirely. `tests/gui/host_client_test.py` has a `forwarder` smoke mode; it
-  **skips** without `pywinctl`, which `forwarder.py` imports at module load.
+- ⚠️ **`tools/apply_tuner.py`'s export grammar CANNOT express the `caps` column** —
+  its key-line regex is `base|shift|altgr`, matching what the keycap tuner emits, and
+  the LUT's four sub-columns are lower/upper/**caps**/AltGr. A bulk edit that touches
+  caps cells therefore cannot go through the CLI: **import the module and call its
+  `set_cell()` / `str_cell()`** so the surgical `sheet2.xml` path (which preserves the
+  other sheets' formula caches) is still the same tested code. ⚠️ Those two are only
+  the XML edit — `set_cell()` RETURNS the modified sheet and persists nothing, so the
+  caller still owns the language-column arithmetic (`base = 2 + langs.index(lang)*4`,
+  `+0/1/2/3` for base/shift/caps/AltGr), rewriting the zip entry, and the `cog -r
+  lang_lut.c` afterwards. The whole loop, with its verification steps, is the
+  firmware repo's `tune-lang-lut-cells` skill; this note is only about which half
+  the CLI cannot do. Hit on 2026-09-03,
+  where 14 of the 117 cells drawing `§ £ ± µ` were caps. Widening the regex is a
+  bigger change than it looks — the tuner never emits `caps`, so the grammar would
+  gain an arm nothing exercises.
+
+### The layout editor
+
+- **The keymap editor — key geometry, the case plate, the three preview modes and
+  where the preview data comes from — is
+  [`docs/layout-editor.md`](docs/layout-editor.md).** Read it before touching
+  `gui/layout_dialog/`, `scripts/export_preview_data.py` or
+  `scripts/export_board_outline.py`. Four things in it that are easy to get
+  backwards from the code: the key geometry comes from the KLE
+  (`polyhost/res/polykybd-split72.json`) and QMK's `layouts.*.layout` is **not** a
+  second opinion on it (64 of the 74 keys disagree — it is a coarse grid carrying
+  no column stagger and no thumb rotation at all, and the PCB is the authority);
+  the plate outline is the **case** SVG, not `Edge.Cuts`; a legend using a display-
+  list op `oled_preview.py` lacks is **refused**, so the key falls back to its
+  keycode text, which looks exactly like the op not working; and the preview data
+  ships with the host while a strictly-NEWER firmware checkout overrides it, so a
+  stale export and a stale clone are different faults with the same symptom.
+  - ⚠️ **`python tools/preview_doctor.py` is what answers "why is this preview
+    wrong"** — host and firmware commits, the layer-enum diff, every layer key's
+    resolved token, the brightness legend expressions. Three separate reports (a
+    blank L5, missing emoji/Intl keys, the old moon brightness icons) were ONE
+    stale clone, and two rounds were spent inferring which end was stale, wrongly.
+    Ask for its output before theorising.
+  - ⚠️ **A GENERATED file whose generator's INPUT PATH has died fails silently, and
+    no `cmp` can catch it** — which is the difference from the mirrored files this
+    repo already guards (`noto-fonts.yaml`, `iso_lang_country.py`, the six skills).
+    A copy has a counterpart to compare against; a generated artifact has only the
+    question *"does its generator still resolve its input"*, and nothing asks it.
+    `layer_names.yaml` rotted through TWO renames that way and mislabelled the
+    editor's layer tabs against an enum that no longer existed. **Run the generator
+    — or the `cmp` — rather than trusting either kind of file.**
+
+### The tray, its menus, and the OS around them
+
+- **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
+  that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
+  PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal
+  user. Now: status · Pause · [Language] · Brightness · Idle Display · Keycap Script ·
+  Configure Keymap · Updates · Maintenance · Settings · Help & About · Quit, with
+  **Developer** slotted in before Settings when developer mode is on. The invariant is
+  that turning developer mode on **does not rearrange anything** (asserted by
+  `tests/gui/host_client_test.py` `test_developer_mode_only_adds_a_submenu`), so muscle
+  memory survives the toggle. `CommandsSubMenu` (`gui/cmd_menu.py`) builds Brightness +
+  Maintenance + the Developer submenus and gates them off **explicit action lists**
+  (`_device_actions` follow `connected`, `_fw_actions` follow `fw_enabled`) — it can no
+  longer walk one menu's actions, since they live under different parents. ⚠️
+  `managed_connection_status` still blanket-disables every top-level action first, so a
+  **new group parent must be re-enabled explicitly there** or its whole submenu goes
+  unreachable on a disconnect (that is why Updates / Help & About / Pause are listed).
+  Two rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
+  entry (only while `safe_mode`) and Install WinCompose (only while it isn't running).
+  The language menu is built lazily and inserts itself at `self._lang_anchor`
+  (Brightness), not at index 1.
+
+- **A menu row that can answer its own question should — the font-pack row is the
+  pattern.** `PolyCore.fontpack_bundle_status()` is a **local** comparison (the cached
+  `GET_ID` version block vs the shipped `bundles.json`, no device I/O on either side of
+  the RPC), so the Updates row relabels itself on `aboutToShow` — *"Keyboard fonts: up
+  to date"* (disabled) or *"Update keyboard fonts (N)…"* with the stale bundle ids in
+  its tooltip — instead of hiding the answer behind a status dialog. Same idea in
+  Brightness: *"Back to automatic"* renames itself to *"Clear manual override"* when
+  `brightness_set_daylight_dependent` is off, because that is what it would actually do.
+  Keep such refreshes to reads that are genuinely free; an `aboutToShow` that touches
+  the device would stall the menu.
+
+- **"Back to automatic" exists because the firmware's auto mode is a ONE-WAY DOOR from
+  the host's side.** Any manual `set_brightness` drops the keyboard out of auto mode
+  (its own LTR-559 sensor then backs off too) and nothing re-engages it until the host
+  deliberately re-asserts — so the tray's brightness presets used to strand the keyboard
+  in manual until a replug. The entry calls `PolyCore.refresh_daylight_brightness()`
+  (daylight on → `VOLATILE|AUTO_ON` + the current value; off → `AUTO_OFF`, i.e. back to
+  the keyboard's stored manual level), which is now `M_DAYLIGHT_REFRESH` + a `RemoteCore`
+  mirror + `polyctl brightness --auto`. It returns `(True, "queued")` like every other
+  command-API method — it is a `submit`, not a `run_sync`.
+
+- **Developer mode (`--dev`) is SEPARATE from log verbosity — and it is a persisted
+  setting, not just a flag.** `--debug N` used to conflate three things: the log level,
+  the developer/diagnostic UI surface, and `allow_key_injection`. It is now split:
+  **`--dev [0|1|2]`** (bare = 1) carries the level *and* turns developer mode on, while
+  the **`developer_mode`** setting (default False) governs the surface alone. `main_app.resolve_dev`
+  is the one pure decision point (unit-tested): flag absent → the setting decides and
+  logging stays INFO; flag present → it wins **in both directions**, so `--dev 0` forces
+  developer mode off over an enabled setting (hence `default=None` — "flag absent" must
+  stay distinguishable from `--dev 0`). The setting exists because under daemon-by-default
+  the tray GUI is launched by autostart **with no flags**, so a flag-only gate made every
+  developer tool unreachable unless you started the app by hand. `--debug N` survives as a
+  hidden deprecated alias (existing shortcuts / autostart entries) that logs a warning.
+  `PolyHost(log_level, verbosity, developer, …)`, `run_headless(..., developer=)` and
+  `SettingsDialog.setup(..., developer_mode=)` all take the two independently; the
+  GUI-spawned daemon inherits only the **resolved level** as `--dev N` (`_spawned_daemon_flags`)
+  and reads `developer_mode` from the same settings file itself. Read it at startup with
+  `settings.read_setting("developer_mode", False)` — the file-only helper — **not**
+  `PolySettings()`, which creates/rewrites the config and log-dumps every key before the
+  launch path is even known.
+
 - **Both tray apps FOLLOW THE OS light/dark setting (2026-09-07) —
   `services/os_theme.py` (Qt-free reader + rule) + `gui/theme.apply_theme`.**
   They wore the dark palette unconditionally, so a light Windows desktop got a
@@ -2639,7 +1175,283 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     exported to the shell (StatusNotifier/DBusMenu) and drawn with the system
     theme rather than by Qt, but that is **unverified here**. The way to tell them
     apart is a real window: open Settings, which Qt certainly draws.
+
+- **The brand mark and the menu icons are [`docs/icons.md`](docs/icons.md).**
+  Three rules bind code outside that file:
+  - **The mark is GENERATED — edit `tools/gen_brand_icons.py`, never the PNGs**, and
+    re-run the two downstream generators (`browser-extension/generate_icons.py`,
+    `store/make_promo.py`) which read `pgray.png`.
+  - ⚠️ **A wrong or missing icon NAME fails silently** — `QIcon()` on a nonexistent
+    path returns an **empty** icon, nothing raises at import or at runtime, and the
+    menu row simply renders without a picture. Icon names are plain string literals
+    at ~50 `get_icon()` call sites, so `tests/gui/icon_assets_test.py` is the guard:
+    it asserts every name resolves, that no shipped `.svg` is unreferenced, and that
+    the opsz48 / single-fill format holds.
+  - ⚠️ **Fetch Material Symbols at optical size 48, never 24, and check the tint on
+    BOTH theme grounds.** The opsz axis changes the geometry, not just the header —
+    measured on a 48px canvas an opsz24 file carries ~25% more ink (max +43%), so a
+    mixed set renders visibly uneven. And since the apps follow the OS light/dark
+    setting, a colour picked against one ground can vanish against the other:
+    `#FFFF55` is 7.6:1 on the dark chrome and **1.07:1** on the light one. The test
+    holds a 2.0 contrast floor on both.
+
+- **WinCompose install from the tray (Windows)**: WinCompose is what gives the keyboard real
+  unicode output on Windows (`polyhost/input/unicode_input.py` — `wincompose_running()` picks
+  `InputMethod.WinCompose` over the far more limited native path), so a fresh Windows box has
+  the host but no WinCompose. The tray shows **"Install WinCompose…"** exactly while it is
+  *not* running (`host.py` `_refresh_wincompose_action`, re-probed on `menu.aboutToShow` — no
+  background polling), downloading our fork's installer via `services/wincompose_install.py`
+  (Qt-free; reuses the updater's **web**, non-API release lookup so it doesn't share
+  api.github.com's 60/hour anonymous limit) and starting it with `os.startfile` so Windows
+  raises the normal UAC prompt. **No release is published on `thpoll83/wincompose` yet** —
+  `find_installer()` returns None then, and the menu falls back to opening the releases page,
+  so the entry is useful before and after the first release. Because the unicode mode is only
+  pushed on *connect*, a fresh install would otherwise not reach the keyboard until a replug:
+  the same menu-open probe fires `PolyCore.refresh_unicode_mode()` on a not-running→running
+  transition (`M_UNICODE_MODE_REFRESH` → `RemoteCore` mirror → `polyctl unicode-mode`).
+  `process_exists()` runs TASKLIST with **`CREATE_NO_WINDOW`** (else a console flashes under
+  the `pythonw`/`.vbs` autostart chain) and **never raises** — it sits on the post-connect
+  path, where an exception would abort the whole connect flow over a cosmetic detection.
+
+- **The unicode input method is WATCHED for the life of the core, and an
+  ambiguous reading is applied WITHOUT being stored** (`PolyCore`
+  `_start_wincompose_settle` / `_wincompose_settle_loop` / `_apply_unicode_mode`,
+  firmware protocol 17). It used to be detected exactly once, in the post-connect
+  flow — and at Windows logon autostart brings PolyKybdHost up **before**
+  WinCompose, so `get_input_method()` found no `wincompose.exe`, pushed plain
+  `Windows`, and the keyboard typed Alt+numpad sequences (which cannot produce an
+  emoji) for the rest of the session. Nothing corrected it: the tray probe needs
+  the user to open the menu and deliberately skipped its FIRST look, and a
+  headless daemon has no tray at all. Field report 2026-09-08, and the firmware
+  half of the same bug is in `qmk_firmware/CLAUDE.md` (cmd 20 called QMK's
+  notification callback rather than the setter, so the legend moved and the mode
+  did not). What is load-bearing:
+  - ⚠️ **A plain-`Windows` reading is an ABSENCE, not an observation.** Every other
+    reading is positive — the process is running, or the platform is not Windows.
+    Just after logon, "no wincompose.exe" is equally consistent with "it has not
+    started yet", which is the whole reason the watcher exists. So ambiguity does
+    **not** decide whether to push, it decides whether the push is **stored**:
+    the mode is applied VOLATILE (cmd 20 `data[3]`, protocol 17) — while WinCompose
+    is absent, `Windows` genuinely IS how the keyboard should type — and re-asserted
+    persistently on the first pass after the window closes. If WinCompose turns up
+    first, the stored mode was never disturbed, and the firmware's
+    `eeprom_update_byte` skips the write for a value it already holds. On firmware
+    older than 17 there is no way to apply without storing, so the reading is
+    **held** instead: the alternatives are a wrong stored value and a delay, and
+    the delay is recoverable.
+  - ⚠️ **The window is measured from the PROCESS start, not the connect.**
+    WinCompose races the logon; it does not race a replug three hours later, where
+    treating the reading as ambiguous would only postpone the re-assert that exists
+    to catch a *different* keyboard being plugged in.
+  - ⚠️ **The push dedupe is over (mode, persist), not the mode alone.** Re-asserting
+    the same mode to make a volatile one stick is the entire point of the window
+    closing; a mode-only dedupe swallows it and the keyboard loses the setting at
+    the next power cycle. Mutation-checked.
+  - ⚠️ **The watcher thread must never touch the device.** `_apply_unicode_mode`
+    reads the CACHED protocol via `protocol_supports(self.keeb.protocol_version, …)`
+    rather than `keeb.supports()`, which lazily calls `query_version_info()` — HID
+    I/O, which belongs on the worker. Same reason the TASKLIST probe is on its own
+    thread rather than a worker periodic: ~50 ms must not sit between the reconnect
+    probe and the console read.
+  - **The watch is permanent and bidirectional, with no deadline.** Stopping when
+    WinCompose appears would catch a late start and never notice it being *quit*,
+    which leaves the keyboard emitting compose sequences that produce nothing —
+    and only the tray covered that, which a daemon does not have. 10 s probes for
+    the first 10 minutes after a connect, then one a minute. A cut-off would just
+    be another guess at how slow a logon can be.
+  - **A mode counts as pushed only when the device confirms it** — `worker.submit`
+    only QUEUES the command, so recording at submit time records a mode the device
+    may never have taken (paused, mid-flash, unplugged) and the dedupe then
+    suppresses the retry, which is the very failure the watcher exists to fix.
+  - ⚠️ **`shutdown()` and `_start_wincompose_settle` share a lock plus a one-way
+    flag**, or a reconnect landing concurrently clears the stop Event and starts a
+    fresh watcher holding the core after its worker has stopped.
+
+- **A settings change applies its device side effects through ONE core hook —
+  `PolyCore.note_settings_changed(keys=None)`.** There are exactly two settings
+  writers: `settings_set` (polyctl and the client-mode dialog) and the in-process
+  settings dialog, which writes the file directly. The dialog already carried a
+  hand-written "nudge the core" line for the daylight brightness, so a second side
+  effect meant a second copy — and that is how enabling
+  `unicode_send_composition_mode` mid-session came to do nothing at all until the
+  next reconnect (the watcher is armed only in the post-connect flow, and only when
+  the setting was already on). `keys=None` means "anything in the dialog may have
+  changed", which is all a whole-file write knows. Add the side effect to the hook,
+  never to a caller.
+
+- ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
+  `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
+  menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
+  `host.py` is simply **absent** there until wired separately. It matters most
+  for support features: the forwarder runs on a **different machine** from the
+  keyboard, so its logs can never appear in a bundle collected host-side, and
+  its failure domain (which window backend that desktop selects, the report
+  transport, the authkey) is exactly the log-diagnosable kind. Both "Report a
+  Problem…" and "Collect logs…" are wired in both places, and the forwarder
+  supplies its **own** diagnostics text leading with `FORWARDER mode (no keyboard
+  attached to this machine)` — the plain version line otherwise reads exactly
+  like a report from the keyboard machine, which is a different failure domain
+  entirely. `tests/gui/host_client_test.py` has a `forwarder` smoke mode; it
+  **skips** without `pywinctl`, which `forwarder.py` imports at module load.
+
+### Updates, autostart and daemon mode
+
+- **GUI self-update must be applied by the DAEMON, not the client (daemon-by-default).**
+  In daemon mode the tray GUI is a `--connect` client and a separate `--headless`
+  daemon owns `PolyCore` — and therefore the **protocol gate** (its loaded
+  `_version.__protocol__`). So the tray's "Check for updates → install" routes the
+  install through the daemon over RPC (`RemoteCore.install_update` → `M_UPDATE_INSTALL`
+  → `PolyCore.install_update`), letting the daemon overwrite the files and **re-exec
+  itself** (`headless.py` `_on_update_event`). It must **not** run `UpdateInstaller`
+  in the GUI process: that refreshed only the client while the daemon kept running the
+  pre-update code, so the daemon stayed on the OLD `__protocol__` and its `FEATURE_MIN_PROTOCOL`
+  table (historically it *rejected* the keyboard with *"Protocol mismatch, please update"*;
+  under the range-connect model it instead keeps the keyboard on the old capability set —
+  newer features disabled, status stuck on "update the host app") until manually restarted
+  (field 2026-07). After the daemon re-execs, `PolyHost._on_update_done` (client mode)
+  waits for the control endpoint to go **down → back LIVE** (`_await_daemon_restart_then_relaunch`)
+  before relaunching the GUI — relaunching immediately would re-attach to the still-up
+  **old** daemon (the bug) or race the re-exec and spawn a second daemon. The daemon's
+  `update_*` **core events are dicts** (`{"pct","msg"}` / `{"relay_path"}` / `{"msg"}`)
+  while the legacy in-GUI `UpdateInstaller` emits tuples/strings — `_on_job_done`
+  normalizes both. The `polyctl update install` path already restarted the daemon
+  correctly; only the tray menu path was broken.
+
+- **Autostart registration and the post-update relaunch chain are
+  [`docs/autostart.md`](docs/autostart.md).** `setup_autostart_for_app()` is called
+  from `main_app.py` unless `--portable`; Windows uses a non-elevated logon
+  scheduled task driving a venv-activating `.bat` through a hidden-launch `.vbs`,
+  Linux a `.desktop` entry, macOS a `launchd` plist. Four things stay here:
+  - ⚠️ **Every relaunch must be spawned DETACHED** — `updater.detached_popen_kwargs()`
+    / `spawn_detached()`. A plain `Popen` on Windows is how *"it doesn't start up
+    again after the update"* happens: the child inherits the exiting parent's console
+    and dies when that window closes, or, when the parent has none, is handed a brand
+    new console it then dies with. `sys.executable` must also be normalised to
+    `pythonw.exe`, or one session started from a terminal makes **every** later
+    restart console-owning.
+  - ⚠️ **The generated launchers live in the platformdirs config dir, NOT the
+    checkout** — they used to be in-tree under a `.gitignore` entry, so
+    `git clean -xdf` deleted the exact file the registered task points at and
+    autostart silently stopped working while the task still read `State: Ready`.
+  - ⚠️ **The Windows task is named `PolyHost`, not `PolyKybdHost`** — so
+    `Get-ScheduledTask -TaskName PolyKybdHost*` returns nothing on a perfectly
+    healthy install and reads as "autostart is gone".
+  - **`updater.preflight()` runs before the download**, at the one choke point the
+    tray, the daemon and `polyctl update install` all pass through: it checks the
+    copy *and* the relaunch, because an update that copies perfectly and then cannot
+    relaunch is indistinguishable from "the app never came back".
+
+### When something is reported broken
+
+- **Logs, crash reporting and the guided problem report are
+  [`docs/diagnostics.md`](docs/diagnostics.md)** — the Qt-free `log_bundle` service
+  and its three front ends (tray, log viewer, `polyctl logs`), the pre-filled GitHub
+  issue, and the modeless dialog a firmware `crash:` console line raises. Five
+  things stay here because they bind code outside that subsystem:
+  - ⚠️ **A NEW LOG FILE reaches nobody unless `LOG_SOURCES` knows about it.** That
+    one declaration (filename, viewer tab title, whether it is time-sliced) replaced
+    **four** hand-kept lists — `log_bundle.py` plus a `log_files` dict in `host.py`
+    *and* in `forwarder.py`, which is a second tray app with its own viewer — and
+    they had already drifted: `crash_log.txt`, the file whose whole purpose is
+    proving whether the app crashed, shipped into **none** of them. Registering is
+    only half: check the file's lines carry a sliceable `[YYYY-MM-DD HH:MM:SS,mmm]`
+    prefix, because `slice_lines` starts `keep = False` and silently drops a whole
+    file that has none.
+  - ⚠️ **Never rotate, delete or `os.replace` `crash_log.txt`** — `faulthandler`
+    holds the file DESCRIPTOR, so a rename leaves the live process dumping into a
+    file nobody reads and eventually into a deleted inode, silently. It is bounded
+    by an in-place trim before the fd exists, and cleared by TRUNCATION, which is
+    safe only because every writer opens with `"a"` (**O_APPEND**).
+  - **Redaction defaults ON for a report and OFF for "Collect logs…", deliberately** —
+    a local bundle is a file you inspect before sending, a report is aimed at a
+    public tracker. Same data, different destination, so the safe default flips.
+  - ⚠️ **`polyctl logs` must work with NO host running** — it is routed before
+    `connect()`, because the moment a user most needs the logs is the one where the
+    app failed to start or the daemon died.
+  - ⚠️ **"The tray icon is gone" is NOT "the app crashed"** — check the process list
+    first (and read it in PAIRS; each launch showed two `pythonw.exe`). Under
+    daemon-by-default the daemon still owns the device and keeps switching overlays
+    with no GUI attached, which is exactly why nothing looks broken.
+
+- **Multi-machine forwarding fails SILENTLY in three different ways, and NONE of
+  them is diagnosable from the forwarder's own log.** All three were hit on one
+  setup that had worked for weeks (field, 2026-08-17); the forwarder log showed
+  nothing but a repeating error with no cause in it. Check these before reading
+  any code:
+  - ⚠️ **A disabled relay reads as `Connection timed out`, NOT "connection
+    refused"** — so the log looks like a network problem rather than a host that
+    isn't listening. A closed port would RST, but the keyboard machine's firewall
+    silently drops SYNs to a port nothing has bound, and the old allow-rule went
+    away with the listener. The *cause* is logged once, on the **other machine**,
+    by `RemoteHandler.listen_to_forwarder` ("Remote overlay entries are configured
+    but the legacy plaintext window relay (TCP 50162) is disabled") — and only
+    when remote entries are mapped and `window_report_network_enabled` is off. In
+    daemon mode that line is in `daemon_log.txt`, not the tray log.
+  - ⚠️ **`WindowReportServer` is started ONLY by `HeadlessHost`** (`headless.py`
+    `_maybe_start_window_report_server` is its one construction site — `host.py`
+    has none). So under `--no-daemon`, `window_report_network_enabled` is a
+    **silent no-op**: the setting reads back true and nothing listens.
+  - ⚠️ **A forwarded window is used only while the keyboard machine's OWN focused
+    window is a `remote: true` mapping entry** (`active_window.py`
+    `is_remote_mapping_entry`, the `elif` in the window tick) — normally the
+    remote-desktop client you are viewing the other machine through (the shipped
+    entry is `nxplayer`/NoMachine). Without such an entry both logs look perfectly
+    healthy — the forwarder reports windows, the daemon receives them — and the
+    keycaps simply never change.
+  - The user-facing version of all three is the docs site's
+    [Multi-Machine Setup](https://www.polykybd.org/using/multi-machine/) page
+    (rewritten 2026-08-17, docs#51). ⚠️ **The relay gate that caused this shipped
+    in 0.10.5 and the docs kept recommending the dead path for six weeks** — when
+    you flip a transport off by default, move that page in the same change.
+  - **Browser-URL matching DOES cross machines — but only over the authenticated
+    RPC path** (`--report-rpc`; the forwarder gained this in 0.12.x). Three things
+    had to be true at once, so if a `url:` / `urls-contains:` entry is not firing
+    for a forwarded window, check them in this order: the forwarder runs its own
+    loopback receiver for the extension (`handler/browser_url_source.BrowserUrlSource`,
+    shared with `PolyCore` so the two roles cannot drift — the extension itself is
+    unchanged and always POSTed to `127.0.0.1` on its own machine); the report
+    carries the optional `url` param (**RPC only**); and `RemoteHandler._match_remote`
+    passes it to the matcher. ⚠️ **The legacy plaintext relay deliberately does NOT
+    carry the URL**: its framing is positional `handle;name;title;os` with the
+    free-text field in the *middle*, so a title containing `;` already truncates the
+    title and kills the `os` field — a fifth field would deepen a live bug on a
+    transport that is off by default. Two details that are easy to get backwards:
+    a **None url is STORED** (unlike a None os, which is ignored — the OS belongs to
+    the sending machine, a URL to the window in that report, so keeping the last one
+    would pin a stale site's overlay onto the next non-browser window); and the URL
+    is **part of the window's identity on both ends**, because an SPA route change
+    moves neither handle nor title — the forwarder re-sends on a URL change rather
+    than waiting out its 15 s heartbeat, and `remote_changed` re-matches.
+
+- **Telemetry — the client, the Cloudflare collector and its traps — is
+  [`docs/telemetry-internals.md`](docs/telemetry-internals.md).** One small JSON POST
+  per install per day, **on by default**, opt out in the settings dialog or
+  `polyctl telemetry disable`; `TELEMETRY_ENDPOINT` empty disables sending entirely,
+  which is how it ships before a collector exists. Four things stay here:
+  - ⚠️ **The payload is an ALLOW-LIST at both ends — a privacy guarantee, not a
+    style choice.** The host can see window titles and app names, because it reads
+    them constantly for overlays. `build_payload()` copies named fields and **never
+    spreads a status dict**; the Worker rebuilds the row it stores. The frozen
+    `PAYLOAD_KEYS` test exists to make an accidental widening fail loudly.
+  - ⚠️ **There is NO in-app consent step.** The first-run dialog was removed, so the
+    **release notes are the disclosure** and the one INFO line
+    `_log_telemetry_notice` prints at every start is all a headless daemon can say.
+    Do not gate that line on an "already told them" flag, downgrade it to debug, or
+    drop it in a logging cleanup — and write the release notes *before* shipping a
+    release that sets the endpoint.
+  - **The collector is WRITE-ONLY by design** — no read route, therefore no route
+    that can leak the dataset. Read the data with `wrangler d1 execute` or
+    `telemetry-collector/dashboard.py --open`.
+  - ⚠️ **`workers.dev` is CLOUDFLARE's zone, not ours**, so every zone-scoped
+    Cloudflare product is unavailable here — WAF rate limiting and Cloudflare Access
+    both. Anything configured as a Worker **binding** works; anything Cloudflare
+    describes as "protect a route/hostname" needs a zone you own. This has cost a
+    round twice.
+
+### Environment
+
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
+
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
   - **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
@@ -2663,7 +1475,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     all. **Install the deps and read the count**; the failure list alone cannot tell a
     green suite from an absent one. Same rule as the appending-tests-after-`__main__`
     note, in the opposite direction.
-- **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
+
 - **Chromium is available headless in the dev/remote container — use it to LOOK at
   generated HTML/SVG rather than reading the markup.**
   `/opt/pw-browsers/chromium --headless --no-sandbox --disable-gpu --hide-scrollbars
@@ -2676,6 +1488,9 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   grid: the HTML and the tests were both perfectly correct, and the defect existed only
   in the render. Same reasoning as judging a tray icon by rasterising it (above) —
   measure or look, don't infer from the source.
+
+### Tests
+
 - **RUN the real entry point once before believing a mocked suite — the output is
   where format bugs live.** Same instinct as rendering a widget or rasterising an
   icon above, applied to the CLI: a suite whose fixtures you wrote can only be as
@@ -2688,6 +1503,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `cd /tmp/x && PYTHONPATH=<repo> <repo>/.venv/bin/python -m polyhost.cli.polyctl
   logs bundle --since 1h`, then unzip and look. It is ~30 s and it has now caught
   two bugs in one PR that the tests could not see.
+
 - ⚠️ **`polyhost/forwarder.py` is UNTESTABLE in the documented environment — put
   any forwarder logic worth testing in a Qt-free module instead.** It imports
   `pywinctl` at module load (the backend selection at the top), and pywinctl is
@@ -2700,6 +1516,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   tests — and left only the two-line "no target ⇒ close" branch in the forwarder.
   A test gated on both `DISPLAY` and pywinctl would be permanently skipped, which
   is worse than none: it reads as coverage.
+
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
   - ⚠️ **`patch.object(Class, "method")` does NOT reach a fixture that already
     BOUND that method** — and the repo's own fixture idiom is what creates the
@@ -2722,6 +1539,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the suite is green — `python3 -m unittest ... 2>&1 | tail -3` prints it.
     Same family as the mocked-suite traps above: green is not evidence your new
     code ran.
+
 - ⚠️ **A stale `.pyc` can survive a CORRECT fix — clear `__pycache__` before you
   disbelieve your own change.** Python invalidates cached bytecode on
   **(mtime, size)**, so a **length-neutral edit landing in the same mtime second**
@@ -2742,6 +1560,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     having loaded bytecode compiled from the last mutant. **Clear `__pycache__`
     after restoring, not only after editing**, then re-run — the confirmation run
     at the end of a mutation sweep is exactly where this lands.
+
 - **No *test* CI**: no workflow runs the unit tests — but the repo is **not**
   CI-less, and this line said "two workflows" while there were four. They are
   `bump-version.yml` + `release.yml` (see **Releases** below), `deploy-telemetry.yml`
@@ -2749,6 +1568,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   one automated reviewer here that cannot go quiet — see the CodeQL note in the
   code-review conventions above. So a PR gets static analysis and no unit-test run;
   the suite is yours to run locally (`scripts/run_tests.py`).
+
 - **GUI tests need a display**: `tests/gui/host_client_test.py` constructs the real `PolyHost` (default + `--connect` client mode) in a subprocess (one `QApplication`/process; `pynput` needs X) with Qt forced to `offscreen`. They **skip unless `DISPLAY` is set** — run them under a virtual X server: `xvfb-run -a .venv/bin/python -m unittest tests.gui.host_client_test`. `host.py` can't even be *imported* without an X server (pynput at module load), so plain `unittest discover` skips them. Installing `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too (pywinctl/pymonctl `sys.exit(1)` without it).
   - ⚠️ **Do not chain two `xvfb-run -a` invocations in one shell command** — the
     second one hangs (observed ~10 min at 0.7% CPU / 4 s CPU time, on a suite
@@ -2794,6 +1614,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
         grid to survive. Only a magnified CROP shows the difference, which is why
         `--compare` exists and why the docs figure is a close-up rather than three
         whole boards.
+
 - **Use `scripts/run_tests.py` when a run might hang — it has a stall watchdog.**
   Twice on 2026-08-03 the suite wedged past a 200 s timeout with **no output at
   all** — and a bare `timeout` kill discards exactly the information you need. The
@@ -2816,6 +1637,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     below, complete with ~20 threads parked in `recv_message`. **A watchdog dump is
     only evidence of a stall if the run actually exceeded a realistic budget**;
     check the wall clock before reading the stack.
+
 - **✅ The intermittent test-suite stall is FIXED (2026-08-11): it was a deadlock in
   `ControlServer.stop()`, not environment flakiness.** It had gone unexplained
   across ~3 sessions and 20+ non-reproducing runs; the watchdog dump (finally
@@ -2868,379 +1690,6 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the accept thread out *without* `stop()` and then asserts `stop()` returns —
     i.e. it pins the race, not the symptom, and it fails against the old
     implementation.
-- **Single-key keymap write**: the firmware supports `ID_DYNAMIC_KEYMAP_SET_KEYCODE` (0x05) — payload is `[layer, row, col, keycode_hi, keycode_lo]`. No need to write a full layer; `PolyKybd.set_dynamic_keycode()` wraps this.
-- **Firmware update survives protocol mismatches**: `PolyHost.device_present` tracks "a device answers protocol-independent queries (GET_ID/GET_LANG)" separately from `connected` (protocol/version compatible). The flash/apply/bootloader actions and the release-update flow gate on `_fw_actions_allowed()` (present, not paused) — NOT on `connected` — so a keyboard on a mismatched protocol can always be updated (`CommandsSubMenu.update_enabled` re-enables exactly those items when the rest of the menu is greyed out). The HID flash protocol (`hid_fw_up`) is dispatched independently of `PROTOCOL_VERSION` in the firmware. Don't re-gate any firmware-update path on `self.connected`.
-- **Autostart** (`polyhost/services/add_to_startup.py`): `setup_autostart_for_app()` registers the app to start at login (called from `main_app.py` unless `--portable`).
-  - **Windows**: prefers a per-user, **non-elevated logon scheduled task** (`RunLevel Limited` / `LogonType Interactive`, via PowerShell `Register-ScheduledTask`) — needs no admin/UAC and starts earlier than the Startup folder, which Explorer throttles. The task launches the **proven venv-activating `.bat` wrapper** (`create_windows_bat_wrapper`); do **not** swap this for a direct `pythonw -m polyhost` call — running the venv interpreter without activation drops the `Scripts` dir from `PATH` and the app dies silently (regressed once, see git history). The `.bat` is run **windowless** through `wscript.exe` + a hidden-launch `.vbs` (`create_windows_hidden_vbs`, window style 0) so no console flashes. Falls back to a Startup-folder shortcut if task creation is refused (locked-down Task Scheduler). Gotchas learned the hard way: `New-ScheduledTaskAction -Argument ''` is rejected — only pass `-Argument` when non-empty; and f-strings with backslashes in the expression part break on Python < 3.12.
-  - **Linux**: `.desktop` autostart entry; **macOS**: `launchd` plist.
-  - ⚠️ **The generated launchers live in `add_to_startup.launcher_dir()` (the
-    platformdirs user config dir, beside `settings.yaml`) — NOT in the checkout.**
-    They used to be `polyhost/start_polyhost.{bat,vbs,sh}` under a `.gitignore`
-    entry, so **`git clean -xdf` deleted the exact file the registered logon task
-    points at** and autostart silently stopped working: the task still reads
-    `State: Ready` / `LastTaskResult: 0` and starts nothing at the next logon
-    (field, 2026-08-05, on a repo that gets cleaned and branch-switched a lot).
-    Nothing can detect it after the fact either — the only process that could
-    report the breakage regenerates the launcher on its way up, so the broken
-    window is exactly "cleaned, and not started since". The scripts carry absolute
-    paths to the venv and repo root, so their own location is irrelevant to how
-    they work. A launch on the new code re-registers the entry at the new path and
-    deletes the in-checkout leftovers (`_remove_legacy_launchers`).
-  - ⚠️ **Every relaunch in the update chain must be spawned DETACHED — on Windows a
-    plain `Popen` is how the app "doesn't start up again after the update".** Three
-    sites relaunch after a self-update: `updater.restart_app()`, the generated
-    locked-file relay script (`_write_relay_script`), and the daemon's relay spawn
-    (`headless._restart_if_requested`) — all three used a bare
-    `Popen(..., close_fds=False)` (fixed 2026-08-05; the GUI's own relay spawn and
-    `daemon_launch.spawn_headless_daemon` were already correct). Without
-    `DETACHED_PROCESS` Windows does one of two things, both fatal: it hands the child
-    the **exiting parent's console** (closing that window sends CTRL_CLOSE and kills
-    the freshly restarted app — the same "console opens, closing it drops the
-    connection" failure `create_windows_bat_wrapper` avoids with `pythonw`), or —
-    when the parent has *no* console, which the detached daemon does not — it
-    allocates a **brand-new console window** for the child. In daemon mode that is
-    the whole chain: daemon → relay (new console) → restarted daemon (inherits it),
-    while the GUI's own relaunch inherits the old GUI's console. One closed window
-    then takes down the daemon *and* the tray, and `probe_existing` reads `stale` at
-    the next launch. Use `updater.detached_popen_kwargs()` /
-    `detached_creationflags()` (`DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP`, stdio
-    on DEVNULL) for anything that must outlive the process spawning it.
-  - **Detaching the console does NOT escape a job object — `spawn_detached()` also
-    tries `CREATE_BREAKAWAY_FROM_JOB`.** A VS Code debug session (and some
-    terminals) launch the app into a job and tear the whole job down when the
-    session ends; job membership is inherited, so a detached child still dies with
-    it. A job that forbids breakaway fails the spawn with `ERROR_ACCESS_DENIED`
-    (WinError 5), so it falls back to the plain detached spawn — never "no relaunch
-    at all". Outside a job the flag is ignored, so the ordinary autostart/tray path
-    is unaffected.
-  - **A relaunch inherits `sys.executable` forever, so it must be normalised to
-    `pythonw.exe`** (`updater.relaunch_executable()`): one session started from a
-    terminal (`python -m polyhost`) used to make *every* subsequent post-update
-    restart console-owning, long after the autostart `.bat` (which correctly calls
-    `pythonw`) was out of the picture. The 2026-08-05 field log shows exactly that —
-    `Restarting: ['…\\Scripts\\python.exe', '-m', 'polyhost', …]`.
-  - **The relay script logs to `startup_log.txt`**: it runs detached with stdio on
-    DEVNULL, so its old `print(..., file=sys.stderr)` on a failed DLL copy went
-    nowhere. It is the last step of an update — a silent failure there reads as "the
-    app never came back" with no evidence at all.
-  - **`updater.preflight()` runs at the top of `UpdateInstaller.run()`** — the one
-    choke point the tray, the daemon (`PolyCore.install_update`) and `polyctl update
-    install` all pass through. It checks the *copy* (install dir + temp dir writable,
-    both `blocking`) **and the restart** (the relaunch interpreter, the autostart
-    entry, both warnings): an update that copies perfectly and then can't relaunch is
-    indistinguishable from "the app never came back", except that by then the tree is
-    already rewritten. A blocker aborts **before the download**, so nothing has
-    changed; warnings are logged *and* emitted as `update_progress` lines so they
-    reach the tray dialog and the CLI, not just the log.
-  - `get_autostart_status()` reports which mechanism is in place (printed at startup); `remove_autostart()` tears all of them down. `--portable` removes any existing entry rather than just skipping registration.
-  - ⚠️ **The Windows task is named `PolyHost` (`APP_NAME`), NOT `PolyKybdHost`** — so
-    `Get-ScheduledTask -TaskName PolyKybdHost*` returns nothing on a perfectly healthy
-    install and reads as "autostart is gone" (field, 2026-08-05). The check is
-    `Get-ScheduledTask -TaskName PolyHost` / `schtasks /query /tn PolyHost`
-    (`windows_task_exists`), with `Get-ScheduledTaskInfo -TaskName PolyHost` for
-    `LastRunTime`/`LastTaskResult`. Same name for the Startup-folder `.lnk` and the
-    Start-menu launcher.
-  - `_install_windows_autostart` **verifies the task by querying it back** before
-    reporting `"scheduled task (at logon)"`; that string is what the startup log
-    prints, and a PowerShell exit code only says `Register-ScheduledTask` didn't
-    raise. A "registered" task that isn't queryable now falls back to the
-    Startup-folder shortcut instead of leaving no autostart at all.
-- **Layout dialog** (`polyhost/gui/layout_dialog/`): fully implemented — layer switching re-renders all key labels from the cached buffer; clicking a key then selecting from the browser writes immediately to the device via `set_dynamic_keycode()` and keeps the local buffer in sync. `RenderableKey` carries `matrix_index` for row/col derivation.
-- ⚠️ **The editor's key GEOMETRY comes from `polyhost/res/polykybd-split72.json`
-  (KLE), and the firmware's `keyboard.json` is NOT a second opinion on it.** When
-  the board looks misaligned, that is the first thing to get straight, because the
-  obvious cross-check is worthless: QMK's `layouts.*.layout` is a **coarse grid**
-  used for `qmk info -l` ASCII art — it carries no column stagger and no thumb
-  rotation at all. Compared key for key (2026-08-29), **64 of the 74** disagree
-  with the KLE: every non-thumb key by 0.125–0.25 in `y` (the stagger the KLE
-  expresses with fractional `y` offsets), and all ten thumbs by position *and* by
-  the whole `r`/`rx`/`ry` rotation the grid simply does not have. The x values do
-  agree, which is exactly what makes it feel authoritative when it is not.
-  - **The authority is the PCB** (`PolyKybd/poly_kybd/poly_kybd_split72_*.kicad_pcb`),
-    read via the `investigate-kicad-pcb` skill: switch footprints are `SW_K_<n>`,
-    and a row of them at one `y` gives the real pitch. Worked example — the
-    "bottom row looks inset" question: `SW_K_30` sits at x=53.25 against the
-    column above at x=48.49, i.e. **inset 0.25U (4.76 mm)**. So the inset is
-    real; flushing that key to `x: 0` in the KLE would have made the editor
-    disagree with the hardware.
-  - ⚠️ **The KLE's outer column is a STYLISATION, and it is what makes the two
-    numbers differ.** The PCB has 1U switches on a 1.25U pitch (48.49 → 72.30 is
-    23.81 mm = 1.25U, while every other gap is 19.05 mm = 1U); the KLE draws them
-    as 1.25U-wide keys with a 0.25U gap. That is why the bottom row reads as a
-    0.5U inset there and 0.25U on the board. It applies to all five rows, so
-    "fixing" it is a redraw of the whole column, not a bottom-row tweak — don't
-    take it for a bottom-row bug.
-  - `parse_kle` (`polyhost/kle/kle_praser.py`) is the decoder to reason through;
-    note `row_defaults.clear()` after each key (so `w` does not persist) and that
-    `y_cursor` only advances at end-of-row when `current_rotation == 0`, which is
-    what lets the rotated thumb clusters sit outside the row flow.
-
-- **The board the keys sit on is GENERATED from the KiCad boards —
-  `polyhost/res/board_outline.json`, written by `scripts/export_board_outline.py`,
-  drawn by `gui/layout_dialog/board_plate.py`.** It carries each half's
-  case contour and the two optional 0.96" status panels, in the same key
-  units as the KLE, so the editor shows which half a key is on and where the
-  screens are instead of 74 tiles floating in space. It is decoration and fails
-  soft: no file, no picture, unchanged editor.
-  - ⚠️ **The outline is the CASE, not the board — `parts/case/outline_polykybd_split72_*.svg`,
-    which is `Edge.Cuts` grown by `case_wall_thickness + pcb_clearance` = 1.65 mm.**
-    Drawing `Edge.Cuts` itself makes the plate 1.65 mm too small on every side, and
-    the visible symptom is at the thumbs: keycaps overhang the plate there (worst
-    0.10U = 1.9 mm) where on the real keyboard they do not. The shipped SVG is used
-    verbatim rather than re-deriving the offset — it IS the extruded contour, rounded
-    corners and all — placed by a translation fitted to the board's bounding box and
-    then CHECKED, by requiring every one of its 149 points to sit 1.65 mm outside
-    `Edge.Cuts` (measured 1.647–1.654, the spread being the polygon approximation of
-    the corners). That check is what proves the SVG belongs to this board; a swapped
-    left/right pair misses by 18 mm, the spacer outline by 3.8 mm. ⚠️ **1.65 is the
-    split72 left+right case specifically** — `case_polysplit72_right2` and
-    `right_side` use a 0.25 clearance, i.e. 1.75.
-  - ⚠️ **The outline is then FITTED to one even bezel on all four sides
-    (`BEZEL_U`, 0.33U / 6.3 mm) — the real case is NOT even, and that is deliberate.**
-    Measured on the left half the true margins are W 6.4 / E 3.6 / N 8.8 / S 6.2 mm,
-    which reads as a crooked plate rather than as accuracy — because the KEYS are
-    stylised too: the KLE draws the outer column 1.25U wide over a 1.25U pitch where
-    the board has 1U switches, and it approximates the thumb clusters. So a
-    photographically exact case around approximated keys is the worst of both.
-    `normalise_bezel` is an axis-aligned scale + translate, so the silhouette and the
-    rounded corners survive and only the margins move; measured stretch is 1.3% in x
-    and 1.9% in y, and past `MAX_BEZEL_STRETCH` (15%) it refuses rather than reshapes.
-    Evening it also lifted the last two overhanging thumb corners inside, so the
-    overhang bound is now zero rather than a tolerance.
-    - ⚠️ **This BLINDS the even-bezel test to a revert to the bare PCB edge** — that
-      would be evened out too and measure the same. The case-vs-board pin therefore
-      reads `fit.case_mm` (185.30 x 132.30, recorded BEFORE the fit) and not the drawn
-      outline. A test that measures a fitted number cannot also police its input.
-  - **The mm → key-unit transform is a pure translation at 19.05 mm/U** — the
-    boards carry no rotation, so scale is the pitch and the only unknown is the
-    origin. The exporter fits it by trying every (switch, key) pairing and keeping
-    the one that explains all 37 switches, then refuses to write unless the fit is
-    a **bijection** within bounds. Measured: 31 of 37 land exactly, the outer column
-    is out by 0.125U and the outer thumbs by up to 0.24U — the KLE's stylisation
-    (see the outer-column note above), not drift.
-  - ⚠️ **A containment test cannot catch a wrong offset, and that is not obvious.**
-    "Every key is inside the outline" passes with the whole board shifted **0.25U**
-    (4.8 mm) inward, because the inner edge has that much slack — measured, after
-    writing exactly that test and watching the mutation escape. What catches it is
-    the opposite property: the margin at each edge is PINNED, so
-    `test_the_bezel_is_the_SAME_on_all_four_sides` fails on the first edge a
-    translation moves. Ten mutations are caught — translate, scale, mirror, an
-    uneven bezel, a revert to the bare PCB edge, and each of the three ways the
-    status panel can be misplaced (centred in its corner, left at its real width,
-    pulled off the case).
-  - ⚠️ **Restore the baseline before EACH mutation in a sweep, or a `+x`/`-x` pair
-    CANCELS and reads as ESCAPED.** The first harness here re-read the file it had
-    just mutated, so mutation 2 landed on top of mutation 1 and reported the tests
-    as worthless when they were fine. Same family as the ANSI-escape and
-    never-applied traps in `qmk_firmware/CLAUDE.md`: every one of them fails toward
-    "your tests caught nothing", which is the reading that makes you stop trusting a
-    suite that works.
-  - **The status panels are ANCHORED on `J39`** — the 30-pin FPC each half carries
-    for the display (the schematic's *"Optional OLED Status Display"*) — but they are
-    not DRAWN at it. The connector says which corner; `free_rect_at` then measures the
-    largest free rectangle containing it (case polygon minus keycaps plus a 0.06U
-    clearance, on a 0.05U grid) and the panel is grown to span that corner's full
-    width and hung one bezel under the case's top edge. Drawn at the connector it is
-    both too small and too low: the FPC sits at the BOARD's height near the bottom of
-    the corner, so the panel reads as having slipped, and at its real 26.7 mm it
-    leaves a gap on both sides. ⚠️ The display hangs off a ~40 mm cable, so where it
-    ends up in the CASE is in no repo file — this is a layout rule, not a measurement.
-    - ⚠️ **The side bezel is simply NOT DRAWN — which changes the GLASS and nothing
-      else. The screen keeps the size AND the position the uniform fit gave it, so
-      the panel now stops one module bezel (3.5 mm) short of the housing rather than
-      meeting it.** The MODULE is scaled to span the corner, that fit sets the
-      screen's size (30.6 x 15.3 mm on the left half), and the module's side bezel is
-      symmetric — so not drawing it leaves exactly half a bezel of air at each end of
-      the span. Glass survives above and below in the module's own proportion, so the
-      screen's 2:1 aspect is deliberately gone. There is no caption on it — a lit
-      rectangle in a dark frame is already a screen.
-      - ⚠️ **FOUR readings of "remove the bezel" were built and three are wrong; the
-        picture cannot tell them apart and `w == aw` is true of all four.** They are
-        (1) grow the whole MODULE until the bezel closes — that enlarges the bezel
-        along with everything else; (2) widen the SCREEN to fill the glass — same
-        envelope, 23% more lit area, i.e. it adds the bezel to the display rather
-        than deleting it; (3) narrow the glass and slide it FLUSH — correct size,
-        but it moves a screen that was already placed; (4) narrow the glass and
-        leave it where it is, which is the one that ships.
-      - **Two tests separate the four, and they pin different things.**
-        `test_dropping_the_side_bezel_did_NOT_enlarge_the_screen` pins the panel's
-        ASPECT — 21.74/19.26 = 1.129 narrowed against 26.70/19.26 = 1.386 filled —
-        which catches (1) and (2).
-        `test_a_panel_STOPS_ONE_MODULE_BEZEL_SHORT_of_the_case` pins the gap to the
-        housing, which catches (3): a flush panel measures 0. Neither is redundant
-        and neither alone is enough.
-      - **The gap is derived, not hardcoded**: half a module bezel times the scale
-        the panel itself reports (`d.h / panel_h`), because a literal would pin
-        today's corner width rather than the intent.
-    - **The vertical glass is therefore pinned as a RATIO, not in mm** (8.4 of the
-      module's 19.26, whatever the scale). A test in millimetres would encode the
-      corner's width, which is geometry rather than intent.
-    - **The screen carries a PICTURE, following the same Symbol/Preview/Real control
-      the keys do** — `services/status_screen.py` composes it (Qt-free, lit pixels),
-      `gui/layout_dialog/status_screen_render.py` makes the QImage, and
-      `board_plate.set_screen_images` paints it into the lit rectangle. What is
-      decided, not incidental:
-      - **It draws the WHOLE panel — it is a PORT of the firmware's own preview tool**
-        (`qmk_firmware/keyboards/polykybd/tools/status_oled_preview.py`, itself a
-        mirror of `split72/status_oled.c` `oled_update_buffer`), function for function
-        and coordinate for coordinate, so the two files diff line for line. It shipped
-        as a hand-written subset first — top row, side marker, layout name, every other
-        row dark — on the reasoning that the RGB effect, WPM, brightness and language
-        are live DEVICE state the editor does not have and a placeholder is a number
-        true of nothing. ⚠️ **That reasoning was rejected in review**: a status panel
-        showing three of its eight rows reads as broken, not as honest, and the
-        firmware tool has carried representative values for exactly this purpose all
-        along. So the editor uses the tool's own placeholders and the module says
-        plainly that they are not measurements — **do not wire a UI readout to them.**
-      - ⚠️ **A PORT DRIFTS, and nothing in this repo can see the firmware move — so it
-        is pinned to a GOLDEN FIXTURE**, `tests/services/status_panel_golden.json`,
-        generated from the firmware tool by `scripts/gen_status_panel_golden.py` and
-        compared PIXEL FOR PIXEL. Two halves, and each covers what the other cannot:
-        the fixture comparison runs with **no checkout**, so the port cannot drift from
-        what was frozen; a second, checkout-gated test re-derives the fixture live, so
-        `status_oled.c` moving a row is caught on the machine that moved it. A
-        structural comparison would be worthless — both sides are Python read from the
-        same constants and would agree by construction.
-      - ✅ **The pair FIRED, and what it caught was the port — not the fixture.**
-        Measured 2026-09-09 (firmware 0.21.0 → 0.23.3): the checkout-gated half went
-        red with *"the firmware panel moved"*, and the cause was qmk `2bb724ce38`,
-        which split the status OLED's percentage arithmetic in two — saturation is
-        genuinely 0..255 and keeps `byte_to_percent`, while the VALUE is capped at
-        `RGB_MATRIX_MAXIMUM_BRIGHTNESS` (100) and gained `val_to_percent`, so a
-        fully-lit matrix used to report 39%. The firmware moved its own preview tool
-        with the C; this port did not. ⚠️ **Regenerating the fixture ALONE is the wrong
-        fix and the suite says so** — with the new fixture and the old helper,
-        `test_the_port_draws_WHAT_THE_FIRMWARE_TOOL_DREW` fails on both RGB cases
-        (verified by reverting just the helper). The fixture is the BRIDGE: when the
-        live half goes red, read the firmware diff and port the change, then
-        regenerate; a green run needs both.
-      - ⚠️ **Neither half fires on a clone that is BEHIND** — the live one re-derives
-        from whatever checkout is there, so it happily confirms a fixture frozen
-        against the same old firmware. This drift sat unnoticed until a `git fetch`
-        made the clone current. Same shape as the `--check` trap above, and the same
-        remedy: fast-forward the clone before trusting either answer.
-      - ⚠️ **A fixture at the firmware's DEFAULT values pins only the easy half.**
-        Those defaults saturate: `brightness=50` IS `FULL_BRIGHT`, so every gauge
-        segment is lit and no unlit one exists to keep its documented 1px foot, and
-        `sat=255`/`val=100` round identically with and without the `+127`. Measured —
-        three mutations of the port (drop the foot, drop the percent rounding, swap the
-        gauge fill) **all ESCAPED** against the four default cases and are caught by
-        the two non-saturating ones added beside them. Same family as the status-OLED
-        layout rule in `qmk_firmware/CLAUDE.md`: check the worst case, not the default
-        fixture. Nine of ten mutations are caught; the tenth (deleting
-        `brightness_to_level`'s outer `min`) is **inert by construction** — `contrast`
-        is clamped a line above, so no input reaches it — and is kept because the
-        firmware's expression is the same and a port that tidies a redundancy stops
-        diffing against what it mirrors.
-      - **One honest departure**: hardware names the BASE layout on that row and this
-        names the layer being edited. Identical for layers 0..4; above them it says
-        `Fn` / `Numpad` / `Utility`, which is what an editor wants.
-      - ⚠️ **`set_keycodes_for_layer` OWNS `current_layer`, and it did not.** That
-        attribute was written only by the layer-button handler, so calling the method
-        directly left the two disagreeing — and the next MODE change repaints with
-        `current_layer`, silently putting the board and both panels back on the last
-        *clicked* layer. Measured: show layer 5, toggle Symbol → Preview, get layer 0.
-        The layer that ends up on screen is what everything else means by "the layer
-        being edited" (the keycode assignment indexes the buffer with it), so the one
-        method that draws it is the right writer.
-        - ⚠️ **Drive that test through `set_keycodes_for_layer`, not the button** — the
-          button sets `current_layer` on the way past and hides exactly this.
-      - ⚠️ **A failed keymap read used to take the panels with it.** The mode switch's
-        repaint sat inside `if self.key_buffer is not None`, so with the keys locked
-        down the panels never followed the mode at all. They carry the LAYER, not the
-        keymap; a board that cannot be edited still says which layer is selected.
-      - ⚠️ **"The panels open on the keyboard's default layer" is NOT pinned by the
-        test that says so, and the first draft claimed it was.** `_add_board` does draw
-        them before the default layer is read, but the default mode is Symbol — so they
-        are blank until the user picks Preview, and that pick repaints at
-        `current_layer` regardless. Measured: deleting the startup
-        `set_keycodes_for_layer` outright leaves the test green. What that actually
-        breaks is the KEYS (layer 0's keycodes under a layer-3 tab), which is a keycap
-        claim and belongs in a keycap test.
-      - ⚠️ **A missing face SUBTRACTS, it is never a precondition** — and expecting an
-        empty panel from no faces at all was wrong: the role icons, the brightness
-        gauge and the speed box are bitmaps and drawn rectangles, so they survive every
-        missing font. That is what the degradation test pins.
-      - ⚠️ **The Real filter is the `oled` preset, NOT `keycap`.** There is no keycap
-        over a status display — it is a bare panel behind a window — so the cover's
-        diffusion and jitter would model a light guide that is not there. The keys and
-        the screens therefore use different presets on purpose, both out of
-        `fontpack_render.apply_oled_style` so neither is a second set of numbers.
-      - **The faces come from `KeycapPreview.status_faces()`**, i.e. whichever source
-        won the shipped-vs-checkout compare, so one board cannot draw keys from one
-        firmware and screens from another. That needed `_Small_` 15px added to the
-        export's `ui_fonts.plyf` — the third standalone face, which the macro-caption
-        note already said was the right fix rather than another fallback path.
-        ⚠️ Five faces are wanted, not three, and **two of them are found by COVERAGE
-        rather than by name**: the firmware tool names `IconsFont` and
-        `NotoEmoji_Medium_World_20pt16b` out of its parsed headers, and the host has no
-        names for pack fonts at all — so the icon face is the first pool font covering
-        `0x80` and the globe the first covering `U+1F310`. Front-to-back precedence
-        makes both exact today (the World face covers that one codepoint alone), and a
-        renamed header cannot quietly cost the panel a row.
-      - ⚠️ **`_refresh_screens` swallows its exceptions (decoration must not take the
-        editor down), so a plain `AttributeError` in the Real branch cost nothing but
-        a `log.debug` and the panel just stayed flat.** That shipped for the length of
-        one test run. `tests/gui/kb_layout_screens_test.py` drives the real dialog for
-        exactly that reason — a renderer-level test cannot see wiring that is never
-        reached, and the fail-soft `except` is what makes the wiring invisible.
-  - ⚠️ **The grid search resolves the corner to 0.05U, and that millimetre is a
-      millimetre of SCREEN** — the corner's width is what the module is scaled
-      against — so `exact_span` re-measures the one band the panel occupies off the
-      polygon rather than off the grid. The containment test still needs a tolerance:
-      the outline is fitted, so a point can land on the boundary, and a ray-cast
-      answers arbitrarily there.
-    - ⚠️ **`_top_at` at the polygon's EXTREME x lands on a vertex and returns the
-      corner rather than the top edge.** That put one half's panel 0.085U below the
-      other's, on two boards that are mirror images — so `case_top_over` insets 0.4 mm
-      from both ends. Consequence worth knowing: at the very corner the panel clears
-      the case by less than a bezel (0.28U measured), which is why the placement test
-      bounds the tightest gap across the width instead of asserting one bezel.
-  - ⚠️ **The tiles are dark in BOTH themes** (`RenderableKey` hardcodes its greys),
-    so the plate has to work under dark keys either way.
-  - **The two themes are NOT one palette at two lightnesses.** Dark draws a graphite
-    board on the view's own ground; light draws a GREY board on a blue ground
-    (`LIGHT["scene"]`, painted by `add_board` via `setBackgroundBrush`) — the blue
-    moved to the background so the board reads as the object rather than as the
-    biggest coloured shape on screen. `DARK["scene"]` is None, which must stay a
-    no-op: dark's ground is the palette's and nothing here should second-guess it.
-    The light plate is deliberately the DARKER of the two (pinned as a relation, not
-    a literal): a plate a shade off white reads as a differently-coloured page rather
-    than as a board lying on one.
-  - ⚠️ **The BOARD is neutral and every stroke is near-black — the blue survives only
-    as `LIGHT["scene"]`.** The plate, the screen bezel and all three outlines carried
-    the brand mark's blue → cyan sweep, which on a picture of a keyboard reads as a
-    lit edge rather than as a case; the ground is the one place the colour describes
-    the page instead of the object. `test_the_board_and_its_outlines_are_NEUTRAL`
-    bounds the channel spread at 4 for every key but `scene`, so a re-tint fails while
-    a lightness tweak does not.
-    - ⚠️ **"Every outline is darker than its fill" was written first and is WRONG.**
-      The bezel is the darkest thing on the board, so a stroke darker than it would be
-      invisible — `glass_edge` is deliberately the *lighter* of the two, because what
-      it separates the bezel from is the PLATE. The property that actually holds for
-      all three is that none of them is bright (`test_every_OUTLINE_is_DARK` bounds
-      lightness at 90), plus the one real relation: the plate's edge must read against
-      the plate.
-  - ⚠️ **The screen picture is FITTED inside the lit rectangle and inset clear of the
-    frame — scaling it to the rectangle's WIDTH put it on top of the bezel, by two
-    independent mechanisms.** Reported as the display extending over the bezel:
-    - the panel is 2:1 and the lit rectangle no longer has to be (dropping the side
-      bezel reshaped it), so a width-derived height simply overflows; and
-    - a rect item's pen is **centred on the edge**, so half the stroke lies inside,
-      and a picture that exactly fills the rectangle covers that half.
-    So `set_screen_images` scales by `min` over both axes of the box inset by
-    `ACTIVE_PEN` and centres the result, and `SCREEN_BOX` carries the HEIGHT it had
-    been managing without. The pen widths are named constants for that reason — a
-    stroke and the inset that clears it must not drift apart.
-    - ⚠️ **The old test asserted the picture filled the rectangle EXACTLY**, i.e. it
-      had the defect as its contract; that is why nothing caught this. Its replacement
-      bounds the width from BOTH sides — an inset that ran away is as wrong as none.
-    - ⚠️ **The containment test derives the rectangle from the DESCRIPTION, never
-      from `SCREEN_BOX`.** Reading it back off the item makes the check self-consistent
-      with whatever the item cached: measured, replacing the real height with `width/2`
-      escaped exactly that way, because the lit aspect (2.002) is a hair off the
-      panel's 2.000 and the error is a fraction of a pixel. Eight mutations are caught
-      now; that one needed the box asserted against the description as well.
 
 ## Releases
 
