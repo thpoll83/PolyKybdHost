@@ -21,19 +21,41 @@
 # no mnemonic marker and no trailing ellipsis: "save as", not "&Save As...".
 
 hints:
-  # --- deliberately text ---------------------------------------------------
-  # The shipped fonts carry no math alphanumerics, so the only glyphs available
-  # for these are the plain letters B / I / U. That is WORSE than the word:
-  # Ctrl+B's keycap already shows a B, so the icon would say nothing the key
-  # does not. A glyph has to beat the word to be worth having.
+  # --- text FOR NOW, because the glyph does not ship yet ---------------------
+  # ⚠️ These are "not yet", NOT "never" -- an earlier note here said the fonts
+  # carry no distinctive glyph for them, which was reached by guessing codepoints
+  # rather than searching. Measured properly: across the 7242 codepoints the
+  # shipped fonts cover there is indeed no bold, italic or paintbrush glyph --
+  # but NotoSansMath, already in polyhost/res/fonts/noto-fonts.yaml, has both
+  # letterforms, and rendered at keycap size all three read clearly:
+  #
+  #   bold B       U+1D5D5  MATHEMATICAL SANS-SERIF BOLD CAPITAL B   (256 px vs
+  #                         200 for a plain B -- visibly heavier)
+  #   italic I     U+1D610  MATHEMATICAL SANS-SERIF ITALIC CAPITAL I (serifed,
+  #                         so it does not read as a plain stem)
+  #   underlined U          U+0055 + U+0332 as a fontconvert -C composite, the
+  #                         same mechanism the matra fonts use
+  #
+  # ⚠️ Derive a math-alphanumeric codepoint from its block's 'A', never by hand:
+  # the sans-serif italic block starts at U+1D608 = capital A, so I is +8. Taking
+  # U+1D608 for "italic I" renders an italic A, which a render caught and a name
+  # written into a script did not.
+  #
+  # They stay `text` until the glyphs actually ship, because a hint naming a
+  # missing glyph draws a BLANK keycap -- worse than the word, and the failure
+  # the codepoint validation exists to prevent. Landing them means a fonts.yaml
+  # entry, a symbol-bundle content_version bump and a reship, which needs the
+  # pinned fontconvert build.
   bold: text
   italic: text
   underline: text
-  # U+00B2 exists and U+2082 does not. Half a symmetric pair reads as a bug on
-  # the keyboard rather than as a gap, so neither is mapped.
+  # Superscript ² (U+00B2) ships; subscript ₂ (U+2082) is in no bundle, and would
+  # need the U+2080..208E range added. Half a symmetric pair reads as a bug on the
+  # keyboard rather than as a gap, so neither is mapped until both can be.
   superscript: text
   subscript: text
-  # No paintbrush glyph in any shipped bundle.
+  # Genuinely absent: no brush, paint or roller glyph among the 7242 covered
+  # codepoints, and none in the catalog sources either. This one needs bespoke art.
   format painter: text
   # The window system menu -- "System" names the menu, not an action.
   system: text

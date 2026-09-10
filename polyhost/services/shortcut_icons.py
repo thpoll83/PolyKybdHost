@@ -103,10 +103,13 @@ LEXICON: dict[str, tuple[int, tuple[str, ...]]] = {
     "insert":      (0x271A,  ("insert", "add", "insert row", "insert column")),
 }
 
-# Labels deliberately left to the TEXT fallback -- Bold, Italic, Underline,
+# Labels currently left to the TEXT fallback -- Bold, Italic, Underline,
 # Superscript, Subscript, Format Painter -- live in res/shortcut_hints.yaml with
-# their reasons, because that is data a reviewer edits rather than code. The rule
-# behind all of them: a glyph earns an entry only when it beats the word.
+# their reasons, because that is data a reviewer edits rather than code. Most are
+# "not yet" rather than "never": the letterforms exist in a catalog source font
+# and read fine at keycap size, they just do not ship in a bundle. The rule behind
+# all of them is unchanged -- a glyph earns an entry only when it beats the word,
+# and a glyph that is not flashed draws nothing at all.
 
 # Longest phrase first so "save as" beats "save"; ties broken alphabetically so
 # the table order cannot silently decide a match.
