@@ -655,171 +655,26 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       side that breaks the mapping fails a test somewhere. **When you touch these
       status values, update BOTH suites** — and prefer adding the firmware-side
       assertion first, since that is the end a host fixture can never police.
-- **Font-pack inspect/extend tools** (`polyhost/gui/fontpack_inspector_dialog.py` +
-  `fontpack_extend_dialog.py`, Qt-free logic in `polyhost/services/fontpack_*` +
-  `fontgen*`): a standalone window to view every bundle glyph as
-  the keycap draws it and to build/splice new glyphs from a TTF/OTF (pure-Python
-  `fontconvert` parity). Launched from the tray's **Debugging** submenu (the
-  "Inspect Font Packs…" entry), so it is **only shown when the app runs with
-  developer mode** (`developer` in `host.py`) — it's a developer/power-user
-  tool, hidden from the default menu. Unlike the other Debugging entries it works
-  in both in-process and client mode (offline, no device needed). It loads the shipped bundles by default; **"Open .plyf…"**
-  adds any saved/exported `.plyf` as a new tab (folded into the merged ALL_FONTS view
-  + the Extend sources) so a file saved elsewhere can be re-inspected. ⚠️ **A `.plyf`
-  carries no bundle name** — the PlyF header has only abi/`content_version`/font_count
-  + per-font global ALL_FONTS index; the bundle id lives in `bundles.json`/the
-  filename, so an opened tab is named after the file (`decode_pack` synthesises font
-  names as `<filename_stem>#<gidx>`). The **View** selector offers four modes
-  (`_BundleTab._mode`): **Glyph** (native size), **Keycap** (plain 72×40 white-on-
-  black), and — matching the extend dialog — **Keycap OLED** (raw pixels) and
-  **Keycap through cover** (diffused), both routed through `fontpack_render.glyph_cell`
-  → `simulate_oled` (which returns an **RGB** cell; `_BundleTab._pm` keeps RGB via
-  `_pil_to_pixmap` and only applies the semantic tints below to the plain 'L' modes).
-  The grid shows **one cell per codepoint** (a
-  deduped, continuous range) honouring **front-to-back precedence** (the firmware
-  draws each cp from the lowest-global-index font with a glyph, `_BundleTab._stacks`):
-  each cell renders the **winner** — **white** if this bundle draws it, **cyan** if
-  it's borrowed from another bundle. When more than one font has the glyph, the
-  losers are **overdrawn**: a "**stack**" marker (solid right+bottom border whose
-  **depth = number of overdrawn glyphs**, `_stack_pixmap(depth=)`) flags it; hovering
-  the bottom-right stack corner shows the overdrawn glyph **in the slot** (dim),
-  **cycling** through them when there's more than one (`_hover`/`_cycle_advance`), and
-  **double-click there edits the first overdrawn** while a double-click elsewhere edits
-  the winner (`_edit_at`; `_on_edit`/`_bundle_of` target the clicked font's *own*
-  bundle, which may be a different tab). Overlapping `fonts.yaml` ranges from the same
-  source (e.g. a dedicated `_Light_` entry + broad `_EmjEffects_`/`_Emojis1_` all
-  covering U+1F4A1) are why a cp can have 2+ overdraws. **Selecting a glyph highlights
-  the whole range its font wins** (`_on_selection`, subtle tint), since the pack is
-  organised in ranges. A glyph **edited
-  this session** (the editor's OK committed it into the working copy) is re-rendered
-  in-place from that working copy and bordered **green** (`MODIFIED_RGB`,
-  `_BundleTab.apply_working`); "Save as… → Discard" reverts the tab to the loaded
-  bundle. Edits **propagate across tabs**: `_commit_edit` rebuilds the merged
-  ALL_FONTS view (`_rebuild_all_fonts`) and `_propagate` pushes it to every tab
-  (`set_all_fonts`), so a cell in bundle B whose winner or overdrawn (stack) glyph
-  lives in the edited bundle A re-renders from the new glyph — the visible
-  tab rebuilds immediately, the rest lazily on next show. The inspector's
-  **"Peek empty (from source)"** toggle
-  renders the *empty* slots from their source font (via `fontpack_extend.peek_source_glyph`
-  + the shipped render settings, needs the source font downloaded) as **amber
-  previews** — candidates you can then double-click to edit/take; they are not in
-  the pack. Peek **prefers a non-emoji (symbol/text) source over an emoji source**
-  when the slot's own font isn't itself emoji (`_peek_candidates` style key), so a
-  symbol codepoint that also exists in NotoEmoji/NotoColorEmoji previews from the
-  clean symbol font (NotoSansSymbols) rather than the emoji glyph — even if the
-  emoji font is lower-gidx / in-range / in-bundle. For an emoji slot the deferral is
-  a no-op (the emoji source order stands). Peek also offers, as a **last-resort
-  fallback, any downloaded catalog font that no bundle uses** (default render
-  options, `_BundleTab._catalog` from `noto-fonts.yaml`) — so adding a font to the
-  catalog (e.g. NotoSansMath) makes it usable in peek with **no code change**, even
-  though it's in no pack. The extend dialog's **Source fonts** browser (always under the
-  preview; click a font to use it, downloading first if needed) downloads/assigns
-  the Noto source fonts via `polyhost/services/font_downloader.py`, which reads the
-  catalog from **`polyhost/res/fonts/noto-fonts.yaml`**. ⚠️ That YAML is the **single
-  source of truth shared byte-identically** with the firmware's
-  `qmk_firmware/keyboards/polykybd/fonts/noto-fonts.yaml` (which `dl-fonts.sh` reads)
-  — keep both in sync (`cmp`). The host stores a *flat* cache keyed on
-  `basename(dest)`; the firmware honours the nested `dest` path.
-  The extend dialog is a focused **glyph editor** (`FontPackExtendDialog`): it builds
-  **one** glyph/font from a source + options and previews it, with just **OK / Cancel**
-  — OK exposes the built glyph via `result_font`/`result_label`/`result_edit` (Cancel
-  discards); it neither accumulates nor saves. Its preview shows each built keycap
-  **next to the smooth, undithered glyph straight from the source font**
-  (`fontpack_render.preview_sheet` → `reference_glyph_image`, always antialiased/colour
-  regardless of the grayscale toggle), so you can compare the dithered keycap output
-  against what the font actually draws while tuning. **Sequence-mode glyphs** (flags,
-  matras) have a synthetic PUA pack codepoint the source font has no glyph for, so the
-  reference is **HarfBuzz-shaped from the sequence** (`reference_sequence_image`,
-  composites the shaped group) rather than looked up by codepoint — otherwise no
-  reference showed beside a flag. **Scroll-wheel over the preview
-  zooms** it (0.5×–7.0× in 0.5 steps; the render functions take a fractional `scale`,
-  `fontpack_render._px` rounds to pixels). A **Preview** radio group (Normal · OLED ·
-  Keycap, `_preview_style`) shows the keycap the way the physical per-key OLED renders
-  it via `fontpack_render.simulate_oled` (Qt-free, NumPy/PIL) + `preview_sheet(style=)`
-  (only the keycap is post-processed; the source reference + chrome stay natural):
-  lit pixels are a **cool white** (`OLED_TINT` — a hint of blue; the strong cyan in
-  photos is a camera artifact, not what the eye sees) on true black with a slightly
-  bluer **bloom**. The two OLED styles are presets over `simulate_oled`'s knobs —
-  **OLED** = the raw pixels (crisp square grid, jitter/diffusion off) and **Keycap** =
-  as seen through the clear keycap cover (adds **per-pixel brightness jitter** — seeded
-  so the lit area shimmers without flicker — a **staggered grid** and a **diffusion**
-  blur that lets pixels bleed, modelling the cover's light-guide, not the panel; the
-  blur amount is **spatially varied** by a smooth seeded mask — a lighter/heavier blur
-  mixed per region so it isn't one uniform smear). A
-  post-blur **brightness** gain lifts both styles (higher for Keycap, since the
-  diffusion spreads/dims thin strokes);
-  `preview_sheet(oled=)` runs **only the keycap** through it (the source-font reference
-  + chrome stay natural for comparison) and returns RGB, so the preview pixmap path
-  preserves colour (`_pil_to_pixmap`). **Flag keycaps** (the PUA 0xE000 band) are
-  drawn on hardware through a **single-font array** (baseline adjustment 0), so the
-  keycap render uses the **flag's own yAdvance** as the baseline reference
-  (`fontpack_render.base_yadv_for`), NOT the `(yAdvance − IconsFont 40)` shift the
-  in-pack g_all_fonts glyphs get — without this a tall flag (yAdvance 54) was shifted
-  +14 px down and its bottom rows clipped off the 40 px keycap (the "flag preview cut
-  off at the bottom" bug). Emoji (yAdvance 48, drawn via g_all_fonts) keep the shift,
-  so the fix is gated to the flag band only. **Reset** restores the render options to
-  the values the dialog opened with (`_snapshot` taken after prefill). **Auto update**
-  (default on) re-renders on any control change (debounced). Layout niceties: each
-  float control (gamma / contrast / exposure / sharpen / saturation) is a **fixed-width
-  spin (0.1 step) with a slider beside it** (`_with_slider`, one notch = 0.1); range
-  **first–last share one row**; the four flag checkboxes (grayscale/normalize/invert/
-  edge) are a **2×2 grid**; the source-font browser's **"Download all" sits on top** of
-  the list (clear of OK/Cancel).
-  The **accumulate + save** side lives in the **inspector**, not the editor: the
-  inspector owns per-bundle in-memory **working copies** (`_work`/`_pending` keyed by
-  source index). Each editor OK calls `FontPackInspectorDialog._commit_edit` →
-  `replace_glyph` (edit mode) or `splice_font` (whole-font add) into that bundle's
-  working copy, appends a pending-edit description, and marks the tab with a "● "
-  prefix. The toolbar's **"Save as…"** opens `FontPackSaveDialog` for the current
-  bundle: metadata (abi / current content version / working fonts·glyphs·size), the
-  **pending-edits list**, an editable **content_version** spin (default current+1 —
-  **one bump for all accumulated edits**), and **Save .plyf… / Flash / Discard /
-  Close** (`encode_pack(working_fonts, version)` is what's written/flashed; Discard
-  drops that bundle's working copy). Flash is only offered when the inspector was
-  given a `flash_cb`.
-  When you **edit** a glyph, the editor pre-fills the render controls (size,
-  dither, normalize/invert/edge/outline, render size, yAdvance, …) from
-  **`polyhost/res/fontpack/fontpack_render_settings.json`** — a `global ALL_FONTS
-  index → fonts.yaml options` map emitted by the firmware's `generate_fonts.py`
-  (`RENDER_SETTINGS`) and shipped here. The `.plyf` carries only rendered bitmaps,
-  not the fontconvert options, so this manifest is the only way to recover "the
-  settings this glyph was built with". Each record also carries `source_file` (the
-  basename of the source TTF, matching `noto-fonts.yaml`), so the edit dialog
-  **auto-fills the source font from the download cache** when it's present (else it
-  names the file and points at "Download Noto…"/Browse) — the TTF itself isn't
-  bundled. Keep it in sync with the firmware copy
-  (`base/fonts/generated/fontpack_render_settings.json`).
-  **Sequence-mode glyphs** (the language-layer flags): a record with a `sequence`
-  field is a HarfBuzz-shaped font (`-S`), so the editor switches to **sequence mode**
-  and pre-fills the single group for the edited codepoint (group = `cp − font.first`,
-  seq base set to `cp` so Build emits exactly that one glyph). The **flag font is NOT
-  in fonts.yaml** (it's `pack_extra` from `gen-lang-fonts.sh`), so it has no record in
-  `fontpack_render_settings.json`; its options + `seq_first` + the per-flag
-  regional-indicator `sequence` live in **`polyhost/res/fontpack/lang_flags.json`**,
-  which the editor uses as the record when the edited cp is in the flag range. ⚠️
-  `lang_flags.json` is mirrored **byte-identically** with the firmware's
-  `base/fonts/generated/lang_flags.json` (emitted by `gen-lang-fonts.sh`) — keep both
-  in sync (`cmp`). Editing a flag needs **NotoColorEmoji** downloaded; if its cached
-  file is truncated (a bad download) FreeType fails to open it — re-download. A CBDT
-  **colour-bitmap font (NotoColorEmoji) renders whether or not grayscale is checked**:
-  it has no outlines, so `fontgen._open_color_font` decodes it via fontTools for any
-  source with bitmap strikes (`num_fixed_sizes>0`), not only in `-g` mode — otherwise
-  a mono build hit FreeType's "unimplemented feature" on the PNG-based glyph.
-  **Matra/combining-mark fonts** (Devanagari/Bengali/Telugu/Tamil/Thai/Vietnamese,
-  PUA 0xE100+) are sequence-mode **and** use fontconvert `-C` composite (each group
-  composites a mark onto the dotted circle U+25CC). The editor has a **Composite -C**
-  checkbox (enabled in sequence mode); `_setup_sequence_edit` ticks it from the
-  record's `composite` field (the `fontpack_render_settings.json` matra records now
-  carry `composite: true` + `seq_first`, emitted by `generate_fonts.py` from the
-  `-C`/`-F` extra_args), falling back to **inferring** it (every group starts with
-  `25CC` → composite; regional-indicator flag groups don't) for older manifests.
-  Host builds matras via fontgen's mono composite path.
-- **Source-font download validation** (`font_downloader.py`): a download is rejected
-  (`DownloadError`, no file cached) when it's short (Content-Length mismatch) or not a
-  complete sfnt (`_validate_sfnt` checks the table directory fits the file) — this is
-  the fix for a proxy-truncated NotoColorEmoji that FreeType then refused to open.
-  `is_downloaded()` re-validates, so an already-cached corrupt file reads as missing
-  and is re-fetched (overwritten); `download_font(force=True)` always re-downloads.
+- **The font-pack INSPECT and EXTEND dialogs are
+  [`docs/fontpack-tools.md`](docs/fontpack-tools.md)** — a viewer for every bundle
+  glyph as the keycap draws it, and a builder for new glyphs from a TTF/OTF with
+  pure-Python `fontconvert` parity. Both are reached from the tray's **Debugging**
+  submenu, so they are developer-mode only; unlike the other Debugging entries they
+  work in client mode too, since they need no device. Three things the pointer has
+  to carry, because they are the ones that mislead from outside:
+  - **The two dialogs split accumulate from build.** The *extend* dialog builds ONE
+    glyph and previews it (OK / Cancel, nothing saved); the *inspector* owns the
+    working copies, the pending-edit list and Save as…. Looking for a save in the
+    editor finds nothing.
+  - ⚠️ **A `.plyf` carries no bundle NAME** — the PlyF header has abi /
+    `content_version` / `font_count` and a per-font global ALL_FONTS index, and the
+    id lives in `bundles.json` and the filename. So an opened file is named after
+    itself, and a glyph out of one is `<stem>#<gidx>`.
+  - ⚠️ **Editing a glyph needs the render options the `.plyf` does not carry**, which
+    is what `polyhost/res/fontpack/fontpack_render_settings.json` and
+    `lang_flags.json` are for — both mirrored byte-identically from the firmware's
+    generated copies. Keep them in sync (`cmp`); the editor silently pre-fills the
+    wrong controls otherwise.
 - **Glyph-script override (protocol 9+; expanded set at v10)**: HID cmd 30
   (`GLYPH_SCRIPT`) selects a glyph-script *override* of the keycap language legends —
   `GlyphScript.STANDARD` (0, normal) or one of the fantasy/retro scripts from the
@@ -1372,126 +1227,35 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   a **pre-filled GitHub issue** with the bundle attached by the reporter: no
   backend, no new data store, and the user sees what they send. Don't re-propose
   the Worker without answering all four.
-- **Log collection is ONE Qt-free service with three front ends —
-  `polyhost/services/log_bundle.py`.** "Send me your log" used to be a request
-  nobody could satisfy: the logs are **six** files
-  (`host_log.txt`, `daemon_log.txt`, `polykybd_console.txt`, `startup_log.txt`,
-  `forwarder_log.txt`, `crash_log.txt`), the rotating ones × up to 3 backups
-  each, written **relative to the process
-  cwd**, and under daemon-by-default the half that matters is the *daemon's*, not
-  the GUI's. `build_bundle()` writes a `.zip` (logs + `diagnostics.txt` + a
-  redacted `settings.yaml` + a README stating the timeframe and redaction state);
-  `recent_text()` returns the same content for the clipboard. Front ends: the tray's
-  **Help & About → "Collect logs…"**, a **"Collect Logs…"** button in the log viewer,
-  and **`polyctl logs bundle|show|paths`**. Nine things that are load-bearing:
-  - ⚠️ **A NEW log file reaches nobody unless `LOG_SOURCES` knows about it** —
-    that is now the single declaration (filename, viewer tab `title`, and
-    whether it is time-`sliced`), and `viewer_files()` derives both tray apps'
-    log-viewer tabs from it. It used to be **four** hand-maintained lists —
-    `log_bundle.py`, the `log_files` dict in `host.py` *and* in `forwarder.py`
-    (the forwarder is a second tray app with its own viewer), and the count in
-    this paragraph — and they drifted exactly as you would expect: #172 shipped
-    `crash_log.txt`, the file whose entire purpose is proving whether the app
-    crashed, into **none** of them, so the one artifact a support round asks for
-    first could be neither collected nor viewed. Worse, the note recording that
-    said THREE, having itself missed the forwarder: the guard meant to prevent
-    the drift was one of the drifting lists. Fixed 2026-08-18 (#178) by deriving
-    instead of enumerating — same shape as the enumerating-guard trap in the
-    review conventions above. The count in this paragraph is the one hand-kept
-    number left; it is prose, so nothing can derive it.
-  - ⚠️ **Registering a source is only half of it — check its lines carry a
-    sliceable timestamp.** `slice_lines` starts `keep = False` and only flips on a
-    `[YYYY-MM-DD HH:MM:SS,mmm]` prefix, so a file the logging handlers did not
-    write is dropped **in full** and the section silently vanishes: registered,
-    and still reaching nobody. `crash_log.txt` is exactly that — its markers are
-    `=== session start | pid N | … ===` — and worse, `faulthandler` writes its
-    native dump *on the fault* with no marker of its own, so even with the marker
-    format taught to the slicer the dump would inherit the keep/drop decision of a
-    `session start` that may be hours older, dropping precisely the crash being
-    reported. Hence `LogSource.sliced=False` for it. The flag lives **on the
-    entry**, not in a lookup table beside it, so a new source has to answer the
-    question where it is declared. `_collect_source()` is the single place that
-    honours it — `collect_text` and `build_bundle` had two copies of that loop,
-    and the bundle is the copy that reaches a maintainer.
-  - **`crash_summary()` puts the crash counts in the report BODY**, since the body
-    is read long before the attachment is opened. It is deliberately **not** a
-    verdict: a `session start` with no matching `clean exit` is the crash log's
-    headline signal, but the process writing the report is itself such a session
-    (as is a live daemon), so an "it crashed" claim derived here would fire on
-    every healthy report and be learned to ignore.
-  - ⚠️ **`polyctl logs` MUST work with no host running** — `main()` routes it
-    through `_is_offline_command` *before* `connect()`, and a reachable daemon only
-    enriches the diagnostics. The moment a user most needs the logs is the one where
-    the app failed to start or the daemon died, i.e. exactly when `connect()` fails.
-    Don't "simplify" it back onto the normal connect-first path.
-  - **The rotation chain is read `.N` → `.1` → base, i.e. OLDEST first.**
-    `RotatingFileHandler` moves the live file to `.1` and shifts the rest up, so
-    reading base-first silently produces a backwards concatenation.
-  - **Continuation lines inherit their record's keep/drop decision** in
-    `slice_lines`. A traceback carries no timestamp of its own, so a naive
-    per-line time filter keeps the `ERROR` line and drops the half that says what
-    actually failed.
-  - ⚠️ **`default_log_dir()` falls back to the REPO ROOT, so a "there are no
-    logs" test passes for the wrong reason.** Logs are written relative to the
-    process cwd, so a test that runs in a temp dir does not get an empty
-    discovery — it finds the checkout's own `host_log.txt` and friends, and a
-    test asserting the no-logs failure path then passes without ever reaching it.
-    Force the failure at its source instead (make `build_bundle` raise), or the
-    branch you think you covered is untested. Same shape as the stale-guard note
-    in the review conventions above: a green test that pins the environment's
-    accident rather than the contract.
-    - ⚠️ **And do NOT reach for `mock.patch(default_log_dir)` to steady a test —
-      patching the resolver a function depends on pins the coincidence, not the
-      contract.** `build_bundle(log_dir=X)` bundles X's logs, but
-      `environment_text()` called `crash_summary()` with no directory, so
-      `diagnostics.txt` described `default_log_dir()`'s crash log instead — a
-      report whose body and attachment can describe different machines. The test
-      that was supposed to cover that line patched `default_log_dir` to point at
-      its fixture, so the two agreed *only in the test* and the mismatch shipped
-      (caught in review, #178). The test that actually holds it uses **two
-      different directories** with deliberately different contents and asserts
-      the diagnostics describe the one the zip ships. `log_dir` is now threaded
-      `build_bundle` → `environment_text` → `crash_summary`; keep it threaded.
-  - ⚠️ **If a helper resolves a directory to make a decision, what it RETURNS has
-    to carry that resolution.** `viewer_files()` tested
-    `(default_log_dir() / name).exists()` but returned the **bare** filename, and
-    `LogViewerDialog` opens the value it is given relative to the process cwd — so
-    the check and the open could resolve in different directories, showing the
-    wrong file or none. Note the code it replaced was *worse in principle but
-    self-consistent* (it checked and opened the same bare name), which is how the
-    regression got written: centralising the check moved one half and not the
-    other. It returns absolute paths now, which also makes the dialog's "open
-    containing folder" work at all — `os.path.dirname` of a bare name is `""`.
-  - ⚠️ **`crash_log.txt` is bounded by an in-place TRIM, and is the one log that
-    must never be rotated or deleted — `faulthandler` holds the file
-    DESCRIPTOR.** Three consequences that all follow from that one fact, and
-    that will each look like an arbitrary choice to whoever reads the code next:
-    - **Not a `RotatingFileHandler`.** Rotation renames the file; the fd follows
-      the *inode*, so the live process keeps dumping into `crash_log.txt.1` and
-      eventually into a deleted inode — silently. `faulthandler` also bypasses
-      `logging` entirely, so a handler would never even see the ~6 KB dumps that
-      cause the growth; it could only roll over on the marker lines.
-      `trim_if_oversized()` therefore runs inside `install()` **before** the fd
-      is created, which is the only moment with nothing to disturb.
-    - **Rewritten in place, not via `os.replace`.** A replace swaps the inode out
-      from under the *other* process's fd — the GUI and daemon share this file.
-    - **Cleared by TRUNCATION, never `unlink`.** Deleting it would leave
-      `faulthandler` writing to a deleted inode, so "clear my logs" would
-      silently disable crash capture until restart. Truncation is safe only
-      because every writer opens with mode `"a"` (**O_APPEND**), so a concurrent
-      write lands at the new end rather than behind a NUL hole — verify that
-      still holds before adding a handler. Rotated backups are nobody's open
-      file and are most of the bytes, so those *are* unlinked.
-    Size matters here beyond disk: this is the one source the bundle carries
-    **whole** (`sliced=False`), so its size is *bundle* size, and a bundle is
-    what gets attached to a public issue.
-  - **Redaction is anchored on the log message's own wording, not "anything in
-    quotes"** (`_TITLE_PATTERNS`), and masks **window titles only** — app/exe names
-    are kept, since that is what overlay-matching support rounds actually need.
-    Titles can name documents ("Q3 layoffs.xlsx"), so the dialog says so in red when
-    the box is unticked; default is OFF because a first support round with everything
-    masked usually has to be repeated. `browser_report_token` / `telemetry_install_id`
-    are masked **always**, independent of that flag.
+- **Logs, crash reporting and the guided problem report are
+  [`docs/diagnostics.md`](docs/diagnostics.md)** — the Qt-free `log_bundle` service
+  and its three front ends (tray, log viewer, `polyctl logs`), the pre-filled GitHub
+  issue, and the modeless dialog a firmware `crash:` console line raises. Five
+  things stay here because they bind code outside that subsystem:
+  - ⚠️ **A NEW LOG FILE reaches nobody unless `LOG_SOURCES` knows about it.** That
+    one declaration (filename, viewer tab title, whether it is time-sliced) replaced
+    **four** hand-kept lists — `log_bundle.py` plus a `log_files` dict in `host.py`
+    *and* in `forwarder.py`, which is a second tray app with its own viewer — and
+    they had already drifted: `crash_log.txt`, the file whose whole purpose is
+    proving whether the app crashed, shipped into **none** of them. Registering is
+    only half: check the file's lines carry a sliceable `[YYYY-MM-DD HH:MM:SS,mmm]`
+    prefix, because `slice_lines` starts `keep = False` and silently drops a whole
+    file that has none.
+  - ⚠️ **Never rotate, delete or `os.replace` `crash_log.txt`** — `faulthandler`
+    holds the file DESCRIPTOR, so a rename leaves the live process dumping into a
+    file nobody reads and eventually into a deleted inode, silently. It is bounded
+    by an in-place trim before the fd exists, and cleared by TRUNCATION, which is
+    safe only because every writer opens with `"a"` (**O_APPEND**).
+  - **Redaction defaults ON for a report and OFF for "Collect logs…", deliberately** —
+    a local bundle is a file you inspect before sending, a report is aimed at a
+    public tracker. Same data, different destination, so the safe default flips.
+  - ⚠️ **`polyctl logs` must work with NO host running** — it is routed before
+    `connect()`, because the moment a user most needs the logs is the one where the
+    app failed to start or the daemon died.
+  - ⚠️ **"The tray icon is gone" is NOT "the app crashed"** — check the process list
+    first (and read it in PAIRS; each launch showed two `pythonw.exe`). Under
+    daemon-by-default the daemon still owns the device and keeps switching overlays
+    with no GUI attached, which is exactly why nothing looks broken.
 - **Multi-machine forwarding fails SILENTLY in three different ways, and NONE of
   them is diagnosable from the forwarder's own log.** All three were hit on one
   setup that had worked for weeks (field, 2026-08-17); the forwarder log showed
@@ -1541,137 +1305,6 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     is **part of the window's identity on both ends**, because an SPA route change
     moves neither handle nor title — the forwarder re-sends on a URL change rather
     than waiting out its 15 s heartbeat, and `remote_changed` re-matches.
-- ⚠️ **"The tray icon is gone" is NOT the same as "the app crashed" — check the
-  process list before diagnosing anything else.** Field, 2026-08-18: the tray
-  vanished, `startup_log.txt` and `daemon_log.txt` showed nothing wrong, the user
-  relaunched, and it read as a silent crash. `Get-Process pythonw | Select Id,
-  StartTime` settled it in one command — **the original GUI was still running**,
-  minus its icon. ⚠️ **Read that list in PAIRS: each launch showed TWO
-  `pythonw.exe` entries** with the same start time and command line (6 processes
-  for 1 daemon + 2 GUIs). Cause unestablished — so do not explain it, just don't
-  double-count it into "two daemons are fighting over the device". `Get-CimInstance
-  Win32_Process -Filter "Name='pythonw.exe'" | Select ProcessId, ParentProcessId,
-  CreationDate, CommandLine` settles it: one of each pair parenting the other is a
-  launcher stub, a shared parent would be two real instances. Three things conspired, all now fixed on this branch:
-  - **The logon race.** The autostart scheduled task starts the GUI before
-    Explorer's notification area exists; `Shell_NotifyIcon` fails and the icon
-    never appears. Qt re-adds only on Explorer's `TaskbarCreated` broadcast, which
-    it sends when it **restarts**, not when it finishes starting — so losing that
-    race is permanent for the session. `host.py` called `setVisible(True)`
-    unconditionally and nothing anywhere in the app called
-    `isSystemTrayAvailable()`. Now `gui/tray_wait.py` waits for the tray (1→15 s
-    backoff, 5 min cap) and logs both the wait and the eventual show.
-    ⚠️ That check only looks for the shell's tray window, so it can say "available"
-    while the add still fails; if this recurs *with* "icon shown" in the log, the
-    remaining lever is a forced `hide()`/`show()` re-add.
-  - **Nothing could have recorded a crash if there had been one.** Under
-    `pythonw.exe` stderr is a black hole, and the app had no `sys.excepthook`, no
-    `threading.excepthook`, no `faulthandler` and no `qInstallMessageHandler` — so
-    PyQt's abort-on-unhandled-exception-in-a-slot (it calls the excepthook, *then*
-    `qFatal`) left zero trace. `util/crash_log.py` + `gui/qt_crash.py` now capture
-    all four, into `crash_log.txt`; a `session start` line with no matching
-    `clean exit` is itself the diagnosis.
-  - **Losing the tray costs the menu, not the keyboard.** Under daemon-by-default
-    the daemon owns the device, window tracking and overlays, so it kept switching
-    overlays for 14 minutes with no GUI attached — which is *why* nothing looked
-    broken. Also note the control server logs **nothing** when a client connects or
-    disconnects, so the daemon log can never date a GUI's death.
-  - ⚠️ **A tray "Quit" and a crash were previously indistinguishable in the logs** —
-    `quit_app()` writes no line. Don't reason about whether the GUI exited on
-    purpose from `startup_log.txt`; use the crash-log markers.
-- ⚠️ **The self-updater copies release files over a git checkout — `git log -1` can
-  be months behind what is actually running.** `apply_update()` is
-  `copytree(dirs_exist_ok=True)`: it overwrites and never deletes, and `copy2`
-  preserves the *tarball's* mtime, so on-disk timestamps show the release date, not
-  the day it was installed. A field machine sat on a July feature branch (HEAD
-  0.9.47) while running v0.11.10 from the release, with 354 files showing as
-  modified and a reflog untouched for two weeks. When a report's version doesn't
-  match the branch, that is the explanation — the running code is the release, and
-  `_version.py` on disk is the only thing that says which.
-
-- **"Report a Problem" is the guided sibling of log collection —
-  `polyhost/services/problem_report.py` + `gui/report_problem_dialog.py`.** The
-  tray's **Help & About → "Report a Problem…"** takes a description, builds a log
-  bundle, puts the composed issue body on the clipboard and opens a **pre-filled
-  GitHub issue** in the browser. "Collect logs…" beside it stays the manual half,
-  for when the file is going somewhere else. Four things are deliberate:
-  - ⚠️ **Redaction defaults ON here and OFF in "Collect logs…", and that
-    asymmetry is the point.** A local bundle is a file you inspect before
-    sending; a report is aimed at a **public** tracker. Same data, different
-    destination, so the safe default flips.
-  - **The issue body carries NO log lines** — only the description, the
-    diagnostics and the bundle's *filename*, with an instruction to attach it.
-    GitHub has no API to attach a file to an issue without a token, and shipping
-    one in an open-source client is shipping a public credential; more
-    importantly, an attachment is a file the reporter can look at before
-    uploading, which pasted log text is not.
-  - **Diagnostics are path-scrubbed** (`scrub_paths`): `_diagnostics_text` ends
-    with `Config:`/`Logs:` lines, and on every platform those contain the account
-    name (`C:\Users\tom\…`, `/home/tom/…`). Home → `~`, plus a regex for any
-    *other* user directory (a daemon under another account, another drive).
-  - **A pre-filled new-issue URL is a GET**, so an oversized body is truncated or
-    refused somewhere between browser and GitHub. `issue_url_for()` falls back to
-    the blank form above `MAX_URL_BYTES` (6000); the body is on the clipboard
-    either way, so the fallback costs a paste rather than the report. A test
-    pins that a *realistic* report still prefills — otherwise the fallback
-    quietly becomes the normal path.
-- **A firmware crash is ALERTED, not merely logged — `services/crash_report.py` +
-  `gui/crash_alert_dialog.py` (firmware crash record, protocol 16+).** The keyboard
-  prints `crash: side=… kind=… pc=… … fw=…` with its boot banner after a HardFault /
-  unhandled exception / watchdog reboot (qmk `base/crash_record.*`); the console
-  read on the HID worker feeds `CrashScanner`, `PolyCore` emits **`crash_detected`**
-  (a `CrashRecord.to_dict()`), and the tray shows one modeless dialog with two ways
-  out: **Report on GitHub…** (opens Report-a-Problem with the crash pre-filled via
-  `ReportProblemDialog.set_description(text, title)` — bundle, redaction and the
-  issue URL all as before) or **Copy to Clipboard** (`compose_report_text`, the same
-  text `polyctl crash show` prints). `polyctl crash show [--slave] [--json] | clear`
-  is the CLI over **cmd 39** (`M_CRASH_GET/CLEAR`, `FEATURE_MIN_PROTOCOL["crash_record"]`
-  = 16). Three things that are easy to get wrong:
-  - ⚠️ **A console read is a report-sized FRAGMENT, not a line** — the scanner
-    reassembles across the 250 ms reads and only classifies `\n`-terminated lines,
-    and it **dedupes by the line itself** because the boot banner re-emits for
-    ~30 s. `clear_crash_record()` calls `forget()` so the next boot's line is
-    reported again. Same trap the rig's `ConsoleTap` documents.
-  - ⚠️ **The console is starved during a flash** (see the threading notes above),
-    so a crash line printed while the host is flashing is lost to the scanner —
-    the record is still on the keyboard: `polyctl crash show` reads it over HID,
-    where `fresh` says whether it belongs to the boot before this one.
-  - `PHASE_NAMES` / `RECORD_STRUCT` mirror the firmware enum and struct
-    (`_Static_assert(sizeof == 48)` on that side); a phase added there needs a
-    name here or the summary reads `phase N`.
-  - ⚠️ **The dialog is retained for the LIFE OF THE TRAY and only ever appends —
-    "Dismiss" hides the window, it does not forget.** So a crash from an hour ago
-    rides along in the report about the one that just happened; a test session
-    that fired seven triggers left all seven in every later problem report
-    (field, 2026-09-04, which is how this was found). Three places hold state and
-    they had no single gesture that agreed: the dialog's `records` list (nothing
-    cleared it — only quitting the GUI), `CrashScanner._seen` (the dedupe, cleared
-    by `forget()`), and the keyboard's own 4 KB flash archive (HID cmd 39 sub-op
-    2). **`Clear` on the dialog now does all three**, wired to
-    `core.clear_crash_record()` — which is `forget()` plus the erase — so a record
-    cannot come back from one layer after being dropped from another.
-    - It is **confirmed** because the keyboard's archive is the only durable copy:
-      after Clear there is nothing left but the console log.
-    - ⚠️ **A device that refuses still drops the host-side list**, deliberately.
-      Keeping it because the keyboard was paused or mid-flash is exactly the
-      complaint — stale records in every later report — so the failure is
-      reported in the status line instead.
-    - The button is absent when there is no `clear_cb`, since clearing here while
-      the keyboard still held the record is the out-of-step state it prevents.
-      `polyctl crash clear` remains the CLI route and covers the same three.
-    - ⚠️ **The `except` around the device call is broad because an exception
-      escaping a Qt SLOT takes the TRAY DOWN, not just the action** — PyQt calls
-      the excepthook and then `qFatal`. Measured while mutation-testing: narrowing
-      it to `OSError` **aborts the interpreter mid-suite**. It is the same abort
-      `util/crash_log.py` exists to capture, so this is not defensive style.
-    - ⚠️ **That also breaks the mutation harness in a NEW way: a mutation that
-      ABORTS the process reads exactly like one that was not caught.** The run
-      dies before unittest prints anything, so a `grep '^(FAIL|ERROR): '` finds
-      nothing and the harness reports an empty "caught-by" — the result that means
-      *your tests are worthless*. Same family as the ANSI-escape and
-      mutation-never-applied traps in `qmk_firmware/CLAUDE.md`, and the same
-      remedy applies one level up: **judge the run by the `Ran N tests` summary
-      line existing**, not by the absence of failures.
 - ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
   `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
   menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
