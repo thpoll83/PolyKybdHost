@@ -1,4 +1,4 @@
-"""The composite display-list ops — MOVE, BADGE, ERASE and ROT.
+"""The composite display-list ops — MOVE, HALF, BADGE, ERASE and ROT.
 
 These were skipped by the preview until 2026-09-01, so the keycaps that use them
 either drew nothing (the Context-menu key) or drew their text without their mark
@@ -124,6 +124,70 @@ class BadgeAgainstTheBakedGlyphTest(unittest.TestCase):
         op.draw_badge_rect(lambda x, y: ring.add((x, y)), 0, 0, 17, 17, 2, 2)
         self.assertGreater(len(solid), len(ring))
         self.assertTrue(ring <= solid, "the ring must be the solid badge's border")
+
+
+@unittest.skipIf(TOOLS_ERR, TOOLS_ERR)
+class HalfAtCursorTest(unittest.TestCase):
+    """HALF (\\x0F) — kdisp_draw_glyph_half_at: 2x2-OR, literal top-left, no advance.
+
+    The RGB value keycaps need it: the droplet and the sun ink 26x39 and 31x33, so
+    they only fit a 72x40 keycap halved — and HINT_SMALL cannot do it, because it
+    latches for the REST of the run and would take the +/- beside them down too.
+
+    The glyph below is chosen so 2x2-OR and plain decimation DISAGREE: its two lit
+    pixels are both at odd offsets inside their blocks, so decimation (which samples
+    each block's top-left) would draw nothing at all.
+    """
+
+    #  . X . .        column-native: one byte per column, LSB = the top row
+    #  . . . .
+    #  . . . X
+    #  . . . .
+    GLYPH = bytes([0b0000, 0b0001, 0b0000, 0b0100])
+
+    def _renderer(self):
+        from gfx_font import GfxFont
+        g = dict(bitmapOffset=0, width=4, height=4, xAdvance=9, xOffset=5, yOffset=-9)
+        return op.Renderer([GfxFont("t", self.GLYPH, [g], 0xE000, 0xE000, 40)])
+
+    def _lit(self, cps):
+        out = set()
+        self._renderer().draw(lambda x, y: out.add((x, y)), list(cps), op.BUFFER_X, 20)
+        return out
+
+    def test_the_halved_glyph_lands_at_the_LITERAL_cursor(self):
+        """No baseline align and no xOffset — (x, y) is the ink's top-left.
+
+        ⚠️ That is the whole difference from a glyph in a HINT_SMALL run, which keeps
+        both. A HALF that honoured xOffset/yOffset would sit 5px right and 9px above
+        where the legend asked for it, which is a mark drawn on the wrong part of the
+        keycap rather than a missing one.
+        """
+        self.assertEqual(self._lit([0x0E, op.BUFFER_X + 10, 6, 0x0F, 0xE000]),
+                         {(10, 6), (11, 7)})
+
+    def test_it_is_2x2_OR_and_not_decimation(self):
+        """Decimation samples each block's top-left, which for this glyph is empty.
+
+        The faces these icons come from are drawn with 1px strokes, so dropping every
+        other row breaks them — the reason HINT_THIN is a separate op rather than this
+        one."""
+        self.assertTrue(self._lit([0x0F, 0xE000]))
+
+    def test_HALF_does_not_advance_the_cursor(self):
+        """A second HALF right after the first must land on the SAME pixels.
+
+        It composites one icon at a chosen position; the legend moves the cursor
+        itself. An advance here would silently shift everything after it."""
+        once = self._lit([0x0F, 0xE000])
+        self.assertEqual(self._lit([0x0F, 0xE000, 0x0F, 0xE000]), once)
+
+    def test_the_renderer_no_longer_REFUSES_it(self):
+        """⚠️ Both halves are needed: drawing it while `unsupported_ops` still named
+        it would leave every legend using it falling back to its keycode text."""
+        R = self._renderer()
+        self.assertEqual(R.unsupported_ops([0x0F, 0xE000]), set())
+        self.assertEqual(R.unsupported_ops([0x11, 0xE000]), {0x11})   # THIN still is
 
 
 @unittest.skipIf(TOOLS_ERR, TOOLS_ERR)

@@ -194,10 +194,23 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
         just not in the file describing this repo's own board.
         - It **earns the slot**: on host#218 (2026-09-07) it produced three findings
           before any bot had run, and the PR carried a green Sourcery-skipped board
-          at the time. Judge it by the **`Analyze Python` job**, not the `CodeQL`
-          check run, and read its findings as inline review comments from
+          at the time. Its findings arrive as inline review comments from
           `github-advanced-security[bot]` plus a review object — i.e. `get_reviews`
           sees it, which the five-reviewer check below has to account for.
+        - ⚠️ **NEITHER of its two green ticks means "no findings" — this line used to
+          say "judge it by the `Analyze Python` JOB, not the `CodeQL` check run", and
+          that is WRONG.** The job reports whether the ANALYSIS ran, not what it
+          found, so it concludes `success` either way: measured on host#226
+          (2026-09-09), run 204 concluded `success` while carrying all **12** alerts,
+          and runs 207/208 concluded `success` carrying none. Nothing in
+          `get_check_runs` separates those.
+          - **What DOES answer it is `get_review_comments`.** Every alert is a review
+            thread, and GitHub flips the thread to `is_resolved: true` +
+            `is_outdated: true` once the alert is fixed — so twelve resolved threads
+            is POSITIVE evidence the round is closed, where "no new review object on
+            the new head" is only the absence of evidence (and is exactly the
+            false-negative the clean-CodeRabbit note below warns about). Read the
+            threads, not the ticks.
         - ⚠️ It is **not** an answer to a design question and does not read prose;
           it finds the class of defect dataflow finds. "CodeQL was green" is not
           review cover for a refactor, only for what its queries cover.
@@ -215,6 +228,20 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
           is a new false claim in place of the old one. This repo has several such
           front doors (`gui/theme.py`, `core/events.py`, the `server/` package), so
           expect it again.
+        - ⚠️ **`py/unused-global-variable` on a Qt `_APP` keepalive is the SAME
+          family and the remedy is NOT to decline it — the repo already carries the
+          form that satisfies it.** Fifteen test modules hold a QApplication alive so
+          Qt's runtime is not garbage-collected out from under the next widget; twelve
+          assign it at module level, and `tests/gui/macro_tab_test.py` pairs that with a
+          `setUpModule` asserting `_APP is not None`, whose docstring says it is there
+          *"to a reader and to a static analyser alike"*. The three files CodeQL flagged
+          on #226 had deferred the construction into `setUpModule` with a `global` write
+          nothing ever read — which is precisely the shape the query looks for. **So a
+          finding on an established idiom is worth one grep before it is worth a reply:**
+          `grep -rn "QApplication.instance() or QApplication" tests/` would have shown
+          twelve siblings the alert does not fire on, and the difference between them and
+          mine WAS the bug. Same lesson as the ControlServer deadlock — the remedy was in
+          the tree and the failure was search.
       - ⚠️ **`actions_list` blows the tool token cap — 130–220 KB per call, even
         at `per_page: 3`** (kept from the above, because it applies to reading
         *any* workflow run). It saves the JSON to a file and tells you the path;
@@ -427,9 +454,10 @@ For cross-repo context (how this repo relates to `qmk_firmware/` and `AdafruitGF
   the tell is the body text, not the presence of a review:
   - **Budget** — *"you've used your own review budget of 250,000 diff characters
     for the last 7 days ... You can request another review in 1 day and 16 hours by
-    commenting `@sourcery-ai review`"*. ⚠️ Note **250,000, per USER, rolling 7
-    days** — `qmk_firmware/CLAUDE.md` quotes 500,000 from an older notice, so take
-    the figure from the message in front of you. ⚠️ **The countdown is NOT "come
+    commenting `@sourcery-ai review`"*. ⚠️ Note the FIGURE MOVES — 250,000 here,
+    500,000 in an older notice `qmk_firmware/CLAUDE.md` quotes, and **150,000** on
+    host#226 (2026-09-08) — so it is per user and rolling 7 days, but the number is
+    only ever the one in the message in front of you. ⚠️ **The countdown is NOT "come
     back then" — do not plan around it.** Measured across the four PRs of
     2026-08-30, four refusals issued **within 61 seconds of each other** quoted
     four different waits — 4 days, 1 day 3 hours, 1 day 3 hours, 19 hours 41
@@ -1532,11 +1560,13 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the headers lacked was dropped from the grid and could not be chosen at all.
     ⚠️ The `(no glyph)` warning still rests on the source being `"headers"`, i.e. on
     the RESIDENT faces having been visible; keep that meaning if the value is reworked.
-  - ⚠️ **The CAPTION half of that preview has no such fallback: `_Small_` is NOT in
-    `res/preview/ui_fonts.plyf`** (it ships `_Nano_` and `_Mid_` only), so
-    `load_caption_faces()` still needs a firmware checkout and an install without one
-    renders "no font — preview unavailable" rather than a keycap. Closing that means
-    exporting the third face, not another fallback path.
+  - ✅ **The CAPTION half of that preview used to have no such fallback — `_Small_`
+    was NOT in `res/preview/ui_fonts.plyf` (it shipped `_Nano_` and `_Mid_` only), so
+    `load_caption_faces()` needed a firmware checkout. FIXED by exporting the third
+    face**, which is what this note already said the right answer was ("exporting the
+    third face, not another fallback path"). It landed for a different consumer — the
+    status-screen preview draws every row with it — which is the usual way a
+    long-standing gap gets closed.
 - **The editor's key pictures are a THREE-way group — Symbol / Preview / Real —
   drawing every key through the FIRMWARE's own renderers** (`gui/layout_dialog/keycap_preview.py`, driving `tools/oled_preview.py`
   for the language LUT and `tools/lang_demo.py` for the `keycode_helper.c` static-text
@@ -1570,6 +1600,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     rec button has no preview"* (field, 2026-09-08). `scripts/export_preview_data.py
     --check` names every stale file; regenerating writes all four (they are one
     snapshot — leaving them at different `fw_version`s is worse than the staleness).
+    - ⚠️ **`--check` answers against WHATEVER firmware clone sits beside the repo, so
+      a clone that is BEHIND produces a false STALE list naming the wrong files.**
+      Measured 2026-09-09: with the clone 33 commits behind (fw 0.21.0) it reported
+      `legends.json` and `named_glyphs.json` stale and `lang_lut.json`/`layers.json`
+      current. Fast-forwarding the clone to `origin/PolyKybd` (0.23.3) inverted that
+      completely — all four files' CONTENT was already byte-identical to what was
+      committed, and only the `fw_version` stamp lagged. So
+      `git -C ../qmk_firmware fetch origin PolyKybd` and confirm the checkout is not
+      behind BEFORE believing the list; the report is a COMPARISON and one of its two
+      sides is whatever you happen to have checked out. ⚠️ The sizes it prints are the
+      RE-DERIVED ones, not the committed file's, so a size shown there is not evidence
+      about what is in the repo — `git show HEAD:<path> | wc -c` is.
     - ⚠️ **A DEVELOPER CANNOT SEE THIS**, which is why it needed a test that pins
       the source. A firmware checkout that is newer wins the compare above, so the
       editor draws the clone's legends and the stale export is invisible on the very
@@ -1710,10 +1752,23 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       prerequisite must not take the other legends down with it) and reports `\x16`
       as unsupported in that state.
     - **What is still refused** is the ops needing a primitive this model does not
-      have: MOVE (`\x0E`, an absolute buffer position), HALF/THIN (`\x0F`/`\x11`),
-      FRAME (`\x12`), BADGE (`\x13`), ERASE (`\x14`), ROT (`\x15`). Measured over
-      `keycode_helper.c`'s 188 static legends, **none** uses one — so refusing them
-      costs no preview today and closes the class if one appears.
+      have — and the set has shrunk twice, so read it off `SUPPORTED_OPS` rather
+      than off this line. MOVE (`\x0E`), BADGE (`\x13`), ERASE (`\x14`) and ROT
+      (`\x15`) were implemented on 2026-09-01; **HALF (`\x0F`) and BASE (`\x17`) on
+      2026-09-09** — HALF because the RGB value keycaps composite a halved droplet/sun
+      beside a full-size `+` and HINT_SMALL cannot (it latches for the rest of the
+      run), BASE because it is the way *out* of that latch and of `HINT_MID`, which
+      the RGB preset keycaps need for a half-scale `Preset:` over a mid-face effect
+      name. That leaves THIN (`\x11`, the decimating sibling of HALF) and FRAME
+      (`\x12`, a rounded rect at a radius the badge drawer does not take).
+      ⚠️ **BASE has to clear the latch in BOTH walkers** (`bbox` and `draw`), like
+      every other op here — and note it is the firmware that owns the semantics:
+      `\x10` after `\x16` half-scales the *mid* face rather than returning to base,
+      so mirroring "small = mid = False" is only correct because that is what
+      `disp_array.c` does.
+      ⚠️ Implementing one is TWO edits — the draw dispatch and `SUPPORTED_OPS` —
+      and doing only the first leaves every legend using it still falling back to
+      its keycode text, which looks exactly like the op not working.
   - ⚠️ **The renderer's `\v` and `\t` steps need C TRUNCATING division — Python's
     `//` silently produced a ZERO step.** Both are `x += (x / N + 1) * N` on a cursor
     that can be **negative** relative to the origin: `MID_TWO_LINE` lifts the first
@@ -2596,6 +2651,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     GUI-subprocess tests **ERROR and masquerade as failures** — they are missing-dependency
     env failures, not regressions (confirm by `git stash` + re-running on the pristine tree).
     A fully green run prints `OK (skipped=N)` with the env-gated tests skipped, not errored.
+  - ⚠️ **A missing dependency DELETES tests, and the `Ran N` line is the only thing
+    that says so — the run still looks substantial.** A module that fails to import
+    contributes exactly ONE error and ZERO tests, so 24 unimportable modules read as
+    24 errors while quietly removing **465 tests**: measured 2026-09-09, the same tree
+    ran **1982** tests with `hid`/`requests`/`pynput` absent and **2447** with them
+    installed, `OK (skipped=60)`. The trap is that comparing a failure set against a
+    baseline then confirms only that YOUR branch added nothing — both runs are missing
+    the same 465 tests, so it comes back clean for a reason that has nothing to do with
+    coverage, and the device/core half of the suite has never run against the branch at
+    all. **Install the deps and read the count**; the failure list alone cannot tell a
+    green suite from an absent one. Same rule as the appending-tests-after-`__main__`
+    note, in the opposite direction.
 - **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
 - **Chromium is available headless in the dev/remote container — use it to LOOK at
   generated HTML/SVG rather than reading the markup.**
@@ -2704,6 +2771,29 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       platform reports an 800×600 screen — so anything taller than 400 px is
       silently cropped. The developer-mode menu lost its last row that way, with no
       warning and no error; only looking at the PNG caught it.
+    - **`tools/render_layout_editor.py` is the same trick for the LAYOUT EDITOR**,
+      and the docs site's `using/keymap-editor` screenshots come out of it. It
+      builds the real `KbLayoutDialog` against a fake core whose keymap is parsed
+      from the FIRMWARE — the `LAYOUT_*` macro bodies zipped against
+      `keyboard.json`'s matrix positions — so every key shows what the keyboard
+      really has there. `--compare` additionally writes a Symbol/Preview/Real
+      close-up.
+      - ⚠️ **The layer TABS come from `layer_names.c`, not from `layers.h`.** A
+        real editor draws `DYNAMIC_KEYMAP_UPDATE_MAX_LAYER_COUNT` (8) tabs named
+        `Qwerty`/`ColemkDH`/`Fn`; the enum has 12 entries named `_L0`/`_ADDLANG1`.
+        Rendering from the enum therefore produces a screenshot with four tabs too
+        many that **contradicts the docs page describing the real names** — which
+        is what the first cut did.
+      - ⚠️ **`show()` it before the first `fitInView`, even offscreen.** An unshown
+        widget has not laid out, so the view still reports its pre-resize size and
+        the FIRST mode captured renders a postage-stamp keyboard in a full-size
+        panel while every later one is correct. That reads as a mode-specific bug
+        rather than a layout race.
+      - ⚠️ **At board scale Preview and Real are indistinguishable** — a keycap
+        lands in ~50 px, far too small for the OLED simulation's bloom and pixel
+        grid to survive. Only a magnified CROP shows the difference, which is why
+        `--compare` exists and why the docs figure is a close-up rather than three
+        whole boards.
 - **Use `scripts/run_tests.py` when a run might hang — it has a stall watchdog.**
   Twice on 2026-08-03 the suite wedged past a 200 s timeout with **no output at
   all** — and a bare `timeout` kill discards exactly the information you need. The
@@ -2885,11 +2975,297 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `y_cursor` only advances at end-of-row when `current_rotation == 0`, which is
     what lets the rotated thumb clusters sit outside the row flow.
 
+- **The board the keys sit on is GENERATED from the KiCad boards —
+  `polyhost/res/board_outline.json`, written by `scripts/export_board_outline.py`,
+  drawn by `gui/layout_dialog/board_plate.py`.** It carries each half's
+  case contour and the two optional 0.96" status panels, in the same key
+  units as the KLE, so the editor shows which half a key is on and where the
+  screens are instead of 74 tiles floating in space. It is decoration and fails
+  soft: no file, no picture, unchanged editor.
+  - ⚠️ **The outline is the CASE, not the board — `parts/case/outline_polykybd_split72_*.svg`,
+    which is `Edge.Cuts` grown by `case_wall_thickness + pcb_clearance` = 1.65 mm.**
+    Drawing `Edge.Cuts` itself makes the plate 1.65 mm too small on every side, and
+    the visible symptom is at the thumbs: keycaps overhang the plate there (worst
+    0.10U = 1.9 mm) where on the real keyboard they do not. The shipped SVG is used
+    verbatim rather than re-deriving the offset — it IS the extruded contour, rounded
+    corners and all — placed by a translation fitted to the board's bounding box and
+    then CHECKED, by requiring every one of its 149 points to sit 1.65 mm outside
+    `Edge.Cuts` (measured 1.647–1.654, the spread being the polygon approximation of
+    the corners). That check is what proves the SVG belongs to this board; a swapped
+    left/right pair misses by 18 mm, the spacer outline by 3.8 mm. ⚠️ **1.65 is the
+    split72 left+right case specifically** — `case_polysplit72_right2` and
+    `right_side` use a 0.25 clearance, i.e. 1.75.
+  - ⚠️ **The outline is then FITTED to one even bezel on all four sides
+    (`BEZEL_U`, 0.33U / 6.3 mm) — the real case is NOT even, and that is deliberate.**
+    Measured on the left half the true margins are W 6.4 / E 3.6 / N 8.8 / S 6.2 mm,
+    which reads as a crooked plate rather than as accuracy — because the KEYS are
+    stylised too: the KLE draws the outer column 1.25U wide over a 1.25U pitch where
+    the board has 1U switches, and it approximates the thumb clusters. So a
+    photographically exact case around approximated keys is the worst of both.
+    `normalise_bezel` is an axis-aligned scale + translate, so the silhouette and the
+    rounded corners survive and only the margins move; measured stretch is 1.3% in x
+    and 1.9% in y, and past `MAX_BEZEL_STRETCH` (15%) it refuses rather than reshapes.
+    Evening it also lifted the last two overhanging thumb corners inside, so the
+    overhang bound is now zero rather than a tolerance.
+    - ⚠️ **This BLINDS the even-bezel test to a revert to the bare PCB edge** — that
+      would be evened out too and measure the same. The case-vs-board pin therefore
+      reads `fit.case_mm` (185.30 x 132.30, recorded BEFORE the fit) and not the drawn
+      outline. A test that measures a fitted number cannot also police its input.
+  - **The mm → key-unit transform is a pure translation at 19.05 mm/U** — the
+    boards carry no rotation, so scale is the pitch and the only unknown is the
+    origin. The exporter fits it by trying every (switch, key) pairing and keeping
+    the one that explains all 37 switches, then refuses to write unless the fit is
+    a **bijection** within bounds. Measured: 31 of 37 land exactly, the outer column
+    is out by 0.125U and the outer thumbs by up to 0.24U — the KLE's stylisation
+    (see the outer-column note above), not drift.
+  - ⚠️ **A containment test cannot catch a wrong offset, and that is not obvious.**
+    "Every key is inside the outline" passes with the whole board shifted **0.25U**
+    (4.8 mm) inward, because the inner edge has that much slack — measured, after
+    writing exactly that test and watching the mutation escape. What catches it is
+    the opposite property: the margin at each edge is PINNED, so
+    `test_the_bezel_is_the_SAME_on_all_four_sides` fails on the first edge a
+    translation moves. Ten mutations are caught — translate, scale, mirror, an
+    uneven bezel, a revert to the bare PCB edge, and each of the three ways the
+    status panel can be misplaced (centred in its corner, left at its real width,
+    pulled off the case).
+  - ⚠️ **Restore the baseline before EACH mutation in a sweep, or a `+x`/`-x` pair
+    CANCELS and reads as ESCAPED.** The first harness here re-read the file it had
+    just mutated, so mutation 2 landed on top of mutation 1 and reported the tests
+    as worthless when they were fine. Same family as the ANSI-escape and
+    never-applied traps in `qmk_firmware/CLAUDE.md`: every one of them fails toward
+    "your tests caught nothing", which is the reading that makes you stop trusting a
+    suite that works.
+  - **The status panels are ANCHORED on `J39`** — the 30-pin FPC each half carries
+    for the display (the schematic's *"Optional OLED Status Display"*) — but they are
+    not DRAWN at it. The connector says which corner; `free_rect_at` then measures the
+    largest free rectangle containing it (case polygon minus keycaps plus a 0.06U
+    clearance, on a 0.05U grid) and the panel is grown to span that corner's full
+    width and hung one bezel under the case's top edge. Drawn at the connector it is
+    both too small and too low: the FPC sits at the BOARD's height near the bottom of
+    the corner, so the panel reads as having slipped, and at its real 26.7 mm it
+    leaves a gap on both sides. ⚠️ The display hangs off a ~40 mm cable, so where it
+    ends up in the CASE is in no repo file — this is a layout rule, not a measurement.
+    - ⚠️ **The side bezel is simply NOT DRAWN — which changes the GLASS and nothing
+      else. The screen keeps the size AND the position the uniform fit gave it, so
+      the panel now stops one module bezel (3.5 mm) short of the housing rather than
+      meeting it.** The MODULE is scaled to span the corner, that fit sets the
+      screen's size (30.6 x 15.3 mm on the left half), and the module's side bezel is
+      symmetric — so not drawing it leaves exactly half a bezel of air at each end of
+      the span. Glass survives above and below in the module's own proportion, so the
+      screen's 2:1 aspect is deliberately gone. There is no caption on it — a lit
+      rectangle in a dark frame is already a screen.
+      - ⚠️ **FOUR readings of "remove the bezel" were built and three are wrong; the
+        picture cannot tell them apart and `w == aw` is true of all four.** They are
+        (1) grow the whole MODULE until the bezel closes — that enlarges the bezel
+        along with everything else; (2) widen the SCREEN to fill the glass — same
+        envelope, 23% more lit area, i.e. it adds the bezel to the display rather
+        than deleting it; (3) narrow the glass and slide it FLUSH — correct size,
+        but it moves a screen that was already placed; (4) narrow the glass and
+        leave it where it is, which is the one that ships.
+      - **Two tests separate the four, and they pin different things.**
+        `test_dropping_the_side_bezel_did_NOT_enlarge_the_screen` pins the panel's
+        ASPECT — 21.74/19.26 = 1.129 narrowed against 26.70/19.26 = 1.386 filled —
+        which catches (1) and (2).
+        `test_a_panel_STOPS_ONE_MODULE_BEZEL_SHORT_of_the_case` pins the gap to the
+        housing, which catches (3): a flush panel measures 0. Neither is redundant
+        and neither alone is enough.
+      - **The gap is derived, not hardcoded**: half a module bezel times the scale
+        the panel itself reports (`d.h / panel_h`), because a literal would pin
+        today's corner width rather than the intent.
+    - **The vertical glass is therefore pinned as a RATIO, not in mm** (8.4 of the
+      module's 19.26, whatever the scale). A test in millimetres would encode the
+      corner's width, which is geometry rather than intent.
+    - **The screen carries a PICTURE, following the same Symbol/Preview/Real control
+      the keys do** — `services/status_screen.py` composes it (Qt-free, lit pixels),
+      `gui/layout_dialog/status_screen_render.py` makes the QImage, and
+      `board_plate.set_screen_images` paints it into the lit rectangle. What is
+      decided, not incidental:
+      - **It draws the WHOLE panel — it is a PORT of the firmware's own preview tool**
+        (`qmk_firmware/keyboards/polykybd/tools/status_oled_preview.py`, itself a
+        mirror of `split72/status_oled.c` `oled_update_buffer`), function for function
+        and coordinate for coordinate, so the two files diff line for line. It shipped
+        as a hand-written subset first — top row, side marker, layout name, every other
+        row dark — on the reasoning that the RGB effect, WPM, brightness and language
+        are live DEVICE state the editor does not have and a placeholder is a number
+        true of nothing. ⚠️ **That reasoning was rejected in review**: a status panel
+        showing three of its eight rows reads as broken, not as honest, and the
+        firmware tool has carried representative values for exactly this purpose all
+        along. So the editor uses the tool's own placeholders and the module says
+        plainly that they are not measurements — **do not wire a UI readout to them.**
+      - ⚠️ **A PORT DRIFTS, and nothing in this repo can see the firmware move — so it
+        is pinned to a GOLDEN FIXTURE**, `tests/services/status_panel_golden.json`,
+        generated from the firmware tool by `scripts/gen_status_panel_golden.py` and
+        compared PIXEL FOR PIXEL. Two halves, and each covers what the other cannot:
+        the fixture comparison runs with **no checkout**, so the port cannot drift from
+        what was frozen; a second, checkout-gated test re-derives the fixture live, so
+        `status_oled.c` moving a row is caught on the machine that moved it. A
+        structural comparison would be worthless — both sides are Python read from the
+        same constants and would agree by construction.
+      - ✅ **The pair FIRED, and what it caught was the port — not the fixture.**
+        Measured 2026-09-09 (firmware 0.21.0 → 0.23.3): the checkout-gated half went
+        red with *"the firmware panel moved"*, and the cause was qmk `2bb724ce38`,
+        which split the status OLED's percentage arithmetic in two — saturation is
+        genuinely 0..255 and keeps `byte_to_percent`, while the VALUE is capped at
+        `RGB_MATRIX_MAXIMUM_BRIGHTNESS` (100) and gained `val_to_percent`, so a
+        fully-lit matrix used to report 39%. The firmware moved its own preview tool
+        with the C; this port did not. ⚠️ **Regenerating the fixture ALONE is the wrong
+        fix and the suite says so** — with the new fixture and the old helper,
+        `test_the_port_draws_WHAT_THE_FIRMWARE_TOOL_DREW` fails on both RGB cases
+        (verified by reverting just the helper). The fixture is the BRIDGE: when the
+        live half goes red, read the firmware diff and port the change, then
+        regenerate; a green run needs both.
+      - ⚠️ **Neither half fires on a clone that is BEHIND** — the live one re-derives
+        from whatever checkout is there, so it happily confirms a fixture frozen
+        against the same old firmware. This drift sat unnoticed until a `git fetch`
+        made the clone current. Same shape as the `--check` trap above, and the same
+        remedy: fast-forward the clone before trusting either answer.
+      - ⚠️ **A fixture at the firmware's DEFAULT values pins only the easy half.**
+        Those defaults saturate: `brightness=50` IS `FULL_BRIGHT`, so every gauge
+        segment is lit and no unlit one exists to keep its documented 1px foot, and
+        `sat=255`/`val=100` round identically with and without the `+127`. Measured —
+        three mutations of the port (drop the foot, drop the percent rounding, swap the
+        gauge fill) **all ESCAPED** against the four default cases and are caught by
+        the two non-saturating ones added beside them. Same family as the status-OLED
+        layout rule in `qmk_firmware/CLAUDE.md`: check the worst case, not the default
+        fixture. Nine of ten mutations are caught; the tenth (deleting
+        `brightness_to_level`'s outer `min`) is **inert by construction** — `contrast`
+        is clamped a line above, so no input reaches it — and is kept because the
+        firmware's expression is the same and a port that tidies a redundancy stops
+        diffing against what it mirrors.
+      - **One honest departure**: hardware names the BASE layout on that row and this
+        names the layer being edited. Identical for layers 0..4; above them it says
+        `Fn` / `Numpad` / `Utility`, which is what an editor wants.
+      - ⚠️ **`set_keycodes_for_layer` OWNS `current_layer`, and it did not.** That
+        attribute was written only by the layer-button handler, so calling the method
+        directly left the two disagreeing — and the next MODE change repaints with
+        `current_layer`, silently putting the board and both panels back on the last
+        *clicked* layer. Measured: show layer 5, toggle Symbol → Preview, get layer 0.
+        The layer that ends up on screen is what everything else means by "the layer
+        being edited" (the keycode assignment indexes the buffer with it), so the one
+        method that draws it is the right writer.
+        - ⚠️ **Drive that test through `set_keycodes_for_layer`, not the button** — the
+          button sets `current_layer` on the way past and hides exactly this.
+      - ⚠️ **A failed keymap read used to take the panels with it.** The mode switch's
+        repaint sat inside `if self.key_buffer is not None`, so with the keys locked
+        down the panels never followed the mode at all. They carry the LAYER, not the
+        keymap; a board that cannot be edited still says which layer is selected.
+      - ⚠️ **"The panels open on the keyboard's default layer" is NOT pinned by the
+        test that says so, and the first draft claimed it was.** `_add_board` does draw
+        them before the default layer is read, but the default mode is Symbol — so they
+        are blank until the user picks Preview, and that pick repaints at
+        `current_layer` regardless. Measured: deleting the startup
+        `set_keycodes_for_layer` outright leaves the test green. What that actually
+        breaks is the KEYS (layer 0's keycodes under a layer-3 tab), which is a keycap
+        claim and belongs in a keycap test.
+      - ⚠️ **A missing face SUBTRACTS, it is never a precondition** — and expecting an
+        empty panel from no faces at all was wrong: the role icons, the brightness
+        gauge and the speed box are bitmaps and drawn rectangles, so they survive every
+        missing font. That is what the degradation test pins.
+      - ⚠️ **The Real filter is the `oled` preset, NOT `keycap`.** There is no keycap
+        over a status display — it is a bare panel behind a window — so the cover's
+        diffusion and jitter would model a light guide that is not there. The keys and
+        the screens therefore use different presets on purpose, both out of
+        `fontpack_render.apply_oled_style` so neither is a second set of numbers.
+      - **The faces come from `KeycapPreview.status_faces()`**, i.e. whichever source
+        won the shipped-vs-checkout compare, so one board cannot draw keys from one
+        firmware and screens from another. That needed `_Small_` 15px added to the
+        export's `ui_fonts.plyf` — the third standalone face, which the macro-caption
+        note already said was the right fix rather than another fallback path.
+        ⚠️ Five faces are wanted, not three, and **two of them are found by COVERAGE
+        rather than by name**: the firmware tool names `IconsFont` and
+        `NotoEmoji_Medium_World_20pt16b` out of its parsed headers, and the host has no
+        names for pack fonts at all — so the icon face is the first pool font covering
+        `0x80` and the globe the first covering `U+1F310`. Front-to-back precedence
+        makes both exact today (the World face covers that one codepoint alone), and a
+        renamed header cannot quietly cost the panel a row.
+      - ⚠️ **`_refresh_screens` swallows its exceptions (decoration must not take the
+        editor down), so a plain `AttributeError` in the Real branch cost nothing but
+        a `log.debug` and the panel just stayed flat.** That shipped for the length of
+        one test run. `tests/gui/kb_layout_screens_test.py` drives the real dialog for
+        exactly that reason — a renderer-level test cannot see wiring that is never
+        reached, and the fail-soft `except` is what makes the wiring invisible.
+  - ⚠️ **The grid search resolves the corner to 0.05U, and that millimetre is a
+      millimetre of SCREEN** — the corner's width is what the module is scaled
+      against — so `exact_span` re-measures the one band the panel occupies off the
+      polygon rather than off the grid. The containment test still needs a tolerance:
+      the outline is fitted, so a point can land on the boundary, and a ray-cast
+      answers arbitrarily there.
+    - ⚠️ **`_top_at` at the polygon's EXTREME x lands on a vertex and returns the
+      corner rather than the top edge.** That put one half's panel 0.085U below the
+      other's, on two boards that are mirror images — so `case_top_over` insets 0.4 mm
+      from both ends. Consequence worth knowing: at the very corner the panel clears
+      the case by less than a bezel (0.28U measured), which is why the placement test
+      bounds the tightest gap across the width instead of asserting one bezel.
+  - ⚠️ **The tiles are dark in BOTH themes** (`RenderableKey` hardcodes its greys),
+    so the plate has to work under dark keys either way.
+  - **The two themes are NOT one palette at two lightnesses.** Dark draws a graphite
+    board on the view's own ground; light draws a GREY board on a blue ground
+    (`LIGHT["scene"]`, painted by `add_board` via `setBackgroundBrush`) — the blue
+    moved to the background so the board reads as the object rather than as the
+    biggest coloured shape on screen. `DARK["scene"]` is None, which must stay a
+    no-op: dark's ground is the palette's and nothing here should second-guess it.
+    The light plate is deliberately the DARKER of the two (pinned as a relation, not
+    a literal): a plate a shade off white reads as a differently-coloured page rather
+    than as a board lying on one.
+  - ⚠️ **The BOARD is neutral and every stroke is near-black — the blue survives only
+    as `LIGHT["scene"]`.** The plate, the screen bezel and all three outlines carried
+    the brand mark's blue → cyan sweep, which on a picture of a keyboard reads as a
+    lit edge rather than as a case; the ground is the one place the colour describes
+    the page instead of the object. `test_the_board_and_its_outlines_are_NEUTRAL`
+    bounds the channel spread at 4 for every key but `scene`, so a re-tint fails while
+    a lightness tweak does not.
+    - ⚠️ **"Every outline is darker than its fill" was written first and is WRONG.**
+      The bezel is the darkest thing on the board, so a stroke darker than it would be
+      invisible — `glass_edge` is deliberately the *lighter* of the two, because what
+      it separates the bezel from is the PLATE. The property that actually holds for
+      all three is that none of them is bright (`test_every_OUTLINE_is_DARK` bounds
+      lightness at 90), plus the one real relation: the plate's edge must read against
+      the plate.
+  - ⚠️ **The screen picture is FITTED inside the lit rectangle and inset clear of the
+    frame — scaling it to the rectangle's WIDTH put it on top of the bezel, by two
+    independent mechanisms.** Reported as the display extending over the bezel:
+    - the panel is 2:1 and the lit rectangle no longer has to be (dropping the side
+      bezel reshaped it), so a width-derived height simply overflows; and
+    - a rect item's pen is **centred on the edge**, so half the stroke lies inside,
+      and a picture that exactly fills the rectangle covers that half.
+    So `set_screen_images` scales by `min` over both axes of the box inset by
+    `ACTIVE_PEN` and centres the result, and `SCREEN_BOX` carries the HEIGHT it had
+    been managing without. The pen widths are named constants for that reason — a
+    stroke and the inset that clears it must not drift apart.
+    - ⚠️ **The old test asserted the picture filled the rectangle EXACTLY**, i.e. it
+      had the defect as its contract; that is why nothing caught this. Its replacement
+      bounds the width from BOTH sides — an inset that ran away is as wrong as none.
+    - ⚠️ **The containment test derives the rectangle from the DESCRIPTION, never
+      from `SCREEN_BOX`.** Reading it back off the item makes the check self-consistent
+      with whatever the item cached: measured, replacing the real height with `width/2`
+      escaped exactly that way, because the lit aspect (2.002) is a hair off the
+      panel's 2.000 and the error is a fraction of a pixel. Eight mutations are caught
+      now; that one needed the box asserted against the description as well.
+
 ## Releases
 
 Host releases are **GitHub Releases** (tag `vX.Y.Z`; version in `polyhost/_version.py`),
 created by **publishing** — *not* by pushing a tag. Use the `polykybd-github-release`
 skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
+
+- ⚠️ **A `PROTOCOL_VERSION` bump means BOTH artifacts get released, and the check that
+  catches it is the PUBLISHED versions, not the in-tree ones.** The existing "bump
+  `__protocol__` in lockstep with `PROTOCOL_VERSION`" rule is about the *sources*, and
+  it can be perfectly satisfied while the releases are a protocol apart. Measured
+  2026-09-09: firmware `PolyKybd` and host `main` both read protocol 17, while the
+  newest **published** host (v0.14.18) was still 16 — so a firmware-only release would
+  have shipped protocol 17 to every user's protocol-16 app. Read the sibling's newest
+  release (`list_releases`, then its `__protocol__`/`PROTOCOL_VERSION` at that tag)
+  before drafting.
+  - ⚠️ **Nothing downstream catches it, because the connect gate is NOT exact-match.**
+    The host connects to any protocol `>= MIN_SUPPORTED_PROTOCOL` and gates each
+    feature through `FEATURE_MIN_PROTOCOL`, so an old host pairs with new firmware and
+    silently leaves the new features off — quieter than a refusal, and worse to
+    diagnose. (The release skill's own pitfall claimed exact-match for a long time,
+    which made the pairing read as self-enforcing when it is not.)
+  - **Publish the host first, then the firmware** — the host is the side that has to
+    understand the new protocol, so that order never leaves a user holding firmware
+    their app cannot drive.
 
 - ⚠️ **The host and firmware version numbers were deliberately aligned at 0.11.0
   (2026-08-05) — and they are NOT kept in lockstep after that.** The two are

@@ -254,6 +254,64 @@ class TestWebFallback(unittest.TestCase):
         # The scraper must classify .bin.sig as the signature, not as the image.
         self.assertTrue(fw.sig_url.endswith("/poly.bin.sig"))
 
+    def test_handedness_uf2s_are_not_mistaken_for_the_firmware_image(self):
+        """A firmware release also ships polykybd-handedness-{left,right}_vX.uf2,
+        512-byte files that write only the handedness stamp sector. They sort
+        BEFORE the firmware image here, so a first-.uf2-wins scraper hands back a
+        stamp file as the firmware."""
+        base = "/thpoll83/qmk_firmware/releases/download/PolyKybd-fw-v0.9.0"
+        html = "".join(f'<a href="{base}/{n}">' for n in (
+            "polykybd-handedness-left_v0.9.0.uf2",
+            "polykybd-handedness-right_v0.9.0.uf2",
+            "poly.bin", "poly.bin.sig", "poly.uf2"))
+        asset_resp = _make_response(200)
+        asset_resp.text = html
+        with mock.patch.object(updater.requests, "get",
+                               side_effect=[_make_response(403), asset_resp]), \
+             mock.patch.object(updater.requests, "head",
+                               return_value=_redirect_response(
+                                   "https://github.com/thpoll83/qmk_firmware/releases/tag/PolyKybd-fw-v0.9.0")):
+            fw = updater.check_fw_latest("0.8.0")
+        self.assertTrue(fw.uf2_url.endswith("/poly.uf2"), fw.uf2_url)
+        self.assertTrue(fw.bin_url.endswith("/poly.bin"))
+
+
+class TestFirmwareUf2Pairing(unittest.TestCase):
+    """firmware_uf2_for() pairs the image with its .bin instead of taking the
+    first .uf2 in the release. Pure, so both asset paths (API and web scrape)
+    can share it."""
+
+    BIN = "https://x/dl/tag/polykybd_split72_v1.2.3.bin"
+    UF2 = "https://x/dl/tag/polykybd_split72_v1.2.3.uf2"
+    HAND = ["https://x/dl/tag/polykybd-handedness-left_v1.2.3.uf2",
+            "https://x/dl/tag/polykybd-handedness-right_v1.2.3.uf2"]
+
+    def test_picks_the_uf2_sharing_the_bins_stem(self):
+        self.assertEqual(updater.firmware_uf2_for(self.BIN, self.HAND + [self.UF2]), self.UF2)
+
+    def test_order_does_not_decide_it(self):
+        self.assertEqual(updater.firmware_uf2_for(self.BIN, [self.UF2] + self.HAND), self.UF2)
+
+    def test_no_paired_uf2_returns_empty_rather_than_a_stamp_file(self):
+        self.assertEqual(updater.firmware_uf2_for(self.BIN, self.HAND), "")
+
+    def test_no_bin_returns_empty(self):
+        self.assertEqual(updater.firmware_uf2_for("", [self.UF2]), "")
+
+    def test_a_none_bin_returns_empty_rather_than_raising(self):
+        """A release that shipped no .bin (a failed build) reaches the API path
+        with bin_url None — the common case, and not a reason to raise."""
+        self.assertEqual(updater.firmware_uf2_for(None, [self.UF2]), "")
+
+    def test_a_bin_url_that_is_not_a_bin_pairs_with_nothing(self):
+        """The candidate here is precisely what a stem naively chopped off
+        "poly.zip" would pair with, so this fails unless the .bin check runs."""
+        self.assertEqual(
+            updater.firmware_uf2_for("https://x/dl/tag/poly.zip", ["https://x/dl/tag/poly.uf2"]), "")
+
+    def test_a_release_with_only_the_firmware_pair_still_works(self):
+        self.assertEqual(updater.firmware_uf2_for(self.BIN, [self.UF2]), self.UF2)
+
 
 class TestLastCheckTime(unittest.TestCase):
     """The update-check throttle is persisted (in the ETag cache file) so it
