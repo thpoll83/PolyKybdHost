@@ -149,7 +149,9 @@ regression test with two overlapping templates.
   `{KC_ESCAPE: OverlayData}` for `Modifier.NO_MOD`.
 * Hook: where the app is resolved (`OverlayHandler` → `PolyCore.send_overlay_data`),
   append the synthetic converter and a pseudo-filename (`@prog:<slug>`).
-* Setting: `program_icon_enabled` (default?) — see open decisions.
+* Settings: feature on by default; `shortcut_icon_auto_fetch` (default True)
+  gates the *network*, not the feature — off means cache-only (E.1).
+* Fetch runs on the core-owned thread of E.5, never the HID worker.
 
 **Deliverable:** focus GIMP, ESC shows Wilber. Works for an app with a template
 and for one without.
@@ -169,6 +171,8 @@ and for one without.
 
 * `polyhost/services/shortcut_unmatched.py`: append `{app, os, label, accel,
   count, first_seen, last_seen}` to a JSON under the user config dir.
+* ⚠️ The SAME file collects unmatched **app names** (E.3), so the slug map
+  and the label hints grow from one curation pass, not two.
 * `polyctl shortcuts unmatched [--review]` — the probe's `--review` flow,
   emitting `shortcut_hints.yaml` stanzas.
 * ⚠️ Bounded: cap entries, dedupe by (app, label). This file grows unattended.
@@ -195,22 +199,114 @@ sends one synthetic overlay and reads back the mapping.
 
 ---
 
-## Part E — open decisions (need your call)
+## Part E — decisions (settled)
 
-1. **Default on or off?** Program icon and shortcut fallback separately. Both
-   reach the network on first use for a new app.
-2. **Offline behaviour.** No network / unknown app → ESC keeps its normal
-   legend, silently? Or a log line?
-3. **Slug map curation.** Ship `app_icons.yaml` with the ~40 apps measured, or
-   start empty and grow it from the unmatched JSON like the shortcut hints?
-4. **macOS.** No probe backend exists (Linux AT-SPI + Windows UIA do). Phase 2
-   is two-of-three platforms unless someone writes it. The ESC program icon has
-   no such gap — it only needs the app name, which the host already has.
-5. **Where the fetch runs.** `PolyCore` is Qt-free and the worker thread must not
-   block on HTTP. The wincompose installer's pattern (own thread, result through
-   the callback) is the precedent.
+### E.1 Default on, with a fetch setting — **settled**
 
----
+Both features default **on**. The switch is over *retrieving* icons, not over
+the feature:
+
+* `shortcut_icon_auto_fetch` (default **True**) — may reach the network for an
+  icon this install has not cached.
+* Off ⇒ **cache-only**, never a request. Already-fetched apps keep working; a
+  new app simply gets no icon.
+
+That separation matters for anyone on a metered or air-gapped machine: turning
+the switch off must not disable icons they already have.
+
+### E.2 A log line on the miss path — **settled**
+
+INFO, once per (app, reason), not per window switch:
+
+```
+No program icon for 'foo-editor' (no catalog match) — add a slug to app_icons.yaml
+No program icon for 'gimp' (offline, not cached)
+```
+
+⚠️ Dedupe it. The window tick runs continuously, and an undeduped line would
+fill the log with one entry per poll for any app that has no icon.
+
+### E.3 Curate `app_icons.yaml` from the misses — **settled**
+
+Start from automatic matching; write what fails into the same curation JSON the
+shortcut labels use, and grow the YAML from that. Same loop as
+`shortcut_hints.yaml`, same `--review` flow.
+
+⚠️ **Auto-matching stays deliberately strict — no fuzzy fallback.** A wrong
+logo is worse than none: showing Krita for KiCad is a bug the user cannot
+explain, while a missing icon is self-evident and lands in the curation file.
+(The shortcut lexicon needed a measured 0.85 fuzzy floor for the same reason;
+here the answer is simpler because a slug is an exact identifier.)
+
+### E.4 macOS — what the gap actually is
+
+**The harvest needs a per-OS accessibility backend.** Three platforms, three
+unrelated APIs:
+
+| OS | API | status |
+|---|---|---|
+| Linux | AT-SPI2 over D-Bus, `org.a11y.atspi.Action.GetKeyBinding` | built, measured (26 shortcuts on a menubar app) |
+| Windows | UI Automation, `AcceleratorKey` (30006) / `AccessKey` (30007) | built, measured (13 on Word's Home tab) |
+| macOS | Accessibility API — `AXUIElement`, walking the menu bar for `AXMenuItemCmdChar` / `AXMenuItemCmdModifiers` / `AXMenuItemCmdVirtualKey` | **not built** |
+
+So "two of three" means: on macOS **Phase 2 finds nothing and the fall-back
+never fires** — E.2's log line says so, and nothing misbehaves.
+
+Two things make this less bad than it sounds:
+
+* ⚠️ **Phase 1 has no such gap.** The program icon needs only the app *name*,
+  which the host already tracks on every platform for overlay matching. ESC
+  works on macOS from day one.
+* ⚠️ **macOS would likely have the BEST harvest of the three**, not the worst.
+  Every Mac app has a real menu bar with real key equivalents, where GTK4 apps
+  yield literally zero. It is the platform most worth doing eventually.
+
+Cost when someone does it: `pyobjc` (`ApplicationServices`), and the user must
+grant Accessibility permission in System Settings → Privacy & Security — a
+consent prompt neither other platform needs.
+
+⚠️ **I cannot test a macOS backend from this container at all**, so it is out of
+scope here rather than merely deprioritised.
+
+### E.5 Where the fetch runs — a core-owned thread
+
+The constraint is two-sided and both sides are already documented:
+
+* **Never the HID worker.** A 15 s HTTP timeout there stalls the reconnect probe
+  (1 s) and the console read (250 ms).
+* **Never the GUI main thread.** `wincompose_install.find_installer()` froze the
+  tray ~10 s on an unreachable network by doing exactly this.
+
+**`PolyCore` already owns Qt-free threads that do this kind of I/O**, so there is
+a pattern to copy rather than a decision to invent:
+
+| existing | does |
+|---|---|
+| `_wincompose_thread` | TASKLIST probes, 10 s → 60 s cadence, stop `Event` |
+| `_tick_thread` | the headless window tick |
+| telemetry reporter | HTTP POSTs, its own thread |
+
+So: **one core-owned fetch thread**, a small queue of "resolve + fetch icon for
+app X", stop `Event`, and the result handed back through the existing
+`subscribe`/`emit` seam.
+
+⚠️ **Copy the shutdown discipline too.** `_start_wincompose_settle` shares a lock
+with `shutdown()` plus a one-way flag, because a reconnect landing concurrently
+would otherwise clear the stop Event and start a fresh thread *after* shutdown,
+holding the core and submitting to a stopped worker.
+
+#### The sequencing wrinkle
+
+`send_overlays_mru` needs every `OverlayData` **up front**, so on a cache miss
+the icon cannot be in that switch's send. Two options:
+
+* **(a)** the icon appears the *second* time you focus the app — simplest, and
+  the cache makes it once per app ever;
+* **(b)** re-send when the fetch lands, gated on the app still being focused.
+
+**Recommend (b).** `coalesce_key="overlay"` already supersedes an in-flight
+send, so the extra burst is cheap and a stale one cannot pile up. (a) is the
+fallback if (b) turns out to fight the MRU batching.
 
 ## Part F — risks
 
