@@ -70,6 +70,11 @@ class OverlayHandler:
         # value used for the most recent match, for logging.
         self.url_provider = url_provider
         self.current_url = None
+        # The focused application's name, as matching saw it. Kept so the core
+        # can ask what program is in front WITHOUT re-querying the window
+        # (pywinctl is main-thread-only on macOS, and the query is what the tick
+        # exists to do once). None whenever nothing is focused.
+        self.current_app = None
         self.current_entry = None
         self.last_entry = None
         # Tracks whether overlays are currently enabled on the device, so a
@@ -244,6 +249,7 @@ class OverlayHandler:
                 if local_win_changed:
                     # remember active window
                     self.set_win(win, win.title, win.getHandle())
+                    self.current_app = None
                     if win.title == "PolyHost":
                         return None, OverlayCommand.NONE
                     try:
@@ -255,6 +261,7 @@ class OverlayHandler:
                                 app_name = raw_app_name.split(".",-1)[0].lower()
                             else:
                                 app_name = raw_app_name.lower()
+                            self.current_app = app_name
                             # For a browser, resolve the focused tab's URL so the
                             # matcher can key overlays off the website (see
                             # handler/browser_url.py). None for non-browsers or
@@ -301,6 +308,7 @@ class OverlayHandler:
             if self.win:
                 self.log.info("No active window")
                 self.set_win()
+                self.current_app = None
                 if self.current_entry:
                     self.current_entry = None
                     return None, OverlayCommand.DISABLE

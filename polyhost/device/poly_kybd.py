@@ -1241,11 +1241,18 @@ class PolyKybd:
         return overlay.compressed_msgs
 
     def send_overlays_mru(self, filenames: list, cache: OverlayMRUCache,
-                          cancel: threading.Event | None = None) -> bool:
+                          cancel: threading.Event | None = None,
+                          synthetic: dict | None = None) -> bool:
         """
         Send only overlay images not already in the keyboard's MRU pool, then
         update the display-position → pool-slot mapping in one command.
         Does NOT call reset_overlays_and_usage (cached images must be preserved).
+
+        `synthetic` maps a pseudo-filename in `filenames` to an already-built
+        converter (see device/synthetic_overlay.py) — an overlay source with no
+        file behind it, used for the generic icon fall-back. It is resolved by
+        the CALLER, on the caller's thread, because building one may fetch over
+        the network and this method runs on the HID worker.
         """
         import os
         hid_msg_counter = 0
@@ -1260,9 +1267,13 @@ class PolyKybd:
         # unreadable file blanked the keycaps and then returned False, leaving the
         # keyboard with no overlays until the next program switch. Validating up
         # front makes a bad request a no-op on the device.
+        synthetic = synthetic or {}
         converters = []
         for filename in filenames:
             self.log.info("Send Overlay MRU '%s'...", filename)
+            if filename in synthetic:
+                converters.append(synthetic[filename])
+                continue
             converter = ImageConverter(self.device_settings)
             if not converter.open(filename):
                 self.log.warning("Unable to read %s", filename)
@@ -1296,7 +1307,14 @@ class PolyKybd:
             # the LAST entry of the decode loop above for every converter. The
             # two lists are parallel by construction (a failed open() returns
             # early), so this is the only pairing that can be right.
+            # Which (modifier, keycode) pairs a source has already claimed. A
+            # SYNTHETIC source skips a pair a real template already draws, so
+            # the hand-made design always wins and no upload is wasted on an
+            # image the mapping would immediately overwrite. Real sources keep
+            # their existing last-one-wins behaviour.
+            covered: set[tuple[int, int]] = set()
             for filename, converter in zip(filenames, converters):
+                is_synthetic = filename in synthetic
                 for modifier in Modifier:
                     # A pre-v12 keyboard folds any GUI+x onto the bare-GUI
                     # variant and has no flat index space above 90*9, so an
@@ -1312,6 +1330,12 @@ class PolyKybd:
                         if cancel is not None and cancel.is_set():
                             self.log.debug_detailed("send_overlays_mru cancelled")
                             return False
+                        if is_synthetic and (modifier.value, keycode) in covered:
+                            self.log.debug_detailed(
+                                "%s: 0x%x/%s is drawn by a template already",
+                                filename, keycode, modifier)
+                            continue
+                        covered.add((modifier.value, keycode))
                         content_key = (os.path.basename(filename), modifier.value, keycode)
                         pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
 

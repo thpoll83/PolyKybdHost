@@ -377,6 +377,9 @@ class SettingsChangedTest(unittest.TestCase):
         )
         core._did = []
         core._refresh_unicode_watch = lambda: PolyCore._refresh_unicode_watch(core)
+        # note_settings_changed also clears the program-icon negative cache; this
+        # stand-in only models the unicode half, so give it a no-op fetcher.
+        core.app_icons = types.SimpleNamespace(forget_misses=lambda: None)
         return core
 
     def _run(self, core, keys, mode=InputMethod.WinCompose):

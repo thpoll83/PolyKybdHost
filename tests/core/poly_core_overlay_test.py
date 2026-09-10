@@ -24,6 +24,10 @@ def make_core(*, connected=True, handler=True, run_when_disconnected=False):
     core.worker = MagicMock()
     core.device_mgr = MagicMock()
     core.overlay_handler = MagicMock() if handler else None
+    # No focused app and no mark by default: these tests pin the overlay-send
+    # contract, and the program icon has its own class below.
+    core.app_icons = MagicMock()
+    core.app_icons.overlay_for.return_value = (None, None)
     core.keeb = MagicMock()
     core.poly_settings = MagicMock()
     core.poly_settings.get.side_effect = lambda k: {
@@ -35,6 +39,7 @@ def make_core(*, connected=True, handler=True, run_when_disconnected=False):
     core._last_pushed_os = get_host_os().value
     if handler:
         core.overlay_handler.is_remote_mapping_entry.return_value = False
+        core.overlay_handler.current_app = None
     return core
 
 
@@ -145,3 +150,115 @@ class TestOsTracking(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class TestProgramIcon(unittest.TestCase):
+    """The focused app's brand mark, appended to whatever the template sends.
+
+    ⚠️ These pin BEHAVIOUR, not plumbing: that the mark rides the same coalesced
+    send, that an app with no template still gets one, and that the fetch never
+    happens on this thread.
+    """
+
+    def _core(self, app="gimp", mask="MASK"):
+        core = make_core()
+        core.overlay_handler.current_app = app
+        core.app_icons.overlay_for.return_value = (mask, "gimp") if mask else (None, None)
+        return core
+
+    def _submitted(self, core):
+        """What the queued job would hand the device: (files, program)."""
+        seen = {}
+        core._overlay_send_job = lambda files, cancel, program=None: seen.update(
+            files=files, program=program)
+        core.worker.submit.call_args.args[1](threading.Event())
+        return seen["files"], seen["program"]
+
+    def test_the_mark_is_appended_to_a_templates_own_files(self):
+        core = self._core()
+        self.assertTrue(core.send_overlay_data("vscode_template.mods.png"))
+        files, program = self._submitted(core)
+        self.assertEqual(len(files), 2)
+        self.assertEqual(files[-1], "@prog:gimp")
+        self.assertEqual(program, ("@prog:gimp", "MASK"))
+
+    def test_the_mark_goes_LAST_so_a_template_wins_the_key(self):
+        # send_overlays_mru decides which source draws a key by the order it
+        # walks them, so appending is what makes the hand-made design win ESC.
+        core = self._core()
+        core.send_overlay_data(["a.png", "b.png"])
+        files, _ = self._submitted(core)
+        self.assertEqual(files[-1], "@prog:gimp")
+        self.assertEqual(len(files), 3)
+
+    def test_an_app_with_no_mark_sends_only_the_template(self):
+        core = self._core(mask=None)
+        self.assertTrue(core.send_overlay_data("a.png"))
+        files, program = self._submitted(core)
+        self.assertEqual(len(files), 1)
+        self.assertIsNone(program)
+
+    def test_an_app_with_NO_template_still_gets_its_mark(self):
+        # The whole point of the fall-back. handle_active_window returns DISABLE
+        # for an unmatched app; before this, that meant the keycaps went blank.
+        core = self._core()
+        core.overlay_handler.handle_active_window.return_value = (
+            None, OverlayCommand.DISABLE)
+        core.tick_window_tracking()
+        # ⚠️ Assert the SEND, not that the worker was used: a disable submits on
+        # the same queue with the same coalesce key, so "submit was called" is
+        # true whichever branch ran. Mutation-checked -- dropping the mark path
+        # escaped a `submit.assert_called()` entirely.
+        files, program = self._submitted(core)
+        self.assertEqual(files, ["@prog:gimp"])
+        self.assertEqual(program, ("@prog:gimp", "MASK"))
+
+    def test_an_app_with_no_MARK_and_no_template_still_disables(self):
+        # Without a mark there is nothing to draw, so the old behaviour has to
+        # stand -- an ENABLE with no overlays would leave the last app's keycaps
+        # on screen.
+        core = self._core(mask=None)
+        core.overlay_handler.handle_active_window.return_value = (
+            None, OverlayCommand.DISABLE)
+        core.tick_window_tracking()
+        self.assertEqual(core.worker.submit.call_count, 1)
+        # the disable path submits without an on_done/thinking event
+        self.assertNotIn("on_done", core.worker.submit.call_args.kwargs)
+
+    def test_no_focused_app_asks_for_no_mark(self):
+        core = self._core(app=None)
+        self.assertFalse(core.send_overlay_data([]))
+        core.app_icons.overlay_for.assert_not_called()
+
+    def test_the_lookup_never_blocks_this_thread(self):
+        # `overlay_for` is a dict lookup that queues an unseen app; a fetch here
+        # would sit on the GUI main thread for the HTTP timeout.
+        core = self._core()
+        core.send_overlay_data([])
+        core.app_icons.overlay_for.assert_called_once_with("gimp")
+
+    def test_turning_the_fetch_setting_on_clears_the_misses(self):
+        # Otherwise the switch does nothing until a restart: every app focused
+        # while it was off is cached as "no mark", and that cache is what stops
+        # the fetch. The rule this follows is that a settings side effect belongs
+        # in note_settings_changed, never in one of its two callers.
+        core = self._core()
+        core.refresh_daylight_brightness = lambda: None
+        core._refresh_unicode_watch = lambda: None
+        core.note_settings_changed({"shortcut_icon_auto_fetch"})
+        core.app_icons.forget_misses.assert_called_once()
+
+    def test_an_unrelated_setting_leaves_the_cache_alone(self):
+        core = self._core()
+        core.refresh_daylight_brightness = lambda: None
+        core._refresh_unicode_watch = lambda: None
+        core.note_settings_changed({"brightness_gamma"})
+        core.app_icons.forget_misses.assert_not_called()
+
+    def test_a_mark_arriving_LATER_re_matches_so_it_reaches_the_keycap(self):
+        # Without this the icon would only ever appear the SECOND time an app is
+        # focused. Reuses the browser-URL invalidation rather than adding a
+        # second re-send path.
+        core = self._core()
+        core._on_app_icon_ready("gimp")
+        core.overlay_handler.invalidate_window_cache.assert_called_once()
+
