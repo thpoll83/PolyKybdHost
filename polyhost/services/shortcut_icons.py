@@ -103,18 +103,10 @@ LEXICON: dict[str, tuple[int, tuple[str, ...]]] = {
     "insert":      (0x271A,  ("insert", "add", "insert row", "insert column")),
 }
 
-# DELIBERATELY ABSENT, so the next reader does not "fix" it:
-#
-#   Bold / Italic / Underline -- the shipped fonts carry no distinctive glyph for
-#   these (no math alphanumerics), leaving only the plain letters B/I/U. Those are
-#   WORSE than drawing the label: Ctrl+B's keycap already shows a B, so the icon
-#   would say nothing the key does not. "Bold" as text is strictly more
-#   informative. A concept is only worth an entry when the glyph beats the word.
-#
-#   Superscript / Subscript -- U+00B2 exists, U+2082 does not. Mapping one half of
-#   a symmetric pair reads as a bug on the keyboard rather than as a gap.
-#
-#   Format Painter -- no paintbrush glyph in any shipped bundle.
+# Labels deliberately left to the TEXT fallback -- Bold, Italic, Underline,
+# Superscript, Subscript, Format Painter -- live in res/shortcut_hints.yaml with
+# their reasons, because that is data a reviewer edits rather than code. The rule
+# behind all of them: a glyph earns an entry only when it beats the word.
 
 # Longest phrase first so "save as" beats "save"; ties broken alphabetically so
 # the table order cannot silently decide a match.
@@ -201,6 +193,67 @@ _FOLDED_PHRASES: list[tuple[str, str]] = sorted(
 )
 
 
+_HINTS_CACHE: dict[str, str] | None = None
+SUPPRESS = "text"
+
+
+def default_hints_path() -> str:
+    import os
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(here, "res", "shortcut_hints.yaml")
+
+
+def load_hints(path: str | None = None) -> dict[str, str]:
+    """The curated label -> glyph overrides, keyed on the NORMALIZED label.
+
+    Cached, because match() is called per shortcut per application. Missing or
+    unparseable file yields {} -- the hints are an improvement on the rules, never
+    a prerequisite for them, so the mapper must work with none.
+    """
+    global _HINTS_CACHE
+    explicit = path is not None
+    if not explicit and _HINTS_CACHE is not None:
+        return _HINTS_CACHE
+    out: dict[str, str] = {}
+    try:
+        import yaml
+        with open(path or default_hints_path(), encoding="utf-8") as fh:
+            raw = yaml.safe_load(fh) or {}
+        for key, value in (raw.get("hints") or {}).items():
+            out[normalize(str(key))] = str(value).strip()
+    except Exception:
+        out = {}
+    if not explicit:
+        _HINTS_CACHE = out
+    return out
+
+
+def resolve_hint(value: str) -> int | None:
+    """A hint value to a codepoint, or None for the deliberate text fallback."""
+    value = value.strip()
+    if value == SUPPRESS:
+        return None
+    if value.upper().startswith("U+"):
+        try:
+            return int(value[2:], 16)
+        except ValueError:
+            return None
+    entry = LEXICON.get(value)
+    return entry[0] if entry else None
+
+
+def suppressed(label: str, hints: dict[str, str] | None = None) -> bool:
+    """True when a hint says this label should draw its text, deliberately.
+
+    match() returns None for "no icon found" and for "no icon wanted" alike, and
+    the caller needs to tell them apart: only the first belongs in the review
+    queue. A label that keeps resurfacing after somebody decided it is text is a
+    queue nobody will keep reading.
+    """
+    hints = load_hints() if hints is None else hints
+    return hints.get(normalize(label), "").strip() == SUPPRESS
+
+
 @dataclass(frozen=True)
 class IconMatch:
     codepoint: int
@@ -213,8 +266,8 @@ class IconMatch:
         return chr(self.codepoint)
 
 
-def match(label: str, min_confidence: float = 0.6,
-          allow_fuzzy: bool = False) -> IconMatch | None:
+def match(label: str, min_confidence: float = 0.6, allow_fuzzy: bool = False,
+          hints: dict[str, str] | None = None) -> IconMatch | None:
     """Best glyph for a label, or None when nothing clears `min_confidence`.
 
     Four rules, tried in descending confidence. The confidence is the point: a
@@ -225,6 +278,14 @@ def match(label: str, min_confidence: float = 0.6,
     text = normalize(label)
     if not text:
         return None
+
+    # 0. A curated hint always wins -- it exists precisely because the rules got
+    #    this label wrong or missed it, so letting a rule override it would make
+    #    the review loop unable to correct anything.
+    hint = (load_hints() if hints is None else hints).get(text)
+    if hint is not None:
+        cp = resolve_hint(hint)
+        return None if cp is None else IconMatch(cp, hint, 1.0, "hint")
 
     # 1-3. Exact phrase, contained phrase, then a single distinctive word.
     hit = _literal_rules(text)

@@ -154,6 +154,56 @@ class MatchTest(unittest.TestCase):
         self.assertIsNone(si.match("Maximiz", min_confidence=0.99, allow_fuzzy=True))
 
 
+class HintTest(unittest.TestCase):
+    def test_a_hint_beats_every_rule(self):
+        hints = {"save": "quit"}
+        self.assertEqual(si.match("Save").concept, "save")          # rule
+        m = si.match("Save", hints=hints)
+        self.assertEqual((m.concept, m.rule, m.confidence), ("quit", "hint", 1.0))
+
+    def test_text_hint_suppresses_without_looking_like_a_miss(self):
+        """match() returns None either way, so suppressed() is what separates them.
+
+        Only an unknown label belongs in the review queue. A label somebody has
+        already decided is text must leave the queue, or it resurfaces every run
+        and the queue stops being read.
+        """
+        self.assertIsNone(si.match("Bold"))
+        self.assertTrue(si.suppressed("Bold"))
+        self.assertIsNone(si.match("Transpose"))
+        self.assertFalse(si.suppressed("Transpose"))
+
+    def test_hint_accepts_a_literal_codepoint(self):
+        m = si.match("Whatever", hints={"whatever": "U+1F4BE"})
+        self.assertEqual(m.codepoint, 0x1F4BE)
+
+    def test_hints_are_matched_on_the_normalized_label(self):
+        for spelling in ("Bold", "&Bold", "  bold  ", "Bold..."):
+            self.assertTrue(si.suppressed(spelling), spelling)
+
+    def test_a_missing_hints_file_is_not_fatal(self):
+        self.assertEqual(si.load_hints("/nonexistent/shortcut_hints.yaml"), {})
+
+    def test_the_shipped_hints_file_is_valid(self):
+        """Lint the data file -- a typo there fails silently, as a wrong icon.
+
+        `resolve_hint` returns None for an unknown concept name exactly as it does
+        for `text`, so a misspelled concept would quietly suppress the label
+        instead of mapping it. This is the only thing that would catch that.
+        """
+        hints = si.load_hints()
+        self.assertTrue(hints, "shipped hints file failed to load")
+        for key, value in hints.items():
+            self.assertEqual(key, si.normalize(key),
+                             f"hint key {key!r} is not in normalized form")
+            if value == si.SUPPRESS:
+                continue
+            self.assertIsNotNone(
+                si.resolve_hint(value),
+                f"hint {key!r} -> {value!r} is neither 'text', a known concept, "
+                f"nor a parseable U+XXXX codepoint")
+
+
 class GlyphAvailabilityTest(unittest.TestCase):
     def test_every_codepoint_resolves(self):
         """No lexicon entry may name a glyph the keyboard cannot draw."""
@@ -162,7 +212,13 @@ class GlyphAvailabilityTest(unittest.TestCase):
         if not fonts:
             self.skipTest("no fonts available")
         missing = []
-        for concept, (cp, _) in sorted(si.LEXICON.items()):
+        targets = [(c, cp) for c, (cp, _) in si.LEXICON.items()]
+        for key, value in si.load_hints().items():
+            if value != si.SUPPRESS:
+                cp = si.resolve_hint(value)
+                if cp is not None:
+                    targets.append((f"hint:{key}", cp))
+        for concept, cp in sorted(targets):
             if ml.find_glyph(fonts, cp) is None:
                 # The four navigation arrows live in the RESIDENT IconsFont, which
                 # only the firmware headers carry -- the shipped .plyf bundles are

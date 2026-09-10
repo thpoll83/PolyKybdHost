@@ -61,6 +61,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from dataclasses import dataclass, asdict, field
 
@@ -429,6 +430,7 @@ def report(name: str, shortcuts: list[Shortcut], nodes_used: int,
           f"= {len(shortcuts)} total; {len(usable)} displayable "
           f"({len(ok_accels)} of them real accelerators)  [{nodes_used} nodes]")
     matched = 0
+    unmatched: list[dict] = []
     if shortcuts:
         width = max(len(s.accel) for s in shortcuts)
         print()
@@ -438,6 +440,8 @@ def report(name: str, shortcuts: list[Shortcut], nodes_used: int,
             icon = ""
             if icons is not None:
                 m = icons.match(s.label)
+                if m is None and not icons.suppressed(s.label):
+                    unmatched.append({"label": s.label.strip(), "accel": s.accel})
                 if m is not None:
                     matched += 1
                     s.icon = m.codepoint
@@ -459,6 +463,7 @@ def report(name: str, shortcuts: list[Shortcut], nodes_used: int,
         "menu_posts": len(menus),
         "displayable_accelerators": len(ok_accels),
         "icon_matches": matched,
+        "unmatched_labels": unmatched,
         "displayable": len(usable),
         "nodes_walked": nodes_used,
         "shortcuts": [asdict(s) for s in shortcuts],
@@ -822,6 +827,66 @@ def main_uia(args) -> list[dict] | None:
 # Entry point -- picks the backend for the platform
 # ---------------------------------------------------------------------------
 
+def merge_unmatched(path: str, results: list[dict]) -> int:
+    """Accumulate the labels that produced no icon, across runs and applications.
+
+    A running tally rather than a snapshot: the value of the log is knowing which
+    label is worth a hint, and that is a question about FREQUENCY across the apps
+    you actually use, not about any single probe.
+    """
+    log = {"labels": {}}
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                log = json.load(fh) or log
+        except (OSError, ValueError):
+            pass          # a corrupt log must not cost the run
+    labels = log.setdefault("labels", {})
+    added = 0
+    for result in results:
+        app = result.get("app", "?")
+        for item in result.get("unmatched_labels", []):
+            key = item["label"].strip().lower()
+            if not key:
+                continue
+            entry = labels.setdefault(key, {"count": 0, "apps": [],
+                                            "raw": [], "accels": []})
+            entry["count"] += 1
+            added += 1
+            for field_name, value in (("apps", app), ("raw", item["label"]),
+                                      ("accels", item["accel"])):
+                if value and value not in entry[field_name]:
+                    entry[field_name].append(value)
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(log, fh, indent=2, sort_keys=True)
+    return added
+
+
+def review_unmatched(path: str) -> int:
+    """Print the accumulated log by frequency, with a stub for the hint file."""
+    try:
+        with open(path, encoding="utf-8") as fh:
+            labels = (json.load(fh) or {}).get("labels", {})
+    except (OSError, ValueError) as exc:
+        print(f"cannot read {path}: {exc}", file=sys.stderr)
+        return 1
+    if not labels:
+        print(f"{path}: nothing to review")
+        return 0
+    ranked = sorted(labels.items(), key=lambda kv: (-kv[1]["count"], kv[0]))
+    width = min(34, max(len(k) for k in labels))
+    print(f"{len(ranked)} label(s) with no icon, most frequent first:\n")
+    for key, entry in ranked:
+        apps = ", ".join(entry["apps"][:3])
+        accels = ", ".join(entry["accels"][:2])
+        print(f"  {entry['count']:>3}x  {key[:width]:<{width}}  {accels:<20} [{apps}]")
+    print("\nPaste into polyhost/res/shortcut_hints.yaml under `hints:`,")
+    print("giving each a concept name, a U+XXXX codepoint, or `text`:\n")
+    for key, _ in ranked:
+        print(f'  "{key}": text')
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--app", help="application/window name to probe (substring match)")
@@ -836,11 +901,19 @@ def main() -> int:
                     help="force a backend instead of choosing by platform")
     ap.add_argument("--icons", action="store_true",
                     help="map each label to a keycap glyph via shortcut_icons")
+    ap.add_argument("--unmatched", metavar="PATH",
+                    help="accumulate labels that produced no icon into this JSON log")
+    ap.add_argument("--review", metavar="PATH",
+                    help="print an accumulated --unmatched log by frequency and exit")
     ap.add_argument("--selftest", action="store_true", help="run the pure-parser tests")
     args = ap.parse_args()
 
     if args.selftest:
         return selftest()
+    if args.review:
+        return review_unmatched(args.review)
+    if args.unmatched:
+        args.icons = True          # nothing to collect without the matcher
 
     backend = args.backend
     if backend == "auto":
@@ -870,6 +943,9 @@ def main() -> int:
         with open(args.json, "w", encoding="utf-8") as fh:
             json.dump(results, fh, indent=2)
         print(f"wrote {args.json}")
+    if args.unmatched:
+        added = merge_unmatched(args.unmatched, results)
+        print(f"logged {added} unmatched label(s) to {args.unmatched}")
     return 0
 
 

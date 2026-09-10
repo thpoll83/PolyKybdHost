@@ -1,0 +1,42 @@
+# Curated label -> keycap glyph hints for the shortcut-icon mapper.
+#
+# The lexicon in polyhost/services/shortcut_icons.py holds the general rules.
+# This file holds the JUDGEMENTS: labels a real application uses that the rules
+# either miss or get wrong. It is consulted FIRST, so an entry here always wins.
+#
+# It is the other half of a feedback loop. `shortcut_probe.py --unmatched
+# <file>` logs every label that produced no icon, with a count and the apps it
+# came from; `--review <file>` prints them by frequency with a stub to paste in
+# here. Reviewing means giving a label an icon, or marking it `text` -- and
+# `text` is a real answer, not a failure, which is why it removes the label from
+# the queue instead of leaving it to resurface every run.
+#
+# Value forms:
+#   <concept>   a concept name from LEXICON -- reuses that glyph
+#   U+XXXX      a literal codepoint (it MUST resolve in the shipped fonts; the
+#               test in tests/services/shortcut_icons_test.py checks every one)
+#   text        deliberately no icon -- draw the label instead
+#
+# Keys are matched against the NORMALIZED label, so write them lower-case with
+# no mnemonic marker and no trailing ellipsis: "save as", not "&Save As...".
+
+hints:
+  # --- deliberately text ---------------------------------------------------
+  # The shipped fonts carry no math alphanumerics, so the only glyphs available
+  # for these are the plain letters B / I / U. That is WORSE than the word:
+  # Ctrl+B's keycap already shows a B, so the icon would say nothing the key
+  # does not. A glyph has to beat the word to be worth having.
+  bold: text
+  italic: text
+  underline: text
+  # U+00B2 exists and U+2082 does not. Half a symmetric pair reads as a bug on
+  # the keyboard rather than as a gap, so neither is mapped.
+  superscript: text
+  subscript: text
+  # No paintbrush glyph in any shipped bundle.
+  format painter: text
+  # The window system menu -- "System" names the menu, not an action.
+  system: text
+
+  # --- resolved by hand ----------------------------------------------------
+  # (add entries here as `--review` surfaces them)
