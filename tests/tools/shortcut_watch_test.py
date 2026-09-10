@@ -23,9 +23,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 import shortcut_probe as sp  # noqa: E402
 
 
+# Bold is a CATALOG-ONLY concept (icon name, no codepoint) and Save has both, so
+# the fixture exercises each shape. System is a `text` hint.
 WINDOWS = {
     "Word": [("Ctrl+B", "Bold"), ("Ctrl+T", "Transpose"), ("Ctrl+S", "Save")],
-    "mousepad": [("Ctrl+T", "Transpose"), ("Ctrl+m", "Menubar")],
+    "mousepad": [("Ctrl+T", "Transpose"), ("Ctrl+m", "Menubar"),
+                 ("Alt+Space", "System")],
 }
 
 
@@ -92,14 +95,27 @@ class WatchLoopTest(unittest.TestCase):
             self.assertEqual(labels["menubar"]["count"], 1)
 
     def test_a_suppressed_label_never_enters_the_queue(self):
-        """"Bold" is a decided `text` hint, so it must not be logged at all.
+        """"System" is a decided `text` hint, so it must not be logged at all.
 
         Otherwise it resurfaces on every run and the review queue stops being read.
         """
         with tempfile.TemporaryDirectory() as d:
             log = os.path.join(d, "log.json")
-            labels, _ = self._run(["Word", "Word"], log)
-            self.assertNotIn("bold", labels)
+            labels, _ = self._run(["mousepad", "mousepad"], log)
+            self.assertNotIn("system", labels)
+            self.assertIn("transpose", labels)
+
+    def test_a_catalog_only_match_does_not_crash_the_probe(self):
+        """Bold has an icon NAME but no codepoint, and report() formatted the
+        codepoint unconditionally -- so the first such match killed the run.
+
+        The watch loop guards the probe call, which turned the crash into a
+        silently missing label; only a test that reaches report() directly shows
+        it as what it is.
+        """
+        with tempfile.TemporaryDirectory() as d:
+            labels, out = self._run(["Word", "Word"], os.path.join(d, "l.json"))
+            self.assertNotIn("probe failed", out)
             self.assertIn("transpose", labels)
 
     def test_ctrl_c_prints_a_summary_and_the_review(self):

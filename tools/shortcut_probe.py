@@ -236,6 +236,7 @@ class Shortcut:
     displayable: bool
     kind: str = "accelerator"
     icon: int | None = None
+    icon_name: str = ""
     icon_concept: str = ""
     icon_rule: str = ""
     icon_confidence: float = 0.0
@@ -460,10 +461,18 @@ def report(name: str, shortcuts: list[Shortcut], nodes_used: int,
                 if m is not None:
                     matched += 1
                     s.icon = m.codepoint
+                    s.icon_name = m.icon
                     s.icon_concept = m.concept
                     s.icon_rule = m.rule
                     s.icon_confidence = m.confidence
-                    icon = f"  {m.char} U+{m.codepoint:04X} {m.concept}/{m.rule}"
+                    # ⚠️ A catalog-only concept has NO codepoint -- Bold, Italic
+                    # and the rest have no bundle glyph and never will. Formatting
+                    # it unconditionally crashed the probe on the first such match.
+                    if m.codepoint is not None:
+                        where = f"{m.char} U+{m.codepoint:04X}"
+                    else:
+                        where = f"[{m.icon}]"
+                    icon = f"  {where} {m.concept}/{m.rule}"
                 else:
                     icon = "  -"
             if not quiet:
