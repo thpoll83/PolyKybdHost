@@ -106,6 +106,21 @@ class PlacementTest(unittest.TestCase):
         self.assertEqual(x, ic.PANEL_W - w - ic.ICON_MARGIN)
         self.assertEqual(y, (ic.PANEL_H - h) // 2)
 
+    def test_the_BIGGEST_allowed_icon_still_lands_on_the_panel(self):
+        """The margin does not fit at MAX_ICON_HEIGHT, so it is what gives.
+
+        `PANEL_H - 40 - 1` is -1; PIL draws at a negative y and clips the top
+        row with no error. An icon that fills its box -- an SVG mark rasterised
+        square -- hits that exactly.
+        """
+        h = ic.MAX_ICON_HEIGHT
+        for name in ic.PLACEMENTS:
+            with self.subTest(name):
+                x, y = ic.place(h, h, name)
+                self.assertGreaterEqual(min(x, y), 0, "off the panel")
+                self.assertLessEqual(x + h, ic.PANEL_W)
+                self.assertLessEqual(y + h, ic.PANEL_H)
+
     def test_an_unknown_placement_falls_back_to_the_default(self):
         self.assertEqual(ic.place(20, 16, "middle-of-nowhere"),
                          ic.place(20, 16, ic.DEFAULT_PLACEMENT))

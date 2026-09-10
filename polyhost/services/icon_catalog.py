@@ -124,16 +124,25 @@ def place(width: int, height: int, placement: str,
     """Top-left corner for an icon of this size, in panel coordinates.
 
     Pure, so the geometry is testable without a font or a network.
+
+    ⚠️ CLAMPED, because the margin does not fit at every size: an icon inking
+    the full MAX_ICON_HEIGHT of 40 leaves `PANEL_H - 40 - 1` = -1, and PIL then
+    draws at a negative y and clips the top row in silence. Material glyphs ink
+    a row or two under their nominal size so they only graze it, but an icon
+    that fills its box -- an SVG mark rasterised to a square -- hits it exactly.
+    Losing the margin on one side is the right answer there; losing a row of the
+    artwork is not.
     """
     right = PANEL_W - width - margin
     bottom = PANEL_H - height - margin
-    return {
+    x, y = {
         "lower_left": (margin, bottom),
         "lower_right": (right, bottom),
         "upper_left": (margin, margin),
         "upper_right": (right, margin),
         "right": (right, (PANEL_H - height) // 2),
     }.get(placement, (margin, bottom))
+    return max(0, min(x, PANEL_W - width)), max(0, min(y, PANEL_H - height))
 
 
 def default_cache_dir() -> str:
