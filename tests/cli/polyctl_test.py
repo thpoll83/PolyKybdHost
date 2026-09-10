@@ -9,7 +9,9 @@ runs against the fake server with the connection injected.
 """
 import contextlib
 import io
+import os
 import sys
+import tempfile
 import threading
 import unittest
 from multiprocessing import Pipe
@@ -518,6 +520,141 @@ class PolyctlAiRemoteTest(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn("only applies to", err)
         self.assertEqual(self.connects, [])
+
+
+class PolyctlAiRecordedTargetTest(unittest.TestCase):
+    """With no --host, `ai state` follows what the FORWARDER on this box recorded.
+
+    The forwarder already knows the keyboard machine's address — it pushes window
+    reports to it every few seconds — so making every hook repeat that address is a
+    second copy to keep in step. `PolyForwarder.__init__` writes it to the settings
+    file and `_resolve_ai_host` reads it back, so a hook here is the SAME bare
+    command it would be on the keyboard machine.
+    """
+
+    def setUp(self):
+        self.pushed = []
+        self.connects = []
+        self.local_calls = []
+        self.settings = {}
+        test = self
+
+        class _Remote:
+            def ai_state(self, value):
+                test.pushed.append(value)
+                return {"ok": True}
+
+            def close(self):
+                pass
+
+        class _Local:
+            def call(self, method, params=None):
+                test.local_calls.append(method)
+                if method == protocol.M_AI_STATUS:
+                    return {"enabled": True, "state": 0, "name": "off",
+                            "target": None, "raise_seq": 0}
+                return 0
+
+            def close(self):
+                pass
+
+        def _connect(host, port=None, authkey=None):
+            test.connects.append(host)
+            return _Remote()
+
+        import polyhost.server.window_report_client as wrc
+        import polyhost.settings as settings_mod
+        self._wrc, self._settings_mod = wrc, settings_mod
+        self._real_connect = wrc.connect
+        self._real_read = settings_mod.read_setting
+        self._real_local = polyctl.connect
+        wrc.connect = _connect
+        settings_mod.read_setting = lambda key, default=None: self.settings.get(key, default)
+        polyctl.connect = lambda *a, **k: _Local()
+
+    def tearDown(self):
+        self._wrc.connect = self._real_connect
+        self._settings_mod.read_setting = self._real_read
+        polyctl.connect = self._real_local
+
+    def _run(self, argv):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            rc = polyctl.main(argv)
+        return rc, out.getvalue(), err.getvalue()
+
+    def test_a_recorded_host_needs_no_address_on_the_command(self):
+        self.settings["forwarder_host"] = "keeb-box"
+        rc, out, err = self._run(["ai", "state", "working"])
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(self.pushed, ["working"])
+        self.assertEqual(self.connects, ["keeb-box"])
+        self.assertEqual(self.local_calls, [])
+
+    def test_the_host_FILE_wins_and_is_read_LIVE(self):
+        """--host-file exists so the address can change; a cached copy defeats it."""
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "target.txt")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("first-box\n")
+            self.settings["forwarder_host_file"] = path
+            self.settings["forwarder_host"] = "stale-box"
+            self._run(["ai", "state", "idle"])
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("second-box\n")
+            self._run(["ai", "state", "idle"])
+        self.assertEqual(self.connects, ["first-box", "second-box"])
+
+    def test_an_EMPTY_host_file_falls_back_rather_than_pushing_nowhere(self):
+        """PolyForwarder blanks the unused one, so a file that reads empty (missing,
+        or not written yet) must not shadow a recorded plain host."""
+        self.settings["forwarder_host_file"] = "/nonexistent/target.txt"
+        self.settings["forwarder_host"] = "keeb-box"
+        rc, _, err = self._run(["ai", "state", "idle"])
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(self.connects, ["keeb-box"])
+
+    def test_an_explicit_host_BEATS_the_recorded_one(self):
+        self.settings["forwarder_host"] = "keeb-box"
+        self._run(["ai", "state", "idle", "--host", "other-box"])
+        self.assertEqual(self.connects, ["other-box"])
+
+    def test_a_recorded_target_does_NOT_divert_ai_status(self):
+        """`ai status` and `ai target` are about THIS machine — the target names a
+        window HERE, which is the whole point of the remote path. Nobody typed the
+        recorded address, so it must not silently answer about the other box."""
+        self.settings["forwarder_host"] = "keeb-box"
+        rc, _, err = self._run(["ai", "status"])
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(self.connects, [])
+        self.assertTrue(self.local_calls)
+
+    def test_a_recorded_target_does_NOT_divert_a_state_QUERY(self):
+        """`ai state` with no value READS the light; the endpoint only sets it."""
+        self.settings["forwarder_host"] = "keeb-box"
+        rc, _, err = self._run(["ai", "state"])
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(self.connects, [])
+        self.assertTrue(self.local_calls)
+
+    def test_with_nothing_recorded_it_stays_LOCAL(self):
+        rc, _, err = self._run(["ai", "state", "working"])
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(self.connects, [])
+        self.assertTrue(self.local_calls)
+
+    def test_the_error_NAMES_where_an_unwanted_address_came_from(self):
+        """"cannot reach X" is a different problem when X was not typed by the person
+        reading it — without the source there is nothing to point them at."""
+        self.settings["forwarder_host"] = "keeb-box"
+
+        def _refuse(host, port=None, authkey=None):
+            raise OSError("no route to host")
+
+        self._wrc.connect = _refuse
+        rc, _, err = self._run(["ai", "state", "working"])
+        self.assertEqual(rc, 1)
+        self.assertIn("forwarder_host", err)
 
 
 if __name__ == "__main__":

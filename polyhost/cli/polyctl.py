@@ -17,6 +17,7 @@ Wire protocol (see ``polyhost/server/protocol.py``):
 """
 import argparse
 import json
+import os
 import sys
 import time
 
@@ -500,6 +501,45 @@ def _cmd_crash(client, args):
 _AI_STATES = ["off", "idle", "working", "attention"]
 
 
+def _resolve_ai_host(args):
+    """Where `ai state` should push, or None for this machine's own daemon.
+
+    Explicit --host wins, for scripts and for testing against a box the forwarder
+    is not pointed at. Otherwise fall back to what the FORWARDER on this machine
+    recorded at startup, so a hook here is a bare `polyctl ai state working` --
+    the same command it would be on the keyboard machine -- rather than a copy of
+    an address that goes stale the moment the forwarder is repointed.
+
+    The host-FILE is preferred over the plain host and is read live, exactly as
+    the forwarder reads it per report: its whole purpose is that the address in it
+    can change. Only one of the pair is ever non-empty (PolyForwarder writes both,
+    blanking the unused one), so this order settles a relaunch the other way too.
+
+    Returns (host, source) -- `source` names where it came from, for the error
+    message, since "cannot reach X" is a very different problem when X was not
+    typed by the person reading it.
+    """
+    if getattr(args, "host", None):
+        return args.host, "--host"
+    try:
+        from polyhost.settings import read_setting   # noqa: PLC0415 -- pulls yaml
+    except ImportError:
+        return None, None
+    path = read_setting("forwarder_host_file", "") or ""
+    if path:
+        try:
+            with open(os.path.expanduser(path), encoding="utf-8") as f:
+                host = f.read().strip()
+        except OSError:
+            host = ""
+        if host:
+            return host, f"forwarder_host_file ({path})"
+    host = read_setting("forwarder_host", "") or ""
+    if host:
+        return host, "forwarder_host"
+    return None, None
+
+
 def _ai_push_remote(args):
     """`ai state <value> --host X` — push a state to a keyboard on ANOTHER machine.
 
@@ -516,6 +556,12 @@ def _ai_push_remote(args):
         print("error: --host only applies to `ai state <value>` — the remote endpoint "
               "serves the state push and nothing else.", file=sys.stderr)
         return 1
+    host, source = _resolve_ai_host(args)
+    if not host:
+        print("error: no keyboard machine to push to. Either pass --host <address>, or "
+              "run the forwarder on this machine (it records where it pushes, and this "
+              "command then needs no address at all).", file=sys.stderr)
+        return 1
     from polyhost.server.window_report_client import connect as wr_connect
     authkey = None
     if args.authkey_file:
@@ -526,9 +572,10 @@ def _ai_push_remote(args):
             print(f"error: cannot read {args.authkey_file}: {exc}", file=sys.stderr)
             return 1
     try:
-        client = wr_connect(args.host, args.port, authkey)
+        client = wr_connect(host, args.port, authkey)
     except Exception as exc:  # noqa: BLE001 — connect/handshake failures are all "cannot reach"
-        print(f"error: cannot reach the keyboard machine at {args.host} ({exc}). Is its "
+        print(f"error: cannot reach the keyboard machine at {host} (from {source}) "
+              f"({exc}). Is its "
               f"window_report_network_enabled setting on?", file=sys.stderr)
         return 1
     try:
@@ -538,7 +585,7 @@ def _ai_push_remote(args):
         return 1
     finally:
         client.close()
-    print(f"ai state set to {args.value} on {args.host}")
+    print(f"ai state set to {args.value} on {host}")
     return 0
 
 
@@ -1289,9 +1336,20 @@ def main(argv=None):
     # Parse first so --help / bad args exit before we open a socket.
     args = build_parser().parse_args(argv)
 
-    if getattr(args, "command", None) == "ai" and getattr(args, "host", None):
+    if getattr(args, "command", None) == "ai" and (
+            getattr(args, "host", None)
+            or (getattr(args, "ai_action", None) == "state"
+                and getattr(args, "value", None) is not None
+                and _resolve_ai_host(args)[0])):
         # Aimed at another machine's endpoint, so this machine's daemon is not in
         # the path at all — and on a forwarder box there usually is not one.
+        # ⚠️ The two halves of that condition are deliberately NOT the same width.
+        # An explicit --host takes EVERY `ai` action here, so `ai status --host X`
+        # gets the honest "only applies to `ai state <value>`" rather than silently
+        # answering about the wrong machine. A RECORDED forwarder target diverts
+        # only `ai state <value>`: nobody typed it, and `ai status` / `ai target`
+        # are about THIS machine (the target names a window here — the whole point
+        # of the remote path).
         return _ai_push_remote(args)
 
     if _is_offline_command(args):

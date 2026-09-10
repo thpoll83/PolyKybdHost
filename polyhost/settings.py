@@ -50,6 +50,42 @@ def read_setting(name, default=None):
     return data.get(name, default)
 
 
+def write_settings(**values):
+    """Merge `values` into the persisted settings file, leaving every other key alone.
+
+    The file-only sibling of :func:`read_setting`: deliberately does NOT construct
+    :class:`PolySettings`, which creates the config dir, merges + re-saves every
+    default and logs the whole dump -- far too much for recording one address at
+    startup.
+
+    ⚠️ No-ops when every value already matches. The forwarder calls this on every
+    launch, and rewriting the file each time would be pure churn -- and a needless
+    race with a PolyHost that happens to be saving its own settings on the same
+    machine. Returns True when the file holds the values afterwards.
+    """
+    path = settings_path()
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    except OSError:
+        return False
+    try:
+        with open(path, encoding='utf-8') as f:
+            data = yaml.safe_load(f) or {}
+    except (OSError, yaml.YAMLError):
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+    if all(data.get(k) == v for k, v in values.items()):
+        return True
+    data.update(values)
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            yaml.safe_dump(data, f, default_flow_style=False, allow_unicode=True)
+    except (OSError, yaml.YAMLError):
+        return False
+    return True
+
+
 class PolySettings:
     """ Stores program specific settings """
     def __init__(self):
@@ -161,6 +197,17 @@ class PolySettings:
             # using a forwarder with `--report-rpc`. The device-control surface
             # is never exposed (separate registry + separate authkey).
             "window_report_network_enabled": False,
+            # Where the FORWARDER pushes to -- the machine the keyboard is plugged
+            # into. Recorded by PolyForwarder at startup from its own `--host` /
+            # `--host-file`, so a hook on this machine can run a bare
+            # `polyctl ai state working` instead of repeating an address the
+            # forwarder already knows (and drifting from it when it is repointed).
+            # Exactly one of the two is ever non-empty; `--host-file` is kept as a
+            # PATH rather than a snapshot, because its whole point is that the
+            # address in it can change -- polyctl re-reads it the same way the
+            # forwarder does.
+            "forwarder_host": "",
+            "forwarder_host_file": "",
             # Font pack auto-flash: when True, on a fresh keyboard connect the
             # host compares the keyboard's loaded "PlyF" font pack content_version
             # against the pack bundled with this host release and, if the keyboard

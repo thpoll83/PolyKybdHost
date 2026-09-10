@@ -78,6 +78,20 @@ class PolyForwarder(QApplication):
         hide_dock_icon()
         self.host = host
         self.host_file = os.path.expanduser(host_file) if host_file else None
+        # Record where we push, so a hook on THIS machine does not have to repeat an
+        # address we already have. Without it `polyctl ai state` here reaches for this
+        # machine's control socket -- and a forwarder box has no daemon behind it -- so
+        # the agent's hook had to carry `--host <box>` and drift from us the moment the
+        # forwarder was repointed. Nothing else on this machine could answer the
+        # question: the address lives in this process, and a forwarder deliberately has
+        # no listener to ask.
+        # ⚠️ `--host-file` is recorded as the PATH, not its contents: the file exists so
+        # the address can change, and we re-read it per report ourselves (_resolve_host).
+        # Exactly one of the pair is ever non-empty, so a relaunch the other way cannot
+        # leave a stale winner behind.
+        from polyhost.settings import write_settings   # noqa: PLC0415 -- startup only
+        write_settings(forwarder_host=self.host or "",
+                       forwarder_host_file=self.host_file or "")
 
         # H4d: optionally push the active window over the authenticated network
         # window-report endpoint instead of the plaintext TCP relay. ⚠️ The RPC
