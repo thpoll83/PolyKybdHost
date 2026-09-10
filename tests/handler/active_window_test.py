@@ -122,5 +122,131 @@ class TestReEnableSuppression(unittest.TestCase):
         self.assertFalse(h.overlays_enabled)
 
 
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TestInvalidateWindowCache(unittest.TestCase):
+    """Re-evaluating the focused window, and when that is not enough.
+
+    ⚠️ THE FIELD BUG (2026-09-10, "so far nothing"): a program icon that
+    finishes downloading while its app is STILL focused matches the same entry,
+    so `try_to_match_window` returns ENABLE, which `_is_redundant_overlay_cmd`
+    drops because overlays are already on. Nothing is re-sent, and the mark that
+    just arrived does not reach the keycap until the user switches away and
+    back. Measured: a Chrome mark resolved 0.8 s into the send that had gone
+    without it and appeared four minutes later, on the third activation.
+    """
+
+    TITLE = "Some Page - Chrome"
+
+    def _handler(self):
+        # ⚠️ Match against `handler.mapping["chrome"]`, not the dict passed in:
+        # `annotate` returns a COPY carrying the precomputed `flags` list, and
+        # `find_matching_entry` indexes that key unconditionally.
+        handler = OverlayHandler({"chrome": {"overlay": ["x.png"]}})
+        handler.title = self.TITLE
+        return handler
+
+    def _match(self, handler):
+        return handler.try_to_match_window("chrome", handler.mapping["chrome"])[1]
+
+    def _next_poll(self, handler):
+        """What the poll does after an invalidation: re-read the window.
+
+        `invalidate_window_cache` drops the cached title precisely so
+        `local_win_changed` trips, and the poll then calls `set_win` before
+        matching -- so a test that matches on the dropped title is asking the
+        matcher a question the real flow never asks.
+        """
+        handler.title = self.TITLE
+        return self._match(handler)
+
+    def test_a_re_match_of_the_SAME_entry_is_only_an_ENABLE(self):
+        # The premise the bug rests on, pinned so the rest of this class cannot
+        # pass for the wrong reason.
+        h = self._handler()
+        self.assertEqual(self._match(h), OverlayCommand.OFF_ON)
+        self.assertEqual(self._match(h), OverlayCommand.ENABLE)
+
+    def test_the_PLAIN_invalidation_does_NOT_resend_the_same_entry(self):
+        # Correct for a browser URL change, which matches a DIFFERENT entry --
+        # and the reason the icon case needed its own flag rather than a
+        # widening of this one.
+        h = self._handler()
+        self._match(h)
+        h.invalidate_window_cache()
+        self.assertEqual(self._next_poll(h), OverlayCommand.ENABLE)
+
+    def test_resend_same_entry_turns_that_back_into_a_full_OFF_ON(self):
+        h = self._handler()
+        self._match(h)
+        h.invalidate_window_cache(resend_same_entry=True)
+        self.assertEqual(self._next_poll(h), OverlayCommand.OFF_ON)
+
+    def test_the_resulting_ENABLE_really_IS_swallowed_by_the_guard(self):
+        # The second half of the bug: ENABLE is not merely weaker than OFF_ON,
+        # it reaches the device as nothing at all.
+        h = self._handler()
+        h._decide_active_window = lambda *a: (["x.png"], OverlayCommand.OFF_ON)
+        h.handle_active_window(0, 0)
+        h._decide_active_window = lambda *a: (["x.png"], OverlayCommand.ENABLE)
+        self.assertEqual(h.handle_active_window(0, 0)[1], OverlayCommand.NONE)
+
+    def test_BOTH_forms_drop_the_cached_window_so_the_next_poll_re_evaluates(self):
+        for resend in (False, True):
+            with self.subTest(resend_same_entry=resend):
+                h = self._handler()
+                h.handle = 1234
+                h.invalidate_window_cache(resend_same_entry=resend)
+                self.assertIsNone(h.title)
+                self.assertIsNone(h.handle)
+
+    def test_NEITHER_form_re_arms_the_accept_time_debounce(self):
+        # `force_resend` does, deliberately. Here the window is already focused
+        # and has already cleared the debounce, so re-arming it would just delay
+        # the re-send by another accept window -- which for the icon case is the
+        # very latency the flag exists to remove.
+        for resend in (False, True):
+            with self.subTest(resend_same_entry=resend):
+                h = self._handler()
+                h.last_update_msec = 999
+                h.invalidate_window_cache(resend_same_entry=resend)
+                self.assertEqual(h.last_update_msec, 999)
+
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TestMarkOnlySendKeepsTheStateHonest(unittest.TestCase):
+    """The device-side half of the mark-only branch in `tick_window_tracking`.
+
+    An app with no template of its own gets only its program mark, and the tick
+    sends it INSTEAD of issuing the DISABLE the handler asked for. The handler
+    has already recorded "overlays off" for that DISABLE, so unless the tick
+    corrects it the guard below swallows the next real one.
+    """
+
+    def _handler(self):
+        return OverlayHandler({})
+
+    def test_an_UNCORRECTED_state_swallows_the_next_real_disable(self):
+        # This is the failure, spelled out: nothing here calls
+        # note_overlay_state, exactly as the tick did before the fix.
+        h = self._handler()
+        h._decide_active_window = lambda *a: (["x.png"], OverlayCommand.OFF_ON)
+        h.handle_active_window(0, 0)
+        h._decide_active_window = lambda *a: (None, OverlayCommand.DISABLE)
+        self.assertEqual(h.handle_active_window(0, 0)[1], OverlayCommand.DISABLE)
+        # An app with neither template nor mark now asks for a real disable...
+        self.assertEqual(h.handle_active_window(0, 0)[1], OverlayCommand.NONE)
+
+    def test_CORRECTING_it_lets_the_next_real_disable_through(self):
+        h = self._handler()
+        h._decide_active_window = lambda *a: (["x.png"], OverlayCommand.OFF_ON)
+        h.handle_active_window(0, 0)
+        h._decide_active_window = lambda *a: (None, OverlayCommand.DISABLE)
+        h.handle_active_window(0, 0)
+        h.note_overlay_state(True)      # what the tick does after sending a mark
+        self.assertEqual(h.handle_active_window(0, 0)[1], OverlayCommand.DISABLE)
+
+
 if __name__ == "__main__":
     unittest.main()

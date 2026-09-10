@@ -1314,8 +1314,12 @@ class PolyKybd:
             # image the mapping would immediately overwrite. Real sources keep
             # their existing last-one-wins behaviour.
             covered: set[tuple[int, int]] = set()
-            # What each source ended up drawing, for the summary below.
+            # What each source ended up drawing, for the summary below, and what
+            # it OFFERED and lost -- a source that draws nothing is otherwise
+            # absent from the summary, which reads exactly like one that was
+            # never fetched.
             per_source: dict[str, list] = {}
+            deferred: dict[str, list] = {}
             uploaded = 0
             for filename, converter in zip(filenames, converters):
                 is_synthetic = filename in synthetic
@@ -1338,6 +1342,7 @@ class PolyKybd:
                             self.log.debug_detailed(
                                 "%s: 0x%x/%s is drawn by a template already",
                                 filename, keycode, modifier)
+                            deferred.setdefault(filename, []).append((keycode, modifier))
                             continue
                         covered.add((modifier.value, keycode))
                         content_key = (os.path.basename(filename), modifier.value, keycode)
@@ -1404,7 +1409,7 @@ class PolyKybd:
             return False
         cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()
-        self._log_overlay_summary(per_source, uploaded, len(display_to_pool))
+        self._log_overlay_summary(per_source, uploaded, len(display_to_pool), deferred)
         return True
 
     # How many keys a source may contribute before the summary stops naming
@@ -1413,27 +1418,42 @@ class PolyKybd:
     # point -- "which shortcuts did it just add" has no other answer.
     NAME_KEYS_UP_TO = 12
 
-    def _log_overlay_summary(self, per_source: dict, uploaded: int, mapped: int):
+    def _log_overlay_summary(self, per_source: dict, uploaded: int, mapped: int,
+                             deferred: dict | None = None):
         """One INFO line per source saying what it drew, after a successful send.
 
         The window tick logs which app was matched; this says what that turned
         into on the keyboard, which is otherwise only visible by looking at the
         keycaps.
         """
-        if not per_source:
+        if not per_source and not deferred:
             return
         self.log.info("Overlays: %d keycap(s) from %d source(s), %d uploaded, %d cached",
                       mapped, len(per_source), uploaded, mapped - uploaded)
         for filename, keys in per_source.items():
-            # A pseudo-name is kept WHOLE: it names no file, so `basename` could
-            # only ever damage it, and the `@prog:` prefix is what says the mark
-            # came from the icon fall-back rather than from a hand-made template.
-            name = filename if is_synthetic(filename) else os.path.basename(filename)
-            if len(keys) <= self.NAME_KEYS_UP_TO:
-                detail = ", ".join(describe_key(kc, mod) for kc, mod in keys)
-                self.log.info("  %s: %s", name, detail)
-            else:
-                self.log.info("  %s: %d keycap(s)", name, len(keys))
+            self._log_source_line(filename, keys, "")
+        # ⚠️ A source that drew NOTHING is reported too, and this is the whole
+        # reason: the program mark stands down on any key a hand-made template
+        # already draws, and every shipped template draws ESC -- so on an app
+        # that HAS a template the mark is correctly invisible, and its silent
+        # absence from this summary reads as "the icon was never fetched".
+        # Field, 2026-09-10: the log showed a mark resolving and then said
+        # nothing at all about where it went.
+        for filename, keys in (deferred or {}).items():
+            if filename in per_source:
+                continue
+            self._log_source_line(filename, keys, " (deferred to the template)")
+
+    def _log_source_line(self, filename: str, keys: list, suffix: str):
+        # A pseudo-name is kept WHOLE: it names no file, so `basename` could
+        # only ever damage it, and the `@prog:` prefix is what says the mark
+        # came from the icon fall-back rather than from a hand-made template.
+        name = filename if is_synthetic(filename) else os.path.basename(filename)
+        if len(keys) <= self.NAME_KEYS_UP_TO:
+            detail = ", ".join(describe_key(kc, mod) for kc, mod in keys)
+            self.log.info("  %s: %s%s", name, detail, suffix)
+        else:
+            self.log.info("  %s: %d keycap(s)%s", name, len(keys), suffix)
 
     def execute_commands(self, command_list: list,
                          cancel: threading.Event | None = None) -> None:

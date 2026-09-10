@@ -538,10 +538,18 @@ class PolyCore(Observable):
         send, which is also what makes this correct when focus has MOVED ON in
         the meantime (the tick then sends for whatever is focused now, not for
         the app the fetch was started for).
+
+        ⚠️ `resend_same_entry=True` is load-bearing, not defensive. The mark
+        arrives for the app that is STILL focused, so the re-match finds the
+        same entry, returns ENABLE, and the redundant-command guard drops it --
+        the icon then waits for the user to switch away and back. Measured in
+        the field (2026-09-10): a Chrome mark resolved 0.8 s into the send that
+        had already gone without it, and did not reach the keycap until the
+        third activation of the app, four minutes later.
         """
         if self.overlay_handler is not None:
             self.log.debug_detailed("program icon ready: %s", slug)
-            self.overlay_handler.invalidate_window_cache()
+            self.overlay_handler.invalidate_window_cache(resend_same_entry=True)
 
     def tick_window_tracking(self, update_cycle_msec=UPDATE_CYCLE_MSEC,
                              new_window_accept_msec=NEW_WINDOW_ACCEPT_TIME_MSEC):
@@ -565,7 +573,17 @@ class PolyCore(Observable):
                 # on ESC -- that is the generic fall-back, and it is the common
                 # case rather than the exception. send_overlay_data returns False
                 # when there is no mark, and then the disable below stands.
-                pass
+                #
+                # ⚠️ Correct the handler's overlay state, or the NEXT real
+                # disable is swallowed. `handle_active_window` already flipped
+                # its optimistic `overlays_enabled` to False for the DISABLE we
+                # are declining to issue, while the send ends in
+                # `enable_overlays()` -- so the device is ON and the handler
+                # believes OFF. Focus something with neither template nor mark
+                # and `_is_redundant_overlay_cmd` reads that DISABLE as already
+                # done, leaving the previous app's mark lit over an app that has
+                # none.
+                handler.note_overlay_state(True)
             elif cmd in (OverlayCommand.DISABLE, OverlayCommand.ENABLE):
                 self.submit_overlay_cmd(cmd)
             if data and cmd == OverlayCommand.OFF_ON:

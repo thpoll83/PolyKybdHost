@@ -1229,9 +1229,21 @@ class TestOverlaySendSummary(unittest.TestCase, LockCheckMixin):
         self.assertIn(f"  {name}: ESC", lines)
 
     @mock.patch("polyhost.device.poly_kybd.ImageConverter")
-    def test_a_source_that_drew_NOTHING_is_not_reported(self, MockConverter):
-        # A deferred mark contributes no keycap; a line saying so would report
-        # an upload that did not happen.
+    def test_a_DEFERRED_source_is_reported_as_deferred(self, MockConverter):
+        """⚠️ THIS TEST USED TO ASSERT THE OPPOSITE, and that is what hid the
+        first field report of the feature ("so far nothing", 2026-09-10).
+
+        The reasoning was that a source drawing no keycap should not appear in a
+        summary of what was drawn. But EVERY shipped template draws ESC, so on
+        any app that has one the program mark always stands down -- correctly --
+        and the log then showed the mark resolving and said nothing whatever
+        about where it went. Silence there is indistinguishable from the icon
+        never having been fetched, which is exactly the question the summary
+        exists to answer.
+
+        The headline still counts only the sources that DREW: one source put
+        keycaps on the keyboard, and saying two would be the opposite error.
+        """
         MockConverter.return_value = self._converter(
             {KeyCode.KC_ESCAPE.value: _overlay("dot")})
         keeb, device = make_keeb(auto_ack=True)
@@ -1243,7 +1255,26 @@ class TestOverlaySendSummary(unittest.TestCase, LockCheckMixin):
                 {Modifier.NO_MOD: {KeyCode.KC_ESCAPE.value: _overlay("rect")}})})
 
         self.assertIn("1 source(s)", self._headline(lines))
-        self.assertFalse([ln for ln in lines if ln.startswith(f"  {name}:")])
+        self.assertIn(f"  {name}: ESC (deferred to the template)", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_source_that_DREW_is_not_also_reported_as_deferred(self, MockConverter):
+        # A mark can lose ESC to the template and still win another key. One
+        # line per source, naming what it drew -- not two contradicting lines.
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_ESCAPE.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        name = program_name("gimp")
+
+        _, lines = self._lines(
+            keeb, ["app.png", name], OverlayMRUCache(20),
+            {name: SyntheticConverter({Modifier.NO_MOD: {
+                KeyCode.KC_ESCAPE.value: _overlay("rect"),
+                KeyCode.KC_F1.value: _overlay("rect")}})})
+
+        self.assertIn("2 source(s)", self._headline(lines))
+        self.assertIn(f"  {name}: F1", lines)
+        self.assertFalse([ln for ln in lines if "deferred" in ln])
 
     @mock.patch("polyhost.device.poly_kybd.ImageConverter")
     def test_an_empty_send_logs_no_summary_at_all(self, MockConverter):

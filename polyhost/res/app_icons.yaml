@@ -30,9 +30,11 @@
 # squares of 1516 lit pixels. Six apps showing the same white block is worse
 # than one shared "A" that at least says Adobe. Acrobat keeps its own mark.
 #
-# ⚠️ `chromium -> google-chrome` and `explorer -> microsoft-windows` stay OUT on
-# a different rule: those name a DIFFERENT PRODUCT (a different browser, and an
-# OS rather than an app), where the Adobe "A" is the true company.
+# ⚠️ `chromium -> google-chrome` stays OUT on a different rule: it names a
+# DIFFERENT PRODUCT (a different browser), where the Adobe "A" is the true
+# company. `explorer -> microsoft-windows` was out for the same reason and is
+# still out -- but Explorer now gets a plain FOLDER instead, see the generic
+# section at the bottom.
 
 chrome: googlechrome
 vlc: vlcmediaplayer
@@ -94,3 +96,48 @@ premiere, adobe premiere pro: mdi:adobe
 indesign, adobe indesign: mdi:adobe
 lightroom, adobe lightroom: mdi:adobe
 audition, adobe audition: mdi:adobe
+
+# --- Generic marks for apps NO catalog carries a brand for ------------------
+#
+# ⚠️ THIS SECTION BREAKS THE "PRODUCT MARK, NEVER A GENERIC SYMBOL" RULE ABOVE,
+# deliberately, and it is easy to delete if you disagree with the trade.
+#
+# The first field report of this feature was "so far nothing" (2026-09-10), and
+# a third of the reason was here: Windows' own bundled apps have no brand mark
+# in either catalog. Measured against both -- Notepad, Paint, Paint.NET,
+# Windows Terminal, WordPad, Snipping Tool, Task Manager, Explorer, 7-Zip,
+# PuTTY, WinSCP: ZERO hits, in Simple Icons or in mdi, under any spelling the
+# resolver guesses. Microsoft does not license those logos and mdi does not
+# draw them.
+#
+# So the choice is a symbol that says WHAT THE APP IS, or nothing at all. The
+# repo already made that call once: the hand-made `explorer_template` draws a
+# FOLDER on ESC, and its own bindings.yaml says so. A folder identifies
+# Explorer, a palette identifies Paint, and `>_` identifies a terminal -- which
+# is the whole job of the mark. What it must never do is name the wrong BRAND,
+# which is why every entry here is a neutral object rather than another
+# company's logo.
+#
+# Every one was rendered at the real 40x40 and looked at before being listed;
+# a symbol that does not survive 1 bit is worse than no icon.
+notepad: mdi:note-text
+wordpad: mdi:text-box
+mspaint: mdi:palette
+paintdotnet: mdi:brush-variant
+explorer: mdi:folder
+windowsterminal, wt: mdi:console
+cmd: mdi:console-line
+snippingtool, snippingtool2: mdi:scissors-cutting
+taskmgr: mdi:monitor-dashboard
+regedit: mdi:cog-box
+systemsettings: mdi:cog
+photos: mdi:image-multiple
+7zfm, 7zg: mdi:folder-zip
+putty: mdi:console-network
+winscp: mdi:folder-network
+
+# ⚠️ NOT listed, because the entry could never fire: on Windows 11 Calculator,
+# Clock and the other packaged apps all run inside `ApplicationFrameHost.exe`,
+# so the app name the window tracker reports is the HOST, not the app. Their
+# identity is in the window TITLE, which this file cannot key on. Adding
+# `calculator: mdi:calculator` would look like coverage and resolve for nobody.

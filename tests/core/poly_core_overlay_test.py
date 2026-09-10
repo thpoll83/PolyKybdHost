@@ -105,6 +105,35 @@ class TestTickWindowTracking(unittest.TestCase):
         core.overlay_handler.handle_active_window.assert_called_once()
         core.worker.submit.assert_not_called()
 
+    def test_a_mark_only_send_TELLS_THE_HANDLER_overlays_are_on(self):
+        """⚠️ Or the NEXT real disable is swallowed and the mark stays lit.
+
+        `handle_active_window` flips its optimistic `overlays_enabled` to False
+        for the DISABLE, and the tick then declines to issue it in favour of
+        sending the mark -- which ends in `enable_overlays()`. Device ON,
+        handler believes OFF. Focus something with neither template nor mark and
+        `_is_redundant_overlay_cmd` reads that DISABLE as already done, so the
+        previous app's icon sits on ESC over an app that has none.
+        `tests/handler/active_window_test.py` pins that swallow directly.
+        """
+        core = make_core()
+        core.overlay_handler.current_app = "notepad"
+        core.app_icons.overlay_for.return_value = ("MASK", "mdi:note-text")
+        core.overlay_handler.handle_active_window.return_value = (None, OverlayCommand.DISABLE)
+        core.tick_window_tracking()
+        core.overlay_handler.note_overlay_state.assert_called_once_with(True)
+        # ...and the disable really was superseded rather than issued alongside.
+        self.assertEqual(core.worker.submit.call_args.args[0], "overlay")
+
+    def test_a_disable_with_NO_mark_still_disables_and_touches_nothing(self):
+        core = make_core()
+        core.overlay_handler.current_app = "searchhost"
+        core.app_icons.overlay_for.return_value = (None, None)
+        core.overlay_handler.handle_active_window.return_value = (None, OverlayCommand.DISABLE)
+        core.tick_window_tracking()
+        core.overlay_handler.note_overlay_state.assert_not_called()
+        self.assertEqual(core.worker.submit.call_args.kwargs["coalesce_key"], "overlay")
+
 
 class TestOsTracking(unittest.TestCase):
     """The window tick pushes the forwarder's OS while a remote-forwarded window
@@ -261,4 +290,25 @@ class TestProgramIcon(unittest.TestCase):
         core = self._core()
         core._on_app_icon_ready("gimp")
         core.overlay_handler.invalidate_window_cache.assert_called_once()
+
+    def test_the_re_match_FORCES_a_resend_of_the_entry_already_on_screen(self):
+        """⚠️ THE FIELD BUG (2026-09-10, "so far nothing"), and the reason the
+        test above was not enough.
+
+        The mark arrives for the app that is STILL focused, so the re-match
+        finds the SAME entry and `try_to_match_window` returns ENABLE -- which
+        the redundant-command guard drops, because overlays are already on. The
+        plain invalidation therefore re-evaluated and sent nothing, and the icon
+        waited for the user to switch away and back. Measured: a Chrome mark
+        resolved 0.8 s into the send that had gone without it and reached the
+        keycap four minutes later, on the third activation of the app.
+
+        Asserting the CALL could never have caught that -- the handler is a
+        MagicMock, so any argument satisfies it. What matters is the argument,
+        and `tests/handler/active_window_test.py` pins what it does.
+        """
+        core = self._core()
+        core._on_app_icon_ready("gimp")
+        _, kwargs = core.overlay_handler.invalidate_window_cache.call_args
+        self.assertTrue(kwargs.get("resend_same_entry"))
 

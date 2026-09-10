@@ -332,7 +332,7 @@ class OverlayHandler:
             return self.remote_handler.get_overlay_data()
         return None
 
-    def invalidate_window_cache(self):
+    def invalidate_window_cache(self, resend_same_entry=False):
         """Force the next poll to re-evaluate the focused window even if the OS
         reports no window/title change.
 
@@ -342,9 +342,27 @@ class OverlayHandler:
         this so the next ``handle_active_window`` re-matches with the new URL and
         swaps overlays. Cheap: just drops the cached title so ``local_win_changed``
         trips next tick — the accept-time debounce is untouched (the window has
-        already been focused, so the re-match fires promptly)."""
+        already been focused, so the re-match fires promptly).
+
+        ⚠️ `resend_same_entry` exists because re-evaluating is NOT enough when
+        the match itself is unchanged. A new URL matches a DIFFERENT entry, so
+        `try_to_match_window` returns OFF_ON and the overlays are re-sent. A
+        program icon arriving for the app already on screen matches the SAME
+        entry, so it returns ENABLE — which `_is_redundant_overlay_cmd` then
+        drops, because overlays are already on. Nothing is re-sent and the mark
+        that just finished downloading does not reach the keycap until the user
+        switches away and back (field, 2026-09-10). Clearing `last_entry` is
+        what turns that ENABLE back into an OFF_ON.
+
+        It deliberately does NOT reset `last_update_msec` the way
+        `force_resend` does: the window is already focused and has already
+        cleared the accept-time debounce, so re-arming it would just delay the
+        re-send by another accept window.
+        """
         self.title = None
         self.handle = None
+        if resend_same_entry:
+            self.last_entry = None
 
     def force_resend(self):
         """Reset window tracking so the next cycle triggers a fresh OFF_ON resend."""

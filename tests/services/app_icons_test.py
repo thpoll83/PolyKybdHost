@@ -109,11 +109,42 @@ class SlugMapTest(unittest.TestCase):
 
     def test_a_DIFFERENT_product_is_never_substituted(self):
         # The Adobe "A" is the true company for Photoshop. Chrome is not
-        # Chromium and Windows is not File Explorer, so those stay unmapped and
-        # fall through to the curation file.
+        # Chromium, so that stays unmapped and falls through to the curation
+        # file.
         mapping = ai.load_slug_map()
         self.assertNotIn("chromium", mapping)
-        self.assertNotIn("explorer", mapping)
+        # ⚠️ This used to assert `explorer` was unmapped ENTIRELY, on the same
+        # rule -- Windows is an OS, not a file manager. Explorer now maps, to a
+        # plain FOLDER: no catalog carries a File Explorer mark (measured), so
+        # the choice is a neutral object or nothing, and the hand-made
+        # explorer_template already draws a folder on that keycap. The rule the
+        # test exists for is unchanged and is the one pinned now: not the WRONG
+        # BRAND.
+        self.assertNotEqual(mapping.get("explorer"), "mdi:microsoft-windows")
+
+    def test_the_GENERIC_marks_are_objects_rather_than_other_companies_logos(self):
+        """A symbol that says what the app IS is acceptable; a rival's logo is not.
+
+        The generic section exists because Windows' own bundled apps have no
+        brand mark in either catalog -- Notepad, Paint, Terminal, Explorer,
+        WordPad, Snipping Tool, Task Manager, 7-Zip, PuTTY, WinSCP all measured
+        zero hits under every spelling the resolver guesses. Without them the
+        feature resolves nothing at all on a stock Windows desktop, which is a
+        third of why the first field report was "so far nothing".
+        """
+        mapping = ai.load_slug_map()
+        generic = {"notepad", "wordpad", "mspaint", "paintdotnet", "explorer",
+                   "windowsterminal", "wt", "cmd", "snippingtool", "taskmgr",
+                   "regedit", "systemsettings", "photos", "7zfm", "putty",
+                   "winscp"}
+        self.assertTrue(generic <= set(mapping), generic - set(mapping))
+        for app in sorted(generic):
+            slug = mapping[app]
+            self.assertTrue(slug.startswith("mdi:"), f"{app} -> {slug}")
+            # `microsoft-*` / `adobe-*` are the two brand families mdi carries;
+            # a generic entry reaching one of those is the substitution above.
+            for brand in ai.MDI_PREFIXES:
+                self.assertFalse(slug.startswith(f"mdi:{brand}"), f"{app} -> {slug}")
 
     def test_the_map_may_name_EITHER_catalog(self):
         # One column, two catalogs: Simple Icons has no Microsoft at all, so the
