@@ -60,8 +60,10 @@ Windows is the platform that decides this feature.
 from __future__ import annotations
 
 import argparse
+import functools
 import json
 import os
+import time
 import sys
 from dataclasses import dataclass, asdict, field
 
@@ -420,20 +422,22 @@ def _icon_matcher():
 
 
 def report(name: str, shortcuts: list[Shortcut], nodes_used: int,
-           icons=None) -> dict:
+           icons=None, quiet: bool = False) -> dict:
     usable = [s for s in shortcuts if s.displayable]
     accels = [s for s in shortcuts if s.kind == "accelerator"]
     menus = [s for s in shortcuts if s.kind == "menu"]
     ok_accels = [s for s in accels if s.displayable]
-    print(f"\n=== {name} ===")
-    print(f"{len(accels)} accelerator(s) + {len(menus)} menu post(s) "
-          f"= {len(shortcuts)} total; {len(usable)} displayable "
-          f"({len(ok_accels)} of them real accelerators)  [{nodes_used} nodes]")
+    if not quiet:
+        print(f"\n=== {name} ===")
+        print(f"{len(accels)} accelerator(s) + {len(menus)} menu post(s) "
+              f"= {len(shortcuts)} total; {len(usable)} displayable "
+              f"({len(ok_accels)} of them real accelerators)  [{nodes_used} nodes]")
     matched = 0
     unmatched: list[dict] = []
     if shortcuts:
         width = max(len(s.accel) for s in shortcuts)
-        print()
+        if not quiet:
+            print()
         for s in sorted(shortcuts, key=lambda s: (not s.displayable, s.accel)):
             mark = " " if s.displayable else "x"
             hid = f"0x{s.hid:02X}" if s.hid is not None else "  -- "
@@ -451,10 +455,11 @@ def report(name: str, shortcuts: list[Shortcut], nodes_used: int,
                     icon = f"  {m.char} U+{m.codepoint:04X} {m.concept}/{m.rule}"
                 else:
                     icon = "  -"
-            print(f" {mark} {s.accel:<{width}}  {hid}  "
-                  f"{s.label[:34]:<34} [{s.role}]{icon}")
+            if not quiet:
+                print(f" {mark} {s.accel:<{width}}  {hid}  "
+                      f"{s.label[:34]:<34} [{s.role}]{icon}")
         undisplayable = [s for s in shortcuts if not s.displayable]
-        if undisplayable:
+        if undisplayable and not quiet:
             print(f"\n  x = no keycap slot: {', '.join(sorted({s.keysym for s in undisplayable}))}")
     return {
         "app": name,
@@ -504,7 +509,8 @@ def main_atspi(args) -> list[dict] | None:
         budget = [args.max_nodes]
         found = shortcuts_for(app, atspi, budget)
         results.append(report(name, found, args.max_nodes - budget[0],
-                              icons=_icon_matcher() if args.icons else None))
+                              icons=_icon_matcher() if args.icons else None,
+                              quiet=getattr(args, "quiet", False)))
     return results
 
 # ---------------------------------------------------------------------------
@@ -696,14 +702,26 @@ def pick_win_binding(accelerator: str, access_key: str,
     return None, ""
 
 
+_UIA_CACHE = None
+
+
 def _uia():
+    """The IUIAutomation instance, created once.
+
+    Cached because watch mode polls the focused element every interval, and
+    building the COM object per poll is pure overhead.
+    """
+    global _UIA_CACHE
+    if _UIA_CACHE is not None:
+        return _UIA_CACHE
     import comtypes.client
     module = comtypes.client.GetModule("UIAutomationCore.dll")
     iuia = comtypes.client.CreateObject(
         "{ff48dba4-60ef-4201-aa87-54103eef594e}",  # CLSID_CUIAutomation
         interface=module.IUIAutomation,
     )
-    return module, iuia
+    _UIA_CACHE = (module, iuia)
+    return _UIA_CACHE
 
 
 def _cached(element, prop_id, default=""):
@@ -819,7 +837,8 @@ def main_uia(args) -> list[dict] | None:
             print(f"  {name}: subtree fetch failed ({exc})", file=sys.stderr)
             continue
         results.append(report(name, found, count,
-                              icons=_icon_matcher() if args.icons else None))
+                              icons=_icon_matcher() if args.icons else None,
+                              quiet=getattr(args, "quiet", False)))
     return results
 
 
@@ -867,6 +886,11 @@ def review_unmatched(path: str) -> int:
     try:
         with open(path, encoding="utf-8") as fh:
             labels = (json.load(fh) or {}).get("labels", {})
+    except FileNotFoundError:
+        # Nothing was ever logged -- a clean outcome for a watch session where
+        # every label matched, not an error to fail the run on.
+        print(f"{path}: nothing logged yet")
+        return 0
     except (OSError, ValueError) as exc:
         print(f"cannot read {path}: {exc}", file=sys.stderr)
         return 1
@@ -887,6 +911,123 @@ def review_unmatched(path: str) -> int:
     return 0
 
 
+
+def _focus_key(backend):
+    """Cheap identity of the window that currently has focus, or None.
+
+    Process id plus class name, deliberately NOT the title: a title changes as you
+    type (Word appends a modified marker), which would read as a new window every
+    few seconds and re-probe the whole subtree each time. Class name is stable per
+    application window ("OpusApp" for Word), so switching document inside one app
+    does not re-probe -- the reprobe timer covers that.
+    """
+    if backend != "uia":
+        return "atspi"          # no focus tracking on AT-SPI; the timer drives it
+    try:
+        _, iuia = _uia()
+        el = iuia.GetFocusedElement()
+        if el is None:
+            return None
+        return (int(el.CurrentProcessId or 0), str(el.CurrentClassName or ""))
+    except Exception:
+        return None
+
+
+def _focus_title(backend):
+    if backend != "uia":
+        return "all applications"
+    try:
+        _, iuia = _uia()
+        el = iuia.GetFocusedElement()
+        walker = iuia.ControlViewWalker
+        desktop = iuia.GetRootElement()
+        top = el
+        while top is not None:
+            parent = walker.GetParentElement(top)
+            if parent is None or iuia.CompareElements(parent, desktop):
+                break
+            top = parent
+        return str(getattr(top, "CurrentName", "") or "?")
+    except Exception:
+        return "?"
+
+
+def watch(args, backend) -> int:
+    """Probe the focused window as you work, until Ctrl+C.
+
+    ⚠️ A label is counted ONCE PER VISIT, not once per probe. The log exists to
+    rank labels by how often you meet them, and re-probing one window all day
+    would give Word's "Bold" several hundred counts against mousepad's
+    "Transpose" one -- destroying exactly the ranking the log is for. A visit is
+    focus arriving at a window; a periodic re-probe of the same window can add
+    NEW labels (a ribbon tab changed) but never re-counts one already seen.
+    """
+    probe = main_uia if backend == "uia" else main_atspi
+    args.quiet = True
+    args.icons = True
+    if backend == "uia":
+        args.focused, args.all, args.app = True, False, None
+    elif not args.app:
+        args.all = True
+
+    started = time.time()
+    visits, total_logged = 0, 0
+    apps_seen: set[str] = set()
+    current_key, visit_labels, last_probe = object(), set(), 0.0
+
+    # flush= on every line: a watch session is routinely redirected to a file,
+    # and Python block-buffers a non-tty stream, so without this the log stays
+    # empty for hours and reads as a hung process.
+    say = functools.partial(print, flush=True)
+    say(f"watching the focused window every {args.interval}s "
+        f"(re-probe after {args.reprobe}s) -- Ctrl+C to stop")
+    say(f"logging unmatched labels to {args.unmatched}\n")
+    try:
+        while True:
+            key = _focus_key(backend)
+            now = time.time()
+            changed = key is not None and key != current_key
+            due = args.reprobe > 0 and (now - last_probe) >= args.reprobe
+            if key is not None and (changed or due):
+                if changed:
+                    current_key, visit_labels = key, set()
+                    visits += 1
+                try:
+                    results = probe(args) or []
+                except Exception as exc:
+                    # A window can close mid-probe. One bad window must not end a
+                    # session that is meant to run all day.
+                    say(f"  [{time.strftime('%H:%M:%S')}] probe failed: {exc}")
+                    results = []
+                last_probe = now
+
+                fresh, shortcuts, icons = [], 0, 0
+                for result in results:
+                    apps_seen.add(result.get("app", "?"))
+                    shortcuts += result.get("total", 0)
+                    icons += result.get("icon_matches", 0)
+                    new = [u for u in result.get("unmatched_labels", [])
+                           if u["label"].strip().lower() not in visit_labels]
+                    for item in new:
+                        visit_labels.add(item["label"].strip().lower())
+                    if new:
+                        fresh.append({**result, "unmatched_labels": new})
+                added = merge_unmatched(args.unmatched, fresh) if fresh else 0
+                total_logged += added
+                if changed or added:
+                    name = _focus_title(backend)[:44]
+                    say(f"  [{time.strftime('%H:%M:%S')}] {name:<44} "
+                        f"{shortcuts:>3} shortcuts, {icons:>2} icons, "
+                        f"{added:>2} new label(s)")
+            time.sleep(args.interval)
+    except KeyboardInterrupt:
+        elapsed = int(time.time() - started)
+        say(f"\n\nstopped after {elapsed // 3600}h{elapsed % 3600 // 60:02d}m -- "
+            f"{visits} window visit(s) across {len(apps_seen)} application(s)")
+        say(f"logged {total_logged} unmatched label sighting(s) to {args.unmatched}\n")
+        return review_unmatched(args.unmatched)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--app", help="application/window name to probe (substring match)")
@@ -905,6 +1046,13 @@ def main() -> int:
                     help="accumulate labels that produced no icon into this JSON log")
     ap.add_argument("--review", metavar="PATH",
                     help="print an accumulated --unmatched log by frequency and exit")
+    ap.add_argument("--watch", action="store_true",
+                    help="probe the focused window as you work, until Ctrl+C")
+    ap.add_argument("--interval", type=float, default=2.0,
+                    help="watch: seconds between focus polls (default 2)")
+    ap.add_argument("--reprobe", type=float, default=300.0,
+                    help="watch: re-probe the same window after this many seconds, "
+                         "to catch a ribbon/tab change (0 disables)")
     ap.add_argument("--selftest", action="store_true", help="run the pure-parser tests")
     args = ap.parse_args()
 
@@ -916,6 +1064,13 @@ def main() -> int:
         args.icons = True          # nothing to collect without the matcher
 
     backend = args.backend
+    if backend == "auto":
+        backend = "uia" if sys.platform == "win32" else "atspi"
+    if args.watch:
+        if not args.unmatched:
+            print("--watch needs --unmatched PATH to log into", file=sys.stderr)
+            return 2
+        return watch(args, backend)
     if backend == "auto":
         backend = "uia" if sys.platform == "win32" else "atspi"
     if args.focused and backend != "uia":
