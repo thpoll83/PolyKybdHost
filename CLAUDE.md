@@ -855,145 +855,24 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `layer_names.yaml` rotted through TWO renames that way and mislabelled the
     editor's layer tabs against an enum that no longer existed. **Run the generator
     — or the `cmp` — rather than trusting either kind of file.**
-- **The brand mark (`p{color,gray,think,warn}.*`) is GENERATED — edit
-  `tools/gen_brand_icons.py`, never the PNGs.** It draws a 6x6 keycap grid whose
-  UNLIT keys spell a "P" in negative space, on a 1024-unit viewBox (the 64px
-  original's proportions scaled up), and writes the whole set per variant: an SVG
-  master, `p<v>.png` (256, the canonical file `add_to_startup` and the About dialog
-  use), `p<v>@1024.png` for docs/store, the `p<v>_<n>.png` size ladder, `.ico` and
-  `.icns`. Redesigned 2026-09-05 from a six-hue rainbow to one blue -> cyan sweep,
-  with "HOST" stamped out of the bottom row's four rightmost keys.
-  - **`get_icon()` feeds QIcon the LADDER, not the 256 master.** The mark is hard-
-    edged squares, so Qt smoothly downscaling 256 -> 16 for a tray blurs exactly the
-    thing that carries the shape. `BrandMarkTest` (tests/gui/icon_assets_test.py)
-    asserts the set is complete AND that each ladder PNG's pixels match its name —
-    a ladder built by copying one file is as blurry as no ladder, and looks fine
-    until it is on somebody else's taskbar.
-  - ⚠️ **cairosvg does NOT honour `<mask>`** — the stamp is punched by redrawing the
-    body fill over the key instead, which is why the body gradient is
-    `gradientUnits="userSpaceOnUse"`: the punched pixels then match the body around
-    them exactly. A mask renders as a silent no-op (the key just draws whole), so
-    check the render, not the SVG source.
-  - **The busy and warning states draw the RING ONLY** (`RING`, and the engraved
-    ghosts are skipped there too), so the hourglass / warning triangle sits in
-    cleared space instead of over a dimmed grid — which is also why neither
-    carries a dimming overlay any more. The P goes with the inner keys; a
-    transient state reads by its glyph, and the ring plus the HOST stamp still
-    names the app. ⚠️ The triangle is STROKED, so its nominal width understates
-    it by half the stroke on each side — an unshrunk one overlaps the ring keys.
-  - ⚠️ **Whether the inner keys are cleared is counted in the SVG master, not in
-    pixels** — the engraved ghosts are white at 5% opacity over the body, a
-    couple of levels of difference, so a pixel threshold for them would be
-    fragile in exactly the direction that matters.
-    `test_the_state_variants_draw_the_RING_ONLY` counts `url(#keys)` and the
-    ghost rects instead (25/11 for the full mark, 20/0 for the ring). The pixel
-    test beside it answers a DIFFERENT question — that the glyph stays inside
-    the cleared middle — and does NOT catch a variant that kept its inner keys;
-    that gap was found by mutation-testing, not by reading the tests.
-  - **The hourglass is a plain silhouette: two caps and ONE body path**, with a
-    straight-sided `base` run (0.36 of the bulb height) under each cap before
-    the taper starts — without it the shape reads as a bare bowtie. `wall`
-    places the taper's control point between the axis and the bulb edge: ~0.53
-    is a straight wall, below it bows inward (concave) and above it outward
-    (convex); 0.32 ships. Drawing the bulbs as separate shapes leaves a gap at
-    the neck that reads as broken glass, and it is filled shapes throughout,
-    never strokes, because an outline fills in at 16 px and becomes a blob.
-  - **The stamp is rendered only at 128 px and up** (`STAMP_MIN_SIZE`); the smaller
-    renders come from an unstamped master, so a tray icon stays a clean grid instead
-    of carrying four keys of mush. Measured: clean at 128+, legible at 96,
-    unreadable at 64.
-  - ⚠️ **Pillow's ICO writer SKIPS every requested size LARGER than the base image,
-    silently.** Handing it the 16 px render first (natural, when the entries are
-    rendered per size and iterated small-to-large) writes a **single-entry 16x16
-    `.ico`** that Windows then upscales into a blur — no error, no warning, and the
-    file opens fine. The base must be the LARGEST; the rest go in `append_images`.
-    `test_every_ico_carries_the_whole_size_set` reads the ICONDIR count with
-    `struct` so it needs no image library.
-  - ⚠️ **Abutting rects leave a hairline seam once antialiased.** The stamp's pixel
-    cells are inflated 6% so neighbours overlap; without it every letter shows faint
-    grid lines through it at 1024.
-  - The brand `.svg` files are excluded from the Material-Symbols format tests
-    (`BRAND_SVG`): they are multi-layer generated artwork with many fills, not
-    single-fill menu glyphs, and no `get_icon()` call names them.
-  - **Downstream generators re-run from `pgray.png`** — `browser-extension/generate_icons.py`
-    and `browser-extension/store/make_promo.py`. Run both after regenerating.
-
-- **Tray/menu icons (`polyhost/res/icons/`) are Material Symbols at optical size
-  48 — fetch the `_48px` cut, never `_24px`.** The optical-size axis changes the
-  **geometry**, not just the header: the same symbol at opsz24 is drawn with
-  heavier strokes for a smaller render target. Measured on a 48px canvas, an
-  opsz24 file carries **~25% more ink on average (max +43%)** than its opsz48
-  twin, so a mixed-opsz set renders visibly uneven — the new icons look bolder
-  than the untouched ones sitting next to them in the same menu. This cost a
-  full re-fetch of 28 files (2026-07).
-  - Source: `https://raw.githubusercontent.com/google/material-design-icons/master/symbols/web/<name>/materialsymbolsoutlined/<name>_48px.svg`
-    (filled variant: `<name>_fill1_48px.svg` — that's how brightness 100% differs
-    from 50%). Emit as a single `<path>` under
-    `<svg height="48px" viewBox="0 -960 960 960" width="48px" fill="#RRGGBB">`,
-    one fill on the `<svg>` element, tinted from the palette documented in
-    `gui/get_icon.py`.
-  - ⚠️ **A wrong/missing filename fails SILENTLY**: `QIcon()` on a nonexistent
-    path returns an **empty** icon — nothing raises at import or at runtime, the
-    menu entry just renders without one. Icon names are plain string literals at
-    ~50 `get_icon()` call sites, so **`tests/gui/icon_assets_test.py`** asserts
-    every name resolves, that no shipped `.svg` is unreferenced (11 orphans had
-    accumulated), and that the opsz48/single-fill format holds. It is Qt-free, so
-    it runs in the normal suite rather than only under xvfb.
-  - ⚠️ **A tint is drawn on BOTH theme grounds now, so a colour picked against
-    one can vanish against the other — measured, the brightness family did.**
-    The apps follow the OS light/dark setting (see the theme note below), and
-    `#FFFF55` is 7.6:1 on the dark chrome (#505050) and **1.07:1 on the light
-    one** (#F0F0F0): yellow on white, reported from the field 2026-09-07. It is
-    `#B59D24` gold now (3.00 / 2.36), and the three other off-palette one-offs
-    went with it — `sync_problem` was `#A96424`, 1.74:1 on DARK (the same fault
-    the other way), and `delete` `#F19E39`; both adopted the palette colour
-    their meaning already had. Every colour in the set now sits between 2.20:1
-    and 3.22:1 on both grounds, and `IconContrastTest` holds a 2.0 floor.
-    - ⚠️ **A ramp cannot be expressed in LIGHTNESS — that is what made the old
-      one unfixable rather than merely wrong.** The four brightness entries were
-      shades of one yellow (a paler `#F9DB78` for 1%), and a pale tint is the
-      worst case of all on a light ground. The ramp is across the palette now:
-      grey off, **amber** at 1%, gold at 50/100% (the Material glyphs carry the
-      rest — fewer rays, outline vs filled), and **green** for "back to
-      automatic", which is the palette's enabled/ok rather than a brightness
-      level. So amber means caution *and* the dim end, and green means ok *and*
-      automatic; the alternative was two more one-off colours, and the set only
-      just stopped having those.
-  - **Judge a candidate glyph by rendering and measuring it, not by its name.**
-    Rasterise to a fixed canvas (`cairosvg` + PIL) and compare **ink coverage**
-    and **glyph bounding height** against the set (baseline ≈19% ink, ≈34px tall
-    on 48px). That is what caught both the opsz mismatch above and `abc` being
-    only 12px tall — half the next smallest icon — which eyeballing the render
-    had missed. The measurement also overruled three name-based picks: the
-    `brightness_*` family is not a coherent ramp (the `backlight_*` family is),
-    and `bedtime`/`bedtime_off` beat a sun for idle start/stop.
-- ⚠️ **The WINDOW icon and the TASKBAR BUTTON icon are answered by different
-  questions, and `setWindowIcon()` only answers the first.** Windows groups
-  taskbar buttons by **AppUserModelID**, and a process that never sets one is
-  identified by its host executable — `pythonw.exe` — so the button showed the
-  **Python** icon while every title bar was correct (field, 2026-09-04: *"for
-  all these dialogs the program icon is not shown in the task bar"*).
-  - **It was never a missing icon**, which is why chasing `setWindowIcon` call
-    sites finds nothing: `IconStateManager.__init__` runs `update()` with
-    `dirty_flag` already set, so `QApplication.setWindowIcon` is called at
-    startup and every dialog inherits a real `p*.png`. Four dialogs additionally
-    override it with `pcolor.png`; that is cosmetic, not the fix.
-  - **The Linux half had been solved all along, three lines away** —
-    `QApplication.setDesktopFileName('PolyHost')` in `main_app.py`, commented
-    *"important for XWayland icon matching"*, i.e. the same question with the
-    same failure mode. `set_windows_app_id()` is its counterpart and sits in the
-    same `if/elif`, so the two are read together.
-  - ⚠️ **It must run BEFORE the first window exists** — a window keeps the
-    identity it was born with — and it must never raise: this is cosmetic, and an
-    exception there kills the tray before it appears. One call in `main_app`
-    covers the **forwarder** too, which is the second tray app that otherwise
-    gets forgotten.
-  - ⚠️ **`WINDOWS_APP_ID` is STABLE, not a name to tidy.** Windows keys pinned
-    buttons and jump lists off that string, so renaming it orphans a user's
-    pinned icon. A test pins the literal for that reason.
-  - **Not verifiable from this container** — the code path is `win32`-only, so
-    the tests cover the wiring (asked for on Windows, nowhere else, a failure
-    swallowed and logged) and hardware confirms the icon.
+- **The brand mark and the menu icons are [`docs/icons.md`](docs/icons.md).**
+  Three rules bind code outside that file:
+  - **The mark is GENERATED — edit `tools/gen_brand_icons.py`, never the PNGs**, and
+    re-run the two downstream generators (`browser-extension/generate_icons.py`,
+    `store/make_promo.py`) which read `pgray.png`.
+  - ⚠️ **A wrong or missing icon NAME fails silently** — `QIcon()` on a nonexistent
+    path returns an **empty** icon, nothing raises at import or at runtime, and the
+    menu row simply renders without a picture. Icon names are plain string literals
+    at ~50 `get_icon()` call sites, so `tests/gui/icon_assets_test.py` is the guard:
+    it asserts every name resolves, that no shipped `.svg` is unreferenced, and that
+    the opsz48 / single-fill format holds.
+  - ⚠️ **Fetch Material Symbols at optical size 48, never 24, and check the tint on
+    BOTH theme grounds.** The opsz axis changes the geometry, not just the header —
+    measured on a 48px canvas an opsz24 file carries ~25% more ink (max +43%), so a
+    mixed set renders visibly uneven. And since the apps follow the OS light/dark
+    setting, a colour picked against one ground can vanish against the other:
+    `#FFFF55` is 7.6:1 on the dark chrome and **1.07:1** on the light one. The test
+    holds a 2.0 contrast floor on both.
 - **The font-pack flash events carry a `kind` — label UIs from it, not the event name.**
   The doom easter egg's game data (`.whx`) and executable engine pack (`.plyx`) ride the
   **font-pack transport**, so `PolyCore.install_doomwad`/`install_doompack` emit the same
@@ -1152,81 +1031,30 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `settings.read_setting("developer_mode", False)` — the file-only helper — **not**
   `PolySettings()`, which creates/rewrites the config and log-dumps every key before the
   launch path is even known.
-- **Anonymous usage telemetry (`polyhost/services/telemetry.py` + `telemetry-collector/`)**:
-  one small JSON POST per install per day — host/protocol version, OS + coarse release,
-  arch, python, run mode, the attached keyboard's model/fw/protocol/hw/font-pack versions,
-  six counters since the last report (sessions, connects, reconnect_flaps, fw_flashes,
-  fontpack_flashes, update_installs), and a locally-generated random `install_id`. **On by
-  default**, opt out in the settings dialog or `polyctl telemetry disable`;
-  `polyctl telemetry status|preview|send` are the rest of the CLI surface. `PolyCore` owns
-  the reporter (`start_telemetry()` is called next to `worker.start()` in **both**
-  `host.py` and `headless.py` — both construct `PolyCore(start_worker=False)`, so the
-  reporter does not start itself). The endpoint is `TELEMETRY_ENDPOINT` in `settings.py`;
-  **empty disables sending entirely**, which is how it ships before a collector exists.
-  - **The payload is an ALLOW-LIST at both ends**, and that is a privacy guarantee, not a
-    style choice: `build_payload()` copies named fields (never `**status`), and the Worker
-    re-validates and rebuilds the row it stores. The host can see window titles and app
-    names — it reads them constantly for overlays — so the frozen `PAYLOAD_KEYS` test in
-    `tests/services/telemetry_test.py` exists to make an accidental widening fail loudly.
-    Never add a field by spreading a status dict.
-  - ⚠️ **There is NO in-app consent step.** The first-run dialog was removed (#153,
-    "a modal on every upgrade is a poor trade for a disclosure that arrives after the
-    install"), so the **release notes are the disclosure** and the one INFO line
-    `_log_telemetry_notice` prints at every start is the only thing a headless daemon can
-    say. Don't gate that line on an "already told them" flag, downgrade it to debug, or
-    drop it in a logging cleanup. Write the release notes *before* shipping a release that
-    sets the endpoint. Posture + residual risk: `polykybd-ctnd/docs/SECURITY_AUDIT.md`
-    **HOST-3**; user-facing page: `docs/telemetry.md` and the public
-    `software/telemetry` docs page.
-  - **Collector**: a Cloudflare Worker + D1 (`telemetry-collector/`, deployed by
-    `.github/workflows/deploy-telemetry.yml` on push to `main`). It is **write-only by
-    design** — no read route, therefore no route that can leak the dataset. Read the data
-    with `wrangler d1 execute` or **`python telemetry-collector/dashboard.py --open`**,
-    which renders a self-contained HTML dashboard locally (per-install version splits from
-    each install's *newest* report, so a long-running tester doesn't outvote a new one).
-    A hosted version is planned but unbuilt — design and its costs in
-    `telemetry-collector/HOSTED_DASHBOARD.md`. Full setup/runbook: `telemetry-collector/SETUP.md`.
-- ⚠️ **`workers.dev` is CLOUDFLARE's zone, not ours — so every zone-scoped Cloudflare
-  product is unavailable on the collector.** This has now cost a round twice: first on
-  rate limiting (WAF rate-limiting rules are zone-scoped, so the **Workers rate-limit
-  binding** in `wrangler.toml` is the mechanism that works), then again on **Cloudflare
-  Access**, the obvious way to put SSO in front of a hosted dashboard — also unavailable,
-  so that auth would have to live *inside* the Worker until a custom domain exists. Rule
-  of thumb: anything Cloudflare describes as "protect a route/hostname" needs a zone you
-  own; anything configured as a Worker **binding** works. Don't accept advice (including
-  mine) that reaches for a zone-level feature here without checking this first.
-- **`wrangler` gotchas that fail SILENTLY** (full detail in `telemetry-collector/SETUP.md`):
-  - ⚠️ **A command without `--remote` hits the LOCAL sqlite file and reports success.**
-    So a `DELETE` appears to run and the row is still there on the next `SELECT --remote`
-    — deleted three times before the cause was obvious (2026-08-07). This applies to every
-    `d1 execute`, not just the schema step.
-  - **`d1 info <name>` resolves the name through the local `wrangler.toml`**, so it 7404s
-    ("database could not be found") while the file still holds a placeholder id. Use
-    **`d1 list`** to get the real id.
-  - **The API token needs `Workers Scripts: Edit` (plus `D1: Edit`).** Without it the
-    deploy fails with `Authentication error [code: 10000]`, which names the *endpoint* it
-    could not reach and not the permission it lacked. Verify a token fix by triggering the
-    workflow (`workflow_dispatch`) rather than assuming — that is a 30 s check.
-  - **`binding = "DB"` in `wrangler.toml` must stay `DB`**: `d1 create` prints a suggested
-    binding named after the *database*, and adopting it 503s every ping.
-- ⚠️ **The telemetry collector CANNOT double as a problem-report backend — four
-  independent reasons, and the last one is a feature.** The obvious idea when
-  "Report a Problem" was designed (2026-08-18) was to POST the report to the
-  Cloudflare Worker that already exists. It doesn't fit, and each obstacle would
-  have to be removed separately: the Worker caps a request body at **8 KB** (a
-  description plus diagnostics blows past it, let alone logs); the D1 schema is
-  `UNIQUE(install_id, day)` and upserts, so a **second report the same day
-  overwrites the first** — exactly when a user is retrying because it broke
-  again; the payload is an **allow-list rebuilt server-side** (`PAYLOAD_KEYS`,
-  frozen by a test *designed* to make widening fail loudly), so free text can only
-  arrive by deliberately undoing that guarantee; and the Worker is **write-only by
-  design — there is no read route**, which is precisely what makes the dataset
-  unleakable, so retrieval would mean building the route the design exists to
-  avoid, plus auth *inside* the Worker (Cloudflare Access is zone-scoped and
-  unavailable on `workers.dev` — see the note above). Hence the shipped design is
-  a **pre-filled GitHub issue** with the bundle attached by the reporter: no
-  backend, no new data store, and the user sees what they send. Don't re-propose
-  the Worker without answering all four.
+- **Telemetry — the client, the Cloudflare collector and its traps — is
+  [`docs/telemetry-internals.md`](docs/telemetry-internals.md).** One small JSON POST
+  per install per day, **on by default**, opt out in the settings dialog or
+  `polyctl telemetry disable`; `TELEMETRY_ENDPOINT` empty disables sending entirely,
+  which is how it ships before a collector exists. Four things stay here:
+  - ⚠️ **The payload is an ALLOW-LIST at both ends — a privacy guarantee, not a
+    style choice.** The host can see window titles and app names, because it reads
+    them constantly for overlays. `build_payload()` copies named fields and **never
+    spreads a status dict**; the Worker rebuilds the row it stores. The frozen
+    `PAYLOAD_KEYS` test exists to make an accidental widening fail loudly.
+  - ⚠️ **There is NO in-app consent step.** The first-run dialog was removed, so the
+    **release notes are the disclosure** and the one INFO line
+    `_log_telemetry_notice` prints at every start is all a headless daemon can say.
+    Do not gate that line on an "already told them" flag, downgrade it to debug, or
+    drop it in a logging cleanup — and write the release notes *before* shipping a
+    release that sets the endpoint.
+  - **The collector is WRITE-ONLY by design** — no read route, therefore no route
+    that can leak the dataset. Read the data with `wrangler d1 execute` or
+    `telemetry-collector/dashboard.py --open`.
+  - ⚠️ **`workers.dev` is CLOUDFLARE's zone, not ours**, so every zone-scoped
+    Cloudflare product is unavailable here — WAF rate limiting and Cloudflare Access
+    both. Anything configured as a Worker **binding** works; anything Cloudflare
+    describes as "protect a route/hostname" needs a zone you own. This has cost a
+    round twice.
 - **Logs, crash reporting and the guided problem report are
   [`docs/diagnostics.md`](docs/diagnostics.md)** — the Qt-free `log_bundle` service
   and its three front ends (tray, log viewer, `polyctl logs`), the pre-filled GitHub
@@ -1593,82 +1421,29 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     implementation.
 - **Single-key keymap write**: the firmware supports `ID_DYNAMIC_KEYMAP_SET_KEYCODE` (0x05) — payload is `[layer, row, col, keycode_hi, keycode_lo]`. No need to write a full layer; `PolyKybd.set_dynamic_keycode()` wraps this.
 - **Firmware update survives protocol mismatches**: `PolyHost.device_present` tracks "a device answers protocol-independent queries (GET_ID/GET_LANG)" separately from `connected` (protocol/version compatible). The flash/apply/bootloader actions and the release-update flow gate on `_fw_actions_allowed()` (present, not paused) — NOT on `connected` — so a keyboard on a mismatched protocol can always be updated (`CommandsSubMenu.update_enabled` re-enables exactly those items when the rest of the menu is greyed out). The HID flash protocol (`hid_fw_up`) is dispatched independently of `PROTOCOL_VERSION` in the firmware. Don't re-gate any firmware-update path on `self.connected`.
-- **Autostart** (`polyhost/services/add_to_startup.py`): `setup_autostart_for_app()` registers the app to start at login (called from `main_app.py` unless `--portable`).
-  - **Windows**: prefers a per-user, **non-elevated logon scheduled task** (`RunLevel Limited` / `LogonType Interactive`, via PowerShell `Register-ScheduledTask`) — needs no admin/UAC and starts earlier than the Startup folder, which Explorer throttles. The task launches the **proven venv-activating `.bat` wrapper** (`create_windows_bat_wrapper`); do **not** swap this for a direct `pythonw -m polyhost` call — running the venv interpreter without activation drops the `Scripts` dir from `PATH` and the app dies silently (regressed once, see git history). The `.bat` is run **windowless** through `wscript.exe` + a hidden-launch `.vbs` (`create_windows_hidden_vbs`, window style 0) so no console flashes. Falls back to a Startup-folder shortcut if task creation is refused (locked-down Task Scheduler). Gotchas learned the hard way: `New-ScheduledTaskAction -Argument ''` is rejected — only pass `-Argument` when non-empty; and f-strings with backslashes in the expression part break on Python < 3.12.
-  - **Linux**: `.desktop` autostart entry; **macOS**: `launchd` plist.
-  - ⚠️ **The generated launchers live in `add_to_startup.launcher_dir()` (the
-    platformdirs user config dir, beside `settings.yaml`) — NOT in the checkout.**
-    They used to be `polyhost/start_polyhost.{bat,vbs,sh}` under a `.gitignore`
-    entry, so **`git clean -xdf` deleted the exact file the registered logon task
-    points at** and autostart silently stopped working: the task still reads
-    `State: Ready` / `LastTaskResult: 0` and starts nothing at the next logon
-    (field, 2026-08-05, on a repo that gets cleaned and branch-switched a lot).
-    Nothing can detect it after the fact either — the only process that could
-    report the breakage regenerates the launcher on its way up, so the broken
-    window is exactly "cleaned, and not started since". The scripts carry absolute
-    paths to the venv and repo root, so their own location is irrelevant to how
-    they work. A launch on the new code re-registers the entry at the new path and
-    deletes the in-checkout leftovers (`_remove_legacy_launchers`).
-  - ⚠️ **Every relaunch in the update chain must be spawned DETACHED — on Windows a
-    plain `Popen` is how the app "doesn't start up again after the update".** Three
-    sites relaunch after a self-update: `updater.restart_app()`, the generated
-    locked-file relay script (`_write_relay_script`), and the daemon's relay spawn
-    (`headless._restart_if_requested`) — all three used a bare
-    `Popen(..., close_fds=False)` (fixed 2026-08-05; the GUI's own relay spawn and
-    `daemon_launch.spawn_headless_daemon` were already correct). Without
-    `DETACHED_PROCESS` Windows does one of two things, both fatal: it hands the child
-    the **exiting parent's console** (closing that window sends CTRL_CLOSE and kills
-    the freshly restarted app — the same "console opens, closing it drops the
-    connection" failure `create_windows_bat_wrapper` avoids with `pythonw`), or —
-    when the parent has *no* console, which the detached daemon does not — it
-    allocates a **brand-new console window** for the child. In daemon mode that is
-    the whole chain: daemon → relay (new console) → restarted daemon (inherits it),
-    while the GUI's own relaunch inherits the old GUI's console. One closed window
-    then takes down the daemon *and* the tray, and `probe_existing` reads `stale` at
-    the next launch. Use `updater.detached_popen_kwargs()` /
-    `detached_creationflags()` (`DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP`, stdio
-    on DEVNULL) for anything that must outlive the process spawning it.
-  - **Detaching the console does NOT escape a job object — `spawn_detached()` also
-    tries `CREATE_BREAKAWAY_FROM_JOB`.** A VS Code debug session (and some
-    terminals) launch the app into a job and tear the whole job down when the
-    session ends; job membership is inherited, so a detached child still dies with
-    it. A job that forbids breakaway fails the spawn with `ERROR_ACCESS_DENIED`
-    (WinError 5), so it falls back to the plain detached spawn — never "no relaunch
-    at all". Outside a job the flag is ignored, so the ordinary autostart/tray path
-    is unaffected.
-  - **A relaunch inherits `sys.executable` forever, so it must be normalised to
-    `pythonw.exe`** (`updater.relaunch_executable()`): one session started from a
-    terminal (`python -m polyhost`) used to make *every* subsequent post-update
-    restart console-owning, long after the autostart `.bat` (which correctly calls
-    `pythonw`) was out of the picture. The 2026-08-05 field log shows exactly that —
-    `Restarting: ['…\\Scripts\\python.exe', '-m', 'polyhost', …]`.
-  - **The relay script logs to `startup_log.txt`**: it runs detached with stdio on
-    DEVNULL, so its old `print(..., file=sys.stderr)` on a failed DLL copy went
-    nowhere. It is the last step of an update — a silent failure there reads as "the
-    app never came back" with no evidence at all.
-  - **`updater.preflight()` runs at the top of `UpdateInstaller.run()`** — the one
-    choke point the tray, the daemon (`PolyCore.install_update`) and `polyctl update
-    install` all pass through. It checks the *copy* (install dir + temp dir writable,
-    both `blocking`) **and the restart** (the relaunch interpreter, the autostart
-    entry, both warnings): an update that copies perfectly and then can't relaunch is
-    indistinguishable from "the app never came back", except that by then the tree is
-    already rewritten. A blocker aborts **before the download**, so nothing has
-    changed; warnings are logged *and* emitted as `update_progress` lines so they
-    reach the tray dialog and the CLI, not just the log.
-  - `get_autostart_status()` reports which mechanism is in place (printed at startup); `remove_autostart()` tears all of them down. `--portable` removes any existing entry rather than just skipping registration.
-  - ⚠️ **The Windows task is named `PolyHost` (`APP_NAME`), NOT `PolyKybdHost`** — so
-    `Get-ScheduledTask -TaskName PolyKybdHost*` returns nothing on a perfectly healthy
-    install and reads as "autostart is gone" (field, 2026-08-05). The check is
-    `Get-ScheduledTask -TaskName PolyHost` / `schtasks /query /tn PolyHost`
-    (`windows_task_exists`), with `Get-ScheduledTaskInfo -TaskName PolyHost` for
-    `LastRunTime`/`LastTaskResult`. Same name for the Startup-folder `.lnk` and the
-    Start-menu launcher.
-  - `_install_windows_autostart` **verifies the task by querying it back** before
-    reporting `"scheduled task (at logon)"`; that string is what the startup log
-    prints, and a PowerShell exit code only says `Register-ScheduledTask` didn't
-    raise. A "registered" task that isn't queryable now falls back to the
-    Startup-folder shortcut instead of leaving no autostart at all.
-
+- **Autostart registration and the post-update relaunch chain are
+  [`docs/autostart.md`](docs/autostart.md).** `setup_autostart_for_app()` is called
+  from `main_app.py` unless `--portable`; Windows uses a non-elevated logon
+  scheduled task driving a venv-activating `.bat` through a hidden-launch `.vbs`,
+  Linux a `.desktop` entry, macOS a `launchd` plist. Four things stay here:
+  - ⚠️ **Every relaunch must be spawned DETACHED** — `updater.detached_popen_kwargs()`
+    / `spawn_detached()`. A plain `Popen` on Windows is how *"it doesn't start up
+    again after the update"* happens: the child inherits the exiting parent's console
+    and dies when that window closes, or, when the parent has none, is handed a brand
+    new console it then dies with. `sys.executable` must also be normalised to
+    `pythonw.exe`, or one session started from a terminal makes **every** later
+    restart console-owning.
+  - ⚠️ **The generated launchers live in the platformdirs config dir, NOT the
+    checkout** — they used to be in-tree under a `.gitignore` entry, so
+    `git clean -xdf` deleted the exact file the registered task points at and
+    autostart silently stopped working while the task still read `State: Ready`.
+  - ⚠️ **The Windows task is named `PolyHost`, not `PolyKybdHost`** — so
+    `Get-ScheduledTask -TaskName PolyKybdHost*` returns nothing on a perfectly
+    healthy install and reads as "autostart is gone".
+  - **`updater.preflight()` runs before the download**, at the one choke point the
+    tray, the daemon and `polyctl update install` all pass through: it checks the
+    copy *and* the relaunch, because an update that copies perfectly and then cannot
+    relaunch is indistinguishable from "the app never came back".
 ## Releases
 
 Host releases are **GitHub Releases** (tag `vX.Y.Z`; version in `polyhost/_version.py`),
