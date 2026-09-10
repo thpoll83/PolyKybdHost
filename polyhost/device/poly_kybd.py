@@ -1291,7 +1291,12 @@ class PolyKybd:
         # cache; only the mapping commit is skipped.
         gui_combos = self.supports("gui_combo_modifiers")
         with cache.batch():
-            for converter in converters:
+            # zip, not `for converter in converters`: the cache key below names
+            # the file an image came from, and a bare loop leaves `filename` at
+            # the LAST entry of the decode loop above for every converter. The
+            # two lists are parallel by construction (a failed open() returns
+            # early), so this is the only pairing that can be right.
+            for filename, converter in zip(filenames, converters):
                 for modifier in Modifier:
                     # A pre-v12 keyboard folds any GUI+x onto the bare-GUI
                     # variant and has no flat index space above 90*9, so an

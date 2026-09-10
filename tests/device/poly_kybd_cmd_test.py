@@ -762,6 +762,62 @@ class TestSendOverlaysMruFailure(unittest.TestCase, LockCheckMixin):
         self.assert_lock_free(keeb)
 
 
+class TestSendOverlaysMruPerFileKeys(unittest.TestCase, LockCheckMixin):
+    """Each converter's images must be cached under ITS OWN filename.
+
+    The cache key is (basename, modifier, keycode). A bare `for converter in
+    converters` loop leaves `filename` at the last entry of the decode loop, so
+    every converter files its images under the last template's name — and two
+    templates that overlap on (modifier, keycode) then collide: the second one's
+    image is an exact key HIT, is never uploaded, and the keycap ends up showing
+    the FIRST template's picture.
+
+    Today the shipped multi-template apps happen to be disjoint in (modifier,
+    keycode), which is the only reason this was invisible.
+    """
+
+    def _converter(self, overlay_map):
+        converter = MagicMock()
+        converter.open.return_value = True
+        converter.extract_overlays.side_effect = (
+            lambda mod: dict(overlay_map) if mod == Modifier.NO_MOD else None)
+        return converter
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_two_templates_that_OVERLAP_get_distinct_slots(self, MockConverter):
+        first, second = _overlay("dot"), _overlay("rect")
+        MockConverter.side_effect = [
+            self._converter({KeyCode.KC_A.value: first}),
+            self._converter({KeyCode.KC_A.value: second}),
+        ]
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+
+        committed = {}
+        real_mapping = keeb.send_overlay_mapping
+
+        def capture(mapping, *args, **kwargs):
+            committed.update(mapping)
+            return real_mapping(mapping, *args, **kwargs)
+        keeb.send_overlay_mapping = capture
+
+        self.assertTrue(
+            keeb.send_overlays_mru(["base.png", "overlay.png"], cache))
+
+        # Both images uploaded, under their own file's name.
+        self.assertEqual(cache.used_slots(), 2)
+        info = cache.get_mru_info()
+        self.assertEqual({v[0] for v in info.values()},
+                         {"base.png", "overlay.png"})
+
+        # The later template wins the keycap, and the slot it points at is the
+        # one holding ITS image — not the earlier template's.
+        slot = committed[cache.display_flat_idx(KeyCode.KC_A.value,
+                                                Modifier.NO_MOD)]
+        self.assertEqual(info[slot][0], "overlay.png")
+        self.assert_lock_free(keeb)
+
+
 # ---------------------------------------------------------------------------
 # Connect / reconnect
 # ---------------------------------------------------------------------------
