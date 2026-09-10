@@ -186,8 +186,13 @@ class AppIconFetcher:
                 mask = app_icons.render_overlay(path)
                 if mask is None:
                     continue
+                # MDI SVGs carry no <title>, so a bare `title or name` printed
+                # the name twice -- say the brand name only when we have one.
                 title = app_icons.title_of(path)
-                self.log.info("Program icon: %s (%s)", title or name, name)
+                if title and title.lower() != name.lower():
+                    self.log.info("Program icon: %s (%s)", title, name)
+                else:
+                    self.log.info("Program icon: %s", name)
                 return mask, name
             except Exception:
                 self.log.debug("app-icon fetch failed for '%s'", name, exc_info=True)

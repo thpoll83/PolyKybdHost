@@ -1,5 +1,6 @@
 import array
 import logging
+import os
 import math
 import re
 import threading
@@ -17,8 +18,9 @@ from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType, GlyphScri
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE
+from polyhost.device.keys import KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE, describe_key
 from polyhost.device.overlay_cache import OverlayMRUCache
+from polyhost.device.synthetic_overlay import is_synthetic
 from polyhost.services import iso_lang_country
 
 # Minimum firmware PROTOCOL_VERSION required for GET_LANG_LIST_PACKED (the compact
@@ -1254,7 +1256,6 @@ class PolyKybd:
         the CALLER, on the caller's thread, because building one may fetch over
         the network and this method runs on the HID worker.
         """
-        import os
         hid_msg_counter = 0
         hid_msg_counter_old = 0
         MAX_MSG_BEFORE_DELAY = self.poly_settings.get("max_hid_message_before_delay")
@@ -1313,6 +1314,9 @@ class PolyKybd:
             # image the mapping would immediately overwrite. Real sources keep
             # their existing last-one-wins behaviour.
             covered: set[tuple[int, int]] = set()
+            # What each source ended up drawing, for the summary below.
+            per_source: dict[str, list] = {}
+            uploaded = 0
             for filename, converter in zip(filenames, converters):
                 is_synthetic = filename in synthetic
                 for modifier in Modifier:
@@ -1362,6 +1366,9 @@ class PolyKybd:
 
                         display_idx = cache.display_flat_idx(keycode, modifier)
                         display_to_pool[display_idx] = pool_slot
+                        per_source.setdefault(filename, []).append((keycode, modifier))
+                        if not is_hit:
+                            uploaded += 1
 
                         if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
                             hid_msg_counter_old = hid_msg_counter
@@ -1372,12 +1379,16 @@ class PolyKybd:
                             else:
                                 time.sleep(DELAY_TIME_AFTER_MAX_MSG)
 
-        # hid_msg_counter counts ONLY image uploads (cache misses). A full cache
-        # hit is 0 here even though the mapping send (logged separately below)
-        # and enable_overlays still go over HID — that 0 is the MRU win, not a
-        # "nothing was sent". Word it so the log can't be misread.
-        self.log.info("MRU: %d image upload(s) (rest served from cache), "
-                      "%d display positions to map",
+        # hid_msg_counter counts HID MESSAGES, and only those carrying image
+        # data (cache misses) — one image is several. A full cache hit is 0 here
+        # even though the mapping send (logged separately below) and
+        # enable_overlays still go over HID; that 0 is the MRU win, not a
+        # "nothing was sent". ⚠️ Say "message(s)": the summary a few lines down
+        # counts KEYCAPS uploaded, so two adjacent lines both reading
+        # "N upload(s)" over different units read as a contradiction (measured
+        # on a real send: 4 here against 2 there).
+        self.log.info("MRU: %d HID message(s) of image data (rest served from "
+                      "cache), %d display positions to map",
                       hid_msg_counter, len(display_to_pool))
 
         # Re-check right before the commit: the token can flip after the last
@@ -1393,7 +1404,36 @@ class PolyKybd:
             return False
         cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()
+        self._log_overlay_summary(per_source, uploaded, len(display_to_pool))
         return True
+
+    # How many keys a source may contribute before the summary stops naming
+    # them. A template covers most of the board and listing it would bury the
+    # line; a synthetic source is a handful of keys and naming them IS the
+    # point -- "which shortcuts did it just add" has no other answer.
+    NAME_KEYS_UP_TO = 12
+
+    def _log_overlay_summary(self, per_source: dict, uploaded: int, mapped: int):
+        """One INFO line per source saying what it drew, after a successful send.
+
+        The window tick logs which app was matched; this says what that turned
+        into on the keyboard, which is otherwise only visible by looking at the
+        keycaps.
+        """
+        if not per_source:
+            return
+        self.log.info("Overlays: %d keycap(s) from %d source(s), %d uploaded, %d cached",
+                      mapped, len(per_source), uploaded, mapped - uploaded)
+        for filename, keys in per_source.items():
+            # A pseudo-name is kept WHOLE: it names no file, so `basename` could
+            # only ever damage it, and the `@prog:` prefix is what says the mark
+            # came from the icon fall-back rather than from a hand-made template.
+            name = filename if is_synthetic(filename) else os.path.basename(filename)
+            if len(keys) <= self.NAME_KEYS_UP_TO:
+                detail = ", ".join(describe_key(kc, mod) for kc, mod in keys)
+                self.log.info("  %s: %s", name, detail)
+            else:
+                self.log.info("  %s: %d keycap(s)", name, len(keys))
 
     def execute_commands(self, command_list: list,
                          cancel: threading.Event | None = None) -> None:

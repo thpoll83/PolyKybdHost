@@ -8,6 +8,7 @@ the HID worker-thread / command-queue refactoring.
 Invariant asserted throughout: after any PolyKybd call returns, the HID lock
 must be free — a held lock here means a leaked lock in production.
 """
+import os
 import types
 import unittest
 from unittest import mock
@@ -1072,6 +1073,186 @@ class TestConsoleOutput(unittest.TestCase):
         self.assertIsNone(keeb.get_console_output(flush_and_return=False))
         console.replies.extend([pad(b'part2'), b''])
         self.assertEqual(keeb.get_console_output(), 'part1part2')
+
+
+
+class TestOverlaySendSummary(unittest.TestCase, LockCheckMixin):
+    """The per-source INFO lines a successful overlay send leaves in the log.
+
+    ⚠️ This is a SUPPORT surface, not decoration. The window tick already logs
+    which app was matched; nothing said what that turned into on the keyboard,
+    so "the shortcut icons did not appear" had no answer short of photographing
+    the keycaps. These pin what the line has to carry to be worth reading.
+    """
+
+    def _converter(self, overlay_map, modifier=Modifier.NO_MOD):
+        converter = MagicMock()
+        converter.open.return_value = True
+        converter.extract_overlays.side_effect = (
+            lambda mod: dict(overlay_map) if mod == modifier else None)
+        return converter
+
+    def _lines(self, keeb, filenames, cache, synthetic=None):
+        with mock.patch.object(keeb, "log") as log:
+            ok = keeb.send_overlays_mru(filenames, cache, synthetic=synthetic or {})
+        return ok, [call.args[0] % call.args[1:] for call in log.info.call_args_list]
+
+    def _headline(self, lines):
+        """The `Overlays: ...` line, which is not the first INFO of the send."""
+        found = [ln for ln in lines if ln.startswith("Overlays:")]
+        self.assertEqual(len(found), 1, lines)
+        return found[0]
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_the_headline_counts_keycaps_and_sources(self, MockConverter):
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_A.value: _overlay("dot"), KeyCode.KC_B.value: _overlay("rect")})
+        keeb, device = make_keeb(auto_ack=True)
+
+        ok, lines = self._lines(keeb, ["app.png"], OverlayMRUCache(20))
+
+        self.assertTrue(ok)
+        self.assertIn("Overlays: 2 keycap(s) from 1 source(s), 2 uploaded, 0 cached",
+                      lines)
+        self.assert_lock_free(keeb)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_SECOND_send_of_the_same_app_reports_them_as_CACHED(self, MockConverter):
+        """The uploaded/cached split is the whole reason the counts are separate.
+
+        A second switch to the same app uploads nothing -- so a line that only
+        said "2 keycap(s)" would read identically to a full re-transfer, and the
+        MRU cache doing its job would be indistinguishable from it not working.
+        """
+        MockConverter.side_effect = [
+            self._converter({KeyCode.KC_A.value: _overlay("dot")}),
+            self._converter({KeyCode.KC_A.value: _overlay("dot")}),
+        ]
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+
+        _, first = self._lines(keeb, ["app.png"], cache)
+        _, second = self._lines(keeb, ["app.png"], cache)
+
+        self.assertIn("1 uploaded, 0 cached", self._headline(first))
+        self.assertIn("0 uploaded, 1 cached", self._headline(second))
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_SMALL_source_names_every_key_it_drew(self, MockConverter):
+        # "which shortcuts did it just add" has no other answer.
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_C.value: _overlay("dot")}, Modifier.CTRL)
+        keeb, device = make_keeb(auto_ack=True)
+
+        _, lines = self._lines(keeb, ["app.png"], OverlayMRUCache(20))
+
+        self.assertIn("  app.png: Ctrl+C", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_LARGE_source_is_counted_instead_of_listed(self, MockConverter):
+        # A template covers most of the board; listing 26 keycaps would bury the
+        # one line that says what the icon fall-back contributed.
+        many = {KeyCode(0x04 + i).value: _overlay("dot")
+                for i in range(PolyKybd.NAME_KEYS_UP_TO + 1)}
+        MockConverter.return_value = self._converter(many)
+        keeb, device = make_keeb(auto_ack=True)
+
+        _, lines = self._lines(keeb, ["app.png"], OverlayMRUCache(40))
+
+        self.assertIn(f"  app.png: {len(many)} keycap(s)", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_exactly_the_threshold_is_still_NAMED(self, MockConverter):
+        many = {KeyCode(0x04 + i).value: _overlay("dot")
+                for i in range(PolyKybd.NAME_KEYS_UP_TO)}
+        MockConverter.return_value = self._converter(many)
+        keeb, device = make_keeb(auto_ack=True)
+
+        _, lines = self._lines(keeb, ["app.png"], OverlayMRUCache(40))
+
+        detail = [ln for ln in lines if ln.startswith("  app.png:")][0]
+        self.assertNotIn("keycap(s)", detail)
+        self.assertIn("A", detail.split(": ", 1)[1].split(", "))
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_TEMPLATE_is_named_by_its_basename_not_its_full_path(self, MockConverter):
+        # The paths are absolute and long; the interesting part is the filename.
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_A.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+
+        _, lines = self._lines(
+            keeb, [os.path.join("some", "where", "app.png")], OverlayMRUCache(20))
+
+        self.assertIn("  app.png: A", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_SYNTHETIC_source_keeps_its_pseudo_name_whole(self, MockConverter):
+        """`@prog:mdi:microsoft-word`, not `microsoft-word`.
+
+        It names no file, so `basename` can only ever damage it -- and the
+        `@prog:` prefix is what says the mark came from the icon fall-back
+        rather than from a hand-made template.
+
+        ⚠️ The slug the mark is named after comes from `app_icons.yaml`, which
+        is hand-editable, so it uses a path separator here on purpose: no
+        SHIPPED slug carries one, which means `basename` on a pseudo-name is a
+        no-op today and a mutation sweep reports the guard as escaped. What it
+        protects against is a mapping entry that does.
+        """
+        keeb, device = make_keeb(auto_ack=True)
+        name = program_name(f"mdi{os.sep}microsoft-word")
+
+        _, lines = self._lines(
+            keeb, [name], OverlayMRUCache(20),
+            {name: SyntheticConverter(
+                {Modifier.NO_MOD: {KeyCode.KC_ESCAPE.value: _overlay("rect")}})})
+
+        self.assertIn(f"  {name}: ESC", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_TEMPLATE_and_a_MARK_are_reported_SEPARATELY(self, MockConverter):
+        # One line per source is what makes the fall-back visible beside the
+        # template it rode in with.
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_A.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        name = program_name("gimp")
+
+        _, lines = self._lines(
+            keeb, ["app.png", name], OverlayMRUCache(20),
+            {name: SyntheticConverter(
+                {Modifier.NO_MOD: {KeyCode.KC_ESCAPE.value: _overlay("rect")}})})
+
+        self.assertIn("2 source(s)", self._headline(lines))
+        self.assertIn("  app.png: A", lines)
+        self.assertIn(f"  {name}: ESC", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_source_that_drew_NOTHING_is_not_reported(self, MockConverter):
+        # A deferred mark contributes no keycap; a line saying so would report
+        # an upload that did not happen.
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_ESCAPE.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        name = program_name("gimp")
+
+        _, lines = self._lines(
+            keeb, ["app.png", name], OverlayMRUCache(20),
+            {name: SyntheticConverter(
+                {Modifier.NO_MOD: {KeyCode.KC_ESCAPE.value: _overlay("rect")}})})
+
+        self.assertIn("1 source(s)", self._headline(lines))
+        self.assertFalse([ln for ln in lines if ln.startswith(f"  {name}:")])
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_an_empty_send_logs_no_summary_at_all(self, MockConverter):
+        MockConverter.return_value = self._converter({})
+        keeb, device = make_keeb(auto_ack=True)
+
+        _, lines = self._lines(keeb, ["app.png"], OverlayMRUCache(20))
+
+        self.assertFalse([ln for ln in lines if ln.startswith("Overlays:")])
 
 
 if __name__ == '__main__':

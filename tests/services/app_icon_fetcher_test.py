@@ -191,5 +191,57 @@ class FetcherTest(unittest.TestCase):
         self.assertEqual(len(lines), 1, caught.output)
 
 
+
+class ResolvedIconLogTest(unittest.TestCase):
+    """The one INFO line that says which catalog entry an app resolved to.
+
+    It is the only place the resolution is visible: the overlay summary names
+    the mark `@prog:<slug>`, so without this nothing says WHY that slug was
+    chosen for this app.
+    """
+
+    def _log_for(self, title):
+        marks = {"mdi:microsoft-word": "MASK"}
+        patches = [
+            mock.patch("polyhost.services.app_icons.fetch_icon",
+                       lambda name, cache_dir=None, allow_network=None:
+                       f"/cache/{name}" if name in marks else None),
+            mock.patch("polyhost.services.app_icons.render_overlay",
+                       lambda path, box=40: marks[path[len("/cache/"):]]),
+            mock.patch("polyhost.services.app_icons.title_of", lambda path: title),
+        ]
+        for patcher in patches:
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        fetcher = AppIconFetcher(on_ready=lambda slug: None,
+                                 mapping={"winword": "mdi:microsoft-word"})
+        self.addCleanup(fetcher.stop)
+        with self.assertLogs("PolyHost", "INFO") as caught:
+            _wait(lambda: fetcher.overlay_for("winword")[0] is not None)
+        return [r for r in caught.output if "Program icon:" in r]
+
+    def test_a_catalog_WITH_a_title_names_the_brand_and_the_slug(self):
+        lines = self._log_for("Microsoft Word")
+        self.assertEqual(len(lines), 1, lines)
+        self.assertIn("Microsoft Word (mdi:microsoft-word)", lines[0])
+
+    def test_a_catalog_with_NO_title_names_the_slug_ONCE(self):
+        """⚠️ MDI's SVGs carry no `<title>`, so `title or name` printed the name
+        TWICE — `Program icon: mdi:microsoft-word (mdi:microsoft-word)`, which
+        reads as a bug in the resolver rather than as a missing title. Half the
+        shipped catalog is MDI, so this is the COMMON case, not an edge one.
+        """
+        lines = self._log_for(None)
+        self.assertEqual(len(lines), 1, lines)
+        self.assertIn("mdi:microsoft-word", lines[0])
+        self.assertEqual(lines[0].count("mdi:microsoft-word"), 1, lines[0])
+
+    def test_a_title_that_merely_REPEATS_the_slug_is_not_printed_twice(self):
+        # Simple Icons titles are brand names, so one can equal its own slug
+        # ("Figma"); the parenthetical would then say nothing.
+        lines = self._log_for("MDI:Microsoft-Word")
+        self.assertEqual(lines[0].count("icrosoft-"), 1, lines[0])
+
+
 if __name__ == "__main__":
     unittest.main()

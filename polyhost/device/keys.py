@@ -265,3 +265,27 @@ class KeyCode(Enum):
     KC_RIGHT_SHIFT = 0x00E5
     KC_RIGHT_ALT = 0x00E6
     KC_RIGHT_GUI = 0x00E7
+
+
+def describe_key(keycode: int, modifier) -> str:
+    """`ESC` / `Ctrl+Shift+B` — a keycap named the way a log reader expects.
+
+    Used by the overlay-send summary, where the whole point is answering "which
+    keys did that just draw on" without decoding hex.
+    """
+    try:
+        name = KeyCode(keycode).name
+    except ValueError:
+        # An unknown keycode still has known MODIFIERS -- returning the bare hex
+        # here would describe a Ctrl+x cell as a plain one, which is the summary
+        # saying something false rather than something incomplete.
+        name = f"0x{keycode:02X}"
+    else:
+        name = name[3:] if name.startswith("KC_") else name
+        name = {"ESCAPE": "ESC", "SPACE": "SPC"}.get(name, name)
+    value = getattr(modifier, "value", modifier)
+    if not value:
+        return name
+    parts = [label for bit, label in ((1, "Ctrl"), (2, "Shift"), (4, "Alt"), (8, "GUI"))
+             if value & bit]
+    return "+".join(parts + [name]) if parts else name
