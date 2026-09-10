@@ -470,6 +470,15 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
 
 ## Key notes
 
+Nine groups, ordered roughly by how often a session needs them. Six subsystems that
+are read only while you are inside them have moved to `docs/` and are reached from a
+pointer bullet in the group they belong to — the layout editor, the font-pack
+inspect/extend dialogs, diagnostics, telemetry, icons and autostart. Each pointer
+keeps the parts of its subject that bind code *outside* it; if a rule is in a
+pointer, it applies to you even if you never open the file.
+
+### Protocol, versions and the connect gate
+
 - **Version handling is RANGE-connect + per-feature gating (not exact-match).** The
   reconnect gate (`polyhost/core/decisions.py` `decide_reconnect_apply`) connects to any
   firmware whose protocol is **≥ `MIN_SUPPORTED_PROTOCOL`** (= 2, the packed-lang-list
@@ -487,6 +496,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   lists supported/unsupported features. This replaced the old exact-match gate that greyed
   out the **whole** menu on any mismatch (which had "been forgotten twice", leaving current
   keyboards rejected).
+
 - **Every new device-facing command MUST be version-gated — no exceptions.** When you add a
   HID command that the firmware only understands from protocol **N**: add a
   `FEATURE_MIN_PROTOCOL` entry (`device/poly_kybd.py`); guard the `PolyKybd` setter with
@@ -500,6 +510,54 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   range-connect model exists to prevent, and the kind of gate that "has been forgotten
   twice". The capability tests in `tests/device/poly_kybd_capabilities_test.py` are the
   pattern to extend.
+
+- **Wire-format-divergent commands are ENCODED for the device's protocol, not blocked.**
+  The only core command whose wire format ever changed is the **plain-overlay upload**
+  (P11 packed the modifier+segment into one header byte). `send_overlay_for_keycode`
+  (`device/poly_kybd.py`) branches on `self.protocol_version`:
+  `>= OVERLAY_PACKED_HEADER_MIN_PROTOCOL (11)` sends the packed 4-byte header, below it the
+  pre-v11 5-byte `[id, cmd, keycode, modifier, segment]` form — so overlays work on an older
+  keyboard too. Compressed/ROI headers never changed. For a device **newer** than the host
+  (only reachable via the "ignore" newer-firmware choice) we send our newest-known (packed)
+  form and accept that a *future* breaking change to an existing command is unknown to us.
+  If you add another wire-format-breaking change to an existing command, add a
+  `FEATURE_MIN_PROTOCOL` entry + an encode-branch here; a *new* command just needs a
+  `supports()` gate.
+
+- **Newer firmware than the host PROMPTS the user (session policy, default safe).** When
+  `kb_proto > __protocol__`, blindly trusting a newer firmware for wire-format-sensitive
+  commands is risky, so instead of silently connecting the host asks (dialog
+  `polyhost/gui/newer_firmware_dialog.py`, three choices): **Safe mode** (connect but
+  restrict to the stable set — firmware-update + Debugging; the default and the
+  dismiss/close outcome), **Check for updates** (run the host-app update check via the
+  `_on_update_clicked` idiom with `force=True`; install if a matching release is found, else
+  fall back to safe), or **Connect anyway** (full connect, newest-known formats). The choice
+  is a **session-only** core policy `PolyCore._newer_fw_policy` (like `ignore_version`; keyed
+  to the protocol it was chosen for so a re-flash re-asks) set via
+  `set_newer_firmware_policy(choice)` → `M_SET_NEWER_FW_POLICY` (RemoteCore mirror) →
+  drops `last_applied_connected` so the next probe re-applies. Safe mode is
+  `decide_reconnect_apply`'s newer branch: `connected=True` (so the probe doesn't churn) but
+  `compatible=False`/`safe_mode=True`, `tick_window_tracking` skips overlay/OS traffic while
+  `safe_mode`, and the status carries `safe_mode` + `newer_fw_pending` (with capabilities
+  reported all-False, so feature menus grey out). The GUI drives the dialog off that status
+  seam in **both** in-process (`_apply_reconnect_result`) and `--connect` client
+  (`_render_remote_status`) paths — `_maybe_prompt_newer_firmware`, once per protocol per
+  session. `--ignore-version` still forces a full connect (wins over the safe default). A
+  headless daemon with no GUI defaults to safe; drive it with `polyctl newer-policy
+  [ignore|safe]`.
+
+- **Still bump `__protocol__` (`polyhost/_version.py`) in lockstep with the firmware
+  PROTOCOL_VERSION.** It now defines the host's *newest-known* protocol (the fully-supported
+  "match" and the newest wire format the host emits), **not** a hard connect gate. Rule of
+  thumb unchanged: when you add a firmware-protocol feature threshold (e.g.
+  `IDLE_STYLE_MIN_PROTOCOL`, `GLYPH_SCRIPT_MIN_PROTOCOL`, `OVERLAY_PACKED_HEADER_MIN_PROTOCOL`),
+  the firmware protocol advanced to **N**, so set `__protocol__` to **N** and add the feature
+  to `FEATURE_MIN_PROTOCOL` in the same change. Forgetting it now only downgrades the status
+  to "update the host app" and disables that one feature (the keyboard still connects), rather
+  than rejecting the keyboard outright.
+
+- **Firmware update survives protocol mismatches**: `PolyHost.device_present` tracks "a device answers protocol-independent queries (GET_ID/GET_LANG)" separately from `connected` (protocol/version compatible). The flash/apply/bootloader actions and the release-update flow gate on `_fw_actions_allowed()` (present, not paused) — NOT on `connected` — so a keyboard on a mismatched protocol can always be updated (`CommandsSubMenu.update_enabled` re-enables exactly those items when the rest of the menu is greyed out). The HID flash protocol (`hid_fw_up`) is dispatched independently of `PROTOCOL_VERSION` in the firmware. Don't re-gate any firmware-update path on `self.connected`.
+
 - **When the BOARD changes something the host caches, the answer is a counter on a
   reply the host ALREADY polls — not a new poll, and not a push.** The reconnect probe
   sends GET_ID + GET_LANG every second (`RECONNECT_CYCLE_MSEC`), so the firmware's
@@ -524,68 +582,12 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     bugs live in. That invariant is a design decision, not an accident: v3 made
     `SEND_OVERLAY_MAPPING` silent to REDUCE escaped ACKs.
 
-- **Wire-format-divergent commands are ENCODED for the device's protocol, not blocked.**
-  The only core command whose wire format ever changed is the **plain-overlay upload**
-  (P11 packed the modifier+segment into one header byte). `send_overlay_for_keycode`
-  (`device/poly_kybd.py`) branches on `self.protocol_version`:
-  `>= OVERLAY_PACKED_HEADER_MIN_PROTOCOL (11)` sends the packed 4-byte header, below it the
-  pre-v11 5-byte `[id, cmd, keycode, modifier, segment]` form — so overlays work on an older
-  keyboard too. Compressed/ROI headers never changed. For a device **newer** than the host
-  (only reachable via the "ignore" newer-firmware choice) we send our newest-known (packed)
-  form and accept that a *future* breaking change to an existing command is unknown to us.
-  If you add another wire-format-breaking change to an existing command, add a
-  `FEATURE_MIN_PROTOCOL` entry + an encode-branch here; a *new* command just needs a
-  `supports()` gate.
-- **Newer firmware than the host PROMPTS the user (session policy, default safe).** When
-  `kb_proto > __protocol__`, blindly trusting a newer firmware for wire-format-sensitive
-  commands is risky, so instead of silently connecting the host asks (dialog
-  `polyhost/gui/newer_firmware_dialog.py`, three choices): **Safe mode** (connect but
-  restrict to the stable set — firmware-update + Debugging; the default and the
-  dismiss/close outcome), **Check for updates** (run the host-app update check via the
-  `_on_update_clicked` idiom with `force=True`; install if a matching release is found, else
-  fall back to safe), or **Connect anyway** (full connect, newest-known formats). The choice
-  is a **session-only** core policy `PolyCore._newer_fw_policy` (like `ignore_version`; keyed
-  to the protocol it was chosen for so a re-flash re-asks) set via
-  `set_newer_firmware_policy(choice)` → `M_SET_NEWER_FW_POLICY` (RemoteCore mirror) →
-  drops `last_applied_connected` so the next probe re-applies. Safe mode is
-  `decide_reconnect_apply`'s newer branch: `connected=True` (so the probe doesn't churn) but
-  `compatible=False`/`safe_mode=True`, `tick_window_tracking` skips overlay/OS traffic while
-  `safe_mode`, and the status carries `safe_mode` + `newer_fw_pending` (with capabilities
-  reported all-False, so feature menus grey out). The GUI drives the dialog off that status
-  seam in **both** in-process (`_apply_reconnect_result`) and `--connect` client
-  (`_render_remote_status`) paths — `_maybe_prompt_newer_firmware`, once per protocol per
-  session. `--ignore-version` still forces a full connect (wins over the safe default). A
-  headless daemon with no GUI defaults to safe; drive it with `polyctl newer-policy
-  [ignore|safe]`.
-- **Still bump `__protocol__` (`polyhost/_version.py`) in lockstep with the firmware
-  PROTOCOL_VERSION.** It now defines the host's *newest-known* protocol (the fully-supported
-  "match" and the newest wire format the host emits), **not** a hard connect gate. Rule of
-  thumb unchanged: when you add a firmware-protocol feature threshold (e.g.
-  `IDLE_STYLE_MIN_PROTOCOL`, `GLYPH_SCRIPT_MIN_PROTOCOL`, `OVERLAY_PACKED_HEADER_MIN_PROTOCOL`),
-  the firmware protocol advanced to **N**, so set `__protocol__` to **N** and add the feature
-  to `FEATURE_MIN_PROTOCOL` in the same change. Forgetting it now only downgrades the status
-  to "update the host app" and disables that one feature (the keyboard still connects), rather
-  than rejecting the keyboard outright.
-- **GUI self-update must be applied by the DAEMON, not the client (daemon-by-default).**
-  In daemon mode the tray GUI is a `--connect` client and a separate `--headless`
-  daemon owns `PolyCore` — and therefore the **protocol gate** (its loaded
-  `_version.__protocol__`). So the tray's "Check for updates → install" routes the
-  install through the daemon over RPC (`RemoteCore.install_update` → `M_UPDATE_INSTALL`
-  → `PolyCore.install_update`), letting the daemon overwrite the files and **re-exec
-  itself** (`headless.py` `_on_update_event`). It must **not** run `UpdateInstaller`
-  in the GUI process: that refreshed only the client while the daemon kept running the
-  pre-update code, so the daemon stayed on the OLD `__protocol__` and its `FEATURE_MIN_PROTOCOL`
-  table (historically it *rejected* the keyboard with *"Protocol mismatch, please update"*;
-  under the range-connect model it instead keeps the keyboard on the old capability set —
-  newer features disabled, status stuck on "update the host app") until manually restarted
-  (field 2026-07). After the daemon re-execs, `PolyHost._on_update_done` (client mode)
-  waits for the control endpoint to go **down → back LIVE** (`_await_daemon_restart_then_relaunch`)
-  before relaunching the GUI — relaunching immediately would re-attach to the still-up
-  **old** daemon (the bug) or race the re-exec and spawn a second daemon. The daemon's
-  `update_*` **core events are dicts** (`{"pct","msg"}` / `{"relay_path"}` / `{"msg"}`)
-  while the legacy in-GUI `UpdateInstaller` emits tuples/strings — `_on_job_done`
-  normalizes both. The `polyctl update install` path already restarted the daemon
-  correctly; only the tray menu path was broken.
+- **Single-key keymap write**: the firmware supports `ID_DYNAMIC_KEYMAP_SET_KEYCODE` (0x05) — payload is `[layer, row, col, keycode_hi, keycode_lo]`. No need to write a full layer; `PolyKybd.set_dynamic_keycode()` wraps this.
+
+- **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
+
+### The font pack
+
 - **Font-pack bundles (protocol 6+)**: the external-flash font pack ships as **N
   per-family bundles** (`polyhost/res/fontpack/<id>.plyf` + `bundles.json`), not one
   blob. `query_id()` parses the per-bundle `content_version` block the firmware
@@ -655,6 +657,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       side that breaks the mapping fails a test somewhere. **When you touch these
       status values, update BOTH suites** — and prefer adding the firmware-side
       assertion first, since that is the end a host fixture can never police.
+
 - **The font-pack INSPECT and EXTEND dialogs are
   [`docs/fontpack-tools.md`](docs/fontpack-tools.md)** — a viewer for every bundle
   glyph as the keycap draws it, and a builder for new glyphs from a TTF/OTF with
@@ -675,6 +678,30 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `lang_flags.json` are for — both mirrored byte-identically from the firmware's
     generated copies. Keep them in sync (`cmp`); the editor silently pre-fills the
     wrong controls otherwise.
+
+- **The font-pack flash events carry a `kind` — label UIs from it, not the event name.**
+  The doom easter egg's game data (`.whx`) and executable engine pack (`.plyx`) ride the
+  **font-pack transport**, so `PolyCore.install_doomwad`/`install_doompack` emit the same
+  `fontpack_flash_progress`/`fontpack_flash_done` events as a real bundle flash. Both
+  payloads now carry `"kind"` (`fontpack`/`doomwad`/`doompack`, `polyhost/core/events.py`
+  `FLASH_KIND_*` + `flash_kind_label()`), and `polyctl` + the tray render their wording from
+  it — a hardcoded "fontpack"/"updating keyboard fonts" reported a `.plyx` install as a font
+  pack (field 2026-08). A missing `kind` means font pack (older cores), so the fallback is
+  the previous wording.
+  - ⚠️ **`install_doompack` sends UNSIGNED EXECUTABLE CODE, and nothing on either side
+    checks a signature for it.** The `.sig` handling in `hid_fw_up` covers the *firmware*
+    image only; the font-pack transport has no equivalent, and the firmware's
+    `fw_staging_check_signature()` is reached only on the `FW_TARGET_FIRMWARE` target. The
+    keyboard then *branches into* a `.plyx` it validated with a CRC32 (no MPU on the M0+),
+    so anything that can talk raw HID can flash a crafted pack, select `IDLE_STYLE_IDDQD`
+    over cmd 28, and get code execution on the next idle. Do **not** describe the keyboard
+    as "signed firmware, so a malicious flash is covered" — it is not. Tracked as **FW-9**
+    (open, high) in `polykybd-ctnd/docs/SECURITY_AUDIT.md`; the fix is firmware-side
+    (verify the pack at load time), so there is nothing for the host to do beyond not
+    over-claiming.
+
+### Device features over HID
+
 - **Glyph-script override (protocol 9+; expanded set at v10)**: HID cmd 30
   (`GLYPH_SCRIPT`) selects a glyph-script *override* of the keycap language legends —
   `GlyphScript.STANDARD` (0, normal) or one of the fantasy/retro scripts from the
@@ -730,6 +757,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       whose image Qt cannot load renders as an empty box and says nothing.
       ⚠️ `QMenu.setToolTipsVisible(True)` is required — action tooltips are off by
       default, so without it the whole tooltip half is a silent no-op.
+
 - **Keycap legend size (protocol 13+)**: HID cmd 34 sets how large a key's MAIN
   legend is drawn — `GlyphSize.SMALL` (the original face), `MEDIUM`, `LARGE`. Wired
   exactly like the glyph script: `PolyKybd.get/set_glyph_size` behind a
@@ -752,21 +780,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     coordinate. `--check` is the gate to re-run after any change to the firmware's
     `latinbig` entries; `--out` writes the contact sheet the docs page uses. Same
     caveat as `oled_preview.py`: it is a Python model of the C and can drift.
-- ⚠️ **`tools/apply_tuner.py`'s export grammar CANNOT express the `caps` column** —
-  its key-line regex is `base|shift|altgr`, matching what the keycap tuner emits, and
-  the LUT's four sub-columns are lower/upper/**caps**/AltGr. A bulk edit that touches
-  caps cells therefore cannot go through the CLI: **import the module and call its
-  `set_cell()` / `str_cell()`** so the surgical `sheet2.xml` path (which preserves the
-  other sheets' formula caches) is still the same tested code. ⚠️ Those two are only
-  the XML edit — `set_cell()` RETURNS the modified sheet and persists nothing, so the
-  caller still owns the language-column arithmetic (`base = 2 + langs.index(lang)*4`,
-  `+0/1/2/3` for base/shift/caps/AltGr), rewriting the zip entry, and the `cog -r
-  lang_lut.c` afterwards. The whole loop, with its verification steps, is the
-  firmware repo's `tune-lang-lut-cells` skill; this note is only about which half
-  the CLI cannot do. Hit on 2026-09-03,
-  where 14 of the 117 cells drawing `§ £ ± µ` were caps. Widening the regex is a
-  bigger change than it looks — the tuner never emits `caps`, so the grammar would
-  gain an arm nothing exercises.
+
 - **Macros (protocol 15+)**: HID cmds 36/37/38 behind ONE `"macros"`
   `FEATURE_MIN_PROTOCOL` entry — splitting the gate would let the editor load a list
   from a keyboard that cannot save it. `PolyKybd.get_macro_info` /
@@ -827,6 +841,25 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     third face, not another fallback path"). It landed for a different consumer — the
     status-screen preview draws every row with it — which is the usual way a
     long-standing gap gets closed.
+
+- ⚠️ **`tools/apply_tuner.py`'s export grammar CANNOT express the `caps` column** —
+  its key-line regex is `base|shift|altgr`, matching what the keycap tuner emits, and
+  the LUT's four sub-columns are lower/upper/**caps**/AltGr. A bulk edit that touches
+  caps cells therefore cannot go through the CLI: **import the module and call its
+  `set_cell()` / `str_cell()`** so the surgical `sheet2.xml` path (which preserves the
+  other sheets' formula caches) is still the same tested code. ⚠️ Those two are only
+  the XML edit — `set_cell()` RETURNS the modified sheet and persists nothing, so the
+  caller still owns the language-column arithmetic (`base = 2 + langs.index(lang)*4`,
+  `+0/1/2/3` for base/shift/caps/AltGr), rewriting the zip entry, and the `cog -r
+  lang_lut.c` afterwards. The whole loop, with its verification steps, is the
+  firmware repo's `tune-lang-lut-cells` skill; this note is only about which half
+  the CLI cannot do. Hit on 2026-09-03,
+  where 14 of the 117 cells drawing `§ £ ± µ` were caps. Widening the regex is a
+  bigger change than it looks — the tuner never emits `caps`, so the grammar would
+  gain an arm nothing exercises.
+
+### The layout editor
+
 - **The keymap editor — key geometry, the case plate, the three preview modes and
   where the preview data comes from — is
   [`docs/layout-editor.md`](docs/layout-editor.md).** Read it before touching
@@ -855,6 +888,114 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     `layer_names.yaml` rotted through TWO renames that way and mislabelled the
     editor's layer tabs against an enum that no longer existed. **Run the generator
     — or the `cmp` — rather than trusting either kind of file.**
+
+### The tray, its menus, and the OS around them
+
+- **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
+  that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
+  PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal
+  user. Now: status · Pause · [Language] · Brightness · Idle Display · Keycap Script ·
+  Configure Keymap · Updates · Maintenance · Settings · Help & About · Quit, with
+  **Developer** slotted in before Settings when developer mode is on. The invariant is
+  that turning developer mode on **does not rearrange anything** (asserted by
+  `tests/gui/host_client_test.py` `test_developer_mode_only_adds_a_submenu`), so muscle
+  memory survives the toggle. `CommandsSubMenu` (`gui/cmd_menu.py`) builds Brightness +
+  Maintenance + the Developer submenus and gates them off **explicit action lists**
+  (`_device_actions` follow `connected`, `_fw_actions` follow `fw_enabled`) — it can no
+  longer walk one menu's actions, since they live under different parents. ⚠️
+  `managed_connection_status` still blanket-disables every top-level action first, so a
+  **new group parent must be re-enabled explicitly there** or its whole submenu goes
+  unreachable on a disconnect (that is why Updates / Help & About / Pause are listed).
+  Two rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
+  entry (only while `safe_mode`) and Install WinCompose (only while it isn't running).
+  The language menu is built lazily and inserts itself at `self._lang_anchor`
+  (Brightness), not at index 1.
+
+- **A menu row that can answer its own question should — the font-pack row is the
+  pattern.** `PolyCore.fontpack_bundle_status()` is a **local** comparison (the cached
+  `GET_ID` version block vs the shipped `bundles.json`, no device I/O on either side of
+  the RPC), so the Updates row relabels itself on `aboutToShow` — *"Keyboard fonts: up
+  to date"* (disabled) or *"Update keyboard fonts (N)…"* with the stale bundle ids in
+  its tooltip — instead of hiding the answer behind a status dialog. Same idea in
+  Brightness: *"Back to automatic"* renames itself to *"Clear manual override"* when
+  `brightness_set_daylight_dependent` is off, because that is what it would actually do.
+  Keep such refreshes to reads that are genuinely free; an `aboutToShow` that touches
+  the device would stall the menu.
+
+- **"Back to automatic" exists because the firmware's auto mode is a ONE-WAY DOOR from
+  the host's side.** Any manual `set_brightness` drops the keyboard out of auto mode
+  (its own LTR-559 sensor then backs off too) and nothing re-engages it until the host
+  deliberately re-asserts — so the tray's brightness presets used to strand the keyboard
+  in manual until a replug. The entry calls `PolyCore.refresh_daylight_brightness()`
+  (daylight on → `VOLATILE|AUTO_ON` + the current value; off → `AUTO_OFF`, i.e. back to
+  the keyboard's stored manual level), which is now `M_DAYLIGHT_REFRESH` + a `RemoteCore`
+  mirror + `polyctl brightness --auto`. It returns `(True, "queued")` like every other
+  command-API method — it is a `submit`, not a `run_sync`.
+
+- **Developer mode (`--dev`) is SEPARATE from log verbosity — and it is a persisted
+  setting, not just a flag.** `--debug N` used to conflate three things: the log level,
+  the developer/diagnostic UI surface, and `allow_key_injection`. It is now split:
+  **`--dev [0|1|2]`** (bare = 1) carries the level *and* turns developer mode on, while
+  the **`developer_mode`** setting (default False) governs the surface alone. `main_app.resolve_dev`
+  is the one pure decision point (unit-tested): flag absent → the setting decides and
+  logging stays INFO; flag present → it wins **in both directions**, so `--dev 0` forces
+  developer mode off over an enabled setting (hence `default=None` — "flag absent" must
+  stay distinguishable from `--dev 0`). The setting exists because under daemon-by-default
+  the tray GUI is launched by autostart **with no flags**, so a flag-only gate made every
+  developer tool unreachable unless you started the app by hand. `--debug N` survives as a
+  hidden deprecated alias (existing shortcuts / autostart entries) that logs a warning.
+  `PolyHost(log_level, verbosity, developer, …)`, `run_headless(..., developer=)` and
+  `SettingsDialog.setup(..., developer_mode=)` all take the two independently; the
+  GUI-spawned daemon inherits only the **resolved level** as `--dev N` (`_spawned_daemon_flags`)
+  and reads `developer_mode` from the same settings file itself. Read it at startup with
+  `settings.read_setting("developer_mode", False)` — the file-only helper — **not**
+  `PolySettings()`, which creates/rewrites the config and log-dumps every key before the
+  launch path is even known.
+
+- **Both tray apps FOLLOW THE OS light/dark setting (2026-09-07) —
+  `services/os_theme.py` (Qt-free reader + rule) + `gui/theme.apply_theme`.**
+  They wore the dark palette unconditionally, so a light Windows desktop got a
+  dark tray menu and dark dialogs against light windows (field). `ui_theme`
+  ('auto' default, or 'light'/'dark') overrides the desktop; the settings dialog
+  renders it as a **dropdown** via `settings_dialog.CHOICES`, the one place a
+  fixed value set gets a combo instead of the free-text fallback.
+  - **Detection is per platform and never raises**: Windows reads
+    `AppsUseLightTheme` (the APP one — `SystemUsesLightTheme` is the
+    taskbar/Start colour and can differ) with `winreg`, macOS `defaults read -g
+    AppleInterfaceStyle` (⚠️ the key only EXISTS in dark mode, so a failed read
+    means light), Linux `gsettings` `color-scheme` then the gtk-theme name. A
+    desktop that does not answer reports None and `resolve_theme` falls back to
+    **dark** — the historical look, so a failed detection changes nothing rather
+    than flipping somebody's tray.
+  - ⚠️ **The STYLE stays Fusion in both themes; only the palette changes.** Qt 5's
+    native Windows style has no dark mode, so dark must be Fusion, and switching
+    style by theme would make the app look like two different programs depending
+    on a system setting — with the Fusion-shaped bits (`cmd_menu`'s proxy style,
+    the inspectors) only ever checked in one of them. This follows the OS's
+    light/dark CHOICE, not the platform's native chrome.
+  - **The tray re-follows on `menu.aboutToShow`** (`PolyHost._refresh_theme`), so
+    switching the desktop needs no restart; the detection is cached 5 s because on
+    macOS/Linux it is a subprocess. The **forwarder reads it once at startup** — it
+    has no such hook, and its dialogs are short-lived.
+  - ⚠️ **A rendered pixmap does NOT follow a palette change, so the glyph-script
+    previews are dropped and rebuilt** — their ink is picked from the palette
+    (`glyph_script_icon.preview_ink`: the OLED cool white on dark, the palette's
+    own text colour on light), and near-white ink on a light menu is an invisible
+    icon.
+  - ⚠️ **Some developer dialogs hardcode dark colours** (`mru_inspector_dialog`,
+    `fontpack_inspector_dialog`, `fontpack_extend_dialog`) — mostly around OLED
+    previews, where a black ground is the content rather than chrome. Left alone
+    deliberately; every surface a normal user sees draws from the palette.
+  - **Verified by rendering the real menu in both themes**
+    (`ui_theme` in `settings.yaml` + `tools/render_tray_menu.py`), which is also
+    what showed the Material menu icons read on white — they are mid-tone.
+  - ⚠️ **A Linux tray menu can look light while the app palette is dark, and that
+    is NOT evidence the palette applied** — reported from a Linux desktop while the
+    apps were still unconditionally dark. The likely mechanism is that the menu is
+    exported to the shell (StatusNotifier/DBusMenu) and drawn with the system
+    theme rather than by Qt, but that is **unverified here**. The way to tell them
+    apart is a real window: open Settings, which Qt certainly draws.
+
 - **The brand mark and the menu icons are [`docs/icons.md`](docs/icons.md).**
   Three rules bind code outside that file:
   - **The mark is GENERATED — edit `tools/gen_brand_icons.py`, never the PNGs**, and
@@ -873,26 +1014,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     setting, a colour picked against one ground can vanish against the other:
     `#FFFF55` is 7.6:1 on the dark chrome and **1.07:1** on the light one. The test
     holds a 2.0 contrast floor on both.
-- **The font-pack flash events carry a `kind` — label UIs from it, not the event name.**
-  The doom easter egg's game data (`.whx`) and executable engine pack (`.plyx`) ride the
-  **font-pack transport**, so `PolyCore.install_doomwad`/`install_doompack` emit the same
-  `fontpack_flash_progress`/`fontpack_flash_done` events as a real bundle flash. Both
-  payloads now carry `"kind"` (`fontpack`/`doomwad`/`doompack`, `polyhost/core/events.py`
-  `FLASH_KIND_*` + `flash_kind_label()`), and `polyctl` + the tray render their wording from
-  it — a hardcoded "fontpack"/"updating keyboard fonts" reported a `.plyx` install as a font
-  pack (field 2026-08). A missing `kind` means font pack (older cores), so the fallback is
-  the previous wording.
-  - ⚠️ **`install_doompack` sends UNSIGNED EXECUTABLE CODE, and nothing on either side
-    checks a signature for it.** The `.sig` handling in `hid_fw_up` covers the *firmware*
-    image only; the font-pack transport has no equivalent, and the firmware's
-    `fw_staging_check_signature()` is reached only on the `FW_TARGET_FIRMWARE` target. The
-    keyboard then *branches into* a `.plyx` it validated with a CRC32 (no MPU on the M0+),
-    so anything that can talk raw HID can flash a crafted pack, select `IDLE_STYLE_IDDQD`
-    over cmd 28, and get code execution on the next idle. Do **not** describe the keyboard
-    as "signed firmware, so a malicious flash is covered" — it is not. Tracked as **FW-9**
-    (open, high) in `polykybd-ctnd/docs/SECURITY_AUDIT.md`; the fix is firmware-side
-    (verify the pack at load time), so there is nothing for the host to do beyond not
-    over-claiming.
+
 - **WinCompose install from the tray (Windows)**: WinCompose is what gives the keyboard real
   unicode output on Windows (`polyhost/input/unicode_input.py` — `wincompose_running()` picks
   `InputMethod.WinCompose` over the far more limited native path), so a fresh Windows box has
@@ -910,6 +1032,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `process_exists()` runs TASKLIST with **`CREATE_NO_WINDOW`** (else a console flashes under
   the `pythonw`/`.vbs` autostart chain) and **never raises** — it sits on the post-connect
   path, where an exception would abort the whole connect flow over a cosmetic detection.
+
 - **The unicode input method is WATCHED for the life of the core, and an
   ambiguous reading is applied WITHOUT being stored** (`PolyCore`
   `_start_wincompose_settle` / `_wincompose_settle_loop` / `_apply_unicode_mode`,
@@ -963,6 +1086,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   - ⚠️ **`shutdown()` and `_start_wincompose_settle` share a lock plus a one-way
     flag**, or a reconnect landing concurrently clears the stop Event and starts a
     fresh watcher holding the core after its worker has stopped.
+
 - **A settings change applies its device side effects through ONE core hook —
   `PolyCore.note_settings_changed(keys=None)`.** There are exactly two settings
   writers: `settings_set` (polyctl and the client-mode dialog) and the in-process
@@ -974,87 +1098,71 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   the setting was already on). `keys=None` means "anything in the dialog may have
   changed", which is all a whole-file write knows. Add the side effect to the hook,
   never to a caller.
-- **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
-  that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All
-  PolyKybd Commands") held 15 more — mostly diagnostics, one click from a normal
-  user. Now: status · Pause · [Language] · Brightness · Idle Display · Keycap Script ·
-  Configure Keymap · Updates · Maintenance · Settings · Help & About · Quit, with
-  **Developer** slotted in before Settings when developer mode is on. The invariant is
-  that turning developer mode on **does not rearrange anything** (asserted by
-  `tests/gui/host_client_test.py` `test_developer_mode_only_adds_a_submenu`), so muscle
-  memory survives the toggle. `CommandsSubMenu` (`gui/cmd_menu.py`) builds Brightness +
-  Maintenance + the Developer submenus and gates them off **explicit action lists**
-  (`_device_actions` follow `connected`, `_fw_actions` follow `fw_enabled`) — it can no
-  longer walk one menu's actions, since they live under different parents. ⚠️
-  `managed_connection_status` still blanket-disables every top-level action first, so a
-  **new group parent must be re-enabled explicitly there** or its whole submenu goes
-  unreachable on a disconnect (that is why Updates / Help & About / Pause are listed).
-  Two rows are **contextual** (built once, `setVisible` toggled): the newer-firmware
-  entry (only while `safe_mode`) and Install WinCompose (only while it isn't running).
-  The language menu is built lazily and inserts itself at `self._lang_anchor`
-  (Brightness), not at index 1.
-- **A menu row that can answer its own question should — the font-pack row is the
-  pattern.** `PolyCore.fontpack_bundle_status()` is a **local** comparison (the cached
-  `GET_ID` version block vs the shipped `bundles.json`, no device I/O on either side of
-  the RPC), so the Updates row relabels itself on `aboutToShow` — *"Keyboard fonts: up
-  to date"* (disabled) or *"Update keyboard fonts (N)…"* with the stale bundle ids in
-  its tooltip — instead of hiding the answer behind a status dialog. Same idea in
-  Brightness: *"Back to automatic"* renames itself to *"Clear manual override"* when
-  `brightness_set_daylight_dependent` is off, because that is what it would actually do.
-  Keep such refreshes to reads that are genuinely free; an `aboutToShow` that touches
-  the device would stall the menu.
-- **"Back to automatic" exists because the firmware's auto mode is a ONE-WAY DOOR from
-  the host's side.** Any manual `set_brightness` drops the keyboard out of auto mode
-  (its own LTR-559 sensor then backs off too) and nothing re-engages it until the host
-  deliberately re-asserts — so the tray's brightness presets used to strand the keyboard
-  in manual until a replug. The entry calls `PolyCore.refresh_daylight_brightness()`
-  (daylight on → `VOLATILE|AUTO_ON` + the current value; off → `AUTO_OFF`, i.e. back to
-  the keyboard's stored manual level), which is now `M_DAYLIGHT_REFRESH` + a `RemoteCore`
-  mirror + `polyctl brightness --auto`. It returns `(True, "queued")` like every other
-  command-API method — it is a `submit`, not a `run_sync`.
-- **Developer mode (`--dev`) is SEPARATE from log verbosity — and it is a persisted
-  setting, not just a flag.** `--debug N` used to conflate three things: the log level,
-  the developer/diagnostic UI surface, and `allow_key_injection`. It is now split:
-  **`--dev [0|1|2]`** (bare = 1) carries the level *and* turns developer mode on, while
-  the **`developer_mode`** setting (default False) governs the surface alone. `main_app.resolve_dev`
-  is the one pure decision point (unit-tested): flag absent → the setting decides and
-  logging stays INFO; flag present → it wins **in both directions**, so `--dev 0` forces
-  developer mode off over an enabled setting (hence `default=None` — "flag absent" must
-  stay distinguishable from `--dev 0`). The setting exists because under daemon-by-default
-  the tray GUI is launched by autostart **with no flags**, so a flag-only gate made every
-  developer tool unreachable unless you started the app by hand. `--debug N` survives as a
-  hidden deprecated alias (existing shortcuts / autostart entries) that logs a warning.
-  `PolyHost(log_level, verbosity, developer, …)`, `run_headless(..., developer=)` and
-  `SettingsDialog.setup(..., developer_mode=)` all take the two independently; the
-  GUI-spawned daemon inherits only the **resolved level** as `--dev N` (`_spawned_daemon_flags`)
-  and reads `developer_mode` from the same settings file itself. Read it at startup with
-  `settings.read_setting("developer_mode", False)` — the file-only helper — **not**
-  `PolySettings()`, which creates/rewrites the config and log-dumps every key before the
-  launch path is even known.
-- **Telemetry — the client, the Cloudflare collector and its traps — is
-  [`docs/telemetry-internals.md`](docs/telemetry-internals.md).** One small JSON POST
-  per install per day, **on by default**, opt out in the settings dialog or
-  `polyctl telemetry disable`; `TELEMETRY_ENDPOINT` empty disables sending entirely,
-  which is how it ships before a collector exists. Four things stay here:
-  - ⚠️ **The payload is an ALLOW-LIST at both ends — a privacy guarantee, not a
-    style choice.** The host can see window titles and app names, because it reads
-    them constantly for overlays. `build_payload()` copies named fields and **never
-    spreads a status dict**; the Worker rebuilds the row it stores. The frozen
-    `PAYLOAD_KEYS` test exists to make an accidental widening fail loudly.
-  - ⚠️ **There is NO in-app consent step.** The first-run dialog was removed, so the
-    **release notes are the disclosure** and the one INFO line
-    `_log_telemetry_notice` prints at every start is all a headless daemon can say.
-    Do not gate that line on an "already told them" flag, downgrade it to debug, or
-    drop it in a logging cleanup — and write the release notes *before* shipping a
-    release that sets the endpoint.
-  - **The collector is WRITE-ONLY by design** — no read route, therefore no route
-    that can leak the dataset. Read the data with `wrangler d1 execute` or
-    `telemetry-collector/dashboard.py --open`.
-  - ⚠️ **`workers.dev` is CLOUDFLARE's zone, not ours**, so every zone-scoped
-    Cloudflare product is unavailable here — WAF rate limiting and Cloudflare Access
-    both. Anything configured as a Worker **binding** works; anything Cloudflare
-    describes as "protect a route/hostname" needs a zone you own. This has cost a
-    round twice.
+
+- ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
+  `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
+  menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
+  `host.py` is simply **absent** there until wired separately. It matters most
+  for support features: the forwarder runs on a **different machine** from the
+  keyboard, so its logs can never appear in a bundle collected host-side, and
+  its failure domain (which window backend that desktop selects, the report
+  transport, the authkey) is exactly the log-diagnosable kind. Both "Report a
+  Problem…" and "Collect logs…" are wired in both places, and the forwarder
+  supplies its **own** diagnostics text leading with `FORWARDER mode (no keyboard
+  attached to this machine)` — the plain version line otherwise reads exactly
+  like a report from the keyboard machine, which is a different failure domain
+  entirely. `tests/gui/host_client_test.py` has a `forwarder` smoke mode; it
+  **skips** without `pywinctl`, which `forwarder.py` imports at module load.
+
+### Updates, autostart and daemon mode
+
+- **GUI self-update must be applied by the DAEMON, not the client (daemon-by-default).**
+  In daemon mode the tray GUI is a `--connect` client and a separate `--headless`
+  daemon owns `PolyCore` — and therefore the **protocol gate** (its loaded
+  `_version.__protocol__`). So the tray's "Check for updates → install" routes the
+  install through the daemon over RPC (`RemoteCore.install_update` → `M_UPDATE_INSTALL`
+  → `PolyCore.install_update`), letting the daemon overwrite the files and **re-exec
+  itself** (`headless.py` `_on_update_event`). It must **not** run `UpdateInstaller`
+  in the GUI process: that refreshed only the client while the daemon kept running the
+  pre-update code, so the daemon stayed on the OLD `__protocol__` and its `FEATURE_MIN_PROTOCOL`
+  table (historically it *rejected* the keyboard with *"Protocol mismatch, please update"*;
+  under the range-connect model it instead keeps the keyboard on the old capability set —
+  newer features disabled, status stuck on "update the host app") until manually restarted
+  (field 2026-07). After the daemon re-execs, `PolyHost._on_update_done` (client mode)
+  waits for the control endpoint to go **down → back LIVE** (`_await_daemon_restart_then_relaunch`)
+  before relaunching the GUI — relaunching immediately would re-attach to the still-up
+  **old** daemon (the bug) or race the re-exec and spawn a second daemon. The daemon's
+  `update_*` **core events are dicts** (`{"pct","msg"}` / `{"relay_path"}` / `{"msg"}`)
+  while the legacy in-GUI `UpdateInstaller` emits tuples/strings — `_on_job_done`
+  normalizes both. The `polyctl update install` path already restarted the daemon
+  correctly; only the tray menu path was broken.
+
+- **Autostart registration and the post-update relaunch chain are
+  [`docs/autostart.md`](docs/autostart.md).** `setup_autostart_for_app()` is called
+  from `main_app.py` unless `--portable`; Windows uses a non-elevated logon
+  scheduled task driving a venv-activating `.bat` through a hidden-launch `.vbs`,
+  Linux a `.desktop` entry, macOS a `launchd` plist. Four things stay here:
+  - ⚠️ **Every relaunch must be spawned DETACHED** — `updater.detached_popen_kwargs()`
+    / `spawn_detached()`. A plain `Popen` on Windows is how *"it doesn't start up
+    again after the update"* happens: the child inherits the exiting parent's console
+    and dies when that window closes, or, when the parent has none, is handed a brand
+    new console it then dies with. `sys.executable` must also be normalised to
+    `pythonw.exe`, or one session started from a terminal makes **every** later
+    restart console-owning.
+  - ⚠️ **The generated launchers live in the platformdirs config dir, NOT the
+    checkout** — they used to be in-tree under a `.gitignore` entry, so
+    `git clean -xdf` deleted the exact file the registered task points at and
+    autostart silently stopped working while the task still read `State: Ready`.
+  - ⚠️ **The Windows task is named `PolyHost`, not `PolyKybdHost`** — so
+    `Get-ScheduledTask -TaskName PolyKybdHost*` returns nothing on a perfectly
+    healthy install and reads as "autostart is gone".
+  - **`updater.preflight()` runs before the download**, at the one choke point the
+    tray, the daemon and `polyctl update install` all pass through: it checks the
+    copy *and* the relaunch, because an update that copies perfectly and then cannot
+    relaunch is indistinguishable from "the app never came back".
+
+### When something is reported broken
+
 - **Logs, crash reporting and the guided problem report are
   [`docs/diagnostics.md`](docs/diagnostics.md)** — the Qt-free `log_bundle` service
   and its three front ends (tray, log viewer, `polyctl logs`), the pre-filled GitHub
@@ -1084,6 +1192,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     first (and read it in PAIRS; each launch showed two `pythonw.exe`). Under
     daemon-by-default the daemon still owns the device and keeps switching overlays
     with no GUI attached, which is exactly why nothing looks broken.
+
 - **Multi-machine forwarding fails SILENTLY in three different ways, and NONE of
   them is diagnosable from the forwarder's own log.** All three were hit on one
   setup that had worked for weeks (field, 2026-08-17); the forwarder log showed
@@ -1133,64 +1242,36 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     is **part of the window's identity on both ends**, because an SPA route change
     moves neither handle nor title — the forwarder re-sends on a URL change rather
     than waiting out its 15 s heartbeat, and `remote_changed` re-matches.
-- ⚠️ **The FORWARDER is a second tray app, and it is easy to forget.**
-  `polyhost/forwarder.py` (`PolyForwarder`) has its own `QApplication`, its own
-  menu and its own `forwarder_log.txt` — so a user-facing tray feature added to
-  `host.py` is simply **absent** there until wired separately. It matters most
-  for support features: the forwarder runs on a **different machine** from the
-  keyboard, so its logs can never appear in a bundle collected host-side, and
-  its failure domain (which window backend that desktop selects, the report
-  transport, the authkey) is exactly the log-diagnosable kind. Both "Report a
-  Problem…" and "Collect logs…" are wired in both places, and the forwarder
-  supplies its **own** diagnostics text leading with `FORWARDER mode (no keyboard
-  attached to this machine)` — the plain version line otherwise reads exactly
-  like a report from the keyboard machine, which is a different failure domain
-  entirely. `tests/gui/host_client_test.py` has a `forwarder` smoke mode; it
-  **skips** without `pywinctl`, which `forwarder.py` imports at module load.
-- **Both tray apps FOLLOW THE OS light/dark setting (2026-09-07) —
-  `services/os_theme.py` (Qt-free reader + rule) + `gui/theme.apply_theme`.**
-  They wore the dark palette unconditionally, so a light Windows desktop got a
-  dark tray menu and dark dialogs against light windows (field). `ui_theme`
-  ('auto' default, or 'light'/'dark') overrides the desktop; the settings dialog
-  renders it as a **dropdown** via `settings_dialog.CHOICES`, the one place a
-  fixed value set gets a combo instead of the free-text fallback.
-  - **Detection is per platform and never raises**: Windows reads
-    `AppsUseLightTheme` (the APP one — `SystemUsesLightTheme` is the
-    taskbar/Start colour and can differ) with `winreg`, macOS `defaults read -g
-    AppleInterfaceStyle` (⚠️ the key only EXISTS in dark mode, so a failed read
-    means light), Linux `gsettings` `color-scheme` then the gtk-theme name. A
-    desktop that does not answer reports None and `resolve_theme` falls back to
-    **dark** — the historical look, so a failed detection changes nothing rather
-    than flipping somebody's tray.
-  - ⚠️ **The STYLE stays Fusion in both themes; only the palette changes.** Qt 5's
-    native Windows style has no dark mode, so dark must be Fusion, and switching
-    style by theme would make the app look like two different programs depending
-    on a system setting — with the Fusion-shaped bits (`cmd_menu`'s proxy style,
-    the inspectors) only ever checked in one of them. This follows the OS's
-    light/dark CHOICE, not the platform's native chrome.
-  - **The tray re-follows on `menu.aboutToShow`** (`PolyHost._refresh_theme`), so
-    switching the desktop needs no restart; the detection is cached 5 s because on
-    macOS/Linux it is a subprocess. The **forwarder reads it once at startup** — it
-    has no such hook, and its dialogs are short-lived.
-  - ⚠️ **A rendered pixmap does NOT follow a palette change, so the glyph-script
-    previews are dropped and rebuilt** — their ink is picked from the palette
-    (`glyph_script_icon.preview_ink`: the OLED cool white on dark, the palette's
-    own text colour on light), and near-white ink on a light menu is an invisible
-    icon.
-  - ⚠️ **Some developer dialogs hardcode dark colours** (`mru_inspector_dialog`,
-    `fontpack_inspector_dialog`, `fontpack_extend_dialog`) — mostly around OLED
-    previews, where a black ground is the content rather than chrome. Left alone
-    deliberately; every surface a normal user sees draws from the palette.
-  - **Verified by rendering the real menu in both themes**
-    (`ui_theme` in `settings.yaml` + `tools/render_tray_menu.py`), which is also
-    what showed the Material menu icons read on white — they are mid-tone.
-  - ⚠️ **A Linux tray menu can look light while the app palette is dark, and that
-    is NOT evidence the palette applied** — reported from a Linux desktop while the
-    apps were still unconditionally dark. The likely mechanism is that the menu is
-    exported to the shell (StatusNotifier/DBusMenu) and drawn with the system
-    theme rather than by Qt, but that is **unverified here**. The way to tell them
-    apart is a real window: open Settings, which Qt certainly draws.
+
+- **Telemetry — the client, the Cloudflare collector and its traps — is
+  [`docs/telemetry-internals.md`](docs/telemetry-internals.md).** One small JSON POST
+  per install per day, **on by default**, opt out in the settings dialog or
+  `polyctl telemetry disable`; `TELEMETRY_ENDPOINT` empty disables sending entirely,
+  which is how it ships before a collector exists. Four things stay here:
+  - ⚠️ **The payload is an ALLOW-LIST at both ends — a privacy guarantee, not a
+    style choice.** The host can see window titles and app names, because it reads
+    them constantly for overlays. `build_payload()` copies named fields and **never
+    spreads a status dict**; the Worker rebuilds the row it stores. The frozen
+    `PAYLOAD_KEYS` test exists to make an accidental widening fail loudly.
+  - ⚠️ **There is NO in-app consent step.** The first-run dialog was removed, so the
+    **release notes are the disclosure** and the one INFO line
+    `_log_telemetry_notice` prints at every start is all a headless daemon can say.
+    Do not gate that line on an "already told them" flag, downgrade it to debug, or
+    drop it in a logging cleanup — and write the release notes *before* shipping a
+    release that sets the endpoint.
+  - **The collector is WRITE-ONLY by design** — no read route, therefore no route
+    that can leak the dataset. Read the data with `wrangler d1 execute` or
+    `telemetry-collector/dashboard.py --open`.
+  - ⚠️ **`workers.dev` is CLOUDFLARE's zone, not ours**, so every zone-scoped
+    Cloudflare product is unavailable here — WAF rate limiting and Cloudflare Access
+    both. Anything configured as a Worker **binding** works; anything Cloudflare
+    describes as "protect a route/hostname" needs a zone you own. This has cost a
+    round twice.
+
+### Environment
+
 - **Linux HID permissions**: `polyhost/device/99-hid.rules` must be installed as a udev rule for non-root HID access.
+
 - **Venv**: always use `PolyKybdHost/.venv/bin/python` — system `python3` lacks numpy, PyQt5, and other runtime deps. 
   - **Note on multiple venvs**: This project shares a workspace with `qmk_firmware/`. The QMK build uses a separate global venv (`~/.qmk_venv`) installed by the session setup script. The two venvs are **completely isolated and do not interfere** — each has its own Python executable and `site-packages`. When you activate `source .venv/bin/activate` in PolyKybdHost, it activates *this* project's venv; QMK commands via the global alias (e.g., `qmk compile`) still use the separate `~/.qmk_venv` and will not conflict with PolyKybdHost's dependencies.
   - **In a fresh remote/web container the `.venv` does not exist yet** — create it and install the test deps: `python3 -m venv .venv && .venv/bin/pip install numpy pyserial hid platformdirs pyyaml pillow`, plus the hidapi **system** libs `sudo apt-get install -y libhidapi-hidraw0 libhidapi-libusb0` (the `hid` module raises `ImportError: Unable to load any of the following libraries:libhidapi-*` without them). That set is enough to run the device/unit tests (`tests.device.*`); GUI tests additionally need an X server (see below).
@@ -1214,7 +1295,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     all. **Install the deps and read the count**; the failure list alone cannot tell a
     green suite from an absent one. Same rule as the appending-tests-after-`__main__`
     note, in the opposite direction.
-- **`hid_reconnect_retries` is clamped to ≥1 in `PolyKybd.connect()`** (`max(1, …)`, `device/poly_kybd.py`): `connect()` runs on every ~1 s reconnect probe, and with the setting at 0 the `range(retries)` GET_ID loop was skipped entirely, so it blindly re-enumerated the HID interface every probe — `Re-enumerating HID after 0 failed attempts…` log spam plus handle churn that can clip in-flight overlay transfers. **Nothing in the codebase writes this key** (grep-verified) — a 0/negative value is a hand-edit or stale config, not a code path; default is 5 (`settings.py`). Don't remove the clamp.
+
 - **Chromium is available headless in the dev/remote container — use it to LOOK at
   generated HTML/SVG rather than reading the markup.**
   `/opt/pw-browsers/chromium --headless --no-sandbox --disable-gpu --hide-scrollbars
@@ -1227,6 +1308,9 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   grid: the HTML and the tests were both perfectly correct, and the defect existed only
   in the render. Same reasoning as judging a tray icon by rasterising it (above) —
   measure or look, don't infer from the source.
+
+### Tests
+
 - **RUN the real entry point once before believing a mocked suite — the output is
   where format bugs live.** Same instinct as rendering a widget or rasterising an
   icon above, applied to the CLI: a suite whose fixtures you wrote can only be as
@@ -1239,6 +1323,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   `cd /tmp/x && PYTHONPATH=<repo> <repo>/.venv/bin/python -m polyhost.cli.polyctl
   logs bundle --since 1h`, then unzip and look. It is ~30 s and it has now caught
   two bugs in one PR that the tests could not see.
+
 - ⚠️ **`polyhost/forwarder.py` is UNTESTABLE in the documented environment — put
   any forwarder logic worth testing in a Qt-free module instead.** It imports
   `pywinctl` at module load (the backend selection at the top), and pywinctl is
@@ -1251,6 +1336,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   tests — and left only the two-line "no target ⇒ close" branch in the forwarder.
   A test gated on both `DISPLAY` and pywinctl would be permanently skipped, which
   is worse than none: it reads as coverage.
+
 - **Test discovery**: test files follow `*_test.py` naming under `tests/` mirroring `polyhost/` structure. pytest is disabled in VS Code config; use `unittest`. New test packages require an `__init__.py`.
   - ⚠️ **`patch.object(Class, "method")` does NOT reach a fixture that already
     BOUND that method** — and the repo's own fixture idiom is what creates the
@@ -1273,6 +1359,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the suite is green — `python3 -m unittest ... 2>&1 | tail -3` prints it.
     Same family as the mocked-suite traps above: green is not evidence your new
     code ran.
+
 - ⚠️ **A stale `.pyc` can survive a CORRECT fix — clear `__pycache__` before you
   disbelieve your own change.** Python invalidates cached bytecode on
   **(mtime, size)**, so a **length-neutral edit landing in the same mtime second**
@@ -1293,6 +1380,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     having loaded bytecode compiled from the last mutant. **Clear `__pycache__`
     after restoring, not only after editing**, then re-run — the confirmation run
     at the end of a mutation sweep is exactly where this lands.
+
 - **No *test* CI**: no workflow runs the unit tests — but the repo is **not**
   CI-less, and this line said "two workflows" while there were four. They are
   `bump-version.yml` + `release.yml` (see **Releases** below), `deploy-telemetry.yml`
@@ -1300,6 +1388,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
   one automated reviewer here that cannot go quiet — see the CodeQL note in the
   code-review conventions above. So a PR gets static analysis and no unit-test run;
   the suite is yours to run locally (`scripts/run_tests.py`).
+
 - **GUI tests need a display**: `tests/gui/host_client_test.py` constructs the real `PolyHost` (default + `--connect` client mode) in a subprocess (one `QApplication`/process; `pynput` needs X) with Qt forced to `offscreen`. They **skip unless `DISPLAY` is set** — run them under a virtual X server: `xvfb-run -a .venv/bin/python -m unittest tests.gui.host_client_test`. `host.py` can't even be *imported* without an X server (pynput at module load), so plain `unittest discover` skips them. Installing `x11-xserver-utils` (xrandr) lets the in-process path construct under xvfb too (pywinctl/pymonctl `sys.exit(1)` without it).
   - ⚠️ **Do not chain two `xvfb-run -a` invocations in one shell command** — the
     second one hangs (observed ~10 min at 0.7% CPU / 4 s CPU time, on a suite
@@ -1345,6 +1434,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
         grid to survive. Only a magnified CROP shows the difference, which is why
         `--compare` exists and why the docs figure is a close-up rather than three
         whole boards.
+
 - **Use `scripts/run_tests.py` when a run might hang — it has a stall watchdog.**
   Twice on 2026-08-03 the suite wedged past a 200 s timeout with **no output at
   all** — and a bare `timeout` kill discards exactly the information you need. The
@@ -1367,6 +1457,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     below, complete with ~20 threads parked in `recv_message`. **A watchdog dump is
     only evidence of a stall if the run actually exceeded a realistic budget**;
     check the wall clock before reading the stack.
+
 - **✅ The intermittent test-suite stall is FIXED (2026-08-11): it was a deadlock in
   `ControlServer.stop()`, not environment flakiness.** It had gone unexplained
   across ~3 sessions and 20+ non-reproducing runs; the watchdog dump (finally
@@ -1419,31 +1510,7 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     the accept thread out *without* `stop()` and then asserts `stop()` returns —
     i.e. it pins the race, not the symptom, and it fails against the old
     implementation.
-- **Single-key keymap write**: the firmware supports `ID_DYNAMIC_KEYMAP_SET_KEYCODE` (0x05) — payload is `[layer, row, col, keycode_hi, keycode_lo]`. No need to write a full layer; `PolyKybd.set_dynamic_keycode()` wraps this.
-- **Firmware update survives protocol mismatches**: `PolyHost.device_present` tracks "a device answers protocol-independent queries (GET_ID/GET_LANG)" separately from `connected` (protocol/version compatible). The flash/apply/bootloader actions and the release-update flow gate on `_fw_actions_allowed()` (present, not paused) — NOT on `connected` — so a keyboard on a mismatched protocol can always be updated (`CommandsSubMenu.update_enabled` re-enables exactly those items when the rest of the menu is greyed out). The HID flash protocol (`hid_fw_up`) is dispatched independently of `PROTOCOL_VERSION` in the firmware. Don't re-gate any firmware-update path on `self.connected`.
-- **Autostart registration and the post-update relaunch chain are
-  [`docs/autostart.md`](docs/autostart.md).** `setup_autostart_for_app()` is called
-  from `main_app.py` unless `--portable`; Windows uses a non-elevated logon
-  scheduled task driving a venv-activating `.bat` through a hidden-launch `.vbs`,
-  Linux a `.desktop` entry, macOS a `launchd` plist. Four things stay here:
-  - ⚠️ **Every relaunch must be spawned DETACHED** — `updater.detached_popen_kwargs()`
-    / `spawn_detached()`. A plain `Popen` on Windows is how *"it doesn't start up
-    again after the update"* happens: the child inherits the exiting parent's console
-    and dies when that window closes, or, when the parent has none, is handed a brand
-    new console it then dies with. `sys.executable` must also be normalised to
-    `pythonw.exe`, or one session started from a terminal makes **every** later
-    restart console-owning.
-  - ⚠️ **The generated launchers live in the platformdirs config dir, NOT the
-    checkout** — they used to be in-tree under a `.gitignore` entry, so
-    `git clean -xdf` deleted the exact file the registered task points at and
-    autostart silently stopped working while the task still read `State: Ready`.
-  - ⚠️ **The Windows task is named `PolyHost`, not `PolyKybdHost`** — so
-    `Get-ScheduledTask -TaskName PolyKybdHost*` returns nothing on a perfectly
-    healthy install and reads as "autostart is gone".
-  - **`updater.preflight()` runs before the download**, at the one choke point the
-    tray, the daemon and `polyctl update install` all pass through: it checks the
-    copy *and* the relaunch, because an update that copies perfectly and then cannot
-    relaunch is indistinguishable from "the app never came back".
+
 ## Releases
 
 Host releases are **GitHub Releases** (tag `vX.Y.Z`; version in `polyhost/_version.py`),
