@@ -644,7 +644,7 @@ class PolyKybd:
                 compose_cmd(Cmd.AI_STATE, 0xFF), 100, expect(Cmd.AI_STATE))
             if result and len(reply) > 3 and reply[2:3] == b'.':
                 return True, reply[3]
-        except Exception:
+        except Exception:  # noqa: BLE001, S110 -- audited; see below
             # A read of a status light is never worth raising through: any HID
             # failure (unplugged mid-query, a short/NACK reply) is reported the same
             # way an unsupported firmware is -- (False, 0), "we do not know".
