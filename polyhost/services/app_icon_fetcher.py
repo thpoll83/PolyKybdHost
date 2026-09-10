@@ -55,6 +55,12 @@ class AppIconFetcher:
         self._thread = None
         self._shutting_down = False
         self._told: set[tuple] = set()           # (app, reason) already logged
+        # Why a miss missed, recorded on the FETCH thread where it is known.
+        # ⚠️ Not re-derived in `overlay_for`: that runs on the window tick, and
+        # `auto_fetch_enabled()` reads the settings file -- so asking there is
+        # both a per-poll file read and, worse, a read of the setting as it is
+        # NOW rather than as it was when the lookup was refused.
+        self._why: dict[tuple, str] = {}
 
     # ------------------------------------------------------------------
 
@@ -83,7 +89,8 @@ class AppIconFetcher:
             if key in self._masks:
                 mask, resolved = self._masks[key]
                 if mask is None:
-                    self._say(app_name, f"no catalog carries '{names[0]}'")
+                    self._say(app_name, self._why.get(
+                        key, "no catalog carries " + ", ".join(names)))
                 return mask, resolved
             if key not in self._queue and key not in self._inflight:
                 self._queue.append(key)
@@ -106,6 +113,11 @@ class AppIconFetcher:
         with self._lock:
             for key in [k for k, (mask, _) in self._masks.items() if mask is None]:
                 del self._masks[key]
+                # Bookkeeping, not behaviour: `_why` is read only for a key that
+                # HAS a cached miss, and a re-fetch overwrites it -- so leaving
+                # it behind is unobservable (mutation-checked). Dropped anyway so
+                # the negative cache and its explanation cannot disagree.
+                self._why.pop(key, None)
         self._told.clear()
 
     def stop(self):
@@ -160,9 +172,11 @@ class AppIconFetcher:
                 if not self._wake.wait(IDLE_SECONDS):
                     return          # nothing left to do; restarted on demand
                 continue
-            mask, resolved = self._resolve(key)
+            mask, resolved, why = self._resolve(key)
             with self._lock:
                 self._masks[key] = (mask, resolved)
+                if why is not None:
+                    self._why[key] = why
                 self._inflight.discard(key)
             if mask is not None and self._on_ready is not None:
                 try:
@@ -177,7 +191,15 @@ class AppIconFetcher:
                     self.log.debug("app-icon ready callback failed", exc_info=True)
 
     def _resolve(self, names):
-        """Walk the candidates in order; the first that draws something wins."""
+        """(mask, resolved_name, why_it_missed) -- the first candidate that draws
+        something wins, and `why` is None when one did.
+
+        ⚠️ The reason is decided HERE because this is the only place that knows
+        it. A miss with auto-fetch OFF is a refusal to ask, not an answer: the
+        old line said "no catalog carries si:notepad" on a machine that had
+        never sent the request, which is a claim the code cannot support and
+        sends the next round after the catalog instead of after the setting.
+        """
         for name in names:
             try:
                 path = app_icons.fetch_icon(name, self._cache_dir)
@@ -193,7 +215,12 @@ class AppIconFetcher:
                     self.log.info("Program icon: %s (%s)", title, name)
                 else:
                     self.log.info("Program icon: %s", name)
-                return mask, name
+                return mask, name, None
             except Exception:
                 self.log.debug("app-icon fetch failed for '%s'", name, exc_info=True)
-        return None, names[0] if names else None
+        if not app_icons.auto_fetch_enabled():
+            why = ("not cached, and auto-fetch is off -- enable "
+                   "'shortcut_icon_auto_fetch' to look it up")
+        else:
+            why = "no catalog carries " + ", ".join(names)
+        return None, (names[0] if names else None), why

@@ -40,6 +40,12 @@ def make_core(*, connected=True, handler=True, run_when_disconnected=False):
     if handler:
         core.overlay_handler.is_remote_mapping_entry.return_value = False
         core.overlay_handler.current_app = None
+        # The real OverlayHandler.icon_app() answers `current_app` for a LOCAL
+        # window; a bare MagicMock would return a MagicMock and every icon
+        # lookup here would silently ask about the wrong app. The forwarder
+        # branch has its own tests against the real handler.
+        core.overlay_handler.icon_app.side_effect = (
+            lambda: core.overlay_handler.current_app)
     return core
 
 
@@ -218,6 +224,23 @@ class TestProgramIcon(unittest.TestCase):
         files, _ = self._submitted(core)
         self.assertEqual(files[-1], "@prog:gimp")
         self.assertEqual(len(files), 3)
+
+    def test_the_mark_names_the_app_ICON_APP_reports_not_current_app(self):
+        """⚠️ The two DIFFER on a forwarder setup, and only there.
+
+        `current_app` is the local window -- the remote-desktop client -- while
+        the keycaps show the forwarded app, so a mark taken from it would put a
+        NoMachine icon on ESC for every app on the other machine.
+        `OverlayHandler.icon_app()` is what resolves that; this pins that the
+        core CONSULTS it. The fixture makes the two disagree on purpose: with
+        both answering the same thing (the default here, mirroring a local
+        window) reverting the call site is invisible -- measured, that mutation
+        escaped the whole suite.
+        """
+        core = self._core(app="nxplayer")
+        core.overlay_handler.icon_app.side_effect = lambda: "gimp"
+        self.assertTrue(core.send_overlay_data("a.png"))
+        core.app_icons.overlay_for.assert_called_with("gimp")
 
     def test_an_app_with_no_mark_sends_only_the_template(self):
         core = self._core(mask=None)

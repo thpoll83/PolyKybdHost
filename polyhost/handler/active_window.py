@@ -322,6 +322,26 @@ class OverlayHandler:
             and self.current_entry[FLAGS][Flags.HAS_REMOTE.value]
         )  # 0 for remote
 
+    def icon_app(self):
+        """The app the program mark should name — NOT always `current_app`.
+
+        ⚠️ On a multi-machine setup the focused LOCAL window is the remote-desktop
+        client (the shipped entry is `nxplayer`/NoMachine), while the keycaps
+        show the FORWARDED app's overlays. `current_app` holds the local name, so
+        a mark taken from it would put a NoMachine icon on ESC for every app on
+        the other machine — one wrong icon rather than none, which is worse than
+        the gap it fills.
+
+        `RemoteHandler.name` is already normalised the same way the local branch
+        normalises (`data["name"].split(".")[0].lower()`), so it needs no second
+        pass here.
+        """
+        if self.is_remote_mapping_entry():
+            remote = getattr(self.remote_handler, "name", None)
+            if remote:
+                return remote
+        return self.current_app
+
     def get_overlay_data(self):
         if (
             self.current_entry

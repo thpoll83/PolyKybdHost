@@ -22,6 +22,13 @@ def _wait(predicate, timeout=5.0):
     return False
 
 
+# The exact reason line a cached miss reports. Spelled out rather than derived
+# from `candidates()`: this IS the log contract, and a derived expectation would
+# agree with whatever the code produced.
+_MISS_WINWORD = ("no catalog carries "
+                 "si:winword, mdi:microsoft-winword, mdi:adobe-winword")
+
+
 class FetcherTest(unittest.TestCase):
 
     def setUp(self):
@@ -143,6 +150,51 @@ class FetcherTest(unittest.TestCase):
         self.assertTrue(_wait(
             lambda: self.fetcher.overlay_for("winword")[0] == "WINWORD"))
 
+    def test_a_miss_with_AUTO_FETCH_OFF_says_so_instead_of_blaming_the_catalog(self):
+        """⚠️ The two are indistinguishable from the outside and mean opposite
+        things: one is an answer, the other is a refusal to ask.
+
+        With the switch off `fetch_icon` returns None without sending a request,
+        so "no catalog carries si:winword" is a claim about a lookup that never
+        happened -- and it points the next round at the catalog instead of at
+        the setting that is actually in the way.
+        """
+        with mock.patch("polyhost.services.app_icons.auto_fetch_enabled",
+                        lambda: False):
+            self.fetcher.overlay_for("winword")
+            self.assertTrue(_wait(
+                lambda: any(app == "winword" for app, _ in self.fetcher._told)
+                or self.fetcher.overlay_for("winword") is not None))
+            with self.assertLogs("PolyHost", level="INFO") as caught:
+                self.assertTrue(_wait(
+                    lambda: self.fetcher.overlay_for("winword")[0] is None
+                    and any(app == "winword" for app, _ in self.fetcher._told)))
+        reasons = [r for a, r in self.fetcher._told if a == "winword"]
+        self.assertEqual(len(reasons), 1, self.fetcher._told)
+        self.assertIn("auto-fetch is off", reasons[0])
+        self.assertNotIn("no catalog carries", reasons[0])
+        self.assertTrue(any("auto-fetch is off" in line for line in caught.output),
+                        caught.output)
+
+    def test_the_reason_is_the_one_from_the_LOOKUP_not_the_setting_NOW(self):
+        # The miss is cached, so the line can be printed long after the switch
+        # moved. Re-deriving it in `overlay_for` would describe today's setting
+        # while reporting a lookup made under yesterday's -- and would read the
+        # settings FILE on every window tick to do it.
+        with mock.patch("polyhost.services.app_icons.auto_fetch_enabled",
+                        lambda: False):
+            self.fetcher.overlay_for("winword")
+            self.assertTrue(_wait(
+                lambda: self.fetcher.overlay_for("winword")[0] is None
+                and any(app == "winword" for app, _ in self.fetcher._told)))
+        self.fetcher._told.clear()
+        # Switch back on. The cached miss is untouched (forget_misses is what
+        # clears it), so the reason must still name the refusal that produced it.
+        self.fetcher.overlay_for("winword")
+        reasons = [r for a, r in self.fetcher._told if a == "winword"]
+        self.assertEqual(len(reasons), 1, self.fetcher._told)
+        self.assertIn("auto-fetch is off", reasons[0])
+
     def test_forgetting_the_misses_keeps_the_marks_it_HAS(self):
         # Only the negative half is dropped: re-downloading a mark that is
         # already in memory would cost a request for nothing.
@@ -164,7 +216,7 @@ class FetcherTest(unittest.TestCase):
         with self.assertLogs("PolyHost", level="INFO"):
             self.assertTrue(_wait(
                 lambda: self.fetcher.overlay_for("winword") == (None, "si:winword")
-                and ("winword", "no catalog carries 'si:winword'") in self.fetcher._told))
+                and ("winword", _MISS_WINWORD) in self.fetcher._told))
         with self.assertLogs("PolyHost", level="INFO") as caught:
             self.fetcher.forget_misses()
             self.fetcher.overlay_for("winword")
@@ -174,7 +226,7 @@ class FetcherTest(unittest.TestCase):
             self.assertTrue(_wait(lambda: self.fetched.count("si:winword") == 2))
             self.assertTrue(_wait(
                 lambda: self.fetcher.overlay_for("winword")[0] is None
-                and ("winword", "no catalog carries 'si:winword'") in self.fetcher._told))
+                and ("winword", _MISS_WINWORD) in self.fetcher._told))
             self.fetcher.overlay_for("winword")
         lines = [r for r in caught.output if "No program icon for 'winword'" in r]
         self.assertEqual(len(lines), 1, caught.output)

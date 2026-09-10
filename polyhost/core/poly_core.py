@@ -522,7 +522,9 @@ class PolyCore(Observable):
         handler = self.overlay_handler
         if handler is None:
             return None
-        app = getattr(handler, "current_app", None)
+        # NOT `current_app`: on a forwarder setup that is the remote-desktop
+        # client, while the keycaps show the forwarded app -- see icon_app().
+        app = handler.icon_app()
         if not app:
             return None
         mask, slug = self.app_icons.overlay_for(app)

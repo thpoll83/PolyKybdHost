@@ -248,5 +248,69 @@ class TestMarkOnlySendKeepsTheStateHonest(unittest.TestCase):
         self.assertEqual(h.handle_active_window(0, 0)[1], OverlayCommand.DISABLE)
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TestIconAppNamesTheFORWARDEDApp(unittest.TestCase):
+    """Which app the program mark names on a multi-machine setup.
+
+    ⚠️ `current_app` is set ONLY on the local branch of
+    `_decide_active_window`, so while a forwarded window is on the keycaps it
+    still holds the remote-desktop CLIENT (the shipped entry is
+    `nxplayer`/NoMachine). A mark taken from it would put a NoMachine icon on
+    ESC for every app on the other machine -- one WRONG icon for each, which is
+    worse than the gap it fills.
+
+    The gate is `is_remote_mapping_entry()`, the same condition the OS-tracking
+    push already uses to prefer `remote_handler.forwarded_os` -- not a second
+    notion of "a remote window is showing".
+    """
+
+    def _handler(self, *, forwarded=None):
+        handler = OverlayHandler({
+            "nxplayer": {"remote": True, "overlay": ["nx.png"]},
+            "chrome": {"overlay": ["c.png"]},
+        })
+        handler.current_app = "nxplayer"
+        handler.current_entry = handler.mapping["nxplayer"]
+        if handler.remote_handler is not None:
+            handler.remote_handler.name = forwarded
+        return handler
+
+    def test_a_forwarded_window_names_the_FORWARDED_app(self):
+        h = self._handler(forwarded="gimp")
+        self.assertTrue(h.is_remote_mapping_entry())
+        self.assertEqual(h.icon_app(), "gimp")
+
+    def test_a_LOCAL_window_names_current_app(self):
+        h = self._handler(forwarded="gimp")
+        h.current_app = "chrome"
+        h.current_entry = h.mapping["chrome"]
+        self.assertFalse(h.is_remote_mapping_entry())
+        self.assertEqual(h.icon_app(), "chrome")
+
+    def test_with_NOTHING_forwarded_yet_the_client_names_ITSELF(self):
+        # Not a fallback to the wrong answer: until a report arrives, the entry
+        # that matched IS the local one, so whatever is on the board came from
+        # it. (The shipped `nxplayer` entry carries no overlay of its own, so in
+        # practice that is nothing -- and a mark for the client is then the only
+        # thing the board could honestly show.)
+        h = self._handler(forwarded=None)
+        self.assertEqual(h.icon_app(), "nxplayer")
+
+    def test_it_gates_on_the_SAME_condition_as_the_OS_push(self):
+        # `active_os` already prefers the forwarder's value under exactly this
+        # condition. Pinning the pair is what makes a future change to either
+        # one visible: a mark and an OS that disagree about whose window is on
+        # the keycaps would be two different notions of "remote is showing".
+        h = self._handler(forwarded="gimp")
+        h.remote_handler.forwarded_os = 3
+        self.assertEqual(h._active_os(), 3)
+        self.assertEqual(h.icon_app(), "gimp")
+
+        h.current_entry = h.mapping["chrome"]
+        h.current_app = "chrome"
+        self.assertNotEqual(h._active_os(), 3)
+        self.assertEqual(h.icon_app(), "chrome")
+
+
 if __name__ == "__main__":
     unittest.main()
