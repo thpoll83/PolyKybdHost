@@ -65,10 +65,12 @@ LEXICON: dict[str, tuple[int, tuple[str, ...]]] = {
     "fullscreen":  (0x1F5D6, ("fullscreen", "full screen", "maximize", "maximise")),
     "minimize":    (0x1F5D5, ("minimize", "minimise", "iconify")),
     "window":      (0x1F5D4, ("window", "new window", "close window")),
+    # U+1F5DA/DB are literally INCREASE/DECREASE FONT SIZE SYMBOL, so they serve
+    # both the view-zoom and the text-size wording. Word spells them Grow/Shrink Font.
     "zoom in":     (0x1F5DA, ("zoom in", "increase font", "larger", "bigger",
-                              "increase font size")),
+                              "increase font size", "grow font", "larger font")),
     "zoom out":    (0x1F5DB, ("zoom out", "decrease font", "smaller",
-                              "decrease font size")),
+                              "decrease font size", "shrink font", "smaller font")),
     # --- navigation (resident icons -- drawable with no font pack) ----------
     "up":          (ICON_UP,    ("up", "line up", "one line up", "scroll up",
                                  "move up", "previous line")),
@@ -90,7 +92,29 @@ LEXICON: dict[str, tuple[int, tuple[str, ...]]] = {
     "bookmark":    (0x1F516, ("bookmark", "favorite", "favourite", "mark")),
     "lock":        (0x1F512, ("lock", "read only", "viewer mode")),
     "comment":     (0x0023,  ("comment", "uncomment", "toggle comment")),
+    # --- text / document (Office wording) ------------------------------------
+    "change case": (0x1F520, ("change case", "to uppercase", "to lowercase",
+                              "to title case", "to opposite case",
+                              "to sentence case", "capitalize")),
+    "paragraph":   (0x00B6,  ("paragraph", "paragraph settings")),
+    "alignment":   (0x2630,  ("alignment", "align", "align text")),
+    "styles":      (0x1F3A8, ("styles", "cell styles", "style")),
+    "share":       (0x1F517, ("share", "link", "copy link")),
+    "insert":      (0x271A,  ("insert", "add", "insert row", "insert column")),
 }
+
+# DELIBERATELY ABSENT, so the next reader does not "fix" it:
+#
+#   Bold / Italic / Underline -- the shipped fonts carry no distinctive glyph for
+#   these (no math alphanumerics), leaving only the plain letters B/I/U. Those are
+#   WORSE than drawing the label: Ctrl+B's keycap already shows a B, so the icon
+#   would say nothing the key does not. "Bold" as text is strictly more
+#   informative. A concept is only worth an entry when the glyph beats the word.
+#
+#   Superscript / Subscript -- U+00B2 exists, U+2082 does not. Mapping one half of
+#   a symmetric pair reads as a bug on the keyboard rather than as a gap.
+#
+#   Format Painter -- no paintbrush glyph in any shipped bundle.
 
 # Longest phrase first so "save as" beats "save"; ties broken alphabetically so
 # the table order cannot silently decide a match.

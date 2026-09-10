@@ -292,6 +292,18 @@ def selftest() -> int:
     check("win empty", parse_win_accel(""), None)
     check("win unknown key has no hid", parse_win_accel("Ctrl+Ediacaran").hid, None)
 
+    # Real strings captured from Word and Excel on Windows.
+    check("keytip sequence refused", parse_win_accel("Alt, H, Z N"), None)
+    check("short keytip refused", parse_win_accel("Alt, Q"), None)
+    check("alternate accelerators take the first",
+          parse_win_accel("Ctrl+Alt+C, Alt+Ctrl+V").keysym, "C")
+    check("alternate accelerators mods",
+          parse_win_accel("Ctrl+Alt+C, Alt+Ctrl+V").mods, MOD_CTRL | MOD_ALT)
+    check("shrink font punctuation", parse_win_accel("Ctrl+Shift+<").hid, 0x36)
+    check("grow font punctuation", parse_win_accel("Ctrl+Shift+>").hid, 0x37)
+    check("word superscript", parse_win_accel("Ctrl+Shift++").hid, 0x2E)
+    check("word subscript", parse_win_accel("Ctrl+Shift+_").hid, 0x2D)
+
     check("uia accelerator wins", pick_win_binding("Ctrl+S", "Alt+F", 50000),
           ("Ctrl+S", "accelerator"))
     check("uia menubar access key kept", pick_win_binding("", "Alt+F", 50011),
@@ -592,6 +604,11 @@ WINKEY_TO_HID.update({
     "up": 0x52, "↑": 0x52, "oben": 0x52,
     "num lock": 0x53, "numlock": 0x53,
     "menu": 0x65, "apps": 0x65,
+    # Shifted punctuation, spelled as the produced character. Word's Shrink/Grow
+    # Font are Ctrl+Shift+< and Ctrl+Shift+>, which land on the comma/period keys.
+    "<": 0x36, ">": 0x37, "?": 0x38, ":": 0x33, '"': 0x34, "~": 0x35,
+    "{": 0x2F, "}": 0x30, "|": 0x31, "!": 0x1E, "@": 0x1F, "#": 0x20,
+    "$": 0x21, "%": 0x22, "^": 0x23, "&": 0x24, "*": 0x25, "(": 0x26, ")": 0x27,
 })
 
 _WIN_MODS_BY_LEN = sorted(WIN_MOD_TOKENS, key=len, reverse=True)
@@ -612,7 +629,15 @@ def parse_win_accel(text: str) -> Accel | None:
     """
     if not text:
         return None
-    rest = text.strip()
+    # A comma separates either an Office KEYTIP SEQUENCE ("Alt, H, Z N" = press
+    # Alt, then H, then Z, then N) or a list of ALTERNATE accelerators
+    # ("Ctrl+Alt+C, Alt+Ctrl+V"). Taking the first segment handles both: an
+    # alternate list yields its first real chord, and a KeyTip yields the bare
+    # "Alt", which the bare-modifier guard below already refuses. This is the same
+    # distinction the AT-SPI backend draws for "<Alt>f:n" -- a traversal is not a
+    # shortcut and no keycap can show one. Measured on Word and Excel, KeyTips
+    # were 19 of 32 and 22 of 30 reported bindings.
+    rest = text.split(",")[0].strip()
     if not rest:
         return None
     mods = 0
@@ -703,6 +728,12 @@ def uia_shortcuts(iuia, root, cache_request) -> tuple[list[Shortcut], int]:
             continue
         accel = parse_win_accel(text)
         if accel is None:
+            continue
+        # A menu AccessKey carrying no modifier is the mnemonic used once the menu
+        # is already open -- Word's System menu reports "Space" that way while its
+        # real binding is Alt+Space. Same rule as the AT-SPI role gate: only a
+        # chord is a one-press binding.
+        if kind == "menu" and accel.mods == 0:
             continue
         key = (accel.mods, accel.keysym.lower())
         if key in seen:

@@ -108,7 +108,9 @@ class MatchTest(unittest.TestCase):
             self.assertIsNone(si.match(foreign), f"{foreign} should not match")
 
     def test_unknown_label_returns_none(self):
-        self.assertIsNone(si.match("To Opposite Case"))
+        # "To Opposite Case" used to live here; the change-case concept closed it.
+        self.assertIsNone(si.match("Transpose"))
+        self.assertIsNone(si.match("Sensitivity"))
         self.assertIsNone(si.match(""))
 
     def test_confidence_is_ordered_by_rule(self):
