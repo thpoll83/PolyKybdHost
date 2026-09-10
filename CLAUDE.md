@@ -886,6 +886,49 @@ pointer, it applies to you even if you never open the file.
     `render_macro_key()` composes it and counts pixels outside the 72×40 window (320
     cells, 0 clipped) — the same "verify by rendering" rule as `glyph_size_preview.py`,
     with the same caveat that it is a Python model of the C and can drift.
+- **PolyKybd's OWN keycodes reach the browser through
+  `polyhost/services/custom_keycodes.py`, and it is deliberately NOT hung off
+  `KeycapPreview`.** The browser's table is QMK's (`res/keycodes.h`), which names
+  `QK_KB_0`..`QK_KB_31` and stops; the firmware uses 39 slots, so `KC_AI`
+  (`0x7E26` = `QK_KB_38`) had **no tile at all** and could not be assigned by any
+  route the app offers, while the 32 below it were reachable only under QMK's
+  placeholder name. Four things about the shape:
+  - **Two layers, and the second is the guarantee.** `names()` resolves PolyKybd's
+    real names by `preview_data.choose_source` (a firmware checkout wins ONLY by
+    being strictly newer than the shipped export — the same stale-clone rule the
+    previews use); `slots()` then covers the WHOLE `QK_KB` block with `QK_KB_<n>`
+    placeholders, so the key stays assignable with no export and no checkout. That
+    is the half that does not depend on any data being current.
+  - **It reads nothing but JSON and a C header.** Reaching the same names through
+    `KeycapPreview` would tie *whether a key can be assigned* to *whether its
+    picture can be drawn*, and the preview carries PIL, the font packs and
+    `oled_preview` — several documented ways to be unavailable. Hence `_shipped()`
+    pulls the one key it needs out of `legends.json` rather than going through
+    `PreviewData.load()`, which loads the font packs and fails as a unit. Same
+    reasoning as "load the two halves independently", one level out.
+  - ⚠️ **Keys are routed to the tab by VALUE, not by name.** `categorize()` reads
+    name spelling and files `KC_AI` under "Additional"; and QMK's placeholder names
+    for the block must be **deleted before** PolyKybd's are merged, or the tab
+    renders 96 tiles for 64 keys. The tab is appended to `category_order()` so no
+    existing tab moves — same muscle-memory invariant as the tray's developer
+    submenu, and pinned by a test.
+  - ⚠️ **Assert the keys are ON the tab, positively.** The first test only checked
+    they were ABSENT from "User / Macro", which passes vacuously once the
+    placeholders are dropped — so it could not catch routing them by name, the one
+    bug it was written for.
+- ⚠️ **Moving a helper OUT of a module takes anything else in that module that used
+  it, and here the failure surfaced as a WRONG SOURCE PICK rather than a
+  NameError.** Extracting `parse_custom_keycodes` from `keycap_preview.py` took
+  `_read` with it — an unrelated file-reading helper that module still calls twice.
+  The checkout load then raised, `KeycapPreview`'s own `except` swallowed it, and
+  the preview silently fell back to the shipped export: the visible failure was
+  `test_the_automatic_pick_IS_the_version_comparison` reporting `'shipped' !=
+  'checkout'`, which reads as a bug in the source-precedence logic and is nowhere
+  near the edit. **A module with a broad fallback converts a missing symbol into a
+  plausible wrong answer.** Two cheap guards, in order: grep the moved name across
+  the repo *including the file you moved it out of*, and run the FULL suite rather
+  than the new tests — the two new suites were green throughout.
+
   - ⚠️ **The macro ICON lookup (`macro_look.load_render_fonts`) UNIONS the firmware
     headers with the shipped `.plyf` bundles — it must not choose between them, and
     that is the OPPOSITE remedy from `preview_data.choose_source` one section below.**
@@ -910,6 +953,75 @@ pointer, it applies to you even if you never open the file.
     status-screen preview draws every row with it — which is the usual way a
     long-standing gap gets closed.
 
+- **The AI key — a status light the host drives, and a key press that comes back on
+  the CONSOLE (`services/ai_link.py`, HID cmd 40, protocol v18+).** One key wears an
+  agent's status (`off` / `idle` / `working` / `attention`) and, pressed, raises that
+  agent's window. `PolyCore.set_ai_state` pushes; `AiScanner` reads the press back.
+  What is worth knowing is why the two directions use two different channels, and the
+  four traps underneath:
+  - ⚠️ **The press CANNOT ride HID, and this is structural rather than an omission.**
+    `KC_AI` is a custom keycode the firmware swallows, so it emits no HID traffic of
+    its own, and nothing in the protocol lets the keyboard call the host — every
+    command is host-initiated. The firmware prints `ai: open` instead, which the
+    250 ms console periodic already drains for crash records, so the press costs **no
+    new transport at all**. Consequence that will read as a bug: console output is
+    dropped while a firmware or font-pack flash streams (§ threading model), so a
+    press during a flash is simply lost. Press it again.
+  - ⚠️ **`AiScanner` does NOT dedupe by line content, unlike `CrashScanner` one file
+    over — and the difference is the whole point.** Every press prints the same text,
+    so content-dedupe would report the first press of a session and never another. It
+    debounces on TIME (`PRESS_DEBOUNCE_S`) instead, which is what a re-emitted
+    fragment would trip. Both still reassemble report-sized fragments into lines
+    (`feed`), because a console read is a fragment and not a line.
+  - **The window cycle stores the HANDLE it last raised, never an index**
+    (`next_index`). Windows come and go between presses, so a stored index points at
+    a *different* window as soon as one closes — and off the end when several do.
+    Advancing past the handle also gives the right answer for the first press and for
+    "every match disappeared", so there is no special case for either.
+  - ⚠️ **Across the forwarder the press rides the window-report REPLY, which makes it
+    a POLL — and `AiRelayFollower` is what makes a poll idempotent.** The forwarder is
+    a client with no listener, so a reply is the only channel needing no inbound port
+    on its machine, and it is free (those reports are being sent anyway). A monotonic
+    `raise_seq` counts presses, so acting when it *advances* is exactly once per press
+    however often a reply repeats. **Four states are deliberately not a press**, and
+    each would otherwise raise a window nobody asked for: the first reply (a process
+    starting is not a press), a counter going backwards (the daemon restarted —
+    re-baseline), a counter of 0 (what the host reports while the feature is off), and
+    a counter last seen as 0 (the feature was off and has just been re-enabled — the
+    host's counter is **not** reset by disabling, so the first reply after carries
+    whatever it had reached). The last one was CodeRabbit's, on this PR.
+  - ⚠️ **An advance of N raises N times, bounded by `MAX_CATCH_UP`.** Collapsing them
+    would silently drop the cycling that repeated presses exist for, in precisely the
+    case it is wanted. Past the bound something happened but the count is not evidence
+    of how many times, so it raises **once** and re-baselines.
+  - **The feature ships OFF (`ai_key_enabled`), with ONE live reader**
+    (`PolyCore.ai_key_enabled`) gating all four sites: the state push, the reconnect
+    re-push, the press, and the `ai.state` method on the network endpoint. A flag that
+    gates three of four is not off. `set_ai_state` refuses **before** recording the
+    state — with the feature off there is no reconnect re-push to carry it, so storing
+    it would leave `ai status` reporting a light nothing will ever show.
+  - **The status is re-pushed on reconnect**, because the keyboard holds it in RAM
+    only; otherwise the key goes dark while the agent is still working. Nothing is
+    pushed when no agent has reported — pushing OFF to a key that is already off costs
+    a job on the worker that owns the device at its busiest moment.
+  - ⚠️ **`ai.state` is a second hand-listed method on the EXISTING window-report
+    listener, not a registry and not a second port** — injected callbacks, no
+    `PolyCore` reference, no method naming a file, a device or a window, and the relay
+    it returns carries a counter and a bool, never a title. A sibling server would
+    have doubled the network surface for the same already-authenticated peer. With no
+    AI callbacks injected the endpoint is byte-for-byte what it was, which a test pins.
+  - ⚠️ **Native Wayland cannot be driven this way** — no client-callable activation
+    API, the same limit window *tracking* has there. The press is reported and nothing
+    is raised, and the app says so: silently doing nothing reads as a broken key.
+  - **`contrib/ai-hooks/polykybd_ai_hook.py` is one adapter for every agent** (Claude
+    Code hooks read JSON on stdin, the Codex notify program takes it as the last
+    argv, anything else can call `polyctl ai state <word>`). ⚠️ It **never exits
+    non-zero** — a hook that fails can block the agent, and a keyboard light is not
+    worth that.
+  - ⚠️ **An agent living in a BROWSER TAB is out of reach**, and that is stated on the
+    docs page rather than left to be discovered: a tab is not a window, so a press
+    brings the browser forward and stops, and a hook inside a hosted container has no
+    route back to the keyboard at all.
 - ⚠️ **`tools/apply_tuner.py`'s export grammar CANNOT express the `caps` column** —
   its key-line regex is `base|shift|altgr`, matching what the keycap tuner emits, and
   the LUT's four sub-columns are lower/upper/**caps**/AltGr. A bulk edit that touches

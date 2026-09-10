@@ -51,11 +51,17 @@ class WindowReportClient:
         # and a newer one reads None when an older forwarder omits it.
         if url is not None:
             params["url"] = str(url)
-        p.send_message(self._conn, p.make_request(
-            req_id, p.M_WINDOW_REPORT, params))
+        return self._call(p.M_WINDOW_REPORT, params, req_id=req_id)
+
+    def _call(self, method, params, req_id=None):
+        """Send one request and wait for its reply. Raises WindowReportError."""
+        if req_id is None:
+            req_id = self._next_id
+            self._next_id += 1
+        p.send_message(self._conn, p.make_request(req_id, method, params))
         while True:
             if not self._conn.poll(self._timeout):
-                raise WindowReportError("timed out waiting for window.report reply")
+                raise WindowReportError(f"timed out waiting for {method} reply")
             msg = p.recv_message(self._conn)
             if msg.get("id") != req_id:
                 continue  # stray frame — skip
@@ -63,6 +69,14 @@ class WindowReportClient:
                 err = msg["error"] or {}
                 raise WindowReportError(err.get("message", "unknown error"))
             return msg.get("result")
+
+    def ai_state(self, value):
+        """Push the AI key's state to the remote host (the agent runs on OUR machine).
+
+        ``value`` is an AiState int or one of the words the host's parser knows; the
+        host does the parsing, so this stays free of the device enum.
+        """
+        return self._call(p.M_AI_STATE, {"value": value})
 
     def close(self):
         try:
@@ -104,6 +118,14 @@ class WindowReportSession:
         Raises whatever the connect or the report raised, having closed the
         connection first — the caller logs it and the next call reconnects.
         """
+        return self._with_client(
+            host, lambda c: c.report(handle, name, title, os=os, url=url))
+
+    def ai_state(self, host, value):
+        """Push an AI state to ``host``, (re)connecting as needed."""
+        return self._with_client(host, lambda c: c.ai_state(value))
+
+    def _with_client(self, host, fn):
         if self._client is not None and host != self._host:
             self.close()
         try:
@@ -111,7 +133,7 @@ class WindowReportSession:
                 self._client = self._connect(
                     host, self._port, self._authkey, self._timeout)
                 self._host = host
-            return self._client.report(handle, name, title, os=os, url=url)
+            return fn(self._client)
         except Exception:
             self.close()
             raise

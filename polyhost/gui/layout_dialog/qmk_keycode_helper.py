@@ -236,10 +236,24 @@ def last_key_in_standard_category() -> str:
     return "KC_KP_EQUAL"
 
 
+def polykybd_category() -> str:
+    """The tab PolyKybd's own keycodes live under (QMK's QK_KB block).
+
+    Not produced by `categorize`, which reads a keycode's SPELLING: PolyKybd's names
+    (`KC_AI`, `KC_LANG`, `KC_EDEN`) match none of its rules, so they would scatter
+    into "Additional" while the unnamed slots of the same block stayed in
+    "User / Macro". The browser assigns this one by value instead.
+    """
+    return "PolyKybd"
+
+
 def category_order() -> list[str]:
+    # ⚠️ APPEND ONLY. The tabs are muscle memory, so a new category goes at the end
+    # rather than beside a related one -- the same invariant the tray menu keeps.
     return ["Standard", "Additional", "Modifiers", "Media / System", "RGB", "Unicode / International",
             "Mouse / Joystick",
-            "Midi", "Haptic", "Magic", "User / Macro", "Programmable", "Space Cadet", "Quantum"]
+            "Midi", "Haptic", "Magic", "User / Macro", "Programmable", "Space Cadet", "Quantum",
+            polykybd_category()]
 
 
 # 5-bit modifier mask bits (modifiers.h). Bit 4 selects right-hand mods.

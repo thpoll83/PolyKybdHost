@@ -21,6 +21,7 @@ class _FakeClient:
     def __init__(self, host, fail=False):
         self.host = host
         self.reports = []
+        self.states = []
         self.closed = False
         self._fail = fail
 
@@ -29,6 +30,12 @@ class _FakeClient:
             raise OSError("boom")
         self.reports.append((handle, name, title, os, url))
         return {"reported": True}
+
+    def ai_state(self, value):
+        if self._fail:
+            raise OSError("boom")
+        self.states.append(value)
+        return {"ok": True}
 
     def close(self):
         self.closed = True
@@ -140,6 +147,39 @@ class WindowReportSessionTest(unittest.TestCase):
         # `connect` is defined below the class.
         from polyhost.server import window_report_client as wrc
         self.assertIs(WindowReportSession()._connect, wrc.connect)
+
+
+class WindowReportSessionAiTest(unittest.TestCase):
+    """`ai_state` shares the session's connection and its reconnect rules.
+
+    It is a second method on one link rather than a second link: the forwarder is
+    already holding an authenticated connection to that machine, and a hook firing
+    every few seconds must not open one each time.
+    """
+
+    def setUp(self):
+        self.connector = _FakeConnector()
+        self.session = WindowReportSession(
+            port=50163, authkey=b"k", connect_fn=self.connector)
+
+    def test_a_push_reuses_the_report_connection(self):
+        self.session.report("keeb-box", 1, "a", "b")
+        self.session.ai_state("keeb-box", "working")
+        self.assertEqual(self.connector.hosts, ["keeb-box"])
+        self.assertEqual(self.connector.clients[0].states, ["working"])
+
+    def test_a_changed_host_reconnects_for_a_push_too(self):
+        self.session.ai_state("box-a", "working")
+        self.session.ai_state("box-b", "idle")
+        self.assertEqual(self.connector.hosts, ["box-a", "box-b"])
+        self.assertTrue(self.connector.clients[0].closed)
+
+    def test_a_failed_push_closes_so_the_next_call_reconnects(self):
+        connector = _FakeConnector(fail_report_hosts=["keeb-box"])
+        session = WindowReportSession(connect_fn=connector)
+        with self.assertRaises(OSError):
+            session.ai_state("keeb-box", "working")
+        self.assertIsNone(session.host)
 
 
 if __name__ == "__main__":

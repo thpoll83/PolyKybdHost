@@ -101,8 +101,14 @@ class HeadlessHost:
             return
         from polyhost.server.window_report_server import WindowReportServer
         try:
+            # The AI half is wired unconditionally; PolyCore.set_ai_state refuses
+            # while `ai_key_enabled` is off, and ai_relay_state() reports inactive,
+            # so the feature's own flag gates the network method rather than a
+            # second construction-time condition that could disagree with it.
             self._winreport_server = WindowReportServer(
-                self.core.report_window, __version__, self.log)
+                self.core.report_window, __version__, self.log,
+                on_ai_state=self.core.set_ai_state,
+                ai_relay=self.core.ai_relay_state)
             self._winreport_server.start()
         except Exception:
             self.log.exception("Could not start the window-report network listener")

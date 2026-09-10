@@ -364,6 +364,18 @@ class RemoteCore(Observable):
     def clear_crash_record(self):
         return self._device(p.M_CRASH_CLEAR)
 
+    def set_ai_state(self, value):
+        return self._device(p.M_AI_STATE_SET, {"value": value})
+
+    def get_ai_state(self):
+        return self._device(p.M_AI_STATE_GET)
+
+    def ai_status(self):
+        return self._device(p.M_AI_STATUS)
+
+    def set_ai_target(self, pattern):
+        return self._device(p.M_AI_TARGET_SET, {"pattern": pattern})
+
     # -- overlays -----------------------------------------------------------
     def send_overlay_data(self, files):
         try:

@@ -50,6 +50,42 @@ def read_setting(name, default=None):
     return data.get(name, default)
 
 
+def write_settings(**values):
+    """Merge `values` into the persisted settings file, leaving every other key alone.
+
+    The file-only sibling of :func:`read_setting`: deliberately does NOT construct
+    :class:`PolySettings`, which creates the config dir, merges + re-saves every
+    default and logs the whole dump -- far too much for recording one address at
+    startup.
+
+    ⚠️ No-ops when every value already matches. The forwarder calls this on every
+    launch, and rewriting the file each time would be pure churn -- and a needless
+    race with a PolyHost that happens to be saving its own settings on the same
+    machine. Returns True when the file holds the values afterwards.
+    """
+    path = settings_path()
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    except OSError:
+        return False
+    try:
+        with open(path, encoding='utf-8') as f:
+            data = yaml.safe_load(f) or {}
+    except (OSError, yaml.YAMLError):
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+    if all(data.get(k) == v for k, v in values.items()):
+        return True
+    data.update(values)
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            yaml.safe_dump(data, f, default_flow_style=False, allow_unicode=True)
+    except (OSError, yaml.YAMLError):
+        return False
+    return True
+
+
 class PolySettings:
     """ Stores program specific settings """
     def __init__(self):
@@ -135,6 +171,23 @@ class PolySettings:
             # --no-daemon (or this setting) opts out — e.g. for development, where
             # in-process keeps your code edits in the same process as the GUI.
             "daemon_mode": True,
+            # The AI key: OFF BY DEFAULT, and the flag gates the whole feature —
+            # the status light, the press that raises a window, and the `ai.state`
+            # method on the network endpoint. With it False nothing pushes a state
+            # (so the key's LED stays dark and its keycap reads OFF), a press is
+            # noted in the log and raises nothing, and a remote push is refused
+            # even when the network listener is up. It is off because the feature
+            # only means anything once an agent is wired to drive it: a light that
+            # can never change is worse than no light.
+            # Turn it on with `polyctl settings set ai_key_enabled true`.
+            "ai_key_enabled": False,
+            # Which window the AI key raises: a case-insensitive substring of the
+            # window title, or a regex written as /.../ . Empty = the key reports the
+            # press and raises nothing (it says so rather than failing silently).
+            # Set it with `polyctl ai target "<part of the title>"`.
+            # ⚠️ On the FORWARDER this names a window on the forwarder's OWN machine —
+            # that is the whole point of the remote path, since the agent runs there.
+            "ai_window_target": "",
             # Window-report network endpoint (headless-core H4d): when True the
             # daemon/host opens a separate, auth-gated AF_INET listener that
             # serves ONLY `window.report` (port WINDOW_REPORT_PORT), so a remote
@@ -144,6 +197,17 @@ class PolySettings:
             # using a forwarder with `--report-rpc`. The device-control surface
             # is never exposed (separate registry + separate authkey).
             "window_report_network_enabled": False,
+            # Where the FORWARDER pushes to -- the machine the keyboard is plugged
+            # into. Recorded by PolyForwarder at startup from its own `--host` /
+            # `--host-file`, so a hook on this machine can run a bare
+            # `polyctl ai state working` instead of repeating an address the
+            # forwarder already knows (and drifting from it when it is repointed).
+            # Exactly one of the two is ever non-empty; `--host-file` is kept as a
+            # PATH rather than a snapshot, because its whole point is that the
+            # address in it can change -- polyctl re-reads it the same way the
+            # forwarder does.
+            "forwarder_host": "",
+            "forwarder_host_file": "",
             # Font pack auto-flash: when True, on a fresh keyboard connect the
             # host compares the keyboard's loaded "PlyF" font pack content_version
             # against the pack bundled with this host release and, if the keyboard

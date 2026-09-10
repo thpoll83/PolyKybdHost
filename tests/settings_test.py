@@ -72,5 +72,85 @@ class DeveloperModeDefaultTest(unittest.TestCase):
         self.assertIs(s.get("developer_mode"), False)
 
 
+class WriteSettingsTest(unittest.TestCase):
+    """The file-only writer `read_setting`'s sibling.
+
+    PolyForwarder records where it pushes here at every startup, so this runs on a
+    path that must not construct PolySettings (which creates the config dir, merges
+    and re-saves every default, and log-dumps the lot) and must never raise.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = os.path.join(self._tmp.name, "cfg")
+        self.path = os.path.join(self.dir, "settings.yaml")
+        self._patch = mock.patch("polyhost.settings.user_config_dir",
+                                 return_value=self.dir)
+        self._patch.start()
+
+    def tearDown(self):
+        self._patch.stop()
+        self._tmp.cleanup()
+
+    def _read(self):
+        import yaml
+        with open(self.path, encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+
+    def test_it_writes_into_a_config_dir_that_does_not_exist_yet(self):
+        self.assertTrue(settings.write_settings(forwarder_host="keeb-box"))
+        self.assertEqual(self._read()["forwarder_host"], "keeb-box")
+
+    def test_it_MERGES_rather_than_replacing_the_file(self):
+        """The forwarder writes two keys; everything else in there is somebody's
+        settings and a whole-file write would take them with it."""
+        settings.write_settings(ui_theme="light", telemetry_enabled=False)
+        settings.write_settings(forwarder_host="keeb-box")
+        data = self._read()
+        self.assertEqual(data["ui_theme"], "light")
+        self.assertIs(data["telemetry_enabled"], False)
+        self.assertEqual(data["forwarder_host"], "keeb-box")
+
+    def test_an_UNCHANGED_write_does_not_touch_the_file(self):
+        """This runs at every forwarder launch, so rewriting the file each time is
+        pure churn -- and a needless race with a PolyHost saving its own settings on
+        the same machine."""
+        settings.write_settings(forwarder_host="keeb-box")
+        before = os.stat(self.path)
+        os.utime(self.path, (before.st_atime - 10, before.st_mtime - 10))
+        stamp = os.stat(self.path).st_mtime
+        self.assertTrue(settings.write_settings(forwarder_host="keeb-box"))
+        self.assertEqual(os.stat(self.path).st_mtime, stamp)
+
+    def test_a_CHANGED_value_is_written_even_when_a_sibling_matches(self):
+        """A forwarder repointed --host-file -> --host writes one key that already
+        matches ("" stays "") and one that does not; an all-or-nothing compare that
+        got the quantifier wrong would skip the whole write."""
+        settings.write_settings(forwarder_host="first-box", forwarder_host_file="")
+        settings.write_settings(forwarder_host="second-box", forwarder_host_file="")
+        self.assertEqual(self._read()["forwarder_host"], "second-box")
+
+    def test_a_MALFORMED_file_is_replaced_rather_than_raising(self):
+        os.makedirs(self.dir, exist_ok=True)
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write("{{{ not yaml")
+        self.assertTrue(settings.write_settings(forwarder_host="keeb-box"))
+        self.assertEqual(self._read()["forwarder_host"], "keeb-box")
+
+    def test_a_file_holding_a_LIST_is_replaced_rather_than_raising(self):
+        """Valid YAML, wrong shape -- `.get` on a list is an AttributeError, and this
+        is startup code in a tray app with no console."""
+        os.makedirs(self.dir, exist_ok=True)
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write("- one\n- two\n")
+        self.assertTrue(settings.write_settings(forwarder_host="keeb-box"))
+        self.assertEqual(self._read()["forwarder_host"], "keeb-box")
+
+    def test_an_UNWRITABLE_location_reports_False_and_does_not_raise(self):
+        with mock.patch("polyhost.settings.user_config_dir",
+                        return_value="/proc/nope/cfg"):
+            self.assertFalse(settings.write_settings(forwarder_host="keeb-box"))
+
+
 if __name__ == "__main__":
     unittest.main()

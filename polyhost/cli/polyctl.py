@@ -17,6 +17,7 @@ Wire protocol (see ``polyhost/server/protocol.py``):
 """
 import argparse
 import json
+import os
 import sys
 import time
 
@@ -493,6 +494,140 @@ def _cmd_crash(client, args):
     return 0
 
 
+# The words a hook or a person can pass, and the wire value each means. Kept as plain
+# strings rather than importing the device enum, because polyctl never imports the
+# device layer -- the daemon parses the alias set (AiState.parse), so a hook may also
+# use its own vocabulary ("done", "waiting", ...) that is not listed here.
+_AI_STATES = ["off", "idle", "working", "attention"]
+
+
+def _resolve_ai_host(args):
+    """Where `ai state` should push, or None for this machine's own daemon.
+
+    Explicit --host wins, for scripts and for testing against a box the forwarder
+    is not pointed at. Otherwise fall back to what the FORWARDER on this machine
+    recorded at startup, so a hook here is a bare `polyctl ai state working` --
+    the same command it would be on the keyboard machine -- rather than a copy of
+    an address that goes stale the moment the forwarder is repointed.
+
+    The host-FILE is preferred over the plain host and is read live, exactly as
+    the forwarder reads it per report: its whole purpose is that the address in it
+    can change. Only one of the pair is ever non-empty (PolyForwarder writes both,
+    blanking the unused one), so this order settles a relaunch the other way too.
+
+    Returns (host, source) -- `source` names where it came from, for the error
+    message, since "cannot reach X" is a very different problem when X was not
+    typed by the person reading it.
+    """
+    if getattr(args, "host", None):
+        return args.host, "--host"
+    try:
+        from polyhost.settings import read_setting   # noqa: PLC0415 -- pulls yaml
+    except ImportError:
+        return None, None
+    path = read_setting("forwarder_host_file", "") or ""
+    if path:
+        try:
+            with open(os.path.expanduser(path), encoding="utf-8") as f:
+                host = f.read().strip()
+        except OSError:
+            host = ""
+        if host:
+            return host, f"forwarder_host_file ({path})"
+    host = read_setting("forwarder_host", "") or ""
+    if host:
+        return host, "forwarder_host"
+    return None, None
+
+
+def _ai_push_remote(args):
+    """`ai state <value> --host X` — push a state to a keyboard on ANOTHER machine.
+
+    This is the multi-machine half of the AI key: the agent runs here, the keyboard
+    is plugged in over there, so a hook here has to reach the daemon over there. It
+    goes straight to that daemon's window-report endpoint (`ai.state`) rather than
+    through this machine's control socket, because on a forwarder machine there is
+    normally no local daemon at all — the forwarder is not one.
+
+    The press travels the other way on the reply to a window report, so nothing here
+    needs a listener; see `polyhost/forwarder.py` `_apply_ai_relay`.
+    """
+    if args.ai_action != "state" or args.value is None:
+        print("error: --host only applies to `ai state <value>` — the remote endpoint "
+              "serves the state push and nothing else.", file=sys.stderr)
+        return 1
+    host, source = _resolve_ai_host(args)
+    if not host:
+        print("error: no keyboard machine to push to. Either pass --host <address>, or "
+              "run the forwarder on this machine (it records where it pushes, and this "
+              "command then needs no address at all).", file=sys.stderr)
+        return 1
+    from polyhost.server.window_report_client import connect as wr_connect
+    authkey = None
+    if args.authkey_file:
+        try:
+            with open(args.authkey_file, "rb") as f:
+                authkey = f.read().strip()
+        except OSError as exc:
+            print(f"error: cannot read {args.authkey_file}: {exc}", file=sys.stderr)
+            return 1
+    try:
+        client = wr_connect(host, args.port, authkey)
+    except Exception as exc:  # noqa: BLE001 — connect/handshake failures are all "cannot reach"
+        print(f"error: cannot reach the keyboard machine at {host} (from {source}) "
+              f"({exc}). Is its "
+              f"window_report_network_enabled setting on?", file=sys.stderr)
+        return 1
+    try:
+        client.ai_state(args.value)
+    except Exception as exc:  # noqa: BLE001
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        client.close()
+    print(f"ai state set to {args.value} on {host}")
+    return 0
+
+
+def _cmd_ai(client, args):
+    """The agent status light and the window its key raises (firmware v18+)."""
+    if args.ai_action == "state":
+        if args.value is None:
+            value = client.call(protocol.M_AI_STATE_GET, {})
+            name = _AI_STATES[value] if 0 <= value < len(_AI_STATES) else str(value)
+            print(f"ai state: {name} ({value})")
+            return 0
+        client.call(protocol.M_AI_STATE_SET, {"value": args.value})
+        print(f"ai state set to {args.value}")
+        return 0
+    if args.ai_action == "target":
+        if args.value is None:
+            info = client.call(protocol.M_AI_STATUS, {})
+            print(info.get("target") or "(no target set)")
+            return 0
+        client.call(protocol.M_AI_TARGET_SET, {"pattern": args.value})
+        print(f"ai window target set to {args.value!r}")
+        return 0
+    info = client.call(protocol.M_AI_STATUS, {})
+    if args.json:
+        print(json.dumps(info, indent=2))
+        return 0
+    state_line = f"{info.get('name')} ({info.get('state')})"
+    if info.get("state") and not info.get("pushed", True):
+        state_line += "  -- NOT on the keyboard (the last push did not land)"
+    print(f"state:     {state_line}")
+    print(f"target:    {info.get('target') or '(none set)'}")
+    matches = info.get("matches") or []
+    if info.get("target"):
+        print(f"matches:   {len(matches)} window(s)")
+        for title in matches:
+            print(f"  - {title}")
+    if not info.get("supported"):
+        print("note:      this keyboard's firmware is too old for the status light "
+              "(needs protocol v18+); the key press still works.")
+    return 0
+
+
 def _cmd_replay_anim(client, args):
     client.call(protocol.M_REPLAY_ANIM, {})
     print("replaying startup animation")
@@ -924,6 +1059,34 @@ def build_parser():
              "they need the latinbig font-pack bundle)")
     p_glyph_size.set_defaults(func=_cmd_glyph_size)
 
+    p_ai = sub.add_parser(
+        "ai", help="the agent status light and the window its key raises (firmware v18+)")
+    p_ai.add_argument(
+        "ai_action", nargs="?", choices=["status", "state", "target"], default="status",
+        help="'state' sets what the AI key shows, 'target' sets which window it "
+             "raises, 'status' (default) prints both")
+    p_ai.add_argument(
+        "value", nargs="?", default=None,
+        help="for 'state': off | idle | working | attention (aliases like 'busy', "
+             "'done' and 'waiting' work too). For 'target': part of the window "
+             "title, or /a regex/. Omit either to print the current value")
+    p_ai.add_argument("--json", action="store_true",
+                      help="print the status as JSON (for scripts)")
+    # Multi-machine: with --host, `ai state <value>` goes straight to that machine's
+    # window-report endpoint instead of this machine's control socket, so a hook on
+    # a forwarder box can drive a keyboard plugged into another one.
+    p_ai.add_argument("--host", default=None,
+                      help="push the state to the PolyKybdHost on ANOTHER machine "
+                           "(the one the keyboard is plugged into). Needs that host's "
+                           "window_report_network_enabled setting on")
+    p_ai.add_argument("--port", type=int, default=None,
+                      help="port of the remote window-report endpoint (default "
+                           f"{protocol.WINDOW_REPORT_PORT})")
+    p_ai.add_argument("--authkey-file", default=None,
+                      help="the remote machine's polykybd-winreport.authkey; omit to "
+                           "use this machine's own copy of it")
+    p_ai.set_defaults(func=_cmd_ai)
+
     p_macro = sub.add_parser(
         "macro", help="list, read, write or clear the keyboard's macros (firmware v15+)")
     p_macro.add_argument(
@@ -1172,6 +1335,22 @@ def _is_offline_command(args) -> bool:
 def main(argv=None):
     # Parse first so --help / bad args exit before we open a socket.
     args = build_parser().parse_args(argv)
+
+    if getattr(args, "command", None) == "ai" and (
+            getattr(args, "host", None)
+            or (getattr(args, "ai_action", None) == "state"
+                and getattr(args, "value", None) is not None
+                and _resolve_ai_host(args)[0])):
+        # Aimed at another machine's endpoint, so this machine's daemon is not in
+        # the path at all — and on a forwarder box there usually is not one.
+        # ⚠️ The two halves of that condition are deliberately NOT the same width.
+        # An explicit --host takes EVERY `ai` action here, so `ai status --host X`
+        # gets the honest "only applies to `ai state <value>`" rather than silently
+        # answering about the wrong machine. A RECORDED forwarder target diverts
+        # only `ai state <value>`: nobody typed it, and `ai status` / `ai target`
+        # are about THIS machine (the target names a window here — the whole point
+        # of the remote path).
+        return _ai_push_remote(args)
 
     if _is_offline_command(args):
         # Still try to attach, so a bundle picks up live daemon status — but a

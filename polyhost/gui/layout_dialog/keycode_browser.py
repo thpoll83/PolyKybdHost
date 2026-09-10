@@ -4,22 +4,42 @@ from PyQt5.QtWidgets import (
     QTabWidget,
     QVBoxLayout, QScrollArea, )
 
+from polyhost.services import custom_keycodes as ck
 from polyhost.gui.flow_layout import FlowLayout
 from polyhost.gui.layout_dialog.keycode_browser_button import KeycodeBrowserButton
 from polyhost.gui.layout_dialog.keycode_composer import KeycodeComposer
 from polyhost.gui.layout_dialog.macro_tab import MacroTab
 from polyhost.gui.layout_dialog.qmk_keycode_helper import HEADER_FILE, parse_qmk_keycodes, categorize, create_nice_name, \
-    category_order, standard_category, last_key_in_standard_category, build_keycode_to_name
+    category_order, standard_category, last_key_in_standard_category, build_keycode_to_name, \
+    polykybd_category
 
 
 class KeycodeBrowser(QWidget):
     keycodeSelected = pyqtSignal(str, str, int, int)  # uint16
     macrosChanged = pyqtSignal()          # relayed from the Macros tab
 
-    def __init__(self, num_layers: int = 9, core=None):
+    def __init__(self, num_layers: int = 9, core=None, custom=None):
         super().__init__()
 
         self.keycodes = parse_qmk_keycodes(HEADER_FILE)
+        # PolyKybd's own keycodes. QMK's header names only QK_KB_0..31, so without
+        # this the seven slots above that -- KC_AI among them -- have no tile and
+        # cannot be assigned at all, and the 32 below show as `QK_KB_0` rather than
+        # `KC_LANG`. `browser_entries` covers the WHOLE block either way, so the
+        # tab exists even with no export and no firmware checkout to name it from.
+        #
+        # ⚠️ Merged BEFORE the reverse map is built, so `build_keycode_to_name`'s
+        # "a KC_ name beats a non-KC_ one" rule makes a placed key read `KC_AI`
+        # rather than `QK_KB_38`.
+        self.custom_keycodes = ck.browser_entries() if custom is None else dict(custom)
+        # Drop QMK's placeholder names for the block first. `browser_entries` covers
+        # every value in it, so leaving them would show slot 0 twice -- once as
+        # `KC_LANG` and once as `QK_KB_0` (96 tiles for 64 keys). An UNNAMED slot
+        # keeps the same `QK_KB_<n>` spelling, so those dedupe on the dict key.
+        for name in [n for n, v in self.keycodes.items()
+                     if v in set(self.custom_keycodes.values())]:
+            del self.keycodes[name]
+        self.keycodes.update(self.custom_keycodes)
         self.codes_to_name = build_keycode_to_name(self.keycodes)
 
         tabs = QTabWidget()
@@ -28,15 +48,21 @@ class KeycodeBrowser(QWidget):
         self.setMaximumHeight(400)
 
         CAT_ORDER = category_order()
+        POLYKYBD = polykybd_category()
 
         categories = {}
         STANDARD = standard_category()
         cat = STANDARD
         LAST_KEY_IN_STD = last_key_in_standard_category()
 
+        custom_values = set(self.custom_keycodes.values())
         for name, keycode in self.keycodes.items():
             if cat != STANDARD:
-                cat = categorize(name)
+                # By VALUE, not by name: `categorize` reads the spelling, and
+                # PolyKybd's names match none of its rules -- `KC_AI` would land in
+                # "Additional" while `QK_KB_38`, the same key, landed in
+                # "User / Macro". One block, one tab.
+                cat = POLYKYBD if keycode in custom_values else categorize(name)
             categories.setdefault(cat, {})[name] = keycode
             if name == LAST_KEY_IN_STD:
                 cat = ""

@@ -44,6 +44,10 @@ from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
 from polyhost.settings import PolySettings
 from polyhost.services.crash_report import CrashScanner
+from polyhost.services.ai_link import (
+    AiScanner, WindowRaiser,
+    activate_window as ai_link_activate_window,
+    enumerate_windows as ai_link_enumerate_windows)
 from polyhost.util.observable import Observable
 
 RECONNECT_CYCLE_MSEC = 1000
@@ -248,6 +252,16 @@ class PolyCore(Observable):
         self.worker.add_periodic("reconnect", RECONNECT_CYCLE_MSEC / 1000.0,
                                  self._reconnect_periodic)
         self._crash_scanner = CrashScanner()   # firmware crash lines in the console stream
+        self._ai_scanner = AiScanner()         # ...and the AI key's press line
+        self._ai_raiser = WindowRaiser(self._enumerate_windows, self._activate_window)
+        self._ai_state = 0                     # what the agent says it is doing
+        # Presses counted since this core started, for the FORWARDER relay. A press
+        # is relayed as a monotonic sequence number rather than a "raise now" flag
+        # because the forwarder polls: a counter is idempotent (a reply seen twice
+        # raises once) and needs no per-forwarder acknowledgement here — each
+        # forwarder just remembers the last number it acted on.
+        self._ai_press_seq = 0
+        self._ai_pushed = False                # ...and whether the keyboard took it
         self.worker.add_periodic("console", UPDATE_CYCLE_MSEC / 1000.0,
                                  self._console_periodic)
         self.worker.add_periodic("brightness", PERIODIC_10MIN_CYCLE_MSEC / 1000.0,
@@ -1067,6 +1081,17 @@ class PolyCore(Observable):
                 # blindly mass-flash it now that we connect across protocols.
                 if self.keeb.supports("fontpack"):
                     self._maybe_auto_flash_fontpack()
+                # Re-push the agent status: the keyboard holds it in RAM only (a
+                # status about a host process is a lie after a reboot), so a
+                # reconnect would otherwise leave the key dark while an agent is
+                # still working. Self-gated on protocol v18+, and skipped when
+                # nothing has reported — pushing OFF to a key that is already off
+                # buys nothing.
+                if connected_now and self._ai_state and self.ai_key_enabled():
+                    self.worker.submit(
+                        "ai_state_resync",
+                        lambda c, v=self._ai_state: self.keeb.set_ai_state(v),
+                        on_done=self._note_ai_push)
 
         # The applying client owns the applied-connection state the worker reads.
         self.last_applied_connected = self.connected
@@ -1150,6 +1175,7 @@ class PolyCore(Observable):
             self.emit("console", (kb_serial, kb_log))
         if kb_log:
             self._scan_console_for_crashes(kb_log)
+            self._scan_console_for_ai_key(kb_log)
 
     def _scan_console_for_crashes(self, chunk):
         """Watch the console stream for the firmware's crash line and alert once.
@@ -1168,6 +1194,140 @@ class PolyCore(Observable):
         for rec in records:
             self.log.warning("Keyboard firmware crash record: %s", rec.line)
             self.emit("crash_detected", rec.to_dict())
+
+    # --- the AI key: its press, and the window it raises ----------------------
+    def _scan_console_for_ai_key(self, chunk):
+        """Watch the console stream for the AI key's press line and act on it.
+
+        The firmware prints `ai: open` on the release edge — see services/ai_link.py
+        for why a console line is the whole channel. Each press raises the NEXT window
+        matching the stored target, so repeated presses walk through several agent
+        sessions instead of fighting over one.
+        """
+        try:
+            presses = self._ai_scanner.feed(chunk)
+        except Exception:  # noqa: BLE001 — a scanner bug must not kill the console read
+            self.log.warning("AI key scan failed", exc_info=True)
+            return
+        if presses and not self.ai_key_enabled():
+            # Feed the scanner either way so its line buffer never grows unbounded,
+            # then stop here. Logged rather than silent: a user who mapped KC_AI and
+            # forgot the flag should find out from the log, not from a dead key.
+            self.log.info("AI key pressed, but the AI key is off (ai_key_enabled)")
+            return
+        for _ in range(presses):
+            # Bump BEFORE the local raise: the relay must fire even when this machine
+            # has no matching window, which is the normal multi-machine case (the
+            # agent runs on the forwarder's machine, so only its target matches).
+            self._ai_press_seq += 1
+            target = self.poly_settings.get("ai_window_target") or ""
+            ok, msg = self._ai_raiser.raise_next(target)
+            self.log.info("AI key pressed: %s", msg)
+            self.emit(events.AI_KEY_PRESSED, {"ok": ok, "msg": msg, "target": target})
+
+    # The window pair lives in services/ai_link.py, not here, because the FORWARDER
+    # needs the same two functions: it raises the agent window on its own machine
+    # when a press relays across. Two hand-written pywinctl pairs would drift, and
+    # the one that drifts is the one nobody runs. Both stay lazy about pywinctl —
+    # poly_core must import with no display (tests/core/import_guard_test.py).
+    _enumerate_windows = staticmethod(ai_link_enumerate_windows)
+    _activate_window = staticmethod(ai_link_activate_window)
+
+    AI_DISABLED_MSG = ("The AI key is off. Turn it on with "
+                       "`polyctl settings set ai_key_enabled true`.")
+
+    def ai_key_enabled(self):
+        """Whether the AI key feature is switched on (settings, default False).
+
+        ONE reader for the flag, because it has to gate four separate things — the
+        state push, the reconnect re-push, the press that raises a window, and the
+        `ai.state` method on the network endpoint — and a flag that gates three of
+        four is not off. It is read live rather than cached at construction so
+        flipping the setting takes effect without restarting the daemon.
+        """
+        return bool(self.poly_settings.get("ai_key_enabled"))
+
+    def set_ai_state(self, value):
+        """Push what the AI key shows (HID cmd 40). Accepts an AiState value or one of
+        the words AiState.parse knows, so a hook can pass its own vocabulary."""
+        from polyhost.device.command_ids import AiState   # noqa: PLC0415 — cheap, no Qt
+        if not self.ai_key_enabled():
+            # Refuse BEFORE recording the state: with the feature off there is no
+            # reconnect re-push to carry it later, so storing it would leave
+            # `ai status` reporting a state nothing will ever show.
+            return False, self.AI_DISABLED_MSG
+        if isinstance(value, str):
+            parsed = AiState.parse(value)
+            if parsed is None:
+                return False, (f"Unknown AI state: {value!r} "
+                               f"(off | idle | working | attention)")
+            v = parsed.value
+        else:
+            try:
+                v = int(value)
+            except (TypeError, ValueError):
+                return False, f"Invalid AI state: {value!r}"
+            if v not in {st.value for st in AiState}:
+                return False, f"Invalid AI state: {value!r} (0 off .. 3 attention)"
+        ok, payload = self._device_call(
+            "ai_state_set", lambda c, v=v: self.keeb.set_ai_state(v))
+        # The DESIRED state is recorded either way -- it is a fact about the agent, not
+        # about the keyboard, so a paused worker or an unplugged board must not lose it
+        # (that is what the reconnect re-push above exists for). Whether the keyboard is
+        # actually SHOWING it is the separate `pushed` flag, so `ai status` cannot claim
+        # a light that never lit.
+        self._ai_state  = v
+        self._ai_pushed = bool(ok)
+        self.emit(events.AI_STATE_CHANGED,
+                  {"state": v, "name": AiState(v).name.lower(), "pushed": self._ai_pushed})
+        return ok, payload
+
+    def _note_ai_push(self, _name, result):
+        """on_done for the reconnect re-push: record whether the keyboard took it."""
+        self._ai_pushed = bool(isinstance(result, tuple) and result and result[0])
+
+    def get_ai_state(self):
+        return self._device_call("ai_state_get", lambda c: self.keeb.get_ai_state())
+
+    def ai_status(self):
+        """Everything `polyctl ai status` and the tray need, with no device I/O:
+        the state an agent last reported (and whether the keyboard took it), the
+        window target, and what it matches right now."""
+        from polyhost.device.command_ids import AiState   # noqa: PLC0415
+        target = self.poly_settings.get("ai_window_target") or ""
+        titles = []
+        if target:
+            try:
+                from polyhost.services.ai_link import match_windows  # noqa: PLC0415
+                titles = [m.title for m in match_windows(self._enumerate_windows(), target)]
+            except Exception:  # noqa: BLE001 — no window backend is a fact, not a failure
+                titles = []
+        return True, {
+            "enabled": self.ai_key_enabled(),
+            "state": self._ai_state,
+            "name": AiState(self._ai_state).name.lower(),
+            "pushed": self._ai_pushed,
+            "target": target,
+            "matches": titles,
+            "supported": bool(self.keeb.supports("ai_state")),
+        }
+
+    def ai_relay_state(self):
+        """What a remote forwarder needs on the back of its window report.
+
+        Deliberately tiny and read-only — it names no window and carries no title,
+        so the network endpoint stays a place that cannot learn anything about this
+        machine. ``raise_seq`` counts presses; ``active`` says an agent is currently
+        reporting something, which is what lets the forwarder poll faster only while
+        that is true instead of all the time.
+        """
+        if not self.ai_key_enabled():
+            return {"raise_seq": 0, "active": False}
+        return {"raise_seq": self._ai_press_seq, "active": bool(self._ai_state)}
+
+    def set_ai_target(self, pattern):
+        """Store which window the AI key raises (a title substring, or /regex/)."""
+        return self.settings_set("ai_window_target", str(pattern or ""))
 
     # HID SET_BRIGHTNESS flag bits — mirror firmware base/com.h (protocol >= 5).
     # On older firmware the flags byte is ignored (plain persisted set), so we
