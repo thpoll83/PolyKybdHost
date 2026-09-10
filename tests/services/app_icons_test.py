@@ -96,6 +96,25 @@ class SlugMapTest(unittest.TestCase):
             self.assertIn(source, ai.SOURCES, f"{app} -> {value}")
             self.assertRegex(name, r"^[a-z0-9]+(-[a-z0-9]+)*$", f"{app} -> {value}")
 
+    def test_the_adobe_products_share_the_COMPANY_mark(self):
+        # Not a compromise reached by shrugging: the `logos:` collection's
+        # per-product Adobe marks were rendered at 1-bit and all six flatten to
+        # the SAME solid rounded square (the "Ps"/"Ai" letters are separate
+        # coloured paths, not knockouts). One shared "A" at least says Adobe.
+        mapping = ai.load_slug_map()
+        for app in ("photoshop", "illustrator", "afterfx", "premiere"):
+            self.assertEqual(ai.candidates(app, mapping), ["mdi:adobe"], app)
+        # Acrobat has a mark of its own and keeps it.
+        self.assertEqual(ai.candidates("acrobat", mapping), ["mdi:adobe-acrobat"])
+
+    def test_a_DIFFERENT_product_is_never_substituted(self):
+        # The Adobe "A" is the true company for Photoshop. Chrome is not
+        # Chromium and Windows is not File Explorer, so those stay unmapped and
+        # fall through to the curation file.
+        mapping = ai.load_slug_map()
+        self.assertNotIn("chromium", mapping)
+        self.assertNotIn("explorer", mapping)
+
     def test_the_map_may_name_EITHER_catalog(self):
         # One column, two catalogs: Simple Icons has no Microsoft at all, so the
         # Office family can only be expressed as an mdi entry.

@@ -96,7 +96,7 @@ interpretation.
 |---|---|
 | guess alone, Simple Icons only | 85 (56 %) |
 | guess alone, both catalogs | 83 (54 %)¹ |
-| **both catalogs + the shipped map** | **105 (69 %)** |
+| **both catalogs + the shipped map** | **111 (73 %)** |
 
 ¹ lower on the guess alone because the **bare** mdi name is deliberately not
 tried — mdi is 7400 icons of which most are generic UI symbols, so `code` would
@@ -104,10 +104,17 @@ resolve to a generic `</>` glyph. Only the provably-brand `microsoft-*` /
 `adobe-*` forms are guessed; the handful of real brands mdi holds under a bare
 name (`powershell`) get a map entry.
 
-⚠️ **Adobe products are deliberately left uncovered.** mdi has `adobe` and
-`adobe-acrobat` and nothing else, so Photoshop/Illustrator/Premiere could only
-share the company "A" — the right company and the wrong answer to *which program
-is this*. Same reasoning rules out `chromium → google-chrome`.
+**Adobe products share the company "A"** (`mdi:adobe`), because nothing more
+specific survives 1 bit. The obvious better answer — the CC0 `logos:` collection's
+`adobe-photoshop`, `adobe-illustrator`, `adobe-premiere`, `adobe-indesign`,
+`adobe-lightroom`, `adobe-after-effects` — was rendered and looked at: the product
+letters ("Ps", "Ai") are **separate coloured paths, not knockouts**, so flattening
+to a silhouette gives six identical solid rounded squares of 1516 lit pixels.
+Acrobat keeps its own mark.
+
+⚠️ `chromium → google-chrome` and `explorer → microsoft-windows` stay out on a
+different rule: those name a **different product** (a different browser, an OS
+rather than an app), where the Adobe "A" is the true company.
 
 **The complement for the last third is the OS's OWN icon for the running
 process** — the exe's resource icon on Windows, the `.desktop` + hicolor theme on

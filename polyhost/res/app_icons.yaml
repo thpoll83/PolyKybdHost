@@ -21,13 +21,18 @@
 # Material Design Icons, which draws them as monochrome single-path glyphs and
 # renders them cleanly at 40x40.
 #
-# ⚠️ ADOBE PRODUCTS ARE DELIBERATELY LEFT UNCOVERED. mdi has `adobe` and
-# `adobe-acrobat` and nothing else, so Photoshop, Illustrator, Premiere,
-# InDesign and Lightroom could only share the company's "A" -- the right company
-# and the wrong answer to "which program is this". A missing icon is
-# self-evident and lands in the curation file; an ambiguous one is not. Same
-# reasoning rules out `chromium -> google-chrome` (a different browser) and
-# `explorer -> microsoft-windows` (the OS, not the app).
+# ⚠️ ADOBE PRODUCTS SHARE THE COMPANY "A", because nothing more specific
+# survives 1 bit. The obvious better answer -- the `logos:` collection's
+# `adobe-photoshop`, `adobe-illustrator`, `adobe-premiere`, `adobe-indesign`,
+# `adobe-lightroom`, `adobe-after-effects`, all CC0 -- was rendered and looked
+# at: the product letters ("Ps", "Ai") are SEPARATE COLOURED PATHS rather than
+# knockouts, so flattening to a silhouette gives six identical solid rounded
+# squares of 1516 lit pixels. Six apps showing the same white block is worse
+# than one shared "A" that at least says Adobe. Acrobat keeps its own mark.
+#
+# ⚠️ `chromium -> google-chrome` and `explorer -> microsoft-windows` stay OUT on
+# a different rule: those name a DIFFERENT PRODUCT (a different browser, and an
+# OS rather than an app), where the Adobe "A" is the true company.
 
 chrome: googlechrome
 vlc: vlcmediaplayer
@@ -80,3 +85,12 @@ powershell, pwsh: mdi:powershell
 writer, lowriter: si:libreofficewriter
 calc, localc: si:libreofficecalc
 impress, loimpress: si:libreofficeimpress
+
+# Adobe products, sharing the company mark -- see the note at the top.
+photoshop, adobe photoshop: mdi:adobe
+illustrator, adobe illustrator: mdi:adobe
+afterfx, adobe after effects: mdi:adobe
+premiere, adobe premiere pro: mdi:adobe
+indesign, adobe indesign: mdi:adobe
+lightroom, adobe lightroom: mdi:adobe
+audition, adobe audition: mdi:adobe
