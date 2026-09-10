@@ -99,6 +99,10 @@ notepad++:
   overlay: [notepadpp_template.mods.png, notepadpp_template.combo.mods.png]
 explorer:
   overlay: [explorer_template.mods.png, explorer_template.combo.mods.png]
+windowsterminal,wt:
+  overlay: [windowsterminal_template.mods.png, windowsterminal_template.combo.mods.png]
+notepad:
+  overlay: [notepad_template.mods.png, notepad_template.combo.mods.png]
 winword:
   overlay: [word_template.mods.png, word_template.combo.mods.png]
 excel:
