@@ -1557,6 +1557,18 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
     rec button has no preview"* (field, 2026-09-08). `scripts/export_preview_data.py
     --check` names every stale file; regenerating writes all four (they are one
     snapshot — leaving them at different `fw_version`s is worse than the staleness).
+    - ⚠️ **`--check` answers against WHATEVER firmware clone sits beside the repo, so
+      a clone that is BEHIND produces a false STALE list naming the wrong files.**
+      Measured 2026-09-09: with the clone 33 commits behind (fw 0.21.0) it reported
+      `legends.json` and `named_glyphs.json` stale and `lang_lut.json`/`layers.json`
+      current. Fast-forwarding the clone to `origin/PolyKybd` (0.23.3) inverted that
+      completely — all four files' CONTENT was already byte-identical to what was
+      committed, and only the `fw_version` stamp lagged. So
+      `git -C ../qmk_firmware fetch origin PolyKybd` and confirm the checkout is not
+      behind BEFORE believing the list; the report is a COMPARISON and one of its two
+      sides is whatever you happen to have checked out. ⚠️ The sizes it prints are the
+      RE-DERIVED ones, not the committed file's, so a size shown there is not evidence
+      about what is in the repo — `git show HEAD:<path> | wc -c` is.
     - ⚠️ **A DEVELOPER CANNOT SEE THIS**, which is why it needed a test that pins
       the source. A firmware checkout that is newer wins the compare above, so the
       editor draws the clone's legends and the stale export is invisible on the very
@@ -2977,6 +2989,24 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
         `status_oled.c` moving a row is caught on the machine that moved it. A
         structural comparison would be worthless — both sides are Python read from the
         same constants and would agree by construction.
+      - ✅ **The pair FIRED, and what it caught was the port — not the fixture.**
+        Measured 2026-09-09 (firmware 0.21.0 → 0.23.3): the checkout-gated half went
+        red with *"the firmware panel moved"*, and the cause was qmk `2bb724ce38`,
+        which split the status OLED's percentage arithmetic in two — saturation is
+        genuinely 0..255 and keeps `byte_to_percent`, while the VALUE is capped at
+        `RGB_MATRIX_MAXIMUM_BRIGHTNESS` (100) and gained `val_to_percent`, so a
+        fully-lit matrix used to report 39%. The firmware moved its own preview tool
+        with the C; this port did not. ⚠️ **Regenerating the fixture ALONE is the wrong
+        fix and the suite says so** — with the new fixture and the old helper,
+        `test_the_port_draws_WHAT_THE_FIRMWARE_TOOL_DREW` fails on both RGB cases
+        (verified by reverting just the helper). The fixture is the BRIDGE: when the
+        live half goes red, read the firmware diff and port the change, then
+        regenerate; a green run needs both.
+      - ⚠️ **Neither half fires on a clone that is BEHIND** — the live one re-derives
+        from whatever checkout is there, so it happily confirms a fixture frozen
+        against the same old firmware. This drift sat unnoticed until a `git fetch`
+        made the clone current. Same shape as the `--check` trap above, and the same
+        remedy: fast-forward the clone before trusting either answer.
       - ⚠️ **A fixture at the firmware's DEFAULT values pins only the easy half.**
         Those defaults saturate: `brightness=50` IS `FULL_BRIGHT`, so every gauge
         segment is lit and no unlit one exists to keep its documented 1px foot, and
