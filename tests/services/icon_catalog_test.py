@@ -71,7 +71,84 @@ class OfflineTest(unittest.TestCase):
 
 
 class PlacementTest(unittest.TestCase):
-    """Geometry, checked with an ordinary system font so it needs no catalog."""
+    """Pure geometry -- no font, no network, no rendering."""
+
+    def test_every_placement_lands_inside_the_panel(self):
+        for name in ic.PLACEMENTS:
+            with self.subTest(name):
+                x, y = ic.place(20, 16, name)
+                self.assertGreaterEqual(x, 0)
+                self.assertGreaterEqual(y, 0)
+                self.assertLessEqual(x + 20, ic.PANEL_W)
+                self.assertLessEqual(y + 16, ic.PANEL_H)
+
+    def test_there_is_a_margin_at_all(self):
+        """Derived expectations below move with ICON_MARGIN, so pin it here.
+
+        Without this a margin of 0 -- an icon flush against the panel edge --
+        satisfies every other test in this class.
+        """
+        self.assertGreaterEqual(ic.ICON_MARGIN, 1)
+
+    def test_each_corner_is_the_corner_it_names(self):
+        w, h = 20, 16
+        left, top = ic.ICON_MARGIN, ic.ICON_MARGIN
+        right, bottom = ic.PANEL_W - w - left, ic.PANEL_H - h - top
+        self.assertEqual(ic.place(w, h, "lower_left"), (left, bottom))
+        self.assertEqual(ic.place(w, h, "lower_right"), (right, bottom))
+        self.assertEqual(ic.place(w, h, "upper_left"), (left, top))
+        self.assertEqual(ic.place(w, h, "upper_right"), (right, top))
+
+    def test_right_is_vertically_centred(self):
+        """The roomy option: it grows leftward from the right edge, mid-height."""
+        w, h = 20, 16
+        x, y = ic.place(w, h, "right")
+        self.assertEqual(x, ic.PANEL_W - w - ic.ICON_MARGIN)
+        self.assertEqual(y, (ic.PANEL_H - h) // 2)
+
+    def test_an_unknown_placement_falls_back_to_the_default(self):
+        self.assertEqual(ic.place(20, 16, "middle-of-nowhere"),
+                         ic.place(20, 16, ic.DEFAULT_PLACEMENT))
+        self.assertIn(ic.DEFAULT_PLACEMENT, ic.PLACEMENTS)
+
+
+class LegendClearanceTest(unittest.TestCase):
+    """Why the default corner is the CONTESTED one, and why the right trio is not.
+
+    The base legend is left-aligned and its ink ends near x=24 (measured through
+    the shipped renderer -- the table lives in `icon_catalog`). So an icon that
+    grows leftward from the right edge can never reach it, while one in either
+    left corner shares the same columns and the height decides the damage.
+
+    This is geometry, so it is checkable offline; the pixel-against-pixel counts
+    behind it are not, and are recorded in the module comment instead.
+    """
+
+    LEGEND_RIGHT = 24          # measured: plain S B W M Q @ ink x 0..24
+
+    def _left_edge(self, placement, size=16):
+        return ic.place(size, size, placement)[0]
+
+    def test_the_right_hand_placements_clear_the_legend_COLUMNS(self):
+        for name in ("lower_right", "upper_right", "right"):
+            with self.subTest(name):
+                self.assertGreater(self._left_edge(name), self.LEGEND_RIGHT)
+
+    def test_the_left_hand_placements_do_NOT(self):
+        """Including the default -- that is the trade, not an oversight."""
+        for name in ("lower_left", "upper_left"):
+            with self.subTest(name):
+                self.assertLessEqual(self._left_edge(name), self.LEGEND_RIGHT)
+        self.assertIn(ic.DEFAULT_PLACEMENT, ("lower_left", "upper_left"))
+
+    def test_the_default_height_stays_on_the_measured_plateau(self):
+        """16 costs 8 pairs 2 px each; 20 costs 153 pairs up to 22 px."""
+        self.assertLessEqual(ic.DEFAULT_ICON_HEIGHT, 16)
+        self.assertGreaterEqual(ic.DEFAULT_ICON_HEIGHT, 12)
+
+
+class RenderTest(unittest.TestCase):
+    """Rendering, with an ordinary system font so it needs no catalog."""
 
     def _font(self):
         import glob
@@ -82,25 +159,86 @@ class PlacementTest(unittest.TestCase):
                 return hits[0]
         return None
 
-    def test_the_icon_is_right_aligned_and_leaves_the_legend_side_blank(self):
+    def _mask(self, **kw):
+        font = self._font()
+        if font is None:
+            self.skipTest("no system TTF to render with")
+        mask = ic.render_overlay("x", font, {"x": ord("X")}, **kw)
+        self.assertIsNotNone(mask)
+        self.assertEqual(mask.shape, (ic.PANEL_H, ic.PANEL_W))
+        return mask
+
+    def test_most_of_the_frame_is_blank_so_the_legend_survives(self):
         """The property the whole design rests on.
 
         The firmware clears a courtyard around the overlay's ink and draws it, so
         blank areas leave the legend underneath intact. A full-frame icon would
-        erase the letter; a right-aligned one punches in beside it.
+        erase the letter; a corner one punches in beside it.
+        """
+        mask = self._mask(height=16)
+        self.assertTrue(mask.any(), "no ink drawn at all")
+        self.assertLess(mask.sum(), ic.PANEL_W * ic.PANEL_H // 4)
+
+    def test_the_default_places_it_bottom_LEFT(self):
+        mask = self._mask(height=16)
+        rows = mask.any(axis=1).nonzero()[0]
+        cols = mask.any(axis=0).nonzero()[0]
+        self.assertLess(cols.max(), ic.PANEL_W // 2, "ink in the right half")
+        self.assertGreater(rows.min(), ic.PANEL_H // 2, "ink in the top half")
+
+    def test_render_HONOURS_the_placement_it_is_given(self):
+        """Not just the default -- an ignored argument passes every other test."""
+        quadrant = {
+            "lower_left": (False, True), "lower_right": (True, True),
+            "upper_left": (False, False), "upper_right": (True, False),
+        }
+        for name, (want_right, want_low) in quadrant.items():
+            with self.subTest(name):
+                mask = self._mask(height=16, placement=name)
+                rows = mask.any(axis=1).nonzero()[0]
+                cols = mask.any(axis=0).nonzero()[0]
+                is_right = cols.min() > ic.PANEL_W // 2
+                is_low = rows.min() > ic.PANEL_H // 2
+                self.assertEqual(is_right, want_right, "wrong side")
+                self.assertEqual(is_low, want_low, "wrong half")
+
+    def test_nothing_touches_the_panel_edge(self):
+        """Literal bounds -- deriving them from ICON_MARGIN hides a zero margin."""
+        for name in ic.PLACEMENTS:
+            with self.subTest(name):
+                mask = self._mask(height=16, placement=name)
+                self.assertFalse(mask[0].any() or mask[-1].any(), "top/bottom edge")
+                self.assertFalse(mask[:, 0].any() or mask[:, -1].any(), "side edge")
+
+    def test_a_glyph_the_FONT_lacks_is_refused_not_drawn_as_notdef(self):
+        """A missing glyph inks a box, so the bbox guard alone cannot see it.
+
+        This is the shape that reaches a keycap: `icon_names=` is a request, and
+        Google returns whatever it recognised -- one renamed name comes back
+        absent while the rest of the subset is fine. `.notdef` then covers most
+        of the corner, means nothing, and wipes the legend under it.
         """
         font = self._font()
         if font is None:
             self.skipTest("no system TTF to render with")
-        mask = ic.render_overlay("x", font, {"x": ord("X")}, height=30)
-        self.assertIsNotNone(mask)
-        self.assertEqual(mask.shape, (ic.PANEL_H, ic.PANEL_W))
-        columns = mask.any(axis=0)
-        self.assertFalse(columns[:ic.PANEL_W // 2].any(),
-                         "ink in the left half would overwrite the legend")
-        self.assertTrue(columns[ic.PANEL_W // 2:].any(), "no ink drawn at all")
-        # And it must not run off the panel: the right margin is respected.
-        self.assertFalse(columns[ic.PANEL_W - ic.ICON_MARGIN:].any())
+        missing = 0x10FFFD          # plane-16 noncharacter: in no real font
+        # ⚠️ Establish that INDEPENDENTLY -- gating the skip on `ic.font_covers`
+        # lets a mutation that makes it always return True skip this test rather
+        # than fail it, which is the one result that means "untested".
+        from fontTools.ttLib import TTFont
+        with TTFont(font, lazy=True) as probe:
+            if missing in probe.getBestCmap():
+                self.skipTest("this font somehow covers the probe codepoint")
+
+        # The half that makes the guard necessary: it is NOT blank.
+        from PIL import Image, ImageDraw, ImageFont
+        d = ImageDraw.Draw(Image.new("L", (ic.PANEL_W, ic.PANEL_H), 0))
+        box = d.textbbox((0, 0), chr(missing),
+                         font=ImageFont.truetype(font, 16))
+        self.assertGreater(box[2] - box[0], 0, "notdef would have measured blank")
+        self.assertGreater(box[3] - box[1], 0)
+
+        self.assertIsNone(ic.render_overlay("x", font, {"x": missing}))
 
     def test_an_unknown_name_yields_nothing(self):
         font = self._font()
