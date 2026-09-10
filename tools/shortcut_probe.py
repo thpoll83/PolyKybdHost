@@ -28,6 +28,17 @@ displayable_hid(), the HID tables and the report are shared.
 
     python tools/shortcut_probe.py --selftest      # pure parsers, runs anywhere
 
+Watch mode runs unattended for as long as you leave it, probing whichever window
+has focus and logging the labels that got no icon. That log is what grows
+res/shortcut_hints.yaml: which labels deserve a glyph is a question about the
+apps you actually use, and a day of ordinary work answers it better than a guess.
+A label counts once per window VISIT, not once per probe, so the ranking reflects
+how often you meet it rather than how long a window sat in the foreground.
+
+    python tools/shortcut_probe.py --watch --unmatched unmatched.json
+    ...work all day, then Ctrl+C...
+    python tools/shortcut_probe.py --review unmatched.json
+
 Needs the accessibility bus up (org.a11y.Bus) and the app running with its
 toolkit bridge active; GTK3 needs libatk-adaptor installed.
 
@@ -48,7 +59,7 @@ So on Linux this discovers shortcuts for legacy-menubar apps only. Treat that
 as the ceiling when deciding whether it is worth a HID command.
 
 WINDOWS IS UNMEASURED AND THE UIA BACKEND IS UNRUN. It was written without a
-Windows machine to test on, so the pure parsers below are selftested (46 cases,
+Windows machine to test on, so the pure parsers below are selftested (54 cases,
 including real localized strings) but uia_shortcuts()/main_uia() have never
 executed. Expect to debug them on first contact. There are two reasons to think
 Windows scores better than the Linux numbers above -- classic menubars are far

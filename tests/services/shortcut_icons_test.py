@@ -211,6 +211,16 @@ class GlyphAvailabilityTest(unittest.TestCase):
         fonts, source = _fonts()
         if not fonts:
             self.skipTest("no fonts available")
+        if source != "headers":
+            # The shipped .plyf bundles are the PACK half only, so every resident
+            # glyph reads as absent and this cannot distinguish a bad entry from a
+            # missing font source. Hand-listing the resident ones as exemptions was
+            # tried and is the guard shape that goes stale: it covered the four
+            # arrows, passed on an interpreter that could load the headers, and
+            # failed on one that could not. Needs a qmk_firmware checkout and
+            # Pillow (tools/gfx_font parses the committed headers with it).
+            self.skipTest("headers unavailable (need a qmk_firmware checkout + "
+                          "Pillow); a packs-only load cannot see resident glyphs")
         missing = []
         targets = [(c, cp) for c, (cp, _) in si.LEXICON.items()]
         for key, value in si.load_hints().items():
@@ -220,13 +230,6 @@ class GlyphAvailabilityTest(unittest.TestCase):
                     targets.append((f"hint:{key}", cp))
         for concept, cp in sorted(targets):
             if ml.find_glyph(fonts, cp) is None:
-                # The four navigation arrows live in the RESIDENT IconsFont, which
-                # only the firmware headers carry -- the shipped .plyf bundles are
-                # the pack half alone. Absent from a packs-only load is expected
-                # and is not a broken entry.
-                if source == "packs" and cp in (si.ICON_UP, si.ICON_DOWN,
-                                                si.ICON_LEFT, si.ICON_RIGHT):
-                    continue
                 missing.append(f"{concept} U+{cp:04X}")
         self.assertEqual(missing, [], f"unrenderable glyphs ({source}): {missing}")
 
