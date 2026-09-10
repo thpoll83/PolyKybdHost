@@ -94,6 +94,14 @@ class PolySettings:
             "max_hid_message_before_delay": 15,
             "delay_time_after_max_hid_messages": 0.3,
             "hid_reconnect_retries": 5,
+            # Height in pixels of a fetched shortcut icon inside the 72x40
+            # keycap. The icon is right-aligned and the rest of the frame is
+            # blank, so the legend underneath survives -- collision with the
+            # letter is zero at every size from 24 to 40, and what changes is
+            # balance: at 40 the icon is flush against the panel edge, at 24 it
+            # reads as small beside the legend. 30 keeps a margin all round with
+            # the letter still dominant. Clamped by icon_catalog.icon_height().
+            "shortcut_icon_height": 30,
             # Developer mode: reveals the tray's Developer submenu and the
             # `dev_`-prefixed settings below, and allows key injection. Formerly
             # implied by `--debug`; it is a persisted setting because under

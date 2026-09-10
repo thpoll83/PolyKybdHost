@@ -168,8 +168,8 @@ class HintTest(unittest.TestCase):
         already decided is text must leave the queue, or it resurfaces every run
         and the queue stops being read.
         """
-        self.assertIsNone(si.match("Bold"))
-        self.assertTrue(si.suppressed("Bold"))
+        self.assertIsNone(si.match("System"))
+        self.assertTrue(si.suppressed("System"))
         self.assertIsNone(si.match("Transpose"))
         self.assertFalse(si.suppressed("Transpose"))
 
@@ -178,7 +178,7 @@ class HintTest(unittest.TestCase):
         self.assertEqual(m.codepoint, 0x1F4BE)
 
     def test_hints_are_matched_on_the_normalized_label(self):
-        for spelling in ("Bold", "&Bold", "  bold  ", "Bold..."):
+        for spelling in ("System", "&System", "  system  ", "System..."):
             self.assertTrue(si.suppressed(spelling), spelling)
 
     def test_a_missing_hints_file_is_not_fatal(self):
@@ -196,12 +196,63 @@ class HintTest(unittest.TestCase):
         for key, value in hints.items():
             self.assertEqual(key, si.normalize(key),
                              f"hint key {key!r} is not in normalized form")
-            if value == si.SUPPRESS:
-                continue
-            self.assertIsNotNone(
-                si.resolve_hint(value),
-                f"hint {key!r} -> {value!r} is neither 'text', a known concept, "
-                f"nor a parseable U+XXXX codepoint")
+            self.assertTrue(
+                si.hint_is_valid(value),
+                f"hint {key!r} -> {value!r} is not 'text', a known concept, a "
+                f"parseable U+XXXX codepoint, or an icon:<name>")
+
+
+class CatalogIconTest(unittest.TestCase):
+    def test_every_concept_names_a_catalog_icon(self):
+        """A concept without an icon name can only ever draw from a bundle.
+
+        The catalog is what makes the feature generic -- 4277 icons, no reship --
+        so an entry that names none is a concept the on-demand path cannot serve.
+        """
+        for concept, (_, icon, _) in si.LEXICON.items():
+            self.assertTrue(icon, f"{concept} has no catalog icon name")
+            self.assertRegex(icon, r"^[a-z0-9_]+$", concept)
+
+    def test_the_formerly_impossible_concepts_are_catalog_only(self):
+        """Bold and friends have no bundle glyph, and need none.
+
+        Each was `text` while the font pack was the only route: the shipped fonts
+        carry no bold, italic or paintbrush glyph among their 7242 codepoints,
+        and adding one meant fontconvert plus a bundle reship. This pins that
+        they now resolve, and that they resolve WITHOUT a codepoint -- so a
+        regression that quietly gave them one would be visible.
+        """
+        for label, icon in (("Bold", "format_bold"), ("Italic", "format_italic"),
+                            ("Underline", "format_underlined"),
+                            ("Superscript", "superscript"),
+                            ("Subscript", "subscript"),
+                            ("Format Painter", "format_paint")):
+            m = si.match(label)
+            self.assertIsNotNone(m, label)
+            self.assertEqual(m.icon, icon, label)
+            self.assertIsNone(m.codepoint, label)
+
+    def test_a_hint_can_name_a_catalog_icon(self):
+        m = si.match("Whatever", hints={"whatever": "icon:rocket_launch"})
+        self.assertEqual(m.icon, "rocket_launch")
+        self.assertIsNone(m.codepoint)
+
+    def test_the_lint_accepts_icon_values_and_rejects_typos(self):
+        """`icon:` is explicit so a misspelled CONCEPT still fails the lint.
+
+        Treating any unrecognised bare word as a catalog name would make the lint
+        accept everything, and a typo would then fail as a missing icon -- the
+        shape nobody investigates.
+        """
+        self.assertTrue(si.hint_is_valid("icon:rocket_launch"))
+        self.assertTrue(si.hint_is_valid("save"))
+        self.assertTrue(si.hint_is_valid("U+1F4BE"))
+        self.assertTrue(si.hint_is_valid("text"))
+        self.assertFalse(si.hint_is_valid("saev"))
+
+    def test_char_is_empty_without_a_codepoint(self):
+        self.assertEqual(si.match("Bold").char, "")
+        self.assertEqual(si.match("Save").char, chr(0x1F4BE))
 
 
 class GlyphAvailabilityTest(unittest.TestCase):
@@ -222,12 +273,12 @@ class GlyphAvailabilityTest(unittest.TestCase):
             self.skipTest("headers unavailable (need a qmk_firmware checkout + "
                           "Pillow); a packs-only load cannot see resident glyphs")
         missing = []
-        targets = [(c, cp) for c, (cp, _) in si.LEXICON.items()]
+        # A catalog-only concept has no bundle glyph by design; nothing to check.
+        targets = [(c, cp) for c, (cp, _, _) in si.LEXICON.items() if cp is not None]
         for key, value in si.load_hints().items():
-            if value != si.SUPPRESS:
-                cp = si.resolve_hint(value)
-                if cp is not None:
-                    targets.append((f"hint:{key}", cp))
+            cp = si.resolve_hint(value)
+            if cp is not None:
+                targets.append((f"hint:{key}", cp))
         for concept, cp in sorted(targets):
             if ml.find_glyph(fonts, cp) is None:
                 missing.append(f"{concept} U+{cp:04X}")

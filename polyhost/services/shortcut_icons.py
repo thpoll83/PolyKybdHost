@@ -39,68 +39,120 @@ ICON_UP, ICON_DOWN, ICON_LEFT, ICON_RIGHT = 0x81, 0x82, 0x83, 0x84
 
 # concept -> (codepoint, phrases). Phrases are matched longest-first, so a
 # compound ("save as") wins over the word it contains ("save").
-LEXICON: dict[str, tuple[int, tuple[str, ...]]] = {
+# concept -> (font-pack codepoint or None, catalog icon name, phrases).
+#
+# TWO icon sources, and the difference decides what is possible:
+#   * the CODEPOINT draws from a `.plyf` bundle already on the keyboard -- no
+#     network, but every glyph must be chosen in advance and reshipped.
+#   * the ICON NAME is fetched from the catalog on demand (icon_catalog.py) --
+#     any of 4277 icons, no firmware change, at the cost of one small download.
+# A concept may have only the second: `format_bold` and friends have no bundle
+# glyph and never will without a reship, which is exactly the wall the catalog
+# route removes. Prefer the codepoint when present (it always works offline) and
+# fall back to the name.
+#
+# Phrases are matched longest-first, so a compound ("save as") wins over the word
+# it contains ("save").
+LEXICON: dict[str, tuple[int | None, str, tuple[str, ...]]] = {
     # --- file ---------------------------------------------------------------
-    "save":        (0x1F4BE, ("save", "write", "store")),
-    "save as":     (0x1F5AB, ("save as", "save a copy", "save copy", "save all")),
-    "open":        (0x1F4C2, ("open", "open file", "open recent", "load")),
-    "new":         (0x1F5B9, ("new", "new file", "new document", "new from template")),
-    "print":       (0x2399,  ("print", "print preview")),
-    "reload":      (0x1F5D8, ("reload", "refresh", "revert", "restore")),
+    "save":        (0x1F4BE, "save", ("save", "write", "store")),
+    "save as":     (0x1F5AB, "save_as", ("save as", "save a copy", "save copy",
+                                         "save all")),
+    "open":        (0x1F4C2, "folder_open", ("open", "open file", "open recent",
+                                             "load")),
+    "new":         (0x1F5B9, "note_add", ("new", "new file", "new document",
+                                          "new from template")),
+    "print":       (0x2399,  "print", ("print", "print preview")),
+    "reload":      (0x1F5D8, "refresh", ("reload", "refresh", "revert", "restore")),
     # --- edit ---------------------------------------------------------------
-    "cut":         (0x2702,  ("cut",)),
-    "copy":        (0x1F5D7, ("copy", "duplicate", "duplicate line")),
-    "paste":       (0x1F4CB, ("paste", "paste special", "paste as column")),
-    "undo":        (0x1F504, ("undo",)),
-    "redo":        (0x1F503, ("redo", "repeat")),
-    "delete":      (0x232B,  ("delete", "erase", "clear", "delete line")),
-    "select all":  (0x2610,  ("select all", "select")),
+    "cut":         (0x2702,  "content_cut", ("cut",)),
+    "copy":        (0x1F5D7, "content_copy", ("copy", "duplicate",
+                                              "duplicate line")),
+    "paste":       (0x1F4CB, "content_paste", ("paste", "paste special",
+                                               "paste as column")),
+    "undo":        (0x1F504, "undo", ("undo",)),
+    "redo":        (0x1F503, "redo", ("redo", "repeat")),
+    "delete":      (0x232B,  "delete", ("delete", "erase", "clear",
+                                        "delete line")),
+    "select all":  (0x2610,  "select_all", ("select all", "select")),
     # --- search -------------------------------------------------------------
-    "find":        (0x1F50D, ("find", "search", "incremental search", "highlight all")),
-    "find next":   (0x1F50E, ("find next", "find previous", "search next",
-                              "search again")),
-    "replace":     (0x1F501, ("replace", "find and replace", "substitute")),
-    "go to":       (0x1F4CD, ("go to", "goto", "jump to", "go to line")),
+    "find":        (0x1F50D, "search", ("find", "search", "incremental search",
+                                        "highlight all")),
+    "find next":   (0x1F50E, "find_in_page", ("find next", "find previous",
+                                              "search next", "search again")),
+    "replace":     (0x1F501, "find_replace", ("replace", "find and replace",
+                                              "substitute")),
+    "go to":       (0x1F4CD, "my_location", ("go to", "goto", "jump to",
+                                             "go to line")),
     # --- view ---------------------------------------------------------------
-    "fullscreen":  (0x1F5D6, ("fullscreen", "full screen", "maximize", "maximise")),
-    "minimize":    (0x1F5D5, ("minimize", "minimise", "iconify")),
-    "window":      (0x1F5D4, ("window", "new window", "close window")),
+    "fullscreen":  (0x1F5D6, "fullscreen", ("fullscreen", "full screen",
+                                            "maximize", "maximise")),
+    "minimize":    (0x1F5D5, "minimize", ("minimize", "minimise", "iconify")),
+    "window":      (0x1F5D4, "web_asset", ("window", "new window",
+                                           "close window")),
     # U+1F5DA/DB are literally INCREASE/DECREASE FONT SIZE SYMBOL, so they serve
     # both the view-zoom and the text-size wording. Word spells them Grow/Shrink Font.
-    "zoom in":     (0x1F5DA, ("zoom in", "increase font", "larger", "bigger",
-                              "increase font size", "grow font", "larger font")),
-    "zoom out":    (0x1F5DB, ("zoom out", "decrease font", "smaller",
-                              "decrease font size", "shrink font", "smaller font")),
-    # --- navigation (resident icons -- drawable with no font pack) ----------
-    "up":          (ICON_UP,    ("up", "line up", "one line up", "scroll up",
-                                 "move up", "previous line")),
-    "down":        (ICON_DOWN,  ("down", "line down", "one line down",
-                                 "scroll down", "move down", "next line")),
-    "left":        (ICON_LEFT,  ("left", "word left", "one word left", "back",
-                                 "backward", "previous")),
-    "right":       (ICON_RIGHT, ("right", "word right", "one word right",
-                                 "forward", "next")),
+    "zoom in":     (0x1F5DA, "zoom_in", ("zoom in", "increase font", "larger",
+                                         "bigger", "increase font size",
+                                         "grow font", "larger font")),
+    "zoom out":    (0x1F5DB, "zoom_out", ("zoom out", "decrease font", "smaller",
+                                          "decrease font size", "shrink font",
+                                          "smaller font")),
+    # --- navigation (the codepoints are RESIDENT -- no font pack needed) -----
+    "up":          (ICON_UP,    "arrow_upward", ("up", "line up", "one line up",
+                                                 "scroll up", "move up",
+                                                 "previous line")),
+    "down":        (ICON_DOWN,  "arrow_downward", ("down", "line down",
+                                                   "one line down", "scroll down",
+                                                   "move down", "next line")),
+    "left":        (ICON_LEFT,  "arrow_back", ("left", "word left",
+                                               "one word left", "back",
+                                               "backward", "previous")),
+    "right":       (ICON_RIGHT, "arrow_forward", ("right", "word right",
+                                                  "one word right", "forward",
+                                                  "next")),
     # --- misc ---------------------------------------------------------------
-    "indent":      (0x2348,  ("indent", "increase indent")),
-    "outdent":     (0x2347,  ("outdent", "unindent", "decrease indent")),
-    "settings":    (0x2699,  ("settings", "preferences", "options", "configure",
-                              "properties")),
-    "help":        (0x2753,  ("help", "about", "contents", "documentation",
-                              "keyboard shortcuts")),
-    "close":       (0x1F5D9, ("close", "cancel", "close tab", "close document")),
-    "quit":        (0x1F6AA, ("quit", "exit")),
-    "bookmark":    (0x1F516, ("bookmark", "favorite", "favourite", "mark")),
-    "lock":        (0x1F512, ("lock", "read only", "viewer mode")),
-    "comment":     (0x0023,  ("comment", "uncomment", "toggle comment")),
+    "indent":      (0x2348,  "format_indent_increase", ("indent",
+                                                        "increase indent")),
+    "outdent":     (0x2347,  "format_indent_decrease", ("outdent", "unindent",
+                                                        "decrease indent")),
+    "settings":    (0x2699,  "settings", ("settings", "preferences", "options",
+                                          "configure", "properties")),
+    "help":        (0x2753,  "help", ("help", "about", "contents",
+                                      "documentation", "keyboard shortcuts")),
+    "close":       (0x1F5D9, "close", ("close", "cancel", "close tab",
+                                       "close document")),
+    "quit":        (0x1F6AA, "logout", ("quit", "exit")),
+    "bookmark":    (0x1F516, "bookmark", ("bookmark", "favorite", "favourite",
+                                          "mark")),
+    "lock":        (0x1F512, "lock", ("lock", "read only", "viewer mode")),
+    "comment":     (0x0023,  "comment", ("comment", "uncomment",
+                                         "toggle comment")),
     # --- text / document (Office wording) ------------------------------------
-    "change case": (0x1F520, ("change case", "to uppercase", "to lowercase",
-                              "to title case", "to opposite case",
-                              "to sentence case", "capitalize")),
-    "paragraph":   (0x00B6,  ("paragraph", "paragraph settings")),
-    "alignment":   (0x2630,  ("alignment", "align", "align text")),
-    "styles":      (0x1F3A8, ("styles", "cell styles", "style")),
-    "share":       (0x1F517, ("share", "link", "copy link")),
-    "insert":      (0x271A,  ("insert", "add", "insert row", "insert column")),
+    "change case": (0x1F520, "match_case", ("change case", "to uppercase",
+                                            "to lowercase", "to title case",
+                                            "to opposite case",
+                                            "to sentence case", "capitalize")),
+    "paragraph":   (0x00B6,  "format_paragraph", ("paragraph",
+                                                  "paragraph settings")),
+    "alignment":   (0x2630,  "format_align_left", ("alignment", "align",
+                                                   "align text")),
+    "styles":      (0x1F3A8, "palette", ("styles", "cell styles", "style")),
+    "share":       (0x1F517, "share", ("share", "link", "copy link")),
+    "insert":      (0x271A,  "add", ("insert", "add", "insert row",
+                                     "insert column")),
+    # --- CATALOG-ONLY: no bundle glyph exists, and none is needed ------------
+    # Every one of these was `text` while the font pack was the only route. The
+    # shipped fonts carry no bold, italic or paintbrush glyph among their 7242
+    # codepoints, and adding them meant fontconvert plus a bundle reship. The
+    # catalog has all six, so the wall is simply gone.
+    "bold":        (None, "format_bold", ("bold",)),
+    "italic":      (None, "format_italic", ("italic",)),
+    "underline":   (None, "format_underlined", ("underline", "underlined")),
+    "superscript": (None, "superscript", ("superscript",)),
+    "subscript":   (None, "subscript", ("subscript",)),
+    "paint":       (None, "format_paint", ("format painter", "painter",
+                                           "copy formatting")),
 }
 
 # Labels currently left to the TEXT fallback -- Bold, Italic, Underline,
@@ -114,7 +166,7 @@ LEXICON: dict[str, tuple[int, tuple[str, ...]]] = {
 # Longest phrase first so "save as" beats "save"; ties broken alphabetically so
 # the table order cannot silently decide a match.
 _PHRASES: list[tuple[str, str]] = sorted(
-    ((phrase, concept) for concept, (_, phrases) in LEXICON.items()
+    ((phrase, concept) for concept, (_, _, phrases) in LEXICON.items()
      for phrase in phrases),
     key=lambda pc: (-len(pc[0].split()), -len(pc[0]), pc[0]),
 )
@@ -232,9 +284,9 @@ def load_hints(path: str | None = None) -> dict[str, str]:
 
 
 def resolve_hint(value: str) -> int | None:
-    """A hint value to a codepoint, or None for the deliberate text fallback."""
+    """A hint value to a font-pack codepoint, if it names one."""
     value = value.strip()
-    if value == SUPPRESS:
+    if value == SUPPRESS or value.startswith(ICON_PREFIX):
         return None
     if value.upper().startswith("U+"):
         try:
@@ -243,6 +295,27 @@ def resolve_hint(value: str) -> int | None:
             return None
     entry = LEXICON.get(value)
     return entry[0] if entry else None
+
+
+def resolve_hint_icon(value: str) -> str:
+    """A hint value to a CATALOG icon name, if it names one.
+
+    ``icon:<name>`` is explicit rather than "any bare word we do not recognise",
+    so a typo'd concept name still fails the lint in the tests instead of being
+    silently taken for a catalog icon that does not exist.
+    """
+    value = value.strip()
+    if value.startswith(ICON_PREFIX):
+        return value[len(ICON_PREFIX):].strip()
+    entry = LEXICON.get(value)
+    return entry[1] if entry else ""
+
+
+def hint_is_valid(value: str) -> bool:
+    """Whether a hint file value names something -- the lint the tests apply."""
+    value = value.strip()
+    return (value == SUPPRESS or bool(resolve_hint_icon(value))
+            or resolve_hint(value) is not None)
 
 
 def suppressed(label: str, hints: dict[str, str] | None = None) -> bool:
@@ -257,16 +330,26 @@ def suppressed(label: str, hints: dict[str, str] | None = None) -> bool:
     return hints.get(normalize(label), "").strip() == SUPPRESS
 
 
+ICON_PREFIX = "icon:"
+
+
 @dataclass(frozen=True)
 class IconMatch:
-    codepoint: int
+    """A concept, and the two ways it can be drawn.
+
+    `codepoint` is a glyph already on the keyboard (None when the concept has
+    none); `icon` is a catalog name to fetch. A caller prefers the codepoint when
+    it has one -- it needs no network -- and falls back to the name.
+    """
+    codepoint: int | None
     concept: str
     confidence: float
     rule: str
+    icon: str = ""
 
     @property
     def char(self) -> str:
-        return chr(self.codepoint)
+        return chr(self.codepoint) if self.codepoint is not None else ""
 
 
 def match(label: str, min_confidence: float = 0.6, allow_fuzzy: bool = False,
@@ -287,8 +370,12 @@ def match(label: str, min_confidence: float = 0.6, allow_fuzzy: bool = False,
     #    the review loop unable to correct anything.
     hint = (load_hints() if hints is None else hints).get(text)
     if hint is not None:
-        cp = resolve_hint(hint)
-        return None if cp is None else IconMatch(cp, hint, 1.0, "hint")
+        if hint.strip() == SUPPRESS:
+            return None
+        cp, icon = resolve_hint(hint), resolve_hint_icon(hint)
+        if cp is None and not icon:
+            return None                      # unknown value; the lint catches it
+        return IconMatch(cp, hint, 1.0, "hint", icon)
 
     # 1-3. Exact phrase, contained phrase, then a single distinctive word.
     hit = _literal_rules(text)
@@ -302,7 +389,8 @@ def match(label: str, min_confidence: float = 0.6, allow_fuzzy: bool = False,
     hit = _literal_rules(folded, _FOLDED_PHRASES)
     if hit is not None:
         return IconMatch(hit.codepoint, hit.concept,
-                         0.95 if hit.rule == "exact" else 0.85, "spelling")
+                         0.95 if hit.rule == "exact" else 0.85, "spelling",
+                         hit.icon)
 
     words = set(text.split())
 
@@ -342,9 +430,13 @@ def match(label: str, min_confidence: float = 0.6, allow_fuzzy: bool = False,
         if ratio > best_ratio:
             best, best_ratio, best_concept = phrase, ratio, concept
     if best is not None and best_ratio >= max(min_confidence, FUZZY_FLOOR):
-        return IconMatch(LEXICON[best_concept][0], best_concept,
-                         round(best_ratio, 3), "fuzzy")
+        return _for(best_concept, round(best_ratio, 3), "fuzzy")
     return None
+
+
+def _for(concept: str, confidence: float, rule: str) -> IconMatch:
+    codepoint, icon, _ = LEXICON[concept]
+    return IconMatch(codepoint, concept, confidence, rule, icon)
 
 
 def _literal_rules(text: str, table=None) -> IconMatch | None:
@@ -353,14 +445,14 @@ def _literal_rules(text: str, table=None) -> IconMatch | None:
     words = set(text.split())
     for phrase, concept in table:
         if text == phrase:
-            return IconMatch(LEXICON[concept][0], concept, 1.0, "exact")
+            return _for(concept, 1.0, "exact")
     for phrase, concept in table:
         parts = phrase.split()
         if len(parts) > 1 and _contains_sequence(text.split(), parts):
-            return IconMatch(LEXICON[concept][0], concept, 0.9, "phrase")
+            return _for(concept, 0.9, "phrase")
     for phrase, concept in table:
         if " " not in phrase and phrase in words:
-            return IconMatch(LEXICON[concept][0], concept, 0.75, "keyword")
+            return _for(concept, 0.75, "keyword")
     return None
 
 
