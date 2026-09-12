@@ -153,3 +153,64 @@ class TestReportWindow(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestRemoteNoMatchIsLogged(unittest.TestCase):
+    """A forwarded window that produces no overlay must SAY why.
+
+    ⚠️ This is the one question a multi-machine support round always starts with,
+    and it is the one the FORWARDER's own log can never answer -- that side only
+    knows what it sent, so "Active App: 'PuTTY' putty 123" is logged whether or
+    not the keyboard machine did anything with it. Before this, the receiving end
+    logged `Remote App Changed: "putty"` and then nothing at all, so an unmapped
+    app and a mapped app whose title rule missed were indistinguishable.
+    """
+
+    def _handler(self, mapping):
+        with mock.patch.object(RemoteHandler, "listen_to_forwarder", lambda self: None):
+            return RemoteHandler(mapping)
+
+    def test_an_unmapped_remote_app_says_so(self):
+        rh = self._handler(_annotated())
+        rh.report_window(1, "Unknown.exe", "x")
+        with mock.patch.object(rh, "log") as log:
+            self.assertTrue(rh.remote_changed({}))
+        said = " ".join(str(c) for c in log.info.call_args_list)
+        self.assertIn("not in the overlay mapping", said)
+        self.assertIn("unknown", said)          # the NORMALISED name, as matched
+
+    def test_a_mapped_app_whose_TITLE_missed_says_so_DIFFERENTLY(self):
+        # Same outcome on the keycaps, entirely different fix -- so the two must
+        # not share a line. A title rule that cannot match anything isolates it.
+        mapping = {"code": {"titles-startswith": {"nothing-starts-with-this": {"overlay": "x"}},
+                            "flags": [False, False, False, True, False, False]}}
+        rh = self._handler(mapping)
+        rh.report_window(1, "Code.exe", "main.py - VS Code")
+        with mock.patch.object(rh, "log") as log:
+            self.assertTrue(rh.remote_changed({}))
+        said = " ".join(str(c) for c in log.info.call_args_list)
+        self.assertIn("no entry matched its title", said)
+        self.assertIn("main.py - VS Code", said)    # the title, so the rule can be compared
+        self.assertNotIn("not in the overlay mapping", said)
+
+    def test_a_MATCH_stays_quiet_about_failing(self):
+        rh = self._handler(_annotated())
+        rh.report_window(123, "Code.exe", "main.py - VS Code")
+        with mock.patch.object(rh, "log") as log:
+            self.assertTrue(rh.remote_changed({}))
+        said = " ".join(str(c) for c in log.info.call_args_list)
+        self.assertNotIn("not in the overlay mapping", said)
+        self.assertNotIn("no entry matched", said)
+
+    def test_the_line_is_ONCE_PER_CHANGE_not_per_tick(self):
+        # remote_changed runs on the window tick (4x/s). A per-tick line would
+        # bury the log it exists to make readable.
+        rh = self._handler(_annotated())
+        rh.report_window(1, "Unknown.exe", "x")
+        with mock.patch.object(rh, "log") as log:
+            self.assertTrue(rh.remote_changed({}))
+            for _ in range(10):
+                self.assertFalse(rh.remote_changed({}))
+        misses = [c for c in log.info.call_args_list
+                  if "not in the overlay mapping" in str(c)]
+        self.assertEqual(len(misses), 1, f"expected one line, got {misses}")
