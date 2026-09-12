@@ -16,9 +16,13 @@ where each came from.
 Style route: **Microsoft Fluent UI System Icons (MIT)** via `icon_fetch`. Three
 line-editing glyphs are drawn here, because a general UI icon set has nothing
 for "kill to end of line" and the nearest candidates all say "delete file". The
-ESC **program mark** is drawn: a monitor with a block cursor, deliberately
-distinct from the Windows Terminal overlay's `>_` frame -- the mark exists to
-say WHICH set is loaded, so two terminal overlays must not share one.
+ESC **program mark** is NOT baked here -- it comes from the curated generic
+`mdi:console-network` (`polyhost/res/app_icons.yaml`). ⚠️ It replaced a drawn
+monitor-with-a-block-cursor chosen to be DISTINCT from the Windows Terminal
+overlay's framed `>_`, and the two generics sit closer together than those two
+did: `mdi:console` and `mdi:console-network` are both a `>_`. Taken knowingly --
+one is framed, the other carries a network node -- but if the two terminal
+overlays ever become hard to tell apart on a keycap, this is why.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/putty/fetch_icons.py
@@ -155,25 +159,6 @@ def _draw_killword(path: Path, *, forward: bool) -> None:
     _kill_glyph_at(path, flip=forward, **_KILL_WORD)
 
 
-def _draw_terminal_mark(path: Path) -> None:
-    """Program mark: a monitor with a block cursor.
-
-    Drawn rather than downloaded -- PuTTY's own icon is its project artwork --
-    and deliberately NOT the `>_` prompt the Windows Terminal overlay uses: the
-    mark's whole job is to say which set is loaded, so the two must differ.
-    """
-    img, d, u = _canvas(px=256)
-    white = (255, 255, 255, 255)
-    w = int(u * 0.05)
-    d.rounded_rectangle([u * 0.08, u * 0.14, u * 0.92, u * 0.70],
-                        radius=int(u * 0.06), outline=white, width=w)
-    d.rectangle([u * 0.24, u * 0.42, u * 0.40, u * 0.56], fill=white)   # block cursor
-    d.line([(u * 0.50, u * 0.86), (u * 0.50, u * 0.70)], fill=white, width=w)  # stand
-    d.line([(u * 0.28, u * 0.88), (u * 0.72, u * 0.88)], fill=white,
-           width=int(u * 0.06))                                        # foot
-    img.resize((256, 256), Image.LANCZOS).save(path)
-
-
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
@@ -184,8 +169,7 @@ def main() -> int:
              ("killword", lambda p: _draw_killword(p, forward=False),
               "kill the word before the cursor"),
              ("killwordfwd", lambda p: _draw_killword(p, forward=True),
-              "kill the word after the cursor"),
-             ("putty", _draw_terminal_mark, "monitor with a block cursor"))
+              "kill the word after the cursor"))
     for name, fn, what in drawn:
         p = out / f"{name}.png"
         if p.exists():

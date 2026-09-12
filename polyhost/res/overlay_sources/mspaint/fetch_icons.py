@@ -3,9 +3,9 @@
 
 Style route: **Microsoft Fluent UI System Icons (MIT)** via the shared
 `icon_fetch` helper — the house style, and license-clean against the
-GPL-3.0-or-later host. The ESC **program mark** is the shared license-clean
-letter tile (`../program_marks.py`): Paint's own icon is Microsoft trademark
-art.
+GPL-3.0-or-later host. The ESC **program mark** is NOT baked here -- it comes from the
+curated generic `mdi:palette` (`polyhost/res/app_icons.yaml`), which says what
+the app IS and reads better at 40x40 than the letter tile it replaced.
 
 ⚠️ Paint is closed source, so there is no keymap file to read. `bindings.yaml`
 carries only what two independent references agree on; see SOURCES.md.
@@ -21,7 +21,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
-import program_marks  # noqa: E402
 
 FLUENT = {
     # file  (same glyphs as the other Windows overlays, deliberately)
@@ -56,8 +55,7 @@ FLUENT = {
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
-    program_marks.ensure(out / "mspaint.png", "P")
-    print(f"Wrote {n} icons (+ program mark) to {out}")
+    print(f"Wrote {n} icons to {out}")
     return 0
 
 

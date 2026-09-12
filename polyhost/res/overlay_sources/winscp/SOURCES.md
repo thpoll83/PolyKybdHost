@@ -43,10 +43,19 @@ are both compatible with this repo's **GPL-3.0-or-later**.
 
 Drawn here: the `>_` shell prompt (shared, `../prompt_glyph.py`) and the tab-number composites.
 
-⚠️ **The program mark is never the app's real logo.** Every one of these logos is
-proprietary trademark art, so the ESC cell carries a licence-clean substitute --
-usually the shared letter tile (`../program_marks.py`). It exists to say *which
-overlay set is loaded*, not to identify the vendor.
+⚠️ **The program mark is never the app's real logo**, and for most of this batch
+it is not in this folder at all. Measured against both catalogs, none of these
+apps has a brand mark in Simple Icons or mdi -- Microsoft does not license its
+logos and mdi does not draw them -- so the ESC cell takes a **curated generic**
+from `polyhost/res/app_icons.yaml` (a palette for Paint, scissors for Snipping
+Tool, a zipped folder for 7-Zip). It says what the app IS rather than naming a
+brand, which is the mark's whole job.
+
+⚠️ A baked `program_icon:` would WIN over that: `send_overlays_mru` defers a
+synthetic source on any (modifier, keycode) a template already drew. So a mark
+here and a generic in the catalog are mutually exclusive, and the trade is that
+a baked mark always draws while a fetched one needs `shortcut_icon_auto_fetch`
+(default on) and one successful download.
 
 | icon | art | licence |
 |---|---|---|
@@ -121,9 +130,8 @@ overlay set is loaded*, not to identify the vendor.
 | `hidden.png` | Fluent `Eye Off` | MIT |
 | `filter.png` | Fluent `Filter` | MIT |
 | `explorer.png` | Fluent `Folder Open` | MIT |
-| `winscp.png` | drawn (fetch_icons.py) | ours (GPL-3.0-or-later, with the repo) |
 
-70 of 72 are Fluent (MIT, some with a digit composited over); the rest are drawn.
+70 of 71 are Fluent (MIT, some with a digit composited over); the rest are drawn.
 
 ## Verifying
 

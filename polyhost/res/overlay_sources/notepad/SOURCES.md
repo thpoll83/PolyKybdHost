@@ -65,13 +65,20 @@ Choices that are not the obvious one, and why:
 | top / end of document | Arrow Upload / Download | an arrow into a line = "to the end" (same pairing as the Windows Terminal overlay) |
 | word left / right | Arrow Previous / Next | an arrow against a bar = "jump to the next boundary" |
 
-### Drawn here, not downloaded
+### The ESC program mark
 
-**`notepad.png` — the ESC program mark.** Notepad's real product icon is
-Microsoft **trademark art**, so it is not redistributed. Drawn instead: a lined
-page with a folded corner. White on transparent, rendered with
-`program_icon_mode: alpha`. ⚠️ Guarded in `fetch_icons.py`: once committed, the
-PNG is the source of truth and a re-run leaves it alone, so a hand-tune survives.
+**Not in this folder.** Notepad's real product icon is Microsoft **trademark
+art**, and it is in neither catalog — measured against both, Simple Icons and
+mdi have no Microsoft bundled-app marks at all. So the ESC cell takes the
+**curated generic** `mdi:note-text` from `polyhost/res/app_icons.yaml`: a page
+with lines, which says what the app IS rather than naming a brand.
+
+⚠️ This overlay used to bake a drawn mark (a lined page with a folded corner),
+and the two are mutually exclusive — `send_overlays_mru` defers a synthetic
+source on any (modifier, keycode) a template already drew, so a `program_icon:`
+here means the generic is never uploaded. The trade: a baked mark always draws,
+a fetched one needs `shortcut_icon_auto_fetch` (default on) and one successful
+download.
 
 ## Rebuild
 

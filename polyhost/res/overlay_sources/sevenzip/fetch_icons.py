@@ -2,9 +2,8 @@
 """Fetch + render the 7-Zip File Manager shortcut icons (reproducible source step).
 
 Style route: **Microsoft Fluent UI System Icons (MIT)** via `icon_fetch`. The
-ESC **program mark** is the shared license-clean letter tile
-(`../program_marks.py`) reading "7z" -- 7-Zip's own icon is its project artwork
-and the letters are the app's own naming rather than its logo styling.
+ESC **program mark** is NOT baked here -- it comes from the curated generic
+`mdi:folder-zip` (`polyhost/res/app_icons.yaml`).
 
 Shortcuts come from 7-Zip's OWN manual (Menu Items and Shortcut Keys), so this
 is the documented set rather than a third-party summary. See SOURCES.md.
@@ -20,7 +19,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
-import program_marks  # noqa: E402
 
 FLUENT = {
     # file operations
@@ -64,8 +62,7 @@ FLUENT = {
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
-    program_marks.ensure(out / "sevenzip.png", "7z")
-    print(f"Wrote {n} icons (+ program mark) to {out}")
+    print(f"Wrote {n} icons to {out}")
     return 0
 
 

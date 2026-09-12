@@ -25,11 +25,19 @@ margin: 0
 mode: luma
 threshold: 150
 
-program_icon: mspaint.png
-program_icon_mode: alpha
-program_icon_anchor: right
-program_icon_region: [42, 34]
-program_icon_margin: 0
+# ⚠️ NO `program_icon:` HERE, DELIBERATELY -- the ESC mark comes from the
+# CURATED GENERIC in `polyhost/res/app_icons.yaml` (mdi:palette) instead of a
+# baked cell. Both exist and the baked one WINS: `send_overlays_mru` defers a
+# synthetic source on any (modifier, keycode) a template already drew, so a
+# `program_icon:` here would mean the generic is never uploaded.
+#
+# The generic reads better at 40x40 than the letter tile it replaced, and it is
+# also 8 px wider -- the auto-fetch path fixes the mark at the right-hand 40x40
+# square, while a baked one here was 42x34.
+#
+# ⚠️ The trade, stated because it is invisible from this file: a baked mark
+# ALWAYS draws, a fetched one needs `shortcut_icon_auto_fetch` (default on) and
+# one successful download. Offline with a cold cache, ESC stays blank.
 
 bindings:
   # --- Ctrl: file (primary R channel) -----------------------------------

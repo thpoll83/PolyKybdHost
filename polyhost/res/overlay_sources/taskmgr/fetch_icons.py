@@ -2,9 +2,8 @@
 """Fetch + render the Task Manager shortcut icons (reproducible source step).
 
 Style route: **Microsoft Fluent UI System Icons (MIT)** via `icon_fetch`. The
-ESC **program mark** is the shared license-clean letter tile
-(`../program_marks.py`) with the grid motif (the process table) -- Task
-Manager's own icon is Microsoft trademark art.
+ESC **program mark** is NOT baked here -- it comes from the curated generic
+`mdi:monitor-dashboard` (`polyhost/res/app_icons.yaml`), which beats a "T" tile.
 
 ⚠️ This is the THINNEST overlay in the set, and that is the app, not a gap in
 the research: Windows 11 Task Manager has five documented in-app shortcuts. The
@@ -22,7 +21,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
-import program_marks  # noqa: E402
 
 FLUENT = {
     "endtask":    "Dismiss Square",
@@ -36,8 +34,7 @@ FLUENT = {
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
-    program_marks.ensure(out / "taskmgr.png", "T", motif="grid")
-    print(f"Wrote {n} icons (+ program mark) to {out}")
+    print(f"Wrote {n} icons to {out}")
     return 0
 
 

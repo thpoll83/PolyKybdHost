@@ -33,10 +33,19 @@ are both compatible with this repo's **GPL-3.0-or-later**.
 
 Drawn here: nothing (program mark only).
 
-⚠️ **The program mark is never the app's real logo.** Every one of these logos is
-proprietary trademark art, so the ESC cell carries a licence-clean substitute --
-usually the shared letter tile (`../program_marks.py`). It exists to say *which
-overlay set is loaded*, not to identify the vendor.
+⚠️ **The program mark is never the app's real logo**, and for most of this batch
+it is not in this folder at all. Measured against both catalogs, none of these
+apps has a brand mark in Simple Icons or mdi -- Microsoft does not license its
+logos and mdi does not draw them -- so the ESC cell takes a **curated generic**
+from `polyhost/res/app_icons.yaml` (a palette for Paint, scissors for Snipping
+Tool, a zipped folder for 7-Zip). It says what the app IS rather than naming a
+brand, which is the mark's whole job.
+
+⚠️ A baked `program_icon:` would WIN over that: `send_overlays_mru` defers a
+synthetic source on any (modifier, keycode) a template already drew. So a mark
+here and a generic in the catalog are mutually exclusive, and the trade is that
+a baked mark always draws while a fetched one needs `shortcut_icon_auto_fetch`
+(default on) and one successful download.
 
 | icon | art | licence |
 |---|---|---|
@@ -45,9 +54,8 @@ overlay set is loaded*, not to identify the vendor.
 | `efficiency.png` | Fluent `Leaf One` | MIT |
 | `nextpage.png` | Fluent `Arrow Right` | MIT |
 | `prevpage.png` | Fluent `Arrow Left` | MIT |
-| `taskmgr.png` | drawn (fetch_icons.py) | ours (GPL-3.0-or-later, with the repo) |
 
-5 of 6 are Fluent (MIT, some with a digit composited over); the rest are drawn.
+5 of 5 are Fluent (MIT, some with a digit composited over); the rest are drawn.
 
 ## Verifying
 

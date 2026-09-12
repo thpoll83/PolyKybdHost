@@ -2,8 +2,8 @@
 """Fetch + render the Snipping Tool shortcut icons (reproducible source step).
 
 Style route: **Microsoft Fluent UI System Icons (MIT)** via `icon_fetch`. The
-ESC **program mark** is the shared license-clean letter tile
-(`../program_marks.py`) -- Snipping Tool's own icon is Microsoft trademark art.
+ESC **program mark** is NOT baked here -- it comes from the curated generic
+`mdi:scissors-cutting` (`polyhost/res/app_icons.yaml`), which beats an "S" tile.
 
 ⚠️ This is a SMALL overlay by nature: the shortcut everyone knows,
 `Win+Shift+S`, is a GUI/Win-key combination and the overlay format has no
@@ -21,7 +21,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
-import program_marks  # noqa: E402
 
 FLUENT = {
     "newsnip":   "Cut",                 # scissors -- the app's own metaphor
@@ -39,8 +38,7 @@ FLUENT = {
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
-    program_marks.ensure(out / "snippingtool.png", "S", motif="screen")
-    print(f"Wrote {n} icons (+ program mark) to {out}")
+    print(f"Wrote {n} icons to {out}")
     return 0
 
 

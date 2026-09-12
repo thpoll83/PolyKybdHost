@@ -57,12 +57,15 @@ Choices that are not the obvious one, and why:
 
 ### Drawn here, not downloaded
 
-- **`wt.png` — the ESC program mark.** Windows Terminal's real product icon is
-  Microsoft **trademark art**, so it is not redistributed. Drawn instead: a `>_`
-  prompt in a rounded frame — the universal terminal mark, carrying no
-  trademark. White on transparent, rendered with `program_icon_mode: alpha`.
-  ⚠️ Guarded in `fetch_icons.py`: once committed, the PNG is the source of truth
-  and a re-run leaves it alone, so a hand-tune survives.
+- **The ESC program mark is NOT in this folder.** Windows Terminal's real
+  product icon is Microsoft **trademark art** and is in neither catalog, so the
+  ESC cell takes the **curated generic** `mdi:console` from
+  `polyhost/res/app_icons.yaml` — a `>_`, carrying no trademark.
+  ⚠️ This overlay used to bake a framed `>_` drawn here; the two are mutually
+  exclusive, because `send_overlays_mru` defers a synthetic source on any cell a
+  template already drew. That drawing had been extracted to
+  `../prompt_glyph.py` to share with WinSCP's open-terminal key, and **the
+  module is still there for that caller** — only the framed variant went.
 - **`tab1.png`…`tab8.png` — Ctrl+Alt+N switch-to-tab.** The bare Fluent *Tab*
   glyph is an empty rounded box, and at 40 px on a keycap it reads as nothing —
   while the whole point of Ctrl+Alt+N is *which* tab. Composited as the Tab box

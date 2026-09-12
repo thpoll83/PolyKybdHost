@@ -41,10 +41,16 @@ are both compatible with this repo's **GPL-3.0-or-later**.
 
 Drawn here: the program mark only.
 
-⚠️ **The program mark is never the app's real logo.** Every one of these logos is
-proprietary trademark art, so the ESC cell carries a licence-clean substitute --
-usually the shared letter tile (`../program_marks.py`). It exists to say *which
-overlay set is loaded*, not to identify the vendor.
+⚠️ **The program mark is never the app's real logo** -- every one of these is
+proprietary trademark art -- so the ESC cell carries the shared licence-clean
+letter tile (`../program_marks.py`). It says *which overlay set is loaded*, not
+who makes the app.
+
+⚠️ **This is one of the few in the batch that still BAKES a mark**, and the
+reason is a collision: the catalog's generic for WordPad is `mdi:text-box`,
+which is a document with lines -- and so is Notepad's `mdi:note-text`. Two of
+the apps a person is most likely to have open at once would have carried the
+same keycap. The letters do not.
 
 | icon | art | licence |
 |---|---|---|

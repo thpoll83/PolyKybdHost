@@ -4,8 +4,8 @@
 Style route: **Microsoft Fluent UI System Icons (MIT)** via `icon_fetch`. Two
 tool glyphs Fluent has no match for -- the gradient ramp and the clone stamp --
 are drawn here; both are signature paint.net tools whose nearest Fluent glyph
-would say the wrong thing. The ESC **program mark** is the shared license-clean
-letter tile (`../program_marks.py`) reading "PN": paint.net's own icon is its
+would say the wrong thing. The ESC **program mark** is NOT baked here -- it comes
+from the curated generic `mdi:brush-variant` (`polyhost/res/app_icons.yaml`): paint.net's own icon is its
 project artwork, and a bare "P" would collide with the Microsoft Paint overlay.
 
 Shortcuts come from paint.net's OWN documentation (Keyboard & Mouse Commands),
@@ -24,7 +24,6 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
-import program_marks  # noqa: E402
 
 FLUENT = {
     # --- file ---
@@ -228,8 +227,7 @@ def main() -> int:
             print(f"  {name}.png  <- custom (drawn: {what})")
         n += 1
 
-    program_marks.ensure(out / "paintdotnet.png", "PN")
-    print(f"Wrote {n} icons (+ program mark) to {out}")
+    print(f"Wrote {n} icons to {out}")
     return 0
 
 

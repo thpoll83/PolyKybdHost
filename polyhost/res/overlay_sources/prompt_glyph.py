@@ -1,24 +1,27 @@
-"""The `>_` shell prompt, drawn once for every overlay that needs a terminal.
+"""The `>_` shell prompt, drawn because no catalog has one.
 
 ⚠️ **Fluent has no terminal glyph at all** -- probed 2026-09: `Terminal`,
 `Console`, `Window Console`, `Chevron Right Square` and `Square Text` are all
 404, and the nearest hits mean something else. `Window Dev Tools` is a window
 with `</>` and a WRENCH (dev tools, and busy at 40 px), `Prompt` is Fluent's
-**AI**-prompt sparkle, and `Code` is `</>` (source, not a session). So a
-terminal has to be drawn, and two overlays now need one:
+**AI**-prompt sparkle, and `Code` is `</>` (source, not a session). That is the
+whole reason this file exists; WinSCP's `Ctrl+Shift+T` (open terminal) shipped
+with `Prompt` on it, which read as nothing to do with a shell.
 
-* **Windows Terminal** wants it as a PROGRAM MARK -- inside a rounded frame,
-  because a mark's job is to say which overlay set is loaded;
-* **WinSCP** wants the bare prompt as an ordinary key glyph for `Ctrl+Shift+T`
-  (open terminal), where a frame would read as a second window.
+⚠️ **It had a second caller and a `frame=` switch, and BOTH are gone** -- the
+Windows Terminal overlay's ESC mark was a framed `>_`, and that overlay now takes
+its mark from the curated generic (`mdi:console`) instead of baking one. The
+framed variant went with it rather than staying as a parameter nothing passes:
+an unused branch in a drawing module is one nobody re-checks against a render.
+Restore it from git history if a second caller ever wants a frame.
 
-Hence one drawing with `frame=`. Two hand-typed copies of the same chevron is
-exactly the drift this repo keeps recording, and the `>_` proportions were tuned
-against a 40 px render once already.
-
-⚠️ The geometry is UNCHANGED from the Windows Terminal mark it was extracted
-from -- `wt.png` must stay byte-identical, which is checked by regenerating it
-into a temp dir and comparing against the committed file.
+The proportions are this glyph's own, not a reuse of the framed layout. Two
+attempts at re-using it failed in opposite directions and neither was visible
+from the source: as-is, the glyph inherited the FRAME's margin as transparent
+padding and `fit: contain` scaled the canvas rather than the ink (60 lit px
+against ~270 for every icon beside it); cropped to the ink, the aspect freed up
+and `contain` then scaled it so the ">" filled the cell while the "_" -- placed
+for a framed layout, a third of a canvas away -- read as a detached blob.
 """
 from __future__ import annotations
 
@@ -27,57 +30,27 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 WHITE = (255, 255, 255, 255)
-
-# The frameless prompt is drawn on a WIDE canvas with its own proportions, not
-# on the framed one's square. Two attempts at re-using the framed geometry both
-# failed, in opposite directions, and neither is visible from the source:
-#   * as-is, the frameless glyph inherits the FRAME's margin as transparent
-#     padding, and `fit: contain` scales the canvas rather than the ink -- it
-#     landed at 60 lit px against ~270 for every icon beside it;
-#   * cropped to the ink, the aspect frees up and `contain` then scales it so
-#     the ">" fills the cell while the "_" -- placed for a framed layout, a
-#     third of a canvas away -- reads as a detached blob in the corner.
-# So the two variants share the MEANING, not the coordinates.
-_BARE = (3, 2)          # w:h of the frameless canvas
+_ASPECT = (3, 2)                 # w:h -- a `>_` is wider than it is tall
 
 
-def _framed(d, u: int) -> None:
-    w = int(u * 0.055)
-    d.rounded_rectangle([w // 2, u * 0.14, u - w // 2, u * 0.86],
-                        radius=int(u * 0.10), outline=WHITE, width=w)
-    stroke = int(u * 0.065)
-    d.line([(u * 0.26, u * 0.34), (u * 0.46, u * 0.50), (u * 0.26, u * 0.66)],
-           fill=WHITE, width=stroke, joint="curve")          # the ">" chevron
-    d.line([(u * 0.53, u * 0.66), (u * 0.75, u * 0.66)], fill=WHITE, width=stroke)
-
-
-def _bare(d, w: int, h: int) -> None:
-    stroke = int(h * 0.15)
-    d.line([(w * 0.06, h * 0.10), (w * 0.36, h * 0.50), (w * 0.06, h * 0.90)],
-           fill=WHITE, width=stroke, joint="curve")          # the ">" chevron
-    d.line([(w * 0.50, h * 0.88), (w * 0.94, h * 0.88)], fill=WHITE, width=stroke)
-
-
-def render(path: Path, *, frame: bool = True, px: int = 256, ss: int = 4) -> None:
-    """Draw a `>_` prompt, optionally inside a rounded frame.
+def render(path: Path, *, px: int = 256, ss: int = 4) -> None:
+    """Draw a bare `>_` prompt.
 
     White on transparent, so the binding renders it with `mode: alpha` -- the
     alpha IS the shape.
     """
-    if frame:
-        u = px * ss
-        img = Image.new("RGBA", (u, u), (0, 0, 0, 0))
-        _framed(ImageDraw.Draw(img), u)
-        img.resize((px, px), Image.LANCZOS).save(path)
-        return
-    aw, ah = _BARE
+    aw, ah = _ASPECT
     w, h = px * ss, px * ss * ah // aw
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    _bare(ImageDraw.Draw(img), w, h)
+    d = ImageDraw.Draw(img)
+    stroke = int(h * 0.15)
+    d.line([(w * 0.06, h * 0.10), (w * 0.36, h * 0.50), (w * 0.06, h * 0.90)],
+           fill=WHITE, width=stroke, joint="curve")          # the ">" chevron
+    d.line([(w * 0.50, h * 0.88), (w * 0.94, h * 0.88)], fill=WHITE, width=stroke)
     img.resize((px, px * ah // aw), Image.LANCZOS).save(path)
 
 
-def ensure(path: Path, *, frame: bool = True, what: str = "`>_` prompt") -> None:
+def ensure(path: Path, *, what: str = "`>_` prompt") -> None:
     """Draw it unless the file is already committed.
 
     ⚠️ Guarded like every other hand-editable asset here: once committed, the PNG
@@ -86,5 +59,5 @@ def ensure(path: Path, *, frame: bool = True, what: str = "`>_` prompt") -> None
     if path.exists():
         print(f"  {path.name}  <- committed asset (left as-is)")
     else:
-        render(path, frame=frame)
+        render(path)
         print(f"  {path.name}  <- custom (drawn: {what})")
