@@ -21,6 +21,12 @@ comparison against something the OS itself recorded -- a `StartupWMClass`, an
 reason this source is worth having: a *wrong* mark is worse than a missing one,
 and an absent one is self-evident where a wrong one is not.
 
+⚠️ This module must NOT import `app_icons`, which imports it -- that direction
+is the import cycle, and it is also the design: this is a pure LOOKUP that
+finds bytes and converts nothing. Anything that needs to render belongs on the
+other side of the boundary. `tools/os_icon_probe.py` is the runnable check that
+exercises both together, and it lives there for exactly that reason.
+
 Platform status, stated plainly rather than implied:
 
   * **Linux** — implemented and tested against the real `.desktop` and icon-theme
@@ -515,78 +521,3 @@ def icon_bytes(pid, app_name: str = ""):
     except Exception as exc:            # noqa: BLE001 - cosmetic lookup
         log.debug("OS icon lookup failed for pid=%s app=%s: %s", pid, app_name, exc)
         return None
-
-
-# ---------------------------------------------------------------------------
-# Self-check
-# ---------------------------------------------------------------------------
-#
-# ⚠️ This exists because the Windows and macOS backends have never run against a
-# live application, and a claim nobody can check is worth less than a command
-# anybody can run:
-#
-#     python -m polyhost.services.os_app_icon                 # this process
-#     python -m polyhost.services.os_app_icon 1234            # a pid
-#     python -m polyhost.services.os_app_icon "C:\...\WINWORD.EXE"
-#     python -m polyhost.services.os_app_icon 1234 --save out.png
-#
-# It reports what was found, how the 1-bit reading scored, and prints the keycap
-# as text, so "the program mark works on Windows" stops being an assumption.
-
-def _self_check(argv) -> int:
-    import argparse
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("target", nargs="?", default=None,
-                        help="a pid, or a path to an executable/bundle/icon")
-    parser.add_argument("--app", default="", help="the app name the tracker reports")
-    parser.add_argument("--save", default="", help="write the keycap to this PNG")
-    args = parser.parse_args(argv)
-
-    found = None
-    if args.target and not str(args.target).isdigit():
-        path = str(args.target)
-        try:
-            with open(path, "rb") as handle:
-                raw = handle.read()
-        except OSError as exc:
-            print("cannot read %s: %s" % (path, exc))
-            return 2
-        if path.lower().endswith(".exe") or raw[:2] == b"MZ":
-            blob = icon_from_pe(raw)
-            if not blob:
-                print("no RT_GROUP_ICON resource in %s" % path)
-                return 1
-            found = (blob, path)
-        else:
-            found = (raw, path)
-    else:
-        pid = int(args.target) if args.target else os.getpid()
-        found = icon_bytes(pid, args.app)
-        if not found:
-            print("platform %s: no OS icon for pid %d (app %r)"
-                  % (platform_key(), pid, args.app))
-            return 1
-
-    data, source = found
-    print("source: %s (%d bytes)" % (source, len(data)))
-    from polyhost.services import app_icons, icon_binarise
-    mask, conversion, score = app_icons.render_os_overlay(data)
-    if mask is None:
-        print("no 1-bit reading survived")
-        return 1
-    verdict = "DRAWN" if score >= icon_binarise.MIN_SCORE else "REJECTED (too low)"
-    print("conversion: %s   score: %.2f   %s" % (conversion, score, verdict))
-    for row in mask:
-        print("".join("#" if value else "." for value in row))
-    if args.save:
-        try:
-            from PIL import Image
-            Image.fromarray(((~mask) * 255).astype("uint8")).save(args.save)
-            print("wrote %s" % args.save)
-        except Exception as exc:        # noqa: BLE001 - a convenience, not the check
-            print("could not write %s: %s" % (args.save, exc))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(_self_check(sys.argv[1:]))
