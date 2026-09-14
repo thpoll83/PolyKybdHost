@@ -21,8 +21,10 @@ The X display is for **pynput**, which host.py imports at module load and which
 refuses to import without an X connection; Qt itself renders offscreen, so the
 xcb platform plugin (and its system libs) are not needed.
 
-Writes `tray-menu.png` (normal), `tray-menu-developer.png` (developer mode) and
-one `submenu-<name>.png` per top-level submenu.
+Writes `tray-menu.png` (normal), `tray-menu-developer.png` (developer mode),
+`tray-menu-forwarder.png` (the forwarder's own tray, which is a second
+QApplication on a different machine and drifts from this one unnoticed) and one
+`submenu-<name>.png` per top-level submenu.
 
 ⚠️ This is a Qt render on the machine that runs it, so it carries THAT platform's
 menu style — on Linux it is not pixel-identical to what a Windows or macOS user
@@ -118,6 +120,42 @@ def _grab(menu, path, log):
     return pixmap
 
 
+def _render_forwarder(out_dir, log):
+    """Render the FORWARDER's tray menu.
+
+    It is a separate QApplication with its own menu, so nothing about the host
+    render covers it — and the two are supposed to have the same shape, which
+    only an eye on both images can confirm. No fake core and no control server:
+    the forwarder owns neither.
+    """
+    from unittest import mock
+    written = []
+    helper = mock.patch("polyhost.input.linux_gnome_helper.LinuxGnomeInputHelper")
+    helper.start()
+    try:
+        from polyhost.forwarder import PolyForwarder
+        app = PolyForwarder(logging.CRITICAL, host="192.168.1.50")
+        # The steady state a user sees, not the first 250 ms of startup.
+        app.relay_ok = True
+        app.refresh_status()
+        path = os.path.join(out_dir, "tray-menu-forwarder.png")
+        _grab(app.menu, path, log)
+        written.append(path)
+        for action in app.menu.actions():
+            sub_menu = action.menu()
+            if sub_menu is None or not action.isVisible():
+                continue
+            slug = action.text().replace("&&", "and").replace("&", "")
+            slug = "".join(c if c.isalnum() else "-" for c in slug).strip("-").lower()
+            path = os.path.join(out_dir, f"submenu-{slug}-forwarder.png")
+            _grab(sub_menu, path, log)
+            written.append(path)
+        app.quit_app()
+    finally:
+        helper.stop()
+    return written
+
+
 def _render(developer, out_dir, log):
     from polyhost.server import protocol
     from polyhost.server.control_server import ControlServer
@@ -188,7 +226,11 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out-dir", default="menu-renders")
-    ap.add_argument("--mode", choices=["normal", "developer", "both"], default="both")
+    ap.add_argument("--mode",
+                    choices=["normal", "developer", "forwarder", "both", "all"],
+                    default="both",
+                    help="'both' = normal + developer (the host menu); "
+                         "'all' adds the forwarder's")
     args = ap.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
@@ -205,18 +247,22 @@ def main():
               "connection even though Qt renders offscreen)", file=sys.stderr)
         return 2
 
-    modes = [False, True] if args.mode == "both" else [args.mode == "developer"]
-    # One QApplication per process, and PolyHost IS the QApplication — so each
-    # mode needs its own process. Re-exec for the second one.
-    if len(modes) > 1:
+    # One QApplication per process, and PolyHost / PolyForwarder ARE the
+    # QApplication — so each mode needs its own process. Re-exec per mode.
+    groups = {"both": ("normal", "developer"),
+              "all": ("normal", "developer", "forwarder")}
+    if args.mode in groups:
         import subprocess
         rc = 0
-        for mode in ("normal", "developer"):
+        for mode in groups[args.mode]:
             rc |= subprocess.run([sys.executable, os.path.abspath(__file__),
                                   "--out-dir", args.out_dir, "--mode", mode]).returncode
         return rc
 
-    _render(modes[0], args.out_dir, log.info)
+    if args.mode == "forwarder":
+        _render_forwarder(args.out_dir, log.info)
+    else:
+        _render(args.mode == "developer", args.out_dir, log.info)
     return 0
 
 

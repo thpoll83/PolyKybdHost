@@ -2,7 +2,6 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 import ipaddress
-import webbrowser
 import socket
 import sys
 import time
@@ -12,14 +11,17 @@ from PyQt5.QtCore import QTimer, QObject, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication,
     QSystemTrayIcon,
+    QDialog,
     QMenu,
     QAction,
     QMessageBox,
     QProgressDialog)
-from polyhost._version import __version__
+from polyhost._version import __version__, __protocol__
 from polyhost.services import problem_report
 from polyhost.gui.get_icon import get_icon
 from polyhost.services import log_bundle
+from polyhost.gui import about_dialog
+from polyhost.gui.dialog_util import position_near_tray
 from polyhost.gui.theme import apply_theme
 from polyhost.services.os_theme import THEME_AUTO
 from polyhost.settings import read_setting
@@ -30,6 +32,7 @@ from polyhost.gui.tray_wait import TrayVisibilityWaiter
 from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.handler.remote_window import TCP_PORT
 from polyhost.handler.browser_url_source import BrowserUrlSource
+from polyhost.handler.browser_url_source import SETTING_DEFAULTS as _URL_SETTINGS
 
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -47,6 +50,13 @@ else:
 UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
+
+# The settings the forwarder actually acts on. It owns no keyboard, so the vast
+# majority of settings.yaml (brightness, unicode mode, font pack, daemon mode)
+# would be rows that silently do nothing on this machine — worse than no dialog
+# at all. `ui_theme` is read at startup here; the browser-URL keys drive
+# BrowserUrlSource, which the forwarder runs for the machine it sits on.
+FORWARDER_SETTING_KEYS = ("ui_theme",) + tuple(_URL_SETTINGS)
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
@@ -137,7 +147,11 @@ class PolyForwarder(QApplication):
 
         # Create the tray
         self.tray = QSystemTrayIcon(parent=self)
-        self.icon_manager = IconStateManager(self, False, f"({__version__}) Forwarding to {host}")
+        # prefix="f": the forwarder's mark spells an F where the tray app's
+        # spells a P. Both are trays, and forwarding to your own keyboard
+        # machine puts the two side by side in the same notification area.
+        self.icon_manager = IconStateManager(
+            self, False, self._tray_tooltip(), prefix="f")
         self._tray_waiter = TrayVisibilityWaiter(
             show=lambda: self.tray.setVisible(True),
             is_available=QSystemTrayIcon.isSystemTrayAvailable,
@@ -155,34 +169,74 @@ class PolyForwarder(QApplication):
         self.wants_restart = False
         self.title = None
         self.last_update_msec = 0
+        # Whether the last report reached the keyboard machine. None = nothing
+        # sent yet. The tray icon and the status row both read it, so a relay
+        # that is quietly failing is visible without opening the log — the
+        # forwarder used to declare itself connected at startup and never
+        # revisit it, whatever the socket did afterwards.
+        self.relay_ok = None
+        # Forwarding paused by the user. The window poll keeps running (so the
+        # log still shows what is focused) but nothing leaves this machine —
+        # this is the privacy switch, and it mirrors the tray app's Pause.
+        self.paused = False
 
         self.heartbeat_msec = 0
 
         self._tray_waiter.start()
         self.set_style()
 
+        # The menu follows the tray app's shape (docs/tray-ui.md): a status row
+        # you can click, Pause, then the "get something newer" row, Settings and
+        # one Help & About group holding the read-only corner. It used to be
+        # seven flat rows in no particular order, so the same four support
+        # entries sat in different places depending on which app you opened.
         self.menu = QMenu()
 
-        self.exit = QAction(get_icon("power.svg"), "Quit", parent=self)
+        self.status = QAction(get_icon("sync.svg"), "Starting…", parent=self)
+        self.status.setToolTip("Press to pause forwarding")
         # noinspection PyUnresolvedReferences
-        self.exit.triggered.connect(self.quit_app)
-        self.support = QAction(get_icon("support.svg"), "Get Support", parent=self)
+        self.status.triggered.connect(self.toggle_pause)
+        self.menu.addAction(self.status)
+
+        self.pause_action = QAction(get_icon("pause_circle.svg"), "Pause", parent=self)
+        self.pause_action.setToolTip(
+            "Stop sending this machine's active window to the keyboard machine.")
         # noinspection PyUnresolvedReferences
-        self.support.triggered.connect(self.open_support)
+        self.pause_action.triggered.connect(self.toggle_pause)
+        self.menu.addAction(self.pause_action)
+
+        self.menu.addSeparator()
+
+        # The tray app groups this under "Updates" alongside the firmware and
+        # font-pack rows. The forwarder owns no keyboard, so a submenu of one
+        # would be a level of nesting over a single entry — it keeps the label
+        # the tray app uses inside that submenu, in the slot the submenu holds.
+        self.update_action = QAction(get_icon("browser_updated.svg"),
+                                     "Check for host update\u2026", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.update_action.triggered.connect(self._on_update_clicked)
+        self.menu.addAction(self.update_action)
+
+        self.settings_action = QAction(get_icon("settings.svg"), "Settings...", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.settings_action.triggered.connect(self.open_settings)
+        self.menu.addAction(self.settings_action)
+
+        # --- Help & About: the read-only, always-available corner -------------
+        # The forwarder runs on a DIFFERENT machine from the keyboard, so its
+        # logs can never appear in a bundle collected host-side — and its
+        # failure modes (which window backend this desktop selects, the report
+        # transport, the authkey) are exactly the log-diagnosable kind. Every
+        # entry here is worth as much as it is in the tray app.
         self.about = QAction(get_icon("info.svg"), "About", parent=self)
         # noinspection PyUnresolvedReferences
-        self.about.triggered.connect(self.open_about)
+        self.about.triggered.connect(self.show_about_dialog)
 
         self.log_dialog = QAction(get_icon("log.svg"), "Log file...", parent=self)
         # noinspection PyUnresolvedReferences
         self.log_dialog.triggered.connect(self.open_log)
         self.log_viewer = None
 
-        # The forwarder runs on a DIFFERENT machine from the keyboard, so its
-        # logs can never appear in a bundle collected on the host side — and its
-        # failure modes (which window backend this desktop selects, the report
-        # transport, the authkey) are exactly the log-diagnosable kind. Both
-        # entries are therefore worth as much here as in the tray app.
         self.report_problem_action = QAction(get_icon("feedback.svg"),
                                              "Report a Problem...", parent=self)
         # noinspection PyUnresolvedReferences
@@ -195,9 +249,22 @@ class PolyForwarder(QApplication):
         self.collect_logs_action.triggered.connect(self.open_log_bundle)
         self.log_bundle_dialog = None
 
-        self.update_action = QAction(get_icon("browser_updated.svg"), "Check for updates...", parent=self)
+        self.open_config_action = QAction(get_icon("file_open.svg"),
+                                          "Open config folder", parent=self)
         # noinspection PyUnresolvedReferences
-        self.update_action.triggered.connect(self._on_update_clicked)
+        self.open_config_action.triggered.connect(self._open_config_folder)
+
+        self.help_menu = self.menu.addMenu(get_icon("help.svg"), "Help && About")
+        self.help_menu.addAction(self.about)
+        self.help_menu.addAction(self.report_problem_action)
+        self.help_menu.addAction(self.log_dialog)
+        self.help_menu.addAction(self.collect_logs_action)
+        self.help_menu.addAction(self.open_config_action)
+
+        self.exit = QAction(get_icon("power.svg"), "Quit", parent=self)
+        # noinspection PyUnresolvedReferences
+        self.exit.triggered.connect(self.quit_app)
+        self.menu.addAction(self.exit)
 
         # Update plumbing (host-app update only — the forwarder has no device).
         self._update_bridge = _UpdateBridge()
@@ -212,19 +279,75 @@ class PolyForwarder(QApplication):
         self._update_installer = None
         self._update_ui = UpdateProgressController(self.log)
 
-        self.menu.addAction(self.log_dialog)
-        self.menu.addAction(self.report_problem_action)
-        self.menu.addAction(self.collect_logs_action)
-        self.menu.addAction(self.update_action)
-        self.menu.addAction(self.support)
-        self.menu.addAction(self.about)
-        self.menu.addAction(self.exit)
-        
         self.tray.setContextMenu(self.menu)
+        self.refresh_status()
 
-        self.icon_manager.set_connected()
-        
         QTimer.singleShot(1000, self.active_window_reporter)
+
+    # ------------------------------------------------------------------
+    # Status row, tray tooltip and the pause switch
+    # ------------------------------------------------------------------
+    def _target_text(self) -> str:
+        """What this forwarder is aiming at, for a tooltip or a menu row."""
+        host = self._resolve_host()
+        if host:
+            return host
+        if self.host_file:
+            return f"no host (waiting for {self.host_file})"
+        return "no host configured"
+
+    def _tray_tooltip(self) -> str:
+        return f"PolyKybdHost {__version__} (forwarder) \u2192 {self._target_text()}"
+
+    def _status_text(self) -> str:
+        if self.paused:
+            return "Forwarding paused"
+        target = self._target_text()
+        if self.relay_ok is None:
+            return f"Forwarding to {target}\u2026"
+        if self.relay_ok:
+            return f"Forwarding to {target}"
+        return f"Cannot reach {target}"
+
+    def refresh_status(self):
+        """Re-label the status row and repaint the tray icon from the current
+        relay state.
+
+        The colour mark means *reaching the keyboard machine*, not *the process
+        is alive*: the forwarder used to call set_connected() once at startup
+        and never touch it again, so a relay that had been refusing connections
+        for hours still wore the connected icon."""
+        self.status.setText(self._status_text())
+        self.pause_action.setText("Resume" if self.paused else "Pause")
+        self.pause_action.setIcon(get_icon(
+            "play_circle.svg" if self.paused else "pause_circle.svg"))
+        self.tray.setToolTip(self._tray_tooltip())
+        if self.relay_ok and not self.paused:
+            self.icon_manager.set_connected()
+        else:
+            self.icon_manager.set_disconnected()
+
+    def toggle_pause(self):
+        """Stop/resume sending the active window to the keyboard machine.
+
+        The window poll keeps running either way — only send_to_host is skipped
+        — so resuming pushes the current window on the next tick instead of
+        waiting for the user to switch app."""
+        self.paused = not self.paused
+        self.log.info("Forwarding %s", "paused" if self.paused else "resumed")
+        if self.paused:
+            # Drop the RPC connection: a paused forwarder holding an open
+            # authenticated session to the keyboard machine is exactly what
+            # somebody pausing it would not expect.
+            if self._report_session is not None:
+                self._report_session.close()
+        else:
+            # Force the next tick to re-send rather than dedupe against the
+            # window it was already showing when pause was pressed.
+            self.win = None
+            self.title = None
+            self.relay_ok = None
+        self.refresh_status()
 
     def set_style(self):
         """Fusion, dark or light per the OS — shared with PolyHost
@@ -275,6 +398,19 @@ class PolyForwarder(QApplication):
             return False
 
     def send_to_host(self, handle, title, name, url=None):
+        """Report one window, and record whether it landed.
+
+        The status row and the tray mark read `relay_ok`, so every exit path of
+        the transport below has to run through here — that is why the actual
+        socket work sits in _send_to_host and this wrapper does nothing but
+        remember the verdict."""
+        ok = self._send_to_host(handle, title, name, url=url)
+        if ok != self.relay_ok:
+            self.relay_ok = ok
+            self.refresh_status()
+        return ok
+
+    def _send_to_host(self, handle, title, name, url=None):
         # ⚠️ `url` rides the authenticated RPC path ONLY. The legacy relay's
         # framing is positional `handle;name;title;os` with the free-text field
         # in the middle, so a title containing ';' already truncates the title
@@ -356,14 +492,108 @@ class PolyForwarder(QApplication):
         delta = time.perf_counter() - delta
         self.log.info("Opened log dialog in '%f' sec", delta)
         
-    @staticmethod
-    def open_support():
-        webbrowser.open("https://discord.gg/gW8JescH7M", new=0, autoraise=True)
+    def _open_config_folder(self):
+        """Open the config directory (settings.yaml) in the file manager.
 
-    @staticmethod
-    def open_about():
-        webbrowser.open("https://ko-fi.com/polykb", new=0, autoraise=True)
-        
+        The forwarder reads the same settings.yaml as the tray app, out of the
+        same platformdirs location nobody can guess — and on this machine it is
+        the only PolyKybd process there is, so nothing else would open it."""
+        import platformdirs
+        from PyQt5.QtGui import QDesktopServices
+        from PyQt5.QtCore import QUrl
+        path = platformdirs.user_config_dir("PolyHost")
+        self.log.info("Opening config folder %s", path)
+        if not QDesktopServices.openUrl(QUrl.fromLocalFile(path)):
+            QMessageBox.information(None, "Config folder", path)
+
+    def open_settings(self):
+        """Settings, narrowed to the keys that do something on this machine.
+
+        ⚠️ The dialog renders whatever dict it is handed, so passing the whole
+        of settings.yaml here would show brightness, unicode-mode and font-pack
+        rows on a machine with no keyboard attached — every one of them a
+        control that writes a value and changes nothing. FORWARDER_SETTING_KEYS
+        is the allow-list; a value absent from the file falls back to the same
+        default the reader uses.
+        """
+        from polyhost.gui.settings_dialog import SettingsDialog
+        from polyhost.settings import PolySettings
+        settings = PolySettings()
+        current = dict(settings.get_all())
+        shown = {k: current[k] for k in FORWARDER_SETTING_KEYS if k in current}
+        dlg = SettingsDialog()
+        dlg.setup(shown)
+        if dlg.exec_() == QDialog.Accepted:
+            updated = dlg.get_updated_settings()
+            changed = {k: v for k, v in updated.items() if current.get(k) != v}
+            if changed:
+                # set_all over the FULL dict: the dialog only saw a slice, so
+                # writing `updated` alone would drop every key it was not shown.
+                current.update(changed)
+                settings.set_all(current)
+                self.log.info("Forwarder settings changed: %s",
+                              ", ".join(sorted(changed)))
+            # `ui_theme` may be among them — apply it now rather than at the
+            # next restart.
+            self.set_style()
+        dlg.close()
+
+    def _about_info_html(self):
+        """The boxed block: what this forwarder is relaying, and how."""
+        transport = (f"authenticated RPC (port {self._report_port})"
+                     if self._report_rpc
+                     else "legacy plaintext TCP relay")
+        state = ("paused" if self.paused else
+                 "reaching the keyboard machine" if self.relay_ok else
+                 "not reaching the keyboard machine" if self.relay_ok is False
+                 else "starting up")
+        rows = [
+            "<b>Mode:</b> forwarder — no keyboard attached to this machine",
+            f"<b>Target:</b> {self._target_text()} "
+            f"<span style='color:gray;'>({state})</span>",
+            f"<b>Window reports:</b> {transport}",
+        ]
+        if self.host_file:
+            rows.append(f"<b>Host file:</b> {self.host_file}")
+        return about_dialog.rows_html(rows)
+
+    def _about_env_html(self):
+        import platformdirs
+        return about_dialog.rows_html([
+            f"<b>Config:</b> {platformdirs.user_config_dir('PolyHost')}",
+            f"<b>Logs:</b> {os.getcwd()}",
+        ], muted=True)
+
+    def show_about_dialog(self):
+        """The same About dialog the tray app shows, with forwarder content.
+
+        It used to be a webbrowser.open() straight to ko-fi, which told a user
+        on the forwarder machine nothing about the version, the relay target or
+        the transport — the three things every forwarding problem turns out to
+        be about. The Discord link that "Get Support" used to be is one of the
+        project links in here."""
+        import platform
+        from PyQt5.QtCore import qVersion
+        dlg = about_dialog.build_about_dialog(
+            title="About PolyKybdHost (forwarder)",
+            icon_name="fcolor.png",
+            heading=about_dialog.heading_html(
+                __version__,
+                f" &nbsp;·&nbsp; HID protocol P{__protocol__}",
+                f"Python {platform.python_version()} · Qt {qVersion()} · "
+                f"{platform.system()} · forwarder"),
+            description=(
+                "Forwarder mode: this machine has no keyboard. It watches the "
+                "active window here and relays it to the PolyKybdHost running "
+                "on the machine the keyboard is plugged into."),
+            boxed=self._about_info_html(),
+            muted=self._about_env_html(),
+            diagnostics_cb=self._diagnostics_text,
+            clipboard=self.clipboard())
+        QTimer.singleShot(0, lambda: position_near_tray(dlg, self.tray))
+        dlg.exec_()
+
+
     # ------------------------------------------------------------------
     # Host-app update (mirrors the tray app's flow, host-only — no firmware,
     # since the forwarder has no device). Threads marshal back via _update_bridge.
@@ -479,6 +709,15 @@ class PolyForwarder(QApplication):
         self.quit()
 
     def active_window_reporter(self):
+        if self.paused:
+            # Keep the timer alive but send nothing. The window state is
+            # deliberately NOT tracked while paused: self.win/self.title stay
+            # where they were, and toggle_pause clears them so resuming
+            # re-sends immediately rather than deduping against a window the
+            # keyboard machine never heard about.
+            if not self.is_closing:
+                QTimer.singleShot(UPDATE_CYCLE_MSEC, self.active_window_reporter)
+            return
         self.last_update_msec += UPDATE_CYCLE_MSEC
         self.heartbeat_msec += UPDATE_CYCLE_MSEC
         win = pwc.getActiveWindow()

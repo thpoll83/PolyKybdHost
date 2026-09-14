@@ -111,13 +111,47 @@ class TestPolyHostModes(unittest.TestCase):
         if "SMOKE SKIP" in proc.stdout:
             self.skipTest("pywinctl not installed — forwarder cannot be imported")
         self.assertEqual(proc.returncode, 0, f"stdout={proc.stdout}\nstderr={proc.stderr}")
-        rows = _grab(proc.stdout, "FWD_MENU").split("|")
-        self.assertIn("Report a Problem...", rows)
-        self.assertIn("Collect logs...", rows)
+        # Both live under Help & About now, the same group the tray app puts
+        # them in — the whole point of the restructure.
+        help_rows = _grab(proc.stdout, "FWD_HELP").split("|")
+        self.assertIn("Report a Problem...", help_rows)
+        self.assertIn("Collect logs...", help_rows)
         # A forwarder report must not read like one from the keyboard machine.
         self.assertIn("FWD_DIAG_MODE True", proc.stdout)
         self.assertIn("FWD_DIALOGS ReportProblemDialog LogBundleDialog", proc.stdout)
         self.assertIn("FWD_REUSED True", proc.stdout)
+
+    def test_forwarder_menu_follows_the_tray_app_shape(self):
+        """The forwarder is a second tray app, and it had drifted into seven
+        flat rows in no particular order. It carries no device, so it has no
+        device group — but what it DOES share with the tray app has to sit in
+        the same place and read the same way."""
+        proc = _run_smoke("forwarder")
+        if "SMOKE SKIP" in proc.stdout:
+            self.skipTest("pywinctl not installed — forwarder cannot be imported")
+        rows = _grab(proc.stdout, "FWD_MENU").split("|")
+        self.assertEqual(rows[1], "Pause")
+        self.assertEqual(rows[-1], "Quit")
+        for expected in ("Check for host update\u2026", "Settings...", "Help && About"):
+            self.assertIn(expected, rows)
+        # The status row leads, and it names the target rather than the app.
+        self.assertTrue(rows[0].endswith("192.168.1.50"), rows[0])
+        self.assertIn("FWD_ICON_PREFIX f", proc.stdout)
+
+    def test_forwarder_pause_stops_reporting_and_greys_the_icon(self):
+        """Pause is the privacy switch: nothing leaves this machine while it is
+        on. It also has to survive a resume — the window dedupe would otherwise
+        swallow the first report after resuming, because the focused window did
+        not change while forwarding was off."""
+        proc = _run_smoke("forwarder")
+        if "SMOKE SKIP" in proc.stdout:
+            self.skipTest("pywinctl not installed — forwarder cannot be imported")
+        self.assertIn("FWD_PAUSED Forwarding paused | Resume | sent=0", proc.stdout)
+        self.assertIn("FWD_RESUMED_CLEARS_DEDUPE True", proc.stdout)
+        # The mark tracks whether reports are LANDING, not whether the process
+        # is up — it used to be set connected once at startup and never again.
+        self.assertIn("FWD_ICON reach=connected fail=disconnected paused=disconnected",
+                      proc.stdout)
 
     def test_client_mode_connects_and_renders(self):
         proc = _run_smoke("client")
@@ -163,6 +197,7 @@ def _toplevel(app):
 def _smoke_forwarder():
     import logging
     from unittest import mock
+    from polyhost.gui.get_icon import get_icon
     try:
         import pywinctl  # noqa: F401 — forwarder.py imports it at module load
     except Exception:  # noqa: BLE001
@@ -172,8 +207,48 @@ def _smoke_forwarder():
         from polyhost.forwarder import PolyForwarder
         app = PolyForwarder(logging.CRITICAL, host="192.168.1.50",
                             report_rpc=True, report_port=50163)
+        app.relay_ok = True
+        app.refresh_status()
         print("FWD_MENU", "|".join(a.text() for a in app.menu.actions()
                                    if not a.isSeparator()))
+        print("FWD_HELP", "|".join(a.text() for a in app.help_menu.actions()
+                                   if not a.isSeparator()))
+        # The forwarder wears the F mark, the tray app the P one.
+        print("FWD_ICON_PREFIX",
+              "f" if app.icon_manager.connected is get_icon("fcolor.png") else "p")
+
+        # Which icon each state actually paints, read back off the tray.
+        # ⚠️ tray.icon() hands back a COPY, so `is` always fails there; QIcon is
+        # implicitly shared, so cacheKey() is what identifies the same icon.
+        _KEYS = {get_icon("fcolor.png").cacheKey(): "connected",
+                 get_icon("fgray.png").cacheKey(): "disconnected"}
+
+        def _mark():
+            app.refresh_status()
+            return _KEYS.get(app.tray.icon().cacheKey(), "other")
+
+        app.relay_ok, app.paused = True, False
+        reach = _mark()
+        app.relay_ok = False
+        fail = _mark()
+        app.relay_ok, app.paused = True, True
+        paused_mark = _mark()
+        print("FWD_ICON", f"reach={reach} fail={fail} paused={paused_mark}")
+        app.paused, app.relay_ok = False, True
+        app.refresh_status()
+
+        # Pause: the reporter tick must send nothing, and resuming must clear
+        # the window dedupe so the next tick re-sends.
+        sent = []
+        app.send_to_host = lambda *a, **kw: sent.append(a) or True
+        app.win, app.title = object(), "something"
+        app.toggle_pause()
+        app.active_window_reporter()
+        print("FWD_PAUSED", f"{app.status.text()} | {app.pause_action.text()} | "
+                            f"sent={len(sent)}")
+        app.toggle_pause()
+        print("FWD_RESUMED_CLEARS_DEDUPE", app.win is None and app.title is None)
+
         diag = app._diagnostics_text()
         print("FWD_DIAG_MODE", "FORWARDER" in diag and "192.168.1.50" in diag)
         app.report_problem_action.trigger()

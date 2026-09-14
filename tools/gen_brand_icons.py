@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """Generate the PolyKybd brand icon set (SVG masters + PNG/ICO/ICNS).
 
-The mark is a 6x6 keycap grid whose UNLIT keys spell a "P" in negative space;
-the lit keys carry one continuous blue -> cyan gradient across the grid. The
-geometry is the 64x64 original's, scaled to a 1024 unit viewBox, so the new art
-is the same silhouette at any resolution.
+The mark is a 6x6 keycap grid whose UNLIT keys spell a letter in negative
+space; the lit keys carry one continuous blue -> cyan gradient across the grid.
+The geometry is the 64x64 original's, scaled to a 1024 unit viewBox, so the new
+art is the same silhouette at any resolution.
 
-Everything under polyhost/res/icons/p{color,gray,think,warn}.* is written by
-this script -- edit the constants here, never the PNGs.
+Two letters ship: "P" for the tray app and "F" for forwarder mode, which is a
+second tray app that can run on the same desktop -- one glance has to separate
+them. The busy/warning states clear the inner keys entirely, so they carry no
+letter and exist only once, under "p"; IconStateManager reuses them for both.
+
+Everything under polyhost/res/icons/{p,f}{color,gray}.* plus p{think,warn}.* is
+written by this script -- edit the constants here, never the PNGs.
 
     python3 tools/gen_brand_icons.py            # write SVG + PNG + ICO + ICNS
     python3 tools/gen_brand_icons.py --sheet X  # contact sheet to X, write nothing
@@ -31,7 +36,9 @@ PITCH = (S - 2 * AREA_INSET) / 6
 KEY = PITCH * 0.875
 KEY_R = KEY * 0.12
 
-# The mark: 1 = lit key, 0 = dark. The zeros spell a "P".
+# The mark: 1 = lit key, 0 = dark. The zeros spell a letter in the inner 4x4.
+# "P" is the tray app; "F" is the same mark in forwarder mode, so the two tray
+# icons are one glance apart on a machine that runs both.
 GRID = [
     "111111",
     "100001",
@@ -41,10 +48,23 @@ GRID = [
     "111111",
 ]
 
+GRID_F = [
+    "111111",
+    "100001",
+    "101111",
+    "100011",
+    "101111",
+    "111111",
+]
+
+# filename prefix -> the letter its inner keys spell.
+MARKS = {"p": GRID, "f": GRID_F}
+
 # The busy and warning states drop every INNER key, so their glyph sits in real
-# space rather than over a dimmed grid. The P goes with them -- deliberate: a
-# transient state reads by its glyph, and the ring plus the HOST stamp still
-# says which app it belongs to.
+# space rather than over a dimmed grid. The letter goes with them -- deliberate:
+# a transient state reads by its glyph, and the ring plus the HOST stamp still
+# says which app it belongs to. It is also why these two need no F twin: with
+# the inner keys gone there is nothing left to tell a P mark from an F one.
 RING = [
     "111111",
     "100001",
@@ -154,8 +174,13 @@ def _hourglass(cx, cy, w, h, glass, base=0.36, wall=0.32):
     )
 
 
-def svg(variant="color", style="engraved", diagonal=True, stamp=True, body_r=None):
-    """Return the SVG source for one variant."""
+def svg(variant="color", style="engraved", diagonal=True, stamp=True, body_r=None,
+        grid=GRID):
+    """Return the SVG source for one variant.
+
+    `grid` picks the letter spelled by the unlit keys (GRID / GRID_F). It is
+    ignored for the think/warn variants, which draw the RING only.
+    """
     if variant == "gray":
         g0, g1 = "#8A94A6", "#B9C2CE"
         body, rim = "#1A1D23", "#3A414D"
@@ -208,7 +233,7 @@ def svg(variant="color", style="engraved", diagonal=True, stamp=True, body_r=Non
         )
 
     ring_only = variant in ("think", "warn")
-    for r, c, x, y, lit in _keys(RING if ring_only else GRID):
+    for r, c, x, y, lit in _keys(RING if ring_only else grid):
         if not lit:
             # the engraved ghosts are skipped on a ring-only variant: "cleared"
             # has to mean cleared, or the glyph still sits over a grid
@@ -282,22 +307,28 @@ def main():
     ap.add_argument("--sheet", help="write a comparison sheet here and change nothing else")
     args = ap.parse_args()
 
-    variants = ("color", "gray", "think", "warn")
+    # (filename prefix, variant). The think/warn states draw the RING only, so
+    # they carry no letter and are emitted once -- both tray apps share them.
+    wanted = [(prefix, v) for prefix in MARKS for v in ("color", "gray")]
+    wanted += [("p", "think"), ("p", "warn")]
 
     if args.sheet:
         cell = 256
-        sheet = Image.new("RGBA", (cell * len(variants), cell), (255, 255, 255, 0))
-        for i, v in enumerate(variants):
-            sheet.paste(render(svg(v, args.style, not args.horizontal, not args.no_stamp, args.body_r), cell), (i * cell, 0))
+        sheet = Image.new("RGBA", (cell * len(wanted), cell), (255, 255, 255, 0))
+        for i, (prefix, v) in enumerate(wanted):
+            src = svg(v, args.style, not args.horizontal, not args.no_stamp,
+                      args.body_r, MARKS[prefix])
+            sheet.paste(render(src, cell), (i * cell, 0))
         sheet.save(args.sheet)
         print(f"wrote {args.sheet}")
         return
 
     ICONS.mkdir(parents=True, exist_ok=True)
-    for v in variants:
-        src = svg(v, args.style, not args.horizontal, not args.no_stamp, args.body_r)
-        (ICONS / f"p{v}.svg").write_text(src)
-        plain = svg(v, args.style, not args.horizontal, False, args.body_r)
+    for prefix, v in wanted:
+        grid = MARKS[prefix]
+        src = svg(v, args.style, not args.horizontal, not args.no_stamp, args.body_r, grid)
+        (ICONS / f"{prefix}{v}.svg").write_text(src)
+        plain = svg(v, args.style, not args.horizontal, False, args.body_r, grid)
         want = sorted(set(PNG_SIZES) | set(ICNS_SIZES) | set(LADDER_SIZES))
         imgs = {
             sz: render(src if sz >= STAMP_MIN_SIZE else plain, sz) for sz in want
@@ -305,10 +336,10 @@ def main():
         # p<v>.png is the canonical single file (Linux .desktop, the About
         # dialog); p<v>_<n>.png is the ladder get_icon() feeds to QIcon so a
         # tray at 16 px gets a purpose-rendered 16 px, not a downscaled 256.
-        imgs[256].save(ICONS / f"p{v}.png")
-        imgs[1024].save(ICONS / f"p{v}@1024.png")
+        imgs[256].save(ICONS / f"{prefix}{v}.png")
+        imgs[1024].save(ICONS / f"{prefix}{v}@1024.png")
         for sz in LADDER_SIZES:
-            imgs[sz].save(ICONS / f"p{v}_{sz}.png")
+            imgs[sz].save(ICONS / f"{prefix}{v}_{sz}.png")
         # Each ICO entry is rendered at its own size rather than downscaled from
         # one image, so the sub-128 entries carry the unstamped mark.
         # WARNING: Pillow's ICO writer SKIPS any requested size larger than the
@@ -316,13 +347,14 @@ def main():
         # single-entry 16x16 .ico. The base must be the LARGEST.
         largest, *rest = [imgs[s] for s in sorted(ICO_SIZES, reverse=True)]
         largest.save(
-            ICONS / f"p{v}.ico",
+            ICONS / f"{prefix}{v}.ico",
             format="ICO",
             sizes=[(s, s) for s in ICO_SIZES],
             append_images=rest,
         )
-        write_icns(ICONS / f"p{v}.icns", {s: imgs[s] for s in ICNS_SIZES})
-        print(f"wrote p{v}.svg / .png / @1024.png / _{{{','.join(map(str, LADDER_SIZES))}}}.png / .ico / .icns")
+        write_icns(ICONS / f"{prefix}{v}.icns", {s: imgs[s] for s in ICNS_SIZES})
+        print(f"wrote {prefix}{v}.svg / .png / @1024.png / "
+              f"_{{{','.join(map(str, LADDER_SIZES))}}}.png / .ico / .icns")
 
 
 if __name__ == "__main__":

@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import (
     QScrollArea, QPushButton, QComboBox
 )
 
-from polyhost.gui.get_icon import get_icon
 from polyhost.services.os_theme import THEMES
 
 # Settings whose value is one of a fixed set get a dropdown rather than the
@@ -66,7 +65,10 @@ class SettingsDialog(QDialog):
     def setup(self, settings_dict, developer_mode=False, reset_glyph_script=None):
         self._all_settings = dict(settings_dict)
         self._reset_glyph_script = reset_glyph_script
-        self.setWindowIcon(get_icon("pcolor.png"))
+        # No setWindowIcon here: the dialog inherits QApplication's, which
+        # IconStateManager already sets to the right mark for whichever app
+        # opened it (the P for the tray app, the F for the forwarder). Pinning
+        # pcolor.png put the tray app's mark on the forwarder's Settings window.
 
         # Outer layout
         main_layout = QVBoxLayout(self)
