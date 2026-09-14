@@ -123,7 +123,9 @@ For each finding, in order:
    is the first thing a human reviewer reads.
 
 Report the outcome in the retro proposal as a table: PR → CI state → findings
-fixed / refuted / skipped. Do not push fixes without approval, per §4.6.
+fixed / refuted / skipped. The sweep REPORTS; the approval step (§4.5)
+decides what gets pushed. That gate is separate from §4.6, which is about the
+retro's OWN output.
 
 ## 4. Procedure
 
@@ -151,11 +153,50 @@ fixed / refuted / skipped. Do not push fixes without approval, per §4.6.
    - Investigation index → `add_memory`, ONE entry per investigation that cost
      real effort: the question, the verdict in a sentence, and where the full
      write-up landed (`repo/file §heading`, or `owner/repo#N` — ⚠️ a bare `#N`
-     resolves to the wrong PR across the nine repos). ⚠️ **Never the finding
-     itself** — that is the learning above, and two copies of a technical
-     conclusion drift with nothing comparing them. ⚠️ **`search_memories` for
-     the question BEFORE writing** and skip if it is already indexed: a retro
-     re-run over an overlapping session would otherwise index it twice.
+     resolves to the wrong PR across the nine repos).
+     ⚠️ **A DEAD END has no write-up, and it is the case this index pays for
+     best** — real effort spent, verdict *"nothing to change"*, so nothing was
+     committed and there is no file to point at. Write the entry anyway: it IS
+     the whole record, and the **where** field then names what was checked
+     rather than where the answer lives (*"checked every `.github/workflows/`
+     hit against upstream, 2026-08-29"*). `SECURITY_AUDIT.md` §
+     *"Checked and NOT vulnerable — don't re-litigate"* is the same idea kept
+     locally for one domain, and it exists because a dismissed finding that
+     leaves no artifact gets re-raised in full by the next scan. A dead end is
+     dated and closed by construction, so it clears the test below outright.
+     ⚠️ **A finding may ride along ONLY if it is DATED AND CLOSED** — a
+     measurement, the root cause of one incident, a verdict about a run that
+     already happened. Those cannot go
+     stale, because the fact is fixed in the past, and re-deriving one is exactly
+     what this index exists to save. A **STANDING claim about how the code
+     behaves now** (*"cmd 34's range is closed"*, *"the C1 icon band is full at
+     32/32"*) goes in CLAUDE.md and mem0 gets only the pointer — that copy has an
+     expiry date and no expiry mechanism. Two things make it worse here than in
+     the mirror cases this project already tracks: **no `cmp` is possible**
+     (`iso_lang_country.py`, `noto-fonts.yaml` and the five mirrored skills all
+     drifted, and every one is recoverable because ONE command compares the
+     copies — a cloud store against prose in git has no such command, so nothing
+     will ever notice), and **the retrieval path IS the stale case** (CLAUDE.md
+     directs the next session to search mem0 for *what CLAUDE.md no longer
+     carries*, so the moment a claim is edited out, the mem0 copy stops being a
+     duplicate and becomes the only answer — carrying the superseded version).
+     The precedence rule bounds the damage to one verification round, but only
+     while it is followed; this file already records a stale prose note that
+     *"reads as authoritative and the next session copies it"*.
+     ⚠️ **The test is the CLAIM's tense, not its depth.** "We measured X on
+     date D" is closed however technical it is; "X behaves like Y" is standing
+     however trivial. When in doubt, write the dated form — *"2026-09-04: run
+     992's apply job failed with the link dead; cause not established"* is safe,
+     *"the apply job kills the link"* is not.
+     ⚠️ **Phrase the entry as the QUESTION, not as the conclusion.**
+     `search_memories` is semantic, so it scores against what the next session
+     *asks*, and an entry led by its verdict (*"the template injection is
+     unreachable"*) matches *"is this scanner finding real?"* far worse than one
+     that opens with the question. Lead with what was asked, then the verdict,
+     then where it lives — the retrieval key and the write are the same string.
+     ⚠️ **`search_memories` for the question BEFORE writing** and skip if it is
+     already indexed: a retro re-run over an overlapping session would otherwise
+     index it twice.
      ⚠️ **Write it raw — `add_memory(..., infer=False)`.** The default runs an
      LLM extractor that rewrites the entry into third-person narrative prose
      (*"User explained that …"*), losing the question / verdict / write-up
@@ -176,8 +217,32 @@ fixed / refuted / skipped. Do not push fixes without approval, per §4.6.
      neither answers alone, and the empty-`results` dedupe belongs to the
      default path, NOT to the raw write this bullet prescribes. Skip entirely if
      nothing this session took more than a handful of files to answer.
-   - Offer to commit + push the new/edited files (don't unless asked, per repo
-     rules).
+   - **Commit, push and OPEN A PULL REQUEST — every time, in every repo the
+     retro touched.** The user's approval of the proposal IS the authorization:
+     they asked for this standing behaviour explicitly (2026-09-10), so it
+     overrides the default "do not create a pull request unless asked". Do not
+     stop at a local commit, and do not ask a second time.
+     - **One PR per repo.** A retro routinely writes into two or three
+       `CLAUDE.md`s and maybe a skill; each repo gets its own branch, commit and
+       PR against its own default — `PolyKybd` for the firmware, `master` for
+       `Adafruit-GFX-Library` and `PolyKybd` (hardware), `main` for the rest.
+     - ⚠️ **Cut the branch fresh from the updated default FIRST.** A retro runs
+       at the end of a session, which is exactly when the branch you are
+       standing on has just merged — and a push to a merged branch **succeeds
+       silently and orphans the commit** (see Branching in the repo `CLAUDE.md`).
+       `git fetch origin <default> && git checkout -B <branch> origin/<default>`,
+       then confirm with `git merge-base --is-ancestor origin/<default> HEAD`.
+     - **The PR body carries the EVIDENCE, not a summary** — for each note, what
+       happened in the session that justifies it, so a reviewer can check the
+       claim rather than the prose. That is the same evidence the proposal
+       already cites, so it costs nothing to carry over.
+     - ⚠️ **A mirrored skill is TWO PRs** (`qmk_firmware` ↔ `PolyKybdHost` keep
+       five byte-identical copies — see Mirrored skills in either `CLAUDE.md`).
+       Cross-link them in both bodies, or each reads as half a change; and
+       `cmp` the pair before opening either, since a retro is also when the
+       drift gets noticed.
+     - **Report the PR links when done.** The retro is not finished until they
+       exist.
 
 ## 5. Output format
 
@@ -214,10 +279,16 @@ Recommendation: <which to keep, and why>
   repo; use for genuinely cross-project meta-skills.
 - **CLAUDE.md** — the most *specific* one wins (a `lang/FUTURE_LANGUAGES.md`-style
   doc over the top-level CLAUDE.md when the learning is narrow).
-- **mem0** — an INDEX of investigations, never a record of findings: one entry
-  pointing at where the real write-up lives, so a later session can find it
-  without re-deriving it. ⚠️ CLAUDE.md wins on any disagreement — a mem0 hit is
-  a lead to verify against the repo, never an authority.
+- **mem0** — an INDEX of investigations: one entry pointing at where the real
+  write-up lives, so a later session can find it without re-deriving it. A
+  **dated, closed** finding may ride along in the entry; a **standing claim about
+  current behaviour** may not, because nothing can ever compare it against the
+  repo (§4). ⚠️ CLAUDE.md wins on any disagreement — a mem0 hit is a lead to
+  verify against the repo, never an authority.
+- **The gap this closes**: a finding can be too narrow to earn permanent space in
+  CLAUDE.md (every session pays for that file) and still expensive to re-derive.
+  Dated findings are what mem0 is *for*; before this they had nowhere to live but
+  a PR nobody would find.
 
 ## Pitfalls
 
@@ -234,6 +305,8 @@ Recommendation: <which to keep, and why>
   pre-write `search_memories` sends the question text to the same cloud service
   `add_memory` writes to — so a question that cannot leave the machine means
   skipping the index entry altogether, not sanitising it afterwards.
-- **Approval before writing**, and **don't push** unless asked.
+- **Approval before writing — but approval is the ONLY gate.** Once the user
+  picks what to keep, write it, push it and open the PR (§4.6) without asking
+  again. Asking twice is what this instruction exists to stop.
 - This skill is repo-agnostic; if useful beyond this project, copy it to
   `~/.claude/skills/`.
