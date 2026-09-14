@@ -36,6 +36,18 @@ Hard limits baked into the firmware/loader (do not fight them):
   art exists to take; commit whichever it is as `icons/<name>.png`.
 - Icons sit in the **bottom-right** of the cell by default so they never cover
   the firmware-drawn key letter (top-left). Keep that.
+- ⚠️ **A HOSTED app usually wants `icon:` in the mapping instead of a baked
+  `program_icon:`.** On Windows 11 a packaged app's process is the host
+  (`ApplicationFrameHost.exe`; Sticky Notes is `ONENOTE.EXE`), so the entry is
+  keyed on the host and told apart by window title — and the generic ESC mark,
+  looked up from the app NAME, then resolves against the host. `icon:
+  mdi:<slug>` on that entry names the slug to use. For Sticky Notes that
+  prevents a **wrong** icon, not a missing one: `app_icons.yaml` maps `onenote`
+  to `mdi:microsoft-onenote`. The two are mutually exclusive — a baked mark
+  wins, because `send_overlays_mru` skips a synthetic source on any (modifier,
+  keycode) a template already drew. Full rules, including why the parent entry
+  must keep an `overlay:` of its own, in `polyhost/res/overlay-mapping.md`
+  § `icon:`.
 
 The mechanical half (cell+channel placement, primary/combo split, scaling, b/w
 threshold, mapping stanza, previews) is **already automated** by
