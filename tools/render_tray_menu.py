@@ -260,6 +260,23 @@ def main():
         import subprocess
         rc = 0
         for mode in groups[args.mode]:
+            # Audited and accepted. This is an *audit* rule: it fires on any
+            # non-literal argv and asks a human to check where the data came
+            # from. Every element here is either fixed by this file
+            # (sys.executable, this script's own path, the literal flags, a
+            # `mode` drawn from the `groups` table above) or one of this
+            # process's own argparse values, set by whoever is already running
+            # the command. There is no network, file or database input on this
+            # path. shell=False with a list means no shell parses it, so there
+            # is nothing to inject through — and shlex.quote, the rule's
+            # suggested remedy, escapes for a SHELL string and would only
+            # corrupt an argv element here.
+            #
+            # ⚠️ The marker below must stay on the line IMMEDIATELY above the
+            # call — semgrep only applies it to the next line, so putting it at
+            # the top of this comment block (where it reads better) silently
+            # does nothing.
+            # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-tainted-env-args
             rc |= subprocess.run([sys.executable, os.path.abspath(__file__),
                                   "--out-dir", args.out_dir, "--mode", mode,
                                   "--forwarder-host", args.forwarder_host]).returncode
