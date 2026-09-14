@@ -23,6 +23,14 @@ CREATE TABLE IF NOT EXISTS ping (
   host_protocol    INTEGER,
   os               TEXT,
   os_release       TEXT,
+  -- Linux window-stack census (schema 2+). '' on Windows/macOS, and '' for
+  -- every row a schema-1 host wrote, which is why the migration below adds
+  -- them with DEFAULT '' rather than leaving NULL: "never told us" and "told
+  -- us nothing" are the same answer here, and one of them breaks GROUP BY.
+  session          TEXT,                      -- x11 | wayland | other
+  desktop          TEXT,                      -- gnome | kde | xfce | ... | other
+  window_backend   TEXT,                      -- pywinctl | kde_win_reporter
+                                              -- | gnome_wayland_reporter
   arch             TEXT,
   python           TEXT,
   mode             TEXT,                      -- daemon | in-process | headless
@@ -68,3 +76,26 @@ CREATE VIEW IF NOT EXISTS daily_by_fw_version AS
 SELECT day, fw_version, COUNT(*) AS installs
 FROM ping WHERE device_present = 1 AND fw_version <> ''
 GROUP BY day, fw_version ORDER BY day DESC, installs DESC;
+
+
+-- ---------------------------------------------------------------------------
+-- Migrations
+-- ---------------------------------------------------------------------------
+-- The CREATE TABLE above is IF NOT EXISTS, so it does nothing to a live table
+-- that predates a column. Apply these by hand, once, against the deployed D1:
+--
+--   wrangler d1 execute polyhost-telemetry --remote \
+--     --command "ALTER TABLE ping ADD COLUMN session TEXT NOT NULL DEFAULT ''"
+--
+-- D1 takes one ALTER per statement, so run the three separately. Each is a
+-- no-op error ("duplicate column name") if already applied — safe to re-run.
+--
+-- schema 2 (payload session/desktop/window_backend):
+--   ALTER TABLE ping ADD COLUMN session        TEXT NOT NULL DEFAULT '';
+--   ALTER TABLE ping ADD COLUMN desktop        TEXT NOT NULL DEFAULT '';
+--   ALTER TABLE ping ADD COLUMN window_backend TEXT NOT NULL DEFAULT '';
+--
+-- ⚠️ Apply the migration BEFORE deploying the worker. The worker's INSERT
+-- names all three columns, so between a new worker and an un-migrated table
+-- every ping fails with a 503 and the day's data is simply lost — pings are
+-- daily and never retried, so it cannot be backfilled.

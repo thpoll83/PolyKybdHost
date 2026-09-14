@@ -48,9 +48,10 @@ In a second terminal, send a ping by hand:
 ```bash
 curl -i -X POST http://localhost:8787/v1/ping \
   -H 'content-type: application/json' \
-  -d '{"schema":1,"install_id":"00112233445566778899aabbccddeeff",
+  -d '{"schema":2,"install_id":"00112233445566778899aabbccddeeff",
        "host_version":"0.11.5","host_protocol":12,
        "os":"Linux","os_release":"6.8","arch":"x86_64","python":"3.12","mode":"daemon",
+       "session":"x11","desktop":"xfce","window_backend":"pywinctl",
        "device":{"present":true,"connected":true,"name":"PolyKybd Split72",
                  "fw_version":"0.11.4","protocol":12,"hw_version":"1.0",
                  "fontpack":{"symbol":5}},
@@ -68,6 +69,13 @@ npx wrangler d1 execute polyhost-telemetry --local \
 Worth trying while you are here, because these are the paths that matter in
 production: a malformed body (`-d 'nonsense'`) must return **400**, and a `GET
 /v1/ping` must return **405**.
+
+Two more worth one minute each, because both fail silently in production rather
+than erroring. Send the same body with `"schema":1` and the three Linux fields
+removed — it must still return **204**, since hosts shipped before schema 2 keep
+pinging for months. Then send `"desktop":"../../etc/passwd"` and confirm the
+stored `desktop` is **`''`**, not the string: the host buckets these values, but
+the worker treats the body as untrusted and accepts only names it knows.
 
 <!-- If you skipped straight to production and something is wrong, come back here:
      the local loop is far faster to debug than a deployed Worker. -->

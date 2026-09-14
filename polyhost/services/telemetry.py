@@ -28,6 +28,7 @@ the wrong day.
 import json
 import logging
 import math
+import os
 import platform
 import sys
 import threading
@@ -44,7 +45,8 @@ log = logging.getLogger(__name__)
 
 #: Payload format version. Bump when a field changes meaning or is removed —
 #: the server keeps parsing old hosts, which live in the field for months.
-PAYLOAD_SCHEMA = 1
+#: v2 added ``session`` / ``desktop`` / ``window_backend``.
+PAYLOAD_SCHEMA = 2
 
 #: Wait between pings. Deliberately a day: this is a census, not monitoring.
 SEND_INTERVAL_S = 24 * 60 * 60
@@ -75,7 +77,8 @@ COUNTER_KEYS = (
 #: is the actual privacy guarantee, so keep it in sync deliberately.
 PAYLOAD_KEYS = frozenset({
     "schema", "install_id", "host_version", "host_protocol",
-    "os", "os_release", "arch", "python", "mode", "device", "counters",
+    "os", "os_release", "session", "desktop", "window_backend",
+    "arch", "python", "mode", "device", "counters",
 })
 
 #: Same, for the nested device block.
@@ -135,6 +138,63 @@ def _os_release() -> str:
     return ".".join(p for p in parts[:2] if p.isdigit())
 
 
+#: Display servers we report. ``XDG_SESSION_TYPE`` is settable to anything, so
+#: the value is MAPPED through this table and never forwarded: an unrecognised
+#: session reports "other", and Windows/macOS report "" (the field is a Linux
+#: question). Bucketing here rather than at the collector is the point — the
+#: free text then never leaves the user's machine, so no server-side rule has
+#: to be trusted to drop it, and a column the collector DOES accept is kept
+#: forever (in its own column and in the canonical ``raw`` blob alike).
+_SESSIONS = {"x11": "x11", "wayland": "wayland"}
+
+#: Desktops we report, keyed by the lowercased LAST component of
+#: ``XDG_CURRENT_DESKTOP`` (which is colon-separated and prefixed by the distro
+#: — Ubuntu sets "ubuntu:GNOME"). Same rule as _SESSIONS: anything not named
+#: here reports "other", never its own spelling.
+_DESKTOPS = {
+    "gnome": "gnome", "kde": "kde", "plasma": "kde", "xfce": "xfce",
+    "mate": "mate", "x-cinnamon": "cinnamon", "cinnamon": "cinnamon",
+    "lxqt": "lxqt", "lxde": "lxde", "budgie": "budgie", "deepin": "deepin",
+    "pantheon": "pantheon", "unity": "unity", "sway": "sway",
+    "hyprland": "hyprland", "i3": "i3", "river": "river", "niri": "niri",
+    "wlroots": "wlroots",
+}
+
+
+def _bucket(value, table) -> str:
+    """Map ``value`` through ``table``; "" when unset, "other" when unknown."""
+    text = (value or "").strip().lower()
+    if not text:
+        return ""
+    return table.get(text, "other")
+
+
+def _session() -> str:
+    """Display server: "x11" / "wayland" / "other", "" off Linux."""
+    if not sys.platform.startswith("linux"):
+        return ""
+    return _bucket(os.environ.get("XDG_SESSION_TYPE"), _SESSIONS)
+
+
+def _desktop() -> str:
+    """Desktop environment: a name from :data:`_DESKTOPS`, "other", or "".
+
+    ``XDG_CURRENT_DESKTOP`` is colon-separated with the distro first
+    ("ubuntu:GNOME"), so the LAST component is the desktop itself.
+    """
+    if not sys.platform.startswith("linux"):
+        return ""
+    raw = (os.environ.get("XDG_CURRENT_DESKTOP") or "").strip()
+    return _bucket(raw.split(":")[-1] if raw else "", _DESKTOPS)
+
+
+#: The window backends ``handler/active_window.py`` can select. Closed by
+#: construction — our own code picks one of these three — so unlike the two
+#: fields above it needs no bucketing, only a membership check to keep a
+#: future backend from shipping before this list knows about it.
+_WINDOW_BACKENDS = ("pywinctl", "kde_win_reporter", "gnome_wayland_reporter")
+
+
 def build_payload(install_id, mode, status=None, fontpack=None, counters=None) -> dict:
     """Build the ping body from named fields only.
 
@@ -150,6 +210,14 @@ def build_payload(install_id, mode, status=None, fontpack=None, counters=None) -
         "host_protocol": __protocol__,
         "os": platform.system() or "",
         "os_release": _os_release(),
+        # Which window-tracking code path this install is actually on. `os`
+        # alone cannot answer it: the pywinctl branch is the `else` arm, so it
+        # carries Windows, macOS and Linux-X11 together.
+        "session": _session(),
+        "desktop": _desktop(),
+        "window_backend": (_text(status.get("window_backend"))
+                           if status.get("window_backend") in _WINDOW_BACKENDS
+                           else ""),
         "arch": platform.machine() or "",
         "python": _short_python(),
         "mode": str(mode or ""),
