@@ -120,7 +120,7 @@ def _grab(menu, path, log):
     return pixmap
 
 
-def _render_forwarder(out_dir, log):
+def _render_forwarder(out_dir, log, host="192.168.1.100"):
     """Render the FORWARDER's tray menu.
 
     It is a separate QApplication with its own menu, so nothing about the host
@@ -134,7 +134,7 @@ def _render_forwarder(out_dir, log):
     helper.start()
     try:
         from polyhost.forwarder import PolyForwarder
-        app = PolyForwarder(logging.CRITICAL, host="192.168.1.50")
+        app = PolyForwarder(logging.CRITICAL, host=host)
         # The steady state a user sees, not the first 250 ms of startup.
         app.relay_ok = True
         app.refresh_status()
@@ -226,6 +226,11 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out-dir", default="menu-renders")
+    # The status row names the target, so the docs page and its screenshot have
+    # to agree on the example address -- otherwise the image quietly contradicts
+    # the command right above it.
+    ap.add_argument("--forwarder-host", default="192.168.1.100",
+                    help="address shown in the forwarder's status row")
     ap.add_argument("--mode",
                     choices=["normal", "developer", "forwarder", "both", "all"],
                     default="both",
@@ -255,12 +260,30 @@ def main():
         import subprocess
         rc = 0
         for mode in groups[args.mode]:
+            # Audited and accepted. This is an *audit* rule: it fires on any
+            # non-literal argv and asks a human to check where the data came
+            # from. Every element here is either fixed by this file
+            # (sys.executable, this script's own path, the literal flags, a
+            # `mode` drawn from the `groups` table above) or one of this
+            # process's own argparse values, set by whoever is already running
+            # the command. There is no network, file or database input on this
+            # path. shell=False with a list means no shell parses it, so there
+            # is nothing to inject through — and shlex.quote, the rule's
+            # suggested remedy, escapes for a SHELL string and would only
+            # corrupt an argv element here.
+            #
+            # ⚠️ The marker below must stay on the line IMMEDIATELY above the
+            # call — semgrep only applies it to the next line, so putting it at
+            # the top of this comment block (where it reads better) silently
+            # does nothing.
+            # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-tainted-env-args
             rc |= subprocess.run([sys.executable, os.path.abspath(__file__),
-                                  "--out-dir", args.out_dir, "--mode", mode]).returncode
+                                  "--out-dir", args.out_dir, "--mode", mode,
+                                  "--forwarder-host", args.forwarder_host]).returncode
         return rc
 
     if args.mode == "forwarder":
-        _render_forwarder(args.out_dir, log.info)
+        _render_forwarder(args.out_dir, log.info, args.forwarder_host)
     else:
         _render(args.mode == "developer", args.out_dir, log.info)
     return 0
