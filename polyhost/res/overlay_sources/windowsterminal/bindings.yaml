@@ -58,15 +58,33 @@ threshold: 150
 #     DARK window panel carrying light glyphs, so `bright` lights the chevron,
 #     the cursor and the title bar and leaves the panel unlit. `luma` inverts
 #     that into a white slab with a black chevron cut out of it.
-#   * threshold 128 -- swept 100..175. At 150 and above the chevron BREAKS into
-#     two disjoint strokes and stops reading as `>`; at 100 the title bar splits
-#     in two. 128 is the only value where both are whole.
+#   * threshold 90, which is DERIVED rather than eyeballed -- the icon's luma
+#     histogram over black has a clean empty band, and 90 is the middle of it:
+#
+#         0            transparent
+#         44..76       the window panel          <- must stay UNLIT
+#         (77..101     nothing at all)           <- put the threshold here
+#         102,153,204  the three TAB segments    <- must all light
+#         216..221     the chevron + cursor
+#
+#     ⚠️ It shipped at 128 first, which passes tabs 204 and 153 and fails 102 --
+#     so the title bar stopped at 67% of the width and read as CUT OFF (field,
+#     2026-09-14). That is not a colour-conversion artefact, which is the
+#     natural reading: the bar is three FLAT segments, the icon's three tabs,
+#     and a threshold either admits a whole tab or none of it.
+#     ⚠️ Do not "fix" it by nudging to 100 instead. 102 clears it by one unit,
+#     so the antialiased seam between tab 2 and tab 3 falls below and the bar
+#     comes out full width but SPLIT IN TWO -- worse than short. The upper wall
+#     is the tab at 102, the lower wall is the panel at 76, and 90 is 14 clear
+#     of one and 12 of the other.
+#     (The old note's other half still holds: above ~150 the chevron breaks into
+#     two disjoint strokes and stops reading as `>`. That bound is far away.)
 #   * 48px. Unlike the other three there is no convergence to point at: 48 / 64
 #     / 256 measure 269 / 266 / 263 lit and are visually indistinguishable, so
 #     the frame is simply not a meaningful choice here and the smallest ships.
 program_icon: progmark.png
 program_icon_mode: bright
-program_icon_threshold: 128
+program_icon_threshold: 90
 program_icon_anchor: right
 program_icon_region: [40, 40]      # the square mark, full cell height, hard right
 program_icon_margin: 0

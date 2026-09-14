@@ -78,6 +78,15 @@ Choices that are not the obvious one, and why:
   chevron, the cursor and the title bar and leaves the panel unlit, while `luma`
   would invert it into a white slab. Frame/mode/threshold reasoning is in
   `bindings.yaml`.
+  ⚠️ **The threshold is 90 and it is derived, not eyeballed** — the icon's title
+  bar is three FLAT segments (its three tabs, at luma 204 / 153 / 102 over
+  black) and the window panel below tops out at 76, so there is an empty band at
+  77..101 and 90 is the middle of it. It shipped at 128 first, which admits two
+  tabs and drops the third, so the bar stopped at 67% of the width and read as
+  cut off. ⚠️ 100 is the trap: 102 clears it by one unit, so the seam between
+  the last two tabs falls below and the bar comes out full width but split in
+  two. **A bar that stops partway through an icon like this is a threshold
+  landing between flat segments, not a colour-conversion artefact.**
 - **`tab1.png`…`tab8.png` — Ctrl+Alt+N switch-to-tab.** The bare Fluent *Tab*
   glyph is an empty rounded box, and at 40 px on a keycap it reads as nothing —
   while the whole point of Ctrl+Alt+N is *which* tab. Composited as the Tab box
