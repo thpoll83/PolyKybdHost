@@ -4,6 +4,11 @@ import logging
 # module calls. Same line, and the same reason, as `core/poly_core.py` — the
 # dependency belongs to the code that USES the level, not to each of its
 # importers, which is why several tests had to carry a copy of this import.
+# ⚠️ CodeQL reports `py/unused-import` here and is right about the letter of it
+# — no name is read. Acting on it removes the level, and the failure is an
+# AttributeError from whichever call site runs first in a process that happens
+# to have imported nothing else. The `noqa` covers flake8; CodeQL does not read
+# it, so the alert stands and this comment is the disposition.
 import polyhost.util.log_util  # noqa: F401
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_data import OverlayData
