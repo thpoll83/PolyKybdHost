@@ -43,19 +43,42 @@ are both compatible with this repo's **GPL-3.0-or-later**.
 
 Drawn here: the `>_` shell prompt (shared, `../prompt_glyph.py`) and the tab-number composites.
 
-⚠️ **The program mark is never the app's real logo**, and for most of this batch
-it is not in this folder at all. Measured against both catalogs, none of these
-apps has a brand mark in Simple Icons or mdi -- Microsoft does not license its
-logos and mdi does not draw them -- so the ESC cell takes a **curated generic**
-from `polyhost/res/app_icons.yaml` (a palette for Paint, scissors for Snipping
-Tool, a zipped folder for 7-Zip). It says what the app IS rather than naming a
-brand, which is the mark's whole job.
+### The program mark is WinSCP's OWN logo
 
-⚠️ A baked `program_icon:` would WIN over that: `send_overlays_mru` defers a
-synthetic source on any (modifier, keycode) a template already drew. So a mark
-here and a generic in the catalog are mutually exclusive, and the trade is that
-a baked mark always draws while a fetched one needs `shortcut_icon_auto_fetch`
-(default on) and one successful download.
+`icons/progmark.png` is the 64x64 frame of
+[`source/resource/Application.ico`](https://raw.githubusercontent.com/winscp/winscp/master/source/resource/Application.ico)
+from the `winscp/winscp` repository. **WinSCP is GPL-3.0** (`source/resource/
+License.txt`) and this host is GPL-3.0-or-later, so its artwork is simply
+redistributable here -- which is not true of most apps this repo draws marks
+for. The Office and Adobe logos are proprietary and no catalog carries them
+either, which is why those overlays settle for a drawn or curated generic.
+**When an app is free software, ask for its own icon first.**
+
+It replaces the curated generic `mdi:folder-network` this overlay used to take
+from `polyhost/res/app_icons.yaml`, which in turn had replaced a drawn
+two-panels-and-an-arrow mark -- both approximations of an app whose real mark
+was redistributable all along.
+
+⚠️ The two are **mutually exclusive**, not layered: `send_overlays_mru` defers a
+synthetic source on any (modifier, keycode) a template already drew, so a baked
+`program_icon:` means the catalog generic is never uploaded. The trade taken
+here is the right way round -- a baked mark ALWAYS draws, while the fetched one
+needed `shortcut_icon_auto_fetch` (default on) plus one successful download, so
+offline with a cold cache ESC was blank.
+
+⚠️ **Frame, mode and threshold were each picked by rendering, and the obvious
+guesses are wrong in both directions:**
+
+| knob | shipped | why, measured |
+|---|---|---|
+| frame | **64px** | 64 / 128 / 256 render to within one lit pixel of each other (545 / 544 / 544), so 64 is the smallest frame that has converged -- bigger buys nothing. 40 and 48 are different art: both drop the keyhole, and the shackle detaches from the body at 40 and fuses into it at 48. |
+| mode | **`bright`** | The art is pale fills on transparent. `alpha` lights the whole badge as one solid blob (the alpha channel IS the badge); every `luma` threshold is a dark smear. `bright` lights the fills and leaves the dark outlines unlit, which is what keeps the shackle and the two arrows apart. |
+| threshold | **128** | Swept 110..150. Below it the down-right arrow merges into the padlock body; above it the up-left arrow's head erodes and the keyhole disappears. 128 is the only value where all three elements read separately. |
+
+Placed `anchor: right`, `region: [40, 40]`, `margin: 0` -- the mark is square, so
+40x40 is the largest it can be in a 72x40 cell. The rendered ESC cell inks
+x 34..69 / y 2..37, i.e. nothing is clipped and 34 px stay clear on the left for
+the firmware's own ESC legend.
 
 | icon | art | licence |
 |---|---|---|
@@ -130,8 +153,9 @@ a baked mark always draws while a fetched one needs `shortcut_icon_auto_fetch`
 | `hidden.png` | Fluent `Eye Off` | MIT |
 | `filter.png` | Fluent `Filter` | MIT |
 | `explorer.png` | Fluent `Folder Open` | MIT |
+| `progmark.png` | WinSCP `Application.ico`, 64px frame | GPL-3.0 (winscp/winscp) |
 
-70 of 71 are Fluent (MIT, some with a digit composited over); the rest are drawn.
+70 of 71 shortcut icons are Fluent (MIT, some with a digit composited over); the rest are drawn.
 
 ## Verifying
 
