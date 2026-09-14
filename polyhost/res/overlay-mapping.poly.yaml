@@ -99,14 +99,49 @@ notepad++:
   overlay: [notepadpp_template.mods.png, notepadpp_template.combo.mods.png]
 explorer:
   overlay: [explorer_template.mods.png, explorer_template.combo.mods.png]
+windowsterminal,wt:
+  overlay: [windowsterminal_template.mods.png, windowsterminal_template.combo.mods.png]
+notepad:
+  overlay: [notepad_template.mods.png, notepad_template.combo.mods.png]
+mspaint:
+  overlay: mspaint_template.mods.png
+paintdotnet:
+  overlay: [paintdotnet_template.mods.png, paintdotnet_template.combo.mods.png]
+wordpad:
+  overlay: [wordpad_template.mods.png, wordpad_template.combo.mods.png]
+snippingtool:
+  overlay: snippingtool_template.mods.png
+taskmgr:
+  overlay: [taskmgr_template.mods.png, taskmgr_template.combo.mods.png]
+7zfm,7zg:
+  overlay: sevenzip_template.mods.png
+winscp:
+  overlay: [winscp_template.mods.png, winscp_template.combo.mods.png]
+putty:
+  overlay: putty_template.mods.png
 winword:
   overlay: [word_template.mods.png, word_template.combo.mods.png]
 excel:
   overlay: [excel_template.mods.png, excel_template.combo.mods.png]
 outlook:
   overlay: [outlook_template.mods.png, outlook_template.combo.mods.png]
+# ⚠️ `ONENOTE.EXE` HOSTS THE NEW STICKY NOTES, so this entry is about Sticky
+# Notes and NOT about OneNote -- hence the title constraint, which lets a real
+# OneNote window fall through unmatched rather than showing sticky-note keycaps.
+# `icon:` is required for the same reason: without it the mark would resolve from
+# the process name through `app_icons.yaml` (`onenote: mdi:microsoft-onenote`)
+# and draw a OneNote logo on a Sticky Notes window.
+onenote:
+  title: "^Sticky Notes"
+  icon: mdi:sticker-text
+  overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
 powerpnt:
   overlay: [powerpoint_template.mods.png, powerpoint_template.combo.mods.png]
+# Photos runs as its own `Photos.exe`, so no title branch and no `icon:` -- the
+# curated generic (`photos: mdi:image-multiple`) resolves from the process name,
+# confirmed in the field log that prompted this batch.
+photos:
+  overlay: photos_template.mods.png
 photoshop:
   overlay: [photoshop_template.mods.png, photoshop_template.combo.mods.png]
 illustrator:
@@ -139,6 +174,59 @@ obsidian:
   overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png]
 notion:
   overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+# Windows Calculator, SCIENTIFIC mode (see overlay_sources/calc/bindings.yaml for
+# why it is one mode and not both).
+#
+# ⚠️ Keyed on the window TITLE because on Windows 11 the packaged apps all run
+# inside `ApplicationFrameHost.exe`, so the app name the tracker reports is the
+# HOST rather than the app. `title:` is a regex on the entry itself, not a
+# sub-map: an entry with only a title sub-map and no overlay of its own is
+# refused outright by `find_matching_entry` (`has_overlay` gates it), and a
+# top-level fallback overlay here would land on Clock, Photos and Settings too.
+#
+# ⚠️ `calc` is deliberately NOT in this list. It is what LibreOffice Calc reports
+# on some Linux desktops — `app_icons.yaml` already keys `calc, localc` to the
+# LibreOffice mark — so claiming it here would put a Windows Calculator overlay
+# on a spreadsheet.
+#
+# ⚠️ The title is ENGLISH. A localized Windows names the window "Rechner",
+# "Calculadora", … and this entry will not fire there; the app-name entry below
+# still will when Calculator runs unhosted.
+# ⚠️ `ApplicationFrameHost.exe` is NOT an app -- it is the Win11 host process for
+# packaged apps, so the executable name says nothing about what is on screen and
+# the TITLE is the only thing that does. Every hosted app therefore needs its own
+# title branch here, and its own `icon:` (the program mark cannot be resolved from
+# a host process name -- `si:applicationframehost` will never exist). Add a
+# hosted app by adding a branch, not by adding an app_icons.yaml entry.
+# ⚠️ The PARENT must carry an overlay of its own, or none of its title branches
+# are reachable: `find_matching_entry` returns None immediately for an entry with
+# neither `overlay:` nor `remote:`, before it looks at any sub-map. So Calculator
+# is the parent (it was here first) and every other hosted app is a
+# `titles-startswith` branch, which is checked BEFORE the parent's own `title:`
+# regex. A hosted app this file does not name falls through unmatched, which is
+# what should happen -- the parent's `^Calculator` gate is what stops Weather or
+# Clock being handed calculator keycaps.
+applicationframehost:
+  title: "^Calculator"
+  icon: mdi:calculator
+  overlay: [calc_template.mods.png, calc_template.combo.mods.png]
+  titles-startswith:
+    Sound:
+      title: "^Sound Recorder"
+      icon: mdi:microphone
+      overlay: soundrecorder_template.mods.png
+    # Windows 11 renamed Voice Recorder to Sound Recorder; it is the same app and
+    # the same shortcut set (both of the references the overlay is built from are
+    # Voice Recorder pages), so a Windows 10 box gets the same keycaps. Two
+    # branches rather than one loosened regex: the branch key is matched against
+    # the title's FIRST WORD, so `^(Sound|Voice) Recorder` under `Sound:` would
+    # never be reached for a title starting "Voice".
+    Voice:
+      title: "^Voice Recorder"
+      icon: mdi:microphone
+      overlay: soundrecorder_template.mods.png
+calculatorapp:
+  overlay: [calc_template.mods.png, calc_template.combo.mods.png]
 # All three LibreOffice modules are ONE process, and the app-name lookup is an
 # exact dict hit — so they cannot be three separate entries. They are told apart
 # by window title instead: LibreOffice titles end in the module name, e.g.

@@ -82,8 +82,12 @@ firmware-drawn key letter (top-left), matching the existing hand-made templates.
 
 ## Limits (from the firmware/loader)
 
-- **Ctrl+Alt+Shift is not representable** and **GUI/Win-key overlays are dropped**
-  by the firmware — such bindings are skipped with a warning.
+- ⚠️ **All sixteen modifier variants ARE representable since protocol 12** —
+  including Ctrl+Alt+Shift and every GUI/Win-key chord — across four PNG tiers
+  (primary, combo, extra, gui). This bullet said the opposite for a long time
+  after `im_converter` stopped dropping GUI before rendering, and three app
+  overlays skipped real shortcuts on the strength of it. The authority is
+  [`../overlay_specification.md`](../overlay_specification.md), not this file.
 - Cells are 72×40, 1-bit monochrome: keep icons simple and high-contrast.
 
 ## What's automated vs. manual

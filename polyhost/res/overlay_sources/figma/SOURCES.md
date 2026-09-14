@@ -45,8 +45,9 @@ the authoritative source; cross-checked against:
 ### Flagged / dropped
 
 - **No documented default found / dropped:** `A` (no-mod) — no tool bound.
-- **Ctrl+Alt+Shift and any GUI/Win combos:** not representable by the firmware /
-  dropped per spec — none were in the chosen set.
+- **Ctrl+Alt+Shift and any GUI/Win combos:** not drawn — none were in the
+  chosen set. ⚠️ Both ARE representable since protocol 12 (Ctrl+Alt+Shift on the extra
+  tier, GUI on combo A); the wording here claimed a format limit and was stale.
 - **Layout-grid toggle (Shift+G)** and **Outline view (Shift+O)**: Figma also exposes
   layout-grid visibility via `Ctrl+Shift+4` in some builds; the bare-`Shift+G` /
   `Shift+O` toggles used here match the in-app Shortcuts panel and avoid clashing

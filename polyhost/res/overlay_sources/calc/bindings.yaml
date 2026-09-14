@@ -1,0 +1,140 @@
+# Windows Calculator (calc.exe / CalculatorApp) -- SCIENTIFIC MODE.
+#
+# ⚠️ Every key here is parsed from Calculator's OWN RESOURCES, not from a
+# shortcut article. `shortcuts.json` beside this file is the extracted table and
+# `fetch_icons.py --refresh` re-derives it from
+# https://github.com/microsoft/calculator .../Resources/en-US/Resources.resw
+# where each binding is a `<button>.…KeyboardShortcutManager.<kind>` entry.
+#
+# ⚠️ SCIENTIFIC, not Programmer, and it has to be one or the other: F3 is GRAD
+# *and* DWORD in Calculator's own table, F4 is DEG *and* WORD, F5 is RAD *and*
+# HEX. A keycap cannot show both. Scientific wins because that is where the ~50
+# letter shortcuts live, and a letter standing for a trig function is exactly the
+# thing nobody memorises -- which is what these displays are for. The
+# programmer-only keys (QWORD / DEC / OCT / BIN / BYTE, the bitwise operators and
+# the hex digits A-F) are left off rather than mixed in.
+#
+# ⚠️ THE ALT BINDINGS COME FROM A DIFFERENT FILE, and that is why they were
+# missing for so long. `shortcuts.json` is harvested from `Resources.resw`, which
+# describes Calculator's BUTTONS only -- it carries zero Alt entries. The MODE
+# switches live in `src/Calculator.ViewModels/Common/NavCategory.cs`
+# (`CategoryManifest`, one `VirtualKey`/`AccessKey` per mode), dispatched through
+# `KeyboardShortcutManager.NavigateModeByShortcut` off `VirtualKeyAltChord`. The
+# converter categories in the same table carry `VirtualKey = None`, so the mode
+# set really is Alt+1..5 and nothing else. Alt+Up / Alt+Down are the two Alt
+# chords `Resources.resw` does name, in prose rather than as a shortcut entry
+# ("Keep on top (Alt+Up)" / "Back to full view (Alt+Down)").
+#
+# ⚠️ THREE ENTRIES ASSUME A US LAYOUT. Calculator binds a few buttons to a
+# CHARACTER rather than a virtual key -- `@` is square root, `#` is x³, `!` is
+# factorial -- and a character lands on whichever key produces it. Those three
+# are placed where a US layout puts them (Shift+2 / Shift+3 / Shift+1) and will
+# be wrong elsewhere. Everything else is keyed by virtual key and is layout
+# independent.
+app: calc
+match: [calc, calculatorapp, calculator]
+output: calc_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+source: "microsoft/calculator src/Calculator/Resources/en-US/Resources.resw (MIT)"
+
+# Baked rather than taken from the curated generic — see the note beside
+# `progmark` in fetch_icons.py. Right-aligned and a little under the full cell so
+# the firmware's own ESC legend stays clear.
+program_icon: progmark.png
+program_icon_region: [38, 34]
+program_icon_anchor: right
+
+bindings:
+  # --- no modifier: the scientific function row ------------------------------
+  - { key: S, mods: [], icon: sin.png,  label: sin }
+  - { key: O, mods: [], icon: cos.png,  label: cos }
+  - { key: T, mods: [], icon: tan.png,  label: tan }
+  - { key: U, mods: [], icon: sec.png,  label: sec }
+  - { key: I, mods: [], icon: csc.png,  label: csc }
+  - { key: J, mods: [], icon: cot.png,  label: cot }
+  - { key: N, mods: [], icon: ln.png,   label: "ln (log base e)" }
+  - { key: L, mods: [], icon: log.png,  label: "log (base 10)" }
+  - { key: R, mods: [], icon: recip.png, label: "1/x" }
+  - { key: P, mods: [], icon: pi.png,   label: "pi" }
+  - { key: Q, mods: [], icon: sqr.png,  label: "x squared" }
+  - { key: Y, mods: [], icon: powy.png, label: "x to the power y" }
+  - { key: G, mods: [], icon: twopow.png, label: "2 to the x" }
+  - { key: X, mods: [], icon: exp.png,  label: "Exp" }
+  - { key: V, mods: [], icon: ftoe.png, label: "F-E (fixed/scientific)" }
+  - { key: M, mods: [], icon: dms.png,  label: "degrees-minutes-seconds" }
+  - { key: B, mods: [], icon: cbrt.png, label: "cube root" }
+  - { key: F3, mods: [], icon: grad.png, label: "gradians" }
+  - { key: F4, mods: [], icon: deg.png,  label: "degrees" }
+  - { key: F5, mods: [], icon: rad.png,  label: "radians" }
+  - { key: F9, mods: [], icon: negate.png, label: "+/- (negate)" }
+  - { key: DELETE, mods: [], icon: clearentry.png, label: "CE (clear entry)" }
+  # ⚠️ ESC = "C (clear all)" is REAL and is deliberately not drawn: the program
+  # mark owns ESC on every one of this repo's overlays, and breaking that
+  # convention for one app costs more than the binding is worth. Esc-clears-
+  # things is also the one Calculator shortcut a person can guess. The
+  # `tests/res/overlay_cells_test.py` guard is what caught the clash -- the mark
+  # simply overwrote the icon and the binding vanished in silence.
+  - { key: BACKSPACE, mods: [], icon: backspace.png, label: backspace }
+  - { key: ENTER, mods: [], icon: equals.png, label: "equals" }
+
+  # --- Shift: the character-triggered buttons, and the inverse functions -----
+  # ⚠️ The first three are the US-layout entries flagged above.
+  - { key: "1", mods: [SHIFT], icon: fact.png, label: "n! (factorial)" }
+  - { key: "2", mods: [SHIFT], icon: sqrt.png, label: "square root" }
+  - { key: "3", mods: [SHIFT], icon: cube.png, label: "x cubed" }
+  - { key: S, mods: [SHIFT], icon: asin.png, label: "asin" }
+  - { key: O, mods: [SHIFT], icon: acos.png, label: "acos" }
+  - { key: T, mods: [SHIFT], icon: atan.png, label: "atan" }
+  - { key: U, mods: [SHIFT], icon: asec.png, label: "asec" }
+  - { key: I, mods: [SHIFT], icon: acsc.png, label: "acsc" }
+  - { key: J, mods: [SHIFT], icon: acot.png, label: "acot" }
+  - { key: L, mods: [SHIFT], icon: logy.png, label: "log base y" }
+  - { key: E, mods: [SHIFT], icon: euler.png, label: "Euler's number" }
+  - { key: R, mods: [SHIFT], icon: rand.png, label: "random" }
+
+  # --- Ctrl: hyperbolics, powers, memory, and the UI actions ----------------
+  - { key: S, mods: [CTRL], icon: sinh.png, label: sinh }
+  - { key: O, mods: [CTRL], icon: cosh.png, label: cosh }
+  - { key: T, mods: [CTRL], icon: tanh.png, label: tanh }
+  - { key: U, mods: [CTRL], icon: sech.png, label: sech }
+  - { key: I, mods: [CTRL], icon: csch.png, label: csch }
+  - { key: J, mods: [CTRL], icon: coth.png, label: coth }
+  - { key: N, mods: [CTRL], icon: epow.png, label: "e to the x" }
+  - { key: G, mods: [CTRL], icon: tenpow.png, label: "10 to the x" }
+  - { key: Y, mods: [CTRL], icon: ysqrt.png, label: "y-th root of x" }
+  - { key: D, mods: [CTRL], icon: degctrl.png, label: "degrees" }
+  - { key: M, mods: [CTRL], icon: ms.png, label: "MS (memory store)" }
+  - { key: P, mods: [CTRL], icon: mplus.png, label: "M+ (memory add)" }
+  - { key: Q, mods: [CTRL], icon: mminus.png, label: "M- (memory subtract)" }
+  - { key: R, mods: [CTRL], icon: mr.png, label: "MR (memory recall)" }
+  - { key: L, mods: [CTRL], icon: mc.png, label: "MC (memory clear)" }
+  - { key: H, mods: [CTRL], icon: history.png, label: history }
+  - { key: C, mods: [CTRL], icon: copy.png, label: copy }
+  - { key: V, mods: [CTRL], icon: paste.png, label: paste }
+  - { key: HOME, mods: [CTRL], icon: graph.png, label: "graph view" }
+
+  # --- Ctrl+Shift: the inverse hyperbolics ---------------------------------
+  - { key: S, mods: [CTRL, SHIFT], icon: asinh.png, label: asinh }
+  - { key: O, mods: [CTRL, SHIFT], icon: acosh.png, label: acosh }
+  - { key: T, mods: [CTRL, SHIFT], icon: atanh.png, label: atanh }
+  - { key: U, mods: [CTRL, SHIFT], icon: asech.png, label: asech }
+  - { key: I, mods: [CTRL, SHIFT], icon: acsch.png, label: acsch }
+  - { key: J, mods: [CTRL, SHIFT], icon: acoth.png, label: acoth }
+  - { key: D, mods: [CTRL, SHIFT], icon: clearhist.png, label: "clear history" }
+
+  # --- Alt: the calculator MODES, and the two window actions ----------------
+  # Source: microsoft/calculator src/Calculator.ViewModels/Common/NavCategory.cs
+  # (CategoryManifest) for 1-5; src/Calculator/Resources/en-US/Resources.resw
+  # for Up/Down. See the header note.
+  - { key: "1", mods: [ALT], icon: mode_std.png,  label: "Standard mode" }
+  - { key: "2", mods: [ALT], icon: mode_sci.png,  label: "Scientific mode" }
+  - { key: "3", mods: [ALT], icon: mode_gph.png,  label: "Graphing mode" }
+  - { key: "4", mods: [ALT], icon: mode_prg.png,  label: "Programmer mode" }
+  - { key: "5", mods: [ALT], icon: mode_date.png, label: "Date calculation mode" }
+  - { key: UP,   mods: [ALT], icon: keeptop.png,  label: "Keep on top" }
+  - { key: DOWN, mods: [ALT], icon: fullview.png, label: "Back to full view" }

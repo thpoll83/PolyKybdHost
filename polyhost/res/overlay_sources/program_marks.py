@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""Shared, license-clean **program marks** for app overlays.
+"""Shared **program marks** for app overlays -- the app's own, or a substitute.
 
 Every overlay set draws its app's mark into one cell (`program_icon:`, default
-ESC) on every modifier layer, so the user can tell which set is loaded. The real
-logos (Adobe, Blackmagic, Atlassian, Google, ...) are **proprietary trademarks we
-may not redistribute**, so we draw a generic substitute instead: a filled
-rounded-rect tile with the app's initial knocked out as negative space, plus an
-optional small motif that separates apps sharing an initial.
+ESC) on every modifier layer, so the user can tell which set is loaded.
+
+⚠️ **ALWAYS PREFER THE APP'S OWN LOGO, and check the licence before assuming you
+cannot.** This module used to open by asserting the real logos are "proprietary
+trademarks we may not redistribute" -- true of Adobe, Microsoft's shipped Windows
+apps, Blackmagic and Atlassian, and false of every free-software app in the set.
+WinSCP is GPL-3.0, PuTTY and Windows Terminal are MIT, 7-Zip is LGPL; this host
+is GPL-3.0-or-later, so all four ship their real marks and read better for it.
+`own_icon()` is the preferred path and `letter_mark()` the fallback for when the
+licence genuinely does not allow it.
 
 This mirrors the motif the Office overlays already use, factored out because the
 2026-08 batch added eleven sets at once and each needed one.
@@ -120,3 +125,38 @@ def ensure(path: Path, letter: str, motif: str = "none") -> None:
     else:
         letter_mark(path, letter, motif=motif)
         print(f"  {path.name}  <- drawn program mark ('{letter}', motif={motif})")
+
+
+# ---------------------------------------------------------------- own logos
+
+def own_icon(path: Path, url: str, frame: int = 64, *, credit: str = "") -> None:
+    """The app's OWN icon, pulled from its own source repo. PREFER THIS.
+
+    `url` names a multi-frame `.ico`; `frame` SELECTS one of its frames rather
+    than resizing -- `Image.size = (n, n)` on an ICO picks the entry, so asking
+    for a size the file does not carry raises instead of silently resampling the
+    nearest one. That distinction matters: an icon's 32px and 256px entries are
+    usually different artwork, not one image at two scales.
+
+    ⚠️ **Pick the frame and the binding's mode/threshold by RENDERING, not by
+    reasoning** -- the usual guesses are wrong in both directions. Bigger is not
+    better (WinSCP's 64/128/256 frames render within one lit pixel of each
+    other, while its 40 and 48 lose the keyhole), and the conversion mode
+    depends on which way the art is drawn: dark linework on transparent wants
+    `luma`, a dark panel with light glyphs on it wants `bright`, and `alpha`
+    lights the whole silhouette as one blob for anything with a filled
+    background. Each caller's binding file records what its sweep showed.
+
+    Guarded like `ensure()`, so a re-run never clobbers a committed asset.
+    """
+    if path.exists():
+        print(f"  {path.name}  <- committed asset (left as-is)")
+        return
+    import io
+    import urllib.request
+    with urllib.request.urlopen(url, timeout=60) as r:
+        data = r.read()
+    image = Image.open(io.BytesIO(data))
+    image.size = (frame, frame)
+    image.convert("RGBA").save(path)
+    print(f"  {path.name}  <- {credit or url} ({frame}px frame)")

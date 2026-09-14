@@ -16,7 +16,7 @@ Forward (not Find) and `Ctrl+E` = Search.
 - **Ctrl+Shift** (combo R): Reply all, New appointment, New contact, New task, Flag
 - **plain** (A): Delete, F9 Send/Receive
 
-Excluded: Win-key combos and Ctrl+Alt+Shift (not representable).
+Excluded: Win-key combos and Ctrl+Alt+Shift. ⚠️ Since protocol 12 BOTH are representable (Ctrl+Alt+Shift on the extra tier, GUI on combo A) — this line said otherwise and was stale. They are not drawn here because nobody has revisited the set, not because they cannot be.
 
 ## Icons
 
