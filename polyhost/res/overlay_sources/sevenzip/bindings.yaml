@@ -9,7 +9,8 @@
 # do nothing in most apps and everything here.
 #
 # Icons: Microsoft Fluent UI System Icons (MIT). Program mark (ESC, all layers):
-# the shared license-clean letter tile reading "7z".
+# 7-Zip's OWN logo, `CPP/7zip/UI/FileManager/FM.ico` (LGPL-2.1-or-later) -- it
+# replaced the shared letter tile reading "7z". Full licence reasoning below.
 #
 # Regenerate:
 #   python polyhost/res/overlay_sources/sevenzip/fetch_icons.py

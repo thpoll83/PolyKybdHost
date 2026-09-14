@@ -9,8 +9,10 @@ whole reason this file exists; WinSCP's `Ctrl+Shift+T` (open terminal) shipped
 with `Prompt` on it, which read as nothing to do with a shell.
 
 ⚠️ **It had a second caller and a `frame=` switch, and BOTH are gone** -- the
-Windows Terminal overlay's ESC mark was a framed `>_`, and that overlay now takes
-its mark from the curated generic (`mdi:console`) instead of baking one. The
+Windows Terminal overlay's ESC mark was a framed `>_`, and that overlay now bakes
+the app's own `res/terminal.ico` instead (by way of the curated generic
+`mdi:console`, which it also outgrew -- PuTTY's generic was `mdi:console-network`
+and the two are both a `>_`, so neither told the apps apart). The
 framed variant went with it rather than staying as a parameter nothing passes:
 an unused branch in a drawing module is one nobody re-checks against a render.
 Restore it from git history if a second caller ever wants a frame.

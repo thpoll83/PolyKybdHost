@@ -215,6 +215,16 @@ applicationframehost:
       title: "^Sound Recorder"
       icon: mdi:microphone
       overlay: soundrecorder_template.mods.png
+    # Windows 11 renamed Voice Recorder to Sound Recorder; it is the same app and
+    # the same shortcut set (both of the references the overlay is built from are
+    # Voice Recorder pages), so a Windows 10 box gets the same keycaps. Two
+    # branches rather than one loosened regex: the branch key is matched against
+    # the title's FIRST WORD, so `^(Sound|Voice) Recorder` under `Sound:` would
+    # never be reached for a title starting "Voice".
+    Voice:
+      title: "^Voice Recorder"
+      icon: mdi:microphone
+      overlay: soundrecorder_template.mods.png
 calculatorapp:
   overlay: [calc_template.mods.png, calc_template.combo.mods.png]
 # All three LibreOffice modules are ONE process, and the app-name lookup is an

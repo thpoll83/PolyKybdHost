@@ -39,8 +39,14 @@ invented meaning on this evidence.
 `Alt+F4` (close app), `Alt+Space` (window system menu), `Alt+F/E/O/V` (menu
 access keys — every Win32 app has these), `Ctrl+mouse wheel` (not a key), and
 plain `Home`/`End`/`Delete`/`Backspace`/arrow keys (OS-level text editing, not
-Notepad features). Win-key and Ctrl+Alt+Shift combos are not representable at
-all — see `../../overlay_specification.md`.
+Notepad features).
+
+⚠️ This paragraph used to end *"Win-key and Ctrl+Alt+Shift combos are not
+representable at all — see `../../overlay_specification.md`"*, while the spec it
+cited said the opposite: since protocol 12 all sixteen variants are addressable.
+Notepad happens to bind no Win-key chord, so nothing was lost here — but the same
+sentence, copied into the Photos and Windows Terminal notes, is why two real
+shortcuts went undrawn.
 
 ## Icons — all-MIT plus one drawn asset (license-clean)
 

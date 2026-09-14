@@ -71,7 +71,10 @@ bindings:
   #     there is no binding both support. Flagged, not guessed.
   #   * `Ctrl+N` new album / `Ctrl+R` remove album -- one reference only, and
   #     the second directly CONTRADICTS the twice-corroborated `Ctrl+R` = rotate.
-  #   * `Win+H` (share) -- the overlay format drops GUI-key layers entirely.
+  #   * `Win+H` (share) -- ⚠️ REPRESENTABLE, just not drawn yet. This said the
+  #     format "drops GUI-key layers entirely", which stopped being true at
+  #     protocol 12; `Win+H` lands in the combo file's A channel and Fluent
+  #     has a plain `Share` glyph for it.
   #   * `Esc` (back / stop slideshow) -- the program mark owns ESC on every
   #     overlay here.
   #   * bare Spacebar / Enter / arrow keys -- no modifier, and the keycap already

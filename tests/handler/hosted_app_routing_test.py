@@ -24,7 +24,19 @@ import yaml
 try:
     from polyhost.handler.active_window import OverlayHandler
     _IMPORT_ERR = None
-except Exception as e:                      # pywinctl needs an X display
+except Exception as e:
+    # ⚠️ NARROW ON PURPOSE. `active_window` imports pywinctl/Xlib at module load,
+    # which needs a display -- so headless CI has to skip. But a blanket
+    # `except Exception` also swallows a SyntaxError, a renamed `OverlayHandler`
+    # or any other real regression and turns it into a permanent skip, which
+    # reads as coverage. That is the exact trap CLAUDE.md records for the
+    # forwarder suite, so only two things are tolerated here: the dependency
+    # being absent, and Xlib refusing a missing display
+    # (`Xlib.error.DisplayNameError: Bad display name ""`). Everything else
+    # re-raises and fails the run.
+    if not (isinstance(e, ModuleNotFoundError)
+            or type(e).__module__.split(".")[0] == "Xlib"):
+        raise
     _IMPORT_ERR = e
 
 MAPPING = Path(__file__).resolve().parents[2] / "polyhost" / "res" / "overlay-mapping.poly.yaml"

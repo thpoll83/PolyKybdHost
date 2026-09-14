@@ -34,7 +34,7 @@ manager's system menu; see `WINDOW_MANAGER_CHORDS`).
 | Enhance | the two references **disagree** — `Ctrl+E` vs a bare `E`. No binding both support, so it is flagged rather than guessed |
 | `Ctrl+N` new album | one reference only |
 | `Ctrl+R` remove album | one reference only, **and it contradicts** the twice-corroborated `Ctrl+R` = rotate |
-| `Win+H` share | the overlay format drops GUI-key layers entirely |
+| `Win+H` share | ⚠️ **representable, undrawn.** GUI has been carried since protocol 12 (combo A channel); this row claimed otherwise |
 | `Esc` back / stop slideshow | the program mark owns ESC on every overlay in this repo |
 | bare Spacebar / Enter / arrows | no modifier, and the keycap already shows the key |
 

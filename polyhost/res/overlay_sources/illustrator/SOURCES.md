@@ -65,7 +65,9 @@ Adobe Illustrator default keyboard shortcuts. Primary reference:
 - **Ctrl+5 Make-guides, Ctrl+Shift+K Document-setup, Ctrl+Alt+* combos** —
   *dropped*: Ctrl+Alt+Shift is not representable, and the curated set already
   covers the high-value Object/Edit accelerators.
-- **GUI/Win combos** — dropped (firmware drops the GUI overlay channel).
+- **GUI/Win combos** — not drawn here. ⚠️ Not because they cannot be: the
+  loader has carried GUI since protocol 12, and this line claiming otherwise
+  was stale. Nobody has gone back over Illustrator's Win-key chords.
 - **Ctrl+Alt+Shift** — not representable by the firmware (hard limit).
 
 No shortcut in the placed set lacked a documented default; nothing was invented.

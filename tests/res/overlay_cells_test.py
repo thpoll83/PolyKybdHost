@@ -13,11 +13,11 @@ So this compares the DECLARED bindings against the cells the REAL loader
 that drew nothing is a binding the keyboard will never show.
 
 ⚠️ It asks the GENERATOR where a binding lands rather than re-deriving it:
-`resolve_modifier` plus the four channel tables are imported, not copied. A
-second copy of that mapping is exactly the guard shape this repo keeps getting
-caught by -- and the first draft of this file WAS that copy, which promptly
-reported a false failure against `sublime_mac` because it did not know about the
-protocol-12 GUI tiers.
+`resolve_key`, `resolve_modifier`, `binding_applies` and the four channel tables
+are imported, not copied. A second copy of that mapping is exactly the guard
+shape this repo keeps getting caught by -- and the first draft of this file WAS
+that copy, which promptly reported a false failure against `sublime_mac` because
+it did not know about the protocol-12 GUI tiers.
 """
 import os
 import sys
@@ -60,38 +60,57 @@ class OverlayCellsTest(unittest.TestCase):
             # same way the shipped PNGs were generated.
             want = {}
             for b in spec["bindings"]:
+                if not gen.binding_applies(b, gen.PLAT_WINDOWS):
+                    continue          # a macOS/Linux-only binding is not in this set
                 try:
-                    mod = gen.resolve_modifier(b.get("mods"))
-                except ValueError:
-                    continue          # the generator would have skipped it too
-                want[mod] = want.get(mod, 0) + 1
+                    kc = gen.resolve_key(b["key"])
+                    mod = gen.resolve_modifier(b.get("mods"), platform=gen.PLAT_WINDOWS)
+                except (KeyError, ValueError) as e:
+                    # ⚠️ FAIL rather than `continue`. The generator does skip such a
+                    # binding -- but it skips it LOUDLY, appending to `warnings`,
+                    # and a silent skip here is how a shortcut that never reaches a
+                    # keycap comes to read as covered. Nothing in the tree raises
+                    # today (measured: 0 of 1205), so this costs nothing until
+                    # somebody mistypes a key or asks for a chord with no channel.
+                    self.fail(f"{app}: binding {b!r} is not renderable: {e}")
+                want.setdefault(mod, {}).setdefault(kc.value, []).append(
+                    b.get("label") or b["key"])
 
             for suffix, table in KINDS:
                 name = f"{spec['output']}.{suffix}.png"
                 full = os.path.join(OVERLAYS, name)
-                here = {m: n for m, n in want.items() if m in table}
+                here = {m: k for m, k in want.items() if m in table}
                 if not here:
                     continue
                 self.assertTrue(os.path.exists(full),
-                                f"{app}: declares {sum(here.values())} binding(s) on "
+                                f"{app}: declares {sum(len(k) for k in here.values())} binding(s) on "
                                 f"the {suffix} tier but {name} was never generated")
                 conv = ImageConverter(DeviceSettings())
                 self.assertTrue(conv.open(full), f"{app}: cannot open {name}")
 
-                # The program icon rides in EVERY layer of every file, so it adds
-                # one cell per layer -- subtract it before comparing.
-                extra = 1 if spec.get("program_icon") else 0
-                for mod, n in sorted(here.items(), key=lambda kv: kv[0].name):
+                # ⚠️ Per BINDING, not per count. Comparing `len(cells)` against the
+                # number declared needs the program icon subtracted back out, and
+                # that subtraction is wrong in both directions: it undercounts when
+                # a binding sits on the program-icon key (one cell, counted twice),
+                # and any lit cell that is not a binding's hides a binding that drew
+                # nothing. Asking whether THIS keycode is lit needs neither.
+                for mod, keys in sorted(here.items(), key=lambda kv: kv[0].name):
                     cells = conv.extract_overlays(mod) or {}
-                    got = len(cells) - extra
-                    self.assertGreaterEqual(
-                        got, n,
-                        f"{app}: the {mod.name} layer of {name} declares {n} "
-                        f"binding(s) but only {got} cell(s) have any lit pixels. "
-                        f"A cell that drew NOTHING is almost always `mode`, not "
-                        f"the artwork: white-on-transparent art needs `alpha`, "
-                        f"while `luma` lights the dark linework and finds none.")
-                    checked += n
+                    for kc_value, labels in sorted(keys.items()):
+                        self.assertTrue(
+                            kc_value in cells,
+                            f"{app}: {' / '.join(labels)} is declared on the "
+                            f"{mod.name} layer of {name} (keycode 0x{kc_value:02x}) "
+                            f"but that cell has NO lit pixels. A cell that drew "
+                            f"nothing is almost always `mode`, not the artwork: "
+                            f"white-on-transparent art needs `alpha`, while `luma` "
+                            f"lights the dark linework and finds none.")
+                        checked += 1
+                        if len(labels) > 1:
+                            self.fail(f"{app}: {len(labels)} bindings share "
+                                      f"{mod.name}+keycode 0x{kc_value:02x} "
+                                      f"({' / '.join(labels)}); the later one silently "
+                                      f"overdraws the earlier.")
 
         # Guard the guard: a discovery bug that found no bindings would satisfy
         # every assertion above without having checked anything.

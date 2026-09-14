@@ -62,7 +62,6 @@ FLUENT = {
     # --- layers ---
     "newlayer":   "Layer Diagonal Add",
     "duplayer":   "Document Multiple",
-    "dellayer":   "Delete",
     "mergedown":  "Arrow Between Down",
     "layervis":   "Eye",
     "rotatezoom": "Arrow Rotate Clockwise",
@@ -85,7 +84,6 @@ FLUENT = {
     "repeateffect": "Arrow Repeat All",
     # --- tools ---
     "rectselect": "Select Object",
-    "lasso":      "Lasso",
     "movesel":    "Drag",
     "zoomtool":   "Search",
     "pan":        "Hand Right",
@@ -97,7 +95,6 @@ FLUENT = {
     "recolor":    "Color Line",
     "text":       "Text T",
     "linecurve":  "Line",
-    "shapes":     "Shapes",
     # --- windows / colours ---
     "toolswin":   "Options",
     "historywin": "History",

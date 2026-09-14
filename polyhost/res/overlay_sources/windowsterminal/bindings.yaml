@@ -3,15 +3,23 @@
 # Shortcuts: the app's OWN default keymap -- `defaults.json` in microsoft/terminal
 # (auto-generated from the source), so this is the whole default set rather than a
 # docs-page sample. Icons: Microsoft Fluent UI System Icons (MIT). Program mark
-# (ESC, all layers): a drawn `>_` prompt -- the real product icon is Microsoft
-# trademark art. See SOURCES.md.
+# (ESC, all layers): Windows Terminal's OWN logo, `res/terminal.ico` from
+# microsoft/terminal -- MIT, with no trademark carve-out in LICENSE, README or
+# NOTICE. It replaced a drawn `>_`; see SOURCES.md and fetch_icons.py.
 #
 # ⚠️ Windows Terminal is a Ctrl+Shift app: most of its bindings land in the COMBO
 # file's R channel, and the primary Ctrl channel is nearly empty. That is the app,
 # not a mistake -- do not "balance" it by inventing plain-Ctrl meanings.
 #
-# Dropped as unrepresentable (the overlay format has no channel for them):
-#   win+sc(41) quake mode  -- GUI is dropped by the loader
+# Not drawn (each for a stated reason):
+#   win+sc(41) quake mode  -- ⚠️ REPRESENTABLE, just not drawn yet. This line
+#     used to read "GUI is dropped by the loader", which stopped being true when
+#     `im_converter` started sending GUI_KEY (protocol 12): `sc(41)` is KC_GRAVE
+#     and `win+grave` lands in the combo file's A channel. What is missing is the
+#     ART -- no Fluent glyph reads as "terminal that drops from the top" at 72x40
+#     (Panel Top Gallery, Window Arrow Up, Arrow Autofit Down, Chevron Down, Dock
+#     Row and Arrow Download were all rendered and rejected), so the icon is a
+#     choice somebody has to look at rather than one to guess.
 #   alt+f4 close window, ctrl+insert/shift+insert copy/paste (numpad/insert dupes
 #   of ctrl+shift+c/v), menu context menu, plain `enter` copy-on-selection
 #   (conditional: it only copies while a selection exists, so a permanent icon

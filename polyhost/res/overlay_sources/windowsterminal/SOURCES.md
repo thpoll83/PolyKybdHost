@@ -19,7 +19,7 @@ that are not, and why:
 
 | binding | why it is not here |
 |---|---|
-| `win+sc(41)` quake mode | GUI/Win-key overlays are dropped by the loader |
+| `win+sc(41)` quake mode | ⚠️ **representable, undrawn.** GUI has been carried since protocol 12, so `win+grave` has a channel (combo A). No Fluent glyph reads as "terminal dropping from the top" at 72×40 — six were rendered and rejected — so the art is an open choice, not a limit |
 | `alt+f4` close window | OS-level, not app-specific |
 | `ctrl+insert`, `shift+insert` copy/paste | duplicates of `ctrl+shift+c/v`, already drawn on C and V |
 | `enter` copy | **conditional** — it only copies while a selection exists, so a permanent icon on Enter would be wrong most of the time |

@@ -10,7 +10,7 @@ overlay does not depend on a blog post agreeing with the app, which is the usual
 failure mode for Calculator lists (measured: the widely-cited ones disagree with
 each other about the mode keys and omit half the trigonometry).
 
-    pip install cairosvg Pillow
+    pip install cairosvg Pillow fonttools
     python polyhost/res/overlay_sources/calc/fetch_icons.py [--refresh]
 
 ⚠️ THIS IS THE *SCIENTIFIC* MODE OVERLAY, and it has to be one mode or the other.
