@@ -270,7 +270,16 @@ class ResolvedIconLogTest(unittest.TestCase):
         self.addCleanup(fetcher.stop)
         with self.assertLogs("PolyHost", "INFO") as caught:
             _wait(lambda: fetcher.overlay_for("winword")[0] is not None)
-        return [r for r in caught.output if "Program icon:" in r]
+        return [r for r in caught.output if "Program icon" in r]
+
+    def test_the_line_names_the_APP_it_was_resolved_for(self):
+        """⚠️ Not only the mark. "Program icon: mdi:note-text" leaves the reader
+        to map a slug back to the window it appeared on — which is the one thing
+        a report on what this feature got right or wrong has to state, and the
+        reason the fetcher remembers which app first asked for a candidate list
+        even though the queue is keyed on the list."""
+        lines = self._log_for("Microsoft Word")
+        self.assertIn("'winword'", lines[0])
 
     def test_a_catalog_WITH_a_title_names_the_brand_and_the_slug(self):
         lines = self._log_for("Microsoft Word")

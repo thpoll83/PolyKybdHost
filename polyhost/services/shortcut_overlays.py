@@ -33,6 +33,68 @@ MAX_SLOTS = 48
 MIN_CONFIDENCE = 0.85
 
 
+# Why a harvested shortcut got no icon. These are the words the log prints, so
+# they are phrased as what the READER has to do about it — the three want
+# genuinely different fixes and a single "no icon" line cannot say which.
+NO_KEYCAP = "the keyboard has no keycap for that key"
+NO_CONCEPT = "no icon concept matched the label"
+NO_CATALOG_ICON = "the concept has no catalog icon, only a font-pack glyph"
+OVER_CAP = f"over the {MAX_SLOTS}-icon cap for one app"
+
+# HID usage -> the name a person would type, for the log only. Letters and
+# digits are derived; everything else that a shortcut realistically lands on is
+# named here, and anything unnamed prints as its usage id rather than guessing.
+_KEY_NAMES = {0x28: "Enter", 0x29: "Esc", 0x2A: "Backspace", 0x2B: "Tab",
+              0x2C: "Space", 0x2D: "-", 0x2E: "=", 0x2F: "[", 0x30: "]",
+              0x31: "\\", 0x33: ";", 0x34: "'", 0x35: "`", 0x36: ",",
+              0x37: ".", 0x38: "/", 0x46: "PrtScn", 0x47: "ScrollLock",
+              0x48: "Pause", 0x49: "Insert", 0x4A: "Home", 0x4B: "PgUp",
+              0x4C: "Delete", 0x4D: "End", 0x4E: "PgDn", 0x4F: "Right",
+              0x50: "Left", 0x51: "Down", 0x52: "Up", 0x53: "NumLock",
+              0x65: "Menu"}
+for _i in range(12):
+    _KEY_NAMES[0x3A + _i] = f"F{_i + 1}"
+_MOD_NAMES = ((0x01, "Ctrl"), (0x02, "Shift"), (0x04, "Alt"), (0x08, "GUI"))
+
+
+def key_name(hid) -> str:
+    if hid is None:
+        return "?"
+    if 0x04 <= hid <= 0x1D:
+        return chr(ord("A") + hid - 0x04)
+    if 0x1E <= hid <= 0x26:
+        return chr(ord("1") + hid - 0x1E)
+    if hid == 0x27:
+        return "0"
+    return _KEY_NAMES.get(hid, f"0x{hid:02x}")
+
+
+def pretty_key(mods: int, hid) -> str:
+    """`Ctrl+Shift+S` — how the log names one (modifier, keycode)."""
+    return "+".join([n for bit, n in _MOD_NAMES if mods & bit] + [key_name(hid)])
+
+
+def describe(sc) -> str:
+    """`Ctrl+S 'Save'` — one harvested shortcut, for a refusal line."""
+    label = (getattr(sc, "label", "") or "").strip()
+    key = pretty_key(int(getattr(sc, "mods", 0) or 0), getattr(sc, "hid", None))
+    return f"{key} {label!r}" if label else key
+
+
+@dataclass(frozen=True)
+class Plan:
+    """What `plan_report` decided: the slots, and what it refused and why."""
+    slots: list
+    refused: dict          # reason -> [describe(sc), ...]
+
+    def summary(self) -> str:
+        """`20 drawn, 2 refused (no icon concept matched the label: ...)`."""
+        parts = [f"{len(self.slots)} drawn"]
+        for why, items in sorted(self.refused.items()):
+            parts.append(f"{len(items)} because {why}")
+        return ", ".join(parts)
+
+
 @dataclass(frozen=True)
 class Slot:
     """One icon, bound to one (modifier, keycode) of one application."""
@@ -47,7 +109,20 @@ class Slot:
 def plan(shortcuts, hints: dict | None = None,
          min_confidence: float = MIN_CONFIDENCE,
          limit: int = MAX_SLOTS) -> list[Slot]:
+    """The slots alone — see `plan_report` for what was refused and why."""
+    return plan_report(shortcuts, hints, min_confidence, limit).slots
+
+
+def plan_report(shortcuts, hints: dict | None = None,
+                min_confidence: float = MIN_CONFIDENCE,
+                limit: int = MAX_SLOTS) -> "Plan":
     """Decide which harvested shortcuts get an icon, and on which key.
+
+    Returns the REFUSALS as well as the slots, because a shortcut the keyboard
+    silently declined to draw is the single most useful thing this feature can
+    report: it is what the user sees missing, and it is the input Phase 3's
+    curation file is built from. A count alone cannot tell "no icon for this
+    label" apart from "that key has no keycap", and those want opposite fixes.
 
     ⚠️ `Shortcut.mods` IS `Modifier`'s value, with no mapping in between: both
     are the L/R-folded QMK nibble (bit0 Ctrl, bit1 Shift, bit2 Alt, bit3 GUI),
@@ -71,12 +146,19 @@ def plan(shortcuts, hints: dict | None = None,
     """
     hints = shortcut_icons.load_hints() if hints is None else hints
     best: dict[tuple[int, int], Slot] = {}
+    refused: dict[str, list[str]] = {}
+
+    def refuse(why, sc):
+        refused.setdefault(why, []).append(describe(sc))
+
     for sc in shortcuts:
         hid = getattr(sc, "hid", None)
         if not displayable_hid(hid):
+            refuse(NO_KEYCAP, sc)
             continue
         mods = int(getattr(sc, "mods", 0) or 0)
         if not 0 <= mods <= 0x0F:
+            refuse(NO_KEYCAP, sc)
             continue
         # ⚠️ No empty-label guard here, deliberately: `match()` normalizes and
         # refuses "" on its own, so one would be dead code. Mutation-checked --
@@ -85,7 +167,11 @@ def plan(shortcuts, hints: dict | None = None,
         label = (getattr(sc, "label", "") or "").strip()
         hit = shortcut_icons.match(label, min_confidence=min_confidence,
                                    allow_fuzzy=True, hints=hints)
-        if hit is None or hit.confidence < min_confidence or not hit.icon:
+        if hit is None or hit.confidence < min_confidence:
+            refuse(NO_CONCEPT, sc)
+            continue
+        if not hit.icon:
+            refuse(NO_CATALOG_ICON, sc)
             continue
         slot = Slot(modifier=mods, keycode=int(hid), concept=hit.concept,
                     icon=hit.icon, label=label, confidence=hit.confidence)
@@ -95,7 +181,10 @@ def plan(shortcuts, hints: dict | None = None,
         if current is None or slot.confidence > current.confidence:
             best[(mods, slot.keycode)] = slot
     out = sorted(best.values(), key=lambda s: (-s.confidence, s.modifier, s.keycode))
-    return out[:limit]
+    for dropped in out[limit:]:
+        refused.setdefault(OVER_CAP, []).append(
+            f"{pretty_key(dropped.modifier, dropped.keycode)}={dropped.label}")
+    return Plan(out[:limit], refused)
 
 
 def icon_names(slots) -> list[str]:

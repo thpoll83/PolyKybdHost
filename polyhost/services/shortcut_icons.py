@@ -88,8 +88,13 @@ LEXICON: dict[str, tuple[int | None, str, tuple[str, ...]]] = {
     "fullscreen":  (0x1F5D6, "fullscreen", ("fullscreen", "full screen",
                                             "maximize", "maximise")),
     "minimize":    (0x1F5D5, "minimize", ("minimize", "minimise", "iconify")),
-    "window":      (0x1F5D4, "web_asset", ("window", "new window",
-                                           "close window")),
+    # ⚠️ "close window" is NOT here — it is under `close`, with its two siblings.
+    # A window frame on Ctrl+W says WINDOW where the action is CLOSE, and the
+    # keycap then cannot be told from "New Window". Found by reading the
+    # shortcut-icon log on a real harvest (2026-09-14), not by reading the table:
+    # `close tab` and `close document` already drew an X, so this one entry made
+    # three identically-shaped labels disagree.
+    "window":      (0x1F5D4, "web_asset", ("window", "new window")),
     # U+1F5DA/DB are literally INCREASE/DECREASE FONT SIZE SYMBOL, so they serve
     # both the view-zoom and the text-size wording. Word spells them Grow/Shrink Font.
     "zoom in":     (0x1F5DA, "zoom_in", ("zoom in", "increase font", "larger",
@@ -121,7 +126,9 @@ LEXICON: dict[str, tuple[int | None, str, tuple[str, ...]]] = {
     "help":        (0x2753,  "help", ("help", "about", "contents",
                                       "documentation", "keyboard shortcuts")),
     "close":       (0x1F5D9, "close", ("close", "cancel", "close tab",
-                                       "close document")),
+                                       "close document", "close window")),
+    "wrap text":   (None,    "wrap_text", ("wrap text", "word wrap",
+                                           "line wrap", "soft wrap")),
     "quit":        (0x1F6AA, "logout", ("quit", "exit")),
     "bookmark":    (0x1F516, "bookmark", ("bookmark", "favorite", "favourite",
                                           "mark")),

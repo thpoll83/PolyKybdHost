@@ -287,3 +287,38 @@ class GlyphAvailabilityTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CloseFamilyTest(unittest.TestCase):
+    """⚠️ Found by READING THE LOG on a real harvest, not by reading the table.
+
+    "Close Window" resolved to the `window` concept — a window frame on Ctrl+W,
+    where the action is CLOSE and the object is incidental. Its two siblings
+    "Close Tab" and "Close Document" already drew an X, so one entry made three
+    identically-shaped labels disagree, and the keycap could not be told from
+    "New Window".
+
+    This is the shortcut-icon report earning its keep: the defect is invisible
+    from the lexicon (both entries read fine on their own) and obvious the moment
+    one line prints `Ctrl+W=window` beside `Ctrl+N=new`.
+    """
+
+    def test_every_CLOSE_something_label_draws_the_close_icon(self):
+        for label in ("Close", "Close Tab", "Close Document", "Close Window"):
+            with self.subTest(label=label):
+                hit = si.match(label, allow_fuzzy=True)
+                self.assertIsNotNone(hit, label)
+                self.assertEqual(hit.concept, "close", label)
+
+    def test_a_window_label_that_is_NOT_a_close_still_draws_a_window(self):
+        for label in ("Window", "New Window"):
+            with self.subTest(label=label):
+                self.assertEqual(si.match(label, allow_fuzzy=True).concept, "window")
+
+    def test_word_wrap_is_a_CATALOG_ONLY_concept(self):
+        """No font-pack glyph exists for it and none will without a bundle
+        reship — which is the wall the catalog route was added to remove."""
+        hit = si.match("Word Wrap", allow_fuzzy=True)
+        self.assertEqual(hit.concept, "wrap text")
+        self.assertIsNone(hit.codepoint)
+        self.assertEqual(hit.icon, "wrap_text")

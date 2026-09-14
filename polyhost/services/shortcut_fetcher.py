@@ -167,7 +167,9 @@ class ShortcutIconFetcher:
         if not shortcuts:
             self._say(app, "the app exposes no accelerators")
             return {}
-        slots = shortcut_overlays.plan(shortcuts)
+        report = shortcut_overlays.plan_report(shortcuts)
+        slots = report.slots
+        self._report(app, shortcuts, report)
         if not slots:
             self._say(app, f"none of its {len(shortcuts)} shortcut labels "
                            "matched an icon concept")
@@ -189,6 +191,33 @@ class ShortcutIconFetcher:
             self.log.debug("shortcut icon render failed for '%s'", app, exc_info=True)
             return {}
         drawn = sum(len(v) for v in overlays.values())
-        self.log.info("Shortcut icons for '%s': %d key(s) from %d shortcut(s)",
-                      app, drawn, len(shortcuts))
+        if drawn < len(slots):
+            # A concept the subset font did not carry — planned, then dropped at
+            # render time. Worth its own line: it is the one refusal the plan
+            # report above cannot predict.
+            self.log.info("  %d icon(s) planned for '%s' were not in the "
+                          "fetched font and were skipped", len(slots) - drawn, app)
         return overlays
+
+    def _report(self, app, shortcuts, report):
+        """What this app's harvest produced, in a form that can be pasted back.
+
+        ⚠️ INFO, not debug — and that is the whole point of it. This feature
+        decides on its own what to draw on ~20 keycaps, so "it worked" and "it
+        did not" are only distinguishable to a user who can see WHICH key got
+        WHICH icon and which labels were refused. At debug level that report
+        needs `--dev 2`, which nobody running the shipped app has on.
+
+        Three lines per app, once per app per session (the answer is cached), so
+        the volume is bounded by how many applications get focused rather than
+        by how long the session runs.
+        """
+        self.log.info("Shortcut icons for '%s': %d shortcut(s) harvested -> %s",
+                      app, len(shortcuts), report.summary())
+        if report.slots:
+            drawn = " ".join(
+                f"{shortcut_overlays.pretty_key(s.modifier, s.keycode)}={s.concept}"
+                for s in sorted(report.slots, key=lambda s: (s.modifier, s.keycode)))
+            self.log.info("  drawn: %s", drawn)
+        for why, items in sorted(report.refused.items()):
+            self.log.info("  no icon (%s): %s", why, " ".join(items))

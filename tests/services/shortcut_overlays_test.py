@@ -184,3 +184,87 @@ class RenderTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PlanReportTest(unittest.TestCase):
+    """What the log prints, and why each refusal is named separately.
+
+    ⚠️ A single "no icon" count cannot be acted on. "The keyboard has no keycap
+    for that key" is nothing anyone can fix; "no icon concept matched the label"
+    is a curation entry; "the concept has no catalog icon" is a lexicon gap. The
+    report exists so a user can say which of the three they are looking at.
+    """
+
+    def test_each_refusal_is_reported_under_its_OWN_reason(self):
+        report = so.plan_report([
+            sc("Save"),                                  # drawn
+            sc("Frobnicate"),                            # no concept
+            sc("Save", hid=0x80),                        # no keycap
+        ])
+        self.assertEqual(len(report.slots), 1)
+        # ⚠️ Compare against the LITERAL reasons, not against the constants.
+        # `{so.NO_CONCEPT, so.NO_KEYCAP}` collapses to one element if the two
+        # constants are ever made equal, and the assertion then passes over
+        # exactly the merge it exists to forbid — mutation-checked.
+        self.assertEqual(sorted(report.refused), sorted([
+            "no icon concept matched the label",
+            "the keyboard has no keycap for that key"]))
+        self.assertEqual([len(v) for _, v in sorted(report.refused.items())], [1, 1])
+
+    def test_the_reasons_are_DISTINCT_strings(self):
+        """Each names a different fix — nothing to do, a curation entry, a
+        lexicon gap, a cap — so two that read alike are one that cannot be
+        acted on."""
+        reasons = [so.NO_KEYCAP, so.NO_CONCEPT, so.NO_CATALOG_ICON, so.OVER_CAP]
+        self.assertEqual(len(set(reasons)), len(reasons))
+
+    def test_a_refusal_names_the_KEY_and_the_LABEL(self):
+        """Either alone is unusable: the key without the label does not say what
+        was meant, and the label without the key does not say where to look."""
+        report = so.plan_report([sc("Frobnicate", mods=CTRL | SHIFT, hid=KC_B)])
+        (item,) = report.refused[so.NO_CONCEPT]
+        self.assertIn("Ctrl+Shift+B", item)
+        self.assertIn("Frobnicate", item)
+
+    def test_the_cap_reports_what_it_dropped(self):
+        """Silently drawing 48 of 60 would read as the other 12 having failed."""
+        report = so.plan_report([sc("Save", hid=h) for h in range(0x04, 0x30)],
+                                limit=3)
+        self.assertEqual(len(report.slots), 3)
+        self.assertEqual(len(report.refused[so.OVER_CAP]), 0x30 - 0x04 - 3)
+
+    def test_the_summary_counts_both_halves(self):
+        report = so.plan_report([sc("Save"), sc("Frobnicate")])
+        self.assertIn("1 drawn", report.summary())
+        self.assertIn(so.NO_CONCEPT, report.summary())
+
+    def test_plan_is_just_the_slots_of_a_report(self):
+        """So the two can never disagree about what gets drawn."""
+        shortcuts = [sc("Save"), sc("Frobnicate"), sc("Bold", hid=KC_B)]
+        self.assertEqual(so.plan(shortcuts), so.plan_report(shortcuts).slots)
+
+
+class KeyNameTest(unittest.TestCase):
+    """The log is only useful if the key it names is the key on the keyboard."""
+
+    def test_letters_digits_and_the_zero_that_is_not_where_you_expect(self):
+        self.assertEqual(so.key_name(0x04), "A")
+        self.assertEqual(so.key_name(0x1D), "Z")
+        self.assertEqual(so.key_name(0x1E), "1")
+        self.assertEqual(so.key_name(0x26), "9")
+        # ⚠️ HID puts 0 AFTER 9, not before 1 — deriving it from the digit run
+        # would print "0" as ":" or shift every digit by one.
+        self.assertEqual(so.key_name(0x27), "0")
+
+    def test_the_function_row_and_the_nav_cluster(self):
+        self.assertEqual(so.key_name(0x3A), "F1")
+        self.assertEqual(so.key_name(0x45), "F12")
+        self.assertEqual(so.key_name(0x4C), "Delete")
+
+    def test_an_unnamed_usage_prints_its_id_rather_than_guessing(self):
+        self.assertEqual(so.key_name(0x99), "0x99")
+
+    def test_modifiers_print_in_a_STABLE_order(self):
+        """So two lines about the same chord read the same in a pasted log."""
+        self.assertEqual(so.pretty_key(CTRL | SHIFT | ALT, KC_S), "Ctrl+Shift+Alt+S")
+        self.assertEqual(so.pretty_key(0, KC_S), "S")

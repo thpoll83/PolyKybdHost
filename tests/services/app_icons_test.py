@@ -354,13 +354,32 @@ class GeometryTest(unittest.TestCase):
     """The arithmetic that keeps the mark off the ESC glyph."""
 
     def test_the_BOX_clears_the_esc_glyph_and_its_courtyard(self):
-        # This is the whole reason the box is 40 rather than a rounder 44 or 48:
-        # flush right, a box of B starts at 72 - B, and the courtyard clears
+        # Flush right, a box of B starts at 72 - B, and the courtyard clears
         # three columns further left again. 44 reads as a safe compromise and is
-        # not — it clears from 25 against ink reaching 27.
-        left = ai.PANEL_W - ai.PROGRAM_ICON_BOX
-        self.assertGreater(left - COURTYARD, ESC_INK_RIGHT,
-                           "the program icon would eat into the ESC legend")
+        # not — it clears from 25 against ink reaching 27, so 40 is the ceiling.
+        for box in (ai.PROGRAM_ICON_BOX, ai.PROGRAM_ICON_BOX_MAX):
+            left = ai.PANEL_W - box
+            self.assertGreater(left - COURTYARD, ESC_INK_RIGHT,
+                               f"a box of {box} would eat into the ESC legend")
+
+    def test_the_SHIPPED_box_leaves_a_border_inside_that_ceiling(self):
+        """⚠️ Two different constraints, and only one of them is arithmetic.
+
+        The CEILING (40) is the courtyard: past it the clear eats the ESC glyph.
+        The SHIPPED box (38) is a look: at the ceiling a mark that is square in
+        its viewBox inks the panel edge to edge — measured, 10 of 15 shipped
+        marks did — and a keycap reads as a cropped picture rather than an icon
+        sitting on it. Reported from hardware as "a bit too big".
+
+        So this pins the border, not the number: raising the box back to the
+        ceiling passes the courtyard test above and fails this one.
+        """
+        self.assertLess(ai.PROGRAM_ICON_BOX, ai.PANEL_H,
+                        "a full-height mark leaves no border top or bottom")
+        self.assertLessEqual(ai.PROGRAM_ICON_BOX, ai.PROGRAM_ICON_BOX_MAX)
+        # ...and not so small that the only keycap with a whole free half of
+        # panel is spent on whitespace.
+        self.assertGreaterEqual(ai.PROGRAM_ICON_BOX, ai.PANEL_H - 6)
 
     def test_the_ESC_INK_yardstick_still_matches_the_shipped_legend(self):
         # ESC_INK_RIGHT above is a firmware fact, and a firmware fact written

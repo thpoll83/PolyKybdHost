@@ -61,6 +61,12 @@ class AppIconFetcher:
         # both a per-poll file read and, worse, a read of the setting as it is
         # NOW rather than as it was when the lookup was refused.
         self._why: dict[tuple, str] = {}
+        # The app name a candidate list was first looked up for. The queue is
+        # keyed on the CANDIDATES (two apps can share them), but a log line that
+        # names only the slug makes the reader map `mdi:note-text` back to
+        # Notepad themselves — which is exactly the mapping this feature is
+        # supposed to be reporting on.
+        self._asked_for: dict[tuple, str] = {}
 
     # ------------------------------------------------------------------
 
@@ -92,6 +98,7 @@ class AppIconFetcher:
                     self._say(app_name, self._why.get(
                         key, "no catalog carries " + ", ".join(names)))
                 return mask, resolved
+            self._asked_for.setdefault(key, app_name)
             if key not in self._queue and key not in self._inflight:
                 self._queue.append(key)
         self._ensure_thread()
@@ -172,7 +179,9 @@ class AppIconFetcher:
                 if not self._wake.wait(IDLE_SECONDS):
                     return          # nothing left to do; restarted on demand
                 continue
-            mask, resolved, why = self._resolve(key)
+            with self._lock:
+                app_name = self._asked_for.get(key, "")
+            mask, resolved, why = self._resolve(key, app_name)
             with self._lock:
                 self._masks[key] = (mask, resolved)
                 if why is not None:
@@ -190,7 +199,7 @@ class AppIconFetcher:
                     # report.
                     self.log.debug("app-icon ready callback failed", exc_info=True)
 
-    def _resolve(self, names):
+    def _resolve(self, names, app_name=""):
         """(mask, resolved_name, why_it_missed) -- the first candidate that draws
         something wins, and `why` is None when one did.
 
@@ -211,10 +220,15 @@ class AppIconFetcher:
                 # MDI SVGs carry no <title>, so a bare `title or name` printed
                 # the name twice -- say the brand name only when we have one.
                 title = app_icons.title_of(path)
-                if title and title.lower() != name.lower():
-                    self.log.info("Program icon: %s (%s)", title, name)
+                mark = f"{title} ({name})" if title and title.lower() != name.lower() else name
+                # ⚠️ Name the APP, not only the mark. A line reading "Program
+                # icon: mdi:note-text" leaves the reader to map the slug back to
+                # the window it appeared for -- which is the very thing a report
+                # on what this feature got right or wrong has to state.
+                if app_name:
+                    self.log.info("Program icon for '%s': %s", app_name, mark)
                 else:
-                    self.log.info("Program icon: %s", name)
+                    self.log.info("Program icon: %s", mark)
                 return mask, name, None
             except Exception:
                 self.log.debug("app-icon fetch failed for '%s'", name, exc_info=True)

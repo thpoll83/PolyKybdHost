@@ -36,12 +36,23 @@ the remainder is the OS's OWN icon for the running process (the exe's resource
 icon on Windows, the `.desktop`/hicolor theme on Linux, the bundle's `.icns` on
 macOS) -- always exact, no catalog, and a per-platform lift nobody has taken yet.
 
-Geometry: the mark occupies the RIGHT-HAND 40x40 SQUARE of the panel and the
-left 32 px stay the legend's. That 40 is arithmetic, not taste. ESC (U+238B) inks
-x 2..27, and `copy_overlay_to_buffer` clears a Chebyshev-3 courtyard around the
-overlay's ink before drawing it -- so the icon's ink must start at x >= 31 for
-the clear to begin at 28, one column past the glyph. 72 - 31 = 41, i.e. 40.
-Measured over 36 marks: at 40 all 36 leave ESC untouched, at 44 only 20 do.
+Geometry: the mark occupies the RIGHT-HAND 38x38 SQUARE of the panel and the
+left 34 px stay the legend's. The CEILING is arithmetic, not taste: ESC (U+238B)
+inks x 2..27, and `copy_overlay_to_buffer` clears a Chebyshev-3 courtyard around
+the overlay's ink before drawing it -- so the icon's ink must start at x >= 31
+for the clear to begin at 28, one column past the glyph. 72 - 31 = 41, i.e. 40
+is the largest box that fits. Measured over 36 marks: at 40 all 36 leave ESC
+untouched, at 44 only 20 do.
+
+⚠️ **38 ships, not that ceiling of 40, and the difference is a MARGIN rather
+than a clearance.** At 40 a mark that is square in its viewBox inks the panel's
+full height edge to edge -- measured, 10 of 15 shipped marks did, with no top or
+bottom border at all -- so the keycap read as a picture cropped to the panel
+rather than an icon sitting on it. Reported from hardware as "a bit too big"
+(2026-09-14). Dropping two pixels buys a 1 px border top and bottom and moves the
+left edge 32 -> 34, i.e. MORE ESC clearance, so it can only improve the
+courtyard arithmetic above. A wordmark (KiCad, Zoom) loses two pixels of a
+dimension it was never short of.
 """
 
 from __future__ import annotations
@@ -83,9 +94,12 @@ USER_AGENT = "PolyKybdHost"
 PANEL_W, PANEL_H = 72, 40
 
 # The right-hand square the mark is fitted into (see the courtyard arithmetic
-# above). Not a setting: a bigger box eats the ESC glyph, and a smaller one
-# wastes panel on the only keycap whose legend nothing else competes for.
-PROGRAM_ICON_BOX = 40
+# above). Not a setting: 40 is the hard ceiling -- past it the courtyard clear
+# eats the ESC glyph -- and going far below it wastes panel on the only keycap
+# whose legend nothing else competes for. 38 leaves a 1 px border so the mark
+# reads as an icon on the keycap rather than a picture cropped to it.
+PROGRAM_ICON_BOX = 38
+PROGRAM_ICON_BOX_MAX = 40
 
 # Rasterise larger and scale the INK down, rather than rendering straight into
 # the box: a mark drawn with padding inside its viewBox then still fills the
