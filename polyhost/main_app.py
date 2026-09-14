@@ -366,6 +366,24 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         set_windows_app_id(slog)
 
     if args.host or args.host_file:
+        # ⚠️ The forwarder needs its OWN single-instance guard: it opens no
+        # control socket, so `probe_existing` -- which IS the host's lock --
+        # has nothing to probe, and two forwarders therefore used to start with
+        # nothing to stop them. Field 2026-09-14: a second one launched at
+        # 08:23:45, and from then on every window change was reported to the
+        # keyboard TWICE and both processes appended to one `forwarder_log.txt`
+        # (which is what makes such a log read as doubled).
+        #
+        # ⚠️ The `Address already in use` the second instance logged for the
+        # browser-report port is NOT a usable substitute for this. `PolyCore`
+        # binds that port too, so it fires legitimately whenever the host and
+        # the forwarder share a machine -- it cannot tell "another forwarder"
+        # from "the host app is here".
+        from polyhost.server.instance import acquire_singleton, FORWARDER_LOCK
+        lock = acquire_singleton(FORWARDER_LOCK, slog)
+        if lock is None:
+            print("Another PolyKybd forwarder is already running - exiting.")
+            return 0        # the wanted end state already holds; not an error
         from polyhost.forwarder import PolyForwarder
         addr = args.host or f"IP set in {args.host_file}"
         slog.info("Launch path: forwarder -> %s", addr)
@@ -373,6 +391,9 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
         app = PolyForwarder(logging.DEBUG if verbosity>0 else logging.INFO, args.host, args.host_file,
                             report_rpc=args.report_rpc, report_port=args.report_port,
                             report_authkey_file=args.report_authkey_file)
+        # ⚠️ The lock IS the open descriptor, so it has to outlive this scope --
+        # dropped, it is collected and released and a second forwarder starts.
+        app._instance_lock = lock
     else:
         from polyhost.host import PolyHost
         # Spawn the deferred daemon now — AFTER the heavy GUI imports above, so

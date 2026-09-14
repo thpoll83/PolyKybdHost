@@ -76,3 +76,109 @@ def clear_stale_endpoint(address=None) -> None:
         pass
     except OSError:
         pass
+
+
+# --------------------------------------------------------------- OS file lock
+
+FORWARDER_LOCK = "forwarder"
+
+# ⚠️ THE RETURNED HANDLE IS THE LOCK. Both `fcntl.flock` and `msvcrt.locking`
+# release when the descriptor closes, so a caller that does not KEEP a
+# reference has its lock collected out from under it at the next gc and a
+# second instance starts with nothing to notice. Store it on the app object.
+
+
+def _lock_path(name: str) -> str:
+    return os.path.join(protocol._config_dir(), f"{name}.lock")
+
+
+def acquire_singleton(name: str, log=None):
+    """Take an exclusive OS lock for `name`. Returns the handle, or None.
+
+    None means **another live process holds it**. Anything else -- the
+    directory is unwritable, the platform has no locking primitive -- returns a
+    handle so the caller starts anyway: a second forwarder is a degradation,
+    while refusing to launch over an unrelated filesystem fault leaves the user
+    with no forwarder at all. It never raises.
+
+    ⚠️ The lock is held by the OS, NOT by a file's existence, which is what
+    makes this different from `probe_existing` above and why it needs no
+    `clear_stale_endpoint` sibling: a crashed or SIGKILLed process releases it
+    when the kernel closes its descriptors, so there is no stale state to
+    detect and no window in which a dead holder blocks a live launch.
+    """
+    try:
+        os.makedirs(protocol._config_dir(), exist_ok=True)
+        handle = open(_lock_path(name), "a+")
+    except OSError as e:
+        if log is not None:
+            log.debug("single-instance lock unavailable (%s) — starting anyway", e)
+        return _UNLOCKED
+
+    try:
+        if sys.platform == "win32":
+            import msvcrt
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        # Held by someone. Read their pid for the log, then give up the handle.
+        # ⚠️ Read BEFORE closing: closing is what releases our own attempt.
+        holder = ""
+        try:
+            handle.seek(0)
+            holder = handle.read(32).strip()
+        except OSError:
+            pass
+        # ⚠️ Explicit, though dropping it is INERT under CPython -- `handle` is
+        # the last reference and refcounting closes the file at function exit,
+        # so a mutation deleting this line cannot be caught by any test here
+        # (measured: 5 refused calls leak no descriptor without it). It stays
+        # because that is an implementation detail of the interpreter, not of
+        # this function, and because a later edit that retains the handle would
+        # make the leak real with nothing to notice.
+        _close(handle)
+        if log is not None:
+            who = f" (pid {holder})" if holder.isdigit() else ""
+            log.warning("Another PolyKybd forwarder is already running%s — "
+                        "this one is exiting. Two forwarders report every window "
+                        "change twice and only one can hold the browser-report "
+                        "port.", who)
+        return None
+    except Exception as e:  # noqa: BLE001 - no locking primitive: start anyway
+        if log is not None:
+            log.debug("single-instance lock not supported (%s) — starting anyway", e)
+        return handle
+
+    try:
+        handle.seek(0)
+        handle.truncate()
+        handle.write(str(os.getpid()))
+        handle.flush()
+    except OSError:
+        pass            # the pid is a convenience for the log, not the lock
+    return handle
+
+
+def _close(handle) -> None:
+    try:
+        handle.close()
+    except OSError:
+        pass
+
+
+class _Unlocked:
+    """Stand-in handle for 'we could not lock, and started regardless'.
+
+    A real file object would be wrong here -- it carries no lock, so releasing
+    it means nothing -- but returning None is worse still, since None is the
+    caller's signal to EXIT. Hence a distinct truthy object.
+    """
+
+    def close(self) -> None:
+        return None
+
+
+_UNLOCKED = _Unlocked()
