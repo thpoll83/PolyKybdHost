@@ -9,7 +9,6 @@ from PyQt5.QtGui import QColor, QFont, QSyntaxHighlighter, QTextCharFormat, QTex
 from PyQt5.QtWidgets import (QHBoxLayout, QMainWindow, QPlainTextEdit,
                               QPushButton, QTabWidget, QVBoxLayout, QWidget)
 
-from polyhost.gui.get_icon import get_icon
 from polyhost.util.log_util import LEVEL_HEX_COLORS
 
 # Matches "[timestamp] LEVELNAME" at the start of a formatted log line.
@@ -58,7 +57,8 @@ class LogViewerDialog(QMainWindow):
         self.log = logging.getLogger('PolyHost')
         self._collect_cb = collect_cb
         self.setWindowTitle("Log Viewer")
-        self.setWindowIcon(get_icon("pcolor.png"))
+        # Inherits QApplication's window icon — see settings_dialog: both tray
+        # apps open this one, and they wear different marks.
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)

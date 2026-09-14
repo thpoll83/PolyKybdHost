@@ -22,7 +22,11 @@ _SKIP = ("res/overlay_sources",)
 # generated multi-layer mark (tools/gen_brand_icons.py), not a single-fill
 # Material Symbol, and its .svg is a master for docs/store use rather than
 # something get_icon() ever names. BrandMarkTest covers it instead.
-BRAND_VARIANTS = ("pcolor", "pgray", "pthink", "pwarn")
+# The tray app's mark spells a P in negative space; the forwarder's an F. The
+# think/warn states clear every inner key, so they carry no letter and exist
+# once -- IconStateManager hands both apps the same two.
+BRAND_VARIANTS = ("pcolor", "pgray", "fcolor", "fgray", "pthink", "pwarn")
+BRAND_LETTER_VARIANTS = ("pcolor", "pgray", "fcolor", "fgray")
 BRAND_SVG = {f"{v}.svg" for v in BRAND_VARIANTS}
 BRAND_LADDER = (16, 24, 32, 48, 64, 128, 256)
 BRAND_ICO_SIZES = (16, 20, 24, 32, 48, 64, 128, 256)
@@ -253,9 +257,13 @@ class BrandMarkTest(unittest.TestCase):
                 text.count("url(#keys)"),
                 text.count('fill-opacity="0.05"'),
             )
-        # the full mark: 25 lit keys, 11 engraved ghosts. The ring: 20 and none.
+        # the full mark: 25 lit keys and 11 engraved ghosts for the P, 27 and 9
+        # for the F (its middle bar is one key shorter and its bowl is open).
+        # The ring: 20 and none.
         self.assertEqual(counts["pcolor"], (25, 11))
         self.assertEqual(counts["pgray"], (25, 11))
+        self.assertEqual(counts["fcolor"], (27, 9))
+        self.assertEqual(counts["fgray"], (27, 9))
         self.assertEqual(counts["pthink"], (20, 0))
         self.assertEqual(counts["pwarn"], (20, 0))
 
@@ -298,7 +306,7 @@ class BrandMarkTest(unittest.TestCase):
         from PIL import Image
 
         wrong = []
-        for v in ("pcolor", "pgray"):
+        for v in BRAND_LETTER_VARIANTS:
             for size in BRAND_LADDER:
                 im = Image.open(ICON_DIR / f"{v}_{size}.png").convert("RGBA")
                 box = tuple(round(c * size / 1024) for c in (787, 787, 904, 904))

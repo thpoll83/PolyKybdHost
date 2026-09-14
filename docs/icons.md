@@ -18,14 +18,30 @@ entry counts. A rule separated from those numbers cannot be re-derived.
 
 ## The brand mark
 
-- **The brand mark (`p{color,gray,think,warn}.*`) is GENERATED — edit
+- **The brand mark (`{p,f}{color,gray}.*` + `p{think,warn}.*`) is GENERATED — edit
   `tools/gen_brand_icons.py`, never the PNGs.** It draws a 6x6 keycap grid whose
-  UNLIT keys spell a "P" in negative space, on a 1024-unit viewBox (the 64px
+  UNLIT keys spell a letter in negative space, on a 1024-unit viewBox (the 64px
   original's proportions scaled up), and writes the whole set per variant: an SVG
-  master, `p<v>.png` (256, the canonical file `add_to_startup` and the About dialog
-  use), `p<v>@1024.png` for docs/store, the `p<v>_<n>.png` size ladder, `.ico` and
+  master, `<v>.png` (256, the canonical file `add_to_startup` and the About dialog
+  use), `<v>@1024.png` for docs/store, the `<v>_<n>.png` size ladder, `.ico` and
   `.icns`. Redesigned 2026-09-05 from a six-hue rainbow to one blue -> cyan sweep,
   with "HOST" stamped out of the bottom row's four rightmost keys.
+  - **Two letters ship: `GRID` spells a P and `GRID_F` an F** (2026-09-14). The
+    forwarder is a second tray app, and forwarding to your own keyboard machine
+    puts the two marks side by side in one notification area, so they must not look
+    alike. `IconStateManager(..., prefix=)` picks one; `forwarder.py` passes `"f"`.
+    Measured at the tray sizes that matter, the difference reads at 16 px: the P's
+    bowl closes on the right and its middle bar spans all four inner columns, the
+    F's bowl is open and its bar is one key short.
+    - ⚠️ **`think`/`warn` are NOT prefixed, and adding an `f` twin would be pure
+      duplication.** They draw the `RING` only — every inner key cleared, so the
+      glyph sits in real space — which means there is no letter left in them to
+      differ. `IconStateManager` hands both apps the same two files. A byte-identical
+      second copy is exactly the mirrored-file shape this repo keeps getting caught
+      by, and it has no `cmp` guarding it.
+    - The ghost/lit counts differ per letter and `test_the_state_variants_draw_the_
+      RING_ONLY` pins both: **25 lit / 11 ghosts** for the P, **27 / 9** for the F,
+      20 / 0 for the ring.
   - **`get_icon()` feeds QIcon the LADDER, not the 256 master.** The mark is hard-
     edged squares, so Qt smoothly downscaling 256 -> 16 for a tray blurs exactly the
     thing that carries the shape. `BrandMarkTest` (tests/gui/icon_assets_test.py)
