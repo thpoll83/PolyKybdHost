@@ -32,6 +32,10 @@ FLUENT = {
     "selectall": "Select All On",
     "mode":      "Crop Interim",        # the mode picker: rect / freeform / window / full
     "samemode":  "Arrow Sync Circle",   # new snip, same mode as last
+    # --- added 2026-09-14 from a field report, see SOURCES.md ---------------
+    "delay":     "Timer",               # Alt+D: delay the capture
+    "pen":       "Pen",                 # Alt+B: ballpoint pen (after a capture)
+    "highlight": "Highlight",           # Alt+H: highlighter (after a capture)
 }
 
 

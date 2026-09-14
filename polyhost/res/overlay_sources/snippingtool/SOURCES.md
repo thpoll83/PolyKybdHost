@@ -26,6 +26,40 @@ References:
 two that are genuinely worth a keycap -- both are app-only and neither is
 guessable.
 
+### Three more Alt keys, added 2026-09-14
+
+Reported from the field, then checked. Each drawn one has **two independent
+references**, the same bar the `notepad` overlay uses:
+
+| key | action | sources |
+|---|---|---|
+| `Alt+D` | Delay the capture | [xp-pen](https://www.xp-pen.com/blog/snipping-tool-shortcut.html), [allthings.how](https://allthings.how/how-to-use-windows-11-snipping-tool/) |
+| `Alt+B` | Ballpoint pen | [allthings.how](https://allthings.how/how-to-use-windows-11-snipping-tool/) + search corroboration |
+| `Alt+H` | Highlighter | as above |
+
+⚠️ `Alt+B` and `Alt+H` only do anything **once a capture exists** -- they are the
+editor's annotation tools, not capture controls. They are drawn anyway: a keycap
+that shows what a key will do in the state you are about to be in is the point of
+the displays, and the overlay format has no way to express "only while editing".
+
+### ⚠️ Alt+A, Alt+P and Alt+K are NOT drawn
+
+They were reported in the same message and **no reference names any of the
+three** -- not Microsoft's docs, not the four shortcut sites checked. There is
+therefore no action to put on the keycap, and this repo's rule is explicit: *if a
+requested key has no default in that app, flag it -- don't invent a meaning.*
+
+This is a gap waiting on evidence, not a decision. The way to settle it is the
+app itself:
+
+```
+python tools/shortcut_probe.py --focused --json snip.json
+```
+
+with Snipping Tool focused and a capture on screen. That reads `AccessKey` and
+`AcceleratorKey` off the live UI Automation tree — first-party and exact, and
+strictly better than any of the references above.
+
 ## Icons
 
 Every icon is either **Microsoft Fluent UI System Icons** (MIT, the house style
@@ -64,8 +98,12 @@ a baked mark always draws while a fetched one needs `shortcut_icon_auto_fetch`
 | `selectall.png` | Fluent `Select All On` | MIT |
 | `mode.png` | Fluent `Crop Interim` | MIT |
 | `samemode.png` | Fluent `Arrow Sync Circle` | MIT |
+| `delay.png` | Fluent `Timer` | MIT |
+| `pen.png` | Fluent `Pen` | MIT |
+| `highlight.png` | Fluent `Highlight` | MIT |
 
-9 of 9 are Fluent (MIT, some with a digit composited over); the rest are drawn.
+12 of 12 are Fluent (MIT); nothing is drawn here but the program mark, and that
+comes from the curated generic rather than being baked (see above).
 
 ## Verifying
 

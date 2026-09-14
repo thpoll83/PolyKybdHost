@@ -50,3 +50,19 @@ bindings:
   # --- Alt (primary G channel) ------------------------------------------
   - { key: M, mods: [ALT], icon: mode.png,     label: "Snip mode",          source: "ms-fluent/Crop Interim (MIT)" }
   - { key: N, mods: [ALT], icon: samemode.png, label: "New snip, same mode", source: "ms-fluent/Arrow Sync Circle (MIT)" }
+  - { key: D, mods: [ALT], icon: delay.png,     label: "Delay the capture",   source: "ms-fluent/Timer (MIT)" }
+  # ⚠️ These two only do anything ONCE A CAPTURE EXISTS -- they are the editor's
+  # annotation tools, not capture controls. Drawn anyway: a keycap that shows what
+  # a key will do in the state you are about to be in is the point of the
+  # displays, and the overlay format has no way to express "only while editing".
+  - { key: B, mods: [ALT], icon: pen.png,       label: "Ballpoint pen (after a capture)", source: "ms-fluent/Pen (MIT)" }
+  - { key: H, mods: [ALT], icon: highlight.png, label: "Highlighter (after a capture)",   source: "ms-fluent/Highlight (MIT)" }
+
+  # ⚠️ Alt+A, Alt+P and Alt+K were reported from the field on the same day and are
+  # NOT drawn: no reference names any of the three, so there is no action to put
+  # on the keycap. This is the "if a requested key has no default in that app,
+  # flag it -- don't invent a meaning" rule, and it is a gap waiting on evidence
+  # rather than a decision. The way to settle it is the app itself:
+  #     python tools/shortcut_probe.py --focused --json snip.json
+  # with Snipping Tool focused and a capture on screen. That reads AccessKey and
+  # AcceleratorKey off the live toolbar, which is first-party and exact.
