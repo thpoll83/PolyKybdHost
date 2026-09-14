@@ -10,8 +10,12 @@ import threading
 import unittest
 from unittest.mock import MagicMock
 
+import numpy as np
+
 from polyhost.core.poly_core import PolyCore
+from polyhost.device.synthetic_overlay import program_name
 from polyhost.handler.common import OverlayCommand
+from polyhost.core.poly_core import get_overlay_path
 
 
 def make_core(*, connected=True, handler=True, run_when_disconnected=False):
@@ -28,6 +32,8 @@ def make_core(*, connected=True, handler=True, run_when_disconnected=False):
     # contract, and the program icon has its own class below.
     core.app_icons = MagicMock()
     core.app_icons.overlay_for.return_value = (None, None)
+    core.shortcut_icons = MagicMock()
+    core.shortcut_icons.overlays_for.return_value = {}
     core.keeb = MagicMock()
     core.poly_settings = MagicMock()
     core.poly_settings.get.side_effect = lambda k: {
@@ -183,9 +189,6 @@ class TestOsTracking(unittest.TestCase):
         self.assertEqual(core._last_pushed_os, get_host_os().value)
 
 
-if __name__ == '__main__':
-    unittest.main()
-
 class TestProgramIcon(unittest.TestCase):
     """The focused app's brand mark, appended to whatever the template sends.
 
@@ -202,11 +205,20 @@ class TestProgramIcon(unittest.TestCase):
 
     def _submitted(self, core):
         """What the queued job would hand the device: (files, program)."""
-        seen = {}
-        core._overlay_send_job = lambda files, cancel, program=None: seen.update(
-            files=files, program=program)
-        core.worker.submit.call_args.args[1](threading.Event())
+        seen = self._submitted_all(core)
         return seen["files"], seen["program"]
+
+    @staticmethod
+    def _submitted_all(core):
+        """Every argument the queued job would receive, shortcuts included."""
+        seen = {}
+
+        def stub(files, cancel, program=None, shortcuts=None):
+            seen.update(files=files, program=program, shortcuts=shortcuts)
+
+        core._overlay_send_job = stub
+        core.worker.submit.call_args.args[1](threading.Event())
+        return seen
 
     def test_the_mark_is_appended_to_a_templates_own_files(self):
         core = self._core()
@@ -335,3 +347,137 @@ class TestProgramIcon(unittest.TestCase):
         _, kwargs = core.overlay_handler.invalidate_window_cache.call_args
         self.assertTrue(kwargs.get("resend_same_entry"))
 
+
+class TestShortcutIcons(unittest.TestCase):
+    """The Phase-2 fall-back: the app's OWN shortcuts on keys no template covers.
+
+    Everything here is decided on the CALLER's thread, before the worker job, so
+    it is all reachable without a device. What is NOT reachable offline is the
+    harvest that produces the masks — see tests/services/shortcut_source_test.py
+    for why this container can never run one.
+    """
+
+    SHORTCUTS = {"@sc:save:32lower_left": {(1, 0x16): "MASK"},
+                 "@sc:bold:32lower_left": {(1, 0x05): "MASK"}}
+
+    def _core(self, shortcuts=None, mark=None):
+        core = make_core()
+        core.overlay_handler.current_app = "mousepad"
+        core.app_icons.overlay_for.return_value = (
+            (mark, "gimp") if mark else (None, None))
+        core.shortcut_icons.overlays_for.return_value = (
+            self.SHORTCUTS if shortcuts is None else shortcuts)
+        return core
+
+    def test_the_icons_are_appended_to_the_templates_own_files(self):
+        core = self._core()
+        self.assertTrue(core.send_overlay_data("vscode_template.mods.png"))
+        seen = TestProgramIcon._submitted_all(core)
+        self.assertEqual(seen["files"][0], get_overlay_path("vscode_template.mods.png"))
+        self.assertEqual(set(seen["files"][1:]), set(self.SHORTCUTS))
+        self.assertEqual(seen["shortcuts"], self.SHORTCUTS)
+
+    def test_an_app_with_NO_template_still_gets_its_shortcut_icons(self):
+        """The whole point of a fall-back — and the send must not be refused for
+        having no file in it."""
+        core = self._core()
+        self.assertTrue(core.send_overlay_data(None))
+        seen = TestProgramIcon._submitted_all(core)
+        self.assertEqual(set(seen["files"]), set(self.SHORTCUTS))
+
+    def test_the_PROGRAM_MARK_goes_first_so_it_wins_ESC(self):
+        """⚠️ Both are synthetic, so neither defers to the other — `covered` is
+        claimed in list order. ESC is the one key they could both want, and the
+        app's identity is what belongs there."""
+        core = self._core(shortcuts={"@sc:close:32lower_left": {(0, 0x29): "MASK"}},
+                          mark="MARK")
+        core.send_overlay_data(None)
+        files = TestProgramIcon._submitted_all(core)["files"]
+        self.assertEqual(files[0], program_name("gimp"))
+
+    def test_nothing_harvested_changes_nothing(self):
+        core = self._core(shortcuts={})
+        self.assertFalse(core.send_overlay_data(None))
+        core.worker.submit.assert_not_called()
+
+    def test_no_focused_app_asks_for_nothing(self):
+        core = self._core()
+        core.overlay_handler.current_app = None
+        core.send_overlay_data("vscode_template.mods.png")
+        core.shortcut_icons.overlays_for.assert_not_called()
+
+    def test_it_asks_about_the_FORWARDED_app_not_the_RDP_client(self):
+        """⚠️ On a multi-machine setup `current_app` is the remote-desktop client
+        while the keycaps show what is focused on the OTHER machine. Harvesting
+        the client's own shortcuts would put NoMachine's menu icons on a keyboard
+        displaying Word.
+
+        The fixture normally makes the two agree (a local window really does
+        answer `current_app`), which is exactly why this test separates them —
+        mutation-checked: with them equal, swapping the call is invisible.
+        """
+        core = self._core()
+        core.overlay_handler.current_app = "nxplayer"
+        core.overlay_handler.icon_app.side_effect = None
+        core.overlay_handler.icon_app.return_value = "winword"
+        core.send_overlay_data(None)
+        core.shortcut_icons.overlays_for.assert_called_with("winword")
+
+    def test_a_ready_harvest_re_matches_the_STILL_FOCUSED_app(self):
+        """⚠️ `resend_same_entry=True` is load-bearing: the answer lands for the
+        app that is still focused, so the re-match finds the same entry and the
+        redundant-command guard would drop it — leaving the icons to wait for the
+        user to switch away and back. Measured on the program mark, which took
+        four minutes and three activations to appear."""
+        core = make_core()
+        core._on_shortcut_icons_ready("mousepad")
+        core.overlay_handler.invalidate_window_cache.assert_called_once_with(
+            resend_same_entry=True)
+
+
+class TestSyntheticFileFilter(unittest.TestCase):
+    """⚠️ A synthetic name with NO converter must never reach the device layer.
+
+    `send_overlays_mru` hands an unrecognised name to `ImageConverter.open()`,
+    which cannot find a file called `@sc:save:32lower_left` and returns False FOR
+    THE WHOLE SEND — so one undrawable icon would cost every hand-made overlay on
+    the keyboard. Reachable whenever a mask comes back all-black, and far likelier
+    with shortcuts than with the single program mark, since every icon is its own
+    source.
+    """
+
+    def _sent(self, core, files, shortcuts):
+        device = MagicMock()
+        device.device_settings = MagicMock()
+        entry = MagicMock()
+        entry.device = device
+        core.device_mgr.all_entries = [entry]
+        core._overlay_send_job(files, threading.Event(), None, shortcuts)
+        return device.send_overlays_mru.call_args
+
+    def test_an_undrawable_icon_is_dropped_and_the_TEMPLATE_still_goes(self):
+        core = make_core()
+        # An all-black mask: OverlayData refuses it, so shortcut_converter
+        # returns None and the name has no entry in `synthetic`.
+        blank = np.zeros((40, 72), dtype=bool)
+        lit = np.zeros((40, 72), dtype=bool)
+        lit[5:15, 5:25] = True
+        shortcuts = {"@sc:gone:32lower_left": {(1, 0x16): blank},
+                     "@sc:save:32lower_left": {(1, 0x05): lit}}
+        files = ["vscode_template.mods.png"] + list(shortcuts)
+        args = self._sent(core, files, shortcuts)
+        sent_files, synthetic = args.args[0], args.kwargs["synthetic"]
+        self.assertEqual(sent_files, ["vscode_template.mods.png",
+                                      "@sc:save:32lower_left"])
+        self.assertEqual(set(synthetic), {"@sc:save:32lower_left"})
+
+    def test_a_REAL_filename_is_never_filtered_out(self):
+        """Only synthetic names are matched against the converter map; a missing
+        PNG is the device layer's problem to report, not this filter's."""
+        core = make_core()
+        args = self._sent(core, ["nope.mods.png"], {})
+        self.assertEqual(args.args[0], ["nope.mods.png"])
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -40,8 +40,10 @@ from polyhost.device.hid_worker import HidWorker
 from polyhost.device.poly_kybd import PolyKybd
 from polyhost.handler.common import OverlayCommand
 from polyhost.services.app_icon_fetcher import AppIconFetcher
+from polyhost.services.shortcut_fetcher import ShortcutIconFetcher
 from polyhost.device.keys import KeyCode
-from polyhost.device.synthetic_overlay import program_converter, program_name
+from polyhost.device.synthetic_overlay import (is_synthetic, program_converter,
+                                               program_name, shortcut_converter)
 from polyhost.services import telemetry as telemetry_svc
 from polyhost.services.sleep_listener import install_sleep_listener
 from polyhost.services.sunlight_helper import Sunlight
@@ -173,6 +175,12 @@ class PolyCore(Observable):
         # Resolves the focused app to its brand mark off this thread; see
         # services/app_icon_fetcher.py for why a thread is not optional here.
         self.app_icons = AppIconFetcher(on_ready=self._on_app_icon_ready)
+        # The Phase-2 fall-back: the focused app's OWN shortcuts, on the keys
+        # no hand-made template covers. Its own thread for the same reason,
+        # and more so -- the harvest walks another process's accessibility
+        # tree before any icon is even fetched.
+        self.shortcut_icons = ShortcutIconFetcher(
+            on_ready=self._on_shortcut_icons_ready)
         self._wincompose_shutting_down = False
         self._wincompose_stop = threading.Event()
         self._wincompose_thread = None
@@ -399,6 +407,7 @@ class PolyCore(Observable):
         if wincompose_thread is not None:
             wincompose_thread.join(timeout=1)
         self.app_icons.stop()
+        self.shortcut_icons.stop()
         try:
             self.worker.run_sync("save_mru", lambda c: self.keeb.save_mru(), timeout=2)
         except Exception as e:  # never let a save attempt break shutdown
@@ -493,10 +502,17 @@ class PolyCore(Observable):
 
         # ⚠️ Appended LAST, because `send_overlays_mru` lets a real template win
         # any key a synthetic source also offers, and it decides that by the
-        # order it walks the sources.
+        # order it walks the sources. Coverage therefore needs NO computation
+        # here: the device layer defers a synthetic (modifier, keycode) a
+        # template already claimed, before the upload rather than after it.
         program = self._program_icon()
         if program is not None:
             files.append(program[0])
+        # The program mark goes in FIRST of the two synthetic sources, so on the
+        # one key they could both want -- ESC -- the app's own identity wins over
+        # a shortcut icon.
+        shortcuts = self._shortcut_overlays()
+        files.extend(shortcuts)
 
         if len(files) == 0:
             return False
@@ -506,7 +522,8 @@ class PolyCore(Observable):
         # "overlay" completion event.
         self.emit("overlay_activity", {"state": "thinking"})
         self.worker.submit("overlay",
-                           lambda cancel: self._overlay_send_job(files, cancel, program),
+                           lambda cancel: self._overlay_send_job(
+                               files, cancel, program, shortcuts),
                            coalesce_key="overlay",
                            on_done=lambda name, result: self.emit(name, result))
         return True
@@ -551,6 +568,34 @@ class PolyCore(Observable):
         """
         if self.overlay_handler is not None:
             self.log.debug_detailed("program icon ready: %s", slug)
+            self.overlay_handler.invalidate_window_cache(resend_same_entry=True)
+
+    def _shortcut_overlays(self):
+        """{pseudo-filename: {(modifier, keycode): mask}} for the focused app.
+
+        Never blocks and never reaches the network, exactly like
+        `_program_icon`: `overlays_for` is a dict lookup that queues an unseen
+        app for the harvest thread, and `_on_shortcut_icons_ready` re-runs the
+        match when the answer lands.
+        """
+        handler = self.overlay_handler
+        if handler is None:
+            return {}
+        app = handler.icon_app()      # the FORWARDED app, not the RDP client
+        if not app:
+            return {}
+        return self.shortcut_icons.overlays_for(app)
+
+    def _on_shortcut_icons_ready(self, app):
+        """A harvest finished — re-match so the icons reach the keycaps now.
+
+        Same mechanism and same `resend_same_entry=True` as the program mark:
+        the plan lands for the app that is STILL focused, so the re-match finds
+        the same entry and the redundant-command guard would otherwise drop it,
+        leaving the icons to wait for the user to switch away and back.
+        """
+        if self.overlay_handler is not None:
+            self.log.debug_detailed("shortcut icons ready: %s", app)
             self.overlay_handler.invalidate_window_cache(resend_same_entry=True)
 
     def tick_window_tracking(self, update_cycle_msec=UPDATE_CYCLE_MSEC,
@@ -846,7 +891,7 @@ class PolyCore(Observable):
         self.worker.submit("overlay", lambda c, cmd=cmd: self._overlay_cmd_job(cmd, c),
                            coalesce_key="overlay")
 
-    def _overlay_send_job(self, files, cancel, program=None):
+    def _overlay_send_job(self, files, cancel, program=None, shortcuts=None):
         """Worker-thread overlay send. Reset/enable that accompany a send stay
         inside this job so ordering is preserved, and the cancel event is
         forwarded through."""
@@ -869,7 +914,23 @@ class PolyCore(Observable):
                         program[1])
                     if converter is not None:
                         synthetic[program[0]] = converter
-                entry.device.send_overlays_mru(files, entry.cache, cancel,
+                for name, keys in (shortcuts or {}).items():
+                    converter = shortcut_converter(entry.device.device_settings,
+                                                   keys)
+                    if converter is not None:
+                        synthetic[name] = converter
+                # ⚠️ A synthetic name with NO converter has to be dropped from
+                # the file list, or `send_overlays_mru` hands it to
+                # `ImageConverter.open()`, which cannot find a file called
+                # `@sc:save:32lower_left` and RETURNS FALSE FOR THE WHOLE SEND --
+                # one undrawable icon would cost every hand-made overlay on the
+                # keyboard. Reachable whenever a mask comes back all-black
+                # (`OverlayData` refuses one), and far likelier with shortcuts
+                # than with the single program mark, since every icon is its own
+                # source.
+                send = [f for f in files
+                        if not is_synthetic(f) or f in synthetic]
+                entry.device.send_overlays_mru(send, entry.cache, cancel,
                                                synthetic=synthetic)
         except Exception as e:
             msg = f"Failed to send overlays '{files}': {e}"
@@ -1320,6 +1381,15 @@ class PolyCore(Observable):
 
     # Settings whose change should immediately recompute + retransmit the
     # daylight brightness rather than waiting for the next 10-min periodic.
+    _SHORTCUT_ICON_SETTING_KEYS = frozenset({
+        "shortcut_icons_enabled",
+        "shortcut_icon_height", "shortcut_icon_placement",
+        # ⚠️ The FETCH switch belongs here too, not only in the app-icon branch
+        # above: a plan built while it was off carries no icons at all, and
+        # nothing else would ever ask again.
+        "shortcut_icon_auto_fetch",
+    })
+
     _BRIGHTNESS_SETTING_KEYS = frozenset({
         "brightness_set_daylight_dependent",
         "irradiance_min", "irradiance_max", "irradiance_prescaler",
@@ -1750,6 +1820,11 @@ class PolyCore(Observable):
             # app focused while it was off keeps its "no mark" answer until the
             # process restarts.
             self.app_icons.forget_misses()
+        if keys is None or self._SHORTCUT_ICON_SETTING_KEYS.intersection(keys):
+            # Height and corner are part of the rendered pixels, and the
+            # enable switch decides whether the harvest runs at all -- so a
+            # change to any of them invalidates every cached plan.
+            self.shortcut_icons.forget()
 
     def _refresh_unicode_watch(self):
         """Start the settle watcher and re-assert the mode after the setting was

@@ -73,3 +73,43 @@ def program_converter(device_settings, keycode, mask):
     except ValueError:
         return None
     return SyntheticConverter({Modifier.NO_MOD: {keycode: data}})
+
+
+SHORTCUT_PREFIX = "@sc:"
+
+
+def is_shortcut(filename: str) -> bool:
+    return bool(filename) and filename.startswith(SHORTCUT_PREFIX)
+
+
+def shortcut_converter(device_settings, keys):
+    """One icon's overlay source, on every (modifier, keycode) it lands on.
+
+    `keys` is {(modifier_value, keycode): mask} — the shape
+    `shortcut_overlays.render()` produces for ONE concept. One converter per
+    concept rather than per key, because the mask does not depend on the key:
+    the MRU cache keys on (name, modifier, keycode), so the same icon on Ctrl+S
+    in two applications is one pool slot and one upload.
+
+    ⚠️ `Modifier`'s value IS the harvested nibble, so the conversion is a lookup
+    rather than a mapping — an unknown value (a pre-v12 keyboard cannot address
+    9..15, and the caller has no business inventing 16) is dropped rather than
+    guessed. Returns None when nothing survives, so an empty source never costs
+    a pool slot.
+    """
+    from polyhost.device.keys import Modifier
+    from polyhost.device.overlay_data import OverlayData
+    overlays: dict = {}
+    for (modifier_value, keycode), mask in (keys or {}).items():
+        try:
+            modifier = Modifier(modifier_value)
+        except ValueError:
+            continue
+        try:
+            data = OverlayData(device_settings, mask)
+        except ValueError:
+            continue                    # all-black: nothing to draw
+        overlays.setdefault(modifier, {})[keycode] = data
+    if not overlays:
+        return None
+    return SyntheticConverter(overlays)

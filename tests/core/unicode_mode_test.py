@@ -368,6 +368,7 @@ class SettingsChangedTest(unittest.TestCase):
     def _core(self, send_mode=True, connected=True, ambiguous=False):
         core = types.SimpleNamespace(
             _BRIGHTNESS_SETTING_KEYS=PolyCore._BRIGHTNESS_SETTING_KEYS,
+            _SHORTCUT_ICON_SETTING_KEYS=PolyCore._SHORTCUT_ICON_SETTING_KEYS,
             connected=connected,
             poly_settings=types.SimpleNamespace(
                 get=lambda k: {"unicode_send_composition_mode": send_mode}[k]),
@@ -380,6 +381,7 @@ class SettingsChangedTest(unittest.TestCase):
         # note_settings_changed also clears the program-icon negative cache; this
         # stand-in only models the unicode half, so give it a no-op fetcher.
         core.app_icons = types.SimpleNamespace(forget_misses=lambda: None)
+        core.shortcut_icons = types.SimpleNamespace(forget=lambda: None)
         return core
 
     def _run(self, core, keys, mode=InputMethod.WinCompose):

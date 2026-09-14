@@ -115,6 +115,15 @@ class PolySettings:
             # one goes without. Turning it off on a metered or air-gapped machine
             # must not take away icons that are already on disk.
             "shortcut_icon_auto_fetch": True,
+            # May the focused application's own shortcuts be read, and drawn
+            # as icons on the keys a hand-made overlay does not already cover?
+            # ⚠️ This is a different question from `shortcut_icon_auto_fetch`,
+            # which governs only the NETWORK. This one governs whether another
+            # process's accessibility tree is walked at all -- a D-Bus round trip
+            # per node on Linux -- so it is the switch someone on a locked-down
+            # machine wants. Off costs only the fall-back; hand-made overlays and
+            # the program mark are unaffected.
+            "shortcut_icons_enabled": True,
             # Developer mode: reveals the tray's Developer submenu and the
             # `dev_`-prefixed settings below, and allows key injection. Formerly
             # implied by `--debug`; it is a persisted setting because under
