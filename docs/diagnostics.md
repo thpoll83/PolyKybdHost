@@ -281,3 +281,111 @@ purpose is proving whether the app crashed, shipped into none of them.
   modified and a reflog untouched for two weeks. When a report's version doesn't
   match the branch, that is the explanation — the running code is the release, and
   `_version.py` on disk is the only thing that says which.
+
+### When something is reported broken
+
+- **Logs, crash reporting and the guided problem report are
+  [`docs/diagnostics.md`](diagnostics.md)** — the Qt-free `log_bundle` service
+  and its three front ends (tray, log viewer, `polyctl logs`), the pre-filled GitHub
+  issue, and the modeless dialog a firmware `crash:` console line raises. Five
+  things stay here because they bind code outside that subsystem:
+  - ⚠️ **A NEW LOG FILE reaches nobody unless `LOG_SOURCES` knows about it.** That
+    one declaration (filename, viewer tab title, whether it is time-sliced) replaced
+    **four** hand-kept lists — `log_bundle.py` plus a `log_files` dict in `host.py`
+    *and* in `forwarder.py`, which is a second tray app with its own viewer — and
+    they had already drifted: `crash_log.txt`, the file whose whole purpose is
+    proving whether the app crashed, shipped into **none** of them. Registering is
+    only half: check the file's lines carry a sliceable `[YYYY-MM-DD HH:MM:SS,mmm]`
+    prefix, because `slice_lines` starts `keep = False` and silently drops a whole
+    file that has none.
+  - ⚠️ **Never rotate, delete or `os.replace` `crash_log.txt`** — `faulthandler`
+    holds the file DESCRIPTOR, so a rename leaves the live process dumping into a
+    file nobody reads and eventually into a deleted inode, silently. It is bounded
+    by an in-place trim before the fd exists, and cleared by TRUNCATION, which is
+    safe only because every writer opens with `"a"` (**O_APPEND**).
+  - **Redaction defaults ON for a report and OFF for "Collect logs…", deliberately** —
+    a local bundle is a file you inspect before sending, a report is aimed at a
+    public tracker. Same data, different destination, so the safe default flips.
+  - ⚠️ **`polyctl logs` must work with NO host running** — it is routed before
+    `connect()`, because the moment a user most needs the logs is the one where the
+    app failed to start or the daemon died.
+  - ⚠️ **"The tray icon is gone" is NOT "the app crashed"** — check the process list
+    first (and read it in PAIRS; each launch showed two `pythonw.exe`). Under
+    daemon-by-default the daemon still owns the device and keeps switching overlays
+    with no GUI attached, which is exactly why nothing looks broken.
+
+- **Multi-machine forwarding fails SILENTLY in three different ways, and NONE of
+  them is diagnosable from the forwarder's own log.** All three were hit on one
+  setup that had worked for weeks (field, 2026-08-17); the forwarder log showed
+  nothing but a repeating error with no cause in it. Check these before reading
+  any code:
+  - ⚠️ **A disabled relay reads as `Connection timed out`, NOT "connection
+    refused"** — so the log looks like a network problem rather than a host that
+    isn't listening. A closed port would RST, but the keyboard machine's firewall
+    silently drops SYNs to a port nothing has bound, and the old allow-rule went
+    away with the listener. The *cause* is logged once, on the **other machine**,
+    by `RemoteHandler.listen_to_forwarder` ("Remote overlay entries are configured
+    but the legacy plaintext window relay (TCP 50162) is disabled") — and only
+    when remote entries are mapped and `window_report_network_enabled` is off. In
+    daemon mode that line is in `daemon_log.txt`, not the tray log.
+  - ⚠️ **`WindowReportServer` is started ONLY by `HeadlessHost`** (`headless.py`
+    `_maybe_start_window_report_server` is its one construction site — `host.py`
+    has none). So under `--no-daemon`, `window_report_network_enabled` is a
+    **silent no-op**: the setting reads back true and nothing listens.
+  - ⚠️ **A forwarded window is used only while the keyboard machine's OWN focused
+    window is a `remote: true` mapping entry** (`active_window.py`
+    `is_remote_mapping_entry`, the `elif` in the window tick) — normally the
+    remote-desktop client you are viewing the other machine through (the shipped
+    entry is `nxplayer`/NoMachine). Without such an entry both logs look perfectly
+    healthy — the forwarder reports windows, the daemon receives them — and the
+    keycaps simply never change.
+  - The user-facing version of all three is the docs site's
+    [Multi-Machine Setup](https://www.polykybd.org/using/multi-machine/) page
+    (rewritten 2026-08-17, docs#51). ⚠️ **The relay gate that caused this shipped
+    in 0.10.5 and the docs kept recommending the dead path for six weeks** — when
+    you flip a transport off by default, move that page in the same change.
+  - **Browser-URL matching DOES cross machines — but only over the authenticated
+    RPC path** (`--report-rpc`; the forwarder gained this in 0.12.x). Three things
+    had to be true at once, so if a `url:` / `urls-contains:` entry is not firing
+    for a forwarded window, check them in this order: the forwarder runs its own
+    loopback receiver for the extension (`handler/browser_url_source.BrowserUrlSource`,
+    shared with `PolyCore` so the two roles cannot drift — the extension itself is
+    unchanged and always POSTed to `127.0.0.1` on its own machine); the report
+    carries the optional `url` param (**RPC only**); and `RemoteHandler._match_remote`
+    passes it to the matcher. ⚠️ **The legacy plaintext relay deliberately does NOT
+    carry the URL**: its framing is positional `handle;name;title;os` with the
+    free-text field in the *middle*, so a title containing `;` already truncates the
+    title and kills the `os` field — a fifth field would deepen a live bug on a
+    transport that is off by default. Two details that are easy to get backwards:
+    a **None url is STORED** (unlike a None os, which is ignored — the OS belongs to
+    the sending machine, a URL to the window in that report, so keeping the last one
+    would pin a stale site's overlay onto the next non-browser window); and the URL
+    is **part of the window's identity on both ends**, because an SPA route change
+    moves neither handle nor title — the forwarder re-sends on a URL change rather
+    than waiting out its 15 s heartbeat, and `remote_changed` re-matches.
+
+- **Telemetry — the client, the Cloudflare collector and its traps — is
+  [`docs/telemetry-internals.md`](telemetry-internals.md).** One small JSON POST
+  per install per day, **on by default**, opt out in the settings dialog or
+  `polyctl telemetry disable`; `TELEMETRY_ENDPOINT` empty disables sending entirely,
+  which is how it ships before a collector exists. Four things stay here:
+  - ⚠️ **The payload is an ALLOW-LIST at both ends — a privacy guarantee, not a
+    style choice.** The host can see window titles and app names, because it reads
+    them constantly for overlays. `build_payload()` copies named fields and **never
+    spreads a status dict**; the Worker rebuilds the row it stores. The frozen
+    `PAYLOAD_KEYS` test exists to make an accidental widening fail loudly.
+  - ⚠️ **There is NO in-app consent step.** The first-run dialog was removed, so the
+    **release notes are the disclosure** and the one INFO line
+    `_log_telemetry_notice` prints at every start is all a headless daemon can say.
+    Do not gate that line on an "already told them" flag, downgrade it to debug, or
+    drop it in a logging cleanup — and write the release notes *before* shipping a
+    release that sets the endpoint.
+  - **The collector is WRITE-ONLY by design** — no read route, therefore no route
+    that can leak the dataset. Read the data with `wrangler d1 execute` or
+    `telemetry-collector/dashboard.py --open`.
+  - ⚠️ **`workers.dev` is CLOUDFLARE's zone, not ours**, so every zone-scoped
+    Cloudflare product is unavailable here — WAF rate limiting and Cloudflare Access
+    both. Anything configured as a Worker **binding** works; anything Cloudflare
+    describes as "protect a route/hostname" needs a zone you own. This has cost a
+    round twice.
+

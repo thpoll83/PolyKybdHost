@@ -94,3 +94,51 @@ brand-new console window it then dies with. Use
     prints, and a PowerShell exit code only says `Register-ScheduledTask` didn't
     raise. A "registered" task that isn't queryable now falls back to the
     Startup-folder shortcut instead of leaving no autostart at all.
+
+### Updates, autostart and daemon mode
+
+- **GUI self-update must be applied by the DAEMON, not the client (daemon-by-default).**
+  In daemon mode the tray GUI is a `--connect` client and a separate `--headless`
+  daemon owns `PolyCore` — and therefore the **protocol gate** (its loaded
+  `_version.__protocol__`). So the tray's "Check for updates → install" routes the
+  install through the daemon over RPC (`RemoteCore.install_update` → `M_UPDATE_INSTALL`
+  → `PolyCore.install_update`), letting the daemon overwrite the files and **re-exec
+  itself** (`headless.py` `_on_update_event`). It must **not** run `UpdateInstaller`
+  in the GUI process: that refreshed only the client while the daemon kept running the
+  pre-update code, so the daemon stayed on the OLD `__protocol__` and its `FEATURE_MIN_PROTOCOL`
+  table (historically it *rejected* the keyboard with *"Protocol mismatch, please update"*;
+  under the range-connect model it instead keeps the keyboard on the old capability set —
+  newer features disabled, status stuck on "update the host app") until manually restarted
+  (field 2026-07). After the daemon re-execs, `PolyHost._on_update_done` (client mode)
+  waits for the control endpoint to go **down → back LIVE** (`_await_daemon_restart_then_relaunch`)
+  before relaunching the GUI — relaunching immediately would re-attach to the still-up
+  **old** daemon (the bug) or race the re-exec and spawn a second daemon. The daemon's
+  `update_*` **core events are dicts** (`{"pct","msg"}` / `{"relay_path"}` / `{"msg"}`)
+  while the legacy in-GUI `UpdateInstaller` emits tuples/strings — `_on_job_done`
+  normalizes both. The `polyctl update install` path already restarted the daemon
+  correctly; only the tray menu path was broken.
+
+- **Autostart registration and the post-update relaunch chain are
+  [`docs/autostart.md`](autostart.md).** `setup_autostart_for_app()` is called
+  from `main_app.py` unless `--portable`; Windows uses a non-elevated logon
+  scheduled task driving a venv-activating `.bat` through a hidden-launch `.vbs`,
+  Linux a `.desktop` entry, macOS a `launchd` plist. Four things stay here:
+  - ⚠️ **Every relaunch must be spawned DETACHED** — `updater.detached_popen_kwargs()`
+    / `spawn_detached()`. A plain `Popen` on Windows is how *"it doesn't start up
+    again after the update"* happens: the child inherits the exiting parent's console
+    and dies when that window closes, or, when the parent has none, is handed a brand
+    new console it then dies with. `sys.executable` must also be normalised to
+    `pythonw.exe`, or one session started from a terminal makes **every** later
+    restart console-owning.
+  - ⚠️ **The generated launchers live in the platformdirs config dir, NOT the
+    checkout** — they used to be in-tree under a `.gitignore` entry, so
+    `git clean -xdf` deleted the exact file the registered task points at and
+    autostart silently stopped working while the task still read `State: Ready`.
+  - ⚠️ **The Windows task is named `PolyHost`, not `PolyKybdHost`** — so
+    `Get-ScheduledTask -TaskName PolyKybdHost*` returns nothing on a perfectly
+    healthy install and reads as "autostart is gone".
+  - **`updater.preflight()` runs before the download**, at the one choke point the
+    tray, the daemon and `polyctl update install` all pass through: it checks the
+    copy *and* the relaunch, because an update that copies perfectly and then cannot
+    relaunch is indistinguishable from "the app never came back".
+
