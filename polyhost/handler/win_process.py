@@ -52,7 +52,14 @@ def _load_win32():
     global _win32
     if _win32 is not None:
         return _win32
-    from ctypes import wintypes  # fails to import off Windows
+    # Lazy and submodule-qualified: `ctypes.wintypes` raises on import off
+    # Windows, so it cannot sit at module scope — this module has to stay
+    # importable everywhere for the `sys.platform` branch in app_name_for to
+    # be reachable at all. Spelled `import ctypes.wintypes` rather than
+    # `from ctypes import wintypes` so the module is imported one way only
+    # (CodeQL py/import-and-import-from).
+    import ctypes.wintypes
+    wintypes = ctypes.wintypes
 
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
