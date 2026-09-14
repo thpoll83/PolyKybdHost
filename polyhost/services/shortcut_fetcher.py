@@ -167,7 +167,19 @@ class ShortcutIconFetcher:
         if not shortcuts:
             self._say(app, "the app exposes no accelerators")
             return {}
-        report = shortcut_overlays.plan_report(shortcuts)
+        # ⚠️ The codepoint table is loaded BEFORE planning, not after, because
+        # the planner now uses it: a label the lexicon does not know falls back
+        # to a name derived from the label, and the table is what rejects a
+        # derivation the catalog does not carry. A failure here is not fatal --
+        # planning without it simply skips that fall-back, which is the
+        # behaviour before it existed.
+        try:
+            codepoints = icon_catalog.load_codepoints(self._cache_dir)
+        except Exception:
+            self.log.debug("shortcut codepoints unavailable for '%s'", app,
+                           exc_info=True)
+            codepoints = {}
+        report = shortcut_overlays.plan_report(shortcuts, known_names=codepoints)
         slots = report.slots
         self._report(app, shortcuts, report)
         if not slots:
@@ -176,7 +188,6 @@ class ShortcutIconFetcher:
             return {}
         names = shortcut_overlays.icon_names(slots)
         try:
-            codepoints = icon_catalog.load_codepoints(self._cache_dir)
             font = icon_catalog.fetch_subset(names, self._cache_dir)
         except Exception:
             self.log.debug("shortcut icon subset failed for '%s'", app, exc_info=True)

@@ -30,6 +30,12 @@ MAX_SLOTS = 48
 # Below this a label is better left alone: the keycap already says what the key
 # is, and a wrong icon is worse than none (the same reasoning that keeps
 # app-slug matching strict). `match()` itself refuses anything under 0.6.
+
+# A derived name is a real hit but a weaker one than a curated concept, so it
+# sorts BELOW every lexicon match when two shortcuts contend for one key and
+# when the plan is trimmed to MAX_SLOTS. Deliberately under `match()`'s own 0.6
+# floor for the same reason: it is the answer of last resort.
+DERIVED_CONFIDENCE = 0.5
 MIN_CONFIDENCE = 0.85
 
 
@@ -108,14 +114,14 @@ class Slot:
 
 def plan(shortcuts, hints: dict | None = None,
          min_confidence: float = MIN_CONFIDENCE,
-         limit: int = MAX_SLOTS) -> list[Slot]:
+         limit: int = MAX_SLOTS, known_names=None) -> list[Slot]:
     """The slots alone — see `plan_report` for what was refused and why."""
-    return plan_report(shortcuts, hints, min_confidence, limit).slots
+    return plan_report(shortcuts, hints, min_confidence, limit, known_names).slots
 
 
 def plan_report(shortcuts, hints: dict | None = None,
                 min_confidence: float = MIN_CONFIDENCE,
-                limit: int = MAX_SLOTS) -> "Plan":
+                limit: int = MAX_SLOTS, known_names=None) -> "Plan":
     """Decide which harvested shortcuts get an icon, and on which key.
 
     Returns the REFUSALS as well as the slots, because a shortcut the keyboard
@@ -167,14 +173,33 @@ def plan_report(shortcuts, hints: dict | None = None,
         label = (getattr(sc, "label", "") or "").strip()
         hit = shortcut_icons.match(label, min_confidence=min_confidence,
                                    allow_fuzzy=True, hints=hints)
-        if hit is None or hit.confidence < min_confidence:
-            refuse(NO_CONCEPT, sc)
+        concept, icon, confidence = None, None, 0.0
+        if hit is not None and hit.confidence >= min_confidence and hit.icon:
+            concept, icon, confidence = hit.concept, hit.icon, hit.confidence
+        elif known_names:
+            # ⚠️ The lexicon gets to answer FIRST, always. It is the precision
+            # layer -- a chosen icon for a label somebody looked at -- and this
+            # is recall: the first catalog name derivable from the label that
+            # the fetched table actually carries. Measured over 46 real labels
+            # the lexicon resolves 41 and this rescues the other 5 (Rotate,
+            # Crop, Export as PDF, Import, Toggle Sidebar), so a label nobody
+            # has curated now gets an icon with NO config entry.
+            #
+            # `known_names` is the reject: derivation proposes and the catalog
+            # disposes, exactly as `app_icons.candidates()` leaves a bad slug to
+            # the 404. Without a table the fall-back is skipped entirely, which
+            # is the behaviour before it existed.
+            derived = next((n for n in shortcut_icons.derive_names(label)
+                            if n in known_names), None)
+            if derived:
+                concept, icon, confidence = derived, derived, DERIVED_CONFIDENCE
+        if not icon:
+            refuse(NO_CONCEPT if (hit is None or not hit.icon
+                                  or hit.confidence < min_confidence)
+                   else NO_CATALOG_ICON, sc)
             continue
-        if not hit.icon:
-            refuse(NO_CATALOG_ICON, sc)
-            continue
-        slot = Slot(modifier=mods, keycode=int(hid), concept=hit.concept,
-                    icon=hit.icon, label=label, confidence=hit.confidence)
+        slot = Slot(modifier=mods, keycode=int(hid), concept=concept,
+                    icon=icon, label=label, confidence=confidence)
         # Two shortcuts on one key: keep the more confident, and on a tie the
         # first seen, so the result does not depend on dict ordering upstream.
         current = best.get((mods, slot.keycode))

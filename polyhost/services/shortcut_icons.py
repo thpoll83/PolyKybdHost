@@ -474,3 +474,93 @@ def _contains_sequence(haystack: list[str], needle: list[str]) -> bool:
     """True when `needle` appears as consecutive whole words in `haystack`."""
     n = len(needle)
     return any(haystack[i:i + n] == needle for i in range(len(haystack) - n + 1))
+
+
+# ---------------------------------------------------------------------------
+# Derived names: the no-config fall-back for a label the lexicon has never seen
+# ---------------------------------------------------------------------------
+#
+# ⚠️ A FALL-BACK, not a replacement, and the measurement is why. Over 46 real
+# menu labels the lexicon resolves 41 and derivation alone 46 -- so on RECALL
+# derivation wins outright, and replacing the table would still be wrong. The
+# lexicon is a PRECISION layer: it holds the chosen icon for a label somebody
+# looked at, where derivation takes the first catalog name that happens to
+# exist. Both resolve "Add Layer"; derivation answers `add`, which is a true hit
+# and a worse keycap. Hit-counting cannot tell those apart, and this repo's rule
+# is that a wrong icon is worse than none.
+#
+# So: the lexicon answers where it has an opinion, and this covers the tail --
+# which is the point, because a label nobody has curated now gets an icon with
+# no config entry at all. The five it rescued on that sample were Rotate, Crop,
+# Export as PDF, Import and Toggle Sidebar.
+#
+# ⚠️ NOTHING HERE VALIDATES A NAME. These are candidates; the caller keeps the
+# first one the fetched codepoint table actually carries, exactly as
+# `app_icons.candidates()` leaves the catalog's own 404 to reject a bad slug.
+# Guessing and verifying are deliberately different jobs in different places.
+
+# Material Symbols groups a lot of its set behind a category prefix, so the bare
+# English word misses: `copy` is `content_copy`, `bold` is `format_bold`, `open`
+# is `file_open`. Measured -- a direct name lookup resolves 16 of those 46
+# labels, and these five prefixes take it to 33.
+NAME_PREFIXES = ("", "content_", "format_", "file_", "text_")
+
+# Words that carry no icon of their own, dropped before the join. "Toggle" is
+# here because a toggle is not a picture: the icon belongs to what is toggled.
+FILLER_WORDS = frozenset((
+    "this", "page", "the", "a", "as", "to", "toggle", "show", "hide", "all",
+))
+
+# Where the catalog's word is simply a different word. Each target was checked
+# against the shipped codepoint table rather than assumed -- these are the 13
+# that closed the gap from 33 to 46.
+NAME_SYNONYMS = {
+    "find": "search",
+    "replace": "find_replace",
+    "quit": "logout",
+    "preferences": "settings",
+    "reload": "refresh",
+    "duplicate": "content_copy",
+    "rotate": "rotate_right",
+    "import": "file_download",
+    "about": "info",
+    "underline": "format_underlined",
+    "split": "splitscreen",
+    "sidebar": "side_navigation",
+    "next": "navigate_next",
+}
+
+
+def derive_names(label: str) -> list[str]:
+    """Candidate Material Symbols names for `label`, best guess first.
+
+    Ordered most-specific to least: the whole label, then the label without
+    filler, then a synonym for any word the catalog names differently, and only
+    then a single head or tail word. That tail is where a generic answer comes
+    from (`Add Layer` -> `add`), so it sorts last and the lexicon gets to answer
+    before any of it runs.
+    """
+    words = [w for w in normalize(label).split() if w]
+    if not words:
+        return []
+    out: list[str] = []
+
+    def add(name):
+        if name and name not in out:
+            out.append(name)
+
+    kept = [w for w in words if w not in FILLER_WORDS] or words
+    for group in (words, kept):
+        joined = "_".join(group)
+        for prefix in NAME_PREFIXES:
+            add(prefix + joined)
+    add("".join(kept))                      # findnext, fullscreen
+    for word in kept:
+        if word in NAME_SYNONYMS:
+            add(NAME_SYNONYMS[word])
+    for prefix in NAME_PREFIXES:
+        add(prefix + kept[0])
+    if len(kept) > 1:
+        for prefix in NAME_PREFIXES:
+            add(prefix + kept[-1])
+    return out

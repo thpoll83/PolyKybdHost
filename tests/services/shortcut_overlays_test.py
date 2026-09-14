@@ -182,6 +182,51 @@ class RenderTest(unittest.TestCase):
         self.assertEqual(so.icon_names(plan), sorted(set(so.icon_names(plan))))
 
 
+class TestDerivedNameFallback(unittest.TestCase):
+    """The no-config half: a label the lexicon never heard of still gets an icon.
+
+    ⚠️ The table here is SYNTHETIC, not `icon_catalog.load_codepoints()`. The
+    real one is a fetched cache, so a test against it passes or fails on whether
+    this machine has downloaded a font -- which is not what these pin. What they
+    pin is the ORDER (curated beats derived), the REJECT (a derivation the
+    catalog does not carry draws nothing) and the DEGRADATION (no table, no
+    fall-back).
+    """
+
+    # Just enough of Material Symbols to answer the labels below.
+    TABLE = {"save": 1, "file_export": 2, "rotate_right": 3, "search": 4}
+
+    def test_the_lexicon_still_wins_where_it_has_an_opinion(self):
+        """Derivation is RECALL; the lexicon is precision, and precision leads.
+
+        Both resolve "Save". The curated answer must be the one that ships, and
+        must outrank a derived one when two shortcuts contend for a key.
+        """
+        slots = so.plan([sc("Save")], known_names=self.TABLE)
+        self.assertEqual(slots[0].icon, "save")
+        self.assertGreater(slots[0].confidence, so.DERIVED_CONFIDENCE)
+
+    def test_a_label_the_lexicon_does_not_know_is_DERIVED(self):
+        """`Export as PDF` is in no concept's phrase list; `file_export` is in
+        the catalog. Before this it was refused as NO_CONCEPT."""
+        slots = so.plan([sc("Export as PDF")], known_names=self.TABLE)
+        self.assertEqual(slots[0].icon, "file_export")
+        self.assertEqual(slots[0].confidence, so.DERIVED_CONFIDENCE)
+
+    def test_a_derivation_the_CATALOG_LACKS_draws_nothing(self):
+        """⚠️ The reject, and the reason derivation is safe to guess with: it
+        proposes, the catalog disposes. Without this a made-up name would reach
+        the renderer and the keycap would come back blank with nothing to say
+        why -- the failure mode this whole area is built to avoid."""
+        self.assertEqual(so.plan([sc("Frobnicate The Widget")],
+                                 known_names=self.TABLE), [])
+
+    def test_with_NO_table_the_fallback_is_skipped_entirely(self):
+        """A caller that cannot load the codepoints gets the old behaviour, not
+        a crash and not an unvalidated guess."""
+        self.assertEqual(so.plan([sc("Export as PDF")]), [])
+
+
 if __name__ == "__main__":
     unittest.main()
 
