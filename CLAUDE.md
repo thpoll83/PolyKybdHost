@@ -150,7 +150,7 @@ The Qt main thread does **no device I/O** after `PolyHost.__init__`. `HidWorker`
 console reads (250 ms) and daylight brightness (10 min); UI code enqueues jobs.
 The full contract — job coalescing, `run_sync`, `suspend`/`exclusive`, the reconnect
 split and the probe debounce — is [`docs/hid-worker-refactor.md`](docs/hid-worker-refactor.md).
-Five rules bind code outside it:
+Six rules bind code outside it:
 
 - **There is deliberately no synchronous language enumeration at startup.** The first
   worker probe must see a False→True transition and run the full fresh-connect flow; a

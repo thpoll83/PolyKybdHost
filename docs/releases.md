@@ -1,6 +1,7 @@
 # Host releases — mechanics
 
-Moved out of `CLAUDE.md` 2026-09-14. Verbatim.
+Extracted from `CLAUDE.md` 2026-09-14. The prose is unchanged; only heading levels
+and relative links were adjusted to suit a standalone file.
 
 ## Releases
 
@@ -33,7 +34,7 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
   merged PRs, so a host-only or firmware-only change immediately re-separates them.
   That drift is expected and is **not** a bug to "fix": the thing that genuinely
   must move together is `__protocol__` / `PROTOCOL_VERSION` (see the connect-gate
-  note above), which is a different number entirely. Re-aligning the display
+  note in [`protocol-gate.md`](protocol-gate.md)), which is a different number entirely. Re-aligning the display
   versions is a cosmetic choice to make at a release, by landing a `bump:minor` PR
   that does **not** itself edit `_version.py` — the workflow bumps *after* merge, so
   an edited version file would be bumped on top of.
@@ -54,7 +55,7 @@ skill to draft the notes and drive the flow. Mechanics (learned 2026-07):
   `gh release edit`.
 - **Version bump is label-driven**: the merged PR's `bump:major`/`bump:minor`/
   `bump:protocol` label (else patch) drives `bump-version.yml`. Bump `__protocol__` in
-  lockstep with the firmware (see the connect-gate note above).
+  lockstep with the firmware (see the connect-gate note in [`protocol-gate.md`](protocol-gate.md)).
   - ⚠️ **Set the label when the PR is OPENED (`issue_write`, `labels:`), never
     only ask for it in the body.** #212 (2026-09-04) asked for `bump:minor` in its
     body, was merged without it, and the label applied as the merge was happening

@@ -1,6 +1,7 @@
 # Device features over HID
 
-Moved out of `CLAUDE.md` 2026-09-14. Verbatim.
+Extracted from `CLAUDE.md` 2026-09-14. The prose is unchanged; only heading levels
+and relative links were adjusted to suit a standalone file.
 
 ## Device features over HID
 
@@ -26,7 +27,7 @@ Moved out of `CLAUDE.md` 2026-09-14. Verbatim.
   the shipped font. The `__protocol__` 9→10 bump happened once, to establish that
   open-ended contract (pre-v10 firmware NACKed unknown indices); don't bump it again for
   more scripts. `GLYPH_SCRIPT_MIN_PROTOCOL=9` is a `FEATURE_MIN_PROTOCOL` entry (see the
-  range-connect note above), so the Glyph-Script menu is disabled on a pre-v9 keyboard but
+  range-connect note in [`protocol-gate.md`](protocol-gate.md)), so the Glyph-Script menu is disabled on a pre-v9 keyboard but
   the rest of the app still connects; within a glyph-script-capable device the script set is
   free to grow.
   - **Each menu entry PREVIEWS its script** (2026-09-07): the icon is a two-glyph
