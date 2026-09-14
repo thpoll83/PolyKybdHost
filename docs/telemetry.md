@@ -29,11 +29,13 @@ marketing** — if the payload gains a field, the notes have to say so.
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "install_id": "9f2c…",           // random uuid4, generated on this machine
   "host_version": "0.11.5",
   "host_protocol": 12,
   "os": "Windows", "os_release": "11", "arch": "AMD64",
+  // Linux only; "" on Windows and macOS. See "Which desktop" below.
+  "session": "", "desktop": "", "window_backend": "pywinctl",
   "python": "3.12",
   "mode": "daemon",
   "device": {
@@ -51,6 +53,29 @@ marketing** — if the payload gains a field, the notes have to say so.
 
 The server adds the arrival time and a two-letter country derived from the
 connection, then **discards the IP address**. Nothing else is stored.
+
+### Which desktop (added in schema 2)
+
+On Linux the host tracks the focused window through one of three different code
+paths depending on the desktop, and they have different bugs. Without knowing
+which one installs actually run on, a fix for the least-used path can cost as
+much review as one that reaches everybody.
+
+- `session` — the display server: `x11`, `wayland`, or `other`.
+- `desktop` — the desktop environment: `gnome`, `kde`, `xfce`, `mate`,
+  `cinnamon`, `lxqt`, `lxde`, `budgie`, `deepin`, `pantheon`, `unity`, `sway`,
+  `hyprland`, `i3`, `river`, `niri`, `wlroots`, or `other`.
+- `window_backend` — which of the three the host chose: `pywinctl`,
+  `kde_win_reporter`, or `gnome_wayland_reporter`.
+
+All three are `""` on Windows and macOS, where the question does not apply.
+
+The first two come from `XDG_SESSION_TYPE` and `XDG_CURRENT_DESKTOP`, which are
+free text on your machine — a custom session can set them to anything, and some
+distributions prefix their own name (Ubuntu sets `ubuntu:GNOME`). **The value
+sent is never the text of those variables.** It is mapped to one of the names
+listed above, and anything not on the list is sent as `other`. So a desktop we
+have not heard of is counted, and never named.
 
 ## What is never sent
 

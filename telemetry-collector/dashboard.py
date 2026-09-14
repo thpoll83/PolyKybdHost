@@ -240,6 +240,19 @@ def breakdown(rows: list[dict], field: str, blank: str = "(none)") -> list[tuple
     return counts.most_common()
 
 
+def linux_breakdown(rows: list[dict], field: str) -> list[tuple[str, int]]:
+    """A Linux-only field, counted over Linux installs only.
+
+    session/desktop/window_backend are '' on Windows and macOS, so counting
+    them over every row would bury the answer under one huge "(none)" bar.
+    Rows from a schema-1 host are '' on Linux too and show as "(not reported)"
+    — distinct from "other", which means the install told us and we did not
+    recognise the value.
+    """
+    linux = [r for r in rows if str(r.get("os") or "") == "Linux"]
+    return breakdown(linux, field, blank="(not reported)")
+
+
 def fw_breakdown(rows: list[dict]) -> list[tuple[str, int]]:
     """Firmware versions among installs that actually had a keyboard attached."""
     attached = [r for r in rows if r.get("device_present") and str(r.get("fw_version") or "")]
@@ -481,6 +494,9 @@ from {len(latest)} installs</p>
   <div class="card"><h2>Host version (current per install)</h2>{hbars(breakdown(latest, "host_version"))}</div>
   <div class="card"><h2>Firmware version (keyboard attached)</h2>{hbars(fw_breakdown(latest), "No install has reported a keyboard yet.")}</div>
   <div class="card"><h2>Operating system</h2>{hbars(breakdown(latest, "os"))}</div>
+  <div class="card"><h2>Display server (Linux)</h2>{hbars(linux_breakdown(latest, "session"), "No Linux install has reported yet.")}</div>
+  <div class="card"><h2>Desktop (Linux)</h2>{hbars(linux_breakdown(latest, "desktop"), "No Linux install has reported yet.")}</div>
+  <div class="card"><h2>Window backend (Linux)</h2>{hbars(linux_breakdown(latest, "window_backend"), "No Linux install has reported yet.")}</div>
   <div class="card"><h2>Run mode</h2>{hbars(breakdown(latest, "mode"))}</div>
   <div class="card"><h2>Country</h2>{hbars(breakdown(latest, "country"))}</div>
   <div class="card"><h2>Hardware revision</h2>{hbars(breakdown(latest, "hw_version"))}</div>

@@ -260,3 +260,34 @@ class Render(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LinuxBreakdown(unittest.TestCase):
+    """The Linux-only cards count Linux rows only.
+
+    Counted over every row, session/desktop/window_backend would be '' for
+    every Windows and macOS install — one huge "(none)" bar burying the answer
+    the fields were added to give.
+    """
+
+    def test_windows_and_macos_rows_are_excluded(self):
+        rows = [
+            row("a", "2026-09-14", os="Linux", session="x11", desktop="xfce"),
+            row("b", "2026-09-14", os="Windows", session="", desktop=""),
+            row("c", "2026-09-14", os="Darwin", session="", desktop=""),
+        ]
+        self.assertEqual(dash.linux_breakdown(rows, "session"), [("x11", 1)])
+
+    def test_a_schema_1_linux_row_reads_as_not_reported(self):
+        # Distinct from "other": "" means the install never told us, "other"
+        # means it did and the value was not one we name.
+        rows = [
+            row("a", "2026-09-14", os="Linux", session=""),
+            row("b", "2026-09-14", os="Linux", session="other"),
+        ]
+        self.assertEqual(dict(dash.linux_breakdown(rows, "session")),
+                         {"(not reported)": 1, "other": 1})
+
+    def test_no_linux_rows_is_empty_not_an_error(self):
+        rows = [row("a", "2026-09-14", os="Windows")]
+        self.assertEqual(dash.linux_breakdown(rows, "desktop"), [])
