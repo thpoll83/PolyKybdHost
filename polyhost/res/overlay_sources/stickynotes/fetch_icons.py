@@ -52,10 +52,24 @@ FLUENT = {
     "redo":       "Arrow Redo",
     "find":       "Search",
     # --- caret motion ----------------------------------------------------
-    "wordleft":   "Arrow Left",
-    "wordright":  "Arrow Right",
-    "notetop":    "Arrow Up",
-    "notebottom": "Arrow Down",
+    # ⚠️ Double CHEVRONS, not "Arrow Left"/"Arrow Right"/"Arrow Up"/"Arrow Down",
+    # which is what shipped first. A Fluent arrow is a big open chevron head on a
+    # SHAFT TWO PIXELS TALL, and scaling it to fill the 40x36 cell scales the head
+    # to 24 px while the shaft stays 2 -- so the keycap reads as a hairline
+    # shooting out of a chevron, reported from hardware on the sibling Sound
+    # Recorder overlay as "strange pixels jumping out in a straight line". The
+    # stroke does not scale with the shape: invisible in the SVG, obvious in the
+    # 1-bit render.
+    #
+    # ⚠️ The FILLED arrow variant does not fix it and is worse -- the head becomes
+    # solid while the shaft stays a hairline, so it reads as a pin. Measured.
+    #
+    # A double chevron carries the meaning better anyway: these four are all
+    # "move further than one character" (a word, or the whole note).
+    "wordleft":   "Chevron Double Left",
+    "wordright":  "Chevron Double Right",
+    "notetop":    "Chevron Double Up",
+    "notebottom": "Chevron Double Down",
     "delwordback": "Backspace",
     # --- formatting (shared) ---------------------------------------------
     "bold":       "Text Bold",

@@ -32,8 +32,8 @@ FLUENT = {
     # ⚠️ The seek family is drawn as THREE DISTINCT PAIRS, because the app binds
     # three different jump distances to keys that sit next to each other. They
     # are ordered by SIZE so the picture itself says which is bigger:
-    #   Left/Right        = one step -> a single arrow
-    #   Shift+Left/Right  = further  -> a double triangle
+    #   Left/Right        = one step -> ONE triangle
+    #   Shift+Left/Right  = further  -> TWO triangles
     #   Home/End          = the ends -> a triangle against a bar
     # One glyph for all six would put three different distances behind one
     # picture on six adjacent keycaps, which is exactly the ambiguity the
@@ -45,8 +45,19 @@ FLUENT = {
     # "further". A glyph that states a wrong number is the "a wrong icon is worse
     # than no icon, because the user believes it" case, in its most literal form.
     # Seen on the rendered sheet; invisible from the folder names.
-    "seekback":  "Arrow Left",
-    "seekfwd":   "Arrow Right",
+    # ⚠️ "Triangle", NOT "Arrow Left"/"Arrow Right", which is what shipped first.
+    # A Fluent arrow is a big open chevron head on a SHAFT TWO PIXELS TALL, and
+    # scaling it to fill the 40x36 cell scales the head to 24 px while the shaft
+    # stays 2 -- so the keycap reads as a hairline shooting out of a chevron,
+    # reported from hardware as "strange pixels jumping out in a straight line".
+    # The stroke does not scale with the shape, which is invisible in the SVG and
+    # obvious in the 1-bit render.
+    #
+    # A triangle also makes the family exact: these three pairs are now ONE
+    # triangle, TWO triangles and a triangle-against-a-bar, in the SAME outline
+    # weight, so the six keycaps differ only in the thing that matters.
+    "seekback":  "Triangle Left",
+    "seekfwd":   "Triangle Right",
     "jumpback":  "Rewind",
     "jumpfwd":   "Fast Forward",
     "tostart":   "Previous",
