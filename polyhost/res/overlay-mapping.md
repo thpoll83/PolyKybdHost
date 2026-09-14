@@ -94,6 +94,48 @@ Calculator above is the case where both are present: its binding file bakes
 kept as the fallback should the bake ever be dropped — harmless, but do not read
 it as the mark you see on that keycap.
 
+⚠️ **`icon:` is not only about the picture — it is also the app's IDENTITY.**
+`icon_app()` feeds `ShortcutIconFetcher.overlays_for()` (`core/poly_core.py`),
+which caches per app NAME. Without it every `ApplicationFrameHost` app shares one
+cache key, so the second one focused is served the first one's shortcut icons.
+That is why the key survives even where a baked mark makes its artwork moot.
+
+## A PURE HOST needs no entry at all
+
+⚠️ **`icon:` could only ever fix an app that already had an overlay, which is
+circular** — `find_matching_entry` returns `None` for an entry carrying neither
+`overlay:` nor `remote:`, so an identity-only entry is unreachable. Making the
+generic fall-back work for a hosted app therefore required first giving that app
+an overlay: the one thing the generic path exists to avoid needing.
+
+So a process that is **never an application itself** now takes the app's identity
+from its window TITLE — the same signal the browser entries key their web-apps
+off, applied generically instead of per app:
+
+```python
+PURE_HOST_PROCESSES = frozenset({"applicationframehost"})   # handler/common.py
+```
+
+`app_from_host_title()` reads the LAST segment of the title, because Windows
+titles a document window `<document> - <App Name>` — the convention the
+LibreOffice entry already relies on with `titles-endswith`. `Calculator` →
+`calculator`; `image.jpg - Photos` → `photos`. The derived name feeds the catalog
+lookup and the shortcut-icon cache key, and the host's PID is withheld so its
+icon can never be drawn as the app's. **No YAML, for the whole packaged-app
+family including apps nobody has mapped.**
+
+⚠️ **`ONENOTE.EXE` is deliberately NOT a pure host.** It hosts Sticky Notes but is
+a real application too, and its own windows are titled with a NOTEBOOK name — a
+blanket title rule would invent an app called "My Notebook". An impure host keeps
+`icon:` plus a title branch, which is the case that key genuinely earns.
+
+⚠️ The residual risk is an app that titles its windows the other way round
+(document LAST). The derived name is then the document, which the catalog answers
+with a 404 — the safe failure, the same as any unknown app — but the shortcut
+cache fragments per document instead of per app. Accepted rather than guessed
+around: a rule that tried to tell a document from an app name would be wrong in
+both directions.
+
 ⚠️ **The parent entry must keep an `overlay:` of its own.**
 `find_matching_entry` returns `None` for an entry carrying neither `overlay` nor
 `remote` **before** it looks at any sub-map — so a parent reduced to title

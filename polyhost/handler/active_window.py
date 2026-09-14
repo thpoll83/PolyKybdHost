@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 
 from polyhost.handler.common import (
     OverlayCommand, Flags, find_matching_entry, ICON_APP, OS,
+    PURE_HOST_PROCESSES, app_from_host_title,
     TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, URL, URL_HAS, FLAGS,
 )
 from polyhost.handler.remote_window import RemoteHandler
@@ -75,6 +76,10 @@ class OverlayHandler:
         # (pywinctl is main-thread-only on macOS, and the query is what the tick
         # exists to do once). None whenever nothing is focused.
         self.current_app = None
+        # The app a PURE HOST process is showing, derived from the window title
+        # (see `app_from_host_title`). None for an ordinary process. Kept apart
+        # from `current_app` because the mapping lookup keys on the PROCESS.
+        self.current_host_app = None
         # The PID that owns the focused window, kept beside the name so the
         # program mark can fall back to the app's OWN icon from the OS.
         self.current_pid = None
@@ -253,6 +258,7 @@ class OverlayHandler:
                     # remember active window
                     self.set_win(win, win.title, win.getHandle())
                     self.current_app = None
+                    self.current_host_app = None
                     self.current_pid = None
                     if win.title == "PolyHost":
                         return None, OverlayCommand.NONE
@@ -275,6 +281,21 @@ class OverlayHandler:
                             else:
                                 app_name = raw_app_name.lower()
                             self.current_app = app_name
+                            # A PURE HOST process is not an app: every Windows 11
+                            # packaged app reports `applicationframehost`, so the
+                            # process name identifies none of them. The TITLE
+                            # does -- the same signal the browser entries key
+                            # their web-apps off, applied generically instead of
+                            # per app, so an app nobody has mapped still gets its
+                            # own mark, its own icon lookup and its own
+                            # shortcut-icon cache entry.
+                            # ⚠️ `current_app` is deliberately NOT overwritten:
+                            # the mapping lookup below keys on the PROCESS, so
+                            # the shipped `applicationframehost:` entry and its
+                            # title branches keep matching exactly as before.
+                            self.current_host_app = (
+                                app_from_host_title(win.title, app_name)
+                                if app_name in PURE_HOST_PROCESSES else None)
                             # For a browser, resolve the focused tab's URL so the
                             # matcher can key overlays off the website (see
                             # handler/browser_url.py). None for non-browsers or
@@ -322,6 +343,7 @@ class OverlayHandler:
                 self.log.info("No active window")
                 self.set_win()
                 self.current_app = None
+                self.current_host_app = None
                 if self.current_entry:
                     self.current_entry = None
                     return None, OverlayCommand.DISABLE
@@ -363,6 +385,11 @@ class OverlayHandler:
             named = entry.get(ICON_APP)
             if named:
                 return str(named).strip().lower()
+        # A pure host's TITLE names the app where its process cannot. Below the
+        # mapping's `icon:` (an explicit answer beats a derived one) and above
+        # `current_app` (which is `applicationframehost` for every packaged app).
+        if self.current_host_app:
+            return self.current_host_app
         return self.current_app
 
     def icon_pid(self):
@@ -379,6 +406,11 @@ class OverlayHandler:
             return None
         entry = self.current_entry
         if entry and entry.get(ICON_APP):
+            return None
+        # Same reasoning once more: on a PURE HOST the PID is the host's, so its
+        # icon is ApplicationFrameHost's rather than the app's -- confidently
+        # wrong, which is worse than none.
+        if self.current_host_app:
             return None
         return getattr(self, "current_pid", None)
 

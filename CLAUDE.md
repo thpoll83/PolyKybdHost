@@ -331,10 +331,25 @@ the naming rule, the cache key, the fetch threads and the two settings — is
   reaches classic-menubar apps only, the Windows UIA backend has never run against
   a live application, and macOS has no backend. All three degrade to drawing
   nothing and logging which it was, so a quiet keyboard is not evidence of a break.
-- ⚠️ **`icon:` in `overlay-mapping.poly.yaml` is what gives a HOSTED app a mark** —
-  a Windows 11 packaged app's process is `ApplicationFrameHost.exe`, and Sticky
-  Notes runs inside `ONENOTE.EXE`, so a name lookup resolves against the host. For
-  Sticky Notes that is a **wrong** icon prevented, not a missing one.
+- ⚠️ **A HOSTED app is identified by its window TITLE, not its process** — a
+  Windows 11 packaged app's process is `ApplicationFrameHost.exe` for *every* one
+  of them, so the name resolves against the host. `PURE_HOST_PROCESSES` +
+  `app_from_host_title()` (`handler/common.py`) take the last title segment
+  instead, generically and with no YAML. ⚠️ **`ONENOTE.EXE` is NOT in that set**:
+  it hosts Sticky Notes but is a real app too, and its own windows are titled with
+  a notebook name — so it keeps `icon:` plus a title branch, which is the case
+  that key earns. For Sticky Notes that is a **wrong** icon prevented, not a
+  missing one.
+- ⚠️ **`icon:` could never have fixed a hosted app with NO overlay, and the reason
+  is circular**: `find_matching_entry` returns None for an entry carrying neither
+  `overlay:` nor `remote:`, so an identity-only entry is unreachable — the fix was
+  available only to apps that already had an overlay, which is what the generic
+  path exists to avoid needing. Hence the title derivation above.
+- ⚠️ **`icon_app()` is the IDENTITY, not just the picture** — it also keys
+  `ShortcutIconFetcher.overlays_for()`, which caches per app name. Get it wrong on
+  a host process and every packaged app shares one cache entry, so the second one
+  focused is served the first one's shortcut icons. A baked `program_icon:` makes
+  the *artwork* moot but never this.
 
 ### The tray, its menus, and the OS around them
 

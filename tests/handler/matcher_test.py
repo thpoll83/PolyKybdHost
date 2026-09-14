@@ -9,7 +9,9 @@ urls_contains, os] plus the matching sub-maps.
 import unittest
 
 from polyhost.device.command_ids import OsType
-from polyhost.handler.common import find_matching_entry, normalize_os, os_match_keys
+from polyhost.handler.common import (
+    PURE_HOST_PROCESSES, app_from_host_title, find_matching_entry,
+    normalize_os, os_match_keys)
 
 
 def entry(overlay=True, remote=False, title=None, sw=None, ew=None, contains=None,
@@ -295,3 +297,48 @@ class TestOsBranchDesktopEnvironments(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PureHostTitleTest(unittest.TestCase):
+    """A host process names no app; its window TITLE does.
+
+    ⚠️ The gap this closes is circular, and the circle is the point: every
+    Windows 11 packaged app reports `applicationframehost`, and the one
+    correction the mapping offers (`icon:`) sits on an entry
+    `find_matching_entry` refuses to reach without an `overlay:` --
+    `if not (has_overlay or has_remote): return None`. So making the GENERIC
+    path work for a hosted app used to require giving that app an overlay
+    first, which is the exact thing the generic path exists to avoid.
+    """
+
+    def test_a_bare_app_title_is_the_app(self):
+        self.assertEqual(app_from_host_title("Calculator"), "calculator")
+        self.assertEqual(app_from_host_title("Sound Recorder"),
+                         "sound recorder")
+
+    def test_the_app_is_the_LAST_segment_of_a_document_title(self):
+        # Windows titles a document window "<document> - <App Name>", the same
+        # convention the LibreOffice entry relies on with `titles-endswith`.
+        for title in ("image.jpg - Photos", "image.jpg — Photos",
+                      "image.jpg – Photos", "image.jpg | Photos"):
+            self.assertEqual(app_from_host_title(title), "photos", title)
+
+    def test_a_title_naming_only_the_host_identifies_nothing(self):
+        # Better None than an app called "applicationframehost", which would
+        # send the catalog looking for a brand that does not exist.
+        self.assertIsNone(
+            app_from_host_title("applicationframehost",
+                                       "applicationframehost"))
+
+    def test_an_empty_title_identifies_nothing(self):
+        for title in (None, "", "   "):
+            self.assertIsNone(app_from_host_title(title))
+
+    def test_ONENOTE_is_not_a_pure_host(self):
+        # ⚠️ It hosts Sticky Notes but is a real app too, and its own windows are
+        # titled with a NOTEBOOK name -- a blanket title rule would invent an app
+        # called "My Notebook". That case keeps `icon:` + a title branch, which
+        # is where that key genuinely earns its place. If this ever flips, the
+        # mapping entries for Sticky Notes have to be revisited in the same pass.
+        self.assertIn("applicationframehost", PURE_HOST_PROCESSES)
+        self.assertNotIn("onenote", PURE_HOST_PROCESSES)

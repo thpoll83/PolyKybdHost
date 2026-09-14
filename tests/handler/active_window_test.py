@@ -366,5 +366,55 @@ class HostedAppIconTest(unittest.TestCase):
         self.assertEqual(h.icon_app(), "mdi:calculator")
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class PureHostNeedsNoMappingEntryTest(unittest.TestCase):
+    """The generic path has to identify a hosted app with NO overlay.
+
+    ⚠️ Until this, it could not, and the reason was circular: `icon:` is the
+    only correction for a host process, and `find_matching_entry` returns None
+    for an entry carrying neither `overlay:` nor `remote:` -- so the fix was
+    reachable only for apps that already had an overlay, which is the one thing
+    the generic path exists to avoid needing.
+    """
+
+    def _handler(self):
+        # Deliberately EMPTY: the point is that no mapping entry is required.
+        return OverlayHandler({})
+
+    def test_the_title_names_the_app_when_the_process_cannot(self):
+        h = self._handler()
+        h.current_app = "applicationframehost"
+        h.current_host_app = "sound recorder"
+        self.assertEqual(h.icon_app(), "sound recorder")
+
+    def test_the_HOST_pid_is_withheld_so_its_icon_cannot_be_drawn(self):
+        # The PID belongs to ApplicationFrameHost, so the OS icon would be the
+        # host's -- a confidently wrong mark, worse than none.
+        h = self._handler()
+        h.current_app = "applicationframehost"
+        h.current_host_app = "sound recorder"
+        h.current_pid = 4321
+        self.assertIsNone(h.icon_pid())
+
+    def test_an_ordinary_process_is_untouched(self):
+        h = self._handler()
+        h.current_app = "notepad"
+        h.current_host_app = None
+        h.current_pid = 99
+        self.assertEqual(h.icon_app(), "notepad")
+        self.assertEqual(h.icon_pid(), 99)
+
+    def test_an_explicit_icon_still_beats_the_derived_name(self):
+        """A mapping that NAMES the app is an answer somebody chose; the derived
+        one is a guess from a title. The explicit one wins."""
+        h = OverlayHandler({"applicationframehost": {
+            "title": "^Calculator", "icon": "mdi:calculator",
+            "overlay": ["calc.png"]}})
+        h.current_app = "applicationframehost"
+        h.current_host_app = "calculator"
+        h.current_entry = h.mapping["applicationframehost"]
+        self.assertEqual(h.icon_app(), "mdi:calculator")
+
+
 if __name__ == "__main__":
     unittest.main()
