@@ -57,6 +57,30 @@ FLUENT = {
     "paste":     "Clipboard Paste",
     "backspace": "Backspace",
     "graph":     "Data Line",
+    # --- Alt+1..5 mode switches, Alt+Up/Down window actions -----------------
+    # ⚠️ ICONS, not the mode NAMES, and the rendered sheet is what decided it:
+    # "Graph" is five characters and CLIPS the keycap at both 17 px and 14 px,
+    # so a text family would have had its one longest member drawn smaller than
+    # the other four -- the exact DEG/RAD/GRAD complaint two tables below, with
+    # no override able to fix it. These are UI actions rather than mathematical
+    # functions anyway, which is the line this file already draws for
+    # history/copy/paste/graph.
+    #
+    # ⚠️ Three picks avoid a COLLISION rather than being the obvious name:
+    #   * Standard is "Math Symbols" (+ - x /), NOT "Calculator" -- that glyph is
+    #     already the ESC program mark above, and the same art on two keys reads
+    #     as one of them being wrong.
+    #   * Graphing is "Data Trending", NOT "Data Line" -- `graph` (Ctrl+Home,
+    #     graph VIEW) has that one, and the two keys sit on the same overlay.
+    #   * Programmer is "Code" </>, NOT "Braces" -- on a CALCULATOR keycap `{ }`
+    #     is a grouping symbol, so the cleaner-looking glyph is the ambiguous one.
+    "mode_std":  "Math Symbols",
+    "mode_sci":  "Math Formula",
+    "mode_gph":  "Data Trending",
+    "mode_prg":  "Code",
+    "mode_date": "Calendar",
+    "keeptop":   "Pin",
+    "fullview":  "Pin Off",
     # ⚠️ The ESC program mark is BAKED here, unlike the nine overlays that take
     # the curated generic from `app_icons.yaml`. It has to be: on Windows 11 the
     # packaged apps run inside `ApplicationFrameHost.exe`, so the app NAME the

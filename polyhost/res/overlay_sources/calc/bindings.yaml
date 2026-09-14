@@ -14,6 +14,17 @@
 # programmer-only keys (QWORD / DEC / OCT / BIN / BYTE, the bitwise operators and
 # the hex digits A-F) are left off rather than mixed in.
 #
+# ⚠️ THE ALT BINDINGS COME FROM A DIFFERENT FILE, and that is why they were
+# missing for so long. `shortcuts.json` is harvested from `Resources.resw`, which
+# describes Calculator's BUTTONS only -- it carries zero Alt entries. The MODE
+# switches live in `src/Calculator.ViewModels/Common/NavCategory.cs`
+# (`CategoryManifest`, one `VirtualKey`/`AccessKey` per mode), dispatched through
+# `KeyboardShortcutManager.NavigateModeByShortcut` off `VirtualKeyAltChord`. The
+# converter categories in the same table carry `VirtualKey = None`, so the mode
+# set really is Alt+1..5 and nothing else. Alt+Up / Alt+Down are the two Alt
+# chords `Resources.resw` does name, in prose rather than as a shortcut entry
+# ("Keep on top (Alt+Up)" / "Back to full view (Alt+Down)").
+#
 # ⚠️ THREE ENTRIES ASSUME A US LAYOUT. Calculator binds a few buttons to a
 # CHARACTER rather than a virtual key -- `@` is square root, `#` is x³, `!` is
 # factorial -- and a character lands on whichever key produces it. Those three
@@ -115,3 +126,15 @@ bindings:
   - { key: I, mods: [CTRL, SHIFT], icon: acsch.png, label: acsch }
   - { key: J, mods: [CTRL, SHIFT], icon: acoth.png, label: acoth }
   - { key: D, mods: [CTRL, SHIFT], icon: clearhist.png, label: "clear history" }
+
+  # --- Alt: the calculator MODES, and the two window actions ----------------
+  # Source: microsoft/calculator src/Calculator.ViewModels/Common/NavCategory.cs
+  # (CategoryManifest) for 1-5; src/Calculator/Resources/en-US/Resources.resw
+  # for Up/Down. See the header note.
+  - { key: "1", mods: [ALT], icon: mode_std.png,  label: "Standard mode" }
+  - { key: "2", mods: [ALT], icon: mode_sci.png,  label: "Scientific mode" }
+  - { key: "3", mods: [ALT], icon: mode_gph.png,  label: "Graphing mode" }
+  - { key: "4", mods: [ALT], icon: mode_prg.png,  label: "Programmer mode" }
+  - { key: "5", mods: [ALT], icon: mode_date.png, label: "Date calculation mode" }
+  - { key: UP,   mods: [ALT], icon: keeptop.png,  label: "Keep on top" }
+  - { key: DOWN, mods: [ALT], icon: fullview.png, label: "Back to full view" }

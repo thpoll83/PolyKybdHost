@@ -38,7 +38,34 @@ Deliberately left off:
 | `0`–`9` `+` `-` `*` `/` `.` `(` `)` | the keycap already shows the character |
 | `%` | bound to BOTH `modButton` and `percentButton` in the same table |
 | ESC = clear | the program mark owns ESC on every overlay in this repo |
-| Alt+1…4 mode switching | **not in the resource file** — it lives elsewhere in the app, so it could not be verified from source and is not guessed at here |
+
+### The Alt layer comes from a SECOND source file
+
+The mode switches were missing from this overlay until 2026-09-14, and the
+reason is worth keeping: **`Resources.resw` describes Calculator's BUTTONS, and
+a mode switch is not a button.** `shortcuts.json` — 120 entries harvested from
+that file — contains **zero** Alt bindings, so a harvest that was complete by its
+own terms still produced an overlay with an empty Alt layer, and the table above
+recorded that as "it lives elsewhere in the app" and stopped. It does live
+elsewhere, and the file names itself:
+
+| chord | mode | source |
+|---|---|---|
+| Alt+1 | Standard | `src/Calculator.ViewModels/Common/NavCategory.cs`, `CategoryManifest` |
+| Alt+2 | Scientific | same |
+| Alt+3 | Graphing | same |
+| Alt+4 | Programmer | same |
+| Alt+5 | Date | same |
+| Alt+Up | Keep on top | `Resources.resw` — in PROSE (`Keep on top (Alt+Up)`), not as a shortcut entry |
+| Alt+Down | Back to full view | `Resources.resw` — prose (`Back to full view (Alt+Down)`) |
+
+Each `CategoryManifest` row carries a `VirtualKey` + `AccessKey`, dispatched by
+`KeyboardShortcutManager.NavigateModeByShortcut` off the `VirtualKeyAltChord`
+attached property — so the modifier is confirmed to be Alt from the code, not
+from a shortcut list. **The set is complete at five**: the sixteen converter
+categories in the same table (Currency, Length, Angle, …) all carry
+`VirtualKey = MyVirtualKey.None`, so they have no chord at all. Note the old
+note above said Alt+1…**4**; there are five.
 
 ⚠️ **Three entries assume a US layout.** Calculator binds some buttons to a
 CHARACTER rather than a virtual key, and a character lands on whichever key
@@ -79,6 +106,13 @@ bindings render them with `mode: alpha`.
 | `backspace.png` | Backspace |
 | `graph.png` | Data Line |
 | `progmark.png` | Calculator (the ESC program mark) |
+| `mode_std.png` | Math Symbols — Alt+1 Standard |
+| `mode_sci.png` | Math Formula — Alt+2 Scientific |
+| `mode_gph.png` | Data Trending — Alt+3 Graphing |
+| `mode_prg.png` | Code — Alt+4 Programmer |
+| `mode_date.png` | Calendar — Alt+5 Date |
+| `keeptop.png` | Pin — Alt+Up |
+| `fullview.png` | Pin Off — Alt+Down |
 
 * Source: <https://github.com/microsoft/fluentui-system-icons>
 * Licence: MIT
