@@ -8,12 +8,21 @@ from polyhost.gui.get_icon import get_icon
 class IconStateManager:
     """ Set the tray icon as needed """
 
-    def __init__(self, parent, is_connected, tooltip):
+    def __init__(self, parent, is_connected, tooltip, prefix="p"):
+        """`prefix` picks which brand mark the tray wears: "p" for the tray app,
+        "f" for the forwarder, whose unlit keys spell an F instead of a P (see
+        tools/gen_brand_icons.py). Both run as trays on the same desktop when
+        somebody forwards to their own machine, so they must not look alike.
+
+        The busy and warning states are NOT prefixed: they draw the ring only,
+        with every inner key cleared, so there is no letter left in them to
+        differ — a second, byte-identical copy under "f" would be exactly the
+        kind of mirrored file this repo keeps getting caught by."""
         self.parent = parent
         parent.tray.setToolTip(tooltip)
-        
-        self.connected = get_icon("pcolor.png")
-        self.disconnected = get_icon("pgray.png")
+
+        self.connected = get_icon(f"{prefix}color.png")
+        self.disconnected = get_icon(f"{prefix}gray.png")
         self.wait = get_icon("pthink.png")
         self.warn = get_icon("pwarn.png")
         self._is_connected = is_connected
