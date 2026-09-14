@@ -95,7 +95,7 @@ brand-new console window it then dies with. Use
     raise. A "registered" task that isn't queryable now falls back to the
     Startup-folder shortcut instead of leaving no autostart at all.
 
-### Updates, autostart and daemon mode
+## Updates, autostart and daemon mode
 
 - **GUI self-update must be applied by the DAEMON, not the client (daemon-by-default).**
   In daemon mode the tray GUI is a `--connect` client and a separate `--headless`

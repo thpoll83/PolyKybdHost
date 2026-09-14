@@ -2,7 +2,7 @@
 
 Moved out of `CLAUDE.md` 2026-09-14. Verbatim.
 
-### The tray, its menus, and the OS around them
+## The tray, its menus, and the OS around them
 
 - **The tray menu is TWO-TIER: a normal menu of ~9 rows, plus a Developer submenu
   that only ever ADDS.** The old menu had 16 top-level entries, one of which ("All

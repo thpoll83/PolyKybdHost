@@ -282,7 +282,7 @@ purpose is proving whether the app crashed, shipped into none of them.
   match the branch, that is the explanation — the running code is the release, and
   `_version.py` on disk is the only thing that says which.
 
-### When something is reported broken
+## When something is reported broken
 
 - **Logs, crash reporting and the guided problem report are
   [`docs/diagnostics.md`](diagnostics.md)** — the Qt-free `log_bundle` service

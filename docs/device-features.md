@@ -2,7 +2,7 @@
 
 Moved out of `CLAUDE.md` 2026-09-14. Verbatim.
 
-### Device features over HID
+## Device features over HID
 
 - **Glyph-script override (protocol 9+; expanded set at v10)**: HID cmd 30
   (`GLYPH_SCRIPT`) selects a glyph-script *override* of the keycap language legends —

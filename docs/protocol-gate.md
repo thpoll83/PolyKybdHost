@@ -2,7 +2,7 @@
 
 Moved out of `CLAUDE.md` 2026-09-14. Verbatim.
 
-### Protocol, versions and the connect gate
+## Protocol, versions and the connect gate
 
 - **Version handling is RANGE-connect + per-feature gating (not exact-match).** The
   reconnect gate (`polyhost/core/decisions.py` `decide_reconnect_apply`) connects to any

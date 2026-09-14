@@ -2,7 +2,7 @@
 
 Moved out of `CLAUDE.md` 2026-09-14. Verbatim.
 
-### Tests
+## Tests
 
 - **RUN the real entry point once before believing a mocked suite — the output is
   where format bugs live.** Same instinct as rendering a widget or rasterising an

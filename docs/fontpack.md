@@ -2,7 +2,7 @@
 
 Moved out of `CLAUDE.md` 2026-09-14. Verbatim.
 
-### The font pack
+## The font pack
 
 - **Font-pack bundles (protocol 6+)**: the external-flash font pack ships as **N
   per-family bundles** (`polyhost/res/fontpack/<id>.plyf` + `bundles.json`), not one
