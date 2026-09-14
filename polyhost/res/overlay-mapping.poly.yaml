@@ -125,8 +125,23 @@ excel:
   overlay: [excel_template.mods.png, excel_template.combo.mods.png]
 outlook:
   overlay: [outlook_template.mods.png, outlook_template.combo.mods.png]
+# ⚠️ `ONENOTE.EXE` HOSTS THE NEW STICKY NOTES, so this entry is about Sticky
+# Notes and NOT about OneNote -- hence the title constraint, which lets a real
+# OneNote window fall through unmatched rather than showing sticky-note keycaps.
+# `icon:` is required for the same reason: without it the mark would resolve from
+# the process name through `app_icons.yaml` (`onenote: mdi:microsoft-onenote`)
+# and draw a OneNote logo on a Sticky Notes window.
+onenote:
+  title: "^Sticky Notes"
+  icon: mdi:sticker-text
+  overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
 powerpnt:
   overlay: [powerpoint_template.mods.png, powerpoint_template.combo.mods.png]
+# Photos runs as its own `Photos.exe`, so no title branch and no `icon:` -- the
+# curated generic (`photos: mdi:image-multiple`) resolves from the process name,
+# confirmed in the field log that prompted this batch.
+photos:
+  overlay: photos_template.mods.png
 photoshop:
   overlay: [photoshop_template.mods.png, photoshop_template.combo.mods.png]
 illustrator:
@@ -183,10 +198,23 @@ notion:
 # title branch here, and its own `icon:` (the program mark cannot be resolved from
 # a host process name -- `si:applicationframehost` will never exist). Add a
 # hosted app by adding a branch, not by adding an app_icons.yaml entry.
+# ⚠️ The PARENT must carry an overlay of its own, or none of its title branches
+# are reachable: `find_matching_entry` returns None immediately for an entry with
+# neither `overlay:` nor `remote:`, before it looks at any sub-map. So Calculator
+# is the parent (it was here first) and every other hosted app is a
+# `titles-startswith` branch, which is checked BEFORE the parent's own `title:`
+# regex. A hosted app this file does not name falls through unmatched, which is
+# what should happen -- the parent's `^Calculator` gate is what stops Weather or
+# Clock being handed calculator keycaps.
 applicationframehost:
   title: "^Calculator"
   icon: mdi:calculator
   overlay: [calc_template.mods.png, calc_template.combo.mods.png]
+  titles-startswith:
+    Sound:
+      title: "^Sound Recorder"
+      icon: mdi:microphone
+      overlay: soundrecorder_template.mods.png
 calculatorapp:
   overlay: [calc_template.mods.png, calc_template.combo.mods.png]
 # All three LibreOffice modules are ONE process, and the app-name lookup is an
