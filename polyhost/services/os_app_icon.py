@@ -251,7 +251,7 @@ def _windows_exe(pid) -> str:
     """The full image path of a running process, or ""."""
     try:
         import ctypes
-        from ctypes import wintypes
+        import ctypes.wintypes
         PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         handle = kernel32.OpenProcess(
@@ -259,7 +259,7 @@ def _windows_exe(pid) -> str:
         if not handle:
             return ""
         try:
-            size = wintypes.DWORD(32768)
+            size = ctypes.wintypes.DWORD(32768)
             buffer = ctypes.create_unicode_buffer(size.value)
             if not kernel32.QueryFullProcessImageNameW(
                     handle, 0, buffer, ctypes.byref(size)):
@@ -474,7 +474,10 @@ def _macos_icon(pid, app_name: str):
     try:
         candidates += sorted(f for f in os.listdir(resources) if f.endswith(".icns"))
     except OSError:
-        pass
+        pass            # no readable Resources dir. `candidates` may still hold
+                        # the name Info.plist gave, which is the better guess
+                        # anyway; an unreadable bundle is a missing icon, not an
+                        # error worth raising out of a cosmetic lookup.
     for candidate in candidates:
         path = os.path.join(resources, candidate)
         try:

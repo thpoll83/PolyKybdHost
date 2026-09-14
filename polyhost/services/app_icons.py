@@ -484,7 +484,10 @@ def render_os_overlay(data: bytes, box: int = PROGRAM_ICON_BOX):
             try:
                 os.unlink(temporary)
             except OSError:
-                pass
+                pass        # the temp file is the rasteriser's, not the
+                            # caller's; a leaked one costs a few KB in the
+                            # system temp dir, and raising here would lose the
+                            # mask we came for.
         if mask is None:
             return None, None, -1.0
         # ⚠️ SCORED like any other candidate, never trusted for being vector.
