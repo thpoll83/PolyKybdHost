@@ -406,6 +406,21 @@ class TestShortcutIcons(unittest.TestCase):
         core.send_overlay_data("vscode_template.mods.png")
         core.shortcut_icons.overlays_for.assert_not_called()
 
+    def test_a_SHORTCUTS_ONLY_app_tells_the_handler_overlays_are_on(self):
+        """The same trap the mark has, reached by the other source.
+
+        The DISABLE branch asks "did anything get sent?", so an app with no
+        template and no mark but a harvest still supersedes the disable — and
+        must therefore flip the handler's optimistic `overlays_enabled` back to
+        True, or the NEXT real disable is swallowed as already done and this
+        app's icons sit over one that has none.
+        """
+        core = self._core(mark=None)
+        core.overlay_handler.handle_active_window.return_value = (
+            None, OverlayCommand.DISABLE)
+        core.tick_window_tracking()
+        core.overlay_handler.note_overlay_state.assert_called_once_with(True)
+
     def test_it_asks_about_the_FORWARDED_app_not_the_RDP_client(self):
         """⚠️ On a multi-machine setup `current_app` is the remote-desktop client
         while the keycaps show what is focused on the OTHER machine. Harvesting

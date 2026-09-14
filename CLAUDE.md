@@ -1786,6 +1786,71 @@ Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main threa
       Without it the shipped preview drew 236 previews across 75 layouts the keyboard
       suppresses. `test_letter_keycaps_draw_the_same_pixels` is what proves the two
       sources agree, and it is why that test renders rather than compares structures.
+- **The generic icon fall-back is TWO synthetic overlay sources, and the rule that
+  separates them is what their pseudo-filename has to carry.** Both ride
+  `send_overlays_mru`'s `synthetic=` seam (`device/synthetic_overlay.py`), which
+  needs no firmware change at all — a duck-typed converter returning
+  `{keycode: OverlayData}` gets the MRU cache, the pool allocation, the ROI/RLE
+  encoders and the mapping commit for free.
+  - **`@prog:<slug>`** — the focused app's brand mark on ESC
+    (`services/app_icons.py` + `app_icon_fetcher.py`). The name carries the APP,
+    because a mark differs per app by definition.
+  - **`@sc:<concept>:<height><placement>`** — an icon for one of the app's own
+    shortcuts, on a key no hand-made template covers
+    (`services/shortcut_source/` → `shortcut_overlays.py` → `shortcut_fetcher.py`).
+    The name deliberately carries NO app: a `save` icon is the same pixels whoever
+    drew it, so Word and Notepad both drawing Save on Ctrl+S share one pool slot
+    and one upload, and alt-tabbing between them re-sends nothing.
+  - ⚠️ **The render settings are part of that name because
+    `overlay_cache.get_or_allocate` returns an exact key hit WITHOUT comparing
+    bytes.** `@sc:save` alone would keep serving a 32 px mask out of the pool
+    after the user asked for 16, until the next reconnect cleared the cache.
+    Anything that changes the pixels belongs in the key.
+  - ⚠️ **A synthetic name whose converter came back None must be dropped from the
+    file list before `send_overlays_mru` sees it.** It hands an unrecognised name
+    to `ImageConverter.open()`, which cannot find a file called
+    `@sc:save:32lower_left` and returns False **for the whole send** — one
+    undrawable icon costing every hand-made overlay on the keyboard. Reachable
+    whenever a mask is all-black (`OverlayData` refuses one), and far likelier for
+    shortcuts than for the single program mark since every icon is its own source.
+  - **COVERAGE needs no host-side computation, and the plan was wrong to propose
+    it.** `send_overlays_mru` already skips a synthetic `(modifier, keycode)` a
+    real template claimed, *before* the upload — so template-wins is a device-layer
+    property and the caller computes no union. Building one host-side would re-do
+    the template decode the device layer already performs to reach the same answer.
+    The one thing the caller decides is ORDER: the program mark is appended before
+    the shortcut sources, so on ESC — the only key both can want — the app's
+    identity wins.
+  - ⚠️ **`Shortcut.mods` IS `Modifier`'s value, with no mapping in between.** Both
+    are the L/R-folded QMK nibble (bit0 Ctrl, bit1 Shift, bit2 Alt, bit3 GUI),
+    because both were written against the firmware's `overlay_mod_variant()` — but
+    they were defined independently, in `shortcut_source.model` and `device.keys`.
+    `tests/services/shortcut_overlays_test.py` pins the agreement, since a
+    renumbering would put an icon under the WRONG modifier rather than under none.
+  - **What the harvest can reach is a measured ceiling, not a bug.** Linux AT-SPI
+    finds shortcuts for **classic-menubar apps only** — an app whose menu lives in
+    a hamburger popover exposes no accelerator at all, and GTK4 answers
+    `<VoidSymbol>` for every keybinding it has. Windows UIA is built but has
+    **never run against a live application**. macOS has no backend, so the
+    fall-back never fires there. All three degrade to drawing nothing and saying
+    which of the three it was in the log; do not read a quiet keyboard as broken.
+  - ⚠️ **Both fetch threads exist because the alternatives are forbidden, and the
+    shortcut one more so** — the harvest alone is a tree walk over another process
+    (a D-Bus round trip per node) before any icon is downloaded. `overlay_for()` /
+    `overlays_for()` are dict lookups that queue, and the answer arrives through
+    `on_ready` → `invalidate_window_cache(resend_same_entry=True)`. That flag is
+    load-bearing: the answer lands for the app that is STILL focused, so the
+    re-match finds the same entry and the redundant-command guard would drop it —
+    measured on the program mark, where a Chrome icon took four minutes and three
+    activations to appear.
+  - **An EMPTY harvest is cached like a missing mark.** Most apps yield nothing, so
+    without the negative cache every window switch would re-walk a tree already
+    proven empty.
+  - `shortcut_icons_enabled` and `shortcut_icon_auto_fetch` answer **different
+    questions** — may another process's accessibility tree be read at all, and may
+    the network be used for an icon this install has not cached. Someone on a
+    locked-down machine wants the first; someone on a metered one wants the second.
+
 - **The brand mark (`p{color,gray,think,warn}.*`) is GENERATED — edit
   `tools/gen_brand_icons.py`, never the PNGs.** It draws a 6x6 keycap grid whose
   UNLIT keys spell a "P" in negative space, on a 1024-unit viewBox (the 64px

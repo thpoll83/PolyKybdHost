@@ -11,9 +11,14 @@ Two features, one mechanism:
 * **Shortcut icons** — a per-key icon derived from the app's own shortcut
   labels, only where the template does not already draw something.
 
-Status: **Phase 0 and Phase 1 are built, tested and pushed.** The keyboard draws
-the focused app's mark on ESC, for an app with a template and for one without.
-Phase 2 (shortcut icons on other keys) and Phase 3 (the curation file) are next.
+Status: **Phases 0, 1 and 2 are built and tested.** The keyboard draws the
+focused app's mark on ESC and, on the keys no hand-made template covers, icons
+for that app's own shortcuts. Phase 3 (the curation file) is next.
+
+⚠️ **On Linux the fall-back reaches CLASSIC-MENUBAR APPS ONLY, and that is a
+measured ceiling rather than a bug to fix** — see A.3 and E.4. On macOS it
+reaches nothing at all, because that backend is not built. Both degrade to
+drawing nothing and saying why in the log.
 
 ⚠️ **Read A.3 before judging what Phase 1 delivers** — the catalog carries no
 Microsoft Office, no Adobe and no VS Code, which this document previously got
@@ -231,16 +236,58 @@ cache, skip the upload and draw GIMP's logo on an Inkscape window.
 cached while in flight, so the poll loop re-queued it every tick — two fetches
 and two `on_ready`s, the second re-sending every overlay for nothing.
 
-### Phase 2 — shortcut fallback
+### Phase 2 — shortcut fallback — ✅ DONE (`f767935`, `fb73f44`)
 
-* Move the probe backends out of `tools/shortcut_probe.py` into
-  `polyhost/services/shortcut_source/` (`atspi.py`, `uia.py`, `__init__.py`
-  picking by platform). Keep the probe as a CLI over the same code.
-* Coverage: union of the templates' `extract_overlays()` per modifier.
-* For each harvested shortcut whose (keycode, modifier) is uncovered:
-  `label → concept → icon → OverlayData`, into the same synthetic converter.
-* ⚠️ Ordering: synthesise only for uncovered keys, so template-wins needs no
-  precedence rule and no wasted upload.
+**Deliverable met:** a 22-shortcut menubar app resolves to 20 keys with real
+ink, through a live catalog fetch.
+
+| shipped | what it is |
+|---|---|
+| `services/shortcut_source/` | the pure model + the AT-SPI and UIA backends, with `pick()` choosing by platform (11 tests) |
+| `services/shortcut_overlays.py` | `plan()` decides which shortcut gets an icon and on which key; `render()` draws one mask per concept (19 tests, 10/10 mutations) |
+| `services/shortcut_fetcher.py` | the core-owned harvest thread (13 tests, 10/10) |
+| `device/synthetic_overlay.shortcut_converter` | one icon, every key it lands on (8 tests) |
+| `PolyCore` wiring + `shortcut_icons_enabled` | (10 tests, 8/8) |
+
+**The COVERAGE step above turned out to need NO code at all**, which is the one
+thing worth carrying forward from this phase. `send_overlays_mru` already defers
+a synthetic `(modifier, keycode)` that a real template claimed, and it does so
+*before* the upload — so template-wins was inherited whole from Phase 1 and the
+caller computes no union. What the plan proposed (decode every template host-side
+to build a coverage set) would have re-done the expensive decode the device layer
+already performs, to reach the same answer.
+
+⚠️ **THE CACHE KEY IS THE CONCEPT PLUS THE RENDER SETTINGS — the opposite of
+`@prog:<slug>`, and the reasoning inverts cleanly.** A program mark differs per
+app by definition, so its name must carry the app. A `save` icon is the same
+pixels whoever drew it, so its name must NOT: Word and Notepad both putting Save
+on Ctrl+S then share one pool slot and one upload, and alt-tabbing between them
+re-sends nothing. The height and corner are in the key because `get_or_allocate`
+returns an exact key hit **without comparing bytes**, so `@sc:save` alone would
+keep serving a 32 px mask out of the pool after the user asked for 16.
+
+⚠️ **A SYNTHETIC NAME WITH NO CONVERTER HAS TO BE FILTERED OUT OF THE FILE
+LIST.** `send_overlays_mru` hands an unrecognised name to `ImageConverter.open()`,
+which cannot find a file called `@sc:save:32lower_left` and returns False **for
+the whole send** — one undrawable icon costing every hand-made overlay on the
+keyboard. Latent since Phase 1 (the program mark can also fail to build, from an
+all-black mask) and far likelier here, since every icon is its own source.
+
+#### What Phase 2 measured that the plan did not predict
+
+* **20 keys from a 22-shortcut app**, i.e. the harvest is the bottleneck and the
+  lexicon is not: of 22 realistic mousepad labels, 20 cleared 0.85 confidence and
+  every one of them rendered real ink. So Phase 3's curation buys accuracy on the
+  tail, not coverage on the head.
+* **20 pool slots for one app.** The pool holds 600, so this is comfortable — but
+  it is 20 uploads the first time an app is focused, against 0 on every later
+  focus and on any other app that shares a concept. That sharing is what the
+  concept-keyed name above is for, and it is why the first focus of the SECOND
+  menubar app is nearly free.
+* ⚠️ **`match()` already refuses an empty label**, so a guard for one in the
+  planner is dead code. Found by mutation-sweeping, not by reading: deleting it
+  was the one mutation the suite could not catch, and the escape is what said the
+  guard was redundant.
 
 ### Phase 3 — unmatched → curation
 
