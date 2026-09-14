@@ -230,3 +230,97 @@ A and B touch disjoint files and run in parallel.
   consumer makes it redundant; removal is a follow-up cleanup once the
   worker has soaked).
 - Updater/installer QThreads are unrelated and untouched.
+
+## Threading model (HID worker)
+
+Since the HID-worker refactor (`docs/hid-worker-refactor.md`), the Qt main thread does **no device I/O** after `PolyHost.__init__` (the one synchronous `connect()` at startup — which seeds `device_present` for firmware-action gating — is the only exception). There is deliberately **no synchronous language enumeration at startup**: `self.connected` can only be set by the reconnect decision tree (that's where the protocol/version gate lives), so the first worker probe always sees a False→True transition and runs the full fresh-connect flow (enumerate + menu build + unicode mode + cache reset). A startup enumerate just duplicated all of it within the first second (double menu build, field 2026-06-13) — don't re-add one.
+
+- `HidWorker` (`polyhost/device/hid_worker.py`) owns the device. Periodic tasks on the worker: reconnect probe (1 s), console/serial reads (250 ms), daylight brightness incl. its network lookups (10 min).
+- UI code enqueues jobs (`worker.submit`); overlay sends use `coalesce_key="overlay"` so rapid app switches supersede/cancel stale transfers instead of replaying them. Dialogs use `worker.run_sync` (short bounded block; raises `RuntimeError` while suspended). Tray pause maps to `suspend()`/`resume()`, and `exclusive()` restores the prior suspend state on exit. ⚠️ **There are TWO flash paths and only one of them uses `exclusive()`** — see the console-starvation note below, which is what makes the distinction matter.
+- ⚠️ **Nothing the firmware prints during a flash is observable from the host** — and
+  this is not a logging-level problem, so don't go hunting for a switch. QMK *drops*
+  console output that no one drains, and during a flash nobody does. ⚠️ **TWO flash
+  paths reach that outcome by DIFFERENT mechanisms**, so don't reason from one to the
+  other:
+  - The **core job** path (`PolyCore.flash_firmware` / `flash_fontpack`, i.e. the
+    daemon, `polyctl`, and the tray's RPC flash) runs the whole upload as **one long
+    job on the HID worker** and deliberately takes **no `exclusive()`** — its docstring
+    says so, since the worker's single thread already blocks the reconnect probe.
+    `HidWorker._run()` runs due periodics only **between** jobs, so the 250 ms console
+    read simply never gets a turn for the duration.
+  - The **GUI dialog** path (`host.py` `_on_fw_download_done()`, and `cmd_menu.py`'s
+    `_paused_polling()` context manager) *does* wrap in `worker.exclusive()`, because
+    `HidFwUpDialog` stages chunks from **its own QThread** — nothing would otherwise
+    stop the worker's periodics contending for the device while the keyboard
+    re-enumerates. There `suspend()` sets the cancel flag on every periodic, the
+    console read included.
+
+  Either way the
+  window from BEGIN to the post-apply reconnect is a blind spot in the host log,
+  which is exactly where the FW-2 verdict lands: `FW_UP: image signature
+  OK|INVALID|UNSIGNED`, printed at COMMIT. Two rounds were spent concluding "it
+  printed nothing" from a log that structurally could not contain it (2026-08-04);
+  the tell is a gap in the firmware console timestamps spanning the flash. Use
+  **`tools/poly_console.py`** in a second terminal — it reads the console HID
+  interface directly (separate from the raw-HID channel the flash uses, so they
+  coexist) with only `hid`, and survives the reboot. `qmk console` is *not* a
+  substitute on Windows: the QMK CLI refuses to run outside an MSYS2 MinGW64 shell.
+- **`FW_UP_COMMIT` has FOUR status bytes** — `.` accepted, `?` awaiting the physical
+  ACCEPT/REJECT on the keyboard, `S` refused because the image is not validly signed,
+  `!` staged-CRC mismatch. `S` was split out (qmk, 2026-08-05) because the firmware's
+  signature check sits *behind* the CRC result inside `fw_staging_finalize()`, so both
+  refusals arrived as `!` and every consumer reported "CRC mismatch" for an image whose
+  CRC was perfect — including the HIL rig, which sent a real investigation the wrong
+  way. Don't collapse them back into one test.
+  - **`?` means "re-poll me", not "failed".** Under `FW_REQUIRE_SIGNATURE` an unsigned
+    image is not refused outright: the keyboard turns its keycaps into an A/ACCEPT ·
+    R/REJECT dialog and waits up to 60 s for a keypress. `hid_fw_up.flash_firmware`
+    re-sends COMMIT every second (`CONFIRM_POLL_TIMEOUT_S` 75, deliberately past the
+    firmware's own window so the host never gives up first) until the byte changes.
+    Staging state is untouched between polls, so re-running COMMIT is free — and the
+    firmware skips re-bridging to the slave while a prompt is up, or each poll would
+    re-erase the slave's 4 KB staging header sector.
+  - ⚠️ **A host that predates `?` cannot flash an unsigned image at all** — it falls
+    through to the generic failure branch and the progress dialog simply stops, still
+    holding `worker.exclusive()`. Ship the host release before (or with) an enforcing
+    firmware release: the firmware cannot detect an old host, so ordering and the
+    "download the `.sig` too" wording in the notes are the only mitigations.
+  - **`polyctl fw version` is a LIVE query (HID cmd 0x43) — it used to be a cache, and
+    the cache lied.** `PolyCore.get_fw_version()` returned `keeb.get_sw_version()`, the
+    string parsed at the last GET_ID. That is the one command whose whole purpose is
+    "what is running right now", and it is asked exactly when a cache cannot answer:
+    straight after a flash, while `worker.exclusive()` has the reconnect probe suspended
+    so nothing re-probes. It reported the *pre-flash* version after an update had
+    demonstrably installed — the keycaps were already drawing a prompt only the new
+    firmware can render — and it was believed (field, 2026-08-05). It now does device
+    I/O through `_device_call`, returns `(ok, {version, fw_size, fw_crc})`, and **fails
+    loudly** ("suspended") mid-flash rather than handing back a stale string. Don't
+    "optimise" it back to the cached value; the failure is the feature.
+  - **The host may CANCEL the prompt but never accept it** — a COMMIT carrying `'x'`
+    in `data[2]` withdraws it (`_abort_cleanup` sends that form). Cancelling can only
+    ever deny, so it is safe over the very channel signing defends; accepting stays a
+    keypress. Don't add a host-side "allow unsigned" checkbox.
+- **The host is also silent when a firmware `.sig` is simply absent.** `hid_fw_up`
+  reports "Sending image signature…" at 97% when it finds `<bin>.sig` beside the
+  image, and reports a problem when the file exists but is unreadable or the wrong
+  length — but says **nothing at all** in the common case where it isn't there. An
+  unsigned flash is therefore indistinguishable from a signed one in the log, except
+  by the *absence* of a line. That distinction stops being cosmetic the moment
+  `FW_REQUIRE_SIGNATURE` is enabled on the firmware side.
+- **The no-blocking-the-main-thread rule covers NETWORK I/O too, not just device
+  I/O.** Every GitHub call the GUI makes runs on its own thread — `UpdateChecker`,
+  `UpdateInstaller`, `FwUpDownloader`, `wincompose_install.InstallerDownloader` —
+  and a menu handler must only start one and open a progress dialog, never call
+  into `requests` itself. It is easy to miss because these calls *look* cheap next
+  to a flash: `wincompose_install.find_installer()` is two requests (the
+  latest-tag HEAD + the `expanded_assets` GET) at `HTTP_TIMEOUT` 5 s each, so
+  inline in the click handler it froze the tray for ~10 s on an unreachable
+  network (caught in review of its own PR, 2026-08). Where a thread needs to
+  *resolve* something before its real work, give it a `None` input it resolves in
+  `run()` (that downloader takes `info=None`) rather than resolving first on the
+  caller's thread; report "nothing to do" through the finished callback with a
+  sentinel (`NO_INSTALLER`) so the caller can branch without a second code path.
+- `PolyCore` periodics/jobs publish results as core events (`emit(name, payload)`); the Qt client's observer (`PolyHost._on_core_event`) forwards them into `WorkerBridge.job_done` (`polyhost/gui/worker_bridge.py`), a queued Qt signal dispatched in `PolyHost._on_job_done`. **Worker-/core-side code must never touch Qt objects** — go through the event seam. `decide_reconnect_apply` lives in `polyhost/core/decisions.py` (re-exported from `worker_bridge`), unit-tested in `tests/gui/worker_bridge_test.py`.
+- Reconnect is split three ways: `PolyCore._reconnect_probe` (worker, device I/O → plain snapshot dict; pops the firmware fresh-boot marker on every successful probe), `PolyCore.apply_reconnect` (operational half — state, decision tree, post-connect jobs, cache resets; emits `status_changed`; tested in `tests/core/poly_core_apply_test.py`), and `PolyHost._apply_reconnect_result` (Qt rendering: status entry, language menu, OS-language switch). `active_window_reporter` keeps the pywinctl poll on the main thread but delegates the switching decision to `PolyCore.tick_window_tracking`.
+- **The probe is debounced** (`decide_probe_publish`, 3 strikes): the keyboard goes deaf for hundreds of ms after a large overlay transfer while it syncs images to the slave half over UART, so a single failed probe must NOT flap the connection state — that resets the MRU cache, wipes the overlays, and forces a resend that keeps the keyboard busy for the next probe (self-sustaining wipe-and-resend oscillation, seen in the field 2026-06-10). For the same reason the probe drains stale late replies first, never queries version/languages when the lang probe already failed (a stale GET_ID reply can fake a fresh connect), and `query_id`/`GET_LANG` use generous read timeouts (250/150 ms — fine on the worker, forbidden back when this ran on the UI thread).
+
