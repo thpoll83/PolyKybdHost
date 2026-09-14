@@ -159,6 +159,29 @@ obsidian:
   overlay: [obsidian_template.mods.png, obsidian_template.combo.mods.png]
 notion:
   overlay: [notion_template.mods.png, notion_template.combo.mods.png]
+# Windows Calculator, SCIENTIFIC mode (see overlay_sources/calc/bindings.yaml for
+# why it is one mode and not both).
+#
+# ⚠️ Keyed on the window TITLE because on Windows 11 the packaged apps all run
+# inside `ApplicationFrameHost.exe`, so the app name the tracker reports is the
+# HOST rather than the app. `title:` is a regex on the entry itself, not a
+# sub-map: an entry with only a title sub-map and no overlay of its own is
+# refused outright by `find_matching_entry` (`has_overlay` gates it), and a
+# top-level fallback overlay here would land on Clock, Photos and Settings too.
+#
+# ⚠️ `calc` is deliberately NOT in this list. It is what LibreOffice Calc reports
+# on some Linux desktops — `app_icons.yaml` already keys `calc, localc` to the
+# LibreOffice mark — so claiming it here would put a Windows Calculator overlay
+# on a spreadsheet.
+#
+# ⚠️ The title is ENGLISH. A localized Windows names the window "Rechner",
+# "Calculadora", … and this entry will not fire there; the app-name entry below
+# still will when Calculator runs unhosted.
+applicationframehost:
+  title: "^Calculator"
+  overlay: [calc_template.mods.png, calc_template.combo.mods.png]
+calculatorapp:
+  overlay: [calc_template.mods.png, calc_template.combo.mods.png]
 # All three LibreOffice modules are ONE process, and the app-name lookup is an
 # exact dict hit — so they cannot be three separate entries. They are told apart
 # by window title instead: LibreOffice titles end in the module name, e.g.
