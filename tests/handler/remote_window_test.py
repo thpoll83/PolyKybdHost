@@ -8,7 +8,17 @@ pywinctl, so this runs headless (unlike active_window_test).
 import unittest
 from unittest import mock
 
-import polyhost.util.log_util  # noqa: F401 — installs Logger.debug_detailed
+import logging
+
+import polyhost.util.log_util as _log_util
+
+# ⚠️ `log_util` is imported for its SIDE EFFECT -- it attaches `debug_detailed`
+# to `logging.Logger`, which the device code calls. An import that binds a name
+# nothing reads is exactly what gets tidied away (CodeQL py/unused-import says
+# so), and the failure would be an AttributeError far from here. Asserting the
+# effect states the dependency to a reader and to a static analyser alike.
+assert _log_util and hasattr(logging.Logger, "debug_detailed"), \
+    "log_util must attach Logger.debug_detailed"
 from polyhost.device.command_ids import OsType
 from polyhost.handler.remote_window import RemoteHandler
 

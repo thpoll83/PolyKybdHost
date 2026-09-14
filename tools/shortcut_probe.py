@@ -76,7 +76,7 @@ import json
 import os
 import time
 import sys
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict
 
 
 # ---------------------------------------------------------------------------
@@ -93,9 +93,9 @@ from dataclasses import dataclass, asdict, field
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from polyhost.services.shortcut_source.atspi import (  # noqa: E402
-    _atspi, _safe, list_apps, shortcuts_for, walk)
+    _atspi, list_apps, shortcuts_for, walk)
 from polyhost.services.shortcut_source.model import (  # noqa: E402,F401
-    Accel, MOD_ALT, MOD_CTRL, MOD_GUI, MOD_NAMES, MOD_SHIFT, MOD_TOKENS,
+    MOD_ALT, MOD_CTRL, MOD_GUI, MOD_NAMES, MOD_SHIFT, MOD_TOKENS,
     KEYSYM_TO_HID, Shortcut, TREESCOPE_SUBTREE, UIA_CONTROL_TYPES,
     UIA_MENU_TYPES, UIA_PROP_ACCELERATOR, UIA_PROP_ACCESS_KEY,
     UIA_PROP_CLASS_NAME, UIA_PROP_CONTROL_TYPE, UIA_PROP_NAME,
@@ -103,7 +103,7 @@ from polyhost.services.shortcut_source.model import (  # noqa: E402,F401
     displayable_hid, parse_accel, parse_win_accel, pick_binding,
     pick_win_binding)
 from polyhost.services.shortcut_source.uia import (  # noqa: E402
-    _cached, _uia, uia_shortcuts)
+    _uia, uia_shortcuts)
 
 
 
@@ -340,7 +340,8 @@ def main_uia(args) -> list[dict] | None:
         try:
             name = child.CurrentName or ""
         except Exception:
-            pass
+            pass        # UIA raises for a window that closed mid-walk. It is
+                        # simply not in the enumeration; the walk carries on.
         if name.strip():
             windows.append((name, child))
         child = walker.GetNextSiblingElement(child)

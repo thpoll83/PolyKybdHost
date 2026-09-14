@@ -25,10 +25,19 @@ import unittest
 
 import yaml
 
-import polyhost.util.log_util  # noqa: F401  (installs Logger.debug_detailed)
+import logging
+
+import polyhost.util.log_util as _log_util
+
+# ⚠️ `log_util` is imported for its SIDE EFFECT -- it attaches `debug_detailed`
+# to `logging.Logger`, which the device code calls. An import that binds a name
+# nothing reads is exactly what gets tidied away (CodeQL py/unused-import says
+# so), and the failure would be an AttributeError far from here. Asserting the
+# effect states the dependency to a reader and to a static analyser alike.
+assert _log_util and hasattr(logging.Logger, "debug_detailed"), \
+    "log_util must attach Logger.debug_detailed"
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import Modifier
 
 _HERE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(_HERE, "scripts"))

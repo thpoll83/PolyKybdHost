@@ -6,7 +6,6 @@ code, so the fetch is exercised through its no-network path and the rest --
 cache keying, format validation, placement geometry -- is checked directly.
 """
 
-import os
 import tempfile
 import unittest
 

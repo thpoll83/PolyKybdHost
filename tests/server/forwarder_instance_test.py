@@ -33,11 +33,8 @@ class ForwarderLockTest(unittest.TestCase):
         os.makedirs(self.tmp, exist_ok=True)
         self._old = os.environ.get("XDG_CONFIG_HOME")
         os.environ["XDG_CONFIG_HOME"] = self.tmp
-        self.held = []
 
     def tearDown(self):
-        for h in self.held:
-            h.close()
         if self._old is None:
             os.environ.pop("XDG_CONFIG_HOME", None)
         else:
@@ -45,7 +42,7 @@ class ForwarderLockTest(unittest.TestCase):
 
     def test_the_first_caller_gets_a_handle(self):
         h = instance.acquire_singleton("t1")
-        self.held.append(h)
+        self.addCleanup(h.close)
         self.assertIsNotNone(h)
 
     def test_a_SECOND_PROCESS_is_refused_while_the_first_holds_it(self):
@@ -53,7 +50,7 @@ class ForwarderLockTest(unittest.TestCase):
         if sys.platform == "win32":
             self.skipTest("POSIX flock semantics")
         h = instance.acquire_singleton("t2")
-        self.held.append(h)
+        self.addCleanup(h.close)
         self.assertEqual(_acquire_in_subprocess("t2", self.tmp), "held")
 
     def test_releasing_the_handle_frees_it_for_the_next_process(self):
@@ -80,7 +77,7 @@ class ForwarderLockTest(unittest.TestCase):
         subprocess.run([sys.executable, "-c", code], capture_output=True,
                        text=True, env=env, cwd=os.getcwd())
         h = instance.acquire_singleton("t4")
-        self.held.append(h)
+        self.addCleanup(h.close)
         self.assertIsNotNone(h, "a SIGKILLed holder must not block the next launch")
 
     def test_an_unwritable_config_dir_STARTS_ANYWAY(self):
@@ -89,13 +86,13 @@ class ForwarderLockTest(unittest.TestCase):
         ⚠️ It must not return None -- None is the caller's signal to exit."""
         with mock.patch("os.makedirs", side_effect=OSError("read-only")):
             h = instance.acquire_singleton("t5")
+        self.addCleanup(h.close)        # the stand-in must still be closeable
         self.assertIsNotNone(h)
-        h.close()                       # the stand-in must still be closeable
 
     def test_it_never_raises_when_locking_is_unsupported(self):
         with mock.patch("fcntl.flock", side_effect=RuntimeError("no flock")):
             h = instance.acquire_singleton("t6")
-        self.held.append(h)
+        self.addCleanup(h.close)
         self.assertIsNotNone(h)
 
     def test_the_refusal_log_line_names_the_HOLDING_PID(self):
@@ -111,7 +108,7 @@ class ForwarderLockTest(unittest.TestCase):
         if sys.platform == "win32":
             self.skipTest("POSIX flock semantics")
         h = instance.acquire_singleton("t7")
-        self.held.append(h)
+        self.addCleanup(h.close)
         log = mock.MagicMock()
         self.assertIsNone(instance.acquire_singleton("t7", log))
         log.warning.assert_called_once()
@@ -126,7 +123,7 @@ class ForwarderLockTest(unittest.TestCase):
         if sys.platform == "win32":
             self.skipTest("POSIX flock semantics")
         h = instance.acquire_singleton("t8")
-        self.held.append(h)
+        self.addCleanup(h.close)
         with open(instance._lock_path("t8")) as f:
             self.assertEqual(f.read().strip(), str(os.getpid()))
 

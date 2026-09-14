@@ -8,7 +8,6 @@ render tests assert WHERE the ink landed, since an upside-down or mirrored icon
 is a perfectly valid array.
 """
 
-import math
 import unittest
 
 from polyhost.services import svg_raster

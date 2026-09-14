@@ -393,8 +393,13 @@ class GeometryTest(unittest.TestCase):
                 os.path.dirname(os.path.dirname(os.path.dirname(
                     os.path.abspath(__file__)))), "tools"))
             import oled_preview
-        except Exception:
-            self.skipTest("preview data / renderer unavailable")
+        except Exception as exc:
+            # RAISE rather than self.skipTest(): skipTest raises SkipTest too,
+            # but a static analyser cannot see that it never returns, so every
+            # name bound in the try above reads as possibly-uninitialised on the
+            # lines below (CodeQL py/uninitialized-local-variable, 3 errors).
+            raise unittest.SkipTest(
+                f"preview data / renderer unavailable: {exc}") from exc
         data = pdata.PreviewData()
         if not data.load():
             self.skipTest("no shipped preview data")

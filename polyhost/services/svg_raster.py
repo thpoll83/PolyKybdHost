@@ -256,7 +256,9 @@ def parse_path(data: str):
             else:
                 break
     except ValueError:
-        pass
+        pass            # a malformed segment ENDS the path rather than failing
+                        # it: the subpaths already parsed still draw, which is a
+                        # partial mark instead of no mark at all.
     return out
 
 

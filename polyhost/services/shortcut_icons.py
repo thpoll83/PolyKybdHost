@@ -285,9 +285,16 @@ def load_hints(path: str | None = None) -> dict[str, str]:
             out[normalize(str(key))] = str(value).strip()
     except Exception:
         out = {}
-    if not explicit:
-        _HINTS_CACHE = out
-    return out
+    if explicit:
+        return out
+    # ⚠️ Assign THEN return the global, rather than returning `out`. The three
+    # sibling caches here (`_UIA_CACHE`, `_RENDER_SETTINGS_CACHE`,
+    # `_LANG_FLAGS_CACHE`) are all written this way, and the difference is not
+    # cosmetic: an assignment whose value is never read on its own path is what
+    # CodeQL py/unused-global-variable reports, and deleting it on that advice
+    # would silently disable the memo.
+    _HINTS_CACHE = out
+    return _HINTS_CACHE
 
 
 def resolve_hint(value: str) -> int | None:

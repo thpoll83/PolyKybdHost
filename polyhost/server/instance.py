@@ -73,9 +73,11 @@ def clear_stale_endpoint(address=None) -> None:
         if stat.S_ISSOCK(os.lstat(address).st_mode):
             os.unlink(address)
     except FileNotFoundError:
-        pass
+        pass            # already gone -- nothing to clean up
     except OSError:
-        pass
+        pass            # a socket we cannot remove must not stop startup:
+                        # refusing to launch over a filesystem fault leaves the
+                        # user with no app at all. Fail OPEN, as acquire does.
 
 
 # --------------------------------------------------------------- OS file lock
@@ -131,7 +133,8 @@ def acquire_singleton(name: str, log=None):
             handle.seek(0)
             holder = handle.read(32).strip()
         except OSError:
-            pass
+            pass        # the pid is for the LOG LINE only. A failed read costs
+                        # a less informative message, never the refusal itself.
         # ⚠️ Explicit, though dropping it is INERT under CPython -- `handle` is
         # the last reference and refcounting closes the file at function exit,
         # so a mutation deleting this line cannot be caught by any test here
@@ -166,7 +169,8 @@ def _close(handle) -> None:
     try:
         handle.close()
     except OSError:
-        pass
+        pass            # releasing on the way out; there is nothing to recover
+                        # to, and raising here would mask the real exit reason.
 
 
 class _Unlocked:
