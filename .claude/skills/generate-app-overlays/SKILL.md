@@ -18,14 +18,15 @@ format: `polyhost/res/overlay_specification.md`. Loader: `polyhost/device/im_con
 | `*.extra.mods.png` (extra) | Ctrl+Alt+Shift | GUI+Shift | GUI+Alt | GUI+Ctrl |
 | `*.gui.mods.png` (gui) | GUI+Ctrl+Shift | GUI+Alt+Shift | GUI+Ctrl+Alt | GUI+Ctrl+Alt+Shift |
 
+⚠️ **Every modifier chord IS representable since protocol 12 — do NOT skip a
+Win-key or Ctrl+Alt+Shift shortcut.** This section told you to for a long time
+after `im_converter` stopped dropping GUI before rendering ("GUI overlays used to
+be dropped here … They are sent now"), and three app overlays left real shortcuts
+undrawn on the strength of it. `polyhost/res/overlay_specification.md` is the
+authority and was correct throughout; the table above is a copy of it, so **check
+the spec before believing either**.
+
 Hard limits baked into the firmware/loader (do not fight them):
-- ⚠️ **Every modifier chord IS representable since protocol 12 — do NOT skip a
-  Win-key or Ctrl+Alt+Shift shortcut.** This line told you to for a long time
-  after `im_converter` stopped dropping GUI before rendering ("GUI overlays used
-  to be dropped here … They are sent now"), and three app overlays left real
-  shortcuts undrawn on the strength of it. `polyhost/res/overlay_specification.md`
-  is the authority and was correct throughout; this table is a copy of it, so
-  **check the spec before believing either**.
 - Cells are **72×40, 1-bit monochrome** — pick simple, high-contrast icons.
 - Only the **90 mapped keys** carry a cell: `A`–`Z`, `0`–`9`, `F1`–`F12`,
   punctuation, the nav cluster. Keypad/media keys have no cell.
