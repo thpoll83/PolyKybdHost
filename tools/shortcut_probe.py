@@ -93,15 +93,12 @@ from dataclasses import asdict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from polyhost.services.shortcut_source.atspi import (  # noqa: E402
-    _atspi, list_apps, shortcuts_for, walk)
-from polyhost.services.shortcut_source.model import (  # noqa: E402,F401
-    MOD_ALT, MOD_CTRL, MOD_GUI, MOD_NAMES, MOD_SHIFT, MOD_TOKENS,
-    KEYSYM_TO_HID, Shortcut, TREESCOPE_SUBTREE, UIA_CONTROL_TYPES,
-    UIA_MENU_TYPES, UIA_PROP_ACCELERATOR, UIA_PROP_ACCESS_KEY,
-    UIA_PROP_CLASS_NAME, UIA_PROP_CONTROL_TYPE, UIA_PROP_NAME,
-    UIA_PROP_PROCESS_ID, WINKEY_TO_HID, WIN_MOD_TOKENS, WIN_SEPARATORS,
-    displayable_hid, parse_accel, parse_win_accel, pick_binding,
-    pick_win_binding)
+    _atspi, list_apps, shortcuts_for)
+from polyhost.services.shortcut_source.model import (  # noqa: E402
+    MOD_ALT, MOD_CTRL, MOD_GUI, MOD_SHIFT, Shortcut, UIA_PROP_ACCELERATOR,
+    UIA_PROP_ACCESS_KEY, UIA_PROP_CONTROL_TYPE, UIA_PROP_NAME,
+    UIA_PROP_PROCESS_ID, displayable_hid, parse_accel, parse_win_accel,
+    pick_binding, pick_win_binding)
 from polyhost.services.shortcut_source.uia import (  # noqa: E402
     _uia, uia_shortcuts)
 

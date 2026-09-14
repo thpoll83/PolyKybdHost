@@ -40,6 +40,17 @@ class ForwarderLockTest(unittest.TestCase):
         else:
             os.environ["XDG_CONFIG_HOME"] = self._old
 
+    # ⚠️ Every handle here is released with `self.addCleanup(h.close)`, not a
+    # `with` block, and that is deliberate: several of these tests must hold the
+    # lock open ACROSS an assertion (a subprocess has to find it held), and one
+    # closes it mid-test to prove the handle IS the lock. addCleanup also runs
+    # after a failed assertion, where an early return past a manual close would
+    # leak. CodeQL cannot see addCleanup as a close and reports
+    # `py/file-not-closed` on each of these lines; the handles are closed.
+    # ⚠️ `with` is not a drop-in either -- the unwritable-config-dir path
+    # returns `instance._Unlocked`, a stand-in with `close()` and no
+    # context-manager protocol, which is exactly what one of these tests
+    # exercises (`test_an_unwritable_config_dir_STARTS_ANYWAY`).
     def test_the_first_caller_gets_a_handle(self):
         h = instance.acquire_singleton("t1")
         self.addCleanup(h.close)
