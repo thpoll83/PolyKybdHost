@@ -14,11 +14,19 @@ format: `polyhost/res/overlay_specification.md`. Loader: `polyhost/device/im_con
 | File | R | G | B | A |
 |---|---|---|---|---|
 | `*.mods.png` (primary) | Ctrl | Alt | Shift | no-mod |
-| `*.combo.mods.png` (combo) | Ctrl+Shift | Ctrl+Alt | Alt+Shift | GUI *(dropped)* |
+| `*.combo.mods.png` (combo) | Ctrl+Shift | Ctrl+Alt | Alt+Shift | GUI |
+| `*.extra.mods.png` (extra) | Ctrl+Alt+Shift | GUI+Shift | GUI+Alt | GUI+Ctrl |
+| `*.gui.mods.png` (gui) | GUI+Ctrl+Shift | GUI+Alt+Shift | GUI+Ctrl+Alt | GUI+Ctrl+Alt+Shift |
+
+⚠️ **Every modifier chord IS representable since protocol 12 — do NOT skip a
+Win-key or Ctrl+Alt+Shift shortcut.** This section told you to for a long time
+after `im_converter` stopped dropping GUI before rendering ("GUI overlays used to
+be dropped here … They are sent now"), and three app overlays left real shortcuts
+undrawn on the strength of it. `polyhost/res/overlay_specification.md` is the
+authority and was correct throughout; the table above is a copy of it, so **check
+the spec before believing either**.
 
 Hard limits baked into the firmware/loader (do not fight them):
-- **Ctrl+Alt+Shift is not representable**; **GUI/Win-key overlays are dropped.**
-  Skip those shortcuts (the generator warns and drops them automatically).
 - Cells are **72×40, 1-bit monochrome** — pick simple, high-contrast icons.
 - Only the **90 mapped keys** carry a cell: `A`–`Z`, `0`–`9`, `F1`–`F12`,
   punctuation, the nav cluster. Keypad/media keys have no cell.
@@ -31,11 +39,23 @@ Hard limits baked into the firmware/loader (do not fight them):
   **smaller and right-aligned** (e.g. `program_icon_region: [42, 34]`,
   `program_icon_anchor: right`) so the firmware's key legend stays clear — though
   the owner may want it scaled up later (e.g. `[46, 40]`, `margin: 0`). For the
-  source, the real app logo is usually **proprietary** (Office, Windows Explorer),
-  so prefer a **generic drawn mark** (see "Program marks" below) or owner-supplied
-  art; commit it as `icons/<name>.png`. Mind the licence.
+  source, **ALWAYS TRY THE APP'S OWN LOGO FIRST and check its licence** — see
+  "Program marks" below. Reach for a generic drawn mark only when no published
+  art exists to take; commit whichever it is as `icons/<name>.png`.
 - Icons sit in the **bottom-right** of the cell by default so they never cover
   the firmware-drawn key letter (top-left). Keep that.
+- ⚠️ **A HOSTED app usually wants `icon:` in the mapping instead of a baked
+  `program_icon:`.** On Windows 11 a packaged app's process is the host
+  (`ApplicationFrameHost.exe`; Sticky Notes is `ONENOTE.EXE`), so the entry is
+  keyed on the host and told apart by window title — and the generic ESC mark,
+  looked up from the app NAME, then resolves against the host. `icon:
+  mdi:<slug>` on that entry names the slug to use. For Sticky Notes that
+  prevents a **wrong** icon, not a missing one: `app_icons.yaml` maps `onenote`
+  to `mdi:microsoft-onenote`. The two are mutually exclusive — a baked mark
+  wins, because `send_overlays_mru` skips a synthetic source on any (modifier,
+  keycode) a template already drew. Full rules, including why the parent entry
+  must keep an `overlay:` of its own, in `polyhost/res/overlay-mapping.md`
+  § `icon:`.
 
 The mechanical half (cell+channel placement, primary/combo split, scaling, b/w
 threshold, mapping stanza, previews) is **already automated** by
@@ -81,7 +101,9 @@ Do a **coverage pass, not a sample**: enumerate the app's *whole* Ctrl row (and
 notable Shift/Alt/F-key shortcuts) up front and fill the gaps in one go — users
 notice missing ones, and dripping them in piecemeal is what frustrates. Note each
 as **action + key + modifiers**, record the source URL in `SOURCES.md`, and map
-every modifier set to a representable channel (drop Ctrl+Alt+Shift and Win/GUI).
+every modifier set to its channel. ⚠️ **Do not drop Ctrl+Alt+Shift or Win/GUI** —
+both have had one since protocol 12 (extra R, and combo A respectively); this line
+told you to drop them long after that stopped being true.
 
 - **Mind app-specific quirks** (don't assume the obvious meaning): Outlook
   `Ctrl+F` = Forward, `Ctrl+E` = Search, `Ctrl+5/6/7` = Notes/FolderList/Shortcuts;
@@ -137,8 +159,11 @@ Rules:
   **GPL-3.0-or-later** (relicensed from GPLv2-or-later in 2026-06). GPLv3 is
   compatible with MIT, BSD, ISC, LGPLv3, GPLv3 *and* **Apache-2.0** — so the
   Material Symbols set is now usable (it was not under GPLv2). The only art to
-  avoid is proprietary / no-redistribution (most apps' real logos); for those,
-  draw a license-clean substitute. Record source URL + license per icon and flag
+  avoid is proprietary / no-redistribution art; for those, draw a license-clean
+  substitute. ⚠️ **"most apps' real logos" is NOT a safe assumption** — a
+  free-software app's own icon is usually in its own repo under a licence that
+  allows it (WinSCP GPL-3.0, PuTTY and Windows Terminal MIT, 7-Zip LGPL are all
+  shipped here). Check before substituting. Record source URL + license per icon and flag
   anything unclear to the user — don't silently bundle it.
 - **Conversion mode matters** (`mode:` in `bindings.yaml`, per-binding override):
   - `alpha` — opaque pixels lit. Best for a **glyph on transparent** (the alpha
@@ -265,10 +290,32 @@ Don't hand-download icons. Write a tiny per-app `fetch_icons.py` next to
   pixels shown black-on-white for screen) is the clearest review (the full
   720×360 grid looks "all black" because most cells are empty).
 
-## Program marks: license-clean generic marks & composites
+## Program marks: the app's OWN logo first, a substitute only if you must
 
-The real app logos (Office, Explorer, …) are proprietary, so **draw a generic
-mark** in `fetch_icons.py` instead of shipping the trademark. The Office family
+⚠️ **Check the licence before assuming you cannot use the real logo.** This
+section used to open with "the real app logos are proprietary, so draw a generic
+mark", and that is only true of the proprietary half of the set. Of the apps
+with overlays here, **WinSCP is GPL-3.0, PuTTY and Windows Terminal are MIT and
+7-Zip is LGPL** — this host is GPL-3.0-or-later, so all four ship their real
+marks, and each is more recognisable than the substitute it replaced. Two of
+them had been given generics (`mdi:console` and `mdi:console-network`) that were
+*both a `>_`*, i.e. the substitutes collided where the real logos do not.
+
+**Use `program_marks.own_icon(path, url, frame)`** (`overlay_sources/program_marks.py`):
+it pulls one frame out of the app's own `.ico` and is guarded so a re-run never
+clobbers a committed asset. Three things decide how it reads, and **all three are
+picked by rendering the candidates at keycap size, never from the source**:
+
+| knob | how to choose |
+|---|---|
+| frame | `Image.size = (n, n)` SELECTS an ICO entry rather than resizing, and an icon's small and large entries are usually *different artwork*. Bigger is not better: WinSCP's 64/128/256 render within one lit pixel of each other while its 40 and 48 lose a detail. Sweep and take the smallest that has converged. |
+| mode | Dark linework on transparent → `luma` (PuTTY, 7-Zip, WinSCP). A dark panel carrying light glyphs → `bright` (Windows Terminal). Anything with a filled background → **never** `alpha`, which lights the whole silhouette as one blob. |
+| threshold | Sweep ~110..200 and look. It is **not monotonic in legibility**: 7-Zip's border is closed at t140, broken at t170; Windows Terminal's chevron splits into two strokes at t150. |
+
+**When there genuinely is no published art** — an app whose icon ships only
+inside Windows (Notepad, Paint, Snipping Tool, Task Manager), or one that stopped
+publishing source (Paint.NET) — **draw a generic mark** in `fetch_icons.py`
+instead of shipping the trademark. The Office family
 uses one motif: a 90°-rotated trapezoid on the left with the app initial knocked
 out (negative space) + a rounded rect on the right whose interior varies per app
 (Word = text lines, Excel = dashed lines + "X", Outlook = envelope flap,

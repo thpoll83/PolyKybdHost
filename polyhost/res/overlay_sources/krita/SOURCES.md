@@ -21,7 +21,9 @@ document, not tool-options sub-shortcuts). Verified against:
   https://krita-artists.org/t/krita-5-2-default-keyboard-shortcut-guide/93570
 
 28 shortcuts placed across channels (note: only the 90 mapped keycaps carry a
-cell; Ctrl+Alt+Shift and GUI/Win combos are not representable and are skipped):
+cell; Ctrl+Alt+Shift and GUI/Win combos are skipped):
+
+⚠️ Both ARE representable since protocol 12 (Ctrl+Alt+Shift on the extra tier, GUI on combo A); the wording here claimed a format limit and was stale.
 
 - **Ctrl** (primary R): N New, O Open, S Save, W Close, Z Undo, C Copy, X Cut,
   V Paste, A Select-all, T Transform, E Merge-down, G Group
