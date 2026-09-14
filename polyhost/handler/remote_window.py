@@ -3,6 +3,11 @@ import re
 import socket
 import threading
 
+# Imported for its side effect: installs Logger.debug_detailed, which this
+# module calls. Same line, and the same reason, as `core/poly_core.py` — the
+# dependency belongs to the code that USES the level, not to each of its
+# importers, which is why several tests had to carry a copy of this import.
+import polyhost.util.log_util  # noqa: F401
 from polyhost.handler.common import Flags, find_matching_entry
 
 TCP_PORT = 50162

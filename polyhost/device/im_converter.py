@@ -1,5 +1,10 @@
 import logging
 
+# Imported for its side effect: installs Logger.debug_detailed, which this
+# module calls. Same line, and the same reason, as `core/poly_core.py` — the
+# dependency belongs to the code that USES the level, not to each of its
+# importers, which is why several tests had to carry a copy of this import.
+import polyhost.util.log_util  # noqa: F401
 from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_data import OverlayData
 
