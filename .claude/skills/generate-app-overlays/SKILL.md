@@ -100,7 +100,9 @@ Do a **coverage pass, not a sample**: enumerate the app's *whole* Ctrl row (and
 notable Shift/Alt/F-key shortcuts) up front and fill the gaps in one go — users
 notice missing ones, and dripping them in piecemeal is what frustrates. Note each
 as **action + key + modifiers**, record the source URL in `SOURCES.md`, and map
-every modifier set to a representable channel (drop Ctrl+Alt+Shift and Win/GUI).
+every modifier set to its channel. ⚠️ **Do not drop Ctrl+Alt+Shift or Win/GUI** —
+both have had one since protocol 12 (extra R, and combo A respectively); this line
+told you to drop them long after that stopped being true.
 
 - **Mind app-specific quirks** (don't assume the obvious meaning): Outlook
   `Ctrl+F` = Forward, `Ctrl+E` = Search, `Ctrl+5/6/7` = Notes/FolderList/Shortcuts;
