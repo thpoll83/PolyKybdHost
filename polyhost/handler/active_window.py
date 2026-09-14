@@ -75,6 +75,9 @@ class OverlayHandler:
         # (pywinctl is main-thread-only on macOS, and the query is what the tick
         # exists to do once). None whenever nothing is focused.
         self.current_app = None
+        # The PID that owns the focused window, kept beside the name so the
+        # program mark can fall back to the app's OWN icon from the OS.
+        self.current_pid = None
         self.current_entry = None
         self.last_entry = None
         # Tracks whether overlays are currently enabled on the device, so a
@@ -250,10 +253,20 @@ class OverlayHandler:
                     # remember active window
                     self.set_win(win, win.title, win.getHandle())
                     self.current_app = None
+                    self.current_pid = None
                     if win.title == "PolyHost":
                         return None, OverlayCommand.NONE
                     try:
                         raw_app_name = self.win.getAppName()
+                        # The PID is what lets the program mark fall back to the
+                        # app's OWN icon from the OS when no catalog carries it.
+                        # getPID() exists on all three pywinctl backends; it is
+                        # wrapped because a window can die between the poll and
+                        # the query, and a cosmetic lookup must not end the tick.
+                        try:
+                            self.current_pid = self.win.getPID()
+                        except Exception:
+                            self.current_pid = None
                         self.log_win(raw_app_name)
                         if self.mapping:
                             found = False
@@ -351,6 +364,23 @@ class OverlayHandler:
             if named:
                 return str(named).strip().lower()
         return self.current_app
+
+    def icon_pid(self):
+        """The PID behind `icon_app()`, or None when there is no local one.
+
+        ⚠️ None for a FORWARDED app, deliberately: on a multi-machine setup the
+        app the keycaps describe runs on the other machine, so the local PID
+        belongs to the remote-desktop client and its icon would be NoMachine's.
+        The same reasoning as `icon_app()` itself, one step further -- and a
+        mapping that NAMES the app with `icon:` is in the same position, since
+        the named app is not the process we can see.
+        """
+        if self.is_remote_mapping_entry():
+            return None
+        entry = self.current_entry
+        if entry and entry.get(ICON_APP):
+            return None
+        return getattr(self, "current_pid", None)
 
     def get_overlay_data(self):
         if (

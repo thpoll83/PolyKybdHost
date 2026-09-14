@@ -115,6 +115,8 @@ _SLUG_RE = re.compile(r"[^a-z0-9]")
 _VERSION_SUFFIX_RE = re.compile(r"[-_ ]?\d+(\.\d+)*$")
 _EXE_SUFFIX_RE = re.compile(r"\.(exe|app|bin)$")
 
+from polyhost.services import icon_binarise, os_app_icon
+
 log = logging.getLogger("PolyHost")
 
 
@@ -441,14 +443,107 @@ def render_overlay(svg_path: str, box: int = PROGRAM_ICON_BOX):
     return mask
 
 
+def _looks_like_svg(data: bytes) -> bool:
+    """True for SVG bytes, including a file that opens with an XML prologue."""
+    head = (data or b"")[:512].lstrip()
+    return head.startswith(b"<?xml") or head.startswith(b"<svg") or b"<svg" in head
+
+
+def render_os_overlay(data: bytes, box: int = PROGRAM_ICON_BOX):
+    """(mask, conversion, score) for an icon the OPERATING SYSTEM gave us.
+
+    The sibling of `render_overlay`, and separate because the two inputs want
+    opposite treatment. A catalog mark is a monochrome single-path SVG whose
+    ALPHA is the drawing, so silhouette is exactly right. An OS icon is
+    full-colour art whose alpha is only its outer shape -- measured, the six
+    LibreOffice marks all render as the SAME 94.5%-lit page blob that way -- so
+    it has to be read by `icon_binarise`, which picks a conversion per icon.
+    """
+    try:
+        import io
+        import numpy as np
+        from PIL import Image
+        from polyhost.services import icon_binarise
+    except Exception:
+        log.debug("Cannot render an OS icon: Pillow/numpy unavailable")
+        return None, None, -1.0
+    if _looks_like_svg(data):
+        # ⚠️ Vector goes through the EXISTING rasteriser, not Pillow, which
+        # cannot read SVG at all -- and most of a modern Linux icon theme is
+        # SVG, so routing it here is the difference between the Linux backend
+        # working and scoring -1.00 on nearly everything. `_alpha` is also the
+        # right reading for vector art: a themed SVG icon is usually a flat
+        # silhouette already, which is the case alpha is exactly correct for.
+        import tempfile
+        handle, temporary = tempfile.mkstemp(suffix=".svg")
+        try:
+            with os.fdopen(handle, "wb") as fh:
+                fh.write(data)
+            mask = render_overlay(temporary, box)
+        finally:
+            try:
+                os.unlink(temporary)
+            except OSError:
+                pass
+        if mask is None:
+            return None, None, -1.0
+        # ⚠️ SCORED like any other candidate, never trusted for being vector.
+        # `_alpha` gives coverage, so a themed SVG arrives as its SILHOUETTE --
+        # measured, a filled square for gvim and a solid page for LibreOffice,
+        # both of which sit at a perfectly ordinary lit fraction and are read
+        # as blobs only by the edge term.
+        window = mask[:, PANEL_W - box:]
+        return mask, "svg", icon_binarise.score(window)
+    try:
+        image = Image.open(io.BytesIO(data))
+        image.load()
+    except Exception as exc:
+        log.debug("Could not decode an OS icon (%d bytes): %s", len(data or b""), exc)
+        return None, None, -1.0
+    # An .ico or .icns holds several sizes; take the largest, since the render
+    # downscales and a 16px frame upscaled to 38 is mush.
+    try:
+        sizes = getattr(image, "info", {}).get("sizes")
+        if sizes:
+            image.size = max(sizes)
+            image.load()
+    except Exception:
+        pass                            # single-frame image; nothing to choose
+    ink, conversion, score = icon_binarise.choose(image, box)
+    if ink is None:
+        return None, None, score
+    mask = np.zeros((PANEL_H, PANEL_W), dtype=bool)
+    height, width = ink.shape
+    x = PANEL_W - width                 # flush right: the courtyard needs x >= 31
+    y = max(0, (PANEL_H - height) // 2)
+    mask[y:y + height, x:x + width] = ink
+    return mask, conversion, score
+
+
 def program_overlay(app_name: str, mapping: dict | None = None,
                     cache_dir: str | None = None,
-                    allow_network: bool | None = None):
-    """(mask, qualified name) for the focused app, or (None, first candidate).
+                    allow_network: bool | None = None,
+                    pid=None):
+    """(mask, source name) for the focused app, or (None, first candidate).
 
-    A name comes back either way so the caller can say which app it failed for --
-    an unresolvable name and a resolvable one no catalog carries want different
-    curation entries.
+    TWO sources, in this order, and the order is the point:
+
+    1. the **monochrome catalog** (Simple Icons, then mdi), keyed on a slug
+       derived from the app name. These are drawn as one path for small
+       monochrome use, so a 1-bit 38x38 render is what they were made for;
+    2. the app's **own icon, from the OS** (`os_app_icon`), read through
+       `icon_binarise`. Always the right picture by construction -- no guessing
+       -- but full-colour art that has to be thresholded, and measurably not all
+       of it survives that (a smooth gradient with no two-tone structure has no
+       good 1-bit reading, which is what `MIN_SCORE` refuses).
+
+    ⚠️ Catalog FIRST even though the OS icon is the more certain identification,
+    because certainty is not the scarce thing here -- legibility is. A wrong
+    mark and an unreadable one cost the user the same, and the catalog art
+    cannot be unreadable. The OS is what covers the long tail the catalog has
+    never heard of, which is most of what a real desktop runs.
+
+    A name comes back either way so a caller can say which app it failed for.
     """
     for name in candidates(app_name, mapping):
         path = fetch_icon(name, cache_dir, allow_network)
@@ -457,5 +552,15 @@ def program_overlay(app_name: str, mapping: dict | None = None,
         mask = render_overlay(path)
         if mask is not None:
             return mask, name
+    found = os_app_icon.icon_bytes(pid, app_name) if pid is not None else None
+    if found:
+        data, source = found
+        mask, conversion, score = render_os_overlay(data)
+        if mask is not None and score >= icon_binarise.MIN_SCORE:
+            log.debug("Program mark for %s from the OS (%s, %s, score %.2f)",
+                      app_name, source, conversion, score)
+            return mask, "os:" + os.path.basename(source)
+        log.debug("The OS icon for %s does not survive 1-bit (score %.2f)",
+                  app_name, score)
     first = candidates(app_name, mapping)
     return None, (first[0] if first else None)

@@ -22,9 +22,10 @@ rather than one per window switch.
 from __future__ import annotations
 
 import logging
+import os
 import threading
 
-from polyhost.services import app_icons
+from polyhost.services import app_icons, icon_binarise, os_app_icon
 
 # How long a fetch thread lingers with nothing to do before ending. It restarts
 # on the next unseen app, so this is only about not holding a thread for the
@@ -75,7 +76,7 @@ class AppIconFetcher:
             self._mapping = app_icons.load_slug_map()
         return self._mapping
 
-    def overlay_for(self, app_name: str):
+    def overlay_for(self, app_name: str, pid=None):
         """(mask, slug) for an app, without blocking. mask is None until known.
 
         A None mask with a slug may mean "still fetching" or "the catalog does
@@ -98,7 +99,7 @@ class AppIconFetcher:
                     self._say(app_name, self._why.get(
                         key, "no catalog carries " + ", ".join(names)))
                 return mask, resolved
-            self._asked_for.setdefault(key, app_name)
+            self._asked_for.setdefault(key, (app_name, pid))
             if key not in self._queue and key not in self._inflight:
                 self._queue.append(key)
         self._ensure_thread()
@@ -180,8 +181,8 @@ class AppIconFetcher:
                     return          # nothing left to do; restarted on demand
                 continue
             with self._lock:
-                app_name = self._asked_for.get(key, "")
-            mask, resolved, why = self._resolve(key, app_name)
+                app_name, pid = self._asked_for.get(key, ("", None))
+            mask, resolved, why = self._resolve(key, app_name, pid)
             with self._lock:
                 self._masks[key] = (mask, resolved)
                 if why is not None:
@@ -199,7 +200,7 @@ class AppIconFetcher:
                     # report.
                     self.log.debug("app-icon ready callback failed", exc_info=True)
 
-    def _resolve(self, names, app_name=""):
+    def _resolve(self, names, app_name="", pid=None):
         """(mask, resolved_name, why_it_missed) -- the first candidate that draws
         something wins, and `why` is None when one did.
 
@@ -232,6 +233,22 @@ class AppIconFetcher:
                 return mask, name, None
             except Exception:
                 self.log.debug("app-icon fetch failed for '%s'", name, exc_info=True)
+        # No catalog mark. Fall back to the app's OWN icon, which the OS can
+        # always answer for a local process -- this is what covers the long tail
+        # no catalog has heard of, and it is tried SECOND because catalog art is
+        # monochrome by design while an OS icon has to survive thresholding.
+        found = os_app_icon.icon_bytes(pid, app_name) if pid is not None else None
+        if found:
+            data, source = found
+            mask, conversion, score = app_icons.render_os_overlay(data)
+            if mask is not None and score >= icon_binarise.MIN_SCORE:
+                resolved = "os:" + os.path.basename(source)
+                self.log.info("Program icon for '%s': %s (from the OS, %s)",
+                              app_name or "?", resolved, conversion)
+                return mask, resolved, None
+            why = ("its own icon does not survive a 1-bit keycap (score %.2f)"
+                   % score)
+            return None, (names[0] if names else None), why
         if not app_icons.auto_fetch_enabled():
             why = ("not cached, and auto-fetch is off -- enable "
                    "'shortcut_icon_auto_fetch' to look it up")

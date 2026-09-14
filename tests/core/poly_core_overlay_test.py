@@ -52,6 +52,11 @@ def make_core(*, connected=True, handler=True, run_when_disconnected=False):
         # branch has its own tests against the real handler.
         core.overlay_handler.icon_app.side_effect = (
             lambda: core.overlay_handler.current_app)
+        # ⚠️ Same reason, for the PID: left as a bare MagicMock every test would
+        # hand the OS-icon fallback a truthy object that is not a pid, so a
+        # lookup the code declines to make (None) and one it makes with nonsense
+        # would look identical. None is what a local window with no pid reports.
+        core.overlay_handler.icon_pid.side_effect = lambda: None
     return core
 
 
@@ -251,8 +256,26 @@ class TestProgramIcon(unittest.TestCase):
         """
         core = self._core(app="nxplayer")
         core.overlay_handler.icon_app.side_effect = lambda: "gimp"
+        core.overlay_handler.icon_pid.side_effect = lambda: None
         self.assertTrue(core.send_overlay_data("a.png"))
-        core.app_icons.overlay_for.assert_called_with("gimp")
+        core.app_icons.overlay_for.assert_called_with("gimp", None)
+
+    def test_the_PID_comes_from_icon_pid_not_from_the_local_window(self):
+        """⚠️ The OS-icon fallback needs a PID, and the LOCAL one is often wrong.
+
+        `icon_pid()` already returns None for a forwarded window and for an
+        `icon:` entry -- the two cases where the process we can see is not the
+        app the keycaps describe -- so the core must ask IT rather than reach
+        for the tracker's `current_pid`. Reading the raw pid would put the
+        remote-desktop client's own icon on ESC for every app on the other
+        machine, which is the same failure `icon_app()` exists to prevent, one
+        step further along.
+        """
+        core = self._core(app="gimp")
+        core.overlay_handler.icon_app.side_effect = lambda: "gimp"
+        core.overlay_handler.icon_pid.side_effect = lambda: 4242
+        self.assertTrue(core.send_overlay_data("a.png"))
+        core.app_icons.overlay_for.assert_called_with("gimp", 4242)
 
     def test_an_app_with_no_mark_sends_only_the_template(self):
         core = self._core(mask=None)
@@ -298,7 +321,7 @@ class TestProgramIcon(unittest.TestCase):
         # would sit on the GUI main thread for the HTTP timeout.
         core = self._core()
         core.send_overlay_data([])
-        core.app_icons.overlay_for.assert_called_once_with("gimp")
+        core.app_icons.overlay_for.assert_called_once_with("gimp", None)
 
     def test_turning_the_fetch_setting_on_clears_the_misses(self):
         # Otherwise the switch does nothing until a restart: every app focused

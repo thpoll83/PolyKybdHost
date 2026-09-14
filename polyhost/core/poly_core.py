@@ -544,7 +544,10 @@ class PolyCore(Observable):
         app = handler.icon_app()
         if not app:
             return None
-        mask, slug = self.app_icons.overlay_for(app)
+        # The PID rides along so a miss in both catalogs can fall back to the
+        # app's own icon; icon_pid() returns None wherever the local process is
+        # not the app the keycaps describe (a forwarded window, an `icon:` entry).
+        mask, slug = self.app_icons.overlay_for(app, handler.icon_pid())
         if mask is None or not slug:
             return None
         return program_name(slug), mask
