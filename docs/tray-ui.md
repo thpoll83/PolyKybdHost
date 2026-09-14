@@ -228,3 +228,44 @@ and relative links were adjusted to suit a standalone file.
   entirely. `tests/gui/host_client_test.py` has a `forwarder` smoke mode; it
   **skips** without `pywinctl`, which `forwarder.py` imports at module load.
 
+  - **Its menu follows the tray app's SHAPE, minus the device group** (2026-09-14):
+    status · Pause · — · Check for host update… · Settings… · Help & About · Quit,
+    against the tray app's status · Pause · *device rows* · — · Updates ·
+    Maintenance · Settings… · Help & About · Quit. It had been seven flat rows in
+    no particular order, so the four support entries the two apps share sat in
+    different places depending on which one you opened. The one deliberate
+    departure is **Updates**: the tray app's is a submenu because it holds the
+    firmware and font-pack rows too, and a forwarder owns no keyboard — so the row
+    keeps the label it has *inside* that submenu and sits in the submenu's slot,
+    rather than nesting one entry.
+    - **The status row and the tray mark now track whether reports are LANDING.**
+      `send_to_host` is a wrapper that records the verdict in `relay_ok` and
+      repaints; the transport is `_send_to_host`, so every exit path of it runs
+      through the wrapper. Before this the forwarder called `set_connected()` once
+      at startup and never revisited it, so a relay that had been refusing
+      connections for hours still wore the connected mark.
+    - **Pause is the privacy switch**, and it mirrors the tray app's Pause down to
+      the clickable status row. The window poll keeps running (the local log still
+      shows what is focused) but nothing leaves the machine, and the RPC session is
+      dropped — a paused forwarder holding an open authenticated connection to the
+      keyboard machine is not what pausing it looks like. ⚠️ `toggle_pause` clears
+      `win`/`title` on resume, or the window dedupe swallows the first report after
+      resuming, because the focused window did not change while forwarding was off.
+    - ⚠️ **Settings is an ALLOW-LIST (`FORWARDER_SETTING_KEYS`), not the whole
+      file.** `SettingsDialog` renders whatever dict it is handed, so passing all of
+      `settings.yaml` puts brightness, unicode-mode and font-pack rows on a machine
+      with no keyboard — every one a control that writes a value and changes
+      nothing. The dialog therefore sees a slice, and the writer merges the changed
+      keys back into the full dict (`set_all(updated)` alone would drop every key
+      the dialog was never shown).
+    - **About is `gui/about_dialog.build_about_dialog`, shared with `host.py`.**
+      Each app supplies its own heading, description, boxed block and diagnostics;
+      the forwarder's boxed block names the target, the transport and whether
+      reports are landing. It used to be `webbrowser.open()` straight to ko-fi,
+      which told a user on the forwarder machine none of the three things a
+      forwarding problem always turns out to be about. The project links (including
+      the Discord one that "Get Support" used to be) live there now, in both apps.
+    - **`tools/render_tray_menu.py --mode forwarder`** renders it, and `--mode all`
+      renders both apps' menus in one go. The two are supposed to have the same
+      shape and nothing but an eye on both images says whether they still do.
+

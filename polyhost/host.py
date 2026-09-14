@@ -83,18 +83,15 @@ from polyhost.services.updater import (
     get_last_check_time, set_last_check_time)
 from polyhost.gui.hid_fw_up_dialog import HidFwUpDialog
 from polyhost.gui.dialog_util import position_near_tray
+from polyhost.gui import about_dialog
 from polyhost.gui.worker_bridge import WorkerBridge
 from polyhost.server.control_server import ControlServer
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 
-# Project links surfaced in the About dialog.
-POLYKYBD_HOMEPAGE_URL = "https://polykybd.org"
-KOFI_BLOG_URL         = "https://ko-fi.com/polykb"
-SUPPORT_URL           = "https://discord.gg/gW8JescH7M"
-POLYHOST_REPO_URL     = "https://github.com/thpoll83/PolyKybdHost"
-FIRMWARE_REPO_URL     = "https://github.com/thpoll83/qmk_firmware"
-HARDWARE_REPO_URL     = "https://github.com/thpoll83/PolyKybd"
+# The project links surfaced in the About dialog live in gui/about_dialog
+# (PROJECT_LINKS) — the forwarder builds its About from the same module, and a
+# second hand-kept copy of those URLs is how one of the two goes stale.
 
 UPDATE_CYCLE_MSEC = 250
 RECONNECT_CYCLE_MSEC = 1000
@@ -1767,7 +1764,7 @@ class PolyHost(QApplication):
             f"<b>Hardware:</b> {info['hw']}",
             f"<b>Language:</b> {lang_line}",
         ]
-        return "<div style='line-height:150%;'>" + "<br>".join(rows) + "</div>"
+        return about_dialog.rows_html(rows)
 
     def _about_env_html(self, info: dict) -> str:
         """Host environment block: uptime, overlay-mapping count (when known),
@@ -1777,8 +1774,7 @@ class PolyHost(QApplication):
             rows.append(f"<b>Overlay mappings:</b> {info['n_maps']} apps")
         rows.append(f"<b>Config:</b> {info['config_dir']}")
         rows.append(f"<b>Logs:</b> {info['log_dir']}")
-        return ("<div style='line-height:150%; color:gray;'>"
-                + "<br>".join(rows) + "</div>")
+        return about_dialog.rows_html(rows, muted=True)
 
     def _diagnostics_text(self, info: dict) -> str:
         """Plain-text version of the About info, for the clipboard button."""
@@ -1819,111 +1815,30 @@ class PolyHost(QApplication):
         """Construct the About dialog (host + keyboard info, project links, and
         Copy-diagnostics / OK buttons).
 
-        Split from :meth:`show_about_dialog` so it can be built and inspected in
-        a test without the modal ``exec_()`` blocking. Works in client mode too —
-        it only shows info about this host program, no device access."""
+        The chrome is `gui/about_dialog.build_about_dialog`, shared with the
+        forwarder; this method supplies only the content. Split from
+        :meth:`show_about_dialog` so it can be built and inspected in a test
+        without the modal ``exec_()`` blocking. Works in client mode too — it
+        only shows info about this host program, no device access."""
         info = self._gather_about_info()
-
-        dlg = QDialog(None)
-        dlg.setWindowTitle("About PolyKybdHost")
-        dlg.setWindowIcon(get_icon("pcolor.png"))
-
-        outer = QVBoxLayout(dlg)
-        outer.setContentsMargins(20, 18, 20, 14)
-        outer.setSpacing(12)
-
-        # Header: app logo + name / version / build info.
-        header = QHBoxLayout()
-        header.setSpacing(14)
-        logo = QLabel()
-        logo.setPixmap(get_icon("pcolor.png").pixmap(64, 64))
-        logo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        header.addWidget(logo, 0, Qt.AlignTop)
-
-        title_lbl = QLabel(
-            f"<div style='font-size:15pt; font-weight:bold;'>PolyKybdHost</div>"
-            f"<div style='margin-top:3px;'>Version {info['version']}"
-            f" &nbsp;·&nbsp; HID protocol P{info['host_protocol']}</div>"
-            f"<div style='color:gray; margin-top:3px;'>"
-            f"Python {info['python']} · Qt {info['qt']} · "
-            f"{platform.system()} · {info['mode']}</div>")
-        title_lbl.setTextFormat(Qt.RichText)
-        title_lbl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        header.addWidget(title_lbl, 1)
-        outer.addLayout(header)
-
-        desc = QLabel(
-            "Host software for the PolyKybd split keyboard with per-keycap "
-            "OLED displays — tracks the active window and pushes overlays, "
-            "language and keymap updates to the keyboard.")
-        desc.setWordWrap(True)
-        outer.addWidget(desc)
-
-        # Connected-keyboard metrics — cached snapshot; the keyboard's own protocol
-        # sits next to the host's above, so a mismatch is diagnosable right here.
-        status = QLabel(self._about_status_html(info))
-        status.setTextFormat(Qt.RichText)
-        status.setWordWrap(True)
-        status.setStyleSheet(
-            "QLabel { background: rgba(127,127,127,0.12); border-radius: 6px;"
-            " padding: 8px 10px; }")
-        outer.addWidget(status)
-
-        # Host environment (uptime / overlay mappings / config + log paths).
-        env = QLabel(self._about_env_html(info))
-        env.setTextFormat(Qt.RichText)
-        env.setWordWrap(True)
-        env.setTextInteractionFlags(Qt.TextSelectableByMouse)  # copy the paths
-        outer.addWidget(env)
-
-        # Project links — open in the system browser on click. Shown scheme-less
-        # (github.com/… , polykybd.org) but href carries the full https URL. Links
-        # whose URL doesn't say what they are (Blog, Discord) get a short label.
-        def _link(url, emoji, label=None):
-            shown = url.split("://", 1)[-1]
-            text = f"{label} — {shown}" if label else shown
-            return f"{emoji} <a href='{url}'>{text}</a>"
-
-        links = QLabel(
-            "<div style='line-height:170%;'>"
-            + _link(POLYKYBD_HOMEPAGE_URL, "🌐") + "<br>"
-            + _link(KOFI_BLOG_URL, "📝", "Blog") + "<br>"
-            + _link(SUPPORT_URL, "💬", "Discord") + "<br>"
-            + _link(POLYHOST_REPO_URL, "💻") + "<br>"
-            + _link(FIRMWARE_REPO_URL, "⌨️") + "<br>"
-            + _link(HARDWARE_REPO_URL, "🔧")
-            + "</div>")
-        links.setTextFormat(Qt.RichText)
-        links.setOpenExternalLinks(True)
-        links.setTextInteractionFlags(Qt.TextBrowserInteraction)
-        outer.addWidget(links)
-
-        # Buttons: Copy diagnostics (left, ActionRole — doesn't close) + OK.
-        btn_box = QDialogButtonBox(QDialogButtonBox.Ok)
-        copy_btn = btn_box.addButton("Copy diagnostics", QDialogButtonBox.ActionRole)
-
-        def _copy_diag():
-            self.clipboard().setText(self._diagnostics_text(self._gather_about_info()))
-            copy_btn.setText("Copied ✓")
-            # Reset the label after a moment. Parent the timer to the button so
-            # it's destroyed with the dialog — a bare QTimer.singleShot could
-            # otherwise fire into a deleted widget if the dialog is closed within
-            # the delay (RuntimeError on the dead Qt object).
-            reset = QTimer(copy_btn)
-            reset.setSingleShot(True)
-            reset.timeout.connect(lambda: copy_btn.setText("Copy diagnostics"))
-            reset.start(1500)
-        copy_btn.clicked.connect(_copy_diag)
-
-        btn_box.accepted.connect(dlg.accept)
-        ok_btn = btn_box.button(QDialogButtonBox.Ok)
-        if ok_btn is not None:
-            ok_btn.setDefault(True)
-            ok_btn.setFocus()
-        outer.addWidget(btn_box)
-
-        dlg.setMinimumWidth(380)
-        return dlg
+        return about_dialog.build_about_dialog(
+            heading=about_dialog.heading_html(
+                info["version"],
+                f" &nbsp;·&nbsp; HID protocol P{info['host_protocol']}",
+                f"Python {info['python']} · Qt {info['qt']} · "
+                f"{platform.system()} · {info['mode']}"),
+            description=(
+                "Host software for the PolyKybd split keyboard with per-keycap "
+                "OLED displays — tracks the active window and pushes overlays, "
+                "language and keymap updates to the keyboard."),
+            # Cached snapshot of the connected keyboard; the keyboard's own
+            # protocol sits next to the host's above, so a mismatch is
+            # diagnosable right here.
+            boxed=self._about_status_html(info),
+            muted=self._about_env_html(info),
+            diagnostics_cb=lambda: self._diagnostics_text(
+                self._gather_about_info()),
+            clipboard=self.clipboard())
 
     def show_about_dialog(self):
         """Show the modal About dialog, snapped near the tray icon."""

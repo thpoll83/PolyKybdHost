@@ -1,0 +1,60 @@
+# Windows Sound Recorder (formerly Voice Recorder) shortcut overlays for PolyKybd.
+#
+# ⚠️ Microsoft publishes NO shortcut table for this app -- the old "Keyboard
+# shortcuts in apps" support page that carried the Voice Recorder table has been
+# folded into the general Windows shortcuts page and the per-app tables are gone
+# (checked 2026-09-14). Its own FAQ page documents features, not keys. So the
+# `notepad` rule applies: **every binding below is one that TWO independent
+# references agree on**, and anything only one claims is in SOURCES.md as
+# unverified rather than guessed at.
+#
+# ⚠️ THIS OVERLAY IS MOSTLY BARE KEYS, which is unusual here and deliberate. The
+# calc overlay skips unmodified keys because "the keycap already shows the
+# character" -- true of a digit or a `+`, and FALSE of a transport control: a
+# keycap reading `Home` does not say "jump to the start of the recording", and
+# `Space` does not say "play". These are exactly the keys worth relabelling, the
+# same reason Photos' `F5` is drawn.
+#
+# Regenerate:
+#   python polyhost/res/overlay_sources/soundrecorder/fetch_icons.py
+#   python scripts/generate_app_overlays.py \
+#       polyhost/res/overlay_sources/soundrecorder/bindings.yaml --preview /tmp/sr
+app: soundrecorder
+match: [soundrecorder, voicerecorder]
+output: soundrecorder_template
+icon_dir: icons
+fit: contain
+anchor: bottom-right
+region: [40, 36]
+margin: 0
+mode: alpha
+
+# No `program_icon:` -- the mark is named by the mapping entry's `icon:`
+# (mdi:microphone). The app is packaged, so its process is ApplicationFrameHost
+# and a process-name lookup could never resolve.
+
+bindings:
+  # --- Ctrl ---------------------------------------------------------------
+  - { key: R, mods: [CTRL], icon: newrec.png, label: "Start a new recording" }
+  - { key: M, mods: [CTRL], icon: marker.png, label: "Add a marker to the recording" }
+
+  # --- no modifier: the transport --------------------------------------------
+  - { key: SPACE,     mods: [], icon: playpause.png, label: "Play or pause" }
+  - { key: DELETE,    mods: [], icon: delrec.png,    label: "Delete the selected recording" }
+  - { key: BACKSPACE, mods: [], icon: goback.png,    label: "Go back" }
+  - { key: F2,        mods: [], icon: rename.png,    label: "Rename a recording" }
+  - { key: LEFT,  mods: [], icon: seekback.png, label: "Jump back while playing" }
+  - { key: RIGHT, mods: [], icon: seekfwd.png,  label: "Jump ahead while playing" }
+  - { key: HOME,  mods: [], icon: tostart.png,  label: "Jump to the start of the recording" }
+  - { key: END,   mods: [], icon: toend.png,    label: "Jump to the end of the recording" }
+
+  # --- Shift: the longer jump ------------------------------------------------
+  - { key: LEFT,  mods: [SHIFT], icon: jumpback.png, label: "Jump further back" }
+  - { key: RIGHT, mods: [SHIFT], icon: jumpfwd.png,  label: "Jump further ahead" }
+
+  # ⚠️ DELIBERATELY NOT DRAWN:
+  #   * `Esc` (stop recording) -- one reference only, AND the program mark owns
+  #     ESC on every overlay in this repo.
+  #   * bare `O` (show in folder) and bare `S` (share) -- one reference only, and
+  #     a bare letter as a global shortcut is unusual enough to want confirming
+  #     against the app before it goes on a keycap.

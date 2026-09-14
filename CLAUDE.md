@@ -358,7 +358,20 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   `QApplication`, menu and log file, **on a different machine from the keyboard**. A
   user-facing tray feature added to `host.py` is simply absent there until wired
   separately — which matters most for support features, since its logs can never appear
-  in a bundle collected host-side.
+  in a bundle collected host-side. Its menu **follows the tray app's shape minus the
+  device group** (status · Pause · — · update · Settings… · Help & About · Quit) and its
+  About is the **shared** `gui/about_dialog.build_about_dialog`; render both with
+  `tools/render_tray_menu.py --mode all`, since nothing but an eye on the two images says
+  whether they still match. ⚠️ Its Settings is an **allow-list**
+  (`FORWARDER_SETTING_KEYS`) — `SettingsDialog` renders whatever dict it is handed, so
+  the whole `settings.yaml` would put brightness and font-pack rows on a machine with no
+  keyboard, every one a control that writes a value and changes nothing.
+- ⚠️ **The forwarder's tray mark spells an F, not a P** (`IconStateManager(prefix=)`),
+  because both apps can sit in one notification area. It tracks whether reports are
+  **landing** (`relay_ok`, set by the `send_to_host` wrapper around `_send_to_host`) —
+  it used to call `set_connected()` once at startup and never revisit it. ⚠️ `think`/
+  `warn` are deliberately unprefixed: they clear every inner key, so no letter survives
+  in them and an `f` twin would be a byte-identical copy with no `cmp` guarding it.
 - ⚠️ **A wrong or missing icon NAME fails silently** — `QIcon()` on a nonexistent path
   returns an empty icon and the row renders without a picture. `tests/gui/icon_assets_test.py`
   is the guard.
