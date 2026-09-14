@@ -312,5 +312,59 @@ class TestIconAppNamesTheFORWARDEDApp(unittest.TestCase):
         self.assertEqual(h.icon_app(), "chrome")
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class HostedAppIconTest(unittest.TestCase):
+    """A process can HOST a different app, and then the executable name is not
+    the app. Measured twice in four minutes of one field log (2026-09-14):
+    `ApplicationFrameHost.exe` titled "Calculator", and `ONENOTE.EXE` titled
+    "Sticky Notes (new)". The matched entry is the only thing that knows which
+    app it is, because it is what matched the title."""
+
+    def _handler(self):
+        return OverlayHandler({
+            "applicationframehost": {"title": "^Calculator",
+                                     "icon": "mdi:calculator",
+                                     "overlay": ["calc.png"]},
+            "onenote": {"title": "^Sticky Notes", "icon": "mdi:sticker-text",
+                        "overlay": ["sticky.png"]},
+            "chrome": {"overlay": ["c.png"]},
+        })
+
+    def test_a_hosted_app_names_ITSELF_not_the_host_process(self):
+        h = self._handler()
+        h.current_app = "applicationframehost"
+        h.current_entry = h.mapping["applicationframehost"]
+        self.assertEqual(h.icon_app(), "mdi:calculator")
+
+    def test_it_prevents_a_WRONG_mark_not_just_a_missing_one(self):
+        """`app_icons.yaml` maps `onenote` to the OneNote logo, so without this
+        a Sticky Notes window would draw a mark for a different application --
+        which is the failure `icon_app` already refuses for the forwarder."""
+        h = self._handler()
+        h.current_app = "onenote"
+        h.current_entry = h.mapping["onenote"]
+        self.assertEqual(h.icon_app(), "mdi:sticker-text")
+        self.assertNotEqual(h.icon_app(), "onenote")
+
+    def test_an_entry_WITHOUT_icon_is_unchanged(self):
+        h = self._handler()
+        h.current_app = "chrome"
+        h.current_entry = h.mapping["chrome"]
+        self.assertEqual(h.icon_app(), "chrome")
+
+    def test_with_NO_entry_matched_it_still_answers_current_app(self):
+        h = self._handler()
+        h.current_app = "chrome"
+        h.current_entry = None
+        self.assertEqual(h.icon_app(), "chrome")
+
+    def test_the_value_is_normalised_the_way_the_other_two_paths_are(self):
+        h = self._handler()
+        h.current_app = "applicationframehost"
+        h.current_entry = dict(h.mapping["applicationframehost"])
+        h.current_entry["icon"] = "  MDI:Calculator  "
+        self.assertEqual(h.icon_app(), "mdi:calculator")
+
+
 if __name__ == "__main__":
     unittest.main()

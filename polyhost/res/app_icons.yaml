@@ -136,8 +136,20 @@ photos: mdi:image-multiple
 putty: mdi:console-network
 winscp: mdi:folder-network
 
-# ⚠️ NOT listed, because the entry could never fire: on Windows 11 Calculator,
-# Clock and the other packaged apps all run inside `ApplicationFrameHost.exe`,
-# so the app name the window tracker reports is the HOST, not the app. Their
-# identity is in the window TITLE, which this file cannot key on. Adding
-# `calculator: mdi:calculator` would look like coverage and resolve for nobody.
+# ⚠️ A HOSTED app is not listed here, and cannot be: on Windows 11 Calculator,
+# Clock and the other packaged apps run inside `ApplicationFrameHost.exe`, so the
+# app name the window tracker reports is the HOST, not the app -- and the same
+# thing happens outside the packaged-app world, where the new Sticky Notes runs
+# inside `ONENOTE.EXE` (both measured in one field log, 2026-09-14). Their
+# identity is in the window TITLE, which this file cannot key on, so
+# `calculator: mdi:calculator` here would look like coverage and resolve for
+# nobody.
+#
+# ✅ The overlay MAPPING can key on the title, so that is where a hosted app names
+# its mark: `icon:` on the matched entry (`ICON_APP` in handler/common.py), read
+# by `OverlayHandler.icon_app()`. The value lands in `candidates()` exactly like a
+# value from this file, so it takes the same `mdi:`/`si:` spellings.
+#
+# ⚠️ For `onenote` that is not just a gap but a WRONG icon waiting to happen: the
+# entry above maps it to `mdi:microsoft-onenote`, so a Sticky Notes window would
+# draw a OneNote logo unless its mapping entry names its own.

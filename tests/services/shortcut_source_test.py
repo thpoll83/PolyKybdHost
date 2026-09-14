@@ -96,6 +96,38 @@ class ProbeParityTest(unittest.TestCase):
         reporting nothing."""
         self.assertIsNone(ss.parse_win_accel("Wibble+S"))
 
+    def test_the_system_menu_chord_is_NOT_an_app_shortcut(self):
+        """`Alt+Space 'System'` is the window manager's, on every window.
+
+        Field daemon_log.txt (2026-09-14): Calculator and Photos each reported it
+        as their ONLY harvested shortcut, so the diagnostic claimed "1
+        shortcut(s) harvested" for two apps that expose none.
+        """
+        accel = ss.parse_win_accel("Alt+Space")
+        self.assertTrue(ss.is_window_manager_chord(accel.mods, accel.keysym))
+
+    def test_close_window_is_the_same_case(self):
+        accel = ss.parse_win_accel("Alt+F4")
+        self.assertTrue(ss.is_window_manager_chord(accel.mods, accel.keysym))
+
+    def test_an_ordinary_chord_on_the_same_KEY_survives(self):
+        """The rule is the whole chord, not the key: Ctrl+Space is a real
+        binding in plenty of apps and must not be swept up with Alt+Space."""
+        for text in ("Ctrl+Space", "Shift+Space", "Ctrl+Alt+Space", "Ctrl+F4"):
+            accel = ss.parse_win_accel(text)
+            self.assertFalse(ss.is_window_manager_chord(accel.mods, accel.keysym),
+                             f"{text} was dropped as a window-manager chord")
+
+    def test_the_rule_keys_on_the_CHORD_and_never_on_the_LABEL(self):
+        """"System" is localized -- German reports "Systemmenü" -- so a label
+        test would drop these on an English desktop and nowhere else. The
+        signature takes no label at all, which is what pins that."""
+        import inspect
+        params = inspect.signature(ss.is_window_manager_chord).parameters
+        self.assertEqual(list(params), ["mods", "keysym"])
+        de = ss.parse_win_accel("Alt+Leertaste")   # unknown key token, still Alt
+        self.assertTrue(de is None or de.mods == ss.MOD_ALT)
+
 
 if __name__ == "__main__":
     unittest.main()

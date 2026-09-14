@@ -176,6 +176,27 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # so our DEBUG output stays readable. Harmless when not debugging.
     logging.getLogger("PIL").setLevel(logging.INFO)
 
+    # comtypes is FAR worse than Pillow, and it is the window tracker that pays:
+    # every UIA shortcut harvest releases a few hundred COM pointers and logs one
+    # `Release <POINTER(IUIAutomationElement) ptr=0x… at 0x…>` line per release.
+    # Measured on a field daemon_log.txt (2026-09-14, `--dev 1`, four minutes of
+    # ordinary app switching): 483 of 812 lines were that one message, and 490 —
+    # **60% of the whole log** — were comtypes. A log that is three-fifths pointer
+    # addresses is one nobody reads, which is the same cost as not logging.
+    #
+    # ⚠️ Capped to WARNING rather than INFO: comtypes' INFO lines are its own
+    # cache bookkeeping ("Imported existing <module 'comtypes.gen'>", "Using
+    # writeable comtypes cache directory"), which say nothing about the keyboard
+    # either. Nothing here is suppressed that would help diagnose a PolyKybd
+    # problem — a COM failure surfaces as an exception we log ourselves.
+    #
+    # It comes BACK at `--dev 2`, which is what that level is for: DEBUG_DETAILED
+    # is this app's "tell me everything" step, and someone debugging the UIA
+    # harvest itself is exactly who wants the pointer churn. So the cap is only
+    # applied while the run is not at the most detailed level.
+    if verbosity < 2:
+        logging.getLogger("comtypes").setLevel(logging.WARNING)
+
     # Diagnostic log for the pre-GUI launch phase (works under pythonw, where
     # print() is a silent no-op). Captures the daemon decision, autostart, and
     # single-instance handling that otherwise leave no trace when a launch fails.

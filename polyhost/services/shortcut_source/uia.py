@@ -17,7 +17,8 @@ from __future__ import annotations
 from polyhost.services.shortcut_source.model import (
     Shortcut, TREESCOPE_SUBTREE, UIA_CONTROL_TYPES, UIA_PROP_ACCELERATOR,
     UIA_PROP_ACCESS_KEY, UIA_PROP_CONTROL_TYPE, UIA_PROP_NAME,
-    UIA_PROP_PROCESS_ID, parse_win_accel, pick_win_binding)
+    UIA_PROP_PROCESS_ID, is_window_manager_chord, parse_win_accel,
+    pick_win_binding)
 
 
 _UIA_CACHE = None
@@ -75,6 +76,11 @@ def uia_shortcuts(iuia, root, cache_request) -> tuple[list[Shortcut], int]:
         # real binding is Alt+Space. Same rule as the AT-SPI role gate: only a
         # chord is a one-press binding.
         if kind == "menu" and accel.mods == 0:
+            continue
+        # Alt+Space / Alt+F4 belong to Windows, not to the app — see
+        # WINDOW_MANAGER_CHORDS. Dropped here rather than left to the icon
+        # matcher so the harvest COUNT is honest.
+        if is_window_manager_chord(accel.mods, accel.keysym):
             continue
         key = (accel.mods, accel.keysym.lower())
         if key in seen:

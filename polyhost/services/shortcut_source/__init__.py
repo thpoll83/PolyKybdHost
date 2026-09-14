@@ -21,11 +21,13 @@ from __future__ import annotations
 import sys
 
 from polyhost.services.shortcut_source.model import (  # noqa: F401  (re-export)
-    Accel, Shortcut, displayable_hid, parse_accel, parse_win_accel,
-    pick_binding, pick_win_binding)
+    Accel, MOD_ALT, MOD_CTRL, MOD_GUI, MOD_SHIFT, Shortcut,
+    WINDOW_MANAGER_CHORDS, displayable_hid, is_window_manager_chord,
+    parse_accel, parse_win_accel, pick_binding, pick_win_binding)
 
-__all__ = ["Accel", "Shortcut", "displayable_hid", "parse_accel",
-           "parse_win_accel", "pick_binding", "pick_win_binding",
+__all__ = ["Accel", "MOD_ALT", "MOD_CTRL", "MOD_GUI", "MOD_SHIFT", "Shortcut",
+           "WINDOW_MANAGER_CHORDS", "displayable_hid", "is_window_manager_chord",
+           "parse_accel", "parse_win_accel", "pick_binding", "pick_win_binding",
            "backend_name", "pick", "harvest"]
 
 

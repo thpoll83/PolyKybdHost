@@ -177,8 +177,15 @@ notion:
 # ⚠️ The title is ENGLISH. A localized Windows names the window "Rechner",
 # "Calculadora", … and this entry will not fire there; the app-name entry below
 # still will when Calculator runs unhosted.
+# ⚠️ `ApplicationFrameHost.exe` is NOT an app -- it is the Win11 host process for
+# packaged apps, so the executable name says nothing about what is on screen and
+# the TITLE is the only thing that does. Every hosted app therefore needs its own
+# title branch here, and its own `icon:` (the program mark cannot be resolved from
+# a host process name -- `si:applicationframehost` will never exist). Add a
+# hosted app by adding a branch, not by adding an app_icons.yaml entry.
 applicationframehost:
   title: "^Calculator"
+  icon: mdi:calculator
   overlay: [calc_template.mods.png, calc_template.combo.mods.png]
 calculatorapp:
   overlay: [calc_template.mods.png, calc_template.combo.mods.png]

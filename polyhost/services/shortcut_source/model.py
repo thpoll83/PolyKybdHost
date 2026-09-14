@@ -352,6 +352,37 @@ def parse_win_accel(text: str) -> Accel | None:
     return Accel(mods=mods, keysym=key, hid=hid)
 
 
+# Chords the WINDOW MANAGER owns, on every window, in every app. They arrive
+# through UIA looking exactly like an application shortcut -- a control with a
+# real AcceleratorKey and a real label -- because from the app's point of view
+# they ARE controls: the system menu is a menu the app hosts and Windows fills.
+#
+# Measured on a field daemon_log.txt (2026-09-14): Calculator and Photos each
+# reported `Alt+Space 'System'` as their ONLY harvested shortcut, so the
+# diagnostic read "1 shortcut(s) harvested" for two apps that expose none. No
+# icon was ever drawn for it (no concept matches "System"), so this changes no
+# pixels -- it makes the count TRUE, which is what that line is read for.
+#
+# ⚠️ Keyed on the CHORD, never on the label. "System" is localized -- German
+# reports "Systemmenü" -- so a label test would drop these on an English desktop
+# and let them through everywhere else, which is the worst of both.
+#
+# ⚠️ Safe to drop outright rather than merely leave unmatched: Windows
+# INTERCEPTS both of these before the focused app sees them, so an application
+# cannot usefully bind either one, and a keycap promising otherwise would lie.
+# `pick_win_binding`'s existing menu-mnemonic rule catches the OTHER form of the
+# same thing (the bare "Space" a system menu reports once it is already open).
+WINDOW_MANAGER_CHORDS = frozenset({
+    (MOD_ALT, "space"),   # the system menu
+    (MOD_ALT, "f4"),      # close window
+})
+
+
+def is_window_manager_chord(mods: int, keysym: str) -> bool:
+    """True for a chord the OS owns on every window — see WINDOW_MANAGER_CHORDS."""
+    return (mods, (keysym or "").lower()) in WINDOW_MANAGER_CHORDS
+
+
 def pick_win_binding(accelerator: str, access_key: str,
                      control_type: int) -> tuple[str | None, str]:
     """Choose between an element's AcceleratorKey and its AccessKey.

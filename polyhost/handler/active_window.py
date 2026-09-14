@@ -5,7 +5,7 @@ import re
 from urllib.parse import urlsplit
 
 from polyhost.handler.common import (
-    OverlayCommand, Flags, find_matching_entry, OS,
+    OverlayCommand, Flags, find_matching_entry, ICON_APP, OS,
     TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, URL, URL_HAS, FLAGS,
 )
 from polyhost.handler.remote_window import RemoteHandler
@@ -335,11 +335,21 @@ class OverlayHandler:
         `RemoteHandler.name` is already normalised the same way the local branch
         normalises (`data["name"].split(".")[0].lower()`), so it needs no second
         pass here.
+
+        ⚠️ A matched entry may also NAME the app (`icon:` in the mapping), and
+        that wins over `current_app` for the same reason: one process can host a
+        different application, so the executable name is not always the app. See
+        `ICON_APP` in handler/common.py for the two field cases.
         """
         if self.is_remote_mapping_entry():
             remote = getattr(self.remote_handler, "name", None)
             if remote:
                 return remote
+        entry = self.current_entry
+        if entry:
+            named = entry.get(ICON_APP)
+            if named:
+                return str(named).strip().lower()
         return self.current_app
 
     def get_overlay_data(self):

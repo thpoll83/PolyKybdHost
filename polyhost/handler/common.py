@@ -19,6 +19,22 @@ URL_HAS = "urls-contains"
 # app name needs different overlay artwork per OS. Keys are canonical OS names
 # (see `normalize_os`); the sub-entry may itself carry title/url constraints.
 OS = "os"
+# Optional: the name the PROGRAM MARK should be resolved under, when the process
+# is not the app. One process can host a different application, and then the
+# executable name says nothing about what is on screen -- measured twice in four
+# minutes of one field log (2026-09-14): `ApplicationFrameHost.exe` titled
+# "Calculator" (Win11 packaged apps) and `ONENOTE.EXE` titled "Sticky Notes
+# (new)". The mapping is the only thing that already knows which app it is,
+# because it is what matched the title, so it is where the answer belongs.
+#
+# ⚠️ Without it the mark is not merely missing, it can be WRONG: `app_icons.yaml`
+# maps `onenote` to `mdi:microsoft-onenote`, so a Sticky Notes window would draw
+# a OneNote logo -- "one wrong icon rather than none, which is worse than the gap
+# it fills", which is the rule `icon_app()` already states for the forwarder.
+#
+# The value flows through `app_icons.candidates()` unchanged, so it may be a
+# plain app name (`calculator`) or an explicit slug (`mdi:microsoft-onenote`).
+ICON_APP = "icon"
 FLAGS = "flags"
 
 # Accepted spellings -> canonical name. The mapping file is hand-written, so take
