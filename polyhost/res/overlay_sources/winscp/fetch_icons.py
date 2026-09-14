@@ -45,6 +45,7 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import program_marks  # noqa: E402
 import prompt_glyph  # noqa: E402
 import number_badge  # noqa: E402
 
@@ -124,32 +125,6 @@ FLUENT = {
 
 WINSCP_ICO = ("https://raw.githubusercontent.com/winscp/winscp/master/"
               "source/resource/Application.ico")
-PROGMARK_FRAME = 64
-
-
-def _program_mark(path: Path) -> int:
-    """WinSCP's own application icon, at the frame that survives 38 px 1-bit.
-
-    ⚠️ Guarded like every hand-tunable asset here, so a re-run never clobbers
-    an edit -- and the committed PNG is then the source of truth, which matters
-    more than usual for a file fetched from a moving branch.
-    """
-    if path.exists():
-        print(f"  {path.name}  <- committed asset (left as-is)")
-        return 1
-    import io
-    import urllib.request
-    with urllib.request.urlopen(WINSCP_ICO, timeout=30) as response:
-        data = response.read()
-    image = Image.open(io.BytesIO(data))
-    # ⚠️ An .ico is multi-frame and `size` SELECTS the frame rather than
-    # resizing: the small frames are hand-tuned by the designer for small
-    # display, so taking the largest and letting the generator downscale it is
-    # NOT automatically best at this size. Measured, 64 reads better than 256.
-    image.size = (PROGMARK_FRAME, PROGMARK_FRAME)
-    image.convert("RGBA").save(path)
-    print(f"  {path.name}  <- winscp/winscp Application.ico ({PROGMARK_FRAME}px frame)")
-    return 1
 
 
 def main() -> int:
@@ -167,7 +142,9 @@ def main() -> int:
                         what="bare `>_` shell prompt")
     n += 1
 
-    n += _program_mark(out / "progmark.png")
+    program_marks.own_icon(out / "progmark.png", WINSCP_ICO, 64,
+                           credit="winscp/winscp Application.ico")
+    n += 1
     print(f"Wrote {n} icons (+ program mark) to {out}")
     return 0
 

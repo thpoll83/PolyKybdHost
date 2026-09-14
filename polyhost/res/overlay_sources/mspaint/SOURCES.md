@@ -43,13 +43,18 @@ are both compatible with this repo's **GPL-3.0-or-later**.
 
 Drawn here: the program mark only.
 
-⚠️ **The program mark is never the app's real logo**, and for most of this batch
-it is not in this folder at all. Measured against both catalogs, none of these
-apps has a brand mark in Simple Icons or mdi -- Microsoft does not license its
-logos and mdi does not draw them -- so the ESC cell takes a **curated generic**
+⚠️ **The program mark here is not the app's real logo, and that is a fact about
+THIS app rather than a rule.** The sentence used to read *"the program mark is
+never the app's real logo"*, which was written for a mixed batch and inherited
+by every overlay in it -- including the free-software ones, where it was simply
+wrong: WinSCP (GPL-3.0), PuTTY and Windows Terminal (MIT) and 7-Zip (LGPL) all
+ship their real marks now, and read better for it. **Always check the licence
+before drawing a substitute.** What makes this one different is not the vendor
+but where the art lives: it is inside Windows, published in no repository, so
+there is nothing to take under any licence. Hence a **curated generic**
 from `polyhost/res/app_icons.yaml` (a palette for Paint, scissors for Snipping
-Tool, a zipped folder for 7-Zip). It says what the app IS rather than naming a
-brand, which is the mark's whole job.
+Tool). It says what the app IS rather than naming a brand, which is the mark's
+whole job.
 
 ⚠️ A baked `program_icon:` would WIN over that: `send_overlays_mru` defers a
 synthetic source on any (modifier, keycode) a template already drew. So a mark

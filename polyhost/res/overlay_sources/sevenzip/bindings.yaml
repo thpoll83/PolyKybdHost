@@ -26,19 +26,43 @@ margin: 0
 mode: luma
 threshold: 150
 
-# ⚠️ NO `program_icon:` HERE, DELIBERATELY -- the ESC mark comes from the
-# CURATED GENERIC in `polyhost/res/app_icons.yaml` (mdi:folder-zip) instead of a
-# baked cell. Both exist and the baked one WINS: `send_overlays_mru` defers a
-# synthetic source on any (modifier, keycode) a template already drew, so a
-# `program_icon:` here would mean the generic is never uploaded.
+# The ESC mark is the app's OWN LOGO -- `CPP/7zip/UI/FileManager/FM.ico` from the
+# ip7z/7zip repository, which is LGPL-2.1-or-later (Igor Pavlov). This host is
+# GPL-3.0-or-later, so that art is redistributable here; a generic substitute is
+# only for apps whose licence genuinely does not allow it.
 #
-# The generic reads better at 40x40 than the letter tile it replaced, and it is
-# also 8 px wider -- the auto-fetch path fixes the mark at the right-hand 40x40
-# square, while a baked one here was 42x34.
+# It replaces the curated generic `mdi:folder-zip` that
+# `polyhost/res/app_icons.yaml` was supplying. The two are mutually exclusive
+# rather than layered: `send_overlays_mru` defers a synthetic source on any
+# (modifier, keycode) a template already drew, so a `program_icon:` here means
+# the catalog generic is never uploaded. That trade falls the right way -- a
+# baked mark ALWAYS draws, where the fetched one needed
+# `shortcut_icon_auto_fetch` (default on) plus one successful download, so
+# offline with a cold cache ESC was blank.
 #
-# ⚠️ The trade, stated because it is invisible from this file: a baked mark
-# ALWAYS draws, a fetched one needs `shortcut_icon_auto_fetch` (default on) and
-# one successful download. Offline with a cold cache, ESC stays blank.
+# ⚠️ The LGPL is the licence for every 7-Zip file that does not state its own
+# (`DOC/License.txt`), and this icon states none -- so it is LGPL, which is
+# GPL-3 compatible. The unRAR restriction rides on `CPP/7zip/Compress/Rar*`
+# only and does not reach here.
+#
+# ⚠️ Frame, mode and threshold were each picked by RENDERING the candidates at
+# keycap size, never from the source:
+#   * 48px at t140 -- the frame is what decides this, not the letters. The mark
+#     is a heavy rounded border around `7z`, and the border's continuity is the
+#     tell: it is broken at 32/t140 (gaps top-right and bottom-right) and again
+#     at 48/t170, closed at 48/t140. That is NOT monotonic in threshold, so it
+#     has to be looked at rather than reasoned about.
+#   * `luma` -- black linework again, same as PuTTY. `alpha` renders the whole
+#     plate as a solid white rectangle, which is the worst thing a 40px keycap
+#     can show.
+#   * threshold 140 -- also the least ink of the legible options (489 lit vs
+#     706 at 32/t170), which matters for a mark that is mostly border.
+program_icon: progmark.png
+program_icon_mode: luma
+program_icon_threshold: 140
+program_icon_anchor: right
+program_icon_region: [40, 40]      # the square mark, full cell height, hard right
+program_icon_margin: 0
 
 bindings:
   # --- no modifier: the Commander F-keys (primary A channel) ------------

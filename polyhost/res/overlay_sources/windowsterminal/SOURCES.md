@@ -57,15 +57,27 @@ Choices that are not the obvious one, and why:
 
 ### Drawn here, not downloaded
 
-- **The ESC program mark is NOT in this folder.** Windows Terminal's real
-  product icon is Microsoft **trademark art** and is in neither catalog, so the
-  ESC cell takes the **curated generic** `mdi:console` from
-  `polyhost/res/app_icons.yaml` — a `>_`, carrying no trademark.
-  ⚠️ This overlay used to bake a framed `>_` drawn here; the two are mutually
-  exclusive, because `send_overlays_mru` defers a synthetic source on any cell a
-  template already drew. That drawing had been extracted to
-  `../prompt_glyph.py` to share with WinSCP's open-terminal key, and **the
-  module is still there for that caller** — only the framed variant went.
+- **The ESC program mark is Windows Terminal's OWN logo**, `res/terminal.ico`
+  from `microsoft/terminal` (48px frame). ⚠️ This entry used to say the real
+  icon *"is Microsoft trademark art and is in neither catalog"*, and the second
+  half was the only true part: it is not in a catalog, but it IS in the repo,
+  under **MIT with no trademark carve-out in LICENSE, README or NOTICE**
+  (checked). The rule is to look before substituting — Notepad, Paint, Snipping
+  Tool and Task Manager really do have no redistributable icon anywhere, and
+  that is a fact about where their art lives, not about the vendor.
+  It replaced the curated generic `mdi:console`, which had itself replaced a
+  framed `>_` drawn here; the three are mutually exclusive, because
+  `send_overlays_mru` defers a synthetic source on any cell a template already
+  drew. That drawing had been extracted to `../prompt_glyph.py` to share with
+  WinSCP's open-terminal key, and **the module is still there for that caller**.
+  ⚠️ The generic was the weakest of the three for a reason the neighbouring
+  overlay recorded: PuTTY's was `mdi:console-network`, so the two terminal
+  overlays were both a `>_` one keycap apart.
+  ⚠️ It renders `bright` where the other three own-logo marks render `luma` —
+  its art is a dark window panel carrying light glyphs, so `bright` lights the
+  chevron, the cursor and the title bar and leaves the panel unlit, while `luma`
+  would invert it into a white slab. Frame/mode/threshold reasoning is in
+  `bindings.yaml`.
 - **`tab1.png`…`tab8.png` — Ctrl+Alt+N switch-to-tab.** The bare Fluent *Tab*
   glyph is an empty rounded box, and at 40 px on a keycap it reads as nothing —
   while the whole point of Ctrl+Alt+N is *which* tab. Composited as the Tab box

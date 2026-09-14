@@ -50,19 +50,38 @@ are both compatible with this repo's **GPL-3.0-or-later**.
 
 Drawn here: the three kill-* glyphs, the mirrored kill-word-forward, and the program mark.
 
-⚠️ **The program mark is never the app's real logo**, and for most of this batch
-it is not in this folder at all. Measured against both catalogs, none of these
-apps has a brand mark in Simple Icons or mdi -- Microsoft does not license its
-logos and mdi does not draw them -- so the ESC cell takes a **curated generic**
-from `polyhost/res/app_icons.yaml` (a palette for Paint, scissors for Snipping
-Tool, a zipped folder for 7-Zip). It says what the app IS rather than naming a
-brand, which is the mark's whole job.
+### The program mark is PuTTY's OWN logo
 
-⚠️ A baked `program_icon:` would WIN over that: `send_overlays_mru` defers a
-synthetic source on any (modifier, keycode) a template already drew. So a mark
-here and a generic in the catalog are mutually exclusive, and the trade is that
-a baked mark always draws while a fetched one needs `shortcut_icon_auto_fetch`
-(default on) and one successful download.
+`icons/progmark.png` is the 32px frame of
+[`master/windows/putty.ico`](https://raw.githubusercontent.com/github/putty/master/windows/putty.ico)
+from the `github/putty` repository. **PuTTY is MIT (Simon Tatham)** and this host is
+GPL-3.0-or-later, so its artwork is redistributable here.
+
+⚠️ **This paragraph used to say the opposite** -- *"the program mark is never
+the app's real logo ... Microsoft does not license its logos and mdi does not
+draw them"* -- and that was written once for a mixed batch and then inherited by
+every overlay in it, including the free-software ones. It is true of Paint,
+Notepad, Snipping Tool and Task Manager, whose icons live inside Windows and are
+redistributable nowhere. It was never true here. **Check the licence before
+reaching for a substitute.**
+
+It replaces the curated generic `mdi:console-network` from
+`polyhost/res/app_icons.yaml`. The two are mutually exclusive rather than
+layered: `send_overlays_mru` defers a synthetic source on any (modifier,
+keycode) a template already drew, so a baked `program_icon:` means the generic
+is never uploaded. The trade falls the right way -- a baked mark ALWAYS draws,
+where the fetched one needed `shortcut_icon_auto_fetch` (default on) plus one
+successful download, so offline with a cold cache ESC was blank.
+
+Rendered `luma` at threshold 170; the reasoning for the frame, the mode and
+the threshold -- each picked by looking at the render, not from the source -- is
+in `bindings.yaml` beside the `program_icon:` keys.
+
+✅ **It also un-collides a pair the substitutes had pushed together.** The
+generic here was `mdi:console-network` and Windows Terminal's was `mdi:console`
+-- both a `>_`, one keycap apart, which `fetch_icons.py` recorded as a knowing
+trade. The real logos are two networked computers and a terminal window, which
+nobody will confuse.
 
 | icon | art | licence |
 |---|---|---|

@@ -67,11 +67,20 @@ Choices that are not the obvious one, and why:
 
 ### The ESC program mark
 
-**Not in this folder.** Notepad's real product icon is Microsoft **trademark
-art**, and it is in neither catalog — measured against both, Simple Icons and
-mdi have no Microsoft bundled-app marks at all. So the ESC cell takes the
-**curated generic** `mdi:note-text` from `polyhost/res/app_icons.yaml`: a page
-with lines, which says what the app IS rather than naming a brand.
+**Not in this folder** — and the reason is *where the art lives*, not who owns
+it. Notepad ships inside Windows and publishes no source, so there is no
+repository to take its icon from at any licence; it is in neither catalog
+either (measured against both, Simple Icons and mdi have no Microsoft
+bundled-app marks). So the ESC cell takes the **curated generic**
+`mdi:note-text` from `polyhost/res/app_icons.yaml`: a page with lines, which
+says what the app IS rather than naming a brand.
+
+⚠️ **Do not read that as "Microsoft art is off limits"** — Windows Terminal is
+`microsoft/terminal`, MIT, with no trademark carve-out in LICENSE, README or
+NOTICE, and that overlay ships Microsoft's real product icon. The rule across
+this repo is to prefer the app's own logo and check its licence first; a drawn
+or curated substitute is for the apps, like this one, where no published art
+exists to take.
 
 ⚠️ This overlay used to bake a drawn mark (a lined page with a folded corner),
 and the two are mutually exclusive — `send_overlays_mru` defers a synthetic

@@ -16,13 +16,18 @@ where each came from.
 Style route: **Microsoft Fluent UI System Icons (MIT)** via `icon_fetch`. Three
 line-editing glyphs are drawn here, because a general UI icon set has nothing
 for "kill to end of line" and the nearest candidates all say "delete file". The
-ESC **program mark** is NOT baked here -- it comes from the curated generic
-`mdi:console-network` (`polyhost/res/app_icons.yaml`). ⚠️ It replaced a drawn
-monitor-with-a-block-cursor chosen to be DISTINCT from the Windows Terminal
-overlay's framed `>_`, and the two generics sit closer together than those two
-did: `mdi:console` and `mdi:console-network` are both a `>_`. Taken knowingly --
-one is framed, the other carries a network node -- but if the two terminal
-overlays ever become hard to tell apart on a keycap, this is why.
+ESC **program mark is PuTTY's OWN LOGO** -- `windows/putty.ico`, MIT, so
+redistributable in this GPL-3.0-or-later host.
+
+✅ **It closes a confusion this docstring used to record as a knowing trade.**
+The mark went drawn monitor-with-a-block-cursor -> generic `mdi:console-network`
+-> real logo, and the middle step was the worst of the three: Windows Terminal's
+generic was `mdi:console`, so the two terminal overlays were both a `>_` one
+keycap apart, and this file said as much while shipping it anyway. The real
+logos are not remotely alike -- two networked computers here, a terminal WINDOW
+there -- so preferring the originals separated a pair the substitutes had pushed
+together. Generalise: when two generics collide, check whether either app has a
+redistributable logo before tuning the substitutes against each other.
 
     pip install cairosvg Pillow
     python polyhost/res/overlay_sources/putty/fetch_icons.py
@@ -37,6 +42,7 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import program_marks  # noqa: E402
 
 FLUENT = {
     # movement
@@ -159,6 +165,10 @@ def _draw_killword(path: Path, *, forward: bool) -> None:
     _kill_glyph_at(path, flip=forward, **_KILL_WORD)
 
 
+PUTTY_ICO = ("https://raw.githubusercontent.com/github/putty/master/"
+              "windows/putty.ico")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
@@ -179,6 +189,8 @@ def main() -> int:
             print(f"  {name}.png  <- custom (drawn: {what})")
         n += 1
 
+    program_marks.own_icon(out / "progmark.png", PUTTY_ICO, 32,
+                           credit="github/putty windows/putty.ico")
     print(f"Wrote {n} icons to {out}")
     return 0
 

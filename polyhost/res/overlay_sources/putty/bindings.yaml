@@ -34,19 +34,43 @@ margin: 0
 mode: luma
 threshold: 150
 
-# ⚠️ NO `program_icon:` HERE, DELIBERATELY -- the ESC mark comes from the
-# CURATED GENERIC in `polyhost/res/app_icons.yaml` (mdi:console-network) instead of a
-# baked cell. Both exist and the baked one WINS: `send_overlays_mru` defers a
-# synthetic source on any (modifier, keycode) a template already drew, so a
-# `program_icon:` here would mean the generic is never uploaded.
+# The ESC mark is the app's OWN LOGO -- `windows/putty.ico` from the
+# github/putty repository, which is MIT (Simon Tatham). This host is
+# GPL-3.0-or-later, so that art is redistributable here; a generic substitute is
+# only for apps whose licence genuinely does not allow it.
 #
-# The generic reads better at 40x40 than the letter tile it replaced, and it is
-# also 8 px wider -- the auto-fetch path fixes the mark at the right-hand 40x40
-# square, while a baked one here was 42x34.
+# It replaces the curated generic `mdi:console-network` that
+# `polyhost/res/app_icons.yaml` was supplying. The two are mutually exclusive
+# rather than layered: `send_overlays_mru` defers a synthetic source on any
+# (modifier, keycode) a template already drew, so a `program_icon:` here means
+# the catalog generic is never uploaded. That trade falls the right way -- a
+# baked mark ALWAYS draws, where the fetched one needed
+# `shortcut_icon_auto_fetch` (default on) plus one successful download, so
+# offline with a cold cache ESC was blank.
 #
-# ⚠️ The trade, stated because it is invisible from this file: a baked mark
-# ALWAYS draws, a fetched one needs `shortcut_icon_auto_fetch` (default on) and
-# one successful download. Offline with a cold cache, ESC stays blank.
+# ⚠️ It also fixes a confusion this file used to record as a knowing trade: the
+# generic was `mdi:console-network` and Windows Terminal's was `mdi:console`,
+# i.e. two `>_` prompts one keycap apart. The real logos are not remotely alike
+# -- two networked computers here, a terminal WINDOW there -- so preferring the
+# originals separated a pair that the substitutes had pushed together.
+#
+# ⚠️ Frame, mode and threshold were each picked by RENDERING the candidates at
+# keycap size, never from the source:
+#   * 32px, not the 48 -- this is black line art, so the choice is a downscale
+#     against an upscale: at 48 the 1px strokes thin and BREAK (the upper
+#     computer's outline opens at t110/t140), while 32 -> 40 thickens them and
+#     every outline stays closed.
+#   * `luma` -- the art IS dark linework on transparent, so it is the mode that
+#     lights it. `alpha` gives one solid blob (the silhouette), `bright` lights
+#     the white fill INSIDE the monitors instead of their outlines.
+#   * threshold 170 -- swept 110..200. Below it the outlines break into
+#     fragments; above it the screens merge into their bezels.
+program_icon: progmark.png
+program_icon_mode: luma
+program_icon_threshold: 170
+program_icon_anchor: right
+program_icon_region: [40, 40]      # the square mark, full cell height, hard right
+program_icon_margin: 0
 
 bindings:
   # --- Ctrl: readline movement (primary R channel) ----------------------

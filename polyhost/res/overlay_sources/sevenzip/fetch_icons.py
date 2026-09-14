@@ -2,8 +2,14 @@
 """Fetch + render the 7-Zip File Manager shortcut icons (reproducible source step).
 
 Style route: **Microsoft Fluent UI System Icons (MIT)** via `icon_fetch`. The
-ESC **program mark** is NOT baked here -- it comes from the curated generic
-`mdi:folder-zip` (`polyhost/res/app_icons.yaml`).
+ESC **program mark is 7-Zip's OWN LOGO** -- `CPP/7zip/UI/FileManager/FM.ico`
+from ip7z/7zip, replacing the curated generic `mdi:folder-zip`.
+
+⚠️ **The licence needed reading rather than assuming**: `DOC/License.txt` says
+the LGPL covers every file that does not state its own, and this icon states
+none, so it is LGPL and therefore GPL-3 compatible. The unRAR restriction that
+makes 7-Zip look encumbered rides on `CPP/7zip/Compress/Rar*` alone and does not
+reach the icons.
 
 Shortcuts come from 7-Zip's OWN manual (Menu Items and Shortcut Keys), so this
 is the documented set rather than a third-party summary. See SOURCES.md.
@@ -19,6 +25,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import program_marks  # noqa: E402
 
 FLUENT = {
     # file operations
@@ -59,9 +66,15 @@ FLUENT = {
 }
 
 
+SEVENZIP_ICO = ("https://raw.githubusercontent.com/ip7z/7zip/main/"
+                 "CPP/7zip/UI/FileManager/FM.ico")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     n = icon_fetch.fluent(FLUENT, out)
+    program_marks.own_icon(out / "progmark.png", SEVENZIP_ICO, 48,
+                           credit="ip7z/7zip FM.ico")
     print(f"Wrote {n} icons to {out}")
     return 0
 

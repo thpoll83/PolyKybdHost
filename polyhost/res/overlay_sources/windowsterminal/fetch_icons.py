@@ -3,11 +3,17 @@
 
 Style route: **all shortcut icons come from Microsoft Fluent UI System Icons
 (MIT)** — the house style across every PolyKybd app overlay, and license-clean
-against the GPL-3.0-or-later host. The ESC **program mark** is NOT baked here -- it
-comes from the curated generic `mdi:console` (`polyhost/res/app_icons.yaml`),
-a `>_` that carries no trademark. It replaced a framed `>_` drawn here; the
-shared `../prompt_glyph.py` that drawing moved into is still used, by WinSCP's
-open-terminal key.
+against the GPL-3.0-or-later host. The ESC **program mark is Windows Terminal's OWN
+LOGO** (`res/terminal.ico` from microsoft/terminal, MIT with no trademark
+carve-out in LICENSE, README or NOTICE). It replaced the curated generic
+`mdi:console`, which had itself replaced a framed `>_` drawn here -- and the
+generic was the weakest of the three, because PuTTY's was `mdi:console-network`
+and the two are both a `>_`. The shared `../prompt_glyph.py` that the original
+drawing moved into is still used, by WinSCP's open-terminal key.
+
+⚠️ This one takes `bright` where the other three own-logo marks take `luma`:
+its art is a DARK window panel carrying light glyphs, so `bright` lights the
+chevron and the cursor and leaves the panel unlit. See bindings.yaml.
 
 Shortcuts come from the app's OWN defaults — `defaults.json` in
 microsoft/terminal — not from a docs page, so they are authoritative and
@@ -27,6 +33,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import icon_fetch  # noqa: E402
+import program_marks  # noqa: E402
 import number_badge  # noqa: E402
 
 RENDER_PX = 96
@@ -83,6 +90,10 @@ MS_ICONS = {
 
 
 
+TERMINAL_ICO = ("https://raw.githubusercontent.com/microsoft/terminal/main/"
+                 "res/terminal.ico")
+
+
 def main() -> int:
     out = Path(__file__).resolve().parent / "icons"
     out.mkdir(parents=True, exist_ok=True)
@@ -94,6 +105,8 @@ def main() -> int:
     # see number_badge for why that is one shared implementation.
     number_badge.numbered(out / "tab.png", "12345678", out, "tab")
 
+    program_marks.own_icon(out / "progmark.png", TERMINAL_ICO, 48,
+                           credit="microsoft/terminal res/terminal.ico")
     print(f"Wrote {len(MS_ICONS)} icons to {out}")
     return 0
 

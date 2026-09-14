@@ -41,10 +41,13 @@ are both compatible with this repo's **GPL-3.0-or-later**.
 
 Drawn here: the program mark only.
 
-⚠️ **The program mark is never the app's real logo** -- every one of these is
-proprietary trademark art -- so the ESC cell carries the shared licence-clean
-letter tile (`../program_marks.py`). It says *which overlay set is loaded*, not
-who makes the app.
+⚠️ **The program mark is not the app's real logo, because WordPad's lives inside
+Windows and is published in no repository** -- so the ESC cell carries the shared
+licence-clean letter tile (`../program_marks.py`). It says *which overlay set is
+loaded*, not who makes the app. ⚠️ This line used to generalise to *"the program
+mark is never the app's real logo -- every one of these is proprietary trademark
+art"*, which is false of the free-software overlays: WinSCP, PuTTY, Windows
+Terminal and 7-Zip all ship their own marks. **Check the licence first.**
 
 ⚠️ **This is one of the few in the batch that still BAKES a mark**, and the
 reason is a collision: the catalog's generic for WordPad is `mdi:text-box`,
