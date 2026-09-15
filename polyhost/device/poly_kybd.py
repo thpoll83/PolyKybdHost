@@ -1,5 +1,6 @@
 import array
 import logging
+import os
 import math
 import re
 import threading
@@ -17,8 +18,9 @@ from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType, GlyphScri
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE
+from polyhost.device.keys import Modifier, LEGACY_MAX_MODIFIER_VALUE, describe_key
 from polyhost.device.overlay_cache import OverlayMRUCache
+from polyhost.device.synthetic_overlay import is_synthetic
 from polyhost.services import iso_lang_country
 
 # Minimum firmware PROTOCOL_VERSION required for GET_LANG_LIST_PACKED (the compact
@@ -1241,13 +1243,19 @@ class PolyKybd:
         return overlay.compressed_msgs
 
     def send_overlays_mru(self, filenames: list, cache: OverlayMRUCache,
-                          cancel: threading.Event | None = None) -> bool:
+                          cancel: threading.Event | None = None,
+                          synthetic: dict | None = None) -> bool:
         """
         Send only overlay images not already in the keyboard's MRU pool, then
         update the display-position → pool-slot mapping in one command.
         Does NOT call reset_overlays_and_usage (cached images must be preserved).
+
+        `synthetic` maps a pseudo-filename in `filenames` to an already-built
+        converter (see device/synthetic_overlay.py) — an overlay source with no
+        file behind it, used for the generic icon fall-back. It is resolved by
+        the CALLER, on the caller's thread, because building one may fetch over
+        the network and this method runs on the HID worker.
         """
-        import os
         hid_msg_counter = 0
         hid_msg_counter_old = 0
         MAX_MSG_BEFORE_DELAY = self.poly_settings.get("max_hid_message_before_delay")
@@ -1260,9 +1268,13 @@ class PolyKybd:
         # unreadable file blanked the keycaps and then returned False, leaving the
         # keyboard with no overlays until the next program switch. Validating up
         # front makes a bad request a no-op on the device.
+        synthetic = synthetic or {}
         converters = []
         for filename in filenames:
             self.log.info("Send Overlay MRU '%s'...", filename)
+            if filename in synthetic:
+                converters.append(synthetic[filename])
+                continue
             converter = ImageConverter(self.device_settings)
             if not converter.open(filename):
                 self.log.warning("Unable to read %s", filename)
@@ -1291,7 +1303,26 @@ class PolyKybd:
         # cache; only the mapping commit is skipped.
         gui_combos = self.supports("gui_combo_modifiers")
         with cache.batch():
-            for converter in converters:
+            # zip, not `for converter in converters`: the cache key below names
+            # the file an image came from, and a bare loop leaves `filename` at
+            # the LAST entry of the decode loop above for every converter. The
+            # two lists are parallel by construction (a failed open() returns
+            # early), so this is the only pairing that can be right.
+            # Which (modifier, keycode) pairs a source has already claimed. A
+            # SYNTHETIC source skips a pair a real template already draws, so
+            # the hand-made design always wins and no upload is wasted on an
+            # image the mapping would immediately overwrite. Real sources keep
+            # their existing last-one-wins behaviour.
+            covered: set[tuple[int, int]] = set()
+            # What each source ended up drawing, for the summary below, and what
+            # it OFFERED and lost -- a source that draws nothing is otherwise
+            # absent from the summary, which reads exactly like one that was
+            # never fetched.
+            per_source: dict[str, list] = {}
+            deferred: dict[str, list] = {}
+            uploaded = 0
+            for filename, converter in zip(filenames, converters):
+                is_synthetic = filename in synthetic
                 for modifier in Modifier:
                     # A pre-v12 keyboard folds any GUI+x onto the bare-GUI
                     # variant and has no flat index space above 90*9, so an
@@ -1307,6 +1338,13 @@ class PolyKybd:
                         if cancel is not None and cancel.is_set():
                             self.log.debug_detailed("send_overlays_mru cancelled")
                             return False
+                        if is_synthetic and (modifier.value, keycode) in covered:
+                            self.log.debug_detailed(
+                                "%s: 0x%x/%s is drawn by a template already",
+                                filename, keycode, modifier)
+                            deferred.setdefault(filename, []).append((keycode, modifier))
+                            continue
+                        covered.add((modifier.value, keycode))
                         content_key = (os.path.basename(filename), modifier.value, keycode)
                         pool_slot, is_hit = cache.get_or_allocate(content_key, filename, overlay_data.all_bytes)
 
@@ -1333,6 +1371,9 @@ class PolyKybd:
 
                         display_idx = cache.display_flat_idx(keycode, modifier)
                         display_to_pool[display_idx] = pool_slot
+                        per_source.setdefault(filename, []).append((keycode, modifier))
+                        if not is_hit:
+                            uploaded += 1
 
                         if hid_msg_counter_old < hid_msg_counter - MAX_MSG_BEFORE_DELAY:
                             hid_msg_counter_old = hid_msg_counter
@@ -1343,12 +1384,16 @@ class PolyKybd:
                             else:
                                 time.sleep(DELAY_TIME_AFTER_MAX_MSG)
 
-        # hid_msg_counter counts ONLY image uploads (cache misses). A full cache
-        # hit is 0 here even though the mapping send (logged separately below)
-        # and enable_overlays still go over HID — that 0 is the MRU win, not a
-        # "nothing was sent". Word it so the log can't be misread.
-        self.log.info("MRU: %d image upload(s) (rest served from cache), "
-                      "%d display positions to map",
+        # hid_msg_counter counts HID MESSAGES, and only those carrying image
+        # data (cache misses) — one image is several. A full cache hit is 0 here
+        # even though the mapping send (logged separately below) and
+        # enable_overlays still go over HID; that 0 is the MRU win, not a
+        # "nothing was sent". ⚠️ Say "message(s)": the summary a few lines down
+        # counts KEYCAPS uploaded, so two adjacent lines both reading
+        # "N upload(s)" over different units read as a contradiction (measured
+        # on a real send: 4 here against 2 there).
+        self.log.info("MRU: %d HID message(s) of image data (rest served from "
+                      "cache), %d display positions to map",
                       hid_msg_counter, len(display_to_pool))
 
         # Re-check right before the commit: the token can flip after the last
@@ -1364,7 +1409,51 @@ class PolyKybd:
             return False
         cache.record_transferred_mapping(display_to_pool)
         self.enable_overlays()
+        self._log_overlay_summary(per_source, uploaded, len(display_to_pool), deferred)
         return True
+
+    # How many keys a source may contribute before the summary stops naming
+    # them. A template covers most of the board and listing it would bury the
+    # line; a synthetic source is a handful of keys and naming them IS the
+    # point -- "which shortcuts did it just add" has no other answer.
+    NAME_KEYS_UP_TO = 12
+
+    def _log_overlay_summary(self, per_source: dict, uploaded: int, mapped: int,
+                             deferred: dict | None = None):
+        """One INFO line per source saying what it drew, after a successful send.
+
+        The window tick logs which app was matched; this says what that turned
+        into on the keyboard, which is otherwise only visible by looking at the
+        keycaps.
+        """
+        if not per_source and not deferred:
+            return
+        self.log.info("Overlays: %d keycap(s) from %d source(s), %d uploaded, %d cached",
+                      mapped, len(per_source), uploaded, mapped - uploaded)
+        for filename, keys in per_source.items():
+            self._log_source_line(filename, keys, "")
+        # ⚠️ A source that drew NOTHING is reported too, and this is the whole
+        # reason: the program mark stands down on any key a hand-made template
+        # already draws, and every shipped template draws ESC -- so on an app
+        # that HAS a template the mark is correctly invisible, and its silent
+        # absence from this summary reads as "the icon was never fetched".
+        # Field, 2026-09-10: the log showed a mark resolving and then said
+        # nothing at all about where it went.
+        for filename, keys in (deferred or {}).items():
+            if filename in per_source:
+                continue
+            self._log_source_line(filename, keys, " (deferred to the template)")
+
+    def _log_source_line(self, filename: str, keys: list, suffix: str):
+        # A pseudo-name is kept WHOLE: it names no file, so `basename` could
+        # only ever damage it, and the `@prog:` prefix is what says the mark
+        # came from the icon fall-back rather than from a hand-made template.
+        name = filename if is_synthetic(filename) else os.path.basename(filename)
+        if len(keys) <= self.NAME_KEYS_UP_TO:
+            detail = ", ".join(describe_key(kc, mod) for kc, mod in keys)
+            self.log.info("  %s: %s%s", name, detail, suffix)
+        else:
+            self.log.info("  %s: %d keycap(s)%s", name, len(keys), suffix)
 
     def execute_commands(self, command_list: list,
                          cancel: threading.Event | None = None) -> None:

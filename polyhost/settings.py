@@ -94,6 +94,36 @@ class PolySettings:
             "max_hid_message_before_delay": 15,
             "delay_time_after_max_hid_messages": 0.3,
             "hid_reconnect_retries": 5,
+            # Height in pixels of a fetched shortcut icon inside the 72x40
+            # keycap. The firmware clears a courtyard around the overlay, so the
+            # icon never merges with the legend -- the size decides how much of
+            # the legend is eaten instead. Measured in the default corner: 16
+            # leaves it untouched, 24 keeps ~66%, 32 keeps ~42% with an icon
+            # four times the ink, 40 leaves little. 32 is the default because
+            # the overlay is only up while a modifier is HELD. Clamped by
+            # icon_catalog.icon_height(); the table is in that module.
+            "shortcut_icon_height": 32,
+            # Which corner a fetched shortcut icon sits in: lower_left (default),
+            # lower_right, upper_left, upper_right, or right (vertically centred
+            # against the right edge). The three right-hand ones never touch the
+            # base legend at any measured size -- but they are where the firmware
+            # draws the Shift preview and the AltGr hint.
+            "shortcut_icon_placement": "lower_left",
+            # May this install reach the catalog for an icon it has not cached?
+            # ⚠️ The switch is over RETRIEVING, not over the feature: off means
+            # cache-only, so apps already fetched keep their icon and only a new
+            # one goes without. Turning it off on a metered or air-gapped machine
+            # must not take away icons that are already on disk.
+            "shortcut_icon_auto_fetch": True,
+            # May the focused application's own shortcuts be read, and drawn
+            # as icons on the keys a hand-made overlay does not already cover?
+            # ⚠️ This is a different question from `shortcut_icon_auto_fetch`,
+            # which governs only the NETWORK. This one governs whether another
+            # process's accessibility tree is walked at all -- a D-Bus round trip
+            # per node on Linux -- so it is the switch someone on a locked-down
+            # machine wants. Off costs only the fall-back; hand-made overlays and
+            # the program mark are unaffected.
+            "shortcut_icons_enabled": True,
             # Developer mode: reveals the tray's Developer submenu and the
             # `dev_`-prefixed settings below, and allows key injection. Formerly
             # implied by `--debug`; it is a persisted setting because under

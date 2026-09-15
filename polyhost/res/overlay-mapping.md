@@ -45,9 +45,103 @@ window title (or OS) instead — see below.
 | `url` | regex | Hard gate on the focused browser tab's URL. |
 | `urls-contains` | sub-map | Keyed on a **substring** of the URL. |
 | `os` | sub-map | Keyed on the OS running the focused app. |
+| `icon` | slug | Overrides the app name used to look up the **program mark**. |
 
 A sub-map's values are full entries, so they may carry an `overlay` plus further
 constraints of their own — the matcher recurses.
+
+## `icon:` — when the process is not the app
+
+The generic fall-back mark on `ESC` is looked up from the app name
+(`services/app_icons.py` → `res/app_icons.yaml`), which works as long as the
+process is named after the app. On **Windows 11 packaged apps it is not**: the
+window belongs to `ApplicationFrameHost.exe`, and Sticky Notes runs inside
+`ONENOTE.EXE`. Such an entry is reached by window TITLE, so the name the matcher
+started from cannot resolve a mark.
+
+`icon:` names the slug to look up instead. It is inherited by nothing — it
+applies to the entry that declares it, so each title branch states its own:
+
+```yaml
+applicationframehost:
+  title: "^Calculator"                   # ⚠️ the parent needs an overlay - see below
+  icon: mdi:calculator
+  overlay: [calc_template.mods.png, calc_template.combo.mods.png]
+  titles-startswith:
+    Sound:                               # the title's FIRST WORD, no colon
+      title: "^Sound Recorder"
+      icon: mdi:microphone
+      overlay: soundrecorder_template.mods.png
+
+onenote:
+  title: "^Sticky Notes"
+  icon: mdi:sticker-text
+  overlay: [stickynotes_template.mods.png, stickynotes_template.combo.mods.png]
+```
+
+For Sticky Notes that is not merely a gap filled but a **wrong icon prevented**:
+`app_icons.yaml` maps `onenote` to `mdi:microsoft-onenote`, so without `icon:` a
+Sticky Notes window would draw a OneNote logo on its ESC key.
+
+⚠️ **A baked `program_icon:` in the binding file WINS over this.**
+`send_overlays_mru` skips a synthetic source on any (modifier, keycode) a
+template already drew, so a mark in the PNG and a slug here are mutually
+exclusive. The trade: a baked mark always draws, while a slug needs
+`shortcut_icon_auto_fetch` (on by default) and one successful download.
+
+Calculator above is the case where both are present: its binding file bakes
+`program_icon: progmark.png`, so `icon: mdi:calculator` never draws today. It is
+kept as the fallback should the bake ever be dropped — harmless, but do not read
+it as the mark you see on that keycap.
+
+⚠️ **`icon:` is not only about the picture — it is also the app's IDENTITY.**
+`icon_app()` feeds `ShortcutIconFetcher.overlays_for()` (`core/poly_core.py`),
+which caches per app NAME. Without it every `ApplicationFrameHost` app shares one
+cache key, so the second one focused is served the first one's shortcut icons.
+That is why the key survives even where a baked mark makes its artwork moot.
+
+## A PURE HOST needs no entry at all
+
+⚠️ **`icon:` could only ever fix an app that already had an overlay, which is
+circular** — `find_matching_entry` returns `None` for an entry carrying neither
+`overlay:` nor `remote:`, so an identity-only entry is unreachable. Making the
+generic fall-back work for a hosted app therefore required first giving that app
+an overlay: the one thing the generic path exists to avoid needing.
+
+So a process that is **never an application itself** now takes the app's identity
+from its window TITLE — the same signal the browser entries key their web-apps
+off, applied generically instead of per app:
+
+```python
+PURE_HOST_PROCESSES = frozenset({"applicationframehost"})   # handler/common.py
+```
+
+`app_from_host_title()` reads the LAST segment of the title, because Windows
+titles a document window `<document> - <App Name>` — the convention the
+LibreOffice entry already relies on with `titles-endswith`. `Calculator` →
+`calculator`; `image.jpg - Photos` → `photos`. The derived name feeds the catalog
+lookup and the shortcut-icon cache key, and the host's PID is withheld so its
+icon can never be drawn as the app's. **No YAML, for the whole packaged-app
+family including apps nobody has mapped.**
+
+⚠️ **`ONENOTE.EXE` is deliberately NOT a pure host.** It hosts Sticky Notes but is
+a real application too, and its own windows are titled with a NOTEBOOK name — a
+blanket title rule would invent an app called "My Notebook". An impure host keeps
+`icon:` plus a title branch, which is the case that key genuinely earns.
+
+⚠️ The residual risk is an app that titles its windows the other way round
+(document LAST). The derived name is then the document, which the catalog answers
+with a 404 — the safe failure, the same as any unknown app — but the shortcut
+cache fragments per document instead of per app. Accepted rather than guessed
+around: a rule that tried to tell a document from an app name would be wrong in
+both directions.
+
+⚠️ **The parent entry must keep an `overlay:` of its own.**
+`find_matching_entry` returns `None` for an entry carrying neither `overlay` nor
+`remote` **before** it looks at any sub-map — so a parent reduced to title
+branches alone makes every branch unreachable. Under `applicationframehost` the
+parent is Calculator, and its `^Calculator` gate is also what stops an unnamed
+hosted app (Clock, Weather) being handed calculator keycaps.
 
 ## Matching order
 

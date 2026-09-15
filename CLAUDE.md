@@ -307,6 +307,50 @@ full wiring, the preview rendering and the label-measurement rules are in
     editor's layer tabs against an enum that no longer existed. **Run the generator
     — or the `cmp` — rather than trusting either kind of file.**
 
+### Overlay fall-backs: the program mark and the shortcut icons
+
+Two **synthetic** overlay sources draw on keycaps a hand-made template does not
+cover — the focused app's brand mark on `ESC`, and icons for the app's own
+shortcuts harvested from its accessibility tree. Both ride `send_overlays_mru`'s
+`synthetic=` seam, so neither needed a firmware change. The full account —
+the naming rule, the cache key, the fetch threads and the two settings — is
+[`docs/overlay-fallbacks.md`](docs/overlay-fallbacks.md).
+
+- ⚠️ **A synthetic name whose converter came back `None` must be dropped from the
+  file list before `send_overlays_mru` sees it.** It hands the unrecognised name to
+  `ImageConverter.open()`, which returns False for the **whole send** — one
+  undrawable icon costing every hand-made overlay on the keyboard.
+- ⚠️ **Anything that changes the pixels belongs in the pseudo-filename**, because
+  `overlay_cache.get_or_allocate` returns an exact key hit **without comparing
+  bytes** — so `@sc:save` alone keeps serving the old size until the next reconnect.
+- ⚠️ **`Shortcut.mods` IS `device.keys.Modifier`'s value**, with no mapping between
+  them, and the two were defined independently. A renumbering would put an icon
+  under the **wrong** modifier rather than under none;
+  `tests/services/shortcut_overlays_test.py` pins the agreement.
+- **What the harvest can reach is a measured ceiling, not a bug** — Linux AT-SPI
+  reaches classic-menubar apps only, the Windows UIA backend has never run against
+  a live application, and macOS has no backend. All three degrade to drawing
+  nothing and logging which it was, so a quiet keyboard is not evidence of a break.
+- ⚠️ **A HOSTED app is identified by its window TITLE, not its process** — a
+  Windows 11 packaged app's process is `ApplicationFrameHost.exe` for *every* one
+  of them, so the name resolves against the host. `PURE_HOST_PROCESSES` +
+  `app_from_host_title()` (`handler/common.py`) take the last title segment
+  instead, generically and with no YAML. ⚠️ **`ONENOTE.EXE` is NOT in that set**:
+  it hosts Sticky Notes but is a real app too, and its own windows are titled with
+  a notebook name — so it keeps `icon:` plus a title branch, which is the case
+  that key earns. For Sticky Notes that is a **wrong** icon prevented, not a
+  missing one.
+- ⚠️ **`icon:` could never have fixed a hosted app with NO overlay, and the reason
+  is circular**: `find_matching_entry` returns None for an entry carrying neither
+  `overlay:` nor `remote:`, so an identity-only entry is unreachable — the fix was
+  available only to apps that already had an overlay, which is what the generic
+  path exists to avoid needing. Hence the title derivation above.
+- ⚠️ **`icon_app()` is the IDENTITY, not just the picture** — it also keys
+  `ShortcutIconFetcher.overlays_for()`, which caches per app name. Get it wrong on
+  a host process and every packaged app shares one cache entry, so the second one
+  focused is served the first one's shortcut icons. A baked `program_icon:` makes
+  the *artwork* moot but never this.
+
 ### The tray, its menus, and the OS around them
 
 The tray menu is **two-tier**: ~9 normal rows plus a **Developer** submenu that only ever

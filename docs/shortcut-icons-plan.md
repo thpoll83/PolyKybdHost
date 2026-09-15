@@ -1,0 +1,451 @@
+# Generic shortcut + program icons — plan
+
+A **fall-back** for apps with no hand-made overlay template. Where
+`overlay-mapping.poly.yaml` already covers a key, nothing here applies; this
+fills the long tail generically, by fetching icons on demand instead of
+shipping them.
+
+Two features, one mechanism:
+
+* **Program icon** — the focused app's own mark, always on **ESC**.
+* **Shortcut icons** — a per-key icon derived from the app's own shortcut
+  labels, only where the template does not already draw something.
+
+Status: **Phases 0, 1 and 2 are built and tested.** The keyboard draws the
+focused app's mark on ESC and, on the keys no hand-made template covers, icons
+for that app's own shortcuts. Phase 3 (the curation file) is next.
+
+⚠️ **On Linux the fall-back reaches CLASSIC-MENUBAR APPS ONLY, and that is a
+measured ceiling rather than a bug to fix** — see A.3 and E.4. On macOS it
+reaches nothing at all, because that backend is not built. Both degrade to
+drawing nothing and saying why in the log.
+
+⚠️ **Read A.3 before judging what Phase 1 delivers** — the catalog carries no
+Microsoft Office, no Adobe and no VS Code, which this document previously got
+wrong.
+
+---
+
+## Part A — settled design
+
+### A.1 Program icon (ESC)
+
+| property | value |
+|---|---|
+| source | [Simple Icons](https://simpleicons.org) **15.22.0, pinned** (CC0-1.0) first, then [Material Design Icons](https://pictogrammers.com/library/mdi/) via Iconify (Apache-2.0) — both single-path monochrome SVG on a 24×24 box |
+| placement | **right-aligned**, vertically centred → the right-hand **40×40** square |
+| size | fitted to 40×40, aspect preserved |
+| rasteriser | `cairosvg` (today a `tools/` dep — this makes it a runtime one) |
+
+**Why 40 is arithmetic, not taste.** The ESC glyph (U+238B) inks **x 2..27**;
+the firmware clears a Chebyshev-3 courtyard around an overlay, so the icon's
+ink must start at x ≥ 31 → `72 − 31 = 41`, i.e. **40**.
+
+| cap | icon left edge | clears from | ESC worst | ESC untouched |
+|---|---|---|---|---|
+| 48 | 24 | 21 | 71 % | 20/36 |
+| 44 | 28 | 25 | 86 % | 20/36 |
+| 42 | 30 | 27 | 97 % | 21/36 |
+| **40** | **32** | **29** | **100 %** | **36/36** |
+
+⚠️ **44 looks like a safe compromise and is not** — it still clears from x=25
+against ink reaching 27. Only ≤41 clears.
+
+Cost of 40 over 44 is confined: **19 of 36 icons do not change at all** (already
+≤40 wide at 40 tall). Of the 17 that do, Office goes 44×38 → 40×35, GIMP → 40×34,
+KiCad → 40×16. Rendered side by side, none reads worse.
+
+At 40 the rule collapses to: **right 40×40 is the icon, left 32 px is the
+legend.**
+
+### A.2 Shortcut icons (other keys)
+
+Shipped in `icon_catalog.py`: Material Symbols, subsetted server-side
+(4.8 KB for 12 names vs a 10.6 MB variable font), lower-left, 32 px default,
+five placements, clamped to the panel.
+
+⚠️ **An overlap is not a collision** — the courtyard means the icon always lands
+on cleared black. The cost of size is legend pixels eaten, not muddle: at 32 px
+about 42 % of the legend survives. Full table in `icon_catalog.py`.
+
+### A.3 Measured facts worth not re-deriving
+
+⚠️ **CORRECTED 2026-09-10 — the coverage claim here was WRONG, and the correction
+is the most important fact in this document.** It read *"Simple Icons covers 41 of
+42 probed apps, Office included"*. Checked against the CDN's own
+`data/simple-icons.json`, by slug **and** by title, in both versions:
+
+| probe | 15.22.0 | 16.30.0 |
+|---|---|---|
+| `microsoftexcel` / `microsoftoutlook` / `microsoftteams` | absent | absent |
+| `adobephotoshop` / `illustrator` / `aftereffects` | absent | absent |
+| `visualstudiocode` | absent | absent |
+| `slack` | **present** | **absent** |
+| `gimp` `inkscape` `kicad` `krita` `figma` `libreoffice` `obsstudio` `zoom` | present | present |
+
+So Simple Icons carries **no Microsoft and no Adobe at all** — zero of its 3383
+entries contain "microsoft", "adobe", "photoshop", "excel" or "outlook".
+
+✅ **A SECOND SOURCE closes most of it: Material Design Icons (`mdi`,
+Apache-2.0), served by the Iconify API.** It carries the whole `microsoft-*`
+family — word, excel, powerpoint, outlook, onenote, teams, edge, visual-studio,
+visual-studio-code — as monochrome single-path 24×24 glyphs, i.e. the shape this
+renderer already consumes. Rendered at 40×40 1-bit they read *better* than
+several Simple Icons marks, being drawn for small monochrome use in the first
+place. Simple Icons is still asked first: it is the real brand mark, mdi's is an
+interpretation.
+
+**Measured over 151 realistic executable names:**
+
+| | resolved |
+|---|---|
+| guess alone, Simple Icons only | 85 (56 %) |
+| guess alone, both catalogs | 83 (54 %)¹ |
+| **both catalogs + the shipped map** | **111 (73 %)** |
+
+¹ lower on the guess alone because the **bare** mdi name is deliberately not
+tried — mdi is 7400 icons of which most are generic UI symbols, so `code` would
+resolve to a generic `</>` glyph. Only the provably-brand `microsoft-*` /
+`adobe-*` forms are guessed; the handful of real brands mdi holds under a bare
+name (`powershell`) get a map entry.
+
+**Adobe products share the company "A"** (`mdi:adobe`), because nothing more
+specific survives 1 bit. The obvious better answer — the CC0 `logos:` collection's
+`adobe-photoshop`, `adobe-illustrator`, `adobe-premiere`, `adobe-indesign`,
+`adobe-lightroom`, `adobe-after-effects` — was rendered and looked at: the product
+letters ("Ps", "Ai") are **separate coloured paths, not knockouts**, so flattening
+to a silhouette gives six identical solid rounded squares of 1516 lit pixels.
+Acrobat keeps its own mark.
+
+⚠️ `chromium → google-chrome` and `explorer → microsoft-windows` stay out on a
+different rule: those name a **different product** (a different browser, an OS
+rather than an app), where the Adobe "A" is the true company.
+
+**The complement for the last third is the OS's OWN icon for the running
+process** — the exe's resource icon on Windows, the `.desktop` + hicolor theme on
+Linux, the bundle's `.icns` on macOS. Always exact, no catalog. A per-platform
+lift, **not** in this plan.
+
+* ⚠️ **THE VERSION IS PINNED (15.22.0) and a newer pin is NOT a superset.** v16
+  has 76 more entries and dropped Slack. `@latest` resolves to 15.22.0 today
+  (`x-jsd-version`), so leaving it unpinned works right up until npm's `latest`
+  tag moves, at which point every dropped mark vanishes with no error anywhere.
+* ⚠️ **Wordmarks survive and matter** — KiCad and Zoom read *because* the panel
+  is landscape. A square scheme would have discarded them.
+* ⚠️ **The `simple-icons-font` webfont is not a shortcut.** A 1.4 MB TTF that
+  would reuse the existing `ImageFont` path with no new dependency — but it is
+  the same collection, so it has the same hole.
+* Trademark: the collection is CC0, the marks are their owners'. Identifying the
+  focused app is ordinary use; worth a line in the user docs, and a reason not
+  to advertise a bundled logo cache.
+
+---
+
+## Part B — how it integrates (verified against the code)
+
+**The integration is smaller than it first looked. No new send path is needed.**
+
+`PolyKybd.send_overlays_mru(filenames, cache, cancel)` already does everything:
+
+```
+for filename in filenames:            # 1. decode every template up front
+    converter.open(filename)
+prepare_for_mru_send()                # 2. reset firmware mapping + usage
+for converter in converters:
+    for modifier in Modifier:
+        overlay_map = converter.extract_overlays(modifier)   # {keycode: OverlayData}
+        for keycode, overlay_data in overlay_map.items():
+            content_key = (basename(filename), modifier.value, keycode)
+            pool_slot, hit = cache.get_or_allocate(content_key, filename, bytes)
+            if not hit: send_smallest_overlay(...)
+            display_to_pool[display_flat_idx(keycode, modifier)] = pool_slot
+send_overlay_mapping(display_to_pool)
+```
+
+Two consequences that shape the whole plan:
+
+1. **A converter is duck-typed.** Anything exposing
+   `extract_overlays(modifier) -> {keycode: OverlayData}` plugs in. So a
+   *synthetic* converter — built from fetched icons rather than a PNG — needs no
+   changes to the device layer at all.
+2. **"Does the template already cover this key?" is answerable locally.** It is
+   just the union of the templates' own `extract_overlays()` results, computed
+   before any device I/O. No new firmware query, no guessing.
+
+### ⚠️ B.1 A latent bug that goes live the moment we add a converter
+
+`content_key` uses `filename` — the **leftover loop variable from the decode
+loop above**, so it holds the *last* filename for every converter.
+
+Today this is harmless: measured, the shipped multi-template apps (chrome,
+googledocs, excel, github) are **disjoint in (modifier, keycode)**, so no two
+converters ever key the same tuple.
+
+It stops being harmless here. Once a synthetic converter is appended, every
+template's images get filed under the *synthetic* name. If that name is
+app-specific — which it must be — then `chrome_template.*`, shared today by
+chrome/edge/brave/vivaldi, would key differently per browser: **cache misses and
+a full template re-upload on every browser switch.**
+
+**Fix first, separately:** `for filename, converter in zip(filenames, converters)`.
+The lists are always parallel (a failed `open()` returns early). One line, plus a
+regression test with two overlapping templates.
+
+---
+
+## Part C — work breakdown
+
+### Phase 0 — prerequisite (small) — ✅ DONE (`3401720`)
+
+* `content_key` uses each converter's own filename (`zip(filenames, converters)`).
+* The regression test drives two overlapping templates through the real send
+  path and pins all three consequences (two slots, both filenames recorded, the
+  mapping pointing at the later template's image). Confirmed to fail against the
+  pre-fix loop.
+
+### Phase 1 — program icon on ESC — ✅ DONE (`4e23c70`, `84e9223`)
+
+**Deliverable met:** focus GIMP, ESC shows Wilber — for an app with a template
+and for one without.
+
+| shipped | what it is |
+|---|---|
+| `services/app_icons.py` + `res/app_icons.yaml` | slug resolution, fetch, cache, render (38 tests, 16/16 mutations caught) |
+| `services/app_icon_fetcher.py` | the queue that keeps the fetch off the caller's thread (11 tests, 10/10) |
+| `device/synthetic_overlay.py` | the duck-typed converter + the per-device `OverlayData` factory |
+| `poly_kybd.send_overlays_mru(..., synthetic=)` | template-wins coverage rule (7 tests, 6/6) |
+| `PolyCore` + `OverlayHandler.current_app` | the wiring, incl. the no-template case (10 tests, 8/8) |
+
+Measured, not argued: ESC untouched on **12 of 12** marks (all 251 lit legend
+pixels survive the courtyard clear), and end to end on the fake device
+`org.gimp.GIMP` → `gimp` → 581 lit pixels → 8 HID reports → ESC mapped to the
+slot filed under `@prog:gimp`.
+
+Two rules turned out to be the whole contract, and both are pinned:
+
+* a **real template wins** any key the synthetic source also offers, decided
+  before the upload rather than by a later mapping write;
+* the coverage key is **(modifier, keycode)**, not keycode — a template drawing
+  ESC under Ctrl says nothing about bare ESC.
+
+⚠️ **The pseudo-filename carries the slug because it is also the CACHE KEY.** A
+fixed `@prog` would file the second app's mark under the first's key, hit the MRU
+cache, skip the upload and draw GIMP's logo on an Inkscape window.
+
+⚠️ **One bug came from running it, not reading it:** a slug is neither queued nor
+cached while in flight, so the poll loop re-queued it every tick — two fetches
+and two `on_ready`s, the second re-sending every overlay for nothing.
+
+### Phase 2 — shortcut fallback — ✅ DONE (`f767935`, `fb73f44`)
+
+**Deliverable met:** a 22-shortcut menubar app resolves to 20 keys with real
+ink, through a live catalog fetch.
+
+| shipped | what it is |
+|---|---|
+| `services/shortcut_source/` | the pure model + the AT-SPI and UIA backends, with `pick()` choosing by platform (11 tests) |
+| `services/shortcut_overlays.py` | `plan()` decides which shortcut gets an icon and on which key; `render()` draws one mask per concept (19 tests, 10/10 mutations) |
+| `services/shortcut_fetcher.py` | the core-owned harvest thread (13 tests, 10/10) |
+| `device/synthetic_overlay.shortcut_converter` | one icon, every key it lands on (8 tests) |
+| `PolyCore` wiring + `shortcut_icons_enabled` | (10 tests, 8/8) |
+
+**The COVERAGE step above turned out to need NO code at all**, which is the one
+thing worth carrying forward from this phase. `send_overlays_mru` already defers
+a synthetic `(modifier, keycode)` that a real template claimed, and it does so
+*before* the upload — so template-wins was inherited whole from Phase 1 and the
+caller computes no union. What the plan proposed (decode every template host-side
+to build a coverage set) would have re-done the expensive decode the device layer
+already performs, to reach the same answer.
+
+⚠️ **THE CACHE KEY IS THE CONCEPT PLUS THE RENDER SETTINGS — the opposite of
+`@prog:<slug>`, and the reasoning inverts cleanly.** A program mark differs per
+app by definition, so its name must carry the app. A `save` icon is the same
+pixels whoever drew it, so its name must NOT: Word and Notepad both putting Save
+on Ctrl+S then share one pool slot and one upload, and alt-tabbing between them
+re-sends nothing. The height and corner are in the key because `get_or_allocate`
+returns an exact key hit **without comparing bytes**, so `@sc:save` alone would
+keep serving a 32 px mask out of the pool after the user asked for 16.
+
+⚠️ **A SYNTHETIC NAME WITH NO CONVERTER HAS TO BE FILTERED OUT OF THE FILE
+LIST.** `send_overlays_mru` hands an unrecognised name to `ImageConverter.open()`,
+which cannot find a file called `@sc:save:32lower_left` and returns False **for
+the whole send** — one undrawable icon costing every hand-made overlay on the
+keyboard. Latent since Phase 1 (the program mark can also fail to build, from an
+all-black mask) and far likelier here, since every icon is its own source.
+
+#### What Phase 2 measured that the plan did not predict
+
+* **20 keys from a 22-shortcut app**, i.e. the harvest is the bottleneck and the
+  lexicon is not: of 22 realistic mousepad labels, 20 cleared 0.85 confidence and
+  every one of them rendered real ink. So Phase 3's curation buys accuracy on the
+  tail, not coverage on the head.
+* **20 pool slots for one app.** The pool holds 600, so this is comfortable — but
+  it is 20 uploads the first time an app is focused, against 0 on every later
+  focus and on any other app that shares a concept. That sharing is what the
+  concept-keyed name above is for, and it is why the first focus of the SECOND
+  menubar app is nearly free.
+* ⚠️ **`match()` already refuses an empty label**, so a guard for one in the
+  planner is dead code. Found by mutation-sweeping, not by reading: deleting it
+  was the one mutation the suite could not catch, and the escape is what said the
+  guard was redundant.
+
+### Phase 3 — unmatched → curation
+
+* `polyhost/services/shortcut_unmatched.py`: append `{app, os, label, accel,
+  count, first_seen, last_seen}` to a JSON under the user config dir.
+* ⚠️ The SAME file collects unmatched **app names** (E.3), so the slug map
+  and the label hints grow from one curation pass, not two.
+* `polyctl shortcuts unmatched [--review]` — the probe's `--review` flow,
+  emitting `shortcut_hints.yaml` stanzas.
+* ⚠️ Bounded: cap entries, dedupe by (app, label). This file grows unattended.
+
+---
+
+## Part D — testing
+
+Offline, no network, no device — matching `icon_catalog_test.py`:
+
+* **Geometry**: right-aligned 40×40; ESC glyph untouched for a fixture icon
+  (the arithmetic in A.1 is the contract, and a regression would be silent).
+* **Slug resolution**: known app → slug; unknown app → `None`, never a guess
+  that could yield the wrong logo.
+* **Synthetic converter**: `extract_overlays` returns the right keycode/modifier;
+  the result is a real `OverlayData` (so the ROI/RLE paths accept it).
+* **Coverage**: a key the template covers is not synthesised; an uncovered one is.
+* **Cache**: distinct apps get distinct content keys (the Phase-0 bug, inverted).
+* Mutation-check each suite, as the last three commits did.
+
+⚠️ The device path itself stays untested offline — `send_overlays_mru` needs
+hardware. The HIL rig is where a real send is proven; consider a rig test that
+sends one synthetic overlay and reads back the mapping.
+
+---
+
+## Part E — decisions (settled)
+
+### E.1 Default on, with a fetch setting — **settled**
+
+Both features default **on**. The switch is over *retrieving* icons, not over
+the feature:
+
+* `shortcut_icon_auto_fetch` (default **True**) — may reach the network for an
+  icon this install has not cached.
+* Off ⇒ **cache-only**, never a request. Already-fetched apps keep working; a
+  new app simply gets no icon.
+
+That separation matters for anyone on a metered or air-gapped machine: turning
+the switch off must not disable icons they already have.
+
+### E.2 A log line on the miss path — **settled**
+
+INFO, once per (app, reason), not per window switch:
+
+```
+No program icon for 'foo-editor' (no catalog match) — add a slug to app_icons.yaml
+No program icon for 'gimp' (offline, not cached)
+```
+
+⚠️ Dedupe it. The window tick runs continuously, and an undeduped line would
+fill the log with one entry per poll for any app that has no icon.
+
+### E.3 Curate `app_icons.yaml` from the misses — **settled**
+
+Start from automatic matching; write what fails into the same curation JSON the
+shortcut labels use, and grow the YAML from that. Same loop as
+`shortcut_hints.yaml`, same `--review` flow.
+
+⚠️ **Auto-matching stays deliberately strict — no fuzzy fallback.** A wrong
+logo is worse than none: showing Krita for KiCad is a bug the user cannot
+explain, while a missing icon is self-evident and lands in the curation file.
+(The shortcut lexicon needed a measured 0.85 fuzzy floor for the same reason;
+here the answer is simpler because a slug is an exact identifier.)
+
+### E.4 macOS — what the gap actually is
+
+**The harvest needs a per-OS accessibility backend.** Three platforms, three
+unrelated APIs:
+
+| OS | API | status |
+|---|---|---|
+| Linux | AT-SPI2 over D-Bus, `org.a11y.atspi.Action.GetKeyBinding` | built, measured (26 shortcuts on a menubar app) |
+| Windows | UI Automation, `AcceleratorKey` (30006) / `AccessKey` (30007) | built, measured (13 on Word's Home tab) |
+| macOS | Accessibility API — `AXUIElement`, walking the menu bar for `AXMenuItemCmdChar` / `AXMenuItemCmdModifiers` / `AXMenuItemCmdVirtualKey` | **not built** |
+
+So "two of three" means: on macOS **Phase 2 finds nothing and the fall-back
+never fires** — E.2's log line says so, and nothing misbehaves.
+
+Two things make this less bad than it sounds:
+
+* ⚠️ **Phase 1 has no such gap.** The program icon needs only the app *name*,
+  which the host already tracks on every platform for overlay matching. ESC
+  works on macOS from day one.
+* ⚠️ **macOS would likely have the BEST harvest of the three**, not the worst.
+  Every Mac app has a real menu bar with real key equivalents, where GTK4 apps
+  yield literally zero. It is the platform most worth doing eventually.
+
+Cost when someone does it: `pyobjc` (`ApplicationServices`), and the user must
+grant Accessibility permission in System Settings → Privacy & Security — a
+consent prompt neither other platform needs.
+
+⚠️ **I cannot test a macOS backend from this container at all**, so it is out of
+scope here rather than merely deprioritised.
+
+### E.5 Where the fetch runs — a core-owned thread
+
+The constraint is two-sided and both sides are already documented:
+
+* **Never the HID worker.** A 15 s HTTP timeout there stalls the reconnect probe
+  (1 s) and the console read (250 ms).
+* **Never the GUI main thread.** `wincompose_install.find_installer()` froze the
+  tray ~10 s on an unreachable network by doing exactly this.
+
+**`PolyCore` already owns Qt-free threads that do this kind of I/O**, so there is
+a pattern to copy rather than a decision to invent:
+
+| existing | does |
+|---|---|
+| `_wincompose_thread` | TASKLIST probes, 10 s → 60 s cadence, stop `Event` |
+| `_tick_thread` | the headless window tick |
+| telemetry reporter | HTTP POSTs, its own thread |
+
+So: **one core-owned fetch thread**, a small queue of "resolve + fetch icon for
+app X", stop `Event`, and the result handed back through the existing
+`subscribe`/`emit` seam.
+
+⚠️ **Copy the shutdown discipline too.** `_start_wincompose_settle` shares a lock
+with `shutdown()` plus a one-way flag, because a reconnect landing concurrently
+would otherwise clear the stop Event and start a fresh thread *after* shutdown,
+holding the core and submitting to a stopped worker.
+
+#### The sequencing wrinkle
+
+`send_overlays_mru` needs every `OverlayData` **up front**, so on a cache miss
+the icon cannot be in that switch's send. Two options:
+
+* **(a)** the icon appears the *second* time you focus the app — simplest, and
+  the cache makes it once per app ever;
+* **(b)** re-send when the fetch lands, gated on the app still being focused.
+
+**Recommend (b).** `coalesce_key="overlay"` already supersedes an in-flight
+send, so the extra burst is cheap and a stale one cannot pile up. (a) is the
+fallback if (b) turns out to fight the MRU batching.
+
+## Part F — risks
+
+* **`cairosvg` becomes a runtime dependency** (native cairo). The only way to
+  avoid it is the webfont, which lacks the Microsoft marks (A.3).
+* **Cache growth** — one SVG per app is ~1 KB, but unbounded over years. Needs a
+  cap or an age-out, like the crash log's trim.
+* **The harvest is only as good as the app.** Measured: a classic menubar app
+  yields ~26 shortcuts, GTK4 apps yield zero. Phase 2 helps where it helps; that
+  is worth saying in the docs so it does not read as broken.
+* **Trademark presentation** — see A.3.
+
+---
+
+## Later: compare and replace
+
+84 hand-made overlay PNGs live in `polyhost/res/overlays/` with generators in
+`polyhost/res/overlay_sources/`. Several catalog marks look better than the
+current equivalents, so a side-by-side is worth rendering — per app, not
+wholesale.

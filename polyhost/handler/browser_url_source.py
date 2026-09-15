@@ -77,9 +77,27 @@ class BrowserUrlSource:
             return True
         except Exception as e:  # noqa: BLE001 — feature is optional, never fatal
             self.server = None
-            self.log.warning("Browser-report listener unavailable (%s: %s) — "
-                             "browser-URL overlays rely on the macOS fallback only.",
-                             type(e).__name__, e)
+            # ⚠️ Name the platform's REAL consequence. This used to say
+            # "browser-URL overlays rely on the macOS fallback only" on every
+            # platform, and off macOS that fallback is a documented no-op
+            # (`browser_url.current_url`) -- so on Linux and Windows the honest
+            # statement is that browser-URL overlays are OFF for this process.
+            # And say what the error usually means: the port is nearly always
+            # held by another PolyKybd process, because the host core and the
+            # forwarder both bind it.
+            import errno
+            import sys as _sys
+            if isinstance(e, OSError) and e.errno == errno.EADDRINUSE:
+                why = ("the port is already held — the host app and the "
+                       "forwarder both bind it, so check whether one is "
+                       "already running on this machine")
+            else:
+                why = f"{type(e).__name__}: {e}"
+            lost = ("the macOS AppleScript fallback still applies"
+                    if _sys.platform == "darwin"
+                    else "browser-URL overlays are OFF for this process")
+            self.log.warning("Browser-report listener unavailable (%s) — %s.",
+                             why, lost)
             return False
 
     def on_report(self, browser=None, url=None, title=None, focused=True):

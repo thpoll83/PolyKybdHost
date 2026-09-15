@@ -3,6 +3,16 @@ import re
 import socket
 import threading
 
+# Imported for its side effect: installs Logger.debug_detailed, which this
+# module calls. Same line, and the same reason, as `core/poly_core.py` — the
+# dependency belongs to the code that USES the level, not to each of its
+# importers, which is why several tests had to carry a copy of this import.
+# ⚠️ CodeQL reports `py/unused-import` here and is right about the letter of it
+# — no name is read. Acting on it removes the level, and the failure is an
+# AttributeError from whichever call site runs first in a process that happens
+# to have imported nothing else. The `noqa` covers flake8; CodeQL does not read
+# it, so the alert stands and this comment is the disposition.
+import polyhost.util.log_util  # noqa: F401
 from polyhost.handler.common import Flags, find_matching_entry
 
 TCP_PORT = 50162
@@ -162,8 +172,20 @@ class RemoteHandler:
 
     def _match_remote(self):
         """Match the current remote window's app/title against the mapping using
-        the shared matcher, updating current/last_entry. Returns True on match."""
+        the shared matcher, updating current/last_entry. Returns True on match.
+
+        ⚠️ A failure is LOGGED here, at INFO, and says which of the two failures
+        it was. The local path has said this for a long time ("App '%s' in
+        mapping but title did not match", then "No match"); the remote path said
+        nothing at all, so a forwarded window that produced no overlay left a log
+        reading `Remote App Changed: "putty"` and then silence -- with no way to
+        tell an unmapped app from a mapped one whose title rule missed. That is
+        the question every multi-machine support round starts with, and it is the
+        one the forwarder's own log can never answer (it only knows what it
+        SENT).
+        """
         if self.name not in self.mapping:
+            self.log.info("Remote app '%s' is not in the overlay mapping", self.name)
             return False
         try:
             # The forwarder's OS, not ours: the remote app's keymap is a property
@@ -178,6 +200,9 @@ class RemoteHandler:
             )
             return False
         if matched is None:
+            self.log.info(
+                "Remote app '%s' is mapped but no entry matched its title (title='%s')",
+                self.name, self.title)
             return False
         self.current_entry = matched
         self.last_entry = matched

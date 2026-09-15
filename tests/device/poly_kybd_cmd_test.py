@@ -8,6 +8,7 @@ the HID worker-thread / command-queue refactoring.
 Invariant asserted throughout: after any PolyKybd call returns, the HID lock
 must be free — a held lock here means a leaked lock in production.
 """
+import os
 import types
 import unittest
 from unittest import mock
@@ -20,6 +21,7 @@ from polyhost.device.keys import KeyCode, Modifier
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.device.overlay_data import OverlayData
 from polyhost.device.poly_kybd import PolyKybd
+from polyhost.device.synthetic_overlay import SyntheticConverter, program_name
 from polyhost._version import __protocol__
 from polyhost.input.unicode_input import InputMethod
 
@@ -762,6 +764,202 @@ class TestSendOverlaysMruFailure(unittest.TestCase, LockCheckMixin):
         self.assert_lock_free(keeb)
 
 
+class TestSendOverlaysMruPerFileKeys(unittest.TestCase, LockCheckMixin):
+    """Each converter's images must be cached under ITS OWN filename.
+
+    The cache key is (basename, modifier, keycode). A bare `for converter in
+    converters` loop leaves `filename` at the last entry of the decode loop, so
+    every converter files its images under the last template's name — and two
+    templates that overlap on (modifier, keycode) then collide: the second one's
+    image is an exact key HIT, is never uploaded, and the keycap ends up showing
+    the FIRST template's picture.
+
+    Today the shipped multi-template apps happen to be disjoint in (modifier,
+    keycode), which is the only reason this was invisible.
+    """
+
+    def _converter(self, overlay_map):
+        converter = MagicMock()
+        converter.open.return_value = True
+        converter.extract_overlays.side_effect = (
+            lambda mod: dict(overlay_map) if mod == Modifier.NO_MOD else None)
+        return converter
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_two_templates_that_OVERLAP_get_distinct_slots(self, MockConverter):
+        first, second = _overlay("dot"), _overlay("rect")
+        MockConverter.side_effect = [
+            self._converter({KeyCode.KC_A.value: first}),
+            self._converter({KeyCode.KC_A.value: second}),
+        ]
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+
+        committed = {}
+        real_mapping = keeb.send_overlay_mapping
+
+        def capture(mapping, *args, **kwargs):
+            committed.update(mapping)
+            return real_mapping(mapping, *args, **kwargs)
+        keeb.send_overlay_mapping = capture
+
+        self.assertTrue(
+            keeb.send_overlays_mru(["base.png", "overlay.png"], cache))
+
+        # Both images uploaded, under their own file's name.
+        self.assertEqual(cache.used_slots(), 2)
+        info = cache.get_mru_info()
+        self.assertEqual({v[0] for v in info.values()},
+                         {"base.png", "overlay.png"})
+
+        # The later template wins the keycap, and the slot it points at is the
+        # one holding ITS image — not the earlier template's.
+        slot = committed[cache.display_flat_idx(KeyCode.KC_A.value,
+                                                Modifier.NO_MOD)]
+        self.assertEqual(info[slot][0], "overlay.png")
+        self.assert_lock_free(keeb)
+
+
+class TestSendOverlaysMruSynthetic(unittest.TestCase, LockCheckMixin):
+    """A source with no file behind it rides the ordinary MRU send path.
+
+    That is what carries the generic icon fall-back (the program mark on ESC).
+    Nothing in the device layer should need to know how a converter was built,
+    so these pin the two rules that ARE the contract: a synthetic source never
+    overwrites a hand-made template, and its pseudo-name is what keys the cache.
+    """
+
+    def _converter(self, overlay_map, modifier=Modifier.NO_MOD):
+        converter = MagicMock()
+        converter.open.return_value = True
+        converter.extract_overlays.side_effect = (
+            lambda mod: dict(overlay_map) if mod == modifier else None)
+        return converter
+
+    def _synthetic(self, keycode, overlay):
+        return SyntheticConverter({Modifier.NO_MOD: {keycode: overlay}})
+
+    def _run(self, keeb, filenames, cache, synthetic):
+        committed = {}
+        real_mapping = keeb.send_overlay_mapping
+
+        def capture(mapping, *args, **kwargs):
+            committed.update(mapping)
+            return real_mapping(mapping, *args, **kwargs)
+        keeb.send_overlay_mapping = capture
+        ok = keeb.send_overlays_mru(filenames, cache, synthetic=synthetic)
+        return ok, committed
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_synthetic_source_is_uploaded_and_mapped(self, MockConverter):
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_A.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+        name = program_name("gimp")
+
+        ok, committed = self._run(
+            keeb, ["app.png", name], cache,
+            {name: self._synthetic(KeyCode.KC_ESCAPE.value, _overlay("rect"))})
+
+        self.assertTrue(ok)
+        esc = cache.display_flat_idx(KeyCode.KC_ESCAPE.value, Modifier.NO_MOD)
+        self.assertIn(esc, committed)
+        self.assertEqual(cache.get_mru_info()[committed[esc]][0], name)
+        self.assert_lock_free(keeb)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_synthetic_source_DEFERS_to_a_template_that_draws_the_key(self, MockConverter):
+        # The hand-made design wins, and the deferral happens before the upload
+        # rather than after it -- a later mapping write would still cost the
+        # transfer of an image that is then immediately overwritten.
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_ESCAPE.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+        name = program_name("gimp")
+
+        ok, committed = self._run(
+            keeb, ["app.png", name], cache,
+            {name: self._synthetic(KeyCode.KC_ESCAPE.value, _overlay("rect"))})
+
+        self.assertTrue(ok)
+        self.assertEqual(cache.used_slots(), 1)
+        esc = cache.display_flat_idx(KeyCode.KC_ESCAPE.value, Modifier.NO_MOD)
+        self.assertEqual(cache.get_mru_info()[committed[esc]][0], "app.png")
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_the_MODIFIER_is_half_of_what_counts_as_covered(self, MockConverter):
+        # A template that draws ESC under Ctrl says nothing about bare ESC --
+        # they are different keycaps, addressed by different flat indices. A
+        # coverage key of keycode alone would swallow the program icon on every
+        # app whose template happens to draw a modified ESC.
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_ESCAPE.value: _overlay("dot")}, Modifier.CTRL)
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+        name = program_name("gimp")
+
+        ok, committed = self._run(
+            keeb, ["app.png", name], cache,
+            {name: self._synthetic(KeyCode.KC_ESCAPE.value, _overlay("rect"))})
+
+        self.assertTrue(ok)
+        esc = cache.display_flat_idx(KeyCode.KC_ESCAPE.value, Modifier.NO_MOD)
+        self.assertEqual(cache.get_mru_info()[committed[esc]][0], name)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_two_REAL_templates_still_overwrite_each_other(self, MockConverter):
+        # The deferral is for synthetic sources ONLY. Two templates overlapping
+        # is existing behaviour (the later one wins) and several shipped apps
+        # rely on it, so gating the skip on the source is load-bearing.
+        MockConverter.side_effect = [
+            self._converter({KeyCode.KC_A.value: _overlay("dot")}),
+            self._converter({KeyCode.KC_A.value: _overlay("rect")}),
+        ]
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+
+        ok, committed = self._run(keeb, ["base.png", "top.png"], cache, {})
+
+        self.assertTrue(ok)
+        a = cache.display_flat_idx(KeyCode.KC_A.value, Modifier.NO_MOD)
+        self.assertEqual(cache.get_mru_info()[committed[a]][0], "top.png")
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_synthetic_name_is_never_OPENED_as_a_file(self, MockConverter):
+        # It names no file, so a decode attempt could only fail -- and a failed
+        # open aborts the whole send, taking the real templates with it.
+        MockConverter.return_value.open.return_value = False
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+        name = program_name("gimp")
+
+        ok, committed = self._run(
+            keeb, [name], cache,
+            {name: self._synthetic(KeyCode.KC_ESCAPE.value, _overlay("dot"))})
+
+        self.assertTrue(ok)
+        MockConverter.return_value.open.assert_not_called()
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_two_apps_marks_get_DISTINCT_slots(self, MockConverter):
+        # The pseudo-name carries the slug for exactly this reason: a fixed name
+        # would file the second app's mark under the first's key, hit the cache,
+        # skip the upload, and draw GIMP's logo on an Inkscape window.
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+        first, second = program_name("gimp"), program_name("inkscape")
+
+        for name, pattern in ((first, "dot"), (second, "rect")):
+            ok, committed = self._run(
+                keeb, [name], cache,
+                {name: self._synthetic(KeyCode.KC_ESCAPE.value, _overlay(pattern))})
+            self.assertTrue(ok)
+            esc = cache.display_flat_idx(KeyCode.KC_ESCAPE.value, Modifier.NO_MOD)
+            self.assertEqual(cache.get_mru_info()[committed[esc]][0], name)
+        self.assertEqual(cache.used_slots(), 2)
+
 # ---------------------------------------------------------------------------
 # Connect / reconnect
 # ---------------------------------------------------------------------------
@@ -875,6 +1073,217 @@ class TestConsoleOutput(unittest.TestCase):
         self.assertIsNone(keeb.get_console_output(flush_and_return=False))
         console.replies.extend([pad(b'part2'), b''])
         self.assertEqual(keeb.get_console_output(), 'part1part2')
+
+
+
+class TestOverlaySendSummary(unittest.TestCase, LockCheckMixin):
+    """The per-source INFO lines a successful overlay send leaves in the log.
+
+    ⚠️ This is a SUPPORT surface, not decoration. The window tick already logs
+    which app was matched; nothing said what that turned into on the keyboard,
+    so "the shortcut icons did not appear" had no answer short of photographing
+    the keycaps. These pin what the line has to carry to be worth reading.
+    """
+
+    def _converter(self, overlay_map, modifier=Modifier.NO_MOD):
+        converter = MagicMock()
+        converter.open.return_value = True
+        converter.extract_overlays.side_effect = (
+            lambda mod: dict(overlay_map) if mod == modifier else None)
+        return converter
+
+    def _lines(self, keeb, filenames, cache, synthetic=None):
+        with mock.patch.object(keeb, "log") as log:
+            ok = keeb.send_overlays_mru(filenames, cache, synthetic=synthetic or {})
+        return ok, [call.args[0] % call.args[1:] for call in log.info.call_args_list]
+
+    def _headline(self, lines):
+        """The `Overlays: ...` line, which is not the first INFO of the send."""
+        found = [ln for ln in lines if ln.startswith("Overlays:")]
+        self.assertEqual(len(found), 1, lines)
+        return found[0]
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_the_headline_counts_keycaps_and_sources(self, MockConverter):
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_A.value: _overlay("dot"), KeyCode.KC_B.value: _overlay("rect")})
+        keeb, device = make_keeb(auto_ack=True)
+
+        ok, lines = self._lines(keeb, ["app.png"], OverlayMRUCache(20))
+
+        self.assertTrue(ok)
+        self.assertIn("Overlays: 2 keycap(s) from 1 source(s), 2 uploaded, 0 cached",
+                      lines)
+        self.assert_lock_free(keeb)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_SECOND_send_of_the_same_app_reports_them_as_CACHED(self, MockConverter):
+        """The uploaded/cached split is the whole reason the counts are separate.
+
+        A second switch to the same app uploads nothing -- so a line that only
+        said "2 keycap(s)" would read identically to a full re-transfer, and the
+        MRU cache doing its job would be indistinguishable from it not working.
+        """
+        MockConverter.side_effect = [
+            self._converter({KeyCode.KC_A.value: _overlay("dot")}),
+            self._converter({KeyCode.KC_A.value: _overlay("dot")}),
+        ]
+        keeb, device = make_keeb(auto_ack=True)
+        cache = OverlayMRUCache(20)
+
+        _, first = self._lines(keeb, ["app.png"], cache)
+        _, second = self._lines(keeb, ["app.png"], cache)
+
+        self.assertIn("1 uploaded, 0 cached", self._headline(first))
+        self.assertIn("0 uploaded, 1 cached", self._headline(second))
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_SMALL_source_names_every_key_it_drew(self, MockConverter):
+        # "which shortcuts did it just add" has no other answer.
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_C.value: _overlay("dot")}, Modifier.CTRL)
+        keeb, device = make_keeb(auto_ack=True)
+
+        _, lines = self._lines(keeb, ["app.png"], OverlayMRUCache(20))
+
+        self.assertIn("  app.png: Ctrl+C", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_LARGE_source_is_counted_instead_of_listed(self, MockConverter):
+        # A template covers most of the board; listing 26 keycaps would bury the
+        # one line that says what the icon fall-back contributed.
+        many = {KeyCode(0x04 + i).value: _overlay("dot")
+                for i in range(PolyKybd.NAME_KEYS_UP_TO + 1)}
+        MockConverter.return_value = self._converter(many)
+        keeb, device = make_keeb(auto_ack=True)
+
+        _, lines = self._lines(keeb, ["app.png"], OverlayMRUCache(40))
+
+        self.assertIn(f"  app.png: {len(many)} keycap(s)", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_exactly_the_threshold_is_still_NAMED(self, MockConverter):
+        many = {KeyCode(0x04 + i).value: _overlay("dot")
+                for i in range(PolyKybd.NAME_KEYS_UP_TO)}
+        MockConverter.return_value = self._converter(many)
+        keeb, device = make_keeb(auto_ack=True)
+
+        _, lines = self._lines(keeb, ["app.png"], OverlayMRUCache(40))
+
+        detail = [ln for ln in lines if ln.startswith("  app.png:")][0]
+        self.assertNotIn("keycap(s)", detail)
+        self.assertIn("A", detail.split(": ", 1)[1].split(", "))
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_TEMPLATE_is_named_by_its_basename_not_its_full_path(self, MockConverter):
+        # The paths are absolute and long; the interesting part is the filename.
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_A.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+
+        _, lines = self._lines(
+            keeb, [os.path.join("some", "where", "app.png")], OverlayMRUCache(20))
+
+        self.assertIn("  app.png: A", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_SYNTHETIC_source_keeps_its_pseudo_name_whole(self, MockConverter):
+        """`@prog:mdi:microsoft-word`, not `microsoft-word`.
+
+        It names no file, so `basename` can only ever damage it -- and the
+        `@prog:` prefix is what says the mark came from the icon fall-back
+        rather than from a hand-made template.
+
+        ⚠️ The slug the mark is named after comes from `app_icons.yaml`, which
+        is hand-editable, so it uses a path separator here on purpose: no
+        SHIPPED slug carries one, which means `basename` on a pseudo-name is a
+        no-op today and a mutation sweep reports the guard as escaped. What it
+        protects against is a mapping entry that does.
+        """
+        keeb, device = make_keeb(auto_ack=True)
+        name = program_name(f"mdi{os.sep}microsoft-word")
+
+        _, lines = self._lines(
+            keeb, [name], OverlayMRUCache(20),
+            {name: SyntheticConverter(
+                {Modifier.NO_MOD: {KeyCode.KC_ESCAPE.value: _overlay("rect")}})})
+
+        self.assertIn(f"  {name}: ESC", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_TEMPLATE_and_a_MARK_are_reported_SEPARATELY(self, MockConverter):
+        # One line per source is what makes the fall-back visible beside the
+        # template it rode in with.
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_A.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        name = program_name("gimp")
+
+        _, lines = self._lines(
+            keeb, ["app.png", name], OverlayMRUCache(20),
+            {name: SyntheticConverter(
+                {Modifier.NO_MOD: {KeyCode.KC_ESCAPE.value: _overlay("rect")}})})
+
+        self.assertIn("2 source(s)", self._headline(lines))
+        self.assertIn("  app.png: A", lines)
+        self.assertIn(f"  {name}: ESC", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_DEFERRED_source_is_reported_as_deferred(self, MockConverter):
+        """⚠️ THIS TEST USED TO ASSERT THE OPPOSITE, and that is what hid the
+        first field report of the feature ("so far nothing", 2026-09-10).
+
+        The reasoning was that a source drawing no keycap should not appear in a
+        summary of what was drawn. But EVERY shipped template draws ESC, so on
+        any app that has one the program mark always stands down -- correctly --
+        and the log then showed the mark resolving and said nothing whatever
+        about where it went. Silence there is indistinguishable from the icon
+        never having been fetched, which is exactly the question the summary
+        exists to answer.
+
+        The headline still counts only the sources that DREW: one source put
+        keycaps on the keyboard, and saying two would be the opposite error.
+        """
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_ESCAPE.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        name = program_name("gimp")
+
+        _, lines = self._lines(
+            keeb, ["app.png", name], OverlayMRUCache(20),
+            {name: SyntheticConverter(
+                {Modifier.NO_MOD: {KeyCode.KC_ESCAPE.value: _overlay("rect")}})})
+
+        self.assertIn("1 source(s)", self._headline(lines))
+        self.assertIn(f"  {name}: ESC (deferred to the template)", lines)
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_a_source_that_DREW_is_not_also_reported_as_deferred(self, MockConverter):
+        # A mark can lose ESC to the template and still win another key. One
+        # line per source, naming what it drew -- not two contradicting lines.
+        MockConverter.return_value = self._converter(
+            {KeyCode.KC_ESCAPE.value: _overlay("dot")})
+        keeb, device = make_keeb(auto_ack=True)
+        name = program_name("gimp")
+
+        _, lines = self._lines(
+            keeb, ["app.png", name], OverlayMRUCache(20),
+            {name: SyntheticConverter({Modifier.NO_MOD: {
+                KeyCode.KC_ESCAPE.value: _overlay("rect"),
+                KeyCode.KC_F1.value: _overlay("rect")}})})
+
+        self.assertIn("2 source(s)", self._headline(lines))
+        self.assertIn(f"  {name}: F1", lines)
+        self.assertFalse([ln for ln in lines if "deferred" in ln])
+
+    @mock.patch("polyhost.device.poly_kybd.ImageConverter")
+    def test_an_empty_send_logs_no_summary_at_all(self, MockConverter):
+        MockConverter.return_value = self._converter({})
+        keeb, device = make_keeb(auto_ack=True)
+
+        _, lines = self._lines(keeb, ["app.png"], OverlayMRUCache(20))
+
+        self.assertFalse([ln for ln in lines if ln.startswith("Overlays:")])
 
 
 if __name__ == '__main__':

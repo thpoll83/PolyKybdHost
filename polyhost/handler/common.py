@@ -19,7 +19,73 @@ URL_HAS = "urls-contains"
 # app name needs different overlay artwork per OS. Keys are canonical OS names
 # (see `normalize_os`); the sub-entry may itself carry title/url constraints.
 OS = "os"
+# Optional: the name the PROGRAM MARK should be resolved under, when the process
+# is not the app. One process can host a different application, and then the
+# executable name says nothing about what is on screen -- measured twice in four
+# minutes of one field log (2026-09-14): `ApplicationFrameHost.exe` titled
+# "Calculator" (Win11 packaged apps) and `ONENOTE.EXE` titled "Sticky Notes
+# (new)". The mapping is the only thing that already knows which app it is,
+# because it is what matched the title, so it is where the answer belongs.
+#
+# ⚠️ Without it the mark is not merely missing, it can be WRONG: `app_icons.yaml`
+# maps `onenote` to `mdi:microsoft-onenote`, so a Sticky Notes window would draw
+# a OneNote logo -- "one wrong icon rather than none, which is worse than the gap
+# it fills", which is the rule `icon_app()` already states for the forwarder.
+#
+# The value flows through `app_icons.candidates()` unchanged, so it may be a
+# plain app name (`calculator`) or an explicit slug (`mdi:microsoft-onenote`).
+ICON_APP = "icon"
 FLAGS = "flags"
+
+# Processes that are NEVER an application themselves — they only host one. Every
+# Windows 11 packaged app runs inside `ApplicationFrameHost.exe`, so the process
+# name collapses Calculator, Clock, Photos and Sound Recorder onto one string:
+# the catalog lookup gets `applicationframehost` and finds nothing, the OS icon
+# comes from the host process and is confidently wrong, and the shortcut-icon
+# cache keys them all together so the second app served the first one's icons.
+#
+# ⚠️ `ONENOTE.EXE` is deliberately NOT here even though it hosts Sticky Notes.
+# It is a real application as well as a host, and its own windows are titled with
+# a NOTEBOOK name — so a blanket title rule would invent an app called "My
+# Notebook". An impure host needs the mapping's `icon:` and a title branch, which
+# is the case that key genuinely earns.
+PURE_HOST_PROCESSES = frozenset({"applicationframehost"})
+
+# Windows titles a document window "<document> - <App Name>", so the app is the
+# LAST segment. Same convention the LibreOffice mapping entry already relies on
+# ("LibreOffice titles end in the module name", hence `titles-endswith`).
+_TITLE_SEPARATORS = (" - ", " \u2014 ", " \u2013 ", " | ")
+
+
+def app_from_host_title(title, process=None):
+    """The application a PURE HOST process is showing, from its window title.
+
+    Returns a lowercase name for `candidates()` to normalise, or None when the
+    title cannot name an app. Callers use it for IDENTITY only — the mapping
+    lookup still keys on the process, so an existing `applicationframehost:`
+    entry keeps matching exactly as before.
+
+    ⚠️ The residual risk is an app that titles its windows the other way round
+    (document LAST). The derived name is then the document, which the icon
+    catalog answers with a 404 — the safe failure, same as any unknown app — but
+    the shortcut-icon cache fragments per document instead of per app, costing a
+    harvest each time. Accepted rather than guessed around: a rule that tried to
+    tell a document from an app name would be wrong in both directions.
+    """
+    if not title:
+        return None
+    name = str(title).strip()
+    for sep in _TITLE_SEPARATORS:
+        if sep in name:
+            name = name.rsplit(sep, 1)[-1].strip()
+            break
+    name = name.strip().lower()
+    if not name:
+        return None
+    # A title that is just the host's own name identifies nothing.
+    if process and name == str(process).strip().lower():
+        return None
+    return name
 
 # Accepted spellings -> canonical name. The mapping file is hand-written, so take
 # the obvious synonyms rather than making the author guess our internal wording.

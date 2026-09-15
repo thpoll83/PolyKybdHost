@@ -5,7 +5,8 @@ import re
 from urllib.parse import urlsplit
 
 from polyhost.handler.common import (
-    OverlayCommand, Flags, find_matching_entry, OS,
+    OverlayCommand, Flags, find_matching_entry, ICON_APP, OS,
+    PURE_HOST_PROCESSES, app_from_host_title,
     TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, URL, URL_HAS, FLAGS,
 )
 from polyhost.handler.remote_window import RemoteHandler
@@ -70,6 +71,18 @@ class OverlayHandler:
         # value used for the most recent match, for logging.
         self.url_provider = url_provider
         self.current_url = None
+        # The focused application's name, as matching saw it. Kept so the core
+        # can ask what program is in front WITHOUT re-querying the window
+        # (pywinctl is main-thread-only on macOS, and the query is what the tick
+        # exists to do once). None whenever nothing is focused.
+        self.current_app = None
+        # The app a PURE HOST process is showing, derived from the window title
+        # (see `app_from_host_title`). None for an ordinary process. Kept apart
+        # from `current_app` because the mapping lookup keys on the PROCESS.
+        self.current_host_app = None
+        # The PID that owns the focused window, kept beside the name so the
+        # program mark can fall back to the app's OWN icon from the OS.
+        self.current_pid = None
         self.current_entry = None
         self.last_entry = None
         # Tracks whether overlays are currently enabled on the device, so a
@@ -244,10 +257,22 @@ class OverlayHandler:
                 if local_win_changed:
                     # remember active window
                     self.set_win(win, win.title, win.getHandle())
+                    self.current_app = None
+                    self.current_host_app = None
+                    self.current_pid = None
                     if win.title == "PolyHost":
                         return None, OverlayCommand.NONE
                     try:
                         raw_app_name = self.win.getAppName()
+                        # The PID is what lets the program mark fall back to the
+                        # app's OWN icon from the OS when no catalog carries it.
+                        # getPID() exists on all three pywinctl backends; it is
+                        # wrapped because a window can die between the poll and
+                        # the query, and a cosmetic lookup must not end the tick.
+                        try:
+                            self.current_pid = self.win.getPID()
+                        except Exception:
+                            self.current_pid = None
                         self.log_win(raw_app_name)
                         if self.mapping:
                             found = False
@@ -255,6 +280,22 @@ class OverlayHandler:
                                 app_name = raw_app_name.split(".",-1)[0].lower()
                             else:
                                 app_name = raw_app_name.lower()
+                            self.current_app = app_name
+                            # A PURE HOST process is not an app: every Windows 11
+                            # packaged app reports `applicationframehost`, so the
+                            # process name identifies none of them. The TITLE
+                            # does -- the same signal the browser entries key
+                            # their web-apps off, applied generically instead of
+                            # per app, so an app nobody has mapped still gets its
+                            # own mark, its own icon lookup and its own
+                            # shortcut-icon cache entry.
+                            # ⚠️ `current_app` is deliberately NOT overwritten:
+                            # the mapping lookup below keys on the PROCESS, so
+                            # the shipped `applicationframehost:` entry and its
+                            # title branches keep matching exactly as before.
+                            self.current_host_app = (
+                                app_from_host_title(win.title, app_name)
+                                if app_name in PURE_HOST_PROCESSES else None)
                             # For a browser, resolve the focused tab's URL so the
                             # matcher can key overlays off the website (see
                             # handler/browser_url.py). None for non-browsers or
@@ -301,6 +342,8 @@ class OverlayHandler:
             if self.win:
                 self.log.info("No active window")
                 self.set_win()
+                self.current_app = None
+                self.current_host_app = None
                 if self.current_entry:
                     self.current_entry = None
                     return None, OverlayCommand.DISABLE
@@ -314,6 +357,63 @@ class OverlayHandler:
             and self.current_entry[FLAGS][Flags.HAS_REMOTE.value]
         )  # 0 for remote
 
+    def icon_app(self):
+        """The app the program mark should name — NOT always `current_app`.
+
+        ⚠️ On a multi-machine setup the focused LOCAL window is the remote-desktop
+        client (the shipped entry is `nxplayer`/NoMachine), while the keycaps
+        show the FORWARDED app's overlays. `current_app` holds the local name, so
+        a mark taken from it would put a NoMachine icon on ESC for every app on
+        the other machine — one wrong icon rather than none, which is worse than
+        the gap it fills.
+
+        `RemoteHandler.name` is already normalised the same way the local branch
+        normalises (`data["name"].split(".")[0].lower()`), so it needs no second
+        pass here.
+
+        ⚠️ A matched entry may also NAME the app (`icon:` in the mapping), and
+        that wins over `current_app` for the same reason: one process can host a
+        different application, so the executable name is not always the app. See
+        `ICON_APP` in handler/common.py for the two field cases.
+        """
+        if self.is_remote_mapping_entry():
+            remote = getattr(self.remote_handler, "name", None)
+            if remote:
+                return remote
+        entry = self.current_entry
+        if entry:
+            named = entry.get(ICON_APP)
+            if named:
+                return str(named).strip().lower()
+        # A pure host's TITLE names the app where its process cannot. Below the
+        # mapping's `icon:` (an explicit answer beats a derived one) and above
+        # `current_app` (which is `applicationframehost` for every packaged app).
+        if self.current_host_app:
+            return self.current_host_app
+        return self.current_app
+
+    def icon_pid(self):
+        """The PID behind `icon_app()`, or None when there is no local one.
+
+        ⚠️ None for a FORWARDED app, deliberately: on a multi-machine setup the
+        app the keycaps describe runs on the other machine, so the local PID
+        belongs to the remote-desktop client and its icon would be NoMachine's.
+        The same reasoning as `icon_app()` itself, one step further -- and a
+        mapping that NAMES the app with `icon:` is in the same position, since
+        the named app is not the process we can see.
+        """
+        if self.is_remote_mapping_entry():
+            return None
+        entry = self.current_entry
+        if entry and entry.get(ICON_APP):
+            return None
+        # Same reasoning once more: on a PURE HOST the PID is the host's, so its
+        # icon is ApplicationFrameHost's rather than the app's -- confidently
+        # wrong, which is worse than none.
+        if self.current_host_app:
+            return None
+        return getattr(self, "current_pid", None)
+
     def get_overlay_data(self):
         if (
             self.current_entry
@@ -324,7 +424,7 @@ class OverlayHandler:
             return self.remote_handler.get_overlay_data()
         return None
 
-    def invalidate_window_cache(self):
+    def invalidate_window_cache(self, resend_same_entry=False):
         """Force the next poll to re-evaluate the focused window even if the OS
         reports no window/title change.
 
@@ -334,9 +434,27 @@ class OverlayHandler:
         this so the next ``handle_active_window`` re-matches with the new URL and
         swaps overlays. Cheap: just drops the cached title so ``local_win_changed``
         trips next tick — the accept-time debounce is untouched (the window has
-        already been focused, so the re-match fires promptly)."""
+        already been focused, so the re-match fires promptly).
+
+        ⚠️ `resend_same_entry` exists because re-evaluating is NOT enough when
+        the match itself is unchanged. A new URL matches a DIFFERENT entry, so
+        `try_to_match_window` returns OFF_ON and the overlays are re-sent. A
+        program icon arriving for the app already on screen matches the SAME
+        entry, so it returns ENABLE — which `_is_redundant_overlay_cmd` then
+        drops, because overlays are already on. Nothing is re-sent and the mark
+        that just finished downloading does not reach the keycap until the user
+        switches away and back (field, 2026-09-10). Clearing `last_entry` is
+        what turns that ENABLE back into an OFF_ON.
+
+        It deliberately does NOT reset `last_update_msec` the way
+        `force_resend` does: the window is already focused and has already
+        cleared the accept-time debounce, so re-arming it would just delay the
+        re-send by another accept window.
+        """
         self.title = None
         self.handle = None
+        if resend_same_entry:
+            self.last_entry = None
 
     def force_resend(self):
         """Reset window tracking so the next cycle triggers a fresh OFF_ON resend."""

@@ -1,0 +1,99 @@
+# Application name -> icon slug, for the program mark drawn on ESC.
+#
+# Only needed when the executable name differs from the brand slug: "inkscape",
+# "gimp-2.0", "krita" and ~20 others resolve on their own (app_icons.normalise).
+#
+#   key    one app name, or several comma-separated. Matched against the name
+#          the window tracker reports and against its normalised form.
+#   value  a Simple Icons slug, or `mdi:<name>` / `si:<name>` to name the
+#          catalog, or `null` to stop guessing for that app.
+#
+# ⚠️ Check a slug exists before adding it -- never write one from memory. A slug
+# that does not exist costs a fetch on every switch to that app; one that exists
+# for a different brand draws the wrong logo. Simple Icons is pinned to 15.22.0.
+#
+# Why Adobe shares one mark, why `chromium` is absent, and why the generic
+# section below exists: docs/overlay-fallbacks.md.
+
+chrome: googlechrome
+vlc: vlcmediaplayer
+notepad++: notepadplusplus
+resolve: davinciresolve
+
+# LibreOffice reports its module in the title, not the executable.
+soffice, startcenter: libreoffice
+
+# A trailing version goes before the lookup, and `64` counts as one -- so
+# `pycharm64`, `gimp-2.0` and `obs64` reach their slug with no entry at all.
+# `studio64` needs one: it reduces to `studio`, which is a different brand.
+idea: intellijidea
+jetbrains-pycharm, jetbrains-pycharm-ce: pycharm
+studio64: androidstudio
+
+obs: obsstudio
+nvim: neovim
+emacs: gnuemacs
+codium: vscodium
+thunderbird-bin: thunderbird
+
+# --- Material Design Icons (Apache-2.0) ------------------------------------
+# The brands Simple Icons refuses. Each verified present in mdi; each is a
+# PRODUCT mark, never a company or a generic symbol.
+winword: mdi:microsoft-word
+excel: mdi:microsoft-excel
+powerpnt: mdi:microsoft-powerpoint
+msaccess: mdi:microsoft-access
+outlook: mdi:microsoft-outlook
+onenote: mdi:microsoft-onenote
+teams, ms-teams: mdi:microsoft-teams
+msedge, microsoft-edge: mdi:microsoft-edge
+devenv: mdi:microsoft-visual-studio
+code, code-oss: mdi:microsoft-visual-studio-code
+skype: mdi:microsoft-skype
+acrobat, acroread: mdi:adobe-acrobat
+
+# Real brands mdi holds under a BARE name. Listed one by one rather than
+# guessed, because a bare mdi name is usually a generic UI symbol -- see the
+# note in app_icons.candidates().
+powershell, pwsh: mdi:powershell
+
+# LibreOffice reports its module rather than the suite on some desktops.
+writer, lowriter: si:libreofficewriter
+calc, localc: si:libreofficecalc
+impress, loimpress: si:libreofficeimpress
+
+# Adobe products, sharing the company mark -- see the note at the top.
+photoshop, adobe photoshop: mdi:adobe
+illustrator, adobe illustrator: mdi:adobe
+afterfx, adobe after effects: mdi:adobe
+premiere, adobe premiere pro: mdi:adobe
+indesign, adobe indesign: mdi:adobe
+lightroom, adobe lightroom: mdi:adobe
+audition, adobe audition: mdi:adobe
+
+# --- Generic marks, for apps NO catalog has a brand for --------------------
+# These say WHAT THE APP IS, not who made it -- Windows' bundled apps have no
+# mark in either catalog. A neutral object is fine; another company's logo is
+# not. Each was rendered at 40x40 and checked. Why this is allowed to break the
+# product-mark rule above: docs/overlay-fallbacks.md.
+notepad: mdi:note-text
+wordpad: mdi:text-box
+mspaint: mdi:palette
+paintdotnet: mdi:brush-variant
+explorer: mdi:folder
+windowsterminal, wt: mdi:console
+cmd: mdi:console-line
+snippingtool: mdi:scissors-cutting
+taskmgr: mdi:monitor-dashboard
+regedit: mdi:cog-box
+systemsettings: mdi:cog
+photos: mdi:image-multiple
+7zfm, 7zg: mdi:folder-zip
+putty: mdi:console-network
+winscp: mdi:folder-network
+
+# ⚠️ A HOSTED app cannot be listed here at all -- Windows 11 packaged apps
+# report `ApplicationFrameHost.exe`, and Sticky Notes reports `ONENOTE.EXE`, so
+# the name is the HOST. They are identified by window TITLE instead, which this
+# file cannot key on. Use `icon:` on the mapping entry; same `mdi:`/`si:`
+# spellings. Details, and the OneNote wrong-icon trap: docs/overlay-fallbacks.md.
