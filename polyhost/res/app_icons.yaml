@@ -21,21 +21,16 @@ notepad++: notepadplusplus
 resolve: davinciresolve
 
 # LibreOffice reports its module in the title, not the executable.
-soffice, soffice.bin, startcenter: libreoffice
+soffice, startcenter: libreoffice
 
-# JetBrains ships one binary per IDE, all with a 64-bit suffix the version
-# stripper does not touch (it only removes a trailing version).
+# A trailing version goes before the lookup, and `64` counts as one -- so
+# `pycharm64`, `gimp-2.0` and `obs64` reach their slug with no entry at all.
+# `studio64` needs one: it reduces to `studio`, which is a different brand.
 idea: intellijidea
-jetbrains-pycharm, jetbrains-pycharm-ce, pycharm64: pycharm
-webstorm64: webstorm
-goland64: goland
-rider64: rider
-datagrip64: datagrip
-phpstorm64: phpstorm
-rubymine64: rubymine
+jetbrains-pycharm, jetbrains-pycharm-ce: pycharm
 studio64: androidstudio
 
-obs, obs64: obsstudio
+obs: obsstudio
 nvim: neovim
 emacs: gnuemacs
 codium: vscodium
@@ -88,7 +83,7 @@ paintdotnet: mdi:brush-variant
 explorer: mdi:folder
 windowsterminal, wt: mdi:console
 cmd: mdi:console-line
-snippingtool, snippingtool2: mdi:scissors-cutting
+snippingtool: mdi:scissors-cutting
 taskmgr: mdi:monitor-dashboard
 regedit: mdi:cog-box
 systemsettings: mdi:cog

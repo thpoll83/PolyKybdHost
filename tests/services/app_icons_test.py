@@ -82,8 +82,20 @@ class SlugMapTest(unittest.TestCase):
     def test_the_SHIPPED_map_loads_and_splits_its_comma_keys(self):
         mapping = ai.load_slug_map()
         self.assertTrue(mapping, "the shipped app_icons.yaml did not load")
-        for key in ("soffice", "soffice.bin", "startcenter"):
+        for key in ("soffice", "startcenter"):
             self.assertEqual(mapping[key], "libreoffice", key)
+
+    def test_a_name_the_map_does_not_KEY_still_reaches_its_mark(self):
+        # ⚠️ Assert the RESOLUTION, not the key. `normalise` strips `.bin` and a
+        # trailing version before the lookup, so `soffice.bin` and `pycharm64`
+        # reach their slug with no entry of their own -- and an entry for them
+        # would be a line that restates what the reduction already does. This
+        # test used to pin `soffice.bin` as a key, which made removing that
+        # redundant line look like a regression.
+        for name, slug in (("soffice.bin", "libreoffice"),
+                           ("pycharm64", "pycharm"),
+                           ("obs64", "obsstudio")):
+            self.assertEqual(ai.candidates(name)[0], f"si:{slug}", name)
 
     def test_every_shipped_ENTRY_names_a_real_source_and_a_usable_name(self):
         # A capital, a stray space or a source nobody serves is a URL that 404s
