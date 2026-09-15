@@ -145,10 +145,73 @@ def adaptive_ink(image):
         return None
 
 
+# The pre-dither adjustments `dither_ink` runs. ⚠️ NOT optional decoration --
+# bare Floyd-Steinberg on an app icon is unreadable noise at this size, AND it
+# games `score()`, because every isolated pixel of a dithered midtone counts as
+# an edge. Normalise + unsharp + contrast is what removes the scatter, and it is
+# the stage fontconvert itself always pairs with the dither.
+DITHER_ADJUST = dict(normalize=True, sharpness=2.5, contrast=2.5)
+
+
+def dither_ink(image, box: int):
+    """Error-diffused ink, dithered AT the target size. Keeps midtone AREAS.
+
+    The other three conversions all pick a threshold and throw the midtones
+    away, which is right for line art and loses a modern app icon's body: a
+    coloured document, a gradient sphere, a solid object. Measured over 14 icons
+    this wins on firefox, vlc, telegram, draw, writer and inkscape -- vlc goes
+    from four disconnected specks to a recognisable traffic cone -- and loses to
+    `adaptive` on vscode, mousepad, ubuntu and math. Neither dominates, which is
+    why this is a fourth candidate rather than a replacement.
+
+    ⚠️ The dither MUST run at the final size, not at the source size followed by
+    a downscale -- resampling averages the diffusion back into gray and the
+    re-threshold then produces mush. Hence `box` here, where the other
+    conversions leave scaling to `fit()`.
+
+    ⚠️ Composited over WHITE, so ink is DARKNESS. Over black wins on some icons
+    (math, telegram) but loses badly on others (draw, mousepad, ubuntu); one
+    ground was chosen rather than adding a fifth candidate for a coin-flip.
+    """
+    try:
+        import numpy as np
+        from PIL import Image
+        from polyhost.services import fontgen_dither as fd
+    except Exception as exc:
+        log.debug("Could not dither an icon: %s", exc)
+        return None
+    gray = luma_ink(image)
+    if gray is None:
+        return None
+    rows = (gray > 0).any(1).nonzero()[0]
+    cols = (gray > 0).any(0).nonzero()[0]
+    if not len(rows) or not len(cols):
+        return None
+    ink = Image.fromarray(gray[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1])
+    scale = min(box / ink.width, box / ink.height)
+    ink = ink.resize((max(1, round(ink.width * scale)),
+                      max(1, round(ink.height * scale))), Image.LANCZOS)
+    small = np.asarray(ink).astype(np.float32) / 255.0
+    fd.apply_adjustments(small, fd.DitherOpts(**DITHER_ADJUST))
+    h, w = small.shape
+    bits = fd._Bits(h * w)
+    fd._fs(small, bits)
+    return np.array([bits.get(i) for i in range(h * w)],
+                    dtype=bool).reshape(h, w)
+
+
+def _thresholded(convert):
+    """Adapt a coverage function to the (image, box) -> mask contract."""
+    return lambda image, box: fit(convert(image), box)
+
+
+# Each entry is (name, (image, box) -> bool mask). `dither` is last so that a
+# tie goes to a thresholded reading, which has no texture to misread.
 CONVERSIONS = (
-    ("alpha", alpha_coverage),
-    ("luma", luma_ink),
-    ("adaptive", adaptive_ink),
+    ("alpha", _thresholded(alpha_coverage)),
+    ("luma", _thresholded(luma_ink)),
+    ("adaptive", _thresholded(adaptive_ink)),
+    ("dither", dither_ink),
 )
 
 
@@ -219,7 +282,7 @@ def choose(image, box: int):
     """
     best = (None, None, -1.0)
     for name, convert in CONVERSIONS:
-        mask = fit(convert(image), box)
+        mask = convert(image, box)
         value = score(mask)
         if value > best[2]:
             best = (mask, name, value)
