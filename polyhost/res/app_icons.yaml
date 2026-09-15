@@ -1,40 +1,19 @@
-# Application name -> Simple Icons slug, for the program icon drawn on ESC.
+# Application name -> icon slug, for the program mark drawn on ESC.
 #
-# Only consulted when the normalised executable name does NOT already equal the
-# slug: "inkscape", "gimp-2.0", "krita", "figma" and about twenty others resolve
-# on their own (see app_icons.normalise). This file is for the cases where the
-# binary and the brand disagree.
+# Only needed when the executable name differs from the brand slug: "inkscape",
+# "gimp-2.0", "krita" and ~20 others resolve on their own (app_icons.normalise).
 #
-# The key may be a comma-separated list, matched against the raw app name the
-# window tracker reports and against its normalised form. A value of `null`
-# means "never guess for this one" -- the way to suppress a guess that lands on
-# the wrong brand, which is the one failure the resolver cannot detect itself.
+#   key    one app name, or several comma-separated. Matched against the name
+#          the window tracker reports and against its normalised form.
+#   value  a Simple Icons slug, or `mdi:<name>` / `si:<name>` to name the
+#          catalog, or `null` to stop guessing for that app.
 #
-# ⚠️ Every slug here was verified against simple-icons 15.22.0 (the pinned
-# version -- v16 REMOVED brands, see app_icons.py). Do not add one from memory:
-# a slug that does not exist costs a fetch and a curation entry on every switch
-# to that app, and a slug that exists for a DIFFERENT brand draws a wrong logo.
+# ⚠️ Check a slug exists before adding it -- never write one from memory. A slug
+# that does not exist costs a fetch on every switch to that app; one that exists
+# for a different brand draws the wrong logo. Simple Icons is pinned to 15.22.0.
 #
-# A value may name the OTHER catalog: `mdi:microsoft-word`. Simple Icons has no
-# Microsoft and no Adobe at all (measured by substring over the whole
-# collection), so the Office family, Visual Studio and Edge all come from
-# Material Design Icons, which draws them as monochrome single-path glyphs and
-# renders them cleanly at 40x40.
-#
-# ⚠️ ADOBE PRODUCTS SHARE THE COMPANY "A", because nothing more specific
-# survives 1 bit. The obvious better answer -- the `logos:` collection's
-# `adobe-photoshop`, `adobe-illustrator`, `adobe-premiere`, `adobe-indesign`,
-# `adobe-lightroom`, `adobe-after-effects`, all CC0 -- was rendered and looked
-# at: the product letters ("Ps", "Ai") are SEPARATE COLOURED PATHS rather than
-# knockouts, so flattening to a silhouette gives six identical solid rounded
-# squares of 1516 lit pixels. Six apps showing the same white block is worse
-# than one shared "A" that at least says Adobe. Acrobat keeps its own mark.
-#
-# ⚠️ `chromium -> google-chrome` stays OUT on a different rule: it names a
-# DIFFERENT PRODUCT (a different browser), where the Adobe "A" is the true
-# company. `explorer -> microsoft-windows` was out for the same reason and is
-# still out -- but Explorer now gets a plain FOLDER instead, see the generic
-# section at the bottom.
+# Why Adobe shares one mark, why `chromium` is absent, and why the generic
+# section below exists: docs/overlay-fallbacks.md.
 
 chrome: googlechrome
 vlc: vlcmediaplayer
@@ -97,29 +76,11 @@ indesign, adobe indesign: mdi:adobe
 lightroom, adobe lightroom: mdi:adobe
 audition, adobe audition: mdi:adobe
 
-# --- Generic marks for apps NO catalog carries a brand for ------------------
-#
-# ⚠️ THIS SECTION BREAKS THE "PRODUCT MARK, NEVER A GENERIC SYMBOL" RULE ABOVE,
-# deliberately, and it is easy to delete if you disagree with the trade.
-#
-# The first field report of this feature was "so far nothing" (2026-09-10), and
-# a third of the reason was here: Windows' own bundled apps have no brand mark
-# in either catalog. Measured against both -- Notepad, Paint, Paint.NET,
-# Windows Terminal, WordPad, Snipping Tool, Task Manager, Explorer, 7-Zip,
-# PuTTY, WinSCP: ZERO hits, in Simple Icons or in mdi, under any spelling the
-# resolver guesses. Microsoft does not license those logos and mdi does not
-# draw them.
-#
-# So the choice is a symbol that says WHAT THE APP IS, or nothing at all. The
-# repo already made that call once: the hand-made `explorer_template` draws a
-# FOLDER on ESC, and its own bindings.yaml says so. A folder identifies
-# Explorer, a palette identifies Paint, and `>_` identifies a terminal -- which
-# is the whole job of the mark. What it must never do is name the wrong BRAND,
-# which is why every entry here is a neutral object rather than another
-# company's logo.
-#
-# Every one was rendered at the real 40x40 and looked at before being listed;
-# a symbol that does not survive 1 bit is worse than no icon.
+# --- Generic marks, for apps NO catalog has a brand for --------------------
+# These say WHAT THE APP IS, not who made it -- Windows' bundled apps have no
+# mark in either catalog. A neutral object is fine; another company's logo is
+# not. Each was rendered at 40x40 and checked. Why this is allowed to break the
+# product-mark rule above: docs/overlay-fallbacks.md.
 notepad: mdi:note-text
 wordpad: mdi:text-box
 mspaint: mdi:palette
@@ -136,20 +97,8 @@ photos: mdi:image-multiple
 putty: mdi:console-network
 winscp: mdi:folder-network
 
-# ⚠️ A HOSTED app is not listed here, and cannot be: on Windows 11 Calculator,
-# Clock and the other packaged apps run inside `ApplicationFrameHost.exe`, so the
-# app name the window tracker reports is the HOST, not the app -- and the same
-# thing happens outside the packaged-app world, where the new Sticky Notes runs
-# inside `ONENOTE.EXE` (both measured in one field log, 2026-09-14). Their
-# identity is in the window TITLE, which this file cannot key on, so
-# `calculator: mdi:calculator` here would look like coverage and resolve for
-# nobody.
-#
-# ✅ The overlay MAPPING can key on the title, so that is where a hosted app names
-# its mark: `icon:` on the matched entry (`ICON_APP` in handler/common.py), read
-# by `OverlayHandler.icon_app()`. The value lands in `candidates()` exactly like a
-# value from this file, so it takes the same `mdi:`/`si:` spellings.
-#
-# ⚠️ For `onenote` that is not just a gap but a WRONG icon waiting to happen: the
-# entry above maps it to `mdi:microsoft-onenote`, so a Sticky Notes window would
-# draw a OneNote logo unless its mapping entry names its own.
+# ⚠️ A HOSTED app cannot be listed here at all -- Windows 11 packaged apps
+# report `ApplicationFrameHost.exe`, and Sticky Notes reports `ONENOTE.EXE`, so
+# the name is the HOST. They are identified by window TITLE instead, which this
+# file cannot key on. Use `icon:` on the mapping entry; same `mdi:`/`si:`
+# spellings. Details, and the OneNote wrong-icon trap: docs/overlay-fallbacks.md.

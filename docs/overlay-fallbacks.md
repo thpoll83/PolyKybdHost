@@ -106,3 +106,90 @@ cannot resolve a mark — `icon:` on the mapping entry names the slug to use
 instead. Full rules, including why a baked `program_icon:` wins over it and why
 the parent entry must keep an `overlay:` of its own, are in
 [`../polyhost/res/overlay-mapping.md`](../polyhost/res/overlay-mapping.md).
+
+## The two catalog files, and the judgements behind them
+
+`polyhost/res/app_icons.yaml` and `polyhost/res/shortcut_hints.yaml` carry short
+comments saying what goes in them. The reasoning that used to sit in those
+headers lives here, so the files stay readable for someone adding an entry.
+
+### Why the simple-icons version is pinned
+
+Every slug in `app_icons.yaml` was verified against **simple-icons 15.22.0**;
+v16 REMOVED brands (see `app_icons.py`). A slug that does not exist costs a
+fetch and a curation entry on every switch to that app, and a slug that exists
+for a DIFFERENT brand draws a wrong logo — the one failure the resolver cannot
+detect itself. So: check, never write one from memory.
+
+### Why some entries name `mdi:` instead
+
+Simple Icons has **no Microsoft and no Adobe at all** (measured by substring over
+the whole collection), so the Office family, Visual Studio and Edge come from
+Material Design Icons, which draws them as monochrome single-path glyphs that
+render cleanly at 40×40. A bare `mdi:` name is usually a generic UI symbol
+rather than a brand, which is why each one is listed individually rather than
+guessed — see the note in `app_icons.candidates()`.
+
+### ⚠️ Adobe products share the company "A", because nothing finer survives 1 bit
+
+The obvious better answer — the `logos:` collection's `adobe-photoshop`,
+`adobe-illustrator`, `adobe-premiere`, `adobe-indesign`, `adobe-lightroom`,
+`adobe-after-effects`, all CC0 — was rendered and looked at: the product letters
+("Ps", "Ai") are SEPARATE COLOURED PATHS rather than knockouts, so flattening to
+a silhouette gives six identical solid rounded squares of 1516 lit pixels. Six
+apps showing the same white block is worse than one shared "A" that at least
+says Adobe. Acrobat keeps its own mark.
+
+### ⚠️ `chromium -> google-chrome` stays out, on a different rule
+
+It names a DIFFERENT PRODUCT (a different browser), where the Adobe "A" is the
+true company. `explorer -> microsoft-windows` was out for the same reason and is
+still out — Explorer gets a plain folder from the generic section instead.
+
+### ⚠️ The generic section breaks the "product mark, never a generic symbol" rule
+
+Deliberately, and it is easy to delete if you disagree with the trade. The first
+field report of this feature was *"so far nothing"* (2026-09-10), and a third of
+the reason was here: Windows' own bundled apps have no brand mark in either
+catalog. Measured against both — Notepad, Paint, Paint.NET, Windows Terminal,
+WordPad, Snipping Tool, Task Manager, Explorer, 7-Zip, PuTTY, WinSCP: **ZERO
+hits**, in Simple Icons or in mdi, under any spelling the resolver guesses.
+Microsoft does not license those logos and mdi does not draw them.
+
+So the choice is a symbol that says WHAT THE APP IS, or nothing at all. The repo
+already made that call once: the hand-made `explorer_template` draws a folder on
+ESC. A folder identifies Explorer, a palette identifies Paint, and `>_`
+identifies a terminal — which is the whole job of the mark. What it must never
+do is name the wrong BRAND, which is why every entry there is a neutral object
+rather than another company's logo. Each was rendered at the real 40×40 and
+looked at; a symbol that does not survive 1 bit is worse than no icon.
+
+### ⚠️ A hosted app cannot be listed in `app_icons.yaml` at all
+
+On Windows 11 Calculator, Clock and the other packaged apps run inside
+`ApplicationFrameHost.exe`, so the app name the window tracker reports is the
+HOST — and the same happens outside the packaged-app world, where the new Sticky
+Notes runs inside `ONENOTE.EXE` (both measured in one field log, 2026-09-14).
+Their identity is in the window TITLE, which that file cannot key on, so
+`calculator: mdi:calculator` there would look like coverage and resolve for
+nobody. `PURE_HOST_PROCESSES` + `app_from_host_title()` handle the generic case;
+`icon:` on a mapping entry is how a specific one names its mark.
+
+⚠️ For `onenote` that is not just a gap but a WRONG icon waiting to happen: the
+entry maps it to `mdi:microsoft-onenote`, so a Sticky Notes window would draw a
+OneNote logo unless its mapping entry names its own.
+
+### `shortcut_hints.yaml` is half of a feedback loop
+
+The lexicon in `shortcut_icons.py` holds the general rules; the YAML holds the
+JUDGEMENTS — labels a real application uses that the rules miss or get wrong.
+`shortcut_probe.py --unmatched <file>` logs every label that produced no icon,
+with a count and the apps it came from; `--review <file>` prints them by
+frequency with a stub to paste in.
+
+Bold, Italic, Underline, Superscript, Subscript and Format Painter were once
+marked `text` there, because the font pack was the only way to draw anything and
+it carries none of them — no bold, italic or paintbrush glyph among its 7242
+codepoints, and adding one meant fontconvert plus a bundle reship. They are
+ordinary LEXICON concepts now: the catalog has all six, so the constraint that
+made them `text` is gone rather than worked around.
