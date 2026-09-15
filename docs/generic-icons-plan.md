@@ -189,17 +189,33 @@ And a generic phrase **does** resolve: `mdi:help` and `mdi:settings` both return
 GNOME Help and a gear on anything called "Settings" — a wrong icon, with no
 config left to stop it.
 
-✅ **The guard already exists and needs no stop-list.** Simple Icons is
-brand-only (3383 entries), so it rejects generic words by construction —
-measured: `si:help`, `si:portal`, `si:texteditor` are all 404 while `si:vim`,
-`si:python` and `si:libreoffice` are 200. mdi is 7400 icons of which most are
-generic UI symbols, which is why `candidates()` already refuses a **bare** mdi
-name and only trusts the `microsoft-` / `adobe-` prefixed families.
+⚠️ **`candidates()` does NOT produce the winning name today, and the reason is
+easy to miss.** It appends the `microsoft-` / `adobe-` prefixes to whatever it is
+given, so a display name that already carries the prefix comes out doubled:
+`candidates("Microsoft Word")` → `mdi:microsoft-microsoft-word`. The measured win
+above used `kebab()` directly. **A display name needs the BARE mdi form**, which
+is exactly the form the module's existing rule refuses.
 
-**So the display name is tried as a Simple Icons candidate and as a prefixed-mdi
-candidate, never as a bare mdi one** — the same rule the executable name already
-follows, applied to a better key. No new configuration, and no genericity
-heuristic to tune.
+✅ **The rule that admits it without the generic trap is "multi-segment only":
+take the bare mdi name only when `kebab()` yields a hyphenated one.** Measured,
+2026-09-15, over 14 real display names and 10 generic ones:
+
+| | result |
+|---|---|
+| wins resolved | **13 / 14** — every `microsoft-*`, `visual-studio-code`, `adobe-acrobat`, plus LibreOffice / VLC / OBS via Simple Icons |
+| generic names that resolved to a wrong icon | **1 / 10** |
+
+The one loss is **PowerShell**: `si:powershell` is 404 and `mdi:powershell` has no
+hyphen, so it is refused. It costs nothing in practice — `pwsh.exe` has an icon
+resource, and the OS icon is the FIRST source.
+
+⚠️ **The one leak falsifies a claim made earlier in this document.** "Simple Icons
+is brand-only, so it rejects generic words by construction" is **not true**:
+`si:help`, `si:portal` and `si:texteditor` are 404, but **`si:files` is 200**, so
+GNOME Files would get some unrelated brand's mark. Brand-only is a strong
+tendency, not a guarantee, and no hyphen rule can help — the leak is on the
+Simple Icons side. Treat it as residual risk to measure again with a wider
+generic sample, not as a solved problem.
 
 ### B.3 The resolution order
 
@@ -304,9 +320,22 @@ Each phase ends with something demonstrable; nothing depends on hardware until E
   the old work is never at risk and is the thing E4 ports from. (The git proxy
   refuses `refs/tags/*` from a web session, so an open branch is the only safety
   net available.)
-* **E1 — the OS display name.** `_desktop_name()`, `name_from_pe()`,
-  `_macos_name()`; `os_app_icon.app_identity(pid, name) -> (icon_bytes, display_name)`.
-  Extend `tools/os_icon_probe.py` to print both. **Checkable on Linux here.**
+* **E1 — the OS display name.** ✅ Done. `AppIdentity(icon, icon_path, names)`
+  from one resolution per platform, so the mark and the caption cannot describe
+  two different applications; `version_strings()` / `names_from_pe()` reach
+  `RT_VERSION` with the resource walker that already existed. `os_icon_probe.py`
+  prints the names and what each would resolve to. 17 tests where the module had
+  none, mutation-swept 8/8.
+  * ⚠️ **Found while doing it: `_linux_icon_name` picked the WRONG desktop entry
+    for Mousepad.** `org.xfce.mousepad.desktop` and
+    `org.xfce.mousepad-settings.desktop` share an `Exec` stem *and* an `Icon=`,
+    so readdir order decided and the settings dialog won — invisible for as long
+    as only the icon was read. Fixed with a reverse-DNS rank above the `Exec`
+    one, which also resolves `org.gnome.gedit` for a window calling itself
+    `gedit` with no `/proc` lookup at all.
+  * ⚠️ **Still unverified: the Windows and macOS READS.** The parse is tested
+    against a synthetic linker-shaped blob; whether a real `WINWORD.EXE` carries
+    a usable `FileDescription` is what the probe is for.
 * **E2 — resolution order (B.3).** OS icon first, catalog on the display name
   second, nothing third. Delete `app_icons.yaml` and the slug map in the same
   commit, so there is never a state where both paths exist.
