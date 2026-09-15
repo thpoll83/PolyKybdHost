@@ -194,8 +194,11 @@ def dither_ink(image, box: int):
     small = np.asarray(ink).astype(np.float32) / 255.0
     fd.apply_adjustments(small, fd.DitherOpts(**DITHER_ADJUST))
     h, w = small.shape
+    # ⚠️ `_Bits` is reached for because it is the only bit buffer `dither()`
+    # accepts and the module exposes no public constructor; the dither itself
+    # goes through the public entry point.
     bits = fd._Bits(h * w)
-    fd._fs(small, bits)
+    fd.dither(small, fd.DITHER_FLOYD_STEINBERG, bits)
     return np.array([bits.get(i) for i in range(h * w)],
                     dtype=bool).reshape(h, w)
 
