@@ -8,7 +8,11 @@ any of it is checkable off Windows.
 """
 import struct
 import unittest
-from unittest import mock
+# ⚠️ Mock is reached by a plain import, not by the repo's prevailing
+# import-from idiom (28 test files use that). Mixing the two forms for one
+# module trips CodeQL's py/import-and-import-from, which reports on changed
+# code -- so the existing files are unflagged and a new one is not.
+import unittest.mock as mock
 
 from polyhost.services import os_app_icon as osi
 
