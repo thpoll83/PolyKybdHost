@@ -175,6 +175,48 @@ class DesktopEntryTest(unittest.TestCase):
             self.assertEqual(osi._linux_entry("/usr/bin/thing", "")["Name"], "Has Icon")
 
 
+class WindowsExeTest(unittest.TestCase):
+
+    def test_off_windows_it_returns_empty_rather_than_raising(self):
+        # The whole module is a cosmetic lookup: a failure must never reach the
+        # overlay send. Off Windows `ctypes.WinDLL` does not exist at all, so
+        # this is the path every non-Windows run takes.
+        self.assertEqual(osi._windows_exe(1), "")
+
+    def test_the_handle_is_bound_as_a_HANDLE_not_an_int(self):
+        # ⚠️ The bug this pins is invisible in practice: with no explicit
+        # restype ctypes returns OpenProcess's HANDLE as c_int and truncates it
+        # on 64-bit, so CloseHandle closes the wrong thing. Windows hands out
+        # small handles, so it looks fine until it does not -- and this path has
+        # never run on Windows at all.
+        recorded = {}
+
+        class FakeFunc:
+            def __init__(self, name, result):
+                self.name, self.result = name, result
+                self.argtypes = self.restype = None
+
+            def __call__(self, *args):
+                recorded.setdefault("calls", []).append(self.name)
+                return self.result
+
+        class FakeKernel32:
+            def __init__(self):
+                self._f = {"OpenProcess": FakeFunc("OpenProcess", 0)}
+
+            def __getattr__(self, name):
+                return self._f.setdefault(name, FakeFunc(name, 0))
+
+        fake = FakeKernel32()
+        import ctypes
+        with mock.patch.object(ctypes, "WinDLL", create=True,
+                               side_effect=lambda *a, **k: fake):
+            osi._windows_exe(1)
+        self.assertIsNotNone(fake._f["OpenProcess"].restype,
+                             "OpenProcess must declare its HANDLE restype")
+        self.assertIsNotNone(fake._f["OpenProcess"].argtypes)
+
+
 class AppIdentityTest(unittest.TestCase):
 
     def test_an_unsupported_platform_is_an_EMPTY_identity_not_None(self):
