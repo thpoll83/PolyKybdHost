@@ -42,6 +42,16 @@ and relative links were adjusted to suit a standalone file.
   skill**, mirrored in both repos. Load it when you are actually triaging a PR;
   it is ~51 KB that does not belong in every session's context.
 
+- ⚠️ **An image is INVISIBLE to the reviewers, so *"that asset is not present in the
+  repository"* on a `.png` is structurally false — every time.** CodeRabbit names the
+  filter outright in its own comment (`⛔ Files ignored due to path filters (1) …
+  is excluded by `!**/*.png``), and Sourcery behaves the same way: on docs#79
+  (2026-09-14) it raised the missing-asset finding against
+  `tray-menu-forwarder.png` while the commit adding it, `Bin 0 -> 15878 bytes`, sat
+  in the same PR and the build emitted its WebP. The reviewer sees a markdown
+  reference and no file, and reports the only thing that shape can mean. **Reply
+  with the adding commit and that path-filter line**; never "fix" it by re-adding an
+  image that is already there.
 - **A reviewer's CONCLUSION can be sound while its EVIDENCE is invented — and the
   evidence is worth correcting separately.** The existing rule above says verify and
   decline the false ones. The 2026-08-23 round on PolyKybd#35 sharpened it: **3 of 4
