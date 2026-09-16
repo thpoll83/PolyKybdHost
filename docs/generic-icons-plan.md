@@ -362,9 +362,24 @@ Each phase ends with something demonstrable; nothing depends on hardware until E
   * ⚠️ **Still unverified: the Windows and macOS READS.** The parse is tested
     against a synthetic linker-shaped blob; whether a real `WINWORD.EXE` carries
     a usable `FileDescription` is what the probe is for.
-* **E2 — resolution order (B.3).** OS icon first, catalog on the display name
-  second, nothing third. Delete `app_icons.yaml` and the slug map in the same
-  commit, so there is never a state where both paths exist.
+* **E2 — resolution order (B.3).** ✅ Done. `program_overlay` reads the OS icon
+  first and falls through to the catalog only when there is none or it scores
+  below `MIN_SCORE`; the catalog is keyed on the display names, then on the
+  executable name. `app_icons.yaml` was never ported to this branch and
+  `slug_map_path` / `load_slug_map` / `slug_for` are gone, so the two paths never
+  coexisted. 11 tests, mutation-swept 8/8 (including the order reversal itself
+  and the `MIN_SCORE` gate).
+  * **It takes an `AppIdentity`, not a pid**, which is what makes E1's "one
+    resolution" real: `program_overlay(app_name, identity, …)` reads the icon and
+    the display names out of the same lookup, so the mark and whatever captions
+    it cannot describe two applications — and on Windows that lookup opens the
+    process and parses its resources, which is not a thing to do twice per window
+    change. `identity=None` degrades to the executable name alone.
+  * **Driven end to end on this container**: `mousepad` resolves `os:org.xfce.
+    mousepad.png` (206 ink px — the E1 desktop-entry fix holding), `gedit`'s OS
+    icon scores under the gate and falls through as designed, and
+    `libreoffice-writer` reaches `si:libreofficewriter` (1019 px) with no map
+    entry of any kind.
 * **E3 — ESC on all nine variants (Part C).** Device-layer modifier-invariance
   first, then the converter. A test that asserts one pool slot and nine mappings.
 * **E4 — port the shortcut half** from the tag, unchanged.

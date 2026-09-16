@@ -29,12 +29,16 @@ as monochrome single-path 24x24 glyphs, i.e. the same shape this renderer alread
 consumes. Rendered at 40x40 1-bit they read BETTER than several Simple Icons
 marks, because they are drawn for small monochrome use in the first place.
 
-Simple Icons is still tried FIRST: it is the real brand mark where it exists,
-and mdi's version is an interpretation of it. Adobe stays mostly uncovered (mdi
-has `adobe` and `adobe-acrobat` and nothing else), and the route that would close
-the remainder is the OS's OWN icon for the running process (the exe's resource
-icon on Windows, the `.desktop`/hicolor theme on Linux, the bundle's `.icns` on
-macOS) -- always exact, no catalog, and a per-platform lift nobody has taken yet.
+Between the two catalogs Simple Icons is tried FIRST: it is the real brand mark
+where it exists, and mdi's version is an interpretation of it. Adobe stays mostly
+uncovered (mdi has `adobe` and `adobe-acrobat` and nothing else).
+
+⚠️ **But NEITHER catalog is asked first any more.** The OS's own icon for the
+running process (`os_app_icon` -- the exe's resource icon on Windows, the
+`.desktop`/hicolor theme on Linux, the bundle's `.icns` on macOS) is exact by
+construction, so `program_overlay` reads that and only falls through to a catalog
+when it is missing or does not survive 1-bit. What makes that order safe is
+`icon_binarise.MIN_SCORE`; see `program_overlay`.
 
 Geometry: the mark occupies the RIGHT-HAND 38x38 SQUARE of the panel and the
 left 34 px stay the legend's. The CEILING is arithmetic, not taste: ESC (U+238B)
@@ -151,8 +155,8 @@ def normalise(app_name: str) -> str:
     every non-alphanumeric, so the same reduction applied to an executable name
     lands on the slug whenever the two agree ("Inkscape" -> `inkscape`).
 
-    Three reductions before that, each measured against the shipped mapping's
-    own app names rather than invented:
+    Three reductions before that, each measured against real application names
+    rather than invented:
 
     * a reverse-DNS application id keeps only its last component, so the Linux
       desktop/flatpak ids `org.gimp.GIMP` and `org.inkscape.Inkscape` resolve at
@@ -189,37 +193,57 @@ def kebab(app_name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name).strip("-")
 
 
-def candidates(app_name: str, mapping: dict | None = None) -> list:
+def candidates(app_name: str, names=()) -> list:
     """Qualified `source:name` icons to try, in order, for one application.
 
-    Empty when the app is suppressed or unnameable. The list is a preference
-    order, not a set of equals: Simple Icons carries the real brand mark where it
-    has one, so it is asked first and mdi only fills what it refuses.
+    `names` are the application's OS-reported DISPLAY names, best first (see
+    `os_app_icon.display_names`). They are tried BEFORE the executable name
+    because they are a far better key: `kebab("Microsoft Word")` is mdi's own
+    `microsoft-word`, which `winword` can never reach. Measured over 16
+    realistic display names, 14 resolve with no map at all.
+
+    The list is a preference order, not a set of equals -- Simple Icons carries
+    the real brand mark where it has one, and mdi's is an interpretation of it.
+
+    ⚠️ There is NO name->slug map any more, deliberately. 70 hand-written
+    entries bought 73% coverage over 151 probed names and made every unheard-of
+    application a 71st entry; `docs/generic-icons-plan.md` has the measurement
+    and the reversal.
     """
-    if not app_name:
-        return []
-    mapping = load_slug_map() if mapping is None else mapping
-    key = app_name.strip().lower()
-    for probe in (key, normalise(app_name)):
-        if probe in mapping:
-            value = mapping[probe]
-            return [] if value is None else [qualify(value)]
     out = []
+
+    def offer(value):
+        if value and value not in out:
+            out.append(value)
+
+    for display in names:
+        slug = normalise(display)
+        if slug:
+            offer(f"si:{slug}")
+        stem = kebab(display)
+        # ⚠️ The BARE mdi name is admitted for a display name ONLY when it is
+        # MULTI-SEGMENT, and that hyphen is the whole safety rule. mdi is 7400
+        # icons of which most are generic UI symbols, so a bare hit is not
+        # evidence of a brand -- and a display name fails in exactly that
+        # direction: measured on a stock container, `yelp` reports "Help" and
+        # `xdg-desktop-portal-gtk` reports "Portal", while `mdi:help` and
+        # `mdi:settings` both return 200. Requiring a hyphen keeps
+        # `microsoft-word` and `visual-studio-code` and refuses those.
+        # Measured: 13/14 of the real names still resolve, 1/10 generic ones leak.
+        if "-" in stem:
+            offer(f"mdi:{stem}")
+
     guess = normalise(app_name)
     if guess:
-        out.append(f"si:{guess}")
+        offer(f"si:{guess}")
     stem = kebab(app_name)
     if stem:
-        # ⚠️ The BARE mdi stem is deliberately NOT tried. mdi is 7400 icons of
-        # which most are generic UI symbols, so a bare hit is not evidence of a
-        # brand: `code` resolves to a generic `</>` glyph, which on VS Code is a
-        # wrong icon by this module's own rule. Measured, it would gain four apps
-        # on a 151-app list and one of the four would be wrong. The prefixed
-        # forms carry no such risk (every stem behind them is a product name),
-        # and the handful of real brands mdi holds under a bare name get an
-        # explicit map entry instead -- curated, and unable to go stale into
-        # something wrong.
-        out += [f"mdi:{prefix}{stem}" for prefix in MDI_PREFIXES]
+        # For the EXECUTABLE name the bare mdi form stays refused outright --
+        # it has none of the display name's multi-word structure to lean on, so
+        # `code` would resolve to a generic `</>` glyph. Only the provably-brand
+        # prefixed families are guessed; every stem behind them is a product name.
+        for prefix in MDI_PREFIXES:
+            offer(f"mdi:{prefix}{stem}")
     return out
 
 
@@ -235,53 +259,6 @@ def qualify(name: str) -> str:
 def split_name(qualified: str) -> tuple:
     source, _, name = qualify(qualified).partition(":")
     return source, name
-
-
-def slug_map_path() -> str:
-    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                        "res", "app_icons.yaml")
-
-
-def load_slug_map(path: str | None = None) -> dict:
-    """app name -> slug, or -> None for "never guess for this one".
-
-    Returns {} rather than raising: a broken map must cost the icons, never the
-    overlay send that asks for them.
-    """
-    try:
-        import yaml
-        with open(path or slug_map_path(), encoding="utf-8") as fh:
-            data = yaml.safe_load(fh) or {}
-    except Exception:
-        return {}
-    out = {}
-    for key, value in data.items():
-        for part in str(key).split(","):
-            part = part.strip().lower()
-            if part:
-                out[part] = None if value is None else str(value).strip().lower()
-    return out
-
-
-def slug_for(app_name: str, mapping: dict | None = None) -> str | None:
-    """The catalog slug for an application, or None to draw no icon.
-
-    ⚠️ NO FUZZY MATCHING, here or anywhere downstream. A slug is an exact
-    identifier and a *wrong* logo is worse than a missing one -- Krita on a KiCad
-    window is a bug the user cannot explain, while an absent icon is self-evident
-    and lands in the curation file. The explicit map wins; otherwise the guess
-    above is offered and the catalog's own 404 is what rejects it.
-    """
-    if not app_name:
-        return None
-    mapping = load_slug_map() if mapping is None else mapping
-    key = app_name.strip().lower()
-    if key in mapping:
-        return mapping[key]                     # may be None: suppressed
-    guess = normalise(app_name)
-    if guess in mapping:
-        return mapping[guess]
-    return guess or None
 
 
 def _is_svg(data: bytes) -> bool:
@@ -352,9 +329,9 @@ def fetch_icon(slug: str, cache_dir: str | None = None,
 def title_of(svg_path: str) -> str | None:
     """The brand name the catalog gives this mark, from the SVG's own <title>.
 
-    Worth logging beside the slug: it is the only thing that would show a guess
-    having landed on the wrong brand, which is the failure `slug_for` refuses to
-    risk and cannot detect by itself.
+    Worth logging beside the slug: with no curated map left, a guess landing on
+    the wrong BRAND is the one failure the 404 cannot reject for us, and the
+    title is the only thing that would show it.
     """
     try:
         with open(svg_path, encoding="utf-8") as fh:
@@ -523,47 +500,56 @@ def render_os_overlay(data: bytes, box: int = PROGRAM_ICON_BOX):
     return mask, conversion, score
 
 
-def program_overlay(app_name: str, mapping: dict | None = None,
-                    cache_dir: str | None = None,
-                    allow_network: bool | None = None,
-                    pid=None):
+def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
+                    allow_network: bool | None = None):
     """(mask, source name) for the focused app, or (None, first candidate).
 
-    TWO sources, in this order, and the order is the point:
+    TWO sources, and the ORDER REVERSED in E2 (see
+    `docs/generic-icons-plan.md` B.3):
 
-    1. the **monochrome catalog** (Simple Icons, then mdi), keyed on a slug
-       derived from the app name. These are drawn as one path for small
-       monochrome use, so a 1-bit 38x38 render is what they were made for;
-    2. the app's **own icon, from the OS** (`os_app_icon`), read through
-       `icon_binarise`. Always the right picture by construction -- no guessing
-       -- but full-colour art that has to be thresholded, and measurably not all
-       of it survives that (a smooth gradient with no two-tone structure has no
-       good 1-bit reading, which is what `MIN_SCORE` refuses).
+    1. the app's **own icon, from the OS** -- `identity.icon`, read through
+       `icon_binarise`. Exact by construction: no name matching, no network,
+       nothing to guess wrong, which is why it now goes first;
+    2. the **monochrome catalog** (Simple Icons, then mdi), keyed on the
+       OS-reported DISPLAY names and then the executable name.
 
-    ⚠️ Catalog FIRST even though the OS icon is the more certain identification,
-    because certainty is not the scarce thing here -- legibility is. A wrong
-    mark and an unreadable one cost the user the same, and the catalog art
-    cannot be unreadable. The OS is what covers the long tail the catalog has
-    never heard of, which is most of what a real desktop runs.
+    ⚠️ The catalog used to be asked FIRST, and the reason was legibility rather
+    than certainty: catalog art is one path drawn for small monochrome use and
+    cannot be unreadable, while an OS icon is full-colour art that has to
+    survive thresholding and measurably not all of it does. **That reasoning
+    still holds -- what makes the reversal safe is `MIN_SCORE`**, which refuses
+    a bad 1-bit reading and falls through to the catalog instead of drawing a
+    blob. Do not remove that gate; it is the only thing standing between
+    OS-first and a keycap full of mush.
+
+    ⚠️ It takes the resolved `AppIdentity`, **not a pid**, deliberately. The icon
+    and the display names come out of one `os_app_icon.app_identity()` call so
+    the mark and whatever the caller captions it with cannot describe two
+    different applications -- and on Windows that lookup opens the process and
+    reads its resources, which is not a thing to do twice per window change.
+    `identity=None` is the honest degradation for a caller that has no pid: only
+    the executable name reaches the catalog.
 
     A name comes back either way so a caller can say which app it failed for.
     """
-    for name in candidates(app_name, mapping):
+    names = getattr(identity, "names", ()) or ()
+    icon = getattr(identity, "icon", None)
+    if icon:
+        mask, conversion, score = render_os_overlay(icon)
+        source = getattr(identity, "icon_path", "") or ""
+        if mask is not None and score >= icon_binarise.MIN_SCORE:
+            log.debug("Program mark for %s from the OS (%s, %s, score %.2f)",
+                      app_name, source, conversion, score)
+            return mask, "os:" + os.path.basename(source)
+        log.debug("The OS icon for %s does not survive 1-bit (score %.2f) -- "
+                  "falling through to the catalog", app_name, score)
+
+    tried = candidates(app_name, names)
+    for name in tried:
         path = fetch_icon(name, cache_dir, allow_network)
         if not path:
             continue
         mask = render_overlay(path)
         if mask is not None:
             return mask, name
-    found = os_app_icon.icon_bytes(pid, app_name) if pid is not None else None
-    if found:
-        data, source = found
-        mask, conversion, score = render_os_overlay(data)
-        if mask is not None and score >= icon_binarise.MIN_SCORE:
-            log.debug("Program mark for %s from the OS (%s, %s, score %.2f)",
-                      app_name, source, conversion, score)
-            return mask, "os:" + os.path.basename(source)
-        log.debug("The OS icon for %s does not survive 1-bit (score %.2f)",
-                  app_name, score)
-    first = candidates(app_name, mapping)
-    return None, (first[0] if first else None)
+    return None, (tried[0] if tried else None)
