@@ -311,6 +311,32 @@ stays open and untouched as the source to port from. Measured against
 
 ---
 
+## Part D.1 — one Win32 binding, not two
+
+⚠️ **`services/os_app_icon._windows_exe()` and `handler/win_process.py`
+independently bind the same three Win32 calls** — `OpenProcess`,
+`QueryFullProcessImageNameW`, `CloseHandle` — with the same
+`PROCESS_QUERY_LIMITED_INFORMATION` constant and the same 32768 buffer. They
+differ only at the ends: `win_process` starts from an HWND and returns the
+basename, `os_app_icon` starts from a PID and returns the full path. The shared
+middle is "PID → full image path".
+
+`win_process.py` arrived on `main` with PR #238 (`fix(windows): resolve the
+focused app's name without WMI`), after this branch was cut, so this is a
+collision neither side could have seen. **It caught a real defect here**: the
+copy in `os_app_icon` set no `argtypes`/`restypes`, so ctypes returned
+`OpenProcess`'s HANDLE as `c_int` and truncated it on 64-bit. Fixed in place,
+and pinned by a test that fails when the `restype` is removed.
+
+⚠️ **Fixing the duplication is NOT part of this PR.** Unifying them means moving
+the loader somewhere a service and a handler may both import, and a service
+importing a handler is backwards. That is a change to code this branch does not
+own, on a layering question worth deciding on its own. Do it separately — and
+note the repo has been bitten by exactly this before: five pieces of plumbing
+are shared implementations *because* a hand-written copy had already drifted.
+
+---
+
 ## Part E — work breakdown
 
 Each phase ends with something demonstrable; nothing depends on hardware until E4.

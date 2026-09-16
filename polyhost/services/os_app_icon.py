@@ -300,18 +300,47 @@ _RT_GROUP_ICON = 14
 
 
 def _windows_exe(pid) -> str:
-    """The full image path of a running process, or ""."""
+    """The full image path of a running process, or "".
+
+    ⚠️ **The arg/restypes are load-bearing, not decoration.** `OpenProcess`
+    returns a HANDLE; with no explicit `restype` ctypes defaults to `c_int` and
+    TRUNCATES it on 64-bit, so `CloseHandle` then closes the wrong thing or
+    nothing at all. Handles are usually small enough that it appears to work,
+    which is what makes it a latent bug rather than an obvious one -- and this
+    path has never run on Windows, so "it seems fine" is not evidence.
+
+    ⚠️ Spelled `import ctypes.wintypes`, not `from ctypes import wintypes`, so
+    the module is imported one way only (CodeQL py/import-and-import-from), and
+    imported lazily because `ctypes.wintypes` raises off Windows.
+
+    ⚠️ This duplicates the binding in `handler/win_process.py`, which resolves
+    the same thing from an HWND. Two hand-written copies of one Win32 binding is
+    the shape this repo has already been bitten by; unifying them means moving
+    the loader somewhere both a service and a handler may import, which is its
+    own change -- see `docs/generic-icons-plan.md`.
+    """
     try:
         import ctypes
         import ctypes.wintypes
+        wintypes = ctypes.wintypes
         PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL,
+                                         wintypes.DWORD]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.QueryFullProcessImageNameW.argtypes = [
+            wintypes.HANDLE, wintypes.DWORD, wintypes.LPWSTR,
+            ctypes.POINTER(wintypes.DWORD)]
+        kernel32.QueryFullProcessImageNameW.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+
         handle = kernel32.OpenProcess(
             PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
         if not handle:
             return ""
         try:
-            size = ctypes.wintypes.DWORD(32768)
+            size = wintypes.DWORD(32768)
             buffer = ctypes.create_unicode_buffer(size.value)
             if not kernel32.QueryFullProcessImageNameW(
                     handle, 0, buffer, ctypes.byref(size)):
