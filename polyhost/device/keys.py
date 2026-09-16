@@ -38,6 +38,19 @@ class Modifier(Enum):
 # upload and the mapping send drop anything above this on an older device.
 LEGACY_MAX_MODIFIER_VALUE = Modifier.GUI_KEY.value
 
+# The modifier slot of an MRU content key for an image that is the SAME under
+# every modifier -- the generic program mark, which a template-covered app draws
+# on every channel and which must therefore not vanish when a modifier is held.
+# Keying it per variant would allocate one pool slot per variant for identical
+# bytes; keying it once means one upload and N mapping entries, which is what
+# `display_to_pool` is shaped for (N display indices may point at one slot).
+#
+# ⚠️ It is NEGATIVE so it can never collide with a real `Modifier.value`, and a
+# consumer that indexes a list by it must range-check rather than truncate --
+# Python would silently hand back the LAST name for -1. Only the MRU inspector
+# reads it, and it checks.
+MODIFIER_ANY = -1
+
 
 def keycode_to_mapping_idx(key_enum):
     return (key_enum.value - KeyCode.KC_LEFT_CTRL.value + 82) if (key_enum.value > KeyCode.KC_APPLICATION.value) else (
@@ -265,3 +278,27 @@ class KeyCode(Enum):
     KC_RIGHT_SHIFT = 0x00E5
     KC_RIGHT_ALT = 0x00E6
     KC_RIGHT_GUI = 0x00E7
+
+
+def describe_key(keycode: int, modifier) -> str:
+    """`ESC` / `Ctrl+Shift+B` — a keycap named the way a log reader expects.
+
+    Used by the overlay-send summary, where the whole point is answering "which
+    keys did that just draw on" without decoding hex.
+    """
+    try:
+        name = KeyCode(keycode).name
+    except ValueError:
+        # An unknown keycode still has known MODIFIERS -- returning the bare hex
+        # here would describe a Ctrl+x cell as a plain one, which is the summary
+        # saying something false rather than something incomplete.
+        name = f"0x{keycode:02X}"
+    else:
+        name = name[3:] if name.startswith("KC_") else name
+        name = {"ESCAPE": "ESC", "SPACE": "SPC"}.get(name, name)
+    value = getattr(modifier, "value", modifier)
+    if not value:
+        return name
+    parts = [label for bit, label in ((1, "Ctrl"), (2, "Shift"), (4, "Alt"), (8, "GUI"))
+             if value & bit]
+    return "+".join(parts + [name]) if parts else name
