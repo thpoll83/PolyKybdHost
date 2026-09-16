@@ -269,3 +269,82 @@ class PostTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LinuxWindowStackFieldsTest(unittest.TestCase):
+    """schema 2: session / desktop / window_backend.
+
+    These exist to answer "which window-tracking code path are installs
+    actually on", which `os` alone cannot: the pywinctl branch in
+    active_window.py is the `else` arm, so it carries Windows, macOS and
+    Linux-X11 together.
+
+    Every assertion here is really about the same rule — a value we did not
+    name is reported as "other" or "", never in its own spelling. The two
+    env-derived fields are free text on the user's machine
+    (`XDG_CURRENT_DESKTOP` is "ubuntu:GNOME" on Ubuntu, and a custom session
+    can set anything), and a column the collector accepts is kept forever.
+    """
+
+    def _payload(self, platform="linux", env=None, status=None):
+        with mock.patch.object(telemetry.sys, "platform", platform), \
+             mock.patch.dict(telemetry.os.environ, env or {}, clear=True):
+            return telemetry.build_payload("abc", "daemon", status, None, None)
+
+    def test_known_session_and_desktop_are_reported(self):
+        p = self._payload(env={"XDG_SESSION_TYPE": "x11",
+                               "XDG_CURRENT_DESKTOP": "XFCE"})
+        self.assertEqual(p["session"], "x11")
+        self.assertEqual(p["desktop"], "xfce")
+
+    def test_distro_prefix_is_stripped(self):
+        # Ubuntu sets "ubuntu:GNOME"; the desktop is the LAST component.
+        p = self._payload(env={"XDG_CURRENT_DESKTOP": "ubuntu:GNOME"})
+        self.assertEqual(p["desktop"], "gnome")
+
+    def test_an_unknown_desktop_is_bucketed_not_forwarded(self):
+        p = self._payload(env={"XDG_SESSION_TYPE": "mir",
+                               "XDG_CURRENT_DESKTOP": "MyCorp-Secret-Shell"})
+        self.assertEqual(p["session"], "other")
+        self.assertEqual(p["desktop"], "other")
+        self.assertNotIn("MyCorp", json.dumps(p))
+        self.assertNotIn("mir", json.dumps(p))
+
+    def test_unset_env_reports_empty_not_other(self):
+        # "" means the install never told us; "other" means it did and we did
+        # not recognise the value. The dashboard shows them separately.
+        p = self._payload(env={})
+        self.assertEqual(p["session"], "")
+        self.assertEqual(p["desktop"], "")
+
+    def test_off_linux_the_env_is_never_read(self):
+        # A stray XDG_* on Windows (WSL, a Cygwin shell, a user's own export)
+        # must not be reported as though it described the desktop.
+        for plat in ("win32", "darwin"):
+            p = self._payload(plat, {"XDG_SESSION_TYPE": "x11",
+                                     "XDG_CURRENT_DESKTOP": "GNOME"})
+            self.assertEqual(p["session"], "", plat)
+            self.assertEqual(p["desktop"], "", plat)
+
+    def test_window_backend_comes_from_the_snapshot(self):
+        p = self._payload(status={"window_backend": "kde_win_reporter"})
+        self.assertEqual(p["window_backend"], "kde_win_reporter")
+
+    def test_an_unknown_window_backend_is_dropped(self):
+        # The backend set is closed by construction, so anything else means the
+        # snapshot is not what we think it is — report nothing rather than it.
+        p = self._payload(status={"window_backend": "/etc/passwd"})
+        self.assertEqual(p["window_backend"], "")
+
+    def test_a_missing_window_backend_is_empty(self):
+        # PolyCore leaves it "" when the handler import failed (headless / no
+        # display) — a daemon doing no window tracking at all.
+        self.assertEqual(self._payload(status={})["window_backend"], "")
+
+    def test_the_new_fields_are_in_the_frozen_key_set(self):
+        p = self._payload()
+        self.assertEqual(set(p), set(telemetry.PAYLOAD_KEYS))
+
+    def test_schema_was_bumped_for_them(self):
+        # The collector keys its column handling off this.
+        self.assertGreaterEqual(telemetry.PAYLOAD_SCHEMA, 2)

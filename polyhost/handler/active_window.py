@@ -9,6 +9,7 @@ from polyhost.handler.common import (
     TITLE, TITLE_SW, TITLE_EW, TITLE_HAS, URL, URL_HAS, FLAGS,
 )
 from polyhost.handler.remote_window import RemoteHandler
+from polyhost.handler.win_process import app_name_for
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
 _IS_WAYLAND = os.getenv("XDG_SESSION_TYPE") == "wayland"
@@ -247,7 +248,7 @@ class OverlayHandler:
                     if win.title == "PolyHost":
                         return None, OverlayCommand.NONE
                     try:
-                        raw_app_name = self.win.getAppName()
+                        raw_app_name = app_name_for(self.win)
                         self.log_win(raw_app_name)
                         if self.mapping:
                             found = False
