@@ -17,7 +17,7 @@
  */
 
 const MAX_BODY_BYTES = 8 * 1024;
-const SUPPORTED_SCHEMAS = new Set([1]);
+const SUPPORTED_SCHEMAS = new Set([1, 2]);
 
 // Field caps. A payload is machine-generated, so anything longer is either a
 // bug or an attempt to fill the database; truncating beats rejecting because a
@@ -27,6 +27,9 @@ const LIMITS = {
   host_version: 32,
   os: 32,
   os_release: 32,
+  session: 16,
+  desktop: 32,
+  window_backend: 32,
   arch: 32,
   python: 16,
   mode: 32,
@@ -36,6 +39,22 @@ const LIMITS = {
 };
 
 const str = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '');
+/** Accept only a known value. The host already buckets `session`/`desktop` and
+ *  picks `window_backend` from a closed set, but the body is untrusted input —
+ *  a host that skipped the bucketing (or a hand-rolled POST) must not be able
+ *  to write free text into a column we then keep forever. Anything unknown
+ *  lands as '' rather than rejecting the ping: one odd field should not cost
+ *  the whole day's row. */
+const oneOf = (v, allowed) => (typeof v === 'string' && allowed.has(v) ? v : '');
+const SESSIONS = new Set(['x11', 'wayland', 'other']);
+const DESKTOPS = new Set([
+  'gnome', 'kde', 'xfce', 'mate', 'cinnamon', 'lxqt', 'lxde', 'budgie',
+  'deepin', 'pantheon', 'unity', 'sway', 'hyprland', 'i3', 'river', 'niri',
+  'wlroots', 'other',
+]);
+const WINDOW_BACKENDS = new Set([
+  'pywinctl', 'kde_win_reporter', 'gnome_wayland_reporter',
+]);
 const int = (v) => (Number.isFinite(v) ? Math.trunc(v) : null);
 const bool = (v) => (v ? 1 : 0);
 
@@ -72,6 +91,12 @@ function toRow(payload, country, now) {
     host_protocol: int(payload.host_protocol),
     os: str(payload.os, LIMITS.os),
     os_release: str(payload.os_release, LIMITS.os_release),
+    // Schema 2+. A schema-1 host sends none of these; '' is the correct
+    // reading of "this install never told us", and is what the columns
+    // already hold for every row written before the migration.
+    session: oneOf(payload.session, SESSIONS),
+    desktop: oneOf(payload.desktop, DESKTOPS),
+    window_backend: oneOf(payload.window_backend, WINDOW_BACKENDS),
     arch: str(payload.arch, LIMITS.arch),
     python: str(payload.python, LIMITS.python),
     mode: str(payload.mode, LIMITS.mode),
@@ -89,10 +114,11 @@ function toRow(payload, country, now) {
 const INSERT = `
 INSERT OR IGNORE INTO ping (
   received_at, day, install_id, schema_version, country,
-  host_version, host_protocol, os, os_release, arch, python, mode,
+  host_version, host_protocol, os, os_release, session, desktop,
+  window_backend, arch, python, mode,
   device_present, device_connected, device_name, fw_version, device_protocol,
   hw_version, fontpack, counters, raw
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 export default {
   async fetch(request, env) {
@@ -147,7 +173,8 @@ export default {
       await env.DB.prepare(INSERT)
         .bind(
           row.received_at, row.day, row.install_id, row.schema_version, row.country,
-          row.host_version, row.host_protocol, row.os, row.os_release, row.arch,
+          row.host_version, row.host_protocol, row.os, row.os_release,
+          row.session, row.desktop, row.window_backend, row.arch,
           row.python, row.mode, row.device_present, row.device_connected,
           row.device_name, row.fw_version, row.device_protocol, row.hw_version,
           row.fontpack, row.counters, JSON.stringify(row),

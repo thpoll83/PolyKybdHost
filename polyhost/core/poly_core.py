@@ -224,6 +224,12 @@ class PolyCore(Observable):
         # sends still work.
         self.mapping = {}
         self.overlay_handler = None
+        # Which window-tracking backend active_window selected, for the
+        # telemetry census. "" while the handler has not been created, and
+        # STAYS "" when its import fails (headless, or no display) — which is
+        # the state worth seeing, since such a daemon does no window tracking
+        # at all and nothing else reports that.
+        self.window_backend = ""
         # Focused-browser active-tab URL, so overlays can key off the website
         # (browser web-apps defeat window-title matching). Fed by the browser
         # extension via the loopback report server below, and/or the macOS
@@ -442,7 +448,7 @@ class PolyCore(Observable):
 
     def _create_overlay_handler(self):
         try:
-            from polyhost.handler.active_window import OverlayHandler
+            from polyhost.handler.active_window import _BACKEND_NAME, OverlayHandler
             # url_provider lets the matcher key overlays off the focused
             # browser's website; None-safe (returns None for non-browsers / when
             # no reporter is present, so matching is unchanged without it).
@@ -452,6 +458,7 @@ class PolyCore(Observable):
                 self.mapping, url_provider=url_lookup,
                 enable_legacy_relay=bool(self.settings_get("dev_legacy_plaintext_relay")),
                 rpc_relay_enabled=bool(self.settings_get("window_report_network_enabled")))
+            self.window_backend = _BACKEND_NAME
         except Exception as e:
             # Headless / no display: pywinctl cannot load. Window-driven
             # overlay switching stays off; explicit sends still work.
@@ -1307,6 +1314,7 @@ class PolyCore(Observable):
             "hw_version": self.keeb.get_hw_version(),
             "current_lang": self.keeb.get_current_lang(),
             "host_version": __version__,
+            "window_backend": self.window_backend,
         }
 
     def list_languages(self):

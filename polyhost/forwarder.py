@@ -33,6 +33,7 @@ from polyhost.gui.log_viewer import LogViewerDialog
 from polyhost.handler.remote_window import TCP_PORT
 from polyhost.handler.browser_url_source import BrowserUrlSource
 from polyhost.handler.browser_url_source import SETTING_DEFAULTS as _URL_SETTINGS
+from polyhost.handler.win_process import app_name_for
 
 
 IS_PLASMA = os.getenv("XDG_CURRENT_DESKTOP") == "KDE"
@@ -729,7 +730,7 @@ class PolyForwarder(QApplication):
                 if self.last_update_msec > NEW_WINDOW_ACCEPT_TIME_MSEC:
                     #just to limit the time value:
                     self.last_update_msec = NEW_WINDOW_ACCEPT_TIME_MSEC * 2
-                    app_name = win.getAppName()
+                    app_name = app_name_for(win)
                     # None for every non-browser app, and for a browser whose
                     # extension report is stale/unfocused — so a URL can never
                     # linger onto the wrong window.
