@@ -24,12 +24,16 @@ CREATE TABLE IF NOT EXISTS ping (
   os               TEXT,
   os_release       TEXT,
   -- Linux window-stack census (schema 2+). '' on Windows/macOS, and '' for
-  -- every row a schema-1 host wrote, which is why the migration below adds
-  -- them with DEFAULT '' rather than leaving NULL: "never told us" and "told
-  -- us nothing" are the same answer here, and one of them breaks GROUP BY.
-  session          TEXT,                      -- x11 | wayland | other
-  desktop          TEXT,                      -- gnome | kde | xfce | ... | other
-  window_backend   TEXT,                      -- pywinctl | kde_win_reporter
+  -- every row a schema-1 host wrote: "never told us" and "told us nothing"
+  -- are the same answer here, and NULL for one of them breaks GROUP BY.
+  -- ⚠️ NOT NULL DEFAULT '' where the older columns above are plain nullable
+  -- TEXT. That is deliberate, not drift: these three MUST match what the
+  -- ALTER statements below already applied to the live table, or a database
+  -- built fresh from this file accepts NULLs that production rejects — and
+  -- the whole point of this file is to reproduce the live table.
+  session          TEXT NOT NULL DEFAULT '',  -- x11 | wayland | other
+  desktop          TEXT NOT NULL DEFAULT '',  -- gnome | kde | xfce | … | other
+  window_backend   TEXT NOT NULL DEFAULT '',  -- pywinctl | kde_win_reporter
                                               -- | gnome_wayland_reporter
   arch             TEXT,
   python           TEXT,
