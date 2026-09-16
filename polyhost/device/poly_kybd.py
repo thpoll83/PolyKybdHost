@@ -1390,12 +1390,16 @@ class PolyKybd:
                             else:
                                 time.sleep(DELAY_TIME_AFTER_MAX_MSG)
 
-        # hid_msg_counter counts ONLY image uploads (cache misses). A full cache
-        # hit is 0 here even though the mapping send (logged separately below)
-        # and enable_overlays still go over HID — that 0 is the MRU win, not a
-        # "nothing was sent". Word it so the log can't be misread.
-        self.log.info("MRU: %d image upload(s) (rest served from cache), "
-                      "%d display positions to map",
+        # hid_msg_counter counts HID MESSAGES, and only those carrying image
+        # data (cache misses) — one image is several. A full cache hit is 0 here
+        # even though the mapping send (logged separately below) and
+        # enable_overlays still go over HID; that 0 is the MRU win, not a
+        # "nothing was sent". ⚠️ Say "message(s)": the summary a few lines down
+        # counts KEYCAPS uploaded, so two adjacent lines both reading
+        # "N upload(s)" over different units read as a contradiction (measured
+        # on a real send: 4 here against 2 there).
+        self.log.info("MRU: %d HID message(s) of image data (rest served from "
+                      "cache), %d display positions to map",
                       hid_msg_counter, len(display_to_pool))
 
         # Re-check right before the commit: the token can flip after the last
@@ -1441,9 +1445,13 @@ class PolyKybd:
         # absence from this summary reads as "the icon was never fetched".
         # Field, 2026-09-10: the log showed a mark resolving and then said
         # nothing at all about where it went.
+        # ⚠️ Reported even when the source ALSO drew something, which the first
+        # version got wrong. Since E3 the program mark offers every modifier
+        # variant of ESC, so on a template-covered app it draws 15 and loses 1 --
+        # and "it lost the bare ESC to the template" is exactly the question a
+        # reader has when the keycap shows the hand-made design. Skipping a
+        # source that appears in `per_source` reported that as nothing at all.
         for filename, keys in (deferred or {}).items():
-            if filename in per_source:
-                continue
             self._log_source_line(filename, keys, " (deferred to the template)")
 
     def _log_source_line(self, filename: str, keys: list, suffix: str):
@@ -1452,11 +1460,28 @@ class PolyKybd:
         # came from the icon fall-back rather than from a hand-made template.
         import os
         name = filename if is_synthetic(filename) else os.path.basename(filename)
+        self.log.info("  %s: %s%s", name, self._describe_keys(keys), suffix)
+
+    def _describe_keys(self, keys: list) -> str:
+        """`ESC, S` / `ESC on 15 modifier variants` / `31 keycap(s)`.
+
+        ⚠️ The MIDDLE form exists because of E3 and a bare count is useless for
+        it. The program mark is ONE key on up to 16 variants, so the old
+        threshold turned it into "15 keycap(s)" -- which a reader cannot tell
+        apart from fifteen DIFFERENT keys, and the difference is the whole
+        behaviour of the feature. Spelling out "ESC, Ctrl+ESC, Shift+ESC, ..."
+        is no better; naming the key once and counting the variants is.
+        """
+        if not keys:
+            return "nothing"
+        distinct = {kc for kc, _ in keys}
+        if len(distinct) == 1 and len(keys) > 1:
+            from polyhost.device.keys import Modifier
+            return "%s on %d modifier variant(s)" % (
+                describe_key(next(iter(distinct)), Modifier.NO_MOD), len(keys))
         if len(keys) <= self.NAME_KEYS_UP_TO:
-            detail = ", ".join(describe_key(kc, mod) for kc, mod in keys)
-            self.log.info("  %s: %s%s", name, detail, suffix)
-        else:
-            self.log.info("  %s: %d keycap(s)%s", name, len(keys), suffix)
+            return ", ".join(describe_key(kc, mod) for kc, mod in keys)
+        return "%d keycap(s)" % len(keys)
 
     def execute_commands(self, command_list: list,
                          cancel: threading.Event | None = None) -> None:

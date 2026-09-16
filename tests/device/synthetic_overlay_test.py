@@ -160,6 +160,71 @@ class OnePoolSlotTest(unittest.TestCase):
         self.assertNotEqual(mapping[no_mod], mapping[ctrl])
 
 
+class SummaryLogTest(unittest.TestCase):
+    """What the log says about what just reached the keyboard.
+
+    This is the only record of where the generic mark went — the keycaps are the
+    other one, and they are on a desk somewhere.
+    """
+
+    def setUp(self):
+        self.keeb = _keeb()
+        self.lines = []
+        self.keeb.log = mock.MagicMock()
+        self.keeb.log.info.side_effect = lambda fmt, *a: self.lines.append(fmt % a)
+
+    def test_ONE_key_on_many_variants_NAMES_the_key(self):
+        # ⚠️ The E3 case, and a bare count is useless for it: the mark is one key
+        # on up to 16 variants, and "15 keycap(s)" cannot be told apart from
+        # fifteen DIFFERENT keys — which is the whole behaviour of the feature.
+        keys = [(ESC, m) for m in list(Modifier)[:15]]
+        self.keeb._log_source_line(syn.program_name("inkscape"), keys, "")
+        self.assertEqual(self.lines, ["  @prog:inkscape: ESC on 15 modifier variant(s)"])
+
+    def test_a_few_DIFFERENT_keys_are_still_spelled_out(self):
+        self.keeb._log_source_line("app.mods.png", [
+            (ESC, Modifier.NO_MOD), (KeyCode.KC_S.value, Modifier.CTRL)], "")
+        self.assertEqual(self.lines, ["  app.mods.png: ESC, Ctrl+S"])
+
+    def test_MANY_different_keys_fall_back_to_a_count(self):
+        # A template covers most of the board; listing it would bury the line.
+        keys = [(kc, Modifier.NO_MOD) for kc in range(4, 4 + 31)]
+        self.keeb._log_source_line("app.mods.png", keys, "")
+        self.assertIn("31 keycap(s)", self.lines[0])
+
+    def test_a_PARTIAL_deferral_is_reported_even_though_the_source_DREW(self):
+        # ⚠️ The first cut skipped any source present in `per_source`, so on a
+        # template-covered app the mark drawing 15 variants and losing the bare
+        # ESC was reported as drawing 15 and nothing else. "It lost ESC to the
+        # template" is exactly the question a reader has when the keycap shows
+        # the hand-made design instead of the app's own icon.
+        name = syn.program_name("inkscape")
+        self.keeb._log_overlay_summary(
+            per_source={name: [(ESC, Modifier.CTRL)]},
+            uploaded=1, mapped=1,
+            deferred={name: [(ESC, Modifier.NO_MOD)]})
+        self.assertTrue(any("deferred to the template" in line for line in self.lines),
+                        self.lines)
+
+    def test_a_source_that_drew_NOTHING_is_still_named(self):
+        # Its silent absence reads as "the icon was never fetched" (field, 2026-09-10).
+        name = syn.program_name("word")
+        self.keeb._log_overlay_summary(per_source={}, uploaded=0, mapped=0,
+                                       deferred={name: [(ESC, Modifier.NO_MOD)]})
+        self.assertTrue(any(name in line and "deferred" in line for line in self.lines),
+                        self.lines)
+
+    def test_the_two_adjacent_COUNTS_do_not_both_say_upload(self):
+        # ⚠️ `MRU: N ...` counts HID MESSAGES and `Overlays: ... N uploaded`
+        # counts KEYCAPS, so two adjacent lines both reading "N upload(s)" are a
+        # contradiction at a glance (measured on a real send: 4 against 2). This
+        # regressed once by porting the second line next to the older first one.
+        import inspect
+        source = inspect.getsource(type(self.keeb).send_overlays_mru)
+        self.assertIn("HID message(s) of image data", source)
+        self.assertNotIn("image upload(s)", source)
+
+
 class CacheKeyPairingTest(unittest.TestCase):
     """Each source is keyed under ITS OWN name."""
 
