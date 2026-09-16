@@ -383,8 +383,40 @@ Each phase ends with something demonstrable; nothing depends on hardware until E
 * **E3 — ESC on all nine variants (Part C).** Device-layer modifier-invariance
   first, then the converter. A test that asserts one pool slot and nine mappings.
 * **E4 — port the shortcut half** from the tag, unchanged.
-* **E5 — the fifth binarisation candidate** (FS over black) and re-score
-  mousepad / telegram / firefox.
+* **E5 — the fifth binarisation candidate** (FS over black). ✅ Done, and the
+  answer is **NO — do not add it.** It was implemented, scored and rendered
+  against every real icon on the dev container (9 LibreOffice marks, Mousepad,
+  the Debian spiral, the Ubuntu wordmark), and the measurement refutes the
+  proposal outright. Evidence sheet: [`images/binarise.png`](images/binarise.png).
+  * **It wins on score and loses on sight, which is the mousepad failure
+    repeated six times.** `dither_black` takes the top score on six icons —
+    math 0.879, base 0.829, writer 0.827, impress 0.715, calc 0.582, debian
+    0.633 — and on five of those the render it replaces is *clean line art*
+    (`adaptive`: math's crisp √x, writer's ruled lines, calc's spreadsheet
+    grid). What `dither_black` draws instead is a halftone field. Shipping it
+    would trade five good renders for speckle and gain nothing; debian is a wash.
+  * ⚠️ **It does NOT fix mousepad**, which is the thing E5 was for. `dither`
+    still wins there at 0.669 against `adaptive`'s 0.386, unchanged, and
+    `adaptive` is still visibly the better render. telegram and firefox are not
+    installed here, so their half is still unmeasured — but the proposal's
+    premise is already dead on the icons that ARE measurable.
+  * **The real defect is `score()`, and the obvious repair was TRIED and
+    refuted.** `detail = edges/lit` is near 1.0 for a dither field, because
+    every lit pixel in a halftone touches an unlit one — the term meant to
+    reward line art is maximised by texture. The separating term that suggests
+    itself is *cohesion* (the share of lit pixels with a lit 4-neighbour), on
+    the theory that a halftone is isolated pixels. **Measured: it does not
+    separate them** — 0.78–1.0 across every conversion and every icon, because
+    a Floyd–Steinberg field at ~50% density is not a checkerboard and its
+    pixels do touch. No term was shipped.
+  * **So the open question is unchanged and better stated**: `score()` cannot
+    tell halftone texture from detail, and the fix is not a fifth candidate and
+    not cohesion. ⚠️ Per `score()`'s own docstring, extend it by finding an icon
+    it gets wrong and adding the term that separates *that* — do not tune the
+    constants. The pixel pitch of the real panel is still in none of the four
+    repos, so whether a halftone reads as gray or as speckle on hardware
+    remains the one thing that would settle whether `dither` deserves its wins
+    at all.
 * **E6 — Windows + macOS.** `os_icon_probe` on a real machine. Until this runs,
   two of three platforms are untested and the docs must say so.
 

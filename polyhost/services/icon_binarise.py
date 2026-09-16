@@ -172,6 +172,17 @@ def dither_ink(image, box: int):
     ⚠️ Composited over WHITE, so ink is DARKNESS. Over black wins on some icons
     (math, telegram) but loses badly on others (draw, mousepad, ubuntu); one
     ground was chosen rather than adding a fifth candidate for a coin-flip.
+
+    ⚠️ **Offering BOTH grounds as scored candidates was tried and MEASURED
+    WORSE — do not re-propose it.** The reasoning is appealing (`choose()` picks
+    per icon, so why decide globally?) and the result is not: FS-over-black took
+    the top score on six of twelve real icons and on five of those replaced
+    clean `adaptive` line art with a halftone field. It scores well for the
+    reason it looks bad — `score()`'s `detail` term is `edges/lit`, which a
+    dither maximises because every lit pixel in a halftone touches an unlit one.
+    It also did NOT move mousepad, the regression it was proposed for. The sheet
+    is `docs/images/binarise.png`; the write-up is `docs/generic-icons-plan.md`
+    § E5, including the *cohesion* term that was tried next and also refuted.
     """
     try:
         import numpy as np
