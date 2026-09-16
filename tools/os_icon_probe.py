@@ -82,14 +82,34 @@ def main(argv=None) -> int:
     data = found
     print("source: %s (%d bytes)" % (source, len(data)))
     print("names:  %s" % (", ".join(names) or "(none)"))
-    for name in names:
-        print("  %-26s -> %s" % (name, ", ".join(app_icons.candidates(name)) or "-"))
+    # ⚠️ ONE call, with the names in the NAMES slot -- not one call per name with
+    # each in the app-name slot. That is how `app_icon_fetcher` calls it, and it
+    # is the only form that produces the bare `mdi:microsoft-word`: the hyphen
+    # rule admits a bare mdi name for a DISPLAY name and refuses it for an
+    # executable, so probing name-by-name would silently hide the exact
+    # mechanism this tool exists to verify.
+    tried = app_icons.candidates(args.app or os.path.basename(source), names)
+    print("catalog order:")
+    for name in tried:
+        print("    %s" % name)
+    if not tried:
+        print("    (nothing -- no catalog name could be derived)")
     mask, conversion, score = app_icons.render_os_overlay(data)
     if mask is None:
         print("no 1-bit reading survived")
         return 1
     verdict = "DRAWN" if score >= icon_binarise.MIN_SCORE else "REJECTED (too low)"
-    print("conversion: %s   score: %.2f   %s" % (conversion, score, verdict))
+    print("conversion: %s   score: %.2f   %s (gate %.2f)"
+          % (conversion, score, verdict, icon_binarise.MIN_SCORE))
+    # What the running app would actually do, which is the question E6 asks.
+    # The OS icon goes FIRST since E2, so a REJECTED reading here is not a
+    # failure -- it is the gate working, and the catalog gets its turn.
+    if score >= icon_binarise.MIN_SCORE:
+        print("=> the keycap would show THIS, the app's own icon")
+    elif tried:
+        print("=> the keycap would fall through to the catalog: %s" % tried[0])
+    else:
+        print("=> the keycap would show NOTHING (no OS reading, no catalog name)")
     for row in mask:
         print("".join("#" if value else "." for value in row))
     if args.save:

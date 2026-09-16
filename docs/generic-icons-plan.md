@@ -417,8 +417,55 @@ Each phase ends with something demonstrable; nothing depends on hardware until E
     repos, so whether a halftone reads as gray or as speckle on hardware
     remains the one thing that would settle whether `dither` deserves its wins
     at all.
-* **E6 — Windows + macOS.** `os_icon_probe` on a real machine. Until this runs,
-  two of three platforms are untested and the docs must say so.
+* **E6 — Windows + macOS.** ⚠️ **Only you can close this**, and it is the last
+  thing standing between this branch and "measured on every platform". Two of
+  three OS backends have never executed against a live application: the parse is
+  tested against a synthetic linker-shaped blob, which proves the arithmetic and
+  nothing about what a real `WINWORD.EXE` carries.
+
+  The probe is ready and the whole run is one command per app. **On Windows:**
+
+  ```
+  python tools/os_icon_probe.py "C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE"
+  python tools/os_icon_probe.py "C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE"
+  python tools/os_icon_probe.py "C:\Windows\System32\notepad.exe"
+  python tools/os_icon_probe.py <pid-of-a-running-app>          # the live path
+  ```
+
+  **On macOS:**
+
+  ```
+  python tools/os_icon_probe.py /Applications/Safari.app
+  python tools/os_icon_probe.py <pid-of-a-running-app>
+  ```
+
+  **What decides it is the `names:` line, not the picture.** B.2's resolution
+  half is measured (14/16 — given "Microsoft Word" the catalogs answer); its READ
+  half is the assumption. So:
+
+  * `names:` holding a **product name** ("Microsoft Word") ⇒ B.2 holds, and the
+    `catalog order:` block below it will show `mdi:microsoft-word`;
+  * `names:` holding a **sentence** (`Notepad++ : a free (GNU) source code
+    editor`) or the bare exe name (`pwsh`) ⇒ the documented reason both
+    `FileDescription` and `ProductName` are offered and the catalog's 404 does
+    the rejecting;
+  * `names: (none)` ⇒ B.2 does not hold on Windows and the feature falls back to
+    the executable name, which is the treadmill this exercise removed. That is
+    the one result that would change the design.
+
+  The last line says what the running app would do (`=> the keycap would ...`),
+  which is the answer in one line if the rest is too much.
+
+  ⚠️ **A `REJECTED (too low)` verdict is NOT a failure** — since E2 the OS icon
+  is tried first and the `MIN_SCORE` gate falling through to the catalog is the
+  gate working. The failure case is `names: (none)`.
+
+  ⚠️ **The probe itself had a defect until this commit, and it was the one that
+  matters here**: it called `candidates()` once per display name with the name in
+  the *executable* slot, which yields `mdi:microsoft-microsoft-word` and never
+  `mdi:microsoft-word` — so it would have reported Word as unresolvable while the
+  running app resolves it fine. The instrument was under-reporting the mechanism
+  it exists to measure. It now makes the single call `app_icon_fetcher` makes.
 
 ---
 
