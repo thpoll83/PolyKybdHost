@@ -17,7 +17,7 @@ from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType, GlyphScri
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
-from polyhost.device.keys import (KeyCode, Modifier, LEGACY_MAX_MODIFIER_VALUE,
+from polyhost.device.keys import (Modifier, LEGACY_MAX_MODIFIER_VALUE,
                                   MODIFIER_ANY, describe_key)
 from polyhost.device.synthetic_overlay import is_synthetic
 from polyhost.device.overlay_cache import OverlayMRUCache
