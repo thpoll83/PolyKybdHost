@@ -119,7 +119,12 @@ _SLUG_RE = re.compile(r"[^a-z0-9]")
 _VERSION_SUFFIX_RE = re.compile(r"[-_ ]?\d+(\.\d+)*$")
 _EXE_SUFFIX_RE = re.compile(r"\.(exe|app|bin)$")
 
-from polyhost.services import icon_binarise, os_app_icon
+# ⚠️ `os_app_icon` is deliberately NOT imported here. Since E2 this module
+# takes a resolved `AppIdentity` rather than a pid, so it needs nothing from
+# that module at all -- which is the sharper form of the boundary the
+# docstring describes: the lookup finds bytes, this side renders them, and
+# the dependency runs one way only (see `tools/os_icon_probe.py`).
+from polyhost.services import icon_binarise
 
 log = logging.getLogger("PolyHost")
 
