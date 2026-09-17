@@ -562,11 +562,26 @@ class PolyCore(Observable):
             self._app_icons = AppIconFetcher(on_ready=lambda slug: None)
         name, identity = handler.focused_app()
         if not name:
+            # ⚠️ Silent until 2026-09-17, and that cost a hardware round: with
+            # no line here and none from the fetcher (which only speaks once it
+            # has RESOLVED something), "no mark appeared" and "this code never
+            # ran" look identical in the log. debug_detailed because the tick
+            # runs continuously.
+            self.log.debug_detailed(
+                "No program mark: the handler names no focused app "
+                "(remote=%s)", handler.is_remote_mapping_entry())
             return
         # `identity` is set only for a FORWARDED window, where the other machine
         # already resolved it — see AppAwareHandler.focused_app.
         mask, slug = self._app_icons.overlay_for(name, identity=identity)
         if mask is None or not slug or slug == self._program_mark_on_device:
+            # A None mask is normal on the first sighting (the fetch was just
+            # queued) and the fetcher reports a real miss itself, so this stays
+            # at the detailed level -- it exists to prove the path RAN.
+            self.log.debug_detailed(
+                "No program mark for '%s' yet: mask=%s slug=%s on_device=%s "
+                "forwarded_identity=%s", name, mask is not None, slug,
+                self._program_mark_on_device, identity is not None)
             return
         self._send_program_mark(slug, mask)
 
