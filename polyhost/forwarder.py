@@ -474,8 +474,21 @@ class PolyForwarder(QApplication):
                 # Taken over the bytes we SEND, so the key names what the
                 # receiver actually holds.
                 ident["icon_key"] = hashlib.sha256(icon).hexdigest()[:16]
+                self.log.info(
+                    "App identity for %r: icon %s %d B (%d B on disk), key %s,"
+                    " names=%s", key, got.icon_path or "<no path>", len(icon),
+                    len(got.icon), ident["icon_key"],
+                    ", ".join(got.names) or "<none>")
         except Exception as e:
             self.log.debug("No OS identity for %r: %s", key, e)
+        if not ident.get("icon"):
+            # ⚠️ Said out loud because the keyboard machine cannot say it. When
+            # no icon travels, the daemon has only the names to work with and
+            # its log reports a CATALOG miss -- which reads as "the catalog is
+            # thin" when the real answer is that this machine never found an
+            # icon to send.
+            self.log.info("App identity for %r: no icon to send, names=%s",
+                          key, ", ".join(ident.get("names") or ()) or "<none>")
         self._identity_cache[key] = ident
         return ident
 

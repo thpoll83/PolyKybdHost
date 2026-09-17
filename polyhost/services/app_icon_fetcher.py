@@ -40,6 +40,49 @@ from polyhost.services import app_icons, os_app_icon
 IDLE_SECONDS = 30.0
 
 
+def _as_identity(given, app_name=""):
+    """A forwarded identity as an `AppIdentity`, whatever shape it arrived in.
+
+    ⚠️ THE FORWARDED ONE IS A DICT. It crosses the network as JSON-ish RPC
+    params, so `RemoteHandler` caches `{"names": (...), "icon": b"...",
+    "icon_key": "..."}` -- while every consumer reads an `AppIdentity` through
+    `getattr(identity, "names", ())`. A dict answers NEITHER attribute and
+    getattr hands back the default, so the whole identity was discarded in
+    silence: no icon, no names, and a daemon log reading `OS names: <none>` for
+    an app whose forwarder had just resolved it correctly. Nothing raised,
+    nothing warned, and the transport, the cache and the key were all working.
+
+    Reported 2026-09-17: gnome-terminal and the log window drew marks (they hit
+    the CATALOG on their app name and need no identity at all) while GNOME Text
+    Editor and VS Code did not -- the two that depend on a forwarded identity.
+
+    Raises on anything else rather than degrading: a silent getattr miss is
+    exactly what cost that round.
+    """
+    if given is None or isinstance(given, os_app_icon.AppIdentity):
+        return given
+    if isinstance(given, dict):
+        # ⚠️ A STAND-IN PATH, because the real one is on the other machine and
+        # the path is what names the mark. `program_overlay` returns
+        # `"os:" + basename(icon_path)`, so an empty path makes the slug a bare
+        # `"os:"` -- IDENTICAL for every forwarded app. `_maybe_send_program_mark`
+        # skips a slug already on the device, so switching from VS Code to Text
+        # Editor would leave VS Code's mark up and send nothing.
+        #
+        # The key is a content hash of the icon, so the slug also changes when
+        # the icon does -- a theme change re-draws instead of being deduped away.
+        path = given.get("icon_path", "")
+        if not path and given.get("icon"):
+            key = given.get("icon_key") or ""
+            path = "%s@%s" % (app_name or "forwarded", key[:12]) if key else app_name
+        return os_app_icon.AppIdentity(
+            icon=given.get("icon"),
+            icon_path=path,
+            names=tuple(given.get("names") or ()))
+    raise TypeError("a forwarded identity must be a dict or an AppIdentity, "
+                    "got %r" % (type(given).__name__,))
+
+
 class AppIconFetcher:
     """A small work queue over `app_icons`, with an in-memory result cache."""
 
@@ -103,7 +146,8 @@ class AppIconFetcher:
             # `setdefault` so the first identity wins for as long as the
             # miss is cached, matching how `pid` behaves one line up.
             if identity is not None:
-                self._given_identity.setdefault(app_name, identity)
+                self._given_identity.setdefault(
+                    app_name, _as_identity(identity, app_name))
             if app_name not in self._queue and app_name not in self._inflight:
                 self._queue.append(app_name)
         self._ensure_thread()

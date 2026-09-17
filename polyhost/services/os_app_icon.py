@@ -310,9 +310,24 @@ def _linux_identity(pid, app_name: str):
     for path in _theme_candidates(icon) if icon else ():
         try:
             with open(path, "rb") as handle:
-                return AppIdentity(handle.read(), path, names)
+                data = handle.read()
         except OSError as exc:
             log.debug("Could not read %s: %s", path, exc)
+            continue
+        # ⚠️ The FILE, not just "an icon was found". Which one the theme hands
+        # back decides everything downstream -- `_theme_candidates` sorts raster
+        # AHEAD of svg, so the same application can resolve to a 48px PNG on one
+        # machine and a scalable SVG on another, and those take different
+        # branches in `render_os_overlay`. Diagnosing a blank keycap without
+        # this line means guessing which one was read.
+        log.info("Icon for %r: %s (%d B) via Icon=%r, names=%s",
+                 app_name, path, len(data), icon, ", ".join(names) or "<none>")
+        return AppIdentity(data, path, names)
+    # The other half of the question, and the one that looks identical from
+    # outside: an entry with a name but no icon file on disk. Only the catalog
+    # can draw for it, keyed on those names.
+    log.info("No icon FILE for %r: Icon=%r resolved to nothing, names=%s",
+             app_name, icon or "<unset>", ", ".join(names) or "<none>")
     return AppIdentity(None, "", names)
 
 

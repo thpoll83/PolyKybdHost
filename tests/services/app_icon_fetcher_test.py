@@ -10,7 +10,7 @@ import time
 import unittest
 import unittest.mock as mock
 
-from polyhost.services import os_app_icon
+from polyhost.services import app_icon_fetcher, app_icons, os_app_icon
 from polyhost.services.app_icon_fetcher import AppIconFetcher
 
 
@@ -194,6 +194,75 @@ class MissReasonTest(unittest.TestCase):
         self.assertIn("si:winword", why)
         self.assertIn("mdi:microsoft-winword", why)
 
+
+
+class ForwardedIdentityShapeTest(unittest.TestCase):
+    """A forwarded identity is a DICT, and every consumer reads an AppIdentity.
+
+    ⚠️ The regression, measured on a live pair 2026-09-17: the forwarder
+    resolved GNOME Text Editor correctly and sent names + icon, and the daemon
+    logged `No program mark for gnome-text-edit ... (OS names: <none>)`.
+    `program_overlay` reads `getattr(identity, "names", ())`, a dict answers
+    neither attribute, and getattr hands back the default -- so the whole
+    identity was discarded in silence. The transport, the cache and the key
+    were all working. gnome-terminal and the log window kept drawing because
+    they hit the CATALOG on their app name and need no identity at all.
+    """
+
+    ICON = b"\x89PNG\r\n\x1a\n" + b"x" * 64
+
+    def test_a_dict_becomes_an_AppIdentity(self):
+        ident = app_icon_fetcher._as_identity(
+            {"names": ("Text Editor",), "icon": self.ICON, "icon_key": "k1"},
+            "gnome-text-edit")
+        self.assertEqual(ident.names, ("Text Editor",))
+        self.assertEqual(ident.icon, self.ICON)
+
+    def test_an_AppIdentity_passes_through_and_None_stays_None(self):
+        from polyhost.services.os_app_icon import AppIdentity
+        native = AppIdentity(icon=None, icon_path="/x.png", names=("A",))
+        self.assertIs(app_icon_fetcher._as_identity(native), native)
+        self.assertIsNone(app_icon_fetcher._as_identity(None))
+
+    def test_anything_else_RAISES_rather_than_degrading(self):
+        # A silent getattr miss is what cost the round this test exists for.
+        with self.assertRaises(TypeError):
+            app_icon_fetcher._as_identity(("Text Editor",), "x")
+
+    def test_program_overlay_REFUSES_a_raw_dict(self):
+        # The guard that stops a second caller re-introducing the silence.
+        with self.assertRaises(TypeError):
+            app_icons.program_overlay(
+                "gnome-text-edit", {"names": ("Text Editor",)},
+                allow_network=False)
+
+    def test_two_forwarded_apps_get_DIFFERENT_mark_slugs(self):
+        # ⚠️ The second defect, found while fixing the first. The real
+        # `icon_path` is on the other machine, and `program_overlay` names the
+        # mark `"os:" + basename(icon_path)` -- so an empty path made every
+        # forwarded app share the slug `"os:"`, and the tick skips a slug
+        # already on the device. Switching from VS Code to Text Editor would
+        # have left VS Code's mark up.
+        first = app_icon_fetcher._as_identity(
+            {"icon": self.ICON, "icon_key": "aaaaaaaaaaaa"}, "code")
+        second = app_icon_fetcher._as_identity(
+            {"icon": self.ICON, "icon_key": "bbbbbbbbbbbb"}, "gnome-text-edit")
+        self.assertNotEqual(first.icon_path, second.icon_path)
+        self.assertIn("code", first.icon_path)
+
+    def test_the_slug_CHANGES_when_the_icon_does(self):
+        # The key is a content hash, so a theme change re-draws rather than
+        # being deduped away as "already on the device".
+        same_app = [app_icon_fetcher._as_identity(
+            {"icon": self.ICON, "icon_key": k}, "code")
+            for k in ("aaaaaaaaaaaa", "bbbbbbbbbbbb")]
+        self.assertNotEqual(same_app[0].icon_path, same_app[1].icon_path)
+
+    def test_a_real_path_is_kept_when_there_is_one(self):
+        ident = app_icon_fetcher._as_identity(
+            {"icon": self.ICON, "icon_path": "/usr/share/icons/x.png",
+             "icon_key": "k"}, "x")
+        self.assertEqual(ident.icon_path, "/usr/share/icons/x.png")
 
 if __name__ == "__main__":
     unittest.main()

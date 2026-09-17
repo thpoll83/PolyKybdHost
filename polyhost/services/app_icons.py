@@ -602,6 +602,16 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
 
     A name comes back either way so a caller can say which app it failed for.
     """
+    # ⚠️ A dict is a PROGRAMMING error here, not an input to tolerate. The
+    # forwarded identity arrives as one over the RPC, and the getattr reads
+    # below answer every dict with their default -- so it was accepted, ignored
+    # and logged as "OS names: <none>". `app_icon_fetcher._as_identity` is the
+    # boundary that converts it; this is the guard that stops a second caller
+    # from re-introducing the silence. Deliberately narrower than an isinstance
+    # check on AppIdentity, which would reject the test doubles.
+    if isinstance(identity, dict):
+        raise TypeError("program_overlay takes an AppIdentity, not a dict -- "
+                        "convert a forwarded identity with _as_identity()")
     names = getattr(identity, "names", ()) or ()
     icon = getattr(identity, "icon", None)
     if icon:
