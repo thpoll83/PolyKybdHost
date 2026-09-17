@@ -135,11 +135,19 @@ are the icons the user actually sees. Order of preference:
    Tabler/Lucide are also fine (MIT/ISC). **Don't assume the app's icons come
    from one of these** — verify (render both and compare silhouettes); they're
    usually custom and only *style*-compatible.
-   - **Material Symbols (Apache-2.0) is available as a backup / comparison
-     source**, via the shared helper
+   - **Material Symbols (Apache-2.0) is wired in as the automatic fallback.**
+     `icon_fetch.fluent()` tries Fluent first; a spec of the form
+     **`"ms:<name>"`** goes straight to Material, and a bare Fluent folder name
+     that 404s at every size is retried there before the helper gives up. ⚠️
+     **Prefer the explicit `ms:` form** — Material's vocabulary is its own
+     (`undo`, not `Arrow Undo`; `groups`, not `People Team`), so the automatic
+     pass only ever helps where the two sets already agree on a name, and the
+     error message names both sources when neither has it. A **pinned** full
+     Fluent asset path never falls back: substituting a different icon set for
+     a cut that was chosen on purpose is worse than failing. Browse names at
+     fonts.google.com/icons; the lower-level
      `polyhost/res/overlay_sources/material_symbols.py`
-     (`ms.render(name, path, weight=300)`; browse names at
-     fonts.google.com/icons). It became license-clean with the **2026-06 GPLv3
+     (`ms.render(name, path, weight=300)`) is still there for a one-off. It became license-clean with the **2026-06 GPLv3
      relicense** (Apache-2.0 is GPLv2-incompatible but GPLv3-compatible). A full
      Photoshop+Illustrator A/B (2026-06) concluded: **keep Fluent** — Material is
      a wash for bread-and-butter glyphs, *better* for a handful of abstract
