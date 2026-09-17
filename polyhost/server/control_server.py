@@ -200,6 +200,8 @@ class ControlServer(MpcListenerServer):
             p.M_IDLE_SET: lambda conn, params: _unwrap(c.set_idle(params["idle"])),
             p.M_IDLE_STYLE_SET: lambda conn, params: _unwrap(c.set_idle_style(params["value"])),
             p.M_IDLE_STYLE_GET: lambda conn, params: _unwrap(c.get_idle_style()),
+            p.M_IDLE_TIMEOUT_SET: lambda conn, params: _unwrap(c.set_idle_timeout(params["value"])),
+            p.M_IDLE_TIMEOUT_GET: lambda conn, params: _unwrap(c.get_idle_timeout()),
             p.M_GLYPH_SCRIPT_SET: lambda conn, params: _unwrap(c.set_glyph_script(params["value"])),
             p.M_GLYPH_SCRIPT_GET: lambda conn, params: _unwrap(c.get_glyph_script()),
             p.M_GLYPH_SIZE_SET: lambda conn, params: _unwrap(c.set_glyph_size(params["value"])),

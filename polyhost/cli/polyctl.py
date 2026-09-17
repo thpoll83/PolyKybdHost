@@ -20,7 +20,7 @@ import json
 import sys
 import time
 
-from polyhost.device.command_ids import GlyphScript, GlyphSize, IdleStyle  # stdlib-only (Enum), no Qt
+from polyhost.device.command_ids import GlyphScript, GlyphSize, IdleStyle, IdleTimeout  # stdlib-only (Enum), no Qt
 from polyhost.server import protocol
 
 # Default timeframe for `polyctl logs` — long enough for "it broke this
@@ -297,6 +297,27 @@ def _cmd_idle_style(client, args):
         value = _IDLE_STYLE_VALUES[args.style]
         client.call(protocol.M_IDLE_STYLE_SET, {"value": value})
         print(f"idle style set to {args.style} ({value})")
+    return 0
+
+
+# Derived from the shared IdleTimeout enum so new presets appear automatically.
+# The CLI name is the label with its space dropped ("15sec", "2min"), which keeps
+# it typeable without quoting.
+_IDLE_TIMEOUT_NAMES = {t.value: t.label.replace(" ", "") for t in IdleTimeout}
+_IDLE_TIMEOUT_VALUES = {v: k for k, v in _IDLE_TIMEOUT_NAMES.items()}
+
+
+def _cmd_idle_timeout(client, args):
+    if args.preset is None:
+        value, seconds = client.call(protocol.M_IDLE_TIMEOUT_GET, {})
+        # Label from the seconds the KEYBOARD reported, not from this host's table:
+        # a firmware newer than this host can carry a preset it has no name for.
+        print(f"idle timeout: {IdleTimeout.label_for(value, seconds)} "
+              f"(preset {value}, {seconds}s)")
+    else:
+        value = _IDLE_TIMEOUT_VALUES[args.preset]
+        client.call(protocol.M_IDLE_TIMEOUT_SET, {"value": value})
+        print(f"idle timeout set to {args.preset} (preset {value})")
     return 0
 
 
@@ -906,6 +927,16 @@ def build_parser():
         help="omit to print the current style; 'pulse' = legacy, 'jitter' = move the "
              "legend, 'iddqd' = attract-demo screensaver (doom-enabled firmware)")
     p_idle_style.set_defaults(func=_cmd_idle_style)
+
+    p_idle_timeout = sub.add_parser(
+        "idle-timeout",
+        help="get or set how long before the keyboard goes idle (firmware v18+)")
+    p_idle_timeout.add_argument(
+        "preset", nargs="?", choices=list(_IDLE_TIMEOUT_VALUES.keys()), default=None,
+        help="omit to print the current timeout; otherwise one of the fixed presets. "
+             "This is the delay before the idle STYLE engages, not the 10-minute "
+             "display-off deadline, which is fixed.")
+    p_idle_timeout.set_defaults(func=_cmd_idle_timeout)
 
     p_glyph_script = sub.add_parser(
         "glyph-script", help="get or set the glyph-script override (firmware v9+)")

@@ -1360,6 +1360,20 @@ class PolyCore(Observable):
         return self._device_call(
             "idle_style_get", lambda c: self.keeb.get_idle_style())
 
+    def set_idle_timeout(self, value):
+        try:
+            v = int(value)
+        except (TypeError, ValueError):
+            return False, f"Invalid idle timeout: {value!r}"
+        return self._device_call(
+            "idle_timeout_set", lambda c, v=v: self.keeb.set_idle_timeout(v))
+
+    def get_idle_timeout(self):
+        """(ok, (preset index, seconds)). The seconds are the KEYBOARD's, so a
+        preset this host does not know still renders as a duration."""
+        return self._device_call(
+            "idle_timeout_get", lambda c: self.keeb.get_idle_timeout())
+
     def refresh_unicode_mode(self):
         """Re-detect the host's unicode input method and push it to the keyboard.
 

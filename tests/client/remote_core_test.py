@@ -73,6 +73,14 @@ class FakeCore:
         self.calls.append(("send_overlay_mapping", mapping))
         return (True, "mapped")
 
+    def set_idle_timeout(self, value):
+        self.calls.append(("set_idle_timeout", value))
+        return (True, None)
+
+    def get_idle_timeout(self):
+        self.calls.append(("get_idle_timeout",))
+        return (True, (5, 300))
+
     def refresh_daylight_brightness(self):
         self.calls.append(("refresh_daylight_brightness",))
         return (True, "queued")
@@ -167,6 +175,18 @@ class TestRemoteCore(unittest.TestCase):
         self.assertTrue(ok)
         # Keys cross JSON as strings; the daemon-side core coerces them back.
         self.assertIn(("send_overlay_mapping", {"4": 5}), self.core.calls)
+
+    def test_idle_timeout_is_mirrored_over_rpc(self):
+        """Daemon-by-default makes the tray an RPC client, so a core method with no
+        RemoteCore mirror is missing for every normal user and present only for the
+        developer running in-process. The tuple also has to survive JSON, which has
+        no tuples — it arrives as a list, and callers index it."""
+        ok, _ = self.rc.set_idle_timeout(2)
+        self.assertTrue(ok)
+        self.assertIn(("set_idle_timeout", 2), self.core.calls)
+        ok, value = self.rc.get_idle_timeout()
+        self.assertTrue(ok)
+        self.assertEqual(list(value), [5, 300])
 
     def test_back_to_automatic_brightness_reaches_the_daemon(self):
         """The tray's way out of a manual preset. It MUST run in the daemon: the

@@ -61,6 +61,8 @@ M_DAYLIGHT_REFRESH = "brightness.daylight_refresh"   # {} -> (ok, payload)
 M_IDLE_SET = "idle.set"                # {"idle": bool} -> (ok, payload)
 M_IDLE_STYLE_SET = "idle.style.set"    # {"value": 0|1|2} -> (ok, payload)  (0=pulse, 1=jitter, 2=iddqd attract demo)
 M_IDLE_STYLE_GET = "idle.style.get"    # {} -> (ok, value)
+M_IDLE_TIMEOUT_SET = "idle.timeout.set"  # {"value": 0..5} -> (ok, payload)  (IdleTimeout preset)
+M_IDLE_TIMEOUT_GET = "idle.timeout.get"  # {} -> (ok, [preset, seconds])
 M_GLYPH_SCRIPT_SET = "glyph.script.set"  # {"value": 0|1|...} -> (ok, payload)  (0=standard, 1=tengwar)
 M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
 # Keycap legend SIZE (firmware protocol v13+). A closed range, unlike the script
