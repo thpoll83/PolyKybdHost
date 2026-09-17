@@ -165,7 +165,21 @@ class RemoteHandler:
         OS that is actually running it. A keyboard machine on Windows has no
         `.desktop` entries to consult at all.
         """
-        return self._forwarded_identity.get(normalise_app_name(name))
+        known = self._forwarded_identity.get(normalise_app_name(name))
+        # ⚠️ An EMPTY record is not an identity, and returning one is worse than
+        # returning nothing. `_note_identity` creates the dict on the FIRST
+        # report, which the forwarder sends before it has resolved anything --
+        # its lookup is file I/O and takes ~100-300 ms. A caller testing
+        # `identity is not None` then latches that empty answer as "the identity
+        # arrived" and never looks again, so the real one 300 ms later is
+        # ignored for the life of the process.
+        #
+        # Measured 2026-09-17: GNOME Text Editor, Nautilus and Calculator all
+        # logged `OS names: <none>` this way, while VS Code and Chrome worked --
+        # because those two are ALSO running locally on the keyboard machine, so
+        # their first lookup came from the local window with a genuinely None
+        # identity and the remote one was still the first real one.
+        return known or None
 
     def report_window(self, handle, name, title, os=None, url=None,
                       names=(), icon_key=None, icon=None):

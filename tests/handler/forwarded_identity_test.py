@@ -193,3 +193,52 @@ class NameKeyTest(unittest.TestCase):
         h.report_window(1, "Code.exe", "t", icon_key="k1", icon=ICON)
         # Same app, reported again — must NOT ask for the icon a second time.
         self.assertIsNone(h.report_window(1, "Code.exe", "t", icon_key="k1"))
+
+
+class EmptyRecordIsNotAnIdentityTest(unittest.TestCase):
+    """The first report arrives BEFORE the forwarder has resolved anything.
+
+    ⚠️ `_note_identity` creates the record on that first report, so
+    `forwarded_identity` used to answer `{}` -- which is not None, so a caller
+    testing `identity is not None` latched it as "the identity arrived" and
+    never looked again. The real one, 300 ms later, was ignored for the life of
+    the process.
+
+    Measured 2026-09-17: GNOME Text Editor, Nautilus and Calculator all logged
+    `OS names: <none>` this way, while VS Code and Chrome worked -- because
+    those two ALSO run locally on the keyboard machine, so their first lookup
+    came from the local window with a genuinely None identity and the remote one
+    was still the first real one. Same code, and the apps that happened to exist
+    on both machines were the ones that worked.
+    """
+
+    def test_a_report_with_nothing_resolved_yields_NO_identity(self):
+        h = _handler()
+        h.report_window(1, "gnome-text-edit", "t")
+        self.assertIsNone(h.forwarded_identity("gnome-text-edit"))
+
+    def test_names_alone_ARE_an_identity(self):
+        h = _handler()
+        h.report_window(1, "gnome-text-edit", "t", names=("Text Editor",))
+        self.assertEqual(h.forwarded_identity("gnome-text-edit")["names"],
+                         ("Text Editor",))
+
+    def test_an_icon_key_ALONE_is_deliberately_not_recorded(self):
+        # ⚠️ Not an oversight, and I asserted the opposite first. The key names
+        # the icon we HOLD, so recording it before the art arrives would make
+        # `want_icon` false forever and the icon would never be requested at
+        # all. A key with no names and no icon therefore leaves nothing to
+        # report -- and the report that carries it always carries the names too,
+        # because the forwarder resolves both in one lookup.
+        h = _handler()
+        h.report_window(1, "gimp", "t", icon_key="abc123")
+        self.assertIsNone(h.forwarded_identity("gimp"))
+        self.assertEqual(h.report_window(1, "gimp", "t", icon_key="abc123"),
+                         {"want_icon": True}, "and it must still ask for it")
+
+    def test_an_empty_report_after_a_real_one_does_not_erase_it(self):
+        h = _handler()
+        h.report_window(1, "gimp", "t", names=("GIMP",), icon_key="abc123")
+        h.report_window(1, "gimp", "t")
+        self.assertEqual(h.forwarded_identity("gimp")["names"], ("GIMP",))
+

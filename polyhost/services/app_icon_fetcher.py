@@ -40,6 +40,28 @@ from polyhost.services import app_icons, os_app_icon
 IDLE_SECONDS = 30.0
 
 
+def _identity_signature(given):
+    """What this identity CARRIES, or None when it carries nothing.
+
+    An empty dict is the shape `RemoteHandler` creates on a report that arrived
+    before the forwarder had resolved anything; it is not an identity and must
+    not count as one. Beyond that the signature makes the identity's ARRIVAL
+    comparable, so a later report that adds the icon to the names is recognised
+    as new information rather than as a repeat.
+    """
+    if given is None:
+        return None
+    if isinstance(given, dict):
+        names = tuple(given.get("names") or ())
+        key = given.get("icon_key") or ""
+        has_icon = bool(given.get("icon"))
+        return (names, key, has_icon) if (names or key or has_icon) else None
+    names = tuple(getattr(given, "names", ()) or ())
+    has_icon = bool(getattr(given, "icon", None))
+    return (names, getattr(given, "icon_path", ""), has_icon) \
+        if (names or has_icon) else None
+
+
 def _as_identity(given, app_name=""):
     """A forwarded identity as an `AppIdentity`, whatever shape it arrived in.
 
@@ -116,6 +138,7 @@ class AppIconFetcher:
         # app name -> an AppIdentity the CALLER already resolved (forwarder
         # mode). Absent for a local app, which this side resolves itself.
         self._given_identity: dict[str, object] = {}
+        self._given_identity_sig: dict[str, object] = {}
 
     # ------------------------------------------------------------------
 
@@ -137,11 +160,18 @@ class AppIconFetcher:
             # entry and the PE resources all live there -- a keyboard
             # machine on Windows has no desktop entries to consult at all.
             # Recorded BEFORE the cache is read, because of the race below.
-            first_identity = (identity is not None
-                              and self._given_identity.get(app_name) is None)
+            # ⚠️ Keyed on what the identity CONTAINS, not on whether one has
+            # been seen. A forwarded identity arrives in pieces -- the names in
+            # one report and the icon in the next, because the receiver asks for
+            # the art only once it knows it lacks it -- so "we already had one"
+            # would resolve on the names alone and then ignore the icon.
+            richer = _identity_signature(identity)
+            first_identity = (richer is not None
+                              and richer != self._given_identity_sig.get(app_name))
             if first_identity:
                 self._given_identity[app_name] = _as_identity(identity,
                                                               app_name)
+                self._given_identity_sig[app_name] = richer
             if app_name in self._masks:
                 mask, resolved = self._masks[app_name]
                 # ⚠️ A MISS RESOLVED BEFORE THE IDENTITY ARRIVED IS RETRIED,

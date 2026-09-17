@@ -362,5 +362,100 @@ class LateIdentityRetryTest(unittest.TestCase):
         self.assertEqual(len(calls), after_first,
                          "a repeated identity must not re-queue the app")
 
+
+class IdentitySignatureTest(unittest.TestCase):
+    """The retry is keyed on what the identity CARRIES, not on having seen one."""
+
+    def test_an_empty_dict_carries_nothing(self):
+        self.assertIsNone(app_icon_fetcher._identity_signature({}))
+        self.assertIsNone(app_icon_fetcher._identity_signature(None))
+
+    def test_names_alone_and_a_key_alone_both_count(self):
+        self.assertIsNotNone(
+            app_icon_fetcher._identity_signature({"names": ("A",)}))
+        self.assertIsNotNone(
+            app_icon_fetcher._identity_signature({"icon_key": "k"}))
+
+    def test_adding_the_ICON_changes_the_signature(self):
+        # ⚠️ A forwarded identity arrives in PIECES: the names in one report and
+        # the icon in the next, because the receiver asks for the art only once
+        # it knows it lacks it. Keyed on mere presence, the resolution would run
+        # on the names alone and then ignore the icon that followed.
+        names_only = {"names": ("Text Editor",), "icon_key": "k"}
+        with_icon = dict(names_only, icon=b"\x89PNG")
+        self.assertNotEqual(app_icon_fetcher._identity_signature(names_only),
+                            app_icon_fetcher._identity_signature(with_icon))
+
+    def test_the_SAME_identity_twice_has_the_same_signature(self):
+        a = {"names": ("A",), "icon_key": "k", "icon": b"x"}
+        self.assertEqual(app_icon_fetcher._identity_signature(a),
+                         app_icon_fetcher._identity_signature(dict(a)))
+
+
+class IdentityArrivesInPiecesTest(unittest.TestCase):
+    """names first, icon second -- each must get a look."""
+
+    def _fetcher(self, resolve):
+        f = AppIconFetcher()
+        f._resolve = resolve
+        return f
+
+    def _drain(self, f, name, ident=None, tries=80):
+        for _ in range(tries):
+            mask, resolved = f.overlay_for(name, identity=ident)
+            if mask is not None or resolved is not None:
+                return mask, resolved
+            time.sleep(0.02)
+        return f.overlay_for(name, identity=ident)
+
+    def test_the_icon_gets_a_look_after_the_names_missed(self):
+        def resolve(app_name, pid=None, given=None):
+            if given is not None and getattr(given, "icon", None):
+                return object(), "os:drew", None
+            return None, "si:missed", "no catalog carries it"
+
+        f = self._fetcher(resolve)
+        try:
+            self._drain(f, "app")                       # nothing resolved yet
+            self._drain(f, "app", {"names": ("A",), "icon_key": "k"})
+            for _ in range(80):
+                mask, resolved = f.overlay_for(
+                    "app", identity={"names": ("A",), "icon_key": "k",
+                                     "icon": b"\x89PNG"})
+                if mask is not None:
+                    break
+                time.sleep(0.02)
+        finally:
+            f.stop()
+        self.assertIsNotNone(mask, "the icon must get a look of its own")
+        self.assertEqual(resolved, "os:drew")
+
+    def test_an_EMPTY_identity_does_not_consume_the_first_look(self):
+        # The shipped bug, at this level: `{}` latched as "seen" and the real
+        # identity was then never a new one.
+        seen = []
+
+        def resolve(app_name, pid=None, given=None):
+            seen.append(getattr(given, "names", None))
+            if given is not None and getattr(given, "names", ()):
+                return object(), "os:drew", None
+            return None, "si:missed", "nope"
+
+        f = self._fetcher(resolve)
+        try:
+            self._drain(f, "app", {})                   # the empty first report
+            self._drain(f, "app", {})
+            mask, resolved = None, None
+            for _ in range(80):
+                mask, resolved = f.overlay_for("app",
+                                               identity={"names": ("A",)})
+                if mask is not None:
+                    break
+                time.sleep(0.02)
+        finally:
+            f.stop()
+        self.assertIsNotNone(mask)
+        self.assertEqual(resolved, "os:drew")
+
 if __name__ == "__main__":
     unittest.main()
