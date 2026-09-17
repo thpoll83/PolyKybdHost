@@ -472,15 +472,26 @@ def render_os_overlay(data: bytes, box: int = PROGRAM_ICON_BOX):
                             # caller's; a leaked one costs a few KB in the
                             # system temp dir, and raising here would lose the
                             # mask we came for.
-        if mask is None:
-            return None, None, -1.0
         # ⚠️ SCORED like any other candidate, never trusted for being vector.
         # `_alpha` gives coverage, so a themed SVG arrives as its SILHOUETTE --
         # measured, a filled square for gvim and a solid page for LibreOffice,
         # both of which sit at a perfectly ordinary lit fraction and are read
         # as blobs only by the edge term.
-        window = mask[:, PANEL_W - box:]
-        return mask, "svg", icon_binarise.score(window)
+        silhouette = (None, None, -1.0)
+        if mask is not None:
+            silhouette = (mask, "svg",
+                          icon_binarise.score(mask[:, PANEL_W - box:]))
+        # ⚠️ TWO readings compete, rather than the silhouette winning by being
+        # first. A monochrome single-path SVG still wins as a silhouette (its
+        # alpha IS the drawing); a full-colour desktop icon loses, which is the
+        # whole point -- see `_svg_colour_candidate`. Same scorer for both, so
+        # this is the existing five-way contest with a sixth entrant, not a new
+        # policy.
+        colour = _svg_colour_candidate(data, box)
+        best = max((silhouette, colour), key=lambda c: c[2])
+        if best[0] is None:
+            return None, None, -1.0
+        return best
     try:
         image = Image.open(io.BytesIO(data))
         image.load()
@@ -499,12 +510,64 @@ def render_os_overlay(data: bytes, box: int = PROGRAM_ICON_BOX):
     ink, conversion, score = icon_binarise.choose(image, box)
     if ink is None:
         return None, None, score
+    return _place_ink(ink), conversion, score
+
+
+def _place_ink(ink):
+    """`ink` seated in the 72x40 panel, flush right and vertically centred."""
+    import numpy as np
     mask = np.zeros((PANEL_H, PANEL_W), dtype=bool)
     height, width = ink.shape
     x = PANEL_W - width                 # flush right: the courtyard needs x >= 31
     y = max(0, (PANEL_H - height) // 2)
     mask[y:y + height, x:x + width] = ink
-    return mask, conversion, score
+    return mask
+
+
+def _svg_colour_candidate(data: bytes, box: int):
+    """(mask, conversion, score) for an SVG read as COLOUR ART, or a miss.
+
+    ⚠️ The silhouette is the WRONG reading for an OS icon, and measurably so.
+    `render_overlay` takes alpha, which is exactly right for a catalog mark --
+    one monochrome path whose alpha IS the drawing -- and throws away everything
+    inside a modern desktop icon, which is a filled rounded-rect plate with art
+    on top. Measured on the real `org.gnome.TextEditor.svg`: as a silhouette it
+    is a 71.8%-lit blob scoring **0.10** and `MIN_SCORE` correctly refuses it,
+    so the keycap stayed blank; rasterised in colour and read by `choose` it
+    scores **0.48** and draws a recognisable pen. Reported from a live forwarder
+    as terminal and the log window showing marks while the text editor did not.
+
+    ⚠️ cairosvg only, and that is not the inconsistency it looks like. `_alpha`
+    keeps the pure-Python rasteriser PRIMARY so a catalog mark renders
+    identically on every platform, including a Windows box where cairosvg cannot
+    install. `svg_raster` fills paths into a coverage mask by construction --
+    its own scope note says "a flat, one-colour SVG" -- so it cannot answer this
+    question at all. An OS icon comes from THIS machine's theme, so it is
+    machine-specific already and cross-platform identity was never a property it
+    could have; and Windows app icons are PE resources, not SVG, so the branch
+    is barely reachable there. No cairosvg means today's silhouette, unchanged.
+    """
+    try:
+        import io as _io
+
+        import cairosvg
+        from PIL import Image
+    except Exception:
+        return None, None, -1.0
+    try:
+        # Supersampled for the same reason `_alpha` is: the reduction to `box`
+        # is where the antialiasing that survives 1-bit comes from.
+        png = cairosvg.svg2png(bytestring=data,
+                               output_width=box * SUPERSAMPLE,
+                               output_height=box * SUPERSAMPLE)
+        ink, conversion, score = icon_binarise.choose(
+            Image.open(_io.BytesIO(png)), box)
+    except Exception as exc:
+        log.debug("Could not rasterise an SVG icon in colour: %s", exc)
+        return None, None, -1.0
+    if ink is None:
+        return None, None, score
+    return _place_ink(ink), conversion, score
 
 
 def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
@@ -545,11 +608,20 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
         mask, conversion, score = render_os_overlay(icon)
         source = getattr(identity, "icon_path", "") or ""
         if mask is not None and score >= icon_binarise.MIN_SCORE:
-            log.debug("Program mark for %s from the OS (%s, %s, score %.2f)",
-                      app_name, source, conversion, score)
+            log.info("Program mark for %s from the OS: %s (%d B, %s, score "
+                     "%.2f >= %.2f)", app_name, source or "<no path>",
+                     len(icon), conversion, score, icon_binarise.MIN_SCORE)
             return mask, "os:" + os.path.basename(source)
-        log.debug("The OS icon for %s does not survive 1-bit (score %.2f) -- "
-                  "falling through to the catalog", app_name, score)
+        # ⚠️ INFO, not debug, and it names every number. "The icon does not
+        # survive 1-bit" is true and useless: the questions a round of hardware
+        # testing actually asks are WHICH file was read, what it scored and
+        # against what -- and answering them cost a session of guessing before
+        # this line existed. It runs once per application, not per tick.
+        log.info("The OS icon for %s does not survive 1-bit: %s (%d B, %s, "
+                 "score %.2f < %.2f) -- falling through to the catalog",
+                 app_name, source or "<no path>", len(icon),
+                 conversion or "nothing rendered", score,
+                 icon_binarise.MIN_SCORE)
 
     tried = candidates(app_name, names)
     for name in tried:
@@ -558,5 +630,11 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
             continue
         mask = render_overlay(path)
         if mask is not None:
+            log.info("Program mark for %s from the catalog: %s", app_name, name)
             return mask, name
+    # The names are the whole story when nothing draws -- they say whether the
+    # OS gave us a usable display name or only an executable stem.
+    log.info("No program mark for %s: the catalog carries none of %s "
+             "(OS names: %s)", app_name, ", ".join(tried) or "<no candidates>",
+             ", ".join(names) or "<none>")
     return None, (tried[0] if tried else None)

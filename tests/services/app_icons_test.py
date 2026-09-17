@@ -6,6 +6,7 @@ firmware's courtyard clear would eat into the ESC glyph, and the keycap would
 look slightly wrong on hardware with nothing failing anywhere.
 """
 import os
+import sys
 import tempfile
 import unittest
 # ⚠️ Mock is reached by a plain import, not by the repo's prevailing
@@ -530,6 +531,107 @@ class ProgramOverlayTest(unittest.TestCase):
                                             allow_network=False)
             self.assertEqual(name, "si:inkscape")
             self.assertIsNotNone(mask)
+
+
+class SvgOsIconIsReadAsColourArtTest(unittest.TestCase):
+    """An OS SVG icon must not be reduced to its silhouette.
+
+    Reported from a live forwarder (2026-09-17): gnome-terminal and PolyHost's
+    own log window drew marks while GNOME Text Editor drew nothing. `_alpha`
+    gives coverage, which is exactly right for a catalog mark -- one monochrome
+    path whose alpha IS the drawing -- and throws away everything inside a
+    modern desktop icon, a filled plate with art on top.
+
+    ⚠️ **The numbers that motivated this come from the REAL
+    `org.gnome.TextEditor.svg`, measured, and are deliberately not asserted
+    here**: silhouette 71.8% lit scoring **0.10** against `MIN_SCORE` 0.30, the
+    same file read as colour scoring **0.48** and drawing a recognisable pen.
+    Four synthetic plate icons were tried as a stand-in and none of them clears
+    the gate in colour either (0.15-0.25) -- they are flat fills where the real
+    one has gradients and shading. Tuning a fixture until it agreed would have
+    been the suite measuring itself, so what is pinned below is the MECHANISM,
+    which holds for every one of them: on a plate icon the colour reading beats
+    the silhouette. Whether a given icon then clears `MIN_SCORE` is a property
+    of that icon, not of this change.
+    """
+
+    # A plate drawn as a PATH -- `svg_raster` renders `<path>` only, so a
+    # `<rect>` plate is silently skipped and the fixture stops being a plate at
+    # all. That cost a round here.
+    PLATE = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">'
+        '<path d="M32 8h64a24 24 0 0 1 24 24v64a24 24 0 0 1-24 24H32'
+        'A24 24 0 0 1 8 96V32A24 24 0 0 1 32 8z" fill="#f6f5f4"/>'
+        '<path d="M92 28l14 14-46 46-18 4 4-18z" fill="#241f31"/>'
+        '</svg>'
+    ).encode()
+
+    MONO = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+        '<path d="M12 2L2 22h20L12 2zm0 6l6 12H6l6-12z"/></svg>'
+    ).encode()
+
+    def _cairo(self):
+        try:
+            import cairosvg  # noqa: F401
+        except Exception:
+            self.skipTest("cairosvg not installed; the silhouette path is used")
+
+    def _silhouette(self, svg):
+        handle, path = tempfile.mkstemp(suffix=".svg")
+        try:
+            with os.fdopen(handle, "wb") as fh:
+                fh.write(svg)
+            return ai.render_overlay(path, ai.PROGRAM_ICON_BOX)
+        finally:
+            os.unlink(path)
+
+    def test_the_silhouette_reading_of_a_plate_icon_is_a_BLOB(self):
+        # Pins the premise. If this stops being true the change below is
+        # solving a problem that no longer exists.
+        mask = self._silhouette(self.PLATE)
+        window = mask[:, ai.PANEL_W - ai.PROGRAM_ICON_BOX:]
+        self.assertGreater(window.sum() / window.size, 0.6,
+                           "the plate should swallow the drawing")
+        self.assertLess(ai.icon_binarise.score(window),
+                        ai.icon_binarise.MIN_SCORE,
+                        "and MIN_SCORE should refuse it")
+
+    def test_the_colour_reading_BEATS_the_silhouette_on_a_plate_icon(self):
+        self._cairo()
+        window = self._silhouette(self.PLATE)[:, ai.PANEL_W - ai.PROGRAM_ICON_BOX:]
+        _, _, colour = ai._svg_colour_candidate(self.PLATE, ai.PROGRAM_ICON_BOX)
+        self.assertGreater(colour, ai.icon_binarise.score(window))
+
+    def test_render_os_overlay_returns_the_colour_candidate_for_a_plate(self):
+        self._cairo()
+        _, conversion, _ = ai.render_os_overlay(self.PLATE)
+        self.assertNotEqual(conversion, "svg",
+                            "the silhouette must not win on a plate icon")
+
+    def test_a_monochrome_svg_reads_IDENTICALLY_either_way(self):
+        # The safety property: for a single-path mark, whose alpha IS the
+        # drawing, the colour path's `alpha` conversion reproduces the
+        # silhouette pixel for pixel -- so competing the two cannot change what
+        # a catalog-style icon draws. Measured: 0 differing pixels of 2880.
+        self._cairo()
+        silhouette = self._silhouette(self.MONO)
+        colour, _, _ = ai._svg_colour_candidate(self.MONO, ai.PROGRAM_ICON_BOX)
+        self.assertIsNotNone(colour)
+        self.assertEqual(int((silhouette != colour).sum()), 0)
+
+    def test_without_cairosvg_the_silhouette_is_still_used(self):
+        # Windows has no cairosvg wheel, and `svg_raster` fills paths into a
+        # coverage mask by construction, so it cannot answer this. The
+        # degradation has to be today's behaviour, not a blank keycap.
+        with mock.patch.dict(sys.modules, {"cairosvg": None}):
+            mask, conversion, _ = ai.render_os_overlay(self.MONO)
+        self.assertIsNotNone(mask)
+        self.assertEqual(conversion, "svg")
+
+    def test_the_colour_candidate_never_raises_on_junk(self):
+        self.assertIsNone(
+            ai._svg_colour_candidate(b"<svg not really", 38)[0])
 
 
 if __name__ == "__main__":
