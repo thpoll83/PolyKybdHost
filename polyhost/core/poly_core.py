@@ -863,7 +863,8 @@ class PolyCore(Observable):
             # window is re-asserted persistently on the first pass after it closes.
             self._apply_unicode_mode(mode)
 
-    def report_window(self, handle, name, title, os=None, url=None):
+    def report_window(self, handle, name, title, os=None, url=None,
+                      names=(), icon_key=None, icon=None):
         """Inject an external active-window report into remote window tracking
         (the ``window.report`` RPC / ``polyctl window report``).
 
@@ -876,12 +877,27 @@ class PolyCore(Observable):
         daemon's remote window matching without the bespoke TCP. No device I/O
         and no worker needed: it just stores the report; the next
         window-tracking tick applies it if a remote-mapping entry is active.
+        ⚠️ This is the ONE sink both RPC entry points reach -- the network
+        ``WindowReportServer`` and the control socket -- so a parameter missing
+        here is missing from both. ``url`` was accepted and silently dropped
+        until 2026-09-17; ``names``/``icon_key``/``icon`` raised TypeError at
+        the forwarder, which is the louder half of the same omission.
+
         Returns the uniform ``(ok, payload)`` the RPC layer unwraps."""
         handler = self.overlay_handler
         if handler is None or getattr(handler, "remote_handler", None) is None:
             return False, "window tracking unavailable"
-        handler.remote_handler.report_window(handle, name, title, os=os)
-        return True, {"reported": True}
+        ret = handler.remote_handler.report_window(
+            handle, name, title, os=os, url=url,
+            names=names, icon_key=icon_key, icon=icon)
+        payload = {"reported": True}
+        # The handler answers "send me the icon" here and nowhere else, so
+        # dropping this makes the forwarder's follow-up unreachable and the app
+        # mark never appears -- the failure looks like a dead feature, not a
+        # lost field.
+        if isinstance(ret, dict):
+            payload.update(ret)
+        return True, payload
 
     def submit_overlay_cmd(self, cmd):
         """Queue an enable/disable of overlays (coalesces with sends)."""

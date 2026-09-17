@@ -81,7 +81,11 @@ class WindowReportServerTest(unittest.TestCase):
     def test_report_reaches_callback(self):
         c = self._client()
         result = c.report(1234, "code.exe", "main.py - VS Code")
-        self.assertEqual(result, {"ok": True})
+        # The sink's payload is merged into the result, not discarded: the
+        # double returns PolyCore's real (ok, payload) tuple, and `want_icon`
+        # rides that payload. Asserting a bare {"ok": True} here is what let
+        # the dict-only merge look correct while dropping every field.
+        self.assertEqual(result, {"ok": True, "reported": True})
         self.assertEqual(self.reports, [("1234", "code.exe", "main.py - VS Code")])
         self.assertIsNone(self.last_os)  # no os field -> callback gets None
 

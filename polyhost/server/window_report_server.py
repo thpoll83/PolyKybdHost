@@ -92,8 +92,15 @@ class WindowReportServer(MpcListenerServer):
                               names=tuple(str(n) for n in names[:MAX_NAMES]),
                               icon_key=params.get("icon_key"), icon=icon)
         # report_window returns the (ok, payload) contract; surface failure.
-        if isinstance(ret, tuple) and len(ret) == 2 and not ret[0]:
-            return p.make_error(req_id, p.ERR_DEVICE, str(ret[1]))
+        if isinstance(ret, tuple) and len(ret) == 2:
+            if not ret[0]:
+                return p.make_error(req_id, p.ERR_DEVICE, str(ret[1]))
+            # ⚠️ Unwrap, or `want_icon` cannot reach the forwarder: the real
+            # sink is PolyCore.report_window, which answers a TUPLE, so a
+            # dict-only merge here silently discarded every field the payload
+            # carried while still replying ok. The feature then looks dead
+            # rather than broken.
+            ret = ret[1]
         result = {"ok": True}
         # The sink may ask for something back -- today only `want_icon`. Merging
         # rather than replacing keeps `ok` unconditional, so an older forwarder
