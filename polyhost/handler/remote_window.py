@@ -18,6 +18,19 @@ RECV_ACCEPT_TIMEOUT = 1.0
 MAX_FORWARDED_APPS = 64
 
 
+def normalise_app_name(name):
+    """The key both the matcher and the identity cache use for a remote app.
+
+    ⚠️ ONE definition, because two are a silent miss. `remote_changed` stores
+    `self.name` this way and the mapping is keyed on it, so an identity filed
+    under the RAW name is invisible to every lookup: `Code.exe` arrives on the
+    wire, is cached as `Code.exe`, and is asked for as `code`. It agrees by luck
+    for a name that is already lower-case and has no dot, which is exactly why
+    `gnome-text-edit` hid this.
+    """
+    return str(name or "").split(".")[0].lower()
+
+
 # Needs to be started as thread
 def receive_from_forwarder(log, on_report, stop_event):
     """Accept ``handle;name;title[;os]`` reports from a forwarder and hand each to
@@ -152,7 +165,7 @@ class RemoteHandler:
         OS that is actually running it. A keyboard machine on Windows has no
         `.desktop` entries to consult at all.
         """
-        return self._forwarded_identity.get(str(name))
+        return self._forwarded_identity.get(normalise_app_name(name))
 
     def report_window(self, handle, name, title, os=None, url=None,
                       names=(), icon_key=None, icon=None):
@@ -178,7 +191,8 @@ class RemoteHandler:
         # onto the next non-browser window. The sender already gates freshness
         # and focus, so None here means "this window has no URL".
         self.forwarded_url = url
-        want_icon = self._note_identity(str(name), names, icon_key, icon)
+        want_icon = self._note_identity(normalise_app_name(name), names,
+                                        icon_key, icon)
         self.log.debug_detailed(
             "report_window: handle=%s name=%s title=%s os=%s names=%s icon=%s",
             handle, name, title, os, names or "()",
@@ -280,7 +294,7 @@ class RemoteHandler:
         ):
             self.handle = data["handle"]
             self.title = data["title"]
-            self.name = data["name"].split(".")[0].lower()
+            self.name = normalise_app_name(data["name"])
             self._matched_os = self.forwarded_os
             self._matched_url = self.forwarded_url
             self.log.info(

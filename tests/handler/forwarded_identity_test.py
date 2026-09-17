@@ -171,3 +171,25 @@ class LruOrderTest(unittest.TestCase):
         self.assertIsNotNone(h.forwarded_identity("gimp"))
         self.assertIsNone(h.report_window(1, "gimp", "GIMP", icon_key="abc123"),
                           "the icon should still be cached, so no re-ask")
+
+
+class NameKeyTest(unittest.TestCase):
+    """The cache key and the lookup key must be the SAME normalisation."""
+
+    def test_a_windows_exe_name_round_trips(self):
+        # ⚠️ The regression: `report_window` filed the identity under the raw
+        # "Code.exe" while `RemoteHandler.name` — what the matcher and
+        # `focused_app()` use — is "code". The forwarded identity was then
+        # invisible for every app whose name has a dot or a capital, which is
+        # every Windows app. It agreed by luck for "gnome-text-edit".
+        h = _handler()
+        h.report_window(1, "Code.exe", "main.py", names=("Visual Studio Code",),
+                        icon_key="k1", icon=ICON)
+        self.assertIsNotNone(h.forwarded_identity("code"))
+        self.assertEqual(h.forwarded_identity("code")["icon"], ICON)
+
+    def test_the_want_icon_answer_uses_the_same_key(self):
+        h = _handler()
+        h.report_window(1, "Code.exe", "t", icon_key="k1", icon=ICON)
+        # Same app, reported again — must NOT ask for the icon a second time.
+        self.assertIsNone(h.report_window(1, "Code.exe", "t", icon_key="k1"))
