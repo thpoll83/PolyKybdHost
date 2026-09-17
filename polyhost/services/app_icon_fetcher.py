@@ -70,10 +70,13 @@ class AppIconFetcher:
         # The pid an app was first seen with, so the fetch thread can resolve
         # the identity the window tick was not allowed to.
         self._asked_for: dict[str, object] = {}
+        # app name -> an AppIdentity the CALLER already resolved (forwarder
+        # mode). Absent for a local app, which this side resolves itself.
+        self._given_identity: dict[str, object] = {}
 
     # ------------------------------------------------------------------
 
-    def overlay_for(self, app_name: str, pid=None):
+    def overlay_for(self, app_name: str, pid=None, identity=None):
         """(mask, resolved name) for an app, without blocking. mask is None until known.
 
         A None mask with a name may mean "still resolving" or "nothing can draw
@@ -93,6 +96,14 @@ class AppIconFetcher:
                         app_name, "nothing could draw a mark for it"))
                 return mask, resolved
             self._asked_for.setdefault(app_name, pid)
+            # ⚠️ A FORWARDED app is resolved on the other machine and the
+            # answer travels with the report, because the pid, the .desktop
+            # entry and the PE resources all live there -- a keyboard
+            # machine on Windows has no desktop entries to consult at all.
+            # `setdefault` so the first identity wins for as long as the
+            # miss is cached, matching how `pid` behaves one line up.
+            if identity is not None:
+                self._given_identity.setdefault(app_name, identity)
             if app_name not in self._queue and app_name not in self._inflight:
                 self._queue.append(app_name)
         self._ensure_thread()
@@ -175,7 +186,8 @@ class AppIconFetcher:
                 continue
             with self._lock:
                 pid = self._asked_for.get(key)
-            mask, resolved, why = self._resolve(key, pid)
+                given = self._given_identity.get(key)
+            mask, resolved, why = self._resolve(key, pid, given)
             with self._lock:
                 self._masks[key] = (mask, resolved)
                 if why is not None:
@@ -193,7 +205,7 @@ class AppIconFetcher:
                     # report.
                     self.log.debug("app-icon ready callback failed", exc_info=True)
 
-    def _resolve(self, app_name: str, pid=None):
+    def _resolve(self, app_name: str, pid=None, given=None):
         """(mask, resolved_name, why_it_missed) -- `why` is None when one drew.
 
         Runs on the fetch thread, which is the only place allowed to do I/O.
@@ -208,14 +220,19 @@ class AppIconFetcher:
         The ORDER lives in `program_overlay` (OS icon, then catalog), not here.
         This function decides only what to log and why a miss missed.
         """
-        try:
-            identity = os_app_icon.app_identity(pid, app_name)
-        except Exception:
-            # Never raises by contract, but a backend is three platforms of
-            # file parsing and a miss here must cost the catalog route, not
-            # the whole lookup.
-            self.log.debug("app identity failed for '%s'", app_name, exc_info=True)
-            identity = os_app_icon.app_identity(None, "")
+        if given is not None:
+            # Already resolved, on the machine that is actually running the app.
+            identity = given
+        else:
+            try:
+                identity = os_app_icon.app_identity(pid, app_name)
+            except Exception:
+                # Never raises by contract, but a backend is three platforms of
+                # file parsing and a miss here must cost the catalog route, not
+                # the whole lookup.
+                self.log.debug("app identity failed for '%s'", app_name,
+                               exc_info=True)
+                identity = os_app_icon.app_identity(None, "")
         try:
             mask, resolved = app_icons.program_overlay(
                 app_name, identity, self._cache_dir)

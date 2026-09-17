@@ -72,6 +72,11 @@ class OverlayHandler:
         self.url_provider = url_provider
         self.current_url = None
         self.current_entry = None
+        # The focused app's NORMALISED name, as the matcher saw it. Kept so the
+        # generic-icon path can ask about the same application the mapping was
+        # tested against -- re-deriving it there would be a second normaliser
+        # free to disagree with this one.
+        self.app_name = None
         self.last_entry = None
         # Tracks whether overlays are currently enabled on the device, so a
         # same-app title change doesn't re-issue an ENABLE that's already in
@@ -256,6 +261,7 @@ class OverlayHandler:
                                 app_name = raw_app_name.split(".",-1)[0].lower()
                             else:
                                 app_name = raw_app_name.lower()
+                            self.app_name = app_name
                             # For a browser, resolve the focused tab's URL so the
                             # matcher can key overlays off the website (see
                             # handler/browser_url.py). None for non-browsers or
@@ -308,6 +314,26 @@ class OverlayHandler:
 
         # self.log.info("Nothing at all")
         return None, OverlayCommand.NONE
+
+    def focused_app(self):
+        """``(name, identity)`` for the focused application, or ``(None, None)``.
+
+        ``identity`` is an :class:`AppIdentity` only for a FORWARDED window, where
+        the forwarder already resolved it on the machine running the app. It is
+        None for a local window, which this machine resolves itself.
+
+        ⚠️ Both come from here rather than from the caller re-deriving them: the
+        name is the one the MATCHER used, so "no template covers this app" and
+        "draw a generic mark for this app" can never disagree about which
+        application they mean.
+        """
+        rh = getattr(self, "remote_handler", None)
+        if rh is not None and self.is_remote_mapping_entry():
+            name = getattr(rh, "name", None)
+            if name:
+                return name, rh.forwarded_identity(name)
+            return None, None
+        return self.app_name, None
 
     def is_remote_mapping_entry(self):
         return (
