@@ -408,10 +408,27 @@ class PolyForwarder(QApplication):
                 # Follow up NOW rather than waiting for the next window change:
                 # otherwise the mark appears only once the user switches away
                 # and back, which reads as the feature not working.
-                self._report_session.report(
-                    host, handle, name, title, os=self._os_value, url=url,
-                    names=ident.get("names"), icon_key=ident.get("icon_key"),
-                    icon=ident["icon"])
+                #
+                # ⚠️ Guarded SEPARATELY, and the report above has already
+                # landed. This second call carries nothing the keyboard needs to
+                # track the window, so a rejected icon must not be reported as a
+                # failed window report -- that is the tray mark going red and
+                # `send_to_host` retrying over a keycap decoration.
+                try:
+                    self._report_session.report(
+                        host, handle, name, title, os=self._os_value, url=url,
+                        names=ident.get("names"), icon_key=ident.get("icon_key"),
+                        icon=ident["icon"])
+                except Exception as e:
+                    # Drop it for this app rather than re-offering forever: the
+                    # receiver asks on every report, so an icon it will not
+                    # accept would otherwise be re-sent on every window change.
+                    self.log.warning(
+                        "Could not send the app icon for %r (%d B) to %s: %s"
+                        " -- window reporting is unaffected",
+                        name, len(ident.get("icon") or b""), host, e)
+                    ident.pop("icon", None)
+                    ident.pop("icon_key", None)
             return True
         except Exception as e:
             self.log.error("Window-report RPC to %s failed: %s", host, e)
@@ -444,10 +461,19 @@ class PolyForwarder(QApplication):
             if got.names:
                 ident["names"] = list(got.names)
             if got.icon:
-                ident["icon"] = got.icon
+                # ⚠️ SHRUNK before it goes anywhere near the wire. A stock VS
+                # Code icon is 512x512 / ~220 KB, which the window-report
+                # endpoint refuses outright (it bounds its one network-reachable
+                # method on purpose) -- so the whole report failed and the mark
+                # never arrived. The receiver reduces to a 38 px box regardless.
+                from polyhost.services import icon_binarise
+                icon = icon_binarise.shrink_for_transport(got.icon)
+                ident["icon"] = icon
                 # A content hash, so a theme change or an app update yields a
                 # DIFFERENT key and the receiver re-fetches. A path would not.
-                ident["icon_key"] = hashlib.sha256(got.icon).hexdigest()[:16]
+                # Taken over the bytes we SEND, so the key names what the
+                # receiver actually holds.
+                ident["icon_key"] = hashlib.sha256(icon).hexdigest()[:16]
         except Exception as e:
             self.log.debug("No OS identity for %r: %s", key, e)
         self._identity_cache[key] = ident

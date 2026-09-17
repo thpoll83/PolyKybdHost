@@ -55,6 +55,15 @@ IDEAL_LIT = 0.35
 # tuned until a particular icon passes stops meaning anything.
 MIN_SCORE = 0.30
 
+# The long edge an icon is shrunk to before it crosses the network. The
+# receiver reduces to `app_icons.PROGRAM_ICON_BOX` (38) anyway, so 4x that is
+# ample headroom for its own LANCZOS pass and everything above it is bytes
+# nobody looks at. ⚠️ Cannot be DERIVED from that constant -- `app_icons`
+# imports this module, so importing it back would be a cycle -- so
+# `tests/services/icon_transport_test.py` asserts the 4x relation instead.
+TRANSPORT_MAX_PX = 160
+
+
 
 def _to_rgba(image):
     """`image` as an RGBA numpy array, or None."""
@@ -301,3 +310,78 @@ def choose(image, box: int):
         if value > best[2]:
             best = (mask, name, value)
     return best
+
+
+def looks_like_svg(data: bytes) -> bool:
+    """True for SVG bytes, including a file that opens with an XML prologue.
+
+    ⚠️ ONE definition. `app_icons.render_os_overlay` routes on it (Pillow
+    cannot read SVG at all, and most of a Linux icon theme is SVG) and
+    `shrink_for_transport` refuses to touch vector on the strength of it; a
+    second copy that drifted would send one of them the wrong way.
+    """
+    head = (data or b"")[:512].lstrip()
+    return head.startswith(b"<?xml") or head.startswith(b"<svg") or b"<svg" in head
+
+
+def shrink_for_transport(data: bytes, max_px: int = TRANSPORT_MAX_PX) -> bytes:
+    """`data`, re-encoded smaller when it is a raster icon bigger than `max_px`.
+
+    The forwarder sends an app icon to the keyboard machine over the network,
+    where it is reduced to a 38 px mark. A stock VS Code icon is 512x512 and
+    measured 220 KB -- over the window-report endpoint's bounded-input cap, so
+    the report was REFUSED and the mark never arrived. Shrinking at the sender
+    fixes that at the source rather than by raising a cap whose whole purpose is
+    to bound the one method reachable on the network.
+
+    ⚠️ Deliberately NOT a binarisation. The receiver picks a conversion per icon
+    (`choose`) and that scoring is still being tuned; converting here would
+    freeze every forwarded app at the SENDER's version of it, and the two
+    machines need not even run the same release. Resolution is the redundant
+    part; the reading is not.
+
+    ⚠️ SVG is returned untouched. It is text, already small, and rasterising it
+    here would throw away the vector path that is the difference between the
+    Linux backend working and scoring -1.00 on nearly everything.
+
+    ⚠️ An ICO/ICNS is FLATTENED to its largest frame when it is over-size, which
+    is exactly what the receiver picks anyway. Under the limit it is passed
+    through, so nothing re-encodes without reason.
+
+    Never raises: returns the original bytes if anything at all goes wrong. A
+    cosmetic feature must not break window reporting.
+    """
+    if not data or looks_like_svg(data):
+        return data
+    try:
+        import io as _io
+
+        from PIL import Image
+
+        image = Image.open(_io.BytesIO(data))
+        # ⚠️ No frame selection here. Pillow already reports a multi-frame
+        # .ico/.icns AT ITS LARGEST frame -- measured, a 3-frame ICO opens at
+        # 256 and an 8-entry ICNS at 1024 -- so the `image.size = max(sizes)`
+        # this used to copy from `app_icons` was a no-op for ICO and BROKE
+        # ICNS: its `sizes` entries are 3-tuples (w, h, scale), and assigning
+        # one made the decode raise, so the fallback returned the icon
+        # unshrunk. A 4.1 MB .icns then crossed the wire and the endpoint
+        # refused it -- the reported bug, on the other platform.
+        image.load()
+        if max(image.size) <= max_px:
+            return data
+        image = image.convert("RGBA")
+        image.thumbnail((max_px, max_px), Image.LANCZOS)
+        out = _io.BytesIO()
+        image.save(out, format="PNG")
+        # ⚠️ Returned even on the rare occasion it is BIGGER in bytes. A smooth
+        # 256x256 icon can encode to 1.5 KB and re-encode to more, and keeping
+        # the original there was tried -- but it leaves the PIXEL count
+        # unbounded, and pixels are what the receiver has to decode. Bounding
+        # the raster is the invariant worth having; at these scales both forms
+        # are far under the endpoint's byte cap, so the trade costs nothing.
+        return out.getvalue()
+    except Exception:
+        log.debug("Could not shrink a %d-byte icon for transport; sending as-is",
+                  len(data), exc_info=True)
+        return data

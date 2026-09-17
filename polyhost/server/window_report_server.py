@@ -36,7 +36,16 @@ from polyhost.server.mpc_listener import MpcListenerServer
 # ~16 KB, and base64 inflates by 4/3. 64 KB of base64 leaves ~48 KB of icon,
 # generous for anything legitimate and still a bounded read on the one method
 # exposed to the network.
-MAX_ICON_B64 = 64 * 1024
+# ⚠️ DERIVED from what a shrunk icon can be, not guessed. It was 64 KB on the
+# premise that "the largest on a stock GNOME install measured ~16 KB"; a stock
+# VS Code icon is 512x512 / ~220 KB, so the endpoint REFUSED a legitimate report
+# (measured 2026-09-17, 294276 base64 chars). The sender now bounds the RASTER
+# at icon_binarise.TRANSPORT_MAX_PX, so the real ceiling is an incompressible
+# PNG of that size: 160x160 RGBA is 102400 raw and measured 102685 encoded,
+# i.e. ~136916 base64 chars. 192 KB leaves ~40% headroom for a format we do not
+# ship today without becoming a memory lever -- which is the whole point of a
+# cap on the ONE method reachable over the network.
+MAX_ICON_B64 = 192 * 1024
 # The OS offers one display name on Linux and at most a handful on Windows.
 MAX_NAMES = 8
 

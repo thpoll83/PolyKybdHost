@@ -426,9 +426,11 @@ def render_overlay(svg_path: str, box: int = PROGRAM_ICON_BOX):
 
 
 def _looks_like_svg(data: bytes) -> bool:
-    """True for SVG bytes, including a file that opens with an XML prologue."""
-    head = (data or b"")[:512].lstrip()
-    return head.startswith(b"<?xml") or head.startswith(b"<svg") or b"<svg" in head
+    """True for SVG bytes. Delegates -- `icon_binarise` owns the one definition,
+    because the forwarder's `shrink_for_transport` routes on it too and a second
+    copy that drifted would send one of the two the wrong way."""
+    from polyhost.services import icon_binarise
+    return icon_binarise.looks_like_svg(data)
 
 
 def render_os_overlay(data: bytes, box: int = PROGRAM_ICON_BOX):
