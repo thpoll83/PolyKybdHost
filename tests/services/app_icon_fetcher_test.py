@@ -457,5 +457,59 @@ class IdentityArrivesInPiecesTest(unittest.TestCase):
         self.assertIsNotNone(mask)
         self.assertEqual(resolved, "os:drew")
 
+
+class TwoForwardersInterleaveTest(unittest.TestCase):
+    """An OLD forwarder reporting alongside a new one must not poison the cache.
+
+    ⚠️ Not hypothetical. Measured 2026-09-17: a field log showed TWO forwarder
+    processes on one machine writing to one file -- `forwarder.py:511` from
+    commit 8f26a6f (2026-09-07, which sends no identity at all) interleaved with
+    `forwarder.py:859` from the current branch. The tell was in the same log:
+    `Browser-report listener unavailable (OSError: [Errno 98] Address already in
+    use)`, i.e. a forwarder was already up when the second one started.
+
+    The old process reports every window with no names and no icon_key, so
+    whichever report the daemon's tick happened to act on decided whether that
+    app ever got a mark -- which is why the pattern looked arbitrary and moved
+    between runs rather than following anything about the apps.
+    """
+
+    def _fetcher(self, resolve):
+        f = AppIconFetcher()
+        f._resolve = resolve
+        return f
+
+    def test_an_identity_less_report_between_real_ones_is_harmless(self):
+        def resolve(app_name, pid=None, given=None):
+            if given is not None and getattr(given, "names", ()):
+                return object(), "os:drew", None
+            return None, "si:missed", "no catalog carries it"
+
+        old = {}                                   # what the stale forwarder sends
+        new = {"names": ("Text Editor",), "icon_key": "k"}
+        f = self._fetcher(resolve)
+        try:
+            # ⚠️ The EMPTY DICT is passed as-is, not pre-filtered to None.
+            # `forwarded_identity` does return None for it now, but this asserts
+            # the fetcher does not depend on that -- one layer converting it is
+            # a fix, two layers agreeing is the property. Passing `or None` here
+            # made the test survive the mutation that re-breaks it.
+            for _ in range(3):
+                f.overlay_for("gnome-text-edit", identity=old)
+                time.sleep(0.02)
+            mask = None
+            for _ in range(80):
+                mask, resolved = f.overlay_for("gnome-text-edit",
+                                               identity=new)
+                if mask is not None:
+                    break
+                # ...and keeps interleaving afterwards.
+                f.overlay_for("gnome-text-edit", identity=old)
+                time.sleep(0.02)
+        finally:
+            f.stop()
+        self.assertIsNotNone(mask, "the live forwarder's identity must still win")
+        self.assertEqual(resolved, "os:drew")
+
 if __name__ == "__main__":
     unittest.main()
