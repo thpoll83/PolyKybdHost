@@ -47,13 +47,30 @@ IDEAL_LIT = 0.35
 # Below this, `choose()` has found nothing worth drawing. A wrong or unreadable
 # mark is worse than none -- the user cannot tell a bad render from a bug.
 #
-# ⚠️ The value is taken from where the DATA separates, not chosen: over the
-# seven reference icons the one unreadable render (LibreOffice Draw, a smooth
-# gradient with no two-tone structure) scores 0.174 while the WORST legible one
-# scores 0.426. Anything in that gap rejects exactly the blob. Re-derive it from
-# the histogram rather than nudging it if a new icon lands in between -- a floor
-# tuned until a particular icon passes stops meaning anything.
-MIN_SCORE = 0.30
+# ⚠️ The value is taken from where the DATA separates, not chosen, and it has
+# been RE-DERIVED once (0.30 -> 0.25, 2026-09-17) because the original corpus
+# was seven icons. Over 130 real application icons -- the Humanity set, the
+# LibreOffice 512px set, /usr/share/pixmaps and 19 upstream GNOME app icons --
+# scored through the shipped pipeline:
+#
+#     min 0.204   p25 0.418   median 0.482   max 0.845
+#     exactly ONE of the 130 falls below 0.30 (GNOME Calendar, 0.204)
+#
+# So the band between 0.20 and 0.30 is nearly EMPTY, and the old floor was not
+# holding a line the data draws -- it sat in the middle of a gap. What bounds it
+# from below is unchanged and measured: the one unreadable render (LibreOffice
+# Draw, a smooth gradient with no two-tone structure) scores 0.174, and the
+# suite's synthetic blob and fragment fixtures score 0.074 and 0.059. 0.25
+# clears all three by a wide margin and still refuses Calendar.
+#
+# What it buys is the near-miss band a two-decimal log could not even print
+# honestly: a field report had GNOME Calculator's Yaru icon at 0.298, refused by
+# a hundredth. Nothing else in 130 icons changes hands.
+#
+# ⚠️ Do NOT lower it further without re-measuring. 0.20 would admit Calendar and
+# sit 0.026 above the documented unreadable case, which is not a separation --
+# and a floor tuned until a particular icon passes stops meaning anything.
+MIN_SCORE = 0.25
 
 # The long edge an icon is shrunk to before it crosses the network. The
 # receiver reduces to `app_icons.PROGRAM_ICON_BOX` (38) anyway, so 4x that is

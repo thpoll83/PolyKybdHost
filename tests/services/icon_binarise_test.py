@@ -129,5 +129,35 @@ class GateTest(unittest.TestCase):
         self.assertLess(ib.score(_blob()), ib.MIN_SCORE)
 
 
+
+class MinScoreFloorTest(unittest.TestCase):
+    """What MIN_SCORE must stay above, whatever it is set to.
+
+    ⚠️ The value moved once (0.30 -> 0.25, 2026-09-17) after the corpus grew
+    from seven icons to 130, which showed the 0.20-0.30 band is nearly empty --
+    the old floor sat in the middle of a gap rather than on an edge of it. These
+    are the bounds that make any such move safe, so they are asserted rather
+    than left to the comment beside the constant.
+    """
+
+    def test_it_still_refuses_the_three_measured_failures(self):
+        # blob 0.074, fragments 0.059, and the documented unreadable render
+        # (LibreOffice Draw, a smooth gradient) at 0.174.
+        self.assertGreater(ib.MIN_SCORE, 0.174,
+                           "must stay above the documented unreadable render")
+        self.assertGreater(ib.score(_blob()), -2)       # sanity: it renders
+        self.assertLess(ib.score(_blob()), ib.MIN_SCORE)
+        self.assertLess(ib.score(_fragments()), ib.MIN_SCORE)
+
+    def test_the_margin_above_that_case_is_a_SEPARATION_not_a_hair(self):
+        # 0.20 would clear the 0.174 case by 0.026, which is noise rather than a
+        # separation. This is what stops the next "just a bit lower" from
+        # landing there.
+        self.assertGreaterEqual(ib.MIN_SCORE - 0.174, 0.05)
+
+    def test_line_art_still_passes(self):
+        # The must-pass fixture sits at 0.319, so it has never had much room.
+        self.assertGreaterEqual(ib.score(_line_art()), ib.MIN_SCORE)
+
 if __name__ == "__main__":
     unittest.main()
