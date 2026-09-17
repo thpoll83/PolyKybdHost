@@ -619,7 +619,7 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
         source = getattr(identity, "icon_path", "") or ""
         if mask is not None and score >= icon_binarise.MIN_SCORE:
             log.info("Program mark for %s from the OS: %s (%d B, %s, score "
-                     "%.2f >= %.2f)", app_name, source or "<no path>",
+                     "%.3f >= %.3f)", app_name, source or "<no path>",
                      len(icon), conversion, score, icon_binarise.MIN_SCORE)
             return mask, "os:" + os.path.basename(source)
         # ⚠️ INFO, not debug, and it names every number. "The icon does not
@@ -627,8 +627,12 @@ def program_overlay(app_name: str, identity=None, cache_dir: str | None = None,
         # testing actually asks are WHICH file was read, what it scored and
         # against what -- and answering them cost a session of guessing before
         # this line existed. It runs once per application, not per tick.
+        # ⚠️ THREE decimals. At two, a near miss printed "score 0.30 < 0.30"
+        # -- a line that reads as a contradiction and sends the reader looking
+        # for a comparison bug. Measured on GNOME Calculator, which lands just
+        # under the gate.
         log.info("The OS icon for %s does not survive 1-bit: %s (%d B, %s, "
-                 "score %.2f < %.2f) -- falling through to the catalog",
+                 "score %.3f < %.3f) -- falling through to the catalog",
                  app_name, source or "<no path>", len(icon),
                  conversion or "nothing rendered", score,
                  icon_binarise.MIN_SCORE)

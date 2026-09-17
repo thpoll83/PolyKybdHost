@@ -132,22 +132,43 @@ class AppIconFetcher:
         if not app_name:
             return None, None
         with self._lock:
-            if app_name in self._masks:
-                mask, resolved = self._masks[app_name]
-                if mask is None:
-                    self._say(app_name, self._why.get(
-                        app_name, "nothing could draw a mark for it"))
-                return mask, resolved
-            self._asked_for.setdefault(app_name, pid)
             # ⚠️ A FORWARDED app is resolved on the other machine and the
             # answer travels with the report, because the pid, the .desktop
             # entry and the PE resources all live there -- a keyboard
             # machine on Windows has no desktop entries to consult at all.
-            # `setdefault` so the first identity wins for as long as the
-            # miss is cached, matching how `pid` behaves one line up.
-            if identity is not None:
-                self._given_identity.setdefault(
-                    app_name, _as_identity(identity, app_name))
+            # Recorded BEFORE the cache is read, because of the race below.
+            first_identity = (identity is not None
+                              and self._given_identity.get(app_name) is None)
+            if first_identity:
+                self._given_identity[app_name] = _as_identity(identity,
+                                                              app_name)
+            if app_name in self._masks:
+                mask, resolved = self._masks[app_name]
+                # ⚠️ A MISS RESOLVED BEFORE THE IDENTITY ARRIVED IS RETRIED,
+                # or the identity is worthless for the app that needed it most.
+                # The forwarder resolves an app on FIRST sighting, which is file
+                # I/O -- a desktop scan and a theme walk, ~100-300 ms measured --
+                # so its very first report carries no identity at all. Whether
+                # the daemon's tick resolves before or after that is a RACE, and
+                # the loser is cached: measured on one live pair, GNOME
+                # Calculator and Settings won and drew, while Text Editor, VS
+                # Code and Nautilus lost by ~100 ms and logged `OS names:
+                # <none>` for an identity that arrived 200 ms later and was
+                # never looked at again.
+                #
+                # Only a MISS is dropped. A mask that drew is kept, so a late
+                # identity can never take a working mark away.
+                if mask is None and first_identity:
+                    del self._masks[app_name]
+                    self._why.pop(app_name, None)
+                    self._told = {(a, r) for (a, r) in self._told
+                                  if a != app_name}
+                else:
+                    if mask is None:
+                        self._say(app_name, self._why.get(
+                            app_name, "nothing could draw a mark for it"))
+                    return mask, resolved
+            self._asked_for.setdefault(app_name, pid)
             if app_name not in self._queue and app_name not in self._inflight:
                 self._queue.append(app_name)
         self._ensure_thread()

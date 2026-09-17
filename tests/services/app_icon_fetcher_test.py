@@ -264,5 +264,103 @@ class ForwardedIdentityShapeTest(unittest.TestCase):
              "icon_key": "k"}, "x")
         self.assertEqual(ident.icon_path, "/usr/share/icons/x.png")
 
+
+class LateIdentityRetryTest(unittest.TestCase):
+    """A miss resolved BEFORE the identity arrived must be retried.
+
+    ⚠️ The forwarder resolves an app on FIRST sighting, which is file I/O -- a
+    desktop scan plus a theme walk, ~100-300 ms measured -- so its very first
+    report carries no identity at all. Whether the daemon's tick resolves before
+    or after that is a RACE, and the loser used to be cached forever.
+
+    Measured on one live pair (2026-09-17): GNOME Calculator and Settings won
+    the race and drew, while Text Editor, VS Code and Nautilus lost it by about
+    100 ms and logged `OS names: <none>` for an identity that arrived 200 ms
+    later and was never looked at again. Same code, same machines, opposite
+    outcomes -- which is what made it read as an identity bug rather than an
+    ordering one.
+    """
+
+    def _fetcher(self, resolve):
+        f = AppIconFetcher()
+        f._resolve = resolve
+        return f
+
+    def _drain(self, f, name, tries=80):
+        for _ in range(tries):
+            mask, resolved = f.overlay_for(name)
+            if mask is not None:
+                return mask, resolved
+            time.sleep(0.02)
+        return f.overlay_for(name)
+
+    def test_a_miss_without_an_identity_is_retried_WITH_one(self):
+        seen = []
+
+        def resolve(app_name, pid=None, given=None):
+            seen.append(given)
+            if given is None:
+                return None, "si:missed", "no catalog carries it"
+            return object(), "os:drew", None
+
+        f = self._fetcher(resolve)
+        try:
+            self._drain(f, "app", tries=40)
+            self.assertEqual(f.overlay_for("app"), (None, "si:missed"))
+            f.overlay_for("app", identity={"names": ("A",), "icon": b"x",
+                                           "icon_key": "k"})
+            mask, resolved = self._drain(f, "app")
+        finally:
+            f.stop()
+        self.assertIsNotNone(mask, "the late identity must get a second look")
+        self.assertEqual(resolved, "os:drew")
+        self.assertIsNone(seen[0])
+        self.assertIsNotNone(seen[-1])
+
+    def test_a_SUCCESSFUL_mark_is_never_dropped_by_a_late_identity(self):
+        # The other direction: a late identity must not take a working mark
+        # away and re-run the whole resolution.
+        calls = []
+
+        def resolve(app_name, pid=None, given=None):
+            calls.append(given)
+            return object(), "si:drew", None
+
+        f = self._fetcher(resolve)
+        try:
+            self._drain(f, "app")
+            before = len(calls)
+            mask, resolved = f.overlay_for(
+                "app", identity={"names": ("A",), "icon": b"x", "icon_key": "k"})
+        finally:
+            f.stop()
+        self.assertIsNotNone(mask)
+        self.assertEqual(resolved, "si:drew")
+        self.assertEqual(len(calls), before, "no re-resolution after a hit")
+
+    def test_a_SECOND_identity_does_not_re_trigger_forever(self):
+        # The tick calls overlay_for continuously, and the same identity comes
+        # with every report. Only the FIRST one may invalidate a miss, or a
+        # permanently-unresolvable app re-queues on every window tick.
+        calls = []
+
+        def resolve(app_name, pid=None, given=None):
+            calls.append(given)
+            return None, "si:missed", "nope"
+
+        ident = {"names": ("A",), "icon": b"x", "icon_key": "k"}
+        f = self._fetcher(resolve)
+        try:
+            f.overlay_for("app", identity=ident)
+            self._drain(f, "app", tries=40)
+            after_first = len(calls)
+            for _ in range(5):
+                f.overlay_for("app", identity=ident)
+            time.sleep(0.1)
+        finally:
+            f.stop()
+        self.assertEqual(len(calls), after_first,
+                         "a repeated identity must not re-queue the app")
+
 if __name__ == "__main__":
     unittest.main()
