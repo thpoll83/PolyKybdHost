@@ -143,8 +143,10 @@ class FakeCore:
     def set_all_overlay_usage(self):
         return (True, "all")
 
-    def report_window(self, handle, name, title, os=None, url=None):
+    def report_window(self, handle, name, title, os=None, url=None,
+                      names=(), icon_key=None, icon=None):
         self.calls.append(("report_window", handle, name, title, os, url))
+        self.last_identity = (names, icon_key, icon)
         return (True, {"reported": True})
 
     def send_overlay_mapping(self, mapping):

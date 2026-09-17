@@ -265,7 +265,9 @@ class ControlServer(MpcListenerServer):
             p.M_TELEMETRY_SEND: lambda conn, params: _unwrap(c.telemetry_send_now()),
             p.M_WINDOW_REPORT: lambda conn, params: _unwrap(c.report_window(
                 params["handle"], params["name"], params.get("title", ""),
-                os=params.get("os"), url=params.get("url"))),
+                os=params.get("os"), url=params.get("url"),
+                names=tuple(params.get("names") or ()),
+                icon_key=params.get("icon_key"))),
             p.M_HOST_SHUTDOWN: self._cmd_host_shutdown,
             p.EVENTS_SUBSCRIBE: self._cmd_events_subscribe,
         }
