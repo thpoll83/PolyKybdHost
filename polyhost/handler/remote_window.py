@@ -1,3 +1,4 @@
+import collections
 import logging
 import re
 import socket
@@ -13,6 +14,8 @@ BUFFER_SIZE = 1024
 # stalls every daemon/GUI quit by that long while accept() waits out its timeout.
 # Kept short so a quit is prompt; the idle re-check cost is one syscall/second.
 RECV_ACCEPT_TIMEOUT = 1.0
+# Generous next to how many applications a person actually focuses.
+MAX_FORWARDED_APPS = 64
 
 
 # Needs to be started as thread
@@ -77,6 +80,13 @@ class RemoteHandler:
         self.last_entry = None
         self.connections = {}
         self.mapping = mapping
+        # app name -> {"names": (...), "icon_key": str, "icon": bytes}, as the
+        # FORWARDER resolved it. ⚠️ Bounded: on the network path the app name is
+        # attacker-shaped, so an unbounded dict keyed on it is a slow memory leak
+        # against the process that owns the HID device. A user focuses a handful
+        # of applications; MAX_FORWARDED_APPS is far above that and the eviction
+        # only costs one re-send of an icon.
+        self._forwarded_identity = collections.OrderedDict()
         # The legacy plaintext relay (receive_from_forwarder, TCP_PORT) is
         # unauthenticated and binds all interfaces, so it is OFF by default and
         # only started when the `dev_legacy_plaintext_relay` setting opts in.
@@ -134,7 +144,18 @@ class RemoteHandler:
         self.forwarder.daemon = True
         self.forwarder.start()
 
-    def report_window(self, handle, name, title, os=None, url=None):
+    def forwarded_identity(self, name):
+        """What the FORWARDER resolved for `name`, or None.
+
+        The generic-icon path reads this instead of calling `os_app_icon`: the
+        application runs on the other machine, so only the forwarder can ask the
+        OS that is actually running it. A keyboard machine on Windows has no
+        `.desktop` entries to consult at all.
+        """
+        return self._forwarded_identity.get(str(name))
+
+    def report_window(self, handle, name, title, os=None, url=None,
+                      names=(), icon_key=None, icon=None):
         """Single entry point for an active-window report, from either source:
         the cross-machine TCP relay (`receive_from_forwarder`) or the
         ``window.report`` control-socket RPC / ``polyctl window report``.
@@ -157,8 +178,55 @@ class RemoteHandler:
         # onto the next non-browser window. The sender already gates freshness
         # and focus, so None here means "this window has no URL".
         self.forwarded_url = url
+        want_icon = self._note_identity(str(name), names, icon_key, icon)
         self.log.debug_detailed(
-            "report_window: handle=%s name=%s title=%s os=%s", handle, name, title, os)
+            "report_window: handle=%s name=%s title=%s os=%s names=%s icon=%s",
+            handle, name, title, os, names or "()",
+            ("%d B" % len(icon)) if icon else ("wanted" if want_icon else "-"))
+        return {"want_icon": True} if want_icon else None
+
+    def _note_identity(self, name, names, icon_key, icon):
+        """Record what the forwarder resolved; answer whether we still need art.
+
+        ⚠️ The ANSWER comes from here rather than from the forwarder remembering
+        what it sent, and that is the whole point. A forwarder-side "already
+        sent" flag desyncs from reality in three ordinary ways -- this daemon
+        restarts with an empty cache, `--host-file` repoints the forwarder at a
+        DIFFERENT machine mid-session (`WindowReportSession` reconnects for
+        exactly that), or the entry is evicted here. Each one leaves the sender
+        certain it has delivered an icon the receiver does not have, and the app
+        silently never gets a mark again. Asking on every report costs one bool
+        in a frame that is already being sent, and cannot go stale.
+
+        The same shape as the font pack's rule that a version comparison alone
+        must never decide what to re-flash: the receiver's own state decides.
+        """
+        if not name:
+            return False
+        known = self._forwarded_identity.get(name)
+        if known is None:
+            known = {}
+            self._forwarded_identity[name] = known
+        if names:
+            known["names"] = tuple(names)
+        # ⚠️ Refreshed on EVERY report, not only when the entry is created. Doing
+        # it on insert alone inverts the cache: the app you actually use reports
+        # over and over without ever moving, ageing towards eviction, while an
+        # app seen once sits at the fresh end. The bound is enforced here too, so
+        # it cannot be skipped by a path that only updates.
+        self._forwarded_identity.move_to_end(name)
+        while len(self._forwarded_identity) > MAX_FORWARDED_APPS:
+            self._forwarded_identity.popitem(last=False)
+        if icon:
+            known["icon"] = icon
+            known["icon_key"] = icon_key
+            return False
+        # ⚠️ Keyed on icon_key, not merely on presence: a theme change or an app
+        # update gives the same application a different icon, and "we have AN
+        # icon" would pin the old one forever.
+        if icon_key is None:
+            return False                # the forwarder found no icon to offer
+        return known.get("icon_key") != icon_key
 
     def _match_remote(self):
         """Match the current remote window's app/title against the mapping using
