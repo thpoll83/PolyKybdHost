@@ -158,6 +158,50 @@ class FidelityTest(unittest.TestCase):
         disc = np.sqrt((grid[0] - 18.5) ** 2 + (grid[1] - 18.5) ** 2) <= 17
         self.assertGreater(ib.fidelity(disc, image), 0.8)
 
+    def test_a_SATURATED_COLOUR_is_ink_and_not_blank_paper(self):
+        # ⚠️ The reference was `1 - luma`, which weights green x0.72 and blue
+        # x0.07 — so a saturated yellow on white read as very nearly nothing.
+        # GNOME Calculator is two panels, grey and yellow; the yellow half
+        # measured 0.234 against the grey half's 0.623, i.e. the reference said
+        # it was almost blank, so the render that DROPPED it scored 0.983 and
+        # shipped. Reported from hardware as "the right side became invisible".
+        image = _source(lambda d, s: (
+            d.rectangle([0, 0, s // 2, s], fill=(70, 70, 70, 255)),
+            d.rectangle([s // 2, 0, s, s], fill=(255, 222, 0, 255))))
+        reference = ib._source_ink(image, (38, 38))
+        grey, yellow = reference[:, :19].mean(), reference[:, 19:].mean()
+        self.assertGreater(yellow, 0.4 * grey,
+                           "a bright colour is ink, not paper")
+
+    def test_a_render_that_DROPS_A_PANEL_is_not_perfectly_faithful(self):
+        # ⚠️ Correlation alone CANNOT see this — it is invariant to scale, so a
+        # render that blanks a whole region still correlates ~1 as long as what
+        # it does draw lines up. That is exactly how Calculator's `adaptive`
+        # reading, with the yellow half completely empty, scored higher than
+        # every render that drew both halves. `coverage` asks the question
+        # correlation cannot: of the blocks the source fills, how many did the
+        # render put anything at all into.
+        image = _source(lambda d, s: (
+            d.rectangle([4, 4, s // 2 - 2, s - 4], fill=(40, 40, 40, 255)),
+            d.rectangle([s // 2 + 2, 4, s - 4, s - 4], fill=(255, 210, 0, 255))))
+        both = np.zeros((38, 38), dtype=bool)
+        both[4:34, 4:17] = True
+        both[4:34:2, 21:34:2] = True          # the second panel, as a texture
+        dropped = both.copy()
+        dropped[:, 19:] = False               # the same render minus that panel
+        self.assertGreater(ib.fidelity(both, image), ib.fidelity(dropped, image))
+
+    def test_COVERAGE_reads_the_polarity_that_CORRELATED(self):
+        # ⚠️ Otherwise it refuses every dark-plate icon outright: there the ink
+        # is deliberately where the source is LIGHT, so coverage measured on the
+        # mask reads ~0 for a render that is entirely faithful. The absolute
+        # correlation already accepts both readings; coverage has to follow it.
+        image = _source(self._plate)
+        mask = dict(ib.CONVERSIONS)["adaptive"](image, 38)
+        self.assertGreater(ib.fidelity(mask, image), 0.0)
+        self.assertAlmostEqual(ib.fidelity(mask, image),
+                               ib.fidelity(~mask, image), places=6)
+
     def test_it_is_ROBUST_to_the_mask_being_a_different_shape(self):
         # A render is fitted to the box preserving aspect, so it is often not
         # square; the reference is cropped and resized to whatever it is.
@@ -165,6 +209,70 @@ class FidelityTest(unittest.TestCase):
         tall = np.zeros((38, 22), dtype=bool)
         tall[6:32, 4:18] = True
         self.assertGreater(ib.fidelity(tall, image), -1.0)
+
+
+class PolarityTest(unittest.TestCase):
+    """A dark plate with a glyph knocked out is a PICTURE, not a filled cell."""
+
+    def _plate(self, size=38):
+        """A terminal plate: lit everywhere but a `>_` knocked out of the middle."""
+        m = np.ones((size, size), dtype=bool)
+        m[0, 0] = m[0, -1] = m[-1, 0] = m[-1, -1] = False    # rounded corners
+        for i in range(9):                                   # the `>`
+            m[9 + i, 6 + 2 * i:10 + 2 * i] = False
+            m[26 - i, 6 + 2 * i:10 + 2 * i] = False
+        m[26:30, 24:34] = False                              # the `_`
+        return m
+
+    def _silhouette(self, size=38):
+        """The thing `MAX_LIT` exists to refuse: a filled shape with no hole."""
+        grid = np.mgrid[0:size, 0:size]
+        centre = (size - 1) / 2.0
+        return np.sqrt((grid[0] - centre) ** 2 + (grid[1] - centre) ** 2) <= size * 0.47
+
+    def test_a_knocked_out_GLYPH_is_read_rather_than_refused(self):
+        # ⚠️ Every term in `score()` reads ink as the minority, so a majority-lit
+        # render was refused outright by `MAX_LIT` however much picture it
+        # carried. Measured over the 87 distinct Yaru arts, that cost 9 icons
+        # their best reading: bash and the root terminal shipped a bare `>`
+        # fragment of their own lit background instead of the plate.
+        plate = self._plate()
+        self.assertGreater(plate.mean(), ib.MAX_LIT, "the fixture must be majority-lit")
+        self.assertGreater(ib.score(plate), ib.MIN_SCORE)
+
+    def test_a_FILLED_silhouette_is_still_refused(self):
+        # ⚠️ The gate, and it is not defensive. Without it the flip readmits the
+        # exact thing `MAX_LIT` was there for: a flat disc's inverse is the page
+        # around it, which has structure of its own and scores 0.43 — past
+        # `MIN_SCORE`, i.e. a confident offer to draw a blob on the ESC keycap.
+        disc = self._silhouette()
+        self.assertGreater(disc.mean(), ib.MAX_LIT)
+        self.assertEqual(ib.score(disc), -1.0)
+
+    def test_what_separates_them_is_an_ENCLOSED_HOLE_and_nothing_else(self):
+        # Neither lit fraction nor bounding-box fill tells the two apart — both
+        # are majority-lit and neither fills its own box. Measured at 38x38: all
+        # 13 silhouettes tried enclose EXACTLY 0.000 of their unlit pixels and
+        # all 20 real plate renders enclose 0.098 to 0.555, so the data separates
+        # at zero with a wide empty band above it.
+        self.assertEqual(ib._enclosed_share(self._silhouette()), 0.0)
+        self.assertGreater(ib._enclosed_share(self._plate()), ib.ENCLOSED_MIN)
+        self.assertLess(ib.ENCLOSED_MIN, 0.098, "below the smallest real case")
+        self.assertGreater(ib.ENCLOSED_MIN, 0.0, "above a single stray pixel")
+
+    def test_a_hole_that_TOUCHES_THE_EDGE_is_the_page_not_a_hole(self):
+        # The flood runs inward from the border, so a bite out of the side is
+        # reachable and does not count — which is what a silhouette's background
+        # is, seen from inside.
+        bitten = np.ones((38, 38), dtype=bool)
+        bitten[10:28, :8] = False
+        self.assertEqual(ib._enclosed_share(bitten), 0.0)
+
+    def test_the_flipped_render_is_scored_UNCHANGED_otherwise(self):
+        # The flip is a reading of the same mask, not a second scoring path: the
+        # plate scores exactly what its own inverse scores.
+        plate = self._plate()
+        self.assertAlmostEqual(ib.score(plate), ib.score(~plate), places=9)
 
 
 class ChooseTest(unittest.TestCase):

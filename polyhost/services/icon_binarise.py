@@ -224,6 +224,26 @@ DITHER_TUNINGS = (
 # the fewest weak matches.
 FIDELITY_BLOCK = 4
 
+# A reference block counts as INKED, for the coverage check in `fidelity()`, at
+# this share of the source's darkest block; a render's block counts as DRAWN at
+# this share of lit pixels. Both are deliberately loose -- coverage asks whether
+# a region was drawn AT ALL, not how well, because how well is what the
+# correlation beside it already measures. Half the peak splits the two panels of
+# every two-tone icon in the corpus, and one lit pixel in a 4x4 block is the
+# least a dither can put down while still claiming the region exists.
+COVERAGE_INK = 0.5
+COVERAGE_MIN = 0.05
+
+# A majority-lit render is only read as an INVERTED picture when this share of
+# its unlit pixels is enclosed by ink -- a glyph knocked out of a plate rather
+# than the page around a silhouette. The data separates at ZERO and leaves a wide
+# empty band: measured at the shipping 38x38, all 13 silhouettes tried (a flat
+# disc, a plain rounded rect, and the `alpha` reading of 11 real icons) enclose
+# EXACTLY 0.000, while all 20 real plate renders enclose 0.098 to 0.555. Any
+# floor inside that band is equally supported; this one sits ~5x above a
+# single-pixel hole and ~5x below the smallest real case.
+ENCLOSED_MIN = 0.02
+
 def dither_ink(image, box: int, gamma: float = 1.0, contrast: float = 2.5):
     """Error-diffused ink, dithered AT the target size. Keeps midtone AREAS.
 
@@ -396,6 +416,26 @@ def score(mask) -> float:
         return -1.0
     import numpy as np
     lit = float(mask.mean())
+    if lit > MAX_LIT and _enclosed_share(mask) >= ENCLOSED_MIN:
+        # A majority-lit render is the SAME PICTURE with the polarity flipped --
+        # a white `>_` knocked out of a black terminal plate, not a filled cell.
+        # Every term below reads ink as the minority, so measure the side that
+        # carries the shape. `fidelity()` already takes the ABSOLUTE correlation
+        # for exactly this reason; the gate was the half that still assumed a
+        # light page. Measured over the 87 distinct Yaru arts: 9 winners change,
+        # every one of them a dark-plate icon that had been rendering as a
+        # fragment of its own lit background (bash and the root terminal drew a
+        # bare `>`; Calls, Music and Snap Store drew their glyph in a noise
+        # field), and the winning lit range opens from 0.055-0.623 to
+        # 0.055-0.839 -- the top of which IS the plate.
+        #
+        # ⚠️ GATED ON AN ENCLOSED HOLE, because without it this readmits the one
+        # thing `MAX_LIT` exists to refuse: a filled silhouette's inverse is the
+        # page around it, which has structure of its own and scored 0.43 for a
+        # FLAT DISC -- past `MIN_SCORE`, i.e. a confident offer to draw a blob on
+        # the ESC keycap. See `_enclosed_share`.
+        mask = ~mask
+        lit = float(mask.mean())
     if lit > MAX_LIT or lit < MIN_LIT:
         return -1.0
     ink = int(mask.sum())
@@ -423,8 +463,17 @@ def _source_ink(image, shape):
     rgba = image.convert("RGBA")
     flat = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
     flat.alpha_composite(rgba)
-    grey = np.asarray(flat.convert("L")).astype("float32") / 255.0
-    ink = (1.0 - grey) * (np.asarray(rgba.split()[-1]).astype("float32") / 255.0 > 0.35)
+    # ⚠️ DISTANCE FROM THE PAGE, not darkness. Luma weights green x0.72 and blue
+    # x0.07, so a saturated colour on white reads as almost nothing: GNOME
+    # Calculator's yellow half measured 0.234 against its grey half's 0.623, i.e.
+    # the reference said the right panel was very nearly blank -- so the render
+    # that DROPPED that panel entirely scored 0.983 and shipped. Under this
+    # reference the same panel reads 0.481. Euclidean distance in RGB is the
+    # cheapest form that treats a bright colour as ink; it is not perceptual and
+    # does not need to be, because only the RANKING of block means is used.
+    rgb = np.asarray(flat.convert("RGB")).astype("float32") / 255.0
+    ink = np.sqrt(((1.0 - rgb) ** 2).sum(axis=2)) / np.sqrt(3.0)
+    ink = ink * (np.asarray(rgba.split()[-1]).astype("float32") / 255.0 > 0.35)
     rows = np.flatnonzero(ink.any(1))
     cols = np.flatnonzero(ink.any(0))
     if not len(rows) or not len(cols):
@@ -433,6 +482,37 @@ def _source_ink(image, shape):
     small = Image.fromarray((crop * 255).astype("uint8")).resize(
         (shape[1], shape[0]), Image.LANCZOS)
     return np.asarray(small).astype("float32") / 255.0
+
+
+def _enclosed_share(mask) -> float:
+    """Share of the UNLIT pixels that are a HOLE in the ink, not the page around it.
+
+    Floods the unlit region inward from the cell border; whatever the flood
+    cannot reach is enclosed by ink. This is the one thing that separates a
+    terminal plate with a `>_` knocked out of it -- which `score()` must read
+    inverted -- from a filled silhouette, which it must still refuse. Both are
+    majority-lit and neither lit fraction nor bounding-box fill tells them apart.
+    """
+    import numpy as np
+    unlit = ~mask
+    if not unlit.any():
+        return 0.0
+    reach = np.zeros_like(unlit)
+    reach[0, :] |= unlit[0, :]
+    reach[-1, :] |= unlit[-1, :]
+    reach[:, 0] |= unlit[:, 0]
+    reach[:, -1] |= unlit[:, -1]
+    while True:
+        grown = reach.copy()
+        grown[1:, :] |= reach[:-1, :]
+        grown[:-1, :] |= reach[1:, :]
+        grown[:, 1:] |= reach[:, :-1]
+        grown[:, :-1] |= reach[:, 1:]
+        grown &= unlit
+        if grown.sum() == reach.sum():
+            break
+        reach = grown
+    return float((unlit & ~reach).sum()) / float(unlit.sum())
 
 
 def _block_mean(field, size):
@@ -466,6 +546,22 @@ def fidelity(mask, image, block: int = FIDELITY_BLOCK) -> float:
     light-on-dark or dark-on-light; both preserve the proportions, and the sign
     only records which way round the plate went. Signed correlation refuses seven
     of the 87 outright for that alone.
+
+    ⚠️ **CORRELATION ALONE CANNOT SEE A DROPPED PANEL, which is why `coverage`
+    multiplies it.** Correlation is invariant to scale, so a render that blanks a
+    whole region still scores ~1 as long as what it DOES draw lines up with the
+    source. GNOME Calculator is the worked example: `adaptive` renders the grey
+    half perfectly and leaves the yellow half completely empty, and scored 0.983
+    -- higher than every render that drew both halves. `coverage` asks the
+    question correlation cannot, of the blocks the SOURCE fills, how many did the
+    render put anything at all into; it takes Calculator's `adaptive` to 0.462
+    against the dither's 0.648. Reported from hardware as "calc degraded as the
+    right side became invisible".
+
+    ⚠️ Coverage is measured on **whichever polarity correlated**, or it would
+    refuse every dark-plate icon outright -- there the ink is deliberately where
+    the source is light, so an unflipped coverage reads ~0 for a render that is
+    entirely faithful.
     """
     import numpy as np
     if mask is None or not mask.size:
@@ -477,12 +573,18 @@ def fidelity(mask, image, block: int = FIDELITY_BLOCK) -> float:
     original = _block_mean(reference, block)
     if rendered is None or original is None:
         return -1.0
-    rendered = rendered.ravel() - rendered.mean()
-    original = original.ravel() - original.mean()
-    spread = float(np.sqrt((rendered * rendered).sum() * (original * original).sum()))
+    centred = rendered.ravel() - rendered.mean()
+    base = original.ravel() - original.mean()
+    spread = float(np.sqrt((centred * centred).sum() * (base * base).sum()))
     if spread <= 1e-9:
         return -1.0
-    return abs(float((rendered * original).sum() / spread))
+    correlation = float((centred * base).sum() / spread)
+    drawn = (1.0 - rendered) if correlation < 0.0 else rendered
+    inked = original >= COVERAGE_INK * float(original.max())
+    if not inked.any():
+        return abs(correlation)
+    coverage = float((drawn[inked] > COVERAGE_MIN).mean())
+    return abs(correlation) * coverage
 
 
 def choose(image, box: int):

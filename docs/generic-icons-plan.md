@@ -618,6 +618,64 @@ Each phase ends with something demonstrable; nothing depends on hardware until E
 
 ---
 
+### E10 — the ranker could not see a colour, and the gate could not see an inverted picture
+
+Two defects, both reported from hardware on the same run: *"the icon for gnome
+text edit, nautilus are not great, calc degraded as the right side became
+invisible"*.
+
+**The reference measured DARKNESS.** `_source_ink` built its comparison map as
+`1 - luma`, and luma weights green ×0.72 and blue ×0.07 — so a saturated colour
+on white reads as almost nothing. GNOME Calculator is a grey panel beside a
+yellow one; the yellow half measured **0.234** against the grey half's 0.623,
+i.e. the reference said the right side was nearly blank. The render that dropped
+that panel *entirely* therefore scored **0.983**, higher than every render that
+drew both. Distance from the page in RGB puts the same panel at **0.481**.
+
+**Correlation cannot see a dropped panel at all.** It is invariant to scale, so
+a render that blanks a whole region still correlates ~1 as long as what it does
+draw lines up. `coverage` — of the blocks the source fills, how many did the
+render put anything into — is what separates them: Calculator's `adaptive`
+reading goes 0.983 → **0.462** against the dither's **0.648**. Coverage is read
+on whichever polarity correlated, or every dark-plate icon is refused for
+drawing its ink where the source is light.
+
+**The lit gate assumed ink is the minority.** `MAX_LIT` refused any render over
+70% lit, which is the right rule for a filled silhouette and the wrong one for a
+terminal plate with a `>_` knocked out of it — the same picture, polarity
+flipped, which `fidelity()` already accepted (it takes the *absolute*
+correlation for exactly this reason). Measured over the 87 distinct Yaru arts,
+**9 winners change**, every one a dark-plate icon that had been shipping a
+fragment of its own lit background: `bash` and the root terminal drew a bare
+`>`; Calls, Music and Snap Store drew their glyph in a noise field. The winning
+lit range opens from 0.055–0.623 to 0.055–**0.839**, the top of which *is* the
+plate.
+
+⚠️ **The flip is gated on an ENCLOSED HOLE, and without that gate it readmits
+the one thing `MAX_LIT` exists for.** A filled silhouette's inverse is the page
+around it, which has structure of its own: a flat disc scored **0.43** — past
+`MIN_SCORE`, i.e. a confident offer to draw a blob on the ESC keycap, and two
+existing tests caught it. `_enclosed_share` floods the unlit region inward from
+the border and asks what the flood cannot reach. The data separates at **zero**:
+all 13 silhouettes tried (a flat disc, a plain rounded rect, and the `alpha`
+reading of 11 real icons) enclose exactly 0.000, while all 20 real plate renders
+enclose 0.098–0.555. Neither lit fraction nor bounding-box fill tells them apart.
+
+**Net:** 19 of 87 picks change from the colour/coverage reference and 9 more
+from the polarity gate; `luma` all but disappears as a winner and `alpha` wins
+nothing. Calculator gets its `=` panel back, Text Editor gets the page's ruled
+lines back instead of a bare pencil.
+
+⚠️ **Nautilus is NOT fixed and is not pretended to be.** Its source is a flat
+mid-grey slab with one white handle; there is no internal structure to render,
+so every candidate is either a noise field or an empty outline. `dither-hi`
+draws a solid folder with the handle knocked out and reads best to a human, but
+its correlation against a flat source is 0.32 against the dither's 0.84, so the
+measure does not pick it. A flat-source case needs a different answer than a
+better reference.
+
+8 mutations, 8 caught by the intended test.
+
 ## Part F — what could still fail
 
 * **B.2's RESOLUTION half is measured (14/16); its READ half is not.** What is
