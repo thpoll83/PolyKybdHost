@@ -31,6 +31,7 @@ import binascii
 
 from polyhost.server import protocol as p
 from polyhost.server.mpc_listener import MpcListenerServer
+from polyhost.services import shortcut_relay
 
 # A real OS icon is a few KB -- the largest on a stock GNOME install measured
 # ~16 KB, and base64 inflates by 4/3. 64 KB of base64 leaves ~48 KB of icon,
@@ -95,11 +96,23 @@ class WindowReportServer(MpcListenerServer):
         names = params.get("names") or ()
         if not isinstance(names, (list, tuple)):
             return p.make_error(req_id, p.ERR_INVALID_PARAMS, "names must be a list")
+        # ⚠️ NOT refused on a shape error, unlike `names` above, and the
+        # difference is deliberate. Shortcuts ride the MAIN report frame while
+        # the icon travels in a follow-up call the forwarder already guards, so
+        # a malformed shortcut list must cost keycap decoration and never the
+        # window report itself -- the keyboard would stop tracking windows over
+        # a cosmetic field. `decode` is therefore total: it drops junk entries,
+        # clamps the count and the label length, and answers () for anything it
+        # cannot read at all. It is also the only place on this endpoint that
+        # parses a nested structure, which is the second reason it is bounded.
+        shortcuts = shortcut_relay.decode(params.get("shortcuts")) \
+            if "shortcuts" in params else None
         ret = self._on_report(params["handle"], params["name"],
                               params.get("title", ""), os=params.get("os"),
                               url=params.get("url"),
                               names=tuple(str(n) for n in names[:MAX_NAMES]),
-                              icon_key=params.get("icon_key"), icon=icon)
+                              icon_key=params.get("icon_key"), icon=icon,
+                              shortcuts=shortcuts)
         # report_window returns the (ok, payload) contract; surface failure.
         if isinstance(ret, tuple) and len(ret) == 2:
             if not ret[0]:

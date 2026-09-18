@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import (
 from polyhost._version import __version__, __protocol__
 from polyhost.services import problem_report
 from polyhost.services.relay_health import RelayHealth
+from polyhost.services import shortcut_relay
 from polyhost.gui.get_icon import get_icon
 from polyhost.services import log_bundle
 from polyhost.gui import about_dialog
@@ -60,7 +61,7 @@ HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host c
 # would be rows that silently do nothing on this machine — worse than no dialog
 # at all. `ui_theme` is read at startup here; the browser-URL keys drive
 # BrowserUrlSource, which the forwarder runs for the machine it sits on.
-FORWARDER_SETTING_KEYS = ("ui_theme",) + tuple(_URL_SETTINGS)
+FORWARDER_SETTING_KEYS = ("ui_theme", "shortcut_icons_enabled") + tuple(_URL_SETTINGS)
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
@@ -190,6 +191,17 @@ class PolyForwarder(QApplication):
         # _identity_for. Unbounded is fine here: the keys are app names from
         # THIS machine's own window manager, not remote input.
         self._identity_cache = {}
+        # The shortcuts THIS machine's accessibility tree exposes, per app --
+        # same one-lookup-per-app contract as `_identity_cache` and the same
+        # reason it is resolved here rather than on the keyboard machine: a
+        # forwarded app's tree is only readable from the computer running it.
+        #
+        # ⚠️ The logic lives in a Qt-free module because THIS file cannot be
+        # tested (it imports pywinctl at module load), and the three-state
+        # answer, the in-flight guard and the privacy gate are exactly the parts
+        # worth testing -- the same split as `RelayHealth` above.
+        self._shortcuts = shortcut_relay.RelaySource(
+            self.log, on_ready=self._shortcuts_ready)
         # Forwarding paused by the user. The window poll keeps running (so the
         # log still shows what is focused) but nothing leaves this machine —
         # this is the privacy switch, and it mirrors the tray app's Pause.
@@ -416,31 +428,45 @@ class PolyForwarder(QApplication):
             # RemoteHandler._note_identity for why a sender-side "already sent"
             # flag cannot be trusted: its daemon restarts, --host-file repoints
             # us at a different machine, entries get evicted.
-            if (result or {}).get("want_icon") and ident.get("icon"):
+            asked = result or {}
+            send_icon = bool(asked.get("want_icon") and ident.get("icon"))
+            # ⚠️ `None` means "not harvested yet", `[]` means "harvested, this
+            # app exposes nothing" -- and the difference is what stops the
+            # receiver asking forever. So the emptiness test below is
+            # `is not None`, never truthiness.
+            shortcuts = (self._shortcuts.shortcuts_for(name)
+                         if asked.get("want_shortcuts") else None)
+            if send_icon or shortcuts is not None:
                 # Follow up NOW rather than waiting for the next window change:
                 # otherwise the mark appears only once the user switches away
                 # and back, which reads as the feature not working.
                 #
                 # ⚠️ Guarded SEPARATELY, and the report above has already
                 # landed. This second call carries nothing the keyboard needs to
-                # track the window, so a rejected icon must not be reported as a
-                # failed window report -- that is the tray mark going red and
-                # `send_to_host` retrying over a keycap decoration.
+                # track the window, so a rejected decoration must not be reported
+                # as a failed window report -- that is the tray mark going red
+                # and `send_to_host` retrying over a keycap decoration.
                 try:
                     self._report_session.report(
                         host, handle, name, title, os=self._os_value, url=url,
                         names=ident.get("names"), icon_key=ident.get("icon_key"),
-                        icon=ident["icon"])
+                        icon=ident["icon"] if send_icon else None,
+                        shortcuts=shortcuts)
                 except Exception as e:
                     # Drop it for this app rather than re-offering forever: the
                     # receiver asks on every report, so an icon it will not
                     # accept would otherwise be re-sent on every window change.
                     self.log.warning(
-                        "Could not send the app icon for %r (%d B) to %s: %s"
-                        " -- window reporting is unaffected",
-                        name, len(ident.get("icon") or b""), host, e)
-                    ident.pop("icon", None)
-                    ident.pop("icon_key", None)
+                        "Could not send the app icon/shortcuts for %r (%d B, %s"
+                        " shortcut(s)) to %s: %s -- window reporting is"
+                        " unaffected", name, len(ident.get("icon") or b""),
+                        "-" if shortcuts is None else len(shortcuts), host, e)
+                    # ⚠️ Only the half that was actually offered. Attributing a
+                    # failure to the icon when this call carried no icon would
+                    # throw away a good one over an unrelated refusal.
+                    if send_icon:
+                        ident.pop("icon", None)
+                        ident.pop("icon_key", None)
             return True
         except Exception as e:
             return self._note_send_failure("RPC to %s: %s" % (host, e))
@@ -502,6 +528,18 @@ class PolyForwarder(QApplication):
                           key, ", ".join(ident.get("names") or ()) or "<none>")
         self._identity_cache[key] = ident
         return ident
+
+    def _shortcuts_ready(self, name):
+        """A harvest finished; make the next poll re-send so it goes out now.
+
+        ⚠️ Nudges the heartbeat rather than waiting it out. The receiver only
+        learns the answer on the next report, and plain waiting is up to
+        HEARTBEAT_MSEC (15 s) of a focused app with no icons -- which reads as
+        the feature not working. The poll may reset the counter first, in which
+        case the real heartbeat still delivers, so this is an accelerator and
+        never the only path.
+        """
+        self.heartbeat_msec = HEARTBEAT_MSEC
 
     def _pid_for_window(self):
         """The focused window's pid, or 0.

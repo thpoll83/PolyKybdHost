@@ -17,17 +17,38 @@ from polyhost.services.shortcut_fetcher import ShortcutIconFetcher
 MASKS = {"@sc:save:32lower_left": {(1, 0x16): "MASK"}}
 
 
-def settled(fetcher, app, timeout=2.0):
-    """Poll `overlays_for` until the thread has answered, or give up."""
+def _sc():
+    from polyhost.services.shortcut_source.model import Shortcut
+    return Shortcut(label="Save", role="", accel="", mods=1, keysym="",
+                    hid=0x16, displayable=True)
+
+
+def _plan():
+    from polyhost.services.shortcut_overlays import Plan, Slot
+    return Plan([Slot(modifier=1, keycode=0x16, concept="save", icon="save",
+                      label="Save", confidence=1.0)], {})
+
+
+def settled(fetcher, app, timeout=2.0, **kw):
+    """Poll `overlays_for` until the thread has answered, or give up.
+
+    ⚠️ RE-READS after seeing the cache filled, rather than returning the `out`
+    from the top of the loop. Those are two different instants: the worker
+    routinely finishes in between, and the stale `out` is then `{}` while the
+    real answer sits in the cache -- which reads as "the fetcher returned
+    nothing" and fails the test for a reason that is entirely the helper's.
+    Measured at ~1 run in 5, and recorded as an unexplained flake for a while
+    before the two reads were noticed.
+    """
     end = time.monotonic() + timeout
     while time.monotonic() < end:
-        out = fetcher.overlays_for(app)
+        out = fetcher.overlays_for(app, **kw)
         if out:
             return out
         with fetcher._lock:
             done = any(k.startswith(app + "\x00") for k in fetcher._overlays)
         if done:
-            return out
+            return fetcher.overlays_for(app, **kw)
         time.sleep(0.01)
     return None
 
@@ -161,6 +182,76 @@ class QueueTest(unittest.TestCase):
             self.fetcher.overlays_for("gedit")
             time.sleep(0.2)
         self.assertEqual(calls, ["gedit", "gedit"])
+
+
+class RelayedHarvestTest(unittest.TestCase):
+    """A forwarded app's shortcuts are harvested on the OTHER machine.
+
+    Only the harvest moves. Which concept a label means, which catalog subset to
+    fetch and what height and corner to raster at are all knowable only here,
+    so everything after the harvest runs unchanged.
+    """
+
+    def setUp(self):
+        self.fetcher = ShortcutIconFetcher()
+        self.addCleanup(self.fetcher.stop)
+
+    def test_a_RELAYED_harvest_never_touches_the_local_backend(self):
+        """⚠️ The whole point. The local backend would walk THIS machine's tree,
+        never find the app, and report "exposes no accelerators" — which is
+        indistinguishable from an app that genuinely has none. Measured from a
+        real log: a Windows daemon reported 0 icons for a gnome-terminal whose
+        own machine exposes 16."""
+        relayed = [_sc()]
+        with patch.object(shortcut_fetcher.shortcut_source, "harvest") as harvest, \
+             patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason") as why, \
+             patch.object(shortcut_fetcher.shortcut_overlays, "plan_report",
+                          return_value=_plan()), \
+             patch.object(shortcut_fetcher.icon_catalog, "load_codepoints",
+                          return_value={"save": 1}), \
+             patch.object(shortcut_fetcher.icon_catalog, "fetch_subset",
+                          return_value="f.ttf"), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "render",
+                          return_value=MASKS):
+            self.assertEqual(settled(self.fetcher, "gnome-terminal",
+                                     harvested=relayed), MASKS)
+            harvest.assert_not_called()
+            # ⚠️ And the availability probe is not consulted either: a keyboard
+            # machine with NO backend at all (macOS, or a venv that cannot see
+            # PyGObject) must still draw a forwarded app's icons. Gating on it
+            # would make the relay useless on exactly the setups that need it.
+            why.assert_not_called()
+
+    def test_the_RELAYED_shortcuts_are_what_gets_PLANNED(self):
+        relayed = [_sc(), _sc()]
+        with patch.object(shortcut_fetcher.shortcut_overlays, "plan_report",
+                          return_value=_plan()) as plan, \
+             patch.object(shortcut_fetcher.icon_catalog, "load_codepoints",
+                          return_value={"save": 1}), \
+             patch.object(shortcut_fetcher.icon_catalog, "fetch_subset",
+                          return_value="f.ttf"), \
+             patch.object(shortcut_fetcher.shortcut_overlays, "render",
+                          return_value=MASKS):
+            settled(self.fetcher, "gnome-terminal", harvested=relayed)
+        self.assertEqual(plan.call_args.args[0], tuple(relayed))
+
+    def test_an_EMPTY_relayed_harvest_says_WHOSE_answer_it_is(self):
+        # A user reading "the app exposes no accelerators" on a forwarded app
+        # goes and checks the wrong machine.
+        said = []
+        self.fetcher._say = lambda app, reason: said.append(reason)
+        self.fetcher._harvested["gedit"] = ()
+        self.assertEqual(self.fetcher._resolve("gedit", 32, "lower_left"), {})
+        self.assertEqual(len(said), 1)
+        self.assertIn("forwarder", said[0])
+
+    def test_the_relayed_answer_SURVIVES_forget(self):
+        # `forget()` invalidates masks drawn at the old size; it does not
+        # invalidate the other machine's answer about its own application, and
+        # nothing would ever ask for it again.
+        self.fetcher.overlays_for("gnome-terminal", harvested=[_sc()])
+        self.fetcher.forget()
+        self.assertIn("gnome-terminal", self.fetcher._harvested)
 
 
 class BackendReasonTest(unittest.TestCase):

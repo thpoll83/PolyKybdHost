@@ -329,27 +329,52 @@ class SettingsChangeTest(unittest.TestCase):
 
 
 class ForwardedShortcutsTest(unittest.TestCase):
-    """A forwarded app runs on the OTHER machine; its tree is not here."""
+    """A forwarded app runs on the OTHER machine, so its tree is read THERE.
 
-    def _remote(self, **kw):
+    ⚠️ The harvest reads a LOCAL accessibility backend -- AT-SPI here, UI
+    Automation on Windows -- so for an app on the other machine it walks the
+    wrong tree, finds nothing, and reports "the app exposes no accelerators".
+    Measured from a real log: a Windows daemon reported 0 shortcut icons for a
+    gnome-terminal whose own machine exposes 16. The forwarder therefore
+    harvests and relays the shortcuts as text, exactly as it already relays the
+    program mark's identity, and this class pins the three states that relay
+    can be in.
+    """
+
+    def _remote(self, relayed=None, **kw):
         core = make_core(**kw)
         core.overlay_handler.is_remote_mapping_entry.return_value = True
+        core.overlay_handler.remote_handler.forwarded_shortcuts.return_value = relayed
         return core
 
-    def test_a_forwarded_window_is_NOT_harvested_locally(self):
-        # ⚠️ The harvest reads a LOCAL accessibility backend -- AT-SPI here,
-        # UI Automation on Windows -- so for an app on the other machine it
-        # walks the wrong tree, finds nothing, and reports "the app exposes no
-        # accelerators". Measured from a real log: a Windows daemon reported 0
-        # shortcut icons for a gnome-terminal whose own machine exposes 16.
-        core = self._remote(mask=_mask())
+    def test_nothing_relayed_YET_asks_the_local_backend_NOTHING(self):
+        core = self._remote(relayed=None, mask=_mask())
         _tick(core)
         core._shortcut_icons.overlays_for.assert_not_called()
 
-    def test_the_MARK_still_goes_out_for_a_forwarded_window(self):
-        # It works because E1 resolves the identity ON THE FORWARDER and relays
-        # it. Losing the mark as well would be a regression, not a fix.
-        core = self._remote(mask=_mask())
+    def test_a_RELAYED_harvest_is_planned_and_rendered_here(self):
+        # The division of labour: the other machine harvests, this one decides
+        # what each label means and rasters it at this keyboard's height.
+        relayed = ({"label": "Save"},)
+        core = self._remote(relayed=relayed, mask=_mask())
+        _tick(core)
+        core._shortcut_icons.overlays_for.assert_called_once_with(
+            "gimp", harvested=relayed)
+
+    def test_an_EMPTY_relayed_harvest_is_still_an_ANSWER(self):
+        # ⚠️ `()` and None are different and the gap between them is the bug
+        # this guards: `()` means the forwarder looked and the app exposes
+        # nothing, so it must reach the fetcher (which caches it and says so).
+        # Skipping it would leave the core asking on every single tick.
+        core = self._remote(relayed=(), mask=_mask())
+        _tick(core)
+        core._shortcut_icons.overlays_for.assert_called_once_with(
+            "gimp", harvested=())
+
+    def test_the_MARK_still_goes_out_while_the_relay_is_in_flight(self):
+        # The mark works because the forwarder resolves the identity and relays
+        # it. Losing the mark while waiting for shortcuts would be a regression.
+        core = self._remote(relayed=None, mask=_mask())
         _tick(core)
         core.worker.submit.call_args.args[1](threading.Event())
         names = core.device_mgr.all_entries[0].device.send_overlays_mru.call_args.args[0]
@@ -358,16 +383,18 @@ class ForwardedShortcutsTest(unittest.TestCase):
     def test_it_says_WHY_at_INFO_once_per_app(self):
         # Not a failure to debug: this feature decides on its own what to draw
         # on ~20 keycaps, so "it drew nothing" needs a readable reason.
-        core = self._remote(mask=_mask())
+        core = self._remote(relayed=None, mask=_mask())
         with self.assertLogs("test.polycore.mark", level="INFO") as caught:
             for _ in range(4):
                 _tick(core)
-        said = [m for m in caught.output if "running on the FORWARDER" in m]
+        said = [m for m in caught.output if "runs on the FORWARDER" in m]
         self.assertEqual(len(said), 1, said)
 
     def test_a_LOCAL_window_is_still_harvested(self):
         core = make_core(mask=_mask())
         _tick(core)
+        # ⚠️ No `harvested=` kwarg: a local app's tree IS readable here, and
+        # passing one would route it down the relay path and never look.
         core._shortcut_icons.overlays_for.assert_called_once_with("gimp")
 
 

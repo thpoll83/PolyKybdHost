@@ -59,7 +59,7 @@ class WindowReportServerTest(unittest.TestCase):
             pass
 
     def _on_report(self, handle, name, title, os=None, url=None,
-                   names=(), icon_key=None, icon=None):
+                   names=(), icon_key=None, icon=None, shortcuts=None):
         self.reports.append((handle, name, title))
         self.last_os = os
         self.last_url = url
@@ -69,6 +69,7 @@ class WindowReportServerTest(unittest.TestCase):
         self.last_names = names
         self.last_icon_key = icon_key
         self.last_icon = icon
+        self.last_shortcuts = shortcuts
         return self.report_result
 
     def _client(self, authkey=None):

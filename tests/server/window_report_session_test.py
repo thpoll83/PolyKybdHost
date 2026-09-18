@@ -29,13 +29,15 @@ class _FakeClient:
         # The session reads `want_icon` off the reply; a fake that cannot answer
         # it would make the icon follow-up untestable from here.
         self.report_result = {"reported": True}
+        self.shortcuts = []
 
     def report(self, handle, name, title, os=None, url=None,
-               names=None, icon_key=None, icon=None):
+               names=None, icon_key=None, icon=None, shortcuts=None):
         if self._fail:
             raise OSError("boom")
         self.reports.append((handle, name, title, os, url))
         self.identities.append((names, icon_key, icon))
+        self.shortcuts.append(shortcuts)
         return dict(self.report_result)
 
     def close(self):
