@@ -36,7 +36,14 @@ log = logging.getLogger('PolyHost')
 # upper bound is a filled blob carrying no shape; one below the lower bound has
 # lost the icon. Both numbers are measured (see the module docstring), not tuned
 # to taste: the LibreOffice silhouettes sit at 94.5% and Draw's luma at 1.9%.
-MAX_LIT = 0.80
+# ⚠️ TIGHTENED 0.80 -> 0.70 (2026-09-18) and it costs nothing measured: across
+# 1064 renders of 116 real icons NO winning render exceeds 0.623 lit, so the
+# change moves zero winners and zero gate decisions. What the old bound admitted
+# was a flat filled DISC at 0.763 -- a featureless black circle on the ESC
+# keycap, and the fixture `app_icons_test` uses for "does not survive 1-bit".
+# It survived because the rewritten score no longer leans on `detail`, which had
+# been refusing it as a side effect of being maximised by texture.
+MAX_LIT = 0.70
 MIN_LIT = 0.04
 
 # The lit fraction a legible keycap icon tends to have. Scoring peaks here and
@@ -44,33 +51,47 @@ MIN_LIT = 0.04
 # still loses to one with a healthier balance of ink to ground.
 IDEAL_LIT = 0.35
 
+# The lit-balance falls to zero this far either side of `IDEAL_LIT`. It is a
+# SOFT preference, unlike the hard bounds above, and its width decides how much
+# a heavy render is punished for being heavy.
+#
+# ⚠️ Measured, and the whole 0.50-0.70 band is within one icon of each other on
+# the 22-icon judged set (16-17 of 22), so this is the middle of a plateau
+# rather than a fitted peak. Below 0.50 it starts refusing sparse marks that are
+# perfectly readable -- GNOME Dictionary's `a` inks 5.5% of the cell.
+LIT_WIDTH = 0.55
+
+# A render whose ink fills this much of its own bounding box is a RECTANGLE, not
+# a mark, and no threshold on ink or edges can tell those apart -- see the
+# `survives` note in `score()`. Measured over 1064 renders of 116 real icons: it
+# rejects 10, every one an `alpha` silhouette already at or past `MAX_LIT`, and
+# the highest-filling render it lets through is 0.836 (LibreOffice's Start
+# Centre, which is a poor reading for other reasons). The synthetic blob fixture
+# is 1.000 by construction.
+MAX_FILL = 0.95
+
 # Below this, `choose()` has found nothing worth drawing. A wrong or unreadable
 # mark is worse than none -- the user cannot tell a bad render from a bug.
 #
 # ⚠️ The value is taken from where the DATA separates, not chosen, and it has
-# been RE-DERIVED once (0.30 -> 0.25, 2026-09-17) because the original corpus
-# was seven icons. Over 130 real application icons -- the Humanity set, the
-# LibreOffice 512px set, /usr/share/pixmaps and 19 upstream GNOME app icons --
-# scored through the shipped pipeline:
+# been RE-DERIVED TWICE -- 0.30 -> 0.25 when the corpus grew to 130 icons, then
+# 0.25 -> 0.08 when `score()` was rewritten (2026-09-18) and the scale moved
+# under it. Re-derived over 116 deduplicated real icons (Yaru 256, hicolor
+# 512/256/128, /usr/share/pixmaps) plus the suite's synthetic fixtures:
 #
-#     min 0.204   p25 0.418   median 0.482   max 0.845
-#     exactly ONE of the 130 falls below 0.30 (GNOME Calendar, 0.204)
+#     fixtures   checkerboard 0.000   fragments 0.037   blob REJECTED outright
+#     real icons lowest 0.097, then 0.116, 0.175, 0.187 ... median 0.428
 #
-# So the band between 0.20 and 0.30 is nearly EMPTY, and the old floor was not
-# holding a line the data draws -- it sat in the middle of a gap. What bounds it
-# from below is unchanged and measured: the one unreadable render (LibreOffice
-# Draw, a smooth gradient with no two-tone structure) scores 0.174, and the
-# suite's synthetic blob and fragment fixtures score 0.074 and 0.059. 0.25
-# clears all three by a wide margin and still refuses Calendar.
+# So the band 0.037 -> 0.097 is EMPTY and 0.08 sits inside it, clearing the
+# fragments by 2.2x and staying below every real icon measured.
 #
-# What it buys is the near-miss band a two-decimal log could not even print
-# honestly: a field report had GNOME Calculator's Yaru icon at 0.298, refused by
-# a hundredth. Nothing else in 130 icons changes hands.
-#
-# ⚠️ Do NOT lower it further without re-measuring. 0.20 would admit Calendar and
-# sit 0.026 above the documented unreadable case, which is not a separation --
-# and a floor tuned until a particular icon passes stops meaning anything.
-MIN_SCORE = 0.25
+# ⚠️ It is a WEAKER gate than the number it replaced, and deliberately so. The
+# old floor refused the synthetic blob only because `detail` was maximised by
+# texture -- the documented defect this rewrite removes -- so removing the defect
+# removes that accident. What refuses a blob now is `MAX_FILL`, which is a
+# statement about the SHAPE and cannot be defeated by re-thresholding. The floor
+# is left holding the fragments and the halftone, which is all the data supports.
+MIN_SCORE = 0.08
 
 # The long edge an icon is shrunk to before it crosses the network. The
 # receiver reduces to `app_icons.PROGRAM_ICON_BOX` (38) anyway, so 4x that is
@@ -278,39 +299,82 @@ def fit(coverage, box: int):
 def score(mask) -> float:
     """How legible this 1-bit render is. Higher is better; <= 0 is unusable.
 
-    Three terms, each added because a real icon defeated the ones before it:
+    Two HARD rejections and four terms. Each arrived because a real icon defeated
+    what was there before it:
 
-    * **edge** -- the share of lit pixels touching an unlit one. A solid shape
-      scores near zero however large it is, which is what rejects a silhouette
-      (Yelp's help icon reduces to a ring, gedit's to a diagonal bar);
-    * **balance** -- prefers a healthy ink-to-ground ratio over one extreme;
-    * **spread** -- the share of ROWS and COLUMNS carrying any ink. Without it
-      a render made of thin fragments scores *well*, because `edges/lit`
-      approaches 1.0 for anything thin: Mousepad's icon reduced to a band of
-      text at the top and a rule at the bottom, 12% lit with an empty middle,
-      and scored 0.55 until this term took it to 0.14.
+    * **lit bounds** -- past `MAX_LIT` the render is a filled cell, below
+      `MIN_LIT` the icon is gone;
+    * **bbox fill** -- ink filling `MAX_FILL` of its own bounding box is a
+      rectangle. This is what refuses a silhouette, and it replaced `detail`
+      doing that job by accident (below);
+    * **detail** -- the share of lit pixels touching an unlit one, at a QUARTER
+      power. It is kept because it still orders two otherwise-equal readings, and
+      weakened because at full strength it decided everything;
+    * **survives** -- the variance of the 2x2 block means, divided by the
+      variance a uniform field of the same density would have. ~1 for ink that is
+      still ink after a blur, ~0 for a halftone that reads as grey;
+    * **balance** -- prefers a healthy ink-to-ground ratio, zero `LIT_WIDTH`
+      either side of `IDEAL_LIT`;
+    * **spread** -- the share of ROWS and COLUMNS carrying any ink, which rejects
+      a render made of thin fragments with an empty middle (Mousepad's).
 
-    ⚠️ This is a HEURISTIC fitted to roughly a dozen real icons, not a derived
-    measure, and it should be read as one. It is a filter on the obvious
-    failures -- blob, silhouette, fragments -- and not a judge of whether a mark
-    is recognisable. Extend it by finding an icon it gets wrong and adding the
-    term that separates it, the way each of these three arrived; do not tune the
-    constants until a favourite icon passes.
+    ⚠️ **`detail` used to be the first term at full strength and it was
+    MAXIMISED BY TEXTURE** -- every lit pixel of a dither field touches an unlit
+    one -- so the term meant to reward line art systematically handed the win to
+    `dither`. Measured 2026-09-18 over the 235-icon Yaru set with 22 icons judged
+    by eye: the old scorer picked the render a human would pick **8 times out of
+    22**, and 13 of the 14 misses were "dither or luma won, adaptive was cleaner".
+    This version picks it 16 times. On the 88 distinct arts in that set 23
+    winners change: 17 better, 4 worse, 2 a wash.
+
+    ⚠️ **Four repairs were measured and REFUTED before this one** -- do not
+    re-propose them without new evidence:
+
+    * a **detail ceiling** (peak at a moderate value, fall off toward 1.0). The
+      highest-scoring render in the whole corpus, Power Statistics' dithered
+      waveform, sits at detail 0.996; a ceiling destroys it;
+    * **cohesion** (largest connected component's share). Refuted twice: it reads
+      0.78-1.0 for halftone AND line art, and shipping it moved 37 winners while
+      deflating the scale from 191 to 144 icons above the gate;
+    * **stroke neighbourhood** (share of lit pixels with a lit 4-neighbour). Same
+      wall: real dither reads 0.85-0.99, indistinguishable from line art. Only a
+      perfect checkerboard reads 0, which is why testing it synthetically MISLEADS;
+    * **bbox fill as a scoring TERM** rather than a rejection. It moved agreement
+      DOWN (13 of 22 at best) -- it is a good yes/no and a bad dial.
+
+    ⚠️ **The cost of `survives` is that sparse thin strokes score much lower**, a
+    1px stroke and a dither field genuinely resembling each other at 2x2. GNOME
+    System Monitor's clean trace went 0.34 -> 0.10 and the suite's `_line_art`
+    fixture 0.32 -> 0.10. The ORDER is right in both cases -- they still win their
+    icon -- but the bottom of the scale is compressed, which is why `MIN_SCORE`
+    moved with it and now sits where the data separates rather than mid-range.
+
+    ⚠️ Still a HEURISTIC fitted to judged icons, not a derived measure. Extend it
+    by finding an icon it gets wrong and adding the term that separates it; do not
+    tune the constants until a favourite icon passes.
     """
-    if mask is None or not mask.size:
+    if mask is None or not mask.size or not mask.any():
         return -1.0
     import numpy as np
     lit = float(mask.mean())
     if lit > MAX_LIT or lit < MIN_LIT:
         return -1.0
+    ink = int(mask.sum())
+    rows = np.flatnonzero(mask.any(1))
+    cols = np.flatnonzero(mask.any(0))
+    box_area = (rows[-1] - rows[0] + 1) * (cols[-1] - cols[0] + 1)
+    if ink >= MAX_FILL * box_area:
+        return -1.0
     padded = np.pad(mask, 1)
     surrounded = (padded[:-2, 1:-1] & padded[2:, 1:-1]
                   & padded[1:-1, :-2] & padded[1:-1, 2:])
-    edges = mask & ~(mask & surrounded)
-    detail = float(edges.sum()) / max(1, int(mask.sum()))
-    balance = 1.0 - abs(lit - IDEAL_LIT)
+    detail = float((mask & ~surrounded).sum()) / ink
+    height, width = mask.shape[0] // 2 * 2, mask.shape[1] // 2 * 2
+    blocks = mask[:height, :width].reshape(height // 2, 2, width // 2, 2)
+    survives = float(blocks.mean(axis=(1, 3)).var()) / (lit * (1.0 - lit))
+    balance = max(0.0, 1.0 - abs(lit - IDEAL_LIT) / LIT_WIDTH)
     spread = min(float(mask.any(1).mean()), float(mask.any(0).mean()))
-    return detail * balance * spread
+    return detail ** 0.25 * survives * balance * spread
 
 
 def choose(image, box: int):

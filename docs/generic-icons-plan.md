@@ -467,6 +467,56 @@ Each phase ends with something demonstrable; nothing depends on hardware until E
   running app resolves it fine. The instrument was under-reporting the mechanism
   it exists to measure. It now makes the single call `app_icon_fetcher` makes.
 
+* **E7 — `score()` picks the wrong conversion.** ✅ Done. Reported from the field
+  as *"video which looked quite bad and I'm sure her dithering would have
+  worked"*, and it is the defect `KnownWeaknessTest` had pinned since E5:
+  `detail` is `edges/lit`, and every lit pixel of a dither field touches an unlit
+  one, so the term meant to reward line art was **maximised by texture**.
+
+  **Measured, not argued.** Extracted the real `yaru-theme-icon` package (235
+  icons, 88 distinct arts) and judged 22 by eye against the four conversions. The
+  old scorer picked the render a human would pick **8 times out of 22**; 13 of
+  the 14 misses were "`dither` or `luma` won, `adaptive` was cleaner". The
+  rewrite picks it 16 times, and over the 88 distinct arts **34 winners change:
+  ~26 better, 4 worse, 4 a wash**.
+
+  What shipped: `detail` at a **quarter power** (kept — it still orders two
+  otherwise-equal readings — but no longer decides everything), a new
+  **`survives`** term (variance of the 2×2 block means over what a uniform field
+  of that density would give: ~1 for ink that is still ink after a blur, ~0 for a
+  halftone that reads as grey), **`MAX_FILL`** rejecting ink that fills its own
+  bounding box, and **`MAX_LIT` 0.80 → 0.70** (free: no winning render among 116
+  real icons exceeds 0.623 lit). `MIN_SCORE` re-derived 0.25 → **0.08**, where the
+  data separates on the new scale.
+
+  ⚠️ **Four repairs were measured and REFUTED first, and they are pinned as tests
+  so they are not re-proposed**: a detail *ceiling* (the corpus's best render,
+  Power Statistics' dithered waveform, sits at detail 0.996), **cohesion**,
+  **stroke neighbourhood** (both read 0.78–1.0 for halftone *and* line art —
+  only a perfect checkerboard separates, which is why testing the idea
+  synthetically MISLEADS), and bbox fill as a scoring *term* rather than a
+  rejection.
+
+  ⚠️ **The honest cost**: `survives` cannot tell a 1px stroke from a halftone at
+  2×2, so sparse line art scores much lower — the `_line_art` fixture went
+  0.319 → 0.104. The *order* is still right, but the bottom of the scale is
+  compressed, which is why `MIN_SCORE` moved with it and now sits where the data
+  separates rather than mid-range. The gate is weaker than the number it
+  replaced; what refuses a blob now is `MAX_FILL`, a statement about the shape,
+  which is a better guard than a float that worked by accident.
+
+  ⚠️ **The blob fixture and GNOME Totem's play triangle are statistically
+  near-identical** (lit 0.62 vs 0.55, detail 0.13 vs 0.15). Anything that rejects
+  one rejects the other — so the old `test_a_SOLID_BLOB_scores_near_zero` was, in
+  effect, what made Totem draw a scribble. Accepting large solid marks is a
+  decision, and on a keycap it is the right one: a solid play triangle is the most
+  legible thing in the corpus.
+
+  22 tests where there were 13, mutation-swept 8/8. ⚠️ The first sweep reported
+  all 8 "caught" and was a **fail-open** — a quoting bug passed the literal `$S`
+  to `unittest`, which errors, which reads as caught. Read the *caught-by* names,
+  never the verdict alone.
+
 ---
 
 ## Part F — what could still fail
