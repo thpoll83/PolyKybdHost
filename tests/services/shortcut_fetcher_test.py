@@ -9,6 +9,7 @@ queue with the slow half stubbed out.
 import threading
 import time
 import unittest
+from unittest import mock
 from unittest.mock import patch
 
 from polyhost.services import shortcut_fetcher
@@ -161,6 +162,36 @@ class QueueTest(unittest.TestCase):
             self.fetcher.overlays_for("gedit")
             time.sleep(0.2)
         self.assertEqual(calls, ["gedit", "gedit"])
+
+
+class BackendReasonTest(unittest.TestCase):
+    """The log has to say WHICH of the three causes, not a flat platform claim."""
+
+    def test_the_REASON_reaches_the_log_verbatim(self):
+        # ⚠️ It used to say "no accessibility backend on this platform" whatever
+        # the cause -- true on macOS, and misleading for the commonest case,
+        # which is an interpreter that cannot see the system PyGObject. A user
+        # reading that line installs a package they already have.
+        f = ShortcutIconFetcher()
+        said = []
+        f._say = lambda app, reason: said.append((app, reason))
+        with mock.patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                               return_value="this virtualenv cannot see the "
+                                            "system PyGObject"):
+            self.assertEqual(f._resolve("gimp", 32, "lower_left"), {})
+        self.assertEqual(len(said), 1)
+        self.assertIn("virtualenv", said[0][1])
+
+    def test_a_USABLE_backend_gets_past_the_gate(self):
+        f = ShortcutIconFetcher()
+        said = []
+        f._say = lambda app, reason: said.append(reason)
+        with mock.patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                               return_value=None), \
+             mock.patch.object(shortcut_fetcher.shortcut_source, "harvest", return_value=[]):
+            self.assertEqual(f._resolve("gimp", 32, "lower_left"), {})
+        # It reached the NEXT refusal, which is a different sentence entirely.
+        self.assertEqual(said, ["the app exposes no accelerators"])
 
 
 class ResolveTest(unittest.TestCase):

@@ -769,6 +769,44 @@ reachable today only from a direct API call.
 
 5 mutations, 5 caught by the intended test.
 
+### E13 — the "no backend" message named the wrong cause
+
+Reported from the probe: `AT-SPI unavailable: No module named 'gi'` followed by
+*"Needs python3-gi + gir1.2-atspi-2.0, and the a11y bus running"* — advice to
+install two packages that were **already installed**.
+
+**PyGObject is a distro package**, in `/usr/lib/python3/dist-packages`. A
+virtualenv built without `--system-site-packages` cannot import it however
+thoroughly it is installed, and `pip install PyGObject` builds from source and
+needs the gobject-introspection headers — so on a managed machine the answer is
+to let the venv see the system packages, or to run a different interpreter.
+Neither is "install python3-gi".
+
+`available()` swallowed every exception, so **three causes needing opposite
+fixes collapsed into one sentence** — and the app's own log line said *"no
+accessibility backend on this platform"*, which is true on macOS and actively
+denies the commonest cause. `unavailable_reason()` separates them:
+
+| cause | what it now says | the fix |
+|---|---|---|
+| venv without system site-packages | *"this virtualenv (…/pyvenv.cfg) cannot see the system PyGObject"* | one line in `pyvenv.cfg`, or another interpreter |
+| PyGObject built for another Python | *"installed for a DIFFERENT Python than …"* | run the interpreter it was built for |
+| genuinely absent | *"PyGObject is not installed"* | `python3-gi` |
+| typelib absent | *"the Atspi typelib is missing"* | `gir1.2-atspi-2.0` |
+| bus down | *"the accessibility bus is not running"* | start it |
+| macOS | *"this platform has no accessibility backend"* | nothing; not built |
+
+⚠️ **Saying "not installed" about a package that is on disk for a different
+interpreter would reproduce the same defect one level down**, so the reason
+looks before it says it (`glob` over `dist-packages`/`site-packages`).
+
+The **probe additionally goes and finds a working interpreter** and prints the
+command — a CLI a human runs once, so a handful of subprocesses is the right
+price for turning "it does not work" into a line that does. The app never does
+that: `unavailable_reason()` stays pure, because it runs on the harvest path.
+
+7 mutations, 7 caught by the intended test.
+
 ## Part F — what could still fail
 
 * **B.2's RESOLUTION half is measured (14/16); its READ half is not.** What is

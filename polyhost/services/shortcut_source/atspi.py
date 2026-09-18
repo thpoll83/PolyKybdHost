@@ -101,12 +101,74 @@ def available() -> bool:
     A plain import check: `Atspi` imports fine without a session bus and only
     fails when asked for the desktop, so the desktop is what is asked for.
     """
+    return unavailable_reason() is None
+
+
+def unavailable_reason() -> str | None:
+    """WHY the bridge is unusable, or None when it works.
+
+    ⚠️ **Three different causes used to collapse into one sentence, and the most
+    likely of the three was the one the sentence ruled out.** `available()`
+    swallowed every exception, so the caller could only say *"no accessibility
+    backend on this platform"* -- which is true on macOS, and actively
+    misleading when the real cause is that THIS INTERPRETER cannot see the
+    system PyGObject. PyGObject is a distro package living in
+    `/usr/lib/python3/dist-packages`; a virtualenv built without
+    `--system-site-packages` cannot import it however thoroughly it is
+    installed, so a user reading that line goes and installs a package they
+    already have (reported 2026-09-18, from `python3 tools/shortcut_probe.py`
+    answering `No module named 'gi'`).
+
+    The three are told apart because they need opposite fixes: a different
+    interpreter (or one line in `pyvenv.cfg`), a distro package, or starting a
+    service. Cheap enough for the harvest path -- no subprocess, no bus call
+    beyond the one `available()` always made.
+    """
     try:
-        atspi = _atspi()
-        atspi.get_desktop(0).get_child_count()
-        return True
-    except Exception:
-        return False
+        import gi                                       # noqa: F401
+    except ImportError:
+        return _no_pygobject_reason()
+    try:
+        gi.require_version("Atspi", "2.0")
+        from gi.repository import Atspi                 # noqa: F401
+    except Exception as exc:
+        return ("the Atspi typelib is missing (install gir1.2-atspi-2.0): %s"
+                % exc)
+    try:
+        Atspi.get_desktop(0).get_child_count()
+    except Exception as exc:
+        return "the accessibility bus is not running (org.a11y.Bus): %s" % exc
+    return None
+
+
+def _no_pygobject_reason() -> str:
+    """`gi` is not importable -- say whether that is a venv or a missing package.
+
+    A venv is named explicitly because it is both the likeliest cause and the
+    one nobody can fix by installing anything: PyGObject builds from source
+    under pip and needs the gobject-introspection headers, so on a managed
+    machine the answer is to let the venv see the system packages rather than
+    to install into it.
+    """
+    import glob
+    import os
+    import sys
+    # ⚠️ "not installed" is the wrong word whenever the distro package is on
+    # disk for a DIFFERENT interpreter, which is the whole point of this
+    # function -- saying it would reproduce the misleading message one level
+    # down. So look before saying it.
+    elsewhere = bool(glob.glob("/usr/lib/python3*/dist-packages/gi/__init__.py")
+                     or glob.glob("/usr/lib64/python3*/site-packages/gi/__init__.py"))
+    if sys.prefix != sys.base_prefix:
+        config = os.path.join(sys.prefix, "pyvenv.cfg")
+        where = " (%s)" % config if os.path.exists(config) else ""
+        return ("this virtualenv%s cannot see the system PyGObject -- set "
+                "`include-system-site-packages = true` in pyvenv.cfg, or run "
+                "the system interpreter" % where)
+    if elsewhere:
+        return ("PyGObject is installed for a DIFFERENT Python than %s -- run "
+                "the interpreter it was built for" % sys.executable)
+    return "PyGObject is not installed (install python3-gi)"
 
 
 def shortcuts_for_app(name: str, budget: int = DEFAULT_NODE_BUDGET) -> list[Shortcut]:

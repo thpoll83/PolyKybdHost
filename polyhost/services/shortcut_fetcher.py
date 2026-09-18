@@ -160,8 +160,14 @@ class ShortcutIconFetcher:
         this is macOS), the app exposes nothing (a modern toolkit — nothing to
         do), or nothing in what it exposes matched a concept (curation).
         """
-        if shortcut_source.pick() is None:
-            self._say(app, "no accessibility backend on this platform")
+        unusable = shortcut_source.unavailable_reason()
+        if unusable is not None:
+            # ⚠️ The REASON, not a flat "no backend on this platform". That
+            # sentence is true on macOS and misleading everywhere else: the
+            # commonest cause is an interpreter that cannot see the system
+            # PyGObject, which the sentence rules out, so a user reading it goes
+            # and installs a package they already have.
+            self._say(app, unusable)
             return {}
         shortcuts = shortcut_source.harvest(app)
         if not shortcuts:

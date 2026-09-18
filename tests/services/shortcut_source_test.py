@@ -11,7 +11,9 @@ thread for a cosmetic feature, and an escape there reaches
 accessibility bridge would put a spurious crash in every later problem report.
 """
 
+import sys
 import unittest
+from unittest import mock
 from unittest.mock import patch
 
 from polyhost.services import shortcut_source as ss
@@ -48,6 +50,59 @@ class BackendChoiceTest(unittest.TestCase):
         with patch.object(ss.sys, "platform", "linux"), \
              patch("builtins.__import__", side_effect=ImportError("no gi")):
             self.assertIsNone(ss.pick())
+
+
+class UnavailableReasonTest(unittest.TestCase):
+    """Three causes that need OPPOSITE fixes, told apart rather than flattened."""
+
+    def test_macOS_says_the_PLATFORM_not_the_interpreter(self):
+        with mock.patch.object(ss.sys, "platform", "darwin"):
+            self.assertIn("platform", ss.unavailable_reason())
+
+    def test_a_VENV_that_cannot_see_the_system_PyGObject_says_so(self):
+        # ⚠️ The reported case, and the one the old flat message ruled out.
+        # PyGObject is a distro package; a venv built without
+        # --system-site-packages cannot import it however thoroughly it is
+        # installed, so "install python3-gi" sends the reader nowhere.
+        from polyhost.services.shortcut_source import atspi
+        with mock.patch.object(atspi, "_atspi", side_effect=ImportError("No module named 'gi'")), \
+             mock.patch.object(sys, "prefix", "/home/u/.venv"), \
+             mock.patch.object(sys, "base_prefix", "/usr"):
+            reason = atspi.unavailable_reason()
+        self.assertIn("virtualenv", reason)
+        self.assertIn("include-system-site-packages", reason)
+
+    def test_PyGObject_for_ANOTHER_python_is_not_called_MISSING(self):
+        # Saying "not installed" about a package that is on disk for a different
+        # interpreter reproduces, one level down, the exact misleading message
+        # this function exists to replace.
+        from polyhost.services.shortcut_source import atspi
+        with mock.patch.object(atspi, "_atspi", side_effect=ImportError("boom")), \
+             mock.patch.object(sys, "prefix", "/usr"), \
+             mock.patch.object(sys, "base_prefix", "/usr"), \
+             mock.patch("glob.glob", return_value=["/usr/lib/python3.12/dist-packages/gi/__init__.py"]):
+            reason = atspi.unavailable_reason()
+        self.assertIn("DIFFERENT Python", reason)
+        self.assertNotIn("not installed", reason)
+
+    def test_a_WORKING_backend_gives_no_reason_at_all(self):
+        # ⚠️ Patch the ATTRIBUTE on the package, not `sys.modules`: the function
+        # does `from polyhost.services.shortcut_source import atspi`, and once
+        # the submodule has been imported once that resolves to the package
+        # attribute, so a sys.modules patch silently hands back the real module.
+        backend = mock.Mock(unavailable_reason=lambda: None)
+        with mock.patch.object(ss, "backend_name", return_value="atspi"), \
+             mock.patch.object(ss, "atspi", backend, create=True):
+            self.assertIsNone(ss.unavailable_reason())
+
+    def test_a_backend_WITHOUT_the_reason_api_still_answers(self):
+        # The uia backend predates it; reporting it as working would be worse
+        # than a vague sentence.
+        backend = mock.Mock(spec=["available"])
+        backend.available.return_value = False
+        with mock.patch.object(ss, "backend_name", return_value="uia"), \
+             mock.patch.object(ss, "uia", backend, create=True):
+            self.assertIn("unusable", ss.unavailable_reason())
 
 
 class HarvestTest(unittest.TestCase):
