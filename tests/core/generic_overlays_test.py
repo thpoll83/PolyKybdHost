@@ -15,6 +15,7 @@ from unittest.mock import MagicMock
 import numpy as np
 
 from polyhost.core.poly_core import PolyCore
+from polyhost.settings import DEFAULT_SETTINGS
 from polyhost.handler.common import OverlayCommand
 
 
@@ -24,7 +25,18 @@ def _mask():
     return m
 
 
-def make_core(*, app=("gimp", None), mask=None, slug="si:gimp", shortcuts=None):
+# ⚠️ ONE key is pinned against its shipped default, and it is not an oversight.
+# `note_settings_changed(None)` -- what the in-process dialog sends -- runs EVERY
+# branch, so answering the real `unicode_send_composition_mode` starts the
+# unicode watcher, which then wants half a dozen instance attributes this file
+# has no business fixturing. A file whose subject is generic overlays should not
+# carry another subsystem's state; pinning the key that reaches it is the
+# narrower lie. Every key this file's subject actually reads answers its default.
+_FIXTURE_SETTINGS = {"unicode_send_composition_mode": False}
+
+
+def make_core(*, app=("gimp", None), mask=None, slug="si:gimp", shortcuts=None,
+              settings=None):
     core = PolyCore.__new__(PolyCore)
     core.log = logging.getLogger("test.polycore.mark")
     core.connected = True
@@ -41,12 +53,22 @@ def make_core(*, app=("gimp", None), mask=None, slug="si:gimp", shortcuts=None):
     # MagicMock would answer TRUTHY and silently stand the generic half down.
     core.overlay_handler.covered_by_template.return_value = False
     core.poly_settings = MagicMock()
-    core.poly_settings.get.side_effect = lambda k: False
+    # ⚠️ The SHIPPED defaults, not a blanket False. This stub answered False to
+    # every key, which silently stood down every feature whose default is True
+    # and made the failure read as the feature being broken -- 25 tests in this
+    # file reporting "nothing was submitted" the moment a master switch landed,
+    # none of them about a switch. Same family as the `covered_by_template`
+    # comment below: a stub that answers the wrong CONSTANT is indistinguishable
+    # from the code under test being wrong.
+    overrides = dict(_FIXTURE_SETTINGS, **(settings or {}))
+    core.poly_settings.get.side_effect = (
+        lambda k: overrides[k] if k in overrides else DEFAULT_SETTINGS.get(k, False))
     # `note_settings_changed(None)` -- what the in-process dialog sends -- runs
     # the brightness branch first, so the fixture has to mirror that too.
     core.sunlight = MagicMock()
     from polyhost.input.unicode_input import get_host_os
     core._last_pushed_os = get_host_os().value
+
     core._generic_on_device = None
     core._told_no_remote_shortcuts = set()
     core._app_icons = MagicMock()
@@ -84,8 +106,21 @@ class TemplateWinsTest(unittest.TestCase):
         self.assertIsNone(core._generic_on_device)
 
 
+OFF = {"generic_overlays_fill_gaps": False}
+
+
 class TemplatePriorityTest(unittest.TestCase):
-    """A hand-made overlay set wins, and it has to keep winning after tick 1."""
+    """A hand-made set wins, and it keeps winning after tick 1.
+
+    ⚠️ Scoped to `generic_overlays_fill_gaps: False`, which is a real shipped
+    position and not a way to keep old assertions passing: off means a templated
+    app shows exactly what its author drew and costs no harvest at all. The ON
+    position -- where the two ride ONE send and the template wins per KEY rather
+    than per window -- is `TemplateGapFillTest` below. The regression these were
+    written for (the generic set overwriting a live template a second after it
+    appeared) is impossible in either, for different reasons: here nothing
+    generic is sent, there it is the same send.
+    """
 
     def test_the_generic_set_does_NOT_overwrite_a_live_template(self):
         # ⚠️ The regression, reported from hardware as "icons where we have
@@ -95,7 +130,7 @@ class TemplatePriorityTest(unittest.TestCase):
         # old `else` branch fired, `send_overlays_mru` reset the mapping the
         # template had just committed, and the hand-made keycaps went blank about
         # a second after appearing.
-        core = make_core(mask=_mask(), shortcuts=_sc())
+        core = make_core(mask=_mask(), shortcuts=_sc(), settings=OFF)
         core.overlay_handler.covered_by_template.return_value = True
         _tick(core, data="gimp_template.mods.png", cmd=OverlayCommand.OFF_ON)
         self.assertEqual(core.worker.submit.call_count, 1)      # the template
@@ -106,13 +141,13 @@ class TemplatePriorityTest(unittest.TestCase):
     def test_it_is_asked_the_HANDLER_not_the_returned_data(self):
         # The data is the tell that a template was JUST SENT; the handler is the
         # only thing that knows one is STILL ACTIVE.
-        core = make_core(mask=_mask(), shortcuts=_sc())
+        core = make_core(mask=_mask(), shortcuts=_sc(), settings=OFF)
         core.overlay_handler.covered_by_template.return_value = True
         _tick(core)                       # no data, no command, template active
         core.worker.submit.assert_not_called()
 
     def test_leaving_a_templated_app_hands_the_board_BACK_to_the_generic_set(self):
-        core = make_core(mask=_mask(), shortcuts=_sc())
+        core = make_core(mask=_mask(), shortcuts=_sc(), settings=OFF)
         core.overlay_handler.covered_by_template.return_value = True
         _tick(core)
         core.worker.submit.assert_not_called()
@@ -123,7 +158,7 @@ class TemplatePriorityTest(unittest.TestCase):
     def test_a_covered_window_costs_NO_fetch_at_all(self):
         # Not merely "sends nothing": a template-covered app must not walk
         # another process's accessibility tree either.
-        core = make_core(mask=_mask(), shortcuts=_sc())
+        core = make_core(mask=_mask(), shortcuts=_sc(), settings=OFF)
         core.overlay_handler.covered_by_template.return_value = True
         _tick(core)
         core._app_icons.overlay_for.assert_not_called()
@@ -451,6 +486,126 @@ class FailurePathTest(unittest.TestCase):
         args, kwargs = entry.device.send_overlays_mru.call_args
         self.assertEqual(args[0], ["@prog:si:gimp"])
         self.assertIn("@prog:si:gimp", kwargs["synthetic"])
+
+
+
+
+class TemplateGapFillTest(unittest.TestCase):
+    """`generic_overlays_fill_gaps` ON: the two ride ONE send.
+
+    ⚠️ The precedence that makes this safe is NOT here -- it is in
+    `send_overlays_mru`, which skips a synthetic source on any (modifier,
+    keycode) a real one already claimed. What this class pins is the half the
+    core owns: that the template files are FOUND, that they go FIRST in the
+    list, and that they are found from the handler rather than from what
+    `handle_active_window` returned.
+    """
+
+    def test_a_covered_window_IS_filled(self):
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "gimp_template.mods.png"
+        _tick(core)
+        self.assertEqual(core.worker.submit.call_count, 1)
+
+    def test_the_TEMPLATE_files_go_FIRST_in_the_send(self):
+        """⚠️ Positional, because `send_overlays_mru` walks the list in order and
+        a real source claims its keys unconditionally. Last, and a template with
+        a baked `program_icon:` would lose ESC to the generic mark — the exact
+        inversion of "the hand-made design always wins"."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "gimp_template.mods.png"
+        _tick(core)
+        entry = core.device_mgr.all_entries[0]
+        sent = entry.device.send_overlays_mru.call_args
+        if sent is None:                       # the send runs on the worker
+            core.worker.submit.call_args.args[1](threading.Event())
+            sent = entry.device.send_overlays_mru.call_args
+        filenames, synthetic = sent.args[0], sent.kwargs["synthetic"]
+        self.assertTrue(filenames[0].endswith("gimp_template.mods.png"))
+        self.assertNotIn(filenames[0], synthetic)
+        self.assertTrue(set(filenames[1:]) <= set(synthetic))
+
+    def test_the_file_list_comes_from_the_HANDLER_not_the_returned_data(self):
+        """⚠️ The 2026-09-18 field bug, reachable again through a different door.
+        `handle_active_window` returns the filenames ONLY on the tick the window
+        changes, and the fill runs on the tick the shortcuts resolve — several
+        later. Taken from `data` the list would be empty exactly when it matters,
+        the synthetic sources would go alone, and `prepare_for_mru_send`'s reset
+        would blank every hand-made keycap."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "gimp_template.mods.png"
+        _tick(core)                            # NO data on this tick
+        entry = core.device_mgr.all_entries[0]
+        core.worker.submit.call_args.args[1](threading.Event())
+        filenames = entry.device.send_overlays_mru.call_args.args[0]
+        self.assertTrue(any("gimp_template" in f for f in filenames))
+
+    def test_a_template_with_NOTHING_generic_to_add_is_not_re_sent(self):
+        """⚠️ No mark and no shortcuts is not "send the template again" — it is
+        already on the device from the change tick, and a send would pay a full
+        mapping rebuild to change nothing."""
+        core = make_core(mask=None, slug=None, shortcuts={})
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "gimp_template.mods.png"
+        _tick(core)
+        core.worker.submit.assert_not_called()
+
+    def test_the_signature_separates_two_apps_with_the_SAME_generic_half(self):
+        """Same mark, same shortcuts, different template: the second must still
+        send, or its template never reaches the device."""
+        sig_a = PolyCore._generic_signature("si:gimp", _sc(), ("a.mods.png",))
+        sig_b = PolyCore._generic_signature("si:gimp", _sc(), ("b.mods.png",))
+        self.assertNotEqual(sig_a, sig_b)
+
+
+class GenericOverlayMasterSwitchTest(unittest.TestCase):
+
+    def test_OFF_draws_nothing_on_an_app_with_no_template(self):
+        core = make_core(mask=_mask(), shortcuts=_sc(),
+                         settings={"generic_overlays_enabled": False})
+        _tick(core)
+        core.worker.submit.assert_not_called()
+        core._app_icons.overlay_for.assert_not_called()
+        core._shortcut_icons.overlays_for.assert_not_called()
+
+    def test_OFF_also_stops_the_gap_fill(self):
+        """⚠️ The master switch is OUTSIDE the fill branch, so it wins whatever
+        `fill_gaps` says. A ladder whose lower rung could override the upper one
+        would make "turn the whole thing off" untrue."""
+        core = make_core(mask=_mask(), shortcuts=_sc(),
+                         settings={"generic_overlays_enabled": False,
+                                   "generic_overlays_fill_gaps": True})
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "gimp_template.mods.png"
+        _tick(core)
+        core.worker.submit.assert_not_called()
+
+    def test_OFF_does_not_stop_a_TEMPLATE_send(self):
+        """It governs the generic path only — a hand-made overlay is not it."""
+        core = make_core(settings={"generic_overlays_enabled": False})
+        _tick(core, data="gimp_template.mods.png", cmd=OverlayCommand.OFF_ON)
+        self.assertEqual(core.worker.submit.call_count, 1)
+
+    def test_BOTH_ship_ON(self):
+        """The shipped position, asserted rather than assumed: this is what a
+        user gets before touching anything, and the whole feature is invisible
+        if either default flips."""
+        self.assertIs(DEFAULT_SETTINGS["generic_overlays_enabled"], True)
+        self.assertIs(DEFAULT_SETTINGS["generic_overlays_fill_gaps"], True)
+
+    def test_TOGGLING_either_one_re_evaluates(self):
+        """⚠️ Without this a mid-session flip does nothing until the next app
+        switch: the tick reads `_generic_on_device` and reports the set as
+        already there. `_forget_generic_overlays` clears exactly that."""
+        for key in ("generic_overlays_enabled", "generic_overlays_fill_gaps"):
+            with self.subTest(key=key):
+                core = make_core(mask=_mask(), shortcuts=_sc())
+                core._generic_on_device = ("something", (), ())
+                core.note_settings_changed({key})
+                self.assertIsNone(core._generic_on_device)
 
 
 if __name__ == "__main__":
