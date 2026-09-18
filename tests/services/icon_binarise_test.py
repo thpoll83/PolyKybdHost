@@ -94,224 +94,159 @@ class ConversionSetTest(unittest.TestCase):
                          (1.0, ib.DITHER_ADJUST["contrast"]))
 
 
-class DitherPreferenceTest(unittest.TestCase):
-    """A dither is PREFERRED over a threshold read, not merely scored against it."""
+def _source(shape, size=152):
+    """A real RGBA source image, so `fidelity` has something to compare against."""
+    from PIL import Image, ImageDraw
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    shape(ImageDraw.Draw(image), size)
+    return image
 
-    def _icon(self, shape, size=160):
-        from PIL import Image, ImageDraw
-        image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-        shape(ImageDraw.Draw(image), size)
-        return image
 
-    def test_a_dither_wins_even_when_it_scores_LOWER(self):
-        # ⚠️ This is the whole feature and it cannot be expressed as a tie-break:
-        # the dither is taken while it scores as little as DITHER_PREFERENCE of
-        # the best threshold reading. A plain argmax puts a dither first on 36 of
-        # 88 real icons; the preference puts it first on 74.
-        self.assertLess(ib.DITHER_PREFERENCE, 1.0)
-        self.assertGreater(ib.DITHER_PREFERENCE, 0.0)
+class FidelityTest(unittest.TestCase):
+    """The measure that looks at the SOURCE — the one `score()` never had."""
 
-    def test_the_preference_is_a_FLOOR_and_a_bad_dither_is_still_refused(self):
-        # "More than just snowflakes" — a dither scoring far under the threshold
-        # read loses. Measured: GNOME Bluetooth's dither is 0.33 of its adaptive
-        # reading and is correctly refused.
-        class Stub:
-            pass
-        real = ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS
+    def _plate(self, draw, size):
+        draw.rounded_rectangle([4, 4, size - 4, size - 4], 24, fill=(60, 60, 60, 255))
+        draw.polygon([(size * 0.38, size * 0.28), (size * 0.38, size * 0.72),
+                      (size * 0.72, size * 0.5)], fill=(250, 250, 250, 255))
+
+    def test_a_faithful_render_outscores_an_unfaithful_one(self):
+        # The whole point: `score()` grades the mask alone, `fidelity` grades it
+        # against the picture it came from.
+        image = _source(self._plate)
+        masks = {name: convert(image, 38) for name, convert in ib.CONVERSIONS}
+        best = max(masks, key=lambda n: ib.fidelity(masks[n], image))
+        self.assertGreater(ib.fidelity(masks[best], image), 0.8)
+
+    def test_an_INVERTED_render_is_EQUALLY_faithful(self):
+        # ⚠️ Absolute value, and it is load-bearing rather than defensive: a
+        # dark-plate icon reads correctly either way round and both keep the
+        # proportions. Signed correlation refuses seven of the 87 Yaru arts for
+        # nothing but the sign — Terminal, Dictionary, Backups among them.
+        image = _source(self._plate)
+        mask = dict(ib.CONVERSIONS)["adaptive"](image, 38)
+        self.assertAlmostEqual(ib.fidelity(mask, image),
+                               ib.fidelity(~mask, image), places=6)
+
+    def test_a_BLANK_render_scores_NOTHING_not_almost_everything(self):
+        # ⚠️ The refutation of the obvious form. `1 - mean|render - source|` looks
+        # right and is degenerate: an icon source is mostly light, so an EMPTY
+        # render matches its mean and scores ~0.9 — measured, it picked a blank
+        # mask for baobab, empathy, engrampa and eog. A correlation has no
+        # variance to correlate and returns nothing at all.
+        image = _source(self._plate)
+        blank = np.zeros((38, 38), dtype=bool)
+        self.assertEqual(ib.fidelity(blank, image), -1.0)
+        self.assertEqual(ib.fidelity(np.ones((38, 38), dtype=bool), image), -1.0)
+
+    def test_the_BLOCK_SIZE_is_the_scale_a_keycap_is_READ_at(self):
+        # At 2px it grades the dither's texture rather than the picture (a dither
+        # then wins only 56 of 87 Yaru arts against 65 at 4px); at 6 it stops
+        # separating the gammas.
+        self.assertEqual(ib.FIDELITY_BLOCK, 4)
+
+    def test_the_SOURCE_is_cropped_to_its_INK_before_comparing(self):
+        # ⚠️ A render is cropped to its own ink and scaled to the box, so the
+        # reference has to be cropped the same way or the two are compared at
+        # different scales and offsets. Measured on a small shape in a large
+        # transparent canvas: cropped 0.87, uncropped 0.10 — the change is
+        # invisible on an icon that fills its frame, which is most of them, and
+        # that is why it needs a fixture that does not.
+        image = _source(lambda d, s: d.ellipse(
+            [s * 0.06, s * 0.06, s * 0.34, s * 0.34], fill=(20, 20, 20, 255)))
+        grid = np.mgrid[0:38, 0:38]
+        disc = np.sqrt((grid[0] - 18.5) ** 2 + (grid[1] - 18.5) ** 2) <= 17
+        self.assertGreater(ib.fidelity(disc, image), 0.8)
+
+    def test_it_is_ROBUST_to_the_mask_being_a_different_shape(self):
+        # A render is fitted to the box preserving aspect, so it is often not
+        # square; the reference is cropped and resized to whatever it is.
+        image = _source(self._plate)
+        tall = np.zeros((38, 22), dtype=bool)
+        tall[6:32, 4:18] = True
+        self.assertGreater(ib.fidelity(tall, image), -1.0)
+
+
+class ChooseTest(unittest.TestCase):
+    """`score()` gates, `fidelity()` ranks — and the gate comes first."""
+
+    class _Stub:
+        pass
+
+    def _with(self, conversions, image=None):
+        real = ib.CONVERSIONS
         try:
-            good = _line_art()
-            bad = _fragments()
-            ib.THRESHOLD_CONVERSIONS = (("adaptive", lambda i, b: good),)
-            ib.DITHER_CONVERSIONS = (("dither", lambda i, b: bad),)
-            self.assertLess(ib.score(bad), ib.DITHER_PREFERENCE * ib.score(good))
-            _, name, _ = ib.choose(Stub(), 38)
-            self.assertEqual(name, "adaptive")
+            ib.CONVERSIONS = conversions
+            return ib.choose(image if image is not None else self._Stub(), 38)
         finally:
-            ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS = real
+            ib.CONVERSIONS = real
 
-    def test_a_dither_that_scores_at_all_but_UNDER_the_threshold_still_wins(self):
-        # The other side of the same rule, and the one a plain argmax gets wrong.
-        # ⚠️ The fixtures must be ordered `threshold > dither` or the test passes
-        # under argmax too and pins nothing — a mutation sweep caught exactly that
-        # (the first version handed the DITHER slot the higher-scoring mask).
-        class Stub:
-            pass
-        real = ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS
-        try:
-            strong, weaker = _triangle(), _scribble()
-            self.assertGreater(ib.score(strong), ib.score(weaker))     # argmax would take `strong`
-            self.assertGreaterEqual(ib.score(weaker),
-                                    ib.DITHER_PREFERENCE * ib.score(strong))
-            ib.THRESHOLD_CONVERSIONS = (("adaptive", lambda i, b: strong),)
-            ib.DITHER_CONVERSIONS = (("dither", lambda i, b: weaker),)
-            _, name, _ = ib.choose(Stub(), 38)
-            self.assertEqual(name, "dither")
-        finally:
-            ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS = real
-
-    def test_a_dither_that_scores_ZERO_never_wins_a_NEGATIVE_comparison(self):
-        # ⚠️ The "scored at all" clause, and it only bites when the THRESHOLD
-        # reading is itself rejected: multiplying a negative score by the floor
-        # RAISES it, so `0.0 >= 0.5 * -1.0` is true and a pure grain field would
-        # be handed back as the pick. A mutation sweep found the first version of
-        # this test could not tell the clause was gone, because both sides were
-        # -1.0 and the comparison came out false either way.
-        class Stub:
-            pass
-        real = ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS
-        try:
-            self.assertEqual(ib.score(_blob()), -1.0)          # threshold rejected
-            self.assertEqual(ib.score(_checkerboard()), 0.0)   # pure grain
-            self.assertGreaterEqual(ib.score(_checkerboard()),
-                                    ib.DITHER_PREFERENCE * ib.score(_blob()))
-            ib.THRESHOLD_CONVERSIONS = (("adaptive", lambda i, b: _blob()),)
-            ib.DITHER_CONVERSIONS = (("dither", lambda i, b: _checkerboard()),)
-            mask, name, value = ib.choose(Stub(), 38)
-            # ⚠️ "nothing rendered", not "the threshold read won": `pick()` seeds
-            # at -1.0 and requires a STRICT improvement, so a reading that scores
-            # exactly -1.0 never becomes the best. Without the clause this comes
-            # back as the checkerboard at 0.0.
-            self.assertIsNone(mask)
-            self.assertIsNone(name)
-            self.assertEqual(value, -1.0)
-        finally:
-            ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS = real
-
-    def test_the_TUNING_reaches_the_dither_and_is_not_decoration(self):
-        # ⚠️ Nothing else notices if `dither_ink` stops passing its gamma along —
-        # the conversions still differ by their contrast, so the set still looks
-        # like three candidates. A mutation dropping `gamma_val=` escaped until
-        # this existed. Driven on a real GRADIENT, which is the only input whose
-        # dither gamma can change.
-        from PIL import Image
-        ramp = Image.new("L", (160, 160))
-        ramp.putdata([min(255, x) for _ in range(160) for x in range(160)])
-        ramp = ramp.convert("RGBA")
-        masks = {name: convert(ramp, 38) for name, convert in ib.DITHER_CONVERSIONS}
-        lo, mid, hi = masks["dither-lo"], masks["dither"], masks["dither-hi"]
-        self.assertGreater(int((lo != mid).sum()), 20)
-        self.assertGreater(int((hi != mid).sum()), 20)
-        # and gamma moves the ink monotonically: a lower gamma lightens the ramp
-        self.assertLess(float(lo.mean()), float(hi.mean()))
-
-
-class ScoreTest(unittest.TestCase):
-    """Each term exists because a real icon defeated the ones before it."""
-
-    def test_a_SOLID_BLOB_is_REJECTED_OUTRIGHT_by_its_bbox_fill(self):
-        # A silhouette is large and says nothing — Yelp reduces to a ring, gedit
-        # to a diagonal bar. ⚠️ It used to be refused by `detail` scoring it near
-        # zero, which worked only because `detail` was maximised by texture — the
-        # defect the 2026-09-18 rewrite removed. `MAX_FILL` refuses it on the
-        # SHAPE instead: ink filling its own bounding box is a rectangle.
-        self.assertEqual(ib.score(_blob()), -1.0)
-
-    def test_the_blob_is_refused_for_its_FILL_and_not_its_LIT(self):
-        # Without this the test above passes for the wrong reason the day someone
-        # lowers MAX_LIT, and the fill guard could be deleted unnoticed.
-        self.assertLess(_blob().mean(), ib.MAX_LIT)
-        self.assertGreater(_blob().mean(), ib.MIN_LIT)
-
-    def test_a_SOLID_SHAPE_that_does_NOT_fill_its_box_is_kept(self):
-        # The other half of that decision, and the reason it is `fill` and not
-        # `detail`: GNOME Totem's icon reads best as a solid play TRIANGLE, whose
-        # ink and edge statistics are nearly identical to the blob's (lit 0.55 vs
-        # 0.62, detail 0.15 vs 0.13). Anything that rejects one on those rejects
-        # the other — and under the old scorer Totem drew a luma scribble instead.
-        rows = np.flatnonzero(_triangle().any(1))
-        cols = np.flatnonzero(_triangle().any(0))
-        box = (rows[-1] - rows[0] + 1) * (cols[-1] - cols[0] + 1)
-        self.assertLess(_triangle().sum() / float(box), ib.MAX_FILL)
-        self.assertGreater(ib.score(_triangle()), ib.MIN_SCORE)
-
-    def test_a_CLEAN_SOLID_MARK_outscores_a_HIGH_DETAIL_SCRIBBLE(self):
-        # ⚠️ This is what the QUARTER POWER on `detail` buys, and nothing else in
-        # the suite pins it — a mutation sweep caught the omission by putting the
-        # exponent back to 1.0 with every other test still green.
+    def test_the_MOST_FAITHFUL_usable_render_wins_not_the_HIGHEST_SCORING(self):
+        # ⚠️ This replaced a hardcoded `DITHER_PREFERENCE` thumb, and pinning the
+        # ORDER is what stops it being rebuilt: a dither was being forced to the
+        # front with a tuned constant because the owner kept preferring it, when
+        # the real defect was that `score()` ranks crispness and a human ranks
+        # recognisability.
         #
-        # The pair reproduces GNOME Totem, whose four readings are a blob, a
-        # threshold scribble across the plate's gradient, a solid play triangle
-        # and a heavy dither. At full strength `detail` handed it to the scribble
-        # (0.258 against the triangle's 0.110) and the keycap drew noise; at ^0.25
-        # the triangle wins. ⚠️ The margin is real but not wide — 0.362 against
-        # 0.303 — because the scribble is genuinely detailed. Do not read a small
-        # margin here as slack to spend.
-        self.assertGreater(ib.score(_triangle()), ib.score(_scribble()))
+        # The pair is the whole argument in miniature — the source is a solid
+        # disc, so a crisp RING is the better-scoring render and the wrong
+        # picture, while a halftoned disc scores lower and is the right one.
+        image = _source(lambda d, s: d.ellipse(
+            [s * 0.18, s * 0.18, s * 0.82, s * 0.82], fill=(45, 45, 45, 255)))
+        radius = np.sqrt((np.mgrid[0:38, 0:38][0] - 18.5) ** 2
+                         + (np.mgrid[0:38, 0:38][1] - 18.5) ** 2)
+        ring = (radius > 12) & (radius < 14.5)
+        halftone = (radius <= 14.5) & ((np.mgrid[0:38, 0:38][0]
+                                        + np.mgrid[0:38, 0:38][1]) % 2 == 0)
+        self.assertGreater(ib.score(ring), ib.score(halftone))          # argmax takes the ring
+        self.assertGreater(ib.fidelity(halftone, image), ib.fidelity(ring, image))
+        self.assertGreater(min(ib.score(ring), ib.score(halftone)), ib.MIN_SCORE)
+        _, name, _ = self._with((("ring", lambda i, b: ring),
+                                 ("disc", lambda i, b: halftone)), image)
+        self.assertEqual(name, "disc")
 
-    def test_the_scribble_fixture_really_IS_the_high_detail_one(self):
-        # Without this the test above could pass because the scribble is bad in
-        # some other way, and the exponent could be removed unnoticed.
-        def detail(mask):
-            p = np.pad(mask, 1)
-            surrounded = (p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:])
-            return float((mask & ~surrounded).sum()) / float(mask.sum())
-
-        self.assertGreater(detail(_scribble()), 3 * detail(_triangle()))
-
-    def test_THIN_FRAGMENTS_with_an_empty_middle_are_rejected(self):
-        # The `spread` term. Without it `edges/lit` approaches 1.0 for anything
-        # thin and this shape scored 0.55.
+    def test_a_render_BELOW_THE_GATE_never_wins_however_faithful(self):
+        # ⚠️ The gate is not advisory, and the fixture has to make it BITE: the
+        # sub-gate render must be the MORE faithful one or the test passes with
+        # the gate deleted. A mutation sweep caught exactly that.
+        #
+        # The source is two thin bands with an empty middle — the shape the
+        # `_fragments` fixture exists to refuse. It correlates with the source
+        # far better than anything usable does, and it is still grain on a keycap.
+        image = _source(lambda d, s: (
+            d.rectangle([s * 0.10, s * 0.05, s * 0.90, s * 0.13], fill=(30, 30, 30, 255)),
+            d.rectangle([s * 0.10, s * 0.92, s * 0.90, s * 0.95], fill=(30, 30, 30, 255))))
         self.assertLess(ib.score(_fragments()), ib.MIN_SCORE)
-
-    def test_LINE_ART_scores_above_the_gate(self):
         self.assertGreaterEqual(ib.score(_line_art()), ib.MIN_SCORE)
+        self.assertGreater(ib.fidelity(_fragments(), image),
+                           ib.fidelity(_line_art(), image))
+        _, name, _ = self._with((("usable", lambda i, b: _line_art()),
+                                 ("faithful_junk", lambda i, b: _fragments())), image)
+        self.assertEqual(name, "usable")
 
-    def test_an_empty_or_absent_mask_is_unusable(self):
-        self.assertEqual(ib.score(None), -1.0)
-        self.assertEqual(ib.score(np.zeros((38, 38), dtype=bool)), -1.0)
+    def test_when_NOTHING_clears_the_gate_the_best_of_a_bad_lot_is_returned(self):
+        # A caller drawing a mark it has no alternative for may take whatever
+        # comes back — `app_icons` is the one that compares against MIN_SCORE.
+        image = _source(lambda d, s: d.ellipse([4, 4, s - 4, s - 4],
+                                               fill=(30, 30, 30, 255)))
+        _, name, value = self._with((("a", lambda i, b: _fragments()),
+                                     ("b", lambda i, b: _checkerboard())), image)
+        self.assertIn(name, ("a", "b"))
+        self.assertLess(value, ib.MIN_SCORE)
 
-    def test_an_ALL_LIT_mask_is_unusable(self):
-        self.assertEqual(ib.score(np.ones((38, 38), dtype=bool)), -1.0)
+    def test_a_render_that_does_not_RENDER_is_dropped_before_ranking(self):
+        # -1.0 means "nothing came back", and it must not reach `fidelity`.
+        image = _source(lambda d, s: d.ellipse([4, 4, s - 4, s - 4],
+                                               fill=(30, 30, 30, 255)))
+        _, name, _ = self._with((("dead", lambda i, b: _blob()),
+                                 ("live", lambda i, b: _line_art())), image)
+        self.assertEqual(name, "live")
 
-
-class HalftoneTest(unittest.TestCase):
-    """The defect E5 found and E7 fixed. The inversion IS the evidence."""
-
-    def test_LINE_ART_now_outscores_a_HALFTONE(self):
-        # ⚠️ This assertion is the reverse of the one it replaces, and that is
-        # the point. Until 2026-09-18 it read `assertGreater(checkerboard,
-        # line_art)` with a comment saying to invert it when someone fixed
-        # `score()` — because `detail` is `edges/lit` and every lit pixel of a
-        # dither field touches an unlit one, so the term meant to REWARD line art
-        # was MAXIMISED by texture. It handed `dither` the win on mousepad (0.669
-        # vs 0.386) while rendering visibly worse.
-        #
-        # `survives` is what separates them: block the mask into 2x2 and a
-        # halftone's blocks are all the same mid grey, while line art's are empty
-        # or full. Measured here 0.850 -> 0.000 for the checkerboard.
-        self.assertGreater(ib.score(_line_art()), ib.score(_checkerboard()))
-        self.assertEqual(ib.score(_checkerboard()), 0.0)
-
-    def test_the_SEPARATION_is_the_2x2_BLOCK_VARIANCE_and_nothing_else(self):
-        # Pin the mechanism, not just the outcome: the checkerboard's other three
-        # terms are all healthy, so anything that drops `survives` reinstates the
-        # defect rather than merely changing a number.
-        board = _checkerboard()
-        self.assertAlmostEqual(float(board.mean()), 0.5, places=2)   # balance fine
-        self.assertEqual(min(board.any(1).mean(), board.any(0).mean()), 1.0)
-        padded = np.pad(board, 1)
-        surrounded = (padded[:-2, 1:-1] & padded[2:, 1:-1]
-                      & padded[1:-1, :-2] & padded[1:-1, 2:])
-        self.assertEqual(float((board & ~surrounded).sum()) / board.sum(), 1.0)
-
-    def test_COHESION_does_not_separate_them_either(self):
-        # The obvious repair, measured and refuted: "a halftone is isolated
-        # pixels, line art is not". Over every real icon on the container it
-        # reads 0.78-1.0 for BOTH, because a Floyd-Steinberg field at ~50%
-        # density is not a checkerboard and its pixels do touch. A perfect
-        # checkerboard is the one case where it works, which is exactly why
-        # testing the idea on a synthetic checkerboard would have MISLED.
-        def cohesion(mask):
-            p = np.pad(mask, 1)
-            neigh = p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]
-            return float((mask & neigh).sum()) / float(mask.sum())
-
-        self.assertEqual(cohesion(_checkerboard()), 0.0)     # the tempting case
-        self.assertGreater(cohesion(_line_art()), 0.9)
-        # ...and the real dither this is meant to catch is nothing like it:
-        rng = np.random.default_rng(0)
-        realistic = rng.random((38, 38)) < 0.5
-        self.assertGreater(cohesion(realistic), 0.75)
+    def test_nothing_at_all_is_still_the_documented_triple(self):
+        image = _source(lambda d, s: d.ellipse([4, 4, s - 4, s - 4],
+                                               fill=(30, 30, 30, 255)))
+        self.assertEqual(self._with((("dead", lambda i, b: _blob()),), image),
+                         (None, None, -1.0))
 
 
 class RefutedRepairsTest(unittest.TestCase):

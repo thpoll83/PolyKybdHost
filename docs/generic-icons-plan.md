@@ -570,6 +570,52 @@ Each phase ends with something demonstrable; nothing depends on hardware until E
   "unusable dither" case put -1.0 on both sides (where the comparison is false
   either way), and nothing asserted the gamma reached `dither_ink` at all.
 
+* **E9 — the metric never looked at the ORIGINAL, and that was the real defect.**
+  ✅ Done. Owner's diagnosis, and it is correct: *"I think the proportions and
+  dimension of the original icons play a bigger role than just a clear icon and
+  that is where your metric lacks behind — vs my subjective recognizability
+  measure."*
+
+  Every term in `score()` is a property of the MASK ALONE — edges, grain, ink
+  balance, spread. It can say a render is crisp and it cannot say it is the right
+  picture. So it ranked clean threshold line art above a dither that kept the
+  artwork's layout, and E8 papered over that with a tuned `DITHER_PREFERENCE`
+  constant that forced a dither to the front because a human kept choosing one.
+  **The preference was a symptom.**
+
+  `fidelity(mask, image)` is the missing measure: |Pearson r| between the render's
+  and the source's 4×4 block fields. `choose()` now uses `score()` as a GATE
+  (usable at all) and fidelity as the RANKING (which usable render is the right
+  picture). **A dither wins 65 of 87 distinct Yaru arts on its own merits, against
+  36 under score-argmax** — so the thumb could be deleted, not retuned.
+
+  ⚠️ **1 - MAE was the obvious form and is DEGENERATE.** Most icon sources are
+  mostly light, so a BLANK render matches the mean and scores ~0.9: it picked an
+  empty mask for baobab, empathy, engrampa and eog. Correlation is invariant to
+  offset and scale, so a constant render has no variance and scores nothing.
+
+  ⚠️ **ABSOLUTE value, because an inverted render is equally faithful in SHAPE.**
+  A dark-plate icon (Terminal, Dictionary, Backups) reads correctly either way
+  round. Signed correlation refuses seven of the 87 for nothing but the sign.
+
+  ⚠️ **The reference is cropped to its ink bbox**, because a render is. Measured on
+  a small shape in a large transparent canvas: cropped 0.87, uncropped 0.10 — and
+  invisible on an icon that fills its frame, which is most of them.
+
+  **What it repaired**, judged on the same sheets that condemned E8: GNOME
+  Weather, gparted, Extensions, Mahjongg and Aisleriot go back to clean `adaptive`
+  reads, LibreOffice Base/Impress/Writer back to `luma`, while Totem keeps the
+  dithered film-strip plate with the play triangle knocked out of it (fidelity
+  0.93) and Text Editor, Camera, Calculator and the Game Boy keep their gains.
+  `FIDELITY_BLOCK` is 4 because that is where the corpus separates: at 2 the
+  measure grades the dither's texture (a dither wins only 56 of 87) and at 6 it
+  stops telling the gammas apart.
+
+  22 tests, mutation-swept 8/8. ⚠️ Two escaped first: the gate test used a fixture
+  where the sub-gate render was ALSO the less faithful one, so deleting the gate
+  changed nothing, and nothing asserted the reference is cropped — both needed a
+  fixture built to make the deleted line matter, not a new assertion.
+
 ---
 
 ## Part F — what could still fail

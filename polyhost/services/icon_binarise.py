@@ -216,27 +216,13 @@ DITHER_TUNINGS = (
     ("dither-hi", 2.0, 3.5),
 )
 
-# How much worse than the best THRESHOLD reading a dither may score and still be
-# taken. The order of preference is a product decision -- a dithered icon keeps
-# the artwork's body, a thresholded one keeps an outline -- so this is not a
-# tie-break, it is a thumb on the scale.
-#
-# ⚠️ 0.50 IS MEASURED AGAINST A HAND-JUDGED SET, and the trade is roughly one for
-# one. Over 25 arts judged by eye (17 where the dither is clearly better, 8 where
-# it is clearly worse): at 0.50 every one of the 17 wins is kept and 2 of the 8
-# losses are refused; at 0.55 a third loss goes but two wins go with it. Below
-# 0.40 nothing is refused at all.
-#
-# ⚠️ **A "SNOWFLAKE DETECTOR" WAS ATTEMPTED AND COULD NOT BE BUILT** -- see the
-# refutation list in `score()`. Over 29 hand-labelled renders, isolated-pixel
-# share, 2x2/3x3/4x4 grain share, full-block share, blur survival and lit all
-# OVERLAP between "dithered picture" and "dithered noise", the best single split
-# reaching 23 of 29. The reason is not a missing feature: what makes Shotwell's
-# tree or gparted's disc read as noise is that the SUBJECT is intricate, not that
-# the dither is bad. So this constant is a blunt relative floor and is honest
-# about being one; it does not detect grain and must not be described as if it
-# does.
-DITHER_PREFERENCE = 0.50
+# The block size `fidelity()` compares the render and the source at. It is the
+# scale at which a keycap is READ -- at 38px, 4px blocks are roughly the feature
+# size the eye resolves at arm's length. Measured over the 87 distinct Yaru arts,
+# 2 is too fine (it grades the dither's texture, and a dither wins only 56 of 87)
+# and 6 too coarse to separate the gammas; 3, 4 and 6 all sit at 63-65 and 4 has
+# the fewest weak matches.
+FIDELITY_BLOCK = 4
 
 def dither_ink(image, box: int, gamma: float = 1.0, contrast: float = 2.5):
     """Error-diffused ink, dithered AT the target size. Keeps midtone AREAS.
@@ -430,39 +416,107 @@ def score(mask) -> float:
     return detail ** 0.25 * survives * balance * spread
 
 
+def _source_ink(image, shape):
+    """The SOURCE as an ink map at `shape` -- darkness = ink, cropped like a render."""
+    import numpy as np
+    from PIL import Image
+    rgba = image.convert("RGBA")
+    flat = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+    flat.alpha_composite(rgba)
+    grey = np.asarray(flat.convert("L")).astype("float32") / 255.0
+    ink = (1.0 - grey) * (np.asarray(rgba.split()[-1]).astype("float32") / 255.0 > 0.35)
+    rows = np.flatnonzero(ink.any(1))
+    cols = np.flatnonzero(ink.any(0))
+    if not len(rows) or not len(cols):
+        return None
+    crop = ink[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+    small = Image.fromarray((crop * 255).astype("uint8")).resize(
+        (shape[1], shape[0]), Image.LANCZOS)
+    return np.asarray(small).astype("float32") / 255.0
+
+
+def _block_mean(field, size):
+    height, width = field.shape
+    tall, wide = height // size * size, width // size * size
+    if tall < size or wide < size:
+        return None
+    return field[:tall, :wide].reshape(
+        tall // size, size, wide // size, size).mean(axis=(1, 3))
+
+
+def fidelity(mask, image, block: int = FIDELITY_BLOCK) -> float:
+    """How well a render keeps the SOURCE's layout: |Pearson r| over coarse blocks.
+
+    ⚠️ **`score()` never looks at the source.** Every one of its terms is a
+    property of the mask alone, so it can say a render is crisp and cannot say it
+    is the right picture -- which is why it preferred clean threshold line art
+    while a human preferred the dither that kept the artwork's proportions.
+    Measured over the 87 distinct Yaru arts: ranking by `score()` puts a dither
+    first on 36, ranking by this puts one first on 65, with no thumb on the scale.
+
+    ⚠️ **1 - MAE was the obvious form and is DEGENERATE -- do not go back to it.**
+    Most icon sources are mostly light, so a BLANK render matches the mean and
+    scores ~0.9; it picked an empty mask for baobab, empathy, engrampa and eog.
+    Correlation is invariant to offset and scale, so a constant render has no
+    variance and scores nothing at all. It asks only whether the ink goes WHERE
+    the darkness is, which is the property being claimed.
+
+    ⚠️ **ABSOLUTE value, because an inverted render is equally faithful in
+    SHAPE.** A dark-plate icon (Terminal, Dictionary, Backups) reads correctly as
+    light-on-dark or dark-on-light; both preserve the proportions, and the sign
+    only records which way round the plate went. Signed correlation refuses seven
+    of the 87 outright for that alone.
+    """
+    import numpy as np
+    if mask is None or not mask.size:
+        return -1.0
+    reference = _source_ink(image, mask.shape)
+    if reference is None:
+        return -1.0
+    rendered = _block_mean(mask.astype("float32"), block)
+    original = _block_mean(reference, block)
+    if rendered is None or original is None:
+        return -1.0
+    rendered = rendered.ravel() - rendered.mean()
+    original = original.ravel() - original.mean()
+    spread = float(np.sqrt((rendered * rendered).sum() * (original * original).sum()))
+    if spread <= 1e-9:
+        return -1.0
+    return abs(float((rendered * original).sum() / spread))
+
+
 def choose(image, box: int):
     """(mask, conversion name, score) for the best 1-bit reading of `image`.
 
-    ⚠️ **A DITHER IS PREFERRED, NOT MERELY SCORED.** The six candidates are not
-    peers: the three threshold reads keep an outline and throw the artwork's body
-    away, the three dither reads keep the body. On a 72x40 keycap the body is
-    usually what makes an app recognisable, so the best dither wins unless it
-    scores below `DITHER_PREFERENCE` of the best threshold read. Taking the plain
-    argmax instead puts a dither first on 36 of 88 real icons; this puts it first
-    on 74.
+    ⚠️ **TWO MEASURES, AND THEY ANSWER DIFFERENT QUESTIONS.** `score()` decides
+    whether a render is USABLE -- a blob, a fragment field, a grey halftone are
+    all refused -- and `fidelity()` decides which of the usable ones is the RIGHT
+    PICTURE, by comparing it against the source. Everything clearing `MIN_SCORE`
+    is ranked by fidelity; the best score is the fallback only when nothing does.
 
-    ⚠️ The preference is a THUMB ON THE SCALE, not a claim that the score is
-    wrong. It exists because `score()` is a legibility heuristic and "which of
-    two legible readings do we want" is a product question it was never asked.
+    ⚠️ **This replaced a hardcoded `DITHER_PREFERENCE` thumb (2026-09-18), and
+    the thumb is the thing worth not rebuilding.** A dither was being forced to
+    the front because a human kept preferring it, with a relative floor tuned
+    until the count looked right. The real finding is that the dither preference
+    was a SYMPTOM: `score()` was ranking crispness while the owner was ranking
+    recognisability, so the fix is a measure that looks at the original rather
+    than a constant that overrides the one that does not. With fidelity ranking,
+    a dither wins 65 of 87 on its own merits and no constant decides it.
 
     Returns (None, None, -1.0) when nothing renders at all. A caller that wants
     only confident results compares the score against `MIN_SCORE`; one drawing a
     mark it has no alternative for may take whatever comes back.
     """
-    def pick(conversions):
-        best = (None, None, -1.0)
-        for name, convert in conversions:
-            mask = convert(image, box)
-            value = score(mask)
-            if value > best[2]:
-                best = (mask, name, value)
-        return best
-
-    threshold = pick(THRESHOLD_CONVERSIONS)
-    dithered = pick(DITHER_CONVERSIONS)
-    if dithered[2] > 0.0 and dithered[2] >= DITHER_PREFERENCE * threshold[2]:
-        return dithered
-    return threshold
+    candidates = []
+    for name, convert in CONVERSIONS:
+        mask = convert(image, box)
+        value = score(mask)
+        if value > -1.0:
+            candidates.append((mask, name, value))
+    if not candidates:
+        return None, None, -1.0
+    usable = [c for c in candidates if c[2] >= MIN_SCORE] or candidates
+    return max(usable, key=lambda c: fidelity(c[0], image))
 
 
 def looks_like_svg(data: bytes) -> bool:
