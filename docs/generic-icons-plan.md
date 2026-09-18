@@ -676,6 +676,59 @@ better reference.
 
 8 mutations, 8 caught by the intended test.
 
+### E11 — the shortcut half, wired
+
+E4 ported `shortcut_overlays` / `shortcut_fetcher` / `shortcut_source` with their
+117 tests and **nothing in the running app imported any of them** — a keyboard on
+this branch showed the program mark on ESC and no shortcut icons at all. This
+wires them into the same tick the mark already runs on.
+
+⚠️ **ONE send, not two, and that is forced rather than tidy.**
+`send_overlays_mru` calls `prepare_for_mru_send()`, which RESETS the firmware's
+whole display→pool mapping, and then commits the mapping it built from the
+filenames it was handed. A second call does not add to the first — it replaces
+it. So sending the mark and then the shortcut icons would leave only the icons,
+with the mark's upload wasted. `_maybe_send_program_mark` is therefore
+`_maybe_send_generic_overlays`, and both sources go into one `filenames` list.
+
+**The mark goes first in that list, so it keeps ESC.** Both sources are synthetic
+and `send_overlays_mru` gives an earlier synthetic source the key. The mark is
+the one keycap that means the same thing in every application, so a shortcut
+concept landing on Escape must not displace it; the loser is logged as deferred,
+exactly like a template deferral.
+
+⚠️ **The dedupe signature carries the KEYS, not just the source names.** Two
+applications routinely resolve the same concepts — Save, Copy, Paste — while
+binding them to different chords, so a name-only signature would report the
+second app as already on the device and its icons would land on the first app's
+keys or nowhere. This is the **opposite** of the MRU cache key, which is the
+concept alone and correct there for exactly the inverse reason: the *pixels* do
+not depend on the key, so `save` is one pool slot board-wide.
+
+⚠️ **A latent bug the mark already had, and which the shortcut half makes ~20×
+worse: a reconnect did not clear the signature.** `reset_all_caches()` empties
+the MRU and the keyboard's pool is cleared right after, so nothing generic is on
+the device — but the dedupe still claimed it was, and the tick never re-sent.
+The keycaps stayed blank until the user switched application.
+
+**Settings.** `shortcut_icons_enabled` and `shortcut_icon_auto_fetch` are now in
+the defaults, so the settings dialog can show them. Two switches because they
+answer different questions: the first governs whether another process's
+accessibility tree is **read at all** — the question on a locked-down machine —
+and the second only whether the icon catalog may be **fetched over the network**.
+`note_settings_changed` forgets both caches *and* the device signature, because
+each alone leaves the change invisible: a height change alters the pixels while
+the source names may be identical.
+
+**Driven end to end, not only through the suite.** On this container the harvest
+correctly reports *"no accessibility backend on this platform"* (no AT-SPI bus),
+so the chain downstream of it was driven with real parsed accelerators: 16
+harvested → 16 concepts planned → a 4.8 KB catalog subset fetched → 16 masks
+rendered → 16 converters built, and the real tick path sends
+`['@prog:os:org.xfce.mousepad.png']` with 16 modifier variants from one upload.
+
+9 mutations, 9 caught by the intended test.
+
 ## Part F — what could still fail
 
 * **B.2's RESOLUTION half is measured (14/16); its READ half is not.** What is

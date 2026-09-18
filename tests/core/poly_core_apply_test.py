@@ -149,6 +149,19 @@ class TestApplyReconnect(unittest.TestCase):
         core = make_core(paused=True)
         self.assertIsNone(core.apply_reconnect(connect_snapshot()))
 
+    def test_a_fresh_connect_FORGETS_the_generic_overlays(self):
+        # ⚠️ The MRU cache is reset and the keyboard's pool is cleared, so the
+        # mark and every shortcut icon are gone -- but the dedupe still claimed
+        # they were there, so the tick never re-sent them and the keycaps stayed
+        # blank until the user switched application. Latent since the mark
+        # shipped; the shortcut half made it worse, because it is ~20 keycaps
+        # rather than one.
+        core = make_core()
+        core._generic_on_device = ("si:gimp", ())
+        core.apply_reconnect(connect_snapshot())
+        core.device_mgr.reset_all_caches.assert_called_once()
+        self.assertIsNone(core._generic_on_device)
+
     def test_fresh_compatible_connect_runs_post_connect(self):
         core = make_core(unicode_mode=True)
         events = []
