@@ -314,5 +314,104 @@ class RenderTest(unittest.TestCase):
         self.assertIsNone(ic.render_overlay("nope", font, {"x": ord("X")}))
 
 
+class FaceTest(unittest.TestCase):
+    """Two catalogs behind one API — and they are NOT interchangeable by name.
+
+    Fluent's vocabulary is systematically its own (`undo` is `arrow_undo`,
+    `close` is `dismiss`), so a concept names its Fluent icon explicitly. What
+    this class pins is the plumbing that keeps the two apart: the qualified
+    name, the per-face parse, and the caches that must not poison each other.
+    """
+
+    FLUENT_JSON = ('{"ic_fluent_copy_24_regular": 62252,'
+                   ' "ic_fluent_save_24_regular": 61000,'
+                   ' "ic_fluent_copy_16_regular": 1,'
+                   ' "ic_fluent_copy_24_filled": 2,'
+                   ' "ic_fluent_bad_24_regular": "not-a-number",'
+                   ' "junk": 3}')
+
+    def test_a_QUALIFIED_name_pins_its_catalog(self):
+        self.assertEqual(ic.split_face("fluent:copy"), (ic.FLUENT, "copy"))
+        self.assertEqual(ic.split_face("material:save"), (ic.MATERIAL, "save"))
+
+    def test_a_BARE_name_takes_the_default(self):
+        self.assertEqual(ic.split_face("save"), (ic.DEFAULT_FACE, "save"))
+
+    def test_an_UNKNOWN_prefix_is_part_of_the_NAME_not_a_face(self):
+        # ⚠️ Otherwise a colon in an icon name silently eats the first segment
+        # and looks up something else entirely.
+        self.assertEqual(ic.split_face("weird:thing"), (ic.DEFAULT_FACE, "weird:thing"))
+
+    def test_the_fluent_table_keeps_only_24px_REGULAR_and_keys_on_the_STEM(self):
+        # It ships every size and weight; 24/regular is the one drawn here, and
+        # the stem is what a lexicon entry names.
+        got = ic._fluent_codepoints(self.FLUENT_JSON)
+        self.assertEqual(got, {"copy": 62252, "save": 61000})
+
+    def test_a_MALFORMED_fluent_table_is_empty_rather_than_an_exception(self):
+        # It is fetched over the network for a cosmetic feature; nothing here
+        # may raise on the render path.
+        for junk in ("", "not json", "[]", "null"):
+            with self.subTest(junk=junk):
+                self.assertEqual(ic._fluent_codepoints(junk), {})
+
+    def test_the_two_faces_cache_their_tables_SEPARATELY(self):
+        """⚠️ One shared path would have whichever face ran first answer for
+        both — and the parse differs, so the second face would read the first
+        one's bytes and come back empty rather than wrong-looking."""
+        with tempfile.TemporaryDirectory() as d:
+            self.assertNotEqual(ic.codepoints_path(d, ic.MATERIAL),
+                                ic.codepoints_path(d, ic.FLUENT))
+
+    def test_fluent_ignores_the_NAME_SET_because_it_has_no_subset_endpoint(self):
+        """⚠️ The property that stops a growing lexicon re-downloading 2.8 MB.
+
+        Material is content-keyed because Google serves exactly the icons asked
+        for; Fluent ships one whole font, so keying it on the names would make
+        every new concept a fresh download of the same file.
+        """
+        with tempfile.TemporaryDirectory() as d:
+            one = ic.subset_path(["copy"], d, ic.FLUENT)
+            many = ic.subset_path(["copy", "save", "dismiss"], d, ic.FLUENT)
+            self.assertEqual(one, many)
+            # Material must keep the opposite behaviour.
+            self.assertNotEqual(ic.subset_path(["copy"], d, ic.MATERIAL),
+                                ic.subset_path(["copy", "save"], d, ic.MATERIAL))
+
+    def test_the_two_faces_cache_their_FONTS_separately(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertNotEqual(ic.subset_path(["copy"], d, ic.FLUENT),
+                                ic.subset_path(["copy"], d, ic.MATERIAL))
+
+    def test_a_cached_fluent_font_is_served_with_NO_network(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = ic.subset_path(["copy"], d, ic.FLUENT)
+            with open(path, "wb") as fh:
+                fh.write(b"\x00\x01\x00\x00" + b"pretend-this-is-a-font")
+            self.assertEqual(
+                ic.fetch_subset(["copy"], d, allow_network=False, face=ic.FLUENT),
+                path)
+
+    def test_a_missing_fluent_font_with_no_network_is_None_not_a_raise(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIsNone(ic.fetch_subset(["copy"], d, allow_network=False,
+                                              face=ic.FLUENT))
+
+    def test_a_NON_TTF_body_is_refused_rather_than_cached(self):
+        """⚠️ GitHub serves an HTML error page with a 200 on some failures, and
+        caching that leaves a file that fails at RENDER time, once per keycap,
+        forever — the cache makes a transient failure permanent."""
+        with tempfile.TemporaryDirectory() as d:
+            path = ic.subset_path(["copy"], d, ic.FLUENT)
+            self.assertIsNone(ic._store_font(path, b"<!DOCTYPE html><html>nope"))
+            self.assertFalse(__import__("os").path.exists(path))
+
+    def test_FACES_is_a_PREFERENCE_ORDER_with_fluent_first(self):
+        # The order is the feature: Fluent is the house style every hand-made
+        # template already uses, Material fills what it lacks.
+        self.assertEqual(ic.FACES[0], ic.FLUENT)
+        self.assertIn(ic.MATERIAL, ic.FACES)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -40,6 +40,57 @@ CODEPOINTS_URL = (
     "variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints"
 )
 
+# --- faces -----------------------------------------------------------------
+#
+# Two catalogs, named like `app_icons`'s `si:`/`mdi:` for the same reason: a
+# qualified `face:name` is one string a lexicon entry can carry, so the choice
+# travels with the concept instead of living in a parallel table.
+#
+# ⚠️ THE TWO ARE NOT INTERCHANGEABLE BY NAME. Fluent's vocabulary is
+# systematically its own -- `undo` is `arrow_undo`, `close` is `dismiss`, `paste`
+# is `clipboard_paste`, `bold` is `text_bold`, `fullscreen` is `arrow_maximize`,
+# `quit` is `sign_out`. Measured over the 48 lexicon concepts, only 20 derive
+# from the Material spelling, and a substring search invents false friends:
+# `fireplace` for "replace", `briefcase` for "change case", `arrow_clockwise`
+# for "lock". So each concept names its Fluent icon explicitly; there is no
+# derivation to be clever with.
+#
+# ⚠️ FLUENT HAS NO SERVER-SIDE SUBSET. Google serves `icon_names=` and returns
+# 4.8 KB for twelve icons; Fluent ships one 2.8 MB TTF on GitHub and nothing
+# else, so the whole font is fetched once and cached. That is 3.8x smaller than
+# the 10.6 MB full Material font this module already rejected for the same
+# reason, and it is paid once per machine rather than per icon set -- but it is
+# the cost, and it is why `fetch_subset` branches per face rather than
+# pretending the two behave alike.
+MATERIAL, FLUENT = "material", "fluent"
+FACES = (FLUENT, MATERIAL)
+DEFAULT_FACE = MATERIAL
+
+FLUENT_CODEPOINTS_URL = (
+    "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/"
+    "fonts/FluentSystemIcons-Regular.json"
+)
+FLUENT_FONT_URL = (
+    "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/"
+    "fonts/FluentSystemIcons-Regular.ttf"
+)
+# The table keys every size and weight it ships; 24/regular is the one drawn
+# here, and is also the set the hand-made template overlays are sourced from.
+FLUENT_PREFIX, FLUENT_SUFFIX = "ic_fluent_", "_24_regular"
+
+
+def split_face(name: str) -> tuple[str, str]:
+    """`fluent:copy` -> ("fluent", "copy"); a bare name takes DEFAULT_FACE.
+
+    Mirrors `app_icons.qualify`, so an unqualified entry keeps working and a
+    qualified one pins its catalog.
+    """
+    text = str(name or "")
+    face, sep, rest = text.partition(":")
+    if sep and face in FACES:
+        return face, rest
+    return DEFAULT_FACE, text
+
 # ⚠️ The User-Agent decides the FORMAT Google serves. A modern browser UA gets
 # woff2, which Pillow cannot open; an absent or old one gets plain TTF. Asking
 # for TTF is the whole reason this needs no rasteriser dependency, so the UA is
@@ -203,34 +254,71 @@ def _get(url: str, user_agent: str | None = None) -> bytes:
         return response.read()
 
 
-def codepoints_path(cache_dir: str | None = None) -> str:
-    return os.path.join(cache_dir or default_cache_dir(), "codepoints.txt")
+def codepoints_path(cache_dir: str | None = None,
+                    face: str = DEFAULT_FACE) -> str:
+    stem = "codepoints.txt" if face == MATERIAL else f"codepoints-{face}.json"
+    return os.path.join(cache_dir or default_cache_dir(), stem)
+
+
+def _cached_text(path: str, url: str, allow_network: bool) -> str:
+    """The cached body for `url`, fetching and storing it once. "" on failure."""
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as fh:
+                return fh.read()
+        except OSError:
+            pass
+    if not allow_network:
+        return ""
+    try:
+        text = _get(url).decode("utf-8", "replace")
+    except Exception:
+        return ""
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text)
+    except OSError:
+        pass                    # an uncacheable answer is still a usable one
+    return text
+
+
+def _fluent_codepoints(text: str) -> dict[str, int]:
+    """Fluent's table -> {stem: codepoint} for the 24px regular set.
+
+    ⚠️ Keyed on the STEM (`copy`), not the full `ic_fluent_copy_24_regular`, so a
+    lexicon entry names the icon the way a person would and the size/weight this
+    module draws stays one decision in one place.
+    """
+    import json
+    try:
+        raw = json.loads(text)
+    except Exception:
+        return {}
+    out: dict[str, int] = {}
+    for key, value in (raw or {}).items():
+        if not (key.startswith(FLUENT_PREFIX) and key.endswith(FLUENT_SUFFIX)):
+            continue
+        try:
+            out[key[len(FLUENT_PREFIX):-len(FLUENT_SUFFIX)]] = int(value)
+        except (TypeError, ValueError):
+            continue
+    return out
 
 
 def load_codepoints(cache_dir: str | None = None,
-                    allow_network: bool = True) -> dict[str, int]:
+                    allow_network: bool = True,
+                    face: str = DEFAULT_FACE) -> dict[str, int]:
     """name -> codepoint for every icon in the catalog, cached on disk.
 
     Rendering goes by codepoint rather than by the font's name ligatures,
     because ligature substitution needs Raqm in Pillow and is not guaranteed to
     be compiled in. A codepoint always draws.
     """
-    path = codepoints_path(cache_dir)
-    text = ""
-    if os.path.exists(path):
-        try:
-            with open(path, encoding="utf-8") as fh:
-                text = fh.read()
-        except OSError:
-            text = ""
-    if not text and allow_network:
-        try:
-            text = _get(CODEPOINTS_URL).decode("utf-8", "replace")
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as fh:
-                fh.write(text)
-        except Exception:
-            return {}
+    url = CODEPOINTS_URL if face == MATERIAL else FLUENT_CODEPOINTS_URL
+    text = _cached_text(codepoints_path(cache_dir, face), url, allow_network)
+    if face == FLUENT:
+        return _fluent_codepoints(text)
     out: dict[str, int] = {}
     for line in text.splitlines():
         parts = line.split()
@@ -242,19 +330,39 @@ def load_codepoints(cache_dir: str | None = None,
     return out
 
 
-def subset_path(names, cache_dir: str | None = None) -> str:
+def subset_path(names, cache_dir: str | None = None,
+                face: str = DEFAULT_FACE) -> str:
     """Cache file for one SET of icon names.
 
     Keyed on the sorted set, so growing the lexicon fetches a new subset and
     leaves the old one cached rather than invalidating anything.
+
+    ⚠️ Fluent ignores `names`: there is no subset endpoint, so one whole-font
+    file serves every set. The path is therefore stable rather than content-
+    keyed, which is also what stops a growing lexicon re-downloading 2.8 MB.
     """
+    if face == FLUENT:
+        return os.path.join(cache_dir or default_cache_dir(), "fluent-regular.ttf")
     key = hashlib.sha256(",".join(sorted(set(names))).encode()).hexdigest()[:16]
     return os.path.join(cache_dir or default_cache_dir(), f"symbols-{key}.ttf")
 
 
+def _store_font(path: str, data: bytes) -> str | None:
+    """Write a fetched font, refusing anything that is not a TTF."""
+    if not _is_ttf(data):
+        return None
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".part"
+    with open(tmp, "wb") as fh:
+        fh.write(data)
+    os.replace(tmp, path)          # never leave a half file under the real name
+    return path
+
+
 def fetch_subset(names, cache_dir: str | None = None,
-                 allow_network: bool = True) -> str | None:
-    """Path to a TTF containing exactly `names`, downloading it once if needed.
+                 allow_network: bool = True,
+                 face: str = DEFAULT_FACE) -> str | None:
+    """Path to a TTF that can draw `names`, downloading it once if needed.
 
     Returns None when it is neither cached nor reachable -- the caller then draws
     the label text, which is why nothing here raises.
@@ -262,11 +370,16 @@ def fetch_subset(names, cache_dir: str | None = None,
     names = sorted(set(n for n in names if n))
     if not names:
         return None
-    path = subset_path(names, cache_dir)
+    path = subset_path(names, cache_dir, face)
     if os.path.exists(path) and os.path.getsize(path) > 4:
         return path
     if not allow_network:
         return None
+    if face == FLUENT:
+        try:
+            return _store_font(path, _get(FLUENT_FONT_URL, TTF_USER_AGENT))
+        except Exception:
+            return None
     try:
         query = urllib.parse.urlencode({"family": FAMILY.replace(" ", "+"),
                                         "icon_names": ",".join(names)},
@@ -276,15 +389,7 @@ def fetch_subset(names, cache_dir: str | None = None,
         if start < 0:
             return None
         url = css[start + 4:css.find(")", start)].strip("'\" ")
-        data = _get(url, TTF_USER_AGENT)
-        if not _is_ttf(data):
-            return None
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        tmp = path + ".part"
-        with open(tmp, "wb") as fh:
-            fh.write(data)
-        os.replace(tmp, path)          # never leave a half file under the real name
-        return path
+        return _store_font(path, _get(url, TTF_USER_AGENT))
     except Exception:
         return None
 
