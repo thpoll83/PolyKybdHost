@@ -517,6 +517,59 @@ Each phase ends with something demonstrable; nothing depends on hardware until E
   to `unittest`, which errors, which reads as caught. Read the *caught-by* names,
   never the verdict alone.
 
+* **E8 — a dither is PREFERRED, and there are three of them.** ✅ Done. Owner's
+  call after reviewing the tuning sheets: *"with a very very few exceptions dither
+  always looks better. So yes add 2 or 3 dither candidates and make them the first
+  choice as long as it is more than just snowflakes."*
+
+  **Gamma is the knob, and it points OPPOSITE ways per icon** — Totem, Text Editor,
+  Weather and Camera want 1.4–2.0; the Calculator wants 0.5. So the three tunings
+  are scored candidates rather than one tuned default. The set
+  (`dither-lo` 0.5/2.5, `dither` 1.0/2.5, `dither-hi` 2.0/3.5) is **chosen by
+  measurement**: of every 3-combination from a 12-point grid it maximises the mean
+  best-dither score over the 88 distinct Yaru arts (0.317 against 0.225 for the
+  shipped tuning alone) and puts the best dither ahead of the best threshold read
+  on 36 of 88 rather than 21.
+
+  `choose()` now splits the candidates and takes the best dither unless it scores
+  below `DITHER_PREFERENCE` (0.50) of the best threshold read. That lifts a dither
+  from 36 of 88 picks to **74**, and changes 67 of the 88 picks.
+
+  ⚠️ **A "SNOWFLAKE DETECTOR" WAS ATTEMPTED AND COULD NOT BE BUILT — this is the
+  fifth refuted repair in this area and the most instructive.** 29 renders were
+  hand-labelled picture vs noise and every candidate feature OVERLAPPED:
+  isolated-pixel share, 2×2/3×3/4×4 grain share, full-block share, blur survival
+  and lit, the best single split reaching 23 of 29. The reason is not a missing
+  feature: what makes Shotwell's tree or gparted's disc read as noise is that the
+  **subject** is intricate, not that the dither is bad. `DITHER_PREFERENCE` is
+  therefore a blunt relative floor and is documented as one.
+
+  **0.50 is measured against a hand-judged set and the trade is about one for
+  one.** Of 25 arts judged by eye (17 clear dither wins, 8 clear losses) it keeps
+  all 17 wins and refuses 2 of the 8 losses; 0.55 refuses a third loss but takes
+  two wins with it; below 0.40 nothing is refused.
+
+  ⚠️ **The cost is real and is NOT "a very few exceptions".** Reading all 88
+  before/after by eye: roughly 30 better, 25 worse, 30 unchanged. The losses
+  cluster on clean line-art marks — the whole LibreOffice family, GNOME Music,
+  Mines, Livepatch, gparted, app-center — which come back at
+  `DITHER_PREFERENCE` 0.70 at the cost of Totem, cpu-x, audio-recorder,
+  address-book and clock-app. One constant moves the whole trade; the sheets to
+  judge it from are in the session, and the owner's stated preference is what
+  0.50 encodes.
+
+  Also: `test_a_monochrome_svg_reads_IDENTICALLY_either_way` had to widen. A flat
+  single-path mark now comes back from `dither-hi`, which reproduces the shape
+  exactly in its interior and differs on **20 anti-aliased edge pixels of 1444**;
+  the exact half is pinned separately against the non-diffusing conversion.
+
+  28 tests in the module (13 before E7), mutation-swept 8/8 twice. ⚠️ Three of the
+  eight escaped on the first pass and each escape was a FIXTURE fault, not a
+  missing test: the "dither wins while scoring lower" case handed the dither slot
+  the *higher*-scoring mask (so it passed under a plain argmax too), the
+  "unusable dither" case put -1.0 on both sides (where the comparison is false
+  either way), and nothing asserted the gamma reached `dither_ink` at all.
+
 ---
 
 ## Part F — what could still fail

@@ -63,20 +63,136 @@ def _fragments(size=38):
 
 class ConversionSetTest(unittest.TestCase):
 
-    def test_there_are_exactly_FOUR_conversions(self):
-        # ⚠️ A guard against re-adding the fifth (Floyd-Steinberg over BLACK).
-        # It was implemented, scored and rendered against every real icon on the
-        # dev container and it is measurably WORSE: it takes the top score on six
-        # of twelve and on five of those replaces clean `adaptive` line art with
-        # a halftone field, while not moving the mousepad regression it was
-        # proposed for. See docs/generic-icons-plan.md § E5 and the evidence
-        # sheet docs/images/binarise.png before changing this number.
+    def test_the_SIX_conversions_are_three_thresholds_then_three_dithers(self):
+        # ⚠️ Still a guard against re-adding Floyd-Steinberg over BLACK, which is
+        # a different proposal from the three GAMMAS here. It was implemented,
+        # scored and rendered against every real icon on the dev container and is
+        # measurably WORSE: it takes the top score on six of twelve and on five of
+        # those replaces clean `adaptive` line art with a halftone field, while
+        # not moving the mousepad regression it was proposed for. See
+        # docs/generic-icons-plan.md § E5 and docs/images/binarise.png.
         self.assertEqual([name for name, _ in ib.CONVERSIONS],
-                         ["alpha", "luma", "adaptive", "dither"])
+                         ["alpha", "luma", "adaptive",
+                          "dither-lo", "dither", "dither-hi"])
+        self.assertEqual(ib.CONVERSIONS,
+                         ib.THRESHOLD_CONVERSIONS + ib.DITHER_CONVERSIONS)
 
-    def test_the_DITHER_is_last_so_a_tie_goes_to_a_threshold(self):
-        # A thresholded reading has no texture to misread.
-        self.assertEqual(ib.CONVERSIONS[-1][0], "dither")
+    def test_the_three_dither_GAMMAS_span_both_directions(self):
+        # ⚠️ The set is not spaced by taste. The right gamma is per icon and
+        # points OPPOSITE ways — Totem/Text Editor/Weather want 1.4-2.0, the
+        # Calculator wants 0.5 — so a single tuned default cannot serve both and
+        # the low/mid/high spread is the whole reason there are three.
+        gammas = [g for _, g, _ in ib.DITHER_TUNINGS]
+        self.assertLess(min(gammas), 1.0)
+        self.assertGreater(max(gammas), 1.0)
+        self.assertIn(1.0, gammas)          # the tuning that shipped before
+
+    def test_the_MID_tuning_is_the_one_that_shipped_alone(self):
+        # Keeps the name `dither` meaning what it meant, so an old log line or a
+        # stored choice still reads correctly.
+        self.assertEqual(dict((n, (g, c)) for n, g, c in ib.DITHER_TUNINGS)["dither"],
+                         (1.0, ib.DITHER_ADJUST["contrast"]))
+
+
+class DitherPreferenceTest(unittest.TestCase):
+    """A dither is PREFERRED over a threshold read, not merely scored against it."""
+
+    def _icon(self, shape, size=160):
+        from PIL import Image, ImageDraw
+        image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        shape(ImageDraw.Draw(image), size)
+        return image
+
+    def test_a_dither_wins_even_when_it_scores_LOWER(self):
+        # ⚠️ This is the whole feature and it cannot be expressed as a tie-break:
+        # the dither is taken while it scores as little as DITHER_PREFERENCE of
+        # the best threshold reading. A plain argmax puts a dither first on 36 of
+        # 88 real icons; the preference puts it first on 74.
+        self.assertLess(ib.DITHER_PREFERENCE, 1.0)
+        self.assertGreater(ib.DITHER_PREFERENCE, 0.0)
+
+    def test_the_preference_is_a_FLOOR_and_a_bad_dither_is_still_refused(self):
+        # "More than just snowflakes" — a dither scoring far under the threshold
+        # read loses. Measured: GNOME Bluetooth's dither is 0.33 of its adaptive
+        # reading and is correctly refused.
+        class Stub:
+            pass
+        real = ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS
+        try:
+            good = _line_art()
+            bad = _fragments()
+            ib.THRESHOLD_CONVERSIONS = (("adaptive", lambda i, b: good),)
+            ib.DITHER_CONVERSIONS = (("dither", lambda i, b: bad),)
+            self.assertLess(ib.score(bad), ib.DITHER_PREFERENCE * ib.score(good))
+            _, name, _ = ib.choose(Stub(), 38)
+            self.assertEqual(name, "adaptive")
+        finally:
+            ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS = real
+
+    def test_a_dither_that_scores_at_all_but_UNDER_the_threshold_still_wins(self):
+        # The other side of the same rule, and the one a plain argmax gets wrong.
+        # ⚠️ The fixtures must be ordered `threshold > dither` or the test passes
+        # under argmax too and pins nothing — a mutation sweep caught exactly that
+        # (the first version handed the DITHER slot the higher-scoring mask).
+        class Stub:
+            pass
+        real = ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS
+        try:
+            strong, weaker = _triangle(), _scribble()
+            self.assertGreater(ib.score(strong), ib.score(weaker))     # argmax would take `strong`
+            self.assertGreaterEqual(ib.score(weaker),
+                                    ib.DITHER_PREFERENCE * ib.score(strong))
+            ib.THRESHOLD_CONVERSIONS = (("adaptive", lambda i, b: strong),)
+            ib.DITHER_CONVERSIONS = (("dither", lambda i, b: weaker),)
+            _, name, _ = ib.choose(Stub(), 38)
+            self.assertEqual(name, "dither")
+        finally:
+            ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS = real
+
+    def test_a_dither_that_scores_ZERO_never_wins_a_NEGATIVE_comparison(self):
+        # ⚠️ The "scored at all" clause, and it only bites when the THRESHOLD
+        # reading is itself rejected: multiplying a negative score by the floor
+        # RAISES it, so `0.0 >= 0.5 * -1.0` is true and a pure grain field would
+        # be handed back as the pick. A mutation sweep found the first version of
+        # this test could not tell the clause was gone, because both sides were
+        # -1.0 and the comparison came out false either way.
+        class Stub:
+            pass
+        real = ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS
+        try:
+            self.assertEqual(ib.score(_blob()), -1.0)          # threshold rejected
+            self.assertEqual(ib.score(_checkerboard()), 0.0)   # pure grain
+            self.assertGreaterEqual(ib.score(_checkerboard()),
+                                    ib.DITHER_PREFERENCE * ib.score(_blob()))
+            ib.THRESHOLD_CONVERSIONS = (("adaptive", lambda i, b: _blob()),)
+            ib.DITHER_CONVERSIONS = (("dither", lambda i, b: _checkerboard()),)
+            mask, name, value = ib.choose(Stub(), 38)
+            # ⚠️ "nothing rendered", not "the threshold read won": `pick()` seeds
+            # at -1.0 and requires a STRICT improvement, so a reading that scores
+            # exactly -1.0 never becomes the best. Without the clause this comes
+            # back as the checkerboard at 0.0.
+            self.assertIsNone(mask)
+            self.assertIsNone(name)
+            self.assertEqual(value, -1.0)
+        finally:
+            ib.THRESHOLD_CONVERSIONS, ib.DITHER_CONVERSIONS = real
+
+    def test_the_TUNING_reaches_the_dither_and_is_not_decoration(self):
+        # ⚠️ Nothing else notices if `dither_ink` stops passing its gamma along —
+        # the conversions still differ by their contrast, so the set still looks
+        # like three candidates. A mutation dropping `gamma_val=` escaped until
+        # this existed. Driven on a real GRADIENT, which is the only input whose
+        # dither gamma can change.
+        from PIL import Image
+        ramp = Image.new("L", (160, 160))
+        ramp.putdata([min(255, x) for _ in range(160) for x in range(160)])
+        ramp = ramp.convert("RGBA")
+        masks = {name: convert(ramp, 38) for name, convert in ib.DITHER_CONVERSIONS}
+        lo, mid, hi = masks["dither-lo"], masks["dither"], masks["dither-hi"]
+        self.assertGreater(int((lo != mid).sum()), 20)
+        self.assertGreater(int((hi != mid).sum()), 20)
+        # and gamma moves the ink monotonically: a lower gamma lightens the ramp
+        self.assertLess(float(lo.mean()), float(hi.mean()))
 
 
 class ScoreTest(unittest.TestCase):

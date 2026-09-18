@@ -192,15 +192,53 @@ def adaptive_ink(image):
         return None
 
 
-# The pre-dither adjustments `dither_ink` runs. ⚠️ NOT optional decoration --
-# bare Floyd-Steinberg on an app icon is unreadable noise at this size, AND it
-# games `score()`, because every isolated pixel of a dithered midtone counts as
-# an edge. Normalise + unsharp + contrast is what removes the scatter, and it is
+# The pre-dither adjustments the dither conversions run. ⚠️ NOT optional
+# decoration -- bare Floyd-Steinberg on an app icon is unreadable noise at this
+# size. Normalise + unsharp + contrast is what removes the scatter, and it is
 # the stage fontconvert itself always pairs with the dither.
 DITHER_ADJUST = dict(normalize=True, sharpness=2.5, contrast=2.5)
 
+# ⚠️ GAMMA IS THE KNOB THAT DECIDES WHETHER A DITHER READS, and the right value
+# is PER ICON and points in OPPOSITE directions -- which is why these are three
+# scored candidates rather than one tuned default. Measured over the 235-icon
+# Yaru set at 38x38: Totem, Text Editor, Weather and Camera want gamma 1.4-2.0,
+# while Calculator wants 0.5 (at 2.0 its right panel turns into a texture field,
+# at 0.5 Totem's triangle drowns in scatter).
+#
+# The set is CHOSEN BY MEASUREMENT, not spaced by taste: of every 3-tuning
+# combination drawn from a 12-point grid, this one maximises the mean best-dither
+# score over the 88 distinct arts (0.317, against 0.225 for the shipped tuning
+# alone) and puts the best dither ahead of the best threshold read on 36 of 88
+# rather than 21.
+DITHER_TUNINGS = (
+    ("dither-lo", 0.5, 2.5),
+    ("dither", 1.0, 2.5),
+    ("dither-hi", 2.0, 3.5),
+)
 
-def dither_ink(image, box: int):
+# How much worse than the best THRESHOLD reading a dither may score and still be
+# taken. The order of preference is a product decision -- a dithered icon keeps
+# the artwork's body, a thresholded one keeps an outline -- so this is not a
+# tie-break, it is a thumb on the scale.
+#
+# ⚠️ 0.50 IS MEASURED AGAINST A HAND-JUDGED SET, and the trade is roughly one for
+# one. Over 25 arts judged by eye (17 where the dither is clearly better, 8 where
+# it is clearly worse): at 0.50 every one of the 17 wins is kept and 2 of the 8
+# losses are refused; at 0.55 a third loss goes but two wins go with it. Below
+# 0.40 nothing is refused at all.
+#
+# ⚠️ **A "SNOWFLAKE DETECTOR" WAS ATTEMPTED AND COULD NOT BE BUILT** -- see the
+# refutation list in `score()`. Over 29 hand-labelled renders, isolated-pixel
+# share, 2x2/3x3/4x4 grain share, full-block share, blur survival and lit all
+# OVERLAP between "dithered picture" and "dithered noise", the best single split
+# reaching 23 of 29. The reason is not a missing feature: what makes Shotwell's
+# tree or gparted's disc read as noise is that the SUBJECT is intricate, not that
+# the dither is bad. So this constant is a blunt relative floor and is honest
+# about being one; it does not detect grain and must not be described as if it
+# does.
+DITHER_PREFERENCE = 0.50
+
+def dither_ink(image, box: int, gamma: float = 1.0, contrast: float = 2.5):
     """Error-diffused ink, dithered AT the target size. Keeps midtone AREAS.
 
     The other three conversions all pick a threshold and throw the midtones
@@ -250,7 +288,8 @@ def dither_ink(image, box: int):
     ink = ink.resize((max(1, round(ink.width * scale)),
                       max(1, round(ink.height * scale))), Image.LANCZOS)
     small = np.asarray(ink).astype(np.float32) / 255.0
-    fd.apply_adjustments(small, fd.DitherOpts(**DITHER_ADJUST))
+    adjust = dict(DITHER_ADJUST, gamma_val=gamma, contrast=contrast)
+    fd.apply_adjustments(small, fd.DitherOpts(**adjust))
     h, w = small.shape
     # ⚠️ `_Bits` is reached for because it is the only bit buffer `dither()`
     # accepts and the module exposes no public constructor; the dither itself
@@ -268,12 +307,26 @@ def _thresholded(convert):
 
 # Each entry is (name, (image, box) -> bool mask). `dither` is last so that a
 # tie goes to a thresholded reading, which has no texture to misread.
-CONVERSIONS = (
+def _tuned_dither(gamma: float, contrast: float):
+    def convert(image, box: int):
+        return dither_ink(image, box, gamma=gamma, contrast=contrast)
+    return convert
+
+
+# The THRESHOLD reads -- each picks a cut and throws the midtones away.
+THRESHOLD_CONVERSIONS = (
     ("alpha", _thresholded(alpha_coverage)),
     ("luma", _thresholded(luma_ink)),
     ("adaptive", _thresholded(adaptive_ink)),
-    ("dither", dither_ink),
 )
+
+# The DITHER reads -- each keeps the midtone AREAS, at a different gamma.
+DITHER_CONVERSIONS = tuple(
+    (name, _tuned_dither(gamma, contrast)) for name, gamma, contrast in DITHER_TUNINGS)
+
+DITHER_NAMES = frozenset(name for name, _, _ in DITHER_TUNINGS)
+
+CONVERSIONS = THRESHOLD_CONVERSIONS + DITHER_CONVERSIONS
 
 
 def fit(coverage, box: int):
@@ -380,17 +433,36 @@ def score(mask) -> float:
 def choose(image, box: int):
     """(mask, conversion name, score) for the best 1-bit reading of `image`.
 
+    ⚠️ **A DITHER IS PREFERRED, NOT MERELY SCORED.** The six candidates are not
+    peers: the three threshold reads keep an outline and throw the artwork's body
+    away, the three dither reads keep the body. On a 72x40 keycap the body is
+    usually what makes an app recognisable, so the best dither wins unless it
+    scores below `DITHER_PREFERENCE` of the best threshold read. Taking the plain
+    argmax instead puts a dither first on 36 of 88 real icons; this puts it first
+    on 74.
+
+    ⚠️ The preference is a THUMB ON THE SCALE, not a claim that the score is
+    wrong. It exists because `score()` is a legibility heuristic and "which of
+    two legible readings do we want" is a product question it was never asked.
+
     Returns (None, None, -1.0) when nothing renders at all. A caller that wants
     only confident results compares the score against `MIN_SCORE`; one drawing a
     mark it has no alternative for may take whatever comes back.
     """
-    best = (None, None, -1.0)
-    for name, convert in CONVERSIONS:
-        mask = convert(image, box)
-        value = score(mask)
-        if value > best[2]:
-            best = (mask, name, value)
-    return best
+    def pick(conversions):
+        best = (None, None, -1.0)
+        for name, convert in conversions:
+            mask = convert(image, box)
+            value = score(mask)
+            if value > best[2]:
+                best = (mask, name, value)
+        return best
+
+    threshold = pick(THRESHOLD_CONVERSIONS)
+    dithered = pick(DITHER_CONVERSIONS)
+    if dithered[2] > 0.0 and dithered[2] >= DITHER_PREFERENCE * threshold[2]:
+        return dithered
+    return threshold
 
 
 def looks_like_svg(data: bytes) -> bool:
