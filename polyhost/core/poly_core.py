@@ -505,7 +505,7 @@ class PolyCore(Observable):
         self.emit("overlay_activity", {"state": "thinking"})
         self.worker.submit("overlay", lambda cancel: self._overlay_send_job(files, cancel),
                            coalesce_key="overlay",
-                           on_done=lambda name, result: self.emit(name, result))
+                           on_done=self.emit)
         return True
 
     def tick_window_tracking(self, update_cycle_msec=UPDATE_CYCLE_MSEC,
@@ -615,7 +615,7 @@ class PolyCore(Observable):
             "overlay",
             lambda cancel: self._program_mark_job(filename, built, cancel),
             coalesce_key="overlay",
-            on_done=lambda name, result: self.emit(name, result))
+            on_done=self.emit)
 
     def _program_mark_job(self, filename, built, cancel):
         """Worker-thread send of the generic mark. Mirrors _overlay_send_job."""
