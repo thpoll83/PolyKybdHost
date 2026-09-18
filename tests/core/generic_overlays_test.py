@@ -48,6 +48,7 @@ def make_core(*, app=("gimp", None), mask=None, slug="si:gimp", shortcuts=None):
     from polyhost.input.unicode_input import get_host_os
     core._last_pushed_os = get_host_os().value
     core._generic_on_device = None
+    core._told_no_remote_shortcuts = set()
     core._app_icons = MagicMock()
     core._app_icons.overlay_for.return_value = (mask, slug)
     core._shortcut_icons = MagicMock()
@@ -325,6 +326,49 @@ class SettingsChangeTest(unittest.TestCase):
         core = self._core()
         core.note_settings_changed(None)
         core._shortcut_icons.forget.assert_called_once()
+
+
+class ForwardedShortcutsTest(unittest.TestCase):
+    """A forwarded app runs on the OTHER machine; its tree is not here."""
+
+    def _remote(self, **kw):
+        core = make_core(**kw)
+        core.overlay_handler.is_remote_mapping_entry.return_value = True
+        return core
+
+    def test_a_forwarded_window_is_NOT_harvested_locally(self):
+        # ⚠️ The harvest reads a LOCAL accessibility backend -- AT-SPI here,
+        # UI Automation on Windows -- so for an app on the other machine it
+        # walks the wrong tree, finds nothing, and reports "the app exposes no
+        # accelerators". Measured from a real log: a Windows daemon reported 0
+        # shortcut icons for a gnome-terminal whose own machine exposes 16.
+        core = self._remote(mask=_mask())
+        _tick(core)
+        core._shortcut_icons.overlays_for.assert_not_called()
+
+    def test_the_MARK_still_goes_out_for_a_forwarded_window(self):
+        # It works because E1 resolves the identity ON THE FORWARDER and relays
+        # it. Losing the mark as well would be a regression, not a fix.
+        core = self._remote(mask=_mask())
+        _tick(core)
+        core.worker.submit.call_args.args[1](threading.Event())
+        names = core.device_mgr.all_entries[0].device.send_overlays_mru.call_args.args[0]
+        self.assertEqual(names, ["@prog:si:gimp"])
+
+    def test_it_says_WHY_at_INFO_once_per_app(self):
+        # Not a failure to debug: this feature decides on its own what to draw
+        # on ~20 keycaps, so "it drew nothing" needs a readable reason.
+        core = self._remote(mask=_mask())
+        with self.assertLogs("test.polycore.mark", level="INFO") as caught:
+            for _ in range(4):
+                _tick(core)
+        said = [m for m in caught.output if "running on the FORWARDER" in m]
+        self.assertEqual(len(said), 1, said)
+
+    def test_a_LOCAL_window_is_still_harvested(self):
+        core = make_core(mask=_mask())
+        _tick(core)
+        core._shortcut_icons.overlays_for.assert_called_once_with("gimp")
 
 
 class ForwardedTest(unittest.TestCase):

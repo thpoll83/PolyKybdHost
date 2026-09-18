@@ -162,6 +162,9 @@ class PolyCore(Observable):
         self._app_icons = None
         self._shortcut_icons = None
         self._generic_on_device = None
+        # Apps already told they get no shortcut icons because they are
+        # forwarded -- one line each, not one per window change.
+        self._told_no_remote_shortcuts = set()
         # Last unicode input method pushed to the keyboard (an InputMethod, or
         # None). The WinCompose settle watcher re-probes after a connect and pushes
         # only on a real change; see _start_wincompose_settle.
@@ -611,10 +614,29 @@ class PolyCore(Observable):
         mask, slug = self._app_icons.overlay_for(name, identity=identity)
         if mask is None or not slug:
             slug = None
-        # {source_name: {(modifier_value, keycode): mask}} -- one entry per
-        # CONCEPT, shared across every key that concept lands on and across
-        # applications, which is what makes Save cost one pool slot board-wide.
-        shortcuts = self._shortcut_icons.overlays_for(name)
+        # ⚠️ **A FORWARDED window's shortcuts CANNOT be harvested here, and
+        # asking anyway is worse than not asking.** The harvest reads the
+        # application's accessibility tree through a LOCAL backend -- AT-SPI on
+        # Linux, UI Automation on Windows -- and a forwarded app is running on
+        # the OTHER machine. So the lookup walks this machine's tree, never
+        # finds the app, and reports "the app exposes no accelerators", which is
+        # indistinguishable from an app that genuinely has none.
+        #
+        # Measured from a real log (2026-09-18): a Windows daemon with a Linux
+        # forwarder drew `mark 'si:gnometerminal' on ESC, 0 shortcut icon(s)`
+        # for a gnome-terminal whose own machine exposes SIXTEEN, every one
+        # displayable. The program mark works there only because E1 resolves the
+        # identity ON THE FORWARDER and relays it; the shortcut half has no
+        # such relay yet.
+        if handler.is_remote_mapping_entry():
+            self._say_no_remote_shortcuts(name)
+            shortcuts = {}
+        else:
+            # {source_name: {(modifier_value, keycode): mask}} -- one entry per
+            # CONCEPT, shared across every key that concept lands on and across
+            # applications, which is what makes Save cost one pool slot
+            # board-wide.
+            shortcuts = self._shortcut_icons.overlays_for(name)
         signature = self._generic_signature(slug, shortcuts)
         if signature is None:
             # Both halves are normal on the first sighting (the fetches were
@@ -628,6 +650,24 @@ class PolyCore(Observable):
         if signature == self._generic_on_device:
             return
         self._send_generic_overlays(name, signature, slug, mask, shortcuts)
+
+    def _say_no_remote_shortcuts(self, name):
+        """Say it once per app, at INFO, because it is not a failure to debug.
+
+        The same level and shape as `ShortcutIconFetcher._say`: this feature
+        decides on its own what to draw on ~20 keycaps, so "it drew nothing"
+        needs a reason a user can read without developer mode. Bounded by how
+        many forwarded applications get focused, not by how long the session
+        runs.
+        """
+        if name in self._told_no_remote_shortcuts:
+            return
+        self._told_no_remote_shortcuts.add(name)
+        self.log.info(
+            "No shortcut icons for '%s': it is running on the FORWARDER, and "
+            "the harvest reads the accessibility tree of a LOCAL application. "
+            "The program mark still works (the forwarder resolves and relays "
+            "it).", name)
 
     @staticmethod
     def _generic_signature(slug, shortcuts):
