@@ -9,7 +9,7 @@ queue with the slow half stubbed out.
 import threading
 import time
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from polyhost.services import shortcut_fetcher
 from polyhost.services.shortcut_fetcher import ShortcutIconFetcher
