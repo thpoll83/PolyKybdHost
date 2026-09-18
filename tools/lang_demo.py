@@ -368,7 +368,7 @@ STATIC_CALL_DEFAULTS = {
     # <helper>();`.
     'idle_style_legend()': 'SETTING_LBL("IDLE:", "Pulse")',
     'glyph_script_legend()': 'SETTING_LBL("SCRIPT:", "Std")',
-    'idle_timeout_legend()': 'SETTING_LBL("IDLE IN", "2min")',
+    'idle_timeout_legend()': 'IDLE_TIMEOUT_LBL("2min")',
 }
 
 
