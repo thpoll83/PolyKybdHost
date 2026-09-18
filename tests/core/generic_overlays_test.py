@@ -525,7 +525,7 @@ class TemplateGapFillTest(unittest.TestCase):
         filenames, synthetic = sent.args[0], sent.kwargs["synthetic"]
         self.assertTrue(filenames[0].endswith("gimp_template.mods.png"))
         self.assertNotIn(filenames[0], synthetic)
-        self.assertTrue(set(filenames[1:]) <= set(synthetic))
+        self.assertLessEqual(set(filenames[1:]), set(synthetic))
 
     def test_the_file_list_comes_from_the_HANDLER_not_the_returned_data(self):
         """⚠️ The 2026-09-18 field bug, reachable again through a different door.
