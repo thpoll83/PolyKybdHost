@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (
     QProgressDialog)
 from polyhost._version import __version__, __protocol__
 from polyhost.services import problem_report
+from polyhost.services.relay_health import RelayHealth
 from polyhost.gui.get_icon import get_icon
 from polyhost.services import log_bundle
 from polyhost.gui import about_dialog
@@ -52,6 +53,7 @@ else:
 UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
+
 
 # The settings the forwarder actually acts on. It owns no keyboard, so the vast
 # majority of settings.yaml (brightness, unicode mode, font pack, daemon mode)
@@ -177,6 +179,13 @@ class PolyForwarder(QApplication):
         # forwarder used to declare itself connected at startup and never
         # revisit it, whatever the socket did afterwards.
         self.relay_ok = None
+        # Should we attempt a report now, and is this failure worth a line?
+        # ⚠️ Pure and in its own module because THIS file cannot be tested (it
+        # imports pywinctl at module load), and the backoff/transition rules are
+        # exactly the part worth testing. The transport records a reason here
+        # and never logs it itself.
+        self._relay = RelayHealth()
+        self._send_error = None
         # app name -> what the local OS says it is. One lookup per app; see
         # _identity_for. Unbounded is fine here: the keys are app names from
         # THIS machine's own window manager, not remote input.
@@ -353,6 +362,9 @@ class PolyForwarder(QApplication):
             self.win = None
             self.title = None
             self.relay_ok = None
+            # ⚠️ And drop any backoff: pressing Resume must not sit out a 30 s
+            # retry timer left over from before the pause.
+            self._relay.reset()
         self.refresh_status()
 
     def set_style(self):
@@ -394,7 +406,7 @@ class PolyForwarder(QApplication):
             # machine, and a stale connection would keep serving the old one.
             if self._report_session is not None:
                 self._report_session.close()
-            return False
+            return self._note_send_failure("no host to report to")
         ident = self._identity_for(name)
         try:
             result = self._report_session.report(
@@ -431,8 +443,7 @@ class PolyForwarder(QApplication):
                     ident.pop("icon_key", None)
             return True
         except Exception as e:
-            self.log.error("Window-report RPC to %s failed: %s", host, e)
-            return False
+            return self._note_send_failure("RPC to %s: %s" % (host, e))
 
     def _identity_for(self, name):
         """What THIS machine's OS says the app is -- cached, one lookup per app.
@@ -506,18 +517,50 @@ class PolyForwarder(QApplication):
         except Exception:
             return 0
 
+    def _note_send_failure(self, reason: str) -> bool:
+        """Record WHY a report failed. Always returns False, and never logs.
+
+        ⚠️ Deliberately silent. Every transport path used to log its own ERROR,
+        which is correct once and wrong on the two-hundredth consecutive
+        attempt; `RelayHealth` owns the up/down transition and so is the only
+        thing that can tell those apart.
+        """
+        self._send_error = reason
+        return False
+
     def send_to_host(self, handle, title, name, url=None):
         """Report one window, and record whether it landed.
 
         The status row and the tray mark read `relay_ok`, so every exit path of
         the transport below has to run through here — that is why the actual
         socket work sits in _send_to_host and this wrapper does nothing but
-        remember the verdict."""
+        remember the verdict.
+
+        ⚠️ It also SKIPS the attempt while the relay is backing off. That is not
+        only about the log: the attempt blocks the window poll for the whole
+        socket timeout, so a dead daemon used to stall the tick by 3 s on every
+        focus change. The cost is that a window change during the backoff is not
+        reported — harmless, because the heartbeat re-sends the current window
+        within HEARTBEAT_MSEC of the relay coming back.
+        """
+        now = time.monotonic()
+        if not self._relay.should_attempt(now):
+            self._say(self._relay.tick(now))
+            return False
         ok = self._send_to_host(handle, title, name, url=url)
+        self._say(self._relay.note(ok, now, self._send_error))
         if ok != self.relay_ok:
             self.relay_ok = ok
             self.refresh_status()
         return ok
+
+    def _say(self, verdict) -> None:
+        """Emit what RelayHealth decided is worth saying, naming the host."""
+        if not verdict:
+            return
+        level, message = verdict
+        getattr(self.log, level)(
+            "Window %s (%s)", message, self._resolve_host() or "no host set")
 
     def _send_to_host(self, handle, title, name, url=None):
         # ⚠️ `url` rides the authenticated RPC path ONLY. The legacy relay's
@@ -529,14 +572,13 @@ class PolyForwarder(QApplication):
             return self._send_via_rpc(handle, title, name, url=url)
         host = self._resolve_host()
         if not host:
-            return False
+            return self._note_send_failure("no host to report to")
         try:
             ip = ipaddress.ip_address(host)
         except ValueError:
             ip = socket.gethostbyname(host)
         except OSError as err:
-            self.log.error("Could not resolve %s: %s", host, err)
-            return False
+            return self._note_send_failure("could not resolve %s: %s" % (host, err))
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(3.0)
@@ -547,16 +589,15 @@ class PolyForwarder(QApplication):
             s.close()
             return True
         except socket.timeout as err:
-            self.log.error("Connection timed out: %s",err)
+            return self._note_send_failure("connection timed out: %s" % err)
         except ConnectionRefusedError as err:
-            self.log.error("Connection refused: %s", err)
+            return self._note_send_failure("connection refused: %s" % err)
         except ConnectionAbortedError as err:
-            self.log.error("Connection aborted: %s", err)
+            return self._note_send_failure("connection aborted: %s" % err)
         except ConnectionResetError as err:
-            self.log.error("Connection reset: %s", err)
+            return self._note_send_failure("connection reset: %s" % err)
         except ConnectionError as err:
-            self.log.error("Connection error: %s", err)
-        return False
+            return self._note_send_failure("connection error: %s" % err)
 
     def _diagnostics_text(self) -> str:
         """Diagnostics for a forwarder report.
