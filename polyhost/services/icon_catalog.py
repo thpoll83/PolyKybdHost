@@ -49,11 +49,27 @@ TTF_USER_AGENT = "Mozilla/5.0"
 
 HTTP_TIMEOUT = 15
 
-# Where the icon sits in the 72x40 keycap. LOWER_LEFT is the default: one fixed
-# corner the eye learns, and the two right-hand corners are already spoken for --
-# the firmware draws the Shift preview upper-right and the AltGr hint lower-right.
+# Where the icon sits in the 72x40 keycap. LOWER_RIGHT is the default, because
+# that is the CONVENTION EVERY HAND-MADE TEMPLATE ALREADY FOLLOWS -- all twelve
+# `overlay_sources/*/bindings.yaml` set `anchor: bottom-right`, so any other
+# corner makes a generic app look different from a templated one on the same
+# board. That inconsistency is the same defect E3 removed for the program mark,
+# where one keycap behaved two ways depending on whether somebody had drawn
+# overlays for that application.
+#
+# ⚠️ It was LOWER_LEFT until a hardware report, on the reasoning that the two
+# right-hand corners are "already spoken for" -- the firmware draws the Shift
+# preview upper-right and the AltGr hint lower-right. That is true and it is the
+# weaker half of the trade, for two reasons this file can measure:
+#   * the BASE LEGEND inks columns 0..24 (pinned as `LEGEND_RIGHT` in the
+#     tests), so a left-hand icon covers the legend on EVERY key while the
+#     right-hand one clears it entirely;
+#   * the AltGr hint exists only on the keys and layouts that bind one, and only
+#     in the unshifted view, where the legend is always there.
+# The courtyard means neither can merge with what is underneath (see below), so
+# what is being traded is which pixels get covered, not legibility.
 PLACEMENTS = ("lower_left", "lower_right", "upper_left", "upper_right", "right")
-DEFAULT_PLACEMENT = "lower_left"
+DEFAULT_PLACEMENT = "lower_right"
 
 # ⚠️ AN OVERLAP IS NOT A COLLISION -- the firmware CLEARS A COURTYARD around the
 # overlay's ink before drawing it, so the icon always lands on cleared black and
@@ -135,13 +151,19 @@ def place(width: int, height: int, placement: str,
     """
     right = PANEL_W - width - margin
     bottom = PANEL_H - height - margin
-    x, y = {
+    corners = {
         "lower_left": (margin, bottom),
         "lower_right": (right, bottom),
         "upper_left": (margin, margin),
         "upper_right": (right, margin),
         "right": (right, (PANEL_H - height) // 2),
-    }.get(placement, (margin, bottom))
+    }
+    # ⚠️ The fall-back is DERIVED from DEFAULT_PLACEMENT, never written out
+    # again. It was a second copy of the same corner, which agreed by luck until
+    # the default moved and then quietly disagreed with `icon_placement()` --
+    # so an unknown value landed in one corner and a missing setting in another.
+    # A test pins them equal; this is what makes that test unable to go stale.
+    x, y = corners.get(placement, corners[DEFAULT_PLACEMENT])
     return max(0, min(x, PANEL_W - width)), max(0, min(y, PANEL_H - height))
 
 

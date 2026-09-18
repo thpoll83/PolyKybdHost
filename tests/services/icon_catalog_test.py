@@ -127,12 +127,18 @@ class PlacementTest(unittest.TestCase):
 
 
 class LegendClearanceTest(unittest.TestCase):
-    """Why the default corner is the CONTESTED one, and why the right trio is not.
+    """Which corners share columns with the legend, and which cannot.
 
     The base legend is left-aligned and its ink ends near x=24 (measured through
     the shipped renderer -- the table lives in `icon_catalog`). So an icon that
     grows leftward from the right edge can never reach it, while one in either
     left corner shares the same columns and the height decides the damage.
+
+    ⚠️ This measurement used to sit under a default that CONTRADICTED it: the
+    default was `lower_left`, i.e. the corner these tests show overlaps the
+    legend on every key, chosen to keep clear of the Shift/AltGr hints instead.
+    It moved after a hardware report, so the geometry and the default now agree
+    -- but the test that matters is the template one, not this one.
 
     This is geometry, so it is checkable offline; the pixel-against-pixel counts
     behind it are not, and are recorded in the module comment instead.
@@ -149,11 +155,23 @@ class LegendClearanceTest(unittest.TestCase):
                 self.assertGreater(self._left_edge(name), self.LEGEND_RIGHT)
 
     def test_the_left_hand_placements_do_NOT(self):
-        """Including the default -- that is the trade, not an oversight."""
+        """The trade a left corner makes, and the reason it is not the default."""
         for name in ("lower_left", "upper_left"):
             with self.subTest(name):
                 self.assertLessEqual(self._left_edge(name), self.LEGEND_RIGHT)
-        self.assertIn(ic.DEFAULT_PLACEMENT, ("lower_left", "upper_left"))
+
+    def test_the_DEFAULT_clears_the_legend_and_matches_the_templates(self):
+        """⚠️ Two independent reasons, and the second is the binding one.
+
+        The measurement above says a right-hand corner clears the legend
+        columns. What DECIDES it is that every hand-made template sets
+        `anchor: bottom-right`, so any other default makes a generic app look
+        different from a templated one on the same keyboard -- the one-key-two-
+        behaviours defect E3 removed for the program mark. Reported from
+        hardware once the relay made the icons visible at all.
+        """
+        self.assertEqual(ic.DEFAULT_PLACEMENT, "lower_right")
+        self.assertGreater(self._left_edge(ic.DEFAULT_PLACEMENT), self.LEGEND_RIGHT)
 
     def test_the_default_height_fits_the_panel_in_every_corner(self):
         """The real constraint, now that overlap is not one.
@@ -205,13 +223,18 @@ class RenderTest(unittest.TestCase):
         self.assertTrue(mask.any(), "no ink drawn at all")
         self.assertLess(mask.sum(), ic.PANEL_W * ic.PANEL_H // 2)
 
-    def test_the_default_places_it_bottom_LEFT(self):
+    def test_the_default_places_it_bottom_RIGHT(self):
         """Drawn small on purpose: at the shipped height the icon spans more
-        than half the panel, so a quadrant test would say nothing."""
+        than half the panel, so a quadrant test would say nothing.
+
+        This is the END of the chain the setting only starts -- `place()` can
+        return the right corner while `render()` draws somewhere else, and that
+        is what the user sees.
+        """
         mask = self._mask(height=12)
         rows = mask.any(axis=1).nonzero()[0]
         cols = mask.any(axis=0).nonzero()[0]
-        self.assertLess(cols.max(), ic.PANEL_W // 2, "ink in the right half")
+        self.assertGreater(cols.min(), ic.PANEL_W // 2, "ink in the left half")
         self.assertGreater(rows.min(), ic.PANEL_H // 2, "ink in the top half")
 
     def test_render_HONOURS_the_placement_it_is_given(self):
