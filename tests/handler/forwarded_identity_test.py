@@ -8,7 +8,7 @@ when this side says it needs it.
 """
 import base64
 import unittest
-from unittest import mock
+from unittest.mock import patch
 
 import polyhost.util.log_util  # noqa: F401 - installs Logger.debug_detailed
 
@@ -39,7 +39,7 @@ class _ShortcutsOff:
     """
 
     def setUp(self):
-        off = mock.patch.object(shortcut_fetcher, "enabled", return_value=False)
+        off = patch.object(shortcut_fetcher, "enabled", return_value=False)
         off.start()
         self.addCleanup(off.stop)
         super().setUp()
@@ -180,7 +180,7 @@ class WantShortcutsTest(unittest.TestCase):
     """
 
     def setUp(self):
-        on = mock.patch.object(shortcut_fetcher, "enabled", return_value=True)
+        on = patch.object(shortcut_fetcher, "enabled", return_value=True)
         on.start()
         self.addCleanup(on.stop)
 
@@ -214,7 +214,7 @@ class WantShortcutsTest(unittest.TestCase):
         # Off means no application's accessibility tree is read ANYWHERE: the
         # forwarder harvests only when asked, so not asking is what carries the
         # privacy switch across the machine boundary.
-        with mock.patch.object(shortcut_fetcher, "enabled", return_value=False):
+        with patch.object(shortcut_fetcher, "enabled", return_value=False):
             self.assertIsNone(_handler().report_window(1, "gimp", "GIMP"))
 
     def test_a_RESTARTED_daemon_asks_again(self):
