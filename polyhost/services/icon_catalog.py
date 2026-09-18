@@ -106,7 +106,14 @@ DEFAULT_PLACEMENT = "lower_right"
 # near x=24 and they grow leftward from x=70 -- but they are where the firmware
 # draws the Shift preview (upper right) and the AltGr hint (lower right).
 # upper_left has no case at all: it lands on the legend's own cap height.
-DEFAULT_ICON_HEIGHT = 32
+# 36, not 40, and the four px are the whole point: at 40 the nominal box IS the
+# panel height, so `place()` clamps and the top margin disappears -- the silent
+# clip its own docstring warns about. Measured over eight shipped concepts at
+# 36: real ink 26-30 px tall, left edge at column 37, margins intact on every
+# side. 32 was the earlier default and reads small beside the firmware legend.
+# 38 and 40 stay reachable through `shortcut_icon_height` for anyone who wants
+# them.
+DEFAULT_ICON_HEIGHT = 36
 MIN_ICON_HEIGHT, MAX_ICON_HEIGHT = 8, 40
 
 PANEL_W, PANEL_H = 72, 40

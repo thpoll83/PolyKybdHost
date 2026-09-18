@@ -21,6 +21,22 @@ class HeightTest(unittest.TestCase):
         # 40 would sit flush against the panel edge; the default must not.
         self.assertLess(ic.DEFAULT_ICON_HEIGHT, ic.PANEL_H)
 
+    def test_the_default_height_KEEPS_ITS_MARGIN_in_the_default_corner(self):
+        """⚠️ Strictly less than PANEL_H is not enough, and the gap between the
+        two is where the silent clip lives.
+
+        At `MAX_ICON_HEIGHT` the nominal box IS the panel, so `place()` clamps
+        the top margin to zero rather than reporting anything -- see its own
+        docstring. A default that large draws to the panel edge on one side
+        only, which reads as a rendering fault rather than a size choice. So the
+        default has to leave room in BOTH axes, in the corner it actually uses.
+        """
+        h = ic.DEFAULT_ICON_HEIGHT
+        x, y = ic.place(h, h, ic.DEFAULT_PLACEMENT)
+        self.assertGreaterEqual(y, ic.ICON_MARGIN, "no top margin")
+        self.assertGreaterEqual(ic.PANEL_H - (y + h), ic.ICON_MARGIN, "no bottom margin")
+        self.assertGreaterEqual(ic.PANEL_W - (x + h), ic.ICON_MARGIN, "no right margin")
+
 
 class CacheKeyTest(unittest.TestCase):
     def test_the_key_is_the_SET_of_names_not_their_order(self):
