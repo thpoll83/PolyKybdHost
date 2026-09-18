@@ -37,6 +37,9 @@ def make_core(*, app=("gimp", None), mask=None, slug="si:gimp", shortcuts=None):
     core.overlay_handler = MagicMock()
     core.overlay_handler.is_remote_mapping_entry.return_value = False
     core.overlay_handler.focused_app.return_value = app
+    # No hand-made overlay set covers this window unless a test says so; a bare
+    # MagicMock would answer TRUTHY and silently stand the generic half down.
+    core.overlay_handler.covered_by_template.return_value = False
     core.poly_settings = MagicMock()
     core.poly_settings.get.side_effect = lambda k: False
     # `note_settings_changed(None)` -- what the in-process dialog sends -- runs
@@ -78,6 +81,52 @@ class TemplateWinsTest(unittest.TestCase):
         self.assertEqual(core._generic_on_device[0], "si:gimp")
         _tick(core, data="x.mods.png", cmd=OverlayCommand.OFF_ON)
         self.assertIsNone(core._generic_on_device)
+
+
+class TemplatePriorityTest(unittest.TestCase):
+    """A hand-made overlay set wins, and it has to keep winning after tick 1."""
+
+    def test_the_generic_set_does_NOT_overwrite_a_live_template(self):
+        # ⚠️ The regression, reported from hardware as "icons where we have
+        # overlays take priority, which is not the case right now". The template
+        # arrives on the tick the window changes; on EVERY tick after that
+        # `handle_active_window` answers (None, NONE) for the same window, so the
+        # old `else` branch fired, `send_overlays_mru` reset the mapping the
+        # template had just committed, and the hand-made keycaps went blank about
+        # a second after appearing.
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.overlay_handler.covered_by_template.return_value = True
+        _tick(core, data="gimp_template.mods.png", cmd=OverlayCommand.OFF_ON)
+        self.assertEqual(core.worker.submit.call_count, 1)      # the template
+        for _ in range(5):
+            _tick(core)                                         # same window
+        self.assertEqual(core.worker.submit.call_count, 1)      # and nothing else
+
+    def test_it_is_asked_the_HANDLER_not_the_returned_data(self):
+        # The data is the tell that a template was JUST SENT; the handler is the
+        # only thing that knows one is STILL ACTIVE.
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.overlay_handler.covered_by_template.return_value = True
+        _tick(core)                       # no data, no command, template active
+        core.worker.submit.assert_not_called()
+
+    def test_leaving_a_templated_app_hands_the_board_BACK_to_the_generic_set(self):
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.overlay_handler.covered_by_template.return_value = True
+        _tick(core)
+        core.worker.submit.assert_not_called()
+        core.overlay_handler.covered_by_template.return_value = False
+        _tick(core)
+        self.assertEqual(core.worker.submit.call_count, 1)
+
+    def test_a_covered_window_costs_NO_fetch_at_all(self):
+        # Not merely "sends nothing": a template-covered app must not walk
+        # another process's accessibility tree either.
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.overlay_handler.covered_by_template.return_value = True
+        _tick(core)
+        core._app_icons.overlay_for.assert_not_called()
+        core._shortcut_icons.overlays_for.assert_not_called()
 
 
 class GenericMarkTest(unittest.TestCase):

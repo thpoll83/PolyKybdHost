@@ -351,6 +351,24 @@ class OverlayHandler:
             return self.remote_handler.get_overlay_data()
         return None
 
+    def covered_by_template(self) -> bool:
+        """Does a hand-made overlay set cover the focused window RIGHT NOW?
+
+        ⚠️ Not "did one just get sent". `handle_active_window` returns the
+        template filenames only on the tick the window CHANGES; every tick after
+        that it answers `(None, NONE)` for the same window. So a caller that
+        reads "a template is active" off the returned data sees it once and then
+        believes there is none -- which is how the generic fall-back came to
+        overwrite the template one tick after it landed, blanking every keycap
+        the hand-made set had just drawn (field, 2026-09-18).
+
+        Answered from `get_overlay_data()` rather than from `current_entry`
+        alone, so it cannot disagree with what a send would actually carry: a
+        matched entry with no overlay flag, and a remote entry whose forwarder
+        has no overlay, are both "not covered".
+        """
+        return self.get_overlay_data() is not None
+
     def invalidate_window_cache(self):
         """Force the next poll to re-evaluate the focused window even if the OS
         reports no window/title change.

@@ -43,6 +43,9 @@ def make_core(*, connected=True, handler=True, run_when_disconnected=False):
     if handler:
         core.overlay_handler.is_remote_mapping_entry.return_value = False
         core.overlay_handler.focused_app.return_value = (None, None)
+        # A bare MagicMock answers TRUTHY here, which would stand the generic
+        # half down and make these tests pass for the wrong reason.
+        core.overlay_handler.covered_by_template.return_value = False
     return core
 
 

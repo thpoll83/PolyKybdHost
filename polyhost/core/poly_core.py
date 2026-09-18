@@ -537,6 +537,18 @@ class PolyCore(Observable):
                 # A template send re-programs the whole pool, so whatever
                 # generic overlays were on the device are gone with it.
                 self._generic_on_device = None
+            elif handler.covered_by_template():
+                # ⚠️ A TEMPLATE COVERS THIS WINDOW, so the generic fall-back must
+                # stand down -- and asking the handler is the only way to know,
+                # because `handle_active_window` returns the template filenames
+                # ONLY on the tick the window changes. Reading "a template is
+                # active" off `data` therefore saw it once and then believed
+                # there was none, so the very next tick sent the generic set,
+                # `send_overlays_mru` reset the mapping the template had just
+                # committed, and every hand-made keycap went blank about a second
+                # after it appeared (field, 2026-09-18).
+                self.log.debug_detailed(
+                    "Generic overlays stood down: a template covers this window")
             else:
                 # ⚠️ Every tick, not only on a change. `overlay_for` is a dict
                 # lookup by contract precisely so this is cheap, and it is what

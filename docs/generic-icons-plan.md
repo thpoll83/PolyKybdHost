@@ -729,6 +729,46 @@ rendered → 16 converters built, and the real tick path sends
 
 9 mutations, 9 caught by the intended test.
 
+### E12 — the generic set was overwriting the template one tick later
+
+Reported from hardware: *"we also said that icons where we have overlays take
+priority, which is not the case right now."* Correct, and the design note it
+refers to was the one being violated — *"template always wins; this runs only on
+the branch where the matcher found nothing."*
+
+**`handle_active_window` returns the template filenames ONLY on the tick the
+window CHANGES.** Every tick after that it answers `(None, NONE)` for the same
+window. The tick's branch was `if data and cmd == OFF_ON: … else: <generic>`, so
+one tick after a template landed the `else` fired, `send_overlays_mru` called
+`prepare_for_mru_send()` — which resets the firmware's whole display→pool
+mapping — and committed a mapping containing only the generic sources. Every
+hand-made keycap went blank about a second after it appeared.
+
+⚠️ **The tell that it is a STATE question and not a DATA question.** `data` says
+*a template was just sent*; only the handler knows *a template is still active*.
+`covered_by_template()` answers from `get_overlay_data()` rather than from
+`current_entry`, so it cannot disagree with what a send would actually carry — a
+matched entry with no overlay flag, and a remote entry whose forwarder has no
+overlay, are both "not covered".
+
+**It predates the shortcut half.** The program mark alone has been doing this
+since E3; it was one keycap winning over the template's whole set, which is
+already wrong and is much louder now that the generic side is ~20 keycaps.
+
+**Not "skip the send" — skip the FETCH too.** A template-covered app must not
+walk another process's accessibility tree either, so the gate sits above both
+`overlay_for` and `overlays_for`.
+
+⚠️ **The mixed send was NOT chosen, deliberately.** `send_overlays_mru` already
+has the machinery for it (`covered` makes a synthetic source defer a key a real
+template draws, and logs it as *"deferred to the template"*), so template and
+generic could ride one send with the generic filling the template's gaps. That is
+a bigger change than the report asks for and it would alter the look of every
+templated app, so it is left as a question rather than taken. The machinery is
+reachable today only from a direct API call.
+
+5 mutations, 5 caught by the intended test.
+
 ## Part F — what could still fail
 
 * **B.2's RESOLUTION half is measured (14/16); its READ half is not.** What is
