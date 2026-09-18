@@ -406,6 +406,25 @@ class FaceTest(unittest.TestCase):
             self.assertIsNone(ic._store_font(path, b"<!DOCTYPE html><html>nope"))
             self.assertFalse(__import__("os").path.exists(path))
 
+    def test_fluent_is_PINNED_to_an_immutable_ref_not_a_branch(self):
+        """⚠️ The pin is load-bearing twice, so it gets a test rather than a
+        comment alone.
+
+        The hand-made template overlays are generated from this font and
+        COMMITTED as PNGs. If the app fetched `main`, an upstream redraw would
+        move the generic path off the templates and split every shared pool
+        slot -- the byte dedupe is exact, so one pixel is a full miss. It also
+        restores the generator's contract that re-running it reproduces the
+        overlays byte for byte.
+
+        A commit, not a tag: a tag can be moved.
+        """
+        self.assertRegex(ic.FLUENT_REF, r"^[0-9a-f]{40}$")
+        for url in (ic.FLUENT_FONT_URL, ic.FLUENT_CODEPOINTS_URL):
+            with self.subTest(url=url):
+                self.assertIn(ic.FLUENT_REF, url)
+                self.assertNotIn("/main/", url)
+
     def test_FACES_is_a_PREFERENCE_ORDER_with_fluent_first(self):
         # The order is the feature: Fluent is the house style every hand-made
         # template already uses, Material fills what it lacks.

@@ -66,14 +66,29 @@ MATERIAL, FLUENT = "material", "fluent"
 FACES = (FLUENT, MATERIAL)
 DEFAULT_FACE = MATERIAL
 
-FLUENT_CODEPOINTS_URL = (
-    "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/"
-    "fonts/FluentSystemIcons-Regular.json"
-)
-FLUENT_FONT_URL = (
-    "https://raw.githubusercontent.com/microsoft/fluentui-system-icons/main/"
-    "fonts/FluentSystemIcons-Regular.ttf"
-)
+# ⚠️ PINNED TO A COMMIT, not to `main`, and that pin is load-bearing twice over.
+#
+# The hand-made template overlays are generated from this same font and
+# COMMITTED as PNGs, so their pixels are frozen at whatever Fluent shipped the
+# day they were generated. If the app fetched `main`, an upstream redraw would
+# silently move the generic path off the templates and every shared pool slot
+# would split in two -- the byte dedupe is exact, so a one-pixel change is a
+# full miss. The two halves have to read the same bytes or they are not one
+# icon set.
+#
+# It also restores the generator's contract, which is that re-running it on the
+# committed `bindings.yaml` reproduces the overlays byte for byte. A moving
+# branch makes that depend on the day.
+#
+# A commit rather than a tag because a tag can be moved and this one cannot.
+# Bumping it is a deliberate act: change the pin, re-run
+# `generate_app_overlays.py` for every template, and check what moved -- the
+# same shape as `app_icons.CDN_VERSION` and as the font pack's content_version.
+FLUENT_REF = "9cf8af0f95a555918a60b8147a2f33a6a1248442"
+FLUENT_RAW = ("https://raw.githubusercontent.com/microsoft/fluentui-system-icons/"
+              f"{FLUENT_REF}/fonts/FluentSystemIcons-Regular")
+FLUENT_CODEPOINTS_URL = f"{FLUENT_RAW}.json"
+FLUENT_FONT_URL = f"{FLUENT_RAW}.ttf"
 # The table keys every size and weight it ships; 24/regular is the one drawn
 # here, and is also the set the hand-made template overlays are sourced from.
 FLUENT_PREFIX, FLUENT_SUFFIX = "ic_fluent_", "_24_regular"
