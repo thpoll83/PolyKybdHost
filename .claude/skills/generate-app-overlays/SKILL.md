@@ -206,6 +206,39 @@ bindings:
   - { key: F5, mods: [],           icon: run.png,       label: Run, invert: true }
 ```
 
+### ⚠️ A label that NAMES a concept is drawn by the shared renderer, not by your icon
+
+The running app draws a keycap icon for a shortcut it has no template for, from
+the same Fluent/Material catalog. So a binding whose label **is** a concept
+(`Copy`, `Save`, `Undo`, `Paste`, `Bold`, …) is rendered by that same code path
+rather than from `icons/`, and the two cells come out **byte-identical** — which
+is the whole point: `overlay_cache` dedupes by content, so the concept costs one
+pool slot board-wide instead of one per app. Measured over the committed
+templates: the 29 concepts they name were drawn **84** ways before and **33**
+after. You will see `concept:fluent:copy` in the placement table where the source
+column would normally show your PNG, and the committed icon is simply unused.
+
+Three ways a binding declines, and the last two are automatic:
+
+- **`shared: false`** — the label folds onto a sibling's concept and your art
+  carries a distinction the concept cannot. Explorer's `Delete (perm)` needs it,
+  because `normalize` drops the parenthesis and it would otherwise draw the same
+  trash can as plain `Delete`.
+- **any of `region` / `anchor` / `margin` / `fit` / `threshold` / `mode`** — the
+  shared renderer owns the placement, so it cannot honour a hand-made one, and
+  ignoring it would discard your decision. Set one and the binding keeps its art.
+- **a label that merely FOLDS to a concept** — `Copy merged`, `Duplicate line`,
+  `Go to definition`, `New folder`. ⚠️ Do **not** widen this: the lexicon is
+  built for the generic path, where any recognisable icon beats a text label, so
+  it folds hard. Matching on a fold instead of the name sent 626 bindings to 43
+  concepts and produced **97 same-app collisions** — two keys of one app drawing
+  the same picture for different actions ("Add cursor above" and "Add cursor
+  below" both an insert glyph; four of Figma's `*properties*` all a gear).
+
+`tests/res/overlay_sharing_test.py` asserts every template drawing a concept
+draws the same bytes, and calls the generator's own `concept_to_share` so the
+rule cannot exist in two places.
+
 Per-binding overrides: `anchor`, `region`, `margin`, `fit`, `mode`, `threshold`,
 `invert`, `source`. Unknown keys (like `source`) are ignored by the generator, so
 use them freely for provenance. Bare key tokens (`S`, `F5`, `[`, `]`, `\`, `=`,
