@@ -215,9 +215,16 @@ class PolyKybdMock:
         return True, getattr(self, "_idle_style", 0)
 
     def set_idle_timeout(self, value) -> tuple[bool, str]:
+        # Refuses what the firmware refuses: the preset range is CLOSED, so a mock
+        # that banked any integer would let a caller "succeed" against a value the
+        # real board NACKs.
         v = getattr(value, "value", value)
         self._log_call("set_idle_timeout", v)
-        self._idle_timeout = int(v)
+        try:
+            v = IdleTimeout(int(v)).value
+        except (ValueError, TypeError):
+            return False, f"{value!r} is not an idle-timeout preset"
+        self._idle_timeout = v
         return True, ""
 
     def get_idle_timeout(self) -> tuple[bool, tuple[int, int]]:

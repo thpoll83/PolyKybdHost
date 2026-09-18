@@ -172,6 +172,28 @@ class TestIdleTimeoutGate(unittest.TestCase):
         self.assertEqual(report[1], Cmd.IDLE_TIMEOUT.value)
         self.assertEqual(report[2], IdleTimeout.SEC_45.value)
 
+    def test_set_refuses_a_preset_the_enum_does_not_carry(self):
+        """The range is CLOSED, so an unknown preset is refused HERE — before any
+        I/O. Sending it would be answered with a NACK the prefix check cannot see,
+        and the reply would read as success."""
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
+        for bad in (99, -1, len(IdleTimeout), "2min"):
+            with self.subTest(value=bad):
+                ok, msg = keeb.set_idle_timeout(bad)
+                self.assertFalse(ok)
+                self.assertIn("preset", msg)
+        keeb.hid.send_and_read_validate.assert_not_called()
+
+    def test_set_reports_a_nack_as_failure_not_success(self):
+        """`expect()` matches only the two `P<cmd>` bytes, which a NACK carries
+        too — so send_and_read_validate's own True says nothing about the verdict.
+        The ACK marker at reply[2] is what decides."""
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.IDLE_TIMEOUT.value, ord("!")]))
+        ok, _ = keeb.set_idle_timeout(IdleTimeout.SEC_45)
+        self.assertFalse(ok)
+
     def test_get_queries_with_0xff_and_reads_preset_plus_seconds(self):
         keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
         keeb.hid.send_and_read_validate.return_value = (

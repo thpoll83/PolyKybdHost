@@ -267,6 +267,13 @@ full wiring, the preview rendering and the label-measurement rules are in
   6". `IdleTimeout.label_for()` is the one place that decides; don't relabel from the
   local enum. The SET range stays closed (see the GlyphSize/GlyphScript note below —
   this one follows GlyphSize).
+- ⚠️ **`expect(Cmd.X)` matches only the two `P<cmd>` bytes, which a NACK carries
+  too** — so `send_and_read_validate` returning True says the reply arrived, never
+  that the firmware accepted it. On a CLOSED range that is the difference between a
+  refusal and a silent success: read the verdict at `reply[2]` (`.` accept, `!`
+  refuse) before reporting one. `set_idle_timeout` does, and validates the preset
+  through the enum before any I/O; `set_glyph_size`, `set_idle_style` and
+  `set_glyph_script` still have the older prefix-only shape.
 - ⚠️ **`GlyphSize` is a CLOSED range and `GlyphScript` is OPEN — that asymmetry is
   deliberate, and it is the one way they differ.** An unknown SCRIPT index is accepted
   by the firmware and degrades to the normal legend, which is what lets the host offer

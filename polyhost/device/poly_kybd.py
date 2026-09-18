@@ -558,16 +558,28 @@ class PolyKybd:
 
         The firmware persists it to EEPROM (flushed at the next suspend/store), so
         it survives reboots. The range is CLOSED — an unknown preset is NACKed, not
-        ignored — so send only values from IdleTimeout; see the enum's docstring for
-        why this differs from GlyphScript."""
-        v = value.value if isinstance(value, IdleTimeout) else int(value)
+        ignored — so an out-of-enum value is refused HERE rather than sent; see the
+        enum's docstring for why this differs from GlyphScript.
+
+        ⚠️ The ACK marker is checked, not just the reply prefix. `expect()` matches
+        only the two `P<cmd>` bytes, which a NACK carries too, so
+        `send_and_read_validate` alone reports the firmware's refusal as success."""
+        try:
+            v = IdleTimeout(value.value if isinstance(value, IdleTimeout)
+                            else int(value)).value
+        except (ValueError, TypeError):
+            return False, (f"{value!r} is not an idle-timeout preset "
+                           f"(0..{len(IdleTimeout) - 1})")
         if not self._idle_timeout_supported():
             return False, (
                 f"Firmware protocol too old for the idle timeout "
                 f"(need v{IDLE_TIMEOUT_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
         self.log.info("Setting idle timeout to preset %d...", v)
-        return self.hid.send_and_read_validate(
+        result, reply = self.hid.send_and_read_validate(
             compose_cmd(Cmd.IDLE_TIMEOUT, v), 100, expect(Cmd.IDLE_TIMEOUT))
+        if result and not (len(reply) > 2 and reply[2:3] == b'.'):
+            return False, "The keyboard refused that idle-timeout preset"
+        return result, reply
 
     def get_idle_timeout(self) -> tuple[bool, tuple[int, int]]:
         """Read the current idle timeout as (preset index, seconds).
