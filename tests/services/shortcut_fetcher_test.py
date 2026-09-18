@@ -9,8 +9,7 @@ queue with the slow half stubbed out.
 import threading
 import time
 import unittest
-from unittest import mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from polyhost.services import shortcut_fetcher
 from polyhost.services.shortcut_fetcher import ShortcutIconFetcher
@@ -175,7 +174,7 @@ class BackendReasonTest(unittest.TestCase):
         f = ShortcutIconFetcher()
         said = []
         f._say = lambda app, reason: said.append((app, reason))
-        with mock.patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
                                return_value="this virtualenv cannot see the "
                                             "system PyGObject"):
             self.assertEqual(f._resolve("gimp", 32, "lower_left"), {})
@@ -186,9 +185,9 @@ class BackendReasonTest(unittest.TestCase):
         f = ShortcutIconFetcher()
         said = []
         f._say = lambda app, reason: said.append(reason)
-        with mock.patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
                                return_value=None), \
-             mock.patch.object(shortcut_fetcher.shortcut_source, "harvest", return_value=[]):
+             patch.object(shortcut_fetcher.shortcut_source, "harvest", return_value=[]):
             self.assertEqual(f._resolve("gimp", 32, "lower_left"), {})
         # It reached the NEXT refusal, which is a different sentence entirely.
         self.assertEqual(said, ["the app exposes no accelerators"])

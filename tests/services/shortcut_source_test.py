@@ -14,8 +14,7 @@ accessibility bridge would put a spurious crash in every later problem report.
 import builtins
 import sys
 import unittest
-from unittest import mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from polyhost.services import shortcut_source as ss
 
@@ -57,7 +56,7 @@ class UnavailableReasonTest(unittest.TestCase):
     """Three causes that need OPPOSITE fixes, told apart rather than flattened."""
 
     def test_macOS_says_the_PLATFORM_not_the_interpreter(self):
-        with mock.patch.object(ss.sys, "platform", "darwin"):
+        with patch.object(ss.sys, "platform", "darwin"):
             self.assertIn("platform", ss.unavailable_reason())
 
     def test_a_VENV_whose_VERSION_differs_is_told_to_be_REBUILT(self):
@@ -67,10 +66,10 @@ class UnavailableReasonTest(unittest.TestCase):
         # include-system-site-packages" -- would NOT have helped, and saying it
         # would send the reader down a path that cannot work.
         from polyhost.services.shortcut_source import atspi
-        with mock.patch.object(atspi, "_import_gi", side_effect=ImportError("No module named 'gi'")), \
-             mock.patch("glob.glob", return_value=["/usr/lib/python3/dist-packages/gi/_gi.cpython-312-x.so"]), \
-             mock.patch.object(sys, "prefix", "/home/u/.venv"), \
-             mock.patch.object(sys, "base_prefix", "/usr"):
+        with patch.object(atspi, "_import_gi", side_effect=ImportError("No module named 'gi'")), \
+             patch("glob.glob", return_value=["/usr/lib/python3/dist-packages/gi/_gi.cpython-312-x.so"]), \
+             patch.object(sys, "prefix", "/home/u/.venv"), \
+             patch.object(sys, "base_prefix", "/usr"):
             reason = atspi.unavailable_reason()
         self.assertIn("virtualenv", reason)
         self.assertIn("recreate it", reason)
@@ -81,11 +80,11 @@ class UnavailableReasonTest(unittest.TestCase):
         # is. The version is already in the filename -- read it rather than
         # leaving the reader to find it.
         from polyhost.services.shortcut_source import atspi
-        with mock.patch.object(atspi, "_import_gi", side_effect=ImportError("boom")), \
-             mock.patch("glob.glob", return_value=["/usr/lib/python3/dist-packages/gi/_gi.cpython-312-x.so"]), \
-             mock.patch("sysconfig.get_config_var", return_value=".cpython-311-x.so"), \
-             mock.patch.object(sys, "prefix", "/usr"), \
-             mock.patch.object(sys, "base_prefix", "/usr"):
+        with patch.object(atspi, "_import_gi", side_effect=ImportError("boom")), \
+             patch("glob.glob", return_value=["/usr/lib/python3/dist-packages/gi/_gi.cpython-312-x.so"]), \
+             patch("sysconfig.get_config_var", return_value=".cpython-311-x.so"), \
+             patch.object(sys, "prefix", "/usr"), \
+             patch.object(sys, "base_prefix", "/usr"):
             reason = atspi.unavailable_reason()
         self.assertIn("3.12", reason)
         self.assertIn("3.11", reason)
@@ -93,8 +92,8 @@ class UnavailableReasonTest(unittest.TestCase):
 
     def test_PyGObject_genuinely_absent_IS_called_missing(self):
         from polyhost.services.shortcut_source import atspi
-        with mock.patch.object(atspi, "_import_gi", side_effect=ImportError("boom")), \
-             mock.patch("glob.glob", return_value=[]):
+        with patch.object(atspi, "_import_gi", side_effect=ImportError("boom")), \
+             patch("glob.glob", return_value=[]):
             self.assertIn("not installed", atspi.unavailable_reason())
 
     def test_a_WORKING_backend_gives_no_reason_at_all(self):
@@ -102,18 +101,18 @@ class UnavailableReasonTest(unittest.TestCase):
         # does `from polyhost.services.shortcut_source import atspi`, and once
         # the submodule has been imported once that resolves to the package
         # attribute, so a sys.modules patch silently hands back the real module.
-        backend = mock.Mock(unavailable_reason=lambda: None)
-        with mock.patch.object(ss, "backend_name", return_value="atspi"), \
-             mock.patch.object(ss, "atspi", backend, create=True):
+        backend = Mock(unavailable_reason=lambda: None)
+        with patch.object(ss, "backend_name", return_value="atspi"), \
+             patch.object(ss, "atspi", backend, create=True):
             self.assertIsNone(ss.unavailable_reason())
 
     def test_a_backend_WITHOUT_the_reason_api_still_answers(self):
         # The uia backend predates it; reporting it as working would be worse
         # than a vague sentence.
-        backend = mock.Mock(spec=["available"])
+        backend = Mock(spec=["available"])
         backend.available.return_value = False
-        with mock.patch.object(ss, "backend_name", return_value="uia"), \
-             mock.patch.object(ss, "uia", backend, create=True):
+        with patch.object(ss, "backend_name", return_value="uia"), \
+             patch.object(ss, "uia", backend, create=True):
             self.assertIn("unusable", ss.unavailable_reason())
 
 
@@ -128,15 +127,15 @@ class SystemSiteRescueTest(unittest.TestCase):
         # ⚠️ The whole safety argument. `gi` is a COMPILED extension built for
         # one Python minor version; importing 3.12's `_gi.cpython-312-*.so` into
         # 3.11 fails with a circular-import error naming neither cause.
-        with mock.patch("sysconfig.get_config_var", return_value=".cpython-312-x86_64-linux-gnu.so"), \
-             mock.patch("os.path.exists", lambda p: p.endswith(
+        with patch("sysconfig.get_config_var", return_value=".cpython-312-x86_64-linux-gnu.so"), \
+             patch("os.path.exists", lambda p: p.endswith(
                  "/gi/_gi.cpython-312-x86_64-linux-gnu.so")):
             self.assertEqual(self.atspi._system_site_dir(),
                              "/usr/lib/python3/dist-packages")
 
     def test_a_MISMATCHED_gi_is_refused_rather_than_imported(self):
-        with mock.patch("sysconfig.get_config_var", return_value=".cpython-311-x86_64-linux-gnu.so"), \
-             mock.patch("os.path.exists", lambda p: p.endswith(
+        with patch("sysconfig.get_config_var", return_value=".cpython-311-x86_64-linux-gnu.so"), \
+             patch("os.path.exists", lambda p: p.endswith(
                  "/gi/_gi.cpython-312-x86_64-linux-gnu.so")):
             self.assertIsNone(self.atspi._system_site_dir())
 
@@ -152,7 +151,7 @@ class SystemSiteRescueTest(unittest.TestCase):
         marker = "/nonexistent/rescue-marker-dist-packages"
         self.assertNotIn(marker, sys.path, "the fixture must be able to fail")
         before = list(sys.path)
-        fake = mock.Mock()
+        fake = Mock()
         real_import = builtins.__import__
 
         def only_gi_needs_the_path(name, *a, **k):
@@ -162,8 +161,8 @@ class SystemSiteRescueTest(unittest.TestCase):
                 return fake
             return real_import(name, *a, **k)
 
-        with mock.patch.object(self.atspi, "_system_site_dir", return_value=marker), \
-             mock.patch.object(builtins, "__import__", only_gi_needs_the_path):
+        with patch.object(self.atspi, "_system_site_dir", return_value=marker), \
+             patch.object(builtins, "__import__", only_gi_needs_the_path):
             self.assertIs(self.atspi._import_gi(), fake)
         self.assertNotIn(marker, sys.path)
         self.assertEqual(sys.path, before)
@@ -178,8 +177,8 @@ class SystemSiteRescueTest(unittest.TestCase):
                 raise ImportError("No module named 'gi'")
             return real_import(name, *a, **k)
 
-        with mock.patch.object(self.atspi, "_system_site_dir", return_value=None), \
-             mock.patch.object(builtins, "__import__", no_gi):
+        with patch.object(self.atspi, "_system_site_dir", return_value=None), \
+             patch.object(builtins, "__import__", no_gi):
             with self.assertRaises(ImportError):
                 self.atspi._import_gi()
 
@@ -201,7 +200,7 @@ class BusProbeTest(unittest.TestCase):
         # initialised") even though it failed. Re-probing therefore reports
         # success and the next get_desktop() kills the process with SIGTRAP --
         # measured, one call after the one that answered correctly.
-        fake = mock.Mock()
+        fake = Mock()
         fake.init.side_effect = [2, 1, 1, 1]
         self.assertFalse(self.atspi._bus_ok(fake))
         for _ in range(3):
@@ -215,23 +214,23 @@ class BusProbeTest(unittest.TestCase):
         # exception. It runs on the fetcher's background thread inside the tray
         # app, so reaching it takes the whole application down for a cosmetic
         # feature. Measured 2026-09-18 in a venv with no system site-packages.
-        fake = mock.Mock()
+        fake = Mock()
         fake.init.return_value = 2
         fake.get_desktop.side_effect = AssertionError(
             "get_desktop() would have ABORTED the process here")
-        with mock.patch.object(self.atspi, "_import_gi", return_value=mock.Mock()), \
-             mock.patch.object(self.atspi, "_atspi", return_value=fake):
+        with patch.object(self.atspi, "_import_gi", return_value=Mock()), \
+             patch.object(self.atspi, "_atspi", return_value=fake):
             reason = self.atspi.unavailable_reason()
         self.assertIn("accessibility bus is not running", reason)
         fake.get_desktop.assert_not_called()
 
     def test_a_working_bus_reads_as_ok(self):
-        fake = mock.Mock()
+        fake = Mock()
         fake.init.return_value = 0
         self.assertTrue(self.atspi._bus_ok(fake))
 
     def test_ALREADY_INITIALISED_is_success_not_failure(self):
-        fake = mock.Mock()
+        fake = Mock()
         fake.init.return_value = 1
         self.assertTrue(self.atspi._bus_ok(fake))
 
