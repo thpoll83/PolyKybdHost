@@ -228,20 +228,36 @@ class ShortcutIconFetcher:
             self._say(app, f"none of its {len(shortcuts)} shortcut labels "
                            "matched an icon concept")
             return {}
-        names = shortcut_overlays.icon_names(slots)
-        try:
-            font = icon_catalog.fetch_subset(names, self._cache_dir)
-        except Exception:
-            self.log.debug("shortcut icon subset failed for '%s'", app, exc_info=True)
-            return {}
-        if not font or not codepoints:
-            self._say(app, "the icon subset is neither cached nor reachable")
-            return {}
-        try:
-            overlays = shortcut_overlays.render(slots, font, codepoints,
-                                                height=height, placement=placement)
-        except Exception:
-            self.log.debug("shortcut icon render failed for '%s'", app, exc_info=True)
+        # ⚠️ ONE FETCH AND ONE RENDER PER CATALOG. The plan can mix faces --
+        # Fluent draws most concepts and Material keeps the five it loses at
+        # 36 px -- and the two are fetched differently (a server-side subset of
+        # exactly the names asked for, versus one whole font), so they cannot
+        # share a request. `render` therefore draws a single face and the
+        # results merge here.
+        by_face = shortcut_overlays.icon_names_by_face(slots)
+        overlays: dict = {}
+        for face, names in sorted(by_face.items()):
+            try:
+                font = icon_catalog.fetch_subset(names, self._cache_dir, face=face)
+                table = (codepoints if face == icon_catalog.MATERIAL
+                         else icon_catalog.load_codepoints(self._cache_dir, face=face))
+            except Exception:
+                self.log.debug("shortcut icon subset failed for '%s' (%s)", app,
+                               face, exc_info=True)
+                continue
+            if not font or not table:
+                # ⚠️ Per face, not fatal: Fluent being unreachable must still
+                # leave the Material half drawn rather than blanking the app.
+                self._say(app, f"the {face} icons are neither cached nor reachable")
+                continue
+            try:
+                overlays.update(shortcut_overlays.render(
+                    slots, font, table, height=height, placement=placement,
+                    face=face))
+            except Exception:
+                self.log.debug("shortcut icon render failed for '%s' (%s)", app,
+                               face, exc_info=True)
+        if not overlays:
             return {}
         drawn = sum(len(v) for v in overlays.values())
         if drawn < len(slots):

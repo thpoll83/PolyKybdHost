@@ -170,6 +170,70 @@ LEXICON: dict[str, tuple[int | None, str, tuple[str, ...]]] = {
 # all of them is unchanged -- a glyph earns an entry only when it beats the word,
 # and a glyph that is not flashed draws nothing at all.
 
+# --- the Fluent spelling of each concept ------------------------------------
+#
+# A SECOND dict rather than a fourth field on LEXICON, because absence is the
+# whole mechanism: a concept with no entry here draws from Material. That makes
+# "Fluent first, Material for what it lacks or loses" one lookup instead of a
+# rule somebody has to apply.
+#
+# ⚠️ EXPLICIT, never derived. Fluent's vocabulary is systematically its own --
+# `undo` is `arrow_undo`, `close` is `dismiss`, `paste` is `clipboard_paste`,
+# `quit` is `sign_out` -- so only 20 of the 48 derive from the Material
+# spelling, and a substring search invents false friends: `fireplace` for
+# "replace", `briefcase` for "change case", `arrow_clockwise` for "lock". A
+# name here is one somebody looked at, in the rendered 36 px 1-bit form.
+#
+# ⚠️ FIVE CONCEPTS ARE DELIBERATELY ABSENT, and each is a render verdict rather
+# than a missing icon -- Fluent has all five. Measured on the contact sheet at
+# the shipped size:
+#   copy / paste   Material fills the front sheet and the clipboard body, which
+#                  reads instantly; Fluent draws both as thin outlines that
+#                  muddle into one shape at 36 px.
+#   select all     Material's dashed marquee IS the conventional mark; Fluent
+#                  draws a checkbox on a square, which reads as "done".
+#   subscript /    Material's bold X-with-digit stays crisp; Fluent's thin
+#   superscript    crossing strokes read as scissors once thresholded.
+# Re-judge them by rendering, not by reading this list.
+FLUENT_ICONS: dict[str, str] = {
+    "alignment": "text_align_left", "bold": "text_bold", "bookmark": "bookmark",
+    "change case": "text_change_case", "close": "dismiss", "comment": "comment",
+    "cut": "cut", "delete": "delete", "down": "arrow_down", "find": "search",
+    "find next": "search_square", "fullscreen": "full_screen_maximize",
+    "go to": "location", "help": "question_circle",
+    "indent": "text_indent_increase", "insert": "add", "italic": "text_italic",
+    "left": "arrow_left", "lock": "lock_closed", "minimize": "arrow_minimize",
+    "new": "document_add", "open": "folder_open",
+    "outdent": "text_indent_decrease", "paint": "paint_brush",
+    "paragraph": "text_paragraph", "print": "print", "quit": "sign_out",
+    "redo": "arrow_redo", "reload": "arrow_sync", "replace": "arrow_swap",
+    "right": "arrow_right", "save": "save", "save as": "save_edit",
+    "settings": "settings", "share": "share", "styles": "color",
+    "underline": "text_underline", "undo": "arrow_undo", "up": "arrow_up",
+    "window": "window", "wrap text": "text_wrap", "zoom in": "zoom_in",
+    "zoom out": "zoom_out",
+}
+
+
+def icon_for(concept: str) -> str:
+    """The QUALIFIED catalog name for a concept — `fluent:copy`, `material:save`.
+
+    Fluent first because it is the house style every hand-made template already
+    draws from, so a generic app and a templated one put the same picture on the
+    same key. Material is the fall-back for what Fluent lacks and the override
+    for the five concepts it loses at 36 px (see FLUENT_ICONS).
+
+    Returns "" for a concept with no catalog icon at all, which `plan_report`
+    already refuses.
+    """
+    stem = FLUENT_ICONS.get(concept)
+    if stem:
+        return f"fluent:{stem}"
+    entry = LEXICON.get(concept)
+    material = entry[1] if entry else ""
+    return f"material:{material}" if material else ""
+
+
 # Longest phrase first so "save as" beats "save"; ties broken alphabetically so
 # the table order cannot silently decide a match.
 _PHRASES: list[tuple[str, str]] = sorted(
