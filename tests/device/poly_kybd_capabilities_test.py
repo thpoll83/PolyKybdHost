@@ -211,6 +211,21 @@ class TestIdleTimeoutGate(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(value, (0, 0))
 
+    def test_a_device_error_is_swallowed_and_logged_not_raised(self):
+        """Every caller is a UI refresh that treats (False, ...) as "say nothing",
+        and the device can be mid-flash or unplugged between the protocol gate and
+        this round trip — so a raise here would take out the tray menu. CodeQL
+        flagged the original bare `except: pass` for having no explanation; this
+        pins the behaviour the comment now describes, including that the debug log
+        itself does not throw."""
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.side_effect = OSError("device went away")
+        keeb.log = MagicMock()
+        ok, value = keeb.get_idle_timeout()
+        self.assertFalse(ok)
+        self.assertEqual(value, (0, 0))
+        keeb.log.debug.assert_called_once()
+
     def test_command_id_and_enum_match_the_firmware(self):
         self.assertEqual(Cmd.IDLE_TIMEOUT.value, 40)
         # poly_idle_timeout in the firmware's base/idle_timeout.h — append-only.

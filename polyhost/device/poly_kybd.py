@@ -583,8 +583,14 @@ class PolyKybd:
             if result and len(reply) > 5 and reply[2:3] == b'.':
                 seconds = reply[4] | (reply[5] << 8)
                 return True, (reply[3], seconds)
-        except Exception:
-            pass
+        except Exception as e:
+            # A read failure here is not an error worth raising: every caller is a
+            # UI refresh (the tray submenu, `polyctl idle-timeout`) that treats
+            # (False, ...) as "leave it unchecked / say nothing", and the device can
+            # legitimately be mid-flash, suspended or unplugged between the gate
+            # above and this round trip. Logged rather than silently swallowed, so a
+            # keyboard that answers this command but not others is still traceable.
+            self.log.debug("Could not read the idle timeout (%s: %s)", type(e).__name__, e)
         return False, (0, 0)
 
     def _glyph_script_supported(self) -> bool:
