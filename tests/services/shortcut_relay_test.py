@@ -252,6 +252,44 @@ class ForwarderWiringTest(unittest.TestCase):
         inspect.signature(shortcut_relay.RelaySource.shortcuts_for).bind(
             None, "gimp")
 
+class DisabledHarvestIsNotCachedTest(unittest.TestCase):
+    """⚠️ The SWITCH is read before the CACHE.
+
+    It used to be the other way round, with the disabled answer written into
+    the cache as `[]`. Turning `shortcut_icons_enabled` back on then did nothing
+    for every app visited while it was off: the cache answered first, and
+    nothing on the FORWARDER clears it — the settings hook that would is on the
+    host, a different machine. It took a restart (Greptile, #240)."""
+
+    def _source(self, allowed):
+        return shortcut_relay.RelaySource(
+            logging.getLogger("test.relay"),
+            allowed=lambda: allowed[0],
+            spawn=lambda fn, name: None)          # never harvest in a test
+
+    def test_re_enabling_MID_SESSION_takes_effect(self):
+        allowed = [False]
+        src = self._source(allowed)
+        self.assertEqual(src.shortcuts_for("gimp"), [])   # visited while off
+        allowed[0] = True
+        # On again: the answer must become "not yet" (a harvest is due), never
+        # the [] cached while it was off.
+        self.assertIsNone(src.shortcuts_for("gimp"))
+
+    def test_a_disabled_answer_is_NOT_written_to_the_cache(self):
+        allowed = [False]
+        src = self._source(allowed)
+        src.shortcuts_for("gimp")
+        self.assertEqual(dict(src._cache), {})
+
+    def test_a_REAL_answer_is_still_cached(self):
+        """The control: without it the two above pass for a source that caches
+        nothing at all, which would re-harvest on every window report."""
+        allowed = [True]
+        src = self._source(allowed)
+        src._cache["gimp"] = [[1, 22, "Save"]]
+        self.assertEqual(src.shortcuts_for("gimp"), [[1, 22, "Save"]])
+
 
 if __name__ == "__main__":
     unittest.main()

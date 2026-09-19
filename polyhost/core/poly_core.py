@@ -2055,10 +2055,29 @@ class PolyCore(Observable):
         the MRU key for the same reason, one layer down.)
         """
         if self._app_icons is not None:
-            self._app_icons.forget()
+            # ⚠️ `forget_misses`, NOT `forget` -- which does not exist on this
+            # fetcher and raised AttributeError here, BEFORE the two lines
+            # below, so no generic-icon setting took effect at all mid-session
+            # (Greptile, #240). The suite missed it because the fixture is a
+            # bare MagicMock, which answers any attribute; the tests now pass
+            # `spec=` so a nonexistent method fails there too.
+            self._app_icons.forget_misses()
         if self._shortcut_icons is not None:
             self._shortcut_icons.forget()
         self._generic_on_device = None
+        # ⚠️ And make the BOARD follow, not just the host's caches. Turning a
+        # switch OFF means no generic send will happen, so whatever is already
+        # mapped on the keycaps stays there until the next app switch -- a
+        # setting that visibly does nothing, which is the failure this repo
+        # keeps recording. `force_resend` makes the next tick re-evaluate the
+        # window as if it had changed, so a templated app re-sends its template
+        # (which re-programs the pool) and an untemplated one disables overlays.
+        #
+        # Unconditional rather than only-on-OFF: whether anything generic will
+        # be drawn under the new settings is the tick's job to work out, not
+        # this hook's. The cost is one overlay send per Settings-dialog OK.
+        if self.overlay_handler is not None:
+            self.overlay_handler.force_resend()
 
     def _refresh_unicode_watch(self):
         """Start the settle watcher and re-assert the mode after the setting was

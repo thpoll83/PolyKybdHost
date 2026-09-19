@@ -138,14 +138,18 @@ class RelaySource:
         key = str(name or "")
         if not key:
             return None
+        # ⚠️ The SWITCH is read before the CACHE, and it used to be the other
+        # way round with the disabled answer cached as []. Turning
+        # `shortcut_icons_enabled` back on then did nothing for every app
+        # visited while it was off -- the cache answered first and nothing on
+        # the forwarder clears it, so it took a restart (Greptile, #240).
+        # Not caching costs nothing: no harvest is spawned either way, and the
+        # receiver gets the same [] it got before.
+        if not self._is_allowed():
+            return []
         cached = self._cache.get(key)
         if cached is not None:
             return cached
-        if not self._is_allowed():
-            # Recorded as an empty answer rather than left unanswered, so the
-            # receiver is told once and stops asking on every report.
-            self._cache[key] = []
-            return []
         if key not in self._inflight:
             self._inflight.add(key)
             self._spawn(lambda: self._run(key), "poly-fwd-shortcuts")

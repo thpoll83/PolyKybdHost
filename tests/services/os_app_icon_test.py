@@ -296,5 +296,51 @@ class MatchRankIsReportedTest(unittest.TestCase):
         entries = {"/x/thing.desktop": {"Icon": "a", "Name": "A", "Exec": "thing"}}
         self.assertIn("2/stem", self._rank(entries, "/usr/bin/thing", "thing"))
 
+class ResourceReaderCallersAgreeTest(unittest.TestCase):
+    """⚠️ `_pe_resource_reader` returns (to_offset, root) and BOTH callers must
+    unpack it that way round.
+
+    `version_strings` had it backwards, so `_resource_blob` received a function
+    where it wants an int, raised, and `app_identity` caught the error and
+    returned an EMPTY identity — losing every Windows display name and the icon
+    that had already been parsed. Green everywhere off Windows, because the path
+    needs a real PE to reach (Greptile, #240).
+
+    Tested as a CONTRACT between the two callers rather than against a synthetic
+    PE: the bug is an argument order, and a fixture elaborate enough to reach it
+    would be testing the linker's layout instead."""
+
+    def _spy(self, fn):
+        """Run `fn` with the reader stubbed, returning what `_resource_blob` got."""
+        seen = {}
+
+        def fake_reader(data):
+            return ("TO_OFFSET_SENTINEL", 0xABCD)        # (to_offset, root)
+
+        def fake_blob(data, root, to_offset, type_id, wanted_id=None):
+            seen["root"], seen["to_offset"] = root, to_offset
+            return b""
+
+        real_reader, real_blob = osi._pe_resource_reader, osi._resource_blob
+        osi._pe_resource_reader, osi._resource_blob = fake_reader, fake_blob
+        try:
+            fn(b"irrelevant")
+        finally:
+            osi._pe_resource_reader, osi._resource_blob = real_reader, real_blob
+        return seen
+
+    def test_version_strings_passes_root_as_the_INT(self):
+        seen = self._spy(osi.version_strings)
+        self.assertEqual(seen["root"], 0xABCD)
+        self.assertEqual(seen["to_offset"], "TO_OFFSET_SENTINEL")
+
+    def test_icon_from_pe_agrees_with_it(self):
+        """The caller that always worked — pinned so the two cannot drift apart
+        again in either direction."""
+        seen = self._spy(osi.icon_from_pe)
+        self.assertEqual(seen["root"], 0xABCD)
+        self.assertEqual(seen["to_offset"], "TO_OFFSET_SENTINEL")
+
+
 if __name__ == "__main__":
     unittest.main()

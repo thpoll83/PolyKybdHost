@@ -71,9 +71,17 @@ def make_core(*, app=("gimp", None), mask=None, slug="si:gimp", shortcuts=None,
 
     core._generic_on_device = None
     core._told_no_remote_shortcuts = set()
-    core._app_icons = MagicMock()
+    # ⚠️ spec'd, and that is the point rather than tidiness: a bare MagicMock
+    # answers ANY attribute, so `_app_icons.forget()` -- a method this fetcher
+    # has never had -- passed here while raising AttributeError in the real app
+    # and silently stopping every generic-icon setting from taking effect
+    # (Greptile, #240). A stub that cannot say "no such method" cannot catch a
+    # typo in the name of one.
+    from polyhost.services.app_icon_fetcher import AppIconFetcher
+    from polyhost.services.shortcut_fetcher import ShortcutIconFetcher
+    core._app_icons = MagicMock(spec=AppIconFetcher)
     core._app_icons.overlay_for.return_value = (mask, slug)
-    core._shortcut_icons = MagicMock()
+    core._shortcut_icons = MagicMock(spec=ShortcutIconFetcher)
     core._shortcut_icons.overlays_for.return_value = shortcuts or {}
     # One device, whose settings the converter is built against.
     entry = MagicMock()
@@ -373,7 +381,11 @@ class SettingsChangeTest(unittest.TestCase):
         core = self._core()
         core.note_settings_changed({"shortcut_icons_enabled"})
         core._shortcut_icons.forget.assert_called_once()
-        core._app_icons.forget.assert_called_once()
+        # ⚠️ `forget_misses`. This line said `forget` and passed against an
+        # unspec'd MagicMock, asserting a call to a method the fetcher does not
+        # have — the same nonexistent name the code was calling. Two halves of
+        # one mistake, agreeing with each other.
+        core._app_icons.forget_misses.assert_called_once()
 
     def test_a_SIZE_change_forgets_what_is_on_the_device(self):
         # ⚠️ The caches alone are not enough. A height change alters the PIXELS
@@ -647,6 +659,32 @@ class GenericOverlayMasterSwitchTest(unittest.TestCase):
         if either default flips."""
         self.assertIs(DEFAULT_SETTINGS["generic_overlays_enabled"], True)
         self.assertIs(DEFAULT_SETTINGS["generic_overlays_fill_gaps"], True)
+
+    def test_it_drops_the_NEGATIVE_cache_of_the_mark_fetcher(self):
+        """⚠️ `forget_misses`, and the name matters. `forget` does not exist on
+        `AppIconFetcher`; calling it raised before the two lines after it, so no
+        generic-icon setting took effect mid-session at all."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.note_settings_changed({"shortcut_icon_auto_fetch"})
+        core._app_icons.forget_misses.assert_called_once_with()
+        core._shortcut_icons.forget.assert_called_once_with()
+
+    def test_it_makes_the_BOARD_follow_not_just_the_caches(self):
+        """⚠️ Turning a switch OFF means no generic send will happen, so the
+        icons already mapped on the keycaps would stay until the next app
+        switch — a setting that visibly does nothing. `force_resend` makes the
+        next tick re-evaluate the window as if it had changed."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.note_settings_changed({"generic_overlays_enabled"})
+        core.overlay_handler.force_resend.assert_called_once_with()
+
+    def test_it_survives_having_NO_window_handler(self):
+        """Headless with no display: `overlay_handler` is None and a settings
+        change must not raise."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        core.overlay_handler = None
+        core.note_settings_changed({"generic_overlays_enabled"})
+        self.assertIsNone(core._generic_on_device)
 
     def test_TOGGLING_either_one_re_evaluates(self):
         """⚠️ Without this a mid-session flip does nothing until the next app
