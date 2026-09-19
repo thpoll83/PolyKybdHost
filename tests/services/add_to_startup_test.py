@@ -267,7 +267,9 @@ class RemoveAutostartTest(unittest.TestCase):
 class MacAutostartIdempotencyTest(unittest.TestCase):
     """macOS must not re-register the LaunchAgent on every launch — doing so
     re-triggers the "Background Items Added" notification (Ventura+). The plist
-    is only (re)written + reloaded when missing or its content changed."""
+    is only (re)written when missing or its content changed, and registering
+    never runs launchctl: the job is RunAtLoad, so loading it would start a
+    second copy of the app that is already running."""
 
     def _run(self, tmp, wrapper="/Users/x/.venv/wrap.sh"):
         plist = Path(tmp) / "LaunchAgents" / "com.PolyHost.plist"
@@ -277,14 +279,21 @@ class MacAutostartIdempotencyTest(unittest.TestCase):
             add_to_startup.add_to_startup(Path(wrapper), "PolyHost", "/icon.png")
         return plist, run
 
-    def test_first_launch_writes_and_loads(self):
+    def test_first_launch_writes_plist_without_starting_a_second_copy(self):
+        """The registering run must NOT `launchctl load`.
+
+        The plist carries RunAtLoad, so loading it starts the job immediately —
+        and this code only ever runs from an already-running PolyHost. On a
+        first-time macOS install that produced two tray icons 691 ms apart, two
+        core daemons, and an EADDRINUSE crash from the daemon that lost the bind
+        after it had already opened the keyboard (field, 2026-09-19).
+        """
         import tempfile
         with tempfile.TemporaryDirectory() as tmp:
             plist, run = self._run(tmp)
             self.assertTrue(plist.exists())
-            # launchctl load was invoked exactly once (no unload — nothing prior).
-            run.assert_called_once()
-            self.assertEqual(run.call_args[0][0][:2], ["launchctl", "load"])
+            self.assertIn("RunAtLoad", plist.read_text())
+            run.assert_not_called()
 
     def test_second_identical_launch_is_noop(self):
         import tempfile
@@ -294,15 +303,17 @@ class MacAutostartIdempotencyTest(unittest.TestCase):
             self.assertTrue(plist.exists())
             run.assert_not_called()         # no launchctl, no re-register
 
-    def test_changed_wrapper_reloads(self):
+    def test_changed_wrapper_rewrites_plist_without_launchctl(self):
+        """A moved wrapper path updates the plist in place and still shells out
+        to nothing. `launchctl unload` is the mirror hazard of `load`: when
+        launchd is what started this process, unloading our own job kills us."""
         import tempfile
         with tempfile.TemporaryDirectory() as tmp:
             self._run(tmp, wrapper="/Users/x/.venv/old.sh")
-            _, run = self._run(tmp, wrapper="/Users/x/.venv/new.sh")
-            # Path moved -> unload the stale one, then load the new one.
-            calls = [c[0][0][:2] for c in run.call_args_list]
-            self.assertIn(["launchctl", "unload"], calls)
-            self.assertIn(["launchctl", "load"], calls)
+            plist, run = self._run(tmp, wrapper="/Users/x/.venv/new.sh")
+            self.assertIn("/Users/x/.venv/new.sh", plist.read_text())
+            self.assertNotIn("/Users/x/.venv/old.sh", plist.read_text())
+            run.assert_not_called()
 
 
 if __name__ == "__main__":

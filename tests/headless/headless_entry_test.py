@@ -181,6 +181,157 @@ class TestWindowReportWiring(unittest.TestCase):
         MockSrv.return_value.stop.assert_called_once()
 
 
+class TestHeadlessStartOrder(unittest.TestCase):
+    """The control endpoint is claimed and bound before the device stack runs."""
+
+    def setUp(self):
+        self._addr = os.path.join(tempfile.mkdtemp(prefix="poly_ord_"), "p.sock")
+        self._key = b"orderkey"
+        self._patches = [
+            mock.patch.object(protocol, "endpoint_address", return_value=self._addr),
+            mock.patch.object(protocol, "load_or_create_authkey", return_value=self._key),
+        ]
+        for p in self._patches:
+            p.start()
+
+    def tearDown(self):
+        for p in self._patches:
+            p.stop()
+
+    def test_control_server_binds_before_the_hid_worker_starts(self):
+        from polyhost.headless import HeadlessHost
+
+        host = HeadlessHost(_quiet())
+        order = []
+        real_cs_start = host.control_server.start
+        real_worker_start = host.core.worker.start
+
+        def cs_start():
+            order.append("control_server")
+            real_cs_start()
+
+        def worker_start():
+            order.append("worker")
+            real_worker_start()
+
+        # The fixture binds the methods, so patch.object on the classes would
+        # not reach them — override on the instances.
+        host.control_server.start = cs_start
+        host.core.worker.start = worker_start
+        host.start()
+        try:
+            self.assertEqual(order[:2], ["control_server", "worker"])
+        finally:
+            host.stop()
+
+
+class TestHeadlessStandsDownWhenTheEndpointIsTaken(unittest.TestCase):
+    """The loser of a daemon race must stand down BEFORE it touches the device.
+
+    `PolyCore.__init__` opens the keyboard, so the old ordering — construct the
+    host, then fail to bind — meant the losing daemon took the device away from
+    the winner on its way out. On macOS the HID open is exclusive, so the winner
+    then got `kIOReturnExclusiveAccess` on every reconnect and the board stayed
+    unreachable until the user replugged it 50 minutes later (field,
+    2026-09-19). It also crashed: `OSError: [Errno 48] Address already in use`,
+    unhandled, in crash_log.txt.
+    """
+
+    def test_run_headless_never_builds_the_host_when_the_lock_is_held(self):
+        import polyhost.headless as headless
+        from polyhost.server.instance import claim_instance
+
+        class _ExplodingHost:
+            def __init__(self, *a, **kw):
+                raise AssertionError(
+                    "HeadlessHost was constructed despite the endpoint being taken "
+                    "— PolyCore.__init__ would have opened the keyboard here")
+
+        root = logging.getLogger()
+        saved_handlers, saved_level = root.handlers[:], root.level
+        root.handlers.clear()
+        keeb = logging.getLogger("PolyKybdConsole")
+        saved_keeb = keeb.handlers[:]
+        keeb.handlers.clear()
+
+        cwd = os.getcwd()
+        tmp = tempfile.mkdtemp(prefix="poly_busy_")
+        addr = os.path.join(tmp, "p.sock")
+        try:
+            os.chdir(tmp)
+            with mock.patch.object(protocol, "endpoint_address", return_value=addr), \
+                 mock.patch.object(protocol, "load_or_create_authkey", return_value=b"k"):
+                claim = claim_instance()
+                try:
+                    with mock.patch.object(headless, "HeadlessHost", _ExplodingHost):
+                        # Returns instead of raising: standing down is a normal
+                        # outcome, not a crash.
+                        headless.run_headless(logging.INFO)
+                finally:
+                    claim.release()
+        finally:
+            os.chdir(cwd)
+            for lg, saved in ((root, saved_handlers), (keeb, saved_keeb)):
+                for h in lg.handlers:
+                    try:
+                        h.close()
+                    except Exception:
+                        pass
+                lg.handlers[:] = saved
+            root.setLevel(saved_level)
+            import shutil
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_a_passed_in_claim_is_not_released_by_run_headless(self):
+        """main_app takes the claim before any device code runs and owns it —
+        run_headless must not drop someone else's lock on the way out."""
+        import polyhost.headless as headless
+        from polyhost.server.instance import claim_instance, EndpointBusy
+
+        class _StubHost:
+            def __init__(self, *a, **kw):
+                pass
+
+            def run(self):
+                pass
+
+        root = logging.getLogger()
+        saved_handlers, saved_level = root.handlers[:], root.level
+        root.handlers.clear()
+        keeb = logging.getLogger("PolyKybdConsole")
+        saved_keeb = keeb.handlers[:]
+        keeb.handlers.clear()
+
+        cwd = os.getcwd()
+        tmp = tempfile.mkdtemp(prefix="poly_claim_")
+        addr = os.path.join(tmp, "p.sock")
+        try:
+            os.chdir(tmp)
+            with mock.patch.object(protocol, "endpoint_address", return_value=addr), \
+                 mock.patch.object(protocol, "load_or_create_authkey", return_value=b"k"):
+                claim = claim_instance()
+                try:
+                    with mock.patch.object(headless, "HeadlessHost", _StubHost):
+                        headless.run_headless(logging.INFO, claim=claim)
+                    # Still held: a second claimant is still refused.
+                    with self.assertRaises(EndpointBusy):
+                        claim_instance()
+                finally:
+                    claim.release()
+        finally:
+            os.chdir(cwd)
+            for lg, saved in ((root, saved_handlers), (keeb, saved_keeb)):
+                for h in lg.handlers:
+                    try:
+                        h.close()
+                    except Exception:
+                        pass
+                lg.handlers[:] = saved
+            root.setLevel(saved_level)
+            import shutil
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 class TestRunHeadlessLogging(unittest.TestCase):
     """run_headless must write a rotating daemon_log.txt — a GUI-spawned daemon
     runs detached with stdio at DEVNULL, so without the file its logs vanish."""
@@ -211,7 +362,12 @@ class TestRunHeadlessLogging(unittest.TestCase):
 
         try:
             os.chdir(tmp)
-            with mock.patch.object(headless, "HeadlessHost", _StubHost):
+            # run_headless claims the instance lock; point it at a private
+            # endpoint so the test never touches the real config dir.
+            addr = os.path.join(tmp, "p.sock")
+            with mock.patch.object(headless, "HeadlessHost", _StubHost), \
+                 mock.patch.object(protocol, "endpoint_address", return_value=addr), \
+                 mock.patch.object(protocol, "load_or_create_authkey", return_value=b"k"):
                 headless.run_headless(logging.INFO)
             # Flush handlers so the file content is on disk before we read it.
             for h in root.handlers:

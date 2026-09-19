@@ -307,26 +307,42 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # socket, client mode (--connect) WANTS the existing instance, and the
     # daemon-by-default block above already resolved the endpoint, so all are
     # excluded here.
+    #
+    # `claim_instance` takes an OS file lock across probe -> clear-stale, and
+    # HOLDS it for the life of this process, so a second host starting in the
+    # same millisecond is turned away instead of racing us to the bind. It is
+    # taken here, before any device code runs: PolyCore.__init__ opens the
+    # keyboard, and on macOS that open is exclusive — the loser of the old race
+    # took the device away from the winner on its way down (field, 2026-09-19).
+    # The claim is passed to run_headless rather than re-taken there: one
+    # process, one claim (a second would block on this process's own lock).
+    instance_claim = None
     if not (args.host or args.host_file or client_mode or daemon_handled_instance):
-        from polyhost.server.instance import (
-            probe_existing, clear_stale_endpoint, LIVE, STALE)
-        outcome = probe_existing()
-        slog.info("Single-instance lock: control-endpoint probe=%s", outcome)
-        if outcome == LIVE:
-            slog.warning("Another PolyKybdHost already serves the control socket; exiting.")
-            print("PolyKybdHost is already running (control socket answered). Exiting.")
-            sys.exit(0)
-        if outcome != STALE:
+        from polyhost.server.instance import claim_instance, EndpointBusy, LIVE, LOCKED
+        try:
+            instance_claim = claim_instance()
+        except EndpointBusy as e:
+            if e.outcome == LIVE:
+                slog.warning("Another PolyKybdHost already serves the control socket; exiting.")
+                print("PolyKybdHost is already running (control socket answered). Exiting.")
+                sys.exit(0)
+            if e.outcome == LOCKED:
+                # A sibling host is mid-startup and has the lock but has not
+                # bound yet. Nothing is wrong — it is simply not our turn.
+                slog.info("Another PolyKybdHost is starting up (holds the instance "
+                          "lock); exiting rather than starting a second host.")
+                print("PolyKybdHost is already starting. Exiting.")
+                sys.exit(0)
             # INCOMPATIBLE / AUTH_MISMATCH: a real process owns the endpoint but
             # we can't speak to it. Don't unlink its socket and fight over the
             # HID device — defer and let the user sort out the version/key.
             slog.warning("Control endpoint in use (%s) but not answering compatibly; exiting.",
-                         outcome)
-            print(f"PolyKybdHost control endpoint is in use ({outcome}) but not "
+                         e.outcome)
+            print(f"PolyKybdHost control endpoint is in use ({e.outcome}) but not "
                   "answering compatibly. Exiting rather than starting a second "
                   "host. Restart the running instance if this is unexpected.")
             sys.exit(0)
-        clear_stale_endpoint()
+        slog.info("Single-instance lock: claimed the control endpoint.")
 
     if args.headless:
         # No Qt in this process — import nothing Qt-dependent.
@@ -343,7 +359,8 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
             hl_level = logging.DEBUG
         else:
             hl_level = logging.INFO
-        run_headless(hl_level, ignore_version=args.ignore_version, developer=developer)
+        run_headless(hl_level, ignore_version=args.ignore_version, developer=developer,
+                     claim=instance_claim)
         crash_log.note_clean_exit(slog, "headless daemon")
         sys.exit(0)
 
