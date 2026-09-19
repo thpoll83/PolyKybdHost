@@ -238,7 +238,7 @@ class TestHeadlessStandsDownWhenTheEndpointIsTaken(unittest.TestCase):
     """
 
     def test_run_headless_never_builds_the_host_when_the_lock_is_held(self):
-        import polyhost.headless as headless
+        from polyhost.headless import run_headless
         from polyhost.server.instance import claim_instance
 
         class _ExplodingHost:
@@ -263,10 +263,10 @@ class TestHeadlessStandsDownWhenTheEndpointIsTaken(unittest.TestCase):
                  mock.patch.object(protocol, "load_or_create_authkey", return_value=b"k"):
                 claim = claim_instance()
                 try:
-                    with mock.patch.object(headless, "HeadlessHost", _ExplodingHost):
+                    with mock.patch("polyhost.headless.HeadlessHost", _ExplodingHost):
                         # Returns instead of raising: standing down is a normal
                         # outcome, not a crash.
-                        headless.run_headless(logging.INFO)
+                        run_headless(logging.INFO)
                 finally:
                     claim.release()
         finally:
@@ -276,6 +276,10 @@ class TestHeadlessStandsDownWhenTheEndpointIsTaken(unittest.TestCase):
                     try:
                         h.close()
                     except Exception:
+                        # Best-effort: the temp dir these handlers write into
+                        # is removed just below, so a handler that refuses to
+                        # close changes nothing — and must not replace the
+                        # test's own result with a teardown error.
                         pass
                 lg.handlers[:] = saved
             root.setLevel(saved_level)
@@ -285,7 +289,7 @@ class TestHeadlessStandsDownWhenTheEndpointIsTaken(unittest.TestCase):
     def test_a_passed_in_claim_is_not_released_by_run_headless(self):
         """main_app takes the claim before any device code runs and owns it —
         run_headless must not drop someone else's lock on the way out."""
-        import polyhost.headless as headless
+        from polyhost.headless import run_headless
         from polyhost.server.instance import claim_instance, EndpointBusy
 
         class _StubHost:
@@ -311,8 +315,8 @@ class TestHeadlessStandsDownWhenTheEndpointIsTaken(unittest.TestCase):
                  mock.patch.object(protocol, "load_or_create_authkey", return_value=b"k"):
                 claim = claim_instance()
                 try:
-                    with mock.patch.object(headless, "HeadlessHost", _StubHost):
-                        headless.run_headless(logging.INFO, claim=claim)
+                    with mock.patch("polyhost.headless.HeadlessHost", _StubHost):
+                        run_headless(logging.INFO, claim=claim)
                     # Still held: a second claimant is still refused.
                     with self.assertRaises(EndpointBusy):
                         claim_instance()
@@ -325,6 +329,10 @@ class TestHeadlessStandsDownWhenTheEndpointIsTaken(unittest.TestCase):
                     try:
                         h.close()
                     except Exception:
+                        # Best-effort: the temp dir these handlers write into
+                        # is removed just below, so a handler that refuses to
+                        # close changes nothing — and must not replace the
+                        # test's own result with a teardown error.
                         pass
                 lg.handlers[:] = saved
             root.setLevel(saved_level)
@@ -337,7 +345,7 @@ class TestRunHeadlessLogging(unittest.TestCase):
     runs detached with stdio at DEVNULL, so without the file its logs vanish."""
 
     def test_run_headless_creates_daemon_log_file(self):
-        import polyhost.headless as headless
+        from polyhost.headless import run_headless
 
         # Isolate the root logger so basicConfig actually attaches our handlers
         # regardless of what earlier tests configured (and restore after).
@@ -365,10 +373,10 @@ class TestRunHeadlessLogging(unittest.TestCase):
             # run_headless claims the instance lock; point it at a private
             # endpoint so the test never touches the real config dir.
             addr = os.path.join(tmp, "p.sock")
-            with mock.patch.object(headless, "HeadlessHost", _StubHost), \
+            with mock.patch("polyhost.headless.HeadlessHost", _StubHost), \
                  mock.patch.object(protocol, "endpoint_address", return_value=addr), \
                  mock.patch.object(protocol, "load_or_create_authkey", return_value=b"k"):
-                headless.run_headless(logging.INFO)
+                run_headless(logging.INFO)
             # Flush handlers so the file content is on disk before we read it.
             for h in root.handlers:
                 h.flush()
@@ -385,6 +393,10 @@ class TestRunHeadlessLogging(unittest.TestCase):
                     try:
                         h.close()
                     except Exception:
+                        # Best-effort: the temp dir these handlers write into
+                        # is removed just below, so a handler that refuses to
+                        # close changes nothing — and must not replace the
+                        # test's own result with a teardown error.
                         pass
                 lg.handlers[:] = saved
             root.setLevel(saved_level)

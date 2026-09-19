@@ -153,10 +153,18 @@ class InstanceClaim:
                 import fcntl
                 fcntl.flock(fd, fcntl.LOCK_UN)
         except OSError:
+            # Explicit unlocking is courtesy: the close below drops the lock
+            # regardless, and on Windows unlocking a region that was never
+            # locked (a claim abandoned before _try_lock succeeded) raises here
+            # by design. Either way there is nothing left to do and nothing
+            # worth failing a shutdown over.
             pass
         try:
             os.close(fd)
         except OSError:
+            # Already closed — a double release, or the interpreter tearing
+            # down around us. The descriptor is gone, which is all release()
+            # promises.
             pass
 
     def __enter__(self):
@@ -189,14 +197,18 @@ def claim_instance(address=None, authkey=None) -> InstanceClaim:
     path = protocol.instance_lock_path(address)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
-    if not _try_lock(fd):
-        # Someone holds the lock. They may not have bound the endpoint yet, so
-        # the probe is the better answer when it has one — "locked" otherwise.
-        os.close(fd)
-        outcome = probe_existing(address, authkey)
-        raise EndpointBusy(LOCKED if outcome == STALE else outcome)
+    # Hand the descriptor to the claim immediately, so every exit path from
+    # here on closes it. Taking the lock first would leak the descriptor for
+    # the life of the process if anything between the open and the assignment
+    # raised.
     claim = InstanceClaim(fd, path)
     try:
+        if not _try_lock(fd):
+            # Someone holds the lock. They may not have bound the endpoint yet,
+            # so the probe is the better answer when it has one — LOCKED
+            # otherwise.
+            outcome = probe_existing(address, authkey)
+            raise EndpointBusy(LOCKED if outcome == STALE else outcome)
         outcome = probe_existing(address, authkey)
         if outcome != STALE:
             raise EndpointBusy(outcome)
