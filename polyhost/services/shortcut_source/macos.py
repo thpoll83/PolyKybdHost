@@ -165,6 +165,40 @@ def _frontmost_pid(workspace) -> int | None:
     return int(app.processIdentifier())
 
 
+def _frontmost_name(workspace) -> str:
+    """The frontmost application's localized name, or "" when unreadable."""
+    try:
+        app = workspace.sharedWorkspace().frontmostApplication()
+        if app is None:
+            return ""
+        return str(app.localizedName() or "")
+    except Exception:
+        return ""
+
+
+def names_agree(requested: str, frontmost: str) -> bool:
+    """Is `frontmost` plausibly the app the caller asked about?
+
+    ⚠️ **FAILS OPEN, and that is the whole design.** The caller's name comes
+    from the window handler and the frontmost name comes from AppKit, so the two
+    spellings are not guaranteed to match even when they denote the same
+    application ("Code" vs "Visual Studio Code", "Safari" vs "Safari.app"). A
+    strict comparison would therefore refuse a correct harvest on an unfamiliar
+    naming convention and turn a RARE mislabel into a TOTAL failure -- strictly
+    worse than the race it closes. So a substring match either way is enough,
+    and anything unreadable or empty is accepted.
+
+    What it does catch is the case that matters: the user switched from Mail to
+    Xcode while the harvest was queued, and the two names have nothing in
+    common. Greptile, #248.
+    """
+    a = (requested or "").strip().lower()
+    b = (frontmost or "").strip().lower()
+    if not a or not b:
+        return True
+    return a in b or b in a
+
+
 def _menu_shortcuts(copy_attr, menu, path, found, seen, budget):
     """Walk one AXMenu, depth first, appending every real key equivalent."""
     for item in _attr(copy_attr, menu, AX_CHILDREN, []) or []:
@@ -204,10 +238,11 @@ def shortcuts_for_app(name: str = "",
                       budget: int = DEFAULT_NODE_BUDGET) -> list[Shortcut]:
     """Every key equivalent the FRONTMOST application's menu bar exposes.
 
-    ⚠️ `name` is accepted and ignored, for the reason the Windows backend gives:
-    the AX API answers "which app is frontmost" directly and cheaply, the caller
-    only ever asks about the app it already believes is focused, and resolving
-    by name would be a second and slower opinion about the same thing.
+    ⚠️ `name` does not SELECT the application -- the AX API answers "which app
+    is frontmost" directly and far more cheaply than "find the one called X",
+    and the caller only ever asks about the app it already believes is focused.
+    It is used to VERIFY, through `names_agree`, that focus has not moved since
+    the harvest was queued; see the note at that call.
 
     ⚠️ **The Apple menu is skipped.** It is the first menu bar item on every
     application and it is not the application's — its items are the system's
@@ -223,6 +258,18 @@ def shortcuts_for_app(name: str = "",
             return []
         pid = _frontmost_pid(workspace)
         if pid is None:
+            return []
+        # ⚠️ The harvest runs on a WORKER THREAD, queued by the window tick, so
+        # focus can move between the two -- and the fetcher caches the result
+        # under the name it ASKED about. Without this check app B's shortcuts
+        # are stored under app A's key and drawn every time A is focused until
+        # the cache clears (Greptile, #248).
+        #
+        # ⚠️ The UIA backend has the SAME race and cannot close it as cheaply:
+        # it resolves the focused ELEMENT, whose owning application name costs
+        # another cross-process call. This backend is deliberately the stricter
+        # of the two rather than both being left equally loose.
+        if not names_agree(name, _frontmost_name(workspace)):
             return []
         app = create_app(pid)
         menu_bar = _attr(copy_attr, app, AX_MENU_BAR)

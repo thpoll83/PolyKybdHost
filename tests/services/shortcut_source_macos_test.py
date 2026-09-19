@@ -187,10 +187,15 @@ class MenuWalkTest(unittest.TestCase):
         # positive cases return [], which is what an app with no menu looks
         # like, so a fixture shortcut here reads as the walk being broken.
         app = FakeElement(AXMenuBar=bar)
+        # ⚠️ The requested name must AGREE with what the fake workspace reports
+        # as frontmost, or the focus-race guard refuses before the walk starts.
+        # These four cases are about the walk; the guard has its own class. That
+        # they went red when the guard landed is the guard being live.
         with patch.object(macos, "_trusted", return_value=True), \
              patch.object(macos, "_api", return_value=(
-                 lambda pid: app, fake_copy_attr, lambda: True, FakeWorkspace())):
-            return macos.shortcuts_for_app("anything", budget=budget)
+                 lambda pid: app, fake_copy_attr, lambda: True,
+                 FakeWorkspace("Mousepad"))):
+            return macos.shortcuts_for_app("Mousepad", budget=budget)
 
     def test_it_reads_a_plain_menu_item(self):
         found = self.walk(menu_bar(APPLE_MENU,
@@ -273,6 +278,9 @@ class MenuWalkTest(unittest.TestCase):
 
 
 class FakeWorkspace:
+    def __init__(self, name="Mousepad"):
+        self.name = name
+
     def sharedWorkspace(self):
         return self
 
@@ -281,6 +289,53 @@ class FakeWorkspace:
 
     def processIdentifier(self):
         return 4242
+
+    def localizedName(self):
+        return self.name
+
+
+class FocusRaceTest(unittest.TestCase):
+    """The harvest runs on a worker thread; focus can move under it.
+
+    ⚠️ The fetcher caches the result under the name it ASKED about, so a moved
+    focus files app B's shortcuts under app A's key and draws them every time A
+    is focused until the cache clears.
+    """
+
+    def harvest(self, requested, frontmost):
+        app = FakeElement(AXMenuBar=menu_bar(
+            APPLE_MENU, bar_item("File", menu_item("Save", "S", mods=0))))
+        with patch.object(macos, "_trusted", return_value=True), \
+             patch.object(macos, "_api", return_value=(
+                 lambda pid: app, fake_copy_attr, lambda: True,
+                 FakeWorkspace(frontmost))):
+            return macos.shortcuts_for_app(requested)
+
+    def test_a_MOVED_focus_harvests_nothing(self):
+        self.assertEqual(self.harvest("Mail", "Xcode"), [])
+
+    def test_the_matching_app_still_harvests(self):
+        self.assertEqual([s.label for s in self.harvest("Mousepad", "Mousepad")],
+                         ["Save"])
+
+    def test_a_DIFFERENT_SPELLING_of_the_same_app_is_accepted(self):
+        # ⚠️ Fails OPEN. The handler's name and AppKit's localizedName are not
+        # guaranteed to match for one app, and refusing on an unfamiliar
+        # convention turns a rare mislabel into a total failure.
+        for requested, frontmost in (("Code", "Visual Studio Code"),
+                                     ("Safari.app", "Safari"),
+                                     ("mousepad", "Mousepad")):
+            with self.subTest(requested=requested):
+                self.assertEqual(len(self.harvest(requested, frontmost)), 1)
+
+    def test_an_UNREADABLE_name_is_accepted_rather_than_refused(self):
+        self.assertEqual(len(self.harvest("Mail", "")), 1)
+        self.assertEqual(len(self.harvest("", "Xcode")), 1)
+
+    def test_names_agree_is_symmetric(self):
+        self.assertTrue(macos.names_agree("Code", "Visual Studio Code"))
+        self.assertTrue(macos.names_agree("Visual Studio Code", "Code"))
+        self.assertFalse(macos.names_agree("Mail", "Xcode"))
 
 
 class AttributeReadTest(unittest.TestCase):

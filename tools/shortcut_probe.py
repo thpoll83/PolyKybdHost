@@ -384,7 +384,14 @@ def main_macos(args) -> list[dict] | None:
         print(f"probing the frontmost app in {delay}s -- click it now...")
         time.sleep(delay)
     found = _macos.shortcuts_for_app("", budget=args.max_nodes)
-    return [report("frontmost application", found, len(found),
+    # ⚠️ The app's own NAME, not a constant: `watch --unmatched` attributes
+    # every label it logs to this string, so a constant would file Xcode's
+    # "Build" and Mail's "Send" under one heading (Greptile, #248).
+    try:
+        who = _macos._frontmost_name(_macos._api()[3]) or "frontmost application"
+    except Exception:
+        who = "frontmost application"
+    return [report(who, found, len(found),
                    icons=_icon_matcher() if args.icons else None,
                    quiet=getattr(args, "quiet", False))]
 
@@ -539,6 +546,19 @@ def _focus_key(backend):
     application window ("OpusApp" for Word), so switching document inside one app
     does not re-probe -- the reprobe timer covers that.
     """
+    if backend == "macos":
+        # ⚠️ A CONSTANT here is what `backend != "uia"` used to give macOS, and
+        # it silently disabled visit tracking: focus changes never registered,
+        # so labels stayed deduplicated across unrelated apps and every visit
+        # summary was wrong (Greptile, #248). The frontmost pid is the cheap
+        # real answer -- stable while one app is focused, different the moment
+        # another takes over.
+        try:
+            _, _, _, workspace = _macos._api()
+            pid = _macos._frontmost_pid(workspace)
+            return None if pid is None else ("macos", pid)
+        except Exception:
+            return None
     if backend != "uia":
         return "atspi"          # no focus tracking on AT-SPI; the timer drives it
     try:
@@ -552,6 +572,9 @@ def _focus_key(backend):
 
 
 def _focus_title(backend):
+    if backend == "macos":
+        return _macos._frontmost_name(
+            _macos._api()[3]) or "frontmost application"
     if backend != "uia":
         return "all applications"
     try:
