@@ -61,6 +61,8 @@ M_DAYLIGHT_REFRESH = "brightness.daylight_refresh"   # {} -> (ok, payload)
 M_IDLE_SET = "idle.set"                # {"idle": bool} -> (ok, payload)
 M_IDLE_STYLE_SET = "idle.style.set"    # {"value": 0|1|2} -> (ok, payload)  (0=pulse, 1=jitter, 2=iddqd attract demo)
 M_IDLE_STYLE_GET = "idle.style.get"    # {} -> (ok, value)
+M_IDLE_TIMEOUT_SET = "idle.timeout.set"  # {"value": 0..5} -> (ok, payload)  (IdleTimeout preset)
+M_IDLE_TIMEOUT_GET = "idle.timeout.get"  # {} -> (ok, [preset, seconds])
 M_GLYPH_SCRIPT_SET = "glyph.script.set"  # {"value": 0|1|...} -> (ok, payload)  (0=standard, 1=tengwar)
 M_GLYPH_SCRIPT_GET = "glyph.script.get"  # {} -> (ok, value)
 # Keycap legend SIZE (firmware protocol v13+). A closed range, unlike the script
@@ -171,6 +173,38 @@ def endpoint_address() -> str:
     except Exception:
         base = _config_dir()
     return os.path.join(base, "polykybd.sock")
+
+
+def instance_lock_path(address=None) -> str:
+    """Path of the file lock that makes the control endpoint a real instance lock.
+
+    ``probe_existing`` -> ``clear_stale_endpoint`` -> ``Listener()`` is a
+    check-then-act, and two daemons starting in the same millisecond both read
+    STALE, both unlink and one loses the bind (field, 2026-09-19: an
+    ``OSError: [Errno 48] Address already in use`` traceback in crash_log.txt).
+    The lock makes that sequence atomic; see
+    :func:`polyhost.server.instance.claim_instance`.
+
+    Lives beside the endpoint so two different endpoints never share one lock —
+    except on Windows, where a named pipe has no filesystem path at all and the
+    lock goes in the config dir, namespaced by the pipe name."""
+    address = address or endpoint_address()
+    if sys.platform == "win32":
+        return os.path.join(_config_dir(), address.rsplit("\\", 1)[-1] + ".instance.lock")
+    return address + ".instance.lock"
+
+
+def gui_lock_path() -> str:
+    """Path of the file lock that keeps a plain GUI launch to ONE tray icon.
+
+    Separate from the endpoint's own lock on purpose: under daemon-by-default
+    the tray and the core daemon are different processes, and the tray holds
+    this one while the daemon holds the endpoint. Sharing one file would have
+    the tray's claim block the daemon it just spawned.
+
+    In the config dir rather than beside the socket: it is per user, and unlike
+    the endpoint lock it guards no address."""
+    return os.path.join(_config_dir(), "polykybd.gui.lock")
 
 
 def authkey_path() -> str:

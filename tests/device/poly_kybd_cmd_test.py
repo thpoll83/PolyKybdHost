@@ -214,6 +214,18 @@ class TestSimpleCommandPayloads(unittest.TestCase, LockCheckMixin):
     def test_reset_overlay_usage(self):
         self.assertEqual(self._payload('reset_overlay_usage')[:3], bytes([POLY, 11, 0x40]))
 
+    def test_set_idle_timeout(self):
+        # cmd 40, then the preset index. This is the one test that catches the host
+        # and the firmware disagreeing about the wire; the firmware side is
+        # keyboards/polykybd/hid_com.c case 40.
+        self.assertEqual(self._payload('set_idle_timeout', 2)[:3], bytes([POLY, 40, 0x02]))
+
+    def test_get_idle_timeout_queries_with_the_sentinel(self):
+        keeb, device = make_keeb(auto_ack=True)
+        keeb.get_idle_timeout()
+        self.assert_lock_free(keeb)
+        self.assertEqual(device.payloads()[0][:3], bytes([POLY, 40, 0xFF]))
+
     def test_reset_overlay_mapping(self):
         self.assertEqual(self._payload('reset_overlay_mapping')[:3], bytes([POLY, 11, 0x80]))
 

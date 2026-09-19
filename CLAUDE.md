@@ -123,8 +123,14 @@ over HID. The full file-by-file map — entry points, `PolyCore`, the control so
 its three servers, `polyctl`, headless mode, `RemoteCore`, the device layer, the
 platform input abstraction, the window handlers and the settings/services — is
 [`docs/architecture.md`](docs/architecture.md). Read it before adding a module or a
-control-socket method. Four rules bind code outside it:
+control-socket method. Five rules bind code outside it:
 
+- ⚠️ **`PolyCore.__init__` OPENS THE KEYBOARD** (`keeb.connect()`), so anything that
+  decides whether this process should be the host must happen **before** the core is
+  constructed, not in a `start()` afterwards. `instance.claim_instance()` is that
+  gate: an OS file lock held for the life of the process, taken in `main_app` before
+  any device code runs. Probing the socket alone is a check-then-act — two hosts
+  starting in the same millisecond both read STALE and both open the device.
 - **`PolyCore` is the Qt-free operational core** and must stay importable without
   PyQt5 and without a display. It communicates **only** through observer callbacks
   with JSON-serializable payloads; worker-side code must never touch a Qt object.
@@ -132,9 +138,10 @@ control-socket method. Four rules bind code outside it:
 - **A new device-coupled GUI surface is expected to work in client mode over RPC.**
   Client mode is the default under daemon-by-default, so anything gated off it is
   unreachable out of the box.
-- ⚠️ **Five pieces of plumbing are shared implementations because a hand-written copy
+- ⚠️ **Six pieces of plumbing are shared implementations because a hand-written copy
   had already drifted** — `MpcListenerServer`, `UpdateProgressController`,
-  `gui/theme.apply_theme`, `util/observable.Observable` and
+  `gui/theme.apply_theme`, `util/observable.Observable`, `util/filelock` (the
+  endpoint claim and the settings save both need an OS file lock) and
   `PolyCore._flash_resource`. Reach for the shared piece; that is the point of it.
   ⚠️ **When a bug is found in one of the three servers, grep the other two**
   (`control_server` / `window_report_server` / `browser_report_server`) for the same
@@ -259,6 +266,21 @@ method, the `RemoteCore` mirror, a `polyctl` subcommand and a gated tray submenu
 full wiring, the preview rendering and the label-measurement rules are in
 [`docs/device-features.md`](docs/device-features.md).
 
+- **The idle TIMEOUT (cmd 40, v18+) is the same wiring one more time**, gated on
+  `"idle_timeout"`: six fixed presets (15 s…5 min) replacing what was a compile-time
+  2 minutes in the firmware. ⚠️ **Its reply carries the duration in SECONDS as well
+  as the preset index, and the UI labels from the SECONDS** — that is the only way a
+  host older than a firmware which adds a preset renders "10 min" instead of "preset
+  6". `IdleTimeout.label_for()` is the one place that decides; don't relabel from the
+  local enum. The SET range stays closed (see the GlyphSize/GlyphScript note below —
+  this one follows GlyphSize).
+- ⚠️ **`expect(Cmd.X)` matches only the two `P<cmd>` bytes, which a NACK carries
+  too** — so `send_and_read_validate` returning True says the reply arrived, never
+  that the firmware accepted it. On a CLOSED range that is the difference between a
+  refusal and a silent success: read the verdict at `reply[2]` (`.` accept, `!`
+  refuse) before reporting one. `set_idle_timeout` does, and validates the preset
+  through the enum before any I/O; `set_glyph_size`, `set_idle_style` and
+  `set_glyph_script` still have the older prefix-only shape.
 - ⚠️ **`GlyphSize` is a CLOSED range and `GlyphScript` is OPEN — that asymmetry is
   deliberate, and it is the one way they differ.** An unknown SCRIPT index is accepted
   by the firmware and degrades to the normal legend, which is what lets the host offer
@@ -325,6 +347,19 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   `PolyCore.note_settings_changed(keys=None)`. Add the side effect to the hook, never to
   a caller; there are two settings writers and the second copy is how enabling a setting
   mid-session came to do nothing at all.
+- ⚠️ **`PolySettings.save()` merges per KEY against the file, and must keep doing so** —
+  the daemon and the tray both hold a `PolySettings`, so a whole-file rewrite from a
+  stale in-memory copy silently reverts the other one. That is how the telemetry install
+  id was lost: the GUI generated and saved it, the daemon saved 8 minutes later from the
+  empty value it had loaded first, and the next run generated a new id, counting the
+  machine as two installs. `save()` re-reads the file and imposes only the keys this
+  process changed, through a temp file + `os.replace`, **under a cross-process lock** —
+  read-merge-replace is itself a read-modify-write, and six concurrent writers of six
+  different keys lose 3–4 of them per run without it. ⚠️ Two details are load-bearing:
+  `_read_file()` returns **None, not `{}`**, when the file cannot be read (merging
+  against `{}` fills every unchanged key with a DEFAULT and silently resets the user's
+  settings), and the lock is **best effort** — a save that cannot take it still writes,
+  because losing the write outright is worse than the rare interleaving.
 - ⚠️ **The FORWARDER is a second tray app** (`polyhost/forwarder.py`) with its own
   `QApplication`, menu and log file, **on a different machine from the keyboard**. A
   user-facing tray feature added to `host.py` is simply absent there until wired
@@ -352,8 +387,25 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
 ### Updates, autostart and daemon mode
 
 Autostart registration and the post-update relaunch chain are
-[`docs/autostart.md`](docs/autostart.md). Four rules bind code outside it:
+[`docs/autostart.md`](docs/autostart.md). Six rules bind code outside it:
 
+- ⚠️ **There are TWO locks, and they are deliberately different files.**
+  `claim_instance()` guards the control endpoint (the core daemon holds it);
+  `claim_gui()` guards the tray icon (the GUI holds it). Under daemon-by-default the
+  GUI is a *client* and never owns the endpoint, so only the GUI lock can stop a second
+  tray — and one shared file would have the tray block the very daemon it just spawned.
+  ⚠️ **`claim_gui()` waits ~3 s rather than refusing at once**, because the post-update
+  relaunch spawns the replacement before this process exits; `main_app` also releases
+  the claim explicitly before `restart_app()`. Refusing immediately there is *"it
+  doesn't start up again after the update"*.
+- ⚠️ **Registering autostart must never START the app** — it always runs from an
+  app that is already running. macOS made this concrete: the plist carries
+  `RunAtLoad`, so the `launchctl load` in `add_to_startup()` launched a SECOND copy,
+  and a first-time install came up with two tray icons, two core daemons and an
+  `EADDRINUSE` crash from the loser — which had already opened the keyboard
+  exclusively, locking the winner out of the device for 50 minutes. The tell is that
+  the second process starts a few ms **before** the first logs "Autostart
+  registration: …", since that line lands after `subprocess.run` returns.
 - **GUI self-update must be applied by the DAEMON, not the client.** In daemon mode the
   tray is a `--connect` client and the daemon owns `PolyCore` — and therefore the
   protocol gate. Running `UpdateInstaller` in the GUI process refreshed only the client

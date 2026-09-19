@@ -15,9 +15,10 @@ from polyhost.device.poly_kybd import (
     PolyKybd, protocol_supports, FEATURE_MIN_PROTOCOL, MIN_SUPPORTED_PROTOCOL,
     OVERLAY_PACKED_HEADER_MIN_PROTOCOL, GLYPH_SIZE_MIN_PROTOCOL,
     MACRO_MIN_PROTOCOL, UNICODE_MODE_VOLATILE_MIN_PROTOCOL,
+    IDLE_TIMEOUT_MIN_PROTOCOL,
 )
 from polyhost.device.device_settings import DeviceSettings
-from polyhost.device.command_ids import HidId, Cmd, GlyphScript, GlyphSize
+from polyhost.device.command_ids import HidId, Cmd, GlyphScript, GlyphSize, IdleTimeout
 from polyhost.device.keys import Modifier, LEGACY_MAX_MODIFIER_VALUE
 from polyhost.input.unicode_input import InputMethod
 from polyhost.settings import PolySettings
@@ -124,6 +125,151 @@ class TestOverlayHeaderEncoding(unittest.TestCase):
         reports = self._capture(None)
         self.assertEqual(reports[0][3], self.MOD.value)
         self.assertEqual(reports[0][4], 0)
+
+
+
+class TestIdleTimeoutGate(unittest.TestCase):
+    """The idle-timeout command (cmd 40, v18+).
+
+    ⚠️ Mirrors the glyph-SIZE tests above rather than the glyph-SCRIPT ones, and
+    that is the point: this range is CLOSED. An unknown script index is accepted by
+    the firmware and degrades to the normal legend; an unknown timeout is NACKed,
+    because it would otherwise persist as a setting that silently resolves to some
+    other duration. See the IdleTimeout docstring.
+    """
+
+    def _keeb(self, protocol):
+        keeb = PolyKybd(DeviceSettings(), PolySettings())
+        keeb.protocol_version = protocol
+        keeb.hid = MagicMock()
+        return keeb
+
+    def test_feature_threshold(self):
+        self.assertEqual(FEATURE_MIN_PROTOCOL["idle_timeout"], IDLE_TIMEOUT_MIN_PROTOCOL)
+        self.assertFalse(protocol_supports(IDLE_TIMEOUT_MIN_PROTOCOL - 1, "idle_timeout"))
+        self.assertTrue(protocol_supports(IDLE_TIMEOUT_MIN_PROTOCOL, "idle_timeout"))
+
+    def test_old_firmware_refuses_without_touching_the_device(self):
+        """The gate must fail BEFORE any I/O. A board below v18 has no cmd 40 at
+        all — the delay is its compile-time 2 minutes — so the menu greys out
+        instead of the command NACKing at runtime."""
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL - 1)
+        ok, msg = keeb.set_idle_timeout(IdleTimeout.SEC_30)
+        self.assertFalse(ok)
+        self.assertIn("too old", msg)
+        keeb.hid.send_and_read_validate.assert_not_called()
+        ok, value = keeb.get_idle_timeout()
+        self.assertFalse(ok)
+        self.assertEqual(value, (0, 0))
+        keeb.hid.send_and_read_validate.assert_not_called()
+
+    def test_set_sends_the_enum_value_on_cmd_40(self):
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (True, b"P\x28.")
+        ok, _ = keeb.set_idle_timeout(IdleTimeout.SEC_45)
+        self.assertTrue(ok)
+        report = keeb.hid.send_and_read_validate.call_args.args[0]
+        self.assertEqual(report[1], Cmd.IDLE_TIMEOUT.value)
+        self.assertEqual(report[2], IdleTimeout.SEC_45.value)
+
+    def test_set_refuses_a_preset_the_enum_does_not_carry(self):
+        """The range is CLOSED, so an unknown preset is refused HERE — before any
+        I/O. Sending it would be answered with a NACK the prefix check cannot see,
+        and the reply would read as success."""
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
+        for bad in (99, -1, len(IdleTimeout), "2min"):
+            with self.subTest(value=bad):
+                ok, msg = keeb.set_idle_timeout(bad)
+                self.assertFalse(ok)
+                self.assertIn("preset", msg)
+        keeb.hid.send_and_read_validate.assert_not_called()
+
+    def test_set_reports_a_nack_as_failure_not_success(self):
+        """`expect()` matches only the two `P<cmd>` bytes, which a NACK carries
+        too — so send_and_read_validate's own True says nothing about the verdict.
+        The ACK marker at reply[2] is what decides."""
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.IDLE_TIMEOUT.value, ord("!")]))
+        ok, _ = keeb.set_idle_timeout(IdleTimeout.SEC_45)
+        self.assertFalse(ok)
+
+    def test_get_queries_with_0xff_and_reads_preset_plus_seconds(self):
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.IDLE_TIMEOUT.value, ord("."),
+                         IdleTimeout.MIN_5.value, 300 & 0xFF, 300 >> 8]))
+        ok, value = keeb.get_idle_timeout()
+        self.assertTrue(ok)
+        self.assertEqual(value, (IdleTimeout.MIN_5.value, 300))
+        report = keeb.hid.send_and_read_validate.call_args.args[0]
+        self.assertEqual(report[2], 0xFF)
+
+    def test_seconds_are_little_endian_over_255(self):
+        """300 does not fit in a byte, so the two-byte order is load-bearing:
+        read big-endian, 5 minutes would come back as 11 seconds."""
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.IDLE_TIMEOUT.value, ord("."), 5, 0x2C, 0x01]))
+        ok, (preset, seconds) = keeb.get_idle_timeout()
+        self.assertTrue(ok)
+        self.assertEqual(seconds, 300)
+
+    def test_a_nacked_reply_is_not_read_as_a_timeout(self):
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.IDLE_TIMEOUT.value, ord("!"), 7, 0, 0]))
+        ok, value = keeb.get_idle_timeout()
+        self.assertFalse(ok)
+        self.assertEqual(value, (0, 0))
+
+    def test_a_truncated_reply_is_refused_rather_than_half_read(self):
+        """The seconds live at data[4..5]; a reply that stops at data[3] would
+        otherwise IndexError or, worse, be read as a zero-second timeout."""
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.return_value = (
+            True, bytes([ord("P"), Cmd.IDLE_TIMEOUT.value, ord("."), 3]))
+        ok, value = keeb.get_idle_timeout()
+        self.assertFalse(ok)
+        self.assertEqual(value, (0, 0))
+
+    def test_a_device_error_is_swallowed_and_logged_not_raised(self):
+        """Every caller is a UI refresh that treats (False, ...) as "say nothing",
+        and the device can be mid-flash or unplugged between the protocol gate and
+        this round trip — so a raise here would take out the tray menu. CodeQL
+        flagged the original bare `except: pass` for having no explanation; this
+        pins the behaviour the comment now describes, including that the debug log
+        itself does not throw."""
+        keeb = self._keeb(IDLE_TIMEOUT_MIN_PROTOCOL)
+        keeb.hid.send_and_read_validate.side_effect = OSError("device went away")
+        keeb.log = MagicMock()
+        ok, value = keeb.get_idle_timeout()
+        self.assertFalse(ok)
+        self.assertEqual(value, (0, 0))
+        keeb.log.debug.assert_called_once()
+
+    def test_command_id_and_enum_match_the_firmware(self):
+        self.assertEqual(Cmd.IDLE_TIMEOUT.value, 40)
+        # poly_idle_timeout in the firmware's base/idle_timeout.h — append-only.
+        self.assertEqual([(t.name, t.value) for t in IdleTimeout],
+                         [("SEC_15", 0), ("SEC_30", 1), ("SEC_45", 2),
+                          ("MIN_1", 3), ("MIN_2", 4), ("MIN_5", 5)])
+        self.assertEqual([t.seconds for t in IdleTimeout], [15, 30, 45, 60, 120, 300])
+
+    def test_the_default_preset_is_the_firmwares_old_constant(self):
+        """MIN_2 is FADE_OUT_TIME, which was 120000 ms on every board ever shipped.
+        If this stops matching, a firmware update silently changes the idle
+        behaviour of every keyboard in the field."""
+        self.assertEqual(IdleTimeout.MIN_2.seconds, 120)
+
+    def test_an_unknown_preset_is_labelled_from_the_keyboards_seconds(self):
+        """Why cmd 40 replies with a duration at all: a firmware NEWER than this
+        host can carry a preset it has no name for, and the menu should read
+        '10 min', not 'preset 6'."""
+        self.assertEqual(IdleTimeout.label_for(6, 600), "10 min")
+        self.assertEqual(IdleTimeout.label_for(6, 90), "90 sec")
+        # With no seconds to go on there is nothing to name it with.
+        self.assertEqual(IdleTimeout.label_for(6), "preset 6")
 
 
 if __name__ == "__main__":

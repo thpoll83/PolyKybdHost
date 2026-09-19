@@ -6,6 +6,7 @@ from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy as np  # for the get_display_image return annotation only
 
+from polyhost.device.command_ids import IdleTimeout
 from polyhost.device.device_settings import DeviceSettings
 from polyhost.util.dict_util import split_by_n_chars
 from polyhost.device.im_converter import ImageConverter
@@ -212,6 +213,28 @@ class PolyKybdMock:
     def get_idle_style(self) -> tuple[bool, int]:
         self._log_call("get_idle_style")
         return True, getattr(self, "_idle_style", 0)
+
+    def set_idle_timeout(self, value) -> tuple[bool, str]:
+        # Refuses what the firmware refuses: the preset range is CLOSED, so a mock
+        # that banked any integer would let a caller "succeed" against a value the
+        # real board NACKs.
+        v = getattr(value, "value", value)
+        self._log_call("set_idle_timeout", v)
+        try:
+            v = IdleTimeout(int(v)).value
+        except (ValueError, TypeError):
+            return False, f"{value!r} is not an idle-timeout preset"
+        self._idle_timeout = v
+        return True, ""
+
+    def get_idle_timeout(self) -> tuple[bool, tuple[int, int]]:
+        self._log_call("get_idle_timeout")
+        value = getattr(self, "_idle_timeout", IdleTimeout.MIN_2.value)
+        try:
+            seconds = IdleTimeout(value).seconds
+        except ValueError:
+            seconds = 0
+        return True, (value, seconds)
 
     def set_glyph_script(self, script) -> tuple[bool, str]:
         value = getattr(script, "value", script)

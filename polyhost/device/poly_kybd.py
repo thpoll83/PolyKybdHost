@@ -13,7 +13,7 @@ from polyhost.settings import PolySettings
 from polyhost.device.bit_packing import (pack_report, pairs_per_report,
                                          plan_mapping_reports)
 from polyhost.device.cmd_composer import compose_cmd, compose_request, expect, compose_cmd_str, compose_roi_header, expectReq
-from polyhost.device.command_ids import Cmd, HidId, IdleStyle, OsType, GlyphScript, GlyphSize
+from polyhost.device.command_ids import Cmd, HidId, IdleStyle, IdleTimeout, OsType, GlyphScript, GlyphSize
 from polyhost.device.hid_helper import HidHelper
 from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_generation
 from polyhost.device.im_converter import ImageConverter
@@ -76,6 +76,11 @@ CRASH_RECORD_MIN_PROTOCOL = 16
 # Used at Windows logon, where an absent wincompose.exe cannot yet be told apart
 # from one that has not started — see PolyCore._unicode_mode_is_ambiguous.
 UNICODE_MODE_VOLATILE_MIN_PROTOCOL = 17
+# Minimum firmware PROTOCOL_VERSION for the idle-TIMEOUT command (cmd 40): how long
+# the keyboard waits without a key event before fading into the idle style. Below
+# this the delay is the firmware's old compile-time constant (2 minutes) and there
+# is nothing to read or set, so the menu greys out rather than NACKing at runtime.
+IDLE_TIMEOUT_MIN_PROTOCOL = 18
 
 # Feature name -> minimum firmware PROTOCOL_VERSION that supports it. This is the
 # single source of truth for per-feature gating: the host connects across a range
@@ -96,6 +101,7 @@ FEATURE_MIN_PROTOCOL = {
     "macros": MACRO_MIN_PROTOCOL,
     "crash_record": CRASH_RECORD_MIN_PROTOCOL,
     "unicode_mode_volatile": UNICODE_MODE_VOLATILE_MIN_PROTOCOL,
+    "idle_timeout": IDLE_TIMEOUT_MIN_PROTOCOL,
 }
 
 # The lowest firmware protocol the host can talk to at all: below this it cannot
@@ -545,6 +551,61 @@ class PolyKybd:
         except Exception:
             pass
         return False, 0
+
+    def _idle_timeout_supported(self) -> bool:
+        return self.supports("idle_timeout")
+
+    def set_idle_timeout(self, value: IdleTimeout | int) -> tuple[bool, Any]:
+        """Select how long the keyboard waits before going idle (cmd 40, v18+).
+
+        The firmware persists it to EEPROM (flushed at the next suspend/store), so
+        it survives reboots. The range is CLOSED — an unknown preset is NACKed, not
+        ignored — so an out-of-enum value is refused HERE rather than sent; see the
+        enum's docstring for why this differs from GlyphScript.
+
+        ⚠️ The ACK marker is checked, not just the reply prefix. `expect()` matches
+        only the two `P<cmd>` bytes, which a NACK carries too, so
+        `send_and_read_validate` alone reports the firmware's refusal as success."""
+        try:
+            v = IdleTimeout(value.value if isinstance(value, IdleTimeout)
+                            else int(value)).value
+        except (ValueError, TypeError):
+            return False, (f"{value!r} is not an idle-timeout preset "
+                           f"(0..{len(IdleTimeout) - 1})")
+        if not self._idle_timeout_supported():
+            return False, (
+                f"Firmware protocol too old for the idle timeout "
+                f"(need v{IDLE_TIMEOUT_MIN_PROTOCOL}+). Please update the PolyKybd firmware.")
+        self.log.info("Setting idle timeout to preset %d...", v)
+        result, reply = self.hid.send_and_read_validate(
+            compose_cmd(Cmd.IDLE_TIMEOUT, v), 100, expect(Cmd.IDLE_TIMEOUT))
+        if result and not (len(reply) > 2 and reply[2:3] == b'.'):
+            return False, "The keyboard refused that idle-timeout preset"
+        return result, reply
+
+    def get_idle_timeout(self) -> tuple[bool, tuple[int, int]]:
+        """Read the current idle timeout as (preset index, seconds).
+
+        The seconds come from the KEYBOARD rather than this host's IdleTimeout
+        table, so a firmware that adds a preset this host has never heard of still
+        renders as a duration instead of a bare index."""
+        if not self._idle_timeout_supported():
+            return False, (0, 0)
+        try:
+            result, reply = self.hid.send_and_read_validate(
+                compose_cmd(Cmd.IDLE_TIMEOUT, 0xFF), 100, expect(Cmd.IDLE_TIMEOUT))
+            if result and len(reply) > 5 and reply[2:3] == b'.':
+                seconds = reply[4] | (reply[5] << 8)
+                return True, (reply[3], seconds)
+        except Exception as e:
+            # A read failure here is not an error worth raising: every caller is a
+            # UI refresh (the tray submenu, `polyctl idle-timeout`) that treats
+            # (False, ...) as "leave it unchecked / say nothing", and the device can
+            # legitimately be mid-flash, suspended or unplugged between the gate
+            # above and this round trip. Logged rather than silently swallowed, so a
+            # keyboard that answers this command but not others is still traceable.
+            self.log.debug("Could not read the idle timeout (%s: %s)", type(e).__name__, e)
+        return False, (0, 0)
 
     def _glyph_script_supported(self) -> bool:
         return self.supports("glyph_script")

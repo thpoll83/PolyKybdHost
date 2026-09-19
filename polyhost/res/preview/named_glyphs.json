@@ -1,5 +1,5 @@
 {
- "fw_version": "0.23.3",
+ "fw_version": "0.26.0",
  "named": {
   "ACUTE_ACCENT": [
    180
@@ -2895,6 +2895,10 @@
    66,
    12
   ],
+  "HINT_POS_IDLECLK": [
+   76,
+   1
+  ],
   "HINT_POS_RUNBOX": [
    54,
    1
@@ -3268,6 +3272,9 @@
   ],
   "ICON_CLIP_HISTORY": [
    128220
+  ],
+  "ICON_CLOCK_2": [
+   128337
   ],
   "ICON_CLOSE": [
    8864

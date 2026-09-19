@@ -2,6 +2,7 @@ import unittest
 from unittest import mock
 
 from polyhost.device.device_settings import DeviceSettings
+from polyhost.device.command_ids import IdleTimeout
 from polyhost.device.poly_kybd_mock import PolyKybdMock
 from polyhost.input.unicode_input import InputMethod
 
@@ -463,6 +464,39 @@ class TestPolyKybdMockCallLog(unittest.TestCase):
         self.mock.press_key(0x05)
         self.mock.release_key(0x04)
         self.assertEqual(len(self.mock.calls), 3)
+
+
+class TestPolyKybdMockIdleTimeout(unittest.TestCase):
+    """The mock refuses what the firmware refuses.
+
+    The preset range is CLOSED — cmd 40 NACKs a value outside the enum — so a mock
+    that banked any integer and answered True would let a caller (or a test) pass
+    against behaviour no real keyboard has.
+    """
+
+    def setUp(self):
+        self.mock = make_mock()
+
+    def test_a_valid_preset_round_trips(self):
+        ok, _ = self.mock.set_idle_timeout(IdleTimeout.SEC_45)
+        self.assertTrue(ok)
+        ok, (preset, seconds) = self.mock.get_idle_timeout()
+        self.assertTrue(ok)
+        self.assertEqual((preset, seconds), (IdleTimeout.SEC_45.value, 45))
+
+    def test_the_default_is_the_firmware_default(self):
+        ok, (preset, seconds) = self.mock.get_idle_timeout()
+        self.assertTrue(ok)
+        self.assertEqual((preset, seconds), (IdleTimeout.MIN_2.value, 120))
+
+    def test_an_unknown_preset_is_refused_and_not_stored(self):
+        self.mock.set_idle_timeout(IdleTimeout.SEC_30)
+        for bad in (99, -1, len(IdleTimeout), "2min"):
+            with self.subTest(value=bad):
+                ok, _ = self.mock.set_idle_timeout(bad)
+                self.assertFalse(ok)
+        _, (preset, _) = self.mock.get_idle_timeout()
+        self.assertEqual(preset, IdleTimeout.SEC_30.value)
 
 
 if __name__ == "__main__":

@@ -74,7 +74,65 @@ class Cmd(Enum):
     # 1 = the slave's last pulled record, 2 = clear the archive. Reply body is
     # [flags][48-byte poly_crash_record_t] — see services/crash_report.py.
     CRASH_RECORD = 39
+    # Idle TIMEOUT (protocol v18+): how long the keyboard sits without a key event
+    # before it starts fading into the idle style. data[2] = 0xFF queries, otherwise
+    # it is an IdleTimeout preset. The reply carries the preset AND its duration in
+    # seconds (see IdleTimeout.label_for), so a host older than a firmware that adds
+    # a preset can still name what it reads back.
+    IDLE_TIMEOUT = 40
 
+
+
+class IdleTimeout(Enum):
+    """How long before the keyboard goes idle — mirrors the firmware's
+    poly_idle_timeout (HID cmd 40, protocol v18+).
+
+    This replaces what was a compile-time constant in the firmware (FADE_OUT_TIME,
+    2 minutes on every board), so MIN_2 is both the default and what an untouched
+    keyboard has always done.
+
+    A CLOSED set, like GlyphSize and unlike GlyphScript: the firmware NACKs a value
+    it does not know. An unknown glyph SCRIPT harmlessly falls through to the normal
+    legend, which is what lets this host offer faces a keyboard lacks; an unknown
+    TIMEOUT would be stored and persisted and then silently resolved to some other
+    duration. So do not send a value that is not in this enum.
+
+    Values are append-only and shared on the wire — never reorder.
+    """
+
+    SEC_15 = 0
+    SEC_30 = 1
+    SEC_45 = 2
+    MIN_1 = 3
+    MIN_2 = 4   # the firmware default, and what FADE_OUT_TIME always was
+    MIN_5 = 5
+
+    @property
+    def seconds(self) -> int:
+        """The preset's duration. Kept here so the CLI, the tray and the tests all
+        say the same thing; the firmware reports its own seconds in the cmd 40 reply
+        and that is what labels a preset this host has never heard of."""
+        return {0: 15, 1: 30, 2: 45, 3: 60, 4: 120, 5: 300}[self.value]
+
+    @property
+    def label(self) -> str:
+        return self.label_for(self.value, self.seconds)
+
+    @staticmethod
+    def label_for(value: int, seconds: int | None = None) -> str:
+        """Human label for a preset INDEX, using the seconds the keyboard reported
+        when this host does not know the index. That is the whole reason cmd 40
+        replies with a duration: a firmware newer than the host can add a preset,
+        and the menu should read "10 min" rather than "preset 6"."""
+        if seconds is None:
+            try:
+                seconds = IdleTimeout(value).seconds
+            except ValueError:
+                return f"preset {value}"
+        if seconds % 60 == 0 and seconds >= 60:
+            minutes = seconds // 60
+            return f"{minutes} min"
+        return f"{seconds} sec"
 
 
 class MacroStyle(Enum):

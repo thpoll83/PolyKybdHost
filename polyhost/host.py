@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, )
 
 from polyhost.core.events import flash_kind_label
-from polyhost.device.command_ids import IdleStyle, GlyphScript, GlyphSize
+from polyhost.device.command_ids import IdleStyle, IdleTimeout, GlyphScript, GlyphSize
 from polyhost.gui.file_dialogs import get_open_file_name
 from polyhost.gui.get_icon import get_icon
 from polyhost.services import log_bundle
@@ -528,6 +528,30 @@ class PolyHost(QApplication):
             self.idle_style_menu.addAction(act)
         # noinspection PyUnresolvedReferences
         self.idle_style_menu.aboutToShow.connect(self.refresh_idle_style_menu)
+
+        # Idle TIMEOUT (firmware v18+): how long before the style above engages.
+        # NESTED inside "Idle Display" rather than added as a twelfth top-level row:
+        # the tray's normal tier is a deliberately short list whose exact shape
+        # tests/gui/host_client_test.py pins, and "which idle animation" and "how
+        # long until it starts" are the same question asked twice. It carries its
+        # OWN protocol gate below, because a keyboard can support the styles (v4+)
+        # and not the timeout (v18+), in which case this one submenu greys out and
+        # the styles above it keep working.
+        self.idle_style_menu.addSeparator()
+        self.idle_timeout_menu = self.idle_style_menu.addMenu("Idle After")
+        idle_timeout_group = QActionGroup(self)
+        idle_timeout_group.setExclusive(True)
+        self.idle_timeout_actions = []
+        for preset in IdleTimeout:
+            act = QAction(preset.label, parent=self, checkable=True)
+            act.setData(preset.value)
+            idle_timeout_group.addAction(act)
+            # noinspection PyUnresolvedReferences
+            act.triggered.connect(self.change_idle_timeout)
+            self.idle_timeout_menu.addAction(act)
+            self.idle_timeout_actions.append(act)
+        # noinspection PyUnresolvedReferences
+        self.idle_timeout_menu.aboutToShow.connect(self.refresh_idle_timeout_menu)
 
         # Glyph-script override (firmware v9+). Same device-coupled pattern as the
         # idle style. Named "Keycap Script" in the menu: "glyph script" is our
@@ -1089,6 +1113,9 @@ class PolyHost(QApplication):
         # whose firmware support is missing instead of letting them error on click
         # (the blanket loop above already set them to `enabled`).
         self.idle_style_menu.menuAction().setEnabled(enabled and self.supports("idle_style"))
+        # Nested inside the one above, so the blanket top-level loop never touches it
+        # and its own (later) protocol gate is the only thing that decides.
+        self.idle_timeout_menu.menuAction().setEnabled(enabled and self.supports("idle_timeout"))
         self.glyph_script_menu.menuAction().setEnabled(enabled and self.supports("glyph_script"))
         self.glyph_size_menu.menuAction().setEnabled(enabled and self.supports("glyph_size"))
         # The Developer parent stays enabled UNCONDITIONALLY: several of its
@@ -1909,6 +1936,26 @@ class PolyHost(QApplication):
             # checkmark to the device's actual style so the menu doesn't lie.
             self.report_device_result("Error", f"Could not set idle style: {msg}")
             self.refresh_idle_style_menu()
+
+    def refresh_idle_timeout_menu(self):
+        # Same shape as refresh_idle_style_menu: read the device, tick the match,
+        # and on failure leave everything unchecked rather than guessing.
+        ok, value = self.core.get_idle_timeout()
+        # (preset, seconds) in-process; JSON turns it into a list over RPC.
+        preset = value[0] if ok and value else None
+        for act in self.idle_timeout_actions:
+            act.setChecked(bool(ok) and act.data() == preset)
+
+    def change_idle_timeout(self):
+        value = self.sender().data()
+        ok, msg = self.core.set_idle_timeout(value)
+        if ok:
+            self.log.info("Idle timeout set to %s.", IdleTimeout(value).label)
+        else:
+            # Firmware too old (needs v18+) or device busy — log and re-sync the
+            # checkmark to the device's actual value so the menu doesn't lie.
+            self.report_device_result("Error", f"Could not set idle timeout: {msg}")
+            self.refresh_idle_timeout_menu()
 
     def _build_glyph_script_previews(self):
         # Give each entry a preview of its own script, rendered from the shipped
