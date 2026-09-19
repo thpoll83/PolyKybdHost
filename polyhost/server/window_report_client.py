@@ -8,6 +8,7 @@ The connect is bounded by a socket timeout (the forwarder polls on the Qt main
 thread, so a stuck connect must not freeze the tray), and the request/response
 wait is bounded with ``conn.poll``.
 """
+import base64
 import socket
 
 from multiprocessing.connection import Connection, answer_challenge, deliver_challenge
@@ -36,12 +37,34 @@ class WindowReportClient:
         if not ok:
             raise WindowReportError(why)
 
-    def report(self, handle, name, title, os=None, url=None):
+    def report(self, handle, name, title, os=None, url=None,
+               names=None, icon_key=None, icon=None, shortcuts=None):
         """Send one window report; raise WindowReportError on failure/timeout.
 
         ``os`` (optional, an OsType value int) lets the forwarder forward its host
         OS; omitted from the params when None so the field is simply absent for
-        forwarders that do not forward their OS."""
+        forwarders that do not forward their OS.
+
+        ``names`` / ``icon_key`` / ``icon`` carry the forwarder's LOCAL answer to
+        "what application is this?" -- the display names the OS gave it, a stable
+        identity for the icon it found, and (only when the receiver asked) the
+        icon bytes themselves.
+
+        ⚠️ They exist because the receiver CANNOT work any of this out. The app
+        runs on the forwarder's machine, so its `.desktop` entry / PE resources
+        and its pid live there; a keyboard machine running Windows has no
+        `.desktop` files at all. Resolving on the receiving side reads the wrong
+        computer's OS.
+
+        ``shortcuts`` is the same story for the app's KEYBOARD SHORTCUTS: they
+        come out of the accessibility tree of a process on the forwarder's
+        machine, so the keyboard machine cannot read them at all. It is a list
+        of ``[mods, hid, label]`` triples -- see `services.shortcut_relay` for
+        why the wire carries text and not rendered masks.
+
+        Returns the response result dict, whose ``want_icon`` / ``want_shortcuts``
+        tell the caller whether to attach ``icon`` / ``shortcuts`` next time
+        round."""
         req_id = self._next_id
         self._next_id += 1
         params = {"handle": str(handle), "name": str(name), "title": str(title)}
@@ -51,6 +74,22 @@ class WindowReportClient:
         # and a newer one reads None when an older forwarder omits it.
         if url is not None:
             params["url"] = str(url)
+        # Same optional-in-both-directions contract as `url` above. ⚠️ `icon` is
+        # base64 TEXT, not raw bytes: this frame is JSON, and it is sent only on
+        # the report after the receiver answered `want_icon`, so the per-focus
+        # path stays text-only and small.
+        if names:
+            params["names"] = [str(n) for n in names]
+        if icon_key is not None:
+            params["icon_key"] = str(icon_key)
+        if icon:
+            params["icon"] = base64.b64encode(icon).decode("ascii")
+        # ⚠️ `is not None`, not truthiness: an EMPTY list is a real answer ("this
+        # app exposes no accelerators") and the one that stops the receiver
+        # asking on every report. Dropping it would re-ask forever.
+        if shortcuts is not None:
+            params["shortcuts"] = [[int(m), int(k), str(t)]
+                                   for m, k, t in shortcuts]
         p.send_message(self._conn, p.make_request(
             req_id, p.M_WINDOW_REPORT, params))
         while True:
@@ -98,7 +137,8 @@ class WindowReportSession:
         """The host the open connection points at, or None when not connected."""
         return self._host
 
-    def report(self, host, handle, name, title, os=None, url=None):
+    def report(self, host, handle, name, title, os=None, url=None,
+               names=None, icon_key=None, icon=None, shortcuts=None):
         """Send one report to ``host``, (re)connecting as needed.
 
         Raises whatever the connect or the report raised, having closed the
@@ -111,7 +151,9 @@ class WindowReportSession:
                 self._client = self._connect(
                     host, self._port, self._authkey, self._timeout)
                 self._host = host
-            return self._client.report(handle, name, title, os=os, url=url)
+            return self._client.report(handle, name, title, os=os, url=url,
+                                       names=names, icon_key=icon_key, icon=icon,
+                                       shortcuts=shortcuts)
         except Exception:
             self.close()
             raise

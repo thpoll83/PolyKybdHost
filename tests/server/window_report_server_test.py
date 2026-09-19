@@ -58,10 +58,18 @@ class WindowReportServerTest(unittest.TestCase):
         except Exception:
             pass
 
-    def _on_report(self, handle, name, title, os=None, url=None):
+    def _on_report(self, handle, name, title, os=None, url=None,
+                   names=(), icon_key=None, icon=None, shortcuts=None):
         self.reports.append((handle, name, title))
         self.last_os = os
         self.last_url = url
+        # Recorded, not swallowed by **kwargs: the point of the double is to
+        # assert what the server forwards, and a catch-all would pass whatever
+        # the server sent -- including nothing.
+        self.last_names = names
+        self.last_icon_key = icon_key
+        self.last_icon = icon
+        self.last_shortcuts = shortcuts
         return self.report_result
 
     def _client(self, authkey=None):
@@ -74,7 +82,11 @@ class WindowReportServerTest(unittest.TestCase):
     def test_report_reaches_callback(self):
         c = self._client()
         result = c.report(1234, "code.exe", "main.py - VS Code")
-        self.assertEqual(result, {"ok": True})
+        # The sink's payload is merged into the result, not discarded: the
+        # double returns PolyCore's real (ok, payload) tuple, and `want_icon`
+        # rides that payload. Asserting a bare {"ok": True} here is what let
+        # the dict-only merge look correct while dropping every field.
+        self.assertEqual(result, {"ok": True, "reported": True})
         self.assertEqual(self.reports, [("1234", "code.exe", "main.py - VS Code")])
         self.assertIsNone(self.last_os)  # no os field -> callback gets None
 

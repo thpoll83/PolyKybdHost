@@ -13,6 +13,7 @@ active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
 """
 import unittest
+from unittest.mock import MagicMock
 
 try:
     from polyhost.handler.active_window import OverlayHandler
@@ -20,6 +21,59 @@ try:
     _IMPORT_ERR = None
 except Exception as e:  # pragma: no cover - headless/no-display env
     _IMPORT_ERR = e
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TestCoveredByTemplate(unittest.TestCase):
+    """What the generic fall-back asks before standing down."""
+
+    def _handler(self):
+        return OverlayHandler({})
+
+    def _entry(self, *, overlay=True, remote=False):
+        from polyhost.handler.common import FLAGS, Flags
+        from polyhost.handler.active_window import OVERLAY
+        flags = [False] * len(Flags)
+        flags[Flags.HAS_OVERLAY.value] = overlay
+        flags[Flags.HAS_REMOTE.value] = remote
+        entry = {FLAGS: flags}
+        if overlay:
+            entry[OVERLAY] = ["gimp.mods.png"]
+        return entry
+
+    def test_a_matched_overlay_entry_COVERS_the_window(self):
+        h = self._handler()
+        h.current_entry = self._entry()
+        self.assertTrue(h.covered_by_template())
+
+    def test_nothing_matched_covers_NOTHING(self):
+        h = self._handler()
+        h.current_entry = None
+        h.remote_handler.has_overlay = lambda: False
+        self.assertFalse(h.covered_by_template())
+
+    def test_a_matched_entry_with_NO_overlay_covers_nothing(self):
+        # A mapping entry can match on title alone and carry no overlay set, so
+        # `current_entry` being truthy is NOT the question -- which is why this
+        # is answered from `get_overlay_data()` rather than from that attribute.
+        h = self._handler()
+        h.current_entry = self._entry(overlay=False)
+        h.remote_handler.has_overlay = lambda: False
+        self.assertFalse(h.covered_by_template())
+
+    def test_it_survives_the_tick_that_reports_NO_change(self):
+        # ⚠️ The regression this exists for. `handle_active_window` returns the
+        # filenames only on the tick the window CHANGES; the caller must still be
+        # able to learn, on every tick after that, that a template is live.
+        h = self._handler()
+        h._decide_active_window = lambda *a: (["gimp.mods.png"], OverlayCommand.OFF_ON)
+        h.current_entry = self._entry()
+        data, cmd = h.handle_active_window(0, 0)
+        self.assertEqual(cmd, OverlayCommand.OFF_ON)
+        h._decide_active_window = lambda *a: (None, OverlayCommand.NONE)
+        data, cmd = h.handle_active_window(0, 0)
+        self.assertIsNone(data)                     # the tell the caller used
+        self.assertTrue(h.covered_by_template())    # the tell it should use
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
@@ -120,6 +174,45 @@ class TestReEnableSuppression(unittest.TestCase):
         # suppressed.
         h.force_resend()
         self.assertFalse(h.overlays_enabled)
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class FocusedAppTest(unittest.TestCase):
+    """`OverlayHandler.focused_app` — name and identity from ONE place."""
+
+    def _handler(self):
+        handler = OverlayHandler.__new__(OverlayHandler)
+        handler.app_name = "gimp"
+        handler.remote_handler = None
+        return handler
+
+    def test_a_LOCAL_window_answers_its_own_name_and_NO_identity(self):
+        handler = self._handler()
+        handler.is_remote_mapping_entry = lambda: False
+        self.assertEqual(handler.focused_app(), ("gimp", None))
+
+    def test_a_FORWARDED_window_answers_the_REMOTE_name_and_its_identity(self):
+        """⚠️ The whole point of the seam: the app runs on the other machine, so
+        the local `app_name` names the wrong thing. Answering it would draw the
+        forwarder's own window mark on a forwarded app."""
+        remote = MagicMock()
+        remote.name = "Code.exe"
+        remote.forwarded_identity.return_value = "IDENTITY"
+        handler = self._handler()
+        handler.remote_handler = remote
+        handler.is_remote_mapping_entry = lambda: True
+        self.assertEqual(handler.focused_app(), ("Code.exe", "IDENTITY"))
+        remote.forwarded_identity.assert_called_once_with("Code.exe")
+
+    def test_a_FORWARDED_window_with_NO_name_yet_answers_NOTHING(self):
+        """⚠️ Not the local name as a fallback. A report can arrive before the
+        name does, and falling back would draw the wrong app's mark for one
+        tick -- which the signature would then latch as already sent."""
+        remote = MagicMock()
+        remote.name = None
+        handler = self._handler()
+        handler.remote_handler = remote
+        handler.is_remote_mapping_entry = lambda: True
+        self.assertEqual(handler.focused_app(), (None, None))
 
 
 if __name__ == "__main__":

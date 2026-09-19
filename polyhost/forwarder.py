@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -18,6 +19,8 @@ from PyQt5.QtWidgets import (
     QProgressDialog)
 from polyhost._version import __version__, __protocol__
 from polyhost.services import problem_report
+from polyhost.services.relay_health import RelayHealth
+from polyhost.services import shortcut_relay
 from polyhost.gui.get_icon import get_icon
 from polyhost.services import log_bundle
 from polyhost.gui import about_dialog
@@ -52,12 +55,13 @@ UPDATE_CYCLE_MSEC = 250
 NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 HEARTBEAT_MSEC = 15000  # resend current window state periodically so the host can catch up
 
+
 # The settings the forwarder actually acts on. It owns no keyboard, so the vast
 # majority of settings.yaml (brightness, unicode mode, font pack, daemon mode)
 # would be rows that silently do nothing on this machine — worse than no dialog
 # at all. `ui_theme` is read at startup here; the browser-URL keys drive
 # BrowserUrlSource, which the forwarder runs for the machine it sits on.
-FORWARDER_SETTING_KEYS = ("ui_theme",) + tuple(_URL_SETTINGS)
+FORWARDER_SETTING_KEYS = ("ui_theme", "shortcut_icons_enabled") + tuple(_URL_SETTINGS)
 
 from polyhost.util.log_util import DEBUG_DETAILED, make_stream_handler, make_collapse_handler  # noqa: F401  (registers debug_detailed on import)
 from polyhost.handler.active_window import log_env_info
@@ -176,6 +180,28 @@ class PolyForwarder(QApplication):
         # forwarder used to declare itself connected at startup and never
         # revisit it, whatever the socket did afterwards.
         self.relay_ok = None
+        # Should we attempt a report now, and is this failure worth a line?
+        # ⚠️ Pure and in its own module because THIS file cannot be tested (it
+        # imports pywinctl at module load), and the backoff/transition rules are
+        # exactly the part worth testing. The transport records a reason here
+        # and never logs it itself.
+        self._relay = RelayHealth()
+        self._send_error = None
+        # app name -> what the local OS says it is. One lookup per app; see
+        # _identity_for. Unbounded is fine here: the keys are app names from
+        # THIS machine's own window manager, not remote input.
+        self._identity_cache = {}
+        # The shortcuts THIS machine's accessibility tree exposes, per app --
+        # same one-lookup-per-app contract as `_identity_cache` and the same
+        # reason it is resolved here rather than on the keyboard machine: a
+        # forwarded app's tree is only readable from the computer running it.
+        #
+        # ⚠️ The logic lives in a Qt-free module because THIS file cannot be
+        # tested (it imports pywinctl at module load), and the three-state
+        # answer, the in-flight guard and the privacy gate are exactly the parts
+        # worth testing -- the same split as `RelayHealth` above.
+        self._shortcuts = shortcut_relay.RelaySource(
+            self.log, on_ready=self._shortcuts_ready)
         # Forwarding paused by the user. The window poll keeps running (so the
         # log still shows what is focused) but nothing leaves this machine —
         # this is the privacy switch, and it mirrors the tray app's Pause.
@@ -348,6 +374,9 @@ class PolyForwarder(QApplication):
             self.win = None
             self.title = None
             self.relay_ok = None
+            # ⚠️ And drop any backoff: pressing Resume must not sit out a 30 s
+            # retry timer left over from before the pause.
+            self._relay.reset()
         self.refresh_status()
 
     def set_style(self):
@@ -389,14 +418,153 @@ class PolyForwarder(QApplication):
             # machine, and a stale connection would keep serving the old one.
             if self._report_session is not None:
                 self._report_session.close()
-            return False
+            return self._note_send_failure("no host to report to")
+        ident = self._identity_for(name)
         try:
-            self._report_session.report(
-                host, handle, name, title, os=self._os_value, url=url)
+            result = self._report_session.report(
+                host, handle, name, title, os=self._os_value, url=url,
+                names=ident.get("names"), icon_key=ident.get("icon_key"))
+            # ⚠️ The RECEIVER decides, and it is asked on every report. See
+            # RemoteHandler._note_identity for why a sender-side "already sent"
+            # flag cannot be trusted: its daemon restarts, --host-file repoints
+            # us at a different machine, entries get evicted.
+            asked = result or {}
+            send_icon = bool(asked.get("want_icon") and ident.get("icon"))
+            # ⚠️ `None` means "not harvested yet", `[]` means "harvested, this
+            # app exposes nothing" -- and the difference is what stops the
+            # receiver asking forever. So the emptiness test below is
+            # `is not None`, never truthiness.
+            shortcuts = (self._shortcuts.shortcuts_for(name)
+                         if asked.get("want_shortcuts") else None)
+            if send_icon or shortcuts is not None:
+                # Follow up NOW rather than waiting for the next window change:
+                # otherwise the mark appears only once the user switches away
+                # and back, which reads as the feature not working.
+                #
+                # ⚠️ Guarded SEPARATELY, and the report above has already
+                # landed. This second call carries nothing the keyboard needs to
+                # track the window, so a rejected decoration must not be reported
+                # as a failed window report -- that is the tray mark going red
+                # and `send_to_host` retrying over a keycap decoration.
+                try:
+                    self._report_session.report(
+                        host, handle, name, title, os=self._os_value, url=url,
+                        names=ident.get("names"), icon_key=ident.get("icon_key"),
+                        icon=ident["icon"] if send_icon else None,
+                        shortcuts=shortcuts)
+                except Exception as e:
+                    # Drop it for this app rather than re-offering forever: the
+                    # receiver asks on every report, so an icon it will not
+                    # accept would otherwise be re-sent on every window change.
+                    self.log.warning(
+                        "Could not send the app icon/shortcuts for %r (%d B, %s"
+                        " shortcut(s)) to %s: %s -- window reporting is"
+                        " unaffected", name, len(ident.get("icon") or b""),
+                        "-" if shortcuts is None else len(shortcuts), host, e)
+                    # ⚠️ Only the half that was actually offered. Attributing a
+                    # failure to the icon when this call carried no icon would
+                    # throw away a good one over an unrelated refusal.
+                    if send_icon:
+                        ident.pop("icon", None)
+                        ident.pop("icon_key", None)
             return True
         except Exception as e:
-            self.log.error("Window-report RPC to %s failed: %s", host, e)
-            return False
+            return self._note_send_failure("RPC to %s: %s" % (host, e))
+
+    def _identity_for(self, name):
+        """What THIS machine's OS says the app is -- cached, one lookup per app.
+
+        ⚠️ Resolved here because it cannot be resolved there. `app_identity`
+        reads a `.desktop` entry / PE resources and the process behind the
+        window, all of which exist only on the machine running the application;
+        the keyboard machine may not even be the same OS.
+
+        ⚠️ Cached because it does FILE I/O and this runs on the window tick. One
+        lookup per application, not per report -- the same reason
+        `AppIconFetcher` caches on the receiving side.
+
+        Never raises: a cosmetic feature must not break window reporting.
+        """
+        key = str(name or "")
+        if not key:
+            return {}
+        cached = self._identity_cache.get(key)
+        if cached is not None:
+            return cached
+        ident = {}
+        try:
+            from polyhost.services import os_app_icon
+            got = os_app_icon.app_identity(self._pid_for_window(), key)
+            if got.names:
+                ident["names"] = list(got.names)
+            if got.icon:
+                # ⚠️ SHRUNK before it goes anywhere near the wire. A stock VS
+                # Code icon is 512x512 / ~220 KB, which the window-report
+                # endpoint refuses outright (it bounds its one network-reachable
+                # method on purpose) -- so the whole report failed and the mark
+                # never arrived. The receiver reduces to a 38 px box regardless.
+                from polyhost.services import icon_binarise
+                icon = icon_binarise.shrink_for_transport(got.icon)
+                ident["icon"] = icon
+                # A content hash, so a theme change or an app update yields a
+                # DIFFERENT key and the receiver re-fetches. A path would not.
+                # Taken over the bytes we SEND, so the key names what the
+                # receiver actually holds.
+                ident["icon_key"] = hashlib.sha256(icon).hexdigest()[:16]
+                self.log.info(
+                    "App identity for %r: icon %s %d B (%d B on disk), key %s,"
+                    " names=%s", key, got.icon_path or "<no path>", len(icon),
+                    len(got.icon), ident["icon_key"],
+                    ", ".join(got.names) or "<none>")
+        except Exception as e:
+            self.log.debug("No OS identity for %r: %s", key, e)
+        if not ident.get("icon"):
+            # ⚠️ Said out loud because the keyboard machine cannot say it. When
+            # no icon travels, the daemon has only the names to work with and
+            # its log reports a CATALOG miss -- which reads as "the catalog is
+            # thin" when the real answer is that this machine never found an
+            # icon to send.
+            self.log.info("App identity for %r: no icon to send, names=%s",
+                          key, ", ".join(ident.get("names") or ()) or "<none>")
+        self._identity_cache[key] = ident
+        return ident
+
+    def _shortcuts_ready(self, name):
+        """A harvest finished; make the next poll re-send so it goes out now.
+
+        ⚠️ Nudges the heartbeat rather than waiting it out. The receiver only
+        learns the answer on the next report, and plain waiting is up to
+        HEARTBEAT_MSEC (15 s) of a focused app with no icons -- which reads as
+        the feature not working. The poll may reset the counter first, in which
+        case the real heartbeat still delivers, so this is an accelerator and
+        never the only path.
+        """
+        self.heartbeat_msec = HEARTBEAT_MSEC
+
+    def _pid_for_window(self):
+        """The focused window's pid, or 0.
+
+        ⚠️ `app_identity` uses it to read `/proc/<pid>/exe`, which is the ONLY
+        rank that resolves an app whose desktop-entry stem does not reduce to its
+        process name -- measured: GNOME Text Editor reports the comm
+        `gnome-text-edit` (kernel-truncated at 15) and resolves through the exe
+        alone.
+        """
+        try:
+            return int(self.win._win.getPid()) if self.win is not None else 0
+        except Exception:
+            return 0
+
+    def _note_send_failure(self, reason: str) -> bool:
+        """Record WHY a report failed. Always returns False, and never logs.
+
+        ⚠️ Deliberately silent. Every transport path used to log its own ERROR,
+        which is correct once and wrong on the two-hundredth consecutive
+        attempt; `RelayHealth` owns the up/down transition and so is the only
+        thing that can tell those apart.
+        """
+        self._send_error = reason
+        return False
 
     def send_to_host(self, handle, title, name, url=None):
         """Report one window, and record whether it landed.
@@ -404,12 +572,33 @@ class PolyForwarder(QApplication):
         The status row and the tray mark read `relay_ok`, so every exit path of
         the transport below has to run through here — that is why the actual
         socket work sits in _send_to_host and this wrapper does nothing but
-        remember the verdict."""
+        remember the verdict.
+
+        ⚠️ It also SKIPS the attempt while the relay is backing off. That is not
+        only about the log: the attempt blocks the window poll for the whole
+        socket timeout, so a dead daemon used to stall the tick by 3 s on every
+        focus change. The cost is that a window change during the backoff is not
+        reported — harmless, because the heartbeat re-sends the current window
+        within HEARTBEAT_MSEC of the relay coming back.
+        """
+        now = time.monotonic()
+        if not self._relay.should_attempt(now):
+            self._say(self._relay.tick(now))
+            return False
         ok = self._send_to_host(handle, title, name, url=url)
+        self._say(self._relay.note(ok, now, self._send_error))
         if ok != self.relay_ok:
             self.relay_ok = ok
             self.refresh_status()
         return ok
+
+    def _say(self, verdict) -> None:
+        """Emit what RelayHealth decided is worth saying, naming the host."""
+        if not verdict:
+            return
+        level, message = verdict
+        getattr(self.log, level)(
+            "Window %s (%s)", message, self._resolve_host() or "no host set")
 
     def _send_to_host(self, handle, title, name, url=None):
         # ⚠️ `url` rides the authenticated RPC path ONLY. The legacy relay's
@@ -421,14 +610,13 @@ class PolyForwarder(QApplication):
             return self._send_via_rpc(handle, title, name, url=url)
         host = self._resolve_host()
         if not host:
-            return False
+            return self._note_send_failure("no host to report to")
         try:
             ip = ipaddress.ip_address(host)
         except ValueError:
             ip = socket.gethostbyname(host)
         except OSError as err:
-            self.log.error("Could not resolve %s: %s", host, err)
-            return False
+            return self._note_send_failure("could not resolve %s: %s" % (host, err))
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(3.0)
@@ -439,16 +627,15 @@ class PolyForwarder(QApplication):
             s.close()
             return True
         except socket.timeout as err:
-            self.log.error("Connection timed out: %s",err)
+            return self._note_send_failure("connection timed out: %s" % err)
         except ConnectionRefusedError as err:
-            self.log.error("Connection refused: %s", err)
+            return self._note_send_failure("connection refused: %s" % err)
         except ConnectionAbortedError as err:
-            self.log.error("Connection aborted: %s", err)
+            return self._note_send_failure("connection aborted: %s" % err)
         except ConnectionResetError as err:
-            self.log.error("Connection reset: %s", err)
+            return self._note_send_failure("connection reset: %s" % err)
         except ConnectionError as err:
-            self.log.error("Connection error: %s", err)
-        return False
+            return self._note_send_failure("connection error: %s" % err)
 
     def _diagnostics_text(self) -> str:
         """Diagnostics for a forwarder report.
