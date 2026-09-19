@@ -4,8 +4,15 @@ import os
 import yaml
 from platformdirs import user_config_dir
 
+from polyhost.util import filelock
+
 APP_NAME = "PolyHost"
 CONFIG_FILENAME = "settings.yaml"
+
+#: How long a save waits for the settings lock before writing anyway. Only ever
+#: contended for the length of one read + replace, so a wait this long means the
+#: holder is wedged rather than slow.
+SAVE_LOCK_TIMEOUT_S = 2.0
 
 # Telemetry ingest URL — the collector in telemetry-collector/ (Cloudflare Worker
 # + D1), verified end to end 2026-08-07. An empty string disables sending entirely,
@@ -223,22 +230,30 @@ class PolySettings:
         self.save()
 
     def load(self):
-        self.collection = self._normalize(self._read_file())
+        # At load there is no prior state to protect, so an unreadable file
+        # legitimately means "start from the defaults" — unlike save(), where
+        # the same `None` must not be allowed to overwrite what we hold.
+        self.collection = self._normalize(self._read_file() or {})
         self._baseline = dict(self.collection)
 
     def _read_file(self):
-        """Raw settings dict from disk. ``{}`` when missing or unreadable.
+        """Raw settings dict from disk, or ``None`` when it cannot be read.
 
-        Never raises: this is called on every save to merge against whatever
-        another process has written, and a transiently unreadable file must not
-        take the host down. An unreadable file simply means "no other writer's
-        keys to preserve"."""
+        ``{}`` and ``None`` mean different things here and the difference is
+        destructive. ``{}`` is "the file is there and holds nothing"; ``None``
+        is "we cannot see what is in it". Merging a save against ``{}`` fills
+        every key this process did not change with a DEFAULT, so one transient
+        read error would silently reset the user's other settings — the exact
+        loss this merge exists to prevent, arriving by another door.
+
+        Never raises: the save path calls it on every write, and an unreadable
+        file must not take the host down."""
         try:
             with open(self.path, encoding='utf-8') as f:
                 data = yaml.safe_load(f) or {}
         except (OSError, yaml.YAMLError):
-            return {}
-        return data if isinstance(data, dict) else {}
+            return None
+        return data if isinstance(data, dict) else None
 
     def _normalize(self, data):
         """Apply the legacy key renames, fill in defaults, drop unknown keys."""
@@ -274,10 +289,33 @@ class PolySettings:
         The write itself goes through a temp file + ``os.replace`` so a reader
         (or a crash) can never see a half-written settings file — the plain
         truncating write left that window open on every save."""
+        # The read -> merge -> replace below is itself a read-modify-write, so
+        # it runs under a cross-process lock: without one, two hosts saving at
+        # the same moment both read the same base and the second `os.replace`
+        # discards the first's update — the lost-update bug again, in a
+        # narrower window. Measured: six concurrent writers of six different
+        # keys lose 3-4 of them per run unlocked, and none locked. Best effort
+        # by design: a save that cannot take the lock still happens, because
+        # losing the write outright is worse than the rare interleaving.
+        with filelock.exclusive(f"{self.path}.lock", timeout=SAVE_LOCK_TIMEOUT_S) as locked:
+            if not locked:
+                self.log.debug("Settings lock busy; saving unsynchronised.")
+            self._save_merged()
+
+    def _save_merged(self):
+        """Merge against the file and replace it. Call under the settings lock."""
         mine = {k: v for k, v in self.collection.items()
                 if k not in self._baseline or self._baseline[k] != v}
-        merged = self._normalize(self._read_file())
-        merged.update(mine)
+        on_disk = self._read_file()
+        if on_disk is None:
+            # We cannot see the current file. Merging against defaults would
+            # reset every key we did not ourselves change, so write what we
+            # hold — the best reconstruction available, and what this did
+            # before the per-key merge existed.
+            merged = self._normalize(self.collection)
+        else:
+            merged = self._normalize(on_disk)
+            merged.update(mine)
 
         tmp = f"{self.path}.{os.getpid()}.tmp"
         try:

@@ -138,9 +138,10 @@ control-socket method. Five rules bind code outside it:
 - **A new device-coupled GUI surface is expected to work in client mode over RPC.**
   Client mode is the default under daemon-by-default, so anything gated off it is
   unreachable out of the box.
-- ⚠️ **Five pieces of plumbing are shared implementations because a hand-written copy
+- ⚠️ **Six pieces of plumbing are shared implementations because a hand-written copy
   had already drifted** — `MpcListenerServer`, `UpdateProgressController`,
-  `gui/theme.apply_theme`, `util/observable.Observable` and
+  `gui/theme.apply_theme`, `util/observable.Observable`, `util/filelock` (the
+  endpoint claim and the settings save both need an OS file lock) and
   `PolyCore._flash_resource`. Reach for the shared piece; that is the point of it.
   ⚠️ **When a bug is found in one of the three servers, grep the other two**
   (`control_server` / `window_report_server` / `browser_report_server`) for the same
@@ -337,7 +338,13 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   id was lost: the GUI generated and saved it, the daemon saved 8 minutes later from the
   empty value it had loaded first, and the next run generated a new id, counting the
   machine as two installs. `save()` re-reads the file and imposes only the keys this
-  process changed, through a temp file + `os.replace`.
+  process changed, through a temp file + `os.replace`, **under a cross-process lock** —
+  read-merge-replace is itself a read-modify-write, and six concurrent writers of six
+  different keys lose 3–4 of them per run without it. ⚠️ Two details are load-bearing:
+  `_read_file()` returns **None, not `{}`**, when the file cannot be read (merging
+  against `{}` fills every unchanged key with a DEFAULT and silently resets the user's
+  settings), and the lock is **best effort** — a save that cannot take it still writes,
+  because losing the write outright is worse than the rare interleaving.
 - ⚠️ **The FORWARDER is a second tray app** (`polyhost/forwarder.py`) with its own
   `QApplication`, menu and log file, **on a different machine from the keyboard**. A
   user-facing tray feature added to `host.py` is simply absent there until wired

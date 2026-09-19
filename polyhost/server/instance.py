@@ -23,6 +23,7 @@ import time
 from multiprocessing.connection import AuthenticationError, Client
 
 from polyhost.server import protocol
+from polyhost.util import filelock
 
 # probe_existing outcomes. Only STALE means "nothing is really there, safe to
 # unlink the socket and bind"; the other three all mean a real process owns the
@@ -108,27 +109,6 @@ class EndpointBusy(RuntimeError):
         self.outcome = outcome
 
 
-def _try_lock(fd) -> bool:
-    """Take an exclusive, non-blocking lock on ``fd``. False if held elsewhere.
-
-    An OS file lock, not a pid file: the kernel drops it when the holder dies
-    however it dies, so a crashed or killed host can never leave the endpoint
-    permanently unclaimable."""
-    if sys.platform == "win32":
-        import msvcrt
-        try:
-            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
-            return True
-        except OSError:
-            return False
-    import fcntl
-    try:
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return True
-    except OSError:
-        return False
-
-
 class InstanceClaim:
     """Proof that this process, and only this process, owns the endpoint.
 
@@ -146,20 +126,7 @@ class InstanceClaim:
         if self._fd is None:
             return
         fd, self._fd = self._fd, None
-        try:
-            if sys.platform == "win32":
-                import msvcrt
-                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
-            else:
-                import fcntl
-                fcntl.flock(fd, fcntl.LOCK_UN)
-        except OSError:
-            # Explicit unlocking is courtesy: the close below drops the lock
-            # regardless, and on Windows unlocking a region that was never
-            # locked (a claim abandoned before _try_lock succeeded) raises here
-            # by design. Either way there is nothing left to do and nothing
-            # worth failing a shutdown over.
-            pass
+        filelock.unlock(fd)
         try:
             os.close(fd)
         except OSError:
@@ -213,7 +180,7 @@ def claim_gui(timeout=GUI_CLAIM_WAIT_S) -> InstanceClaim:
     claim = InstanceClaim(fd, path)
     deadline = time.monotonic() + max(0.0, timeout)
     try:
-        while not _try_lock(fd):
+        while not filelock.try_lock(fd):
             if time.monotonic() >= deadline:
                 raise EndpointBusy(LOCKED)
             time.sleep(_GUI_CLAIM_POLL_S)
@@ -251,7 +218,7 @@ def claim_instance(address=None, authkey=None) -> InstanceClaim:
     # raised.
     claim = InstanceClaim(fd, path)
     try:
-        if not _try_lock(fd):
+        if not filelock.try_lock(fd):
             # Someone holds the lock. They may not have bound the endpoint yet,
             # so the probe is the better answer when it has one — LOCKED
             # otherwise.

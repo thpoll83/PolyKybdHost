@@ -169,13 +169,70 @@ class ConcurrentWriterTest(unittest.TestCase):
 
     def test_an_unreadable_file_does_not_break_a_save(self):
         """A save must never take the host down over a transiently unreadable
-        config — it just means there are no other writer's keys to preserve."""
+        config."""
         a = settings.PolySettings()
         with open(a.path, "w", encoding="utf-8") as f:
             f.write("{{{ not yaml")
         a.collection["hid_reconnect_retries"] = 5
         a.save()
         self.assertEqual(settings.read_setting("hid_reconnect_retries"), 5)
+
+    def test_an_unreadable_file_does_not_RESET_the_other_settings(self):
+        """`None` and `{}` from _read_file mean different things, and the
+        difference is destructive: merging against `{}` fills every key this
+        process did not change with a DEFAULT, so one transient read error
+        would silently reset the user's other settings (Greptile, #245)."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.collection["browser_report_port"] = 10000
+        a.save()
+
+        b = settings.PolySettings()          # loads both customised values
+        with open(b.path, "w", encoding="utf-8") as f:
+            f.write("{{{ not yaml")          # now the file cannot be read
+        b.collection["irradiance_gamma"] = b.collection.get("brightness_gamma")
+        b.collection["brightness_gamma"] = 2.0
+        b.save()
+
+        # The key we changed is persisted, and the two we did NOT change must
+        # survive as the user's values rather than snapping back to defaults.
+        self.assertEqual(settings.read_setting("brightness_gamma"), 2.0)
+        self.assertEqual(settings.read_setting("hid_reconnect_retries"), 9)
+        self.assertEqual(settings.read_setting("browser_report_port"), 10000)
+        self.assertNotEqual(a.defaults["hid_reconnect_retries"], 9)   # a real contrast
+
+    def test_a_save_holds_the_settings_lock(self):
+        """read -> merge -> replace is itself a read-modify-write: without a
+        cross-process lock two hosts saving at once both read the same base and
+        the second replace discards the first's update (Greptile, #245)."""
+        from polyhost.util import filelock
+
+        a = settings.PolySettings()
+        seen = []
+        real = filelock.try_lock
+
+        def _watch(fd):
+            got = real(fd)
+            seen.append(got)
+            return got
+
+        with mock.patch.object(filelock, "try_lock", _watch):
+            a.collection["hid_reconnect_retries"] = 6
+            a.save()
+        self.assertTrue(seen and seen[0], "save() did not take the settings lock")
+        self.assertEqual(settings.read_setting("hid_reconnect_retries"), 6)
+
+    def test_a_wedged_lock_still_lets_the_save_through(self):
+        """Best effort on purpose — losing a save to a stuck lock holder is
+        worse than the rare interleaving the lock prevents."""
+        from polyhost.util import filelock
+
+        a = settings.PolySettings()
+        with mock.patch.object(filelock, "try_lock", return_value=False), \
+             mock.patch.object(settings, "SAVE_LOCK_TIMEOUT_S", 0):
+            a.collection["hid_reconnect_retries"] = 7
+            a.save()
+        self.assertEqual(settings.read_setting("hid_reconnect_retries"), 7)
 
 
 
