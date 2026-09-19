@@ -141,9 +141,18 @@ class HeadlessHost:
             self.core.shutdown()
 
     def run(self):
-        """Start and block until a shutdown is requested (or KeyboardInterrupt)."""
-        self.start()
+        """Start and block until a shutdown is requested (or KeyboardInterrupt).
+
+        ``start()`` is INSIDE the try, not before it: it brings up several
+        services in sequence, and a failure partway through must still reach
+        ``stop()``. That matters more since the control server binds first — a
+        worker that fails to start would otherwise leave the endpoint bound and
+        its accept thread running with no teardown, which is the same shape as
+        the bug this file's start() ordering exists to fix. ``stop()`` is
+        idempotent and every piece it touches tolerates never having started.
+        """
         try:
+            self.start()
             while not self._stop.wait(0.5):
                 pass
         except KeyboardInterrupt:
