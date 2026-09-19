@@ -405,13 +405,30 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
             else:
                 slog.warning("Could not spawn the core daemon; running in-process instead.")
                 print("Could not start the core daemon; running in-process instead.")
-                # Re-probe before unlinking: the endpoint was last probed well
-                # before this deferred spawn attempt, and another process could
-                # have bound it meanwhile — only clear it if it's still stale.
-                from polyhost.server.instance import probe_existing, clear_stale_endpoint, STALE
-                if probe_existing() == STALE:
-                    clear_stale_endpoint()
-                client_mode, defer_connect = False, False
+                # CLAIM the endpoint before owning the device. This path skipped
+                # the claim block above (daemon_handled_instance was true), and a
+                # bare probe-then-clear is the same check-then-act the claim
+                # exists to remove: two GUIs whose daemon spawn both failed would
+                # both read the endpoint as stale, both unlink it and both open
+                # the keyboard. claim_instance does the probe and the clear
+                # itself, under the lock.
+                from polyhost.server.instance import claim_instance, EndpointBusy
+                busy_outcome = None
+                try:
+                    instance_claim = claim_instance()
+                except EndpointBusy as e:
+                    busy_outcome = e.outcome
+                fallback = dl.decide_spawn_failure_fallback(busy_outcome)
+                if fallback == dl.FALLBACK_IN_PROCESS:
+                    client_mode, defer_connect = False, False
+                elif fallback == dl.FALLBACK_CLIENT:
+                    slog.info("A core daemon is serving the endpoint after all; "
+                              "staying a client instead of going in-process.")
+                else:
+                    slog.warning("Control endpoint is in use (%s); exiting rather than "
+                                 "starting a second host.", busy_outcome)
+                    print("PolyKybdHost control endpoint is in use. Exiting.")
+                    sys.exit(0)
         if client_mode:
             slog.info("Launch path: GUI as client of a running core (endpoint=%s).",
                       endpoint or "default")

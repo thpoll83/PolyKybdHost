@@ -27,6 +27,25 @@ class TestDecideStartupMode(unittest.TestCase):
         self.assertEqual(dl.decide_startup_mode(inst.AUTH_MISMATCH, True), dl.DEFER)
 
 
+class TestDecideSpawnFailureFallback(unittest.TestCase):
+    """The deferred-spawn failure path skipped the startup claim, so it has to
+    claim before owning the device. A bare probe-then-clear there is the same
+    check-then-act two GUIs would both win (CodeRabbit, #244)."""
+
+    def test_a_successful_claim_means_we_own_the_device(self):
+        self.assertEqual(dl.decide_spawn_failure_fallback(None), dl.FALLBACK_IN_PROCESS)
+
+    def test_a_live_endpoint_means_attach_rather_than_fight(self):
+        # The one refusal that is good news: a core came up while we were
+        # failing to spawn one.
+        self.assertEqual(dl.decide_spawn_failure_fallback(inst.LIVE), dl.FALLBACK_CLIENT)
+
+    def test_every_other_owner_stands_the_second_host_down(self):
+        for outcome in (inst.LOCKED, inst.INCOMPATIBLE, inst.AUTH_MISMATCH):
+            with self.subTest(outcome=outcome):
+                self.assertEqual(dl.decide_spawn_failure_fallback(outcome), dl.FALLBACK_EXIT)
+
+
 class TestBuildArgv(unittest.TestCase):
     def test_argv_is_this_interpreter_headless(self):
         argv = dl.build_daemon_argv()
