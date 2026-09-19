@@ -397,3 +397,170 @@ def pick_win_binding(accelerator: str, access_key: str,
     if access_key and access_key.strip() and control_type in UIA_MENU_TYPES:
         return access_key.strip(), "menu"
     return None, ""
+
+
+# ---------------------------------------------------------------------------
+# macOS backend (Accessibility API)
+# ---------------------------------------------------------------------------
+#
+# The AX API is the only one of the three that hands back a STRUCTURED binding
+# rather than a string: an NSMenuItem's key equivalent arrives as a character
+# plus a modifier bitmask, so there is nothing to parse and nothing to localize.
+# That makes it exact in the way AT-SPI is and UIA is not.
+#
+# Three things about it are counter-intuitive enough to be worth stating before
+# the tables, because each one produces a CONFIDENTLY WRONG keycap rather than a
+# missing one:
+#
+#  1. ⚠️ **Command is IMPLIED, and bit 3 means its ABSENCE.** The mask is
+#     Carbon's `kMenu*Modifier` set, in which `kMenuNoCommandModifier` (0x08) is
+#     what says the Command key is NOT part of the chord. So a mask of 0 is
+#     ⌘ alone, and the naive reading -- "no bits, no modifiers" -- turns every
+#     ⌘-shortcut on the machine into a bare keypress.
+#
+#  2. ⚠️ **A menu DISPLAYS its letter in upper case whatever the binding is**,
+#     so `AXMenuItemCmdChar` is "S" for ⌘S and "S" for ⇧⌘S alike. Inferring
+#     Shift from the case of the character would therefore add Shift to
+#     essentially every shortcut on the platform. Shift comes from the MASK and
+#     from nowhere else.
+#
+#  3. ⚠️ **`AXMenuItemCmdVirtualKey` 0 is a real key** -- `kVK_ANSI_A` is 0x00 --
+#     so it has to be tested with `is None`, never for truthiness. Getting that
+#     wrong silently drops every ⌘A in existence.
+#
+# What is deliberately NOT here: `AXMenuItemCmdGlyph`, the pre-Cocoa mechanism
+# some Carbon-era apps still use instead of a character. Its `kMenu*Glyph`
+# constants could not be verified from this machine, and a wrong glyph number
+# does not fail -- it draws a real icon on the wrong keycap, which is worse than
+# drawing nothing. It is the first thing to add once somebody has a Mac in front
+# of them; `parse_mac_accel` takes the argument already and ignores it.
+
+# Carbon `kMenu*Modifier`, from Menus.h. Note 0x08 is an INVERTED flag; see (1).
+MAC_MOD_SHIFT = 0x01
+MAC_MOD_OPTION = 0x02
+MAC_MOD_CONTROL = 0x04
+MAC_MOD_NO_COMMAND = 0x08
+
+# AppKit's function-key constants live in the Unicode private use area, and they
+# are what `AXMenuItemCmdChar` carries for an arrow or an F-key -- Cocoa stores
+# the key equivalent as a character, so there is no virtual key to read. Only
+# the ones a keycap can draw are listed; anything else yields no HID id and is
+# reported undisplayable rather than guessed at.
+MAC_FUNCTION_KEY_TO_HID: dict[int, tuple[str, int]] = {
+    0xF700: ("Up", 0x52), 0xF701: ("Down", 0x51),
+    0xF702: ("Left", 0x50), 0xF703: ("Right", 0x4F),
+    0xF727: ("Insert", 0x49), 0xF728: ("Delete", 0x4C),
+    0xF729: ("Home", 0x4A), 0xF72B: ("End", 0x4D),
+    0xF72C: ("PageUp", 0x4B), 0xF72D: ("PageDown", 0x4E),
+    0xF72E: ("Print", 0x46), 0xF72F: ("ScrollLock", 0x47),
+    0xF730: ("Pause", 0x48),
+}
+for _i in range(1, 13):                       # NSF1FunctionKey == 0xF704
+    MAC_FUNCTION_KEY_TO_HID[0xF704 + _i - 1] = (f"F{_i}", 0x3A + _i - 1)
+
+# The literal control characters Cocoa uses for the keys that have one.
+MAC_CONTROL_CHAR_TO_HID: dict[int, tuple[str, int]] = {
+    0x08: ("BackSpace", 0x2A),   # ⌫ as some apps spell it
+    0x09: ("Tab", 0x2B),
+    0x0D: ("Return", 0x28),
+    0x1B: ("Escape", 0x29),
+    0x7F: ("BackSpace", 0x2A),   # NSDeleteCharacter -- the ⌫ key, not ⌦
+}
+
+# Carbon virtual keycodes (`kVK_*`, HIToolbox/Events.h) -> (display name, HID).
+#
+# ⚠️ These are POSITIONAL, exactly as HID usages are, so this table is the one
+# path through this module that is layout-independent by construction. The
+# `AXMenuItemCmdChar` path is character-based instead, which is the right answer
+# for a letter (it is what the user is told to press) and the wrong one for a
+# position -- the two are not interchangeable and neither is a fallback for the
+# other.
+MAC_VIRTUAL_KEY_TO_HID: dict[int, tuple[str, int]] = {}
+for _vk, _c in ((0x00, "a"), (0x0B, "b"), (0x08, "c"), (0x02, "d"), (0x0E, "e"),
+                (0x03, "f"), (0x05, "g"), (0x04, "h"), (0x22, "i"), (0x26, "j"),
+                (0x28, "k"), (0x25, "l"), (0x2E, "m"), (0x2D, "n"), (0x1F, "o"),
+                (0x23, "p"), (0x0C, "q"), (0x0F, "r"), (0x01, "s"), (0x11, "t"),
+                (0x20, "u"), (0x09, "v"), (0x0D, "w"), (0x07, "x"), (0x10, "y"),
+                (0x06, "z")):
+    MAC_VIRTUAL_KEY_TO_HID[_vk] = (_c, KEYSYM_TO_HID[_c])
+for _vk, _c in ((0x1D, "0"), (0x12, "1"), (0x13, "2"), (0x14, "3"), (0x15, "4"),
+                (0x17, "5"), (0x16, "6"), (0x1A, "7"), (0x1C, "8"), (0x19, "9")):
+    MAC_VIRTUAL_KEY_TO_HID[_vk] = (_c, KEYSYM_TO_HID[_c])
+for _vk, _i in ((0x7A, 1), (0x78, 2), (0x63, 3), (0x76, 4), (0x60, 5), (0x61, 6),
+                (0x62, 7), (0x64, 8), (0x65, 9), (0x6D, 10), (0x67, 11), (0x6F, 12)):
+    MAC_VIRTUAL_KEY_TO_HID[_vk] = (f"F{_i}", 0x3A + _i - 1)
+MAC_VIRTUAL_KEY_TO_HID.update({
+    0x18: ("equal", 0x2E), 0x1B: ("minus", 0x2D),
+    0x1E: ("bracketright", 0x30), 0x21: ("bracketleft", 0x2F),
+    0x27: ("apostrophe", 0x34), 0x29: ("semicolon", 0x33),
+    0x2A: ("backslash", 0x31), 0x2B: ("comma", 0x36),
+    0x2C: ("slash", 0x38), 0x2F: ("period", 0x37), 0x32: ("grave", 0x35),
+    0x24: ("Return", 0x28), 0x30: ("Tab", 0x2B), 0x31: ("space", 0x2C),
+    0x33: ("BackSpace", 0x2A), 0x35: ("Escape", 0x29),
+    0x73: ("Home", 0x4A), 0x74: ("PageUp", 0x4B), 0x75: ("Delete", 0x4C),
+    0x77: ("End", 0x4D), 0x79: ("PageDown", 0x4E),
+    0x7B: ("Left", 0x50), 0x7C: ("Right", 0x4F),
+    0x7D: ("Down", 0x51), 0x7E: ("Up", 0x52),
+})
+
+
+def mac_mods_to_qmk(mask: int) -> int:
+    """Carbon `kMenu*Modifier` mask -> the L/R-folded QMK nibble.
+
+    ⚠️ The Command bit is the one that is not there: `kMenuNoCommandModifier`
+    (0x08) SET means ⌘ is absent, so the common mask 0 is ⌘ alone. See (1) in
+    the section header -- reading it as a plain bitmask is the mistake that
+    turns every ⌘-shortcut into a bare keypress.
+    """
+    mods = 0
+    if mask & MAC_MOD_SHIFT:
+        mods |= MOD_SHIFT
+    if mask & MAC_MOD_OPTION:
+        mods |= MOD_ALT
+    if mask & MAC_MOD_CONTROL:
+        mods |= MOD_CTRL
+    if not mask & MAC_MOD_NO_COMMAND:
+        mods |= MOD_GUI
+    return mods
+
+
+def parse_mac_accel(cmd_char: str = "", virtual_key: int | None = None,
+                    modifiers: int | None = None,
+                    glyph: int | None = None) -> Accel | None:
+    """An AX menu item's key equivalent -> (mods, key), or None when it has none.
+
+    `cmd_char` is `AXMenuItemCmdChar`, `virtual_key` is
+    `AXMenuItemCmdVirtualKey`, `modifiers` is `AXMenuItemCmdModifiers`. `glyph`
+    is accepted and IGNORED -- see the section header for why the glyph table is
+    absent rather than guessed.
+
+    The character wins when there is one, because that is what the menu is
+    telling the user to press; the virtual key is the fallback Cocoa uses when
+    there is no character to show.
+    """
+    name = ""
+    hid: int | None = None
+    char = cmd_char or ""
+    if char:
+        code = ord(char[0])
+        if code in MAC_FUNCTION_KEY_TO_HID:
+            name, hid = MAC_FUNCTION_KEY_TO_HID[code]
+        elif code in MAC_CONTROL_CHAR_TO_HID:
+            name, hid = MAC_CONTROL_CHAR_TO_HID[code]
+        elif code == 0x20:
+            name, hid = "space", 0x2C
+        elif code > 0x20:
+            # ⚠️ Case is DISPLAY, never Shift -- see (2). The HID usage is the
+            # same key either way, and Shift rides in the mask.
+            name = char[0]
+            hid = KEYSYM_TO_HID.get(name) or KEYSYM_TO_HID.get(name.lower())
+    # ⚠️ `is None`, because kVK_ANSI_A is 0x00 -- see (3).
+    if hid is None and not name and virtual_key is not None:
+        entry = MAC_VIRTUAL_KEY_TO_HID.get(int(virtual_key))
+        if entry is not None:
+            name, hid = entry
+        else:
+            name = "vk%02X" % int(virtual_key)
+    if not name:
+        return None
+    return Accel(mods=mac_mods_to_qmk(int(modifiers or 0)), keysym=name, hid=hid)

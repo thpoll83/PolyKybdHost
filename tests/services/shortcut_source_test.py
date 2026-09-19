@@ -27,13 +27,21 @@ class BackendChoiceTest(unittest.TestCase):
             with patch.object(ss.sys, "platform", platform):
                 self.assertEqual(ss.backend_name(), expected)
 
-    def test_macOS_has_NO_BACKEND_and_says_so(self):
-        """Not built: the Accessibility API is a third unrelated interface, and
-        it needs pyobjc plus a consent prompt neither other platform has. The
-        fall-back simply never fires there, which is a gap and not a failure."""
+    def test_macOS_now_HAS_a_backend(self):
+        """⚠️ INVERTED. This used to assert the opposite -- `backend_name() == ""`
+        and a `pick()` of None -- and the docstring explaining why ("a third
+        unrelated interface, needing pyobjc plus a consent prompt neither other
+        platform has") was a correct description of the COST, not of an
+        impossibility. The AX backend landed, so the cost is paid and the
+        assertion flips.
+
+        `pick()` is deliberately NOT asserted here: it answers None on this
+        machine because pyobjc is absent, and it would answer a module on a Mac
+        with the permission granted. Asserting either would pin the environment
+        rather than the wiring. `_backend_module` is the wiring, and the macOS
+        test file pins it for all three platforms at once."""
         with patch.object(ss.sys, "platform", "darwin"):
-            self.assertEqual(ss.backend_name(), "")
-            self.assertIsNone(ss.pick())
+            self.assertEqual(ss.backend_name(), "macos")
 
     def test_an_UNAVAILABLE_backend_is_refused_rather_than_returned(self):
         """⚠️ The import succeeds on a machine with no accessibility bus at all,
@@ -55,9 +63,19 @@ class BackendChoiceTest(unittest.TestCase):
 class UnavailableReasonTest(unittest.TestCase):
     """Three causes that need OPPOSITE fixes, told apart rather than flattened."""
 
-    def test_macOS_says_the_PLATFORM_not_the_interpreter(self):
+    def test_macOS_names_ITS_OWN_cause_rather_than_the_platform(self):
+        """⚠️ INVERTED with the one above, and this is the half that matters.
+
+        It used to require the word "platform" in the reason, because the only
+        true thing to say about macOS was that it had no backend. Now the reason
+        has to name a cause the user can ACT on -- a missing pyobjc or an
+        ungranted permission -- and "this platform has no accessibility backend"
+        would be the flat sentence the whole `unavailable_reason` API exists to
+        replace. So the test is the opposite: the word must be ABSENT."""
         with patch.object(ss.sys, "platform", "darwin"):
-            self.assertIn("platform", ss.unavailable_reason())
+            reason = ss.unavailable_reason()
+        self.assertIsNotNone(reason)
+        self.assertNotIn("this platform has no accessibility backend", reason)
 
     def test_a_VENV_whose_VERSION_differs_is_told_to_be_REBUILT(self):
         # ⚠️ Reaching this at all means `_import_gi`'s rescue already failed, and
