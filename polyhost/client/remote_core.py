@@ -330,6 +330,14 @@ class RemoteCore(Observable):
     def get_idle_style(self):
         return self._device(p.M_IDLE_STYLE_GET)
 
+    def set_idle_timeout(self, value):
+        return self._device(p.M_IDLE_TIMEOUT_SET, {"value": value})
+
+    def get_idle_timeout(self):
+        """(ok, [preset, seconds]) — a LIST over the wire, since JSON has no tuple.
+        Callers index it, so both shapes work; don't compare it to a tuple."""
+        return self._device(p.M_IDLE_TIMEOUT_GET)
+
     def refresh_unicode_mode(self):
         """Ask the daemon to re-detect + re-push the unicode input mode.
 

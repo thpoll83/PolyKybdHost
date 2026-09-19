@@ -349,11 +349,26 @@ def _pick_default_branch(expr: str) -> str:
 # render, which reads as a defect in a published figure).
 STATIC_CALL_DEFAULTS = {
     'kc_os_gui_icon()': 'DINGBAT_BLACK_DIA_X',
-    # These two build their legend from the CURRENT setting, which a static preview
-    # cannot know — show the value the keyboard boots with (index 0) rather than the
+    # These build their legend from the CURRENT setting, which a static preview
+    # cannot know — show the value the keyboard boots with rather than the
     # function's own name, which is what rendered before.
+    #
+    # ⚠️ The boot value is NOT always index 0. It is for these two, but the idle
+    # TIMEOUT defaults to IDLE_TIMEOUT_2MIN (index 4) — the 2 minutes every board
+    # had when the delay was the compile-time FADE_OUT_TIME — so "15s" here would
+    # show the editor a setting no keyboard boots with. Read
+    # POLY_DEFAULT_IDLE_TIMEOUT in base/idle_timeout.h, don't assume the first row.
+    #
+    # ⚠️ This table is the guard shape this repo keeps getting caught by: a NEW
+    # settings key whose legend comes from a helper CALL renders as its raw keycode
+    # name in the layout editor until it is added here, and NOTHING says so — the
+    # firmware build is green, the keycap on hardware is correct, and only the
+    # editor is wrong. Found exactly that way when KC_IDLE_TIMEOUT first rendered as
+    # "idle_t…". Add an entry whenever keycode_to_static_text() gains a `return
+    # <helper>();`.
     'idle_style_legend()': 'SETTING_LBL("IDLE:", "Pulse")',
     'glyph_script_legend()': 'SETTING_LBL("SCRIPT:", "Std")',
+    'idle_timeout_legend()': 'IDLE_TIMEOUT_LBL("2min")',
 }
 
 

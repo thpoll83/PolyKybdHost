@@ -187,6 +187,22 @@ class PolyctlTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(dict(server.received)[protocol.M_IDLE_SET], {"idle": True})
 
+    def test_idle_timeout_set_maps_the_preset_name_to_its_value(self):
+        rc, out, _, server = run_main(["idle-timeout", "45sec"],
+                                      {protocol.M_IDLE_TIMEOUT_SET: [True, None]})
+        self.assertEqual(rc, 0)
+        self.assertEqual(dict(server.received)[protocol.M_IDLE_TIMEOUT_SET], {"value": 2})
+
+    def test_idle_timeout_get_labels_from_the_keyboards_seconds(self):
+        """The printed label comes from the SECONDS the device reported, not from
+        this host's table — that is what lets a newer firmware's preset read as a
+        duration instead of a bare index."""
+        rc, out, _, _ = run_main(["idle-timeout"],
+                                 {protocol.M_IDLE_TIMEOUT_GET: [9, 600]})
+        self.assertEqual(rc, 0)
+        self.assertIn("10 min", out)
+        self.assertIn("preset 9", out)
+
     def test_pause_and_resume(self):
         rc, _, _, server = run_main(["pause"], {protocol.M_PAUSE_SET: {"paused": True}})
         self.assertEqual(rc, 0)
