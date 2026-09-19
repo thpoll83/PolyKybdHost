@@ -6,12 +6,17 @@ import socket
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import unittest
+from unittest import mock
+
+from polyhost.server import protocol
 
 from polyhost.server.control_server import ControlServer
 from polyhost.server.instance import (
-    probe_existing, clear_stale_endpoint, claim_instance, EndpointBusy,
-    LIVE, LOCKED, STALE)
+    probe_existing, clear_stale_endpoint, claim_instance, claim_gui,
+    EndpointBusy, LIVE, LOCKED, STALE)
 
 
 class _StubCore:
@@ -178,6 +183,67 @@ class TestInstanceClaim(unittest.TestCase):
                               capture_output=True, text=True)
         self.assertIn("held", proc.stdout, proc.stderr)
         claim_instance(addr, key).release()      # the dead holder's lock is gone
+
+
+@unittest.skipIf(sys.platform == "win32", "flock-specific; Windows uses msvcrt")
+class TestGuiClaim(unittest.TestCase):
+    """One tray icon per user.
+
+    The endpoint lock cannot do this job: under daemon-by-default the GUI is a
+    client and never owns the endpoint, and the daemon spawn is deferred until
+    after the PyQt imports load, so `probe_existing` answers STALE for ~9 s and
+    every GUI launched in that window also shows an icon."""
+
+    def setUp(self):
+        self._dir = tempfile.mkdtemp(prefix="polygui_")
+        self._patch = mock.patch.object(
+            protocol, "gui_lock_path",
+            return_value=os.path.join(self._dir, "polykybd.gui.lock"))
+        self._patch.start()
+
+    def tearDown(self):
+        self._patch.stop()
+
+    def test_second_tray_is_refused(self):
+        claim = claim_gui()
+        try:
+            with self.assertRaises(EndpointBusy) as ctx:
+                claim_gui(timeout=0)
+            self.assertEqual(ctx.exception.outcome, LOCKED)
+        finally:
+            claim.release()
+
+    def test_the_next_tray_may_claim_once_the_first_lets_go(self):
+        claim_gui().release()
+        claim_gui(timeout=0).release()
+
+    def test_waits_for_a_departing_tray_rather_than_refusing(self):
+        """The update relaunch spawns the replacement before this process
+        exits, and a quit-then-restart catches the old tray still tearing down.
+        Both overlap for well under a second, so the claim waits it out —
+        refusing would be "it doesn't start up again after the update"."""
+        claim = claim_gui()
+        threading.Timer(0.25, claim.release).start()
+        started = time.monotonic()
+        second = claim_gui(timeout=5.0)          # must not raise
+        try:
+            self.assertGreater(time.monotonic() - started, 0.1)
+        finally:
+            second.release()
+
+    def test_gui_and_endpoint_locks_are_different_files(self):
+        """They must not share one file: the tray holds the GUI claim while the
+        daemon it spawns holds the endpoint, so one file would have the tray
+        block its own daemon."""
+        addr = _addr()
+        gui = claim_gui()
+        try:
+            endpoint = claim_instance(addr, b"k")   # must not block or raise
+            endpoint.release()
+            self.assertNotEqual(protocol.gui_lock_path(),
+                                protocol.instance_lock_path(addr))
+        finally:
+            gui.release()
 
 
 def _quiet():

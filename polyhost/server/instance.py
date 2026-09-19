@@ -18,10 +18,12 @@ unhandled traceback.
 import os
 import stat
 import sys
+import time
 
 from multiprocessing.connection import AuthenticationError, Client
 
 from polyhost.server import protocol
+from polyhost.util import filelock
 
 # probe_existing outcomes. Only STALE means "nothing is really there, safe to
 # unlink the socket and bind"; the other three all mean a real process owns the
@@ -107,27 +109,6 @@ class EndpointBusy(RuntimeError):
         self.outcome = outcome
 
 
-def _try_lock(fd) -> bool:
-    """Take an exclusive, non-blocking lock on ``fd``. False if held elsewhere.
-
-    An OS file lock, not a pid file: the kernel drops it when the holder dies
-    however it dies, so a crashed or killed host can never leave the endpoint
-    permanently unclaimable."""
-    if sys.platform == "win32":
-        import msvcrt
-        try:
-            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
-            return True
-        except OSError:
-            return False
-    import fcntl
-    try:
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return True
-    except OSError:
-        return False
-
-
 class InstanceClaim:
     """Proof that this process, and only this process, owns the endpoint.
 
@@ -145,20 +126,7 @@ class InstanceClaim:
         if self._fd is None:
             return
         fd, self._fd = self._fd, None
-        try:
-            if sys.platform == "win32":
-                import msvcrt
-                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
-            else:
-                import fcntl
-                fcntl.flock(fd, fcntl.LOCK_UN)
-        except OSError:
-            # Explicit unlocking is courtesy: the close below drops the lock
-            # regardless, and on Windows unlocking a region that was never
-            # locked (a claim abandoned before _try_lock succeeded) raises here
-            # by design. Either way there is nothing left to do and nothing
-            # worth failing a shutdown over.
-            pass
+        filelock.unlock(fd)
         try:
             os.close(fd)
         except OSError:
@@ -173,6 +141,53 @@ class InstanceClaim:
     def __exit__(self, *exc):
         self.release()
         return False
+
+
+#: How long :func:`claim_gui` waits for a departing tray to drop its claim.
+#: The lock overlaps by design on two ordinary paths — the post-update relaunch
+#: spawns the replacement before this process exits, and a user who quits the
+#: tray and immediately starts it again catches the old one still tearing down.
+#: Both resolve in well under a second; the wait only costs a genuine duplicate
+#: launch, which exits silently either way.
+GUI_CLAIM_WAIT_S = 3.0
+
+#: Poll interval while waiting for the GUI claim.
+_GUI_CLAIM_POLL_S = 0.05
+
+
+def claim_gui(timeout=GUI_CLAIM_WAIT_S) -> InstanceClaim:
+    """Claim the right to be the one tray icon, or raise :class:`EndpointBusy`.
+
+    Under daemon-by-default a GUI never owns the endpoint — it is a client — so
+    the endpoint lock cannot keep a second tray from appearing. The gap it
+    leaves is real: the daemon spawn is deferred until after the PyQt imports
+    load, ~9 s on a cold first start, and for that whole window
+    ``probe_existing`` answers STALE, so every GUI launched inside it also
+    decides to spawn a daemon and also shows a tray. A first-time macOS install
+    hit it with two launches 691 ms apart and came up with two icons
+    (2026-09-19).
+
+    Held for the life of the tray process, and taken BEFORE the spawn decision
+    rather than around it, so a second launch settles at once instead of waiting
+    out the window. ``--connect`` does not take it: an extra client GUI against
+    a running core is an explicit, supported thing to ask for."""
+    path = protocol.gui_lock_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    # Same ownership rule as claim_instance: the claim takes the descriptor
+    # straight away, so every exit closes it. This one waits, so an interrupt
+    # landing in the sleep is one more way out of the loop.
+    claim = InstanceClaim(fd, path)
+    deadline = time.monotonic() + max(0.0, timeout)
+    try:
+        while not filelock.try_lock(fd):
+            if time.monotonic() >= deadline:
+                raise EndpointBusy(LOCKED)
+            time.sleep(_GUI_CLAIM_POLL_S)
+    except BaseException:
+        claim.release()
+        raise
+    return claim
 
 
 def claim_instance(address=None, authkey=None) -> InstanceClaim:
@@ -203,7 +218,7 @@ def claim_instance(address=None, authkey=None) -> InstanceClaim:
     # raised.
     claim = InstanceClaim(fd, path)
     try:
-        if not _try_lock(fd):
+        if not filelock.try_lock(fd):
             # Someone holds the lock. They may not have bound the endpoint yet,
             # so the probe is the better answer when it has one — LOCKED
             # otherwise.
