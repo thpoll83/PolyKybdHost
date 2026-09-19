@@ -1,11 +1,20 @@
 import logging
 import os
+import tempfile
+import time
 
 import yaml
 from platformdirs import user_config_dir
 
+from polyhost.util import filelock
+
 APP_NAME = "PolyHost"
 CONFIG_FILENAME = "settings.yaml"
+
+#: How long a save waits for the settings lock before writing anyway. Only ever
+#: contended for the length of one read + replace, so a wait this long means the
+#: holder is wedged rather than slow.
+SAVE_LOCK_TIMEOUT_S = 2.0
 
 # Telemetry ingest URL — the collector in telemetry-collector/ (Cloudflare Worker
 # + D1), verified end to end 2026-08-07. An empty string disables sending entirely,
@@ -194,11 +203,27 @@ class PolySettings:
             "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",
         }
 
+        # What we last saw on disk. `save()` diffs against it to work out which
+        # keys THIS process actually changed, so a concurrent writer's keys are
+        # merged rather than overwritten — see save().
+        self._baseline = {}
+
+        # Set by load() when the file is there but cannot be parsed. The
+        # constructor saves immediately afterwards, so without this the very
+        # first startup after a corrupted write would replace the user's file
+        # with defaults and destroy any chance of hand-recovery.
+        self._load_failed = False
+
         # Load settings
         if os.path.exists(self.path):
             self.load()
+            if self._load_failed:
+                self._preserve_unreadable()
         else:
-            self.collection = self.defaults
+            # A copy: aliasing `defaults` would make every later write to
+            # `collection` mutate the defaults table this process compares
+            # against, including save()'s merge.
+            self.collection = dict(self.defaults)
         self.save()
 
         self.log.info("\nCurrent settings:\n====================================\n%s", yaml.dump(
@@ -215,22 +240,148 @@ class PolySettings:
         self.save()
 
     def load(self):
-        with open(self.path, encoding='utf-8') as f:
-            self.collection = yaml.safe_load(f) or {}
-        for old_key, new_key in self._legacy_key_renames.items():
-            if old_key in self.collection and new_key not in self.collection:
-                self.collection[new_key] = self.collection.pop(old_key)
-        for key, value in self.defaults.items():
-            self.collection.setdefault(key, value)
+        # At load there is no prior state to protect, so an unreadable file
+        # legitimately means "start from the defaults" — unlike save(), where
+        # the same `None` must not be allowed to overwrite what we hold. The
+        # caller is told, because the defaults are about to be written over
+        # whatever could not be read.
+        raw = self._read_file()
+        self._load_failed = raw is None
+        self.collection = self._normalize(raw or {})
+        self._baseline = dict(self.collection)
 
-        self.collection = {k: v for k, v in self.collection.items() if k in self.defaults}
+    def _preserve_unreadable(self):
+        """Move an unparseable settings file aside instead of overwriting it.
+
+        Starting up on a corrupted `settings.yaml` used to raise out of the
+        constructor; it now degrades to the defaults, which is kinder — but the
+        constructor saves straight afterwards, so without this the first launch
+        after a bad write would replace the file with defaults and leave the
+        user nothing to recover from. Renaming costs one file and keeps the
+        original byte-for-byte."""
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        kept = f"{self.path}.unreadable-{stamp}"
+        try:
+            os.replace(self.path, kept)
+        except OSError as e:
+            # Could not move it; leave it alone rather than risk clobbering.
+            # The save that follows will overwrite it, which is the outcome
+            # this guards against — so say so loudly.
+            self.log.error("Settings file at %s is unreadable and could not be "
+                           "preserved (%s); it is about to be replaced with "
+                           "defaults.", self.path, e)
+            return
+        self.log.warning("Settings file at %s could not be parsed; kept a copy "
+                         "at %s and starting from defaults.", self.path, kept)
+
+    def _read_file(self):
+        """Raw settings dict from disk, or ``None`` when it cannot be read.
+
+        ``{}`` and ``None`` mean different things here and the difference is
+        destructive. ``{}`` is "the file is there and holds nothing"; ``None``
+        is "we cannot see what is in it". Merging a save against ``{}`` fills
+        every key this process did not change with a DEFAULT, so one transient
+        read error would silently reset the user's other settings — the exact
+        loss this merge exists to prevent, arriving by another door.
+
+        Never raises: the save path calls it on every write, and an unreadable
+        file must not take the host down."""
+        try:
+            with open(self.path, encoding='utf-8') as f:
+                data = yaml.safe_load(f) or {}
+        except (OSError, yaml.YAMLError):
+            return None
+        return data if isinstance(data, dict) else None
+
+    def _normalize(self, data):
+        """Apply the legacy key renames, fill in defaults, drop unknown keys."""
+        data = dict(data)
+        for old_key, new_key in self._legacy_key_renames.items():
+            if old_key in data and new_key not in data:
+                data[new_key] = data.pop(old_key)
+        for key, value in self.defaults.items():
+            data.setdefault(key, value)
+        return {k: v for k, v in data.items() if k in self.defaults}
 
     def restore_defaults(self):
-        self.collection = self.defaults
+        self.collection = dict(self.defaults)
         self.save()
 
     def save(self):
-        with open(self.path, "w", encoding='utf-8') as f:
-            yaml.safe_dump(self.collection, f)
+        """Persist this process's changes without discarding anyone else's.
+
+        Two processes hold settings at once under daemon-by-default — the
+        daemon and the tray client — and a whole-file rewrite from a stale
+        in-memory copy silently reverts whatever the other one wrote in the
+        meantime. In the field that cost the telemetry install id: the GUI
+        generated and saved it at 11:44:47, the daemon still held the empty
+        value it had loaded at 11:44:45, and the daemon's next save at 11:53:16
+        wiped it — so the following run generated a fresh id and the machine
+        counted as two installs (2026-09-19).
+
+        So the merge is per KEY, not per file: re-read the file, keep its value
+        for every key this process did not itself change, and impose only our
+        own changes on top. `collection` is then updated to the merged result,
+        which is also how this process picks up the other one's edits.
+
+        The write itself goes through a temp file + ``os.replace`` so a reader
+        (or a crash) can never see a half-written settings file — the plain
+        truncating write left that window open on every save."""
+        # The read -> merge -> replace below is itself a read-modify-write, so
+        # it runs under a cross-process lock: without one, two hosts saving at
+        # the same moment both read the same base and the second `os.replace`
+        # discards the first's update — the lost-update bug again, in a
+        # narrower window. Measured: six concurrent writers of six different
+        # keys lose 3-4 of them per run unlocked, and none locked. Best effort
+        # by design: a save that cannot take the lock still happens, because
+        # losing the write outright is worse than the rare interleaving.
+        with filelock.exclusive(f"{self.path}.lock", timeout=SAVE_LOCK_TIMEOUT_S) as locked:
+            if not locked:
+                self.log.debug("Settings lock busy; saving unsynchronised.")
+            self._save_merged()
+
+    def _save_merged(self):
+        """Merge against the file and replace it. Call under the settings lock."""
+        mine = {k: v for k, v in self.collection.items()
+                if k not in self._baseline or self._baseline[k] != v}
+        on_disk = self._read_file()
+        if on_disk is None:
+            # We cannot see the current file. Merging against defaults would
+            # reset every key we did not ourselves change, so write what we
+            # hold — the best reconstruction available, and what this did
+            # before the per-key merge existed.
+            merged = self._normalize(self.collection)
+        else:
+            merged = self._normalize(on_disk)
+            merged.update(mine)
+            # `mine` is applied AFTER the normalize above, so re-filter: a key
+            # that is not in `defaults` would otherwise ride into the file on
+            # the back of the delta and never be dropped again.
+            merged = self._normalize(merged)
+
+        # Unique per SAVE, not per process. The lock is best effort, so two
+        # threads in one process can both be here — a shared pid-based name
+        # would have them writing and replacing the same temp file.
+        fd, tmp = tempfile.mkstemp(
+            dir=os.path.dirname(self.path) or ".",
+            prefix=f"{self.CONFIG_FILENAME}.", suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding='utf-8') as f:
+                yaml.safe_dump(merged, f)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, self.path)
+        except OSError:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                # The temp file was never created, or is already gone. Either
+                # way the settings file itself is untouched, which is the point
+                # of writing beside it — so report the original failure rather
+                # than this cleanup's.
+                pass
+            raise
+        self.collection = merged
+        self._baseline = dict(merged)
         self.log.info("Saved settings to %s", self.path)
 
