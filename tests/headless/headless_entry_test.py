@@ -225,6 +225,27 @@ class TestHeadlessStartOrder(unittest.TestCase):
             host.stop()
 
 
+    def test_a_startup_failure_still_tears_the_control_endpoint_down(self):
+        """A failure partway through start() must reach stop().
+
+        The control server binds FIRST, so a worker that fails to start would
+        otherwise leave the endpoint bound and its accept thread running with
+        nothing to tear them down — the same shape as the bug the start()
+        ordering exists to fix (CodeRabbit, #244).
+        """
+        from polyhost.headless import HeadlessHost
+
+        host = HeadlessHost(_quiet())
+
+        def _refuse():
+            raise RuntimeError("worker refused to start")
+
+        host.core.worker.start = _refuse
+        with self.assertRaises(RuntimeError):
+            host.run()
+        self.assertEqual(probe_existing(self._addr, self._key), STALE)
+
+
 class TestHeadlessStandsDownWhenTheEndpointIsTaken(unittest.TestCase):
     """The loser of a daemon race must stand down BEFORE it touches the device.
 
