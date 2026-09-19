@@ -75,6 +75,17 @@ The measurements behind all of this are in
   the commit — git reports a fast-forward, GitHub shows nothing, and the work is in no
   PR. The one check, before reporting any push as done:
   `git merge-base --is-ancestor <sha> origin/main`.
+- ⚠️ **A MERGE orphans work the same way, and the check above does not fire** —
+  because you never pushed. Merge a stacked PR within a minute of its base and
+  GitHub has not retargeted it yet, so it merges into the base's **branch**, which
+  is itself already merged and closed: both PRs read "merged" and the second one's
+  content is nowhere (2026-09-19, #244 at 15:37:09 and #245 at 15:37:17 — none of
+  #245 reached `main`). So run the same ancestry check on a **merged PR's head**,
+  and confirm by content (`git cat-file -e origin/main:<a file it added>`), before
+  believing the badge. Merge the base, wait for the stacked PR's `base.ref` to
+  become `main`, then merge it. Recovery is the `re-land-orphaned-pr` skill — and
+  it is a re-land, never a second merge, because by then the branch is stale
+  enough that merging it reverts whatever landed in between.
 - ⚠️ **A CLAUDE.md conflict is one of TWO kinds** — *addition beside addition* (keep
   both, main's first) or *supersession* (main's version wins outright, or you ship a
   file that contradicts itself). **After resolving, grep each of your notes back by
@@ -143,6 +154,11 @@ control-socket method. Five rules bind code outside it:
   `gui/theme.apply_theme`, `util/observable.Observable`, `util/filelock` (the
   endpoint claim and the settings save both need an OS file lock) and
   `PolyCore._flash_resource`. Reach for the shared piece; that is the point of it.
+  ⚠️ **Extracting one drops the INLINE comments that made the original pass
+  review** — `util/filelock` lost the comment on an `except … pass` that had been
+  written for CodeQL's empty-except rule, because the extraction moved the
+  rationale into the new module's docstring, where neither the linter nor the next
+  reader looks. Re-run the checks on the extracted copy, not just on the callers.
   ⚠️ **When a bug is found in one of the three servers, grep the other two**
   (`control_server` / `window_report_server` / `browser_report_server`) for the same
   shape before designing anything — a deadlock was diagnosed across three sessions
@@ -442,6 +458,15 @@ outside those files:
   different destination, so the safe default flips.
 - ⚠️ **`polyctl logs` must work with NO host running** — the moment a user most needs
   the logs is the one where the app failed to start.
+- ⚠️ **`Connected to PolyKybd.` does not mean a usable device** —
+  `_open_interfaces()` returns True when `HidHelper` found no raw HID interface
+  (it sets `self.interface = None` and does not raise), so the core logs a
+  connect and every command afterwards returns `'No Interface'`. Nor is
+  `exclusive access and device already open` proof of a second process: the same
+  function reassigns `self.hid` without closing the previous helper, so one
+  process collides with the handle it is replacing. **Reading a bundle is the
+  `triage-log-bundle` skill**, which carries these and the rest of the lines
+  that lie.
 - ⚠️ **"The tray icon is gone" is NOT "the app crashed"** — under daemon-by-default the
   daemon still owns the device with no GUI attached. Check the process list, in PAIRS.
 - ⚠️ **The telemetry payload is an ALLOW-LIST at both ends — a privacy guarantee.**
@@ -480,6 +505,14 @@ GUI tests need `xvfb-run -a`; rendering a widget headless needs `xvfb-run` **and
 headless-render recipes, and the `ControlServer.stop()` deadlock post-mortem — is in
 [`docs/testing.md`](docs/testing.md).
 
+- ⚠️ **A change to CONCURRENT FILE ACCESS is not done when the tests pass.** The
+  per-key settings merge took four review rounds and produced two regressions
+  *while fixing the previous one* — merging against `{}` on a read failure reset
+  every untouched key, and degrading an unreadable file to defaults let the
+  constructor's save destroy it. Its diff looked small. Before calling one done:
+  mutation-sweep it (`mutation-test-suite`), and race it with REAL processes —
+  six concurrent writers of six different keys lose 3–4 per run unlocked and none
+  locked, which no single-process test would ever have shown.
 - **RUN the real entry point once before believing a mocked suite.** A suite whose
   fixtures you wrote can only be as right as your idea of the real data; one
   `polyctl logs bundle` in a temp dir caught two format bugs every test passed over.
