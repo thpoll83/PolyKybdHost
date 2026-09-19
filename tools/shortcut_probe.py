@@ -101,6 +101,7 @@ from polyhost.services.shortcut_source.model import (  # noqa: E402
     pick_binding, pick_win_binding)
 from polyhost.services.shortcut_source.uia import (  # noqa: E402
     _uia, uia_shortcuts)
+from polyhost.services.shortcut_source import macos as _macos  # noqa: E402
 
 
 
@@ -361,6 +362,40 @@ def main_atspi(args) -> list[dict] | None:
     return results
 
 
+def main_macos(args) -> list[dict] | None:
+    """The macOS backend, against whatever is frontmost.
+
+    ⚠️ There is no `--app` here and no `--list`, and that is the API rather
+    than a shortcut: the AX menu bar is read from the FRONTMOST application, so
+    the probe can only ever answer about the window the user just clicked on.
+    Give yourself a few seconds and click the app you want to measure.
+
+    ⚠️ **This is the instrument, so read its refusal before its silence.** A
+    denied Accessibility grant returns an empty tree that looks exactly like an
+    application with no shortcuts -- which is the whole reason
+    `unavailable_reason()` exists and the reason it is printed first here.
+    """
+    reason = _macos.unavailable_reason()
+    if reason is not None:
+        print(f"Accessibility API unavailable: {reason}", file=sys.stderr)
+        return None
+    delay = getattr(args, "delay", 0) or 0
+    if delay:
+        print(f"probing the frontmost app in {delay}s -- click it now...")
+        time.sleep(delay)
+    found = _macos.shortcuts_for_app("", budget=args.max_nodes)
+    # ⚠️ The app's own NAME, not a constant: `watch --unmatched` attributes
+    # every label it logs to this string, so a constant would file Xcode's
+    # "Build" and Mail's "Send" under one heading (Greptile, #248).
+    try:
+        who = _macos._frontmost_name(_macos._api()[3]) or "frontmost application"
+    except Exception:
+        who = "frontmost application"
+    return [report(who, found, len(found),
+                   icons=_icon_matcher() if args.icons else None,
+                   quiet=getattr(args, "quiet", False))]
+
+
 def main_uia(args) -> list[dict] | None:
     try:
         module, iuia = _uia()
@@ -511,6 +546,19 @@ def _focus_key(backend):
     application window ("OpusApp" for Word), so switching document inside one app
     does not re-probe -- the reprobe timer covers that.
     """
+    if backend == "macos":
+        # ⚠️ A CONSTANT here is what `backend != "uia"` used to give macOS, and
+        # it silently disabled visit tracking: focus changes never registered,
+        # so labels stayed deduplicated across unrelated apps and every visit
+        # summary was wrong (Greptile, #248). The frontmost pid is the cheap
+        # real answer -- stable while one app is focused, different the moment
+        # another takes over.
+        try:
+            _, _, _, workspace = _macos._api()
+            pid = _macos._frontmost_pid(workspace)
+            return None if pid is None else ("macos", pid)
+        except Exception:
+            return None
     if backend != "uia":
         return "atspi"          # no focus tracking on AT-SPI; the timer drives it
     try:
@@ -524,6 +572,9 @@ def _focus_key(backend):
 
 
 def _focus_title(backend):
+    if backend == "macos":
+        return _macos._frontmost_name(
+            _macos._api()[3]) or "frontmost application"
     if backend != "uia":
         return "all applications"
     try:
@@ -552,7 +603,7 @@ def watch(args, backend) -> int:
     focus arriving at a window; a periodic re-probe of the same window can add
     NEW labels (a ribbon tab changed) but never re-counts one already seen.
     """
-    probe = main_uia if backend == "uia" else main_atspi
+    probe = _BACKEND_MAINS.get(backend, main_atspi)
     args.quiet = True
     args.icons = True
     if backend == "uia":
@@ -618,6 +669,24 @@ def watch(args, backend) -> int:
         return review_unmatched(args.unmatched)
 
 
+# ⚠️ ONE mapping, shared by --backend, the watch loop and auto-detection. It
+# used to be `"uia" if win32 else "atspi"` written out at three sites, which on
+# a Mac silently ran the AT-SPI path and reported nothing -- the instrument
+# answering about a bus that does not exist rather than saying so.
+_BACKEND_MAINS = {"uia": main_uia, "macos": main_macos, "atspi": main_atspi}
+
+
+def _auto_backend() -> str:
+    """Whichever backend this platform would really use.
+
+    Deferred to `shortcut_source.backend_name()` rather than repeated here: the
+    probe measuring a different backend than the app runs is the one bug this
+    tool cannot afford.
+    """
+    from polyhost.services import shortcut_source
+    return shortcut_source.backend_name() or "atspi"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--app", help="application/window name to probe (substring match)")
@@ -628,7 +697,11 @@ def main() -> int:
     ap.add_argument("--json", help="write the full result to this path")
     ap.add_argument("--max-nodes", type=int, default=20000,
                     help="AT-SPI node budget per application (default 20000)")
-    ap.add_argument("--backend", choices=("auto", "atspi", "uia"), default="auto",
+    ap.add_argument("--delay", type=int, default=0,
+                    help="macOS: seconds to wait before reading the frontmost "
+                         "app, so you can click the one you want to measure")
+    ap.add_argument("--backend", choices=("auto", "atspi", "uia", "macos"),
+                    default="auto",
                     help="force a backend instead of choosing by platform")
     ap.add_argument("--icons", action="store_true",
                     help="map each label to a keycap glyph via shortcut_icons")
@@ -655,19 +728,19 @@ def main() -> int:
 
     backend = args.backend
     if backend == "auto":
-        backend = "uia" if sys.platform == "win32" else "atspi"
+        backend = _auto_backend()
     if args.watch:
         if not args.unmatched:
             print("--watch needs --unmatched PATH to log into", file=sys.stderr)
             return 2
         return watch(args, backend)
     if backend == "auto":
-        backend = "uia" if sys.platform == "win32" else "atspi"
+        backend = _auto_backend()
     if args.focused and backend != "uia":
         print("--focused is only implemented for the UIA backend", file=sys.stderr)
         return 2
 
-    results = main_uia(args) if backend == "uia" else main_atspi(args)
+    results = _BACKEND_MAINS.get(backend, main_atspi)(args)
     if results is None:
         return 1
     if not results:
