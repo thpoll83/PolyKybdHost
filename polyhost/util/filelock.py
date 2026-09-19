@@ -50,6 +50,11 @@ def unlock(fd) -> None:
             import fcntl
             fcntl.flock(fd, fcntl.LOCK_UN)
     except OSError:
+        # Explicit unlocking is courtesy: closing the descriptor drops the lock
+        # regardless, and on Windows unlocking a region that was never locked
+        # (a claim abandoned before try_lock succeeded) raises here by design.
+        # Either way there is nothing left to do, and nothing worth failing a
+        # shutdown over.
         pass
 
 
