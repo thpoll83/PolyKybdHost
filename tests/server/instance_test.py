@@ -169,7 +169,13 @@ class TestInstanceClaim(unittest.TestCase):
             "claim_instance(%r, %r); print('held', flush=True)"
             % (os.getcwd(), addr, key)
         )
-        proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+        # Audit: argv is a LIST, so no shell is involved and there is nothing
+        # for anything to be injected into. argv[0] is this interpreter, and
+        # `code` above is built from os.getcwd() plus two values this test made
+        # itself — a tempfile path and a literal key. No external input reaches
+        # either.
+        proc = subprocess.run([sys.executable, "-c", code],  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+                              capture_output=True, text=True)
         self.assertIn("held", proc.stdout, proc.stderr)
         claim_instance(addr, key).release()      # the dead holder's lock is gone
 

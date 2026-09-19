@@ -416,6 +416,13 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
                 busy_outcome = None
                 try:
                     instance_claim = claim_instance()
+                    # The BINDING is the point, not the value: the claim holds
+                    # an OS file lock for as long as it is alive, so letting it
+                    # go here would hand the endpoint to the next process while
+                    # this one still owns the device. Logging the path keeps
+                    # that visible to a reader (and to static analysis) and
+                    # answers "why did my second instance exit" in a log.
+                    slog.debug("Instance claim held (%s).", instance_claim.path)
                 except EndpointBusy as e:
                     busy_outcome = e.outcome
                 fallback = dl.decide_spawn_failure_fallback(busy_outcome)
