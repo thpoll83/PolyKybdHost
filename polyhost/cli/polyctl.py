@@ -934,7 +934,7 @@ def build_parser():
     p_idle_timeout.add_argument(
         "preset", nargs="?", choices=list(_IDLE_TIMEOUT_VALUES.keys()), default=None,
         help="omit to print the current timeout; otherwise one of the fixed presets. "
-             "This is the delay before the idle STYLE engages, not the 10-minute "
+             "This is the delay before the idle STYLE engages, not the 20-minute "
              "display-off deadline, which is fixed.")
     p_idle_timeout.set_defaults(func=_cmd_idle_timeout)
 
