@@ -1,5 +1,7 @@
 import logging
 import os
+import tempfile
+import time
 
 import yaml
 from platformdirs import user_config_dir
@@ -206,9 +208,17 @@ class PolySettings:
         # merged rather than overwritten — see save().
         self._baseline = {}
 
+        # Set by load() when the file is there but cannot be parsed. The
+        # constructor saves immediately afterwards, so without this the very
+        # first startup after a corrupted write would replace the user's file
+        # with defaults and destroy any chance of hand-recovery.
+        self._load_failed = False
+
         # Load settings
         if os.path.exists(self.path):
             self.load()
+            if self._load_failed:
+                self._preserve_unreadable()
         else:
             # A copy: aliasing `defaults` would make every later write to
             # `collection` mutate the defaults table this process compares
@@ -232,9 +242,37 @@ class PolySettings:
     def load(self):
         # At load there is no prior state to protect, so an unreadable file
         # legitimately means "start from the defaults" — unlike save(), where
-        # the same `None` must not be allowed to overwrite what we hold.
-        self.collection = self._normalize(self._read_file() or {})
+        # the same `None` must not be allowed to overwrite what we hold. The
+        # caller is told, because the defaults are about to be written over
+        # whatever could not be read.
+        raw = self._read_file()
+        self._load_failed = raw is None
+        self.collection = self._normalize(raw or {})
         self._baseline = dict(self.collection)
+
+    def _preserve_unreadable(self):
+        """Move an unparseable settings file aside instead of overwriting it.
+
+        Starting up on a corrupted `settings.yaml` used to raise out of the
+        constructor; it now degrades to the defaults, which is kinder — but the
+        constructor saves straight afterwards, so without this the first launch
+        after a bad write would replace the file with defaults and leave the
+        user nothing to recover from. Renaming costs one file and keeps the
+        original byte-for-byte."""
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        kept = f"{self.path}.unreadable-{stamp}"
+        try:
+            os.replace(self.path, kept)
+        except OSError as e:
+            # Could not move it; leave it alone rather than risk clobbering.
+            # The save that follows will overwrite it, which is the outcome
+            # this guards against — so say so loudly.
+            self.log.error("Settings file at %s is unreadable and could not be "
+                           "preserved (%s); it is about to be replaced with "
+                           "defaults.", self.path, e)
+            return
+        self.log.warning("Settings file at %s could not be parsed; kept a copy "
+                         "at %s and starting from defaults.", self.path, kept)
 
     def _read_file(self):
         """Raw settings dict from disk, or ``None`` when it cannot be read.
@@ -316,10 +354,19 @@ class PolySettings:
         else:
             merged = self._normalize(on_disk)
             merged.update(mine)
+            # `mine` is applied AFTER the normalize above, so re-filter: a key
+            # that is not in `defaults` would otherwise ride into the file on
+            # the back of the delta and never be dropped again.
+            merged = self._normalize(merged)
 
-        tmp = f"{self.path}.{os.getpid()}.tmp"
+        # Unique per SAVE, not per process. The lock is best effort, so two
+        # threads in one process can both be here — a shared pid-based name
+        # would have them writing and replacing the same temp file.
+        fd, tmp = tempfile.mkstemp(
+            dir=os.path.dirname(self.path) or ".",
+            prefix=f"{self.CONFIG_FILENAME}.", suffix=".tmp")
         try:
-            with open(tmp, "w", encoding='utf-8') as f:
+            with os.fdopen(fd, "w", encoding='utf-8') as f:
                 yaml.safe_dump(merged, f)
                 f.flush()
                 os.fsync(f.fileno())

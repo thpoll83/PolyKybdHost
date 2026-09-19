@@ -201,6 +201,58 @@ class ConcurrentWriterTest(unittest.TestCase):
         self.assertEqual(settings.read_setting("browser_report_port"), 10000)
         self.assertNotEqual(a.defaults["hid_reconnect_retries"], 9)   # a real contrast
 
+    def test_startup_on_an_unreadable_file_preserves_it(self):
+        """Starting up used to RAISE on a corrupt settings.yaml; degrading to
+        defaults is kinder, but the constructor saves straight afterwards — so
+        without preserving it, the first launch after a bad write destroys the
+        only copy (Greptile, #246)."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        corrupt = "{{{ not yaml\nbrightness_gamma: 7\n"
+        with open(a.path, "w", encoding="utf-8") as f:
+            f.write(corrupt)
+
+        settings.PolySettings()          # a normal startup on the bad file
+
+        kept = [n for n in os.listdir(self._tmp.name) if ".unreadable-" in n]
+        self.assertEqual(len(kept), 1, f"original not preserved: {os.listdir(self._tmp.name)}")
+        with open(os.path.join(self._tmp.name, kept[0]), encoding="utf-8") as f:
+            self.assertEqual(f.read(), corrupt)   # byte-for-byte, hand-recoverable
+        # And the app still came up, on defaults.
+        self.assertEqual(settings.read_setting("hid_reconnect_retries"),
+                         a.defaults["hid_reconnect_retries"])
+
+    def test_an_unknown_key_never_reaches_the_file(self):
+        """`mine` is applied after _normalize, so without a re-filter a key
+        absent from `defaults` rides into the file on the delta and is never
+        dropped again (Greptile, #246)."""
+        a = settings.PolySettings()
+        a.collection["not_a_real_setting"] = "x"
+        a.save()
+        self.assertIsNone(settings.read_setting("not_a_real_setting"))
+
+    def test_each_save_uses_its_own_temp_file(self):
+        """The lock is best effort, so two threads in one process can both be
+        writing — a pid-based temp name would have them share one path."""
+        a = settings.PolySettings()
+        seen = []
+        real = settings.tempfile.mkstemp
+
+        def _watch(**kw):
+            fd, path = real(**kw)
+            seen.append(path)
+            return fd, path
+
+        with mock.patch.object(settings.tempfile, "mkstemp", _watch):
+            a.collection["hid_reconnect_retries"] = 3
+            a.save()
+            a.collection["hid_reconnect_retries"] = 4
+            a.save()
+        self.assertEqual(len(seen), 2)
+        self.assertNotEqual(seen[0], seen[1])
+        self.assertEqual(settings.read_setting("hid_reconnect_retries"), 4)
+
     def test_a_save_holds_the_settings_lock(self):
         """read -> merge -> replace is itself a read-modify-write: without a
         cross-process lock two hosts saving at once both read the same base and
