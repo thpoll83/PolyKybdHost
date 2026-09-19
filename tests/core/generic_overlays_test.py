@@ -537,7 +537,7 @@ class FailurePathTest(unittest.TestCase):
         args, kwargs = entry.device.send_overlays_mru.call_args
         self.assertEqual(args[0][0], "@prog:si:gimp")      # the mark keeps ESC
         self.assertIn("@prog:si:gimp", kwargs["synthetic"])
-        self.assertTrue(set(args[0]) <= set(kwargs["synthetic"]))
+        self.assertLessEqual(set(args[0]), set(kwargs["synthetic"]))
 
 
 
