@@ -192,6 +192,19 @@ def instance_lock_path(address=None) -> str:
     return address + ".instance.lock"
 
 
+def gui_lock_path() -> str:
+    """Path of the file lock that keeps a plain GUI launch to ONE tray icon.
+
+    Separate from the endpoint's own lock on purpose: under daemon-by-default
+    the tray and the core daemon are different processes, and the tray holds
+    this one while the daemon holds the endpoint. Sharing one file would have
+    the tray's claim block the daemon it just spawned.
+
+    In the config dir rather than beside the socket: it is per user, and unlike
+    the endpoint lock it guards no address."""
+    return os.path.join(_config_dir(), "polykybd.gui.lock")
+
+
 def authkey_path() -> str:
     return os.path.join(_config_dir(), "polykybd.authkey")
 
