@@ -33,6 +33,32 @@ IN_PROCESS = "in_process"       # legacy: own the device in this process
 DEFER = "defer"                 # endpoint in use but incompatible — exit
 
 
+# decide_spawn_failure_fallback results.
+FALLBACK_IN_PROCESS = "fallback_in_process"  # we own the endpoint — take the device
+FALLBACK_CLIENT = "fallback_client"          # someone is serving — attach instead
+FALLBACK_EXIT = "fallback_exit"              # a real owner we cannot talk to — stand down
+
+
+def decide_spawn_failure_fallback(busy_outcome):
+    """Pure decision: what a GUI does when its deferred daemon spawn FAILED.
+
+    That path skipped the startup claim (``daemon_handled_instance``), so it has
+    to claim the endpoint before owning the device — a bare probe-then-clear is
+    the check-then-act two GUIs would both win. ``busy_outcome`` is None when
+    :func:`~polyhost.server.instance.claim_instance` succeeded, otherwise the
+    ``EndpointBusy.outcome`` it raised.
+
+    LIVE is the one refusal that is good news: a core came up while we were
+    failing to spawn one, so attaching to it beats fighting for the device.
+    Everything else means a real process owns the endpoint and we cannot speak
+    to it, which is never worth a second host."""
+    if busy_outcome is None:
+        return FALLBACK_IN_PROCESS
+    if busy_outcome == inst.LIVE:
+        return FALLBACK_CLIENT
+    return FALLBACK_EXIT
+
+
 def decide_startup_mode(outcome, daemon_mode):
     """Pure decision: a ``probe_existing`` outcome + ``daemon_mode`` -> action.
 
