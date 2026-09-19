@@ -1,16 +1,23 @@
 """Discover the keyboard shortcuts the focused application exposes.
 
-One model, three platforms, two backends built:
+One model, three platforms, three backends:
 
-    Linux    AT-SPI2 over D-Bus, `org.a11y.atspi.Action.GetKeyBinding`  built
-    Windows  UI Automation, AcceleratorKey (30006) / AccessKey (30007)  built
-    macOS    Accessibility API, AXMenuItemCmdChar & friends             NOT built
+    Linux    AT-SPI2 over D-Bus, `org.a11y.atspi.Action.GetKeyBinding`
+    Windows  UI Automation, AcceleratorKey (30006) / AccessKey (30007)
+    macOS    Accessibility API, AXMenuItemCmdChar & friends
 
-⚠️ macOS therefore harvests NOTHING and the shortcut fall-back never fires there.
-That is a gap, not a failure: `pick()` returns None, the caller draws no icons,
-and nothing misbehaves. It is also the platform most worth doing eventually --
-every Mac app has a real menu bar with real key equivalents, where the modern
-Linux toolkits yield literally zero.
+⚠️ **"Built" is not "measured", and the three are at different stages.** Only
+the Linux one has run against real applications (mousepad 26/26, gedit 0,
+gnome-text-editor 0 -- the classic-menubar ceiling). Windows and macOS were
+both written without the machine, so their PURE parsers are selftested and
+their platform calls have never executed. Expect to debug each on first
+contact and read a first success as one sample.
+
+macOS is the one with the highest ceiling and the lowest confidence: every Mac
+app has a real menu bar exposing a STRUCTURED binding, so there is nothing to
+parse heuristically -- but it is also the only backend gated on a permission
+the user must grant by hand, and a denied grant looks exactly like an app with
+no shortcuts unless the reason is named. See `macos.unavailable_reason()`.
 
 ⚠️ NOTHING HERE RAISES. It runs on a background thread for a cosmetic feature, so
 a missing bridge, a dead app or a D-Bus timeout must each cost an empty list.
@@ -36,8 +43,27 @@ def backend_name() -> str:
     if sys.platform.startswith("win"):
         return "uia"
     if sys.platform.startswith("darwin"):
-        return ""                       # see the module docstring
+        return "macos"
     return "atspi"
+
+
+def _backend_module(name: str):
+    """Import the named backend.
+
+    ⚠️ One import site, shared by `pick()` and `unavailable_reason()`, because
+    the two must agree about which module they are talking about -- a second
+    copy of this mapping is a place for the two to disagree, and the symptom
+    would be a reason that describes a backend the app is not using. It was two
+    copies while there were two backends and one `else`; adding a third made the
+    `else` a wrong answer for macOS rather than merely an untidy one.
+    """
+    if name == "uia":
+        from polyhost.services.shortcut_source import uia as backend
+    elif name == "macos":
+        from polyhost.services.shortcut_source import macos as backend
+    else:
+        from polyhost.services.shortcut_source import atspi as backend
+    return backend
 
 
 def pick():
@@ -52,10 +78,7 @@ def pick():
     if not name:
         return None
     try:
-        if name == "uia":
-            from polyhost.services.shortcut_source import uia as backend
-        else:
-            from polyhost.services.shortcut_source import atspi as backend
+        backend = _backend_module(name)
     except Exception:
         return None
     return backend if backend.available() else None
@@ -72,12 +95,12 @@ def unavailable_reason() -> str | None:
     """
     name = backend_name()
     if not name:
-        return "this platform has no accessibility backend (macOS is not built)"
+        # Unreachable on the three platforms this app supports; kept because
+        # `backend_name()` answers for whatever `sys.platform` says, and a new
+        # platform must degrade to a sentence rather than an AttributeError.
+        return "this platform has no accessibility backend"
     try:
-        if name == "uia":
-            from polyhost.services.shortcut_source import uia as backend
-        else:
-            from polyhost.services.shortcut_source import atspi as backend
+        backend = _backend_module(name)
     except Exception as exc:
         return "the %s backend could not be imported: %s" % (name, exc)
     reason = getattr(backend, "unavailable_reason", None)
