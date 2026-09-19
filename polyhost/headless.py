@@ -22,6 +22,7 @@ import threading
 from polyhost._version import __version__
 from polyhost.core.poly_core import PolyCore
 from polyhost.server.control_server import ControlServer
+from polyhost.server.instance import EndpointBusy, claim_instance
 
 
 class HeadlessHost:
@@ -83,11 +84,21 @@ class HeadlessHost:
             self.request_stop()
 
     def start(self):
+        """Bind the control endpoint, then bring the device stack up.
+
+        The control endpoint is the single-instance lock, so it is claimed
+        FIRST and a daemon that loses the race stands down having touched no
+        hardware (``instance.EndpointBusy``, handled by :func:`run_headless`).
+        With the worker started first, the loser had already opened the
+        keyboard — and on macOS the HID open is exclusive, so the winner then
+        got ``kIOReturnExclusiveAccess`` on every reconnect attempt and the
+        board stayed unreachable until the user replugged it 50 minutes later
+        (field, macOS 26.6, 2026-09-19)."""
+        self.control_server.start()
         self.core.worker.start()
         self.core.start_telemetry()
         # Core-owned active-window tracking (no-op without a display).
         self.core.start_window_tracking()
-        self.control_server.start()
         self._maybe_start_window_report_server()
         self.log.info("PolyKybdHost running headless. Drive it with `polyctl`.")
 
@@ -130,9 +141,18 @@ class HeadlessHost:
             self.core.shutdown()
 
     def run(self):
-        """Start and block until a shutdown is requested (or KeyboardInterrupt)."""
-        self.start()
+        """Start and block until a shutdown is requested (or KeyboardInterrupt).
+
+        ``start()`` is INSIDE the try, not before it: it brings up several
+        services in sequence, and a failure partway through must still reach
+        ``stop()``. That matters more since the control server binds first — a
+        worker that fails to start would otherwise leave the endpoint bound and
+        its accept thread running with no teardown, which is the same shape as
+        the bug this file's start() ordering exists to fix. ``stop()`` is
+        idempotent and every piece it touches tolerates never having started.
+        """
         try:
+            self.start()
             while not self._stop.wait(0.5):
                 pass
         except KeyboardInterrupt:
@@ -165,7 +185,7 @@ class HeadlessHost:
         updater.restart_app()
 
 
-def run_headless(log_level=logging.INFO, ignore_version=False, developer=None):
+def run_headless(log_level=logging.INFO, ignore_version=False, developer=None, claim=None):
     """Entry point for ``--headless`` (see polyhost/main_app.py).
 
     Logs to a rotating ``daemon_log.txt`` **and** to the stream. The file
@@ -224,6 +244,27 @@ def run_headless(log_level=logging.INFO, ignore_version=False, developer=None):
     if developer is None:
         developer = log_level <= logging.DEBUG
     log.info("Developer mode: %s", developer)
-    host = HeadlessHost(log, ignore_version=ignore_version,
-                        allow_key_injection=developer)
-    host.run()
+    # The endpoint must be claimed BEFORE the host is constructed:
+    # PolyCore.__init__ opens the keyboard, and on macOS that open is exclusive
+    # — a daemon that goes on to lose the bind race has by then already taken
+    # the device away from the winner. main_app normally hands the claim in,
+    # having taken it before any device code could run; a direct call (tests, an
+    # embedder) takes one here. Two GUIs spawning a daemon at the same moment is
+    # an ordinary race, so the loser exits quietly: it used to surface as an
+    # unhandled `OSError: [Errno 48] Address already in use` in crash_log.txt,
+    # which reads as a crash on every first install.
+    owned = claim is None
+    if owned:
+        try:
+            claim = claim_instance()
+        except EndpointBusy as e:
+            log.info("Another PolyKybdHost already serves the control endpoint "
+                     "(%s) — standing down.", e.outcome)
+            return
+    try:
+        host = HeadlessHost(log, ignore_version=ignore_version,
+                            allow_key_injection=developer)
+        host.run()
+    finally:
+        if owned:
+            claim.release()

@@ -175,6 +175,25 @@ def endpoint_address() -> str:
     return os.path.join(base, "polykybd.sock")
 
 
+def instance_lock_path(address=None) -> str:
+    """Path of the file lock that makes the control endpoint a real instance lock.
+
+    ``probe_existing`` -> ``clear_stale_endpoint`` -> ``Listener()`` is a
+    check-then-act, and two daemons starting in the same millisecond both read
+    STALE, both unlink and one loses the bind (field, 2026-09-19: an
+    ``OSError: [Errno 48] Address already in use`` traceback in crash_log.txt).
+    The lock makes that sequence atomic; see
+    :func:`polyhost.server.instance.claim_instance`.
+
+    Lives beside the endpoint so two different endpoints never share one lock —
+    except on Windows, where a named pipe has no filesystem path at all and the
+    lock goes in the config dir, namespaced by the pipe name."""
+    address = address or endpoint_address()
+    if sys.platform == "win32":
+        return os.path.join(_config_dir(), address.rsplit("\\", 1)[-1] + ".instance.lock")
+    return address + ".instance.lock"
+
+
 def authkey_path() -> str:
     return os.path.join(_config_dir(), "polykybd.authkey")
 

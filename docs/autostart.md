@@ -122,7 +122,22 @@ brand-new console window it then dies with. Use
   [`docs/autostart.md`](autostart.md).** `setup_autostart_for_app()` is called
   from `main_app.py` unless `--portable`; Windows uses a non-elevated logon
   scheduled task driving a venv-activating `.bat` through a hidden-launch `.vbs`,
-  Linux a `.desktop` entry, macOS a `launchd` plist. Four things stay here:
+  Linux a `.desktop` entry, macOS a `launchd` plist. Five things stay here:
+  - ⚠️ **Registering macOS autostart must NEVER run `launchctl`.** The plist carries
+    `RunAtLoad`, so `launchctl load` starts the job *immediately* — and
+    `add_to_startup()` only ever runs from an already-running PolyHost, so the load
+    started a **second copy of the app**. That is the whole of the "suddenly two host
+    icons" report from a first-time macOS install (2026-09-19): two trays 691 ms
+    apart, two core daemons, and the daemon that lost the bind race dying on
+    `EADDRINUSE` *after* it had already opened the keyboard — which, because the
+    macOS HID open is exclusive, left the winner unable to talk to the board for the
+    next 50 minutes. `launchctl unload` is the mirror hazard: when launchd is what
+    started this process, unloading our own job kills us. Writing the plist is
+    enough; launchd loads `~/Library/LaunchAgents` at the next login, which is the
+    only moment autostart is meant to fire. **The tell that registration is
+    self-starting: the second process appears a few ms BEFORE the first one logs
+    "Autostart registration: ...", because that line is written after
+    `subprocess.run` returns and launchd has already exec'd the child.**
   - ⚠️ **Every relaunch must be spawned DETACHED** — `updater.detached_popen_kwargs()`
     / `spawn_detached()`. A plain `Popen` on Windows is how *"it doesn't start up
     again after the update"* happens: the child inherits the exiting parent's console

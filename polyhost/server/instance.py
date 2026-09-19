@@ -6,6 +6,14 @@ it rather than fight over the HID device. On POSIX a crashed previous run
 can leave a stale socket file that would block ``Listener`` from binding;
 ``clear_stale_endpoint`` removes it only once we've confirmed nothing is
 listening.
+
+Probing, clearing and binding are three steps, so on their own they are a
+check-then-act: two hosts starting in the same millisecond both read STALE,
+both unlink the socket node and one loses the bind with ``EADDRINUSE`` — after
+both have already opened the keyboard. :func:`claim_instance` closes that
+window with an OS file lock held for the life of the host, and raises
+:class:`EndpointBusy` so the loser stands down cleanly instead of dying in an
+unhandled traceback.
 """
 import os
 import stat
@@ -22,6 +30,12 @@ LIVE = "live"                  # a compatible control server answered hello
 INCOMPATIBLE = "incompatible"  # a process answered but with a bad/absent hello
 AUTH_MISMATCH = "auth"         # a process is listening but rejected our authkey
 STALE = "stale"                # nothing listening (refused / not found / EOF pre-hello)
+
+#: Not a probe outcome: `claim_instance` reports it when another process holds
+#: the instance lock but has not bound the endpoint yet, so there is nothing for
+#: a probe to answer. That window is exactly the one the probe-only check used
+#: to read as STALE, which is how two hosts both concluded they were alone.
+LOCKED = "locked"
 
 
 def probe_existing(address=None, authkey=None, timeout=0.5) -> str:
@@ -76,3 +90,130 @@ def clear_stale_endpoint(address=None) -> None:
         pass
     except OSError:
         pass
+
+
+class EndpointBusy(RuntimeError):
+    """Another process already owns the control endpoint.
+
+    Raised by :func:`claim_instance` instead of letting the bind fail with
+    ``EADDRINUSE``: losing the race is an expected outcome of two hosts
+    starting at once, and the loser's job is to stand down quietly, not to die
+    in a traceback. ``outcome`` carries the :func:`probe_existing` verdict that
+    decided it (LIVE / INCOMPATIBLE / AUTH_MISMATCH), or :data:`LOCKED` when
+    the lock is held by a process that has not bound the endpoint yet."""
+
+    def __init__(self, outcome):
+        super().__init__(f"control endpoint is already in use ({outcome})")
+        self.outcome = outcome
+
+
+def _try_lock(fd) -> bool:
+    """Take an exclusive, non-blocking lock on ``fd``. False if held elsewhere.
+
+    An OS file lock, not a pid file: the kernel drops it when the holder dies
+    however it dies, so a crashed or killed host can never leave the endpoint
+    permanently unclaimable."""
+    if sys.platform == "win32":
+        import msvcrt
+        try:
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+            return True
+        except OSError:
+            return False
+    import fcntl
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return True
+    except OSError:
+        return False
+
+
+class InstanceClaim:
+    """Proof that this process, and only this process, owns the endpoint.
+
+    Held for the life of the host: the OS file lock underneath it is what makes
+    the control socket a real single-instance lock instead of a check-then-act
+    one. :meth:`release` exists for tests and for a host that shuts down without
+    exiting; a process that simply dies releases it too."""
+
+    def __init__(self, fd, path):
+        self._fd = fd
+        self.path = path
+
+    def release(self) -> None:
+        """Drop the lock. Idempotent, never raises."""
+        if self._fd is None:
+            return
+        fd, self._fd = self._fd, None
+        try:
+            if sys.platform == "win32":
+                import msvcrt
+                msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(fd, fcntl.LOCK_UN)
+        except OSError:
+            # Explicit unlocking is courtesy: the close below drops the lock
+            # regardless, and on Windows unlocking a region that was never
+            # locked (a claim abandoned before _try_lock succeeded) raises here
+            # by design. Either way there is nothing left to do and nothing
+            # worth failing a shutdown over.
+            pass
+        try:
+            os.close(fd)
+        except OSError:
+            # Already closed — a double release, or the interpreter tearing
+            # down around us. The descriptor is gone, which is all release()
+            # promises.
+            pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.release()
+        return False
+
+
+def claim_instance(address=None, authkey=None) -> InstanceClaim:
+    """Become the one host that owns the control endpoint, or raise.
+
+    Take this BEFORE building anything that touches the keyboard, and hold it
+    for the life of the process. ``probe_existing`` on its own is a
+    check-then-act: two hosts starting in the same millisecond both read STALE,
+    both unlink the socket node, and one loses the bind with ``EADDRINUSE``.
+    That was survivable only in theory — the loser had already opened the
+    keyboard from ``PolyCore.__init__``, and macOS makes the HID open
+    exclusive, so the *winner* then got ``kIOReturnExclusiveAccess`` on every
+    reconnect and the board stayed unreachable until the user replugged it 50
+    minutes later (field, macOS 26.6, 2026-09-19).
+
+    The file lock serialises probe -> clear-stale -> the caller's bind, and the
+    claim outlives the bind so a second host is turned away for as long as this
+    one runs. Raises :class:`EndpointBusy` when anything else owns it, which
+    includes INCOMPATIBLE / AUTH_MISMATCH: unlinking a socket a live process is
+    bound to would be the worse outcome."""
+    address = address or protocol.endpoint_address()
+    path = protocol.instance_lock_path(address)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    # Hand the descriptor to the claim immediately, so every exit path from
+    # here on closes it. Taking the lock first would leak the descriptor for
+    # the life of the process if anything between the open and the assignment
+    # raised.
+    claim = InstanceClaim(fd, path)
+    try:
+        if not _try_lock(fd):
+            # Someone holds the lock. They may not have bound the endpoint yet,
+            # so the probe is the better answer when it has one — LOCKED
+            # otherwise.
+            outcome = probe_existing(address, authkey)
+            raise EndpointBusy(LOCKED if outcome == STALE else outcome)
+        outcome = probe_existing(address, authkey)
+        if outcome != STALE:
+            raise EndpointBusy(outcome)
+        clear_stale_endpoint(address)
+    except BaseException:
+        claim.release()
+        raise
+    return claim

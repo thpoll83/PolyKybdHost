@@ -307,26 +307,42 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # socket, client mode (--connect) WANTS the existing instance, and the
     # daemon-by-default block above already resolved the endpoint, so all are
     # excluded here.
+    #
+    # `claim_instance` takes an OS file lock across probe -> clear-stale, and
+    # HOLDS it for the life of this process, so a second host starting in the
+    # same millisecond is turned away instead of racing us to the bind. It is
+    # taken here, before any device code runs: PolyCore.__init__ opens the
+    # keyboard, and on macOS that open is exclusive — the loser of the old race
+    # took the device away from the winner on its way down (field, 2026-09-19).
+    # The claim is passed to run_headless rather than re-taken there: one
+    # process, one claim (a second would block on this process's own lock).
+    instance_claim = None
     if not (args.host or args.host_file or client_mode or daemon_handled_instance):
-        from polyhost.server.instance import (
-            probe_existing, clear_stale_endpoint, LIVE, STALE)
-        outcome = probe_existing()
-        slog.info("Single-instance lock: control-endpoint probe=%s", outcome)
-        if outcome == LIVE:
-            slog.warning("Another PolyKybdHost already serves the control socket; exiting.")
-            print("PolyKybdHost is already running (control socket answered). Exiting.")
-            sys.exit(0)
-        if outcome != STALE:
+        from polyhost.server.instance import claim_instance, EndpointBusy, LIVE, LOCKED
+        try:
+            instance_claim = claim_instance()
+        except EndpointBusy as e:
+            if e.outcome == LIVE:
+                slog.warning("Another PolyKybdHost already serves the control socket; exiting.")
+                print("PolyKybdHost is already running (control socket answered). Exiting.")
+                sys.exit(0)
+            if e.outcome == LOCKED:
+                # A sibling host is mid-startup and has the lock but has not
+                # bound yet. Nothing is wrong — it is simply not our turn.
+                slog.info("Another PolyKybdHost is starting up (holds the instance "
+                          "lock); exiting rather than starting a second host.")
+                print("PolyKybdHost is already starting. Exiting.")
+                sys.exit(0)
             # INCOMPATIBLE / AUTH_MISMATCH: a real process owns the endpoint but
             # we can't speak to it. Don't unlink its socket and fight over the
             # HID device — defer and let the user sort out the version/key.
             slog.warning("Control endpoint in use (%s) but not answering compatibly; exiting.",
-                         outcome)
-            print(f"PolyKybdHost control endpoint is in use ({outcome}) but not "
+                         e.outcome)
+            print(f"PolyKybdHost control endpoint is in use ({e.outcome}) but not "
                   "answering compatibly. Exiting rather than starting a second "
                   "host. Restart the running instance if this is unexpected.")
             sys.exit(0)
-        clear_stale_endpoint()
+        slog.info("Single-instance lock: claimed the control endpoint.")
 
     if args.headless:
         # No Qt in this process — import nothing Qt-dependent.
@@ -343,7 +359,8 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
             hl_level = logging.DEBUG
         else:
             hl_level = logging.INFO
-        run_headless(hl_level, ignore_version=args.ignore_version, developer=developer)
+        run_headless(hl_level, ignore_version=args.ignore_version, developer=developer,
+                     claim=instance_claim)
         crash_log.note_clean_exit(slog, "headless daemon")
         sys.exit(0)
 
@@ -388,13 +405,37 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
             else:
                 slog.warning("Could not spawn the core daemon; running in-process instead.")
                 print("Could not start the core daemon; running in-process instead.")
-                # Re-probe before unlinking: the endpoint was last probed well
-                # before this deferred spawn attempt, and another process could
-                # have bound it meanwhile — only clear it if it's still stale.
-                from polyhost.server.instance import probe_existing, clear_stale_endpoint, STALE
-                if probe_existing() == STALE:
-                    clear_stale_endpoint()
-                client_mode, defer_connect = False, False
+                # CLAIM the endpoint before owning the device. This path skipped
+                # the claim block above (daemon_handled_instance was true), and a
+                # bare probe-then-clear is the same check-then-act the claim
+                # exists to remove: two GUIs whose daemon spawn both failed would
+                # both read the endpoint as stale, both unlink it and both open
+                # the keyboard. claim_instance does the probe and the clear
+                # itself, under the lock.
+                from polyhost.server.instance import claim_instance, EndpointBusy
+                busy_outcome = None
+                try:
+                    instance_claim = claim_instance()
+                    # The BINDING is the point, not the value: the claim holds
+                    # an OS file lock for as long as it is alive, so letting it
+                    # go here would hand the endpoint to the next process while
+                    # this one still owns the device. Logging the path keeps
+                    # that visible to a reader (and to static analysis) and
+                    # answers "why did my second instance exit" in a log.
+                    slog.debug("Instance claim held (%s).", instance_claim.path)
+                except EndpointBusy as e:
+                    busy_outcome = e.outcome
+                fallback = dl.decide_spawn_failure_fallback(busy_outcome)
+                if fallback == dl.FALLBACK_IN_PROCESS:
+                    client_mode, defer_connect = False, False
+                elif fallback == dl.FALLBACK_CLIENT:
+                    slog.info("A core daemon is serving the endpoint after all; "
+                              "staying a client instead of going in-process.")
+                else:
+                    slog.warning("Control endpoint is in use (%s); exiting rather than "
+                                 "starting a second host.", busy_outcome)
+                    print("PolyKybdHost control endpoint is in use. Exiting.")
+                    sys.exit(0)
         if client_mode:
             slog.info("Launch path: GUI as client of a running core (endpoint=%s).",
                       endpoint or "default")

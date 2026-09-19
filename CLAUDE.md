@@ -123,8 +123,14 @@ over HID. The full file-by-file map — entry points, `PolyCore`, the control so
 its three servers, `polyctl`, headless mode, `RemoteCore`, the device layer, the
 platform input abstraction, the window handlers and the settings/services — is
 [`docs/architecture.md`](docs/architecture.md). Read it before adding a module or a
-control-socket method. Four rules bind code outside it:
+control-socket method. Five rules bind code outside it:
 
+- ⚠️ **`PolyCore.__init__` OPENS THE KEYBOARD** (`keeb.connect()`), so anything that
+  decides whether this process should be the host must happen **before** the core is
+  constructed, not in a `start()` afterwards. `instance.claim_instance()` is that
+  gate: an OS file lock held for the life of the process, taken in `main_app` before
+  any device code runs. Probing the socket alone is a check-then-act — two hosts
+  starting in the same millisecond both read STALE and both open the device.
 - **`PolyCore` is the Qt-free operational core** and must stay importable without
   PyQt5 and without a display. It communicates **only** through observer callbacks
   with JSON-serializable payloads; worker-side code must never touch a Qt object.
@@ -367,8 +373,16 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
 ### Updates, autostart and daemon mode
 
 Autostart registration and the post-update relaunch chain are
-[`docs/autostart.md`](docs/autostart.md). Four rules bind code outside it:
+[`docs/autostart.md`](docs/autostart.md). Five rules bind code outside it:
 
+- ⚠️ **Registering autostart must never START the app** — it always runs from an
+  app that is already running. macOS made this concrete: the plist carries
+  `RunAtLoad`, so the `launchctl load` in `add_to_startup()` launched a SECOND copy,
+  and a first-time install came up with two tray icons, two core daemons and an
+  `EADDRINUSE` crash from the loser — which had already opened the keyboard
+  exclusively, locking the winner out of the device for 50 minutes. The tell is that
+  the second process starts a few ms **before** the first logs "Autostart
+  registration: …", since that line lands after `subprocess.run` returns.
 - **GUI self-update must be applied by the DAEMON, not the client.** In daemon mode the
   tray is a `--connect` client and the daemon owns `PolyCore` — and therefore the
   protocol gate. Running `UpdateInstaller` in the GUI process refreshed only the client
