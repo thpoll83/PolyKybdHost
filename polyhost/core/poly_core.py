@@ -736,15 +736,29 @@ class PolyCore(Observable):
         cache keys on, and that is correct there for exactly the opposite reason:
         the PIXELS do not depend on the key.
         """
-        if not slug and not shortcuts:
-            # Nothing GENERIC to draw -- so no send, even with templates in
-            # hand: the template is already on the device from the change tick.
-            # ⚠️ An EQUIVALENT MUTANT, measured: `_send_generic_overlays` builds
-            # no sources from an empty pair and returns on `if not built`, so
-            # deleting this changes no outcome. It is kept as the early-out that
-            # stops the fetchers' answers being turned into converters at all,
-            # and said out loud so the next reader does not take the mutation
-            # sweep's silence here as a gap in the tests.
+        if not shortcuts:
+            # ⚠️ NO SHORTCUTS MEANS NO SEND -- **including the mark**, which is
+            # the one case where "what we could resolve" and "what is worth
+            # drawing" come apart.
+            #
+            # The mark alone says only "this app was recognised", and the person
+            # reading the board takes it for "this app has icons": it is the
+            # confirmation that the rest of the keycaps mean something. Drawn
+            # over a board that gained nothing else, it promises what the next
+            # glance disproves -- so it is worse than blank, which at least says
+            # nothing.
+            #
+            # ⚠️ The consequence is deliberate and it is LARGE: where the
+            # harvest can never answer, the feature is silent. That is all of
+            # macOS (no backend built) and every Linux app whose menus live in a
+            # hamburger rather than a menu bar. Those are exactly the cases
+            # where the mark was standing in for a promise nothing could keep.
+            #
+            # ⚠️ Also correct for the first tick of an app that DOES have
+            # shortcuts: the harvest is asynchronous, so this is "not yet"
+            # rather than "never", and the tick that resolves them sends both
+            # together. A mark that appears alone and is joined a second later
+            # by its icons would read as the board changing its mind.
             return None
         return (slug, tuple(sorted(
             (source, tuple(sorted(keys))) for source, keys in shortcuts.items())),

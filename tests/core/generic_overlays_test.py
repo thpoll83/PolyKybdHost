@@ -99,7 +99,7 @@ class TemplateWinsTest(unittest.TestCase):
         # ⚠️ The template re-programs the whole pool, so the generic set is
         # gone with it. Without clearing this, switching template-app -> generic-app ->
         # template-app -> generic-app would skip the second generic send.
-        core = make_core(mask=_mask())
+        core = make_core(mask=_mask(), shortcuts=_sc())
         _tick(core)                                        # generic mark sent
         self.assertEqual(core._generic_on_device[0], "si:gimp")
         _tick(core, data="x.mods.png", cmd=OverlayCommand.OFF_ON)
@@ -168,7 +168,7 @@ class TemplatePriorityTest(unittest.TestCase):
 class GenericMarkTest(unittest.TestCase):
 
     def test_no_template_and_a_mask_QUEUES_the_mark(self):
-        core = make_core(mask=_mask())
+        core = make_core(mask=_mask(), shortcuts=_sc())
         _tick(core)
         self.assertEqual(core.worker.submit.call_args.args[0], "overlay")
         self.assertEqual(core.worker.submit.call_args.kwargs["coalesce_key"],
@@ -176,7 +176,7 @@ class GenericMarkTest(unittest.TestCase):
         self.assertEqual(core._generic_on_device[0], "si:gimp")
 
     def test_it_emits_THINKING_like_any_other_overlay_send(self):
-        core = make_core(mask=_mask())
+        core = make_core(mask=_mask(), shortcuts=_sc())
         events = []
         core.subscribe(lambda n, p: events.append((n, p)))
         _tick(core)
@@ -184,18 +184,48 @@ class GenericMarkTest(unittest.TestCase):
 
     def test_the_SAME_app_is_not_resent_every_tick(self):
         # The tick runs continuously; only a change may cost a transfer.
-        core = make_core(mask=_mask())
+        core = make_core(mask=_mask(), shortcuts=_sc())
         for _ in range(5):
             _tick(core)
         self.assertEqual(core.worker.submit.call_count, 1)
 
     def test_a_DIFFERENT_app_is_sent(self):
-        core = make_core(mask=_mask())
+        core = make_core(mask=_mask(), shortcuts=_sc())
         _tick(core)
         core._app_icons.overlay_for.return_value = (_mask(), "si:inkscape")
         _tick(core)
         self.assertEqual(core.worker.submit.call_count, 2)
         self.assertEqual(core._generic_on_device[0], "si:inkscape")
+
+    def test_a_mark_with_NO_shortcuts_is_NOT_drawn(self):
+        """⚠️ The mark is CONFIRMATION, not recognition.
+
+        Alone on an otherwise unchanged board it says "this app was
+        recognised" and is read as "this app has icons" — a promise the next
+        glance disproves. Blank at least says nothing. Reported from hardware:
+        *"I see it as confirmation that we have something."*
+        """
+        core = make_core(mask=_mask(), shortcuts={})
+        _tick(core)
+        core.worker.submit.assert_not_called()
+        self.assertIsNone(core._generic_on_device)
+
+    def test_the_mark_IS_drawn_once_a_single_shortcut_resolves(self):
+        """The control. Without it the test above passes for a mark that is
+        never drawn at all."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        _tick(core)
+        self.assertEqual(core.worker.submit.call_count, 1)
+        self.assertEqual(core._generic_on_device[0], "si:gimp")
+
+    def test_shortcuts_with_NO_mark_still_send(self):
+        """⚠️ The rule is one-directional. Icons without a mark are fine — they
+        are the payload; a mark without icons is not, because it is only ever a
+        label for them. An app the catalogs do not carry still gets its
+        shortcut icons."""
+        core = make_core(mask=None, slug=None, shortcuts=_sc())
+        _tick(core)
+        self.assertEqual(core.worker.submit.call_count, 1)
 
     def test_NO_mask_yet_sends_nothing_and_claims_nothing(self):
         # First sighting: the fetch was queued, nothing is drawable yet. The
@@ -278,16 +308,21 @@ class ShortcutIconTest(unittest.TestCase):
         self.assertEqual(core.worker.submit.call_count, 2)
 
     def test_a_shortcut_appearing_LATER_is_sent_without_the_app_changing(self):
-        # The harvest is slow and runs off the tick, so the first sighting of an
-        # app resolves the mark and nothing else. The pass after the tree walk
-        # finishes has to send again, or the icons appear only the SECOND time
-        # you focus the application.
+        """The harvest is slow and runs off the tick, so the first sighting of
+        an app resolves nothing. The pass after the tree walk finishes has to
+        send, or the icons appear only the SECOND time you focus the app.
+
+        ⚠️ The first tick now sends NOTHING rather than the mark alone — see
+        `_generic_signature`. The property under test is unchanged and is the
+        one that matters: a late harvest must not be missed. What moved is that
+        the board goes from blank to complete in one step instead of showing a
+        mark that promises icons which are not there yet."""
         core = make_core(mask=_mask(), shortcuts={})
         _tick(core)
-        self.assertEqual(core.worker.submit.call_count, 1)
+        core.worker.submit.assert_not_called()
         core._shortcut_icons.overlays_for.return_value = _sc()
         _tick(core)
-        self.assertEqual(core.worker.submit.call_count, 2)
+        self.assertEqual(core.worker.submit.call_count, 1)
 
     def test_every_key_of_one_concept_rides_ONE_source(self):
         # The pixels do not depend on the key, so a concept is one pool slot
@@ -406,14 +441,30 @@ class ForwardedShortcutsTest(unittest.TestCase):
         core._shortcut_icons.overlays_for.assert_called_once_with(
             "gimp", harvested=())
 
-    def test_the_MARK_still_goes_out_while_the_relay_is_in_flight(self):
-        # The mark works because the forwarder resolves the identity and relays
-        # it. Losing the mark while waiting for shortcuts would be a regression.
+    def test_NOTHING_goes_out_while_the_relay_is_in_flight(self):
+        """⚠️ INVERTED on 2026-09-19, and the old reason is worth keeping: this
+        asserted the mark went out alone, on the grounds that "losing the mark
+        while waiting for shortcuts would be a regression".
+
+        It is not, once the mark's job is understood as CONFIRMATION that the
+        rest of the board means something. A forwarded app whose relay has not
+        answered has nothing behind the mark, and the two cases the user sees
+        are indistinguishable at that moment: a relay still in flight (the icons
+        arrive a second later) and a forwarder too old to send them (they never
+        do). Showing the mark makes the same promise in both."""
         core = self._remote(relayed=None, mask=_mask())
+        _tick(core)
+        core.worker.submit.assert_not_called()
+
+    def test_the_mark_and_the_RELAYED_icons_arrive_TOGETHER(self):
+        """The other half: once the relay answers, both go in one send."""
+        core = self._remote(relayed=[[1, 22, "Save"]], mask=_mask())
+        core._shortcut_icons.overlays_for.return_value = _sc()
         _tick(core)
         core.worker.submit.call_args.args[1](threading.Event())
         names = core.device_mgr.all_entries[0].device.send_overlays_mru.call_args.args[0]
-        self.assertEqual(names, ["@prog:si:gimp"])
+        self.assertEqual(names[0], "@prog:si:gimp")
+        self.assertGreater(len(names), 1, "the icons must ride the same send")
 
     def test_it_says_WHY_at_INFO_once_per_app(self):
         # Not a failure to debug: this feature decides on its own what to draw
@@ -459,7 +510,7 @@ class FailurePathTest(unittest.TestCase):
         # ⚠️ The slug is recorded BEFORE the send, so a superseded job has to put
         # it back — otherwise the app is permanently believed to be marked and
         # never gets one.
-        core = make_core(mask=_mask())
+        core = make_core(mask=_mask(), shortcuts=_sc())
         _tick(core)
         job = core.worker.submit.call_args.args[1]
         cancel = threading.Event()
@@ -468,7 +519,7 @@ class FailurePathTest(unittest.TestCase):
         self.assertIsNone(core._generic_on_device)
 
     def test_a_RAISING_send_forgets_the_mark_and_warns(self):
-        core = make_core(mask=_mask())
+        core = make_core(mask=_mask(), shortcuts=_sc())
         events = []
         core.subscribe(lambda n, p: events.append(n))
         _tick(core)
@@ -479,13 +530,14 @@ class FailurePathTest(unittest.TestCase):
         self.assertIn("overlay_warning", events)
 
     def test_the_send_names_the_SYNTHETIC_source(self):
-        core = make_core(mask=_mask())
+        core = make_core(mask=_mask(), shortcuts=_sc())
         _tick(core)
         core.worker.submit.call_args.args[1](threading.Event())
         entry = core.device_mgr.all_entries[0]
         args, kwargs = entry.device.send_overlays_mru.call_args
-        self.assertEqual(args[0], ["@prog:si:gimp"])
+        self.assertEqual(args[0][0], "@prog:si:gimp")      # the mark keeps ESC
         self.assertIn("@prog:si:gimp", kwargs["synthetic"])
+        self.assertTrue(set(args[0]) <= set(kwargs["synthetic"]))
 
 
 
