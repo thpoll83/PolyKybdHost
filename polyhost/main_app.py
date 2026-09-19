@@ -231,7 +231,24 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     # means "no spawn pending".
     pending_daemon_spawn = None
     is_plain_gui = not (args.headless or explicit_connect or args.host or args.host_file)
+    # One tray icon per user, and the check happens HERE — before the spawn
+    # decision below, not around it. Under daemon-by-default the GUI is a client
+    # and never owns the control endpoint, so the endpoint lock cannot see a
+    # second tray at all; and the daemon spawn is deferred until after the PyQt
+    # imports load (~9 s cold), during which `probe_existing` keeps answering
+    # STALE, so every GUI started in that window also decides to spawn a daemon
+    # and also shows an icon. That is what a first-time macOS install looked
+    # like: two launches 691 ms apart, two trays (2026-09-19). `--connect` is
+    # excluded — an extra client GUI against a running core is a supported ask.
+    gui_claim = None
     if is_plain_gui:
+        from polyhost.server.instance import claim_gui, EndpointBusy
+        try:
+            gui_claim = claim_gui()
+        except EndpointBusy:
+            slog.warning("Another PolyKybdHost tray is already running; exiting.")
+            print("PolyKybdHost is already running (tray). Exiting.")
+            sys.exit(0)
         if args.daemon is None:
             from polyhost.settings import PolySettings  # Qt-free
             daemon_mode = bool(PolySettings().get("daemon_mode"))
@@ -446,6 +463,15 @@ def main(launch_monotonic=None, post_bootstrap_monotonic=None):
     if getattr(app, "wants_restart", False):
         from polyhost.services.updater import restart_app
         del app  # let the QApplication release its X/tray/D-Bus resources first
+        # Drop the tray claim BEFORE relaunching. `restart_app()` prefers
+        # os.execv (which drops it anyway — the lock fd is close-on-exec), but
+        # on Windows, and on POSIX when execv fails, it spawns a DETACHED child
+        # and only then exits. The two processes overlap there, so a still-held
+        # claim would turn the replacement away at startup: "it doesn't start up
+        # again after the update", the exact failure the detached spawn exists
+        # to prevent.
+        if gui_claim is not None:
+            gui_claim.release()
         restart_app()
     sys.exit(rc)
 

@@ -18,6 +18,7 @@ unhandled traceback.
 import os
 import stat
 import sys
+import time
 
 from multiprocessing.connection import AuthenticationError, Client
 
@@ -165,6 +166,46 @@ class InstanceClaim:
     def __exit__(self, *exc):
         self.release()
         return False
+
+
+#: How long :func:`claim_gui` waits for a departing tray to drop its claim.
+#: The lock overlaps by design on two ordinary paths — the post-update relaunch
+#: spawns the replacement before this process exits, and a user who quits the
+#: tray and immediately starts it again catches the old one still tearing down.
+#: Both resolve in well under a second; the wait only costs a genuine duplicate
+#: launch, which exits silently either way.
+GUI_CLAIM_WAIT_S = 3.0
+
+#: Poll interval while waiting for the GUI claim.
+_GUI_CLAIM_POLL_S = 0.05
+
+
+def claim_gui(timeout=GUI_CLAIM_WAIT_S) -> InstanceClaim:
+    """Claim the right to be the one tray icon, or raise :class:`EndpointBusy`.
+
+    Under daemon-by-default a GUI never owns the endpoint — it is a client — so
+    the endpoint lock cannot keep a second tray from appearing. The gap it
+    leaves is real: the daemon spawn is deferred until after the PyQt imports
+    load, ~9 s on a cold first start, and for that whole window
+    ``probe_existing`` answers STALE, so every GUI launched inside it also
+    decides to spawn a daemon and also shows a tray. A first-time macOS install
+    hit it with two launches 691 ms apart and came up with two icons
+    (2026-09-19).
+
+    Held for the life of the tray process, and taken BEFORE the spawn decision
+    rather than around it, so a second launch settles at once instead of waiting
+    out the window. ``--connect`` does not take it: an extra client GUI against
+    a running core is an explicit, supported thing to ask for."""
+    path = protocol.gui_lock_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    deadline = time.monotonic() + max(0.0, timeout)
+    while not _try_lock(fd):
+        if time.monotonic() >= deadline:
+            os.close(fd)
+            raise EndpointBusy(LOCKED)
+        time.sleep(_GUI_CLAIM_POLL_S)
+    return InstanceClaim(fd, path)
 
 
 def claim_instance(address=None, authkey=None) -> InstanceClaim:

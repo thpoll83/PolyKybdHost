@@ -194,11 +194,19 @@ class PolySettings:
             "debug_window_detection_if_not_connected_to_poly_kybd": "dev_run_window_detection_if_not_connected_to_poly_kybd",
         }
 
+        # What we last saw on disk. `save()` diffs against it to work out which
+        # keys THIS process actually changed, so a concurrent writer's keys are
+        # merged rather than overwritten — see save().
+        self._baseline = {}
+
         # Load settings
         if os.path.exists(self.path):
             self.load()
         else:
-            self.collection = self.defaults
+            # A copy: aliasing `defaults` would make every later write to
+            # `collection` mutate the defaults table this process compares
+            # against, including save()'s merge.
+            self.collection = dict(self.defaults)
         self.save()
 
         self.log.info("\nCurrent settings:\n====================================\n%s", yaml.dump(
@@ -215,22 +223,76 @@ class PolySettings:
         self.save()
 
     def load(self):
-        with open(self.path, encoding='utf-8') as f:
-            self.collection = yaml.safe_load(f) or {}
-        for old_key, new_key in self._legacy_key_renames.items():
-            if old_key in self.collection and new_key not in self.collection:
-                self.collection[new_key] = self.collection.pop(old_key)
-        for key, value in self.defaults.items():
-            self.collection.setdefault(key, value)
+        self.collection = self._normalize(self._read_file())
+        self._baseline = dict(self.collection)
 
-        self.collection = {k: v for k, v in self.collection.items() if k in self.defaults}
+    def _read_file(self):
+        """Raw settings dict from disk. ``{}`` when missing or unreadable.
+
+        Never raises: this is called on every save to merge against whatever
+        another process has written, and a transiently unreadable file must not
+        take the host down. An unreadable file simply means "no other writer's
+        keys to preserve"."""
+        try:
+            with open(self.path, encoding='utf-8') as f:
+                data = yaml.safe_load(f) or {}
+        except (OSError, yaml.YAMLError):
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def _normalize(self, data):
+        """Apply the legacy key renames, fill in defaults, drop unknown keys."""
+        data = dict(data)
+        for old_key, new_key in self._legacy_key_renames.items():
+            if old_key in data and new_key not in data:
+                data[new_key] = data.pop(old_key)
+        for key, value in self.defaults.items():
+            data.setdefault(key, value)
+        return {k: v for k, v in data.items() if k in self.defaults}
 
     def restore_defaults(self):
-        self.collection = self.defaults
+        self.collection = dict(self.defaults)
         self.save()
 
     def save(self):
-        with open(self.path, "w", encoding='utf-8') as f:
-            yaml.safe_dump(self.collection, f)
+        """Persist this process's changes without discarding anyone else's.
+
+        Two processes hold settings at once under daemon-by-default — the
+        daemon and the tray client — and a whole-file rewrite from a stale
+        in-memory copy silently reverts whatever the other one wrote in the
+        meantime. In the field that cost the telemetry install id: the GUI
+        generated and saved it at 11:44:47, the daemon still held the empty
+        value it had loaded at 11:44:45, and the daemon's next save at 11:53:16
+        wiped it — so the following run generated a fresh id and the machine
+        counted as two installs (2026-09-19).
+
+        So the merge is per KEY, not per file: re-read the file, keep its value
+        for every key this process did not itself change, and impose only our
+        own changes on top. `collection` is then updated to the merged result,
+        which is also how this process picks up the other one's edits.
+
+        The write itself goes through a temp file + ``os.replace`` so a reader
+        (or a crash) can never see a half-written settings file — the plain
+        truncating write left that window open on every save."""
+        mine = {k: v for k, v in self.collection.items()
+                if k not in self._baseline or self._baseline[k] != v}
+        merged = self._normalize(self._read_file())
+        merged.update(mine)
+
+        tmp = f"{self.path}.{os.getpid()}.tmp"
+        try:
+            with open(tmp, "w", encoding='utf-8') as f:
+                yaml.safe_dump(merged, f)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, self.path)
+        except OSError:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
+        self.collection = merged
+        self._baseline = dict(merged)
         self.log.info("Saved settings to %s", self.path)
 

@@ -331,6 +331,13 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
   `PolyCore.note_settings_changed(keys=None)`. Add the side effect to the hook, never to
   a caller; there are two settings writers and the second copy is how enabling a setting
   mid-session came to do nothing at all.
+- ⚠️ **`PolySettings.save()` merges per KEY against the file, and must keep doing so** —
+  the daemon and the tray both hold a `PolySettings`, so a whole-file rewrite from a
+  stale in-memory copy silently reverts the other one. That is how the telemetry install
+  id was lost: the GUI generated and saved it, the daemon saved 8 minutes later from the
+  empty value it had loaded first, and the next run generated a new id, counting the
+  machine as two installs. `save()` re-reads the file and imposes only the keys this
+  process changed, through a temp file + `os.replace`.
 - ⚠️ **The FORWARDER is a second tray app** (`polyhost/forwarder.py`) with its own
   `QApplication`, menu and log file, **on a different machine from the keyboard**. A
   user-facing tray feature added to `host.py` is simply absent there until wired
@@ -358,8 +365,17 @@ unicode-mode watcher and the icon rules are in [`docs/tray-ui.md`](docs/tray-ui.
 ### Updates, autostart and daemon mode
 
 Autostart registration and the post-update relaunch chain are
-[`docs/autostart.md`](docs/autostart.md). Five rules bind code outside it:
+[`docs/autostart.md`](docs/autostart.md). Six rules bind code outside it:
 
+- ⚠️ **There are TWO locks, and they are deliberately different files.**
+  `claim_instance()` guards the control endpoint (the core daemon holds it);
+  `claim_gui()` guards the tray icon (the GUI holds it). Under daemon-by-default the
+  GUI is a *client* and never owns the endpoint, so only the GUI lock can stop a second
+  tray — and one shared file would have the tray block the very daemon it just spawned.
+  ⚠️ **`claim_gui()` waits ~3 s rather than refusing at once**, because the post-update
+  relaunch spawns the replacement before this process exits; `main_app` also releases
+  the claim explicitly before `restart_app()`. Refusing immediately there is *"it
+  doesn't start up again after the update"*.
 - ⚠️ **Registering autostart must never START the app** — it always runs from an
   app that is already running. macOS made this concrete: the plist carries
   `RunAtLoad`, so the `launchctl load` in `add_to_startup()` launched a SECOND copy,
