@@ -58,3 +58,73 @@ and relative links were adjusted to suit a standalone file.
     The merge case and this one share nothing but the remedy, which is the reason
     to state it once for both.
 
+
+## Worked example: a merged PR whose work never reached `main` (2026-09-19)
+
+The rule in `CLAUDE.md` says a **push** to a merged branch orphans the commit.
+A **merge** does it too, and the stated check does not fire, because nothing was
+pushed.
+
+Two stacked PRs, eight seconds apart:
+
+```
+15:37:09  #244 merged -> main
+15:37:17  #245 merged -> claude/mac-duplicate-host-icons-phqu7w
+```
+
+#245 was based on #244's branch. GitHub retargets a stacked PR to the base's own
+base when the base merges — but not within eight seconds, so #245 merged into a
+branch that was itself already merged and closed. **Both PRs read "merged".**
+Neither GitHub nor git reported anything wrong. None of #245's work was on
+`main`:
+
+```bash
+$ git merge-base --is-ancestor b98445b origin/main
+b98445b: NOT ON MAIN
+$ git cat-file -e origin/main:polyhost/util/filelock.py
+filelock.py: ABSENT from main
+```
+
+### Why the obvious fix is wrong
+
+The orphan branch was cut before PR #243, so `git diff --stat origin/main
+origin/<orphan>` showed **606 deletions** of work that had landed meanwhile —
+the idle-timeout feature, `command_ids.py`, `poly_kybd.py`, two version bumps.
+Merging it would have reverted all of that to recover 558 lines. By the time an
+orphan is noticed it is nearly always too stale to merge.
+
+### The recovery
+
+The orphaned PR's own diff is recoverable exactly, because its base head is on
+`main` already:
+
+```bash
+git checkout -B <new-branch> origin/main
+git diff <pr-base-head> <pr-head> | git apply --3way
+```
+
+Here `git diff 45e5bce b98445b` reproduced exactly the 8 files and 558/53 GitHub
+had shown for #245, and the 3-way apply kept main's newer `CLAUDE.md` sections
+from #243 and #244 rather than reverting them.
+
+⚠️ **Verify against the WORKING TREE, not `HEAD`.** `git apply` stages without
+committing, so `git diff <pr-head> HEAD` compares against the branch point and
+reads as total content loss — a minute of panic, every time. The right form
+takes no second ref:
+
+```bash
+git diff <pr-head> -- <the PR's files>      # expect output only where main moved
+```
+
+Then grep every note back by name, both directions — the re-landed PR's and the
+ones `main` gained while it was orphaned. A 3-way apply that quietly dropped one
+side looks identical to one that did not.
+
+The whole procedure, including how to tell an orphan from a PR that simply has
+not merged, is the **`re-land-orphaned-pr`** skill.
+
+### Preventing it
+
+Merge the base. Wait for the stacked PR's `base.ref` to change to the default
+branch. Then merge the stacked one. Merging both inside a minute is the whole
+bug.
