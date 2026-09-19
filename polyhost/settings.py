@@ -290,6 +290,10 @@ class PolySettings:
             try:
                 os.unlink(tmp)
             except OSError:
+                # The temp file was never created, or is already gone. Either
+                # way the settings file itself is untouched, which is the point
+                # of writing beside it — so report the original failure rather
+                # than this cleanup's.
                 pass
             raise
         self.collection = merged

@@ -207,13 +207,20 @@ def claim_gui(timeout=GUI_CLAIM_WAIT_S) -> InstanceClaim:
     path = protocol.gui_lock_path()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
+    # Same ownership rule as claim_instance: the claim takes the descriptor
+    # straight away, so every exit closes it. This one waits, so an interrupt
+    # landing in the sleep is one more way out of the loop.
+    claim = InstanceClaim(fd, path)
     deadline = time.monotonic() + max(0.0, timeout)
-    while not _try_lock(fd):
-        if time.monotonic() >= deadline:
-            os.close(fd)
-            raise EndpointBusy(LOCKED)
-        time.sleep(_GUI_CLAIM_POLL_S)
-    return InstanceClaim(fd, path)
+    try:
+        while not _try_lock(fd):
+            if time.monotonic() >= deadline:
+                raise EndpointBusy(LOCKED)
+            time.sleep(_GUI_CLAIM_POLL_S)
+    except BaseException:
+        claim.release()
+        raise
+    return claim
 
 
 def claim_instance(address=None, authkey=None) -> InstanceClaim:
