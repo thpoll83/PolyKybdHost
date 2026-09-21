@@ -154,6 +154,11 @@ class PolyCore(Observable):
         # display and the forwarder's OS when a remote-forwarded window is active,
         # deduped against this so set_os only fires on an actual change.
         self._last_pushed_os = None
+        # The generic program mark: the fetch queue (built on first use, so a
+        # headless run that never tracks a window never starts the thread) and
+        # the slug currently on the device, which dedupes the per-tick send.
+        self._app_icons = None
+        self._program_mark_on_device = None
         # Last unicode input method pushed to the keyboard (an InputMethod, or
         # None). The WinCompose settle watcher re-probes after a connect and pushes
         # only on a real change; see _start_wincompose_settle.
@@ -387,6 +392,11 @@ class PolyCore(Observable):
         if self._tick_thread is not None:
             self._tick_thread.join(timeout=1)
             self._tick_thread = None
+        # Never started unless a window was tracked; stop() is idempotent and
+        # never raises, and a daemon thread must still be told to stand down
+        # so it cannot resolve an app into a stopped worker.
+        if self._app_icons is not None:
+            self._app_icons.stop()
         # Under the same lock as _start_wincompose_settle, and with a one-way
         # flag: otherwise a reconnect landing here concurrently would clear the
         # stop Event and start a fresh watcher AFTER shutdown, which would then
@@ -519,9 +529,112 @@ class PolyCore(Observable):
                 self.submit_overlay_cmd(cmd)
             if data and cmd == OverlayCommand.OFF_ON:
                 self.send_overlay_data(data)
+                # A template send re-programs the whole pool, so whatever
+                # generic mark was on the device is gone with it.
+                self._program_mark_on_device = None
+            else:
+                # ⚠️ Every tick, not only on a change. `overlay_for` is a dict
+                # lookup by contract precisely so this is cheap, and it is what
+                # makes a SLOW lookup land: the first sighting returns nothing
+                # and queues the fetch, and the tick after it resolves picks the
+                # mask up. No completion callback has to race the focus.
+                self._maybe_send_program_mark(handler)
             self._track_active_os(handler)
         elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
+
+    def _maybe_send_program_mark(self, handler):
+        """Draw the focused app's OWN icon on ESC when no template covers it.
+
+        The generic fall-back: a template overlay draws a real icon on every
+        shortcut key, and where none exists this puts at least the application's
+        own mark on the board. Template always wins — this runs only on the
+        branch where the matcher found nothing.
+
+        ⚠️ Nothing here does I/O. `AppIconFetcher.overlay_for` is a dict lookup
+        and a queue append; the lookup itself (a file read, and possibly an HTTP
+        GET at a 15 s timeout) happens on the fetcher's own thread. This runs on
+        the GUI main thread in the tray and on the core tick thread headless,
+        and neither may block.
+        """
+        if self._app_icons is None:
+            from polyhost.services.app_icon_fetcher import AppIconFetcher
+            self._app_icons = AppIconFetcher(on_ready=lambda slug: None)
+        name, identity = handler.focused_app()
+        if not name:
+            # ⚠️ Silent until 2026-09-17, and that cost a hardware round: with
+            # no line here and none from the fetcher (which only speaks once it
+            # has RESOLVED something), "no mark appeared" and "this code never
+            # ran" look identical in the log. debug_detailed because the tick
+            # runs continuously.
+            self.log.debug_detailed(
+                "No program mark: the handler names no focused app "
+                "(remote=%s)", handler.is_remote_mapping_entry())
+            return
+        # `identity` is set only for a FORWARDED window, where the other machine
+        # already resolved it — see AppAwareHandler.focused_app.
+        mask, slug = self._app_icons.overlay_for(name, identity=identity)
+        if mask is None or not slug or slug == self._program_mark_on_device:
+            # A None mask is normal on the first sighting (the fetch was just
+            # queued) and the fetcher reports a real miss itself, so this stays
+            # at the detailed level -- it exists to prove the path RAN.
+            self.log.debug_detailed(
+                "No program mark for '%s' yet: mask=%s slug=%s on_device=%s "
+                "forwarded_identity=%s", name, mask is not None, slug,
+                self._program_mark_on_device, identity is not None)
+            return
+        self._send_program_mark(slug, mask)
+
+    def _send_program_mark(self, slug, mask):
+        """Queue the generic mark for every attached device.
+
+        ⚠️ The converters are built HERE, on the caller's thread, and one PER
+        DEVICE. `OverlayData` derives its message counts from that device's
+        `DeviceSettings`, so a single instance shared between two keyboards
+        would report the wrong transfer cost for at least one of them — and
+        `send_overlays_mru` runs on the HID worker, which must not be the thread
+        that builds them.
+        """
+        from polyhost.device.keys import KeyCode
+        from polyhost.device.synthetic_overlay import program_converter, program_name
+        filename = program_name(slug)
+        built = []
+        for entry in self.device_mgr.all_entries:
+            converter = program_converter(entry.device.device_settings,
+                                          KeyCode.KC_ESCAPE.value, mask)
+            if converter is not None:
+                built.append((entry, converter))
+        if not built:
+            return
+        self.log.info("Generic program mark '%s' on ESC (no template overlay).", slug)
+        # Recorded BEFORE the send so a tick landing mid-flight does not queue a
+        # second copy of the same mark; a failed send clears it again.
+        self._program_mark_on_device = slug
+        self.emit("overlay_activity", {"state": "thinking"})
+        self.worker.submit(
+            "overlay",
+            lambda cancel: self._program_mark_job(filename, built, cancel),
+            coalesce_key="overlay",
+            on_done=lambda name, result: self.emit(name, result))
+
+    def _program_mark_job(self, filename, built, cancel):
+        """Worker-thread send of the generic mark. Mirrors _overlay_send_job."""
+        try:
+            for entry, converter in built:
+                if cancel.is_set():
+                    # Superseded by a real overlay set or another app: forget
+                    # what we claimed to have sent, or the mark can never be
+                    # re-sent for this app.
+                    self._program_mark_on_device = None
+                    return
+                entry.device.send_overlays_mru([filename], entry.cache, cancel,
+                                               synthetic={filename: converter})
+        except Exception as e:
+            self._program_mark_on_device = None
+            msg = f"Failed to send the program mark '{filename}': {e}"
+            self.log.warning(msg)
+            self.emit("overlay_warning", msg)
+        self.keeb.set_idle(False)
 
     def _track_active_os(self, handler):
         """Keep the keyboard's OS in sync with the machine currently driving the
@@ -750,7 +863,8 @@ class PolyCore(Observable):
             # window is re-asserted persistently on the first pass after it closes.
             self._apply_unicode_mode(mode)
 
-    def report_window(self, handle, name, title, os=None, url=None):
+    def report_window(self, handle, name, title, os=None, url=None,
+                      names=(), icon_key=None, icon=None):
         """Inject an external active-window report into remote window tracking
         (the ``window.report`` RPC / ``polyctl window report``).
 
@@ -763,12 +877,27 @@ class PolyCore(Observable):
         daemon's remote window matching without the bespoke TCP. No device I/O
         and no worker needed: it just stores the report; the next
         window-tracking tick applies it if a remote-mapping entry is active.
+        ⚠️ This is the ONE sink both RPC entry points reach -- the network
+        ``WindowReportServer`` and the control socket -- so a parameter missing
+        here is missing from both. ``url`` was accepted and silently dropped
+        until 2026-09-17; ``names``/``icon_key``/``icon`` raised TypeError at
+        the forwarder, which is the louder half of the same omission.
+
         Returns the uniform ``(ok, payload)`` the RPC layer unwraps."""
         handler = self.overlay_handler
         if handler is None or getattr(handler, "remote_handler", None) is None:
             return False, "window tracking unavailable"
-        handler.remote_handler.report_window(handle, name, title, os=os)
-        return True, {"reported": True}
+        ret = handler.remote_handler.report_window(
+            handle, name, title, os=os, url=url,
+            names=names, icon_key=icon_key, icon=icon)
+        payload = {"reported": True}
+        # The handler answers "send me the icon" here and nowhere else, so
+        # dropping this makes the forwarder's follow-up unreachable and the app
+        # mark never appears -- the failure looks like a dead feature, not a
+        # lost field.
+        if isinstance(ret, dict):
+            payload.update(ret)
+        return True, payload
 
     def submit_overlay_cmd(self, cmd):
         """Queue an enable/disable of overlays (coalesces with sends)."""

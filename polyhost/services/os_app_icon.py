@@ -197,7 +197,15 @@ def _linux_entry(exe: str, app_name: str) -> dict:
     exe_stem = os.path.basename(exe).lower() if exe else ""
     wanted = (app_name or "").strip().lower()
 
-    def _pick(require_icon: bool) -> dict:
+    def _pick(require_icon: bool):
+        """(entry, which rank matched). The rank is for the log only.
+
+        ⚠️ Reported from HERE rather than re-derived afterwards. The obvious
+        version walked `_desktop_entries()` again and matched the winner by
+        identity -- which can never hit, because that generator re-parses every
+        file and hands back fresh dicts, so ranks 2 and 3 were both logged as
+        "4/Exec-vs-exe". A diagnostic that lies is worse than none.
+        """
         by_stem = {}
         by_dns = {}
         by_exec = {}
@@ -205,7 +213,7 @@ def _linux_entry(exe: str, app_name: str) -> dict:
             if require_icon and not entry.get("Icon", ""):
                 continue
             if wanted and entry.get("StartupWMClass", "").strip().lower() == wanted:
-                return entry
+                return entry, "1/StartupWMClass"
             stem = os.path.basename(path)[:-len(".desktop")].lower()
             if wanted and not by_stem and stem == wanted:
                 by_stem = entry
@@ -214,13 +222,30 @@ def _linux_entry(exe: str, app_name: str) -> dict:
             if (exe_stem and not by_exec and not _is_runtime(exe_stem)
                     and _exec_stem(entry.get("Exec", "")) == exe_stem):
                 by_exec = entry
-        return by_stem or by_dns or by_exec
+        if by_stem:
+            return by_stem, "2/stem"
+        if by_dns:
+            return by_dns, "3/reverse-dns"
+        if by_exec:
+            return by_exec, "4/Exec-vs-exe"
+        return {}, "none"
 
     # ⚠️ The icon-bearing pass runs FIRST and unchanged, so this refactor cannot
     # move an icon that resolves today. Only when nothing carries an `Icon=` do
     # we look again for a name alone -- a name with no icon is still worth
     # having (it is what the catalog match is keyed on), a wrong icon is not.
-    return _pick(True) or _pick(False)
+    # ⚠️ Logged at INFO with the RANK, once per application. "No icon appeared"
+    # and "no desktop entry matched" look identical from outside, and telling
+    # them apart is what decides whether to look at the lookup or at the 1-bit
+    # score -- a session was spent building a fixture to answer it.
+    entry, rank = _pick(True)
+    if not entry:
+        entry, rank = _pick(False)
+        rank += " (name-only pass)"
+    log.info("Desktop entry for %r (exe %r): %s [match %s]",
+             app_name, exe_stem or "<none>",
+             (entry.get("Name") if entry else None) or "<no match>", rank)
+    return entry
 
 
 
@@ -285,9 +310,24 @@ def _linux_identity(pid, app_name: str):
     for path in _theme_candidates(icon) if icon else ():
         try:
             with open(path, "rb") as handle:
-                return AppIdentity(handle.read(), path, names)
+                data = handle.read()
         except OSError as exc:
             log.debug("Could not read %s: %s", path, exc)
+            continue
+        # ⚠️ The FILE, not just "an icon was found". Which one the theme hands
+        # back decides everything downstream -- `_theme_candidates` sorts raster
+        # AHEAD of svg, so the same application can resolve to a 48px PNG on one
+        # machine and a scalable SVG on another, and those take different
+        # branches in `render_os_overlay`. Diagnosing a blank keycap without
+        # this line means guessing which one was read.
+        log.info("Icon for %r: %s (%d B) via Icon=%r, names=%s",
+                 app_name, path, len(data), icon, ", ".join(names) or "<none>")
+        return AppIdentity(data, path, names)
+    # The other half of the question, and the one that looks identical from
+    # outside: an entry with a name but no icon file on disk. Only the catalog
+    # can draw for it, keyed on those names.
+    log.info("No icon FILE for %r: Icon=%r resolved to nothing, names=%s",
+             app_name, icon or "<unset>", ", ".join(names) or "<none>")
     return AppIdentity(None, "", names)
 
 

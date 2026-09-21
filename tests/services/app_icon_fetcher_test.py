@@ -10,7 +10,7 @@ import time
 import unittest
 import unittest.mock as mock
 
-from polyhost.services import os_app_icon
+from polyhost.services import app_icon_fetcher, app_icons, os_app_icon
 from polyhost.services.app_icon_fetcher import AppIconFetcher
 
 
@@ -194,6 +194,322 @@ class MissReasonTest(unittest.TestCase):
         self.assertIn("si:winword", why)
         self.assertIn("mdi:microsoft-winword", why)
 
+
+
+class ForwardedIdentityShapeTest(unittest.TestCase):
+    """A forwarded identity is a DICT, and every consumer reads an AppIdentity.
+
+    ⚠️ The regression, measured on a live pair 2026-09-17: the forwarder
+    resolved GNOME Text Editor correctly and sent names + icon, and the daemon
+    logged `No program mark for gnome-text-edit ... (OS names: <none>)`.
+    `program_overlay` reads `getattr(identity, "names", ())`, a dict answers
+    neither attribute, and getattr hands back the default -- so the whole
+    identity was discarded in silence. The transport, the cache and the key
+    were all working. gnome-terminal and the log window kept drawing because
+    they hit the CATALOG on their app name and need no identity at all.
+    """
+
+    ICON = b"\x89PNG\r\n\x1a\n" + b"x" * 64
+
+    def test_a_dict_becomes_an_AppIdentity(self):
+        ident = app_icon_fetcher._as_identity(
+            {"names": ("Text Editor",), "icon": self.ICON, "icon_key": "k1"},
+            "gnome-text-edit")
+        self.assertEqual(ident.names, ("Text Editor",))
+        self.assertEqual(ident.icon, self.ICON)
+
+    def test_an_AppIdentity_passes_through_and_None_stays_None(self):
+        from polyhost.services.os_app_icon import AppIdentity
+        native = AppIdentity(icon=None, icon_path="/x.png", names=("A",))
+        self.assertIs(app_icon_fetcher._as_identity(native), native)
+        self.assertIsNone(app_icon_fetcher._as_identity(None))
+
+    def test_anything_else_RAISES_rather_than_degrading(self):
+        # A silent getattr miss is what cost the round this test exists for.
+        with self.assertRaises(TypeError):
+            app_icon_fetcher._as_identity(("Text Editor",), "x")
+
+    def test_program_overlay_REFUSES_a_raw_dict(self):
+        # The guard that stops a second caller re-introducing the silence.
+        with self.assertRaises(TypeError):
+            app_icons.program_overlay(
+                "gnome-text-edit", {"names": ("Text Editor",)},
+                allow_network=False)
+
+    def test_two_forwarded_apps_get_DIFFERENT_mark_slugs(self):
+        # ⚠️ The second defect, found while fixing the first. The real
+        # `icon_path` is on the other machine, and `program_overlay` names the
+        # mark `"os:" + basename(icon_path)` -- so an empty path made every
+        # forwarded app share the slug `"os:"`, and the tick skips a slug
+        # already on the device. Switching from VS Code to Text Editor would
+        # have left VS Code's mark up.
+        first = app_icon_fetcher._as_identity(
+            {"icon": self.ICON, "icon_key": "aaaaaaaaaaaa"}, "code")
+        second = app_icon_fetcher._as_identity(
+            {"icon": self.ICON, "icon_key": "bbbbbbbbbbbb"}, "gnome-text-edit")
+        self.assertNotEqual(first.icon_path, second.icon_path)
+        self.assertIn("code", first.icon_path)
+
+    def test_the_slug_CHANGES_when_the_icon_does(self):
+        # The key is a content hash, so a theme change re-draws rather than
+        # being deduped away as "already on the device".
+        same_app = [app_icon_fetcher._as_identity(
+            {"icon": self.ICON, "icon_key": k}, "code")
+            for k in ("aaaaaaaaaaaa", "bbbbbbbbbbbb")]
+        self.assertNotEqual(same_app[0].icon_path, same_app[1].icon_path)
+
+    def test_a_real_path_is_kept_when_there_is_one(self):
+        ident = app_icon_fetcher._as_identity(
+            {"icon": self.ICON, "icon_path": "/usr/share/icons/x.png",
+             "icon_key": "k"}, "x")
+        self.assertEqual(ident.icon_path, "/usr/share/icons/x.png")
+
+
+class LateIdentityRetryTest(unittest.TestCase):
+    """A miss resolved BEFORE the identity arrived must be retried.
+
+    ⚠️ The forwarder resolves an app on FIRST sighting, which is file I/O -- a
+    desktop scan plus a theme walk, ~100-300 ms measured -- so its very first
+    report carries no identity at all. Whether the daemon's tick resolves before
+    or after that is a RACE, and the loser used to be cached forever.
+
+    Measured on one live pair (2026-09-17): GNOME Calculator and Settings won
+    the race and drew, while Text Editor, VS Code and Nautilus lost it by about
+    100 ms and logged `OS names: <none>` for an identity that arrived 200 ms
+    later and was never looked at again. Same code, same machines, opposite
+    outcomes -- which is what made it read as an identity bug rather than an
+    ordering one.
+    """
+
+    def _fetcher(self, resolve):
+        f = AppIconFetcher()
+        f._resolve = resolve
+        return f
+
+    def _drain(self, f, name, tries=80):
+        for _ in range(tries):
+            mask, resolved = f.overlay_for(name)
+            if mask is not None:
+                return mask, resolved
+            time.sleep(0.02)
+        return f.overlay_for(name)
+
+    def test_a_miss_without_an_identity_is_retried_WITH_one(self):
+        seen = []
+
+        def resolve(app_name, pid=None, given=None):
+            seen.append(given)
+            if given is None:
+                return None, "si:missed", "no catalog carries it"
+            return object(), "os:drew", None
+
+        f = self._fetcher(resolve)
+        try:
+            self._drain(f, "app", tries=40)
+            self.assertEqual(f.overlay_for("app"), (None, "si:missed"))
+            f.overlay_for("app", identity={"names": ("A",), "icon": b"x",
+                                           "icon_key": "k"})
+            mask, resolved = self._drain(f, "app")
+        finally:
+            f.stop()
+        self.assertIsNotNone(mask, "the late identity must get a second look")
+        self.assertEqual(resolved, "os:drew")
+        self.assertIsNone(seen[0])
+        self.assertIsNotNone(seen[-1])
+
+    def test_a_SUCCESSFUL_mark_is_never_dropped_by_a_late_identity(self):
+        # The other direction: a late identity must not take a working mark
+        # away and re-run the whole resolution.
+        calls = []
+
+        def resolve(app_name, pid=None, given=None):
+            calls.append(given)
+            return object(), "si:drew", None
+
+        f = self._fetcher(resolve)
+        try:
+            self._drain(f, "app")
+            before = len(calls)
+            mask, resolved = f.overlay_for(
+                "app", identity={"names": ("A",), "icon": b"x", "icon_key": "k"})
+        finally:
+            f.stop()
+        self.assertIsNotNone(mask)
+        self.assertEqual(resolved, "si:drew")
+        self.assertEqual(len(calls), before, "no re-resolution after a hit")
+
+    def test_a_SECOND_identity_does_not_re_trigger_forever(self):
+        # The tick calls overlay_for continuously, and the same identity comes
+        # with every report. Only the FIRST one may invalidate a miss, or a
+        # permanently-unresolvable app re-queues on every window tick.
+        calls = []
+
+        def resolve(app_name, pid=None, given=None):
+            calls.append(given)
+            return None, "si:missed", "nope"
+
+        ident = {"names": ("A",), "icon": b"x", "icon_key": "k"}
+        f = self._fetcher(resolve)
+        try:
+            f.overlay_for("app", identity=ident)
+            self._drain(f, "app", tries=40)
+            after_first = len(calls)
+            for _ in range(5):
+                f.overlay_for("app", identity=ident)
+            time.sleep(0.1)
+        finally:
+            f.stop()
+        self.assertEqual(len(calls), after_first,
+                         "a repeated identity must not re-queue the app")
+
+
+class IdentitySignatureTest(unittest.TestCase):
+    """The retry is keyed on what the identity CARRIES, not on having seen one."""
+
+    def test_an_empty_dict_carries_nothing(self):
+        self.assertIsNone(app_icon_fetcher._identity_signature({}))
+        self.assertIsNone(app_icon_fetcher._identity_signature(None))
+
+    def test_names_alone_and_a_key_alone_both_count(self):
+        self.assertIsNotNone(
+            app_icon_fetcher._identity_signature({"names": ("A",)}))
+        self.assertIsNotNone(
+            app_icon_fetcher._identity_signature({"icon_key": "k"}))
+
+    def test_adding_the_ICON_changes_the_signature(self):
+        # ⚠️ A forwarded identity arrives in PIECES: the names in one report and
+        # the icon in the next, because the receiver asks for the art only once
+        # it knows it lacks it. Keyed on mere presence, the resolution would run
+        # on the names alone and then ignore the icon that followed.
+        names_only = {"names": ("Text Editor",), "icon_key": "k"}
+        with_icon = dict(names_only, icon=b"\x89PNG")
+        self.assertNotEqual(app_icon_fetcher._identity_signature(names_only),
+                            app_icon_fetcher._identity_signature(with_icon))
+
+    def test_the_SAME_identity_twice_has_the_same_signature(self):
+        a = {"names": ("A",), "icon_key": "k", "icon": b"x"}
+        self.assertEqual(app_icon_fetcher._identity_signature(a),
+                         app_icon_fetcher._identity_signature(dict(a)))
+
+
+class IdentityArrivesInPiecesTest(unittest.TestCase):
+    """names first, icon second -- each must get a look."""
+
+    def _fetcher(self, resolve):
+        f = AppIconFetcher()
+        f._resolve = resolve
+        return f
+
+    def _drain(self, f, name, ident=None, tries=80):
+        for _ in range(tries):
+            mask, resolved = f.overlay_for(name, identity=ident)
+            if mask is not None or resolved is not None:
+                return mask, resolved
+            time.sleep(0.02)
+        return f.overlay_for(name, identity=ident)
+
+    def test_the_icon_gets_a_look_after_the_names_missed(self):
+        def resolve(app_name, pid=None, given=None):
+            if given is not None and getattr(given, "icon", None):
+                return object(), "os:drew", None
+            return None, "si:missed", "no catalog carries it"
+
+        f = self._fetcher(resolve)
+        try:
+            self._drain(f, "app")                       # nothing resolved yet
+            self._drain(f, "app", {"names": ("A",), "icon_key": "k"})
+            for _ in range(80):
+                mask, resolved = f.overlay_for(
+                    "app", identity={"names": ("A",), "icon_key": "k",
+                                     "icon": b"\x89PNG"})
+                if mask is not None:
+                    break
+                time.sleep(0.02)
+        finally:
+            f.stop()
+        self.assertIsNotNone(mask, "the icon must get a look of its own")
+        self.assertEqual(resolved, "os:drew")
+
+    def test_an_EMPTY_identity_does_not_consume_the_first_look(self):
+        # The shipped bug, at this level: `{}` latched as "seen" and the real
+        # identity was then never a new one.
+        seen = []
+
+        def resolve(app_name, pid=None, given=None):
+            seen.append(getattr(given, "names", None))
+            if given is not None and getattr(given, "names", ()):
+                return object(), "os:drew", None
+            return None, "si:missed", "nope"
+
+        f = self._fetcher(resolve)
+        try:
+            self._drain(f, "app", {})                   # the empty first report
+            self._drain(f, "app", {})
+            mask, resolved = None, None
+            for _ in range(80):
+                mask, resolved = f.overlay_for("app",
+                                               identity={"names": ("A",)})
+                if mask is not None:
+                    break
+                time.sleep(0.02)
+        finally:
+            f.stop()
+        self.assertIsNotNone(mask)
+        self.assertEqual(resolved, "os:drew")
+
+
+class TwoForwardersInterleaveTest(unittest.TestCase):
+    """An OLD forwarder reporting alongside a new one must not poison the cache.
+
+    ⚠️ Not hypothetical. Measured 2026-09-17: a field log showed TWO forwarder
+    processes on one machine writing to one file -- `forwarder.py:511` from
+    commit 8f26a6f (2026-09-07, which sends no identity at all) interleaved with
+    `forwarder.py:859` from the current branch. The tell was in the same log:
+    `Browser-report listener unavailable (OSError: [Errno 98] Address already in
+    use)`, i.e. a forwarder was already up when the second one started.
+
+    The old process reports every window with no names and no icon_key, so
+    whichever report the daemon's tick happened to act on decided whether that
+    app ever got a mark -- which is why the pattern looked arbitrary and moved
+    between runs rather than following anything about the apps.
+    """
+
+    def _fetcher(self, resolve):
+        f = AppIconFetcher()
+        f._resolve = resolve
+        return f
+
+    def test_an_identity_less_report_between_real_ones_is_harmless(self):
+        def resolve(app_name, pid=None, given=None):
+            if given is not None and getattr(given, "names", ()):
+                return object(), "os:drew", None
+            return None, "si:missed", "no catalog carries it"
+
+        old = {}                                   # what the stale forwarder sends
+        new = {"names": ("Text Editor",), "icon_key": "k"}
+        f = self._fetcher(resolve)
+        try:
+            # ⚠️ The EMPTY DICT is passed as-is, not pre-filtered to None.
+            # `forwarded_identity` does return None for it now, but this asserts
+            # the fetcher does not depend on that -- one layer converting it is
+            # a fix, two layers agreeing is the property. Passing `or None` here
+            # made the test survive the mutation that re-breaks it.
+            for _ in range(3):
+                f.overlay_for("gnome-text-edit", identity=old)
+                time.sleep(0.02)
+            mask = None
+            for _ in range(80):
+                mask, resolved = f.overlay_for("gnome-text-edit",
+                                               identity=new)
+                if mask is not None:
+                    break
+                # ...and keeps interleaving afterwards.
+                f.overlay_for("gnome-text-edit", identity=old)
+                time.sleep(0.02)
+        finally:
+            f.stop()
+        self.assertIsNotNone(mask, "the live forwarder's identity must still win")
+        self.assertEqual(resolved, "os:drew")
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from logging.handlers import RotatingFileHandler
 import os
@@ -176,6 +177,10 @@ class PolyForwarder(QApplication):
         # forwarder used to declare itself connected at startup and never
         # revisit it, whatever the socket did afterwards.
         self.relay_ok = None
+        # app name -> what the local OS says it is. One lookup per app; see
+        # _identity_for. Unbounded is fine here: the keys are app names from
+        # THIS machine's own window manager, not remote input.
+        self._identity_cache = {}
         # Forwarding paused by the user. The window poll keeps running (so the
         # log still shows what is focused) but nothing leaves this machine —
         # this is the privacy switch, and it mirrors the tray app's Pause.
@@ -390,13 +395,116 @@ class PolyForwarder(QApplication):
             if self._report_session is not None:
                 self._report_session.close()
             return False
+        ident = self._identity_for(name)
         try:
-            self._report_session.report(
-                host, handle, name, title, os=self._os_value, url=url)
+            result = self._report_session.report(
+                host, handle, name, title, os=self._os_value, url=url,
+                names=ident.get("names"), icon_key=ident.get("icon_key"))
+            # ⚠️ The RECEIVER decides, and it is asked on every report. See
+            # RemoteHandler._note_identity for why a sender-side "already sent"
+            # flag cannot be trusted: its daemon restarts, --host-file repoints
+            # us at a different machine, entries get evicted.
+            if (result or {}).get("want_icon") and ident.get("icon"):
+                # Follow up NOW rather than waiting for the next window change:
+                # otherwise the mark appears only once the user switches away
+                # and back, which reads as the feature not working.
+                #
+                # ⚠️ Guarded SEPARATELY, and the report above has already
+                # landed. This second call carries nothing the keyboard needs to
+                # track the window, so a rejected icon must not be reported as a
+                # failed window report -- that is the tray mark going red and
+                # `send_to_host` retrying over a keycap decoration.
+                try:
+                    self._report_session.report(
+                        host, handle, name, title, os=self._os_value, url=url,
+                        names=ident.get("names"), icon_key=ident.get("icon_key"),
+                        icon=ident["icon"])
+                except Exception as e:
+                    # Drop it for this app rather than re-offering forever: the
+                    # receiver asks on every report, so an icon it will not
+                    # accept would otherwise be re-sent on every window change.
+                    self.log.warning(
+                        "Could not send the app icon for %r (%d B) to %s: %s"
+                        " -- window reporting is unaffected",
+                        name, len(ident.get("icon") or b""), host, e)
+                    ident.pop("icon", None)
+                    ident.pop("icon_key", None)
             return True
         except Exception as e:
             self.log.error("Window-report RPC to %s failed: %s", host, e)
             return False
+
+    def _identity_for(self, name):
+        """What THIS machine's OS says the app is -- cached, one lookup per app.
+
+        ⚠️ Resolved here because it cannot be resolved there. `app_identity`
+        reads a `.desktop` entry / PE resources and the process behind the
+        window, all of which exist only on the machine running the application;
+        the keyboard machine may not even be the same OS.
+
+        ⚠️ Cached because it does FILE I/O and this runs on the window tick. One
+        lookup per application, not per report -- the same reason
+        `AppIconFetcher` caches on the receiving side.
+
+        Never raises: a cosmetic feature must not break window reporting.
+        """
+        key = str(name or "")
+        if not key:
+            return {}
+        cached = self._identity_cache.get(key)
+        if cached is not None:
+            return cached
+        ident = {}
+        try:
+            from polyhost.services import os_app_icon
+            got = os_app_icon.app_identity(self._pid_for_window(), key)
+            if got.names:
+                ident["names"] = list(got.names)
+            if got.icon:
+                # ⚠️ SHRUNK before it goes anywhere near the wire. A stock VS
+                # Code icon is 512x512 / ~220 KB, which the window-report
+                # endpoint refuses outright (it bounds its one network-reachable
+                # method on purpose) -- so the whole report failed and the mark
+                # never arrived. The receiver reduces to a 38 px box regardless.
+                from polyhost.services import icon_binarise
+                icon = icon_binarise.shrink_for_transport(got.icon)
+                ident["icon"] = icon
+                # A content hash, so a theme change or an app update yields a
+                # DIFFERENT key and the receiver re-fetches. A path would not.
+                # Taken over the bytes we SEND, so the key names what the
+                # receiver actually holds.
+                ident["icon_key"] = hashlib.sha256(icon).hexdigest()[:16]
+                self.log.info(
+                    "App identity for %r: icon %s %d B (%d B on disk), key %s,"
+                    " names=%s", key, got.icon_path or "<no path>", len(icon),
+                    len(got.icon), ident["icon_key"],
+                    ", ".join(got.names) or "<none>")
+        except Exception as e:
+            self.log.debug("No OS identity for %r: %s", key, e)
+        if not ident.get("icon"):
+            # ⚠️ Said out loud because the keyboard machine cannot say it. When
+            # no icon travels, the daemon has only the names to work with and
+            # its log reports a CATALOG miss -- which reads as "the catalog is
+            # thin" when the real answer is that this machine never found an
+            # icon to send.
+            self.log.info("App identity for %r: no icon to send, names=%s",
+                          key, ", ".join(ident.get("names") or ()) or "<none>")
+        self._identity_cache[key] = ident
+        return ident
+
+    def _pid_for_window(self):
+        """The focused window's pid, or 0.
+
+        ⚠️ `app_identity` uses it to read `/proc/<pid>/exe`, which is the ONLY
+        rank that resolves an app whose desktop-entry stem does not reduce to its
+        process name -- measured: GNOME Text Editor reports the comm
+        `gnome-text-edit` (kernel-truncated at 15) and resolves through the exe
+        alone.
+        """
+        try:
+            return int(self.win._win.getPid()) if self.win is not None else 0
+        except Exception:
+            return 0
 
     def send_to_host(self, handle, title, name, url=None):
         """Report one window, and record whether it landed.

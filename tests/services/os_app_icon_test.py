@@ -246,5 +246,55 @@ class AppIdentityTest(unittest.TestCase):
             self.assertEqual(osi.display_names(1, "x"), ("Only A Name",))
 
 
+
+class MatchRankIsReportedTest(unittest.TestCase):
+    """The log line that says WHICH of the four matches fired.
+
+    ⚠️ It exists because "no mark appeared" and "no desktop entry matched" look
+    identical from outside, and telling them apart decides whether to look at
+    the lookup or at the 1-bit score. A session was spent building a fixture to
+    answer it for one app.
+
+    ⚠️ And it is pinned because the first version LIED. It re-walked
+    `_desktop_entries()` and matched the winner by identity -- which can never
+    hit, since that generator re-parses every file and yields fresh dicts -- so
+    ranks 2 and 3 were both reported as "4/Exec-vs-exe". A wrong diagnostic
+    sends the next round the wrong way, which is worse than no diagnostic.
+    """
+
+    def _entries(self, mapping):
+        return lambda: iter(list(mapping.items()))
+
+    def _rank(self, entries, exe, name):
+        with mock.patch.object(osi, "_desktop_entries", self._entries(entries)), \
+                mock.patch.object(osi.log, "info") as info:
+            osi._linux_entry(exe, name)
+        return info.call_args.args[-1]
+
+    def test_each_rank_reports_itself(self):
+        cases = [
+            ("1/StartupWMClass",
+             {"/x/a.desktop": {"Icon": "a", "Name": "A", "StartupWMClass": "thing"}},
+             "/usr/bin/other", "thing"),
+            ("2/stem",
+             {"/x/thing.desktop": {"Icon": "a", "Name": "A", "Exec": "other"}},
+             "/usr/bin/other2", "thing"),
+            ("3/reverse-dns",
+             {"/x/org.gnome.thing.desktop": {"Icon": "a", "Name": "A", "Exec": "x"}},
+             "/usr/bin/other", "thing"),
+            ("4/Exec-vs-exe",
+             {"/x/unrelated.desktop": {"Icon": "a", "Name": "A", "Exec": "thing %U"}},
+             "/usr/bin/thing", "gnome-thing-trunc"),
+            ("none (name-only pass)", {}, "/usr/bin/thing", "thing"),
+        ]
+        for expected, entries, exe, name in cases:
+            with self.subTest(expected):
+                self.assertIn(expected, self._rank(entries, exe, name))
+
+    def test_rank_2_is_not_reported_as_rank_4(self):
+        # The exact shape of the lie: an entry that matches by stem AND by exec.
+        entries = {"/x/thing.desktop": {"Icon": "a", "Name": "A", "Exec": "thing"}}
+        self.assertIn("2/stem", self._rank(entries, "/usr/bin/thing", "thing"))
+
 if __name__ == "__main__":
     unittest.main()

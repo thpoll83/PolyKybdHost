@@ -40,6 +40,71 @@ from polyhost.services import app_icons, os_app_icon
 IDLE_SECONDS = 30.0
 
 
+def _identity_signature(given):
+    """What this identity CARRIES, or None when it carries nothing.
+
+    An empty dict is the shape `RemoteHandler` creates on a report that arrived
+    before the forwarder had resolved anything; it is not an identity and must
+    not count as one. Beyond that the signature makes the identity's ARRIVAL
+    comparable, so a later report that adds the icon to the names is recognised
+    as new information rather than as a repeat.
+    """
+    if given is None:
+        return None
+    if isinstance(given, dict):
+        names = tuple(given.get("names") or ())
+        key = given.get("icon_key") or ""
+        has_icon = bool(given.get("icon"))
+        return (names, key, has_icon) if (names or key or has_icon) else None
+    names = tuple(getattr(given, "names", ()) or ())
+    has_icon = bool(getattr(given, "icon", None))
+    return (names, getattr(given, "icon_path", ""), has_icon) \
+        if (names or has_icon) else None
+
+
+def _as_identity(given, app_name=""):
+    """A forwarded identity as an `AppIdentity`, whatever shape it arrived in.
+
+    ⚠️ THE FORWARDED ONE IS A DICT. It crosses the network as JSON-ish RPC
+    params, so `RemoteHandler` caches `{"names": (...), "icon": b"...",
+    "icon_key": "..."}` -- while every consumer reads an `AppIdentity` through
+    `getattr(identity, "names", ())`. A dict answers NEITHER attribute and
+    getattr hands back the default, so the whole identity was discarded in
+    silence: no icon, no names, and a daemon log reading `OS names: <none>` for
+    an app whose forwarder had just resolved it correctly. Nothing raised,
+    nothing warned, and the transport, the cache and the key were all working.
+
+    Reported 2026-09-17: gnome-terminal and the log window drew marks (they hit
+    the CATALOG on their app name and need no identity at all) while GNOME Text
+    Editor and VS Code did not -- the two that depend on a forwarded identity.
+
+    Raises on anything else rather than degrading: a silent getattr miss is
+    exactly what cost that round.
+    """
+    if given is None or isinstance(given, os_app_icon.AppIdentity):
+        return given
+    if isinstance(given, dict):
+        # ⚠️ A STAND-IN PATH, because the real one is on the other machine and
+        # the path is what names the mark. `program_overlay` returns
+        # `"os:" + basename(icon_path)`, so an empty path makes the slug a bare
+        # `"os:"` -- IDENTICAL for every forwarded app. `_maybe_send_program_mark`
+        # skips a slug already on the device, so switching from VS Code to Text
+        # Editor would leave VS Code's mark up and send nothing.
+        #
+        # The key is a content hash of the icon, so the slug also changes when
+        # the icon does -- a theme change re-draws instead of being deduped away.
+        path = given.get("icon_path", "")
+        if not path and given.get("icon"):
+            key = given.get("icon_key") or ""
+            path = "%s@%s" % (app_name or "forwarded", key[:12]) if key else app_name
+        return os_app_icon.AppIdentity(
+            icon=given.get("icon"),
+            icon_path=path,
+            names=tuple(given.get("names") or ()))
+    raise TypeError("a forwarded identity must be a dict or an AppIdentity, "
+                    "got %r" % (type(given).__name__,))
+
+
 class AppIconFetcher:
     """A small work queue over `app_icons`, with an in-memory result cache."""
 
@@ -70,10 +135,14 @@ class AppIconFetcher:
         # The pid an app was first seen with, so the fetch thread can resolve
         # the identity the window tick was not allowed to.
         self._asked_for: dict[str, object] = {}
+        # app name -> an AppIdentity the CALLER already resolved (forwarder
+        # mode). Absent for a local app, which this side resolves itself.
+        self._given_identity: dict[str, object] = {}
+        self._given_identity_sig: dict[str, object] = {}
 
     # ------------------------------------------------------------------
 
-    def overlay_for(self, app_name: str, pid=None):
+    def overlay_for(self, app_name: str, pid=None, identity=None):
         """(mask, resolved name) for an app, without blocking. mask is None until known.
 
         A None mask with a name may mean "still resolving" or "nothing can draw
@@ -86,12 +155,49 @@ class AppIconFetcher:
         if not app_name:
             return None, None
         with self._lock:
+            # ⚠️ A FORWARDED app is resolved on the other machine and the
+            # answer travels with the report, because the pid, the .desktop
+            # entry and the PE resources all live there -- a keyboard
+            # machine on Windows has no desktop entries to consult at all.
+            # Recorded BEFORE the cache is read, because of the race below.
+            # ⚠️ Keyed on what the identity CONTAINS, not on whether one has
+            # been seen. A forwarded identity arrives in pieces -- the names in
+            # one report and the icon in the next, because the receiver asks for
+            # the art only once it knows it lacks it -- so "we already had one"
+            # would resolve on the names alone and then ignore the icon.
+            richer = _identity_signature(identity)
+            first_identity = (richer is not None
+                              and richer != self._given_identity_sig.get(app_name))
+            if first_identity:
+                self._given_identity[app_name] = _as_identity(identity,
+                                                              app_name)
+                self._given_identity_sig[app_name] = richer
             if app_name in self._masks:
                 mask, resolved = self._masks[app_name]
-                if mask is None:
-                    self._say(app_name, self._why.get(
-                        app_name, "nothing could draw a mark for it"))
-                return mask, resolved
+                # ⚠️ A MISS RESOLVED BEFORE THE IDENTITY ARRIVED IS RETRIED,
+                # or the identity is worthless for the app that needed it most.
+                # The forwarder resolves an app on FIRST sighting, which is file
+                # I/O -- a desktop scan and a theme walk, ~100-300 ms measured --
+                # so its very first report carries no identity at all. Whether
+                # the daemon's tick resolves before or after that is a RACE, and
+                # the loser is cached: measured on one live pair, GNOME
+                # Calculator and Settings won and drew, while Text Editor, VS
+                # Code and Nautilus lost by ~100 ms and logged `OS names:
+                # <none>` for an identity that arrived 200 ms later and was
+                # never looked at again.
+                #
+                # Only a MISS is dropped. A mask that drew is kept, so a late
+                # identity can never take a working mark away.
+                if mask is None and first_identity:
+                    del self._masks[app_name]
+                    self._why.pop(app_name, None)
+                    self._told = {(a, r) for (a, r) in self._told
+                                  if a != app_name}
+                else:
+                    if mask is None:
+                        self._say(app_name, self._why.get(
+                            app_name, "nothing could draw a mark for it"))
+                    return mask, resolved
             self._asked_for.setdefault(app_name, pid)
             if app_name not in self._queue and app_name not in self._inflight:
                 self._queue.append(app_name)
@@ -175,7 +281,8 @@ class AppIconFetcher:
                 continue
             with self._lock:
                 pid = self._asked_for.get(key)
-            mask, resolved, why = self._resolve(key, pid)
+                given = self._given_identity.get(key)
+            mask, resolved, why = self._resolve(key, pid, given)
             with self._lock:
                 self._masks[key] = (mask, resolved)
                 if why is not None:
@@ -193,7 +300,7 @@ class AppIconFetcher:
                     # report.
                     self.log.debug("app-icon ready callback failed", exc_info=True)
 
-    def _resolve(self, app_name: str, pid=None):
+    def _resolve(self, app_name: str, pid=None, given=None):
         """(mask, resolved_name, why_it_missed) -- `why` is None when one drew.
 
         Runs on the fetch thread, which is the only place allowed to do I/O.
@@ -208,14 +315,19 @@ class AppIconFetcher:
         The ORDER lives in `program_overlay` (OS icon, then catalog), not here.
         This function decides only what to log and why a miss missed.
         """
-        try:
-            identity = os_app_icon.app_identity(pid, app_name)
-        except Exception:
-            # Never raises by contract, but a backend is three platforms of
-            # file parsing and a miss here must cost the catalog route, not
-            # the whole lookup.
-            self.log.debug("app identity failed for '%s'", app_name, exc_info=True)
-            identity = os_app_icon.app_identity(None, "")
+        if given is not None:
+            # Already resolved, on the machine that is actually running the app.
+            identity = given
+        else:
+            try:
+                identity = os_app_icon.app_identity(pid, app_name)
+            except Exception:
+                # Never raises by contract, but a backend is three platforms of
+                # file parsing and a miss here must cost the catalog route, not
+                # the whole lookup.
+                self.log.debug("app identity failed for '%s'", app_name,
+                               exc_info=True)
+                identity = os_app_icon.app_identity(None, "")
         try:
             mask, resolved = app_icons.program_overlay(
                 app_name, identity, self._cache_dir)
