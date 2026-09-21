@@ -28,7 +28,8 @@ from polyhost.server.instance import EndpointBusy, claim_instance
 class HeadlessHost:
     """Qt-free host: core + control server + core-owned window tick."""
 
-    def __init__(self, log, ignore_version=False, allow_key_injection=False):
+    def __init__(self, log, ignore_version=False, allow_key_injection=False,
+                 claim=None):
         self.log = log
         self._stop = threading.Event()
         self._stopped = False
@@ -36,6 +37,11 @@ class HeadlessHost:
         # after a clean stop (there is no GUI prompt to drive the restart).
         self._restart_after_stop = False
         self._relay_path = None
+        # The instance claim, ONLY so the relaunch can drop it first -- see
+        # `_restart_if_requested`. Ownership stays with whoever took it
+        # (`main_app`, or `run_headless` on a direct call); this host never
+        # releases it on an ordinary shutdown.
+        self._claim = claim
         self.core = PolyCore(log=log, ignore_version=ignore_version,
                              start_worker=False, apply_reconnect_in_core=True,
                              allow_key_injection=allow_key_injection,
@@ -168,6 +174,25 @@ class HeadlessHost:
         if not self._restart_after_stop:
             return
         from polyhost.services import updater
+        # ⚠️ DROP THE ENDPOINT CLAIM BEFORE THE REPLACEMENT STARTS, exactly as
+        # `main_app` does for the tray's. `restart_app()` prefers `os.execv`,
+        # which drops it for free -- the lock fd is close-on-exec and the new
+        # image re-claims it in the same PID -- but on Windows it ALWAYS spawns
+        # a detached child and exits, and on POSIX it falls back to that same
+        # shape whenever execv raises (`ETXTBSY` right after a `pip install -e
+        # .`, i.e. the self-update itself). The two processes overlap there,
+        # and `claim_instance()` does exactly ONE `try_lock` and raises -- it
+        # does not wait, unlike `claim_gui`. So a still-held claim turns the
+        # replacement away with EndpointBusy and the daemon never comes back:
+        # "it doesn't start up again after the update", the precise failure the
+        # detached spawn exists to prevent.
+        #
+        # Only on the relaunch path. `run_headless`'s own `finally` handles an
+        # ordinary shutdown, and releasing here unconditionally would drop the
+        # endpoint early on every clean stop. `release()` is idempotent, so the
+        # two cannot conflict.
+        if self._claim is not None:
+            self._claim.release()
         if self._relay_path:
             # The relay waits for this process to exit, copies the locked files,
             # then relaunches — so we just spawn it and let run() return.
@@ -263,7 +288,7 @@ def run_headless(log_level=logging.INFO, ignore_version=False, developer=None, c
             return
     try:
         host = HeadlessHost(log, ignore_version=ignore_version,
-                            allow_key_injection=developer)
+                            allow_key_injection=developer, claim=claim)
         host.run()
     finally:
         if owned:

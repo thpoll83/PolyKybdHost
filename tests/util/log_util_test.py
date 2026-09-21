@@ -7,8 +7,10 @@ polykybd_console.txt (seen in the field 2026-06-13).
 """
 import logging
 import unittest
+import unittest.mock as mock
 
-from polyhost.util.log_util import MultiLineFormatter, make_stream_handler
+from polyhost.util.log_util import (MultiLineFormatter, RepeatCollapseHandler,
+                                    make_stream_handler)
 
 
 def _format(msg: str) -> str:
@@ -77,6 +79,56 @@ class TestMakeStreamHandler(unittest.TestCase):
         finally:
             sys.stdout = real
         self.assertIsInstance(handler, logging.StreamHandler)
+
+
+class TestABadFormatStringCannotBreakTheCaller(unittest.TestCase):
+    """⚠️ A log line must never be able to break the code that writes it.
+
+    `RepeatCollapseHandler.emit` calls `record.getMessage()` itself, so a
+    format/arguments mismatch raised straight out of `logger.info(...)` and
+    into the caller. Stock logging never does that: `StreamHandler.emit`
+    formats inside its own try and routes a failure to `handleError`, which
+    prints "--- Logging error ---" to stderr and carries on.
+
+    What that cost: `ActiveWindow.log_win` formatted the window handle with
+    `%d`, and on macOS pywinctl's handle is a **tuple** -- so the TypeError
+    landed in the caller's `except`, was logged as "Failed retrieving active
+    window", and every Mac reported no active window at all, forever. No
+    overlays, no per-app language switch, from a cosmetic log line
+    (field, 2026-09-21).
+    """
+
+    class _Collect(logging.Handler):
+        def __init__(self):
+            super().__init__()
+            self.records = []
+
+        def emit(self, record):
+            self.records.append(record.getMessage())
+
+    def _handler(self):
+        inner = self._Collect()
+        return RepeatCollapseHandler(inner), inner
+
+    def test_a_MISMATCHED_format_does_not_reach_the_caller(self):
+        h, inner = self._handler()
+        bad = logging.LogRecord("t", logging.INFO, "", 0,
+                                "handle: %d", ((1234, 5),), None)
+        with mock.patch.object(h, "handleError") as handled:
+            h.emit(bad)                      # must not raise
+        handled.assert_called_once_with(bad)
+        self.assertEqual(inner.records, [])
+
+    def test_the_handler_KEEPS_WORKING_after_a_bad_record(self):
+        """The swallow must not wedge the collapse state -- a handler that
+        stops logging after one bad line is barely better than one that
+        raises."""
+        h, inner = self._handler()
+        with mock.patch.object(h, "handleError"):
+            h.emit(logging.LogRecord("t", logging.INFO, "", 0,
+                                     "handle: %d", ((1,),), None))
+        h.emit(logging.LogRecord("t", logging.INFO, "", 0, "after", (), None))
+        self.assertEqual(inner.records, ["after"])
 
 
 if __name__ == '__main__':

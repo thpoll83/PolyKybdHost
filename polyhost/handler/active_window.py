@@ -189,8 +189,28 @@ class OverlayHandler:
         return True, OverlayCommand.OFF_ON
 
     def log_win(self, raw_app_name):
-        """Log active window"""
-        self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %d", raw_app_name, self.win.title.encode('utf-8'), self.win.getHandle())
+        """Log active window.
+
+        ⚠️ The handle is formatted with **%s, never %d**. It is an opaque token
+        whose type is the platform's: an int HWND on Windows, an int id on the
+        Linux reporters — and on macOS a **tuple**, which is what pywinctl's
+        `MacOSWindow.getHandle()` returns. ⚠️ Measured on Darwin 22.6.0, its
+        members are `(app name, window title)` — e.g.
+        `('Google Chrome', 'Claude Code - Google Chrome')` — NOT a numeric
+        window id, so it is not a stable identity either: it changes whenever
+        the title does. Harmless, because the only test applied to it is
+        equality and `local_win_changed` compares the title anyway. `%d` on it
+        raises `TypeError: %d format: a real number is required, not tuple`,
+        and this line sits inside the `try` whose `except` logs "Failed
+        retrieving active window", so the whole app reported **no active window
+        at all, forever, on every Mac** — no overlays and no per-app language
+        switch — over a cosmetic log line (field, 2026-09-21). Nothing compares
+        or arithmetics the handle; it is only ever tested for equality, so
+        there is no reason to demand a number of it.
+        """
+        self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %s",
+                      raw_app_name, self.win.title.encode('utf-8'),
+                      self.win.getHandle())
 
     def _is_redundant_overlay_cmd(self, cmd):
         """True when ``cmd`` asks for the overlay state the device is already in
@@ -334,6 +354,37 @@ class OverlayHandler:
                 return name, rh.forwarded_identity(name)
             return None, None
         return self.app_name, None
+
+    def focused_pid(self):
+        """The focused LOCAL window's process id, or None.
+
+        ⚠️ The OS-icon route needs this and NOTHING WAS PASSING IT, so the whole
+        route was dead on the local path -- on every platform, not just macOS.
+        `app_icon_fetcher.overlay_for()` takes a `pid`, `os_app_icon.app_identity()`
+        takes it as given and resolves none of its own, and the only production
+        caller (`PolyCore._maybe_send_generic_overlays`) passed neither it nor an
+        identity for a local window. So `_macos_identity` got None, `int(None)`
+        raised inside `_macos_bundle`, and every app logged
+        `(OS names: <none>)` -- the aggregate line that cannot say why (field,
+        2026-09-21). The `pid` parameter and its tests existed the whole time;
+        production simply never used them.
+
+        ⚠️ **None for a FORWARDED window, deliberately.** That app runs on the
+        other machine, so a local pid names an unrelated process -- and the
+        identity that travels with the report is the right answer there, which
+        `focused_app` already returns.
+
+        `getPID()` is on pywinctl's abstract Window and implemented by all three
+        backends, so this is not a macOS special case. It is still guarded: a
+        cosmetic lookup must not take the overlay send with it.
+        """
+        rh = getattr(self, "remote_handler", None)
+        if rh is not None and self.is_remote_mapping_entry():
+            return None
+        try:
+            return self.win.getPID() if self.win else None
+        except Exception:
+            return None
 
     def is_remote_mapping_entry(self):
         return (

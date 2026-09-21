@@ -126,6 +126,22 @@ class RepeatCollapseHandler(logging.Handler):
     # ------------------------------------------------------------------ Handler API
 
     def emit(self, record: logging.LogRecord) -> None:
+        # ⚠️ EVERY exception is routed to `handleError`, which is the Handler
+        # contract and NOT belt-and-braces. Stock logging formats the record
+        # inside `StreamHandler.emit`, which catches a bad format string,
+        # prints "--- Logging error ---" to stderr and carries on; this handler
+        # calls `record.getMessage()` itself, so without this it hands the
+        # TypeError to whoever logged the line. That turned a `%d` on a macOS
+        # window handle -- a tuple -- into "Failed retrieving active window" in
+        # the caller's `except`, killing overlays and the per-app language
+        # switch on every Mac (field, 2026-09-21). A log line must never be
+        # able to break the code that writes it.
+        try:
+            self._emit(record)
+        except Exception:
+            self.handleError(record)
+
+    def _emit(self, record: logging.LogRecord) -> None:
         self.acquire()
         try:
             key = record.getMessage()

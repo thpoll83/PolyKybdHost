@@ -13,7 +13,7 @@ active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
 """
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 try:
     from polyhost.handler.active_window import OverlayHandler
@@ -213,6 +213,94 @@ class FocusedAppTest(unittest.TestCase):
         handler.remote_handler = remote
         handler.is_remote_mapping_entry = lambda: True
         self.assertEqual(handler.focused_app(), (None, None))
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class MacOSTupleHandleTest(unittest.TestCase):
+    """⚠️ The window handle is an OPAQUE TOKEN, not a number.
+
+    It is an int HWND on Windows and an int id on the Linux reporters, but on
+    macOS pywinctl's `MacOSWindow.getHandle()` returns a **tuple**
+    `(app, window number)`. `log_win` formatted it with `%d`, which raises
+    `TypeError: %d format: a real number is required, not tuple` -- and that
+    line sits inside the `try` whose `except` logs "Failed retrieving active
+    window", so the whole poll bailed out and every Mac reported **no active
+    window at all, forever**: no overlays and no per-app language switch, from
+    a cosmetic log line (field, 2026-09-21).
+
+    Nothing compares or arithmetics the handle -- it is only ever tested for
+    equality -- so there was never a reason to demand a number of it.
+    """
+
+    @staticmethod
+    def _win(handle):
+        win = MagicMock()
+        win.title = "Safari"
+        win.getHandle.return_value = handle
+        return win
+
+    def _poll(self, handle):
+        """Two ticks: the first notices the change, the second accepts it.
+
+        ⚠️ Patched by STRING target, not `patch.object` on an imported
+        module. Importing `polyhost.handler.active_window` here as well as
+        `from`-importing it at the top gives one module two import forms, which
+        CodeQL flags (`py/import-and-import-from`) -- a shape this repo has
+        been caught by before. A string target needs no second import.
+        """
+        handler = OverlayHandler({})          # empty mapping: stop after log_win
+        win = self._win(handle)
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=win), \
+             patch(mod + ".app_name_for", return_value="Safari"), \
+             self.assertLogs(handler.log, level="INFO") as captured:
+            handler._decide_active_window(10, 5)
+            handler._decide_active_window(10, 5)
+        return captured.output
+
+    def test_a_TUPLE_handle_still_reports_the_active_window(self):
+        lines = self._poll((1234, 5))
+        self.assertTrue(any("Active App Changed" in l for l in lines), lines)
+        self.assertFalse(any("Failed retrieving active window" in l for l in lines),
+                         lines)
+
+    def test_an_INT_handle_is_unchanged(self):
+        lines = self._poll(98765)
+        self.assertTrue(any("Active App Changed" in l for l in lines), lines)
+        self.assertTrue(any("98765" in l for l in lines), lines)
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class FocusedPidTest(unittest.TestCase):
+    """The pid the OS-icon route needs, and the one case it must NOT give."""
+
+    def _handler(self, pid=1234, raises=False, remote=False):
+        h = OverlayHandler({})
+        h.win = MagicMock()
+        if raises:
+            h.win.getPID.side_effect = OSError("gone")
+        else:
+            h.win.getPID.return_value = pid
+        h.is_remote_mapping_entry = lambda: remote
+        h.remote_handler = MagicMock() if remote else None
+        return h
+
+    def test_a_LOCAL_window_answers_its_pid(self):
+        self.assertEqual(self._handler().focused_pid(), 1234)
+
+    def test_a_FORWARDED_window_answers_NOTHING(self):
+        """⚠️ The app runs on the other machine, so a local pid names an
+        unrelated process -- and the identity travelling with the report is the
+        right answer there."""
+        self.assertIsNone(self._handler(remote=True).focused_pid())
+
+    def test_NO_window_answers_nothing(self):
+        h = self._handler()
+        h.win = None
+        self.assertIsNone(h.focused_pid())
+
+    def test_a_RAISING_backend_does_not_take_the_overlay_send_with_it(self):
+        self.assertIsNone(self._handler(raises=True).focused_pid())
 
 
 if __name__ == "__main__":

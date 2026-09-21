@@ -383,7 +383,8 @@ class TestRunHeadlessLogging(unittest.TestCase):
         tmp = tempfile.mkdtemp(prefix="poly_dlog_")
 
         class _StubHost:
-            def __init__(self, log, ignore_version=False, allow_key_injection=False):
+            def __init__(self, log, ignore_version=False, allow_key_injection=False,
+                         claim=None):
                 log.info("stub daemon up")
 
             def run(self):
@@ -464,3 +465,71 @@ class TestHeadlessImportsNoQt(unittest.TestCase):
 if __name__ == "__main__":
     import unittest.mock  # noqa
     unittest.main()
+
+
+class TestRelaunchDropsTheClaim(unittest.TestCase):
+    """The daemon must let go of the endpoint BEFORE it spawns its replacement.
+
+    `restart_app()` prefers `os.execv`, which drops the claim for free (the lock
+    fd is close-on-exec and the new image re-claims in the same PID). But on
+    Windows it ALWAYS spawns a detached child and exits, and on POSIX it falls
+    back to that same shape whenever execv raises -- `ETXTBSY` right after a
+    `pip install -e .` being the documented case, i.e. the self-update itself.
+    The two processes overlap there, and `claim_instance()` does exactly one
+    `try_lock` and raises: no wait, unlike `claim_gui`. So the replacement is
+    turned away with EndpointBusy and the daemon does not come back.
+
+    `main_app` already releases `gui_claim` before `restart_app()` and carries
+    the reasoning; the daemon had the same hazard and no release.
+    """
+
+    def _host(self, claim):
+        from polyhost.headless import HeadlessHost
+        host = HeadlessHost(_quiet(), claim=claim)
+        self.addCleanup(host.stop)
+        host._restart_after_stop = True
+        return host
+
+    def test_the_claim_is_released_BEFORE_the_relaunch(self):
+        from unittest import mock
+        from polyhost.services import updater
+        order = []
+        claim = mock.Mock()
+        claim.release.side_effect = lambda: order.append("release")
+        host = self._host(claim)
+        with mock.patch.object(updater, "restart_app",
+                               side_effect=lambda: order.append("restart")):
+            host._restart_if_requested()
+        self.assertEqual(order, ["release", "restart"])
+
+    def test_the_relay_path_drops_it_too(self):
+        """The relay waits for this process to exit before it relaunches, so
+        the overlap is shorter -- but the released lock is what the relaunched
+        daemon needs, and holding it here buys nothing."""
+        from unittest import mock
+        from polyhost.services import updater
+        claim = mock.Mock()
+        host = self._host(claim)
+        host._relay_path = "/tmp/relay.py"
+        with mock.patch.object(updater, "spawn_detached"):
+            host._restart_if_requested()
+        claim.release.assert_called_once_with()
+
+    def test_NO_claim_is_the_ordinary_case_and_must_not_raise(self):
+        """A direct `HeadlessHost(...)` -- tests, an embedder -- has none."""
+        from unittest import mock
+        from polyhost.services import updater
+        host = self._host(None)
+        with mock.patch.object(updater, "restart_app"):
+            host._restart_if_requested()
+
+    def test_a_host_that_is_NOT_restarting_keeps_its_claim(self):
+        """`run_headless`'s own finally releases it on an ordinary shutdown;
+        releasing here would drop the endpoint early on every clean stop."""
+        from unittest import mock
+        claim = mock.Mock()
+        from polyhost.headless import HeadlessHost
+        host = HeadlessHost(_quiet(), claim=claim)
+        self.addCleanup(host.stop)
+        host._restart_if_requested()
+        claim.release.assert_not_called()

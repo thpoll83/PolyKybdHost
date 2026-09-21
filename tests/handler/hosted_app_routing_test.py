@@ -142,5 +142,57 @@ class HostedAppRoutingTest(unittest.TestCase):
         self.assertEqual(missing, [])
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class MacOSNamesAndTitlesTest(unittest.TestCase):
+    """⚠️ Two macOS conventions the SHIPPED mapping was written without, each of
+    which ends in a silent "No match" rather than anything that looks wrong.
+
+    * **macOS reports an app's DISPLAY name.** Windows gives the executable
+      (`chrome.exe` -> `chrome`) and Linux the `.desktop` id (`google-chrome`);
+      macOS gives `Google Chrome`, lowercased to `google chrome`. The lookup is
+      an exact dict hit, so a hyphenated key cannot match a Mac.
+    * **A macOS window title does not carry the application name.** VS Code
+      titles a window `Welcome — PolyKybdHost`, where the other two platforms
+      append ` - Visual Studio Code`. The `os: macos` branch repeated that
+      regex, so it matched nothing on the platform it was written for.
+
+    Both measured from a field log on Darwin 22.6.0 (2026-09-21), on which
+    Chrome and VS Code each reported `No match` on every focus change.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.handler = OverlayHandler(yaml.safe_load(MAPPING.read_text(encoding="utf-8")))
+
+    def test_the_macOS_DISPLAY_names_are_keys(self):
+        for name in ("google chrome", "brave browser", "microsoft edge"):
+            self.assertIn(name, self.handler.mapping, name)
+
+    def test_the_other_platforms_keep_THEIR_spellings(self):
+        """The spaced names are an ADDITION. Replacing the hyphenated ones would
+        trade a broken Mac for a broken Linux."""
+        for name in ("chrome", "google-chrome", "brave-browser", "microsoft-edge"):
+            self.assertIn(name, self.handler.mapping, name)
+
+    def _code(self, os_name, title):
+        from polyhost.handler.common import find_matching_entry
+        hit = find_matching_entry(title, self.handler.mapping["code"], None, os_name)
+        return (hit or {}).get("overlay")
+
+    def test_VS_Code_matches_a_REAL_macOS_title(self):
+        overlay = self._code("macos", "Welcome — PolyKybdHost")
+        self.assertTrue(overlay, "the macOS branch matched nothing")
+        self.assertIn("vscode_mac_template.mods.png", overlay)
+
+    def test_Windows_and_Linux_still_REQUIRE_the_app_name_in_the_title(self):
+        """⚠️ The constraint is dropped for macOS ONLY. Dropping it everywhere
+        would hand VS Code's keycaps to any window of a process called `code`."""
+        real = "app.py - PolyKybdHost - Visual Studio Code"
+        self.assertIn("vscode_template.mods.png", self._code("windows", real))
+        self.assertIn("vscode_linux_template.mods.png", self._code("linux", real))
+        self.assertIsNone(self._code("windows", "Welcome — PolyKybdHost"))
+        self.assertIsNone(self._code("linux", "Welcome — PolyKybdHost"))
+
+
 if __name__ == "__main__":
     unittest.main()
