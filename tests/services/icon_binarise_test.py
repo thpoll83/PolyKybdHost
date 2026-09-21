@@ -33,6 +33,26 @@ def _line_art(size=38):
     return m
 
 
+def _triangle(size=38):
+    """A clean solid play triangle — GNOME Totem's best 1-bit reading."""
+    m = np.zeros((size, size), dtype=bool)
+    for y in range(4, size - 4):
+        m[y, 6:6 + int(26 * (1 - abs(y - size // 2) / 15.0))] = True
+    return m
+
+
+def _scribble(size=38):
+    """A high-detail threshold artefact — what Totem's `luma` reading actually is."""
+    m = np.zeros((size, size), dtype=bool)
+    for y in range(4, size - 4):
+        x = 4 + int(y * 0.8)
+        m[y, x:x + 2] = True
+    m[6:14, 6:12] = True
+    rng = np.random.default_rng(7)
+    m[rng.integers(0, size, 70), rng.integers(0, size, 70)] = True
+    return m
+
+
 def _fragments(size=38):
     """Thin ink at the top and bottom with an empty middle — Mousepad's shape."""
     m = np.zeros((size, size), dtype=bool)
@@ -43,80 +63,356 @@ def _fragments(size=38):
 
 class ConversionSetTest(unittest.TestCase):
 
-    def test_there_are_exactly_FOUR_conversions(self):
-        # ⚠️ A guard against re-adding the fifth (Floyd-Steinberg over BLACK).
-        # It was implemented, scored and rendered against every real icon on the
-        # dev container and it is measurably WORSE: it takes the top score on six
-        # of twelve and on five of those replaces clean `adaptive` line art with
-        # a halftone field, while not moving the mousepad regression it was
-        # proposed for. See docs/generic-icons-plan.md § E5 and the evidence
-        # sheet docs/images/binarise.png before changing this number.
+    def test_the_SIX_conversions_are_three_thresholds_then_three_dithers(self):
+        # ⚠️ Still a guard against re-adding Floyd-Steinberg over BLACK, which is
+        # a different proposal from the three GAMMAS here. It was implemented,
+        # scored and rendered against every real icon on the dev container and is
+        # measurably WORSE: it takes the top score on six of twelve and on five of
+        # those replaces clean `adaptive` line art with a halftone field, while
+        # not moving the mousepad regression it was proposed for. See
+        # docs/generic-icons-plan.md § E5 and docs/images/binarise.png.
         self.assertEqual([name for name, _ in ib.CONVERSIONS],
-                         ["alpha", "luma", "adaptive", "dither"])
+                         ["alpha", "luma", "adaptive",
+                          "dither-lo", "dither", "dither-hi"])
+        self.assertEqual(ib.CONVERSIONS,
+                         ib.THRESHOLD_CONVERSIONS + ib.DITHER_CONVERSIONS)
 
-    def test_the_DITHER_is_last_so_a_tie_goes_to_a_threshold(self):
-        # A thresholded reading has no texture to misread.
-        self.assertEqual(ib.CONVERSIONS[-1][0], "dither")
+    def test_the_three_dither_GAMMAS_span_both_directions(self):
+        # ⚠️ The set is not spaced by taste. The right gamma is per icon and
+        # points OPPOSITE ways — Totem/Text Editor/Weather want 1.4-2.0, the
+        # Calculator wants 0.5 — so a single tuned default cannot serve both and
+        # the low/mid/high spread is the whole reason there are three.
+        gammas = [g for _, g, _ in ib.DITHER_TUNINGS]
+        self.assertLess(min(gammas), 1.0)
+        self.assertGreater(max(gammas), 1.0)
+        self.assertIn(1.0, gammas)          # the tuning that shipped before
 
-
-class ScoreTest(unittest.TestCase):
-    """Each term exists because a real icon defeated the ones before it."""
-
-    def test_a_SOLID_BLOB_scores_near_zero(self):
-        # The `edge` term. A silhouette is large and says nothing — Yelp reduces
-        # to a ring, gedit to a diagonal bar.
-        self.assertLess(ib.score(_blob()), ib.MIN_SCORE)
-
-    def test_THIN_FRAGMENTS_with_an_empty_middle_are_rejected(self):
-        # The `spread` term. Without it `edges/lit` approaches 1.0 for anything
-        # thin and this shape scored 0.55.
-        self.assertLess(ib.score(_fragments()), ib.MIN_SCORE)
-
-    def test_LINE_ART_scores_above_the_gate(self):
-        self.assertGreaterEqual(ib.score(_line_art()), ib.MIN_SCORE)
-
-    def test_an_empty_or_absent_mask_is_unusable(self):
-        self.assertEqual(ib.score(None), -1.0)
-        self.assertEqual(ib.score(np.zeros((38, 38), dtype=bool)), -1.0)
-
-    def test_an_ALL_LIT_mask_is_unusable(self):
-        self.assertEqual(ib.score(np.ones((38, 38), dtype=bool)), -1.0)
+    def test_the_MID_tuning_is_the_one_that_shipped_alone(self):
+        # Keeps the name `dither` meaning what it meant, so an old log line or a
+        # stored choice still reads correctly.
+        self.assertEqual(dict((n, (g, c)) for n, g, c in ib.DITHER_TUNINGS)["dither"],
+                         (1.0, ib.DITHER_ADJUST["contrast"]))
 
 
-class KnownWeaknessTest(unittest.TestCase):
-    """The defect E5 found and did NOT fix — pinned so it is read, not rediscovered."""
+def _source(shape, size=152):
+    """A real RGBA source image, so `fidelity` has something to compare against."""
+    from PIL import Image, ImageDraw
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    shape(ImageDraw.Draw(image), size)
+    return image
 
-    def test_a_HALFTONE_outscores_LINE_ART_and_that_is_WRONG(self):
-        # ⚠️ NOT a contract worth preserving — a statement of the open problem.
-        # `detail` is `edges/lit`, and every lit pixel of a dither field touches
-        # an unlit one, so the term meant to REWARD line art is MAXIMISED by
-        # texture. This is why `dither` beats `adaptive` on mousepad (0.669 vs
-        # 0.386) while rendering visibly worse, and why adding a second dither
-        # ground made five more icons worse.
+
+class FidelityTest(unittest.TestCase):
+    """The measure that looks at the SOURCE — the one `score()` never had."""
+
+    def _plate(self, draw, size):
+        draw.rounded_rectangle([4, 4, size - 4, size - 4], 24, fill=(60, 60, 60, 255))
+        draw.polygon([(size * 0.38, size * 0.28), (size * 0.38, size * 0.72),
+                      (size * 0.72, size * 0.5)], fill=(250, 250, 250, 255))
+
+    def test_a_faithful_render_outscores_an_unfaithful_one(self):
+        # The whole point: `score()` grades the mask alone, `fidelity` grades it
+        # against the picture it came from.
+        image = _source(self._plate)
+        masks = {name: convert(image, 38) for name, convert in ib.CONVERSIONS}
+        best = max(masks, key=lambda n: ib.fidelity(masks[n], image))
+        self.assertGreater(ib.fidelity(masks[best], image), 0.8)
+
+    def test_an_INVERTED_render_is_EQUALLY_faithful(self):
+        # ⚠️ Absolute value, and it is load-bearing rather than defensive: a
+        # dark-plate icon reads correctly either way round and both keep the
+        # proportions. Signed correlation refuses seven of the 87 Yaru arts for
+        # nothing but the sign — Terminal, Dictionary, Backups among them.
+        image = _source(self._plate)
+        mask = dict(ib.CONVERSIONS)["adaptive"](image, 38)
+        self.assertAlmostEqual(ib.fidelity(mask, image),
+                               ib.fidelity(~mask, image), places=6)
+
+    def test_a_BLANK_render_scores_NOTHING_not_almost_everything(self):
+        # ⚠️ The refutation of the obvious form. `1 - mean|render - source|` looks
+        # right and is degenerate: an icon source is mostly light, so an EMPTY
+        # render matches its mean and scores ~0.9 — measured, it picked a blank
+        # mask for baobab, empathy, engrampa and eog. A correlation has no
+        # variance to correlate and returns nothing at all.
+        image = _source(self._plate)
+        blank = np.zeros((38, 38), dtype=bool)
+        self.assertEqual(ib.fidelity(blank, image), -1.0)
+        self.assertEqual(ib.fidelity(np.ones((38, 38), dtype=bool), image), -1.0)
+
+    def test_the_BLOCK_SIZE_is_the_scale_a_keycap_is_READ_at(self):
+        # At 2px it grades the dither's texture rather than the picture (a dither
+        # then wins only 56 of 87 Yaru arts against 65 at 4px); at 6 it stops
+        # separating the gammas.
+        self.assertEqual(ib.FIDELITY_BLOCK, 4)
+
+    def test_the_SOURCE_is_cropped_to_its_INK_before_comparing(self):
+        # ⚠️ A render is cropped to its own ink and scaled to the box, so the
+        # reference has to be cropped the same way or the two are compared at
+        # different scales and offsets. Measured on a small shape in a large
+        # transparent canvas: cropped 0.87, uncropped 0.10 — the change is
+        # invisible on an icon that fills its frame, which is most of them, and
+        # that is why it needs a fixture that does not.
+        image = _source(lambda d, s: d.ellipse(
+            [s * 0.06, s * 0.06, s * 0.34, s * 0.34], fill=(20, 20, 20, 255)))
+        grid = np.mgrid[0:38, 0:38]
+        disc = np.sqrt((grid[0] - 18.5) ** 2 + (grid[1] - 18.5) ** 2) <= 17
+        self.assertGreater(ib.fidelity(disc, image), 0.8)
+
+    def test_a_SATURATED_COLOUR_is_ink_and_not_blank_paper(self):
+        # ⚠️ The reference was `1 - luma`, which weights green x0.72 and blue
+        # x0.07 — so a saturated yellow on white read as very nearly nothing.
+        # GNOME Calculator is two panels, grey and yellow; the yellow half
+        # measured 0.234 against the grey half's 0.623, i.e. the reference said
+        # it was almost blank, so the render that DROPPED it scored 0.983 and
+        # shipped. Reported from hardware as "the right side became invisible".
+        image = _source(lambda d, s: (
+            d.rectangle([0, 0, s // 2, s], fill=(70, 70, 70, 255)),
+            d.rectangle([s // 2, 0, s, s], fill=(255, 222, 0, 255))))
+        reference = ib._source_ink(image, (38, 38))
+        grey, yellow = reference[:, :19].mean(), reference[:, 19:].mean()
+        self.assertGreater(yellow, 0.4 * grey,
+                           "a bright colour is ink, not paper")
+
+    def test_a_render_that_DROPS_A_PANEL_is_not_perfectly_faithful(self):
+        # ⚠️ Correlation alone CANNOT see this — it is invariant to scale, so a
+        # render that blanks a whole region still correlates ~1 as long as what
+        # it does draw lines up. That is exactly how Calculator's `adaptive`
+        # reading, with the yellow half completely empty, scored higher than
+        # every render that drew both halves. `coverage` asks the question
+        # correlation cannot: of the blocks the source fills, how many did the
+        # render put anything at all into.
+        image = _source(lambda d, s: (
+            d.rectangle([4, 4, s // 2 - 2, s - 4], fill=(40, 40, 40, 255)),
+            d.rectangle([s // 2 + 2, 4, s - 4, s - 4], fill=(255, 210, 0, 255))))
+        both = np.zeros((38, 38), dtype=bool)
+        both[4:34, 4:17] = True
+        both[4:34:2, 21:34:2] = True          # the second panel, as a texture
+        dropped = both.copy()
+        dropped[:, 19:] = False               # the same render minus that panel
+        self.assertGreater(ib.fidelity(both, image), ib.fidelity(dropped, image))
+
+    def test_COVERAGE_reads_the_polarity_that_CORRELATED(self):
+        # ⚠️ Otherwise it refuses every dark-plate icon outright: there the ink
+        # is deliberately where the source is LIGHT, so coverage measured on the
+        # mask reads ~0 for a render that is entirely faithful. The absolute
+        # correlation already accepts both readings; coverage has to follow it.
+        image = _source(self._plate)
+        mask = dict(ib.CONVERSIONS)["adaptive"](image, 38)
+        self.assertGreater(ib.fidelity(mask, image), 0.0)
+        self.assertAlmostEqual(ib.fidelity(mask, image),
+                               ib.fidelity(~mask, image), places=6)
+
+    def test_it_is_ROBUST_to_the_mask_being_a_different_shape(self):
+        # A render is fitted to the box preserving aspect, so it is often not
+        # square; the reference is cropped and resized to whatever it is.
+        image = _source(self._plate)
+        tall = np.zeros((38, 22), dtype=bool)
+        tall[6:32, 4:18] = True
+        self.assertGreater(ib.fidelity(tall, image), -1.0)
+
+
+class PolarityTest(unittest.TestCase):
+    """A dark plate with a glyph knocked out is a PICTURE, not a filled cell."""
+
+    def _plate(self, size=38):
+        """A terminal plate: lit everywhere but a `>_` knocked out of the middle."""
+        m = np.ones((size, size), dtype=bool)
+        m[0, 0] = m[0, -1] = m[-1, 0] = m[-1, -1] = False    # rounded corners
+        for i in range(9):                                   # the `>`
+            m[9 + i, 6 + 2 * i:10 + 2 * i] = False
+            m[26 - i, 6 + 2 * i:10 + 2 * i] = False
+        m[26:30, 24:34] = False                              # the `_`
+        return m
+
+    def _silhouette(self, size=38):
+        """The thing `MAX_LIT` exists to refuse: a filled shape with no hole."""
+        grid = np.mgrid[0:size, 0:size]
+        centre = (size - 1) / 2.0
+        return np.sqrt((grid[0] - centre) ** 2 + (grid[1] - centre) ** 2) <= size * 0.47
+
+    def test_a_knocked_out_GLYPH_is_read_rather_than_refused(self):
+        # ⚠️ Every term in `score()` reads ink as the minority, so a majority-lit
+        # render was refused outright by `MAX_LIT` however much picture it
+        # carried. Measured over the 87 distinct Yaru arts, that cost 9 icons
+        # their best reading: bash and the root terminal shipped a bare `>`
+        # fragment of their own lit background instead of the plate.
+        plate = self._plate()
+        self.assertGreater(plate.mean(), ib.MAX_LIT, "the fixture must be majority-lit")
+        self.assertGreater(ib.score(plate), ib.MIN_SCORE)
+
+    def test_a_FILLED_silhouette_is_still_refused(self):
+        # ⚠️ The gate, and it is not defensive. Without it the flip readmits the
+        # exact thing `MAX_LIT` was there for: a flat disc's inverse is the page
+        # around it, which has structure of its own and scores 0.43 — past
+        # `MIN_SCORE`, i.e. a confident offer to draw a blob on the ESC keycap.
+        disc = self._silhouette()
+        self.assertGreater(disc.mean(), ib.MAX_LIT)
+        self.assertEqual(ib.score(disc), -1.0)
+
+    def test_what_separates_them_is_an_ENCLOSED_HOLE_and_nothing_else(self):
+        # Neither lit fraction nor bounding-box fill tells the two apart — both
+        # are majority-lit and neither fills its own box. Measured at 38x38: all
+        # 13 silhouettes tried enclose EXACTLY 0.000 of their unlit pixels and
+        # all 20 real plate renders enclose 0.098 to 0.555, so the data separates
+        # at zero with a wide empty band above it.
+        self.assertEqual(ib._enclosed_share(self._silhouette()), 0.0)
+        self.assertGreater(ib._enclosed_share(self._plate()), ib.ENCLOSED_MIN)
+        self.assertLess(ib.ENCLOSED_MIN, 0.098, "below the smallest real case")
+        self.assertGreater(ib.ENCLOSED_MIN, 0.0, "above a single stray pixel")
+
+    def test_a_hole_that_TOUCHES_THE_EDGE_is_the_page_not_a_hole(self):
+        # The flood runs inward from the border, so a bite out of the side is
+        # reachable and does not count — which is what a silhouette's background
+        # is, seen from inside.
+        bitten = np.ones((38, 38), dtype=bool)
+        bitten[10:28, :8] = False
+        self.assertEqual(ib._enclosed_share(bitten), 0.0)
+
+    def test_the_flipped_render_is_scored_UNCHANGED_otherwise(self):
+        # The flip is a reading of the same mask, not a second scoring path: the
+        # plate scores exactly what its own inverse scores.
+        plate = self._plate()
+        self.assertAlmostEqual(ib.score(plate), ib.score(~plate), places=9)
+
+
+class ChooseTest(unittest.TestCase):
+    """`score()` gates, `fidelity()` ranks — and the gate comes first."""
+
+    class _Stub:
+        pass
+
+    def _with(self, conversions, image=None):
+        real = ib.CONVERSIONS
+        try:
+            ib.CONVERSIONS = conversions
+            return ib.choose(image if image is not None else self._Stub(), 38)
+        finally:
+            ib.CONVERSIONS = real
+
+    def test_the_MOST_FAITHFUL_usable_render_wins_not_the_HIGHEST_SCORING(self):
+        # ⚠️ This replaced a hardcoded `DITHER_PREFERENCE` thumb, and pinning the
+        # ORDER is what stops it being rebuilt: a dither was being forced to the
+        # front with a tuned constant because the owner kept preferring it, when
+        # the real defect was that `score()` ranks crispness and a human ranks
+        # recognisability.
         #
-        # When someone finally fixes `score()`, THIS TEST SHOULD FAIL. Invert it
-        # then; do not delete it, because the inversion is the evidence the fix
-        # worked.
-        self.assertGreater(ib.score(_checkerboard()), ib.score(_line_art()))
+        # The pair is the whole argument in miniature — the source is a solid
+        # disc, so a crisp RING is the better-scoring render and the wrong
+        # picture, while a halftoned disc scores lower and is the right one.
+        image = _source(lambda d, s: d.ellipse(
+            [s * 0.18, s * 0.18, s * 0.82, s * 0.82], fill=(45, 45, 45, 255)))
+        radius = np.sqrt((np.mgrid[0:38, 0:38][0] - 18.5) ** 2
+                         + (np.mgrid[0:38, 0:38][1] - 18.5) ** 2)
+        ring = (radius > 12) & (radius < 14.5)
+        halftone = (radius <= 14.5) & ((np.mgrid[0:38, 0:38][0]
+                                        + np.mgrid[0:38, 0:38][1]) % 2 == 0)
+        self.assertGreater(ib.score(ring), ib.score(halftone))          # argmax takes the ring
+        self.assertGreater(ib.fidelity(halftone, image), ib.fidelity(ring, image))
+        self.assertGreater(min(ib.score(ring), ib.score(halftone)), ib.MIN_SCORE)
+        _, name, _ = self._with((("ring", lambda i, b: ring),
+                                 ("disc", lambda i, b: halftone)), image)
+        self.assertEqual(name, "disc")
 
-    def test_COHESION_does_not_separate_them_either(self):
-        # The obvious repair, measured and refuted: "a halftone is isolated
-        # pixels, line art is not". Over every real icon on the container it
-        # reads 0.78-1.0 for BOTH, because a Floyd-Steinberg field at ~50%
-        # density is not a checkerboard and its pixels do touch. A perfect
-        # checkerboard is the one case where it works, which is exactly why
-        # testing the idea on a synthetic checkerboard would have MISLED.
-        def cohesion(mask):
+    def test_a_render_BELOW_THE_GATE_never_wins_however_faithful(self):
+        # ⚠️ The gate is not advisory, and the fixture has to make it BITE: the
+        # sub-gate render must be the MORE faithful one or the test passes with
+        # the gate deleted. A mutation sweep caught exactly that.
+        #
+        # The source is two thin bands with an empty middle — the shape the
+        # `_fragments` fixture exists to refuse. It correlates with the source
+        # far better than anything usable does, and it is still grain on a keycap.
+        image = _source(lambda d, s: (
+            d.rectangle([s * 0.10, s * 0.05, s * 0.90, s * 0.13], fill=(30, 30, 30, 255)),
+            d.rectangle([s * 0.10, s * 0.92, s * 0.90, s * 0.95], fill=(30, 30, 30, 255))))
+        self.assertLess(ib.score(_fragments()), ib.MIN_SCORE)
+        self.assertGreaterEqual(ib.score(_line_art()), ib.MIN_SCORE)
+        self.assertGreater(ib.fidelity(_fragments(), image),
+                           ib.fidelity(_line_art(), image))
+        _, name, _ = self._with((("usable", lambda i, b: _line_art()),
+                                 ("faithful_junk", lambda i, b: _fragments())), image)
+        self.assertEqual(name, "usable")
+
+    def test_when_NOTHING_clears_the_gate_the_best_of_a_bad_lot_is_returned(self):
+        # A caller drawing a mark it has no alternative for may take whatever
+        # comes back — `app_icons` is the one that compares against MIN_SCORE.
+        image = _source(lambda d, s: d.ellipse([4, 4, s - 4, s - 4],
+                                               fill=(30, 30, 30, 255)))
+        _, name, value = self._with((("a", lambda i, b: _fragments()),
+                                     ("b", lambda i, b: _checkerboard())), image)
+        self.assertIn(name, ("a", "b"))
+        self.assertLess(value, ib.MIN_SCORE)
+
+    def test_a_render_that_does_not_RENDER_is_dropped_before_ranking(self):
+        # -1.0 means "nothing came back", and it must not reach `fidelity`.
+        image = _source(lambda d, s: d.ellipse([4, 4, s - 4, s - 4],
+                                               fill=(30, 30, 30, 255)))
+        _, name, _ = self._with((("dead", lambda i, b: _blob()),
+                                 ("live", lambda i, b: _line_art())), image)
+        self.assertEqual(name, "live")
+
+    def test_nothing_at_all_is_still_the_documented_triple(self):
+        image = _source(lambda d, s: d.ellipse([4, 4, s - 4, s - 4],
+                                               fill=(30, 30, 30, 255)))
+        self.assertEqual(self._with((("dead", lambda i, b: _blob()),), image),
+                         (None, None, -1.0))
+
+
+class RefutedRepairsTest(unittest.TestCase):
+    """Repairs that were implemented, measured against real icons, and DROPPED.
+
+    ⚠️ Each is the obvious next idea, which is exactly why it is pinned: the cost
+    of re-proposing one is a full corpus run. The cohesion case lives in
+    `HalftoneTest` because it is specifically about the halftone.
+    """
+
+    def test_a_DETAIL_CEILING_would_destroy_the_corpus_BEST_render(self):
+        # The intuitive fix for "detail rewards thinness": make it peak at a
+        # moderate value and fall off toward 1.0. Refuted by the data — the
+        # highest-scoring render of the 235-icon Yaru set is Power Statistics'
+        # dithered waveform at detail 0.996, and 33 of the 235 winners sit above
+        # 0.95. Detail near 1.0 is not a defect signal.
+        waveform = np.zeros((38, 38), dtype=bool)
+        for x in range(2, 36):
+            waveform[19 + int(8 * np.sin(x / 3.0)), x] = True
+        padded = np.pad(waveform, 1)
+        surrounded = (padded[:-2, 1:-1] & padded[2:, 1:-1]
+                      & padded[1:-1, :-2] & padded[1:-1, 2:])
+        detail = float((waveform & ~surrounded).sum()) / waveform.sum()
+        self.assertGreater(detail, 0.95)          # a legitimate high-detail mark
+
+    def test_a_STROKE_NEIGHBOURHOOD_term_does_not_separate_them_either(self):
+        # "A halftone is isolated pixels, line art is not", measured on the share
+        # of lit pixels having a lit 4-neighbour. Same wall cohesion hit: over the
+        # Yaru set real `dither` renders read 0.85-0.99, indistinguishable from
+        # line art, because Floyd-Steinberg at real densities is clumpy. Only a
+        # PERFECT checkerboard reads 0 — so a synthetic test of the idea would
+        # have said it works.
+        def stroke(mask):
             p = np.pad(mask, 1)
             neigh = p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]
             return float((mask & neigh).sum()) / float(mask.sum())
 
-        self.assertEqual(cohesion(_checkerboard()), 0.0)     # the tempting case
-        self.assertGreater(cohesion(_line_art()), 0.9)
-        # ...and the real dither this is meant to catch is nothing like it:
         rng = np.random.default_rng(0)
-        realistic = rng.random((38, 38)) < 0.5
-        self.assertGreater(cohesion(realistic), 0.75)
+        realistic = rng.random((38, 38)) < 0.25
+        self.assertGreater(stroke(realistic), 0.6)
+        self.assertGreater(stroke(_line_art()), 0.9)
+
+    def test_BBOX_FILL_is_a_REJECTION_and_not_a_scoring_term(self):
+        # Multiplying the score by (1 - fill) was tried and moved agreement with
+        # 22 hand-judged icons DOWN (13 of 22 against 16). It is a good yes/no —
+        # a rectangle is never a mark — and a bad dial, because a compact solid
+        # mark legitimately fills three quarters of its box (GNOME Extensions'
+        # puzzle piece, 0.783).
+        self.assertEqual(ib.score(_blob()), -1.0)
+        puzzle = np.zeros((38, 38), dtype=bool)
+        puzzle[8:30, 8:30] = True
+        puzzle[2:10, 16:24] = True
+        rows = np.flatnonzero(puzzle.any(1))
+        cols = np.flatnonzero(puzzle.any(0))
+        fill = puzzle.sum() / float((rows[-1] - rows[0] + 1) * (cols[-1] - cols[0] + 1))
+        self.assertGreater(fill, 0.70)
+        self.assertLess(fill, ib.MAX_FILL)
+        self.assertGreater(ib.score(puzzle), ib.MIN_SCORE)
 
 
 class GateTest(unittest.TestCase):
@@ -133,30 +429,38 @@ class GateTest(unittest.TestCase):
 class MinScoreFloorTest(unittest.TestCase):
     """What MIN_SCORE must stay above, whatever it is set to.
 
-    ⚠️ The value moved once (0.30 -> 0.25, 2026-09-17) after the corpus grew
-    from seven icons to 130, which showed the 0.20-0.30 band is nearly empty --
-    the old floor sat in the middle of a gap rather than on an edge of it. These
-    are the bounds that make any such move safe, so they are asserted rather
-    than left to the comment beside the constant.
+    ⚠️ The value has moved TWICE -- 0.30 -> 0.25 when the corpus grew from seven
+    icons to 130, and 0.25 -> 0.08 when `score()` was rewritten (2026-09-18) and
+    the scale moved under it. Both times the number was taken from where the data
+    separates. These are the bounds that make any such move safe, so they are
+    asserted rather than left to the comment beside the constant.
     """
 
-    def test_it_still_refuses_the_three_measured_failures(self):
-        # blob 0.074, fragments 0.059, and the documented unreadable render
-        # (LibreOffice Draw, a smooth gradient) at 0.174.
-        self.assertGreater(ib.MIN_SCORE, 0.174,
-                           "must stay above the documented unreadable render")
-        self.assertGreater(ib.score(_blob()), -2)       # sanity: it renders
-        self.assertLess(ib.score(_blob()), ib.MIN_SCORE)
+    def test_it_still_refuses_the_two_measured_failures(self):
+        # On the current scale, over 116 deduplicated real icons plus these
+        # fixtures: checkerboard 0.000, fragments 0.037, and the lowest real
+        # render 0.097. ⚠️ The blob is no longer one of these -- it is refused
+        # OUTRIGHT by MAX_FILL, which is why this list lost an entry.
         self.assertLess(ib.score(_fragments()), ib.MIN_SCORE)
+        self.assertLess(ib.score(_checkerboard()), ib.MIN_SCORE)
 
-    def test_the_margin_above_that_case_is_a_SEPARATION_not_a_hair(self):
-        # 0.20 would clear the 0.174 case by 0.026, which is noise rather than a
-        # separation. This is what stops the next "just a bit lower" from
-        # landing there.
-        self.assertGreaterEqual(ib.MIN_SCORE - 0.174, 0.05)
+    def test_the_margin_above_them_is_a_SEPARATION_not_a_hair(self):
+        # The fragments fixture is the nearest thing below the floor. 2x clear is
+        # what stops the next "just a bit lower" landing on top of it.
+        self.assertGreaterEqual(ib.MIN_SCORE, 2.0 * ib.score(_fragments()))
+
+    def test_it_stays_below_every_REAL_icon_measured(self):
+        # The lowest of the 116 was 0.097 (GNOME System Monitor's trace). A floor
+        # above that starts refusing readable marks, which is the failure the
+        # 0.25 value had: it refused GNOME Dictionary, Extensions, Games and
+        # Empathy while each had a clean `adaptive` render available.
+        self.assertLess(ib.MIN_SCORE, 0.097)
 
     def test_line_art_still_passes(self):
-        # The must-pass fixture sits at 0.319, so it has never had much room.
+        # ⚠️ It passes with far less room than it used to -- 0.104 against 0.319
+        # before the rewrite -- because `survives` cannot tell a 1px stroke from
+        # a halftone at 2x2. That cost is documented beside the term; what must
+        # not happen is the fixture dropping BELOW the floor.
         self.assertGreaterEqual(ib.score(_line_art()), ib.MIN_SCORE)
 
 if __name__ == "__main__":

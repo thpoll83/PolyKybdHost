@@ -36,7 +36,14 @@ log = logging.getLogger('PolyHost')
 # upper bound is a filled blob carrying no shape; one below the lower bound has
 # lost the icon. Both numbers are measured (see the module docstring), not tuned
 # to taste: the LibreOffice silhouettes sit at 94.5% and Draw's luma at 1.9%.
-MAX_LIT = 0.80
+# ⚠️ TIGHTENED 0.80 -> 0.70 (2026-09-18) and it costs nothing measured: across
+# 1064 renders of 116 real icons NO winning render exceeds 0.623 lit, so the
+# change moves zero winners and zero gate decisions. What the old bound admitted
+# was a flat filled DISC at 0.763 -- a featureless black circle on the ESC
+# keycap, and the fixture `app_icons_test` uses for "does not survive 1-bit".
+# It survived because the rewritten score no longer leans on `detail`, which had
+# been refusing it as a side effect of being maximised by texture.
+MAX_LIT = 0.70
 MIN_LIT = 0.04
 
 # The lit fraction a legible keycap icon tends to have. Scoring peaks here and
@@ -44,33 +51,47 @@ MIN_LIT = 0.04
 # still loses to one with a healthier balance of ink to ground.
 IDEAL_LIT = 0.35
 
+# The lit-balance falls to zero this far either side of `IDEAL_LIT`. It is a
+# SOFT preference, unlike the hard bounds above, and its width decides how much
+# a heavy render is punished for being heavy.
+#
+# ⚠️ Measured, and the whole 0.50-0.70 band is within one icon of each other on
+# the 22-icon judged set (16-17 of 22), so this is the middle of a plateau
+# rather than a fitted peak. Below 0.50 it starts refusing sparse marks that are
+# perfectly readable -- GNOME Dictionary's `a` inks 5.5% of the cell.
+LIT_WIDTH = 0.55
+
+# A render whose ink fills this much of its own bounding box is a RECTANGLE, not
+# a mark, and no threshold on ink or edges can tell those apart -- see the
+# `survives` note in `score()`. Measured over 1064 renders of 116 real icons: it
+# rejects 10, every one an `alpha` silhouette already at or past `MAX_LIT`, and
+# the highest-filling render it lets through is 0.836 (LibreOffice's Start
+# Centre, which is a poor reading for other reasons). The synthetic blob fixture
+# is 1.000 by construction.
+MAX_FILL = 0.95
+
 # Below this, `choose()` has found nothing worth drawing. A wrong or unreadable
 # mark is worse than none -- the user cannot tell a bad render from a bug.
 #
 # ⚠️ The value is taken from where the DATA separates, not chosen, and it has
-# been RE-DERIVED once (0.30 -> 0.25, 2026-09-17) because the original corpus
-# was seven icons. Over 130 real application icons -- the Humanity set, the
-# LibreOffice 512px set, /usr/share/pixmaps and 19 upstream GNOME app icons --
-# scored through the shipped pipeline:
+# been RE-DERIVED TWICE -- 0.30 -> 0.25 when the corpus grew to 130 icons, then
+# 0.25 -> 0.08 when `score()` was rewritten (2026-09-18) and the scale moved
+# under it. Re-derived over 116 deduplicated real icons (Yaru 256, hicolor
+# 512/256/128, /usr/share/pixmaps) plus the suite's synthetic fixtures:
 #
-#     min 0.204   p25 0.418   median 0.482   max 0.845
-#     exactly ONE of the 130 falls below 0.30 (GNOME Calendar, 0.204)
+#     fixtures   checkerboard 0.000   fragments 0.037   blob REJECTED outright
+#     real icons lowest 0.097, then 0.116, 0.175, 0.187 ... median 0.428
 #
-# So the band between 0.20 and 0.30 is nearly EMPTY, and the old floor was not
-# holding a line the data draws -- it sat in the middle of a gap. What bounds it
-# from below is unchanged and measured: the one unreadable render (LibreOffice
-# Draw, a smooth gradient with no two-tone structure) scores 0.174, and the
-# suite's synthetic blob and fragment fixtures score 0.074 and 0.059. 0.25
-# clears all three by a wide margin and still refuses Calendar.
+# So the band 0.037 -> 0.097 is EMPTY and 0.08 sits inside it, clearing the
+# fragments by 2.2x and staying below every real icon measured.
 #
-# What it buys is the near-miss band a two-decimal log could not even print
-# honestly: a field report had GNOME Calculator's Yaru icon at 0.298, refused by
-# a hundredth. Nothing else in 130 icons changes hands.
-#
-# ⚠️ Do NOT lower it further without re-measuring. 0.20 would admit Calendar and
-# sit 0.026 above the documented unreadable case, which is not a separation --
-# and a floor tuned until a particular icon passes stops meaning anything.
-MIN_SCORE = 0.25
+# ⚠️ It is a WEAKER gate than the number it replaced, and deliberately so. The
+# old floor refused the synthetic blob only because `detail` was maximised by
+# texture -- the documented defect this rewrite removes -- so removing the defect
+# removes that accident. What refuses a blob now is `MAX_FILL`, which is a
+# statement about the SHAPE and cannot be defeated by re-thresholding. The floor
+# is left holding the fragments and the halftone, which is all the data supports.
+MIN_SCORE = 0.08
 
 # The long edge an icon is shrunk to before it crosses the network. The
 # receiver reduces to `app_icons.PROGRAM_ICON_BOX` (38) anyway, so 4x that is
@@ -171,15 +192,59 @@ def adaptive_ink(image):
         return None
 
 
-# The pre-dither adjustments `dither_ink` runs. ⚠️ NOT optional decoration --
-# bare Floyd-Steinberg on an app icon is unreadable noise at this size, AND it
-# games `score()`, because every isolated pixel of a dithered midtone counts as
-# an edge. Normalise + unsharp + contrast is what removes the scatter, and it is
+# The pre-dither adjustments the dither conversions run. ⚠️ NOT optional
+# decoration -- bare Floyd-Steinberg on an app icon is unreadable noise at this
+# size. Normalise + unsharp + contrast is what removes the scatter, and it is
 # the stage fontconvert itself always pairs with the dither.
 DITHER_ADJUST = dict(normalize=True, sharpness=2.5, contrast=2.5)
 
+# ⚠️ GAMMA IS THE KNOB THAT DECIDES WHETHER A DITHER READS, and the right value
+# is PER ICON and points in OPPOSITE directions -- which is why these are three
+# scored candidates rather than one tuned default. Measured over the 235-icon
+# Yaru set at 38x38: Totem, Text Editor, Weather and Camera want gamma 1.4-2.0,
+# while Calculator wants 0.5 (at 2.0 its right panel turns into a texture field,
+# at 0.5 Totem's triangle drowns in scatter).
+#
+# The set is CHOSEN BY MEASUREMENT, not spaced by taste: of every 3-tuning
+# combination drawn from a 12-point grid, this one maximises the mean best-dither
+# score over the 88 distinct arts (0.317, against 0.225 for the shipped tuning
+# alone) and puts the best dither ahead of the best threshold read on 36 of 88
+# rather than 21.
+DITHER_TUNINGS = (
+    ("dither-lo", 0.5, 2.5),
+    ("dither", 1.0, 2.5),
+    ("dither-hi", 2.0, 3.5),
+)
 
-def dither_ink(image, box: int):
+# The block size `fidelity()` compares the render and the source at. It is the
+# scale at which a keycap is READ -- at 38px, 4px blocks are roughly the feature
+# size the eye resolves at arm's length. Measured over the 87 distinct Yaru arts,
+# 2 is too fine (it grades the dither's texture, and a dither wins only 56 of 87)
+# and 6 too coarse to separate the gammas; 3, 4 and 6 all sit at 63-65 and 4 has
+# the fewest weak matches.
+FIDELITY_BLOCK = 4
+
+# A reference block counts as INKED, for the coverage check in `fidelity()`, at
+# this share of the source's darkest block; a render's block counts as DRAWN at
+# this share of lit pixels. Both are deliberately loose -- coverage asks whether
+# a region was drawn AT ALL, not how well, because how well is what the
+# correlation beside it already measures. Half the peak splits the two panels of
+# every two-tone icon in the corpus, and one lit pixel in a 4x4 block is the
+# least a dither can put down while still claiming the region exists.
+COVERAGE_INK = 0.5
+COVERAGE_MIN = 0.05
+
+# A majority-lit render is only read as an INVERTED picture when this share of
+# its unlit pixels is enclosed by ink -- a glyph knocked out of a plate rather
+# than the page around a silhouette. The data separates at ZERO and leaves a wide
+# empty band: measured at the shipping 38x38, all 13 silhouettes tried (a flat
+# disc, a plain rounded rect, and the `alpha` reading of 11 real icons) enclose
+# EXACTLY 0.000, while all 20 real plate renders enclose 0.098 to 0.555. Any
+# floor inside that band is equally supported; this one sits ~5x above a
+# single-pixel hole and ~5x below the smallest real case.
+ENCLOSED_MIN = 0.02
+
+def dither_ink(image, box: int, gamma: float = 1.0, contrast: float = 2.5):
     """Error-diffused ink, dithered AT the target size. Keeps midtone AREAS.
 
     The other three conversions all pick a threshold and throw the midtones
@@ -229,7 +294,8 @@ def dither_ink(image, box: int):
     ink = ink.resize((max(1, round(ink.width * scale)),
                       max(1, round(ink.height * scale))), Image.LANCZOS)
     small = np.asarray(ink).astype(np.float32) / 255.0
-    fd.apply_adjustments(small, fd.DitherOpts(**DITHER_ADJUST))
+    adjust = dict(DITHER_ADJUST, gamma_val=gamma, contrast=contrast)
+    fd.apply_adjustments(small, fd.DitherOpts(**adjust))
     h, w = small.shape
     # ⚠️ `_Bits` is reached for because it is the only bit buffer `dither()`
     # accepts and the module exposes no public constructor; the dither itself
@@ -247,12 +313,26 @@ def _thresholded(convert):
 
 # Each entry is (name, (image, box) -> bool mask). `dither` is last so that a
 # tie goes to a thresholded reading, which has no texture to misread.
-CONVERSIONS = (
+def _tuned_dither(gamma: float, contrast: float):
+    def convert(image, box: int):
+        return dither_ink(image, box, gamma=gamma, contrast=contrast)
+    return convert
+
+
+# The THRESHOLD reads -- each picks a cut and throws the midtones away.
+THRESHOLD_CONVERSIONS = (
     ("alpha", _thresholded(alpha_coverage)),
     ("luma", _thresholded(luma_ink)),
     ("adaptive", _thresholded(adaptive_ink)),
-    ("dither", dither_ink),
 )
+
+# The DITHER reads -- each keeps the midtone AREAS, at a different gamma.
+DITHER_CONVERSIONS = tuple(
+    (name, _tuned_dither(gamma, contrast)) for name, gamma, contrast in DITHER_TUNINGS)
+
+DITHER_NAMES = frozenset(name for name, _, _ in DITHER_TUNINGS)
+
+CONVERSIONS = THRESHOLD_CONVERSIONS + DITHER_CONVERSIONS
 
 
 def fit(coverage, box: int):
@@ -278,55 +358,267 @@ def fit(coverage, box: int):
 def score(mask) -> float:
     """How legible this 1-bit render is. Higher is better; <= 0 is unusable.
 
-    Three terms, each added because a real icon defeated the ones before it:
+    Two HARD rejections and four terms. Each arrived because a real icon defeated
+    what was there before it:
 
-    * **edge** -- the share of lit pixels touching an unlit one. A solid shape
-      scores near zero however large it is, which is what rejects a silhouette
-      (Yelp's help icon reduces to a ring, gedit's to a diagonal bar);
-    * **balance** -- prefers a healthy ink-to-ground ratio over one extreme;
-    * **spread** -- the share of ROWS and COLUMNS carrying any ink. Without it
-      a render made of thin fragments scores *well*, because `edges/lit`
-      approaches 1.0 for anything thin: Mousepad's icon reduced to a band of
-      text at the top and a rule at the bottom, 12% lit with an empty middle,
-      and scored 0.55 until this term took it to 0.14.
+    * **lit bounds** -- past `MAX_LIT` the render is a filled cell, below
+      `MIN_LIT` the icon is gone;
+    * **bbox fill** -- ink filling `MAX_FILL` of its own bounding box is a
+      rectangle. This is what refuses a silhouette, and it replaced `detail`
+      doing that job by accident (below);
+    * **detail** -- the share of lit pixels touching an unlit one, at a QUARTER
+      power. It is kept because it still orders two otherwise-equal readings, and
+      weakened because at full strength it decided everything;
+    * **survives** -- the variance of the 2x2 block means, divided by the
+      variance a uniform field of the same density would have. ~1 for ink that is
+      still ink after a blur, ~0 for a halftone that reads as grey;
+    * **balance** -- prefers a healthy ink-to-ground ratio, zero `LIT_WIDTH`
+      either side of `IDEAL_LIT`;
+    * **spread** -- the share of ROWS and COLUMNS carrying any ink, which rejects
+      a render made of thin fragments with an empty middle (Mousepad's).
 
-    ⚠️ This is a HEURISTIC fitted to roughly a dozen real icons, not a derived
-    measure, and it should be read as one. It is a filter on the obvious
-    failures -- blob, silhouette, fragments -- and not a judge of whether a mark
-    is recognisable. Extend it by finding an icon it gets wrong and adding the
-    term that separates it, the way each of these three arrived; do not tune the
-    constants until a favourite icon passes.
+    ⚠️ **`detail` used to be the first term at full strength and it was
+    MAXIMISED BY TEXTURE** -- every lit pixel of a dither field touches an unlit
+    one -- so the term meant to reward line art systematically handed the win to
+    `dither`. Measured 2026-09-18 over the 235-icon Yaru set with 22 icons judged
+    by eye: the old scorer picked the render a human would pick **8 times out of
+    22**, and 13 of the 14 misses were "dither or luma won, adaptive was cleaner".
+    This version picks it 16 times. On the 88 distinct arts in that set 23
+    winners change: 17 better, 4 worse, 2 a wash.
+
+    ⚠️ **Four repairs were measured and REFUTED before this one** -- do not
+    re-propose them without new evidence:
+
+    * a **detail ceiling** (peak at a moderate value, fall off toward 1.0). The
+      highest-scoring render in the whole corpus, Power Statistics' dithered
+      waveform, sits at detail 0.996; a ceiling destroys it;
+    * **cohesion** (largest connected component's share). Refuted twice: it reads
+      0.78-1.0 for halftone AND line art, and shipping it moved 37 winners while
+      deflating the scale from 191 to 144 icons above the gate;
+    * **stroke neighbourhood** (share of lit pixels with a lit 4-neighbour). Same
+      wall: real dither reads 0.85-0.99, indistinguishable from line art. Only a
+      perfect checkerboard reads 0, which is why testing it synthetically MISLEADS;
+    * **bbox fill as a scoring TERM** rather than a rejection. It moved agreement
+      DOWN (13 of 22 at best) -- it is a good yes/no and a bad dial.
+
+    ⚠️ **The cost of `survives` is that sparse thin strokes score much lower**, a
+    1px stroke and a dither field genuinely resembling each other at 2x2. GNOME
+    System Monitor's clean trace went 0.34 -> 0.10 and the suite's `_line_art`
+    fixture 0.32 -> 0.10. The ORDER is right in both cases -- they still win their
+    icon -- but the bottom of the scale is compressed, which is why `MIN_SCORE`
+    moved with it and now sits where the data separates rather than mid-range.
+
+    ⚠️ Still a HEURISTIC fitted to judged icons, not a derived measure. Extend it
+    by finding an icon it gets wrong and adding the term that separates it; do not
+    tune the constants until a favourite icon passes.
     """
-    if mask is None or not mask.size:
+    if mask is None or not mask.size or not mask.any():
         return -1.0
     import numpy as np
     lit = float(mask.mean())
+    if lit > MAX_LIT and _enclosed_share(mask) >= ENCLOSED_MIN:
+        # A majority-lit render is the SAME PICTURE with the polarity flipped --
+        # a white `>_` knocked out of a black terminal plate, not a filled cell.
+        # Every term below reads ink as the minority, so measure the side that
+        # carries the shape. `fidelity()` already takes the ABSOLUTE correlation
+        # for exactly this reason; the gate was the half that still assumed a
+        # light page. Measured over the 87 distinct Yaru arts: 9 winners change,
+        # every one of them a dark-plate icon that had been rendering as a
+        # fragment of its own lit background (bash and the root terminal drew a
+        # bare `>`; Calls, Music and Snap Store drew their glyph in a noise
+        # field), and the winning lit range opens from 0.055-0.623 to
+        # 0.055-0.839 -- the top of which IS the plate.
+        #
+        # ⚠️ GATED ON AN ENCLOSED HOLE, because without it this readmits the one
+        # thing `MAX_LIT` exists to refuse: a filled silhouette's inverse is the
+        # page around it, which has structure of its own and scored 0.43 for a
+        # FLAT DISC -- past `MIN_SCORE`, i.e. a confident offer to draw a blob on
+        # the ESC keycap. See `_enclosed_share`.
+        mask = ~mask
+        lit = float(mask.mean())
     if lit > MAX_LIT or lit < MIN_LIT:
+        return -1.0
+    ink = int(mask.sum())
+    rows = np.flatnonzero(mask.any(1))
+    cols = np.flatnonzero(mask.any(0))
+    box_area = (rows[-1] - rows[0] + 1) * (cols[-1] - cols[0] + 1)
+    if ink >= MAX_FILL * box_area:
         return -1.0
     padded = np.pad(mask, 1)
     surrounded = (padded[:-2, 1:-1] & padded[2:, 1:-1]
                   & padded[1:-1, :-2] & padded[1:-1, 2:])
-    edges = mask & ~(mask & surrounded)
-    detail = float(edges.sum()) / max(1, int(mask.sum()))
-    balance = 1.0 - abs(lit - IDEAL_LIT)
+    detail = float((mask & ~surrounded).sum()) / ink
+    height, width = mask.shape[0] // 2 * 2, mask.shape[1] // 2 * 2
+    blocks = mask[:height, :width].reshape(height // 2, 2, width // 2, 2)
+    survives = float(blocks.mean(axis=(1, 3)).var()) / (lit * (1.0 - lit))
+    balance = max(0.0, 1.0 - abs(lit - IDEAL_LIT) / LIT_WIDTH)
     spread = min(float(mask.any(1).mean()), float(mask.any(0).mean()))
-    return detail * balance * spread
+    return detail ** 0.25 * survives * balance * spread
+
+
+def _source_ink(image, shape):
+    """The SOURCE as an ink map at `shape` -- darkness = ink, cropped like a render."""
+    import numpy as np
+    from PIL import Image
+    rgba = image.convert("RGBA")
+    flat = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+    flat.alpha_composite(rgba)
+    # ⚠️ DISTANCE FROM THE PAGE, not darkness. Luma weights green x0.72 and blue
+    # x0.07, so a saturated colour on white reads as almost nothing: GNOME
+    # Calculator's yellow half measured 0.234 against its grey half's 0.623, i.e.
+    # the reference said the right panel was very nearly blank -- so the render
+    # that DROPPED that panel entirely scored 0.983 and shipped. Under this
+    # reference the same panel reads 0.481. Euclidean distance in RGB is the
+    # cheapest form that treats a bright colour as ink; it is not perceptual and
+    # does not need to be, because only the RANKING of block means is used.
+    rgb = np.asarray(flat.convert("RGB")).astype("float32") / 255.0
+    ink = np.sqrt(((1.0 - rgb) ** 2).sum(axis=2)) / np.sqrt(3.0)
+    ink = ink * (np.asarray(rgba.split()[-1]).astype("float32") / 255.0 > 0.35)
+    rows = np.flatnonzero(ink.any(1))
+    cols = np.flatnonzero(ink.any(0))
+    if not len(rows) or not len(cols):
+        return None
+    crop = ink[rows[0]:rows[-1] + 1, cols[0]:cols[-1] + 1]
+    small = Image.fromarray((crop * 255).astype("uint8")).resize(
+        (shape[1], shape[0]), Image.LANCZOS)
+    return np.asarray(small).astype("float32") / 255.0
+
+
+def _enclosed_share(mask) -> float:
+    """Share of the UNLIT pixels that are a HOLE in the ink, not the page around it.
+
+    Floods the unlit region inward from the cell border; whatever the flood
+    cannot reach is enclosed by ink. This is the one thing that separates a
+    terminal plate with a `>_` knocked out of it -- which `score()` must read
+    inverted -- from a filled silhouette, which it must still refuse. Both are
+    majority-lit and neither lit fraction nor bounding-box fill tells them apart.
+    """
+    import numpy as np
+    unlit = ~mask
+    if not unlit.any():
+        return 0.0
+    reach = np.zeros_like(unlit)
+    reach[0, :] |= unlit[0, :]
+    reach[-1, :] |= unlit[-1, :]
+    reach[:, 0] |= unlit[:, 0]
+    reach[:, -1] |= unlit[:, -1]
+    while True:
+        grown = reach.copy()
+        grown[1:, :] |= reach[:-1, :]
+        grown[:-1, :] |= reach[1:, :]
+        grown[:, 1:] |= reach[:, :-1]
+        grown[:, :-1] |= reach[:, 1:]
+        grown &= unlit
+        if grown.sum() == reach.sum():
+            break
+        reach = grown
+    return float((unlit & ~reach).sum()) / float(unlit.sum())
+
+
+def _block_mean(field, size):
+    height, width = field.shape
+    tall, wide = height // size * size, width // size * size
+    if tall < size or wide < size:
+        return None
+    return field[:tall, :wide].reshape(
+        tall // size, size, wide // size, size).mean(axis=(1, 3))
+
+
+def fidelity(mask, image, block: int = FIDELITY_BLOCK) -> float:
+    """How well a render keeps the SOURCE's layout: |Pearson r| over coarse blocks.
+
+    ⚠️ **`score()` never looks at the source.** Every one of its terms is a
+    property of the mask alone, so it can say a render is crisp and cannot say it
+    is the right picture -- which is why it preferred clean threshold line art
+    while a human preferred the dither that kept the artwork's proportions.
+    Measured over the 87 distinct Yaru arts: ranking by `score()` puts a dither
+    first on 36, ranking by this puts one first on 65, with no thumb on the scale.
+
+    ⚠️ **1 - MAE was the obvious form and is DEGENERATE -- do not go back to it.**
+    Most icon sources are mostly light, so a BLANK render matches the mean and
+    scores ~0.9; it picked an empty mask for baobab, empathy, engrampa and eog.
+    Correlation is invariant to offset and scale, so a constant render has no
+    variance and scores nothing at all. It asks only whether the ink goes WHERE
+    the darkness is, which is the property being claimed.
+
+    ⚠️ **ABSOLUTE value, because an inverted render is equally faithful in
+    SHAPE.** A dark-plate icon (Terminal, Dictionary, Backups) reads correctly as
+    light-on-dark or dark-on-light; both preserve the proportions, and the sign
+    only records which way round the plate went. Signed correlation refuses seven
+    of the 87 outright for that alone.
+
+    ⚠️ **CORRELATION ALONE CANNOT SEE A DROPPED PANEL, which is why `coverage`
+    multiplies it.** Correlation is invariant to scale, so a render that blanks a
+    whole region still scores ~1 as long as what it DOES draw lines up with the
+    source. GNOME Calculator is the worked example: `adaptive` renders the grey
+    half perfectly and leaves the yellow half completely empty, and scored 0.983
+    -- higher than every render that drew both halves. `coverage` asks the
+    question correlation cannot, of the blocks the SOURCE fills, how many did the
+    render put anything at all into; it takes Calculator's `adaptive` to 0.462
+    against the dither's 0.648. Reported from hardware as "calc degraded as the
+    right side became invisible".
+
+    ⚠️ Coverage is measured on **whichever polarity correlated**, or it would
+    refuse every dark-plate icon outright -- there the ink is deliberately where
+    the source is light, so an unflipped coverage reads ~0 for a render that is
+    entirely faithful.
+    """
+    import numpy as np
+    if mask is None or not mask.size:
+        return -1.0
+    reference = _source_ink(image, mask.shape)
+    if reference is None:
+        return -1.0
+    rendered = _block_mean(mask.astype("float32"), block)
+    original = _block_mean(reference, block)
+    if rendered is None or original is None:
+        return -1.0
+    centred = rendered.ravel() - rendered.mean()
+    base = original.ravel() - original.mean()
+    spread = float(np.sqrt((centred * centred).sum() * (base * base).sum()))
+    if spread <= 1e-9:
+        return -1.0
+    correlation = float((centred * base).sum() / spread)
+    drawn = (1.0 - rendered) if correlation < 0.0 else rendered
+    inked = original >= COVERAGE_INK * float(original.max())
+    if not inked.any():
+        return abs(correlation)
+    coverage = float((drawn[inked] > COVERAGE_MIN).mean())
+    return abs(correlation) * coverage
 
 
 def choose(image, box: int):
     """(mask, conversion name, score) for the best 1-bit reading of `image`.
 
+    ⚠️ **TWO MEASURES, AND THEY ANSWER DIFFERENT QUESTIONS.** `score()` decides
+    whether a render is USABLE -- a blob, a fragment field, a grey halftone are
+    all refused -- and `fidelity()` decides which of the usable ones is the RIGHT
+    PICTURE, by comparing it against the source. Everything clearing `MIN_SCORE`
+    is ranked by fidelity; the best score is the fallback only when nothing does.
+
+    ⚠️ **This replaced a hardcoded `DITHER_PREFERENCE` thumb (2026-09-18), and
+    the thumb is the thing worth not rebuilding.** A dither was being forced to
+    the front because a human kept preferring it, with a relative floor tuned
+    until the count looked right. The real finding is that the dither preference
+    was a SYMPTOM: `score()` was ranking crispness while the owner was ranking
+    recognisability, so the fix is a measure that looks at the original rather
+    than a constant that overrides the one that does not. With fidelity ranking,
+    a dither wins 65 of 87 on its own merits and no constant decides it.
+
     Returns (None, None, -1.0) when nothing renders at all. A caller that wants
     only confident results compares the score against `MIN_SCORE`; one drawing a
     mark it has no alternative for may take whatever comes back.
     """
-    best = (None, None, -1.0)
+    candidates = []
     for name, convert in CONVERSIONS:
         mask = convert(image, box)
         value = score(mask)
-        if value > best[2]:
-            best = (mask, name, value)
-    return best
+        if value > -1.0:
+            candidates.append((mask, name, value))
+    if not candidates:
+        return None, None, -1.0
+    usable = [c for c in candidates if c[2] >= MIN_SCORE] or candidates
+    return max(usable, key=lambda c: fidelity(c[0], image))
 
 
 def looks_like_svg(data: bytes) -> bool:

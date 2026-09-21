@@ -467,7 +467,214 @@ Each phase ends with something demonstrable; nothing depends on hardware until E
   running app resolves it fine. The instrument was under-reporting the mechanism
   it exists to measure. It now makes the single call `app_icon_fetcher` makes.
 
+* **E7 — `score()` picks the wrong conversion.** ✅ Done. Reported from the field
+  as *"video which looked quite bad and I'm sure her dithering would have
+  worked"*, and it is the defect `KnownWeaknessTest` had pinned since E5:
+  `detail` is `edges/lit`, and every lit pixel of a dither field touches an unlit
+  one, so the term meant to reward line art was **maximised by texture**.
+
+  **Measured, not argued.** Extracted the real `yaru-theme-icon` package (235
+  icons, 88 distinct arts) and judged 22 by eye against the four conversions. The
+  old scorer picked the render a human would pick **8 times out of 22**; 13 of
+  the 14 misses were "`dither` or `luma` won, `adaptive` was cleaner". The
+  rewrite picks it 16 times, and over the 88 distinct arts **34 winners change:
+  ~26 better, 4 worse, 4 a wash**.
+
+  What shipped: `detail` at a **quarter power** (kept — it still orders two
+  otherwise-equal readings — but no longer decides everything), a new
+  **`survives`** term (variance of the 2×2 block means over what a uniform field
+  of that density would give: ~1 for ink that is still ink after a blur, ~0 for a
+  halftone that reads as grey), **`MAX_FILL`** rejecting ink that fills its own
+  bounding box, and **`MAX_LIT` 0.80 → 0.70** (free: no winning render among 116
+  real icons exceeds 0.623 lit). `MIN_SCORE` re-derived 0.25 → **0.08**, where the
+  data separates on the new scale.
+
+  ⚠️ **Four repairs were measured and REFUTED first, and they are pinned as tests
+  so they are not re-proposed**: a detail *ceiling* (the corpus's best render,
+  Power Statistics' dithered waveform, sits at detail 0.996), **cohesion**,
+  **stroke neighbourhood** (both read 0.78–1.0 for halftone *and* line art —
+  only a perfect checkerboard separates, which is why testing the idea
+  synthetically MISLEADS), and bbox fill as a scoring *term* rather than a
+  rejection.
+
+  ⚠️ **The honest cost**: `survives` cannot tell a 1px stroke from a halftone at
+  2×2, so sparse line art scores much lower — the `_line_art` fixture went
+  0.319 → 0.104. The *order* is still right, but the bottom of the scale is
+  compressed, which is why `MIN_SCORE` moved with it and now sits where the data
+  separates rather than mid-range. The gate is weaker than the number it
+  replaced; what refuses a blob now is `MAX_FILL`, a statement about the shape,
+  which is a better guard than a float that worked by accident.
+
+  ⚠️ **The blob fixture and GNOME Totem's play triangle are statistically
+  near-identical** (lit 0.62 vs 0.55, detail 0.13 vs 0.15). Anything that rejects
+  one rejects the other — so the old `test_a_SOLID_BLOB_scores_near_zero` was, in
+  effect, what made Totem draw a scribble. Accepting large solid marks is a
+  decision, and on a keycap it is the right one: a solid play triangle is the most
+  legible thing in the corpus.
+
+  22 tests where there were 13, mutation-swept 8/8. ⚠️ The first sweep reported
+  all 8 "caught" and was a **fail-open** — a quoting bug passed the literal `$S`
+  to `unittest`, which errors, which reads as caught. Read the *caught-by* names,
+  never the verdict alone.
+
+* **E8 — a dither is PREFERRED, and there are three of them.** ✅ Done. Owner's
+  call after reviewing the tuning sheets: *"with a very very few exceptions dither
+  always looks better. So yes add 2 or 3 dither candidates and make them the first
+  choice as long as it is more than just snowflakes."*
+
+  **Gamma is the knob, and it points OPPOSITE ways per icon** — Totem, Text Editor,
+  Weather and Camera want 1.4–2.0; the Calculator wants 0.5. So the three tunings
+  are scored candidates rather than one tuned default. The set
+  (`dither-lo` 0.5/2.5, `dither` 1.0/2.5, `dither-hi` 2.0/3.5) is **chosen by
+  measurement**: of every 3-combination from a 12-point grid it maximises the mean
+  best-dither score over the 88 distinct Yaru arts (0.317 against 0.225 for the
+  shipped tuning alone) and puts the best dither ahead of the best threshold read
+  on 36 of 88 rather than 21.
+
+  `choose()` now splits the candidates and takes the best dither unless it scores
+  below `DITHER_PREFERENCE` (0.50) of the best threshold read. That lifts a dither
+  from 36 of 88 picks to **74**, and changes 67 of the 88 picks.
+
+  ⚠️ **A "SNOWFLAKE DETECTOR" WAS ATTEMPTED AND COULD NOT BE BUILT — this is the
+  fifth refuted repair in this area and the most instructive.** 29 renders were
+  hand-labelled picture vs noise and every candidate feature OVERLAPPED:
+  isolated-pixel share, 2×2/3×3/4×4 grain share, full-block share, blur survival
+  and lit, the best single split reaching 23 of 29. The reason is not a missing
+  feature: what makes Shotwell's tree or gparted's disc read as noise is that the
+  **subject** is intricate, not that the dither is bad. `DITHER_PREFERENCE` is
+  therefore a blunt relative floor and is documented as one.
+
+  **0.50 is measured against a hand-judged set and the trade is about one for
+  one.** Of 25 arts judged by eye (17 clear dither wins, 8 clear losses) it keeps
+  all 17 wins and refuses 2 of the 8 losses; 0.55 refuses a third loss but takes
+  two wins with it; below 0.40 nothing is refused.
+
+  ⚠️ **The cost is real and is NOT "a very few exceptions".** Reading all 88
+  before/after by eye: roughly 30 better, 25 worse, 30 unchanged. The losses
+  cluster on clean line-art marks — the whole LibreOffice family, GNOME Music,
+  Mines, Livepatch, gparted, app-center — which come back at
+  `DITHER_PREFERENCE` 0.70 at the cost of Totem, cpu-x, audio-recorder,
+  address-book and clock-app. One constant moves the whole trade; the sheets to
+  judge it from are in the session, and the owner's stated preference is what
+  0.50 encodes.
+
+  Also: `test_a_monochrome_svg_reads_IDENTICALLY_either_way` had to widen. A flat
+  single-path mark now comes back from `dither-hi`, which reproduces the shape
+  exactly in its interior and differs on **20 anti-aliased edge pixels of 1444**;
+  the exact half is pinned separately against the non-diffusing conversion.
+
+  28 tests in the module (13 before E7), mutation-swept 8/8 twice. ⚠️ Three of the
+  eight escaped on the first pass and each escape was a FIXTURE fault, not a
+  missing test: the "dither wins while scoring lower" case handed the dither slot
+  the *higher*-scoring mask (so it passed under a plain argmax too), the
+  "unusable dither" case put -1.0 on both sides (where the comparison is false
+  either way), and nothing asserted the gamma reached `dither_ink` at all.
+
+* **E9 — the metric never looked at the ORIGINAL, and that was the real defect.**
+  ✅ Done. Owner's diagnosis, and it is correct: *"I think the proportions and
+  dimension of the original icons play a bigger role than just a clear icon and
+  that is where your metric lacks behind — vs my subjective recognizability
+  measure."*
+
+  Every term in `score()` is a property of the MASK ALONE — edges, grain, ink
+  balance, spread. It can say a render is crisp and it cannot say it is the right
+  picture. So it ranked clean threshold line art above a dither that kept the
+  artwork's layout, and E8 papered over that with a tuned `DITHER_PREFERENCE`
+  constant that forced a dither to the front because a human kept choosing one.
+  **The preference was a symptom.**
+
+  `fidelity(mask, image)` is the missing measure: |Pearson r| between the render's
+  and the source's 4×4 block fields. `choose()` now uses `score()` as a GATE
+  (usable at all) and fidelity as the RANKING (which usable render is the right
+  picture). **A dither wins 65 of 87 distinct Yaru arts on its own merits, against
+  36 under score-argmax** — so the thumb could be deleted, not retuned.
+
+  ⚠️ **1 - MAE was the obvious form and is DEGENERATE.** Most icon sources are
+  mostly light, so a BLANK render matches the mean and scores ~0.9: it picked an
+  empty mask for baobab, empathy, engrampa and eog. Correlation is invariant to
+  offset and scale, so a constant render has no variance and scores nothing.
+
+  ⚠️ **ABSOLUTE value, because an inverted render is equally faithful in SHAPE.**
+  A dark-plate icon (Terminal, Dictionary, Backups) reads correctly either way
+  round. Signed correlation refuses seven of the 87 for nothing but the sign.
+
+  ⚠️ **The reference is cropped to its ink bbox**, because a render is. Measured on
+  a small shape in a large transparent canvas: cropped 0.87, uncropped 0.10 — and
+  invisible on an icon that fills its frame, which is most of them.
+
+  **What it repaired**, judged on the same sheets that condemned E8: GNOME
+  Weather, gparted, Extensions, Mahjongg and Aisleriot go back to clean `adaptive`
+  reads, LibreOffice Base/Impress/Writer back to `luma`, while Totem keeps the
+  dithered film-strip plate with the play triangle knocked out of it (fidelity
+  0.93) and Text Editor, Camera, Calculator and the Game Boy keep their gains.
+  `FIDELITY_BLOCK` is 4 because that is where the corpus separates: at 2 the
+  measure grades the dither's texture (a dither wins only 56 of 87) and at 6 it
+  stops telling the gammas apart.
+
+  22 tests, mutation-swept 8/8. ⚠️ Two escaped first: the gate test used a fixture
+  where the sub-gate render was ALSO the less faithful one, so deleting the gate
+  changed nothing, and nothing asserted the reference is cropped — both needed a
+  fixture built to make the deleted line matter, not a new assertion.
+
 ---
+
+### E10 — the ranker could not see a colour, and the gate could not see an inverted picture
+
+Two defects, both reported from hardware on the same run: *"the icon for gnome
+text edit, nautilus are not great, calc degraded as the right side became
+invisible"*.
+
+**The reference measured DARKNESS.** `_source_ink` built its comparison map as
+`1 - luma`, and luma weights green ×0.72 and blue ×0.07 — so a saturated colour
+on white reads as almost nothing. GNOME Calculator is a grey panel beside a
+yellow one; the yellow half measured **0.234** against the grey half's 0.623,
+i.e. the reference said the right side was nearly blank. The render that dropped
+that panel *entirely* therefore scored **0.983**, higher than every render that
+drew both. Distance from the page in RGB puts the same panel at **0.481**.
+
+**Correlation cannot see a dropped panel at all.** It is invariant to scale, so
+a render that blanks a whole region still correlates ~1 as long as what it does
+draw lines up. `coverage` — of the blocks the source fills, how many did the
+render put anything into — is what separates them: Calculator's `adaptive`
+reading goes 0.983 → **0.462** against the dither's **0.648**. Coverage is read
+on whichever polarity correlated, or every dark-plate icon is refused for
+drawing its ink where the source is light.
+
+**The lit gate assumed ink is the minority.** `MAX_LIT` refused any render over
+70% lit, which is the right rule for a filled silhouette and the wrong one for a
+terminal plate with a `>_` knocked out of it — the same picture, polarity
+flipped, which `fidelity()` already accepted (it takes the *absolute*
+correlation for exactly this reason). Measured over the 87 distinct Yaru arts,
+**9 winners change**, every one a dark-plate icon that had been shipping a
+fragment of its own lit background: `bash` and the root terminal drew a bare
+`>`; Calls, Music and Snap Store drew their glyph in a noise field. The winning
+lit range opens from 0.055–0.623 to 0.055–**0.839**, the top of which *is* the
+plate.
+
+⚠️ **The flip is gated on an ENCLOSED HOLE, and without that gate it readmits
+the one thing `MAX_LIT` exists for.** A filled silhouette's inverse is the page
+around it, which has structure of its own: a flat disc scored **0.43** — past
+`MIN_SCORE`, i.e. a confident offer to draw a blob on the ESC keycap, and two
+existing tests caught it. `_enclosed_share` floods the unlit region inward from
+the border and asks what the flood cannot reach. The data separates at **zero**:
+all 13 silhouettes tried (a flat disc, a plain rounded rect, and the `alpha`
+reading of 11 real icons) enclose exactly 0.000, while all 20 real plate renders
+enclose 0.098–0.555. Neither lit fraction nor bounding-box fill tells them apart.
+
+**Net:** 19 of 87 picks change from the colour/coverage reference and 9 more
+from the polarity gate; `luma` all but disappears as a winner and `alpha` wins
+nothing. Calculator gets its `=` panel back, Text Editor gets the page's ruled
+lines back instead of a bare pencil.
+
+⚠️ **Nautilus is NOT fixed and is not pretended to be.** Its source is a flat
+mid-grey slab with one white handle; there is no internal structure to render,
+so every candidate is either a noise field or an empty outline. `dither-hi`
+draws a solid folder with the handle knocked out and reads best to a human, but
+its correlation against a flat source is 0.32 against the dither's 0.84, so the
+measure does not pick it. A flat-source case needs a different answer than a
+better reference.
+
+8 mutations, 8 caught by the intended test.
 
 ## Part F — what could still fail
 

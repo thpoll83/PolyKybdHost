@@ -609,16 +609,40 @@ class SvgOsIconIsReadAsColourArtTest(unittest.TestCase):
         self.assertNotEqual(conversion, "svg",
                             "the silhouette must not win on a plate icon")
 
-    def test_a_monochrome_svg_reads_IDENTICALLY_either_way(self):
+    def test_a_monochrome_svg_reads_THE_SAME_either_way(self):
         # The safety property: for a single-path mark, whose alpha IS the
-        # drawing, the colour path's `alpha` conversion reproduces the
-        # silhouette pixel for pixel -- so competing the two cannot change what
-        # a catalog-style icon draws. Measured: 0 differing pixels of 2880.
+        # drawing, competing the colour reading against the silhouette cannot
+        # change what a catalog-style icon draws.
+        #
+        # ⚠️ It used to assert ZERO differing pixels, and that became too strict
+        # when `choose()` started PREFERRING a dither: the winner here is now
+        # `dither-hi`, which reproduces the shape exactly in its interior (a flat
+        # mark has no midtones to diffuse) and differs on 20 ANTI-ALIASED EDGE
+        # pixels of 1444. Rendered side by side the two are indistinguishable.
+        # So the property is intact and the measurement of it had to widen; a
+        # tolerance this tight still fails if a real dither field appears.
         self._cairo()
         silhouette = self._silhouette(self.MONO)
         colour, _, _ = ai._svg_colour_candidate(self.MONO, ai.PROGRAM_ICON_BOX)
         self.assertIsNotNone(colour)
-        self.assertEqual(int((silhouette != colour).sum()), 0)
+        differing = int((silhouette != colour).sum())
+        self.assertLess(differing, 0.02 * silhouette.size,
+                        "a flat mark must not come back textured")
+
+    def test_the_conversion_WITHOUT_diffusion_still_matches_exactly(self):
+        # The half of the old assertion that is still exact, kept so the claim
+        # above ("a flat mark has no midtones to diffuse") is pinned rather than
+        # asserted in a comment.
+        self._cairo()
+        import io
+        from PIL import Image
+        import cairosvg
+        raster = Image.open(io.BytesIO(cairosvg.svg2png(
+            bytestring=self.MONO, output_width=160, output_height=160)))
+        raster.load()
+        alpha = dict(ai.icon_binarise.CONVERSIONS)["alpha"](raster, ai.PROGRAM_ICON_BOX)
+        plain = dict(ai.icon_binarise.CONVERSIONS)["dither"](raster, ai.PROGRAM_ICON_BOX)
+        self.assertEqual(int((alpha != plain).sum()), 0)
 
     def test_without_cairosvg_the_silhouette_is_still_used(self):
         # Windows has no cairosvg wheel, and `svg_raster` fills paths into a
