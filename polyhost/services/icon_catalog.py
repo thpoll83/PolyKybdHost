@@ -391,6 +391,11 @@ def _store_font(path: str, data: bytes) -> str | None:
         try:
             os.unlink(tmp)
         except OSError:
+            # Already gone, or the directory is unwritable -- either way there
+            # is nothing left to clean up and nothing a caller could do. The
+            # ORIGINAL failure is what matters and it is reported by the None
+            # below; raising this one instead would replace a "could not write
+            # the font" with a "could not delete a temp file".
             pass
         return None
     return path
