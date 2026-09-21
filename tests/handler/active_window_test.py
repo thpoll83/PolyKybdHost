@@ -12,8 +12,7 @@ the redundant-command guard doesn't swallow the retry.
 active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
 """
-import sys
-import types
+import subprocess
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -21,6 +20,7 @@ try:
     from polyhost.handler.active_window import (
         OverlayHandler, _handle_identifies,
         frontmost_app as aw_frontmost_app,
+        _FRONTMOST_SCRIPT,
     )
     from polyhost.handler.common import OverlayCommand
     _IMPORT_ERR = None
@@ -593,38 +593,115 @@ class AWindowlessAppIsStillAnAppTest(unittest.TestCase):
              patch.dict(sys.modules, {"AppKit": appkit}):
             self.assertEqual(aw_frontmost_app(), (None, None))
 
-    def test_frontmost_app_really_reads_the_name_AND_the_pid(self):
+    @staticmethod
+    def _osascript(stdout):
+        """Stand in for the `osascript` subprocess `frontmost_app` shells out to."""
+        return MagicMock(return_value=MagicMock(stdout=stdout))
+
+    def test_frontmost_app_reads_the_name_AND_the_pid(self):
         """⚠\ufe0f Every other test here patches `frontmost_app` itself, so none of
         them can see what the real one returns -- a fake that implements the
         contract cannot test it. Measured: dropping the pid from the real
-        function escaped the whole sweep until this case existed.
-
-        `AppKit` is injected into `sys.modules` because the import is INSIDE the
-        function (it must be: this module is imported on Linux too).
-        """
-        appkit = types.ModuleType("AppKit")
-        app = MagicMock()
-        app.localizedName.return_value = "Photos"
-        app.processIdentifier.return_value = 4242
-        appkit.NSWorkspace = MagicMock()
-        appkit.NSWorkspace.sharedWorkspace.return_value.frontmostApplication \
-            .return_value = app
+        function escaped the whole sweep until this case existed."""
+        run = self._osascript("4242\nPhotos\n")
         with patch(self.MOD + ".platform.system", return_value="Darwin"), \
-             patch.dict(sys.modules, {"AppKit": appkit}):
+             patch(self.MOD + ".subprocess.run", run):
             self.assertEqual(aw_frontmost_app(), ("Photos", 4242))
 
-    def test_frontmost_app_answers_nothing_when_no_app_is_frontmost(self):
-        appkit = types.ModuleType("AppKit")
-        appkit.NSWorkspace = MagicMock()
-        appkit.NSWorkspace.sharedWorkspace.return_value.frontmostApplication \
-            .return_value = None
+    def test_it_asks_SYSTEM_EVENTS_rather_than_the_AppKit_property(self):
+        """⚠\ufe0f The regression this function exists to prevent, pinned at the
+        one place it is visible: WHICH source is asked.
+
+        `NSWorkspace.frontmostApplication` is one line of Python away and is
+        STALE off the main thread -- twice now. The shortcut fetcher read
+        `Safari` for nine consecutive harvests over three minutes; this function
+        froze on `QuickTime Player`, so switching to Activity Monitor drew
+        QuickTime's mark and its shortcuts and logged nothing, because the name
+        never changed. A wrong app is worse than no app.
+
+        Asserting the RESULT cannot catch that -- a stale read returns a
+        perfectly well-formed name. Only the source can be asserted, so this
+        test reads the command and the script."""
+        run = self._osascript("1\nPhotos\n")
         with patch(self.MOD + ".platform.system", return_value="Darwin"), \
-             patch.dict(sys.modules, {"AppKit": appkit}):
+             patch(self.MOD + ".subprocess.run", run):
+            aw_frontmost_app()
+        argv = run.call_args.args[0]
+        self.assertEqual(argv[0], "osascript", argv)
+        script = run.call_args.kwargs["input"]
+        self.assertIn("System Events", script)
+        self.assertIn("frontmost is true", script)
+
+    def test_the_SCRIPT_and_the_PARSER_agree_on_the_order(self):
+        """\u26a0\ufe0f The script and the parser are two halves of one contract and
+        only the parser is under test -- every case here fakes the subprocess
+        OUTPUT, so swapping the two values inside the AppleScript escapes the
+        whole sweep. Measured: it did.
+
+        The pid leads because a process name may contain anything, spaces
+        included ("Activity Monitor", "QuickTime Player"); the pid is digits and
+        ends at the first newline. Reversed, every two-word app would lose its
+        tail -- and every one-word app would still pass.
+        """
+        ret = [l for l in _FRONTMOST_SCRIPT.splitlines()
+               if l.strip().startswith("return ")]
+        self.assertEqual(len(ret), 1, ret)
+        self.assertLess(ret[0].index("procID"), ret[0].index("procName"), ret[0])
+
+    def test_a_process_name_containing_SPACES_survives(self):
+        # "QuickTime Player", "Activity Monitor", "Visual Studio Code" -- the pid
+        # leads for exactly this reason, so the name is whatever is left.
+        run = self._osascript("77\nActivity Monitor\n")
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run", run):
+            self.assertEqual(aw_frontmost_app(), ("Activity Monitor", 77))
+
+    def test_a_name_with_NO_usable_pid_is_still_a_name(self):
+        # 0 is the AppleScript's own unresolved default, never a real pid. The
+        # pid only reaches the OS icon and the AX harvest; the name alone still
+        # picks a template and drives the lexicon.
+        run = self._osascript("0\nPhotos\n")
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run", run):
+            self.assertEqual(aw_frontmost_app(), ("Photos", None))
+
+    def test_frontmost_app_answers_nothing_when_no_app_is_frontmost(self):
+        # The AppleScript's own `try` leaves the defaults in place, so an empty
+        # name is how "could not resolve" arrives -- not an exception.
+        run = self._osascript("0\n\n")
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run", run):
             self.assertEqual(aw_frontmost_app(), (None, None))
 
-    def test_frontmost_app_never_raises(self):
-        with patch(self.MOD + ".platform.system", side_effect=RuntimeError("nope")):
+    def test_frontmost_app_answers_nothing_off_macOS(self):
+        """It is macOS-only on purpose: the other backends do not have this
+        failure mode, and a second opinion about which app is focused is a way
+        for two answers to disagree.
+
+        ⚠\ufe0f A WORKING osascript is faked, and without it this test passes for
+        the wrong reason -- on a Linux host the command is absent anyway, so the
+        platform guard could be deleted outright and nothing would notice."""
+        run = self._osascript("4242\nPhotos\n")
+        with patch(self.MOD + ".platform.system", return_value="Linux"), \
+             patch(self.MOD + ".subprocess.run", run):
             self.assertEqual(aw_frontmost_app(), (None, None))
+        run.assert_not_called()
+
+    def test_frontmost_app_never_raises(self):
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run",
+                   side_effect=RuntimeError("osascript is unwell")):
+            self.assertEqual(aw_frontmost_app(), (None, None))
+
+    def test_a_HUNG_osascript_does_not_hang_the_tick(self):
+        # The window tick is a ~600 ms loop. An unbounded wait here would stop
+        # the board following the focus at all, which is worse than the fault
+        # this function exists to work around.
+        run = MagicMock(side_effect=subprocess.TimeoutExpired("osascript", 2.0))
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch(self.MOD + ".subprocess.run", run):
+            self.assertEqual(aw_frontmost_app(), (None, None))
+        self.assertIsNotNone(run.call_args.kwargs.get("timeout"))
 
 
 if __name__ == "__main__":

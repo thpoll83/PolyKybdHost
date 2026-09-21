@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 import re
+import subprocess
 from urllib.parse import urlsplit
 
 from polyhost.handler.common import (
@@ -27,27 +28,59 @@ else:
     import pywinctl as pwc
 
 
+#: AppleScript is the LIVE answer on any thread. `System Events` is asked fresh
+#: every time, which is the whole reason it is used here instead of the AppKit
+#: property one line of Python away -- see `frontmost_app`. The `try` with no
+#: handler is AppleScript's, and mirrors pywinctl's own query: anything it cannot
+#: resolve leaves the two values at their defaults and the caller sees an empty
+#: name rather than an error.
+_FRONTMOST_SCRIPT = """on run
+    set procName to ""
+    set procID to 0
+    try
+        tell application "System Events"
+            set proc to first application process whose frontmost is true
+            set procName to name of proc
+            set procID to unix id of proc
+        end tell
+    end try
+    return (procID as text) & linefeed & procName
+end run"""
+
+#: Bounds the one blocking call this module adds. The tick is ~600 ms and
+#: `pywinctl` already spawns two or three `osascript` processes per poll with NO
+#: timeout at all, so this is stricter than the code beside it, not looser.
+_FRONTMOST_TIMEOUT_S = 2.0
+
+
 def frontmost_app():
     """``(name, pid)`` for the focused application, or ``(None, None)``.
 
     The window backend's fall-back, for the case where it answers NOTHING.
     ``pywinctl.getActiveWindow()`` returns None for some macOS applications --
-    measured on Photos, Notes and Freeform (field, 2026-09-21) while Chess, Maps
-    and Terminal on the same desktop answered normally -- and the overlay path
-    does not actually need a window. It needs the app's NAME (to pick a template
-    or draw a generic set) and its PID (for the OS icon and the AX shortcut
-    harvest); a window is only how those are usually obtained.
+    it asks `System Events` for the frontmost process, then for that window's
+    `AXTitle`, then matches the pid against `NSWorkspace.runningApplications()`,
+    and a failure in either of the last two yields None. The overlay path does
+    not need the window: it needs the app's NAME (to pick a template or draw a
+    generic set) and its PID (for the OS icon and the AX shortcut harvest).
 
-    ``NSWorkspace`` knows both. It reads the running-application list rather
-    than driving ``System Events``, so it needs no Accessibility grant and
-    answers when the AppleScript ``pywinctl`` depends on does not -- which is
-    measured, not assumed: the log line this function was first written for
-    named 'Photos' correctly at the same instant ``getActiveWindow()`` returned
-    None, on the same thread.
+    ⚠️ **NOT `NSWorkspace.frontmostApplication`, which is STALE off the main
+    thread -- this is the second time that property has been trusted in this
+    codebase and the second time it was wrong.** The first was the shortcut
+    fetcher, where nine consecutive harvests over three minutes all read
+    `Safari`, so exactly one app could ever harvest. Here it froze on
+    `QuickTime Player`: switching to Activity Monitor drew QuickTime's icon and
+    logged nothing at all, because the name never changed (field, 2026-09-22).
+    It is a KVO property published through the main run loop, and the window
+    tick runs on the core's own thread -- in the headless daemon there is no
+    NSApplication run loop to publish it at all.
 
-    ⚠️ macOS only, and it returns ``(None, None)`` everywhere else. The Windows
-    and Linux backends do not have this failure mode, and a second opinion about
-    which app is focused is a way for two answers to disagree.
+    A wrong app is worse than no app: the board confidently draws another
+    program's mark and shortcuts, which reads as the feature working.
+
+    ⚠️ macOS only; ``(None, None)`` everywhere else. The Windows and Linux
+    backends do not have this failure mode, and a second opinion about which app
+    is focused is a way for two answers to disagree.
 
     ⚠️ It never raises. A fall-back that can kill the poll is worse than no
     fall-back.
@@ -55,11 +88,23 @@ def frontmost_app():
     try:
         if platform.system() != "Darwin":
             return None, None
-        import AppKit
-        app = AppKit.NSWorkspace.sharedWorkspace().frontmostApplication()
-        if app is None:
+        out = subprocess.run(
+            ["osascript", "-"], input=_FRONTMOST_SCRIPT, text=True,
+            capture_output=True, timeout=_FRONTMOST_TIMEOUT_S).stdout
+        # `procID` first because a process NAME may contain anything, including
+        # whitespace; the pid is digits and ends at the first newline.
+        pid, _, name = (out or "").strip().partition("\n")
+        name = name.strip()
+        if not name:
             return None, None
-        return app.localizedName(), app.processIdentifier()
+        try:
+            # 0 is the script's own "not resolved" default, and is never a real
+            # application pid. A name without a usable pid still picks the
+            # template and drives the lexicon; only the OS icon and the AX
+            # harvest need the pid, and both already handle None.
+            return name, (int(pid) or None)
+        except ValueError:
+            return name, None
     except Exception:  # noqa: BLE001 - a fall-back must never raise
         return None, None
 
