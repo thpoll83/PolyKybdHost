@@ -189,8 +189,23 @@ class OverlayHandler:
         return True, OverlayCommand.OFF_ON
 
     def log_win(self, raw_app_name):
-        """Log active window"""
-        self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %d", raw_app_name, self.win.title.encode('utf-8'), self.win.getHandle())
+        """Log active window.
+
+        ⚠️ The handle is formatted with **%s, never %d**. It is an opaque token
+        whose type is the platform's: an int HWND on Windows, an int id on the
+        Linux reporters — and on macOS a **tuple** `(app, window number)`, which
+        is what pywinctl's `MacOSWindow.getHandle()` returns. `%d` on that
+        raises `TypeError: %d format: a real number is required, not tuple`,
+        and this line sits inside the `try` whose `except` logs "Failed
+        retrieving active window", so the whole app reported **no active window
+        at all, forever, on every Mac** — no overlays and no per-app language
+        switch — over a cosmetic log line (field, 2026-09-21). Nothing compares
+        or arithmetics the handle; it is only ever tested for equality, so
+        there is no reason to demand a number of it.
+        """
+        self.log.info("Active App Changed: \"%s\", Title: \"%s\"  Handle: %s",
+                      raw_app_name, self.win.title.encode('utf-8'),
+                      self.win.getHandle())
 
     def _is_redundant_overlay_cmd(self, cmd):
         """True when ``cmd`` asks for the overlay state the device is already in

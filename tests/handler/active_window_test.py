@@ -215,5 +215,54 @@ class FocusedAppTest(unittest.TestCase):
         self.assertEqual(handler.focused_app(), (None, None))
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class MacOSTupleHandleTest(unittest.TestCase):
+    """⚠️ The window handle is an OPAQUE TOKEN, not a number.
+
+    It is an int HWND on Windows and an int id on the Linux reporters, but on
+    macOS pywinctl's `MacOSWindow.getHandle()` returns a **tuple**
+    `(app, window number)`. `log_win` formatted it with `%d`, which raises
+    `TypeError: %d format: a real number is required, not tuple` -- and that
+    line sits inside the `try` whose `except` logs "Failed retrieving active
+    window", so the whole poll bailed out and every Mac reported **no active
+    window at all, forever**: no overlays and no per-app language switch, from
+    a cosmetic log line (field, 2026-09-21).
+
+    Nothing compares or arithmetics the handle -- it is only ever tested for
+    equality -- so there was never a reason to demand a number of it.
+    """
+
+    @staticmethod
+    def _win(handle):
+        win = MagicMock()
+        win.title = "Safari"
+        win.getHandle.return_value = handle
+        return win
+
+    def _poll(self, handle):
+        """Two ticks: the first notices the change, the second accepts it."""
+        import polyhost.handler.active_window as aw
+        from unittest import mock
+        handler = aw.OverlayHandler({})       # empty mapping: stop after log_win
+        win = self._win(handle)
+        with mock.patch.object(aw.pwc, "getActiveWindow", return_value=win), \
+             mock.patch.object(aw, "app_name_for", return_value="Safari"), \
+             self.assertLogs(handler.log, level="INFO") as captured:
+            handler._decide_active_window(10, 5)
+            handler._decide_active_window(10, 5)
+        return captured.output
+
+    def test_a_TUPLE_handle_still_reports_the_active_window(self):
+        lines = self._poll((1234, 5))
+        self.assertTrue(any("Active App Changed" in l for l in lines), lines)
+        self.assertFalse(any("Failed retrieving active window" in l for l in lines),
+                         lines)
+
+    def test_an_INT_handle_is_unchanged(self):
+        lines = self._poll(98765)
+        self.assertTrue(any("Active App Changed" in l for l in lines), lines)
+        self.assertTrue(any("98765" in l for l in lines), lines)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -935,9 +935,15 @@ class PolyForwarder(QApplication):
                         handle = win.getHandle()
                         self.send_to_host(handle, self.title, app_name, url=url)
                         if changed:
-                            self.log.info("Active App: '%s' %s %d", self.title, app_name, handle)
+                            # ⚠️ %s, never %d -- the handle is a TUPLE on macOS
+                            # (pywinctl `MacOSWindow.getHandle()`), and the
+                            # TypeError lands in the `except` below, which
+                            # reports it as "Exception in window reporter" and
+                            # relays nothing. Same defect, and the same one-line
+                            # fix, as `ActiveWindow.log_win`.
+                            self.log.info("Active App: '%s' %s %s", self.title, app_name, handle)
                         else:
-                            self.log.debug("Heartbeat: '%s' %s %d", self.title, app_name, handle)
+                            self.log.debug("Heartbeat: '%s' %s %s", self.title, app_name, handle)
                         self.heartbeat_msec = 0
             except Exception as e:
                 self.log.warning("Exception in window reporter: %s", e)
