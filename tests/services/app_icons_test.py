@@ -465,6 +465,48 @@ class ProgramOverlayTest(unittest.TestCase):
                                          tmp, allow_network=False)
             self.assertEqual(name, "si:visualstudiocode")
 
+    def test_TWO_APPS_WITH_THE_SAME_ICON_FILENAME_get_DIFFERENT_slugs(self):
+        """⚠️ THE SLUG IS THE MRU CACHE KEY, and on macOS nearly every system
+        app ships its icon as literally `AppIcon.icns` — Maps, Photos, Notes,
+        Safari, Freeform. Keyed on the basename they all collapsed to
+        `os:AppIcon.icns`, so the MRU filed Maps' mark under it and then served
+        Maps' icon to every app that followed: an MRU HIT, no upload, nothing
+        in the log to notice. Reported from the field as "the maps icon kept
+        showing for every following app" (2026-09-21).
+        """
+        _needs_render(self)
+        icns = "/System/Applications/%s.app/Contents/Resources/AppIcon.icns"
+        with tempfile.TemporaryDirectory() as tmp:
+            maps = ai.program_overlay("Maps", _identity(
+                icon=_png(_ring), icon_path=icns % "Maps"),
+                tmp, allow_network=False)[1]
+            # ⚠️ Another SCOREABLE shape, not just different bytes: a mark
+            # that fails the 1-bit gate falls through to the catalog and
+            # returns `si:photos`, so the test would assert nothing about the
+            # slug. A ring at a different size is both.
+            photos = ai.program_overlay("Photos", _identity(
+                icon=_png(_ring, 96), icon_path=icns % "Photos"),
+                tmp, allow_network=False)[1]
+            self.assertTrue(maps.startswith("os:AppIcon.icns@"), maps)
+            self.assertTrue(photos.startswith("os:AppIcon.icns@"), photos)
+            self.assertNotEqual(maps, photos)
+
+    def test_THE_SAME_ICON_from_two_paths_SHARES_a_slug(self):
+        """⚠️ The better half of the fix, not a side effect: the digest is of
+        the ICON BYTES, so two apps that genuinely ship the same icon still
+        share one pool slot — and an icon that CHANGES under a fixed path (a
+        theme switch) gets a new slug and is redrawn instead of being served
+        stale."""
+        _needs_render(self)
+        with tempfile.TemporaryDirectory() as tmp:
+            a = ai.program_overlay("One", _identity(
+                icon=_png(_ring), icon_path="/A/One.app/AppIcon.icns"),
+                tmp, allow_network=False)[1]
+            b = ai.program_overlay("Two", _identity(
+                icon=_png(_ring), icon_path="/B/Two.app/AppIcon.icns"),
+                tmp, allow_network=False)[1]
+            self.assertEqual(a, b)
+
     def test_the_OS_ICON_IS_ASKED_BEFORE_THE_CATALOG(self):
         # ⚠️ The E2 reversal, and the whole point of it: the OS's own icon is
         # exact by construction -- no name matching, no network, nothing to
@@ -476,7 +518,7 @@ class ProgramOverlayTest(unittest.TestCase):
             mask, name = ai.program_overlay(
                 "Inkscape", _identity(icon=_png(_ring), icon_path="/t/inkscape.png"),
                 tmp, allow_network=False)
-            self.assertEqual(name, "os:inkscape.png")
+            self.assertTrue(name.startswith("os:inkscape.png@"), name)
             self.assertIsNotNone(mask)
             self.assertTrue(mask.any())
 
