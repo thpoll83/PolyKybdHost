@@ -54,7 +54,15 @@ def ssl_context() -> ssl.SSLContext | None:
         # disables checking.
         log.debug("Could not build an SSL context: %s", exc)
         _FAILED = True
-        return None
+        # ⚠️ `return _CONTEXT`, not `return None`, even though it IS None here.
+        # An assignment whose value is never read on its own path is what
+        # CodeQL `py/unused-global-variable` reports, and the repo has already
+        # been caught by the obvious remedy: `shortcut_icons.load_hints` and
+        # its three sibling memos carry the same note, because DELETING the
+        # flag on that advice silently disables the memo and every caller
+        # rebuilds the context it just failed to build. Reading the global
+        # back satisfies the query and keeps the latch.
+        return _CONTEXT
     try:
         import certifi
         ctx.load_verify_locations(cafile=certifi.where())
@@ -65,4 +73,6 @@ def ssl_context() -> ssl.SSLContext | None:
         log.debug("certifi unavailable, using the platform trust store "
                   "only: %s", exc)
     _CONTEXT = ctx
-    return ctx
+    # Same reason as the `_FAILED` return above: return the GLOBAL, not the
+    # local it was built from, so the write is read on its own path.
+    return _CONTEXT

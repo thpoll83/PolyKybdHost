@@ -12,7 +12,7 @@ import unittest.mock as mock
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
-    from PyQt5.QtCore import QRect, QPoint, Qt
+    from PyQt5.QtCore import QRect, Qt
     from PyQt5.QtWidgets import QApplication, QWidget
     from polyhost.gui import dialog_util
     _APP = QApplication.instance() or QApplication([])
