@@ -100,6 +100,18 @@ class PolySettings:
             # toward ~2.2 if the ramp feels too steep at low light, lower it if
             # daytime ends up too dim. Endpoints (0->2, 1->50) are unaffected.
             "brightness_gamma": 1.0,
+            # Generic shortcut icons: read the FOCUSED APPLICATION's own
+            # accessibility tree for its keyboard shortcuts and draw an icon per
+            # chord, where no hand-made template overlay covers that app.
+            # ⚠️ Two switches because they answer different questions, and the
+            # one people actually want is the first. `shortcut_icons_enabled`
+            # governs whether another process is READ at all -- which is the
+            # question on a locked-down machine -- while
+            # `shortcut_icon_auto_fetch` governs only whether the icon CATALOG
+            # may be fetched over the network. Turning the network off still
+            # leaves the harvest running and serves whatever is already cached.
+            "shortcut_icons_enabled": True,
+            "shortcut_icon_auto_fetch": True,
             "max_hid_message_before_delay": 15,
             "delay_time_after_max_hid_messages": 0.3,
             "hid_reconnect_retries": 5,

@@ -676,6 +676,99 @@ better reference.
 
 8 mutations, 8 caught by the intended test.
 
+### E11 — the shortcut half, wired
+
+E4 ported `shortcut_overlays` / `shortcut_fetcher` / `shortcut_source` with their
+117 tests and **nothing in the running app imported any of them** — a keyboard on
+this branch showed the program mark on ESC and no shortcut icons at all. This
+wires them into the same tick the mark already runs on.
+
+⚠️ **ONE send, not two, and that is forced rather than tidy.**
+`send_overlays_mru` calls `prepare_for_mru_send()`, which RESETS the firmware's
+whole display→pool mapping, and then commits the mapping it built from the
+filenames it was handed. A second call does not add to the first — it replaces
+it. So sending the mark and then the shortcut icons would leave only the icons,
+with the mark's upload wasted. `_maybe_send_program_mark` is therefore
+`_maybe_send_generic_overlays`, and both sources go into one `filenames` list.
+
+**The mark goes first in that list, so it keeps ESC.** Both sources are synthetic
+and `send_overlays_mru` gives an earlier synthetic source the key. The mark is
+the one keycap that means the same thing in every application, so a shortcut
+concept landing on Escape must not displace it; the loser is logged as deferred,
+exactly like a template deferral.
+
+⚠️ **The dedupe signature carries the KEYS, not just the source names.** Two
+applications routinely resolve the same concepts — Save, Copy, Paste — while
+binding them to different chords, so a name-only signature would report the
+second app as already on the device and its icons would land on the first app's
+keys or nowhere. This is the **opposite** of the MRU cache key, which is the
+concept alone and correct there for exactly the inverse reason: the *pixels* do
+not depend on the key, so `save` is one pool slot board-wide.
+
+⚠️ **A latent bug the mark already had, and which the shortcut half makes ~20×
+worse: a reconnect did not clear the signature.** `reset_all_caches()` empties
+the MRU and the keyboard's pool is cleared right after, so nothing generic is on
+the device — but the dedupe still claimed it was, and the tick never re-sent.
+The keycaps stayed blank until the user switched application.
+
+**Settings.** `shortcut_icons_enabled` and `shortcut_icon_auto_fetch` are now in
+the defaults, so the settings dialog can show them. Two switches because they
+answer different questions: the first governs whether another process's
+accessibility tree is **read at all** — the question on a locked-down machine —
+and the second only whether the icon catalog may be **fetched over the network**.
+`note_settings_changed` forgets both caches *and* the device signature, because
+each alone leaves the change invisible: a height change alters the pixels while
+the source names may be identical.
+
+**Driven end to end, not only through the suite.** On this container the harvest
+correctly reports *"no accessibility backend on this platform"* (no AT-SPI bus),
+so the chain downstream of it was driven with real parsed accelerators: 16
+harvested → 16 concepts planned → a 4.8 KB catalog subset fetched → 16 masks
+rendered → 16 converters built, and the real tick path sends
+`['@prog:os:org.xfce.mousepad.png']` with 16 modifier variants from one upload.
+
+9 mutations, 9 caught by the intended test.
+
+### E12 — the generic set was overwriting the template one tick later
+
+Reported from hardware: *"we also said that icons where we have overlays take
+priority, which is not the case right now."* Correct, and the design note it
+refers to was the one being violated — *"template always wins; this runs only on
+the branch where the matcher found nothing."*
+
+**`handle_active_window` returns the template filenames ONLY on the tick the
+window CHANGES.** Every tick after that it answers `(None, NONE)` for the same
+window. The tick's branch was `if data and cmd == OFF_ON: … else: <generic>`, so
+one tick after a template landed the `else` fired, `send_overlays_mru` called
+`prepare_for_mru_send()` — which resets the firmware's whole display→pool
+mapping — and committed a mapping containing only the generic sources. Every
+hand-made keycap went blank about a second after it appeared.
+
+⚠️ **The tell that it is a STATE question and not a DATA question.** `data` says
+*a template was just sent*; only the handler knows *a template is still active*.
+`covered_by_template()` answers from `get_overlay_data()` rather than from
+`current_entry`, so it cannot disagree with what a send would actually carry — a
+matched entry with no overlay flag, and a remote entry whose forwarder has no
+overlay, are both "not covered".
+
+**It predates the shortcut half.** The program mark alone has been doing this
+since E3; it was one keycap winning over the template's whole set, which is
+already wrong and is much louder now that the generic side is ~20 keycaps.
+
+**Not "skip the send" — skip the FETCH too.** A template-covered app must not
+walk another process's accessibility tree either, so the gate sits above both
+`overlay_for` and `overlays_for`.
+
+⚠️ **The mixed send was NOT chosen, deliberately.** `send_overlays_mru` already
+has the machinery for it (`covered` makes a synthetic source defer a key a real
+template draws, and logs it as *"deferred to the template"*), so template and
+generic could ride one send with the generic filling the template's gaps. That is
+a bigger change than the report asks for and it would alter the look of every
+templated app, so it is left as a question rather than taken. The machinery is
+reachable today only from a direct API call.
+
+5 mutations, 5 caught by the intended test.
+
 ## Part F — what could still fail
 
 * **B.2's RESOLUTION half is measured (14/16); its READ half is not.** What is

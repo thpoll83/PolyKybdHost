@@ -23,6 +23,59 @@ except Exception as e:  # pragma: no cover - headless/no-display env
 
 
 @unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class TestCoveredByTemplate(unittest.TestCase):
+    """What the generic fall-back asks before standing down."""
+
+    def _handler(self):
+        return OverlayHandler({})
+
+    def _entry(self, *, overlay=True, remote=False):
+        from polyhost.handler.common import FLAGS, Flags
+        from polyhost.handler.active_window import OVERLAY
+        flags = [False] * len(Flags)
+        flags[Flags.HAS_OVERLAY.value] = overlay
+        flags[Flags.HAS_REMOTE.value] = remote
+        entry = {FLAGS: flags}
+        if overlay:
+            entry[OVERLAY] = ["gimp.mods.png"]
+        return entry
+
+    def test_a_matched_overlay_entry_COVERS_the_window(self):
+        h = self._handler()
+        h.current_entry = self._entry()
+        self.assertTrue(h.covered_by_template())
+
+    def test_nothing_matched_covers_NOTHING(self):
+        h = self._handler()
+        h.current_entry = None
+        h.remote_handler.has_overlay = lambda: False
+        self.assertFalse(h.covered_by_template())
+
+    def test_a_matched_entry_with_NO_overlay_covers_nothing(self):
+        # A mapping entry can match on title alone and carry no overlay set, so
+        # `current_entry` being truthy is NOT the question -- which is why this
+        # is answered from `get_overlay_data()` rather than from that attribute.
+        h = self._handler()
+        h.current_entry = self._entry(overlay=False)
+        h.remote_handler.has_overlay = lambda: False
+        self.assertFalse(h.covered_by_template())
+
+    def test_it_survives_the_tick_that_reports_NO_change(self):
+        # ⚠️ The regression this exists for. `handle_active_window` returns the
+        # filenames only on the tick the window CHANGES; the caller must still be
+        # able to learn, on every tick after that, that a template is live.
+        h = self._handler()
+        h._decide_active_window = lambda *a: (["gimp.mods.png"], OverlayCommand.OFF_ON)
+        h.current_entry = self._entry()
+        data, cmd = h.handle_active_window(0, 0)
+        self.assertEqual(cmd, OverlayCommand.OFF_ON)
+        h._decide_active_window = lambda *a: (None, OverlayCommand.NONE)
+        data, cmd = h.handle_active_window(0, 0)
+        self.assertIsNone(data)                     # the tell the caller used
+        self.assertTrue(h.covered_by_template())    # the tell it should use
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
 class TestReEnableSuppression(unittest.TestCase):
 
     def _handler(self):

@@ -34,14 +34,18 @@ def make_core(*, connected=True, handler=True, run_when_disconnected=False):
     from polyhost.input.unicode_input import get_host_os
     core._last_pushed_os = get_host_os().value
     # ⚠️ This fixture stands in for __init__, which is never run here, so every
-    # attribute the tick touches has to be mirrored. The generic program mark is
+    # attribute the tick touches has to be mirrored. The generic overlay set is
     # off by default: `focused_app()` answering (None, None) is what a tick with
     # no resolvable application looks like, which is what these tests are about.
     core._app_icons = None
-    core._program_mark_on_device = None
+    core._shortcut_icons = None
+    core._generic_on_device = None
     if handler:
         core.overlay_handler.is_remote_mapping_entry.return_value = False
         core.overlay_handler.focused_app.return_value = (None, None)
+        # A bare MagicMock answers TRUTHY here, which would stand the generic
+        # half down and make these tests pass for the wrong reason.
+        core.overlay_handler.covered_by_template.return_value = False
     return core
 
 

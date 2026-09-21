@@ -368,6 +368,13 @@ class SettingsChangedTest(unittest.TestCase):
     def _core(self, send_mode=True, connected=True, ambiguous=False):
         core = types.SimpleNamespace(
             _BRIGHTNESS_SETTING_KEYS=PolyCore._BRIGHTNESS_SETTING_KEYS,
+            # `note_settings_changed` drives three side effects, not one; this
+            # stands in for __init__, so the generic-overlay half has to be
+            # mirrored here even though these tests are about the unicode half.
+            _GENERIC_ICON_SETTING_KEYS=PolyCore._GENERIC_ICON_SETTING_KEYS,
+            _app_icons=None,
+            _shortcut_icons=None,
+            _generic_on_device=None,
             connected=connected,
             poly_settings=types.SimpleNamespace(
                 get=lambda k: {"unicode_send_composition_mode": send_mode}[k]),
@@ -377,6 +384,7 @@ class SettingsChangedTest(unittest.TestCase):
         )
         core._did = []
         core._refresh_unicode_watch = lambda: PolyCore._refresh_unicode_watch(core)
+        core._forget_generic_overlays = lambda: PolyCore._forget_generic_overlays(core)
         return core
 
     def _run(self, core, keys, mode=InputMethod.WinCompose):
