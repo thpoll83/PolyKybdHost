@@ -13,7 +13,7 @@ active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
 """
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 try:
     from polyhost.handler.active_window import OverlayHandler
@@ -240,13 +240,19 @@ class MacOSTupleHandleTest(unittest.TestCase):
         return win
 
     def _poll(self, handle):
-        """Two ticks: the first notices the change, the second accepts it."""
-        import polyhost.handler.active_window as aw
-        from unittest import mock
-        handler = aw.OverlayHandler({})       # empty mapping: stop after log_win
+        """Two ticks: the first notices the change, the second accepts it.
+
+        ⚠️ Patched by STRING target, not `patch.object` on an imported
+        module. Importing `polyhost.handler.active_window` here as well as
+        `from`-importing it at the top gives one module two import forms, which
+        CodeQL flags (`py/import-and-import-from`) -- a shape this repo has
+        been caught by before. A string target needs no second import.
+        """
+        handler = OverlayHandler({})          # empty mapping: stop after log_win
         win = self._win(handle)
-        with mock.patch.object(aw.pwc, "getActiveWindow", return_value=win), \
-             mock.patch.object(aw, "app_name_for", return_value="Safari"), \
+        mod = "polyhost.handler.active_window"
+        with patch(mod + ".pwc.getActiveWindow", return_value=win), \
+             patch(mod + ".app_name_for", return_value="Safari"), \
              self.assertLogs(handler.log, level="INFO") as captured:
             handler._decide_active_window(10, 5)
             handler._decide_active_window(10, 5)
@@ -269,7 +275,6 @@ class FocusedPidTest(unittest.TestCase):
     """The pid the OS-icon route needs, and the one case it must NOT give."""
 
     def _handler(self, pid=1234, raises=False, remote=False):
-        from polyhost.handler.active_window import OverlayHandler
         h = OverlayHandler({})
         h.win = MagicMock()
         if raises:

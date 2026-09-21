@@ -7,7 +7,7 @@ polykybd_console.txt (seen in the field 2026-06-13).
 """
 import logging
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from polyhost.util.log_util import (MultiLineFormatter, RepeatCollapseHandler,
                                     make_stream_handler)
