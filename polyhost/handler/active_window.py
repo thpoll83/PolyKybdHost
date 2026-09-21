@@ -27,29 +27,41 @@ else:
     import pywinctl as pwc
 
 
-def frontmost_app_hint():
-    """The focused application's name, best effort, for DIAGNOSTICS only.
+def frontmost_app():
+    """``(name, pid)`` for the focused application, or ``(None, None)``.
 
-    Used on the one path where the window backend answers nothing: without it
-    "No active window" is the whole record, so a user reporting "the board went
-    blank and the app is not even in the log" leaves nothing to act on -- which
-    is exactly what happened (field, 2026-09-21). This names the app the backend
-    could not see.
+    The window backend's fall-back, for the case where it answers NOTHING.
+    ``pywinctl.getActiveWindow()`` returns None for some macOS applications --
+    measured on Photos, Notes and Freeform (field, 2026-09-21) while Chess, Maps
+    and Terminal on the same desktop answered normally -- and the overlay path
+    does not actually need a window. It needs the app's NAME (to pick a template
+    or draw a generic set) and its PID (for the OS icon and the AX shortcut
+    harvest); a window is only how those are usually obtained.
 
-    macOS only, because that is where the backend goes blind: ``NSWorkspace``
-    answers from the running-application list and needs no Accessibility
-    permission, so it still works when the ``System Events`` AppleScript
-    ``pywinctl`` depends on does not. Returns None anywhere else, and never
-    raises -- a diagnostic that can kill the poll is worse than no diagnostic.
+    ``NSWorkspace`` knows both. It reads the running-application list rather
+    than driving ``System Events``, so it needs no Accessibility grant and
+    answers when the AppleScript ``pywinctl`` depends on does not -- which is
+    measured, not assumed: the log line this function was first written for
+    named 'Photos' correctly at the same instant ``getActiveWindow()`` returned
+    None, on the same thread.
+
+    ⚠️ macOS only, and it returns ``(None, None)`` everywhere else. The Windows
+    and Linux backends do not have this failure mode, and a second opinion about
+    which app is focused is a way for two answers to disagree.
+
+    ⚠️ It never raises. A fall-back that can kill the poll is worse than no
+    fall-back.
     """
-    if platform.system() != "Darwin":
-        return None
     try:
+        if platform.system() != "Darwin":
+            return None, None
         import AppKit
         app = AppKit.NSWorkspace.sharedWorkspace().frontmostApplication()
-        return app.localizedName() if app else None
-    except Exception:  # noqa: BLE001 - reporting must never raise
-        return None
+        if app is None:
+            return None, None
+        return app.localizedName(), app.processIdentifier()
+    except Exception:  # noqa: BLE001 - a fall-back must never raise
+        return None, None
 
 
 def _handle_identifies(handle):
@@ -124,6 +136,11 @@ class OverlayHandler:
         # tested against -- re-deriving it there would be a second normaliser
         # free to disagree with this one.
         self.app_name = None
+        # The same two facts for an application the window backend cannot see at
+        # all -- name and pid straight from the OS, no window and so no title.
+        # See the no-window branch of `_decide_active_window`.
+        self.windowless_app = None
+        self.windowless_pid = None
         self.last_entry = None
         # Tracks whether overlays are currently enabled on the device, so a
         # same-app title change doesn't re-issue an ENABLE that's already in
@@ -205,6 +222,10 @@ class OverlayHandler:
         self.title = title
         self.handle = handle
         self.app_name = None
+        # The window path and the windowless one are alternatives, never both:
+        # whichever ran last is the answer, so entering one clears the other.
+        self.windowless_app = None
+        self.windowless_pid = None
 
     def _active_os(self):
         """OS of the machine running the focused app, for the mapping's `os` branch.
@@ -399,16 +420,30 @@ class OverlayHandler:
                         else:
                             return None, OverlayCommand.DISABLE
         else:
-            if self.win:
-                hint = frontmost_app_hint()
-                if hint:
+            # ⚠️ NO WINDOW IS NOT NO APPLICATION, and treating the two as the
+            # same left three apps with a blank board. `getActiveWindow()`
+            # returns None for some macOS apps -- Photos, Notes and Freeform,
+            # measured, while Chess and Maps on the same desktop answered fine
+            # -- and the overlay path never needed the window itself: it needs
+            # the app's name and pid, which `frontmost_app()` knows.
+            #
+            # What is lost without a window is the TITLE, so a template entry
+            # that matches on one cannot be evaluated. That is why this still
+            # returns DISABLE and leaves `current_entry` cleared: the generic
+            # path draws (`focused_app`/`focused_pid` answer from here), the
+            # template path correctly does not.
+            name, pid = frontmost_app()
+            app = name.lower() if name else None
+            if self.win is not None or app != self.windowless_app:
+                self.set_win()
+                self.windowless_app, self.windowless_pid = app, pid
+                if app:
                     self.log.info(
                         "No active window: the window backend (%s) reports none "
-                        "while '%s' is frontmost, so nothing can be drawn for it",
-                        _BACKEND_NAME, hint)
+                        "while '%s' is frontmost -- drawing it from the app "
+                        "name, without a title", _BACKEND_NAME, name)
                 else:
                     self.log.info("No active window")
-                self.set_win()
                 # ⚠️ DISABLE whether or not a TEMPLATE was active. The guard
                 # used to be `if self.current_entry`, which asks "was a
                 # hand-made overlay set on the board?" -- a question that was
@@ -446,7 +481,12 @@ class OverlayHandler:
             if name:
                 return name, rh.forwarded_identity(name)
             return None, None
-        return self.app_name, None
+        # ⚠️ `windowless_app` is the SAME question answered without a window
+        # (see the no-window branch of `_decide_active_window`). It must be
+        # consulted here rather than at the caller, so "which app is focused"
+        # has one answer -- the mark and the shortcut harvest would otherwise be
+        # able to disagree about it.
+        return self.app_name or self.windowless_app, None
 
     def focused_pid(self):
         """The focused LOCAL window's process id, or None.
@@ -475,9 +515,14 @@ class OverlayHandler:
         if rh is not None and self.is_remote_mapping_entry():
             return None
         try:
-            return self.win.getPID() if self.win else None
+            if self.win:
+                return self.win.getPID()
         except Exception:
             return None
+        # No window, but possibly still an app -- and the pid is what makes the
+        # OS icon and the macOS AX harvest reachable, so losing it here would
+        # leave a windowless app with a name and nothing to draw.
+        return self.windowless_pid
 
     def is_remote_mapping_entry(self):
         return (

@@ -12,12 +12,15 @@ the redundant-command guard doesn't swallow the retry.
 active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
 """
+import sys
+import types
 import unittest
 from unittest.mock import MagicMock, patch
 
 try:
     from polyhost.handler.active_window import (
         OverlayHandler, _handle_identifies,
+        frontmost_app as aw_frontmost_app,
     )
     from polyhost.handler.common import OverlayCommand
     _IMPORT_ERR = None
@@ -339,8 +342,19 @@ class LosingTheWindowTest(unittest.TestCase):
         return handler
 
     def _lose_the_window(self, handler):
+        """⚠️ `frontmost_app` is patched to answer NOTHING, deliberately.
+
+        Losing the window no longer means losing the app -- a windowless app the
+        OS can still name is drawn from the name alone (see
+        `AWindowlessAppIsStillAnAppTest`). These four cases are about the other
+        half, where nothing knows what is focused, and off macOS they would pass
+        for the wrong reason: `frontmost_app` returns `(None, None)` on any
+        non-Darwin host, so the premise would be the test machine's platform
+        rather than anything this file asserts.
+        """
         mod = "polyhost.handler.active_window"
-        with patch(mod + ".pwc.getActiveWindow", return_value=None):
+        with patch(mod + ".pwc.getActiveWindow", return_value=None), \
+             patch(mod + ".frontmost_app", return_value=(None, None)):
             return handler._decide_active_window(10, 5)
 
     def test_the_handler_stops_NAMING_the_app_it_can_no_longer_see(self):
@@ -455,6 +469,162 @@ class AnUntitledWindowStillNamesItsAppTest(unittest.TestCase):
         self.assertTrue(_handle_identifies(("Safari", "Docs")))  # macOS, titled
         self.assertFalse(_handle_identifies(("", "")))        # macOS, untitled
         self.assertFalse(_handle_identifies(None))
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class AWindowlessAppIsStillAnAppTest(unittest.TestCase):
+    """⚠️ NO WINDOW IS NOT NO APPLICATION.
+
+    `pywinctl.getActiveWindow()` returns None for some macOS applications --
+    measured on Photos, Notes and Freeform, while Chess, Maps and Terminal on
+    the same desktop answered normally (field, 2026-09-21). The handler treated
+    that as "nothing is focused" and blanked the board, but the overlay path
+    never needed the window: it needs the app's NAME and PID, which
+    `NSWorkspace` knows without one.
+
+    What is genuinely lost is the TITLE, so a template entry that matches on one
+    cannot be evaluated -- hence the DISABLE these tests also pin. The generic
+    path draws; the template path correctly stands down.
+    """
+
+    MOD = "polyhost.handler.active_window"
+
+    def _tick(self, handler, app, times=1):
+        """Poll `times` with no window while `app` = (name, pid) is frontmost."""
+        with patch(self.MOD + ".pwc.getActiveWindow", return_value=None), \
+             patch(self.MOD + ".frontmost_app", return_value=app):
+            for _ in range(times):
+                out = handler._decide_active_window(10, 5)
+        return out
+
+    def test_the_app_is_NAMED_even_with_no_window(self):
+        handler = OverlayHandler({})
+        self._tick(handler, ("Photos", 4242))
+        self.assertEqual(handler.focused_app(), ("photos", None))
+
+    def test_the_PID_survives_too(self):
+        # Without it the OS icon and the macOS AX harvest are both unreachable,
+        # so the app would be named and still draw nothing.
+        handler = OverlayHandler({})
+        self._tick(handler, ("Photos", 4242))
+        self.assertEqual(handler.focused_pid(), 4242)
+
+    def test_it_DISABLES_so_a_stale_template_cannot_survive(self):
+        handler = OverlayHandler({})
+        _, cmd = self._tick(handler, ("Photos", 4242))
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertIsNone(handler.current_entry)
+
+    def test_switching_between_two_WINDOWLESS_apps_is_noticed(self):
+        # Both are invisible to the backend, so the handle/title test that tells
+        # ordinary windows apart has nothing to compare -- the name is all there
+        # is, and without it Notes would keep showing Photos' icons.
+        handler = OverlayHandler({})
+        self._tick(handler, ("Photos", 4242))
+        self._tick(handler, ("Notes", 77))
+        self.assertEqual(handler.focused_app(), ("notes", None))
+        self.assertEqual(handler.focused_pid(), 77)
+
+    def test_the_SAME_windowless_app_does_not_refire_every_tick(self):
+        # `_maybe_send_generic_overlays` runs on every tick, so a DISABLE per
+        # tick would blank the board it has just drawn, forever.
+        handler = OverlayHandler({})
+        with self.assertLogs(handler.log, level="INFO") as caught:
+            self._tick(handler, ("Photos", 4242), times=4)
+        lines = [l for l in caught.output if "No active window" in l]
+        self.assertEqual(len(lines), 1, caught.output)
+        self.assertIn("Photos", lines[0])
+
+    def test_regaining_a_real_window_CLEARS_the_windowless_identity(self):
+        # The two are alternatives. A leftover windowless name would outrank
+        # nothing here, but it would answer for a forwarded window and for the
+        # next app the backend can see.
+        handler = OverlayHandler({})
+        self._tick(handler, ("Photos", 4242))
+        win = MagicMock()
+        win.title = "Terminal"
+        win.getHandle.return_value = (1234, 5)
+        win.getAppName.return_value = "Terminal"
+        win.getPID.return_value = 5          # the pid, NOT the handle's tail
+        with patch(self.MOD + ".pwc.getActiveWindow", return_value=win), \
+             patch(self.MOD + ".app_name_for", return_value="Terminal"):
+            handler._decide_active_window(10, 5)
+            handler._decide_active_window(10, 5)
+        self.assertIsNone(handler.windowless_app)
+        self.assertIsNone(handler.windowless_pid)
+        self.assertEqual(handler.focused_pid(), 5)
+
+    def test_an_app_the_OS_cannot_name_either_is_still_NOTHING(self):
+        handler = OverlayHandler({})
+        _, cmd = self._tick(handler, (None, None))
+        self.assertEqual(handler.focused_app(), (None, None))
+        self.assertIsNone(handler.focused_pid())
+        # NONE, not DISABLE: nothing was ever drawn, so there is nothing to take
+        # off the board. `LosingTheWindowTest` covers the transition that does
+        # need one.
+        self.assertEqual(cmd, OverlayCommand.NONE)
+
+    def test_LOSING_a_windowless_app_to_nothing_disables(self):
+        handler = OverlayHandler({})
+        self._tick(handler, ("Photos", 4242))
+        _, cmd = self._tick(handler, (None, None))
+        self.assertEqual(cmd, OverlayCommand.DISABLE)
+        self.assertEqual(handler.focused_app(), (None, None))
+
+    def test_frontmost_app_answers_nothing_off_macOS(self):
+        """It is macOS-only on purpose: the other backends do not have this
+        failure mode, and a second opinion about which app is focused is a way
+        for two answers to disagree.
+
+        ⚠\ufe0f A working `AppKit` is injected, and without it this test passes
+        for the wrong reason -- on a Linux host the import fails anyway, so the
+        platform guard could be deleted outright and nothing would notice
+        (measured: that mutation escaped until the fake was added). The fake is
+        what makes the guard the only thing answering.
+        """
+        appkit = types.ModuleType("AppKit")
+        app = MagicMock()
+        app.localizedName.return_value = "Photos"
+        app.processIdentifier.return_value = 4242
+        appkit.NSWorkspace = MagicMock()
+        appkit.NSWorkspace.sharedWorkspace.return_value.frontmostApplication \
+            .return_value = app
+        with patch(self.MOD + ".platform.system", return_value="Linux"), \
+             patch.dict(sys.modules, {"AppKit": appkit}):
+            self.assertEqual(aw_frontmost_app(), (None, None))
+
+    def test_frontmost_app_really_reads_the_name_AND_the_pid(self):
+        """⚠\ufe0f Every other test here patches `frontmost_app` itself, so none of
+        them can see what the real one returns -- a fake that implements the
+        contract cannot test it. Measured: dropping the pid from the real
+        function escaped the whole sweep until this case existed.
+
+        `AppKit` is injected into `sys.modules` because the import is INSIDE the
+        function (it must be: this module is imported on Linux too).
+        """
+        appkit = types.ModuleType("AppKit")
+        app = MagicMock()
+        app.localizedName.return_value = "Photos"
+        app.processIdentifier.return_value = 4242
+        appkit.NSWorkspace = MagicMock()
+        appkit.NSWorkspace.sharedWorkspace.return_value.frontmostApplication \
+            .return_value = app
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch.dict(sys.modules, {"AppKit": appkit}):
+            self.assertEqual(aw_frontmost_app(), ("Photos", 4242))
+
+    def test_frontmost_app_answers_nothing_when_no_app_is_frontmost(self):
+        appkit = types.ModuleType("AppKit")
+        appkit.NSWorkspace = MagicMock()
+        appkit.NSWorkspace.sharedWorkspace.return_value.frontmostApplication \
+            .return_value = None
+        with patch(self.MOD + ".platform.system", return_value="Darwin"), \
+             patch.dict(sys.modules, {"AppKit": appkit}):
+            self.assertEqual(aw_frontmost_app(), (None, None))
+
+    def test_frontmost_app_never_raises(self):
+        with patch(self.MOD + ".platform.system", side_effect=RuntimeError("nope")):
+            self.assertEqual(aw_frontmost_app(), (None, None))
 
 
 if __name__ == "__main__":
