@@ -10,7 +10,7 @@ import os
 import shutil
 import tempfile
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from polyhost.services import icon_catalog as ic
 
