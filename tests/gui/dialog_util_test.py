@@ -7,11 +7,12 @@ Construction needs only PyQt5, so it runs under the offscreen Qt platform.
 """
 import os
 import unittest
+import unittest.mock as mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
-    from PyQt5.QtCore import QRect, QPoint
+    from PyQt5.QtCore import QRect, QPoint, Qt
     from PyQt5.QtWidgets import QApplication, QWidget
     from polyhost.gui import dialog_util
     _APP = QApplication.instance() or QApplication([])
@@ -79,6 +80,168 @@ class TestPositionNearTray(unittest.TestCase):
         # QRect.right()/bottom() are inclusive (x + w - 1), so 999/799 here.
         self.assertEqual(moved["x"], 999 - 200 - 12)
         self.assertEqual(moved["y"], 799 - 100 - 12)
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"needs Qt: {_IMPORT_ERR}")
+class BringToFrontTest(unittest.TestCase):
+    """⚠️ A tray app is an ACCESSORY application, and that is why this exists.
+
+    `macos_ui.hide_dock_icon()` sets `NSApplicationActivationPolicyAccessory` —
+    which is what makes it a tray app — and macOS never promotes an accessory
+    to ACTIVE just because it opened a window. Qt's `raise_()`/
+    `activateWindow()` then order the window correctly inside our own process
+    while the process stays behind, so the window lands under whatever the user
+    was in. Reported for "Log file…" and true of every window the tray opens
+    (field, macOS, 2026-09-21).
+    """
+
+    def test_it_promotes_the_PROCESS_before_raising_the_window(self):
+        """⚠️ Order matters: the window ordering has to settle once the app is
+        already frontmost, not before."""
+        from polyhost.util import macos_ui
+        order = []
+        w = QWidget()
+        self.addCleanup(w.deleteLater)
+        with mock.patch.object(macos_ui, "activate_app",
+                               side_effect=lambda: order.append("activate")), \
+             mock.patch.object(w, "raise_", side_effect=lambda: order.append("raise")), \
+             mock.patch.object(w, "activateWindow",
+                               side_effect=lambda: order.append("activate_window")):
+            dialog_util.bring_to_front(w)
+        self.assertEqual(order, ["activate", "raise", "activate_window"])
+
+    def test_activate_app_is_a_NO_OP_off_macOS(self):
+        """⚠️ Asserted on the LOG, not just the return value.
+
+        Off macOS the AppKit import fails anyway, so a missing platform guard
+        returns False either way and a result-only assertion cannot see it —
+        measured: that mutation escaped the first sweep. What the guard buys is
+        that nothing is ATTEMPTED, which the absent debug line is the evidence
+        for.
+        """
+        from polyhost.util import macos_ui
+        with mock.patch.object(macos_ui.platform, "system", return_value="Linux"), \
+             mock.patch.object(macos_ui.log, "debug") as debug:
+            self.assertFalse(macos_ui.activate_app())
+        debug.assert_not_called()
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"needs Qt: {_IMPORT_ERR}")
+class WantsFrontTest(unittest.TestCase):
+    """Which windows may promote the app. ⚠️ Transient chrome must NOT: a
+    tooltip that steals focus is worse than the bug being fixed."""
+
+    def _widget(self, flags=None):
+        w = QWidget()
+        self.addCleanup(w.deleteLater)
+        if flags is not None:
+            w.setWindowFlags(flags)
+        return w
+
+    def test_a_real_window_qualifies(self):
+        self.assertTrue(dialog_util.wants_front(self._widget()))
+
+    def test_a_POPUP_does_not(self):
+        self.assertFalse(dialog_util.wants_front(self._widget(Qt.Popup)))
+
+    def test_a_TOOLTIP_does_not(self):
+        self.assertFalse(dialog_util.wants_front(self._widget(Qt.ToolTip)))
+
+    def test_a_SPLASH_does_not(self):
+        self.assertFalse(dialog_util.wants_front(self._widget(Qt.SplashScreen)))
+
+    def test_a_DIALOG_and_a_TOOL_window_DO_qualify(self):
+        """⚠️ The case a bit test gets wrong. The window types are overlapping
+        VALUES, not flags — Popup is 0x9 and Tool is 0xb, which contains it —
+        so `flags & Qt.Popup` is true for a Tool and for a Dialog (0x3 & 0x9)
+        alike, and would suppress exactly the windows this rule exists for.
+        """
+        self.assertTrue(dialog_util.wants_front(self._widget(Qt.Dialog)))
+        self.assertTrue(dialog_util.wants_front(self._widget(Qt.Tool)))
+
+    def test_a_CHILD_widget_does_not(self):
+        parent = self._widget()
+        child = QWidget(parent)
+        self.assertFalse(dialog_util.wants_front(child))
+
+    def test_a_NON_widget_does_not(self):
+        self.assertFalse(dialog_util.wants_front(None))
+        self.assertFalse(dialog_util.wants_front(object()))
+
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"needs Qt: {_IMPORT_ERR}")
+class InstallFrontOnShowTest(unittest.TestCase):
+    """⚠️ A FILTER, not a call at each `show()`. There are a dozen window-
+    opening sites across the two tray apps, `.exec_()` modals among them, so a
+    per-site fix is the enumerating-guard shape this repo keeps getting caught
+    by — the thirteenth window would be added without it."""
+
+    def setUp(self):
+        self.app = QApplication.instance()
+        if getattr(self.app, "_poly_front_filter", None) is not None:
+            self.app.removeEventFilter(self.app._poly_front_filter)
+            del self.app._poly_front_filter
+
+    def tearDown(self):
+        flt = getattr(self.app, "_poly_front_filter", None)
+        if flt is not None:
+            self.app.removeEventFilter(flt)
+            del self.app._poly_front_filter
+
+    def test_it_is_NOT_installed_off_macOS(self):
+        """Windows and Linux already raise these windows correctly; activating
+        on every show there is a behaviour change nobody asked for."""
+        with mock.patch.object(dialog_util.sys, "platform", "linux"):
+            self.assertIsNone(dialog_util.install_front_on_show(self.app))
+        self.assertIsNone(getattr(self.app, "_poly_front_filter", None))
+
+    def test_it_is_installed_on_macOS_and_KEPT_ALIVE(self):
+        """⚠️ A QObject only Qt references is garbage-collected, and a collected
+        event filter silently stops filtering."""
+        with mock.patch.object(dialog_util.sys, "platform", "darwin"):
+            flt = dialog_util.install_front_on_show(self.app)
+        self.assertIsNotNone(flt)
+        self.assertIs(self.app._poly_front_filter, flt)
+
+    def test_installing_TWICE_adds_one_filter(self):
+        with mock.patch.object(dialog_util.sys, "platform", "darwin"):
+            first = dialog_util.install_front_on_show(self.app)
+            second = dialog_util.install_front_on_show(self.app)
+        self.assertIs(first, second)
+
+    def test_the_filter_brings_a_SHOWN_window_forward(self):
+        from polyhost.gui.dialog_util import _FrontOnShow
+        from PyQt5.QtCore import QEvent
+        w = QWidget()
+        self.addCleanup(w.deleteLater)
+        flt = _FrontOnShow()
+        with mock.patch.object(dialog_util, "bring_to_front") as front:
+            flt.eventFilter(w, QEvent(QEvent.Show))
+        front.assert_called_once_with(w)
+
+    def test_the_filter_IGNORES_a_popup_and_other_events(self):
+        from polyhost.gui.dialog_util import _FrontOnShow
+        from PyQt5.QtCore import QEvent
+        popup = QWidget()
+        self.addCleanup(popup.deleteLater)
+        popup.setWindowFlags(Qt.Popup)
+        plain = QWidget()
+        self.addCleanup(plain.deleteLater)
+        flt = _FrontOnShow()
+        with mock.patch.object(dialog_util, "bring_to_front") as front:
+            flt.eventFilter(popup, QEvent(QEvent.Show))
+            flt.eventFilter(plain, QEvent(QEvent.Hide))
+            flt.eventFilter(plain, QEvent(QEvent.Paint))
+        front.assert_not_called()
+
+    def test_the_filter_never_CONSUMES_the_event(self):
+        """Returning True would swallow the Show and the window never appears."""
+        from polyhost.gui.dialog_util import _FrontOnShow
+        from PyQt5.QtCore import QEvent
+        w = QWidget()
+        self.addCleanup(w.deleteLater)
+        with mock.patch.object(dialog_util, "bring_to_front"):
+            self.assertFalse(_FrontOnShow().eventFilter(w, QEvent(QEvent.Show)))
 
 
 if __name__ == "__main__":
