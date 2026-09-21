@@ -310,6 +310,80 @@ class ConcurrentWriterTest(unittest.TestCase):
         self.assertEqual(len(kept), 1)
         self.assertEqual(settings.read_setting("hid_reconnect_retries"), 4)
 
+    def test_INVALID_UTF8_is_unreadable_rather_than_an_exception(self):
+        """⚠️ `UnicodeDecodeError` is a ValueError, not an OSError, so it was
+        caught by neither arm and escaped `_read_file` entirely -- taking the
+        CONSTRUCTOR down on a corrupt file, which is the #246 defect through a
+        door that fix did not close, and raising out of `save()`.
+
+        Pre-existing on `main` (measured: `PolySettings()` and `save()` both
+        raise there), but it is the commonest way a settings file becomes
+        unreadable -- a write truncated mid multi-byte character -- so a change
+        whose whole subject is the unreadable file cannot leave it open
+        (Greptile P1, #249)."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        corrupt = b"hid_reconnect_retries: 4\n\xff\xfe not utf-8\n"
+        with open(a.path, "wb") as f:
+            f.write(corrupt)
+
+        self.assertEqual(a._read_file_ex(), (None, a.READ_UNREADABLE))
+
+        b = settings.PolySettings()          # startup must not raise
+        b.collection["browser_report_port"] = 10003
+        b.save()                             # nor must the save
+        self.assertEqual(settings.read_setting("browser_report_port"), 10003)
+        kept = [n for n in os.listdir(self._tmp.name) if ".unreadable-" in n]
+        self.assertTrue(kept, "the undecodable original was not preserved")
+        with open(os.path.join(self._tmp.name, kept[0]), "rb") as f:
+            self.assertEqual(f.read(), corrupt)   # byte-for-byte, recoverable
+
+    def test_a_save_ABORTS_when_the_original_cannot_be_preserved(self):
+        """⚠️ `_preserve_unreadable` swallows its OSError, so the save used to
+        carry on and `os.replace` destroyed the very file the preservation
+        exists to keep (Greptile P1, #249).
+
+        The trade is deliberate and it is not symmetric: the file is
+        unparseable, so its ONLY value is hand-recovery, and overwriting it
+        removes the last copy for good. A save that does not land costs the
+        user one setting change they can make again. So the overwrite stands
+        down -- loudly -- and the in-memory value stays pending for the next
+        save once the obstruction is gone."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        corrupt = "{{{ not yaml\nbrightness_gamma: 7\n"
+        with open(a.path, "w", encoding="utf-8") as f:
+            f.write(corrupt)
+
+        # A real collision, not a patched-out helper: a DIRECTORY sitting on
+        # the exact name `_preserve_unreadable` will pick.
+        stamp = "20260921-000000"
+        os.mkdir(f"{a.path}.unreadable-{stamp}")
+        with mock.patch.object(settings.time, "strftime", return_value=stamp):
+            a.collection["browser_report_port"] = 10004
+            a.save()
+
+        with open(a.path, encoding="utf-8") as f:
+            self.assertEqual(f.read(), corrupt, "the save destroyed the original")
+        self.assertEqual(a.collection["browser_report_port"], 10004)  # still pending
+
+    def test_the_CONSTRUCTOR_still_comes_up_when_preservation_fails(self):
+        """Startup cannot abort -- it has to hand back a usable PolySettings --
+        so only the SAVE path gates on the preserve result. Same helper, two
+        callers, opposite obligations."""
+        a = settings.PolySettings()
+        a.save()
+        with open(a.path, "w", encoding="utf-8") as f:
+            f.write("{{{ not yaml")
+        stamp = "20260921-000001"
+        os.mkdir(f"{a.path}.unreadable-{stamp}")
+        with mock.patch.object(settings.time, "strftime", return_value=stamp):
+            b = settings.PolySettings()      # must not raise
+        self.assertEqual(b.get("hid_reconnect_retries"),
+                         b.defaults["hid_reconnect_retries"])
+
     def test_an_unknown_key_never_reaches_the_file(self):
         """`mine` is applied after _normalize, so without a re-filter a key
         absent from `defaults` rides into the file on the delta and is never

@@ -258,7 +258,13 @@ class PolySettings:
         constructor saves straight afterwards, so without this the first launch
         after a bad write would replace the file with defaults and leave the
         user nothing to recover from. Renaming costs one file and keeps the
-        original byte-for-byte."""
+        original byte-for-byte.
+
+        Returns True when the original is safely aside. ⚠️ **The callers have
+        opposite obligations on False**: `_save_merged` must NOT go on to
+        replace the file (that destroys the only copy), while the constructor
+        cannot abort at all -- it has to hand back a usable PolySettings -- so
+        it logs and continues, as it always has."""
         stamp = time.strftime("%Y%m%d-%H%M%S")
         kept = f"{self.path}.unreadable-{stamp}"
         try:
@@ -268,11 +274,11 @@ class PolySettings:
             # The save that follows will overwrite it, which is the outcome
             # this guards against — so say so loudly.
             self.log.error("Settings file at %s is unreadable and could not be "
-                           "preserved (%s); it is about to be replaced with "
-                           "defaults.", self.path, e)
-            return
+                           "preserved (%s).", self.path, e)
+            return False
         self.log.warning("Settings file at %s could not be parsed; kept a copy "
                          "at %s and starting from defaults.", self.path, kept)
+        return True
 
     def _read_file(self):
         """Raw settings dict from disk, or ``None`` when it cannot be read.
@@ -316,7 +322,17 @@ class PolySettings:
                 data = yaml.safe_load(f) or {}
         except FileNotFoundError:
             return None, self.READ_ABSENT
-        except (OSError, yaml.YAMLError):
+        except (OSError, yaml.YAMLError, UnicodeDecodeError):
+            # ⚠️ `UnicodeDecodeError` is a **ValueError**, not an OSError, so
+            # it was caught by neither arm and escaped this function entirely
+            # -- taking the CONSTRUCTOR down on a corrupt file (the #246 defect
+            # through a door that fix did not close) and raising out of
+            # `save()`. Pre-existing rather than new, and listed explicitly
+            # rather than as `ValueError`, which would also swallow bugs.
+            #
+            # It is not an exotic case: a write truncated mid multi-byte
+            # character produces exactly this, and a file that cannot be
+            # decoded is the definition of unreadable.
             return None, self.READ_UNREADABLE
         if not isinstance(data, dict):
             # Valid YAML of the wrong shape -- a list, a bare string. There ARE
@@ -389,8 +405,21 @@ class PolySettings:
             # user's whole file after a bad write — and this is the last moment
             # it exists. Startup has always done this; the save path could not,
             # because `_read_file` answers `None` to both states.
-            if state == self.READ_UNREADABLE:
-                self._preserve_unreadable()
+            if state == self.READ_UNREADABLE and not self._preserve_unreadable():
+                # ⚠️ STAND DOWN rather than replace it. The `os.replace` at the
+                # end of this method would destroy the only copy of a file we
+                # could not read and could not move aside -- and the trade is
+                # not symmetric: the file is unparseable, so its sole value is
+                # hand-recovery, while a save that does not land costs one
+                # setting change the user can simply make again. The change
+                # stays in `self.collection`, so the next save persists it once
+                # whatever is obstructing the backup name is gone.
+                self.log.error(
+                    "Not saving settings: %s could not be read and could not be "
+                    "moved aside, so writing would destroy it. The change is "
+                    "kept in memory and will be saved once that is resolved.",
+                    self.path)
+                return
             merged = self._normalize(self.collection)
         else:
             merged = self._normalize(on_disk)
