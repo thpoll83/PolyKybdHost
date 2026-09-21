@@ -264,5 +264,39 @@ class MacOSTupleHandleTest(unittest.TestCase):
         self.assertTrue(any("98765" in l for l in lines), lines)
 
 
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class FocusedPidTest(unittest.TestCase):
+    """The pid the OS-icon route needs, and the one case it must NOT give."""
+
+    def _handler(self, pid=1234, raises=False, remote=False):
+        from polyhost.handler.active_window import OverlayHandler
+        h = OverlayHandler({})
+        h.win = MagicMock()
+        if raises:
+            h.win.getPID.side_effect = OSError("gone")
+        else:
+            h.win.getPID.return_value = pid
+        h.is_remote_mapping_entry = lambda: remote
+        h.remote_handler = MagicMock() if remote else None
+        return h
+
+    def test_a_LOCAL_window_answers_its_pid(self):
+        self.assertEqual(self._handler().focused_pid(), 1234)
+
+    def test_a_FORWARDED_window_answers_NOTHING(self):
+        """⚠️ The app runs on the other machine, so a local pid names an
+        unrelated process -- and the identity travelling with the report is the
+        right answer there."""
+        self.assertIsNone(self._handler(remote=True).focused_pid())
+
+    def test_NO_window_answers_nothing(self):
+        h = self._handler()
+        h.win = None
+        self.assertIsNone(h.focused_pid())
+
+    def test_a_RAISING_backend_does_not_take_the_overlay_send_with_it(self):
+        self.assertIsNone(self._handler(raises=True).focused_pid())
+
+
 if __name__ == "__main__":
     unittest.main()

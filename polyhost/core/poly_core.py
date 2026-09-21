@@ -661,7 +661,11 @@ class PolyCore(Observable):
             return
         # `identity` is set only for a FORWARDED window, where the other machine
         # already resolved it — see AppAwareHandler.focused_app.
-        mask, slug = self._app_icons.overlay_for(name, identity=identity)
+        # ⚠️ `pid` is what makes the OS-icon route reachable at all -- see
+        # `OverlayHandler.focused_pid`. It is None for a forwarded window,
+        # where `identity` is the answer instead.
+        mask, slug = self._app_icons.overlay_for(
+            name, pid=handler.focused_pid(), identity=identity)
         if mask is None or not slug:
             slug = None
         # ⚠️ **A FORWARDED window's shortcuts CANNOT be harvested here, and

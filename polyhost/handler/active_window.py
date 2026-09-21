@@ -355,6 +355,37 @@ class OverlayHandler:
             return None, None
         return self.app_name, None
 
+    def focused_pid(self):
+        """The focused LOCAL window's process id, or None.
+
+        ⚠️ The OS-icon route needs this and NOTHING WAS PASSING IT, so the whole
+        route was dead on the local path -- on every platform, not just macOS.
+        `app_icon_fetcher.overlay_for()` takes a `pid`, `os_app_icon.app_identity()`
+        takes it as given and resolves none of its own, and the only production
+        caller (`PolyCore._maybe_send_generic_overlays`) passed neither it nor an
+        identity for a local window. So `_macos_identity` got None, `int(None)`
+        raised inside `_macos_bundle`, and every app logged
+        `(OS names: <none>)` -- the aggregate line that cannot say why (field,
+        2026-09-21). The `pid` parameter and its tests existed the whole time;
+        production simply never used them.
+
+        ⚠️ **None for a FORWARDED window, deliberately.** That app runs on the
+        other machine, so a local pid names an unrelated process -- and the
+        identity that travels with the report is the right answer there, which
+        `focused_app` already returns.
+
+        `getPID()` is on pywinctl's abstract Window and implemented by all three
+        backends, so this is not a macOS special case. It is still guarded: a
+        cosmetic lookup must not take the overlay send with it.
+        """
+        rh = getattr(self, "remote_handler", None)
+        if rh is not None and self.is_remote_mapping_entry():
+            return None
+        try:
+            return self.win.getPID() if self.win else None
+        except Exception:
+            return None
+
     def is_remote_mapping_entry(self):
         return (
             self.current_entry

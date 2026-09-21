@@ -8,6 +8,7 @@ look slightly wrong on hardware with nothing failing anywhere.
 import os
 import sys
 import tempfile
+import urllib.error
 import unittest
 # ⚠️ Mock is reached by a plain import, not by the repo's prevailing
 # import-from idiom (28 test files use that). Mixing the two forms for one
@@ -656,6 +657,74 @@ class SvgOsIconIsReadAsColourArtTest(unittest.TestCase):
     def test_the_colour_candidate_never_raises_on_junk(self):
         self.assertIsNone(
             ai._svg_colour_candidate(b"<svg not really", 38)[0])
+
+
+class WhyTheCatalogMissedTest(unittest.TestCase):
+    """⚠️ A MISS must say which KIND of miss it was.
+
+    Every failure path in `fetch_icon` was `log.debug` or nothing at all, so at
+    the default level the only thing a user saw was the aggregate "the catalog
+    carries none of ...". That line reads the same for a 404 (this brand is not
+    in the catalog -- nothing to do), a refused download (network, proxy, an
+    unwritable cache -- fix your machine) and auto-fetch being switched off
+    (flip the setting). Three different actions behind one sentence.
+
+    Measured on macOS 2026-09-21: `si:googlechrome` is a real slug that answers
+    200, and the log still said only "carries none of" -- so the reason could
+    not be worked out from the field log at all.
+    """
+
+    def _reason(self, slug, **kw):
+        reasons = {}
+        with tempfile.TemporaryDirectory() as tmp:
+            ai.fetch_icon(slug, tmp, reasons=reasons, **kw)
+        return reasons.get(slug)
+
+    def test_auto_fetch_being_OFF_is_named(self):
+        self.assertIn("auto-fetch is off",
+                      self._reason("si:gimp", allow_network=False))
+
+    def test_an_unknown_SOURCE_is_named(self):
+        self.assertEqual(self._reason("nosuchcatalog:gimp", allow_network=True),
+                         "unknown source")
+
+    def test_a_404_is_named_as_an_ORDINARY_answer(self):
+        """Not a fault: the brand is not in the catalog and never will be."""
+        err = urllib.error.HTTPError("u", 404, "Not Found", None, None)
+        with mock.patch.object(ai.urllib.request, "urlopen", side_effect=err):
+            self.assertEqual(self._reason("si:nope"), "not in the catalog (404)")
+
+    def test_another_HTTP_status_is_NOT_called_a_missing_brand(self):
+        err = urllib.error.HTTPError("u", 503, "Unavailable", None, None)
+        with mock.patch.object(ai.urllib.request, "urlopen", side_effect=err):
+            self.assertEqual(self._reason("si:nope"), "HTTP 503")
+
+    def test_a_REFUSED_download_is_named(self):
+        with mock.patch.object(ai.urllib.request, "urlopen",
+                               side_effect=OSError("proxy refused")):
+            self.assertIn("download failed", self._reason("si:nope"))
+
+    def test_a_200_THAT_IS_NOT_AN_SVG_is_named(self):
+        """Silent before this: a proxy error page returning 200 was refused by
+        `_is_svg` and reported as if the brand did not exist."""
+        body = b"<!DOCTYPE html><html>nope</html>"
+        response = mock.MagicMock()
+        response.read.return_value = body
+        response.__enter__ = lambda self_: response
+        response.__exit__ = lambda *a: False
+        with mock.patch.object(ai.urllib.request, "urlopen", return_value=response):
+            self.assertIn("not an SVG", self._reason("si:nope"))
+
+    def test_the_MISS_LINE_carries_the_reason(self):
+        """The reason is useless if `program_overlay` drops it."""
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertLogs(ai.log, level="INFO") as captured:
+                mask, _ = ai.program_overlay("gimp", None, tmp,
+                                             allow_network=False)
+        self.assertIsNone(mask)
+        line = "\n".join(captured.output)
+        self.assertIn("No program mark for gimp", line)
+        self.assertIn("auto-fetch is off", line)
 
 
 if __name__ == "__main__":
