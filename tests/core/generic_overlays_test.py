@@ -71,6 +71,7 @@ def make_core(*, app=("gimp", None), mask=None, slug="si:gimp", shortcuts=None,
 
     core._generic_on_device = None
     core._told_no_remote_shortcuts = set()
+    core._told_mark_dropped = set()
     # ⚠️ spec'd, and that is the point rather than tidiness: a bare MagicMock
     # answers ANY attribute, so `_app_icons.forget()` -- a method this fetcher
     # has never had -- passed here while raising AttributeError in the real app
@@ -514,6 +515,35 @@ class ForwardedTest(unittest.TestCase):
         core = make_core(app=("gimp", None), mask=_mask())
         _tick(core)
         self.assertIsNone(core._app_icons.overlay_for.call_args.kwargs["identity"])
+
+    def test_a_DROPPED_mark_says_so_ONCE_at_INFO(self):
+        """⚠️ The rule is deliberate — no shortcuts means no send, INCLUDING the
+        mark — but it was INVISIBLE from the log. The only INFO line was the
+        fetcher announcing a mark it had BUILT (`Program icon for 'terminal':
+        os:Terminal.icns`), which is not the same thing as one reaching the
+        keyboard, so a blank keycap read as the icon having failed rather than
+        having been suppressed on purpose (field, macOS, 2026-09-21).
+        """
+        core = make_core(app=("terminal", None), mask=_mask())
+        core._shortcut_icons.overlays_for.return_value = {}
+        with self.assertLogs(core.log, level="INFO") as captured:
+            _tick(core)
+            _tick(core)                       # the SECOND tick must stay quiet
+        dropped = [l for l in captured.output if "Nothing drawn for 'terminal'" in l]
+        self.assertEqual(len(dropped), 1, captured.output)
+        self.assertIn("not sent on its own", dropped[0])
+
+    def test_an_app_with_NO_mark_at_all_is_not_told(self):
+        """The fetchers report their own misses. This line is only for the case
+        where something WAS built and then discarded."""
+        core = make_core(app=("terminal", None), mask=None)
+        core._shortcut_icons.overlays_for.return_value = {}
+        core._app_icons.overlay_for.return_value = (None, None)
+        with self.assertLogs(core.log, level="INFO") as captured:
+            core.log.info("marker")           # assertLogs needs at least one
+            _tick(core)
+        self.assertFalse([l for l in captured.output if "Nothing drawn" in l],
+                         captured.output)
 
     def test_a_LOCAL_window_passes_its_PID(self):
         """⚠️ The regression that made the OS-icon route DEAD, on every platform.

@@ -175,6 +175,10 @@ class PolyCore(Observable):
         # Apps already told they get no shortcut icons because they are
         # forwarded -- one line each, not one per window change.
         self._told_no_remote_shortcuts = set()
+        # Apps already told their RESOLVED program mark was dropped for want of
+        # shortcuts. Same one-line-each discipline, and see `_say_mark_dropped`
+        # for why the line has to exist at INFO at all.
+        self._told_mark_dropped = set()
         # Last unicode input method pushed to the keyboard (an InputMethod, or
         # None). The WinCompose settle watcher re-probes after a connect and pushes
         # only on a real change; see _start_wincompose_settle.
@@ -708,6 +712,16 @@ class PolyCore(Observable):
             shortcuts = self._shortcut_icons.overlays_for(name)
         signature = self._generic_signature(slug, shortcuts, template_files)
         if signature is None:
+            if mask is not None and not shortcuts:
+                # ⚠️ The ONE case the detailed line below is not enough for: a
+                # mark that RESOLVED and was then discarded by the
+                # mark-needs-shortcuts rule. At INFO the log then said only
+                # `Program icon for 'terminal': os:Terminal.icns` -- which is
+                # the FETCHER reporting a built mask, not anything reaching the
+                # keyboard -- and nothing at all about the drop, so a blank
+                # keycap looked like the icon having failed rather than having
+                # been suppressed on purpose (field, macOS, 2026-09-21).
+                self._say_mark_dropped(name, slug)
             # Both halves are normal on the first sighting (the fetches were
             # just queued) and both fetchers report a real miss themselves, so
             # this stays at the detailed level -- it exists to prove the path RAN.
@@ -828,6 +842,27 @@ class PolyCore(Observable):
             "answer is still in flight (it arrives on a later report) or that "
             "forwarder predates the relay and will never send them -- the "
             "program mark is unaffected either way.", name)
+
+    def _say_mark_dropped(self, name, slug):
+        """Say ONCE per app that a resolved mark was dropped, and why.
+
+        The rule it reports is deliberate: no shortcuts means no send, INCLUDING
+        the mark, because a mark alone reads as "this app has icons" and the
+        next glance disproves it. But the rule was invisible from the log --
+        the only INFO line was the fetcher announcing a mark it had built, so
+        the user saw a success and a blank keyboard and nothing joining them.
+
+        Once per app, like `_say_no_remote_shortcuts`: this runs on the window
+        tick, so a per-tick line would be thousands for one unsupported app.
+        """
+        if name in self._told_mark_dropped:
+            return
+        self._told_mark_dropped.add(name)
+        self.log.info(
+            "Nothing drawn for '%s': its program mark resolved (%s) but the "
+            "app exposes no shortcut icons, and a mark is not sent on its own "
+            "-- it would promise keycaps that are not there. The mark appears "
+            "as soon as any shortcut does.", name, slug or "no name")
 
     @staticmethod
     def _generic_signature(slug, shortcuts, template_files=()):
