@@ -260,8 +260,6 @@ class WantShortcutsTest(unittest.TestCase):
             {"want_icon": True, "want_shortcuts": True})
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class LruOrderTest(_ShortcutsOff, unittest.TestCase):
@@ -354,3 +352,6 @@ class EmptyRecordIsNotAnIdentityTest(_ShortcutsOff, unittest.TestCase):
         h.report_window(1, "gimp", "t")
         self.assertEqual(h.forwarded_identity("gimp")["names"], ("GIMP",))
 
+
+if __name__ == "__main__":
+    unittest.main()
