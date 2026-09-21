@@ -378,12 +378,29 @@ def _windows_exe(pid) -> str:
         handle = kernel32.OpenProcess(
             PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
         if not handle:
+            # ⚠️ SAY WHY. This returned "" silently, which `_windows_identity`
+            # turns into an empty AppIdentity and the tick renders as
+            # `OS names: <none>` -- i.e. "this OS has nothing to say about the
+            # app", when the truth is "I could not open the process". Measured
+            # 2026-09-21: 7zFM reported no names and no icon while
+            # `os_icon_probe.py` on the same binary read `FileDescription:
+            # 7-Zip File Manager` and drew the icon. That is the E13 defect
+            # again -- a message naming the wrong cause -- and the real one is
+            # already in hand, because the DLL is loaded `use_last_error=True`.
+            # ERROR_ACCESS_DENIED (5) is the one to expect: an elevated process
+            # cannot be opened by an unelevated host.
+            log.debug("Could not open pid %s to read its image path "
+                      "(GetLastError=%d); its name and icon are unavailable, "
+                      "which is NOT the same as the OS having none.",
+                      pid, ctypes.get_last_error())
             return ""
         try:
             size = wintypes.DWORD(32768)
             buffer = ctypes.create_unicode_buffer(size.value)
             if not kernel32.QueryFullProcessImageNameW(
                     handle, 0, buffer, ctypes.byref(size)):
+                log.debug("Opened pid %s but could not read its image path "
+                          "(GetLastError=%d).", pid, ctypes.get_last_error())
                 return ""
             return buffer.value
         finally:
