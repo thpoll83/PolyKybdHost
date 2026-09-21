@@ -1,6 +1,8 @@
+import os
+import shutil
 import unittest
+import unittest.mock as mock
 from pathlib import Path
-from unittest import mock
 
 from polyhost.services import add_to_startup
 
@@ -264,6 +266,122 @@ class RemoveAutostartTest(unittest.TestCase):
         startmenu.unlink.assert_not_called()
 
 
+class MacAppLauncherTest(unittest.TestCase):
+    """macOS was the only platform with no MANUAL launcher.
+
+    Windows writes a Start-menu `.lnk` beside its autostart entry and Linux a
+    second `.desktop` under `~/.local/share/applications`; macOS got the
+    LaunchAgent alone. Launchpad indexes `.app` bundles and a plist is not one,
+    so a user who quit the app had no way to start it again short of a terminal
+    or a logout (field, 2026-09-21).
+    """
+
+    def _run(self, tmp, wrapper="/Users/x/.venv/wrap.sh", icon=None):
+        tmp = Path(tmp)
+        plist = tmp / "LaunchAgents" / "com.PolyHost.plist"
+        bundle = tmp / "Applications" / "PolyHost.app"
+        if icon is None:
+            icon = tmp / "pcolor.icns"
+            icon.write_bytes(b"icns-bytes")
+        with mock.patch.object(add_to_startup.platform, "system", return_value="Darwin"), \
+             mock.patch.object(add_to_startup, "_macos_plist_path", return_value=plist), \
+             mock.patch.object(add_to_startup, "_macos_app_bundle", return_value=bundle), \
+             mock.patch.object(add_to_startup.subprocess, "run"):
+            add_to_startup.add_to_startup(Path(wrapper), "PolyHost", str(icon))
+        return bundle
+
+    def test_registering_creates_a_launchable_bundle(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            b = self._run(tmp)
+            self.assertTrue((b / "Contents" / "Info.plist").is_file())
+            self.assertTrue((b / "Contents" / "MacOS" / "PolyHost").is_file())
+            self.assertTrue((b / "Contents" / "Resources" / "pcolor.icns").is_file())
+
+    def test_the_shim_is_EXECUTABLE_and_execs_the_wrapper(self):
+        """A bundle whose MacOS/ entry is not +x does not launch at all, and
+        `exec` matters too: without it a shell sits parked for the app's life."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            shim = self._run(tmp) / "Contents" / "MacOS" / "PolyHost"
+            self.assertTrue(os.access(shim, os.X_OK))
+            body = shim.read_text()
+            self.assertIn('exec "/Users/x/.venv/wrap.sh"', body)
+
+    def test_the_bundle_is_created_even_when_the_PLIST_is_UNCHANGED(self):
+        """⚠️ The regression this ordering exists to prevent.
+
+        The Darwin branch returns early when the plist matches what is already
+        installed -- which is every launch after the first. Creating the bundle
+        after that return means it is written once and can never self-heal, so
+        a user who deletes it, or an upgrade that moves the wrapper, leaves it
+        broken forever.
+        """
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = self._run(tmp)                      # first: registers
+            shutil.rmtree(bundle)                        # user drags it to Trash
+            self.assertFalse(bundle.exists())
+            bundle = self._run(tmp)                      # plist is now IDENTICAL
+            self.assertTrue((bundle / "Contents" / "MacOS" / "PolyHost").is_file())
+
+    def test_a_moved_wrapper_updates_the_shim(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            self._run(tmp, wrapper="/Users/x/.venv/old.sh")
+            b = self._run(tmp, wrapper="/Users/x/.venv/new.sh")
+            body = (b / "Contents" / "MacOS" / "PolyHost").read_text()
+            self.assertIn("new.sh", body)
+            self.assertNotIn("old.sh", body)
+
+    def test_an_UNWRITABLE_location_does_not_stop_autostart(self):
+        """The launcher is a convenience; the plist is the job.
+
+        A raise here would leave the user with neither, which is strictly worse
+        than the state being fixed.
+        """
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            plist = Path(tmp) / "LaunchAgents" / "com.PolyHost.plist"
+            with mock.patch.object(add_to_startup.platform, "system",
+                                   return_value="Darwin"), \
+                 mock.patch.object(add_to_startup, "_macos_plist_path",
+                                   return_value=plist), \
+                 mock.patch.object(add_to_startup, "create_macos_app_bundle",
+                                   side_effect=OSError("read-only")), \
+                 mock.patch.object(add_to_startup.subprocess, "run"):
+                with self.assertRaises(OSError):
+                    add_to_startup.add_to_startup(Path("/w.sh"), "PolyHost", "/i.icns")
+            # ...and with the real function, which swallows it, the plist lands.
+            with mock.patch.object(add_to_startup.platform, "system",
+                                   return_value="Darwin"), \
+                 mock.patch.object(add_to_startup, "_macos_plist_path",
+                                   return_value=plist), \
+                 mock.patch.object(add_to_startup, "_macos_app_bundle",
+                                   return_value=Path("/proc/nope/PolyHost.app")), \
+                 mock.patch.object(add_to_startup.subprocess, "run"):
+                add_to_startup.add_to_startup(Path("/w.sh"), "PolyHost", "/i.icns")
+            self.assertTrue(plist.exists())
+
+    def test_removal_takes_the_launcher_TOO(self):
+        """Matching both other platforms -- Windows removes its Start-menu .lnk
+        "so teardown leaves nothing behind", Linux its applications/.desktop."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = self._run(tmp)
+            plist = Path(tmp) / "LaunchAgents" / "com.PolyHost.plist"
+            with mock.patch.object(add_to_startup.platform, "system",
+                                   return_value="Darwin"), \
+                 mock.patch.object(add_to_startup, "_macos_plist_path",
+                                   return_value=plist), \
+                 mock.patch.object(add_to_startup, "_macos_app_bundle",
+                                   return_value=bundle), \
+                 mock.patch.object(add_to_startup.subprocess, "run"):
+                add_to_startup.remove_autostart("PolyHost")
+            self.assertFalse(bundle.exists())
+            self.assertFalse(plist.exists())
+
+
 class MacAutostartIdempotencyTest(unittest.TestCase):
     """macOS must not re-register the LaunchAgent on every launch — doing so
     re-triggers the "Background Items Added" notification (Ventura+). The plist
@@ -273,8 +391,15 @@ class MacAutostartIdempotencyTest(unittest.TestCase):
 
     def _run(self, tmp, wrapper="/Users/x/.venv/wrap.sh"):
         plist = Path(tmp) / "LaunchAgents" / "com.PolyHost.plist"
+        # ⚠️ `_macos_app_bundle` is patched into the temp dir even though this
+        # class is about the PLIST. Registering now also writes the launcher,
+        # and without this the test wrote a real `~/Applications/PolyHost.app`
+        # on whatever machine ran the suite -- caught by the bundle landing in
+        # this container's /root/Applications.
         with mock.patch.object(add_to_startup.platform, "system", return_value="Darwin"), \
              mock.patch.object(add_to_startup, "_macos_plist_path", return_value=plist), \
+             mock.patch.object(add_to_startup, "_macos_app_bundle",
+                               return_value=Path(tmp) / "Applications" / "PolyHost.app"), \
              mock.patch.object(add_to_startup.subprocess, "run") as run:
             add_to_startup.add_to_startup(Path(wrapper), "PolyHost", "/icon.png")
         return plist, run

@@ -1,5 +1,6 @@
 import platform
 import os
+import shutil
 import sys
 import shlex
 import subprocess
@@ -454,6 +455,94 @@ def _macos_plist_path(app_name=APP_NAME):
     """Path to this app's launchd LaunchAgent plist."""
     return Path.home() / "Library" / "LaunchAgents" / f"com.{app_name}.plist"
 
+def _macos_app_bundle(app_name=APP_NAME):
+    """Path to this app's manual launcher — the thing Launchpad can show."""
+    return Path.home() / "Applications" / f"{app_name}.app"
+
+def create_macos_app_bundle(app_name, wrapper_path, icon_path):
+    """Write a minimal `.app` so the user can START the app again by hand.
+
+    ⚠️ macOS was the ONLY platform with no manual launcher, and the LaunchAgent
+    is not one: Launchpad indexes `.app` bundles, and a plist is not a bundle.
+    Windows has always written a Start-menu `.lnk` beside its autostart entry
+    and Linux a second `.desktop` under `~/.local/share/applications`; macOS got
+    the plist alone, so a user who quit the app had no way back short of a
+    terminal or a logout (field, 2026-09-21). The tell that this was an
+    oversight rather than a decision is in the plist itself: it sets
+    `CFBundleIconFile`, a BUNDLE key that does nothing in a LaunchAgent.
+
+    A bundle is just a directory, so this needs no packaging tool and no build
+    step -- `pcolor.icns` already ships and `_icon_path()` already returns it on
+    Darwin.
+
+    ⚠️ `LSUIElement` is true because this is a MENU-BAR app: without it macOS
+    gives the running process a Dock tile and an application menu it has no use
+    for. Launchpad lists installed bundles regardless, so the launcher still
+    appears -- that is the one claim here that cannot be checked off a Mac, and
+    dropping the key is the fallback if it turns out otherwise.
+    """
+    bundle = _macos_app_bundle(app_name)
+    macos_dir = bundle / "Contents" / "MacOS"
+    resources = bundle / "Contents" / "Resources"
+    icon_name = Path(icon_path).name if icon_path else ""
+    plist = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleName</key>
+    <string>{app_name}</string>
+    <key>CFBundleDisplayName</key>
+    <string>{app_name}</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.{app_name}</string>
+    <key>CFBundleExecutable</key>
+    <string>{app_name}</string>
+    <key>CFBundleIconFile</key>
+    <string>{icon_name}</string>
+    <key>LSUIElement</key>
+    <true/>
+</dict>
+</plist>
+"""
+    try:
+        macos_dir.mkdir(parents=True, exist_ok=True)
+        resources.mkdir(parents=True, exist_ok=True)
+        # Same if-changed discipline as the wrapper and the plist: rewriting a
+        # registered bundle on every launch is what re-fires macOS's
+        # "Background Items Added" notification.
+        info = bundle / "Contents" / "Info.plist"
+        try:
+            stale = info.read_text(encoding="utf-8") != plist
+        except OSError:
+            stale = True
+        if stale:
+            info.write_text(plist, encoding="utf-8")
+        # ⚠️ A SHIM, not a copy of the wrapper. The wrapper is regenerated on
+        # upgrade (venv moves, pythonw changes); pointing at it by path means
+        # the bundle never goes stale, and `exec` keeps one process rather than
+        # leaving a shell parked for the life of the app.
+        _write_executable_if_changed(
+            macos_dir / app_name,
+            f'#!/bin/sh\nexec "{Path(wrapper_path).resolve()}" "$@"\n')
+        if icon_name and Path(icon_path).is_file():
+            target = resources / icon_name
+            data = Path(icon_path).read_bytes()
+            if not target.is_file() or target.read_bytes() != data:
+                target.write_bytes(data)
+        print(f"Launcher installed at: {bundle}")
+        return bundle
+    except OSError as e:
+        # The launcher is a convenience; autostart is the job. A failure here
+        # must not stop the plist being written, so it is reported and swallowed
+        # rather than raised.
+        print(f"Could not create the app launcher at {bundle}: {e}")
+        return None
+
 def add_to_startup(wrapper_path, app_name, icon_path):
     """Register autostart on Linux/macOS (Windows is handled separately)."""
     system = platform.system()
@@ -468,6 +557,11 @@ def add_to_startup(wrapper_path, app_name, icon_path):
         create_linux_shortcut_desktop(app_name, autostart_dir, wrapper_path, icon_path)
 
     elif system == "Darwin":
+        # ⚠️ BEFORE the plist's early return below, which fires on every launch
+        # where the plist is unchanged -- i.e. almost always. Put this after it
+        # and the launcher is created once and can never self-heal if the user
+        # deletes it or an upgrade moves the wrapper.
+        create_macos_app_bundle(app_name, wrapper_path, icon_path)
         plist_path = _macos_plist_path(app_name)
         plist_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
@@ -579,6 +673,16 @@ def remove_autostart(app_name=APP_NAME):
             subprocess.run(["launchctl", "unload", str(plist)], check=False)
             plist.unlink()
             print(f"Removed launchd plist: {plist}")
+        # The manual launcher goes too, matching both other platforms --
+        # Windows removes its Start-menu .lnk "so teardown leaves nothing
+        # behind" and Linux removes its applications/.desktop.
+        bundle = _macos_app_bundle(app_name)
+        if bundle.is_dir():
+            try:
+                shutil.rmtree(bundle)
+                print(f"Removed launcher: {bundle}")
+            except OSError as e:
+                print(f"Could not remove launcher {bundle}: {e}")
 
     # The generated launchers are ours alone (nothing else references them once
     # the entry above is gone), in both the current and the legacy location.
