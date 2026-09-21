@@ -5,7 +5,14 @@
 #   title / titles-startswith / titles-endswith / titles-contains ·
 #   url / urls-contains · os  — plus the matching order and the gotchas.
 #
-chrome,google-chrome,chromium,brave,brave-browser,msedge,microsoft-edge,vivaldi,opera,arc:
+# ⚠️ The SPACED names are macOS's, and they are not decoration: macOS reports
+# an app's DISPLAY name ("Google Chrome"), where Windows reports the
+# executable (chrome.exe -> chrome) and Linux the .desktop id
+# (google-chrome). The lookup is an exact match on the lowercased name, so
+# a hyphenated key can never match a Mac and Chrome silently fell through to
+# "No match" there (field, 2026-09-21). Any multi-word app added here needs
+# its spaced form too.
+chrome,google chrome,google-chrome,chromium,brave,brave browser,brave-browser,msedge,microsoft edge,microsoft-edge,vivaldi,opera,arc:
   overlay: [chrome_template.mods.png, chrome_template.combo.mods.png]
   # urls-contains matches on the focused tab's URL (needs the browser extension
   # or, on macOS, the AppleScript fallback — see settings `browser_url_detection`
@@ -76,7 +83,13 @@ code:
     macos:
       overlay: [vscode_mac_template.mods.png, vscode_mac_template.combo.mods.png,
                 vscode_mac_template.extra.mods.png]
-      title: .* Visual Studio Code
+      # ⚠️ NO `title:` here, deliberately -- a macOS window title does not carry
+      # the application name. VS Code titles a window `Welcome — PolyKybdHost`
+      # where Windows and Linux give `... - Visual Studio Code`, so the outer
+      # regex matched nothing on a Mac and the entry never fired (field,
+      # 2026-09-21). Nothing is lost by dropping it: the app name `code` is
+      # already unambiguous, and the constraint exists for the platforms whose
+      # titles can be checked.
     # Linux differs from the default set by exactly ONE cell: Show Output, which
     # Linux moves to the two-stroke chord Ctrl+K Ctrl+H. Scoped out there rather
     # than dropped outright, which would also have cost the correct Windows and

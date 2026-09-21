@@ -193,8 +193,13 @@ class OverlayHandler:
 
         ⚠️ The handle is formatted with **%s, never %d**. It is an opaque token
         whose type is the platform's: an int HWND on Windows, an int id on the
-        Linux reporters — and on macOS a **tuple** `(app, window number)`, which
-        is what pywinctl's `MacOSWindow.getHandle()` returns. `%d` on that
+        Linux reporters — and on macOS a **tuple**, which is what pywinctl's
+        `MacOSWindow.getHandle()` returns. ⚠️ Measured on Darwin 22.6.0, its
+        members are `(app name, window title)` — e.g.
+        `('Google Chrome', 'Claude Code - Google Chrome')` — NOT a numeric
+        window id, so it is not a stable identity either: it changes whenever
+        the title does. Harmless, because the only test applied to it is
+        equality and `local_win_changed` compares the title anyway. `%d` on it
         raises `TypeError: %d format: a real number is required, not tuple`,
         and this line sits inside the `try` whose `except` logs "Failed
         retrieving active window", so the whole app reported **no active window
