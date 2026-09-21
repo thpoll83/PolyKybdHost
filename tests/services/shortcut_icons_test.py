@@ -455,5 +455,35 @@ class HideIsTheVerbNotTheApp(unittest.TestCase):
         self.assertEqual(si.LEXICON["hide"][1], "visibility_off")
 
 
+class TheKeywordRuleTakesTheLEADINGWord(unittest.TestCase):
+    """⚠️ Among several one-word phrases in one label, the EARLIEST wins.
+
+    A menu label is imperative -- the verb leads and the rest is its object --
+    so the leading word is the one carrying the command. The table is sorted
+    longest-phrase-first, and that made "Hide App Store" match `store` -> SAVE,
+    because "store" is one character longer than "hide". That is exactly as
+    arbitrary a decider as the table order the sort comment exists to remove.
+    """
+
+    def test_hide_app_store_is_a_HIDE_and_not_a_SAVE(self):
+        self.assertEqual(si.match("Hide App Store", allow_fuzzy=True).concept,
+                         "hide")
+
+    def test_both_words_really_are_phrases_so_the_test_pins_a_CHOICE(self):
+        """⚠️ Without this the test above passes for the wrong reason -- if
+        "store" ever stops being a phrase there is nothing left to choose
+        between and the rule is no longer under test."""
+        singles = {phrase: concept for phrase, concept in si._PHRASES
+                   if " " not in phrase}
+        self.assertEqual(singles.get("store"), "save")
+        self.assertEqual(singles.get("hide"), "hide")
+
+    def test_the_trailing_word_still_answers_when_it_is_the_ONLY_match(self):
+        """The rule reorders; it does not narrow. A label whose only lexicon
+        word is at the end resolves exactly as before."""
+        self.assertEqual(si.match("Page Down", allow_fuzzy=True).concept,
+                         si.match("Down", allow_fuzzy=True).concept)
+
+
 if __name__ == "__main__":
     unittest.main()

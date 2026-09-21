@@ -291,6 +291,57 @@ class TestDerivedNameFallback(unittest.TestCase):
         a crash and not an unvalidated guess."""
         self.assertEqual(so.plan([sc("Export as PDF")]), [])
 
+    # --- the ORDER, where the lexicon's answer is below MIN_CONFIDENCE -------
+    #
+    # ⚠️ Field, 2026-09-21, and the second half of the "Hide <AppName>" bug.
+    # Adding the `hide` concept made `match()` answer -- at 0.75, the keyword
+    # rule's score -- and the board still drew a terminal on Cmd+H, because a
+    # sub-threshold lexicon hit fell through to the derivation, which is rated
+    # 0.5 and whose last resort is the label's TAIL word. The planner was
+    # preferring the answer it itself rates LOWER.
+    #
+    # ⚠️ The lesson is in the test that missed it: `HideIsTheVerbNotTheApp`
+    # (shortcut_icons_test) asserts `match("Hide Terminal").concept == "hide"`
+    # and PASSED throughout, because it measures the RESOLVER and the defect is
+    # in its CALLER. Pin the planner when the planner is what draws.
+
+    HIDE_TABLE = {"terminal": 5, "store": 6, "file_export": 2}
+
+    def test_a_sub_threshold_LEXICON_hit_beats_a_derivation(self):
+        slots = so.plan([sc("Hide Terminal")], known_names=self.HIDE_TABLE)
+        self.assertEqual(slots[0].icon, so.shortcut_icons.icon_for("hide"))
+
+    def test_the_derivation_it_beats_really_is_on_offer(self):
+        """⚠️ Otherwise the test above passes for the wrong reason. `terminal`
+        must be BOTH derivable from the label and present in the table, or
+        there is no competing answer and nothing is being ordered."""
+        self.assertIn("terminal",
+                      so.shortcut_icons.derive_names("Hide Terminal"))
+        self.assertIn("terminal", self.HIDE_TABLE)
+
+    def test_the_planner_was_preferring_the_answer_it_rates_LOWER(self):
+        """The inversion, stated in the file's own two numbers."""
+        hit = so.shortcut_icons.match("Hide Terminal", allow_fuzzy=True)
+        self.assertLess(hit.confidence, so.MIN_CONFIDENCE)
+        self.assertGreater(hit.confidence, so.DERIVED_CONFIDENCE)
+
+    def test_the_LEXICON_confidence_travels_not_the_derived_one(self):
+        """It has to outrank a derivation when two shortcuts contend for one
+        key -- that tie-break reads `slot.confidence`, so flattening it to
+        DERIVED_CONFIDENCE would let the weaker answer win the key."""
+        slots = so.plan([sc("Hide Terminal")], known_names=self.HIDE_TABLE)
+        self.assertGreater(slots[0].confidence, so.DERIVED_CONFIDENCE)
+
+    def test_a_label_with_NO_derivation_is_still_REFUSED(self):
+        """⚠️ The guard that this reorders a CHOICE rather than lowering the
+        bar. "Hide Safari" resolves to `hide` at the same 0.75 and still draws
+        nothing, because no derivation competes -- so no label starts drawing
+        that was not drawing already, and MIN_CONFIDENCE still means what it
+        says. Whether a 0.75 keyword hit should draw on its own is a separate
+        question about that threshold, not about this ordering."""
+        self.assertEqual(so.plan([sc("Hide Safari")],
+                                 known_names=self.HIDE_TABLE), [])
+
 
 
 

@@ -534,7 +534,6 @@ def _for(concept: str, confidence: float, rule: str) -> IconMatch:
 def _literal_rules(text: str, table=None) -> IconMatch | None:
     """Exact phrase, then contained phrase, then single keyword -- no scoring."""
     table = _PHRASES if table is None else table
-    words = set(text.split())
     for phrase, concept in table:
         if text == phrase:
             return _for(concept, 1.0, "exact")
@@ -542,9 +541,26 @@ def _literal_rules(text: str, table=None) -> IconMatch | None:
         parts = phrase.split()
         if len(parts) > 1 and _contains_sequence(text.split(), parts):
             return _for(concept, 0.9, "phrase")
+    # ⚠️ The EARLIEST matching word in the label wins, not the first matching
+    # phrase in the table. A menu label is imperative -- the verb leads and the
+    # rest is its object -- so "Hide App Store" is a hide, and taking the table's
+    # order instead made it a SAVE (the "store" phrase sorts ahead of "hide"
+    # because it is one character longer, which is as arbitrary a decider as the
+    # table order the sort comment set out to remove). Two DIFFERENT one-word
+    # phrases are two different words, so they can never share a position and
+    # there is no tie to break -- a label with one matching word is unaffected.
+    positions: dict[str, int] = {}
+    for index, word in enumerate(text.split()):
+        positions.setdefault(word, index)
+    best_at, best_concept = None, None
     for phrase, concept in table:
-        if " " not in phrase and phrase in words:
-            return _for(concept, 0.75, "keyword")
+        if " " in phrase:
+            continue
+        at = positions.get(phrase)
+        if at is not None and (best_at is None or at < best_at):
+            best_at, best_concept = at, concept
+    if best_concept is not None:
+        return _for(best_concept, 0.75, "keyword")
     return None
 
 
