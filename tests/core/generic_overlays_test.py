@@ -700,3 +700,240 @@ class GenericOverlayMasterSwitchTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StaleGenericClearTest(unittest.TestCase):
+    """Leaving an app whose generic set IS on the device must clear the keycaps.
+
+    Field report, 2026-09-21, over a forwarder: gnome-terminal relayed 21
+    shortcuts and got its generic set, then Calculator and Videos relayed 0 --
+    and the terminal's icons stayed on the keycaps in both. Two defects
+    compound to produce that, and each is pinned separately below because
+    either one alone still leaves a stale board reachable.
+    """
+
+    def test_a_generic_send_TELLS_THE_HANDLER_overlays_are_now_on(self):
+        """⚠️ THE DESYNC, and it is what actually kept the icons up.
+
+        `send_overlays_mru` ends with `enable_overlays()`, so after any generic
+        send the DEVICE is showing overlays -- but the handler's
+        `overlays_enabled` was never told, because the generic path is driven by
+        no `OverlayCommand` at all. Its `_is_redundant_overlay_cmd` then swallows
+        the very DISABLE that would clear them, as already-off. From the first
+        generic send onward the handler can never disable overlays again.
+        """
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        _tick(core)
+        core.overlay_handler.note_overlay_state.assert_called_once_with(True)
+
+    def test_an_app_with_NOTHING_generic_clears_what_the_last_one_left(self):
+        """Nothing to draw is not nothing to do: the previous app's icons are
+        still mapped, and only a send with an empty source list resets them."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        _tick(core)                                   # terminal: 21 shortcuts
+        self.assertIsNotNone(core._generic_on_device)
+        core.worker.submit.reset_mock()
+
+        core._app_icons.overlay_for.return_value = (_mask(), "os:calculator")
+        core._shortcut_icons.overlays_for.return_value = {}   # calc: none
+        _tick(core)
+        self.assertEqual(core.worker.submit.call_count, 1,
+                         "the stale set was left on the keycaps")
+        self.assertIsNone(core._generic_on_device)
+
+    def test_it_does_NOT_send_when_the_board_is_already_clear(self):
+        """The clear is armed by `_generic_on_device`, so an app that resolves
+        nothing after another app that resolved nothing costs no HID at all --
+        otherwise every tick on an unsupported app queues a reset."""
+        core = make_core(mask=_mask(), shortcuts={})
+        _tick(core)
+        core.worker.submit.assert_not_called()
+
+    def test_a_DISABLE_forgets_what_it_wiped(self):
+        """⚠️ Symmetrical to the template send at the OFF_ON branch, and needed
+        for the same reason: a DISABLE blanks the board, so a later return to
+        the app whose signature we still hold would be deduped away and its
+        icons would never come back.
+        """
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        _tick(core)
+        self.assertIsNotNone(core._generic_on_device)
+        # The master switch off isolates the DISABLE branch: the generic path
+        # would otherwise run on the same tick and re-send the very set whose
+        # forgetting is under test.
+        core.poly_settings.get.side_effect = (
+            lambda k: False if k == "generic_overlays_enabled"
+            else DEFAULT_SETTINGS.get(k, False))
+        _tick(core, cmd=OverlayCommand.DISABLE)
+        self.assertIsNone(core._generic_on_device)
+
+    def test_the_fill_case_clears_the_GENERIC_half_and_keeps_the_TEMPLATE(self):
+        """⚠️ The clear re-sends the template files rather than an empty list.
+        `prepare_for_mru_send()` resets the whole mapping, so clearing with an
+        empty list under `fill_gaps` would blank every hand-made keycap -- the
+        2026-09-18 field bug, reached through yet another door."""
+        core = make_core(mask=_mask(), shortcuts=_sc(),
+                         settings={"generic_overlays_fill_gaps": True})
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "gimp_template.mods.png"
+        _tick(core)
+        self.assertIsNotNone(core._generic_on_device)
+        core.worker.submit.reset_mock()
+
+        core._shortcut_icons.overlays_for.return_value = {}
+        core._app_icons.overlay_for.return_value = (None, None)
+        _tick(core)
+        self.assertEqual(core.worker.submit.call_count, 1)
+        self.assertIsNone(core._generic_on_device)
+
+        # ⚠️ WHAT is sent, not merely that something was. A clear that passed an
+        # empty list would still satisfy the count above while wiping every
+        # hand-made keycap -- which is the whole failure this branch exists to
+        # avoid, and it escaped the first version of this test.
+        core.worker.submit.call_args.args[1](threading.Event())
+        entry = core.device_mgr.all_entries[0]
+        args, kwargs = entry.device.send_overlays_mru.call_args
+        from polyhost.core.poly_core import get_overlay_path
+        self.assertEqual(args[0], [get_overlay_path("gimp_template.mods.png")])
+        self.assertEqual(kwargs["synthetic"], {})
+
+    def test_the_ordinary_clear_sends_an_empty_list(self):
+        """No template, so the reset inside `send_overlays_mru` IS the clear:
+        nothing is mapped and no keycap draws."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        _tick(core)
+        core.worker.submit.reset_mock()
+        core._shortcut_icons.overlays_for.return_value = {}
+        _tick(core)
+        core.worker.submit.call_args.args[1](threading.Event())
+        entry = core.device_mgr.all_entries[0]
+        args, kwargs = entry.device.send_overlays_mru.call_args
+        self.assertEqual(args[0], [])
+        self.assertEqual(kwargs["synthetic"], {})
+
+    def test_a_FAILED_clear_is_retried_rather_than_forgotten(self):
+        """⚠️ The signature is dropped BEFORE the submit so a tick landing
+        mid-flight does not queue a second clear -- so a clear that raises has
+        to re-arm it, or the stale icons stay up and nothing will ever try
+        again.
+
+        ⚠️ Asserted as "armed", NOT as "the old signature came back". The first
+        version of this test pinned the restore itself, which is how the
+        partial-clear defect below got written: putting `previous` back is one
+        way to arm the retry and it also claims a set is on a keyboard that was
+        already cleared. A pinned behaviour is only as good as the reason it
+        was pinned."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        events = []
+        core.subscribe(lambda n, p: events.append(n))
+        _tick(core)
+        core._shortcut_icons.overlays_for.return_value = {}
+        _tick(core)
+        entry = core.device_mgr.all_entries[0]
+        entry.device.send_overlays_mru.side_effect = RuntimeError("boom")
+        core.worker.submit.call_args.args[1](threading.Event())
+        self.assertIsNotNone(core._generic_on_device)     # the retry is armed
+        self.assertIn("overlay_warning", events)
+
+        core.worker.submit.reset_mock()
+        _tick(core)                                       # …and it fires
+        self.assertEqual(core.worker.submit.call_count, 1)
+
+    def test_a_FAILED_send_re_arms_the_handler_too(self):
+        """`prepare_for_mru_send()` clears the firmware's use_overlay bits at the
+        very start, so a send that died partway leaves the keycaps blank whether
+        or not `enable_overlays()` was reached. The optimistic True recorded at
+        submit time has to be taken back, or the handler believes overlays are
+        showing and the board and the host disagree from then on."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        _tick(core)
+        entry = core.device_mgr.all_entries[0]
+        entry.device.send_overlays_mru.side_effect = RuntimeError("boom")
+        core.overlay_handler.note_overlay_state.reset_mock()
+        core.worker.submit.call_args.args[1](threading.Event())
+        core.overlay_handler.note_overlay_state.assert_called_once_with(False)
+
+    def test_the_clear_reports_the_state_the_BOARD_is_left_in(self):
+        """⚠️ Under `fill_gaps` the clear re-sends the template, so
+        `send_overlays_mru`'s trailing `enable_overlays()` leaves overlays ON --
+        reporting them off would suppress the DISABLE that leaving this
+        application issues, and the template's icons would stay up on the next
+        app. With no template nothing is mapped, so off is the truth."""
+        core = make_core(mask=_mask(), shortcuts=_sc(),
+                         settings={"generic_overlays_fill_gaps": True})
+        core.overlay_handler.covered_by_template.return_value = True
+        core.overlay_handler.get_overlay_data.return_value = "gimp_template.mods.png"
+        _tick(core)
+        core._shortcut_icons.overlays_for.return_value = {}
+        core._app_icons.overlay_for.return_value = (None, None)
+        _tick(core)
+        core.overlay_handler.note_overlay_state.reset_mock()
+        core.worker.submit.call_args.args[1](threading.Event())
+        core.overlay_handler.note_overlay_state.assert_called_once_with(True)
+
+        bare = make_core(mask=_mask(), shortcuts=_sc())
+        _tick(bare)
+        bare._shortcut_icons.overlays_for.return_value = {}
+        _tick(bare)
+        bare.overlay_handler.note_overlay_state.reset_mock()
+        bare.worker.submit.call_args.args[1](threading.Event())
+        bare.overlay_handler.note_overlay_state.assert_called_once_with(False)
+
+    def test_a_PARTIAL_clear_does_not_claim_the_old_set_is_still_up(self):
+        """⚠️ TWO KEYBOARDS, and the second one fails after the first cleared.
+
+        Restoring `previous` says "that set is on every device", which is now
+        false of the keyboard that DID clear. Switch back to that application
+        and the signature matches, the send is skipped, and the cleared
+        keyboard stays blank forever while the host believes it is decorated.
+
+        The send path has never had this hazard because it fails to `None` --
+        "claim nothing", so the next tick re-sends to everyone and a device
+        that already had the set takes it as a cache hit. The clear cannot use
+        `None`: that is also what arms it, so the retry would stop. Hence a
+        value that is neither -- it never equals a real signature, so a send
+        always proceeds, and it is not None, so the clear still retries.
+        (Greptile P1, #240.)
+        """
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        second = MagicMock()
+        from polyhost.device.device_settings import DeviceSettings
+        second.device.device_settings = DeviceSettings()
+        core.device_mgr.all_entries.append(second)
+        _tick(core)
+        signature = core._generic_on_device
+        core.worker.submit.call_args.args[1](threading.Event())   # the real send
+
+        core._shortcut_icons.overlays_for.return_value = {}
+        _tick(core)
+        ok, bad = core.device_mgr.all_entries
+        bad.device.send_overlays_mru.side_effect = RuntimeError("boom")
+        core.worker.submit.call_args.args[1](threading.Event())
+
+        # The first keyboard really was cleared, so the old signature is a lie.
+        self.assertNotEqual(core._generic_on_device, signature)
+        # ...and the clear is still armed, so the failed device is retried.
+        self.assertIsNotNone(core._generic_on_device)
+
+        # The decisive half: going back to that application must SEND again.
+        core.worker.submit.reset_mock()
+        core._shortcut_icons.overlays_for.return_value = _sc()
+        _tick(core)
+        self.assertEqual(core.worker.submit.call_count, 1,
+                         "the cleared keyboard would stay blank")
+
+    def test_a_CANCELLED_clear_leaves_the_board_to_whatever_superseded_it(self):
+        """A cancel means a template send, another app's set or a DISABLE is
+        already on its way, and each of those programs the board and sets the
+        handler state itself. Re-arming the signature here would make that
+        superseding set look stale and suppress it."""
+        core = make_core(mask=_mask(), shortcuts=_sc())
+        _tick(core)
+        core._shortcut_icons.overlays_for.return_value = {}
+        _tick(core)
+        cancel = threading.Event()
+        cancel.set()
+        core.worker.submit.call_args.args[1](cancel)
+        self.assertIsNone(core._generic_on_device)
+        entry = core.device_mgr.all_entries[0]
+        entry.device.send_overlays_mru.assert_not_called()

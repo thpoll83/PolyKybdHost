@@ -61,6 +61,16 @@ NEW_WINDOW_ACCEPT_TIME_MSEC = 1000
 _RES_DIR = pathlib.Path(__file__).parent.parent.resolve() / "res"
 
 
+#: `PolyCore._generic_on_device` when a clear failed PART WAY through a
+#: multi-keyboard send: some devices were cleared and some were not, so neither
+#: the old signature nor `None` is true. It compares unequal to every real
+#: signature, so the next send always proceeds, and it is not `None`, so the
+#: clear stays armed and retries. A plain object() rather than a string: a
+#: signature is a tuple, but only identity makes "never equal to anything"
+#: structural rather than a coincidence of the current signature shape.
+GENERIC_STATE_UNKNOWN = object()
+
+
 def get_overlay_path(filepath):
     """Absolute path of a shipped overlay template (polyhost/res/overlays)."""
     return os.path.join(_RES_DIR, "overlays", filepath)
@@ -553,6 +563,14 @@ class PolyCore(Observable):
         if self.connected and not self.safe_mode:
             data, cmd = handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
             if cmd in (OverlayCommand.DISABLE, OverlayCommand.ENABLE):
+                if cmd == OverlayCommand.DISABLE:
+                    # ⚠️ A DISABLE blanks the keycaps, so whatever generic set we
+                    # believed was on the device is gone with it -- the same
+                    # reasoning as the template send below, and needed for the
+                    # same reason: without this the dedupe keeps claiming the set
+                    # is there, so coming back to that application sends nothing
+                    # and its icons never return.
+                    self._generic_on_device = None
                 self.submit_overlay_cmd(cmd)
             if data and cmd == OverlayCommand.OFF_ON:
                 self.send_overlay_data(data)
@@ -693,11 +711,100 @@ class PolyCore(Observable):
                 "No generic overlays for '%s' yet: mask=%s slug=%s shortcuts=%d "
                 "forwarded_identity=%s", name, mask is not None, slug,
                 len(shortcuts), identity is not None)
+            # ⚠️ NOTHING TO DRAW IS NOT NOTHING TO DO. The previous application's
+            # generic set is still mapped on the keycaps, and only a send resets
+            # it -- returning here is what left gnome-terminal's 21 shortcut
+            # icons up on Calculator and on Videos, both of which relayed none
+            # (field, 2026-09-21).
+            self._clear_generic_overlays(name, template_files)
             return
         if signature == self._generic_on_device:
             return
         self._send_generic_overlays(name, signature, slug, mask, shortcuts,
                                     template_files)
+
+    def _note_overlay_state(self, enabled):
+        """Tell the window handler what the DEVICE is showing, if there is one.
+
+        The handler suppresses a redundant ENABLE/DISABLE against its own
+        `overlays_enabled`, and the generic path changes that state without
+        going through an `OverlayCommand` -- so every generic send and every
+        generic clear has to say so here or the guard is reasoning about a
+        board that moved underneath it.
+
+        The None check is INERT on today's paths and kept for the same reason
+        `_overlay_cmd_job` keeps its own: every caller reaches here only after
+        `tick_window_tracking` found a handler, so a mutation removing it
+        escapes the sweep. Noted rather than pinned by a test that could only
+        assert a no-op.
+        """
+        if self.overlay_handler is not None:
+            self.overlay_handler.note_overlay_state(enabled)
+
+    def _clear_generic_overlays(self, app, template_files=()):
+        """Take a previous application's generic set back off the keycaps.
+
+        ⚠️ **This sends the TEMPLATE FILES, not an empty list, and that is the
+        whole subtlety.** `send_overlays_mru` opens with `prepare_for_mru_send()`,
+        which resets the firmware's mapping AND clears every use_overlay bit --
+        so under `fill_gaps`, where a hand-made template is on the board beside
+        the generic icons, clearing with an empty list would blank the template
+        too. Re-sending the templates alone is what removes the generic half and
+        leaves the hand-made keycaps exactly as their author drew them. With no
+        template (the ordinary case) the list is empty and the reset IS the
+        clear: nothing is mapped and nothing draws.
+
+        ⚠️ Armed by `_generic_on_device`, so an application that resolves nothing
+        costs no HID at all unless something is actually up there. Without that
+        guard every tick on an unsupported app -- which is most of macOS and
+        every GTK4 application on Linux -- would queue a reset.
+        """
+        if self._generic_on_device is None:
+            return
+        previous = self._generic_on_device
+        # Forgotten BEFORE the submit, so a tick landing mid-flight does not
+        # queue a second clear; the failure path puts it back so the next tick
+        # retries rather than leaving stale icons nobody will ever remove.
+        self._generic_on_device = None
+        self.log.info(
+            "Clearing the generic overlays: '%s' resolved nothing to draw%s.",
+            app, f" beyond its {len(template_files)} template file(s)"
+            if template_files else "")
+        self.emit("overlay_activity", {"state": "thinking"})
+        self.worker.submit(
+            "overlay",
+            lambda cancel: self._generic_clear_job(previous, cancel, template_files),
+            coalesce_key="overlay",
+            on_done=self.emit)
+
+    def _generic_clear_job(self, previous, cancel, template_files=()):
+        """Worker-thread half of `_clear_generic_overlays`. Mirrors the send."""
+        try:
+            for entry in self.device_mgr.all_entries:
+                if cancel.is_set():
+                    # Superseded -- by a template send, another application's
+                    # generic set, or a DISABLE. Every one of those re-programs
+                    # the board and sets the handler state itself, so leaving
+                    # both alone here is right: re-arming `_generic_on_device`
+                    # would make the superseding set look stale.
+                    return
+                entry.device.send_overlays_mru(
+                    list(template_files), entry.cache, cancel, synthetic={})
+            self._note_overlay_state(bool(template_files))
+        except Exception as e:
+            # ⚠️ NOT `previous`, and not `None` either -- see
+            # GENERIC_STATE_UNKNOWN. With two keyboards attached the first can
+            # have cleared before the second raised, so `previous` would claim
+            # a set that is no longer on the cleared one: returning to that
+            # application matches the signature, the send is skipped, and that
+            # keyboard stays blank. `None` is what the SEND path uses and is
+            # wrong here for the opposite reason -- it is also what arms the
+            # clear, so the retry would stop.
+            self._generic_on_device = GENERIC_STATE_UNKNOWN
+            msg = f"Failed to clear the generic overlays: {e}"
+            self.log.warning(msg)
+            self.emit("overlay_warning", msg)
+        self.keeb.set_idle(False)
 
     def _say_no_remote_shortcuts(self, name):
         """Say it once per app, at INFO, because it is not a failure to debug.
@@ -824,6 +931,16 @@ class PolyCore(Observable):
         # Recorded BEFORE the send so a tick landing mid-flight does not queue a
         # second copy of the same set; a failed send clears it again.
         self._generic_on_device = signature
+        # ⚠️ AND TELL THE HANDLER, or its next DISABLE is swallowed as redundant
+        # and the keycaps can never be cleared again. `send_overlays_mru` ends
+        # with `enable_overlays()`, so after this the DEVICE is showing overlays
+        # -- but the generic path is driven by no `OverlayCommand`, so nothing
+        # advanced the handler's `overlays_enabled` and it still reads False.
+        # `_is_redundant_overlay_cmd` then drops the DISABLE that leaving this
+        # application would otherwise issue. Optimistic here and reverted on a
+        # failed send, exactly as `handle_active_window` does for its own
+        # commands.
+        self._note_overlay_state(True)
         self.emit("overlay_activity", {"state": "thinking"})
         self.worker.submit(
             "overlay",
@@ -854,6 +971,12 @@ class PolyCore(Observable):
                     synthetic=dict(sources))
         except Exception as e:
             self._generic_on_device = None
+            # `prepare_for_mru_send()` cleared the firmware's use_overlay bits
+            # before anything was mapped, so a send that died partway leaves the
+            # keycaps blank whether or not `enable_overlays()` was reached.
+            # Re-arm the handler to match, or the DISABLE it would issue next is
+            # suppressed against a state that never happened.
+            self._note_overlay_state(False)
             msg = f"Failed to send the generic overlays: {e}"
             self.log.warning(msg)
             self.emit("overlay_warning", msg)
