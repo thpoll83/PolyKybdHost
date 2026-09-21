@@ -244,21 +244,7 @@ def plan_report(shortcuts, hints: dict | None = None,
             # is the behaviour before it existed.
             derived = next((n for n in shortcut_icons.derive_names(label)
                             if n in known_names), None)
-            if derived and hit is not None and hit.icon \
-                    and hit.confidence >= DERIVED_CONFIDENCE:
-                # ⚠️ The paragraph above says the lexicon answers FIRST and this
-                # is what makes that true. A lexicon keyword hit scores 0.75 and
-                # a derivation is rated 0.5, so taking the derivation when both
-                # exist prefers the answer this file itself rates LOWER -- and
-                # the derivation's own last resort is the label's TAIL word, i.e.
-                # the object rather than the verb. "Hide Terminal" drew a
-                # terminal, "Hide App Store" a shop and "Hide Notes" a note, each
-                # naming what the key would hide. Only the choice moves: a label
-                # with no derivation is still refused at NO_CONCEPT exactly as
-                # before, so nothing starts drawing that was not drawing already.
-                concept, confidence = hit.concept, hit.confidence
-                icon = shortcut_icons.icon_for(hit.concept) or hit.icon
-            elif derived:
+            if derived:
                 # `known_names` is the MATERIAL table, so a derivation is a
                 # Material name by construction -- Fluent's vocabulary is its
                 # own and nothing derives into it (see FLUENT_ICONS).

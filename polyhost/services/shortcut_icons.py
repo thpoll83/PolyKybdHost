@@ -256,6 +256,12 @@ _PHRASES: list[tuple[str, str]] = sorted(
     key=lambda pc: (-len(pc[0].split()), -len(pc[0]), pc[0]),
 )
 
+# The one-word phrases, i.e. every word the lexicon recognises on its own.
+# `derive_names` reads it to decide whether a label's leading word is already a
+# concept; see the tail-word note there.
+_SINGLE_WORD_PHRASES: frozenset = frozenset(
+    phrase for phrase, _ in _PHRASES if " " not in phrase)
+
 # See the measurement in match(): the floor sits in the empty bin between real
 # morphology (>= 0.875) and false friends (<= 0.762).
 FUZZY_FLOOR = 0.85
@@ -601,8 +607,13 @@ NAME_PREFIXES = ("", "content_", "format_", "file_", "text_")
 
 # Words that carry no icon of their own, dropped before the join. "Toggle" is
 # here because a toggle is not a picture: the icon belongs to what is toggled.
+# ⚠️ "hide" was here and must NOT come back: a word the LEXICON names as a
+# concept is by definition not filler. Stripping it made the app's own name the
+# HEAD word, so `derive_names("Hide Terminal")` answered `terminal` -- the thing
+# the key hides rather than the thing it does. "show" and "toggle" stay because
+# neither is a concept: "Show Sidebar" really is a sidebar.
 FILLER_WORDS = frozenset((
-    "this", "page", "the", "a", "as", "to", "toggle", "show", "hide", "all",
+    "this", "page", "the", "a", "as", "to", "toggle", "show", "all",
 ))
 
 # Where the catalog's word is simply a different word. Each target was checked
@@ -654,7 +665,14 @@ def derive_names(label: str) -> list[str]:
             add(NAME_SYNONYMS[word])
     for prefix in NAME_PREFIXES:
         add(prefix + kept[0])
-    if len(kept) > 1:
+    # ⚠️ The TAIL is the label's OBJECT, and it is offered only when the LEXICON
+    # did not recognise the leading verb. Where it did, answering with the object
+    # contradicts a curated answer with an uncurated one: "Hide Terminal" drew a
+    # terminal, "Hide App Store" a shop, each naming what the key would hide
+    # (field, 2026-09-21). Where the head is NOT a concept the tail is still the
+    # best guess available and stays -- `Default Font Size` -> `format_size` and
+    # `Use Selection for Find` -> `find` both come from it.
+    if len(kept) > 1 and kept[0] not in _SINGLE_WORD_PHRASES:
         for prefix in NAME_PREFIXES:
             add(prefix + kept[-1])
     return out

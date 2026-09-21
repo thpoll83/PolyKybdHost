@@ -419,18 +419,19 @@ class HideIsTheVerbNotTheApp(unittest.TestCase):
             self.assertEqual(hit.concept, "hide", label)
 
     def test_the_TAIL_WORD_no_longer_answers_for_these_labels(self):
-        """The regression itself, stated as the derivation that caused it.
+        """INVERTED 2026-09-21, and its own guard is what asked for it.
 
-        `derive_names` is unchanged -- it still offers the tail -- so this
-        pins that the LEXICON answers first, which is the whole fix."""
+        It used to assert the derivation still produced the app name, because
+        the first fix left `derive_names` alone and made the LEXICON answer
+        first in the planner. That planner change was reverted (it cost the
+        board ten distinct icons -- see `TheTailIsTheObjectNotTheCommand`), so
+        the tail is now suppressed at the source and the derivation offers
+        nothing. The old assertion carried a message saying to re-read it if
+        the derivation ever changed; it fired, so here is the re-read."""
         known = {"terminal", "notes", "chess"}
-        for label, wrong in (("Hide Terminal", "terminal"),
-                             ("Hide Notes", "notes"),
-                             ("Hide Chess", "chess")):
+        for label in ("Hide Terminal", "Hide Notes", "Hide Chess"):
             derived = next((n for n in si.derive_names(label) if n in known), None)
-            self.assertEqual(derived, wrong,
-                             "the derivation that caused it has changed; "
-                             "re-read whether this test still pins anything")
+            self.assertIsNone(derived, label)
             self.assertEqual(si.match(label, allow_fuzzy=True).concept, "hide")
 
     def test_it_also_rescues_the_ones_that_drew_NOTHING(self):
@@ -483,6 +484,61 @@ class TheKeywordRuleTakesTheLEADINGWord(unittest.TestCase):
         word is at the end resolves exactly as before."""
         self.assertEqual(si.match("Page Down", allow_fuzzy=True).concept,
                          si.match("Down", allow_fuzzy=True).concept)
+
+
+class TheTailIsTheObjectNotTheCommand(unittest.TestCase):
+    """⚠️ Field, 2026-09-21, and the SECOND attempt at the "Hide <AppName>" bug.
+
+    The first attempt reordered the PLANNER so a sub-threshold lexicon hit beat
+    a derivation, and that was wrong: measured on one app it turned 35 distinct
+    icons into 25 repeated generics and pushed `Split Pane`, `Export Text As...`
+    and `Default Font Size` off the 48-icon cap, because a derivation is usually
+    MORE specific than a 0.75 keyword hit. It was reverted.
+
+    The defect is narrower than that. `derive_names` offers the label's TAIL as
+    a last resort, and for "Hide Terminal" the tail is the app -- so the key drew
+    what it would hide. Two things caused it and both are fixed here:
+
+      * "hide" sat in FILLER_WORDS, so it was stripped and `terminal` became the
+        HEAD word rather than the tail;
+      * the tail is offered even when the lexicon already recognises the verb.
+    """
+
+    def test_hide_APPNAME_derives_NOTHING_from_the_app(self):
+        for label, app in (("Hide Terminal", "terminal"),
+                           ("Hide Safari", "safari"),
+                           ("Hide Finder", "finder"),
+                           ("Hide App Store", "store")):
+            self.assertNotIn(app, si.derive_names(label), label)
+
+    def test_a_word_the_LEXICON_names_is_not_FILLER(self):
+        """⚠️ The invariant, stated so "hide" cannot drift back in. A concept is
+        by definition meaning-bearing; stripping one promotes the object."""
+        singles = {phrase for phrase, _ in si._PHRASES if " " not in phrase}
+        self.assertEqual(sorted(w for w in si.FILLER_WORDS if w in singles), [])
+
+    def test_the_tail_still_answers_when_the_head_is_NOT_a_concept(self):
+        """The rule is narrow on purpose -- these three are real derivations the
+        board was drawing, and the first attempt at this bug lost all of them."""
+        for label, want in (("Default Font Size", "format_size"),
+                            ("Use Selection for Find", "search"),
+                            ("Export Text As...", "file_export")):
+            self.assertIn(want, si.derive_names(label), label)
+
+    def test_the_verb_still_answers_where_the_lexicon_knows_it(self):
+        """Suppressing the tail must not leave the label with no candidate at
+        all: the head and the synonyms are offered first and still are."""
+        for label, want in (("Clear Scrollback", "clear"),
+                            ("Quit Terminal", "logout"),
+                            ("Select Next Tab", "navigate_next"),
+                            ("Copy Without Background Colour", "copy")):
+            self.assertIn(want, si.derive_names(label), label)
+
+    def test_SHOW_stays_filler_because_it_is_not_a_concept(self):
+        """⚠️ Only "hide" left FILLER_WORDS. "Show Sidebar" really is a sidebar,
+        so stripping "show" is right and the rule must not widen to it."""
+        self.assertIn("show", si.FILLER_WORDS)
+        self.assertIn("side_navigation", si.derive_names("Show Sidebar"))
 
 
 if __name__ == "__main__":
