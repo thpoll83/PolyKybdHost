@@ -338,6 +338,104 @@ class FocusRaceTest(unittest.TestCase):
         self.assertFalse(macos.names_agree("Mail", "Xcode"))
 
 
+class PidAddressingTest(unittest.TestCase):
+    """⚠️ Harvest the PROCESS the caller named, not "whatever is frontmost".
+
+    `NSWorkspace.frontmostApplication` is STALE on the worker thread this runs
+    on. Measured in the field (macOS 22.6, 2026-09-21): nine consecutive
+    harvests over three minutes all read `Safari` — one of them six seconds
+    BEFORE Safari was first focused, one three minutes after focus had left it.
+    The name check then refused every app but that one, so exactly one
+    application on the machine could ever produce shortcuts, and each refusal
+    reported a focus race that had not happened.
+
+    The fix is to address by pid, which is a direct per-process lookup with no
+    notification to have missed. The caller already has one — `PolyCore` passes
+    the same pid its OS-icon route takes.
+    """
+
+    def _app(self):
+        return FakeElement(AXMenuBar=menu_bar(
+            APPLE_MENU, bar_item("File", menu_item("Save", "S", mods=0))))
+
+    def harvest(self, requested, *, pid=None, running="", frontmost="Safari",
+                reason=None):
+        seen = {}
+
+        def create(p):
+            seen["pid"] = p
+            return self._app()
+
+        with patch.object(macos, "_trusted", return_value=True), \
+             patch.object(macos, "_running_name", return_value=running), \
+             patch.object(macos, "_api", return_value=(
+                 create, fake_copy_attr, lambda: True,
+                 FakeWorkspace(frontmost))):
+            got = macos.shortcuts_for_app(requested, reason=reason, pid=pid)
+        return got, seen
+
+    def test_a_PID_harvests_THAT_app_even_though_frontmost_says_otherwise(self):
+        """The exact field case: frontmost is frozen at Safari, the user is in
+        Terminal, and Terminal is what must be read."""
+        got, seen = self.harvest("Terminal", pid=4242, running="Terminal",
+                                 frontmost="Safari")
+        self.assertEqual([s.label for s in got], ["Save"])
+        self.assertEqual(seen["pid"], 4242)
+
+    def test_WITHOUT_a_pid_it_still_falls_back_to_frontmost(self):
+        """The probe has no pid and runs on the main thread, where the value is
+        live. Removing that path would break it."""
+        got, seen = self.harvest("Safari", pid=None, frontmost="Safari")
+        self.assertEqual([s.label for s in got], ["Save"])
+        self.assertEqual(seen["pid"], 4242)          # FakeWorkspace's pid
+
+    def test_the_pid_path_does_NOT_consult_frontmost_at_all(self):
+        """⚠️ The regression guard. Reading frontmost 'just to check' puts the
+        frozen value back in the decision and the bug returns intact."""
+        called = []
+        with patch.object(macos, "_trusted", return_value=True), \
+             patch.object(macos, "_running_name", return_value="Terminal"), \
+             patch.object(macos, "_frontmost_name",
+                          side_effect=lambda *a: called.append(1) or "Safari"), \
+             patch.object(macos, "_frontmost_pid",
+                          side_effect=lambda *a: called.append(1) or 1), \
+             patch.object(macos, "_api", return_value=(
+                 lambda p: self._app(), fake_copy_attr, lambda: True,
+                 FakeWorkspace("Safari"))):
+            macos.shortcuts_for_app("Terminal", pid=4242)
+        self.assertEqual(called, [])
+
+    def test_a_pid_whose_PROCESS_IS_GONE_asks_to_retry(self):
+        """Not "the app has no shortcuts": nothing was learned, and caching it
+        would pin that answer for the life of the process."""
+        reason = {}
+        self.harvest("Terminal", pid=4242, running="", reason=reason)
+        self.assertIn("pid 4242", reason["why"])
+        self.assertIn("gone", reason["why"])
+        self.assertTrue(reason["retry"])
+
+    def test_a_REUSED_pid_running_a_DIFFERENT_app_is_refused(self):
+        """The one race a pid does not close on its own — the app quit and the
+        OS handed the number to something else. Checked against the per-pid
+        name, never against frontmost."""
+        reason = {}
+        got, _ = self.harvest("Terminal", pid=4242, running="Xcode",
+                              reason=reason)
+        self.assertEqual(got, [])
+        self.assertIn("Xcode", reason["why"])
+        self.assertIn("Terminal", reason["why"])
+        self.assertTrue(reason["retry"])
+
+    def test_the_message_no_longer_blames_FRONTMOST_for_a_pid_mismatch(self):
+        """⚠️ The old wording named the frontmost app, which under the frozen
+        value was always the same wrong name — nine apps all 'focus moved to
+        Safari'. It names what is at the pid now."""
+        reason = {}
+        self.harvest("Terminal", pid=4242, running="Xcode", frontmost="Safari",
+                     reason=reason)
+        self.assertNotIn("Safari", reason["why"])
+
+
 class EmptyHarvestReasonTest(unittest.TestCase):
     """⚠️ SIX ways of returning [], and the caller could tell none of them apart.
 

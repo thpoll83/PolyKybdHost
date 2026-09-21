@@ -68,10 +68,15 @@ class ShortcutIconFetcher:
         # `forget()` for the same reason -- a settings change invalidates the
         # masks, never the other machine's answer about its own app.
         self._harvested: dict[str, tuple] = {}
+        # app -> the pid it was focused as. ⚠️ On macOS this is what decides
+        # whether the harvest reads the app the caller meant or whatever
+        # NSWorkspace last called frontmost -- a value frozen on this thread.
+        # See `shortcut_source.macos._frontmost_name`.
+        self._pids: dict[str, int] = {}
 
     # ------------------------------------------------------------------
 
-    def overlays_for(self, app: str, harvested=None) -> dict:
+    def overlays_for(self, app: str, harvested=None, pid: int | None = None) -> dict:
         """{source_name: {(modifier, keycode): mask}} for an app; {} until known.
 
         ⚠️ Keyed on the app name AND the render settings, because a height or
@@ -98,6 +103,13 @@ class ShortcutIconFetcher:
             return {}
         if harvested is not None:
             self._harvested[app] = tuple(harvested)
+        if pid is not None:
+            # ⚠️ Keyed on the app alone and deliberately NOT part of the cache
+            # key, exactly like `_harvested`: a pid says WHICH PROCESS to read,
+            # and the answer does not depend on it -- the same app restarted
+            # under a new pid exposes the same shortcuts. Putting it in the key
+            # would re-harvest every app on every restart for no new answer.
+            self._pids[app] = int(pid)
         key = f"{app}\x00{icon_catalog.icon_height()}\x00{icon_catalog.icon_placement()}"
         with self._lock:
             if key in self._overlays:
@@ -227,7 +239,8 @@ class ShortcutIconFetcher:
                 self._say(app, unusable)
                 return {}
             reason: dict = {}
-            shortcuts = shortcut_source.harvest(app, reason=reason)
+            shortcuts = shortcut_source.harvest(app, reason=reason,
+                                                pid=self._pids.get(app))
             if not shortcuts:
                 # ⚠️ The backend's own sentence when it has one. *"The app
                 # exposes no accelerators"* is true of exactly ONE of the six

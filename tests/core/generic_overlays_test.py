@@ -493,7 +493,20 @@ class ForwardedShortcutsTest(unittest.TestCase):
         _tick(core)
         # ⚠️ No `harvested=` kwarg: a local app's tree IS readable here, and
         # passing one would route it down the relay path and never look.
-        core._shortcut_icons.overlays_for.assert_called_once_with("gimp")
+        call = core._shortcut_icons.overlays_for.call_args
+        self.assertEqual(call.args, ("gimp",))
+        self.assertNotIn("harvested", call.kwargs)
+
+    def test_a_LOCAL_window_passes_its_PID_to_the_HARVEST_too(self):
+        """⚠️ The same pid the OS-icon route takes. Without it the macOS
+        backend harvests whatever NSWorkspace calls frontmost — a value frozen
+        on the fetcher's worker thread, measured in the field as every app but
+        one refusing with a focus race that had not happened (2026-09-21)."""
+        core = make_core(mask=_mask())
+        core.overlay_handler.focused_pid.return_value = 4242
+        _tick(core)
+        self.assertEqual(
+            core._shortcut_icons.overlays_for.call_args.kwargs["pid"], 4242)
 
 
 class ForwardedTest(unittest.TestCase):

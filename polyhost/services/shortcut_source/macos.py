@@ -175,9 +175,43 @@ def _frontmost_pid(workspace) -> int | None:
 
 
 def _frontmost_name(workspace) -> str:
-    """The frontmost application's localized name, or "" when unreadable."""
+    """The frontmost application's localized name, or "" when unreadable.
+
+    ⚠️ **STALE ON A WORKER THREAD — do not use this to decide which app to
+    harvest.** Measured in the field (macOS 22.6, 2026-09-21): across a 3-minute
+    session it returned `Safari` for every single harvest, including one issued
+    six seconds BEFORE Safari was ever focused and one three minutes after focus
+    had left it. Nine apps in a row, one answer. The consequence was total: the
+    name check refused every app but the one it was stuck on, so exactly one
+    application on the machine could ever produce shortcuts.
+
+    The likely mechanism is that `frontmostApplication` is updated by workspace
+    notifications delivered to the MAIN thread's run loop, which a worker thread
+    does not pump — but that is unverified, and the fix does not rest on it.
+    What is measured is that the value does not change here.
+
+    `_running_name` is the per-pid lookup to use instead; this one is kept for
+    the probe, which runs on the main thread and has no pid to work from.
+    """
     try:
         app = workspace.sharedWorkspace().frontmostApplication()
+        if app is None:
+            return ""
+        return str(app.localizedName() or "")
+    except Exception:
+        return ""
+
+
+def _running_name(pid: int) -> str:
+    """The localized name of the process `pid`, or "" when unreadable.
+
+    A DIRECT lookup rather than an observed property, which is the whole point:
+    it answers about one process instead of about "which app is in front", so
+    there is no notification to have missed. See `_frontmost_name`.
+    """
+    try:
+        from AppKit import NSRunningApplication
+        app = NSRunningApplication.runningApplicationWithProcessIdentifier_(int(pid))
         if app is None:
             return ""
         return str(app.localizedName() or "")
@@ -245,14 +279,24 @@ def _menu_shortcuts(copy_attr, menu, path, found, seen, budget):
 
 def shortcuts_for_app(name: str = "",
                       budget: int = DEFAULT_NODE_BUDGET,
-                      reason: dict | None = None) -> list[Shortcut]:
-    """Every key equivalent the FRONTMOST application's menu bar exposes.
+                      reason: dict | None = None,
+                      pid: int | None = None) -> list[Shortcut]:
+    """Every key equivalent an application's menu bar exposes.
 
-    ⚠️ `name` does not SELECT the application -- the AX API answers "which app
-    is frontmost" directly and far more cheaply than "find the one called X",
-    and the caller only ever asks about the app it already believes is focused.
-    It is used to VERIFY, through `names_agree`, that focus has not moved since
-    the harvest was queued; see the note at that call.
+    ⚠️ **PASS `pid` WHENEVER THE CALLER HAS ONE.** With it this harvests the
+    named PROCESS; without it, whatever `NSWorkspace` calls frontmost — and on
+    the worker thread this runs on, that value is STALE and never changes (see
+    `_frontmost_name`). Measured in the field: without a pid, exactly one
+    application on the machine could ever harvest, because the name check
+    refused all the others against a frozen answer. `PolyCore` already has the
+    pid — the OS-icon route two lines above takes the same one — so the app
+    path always supplies it and only the probe falls back.
+
+    ⚠️ `name` still does not SELECT the application. With a pid it names the
+    process; without one it is checked against the frontmost app through
+    `names_agree`. Either way it VERIFIES rather than searches, because the AX
+    API answers "this pid" and "what is frontmost" directly and answers "find
+    the one called X" not at all.
 
     ⚠️ **The Apple menu is skipped.** It is the first menu bar item on every
     application and it is not the application's — its items are the system's
@@ -291,10 +335,21 @@ def shortcuts_for_app(name: str = "",
             # that function does rather than inventing a second sentence.
             return why(unavailable_reason() or "this process has no "
                        "Accessibility permission")
-        pid = _frontmost_pid(workspace)
+        # ⚠️ Two different questions, and the pid decides which is asked. With
+        # one we verify that THAT PROCESS is still the app the caller meant,
+        # which is a live per-pid lookup; without one we fall back to the
+        # frontmost app, whose name is frozen here.
         if pid is None:
-            return why("macOS reports no frontmost application -- the harvest "
-                       "landed between two apps", retry=True)
+            pid = _frontmost_pid(workspace)
+            if pid is None:
+                return why("macOS reports no frontmost application -- the "
+                           "harvest landed between two apps", retry=True)
+            observed = _frontmost_name(workspace)
+        else:
+            observed = _running_name(pid)
+            if not observed:
+                return why("the process this app was running as (pid %d) is "
+                           "gone" % pid, retry=True)
         # ⚠️ The harvest runs on a WORKER THREAD, queued by the window tick, so
         # focus can move between the two -- and the fetcher caches the result
         # under the name it ASKED about. Without this check app B's shortcuts
@@ -305,11 +360,10 @@ def shortcuts_for_app(name: str = "",
         # it resolves the focused ELEMENT, whose owning application name costs
         # another cross-process call. This backend is deliberately the stricter
         # of the two rather than both being left equally loose.
-        frontmost = _frontmost_name(workspace)
-        if not names_agree(name, frontmost):
-            return why("focus moved to '%s' before the harvest ran, so this "
-                       "never looked at '%s'" % (frontmost or "?", name),
-                       retry=True)
+        if not names_agree(name, observed):
+            return why("the app at that pid is now '%s', not '%s' -- focus "
+                       "moved before the harvest ran, so this never looked"
+                       % (observed or "?", name), retry=True)
         app = create_app(pid)
         menu_bar = _attr(copy_attr, app, AX_MENU_BAR)
         if menu_bar is None:

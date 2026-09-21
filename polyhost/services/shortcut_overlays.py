@@ -17,7 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from polyhost.services import icon_catalog, shortcut_icons
-from polyhost.services.shortcut_source.model import displayable_hid
+from polyhost.services.shortcut_source.model import (
+    MOD_ALT, MOD_CTRL, MOD_GUI, displayable_hid)
 
 # ⚠️ A BOUND ON A LIST NOBODY CURATES. A classic menubar app measured 26
 # shortcuts, but an app is free to expose hundreds of ribbon controls and every
@@ -43,9 +44,49 @@ MIN_CONFIDENCE = 0.85
 # they are phrased as what the READER has to do about it — the three want
 # genuinely different fixes and a single "no icon" line cannot say which.
 NO_KEYCAP = "the keyboard has no keycap for that key"
+NO_MODIFIER = "a bare keypress on a key that types a character"
 NO_CONCEPT = "no icon concept matched the label"
 NO_CATALOG_ICON = "the concept has no catalog icon, only a font-pack glyph"
 OVER_CAP = f"over the {MAX_SLOTS}-icon cap for one app"
+
+# ⚠️ Keys that INSERT A CHARACTER, where a bare-keypress shortcut must not be
+# drawn: 0x04..0x38 is letters, digits, Enter, Backspace, Tab, Space and
+# punctuation, minus Esc. Anything above (F-keys, the nav cluster, the arrows,
+# the keypad) types nothing, so a bare shortcut there is real and is kept.
+#
+# ⚠️ Esc is excluded from the set for a second reason as well as typing
+# nothing: it is where the PROGRAM MARK goes, so it is spoken for anyway.
+_HID_ESC = 0x29
+_TYPING_HID = frozenset(range(0x04, 0x39)) - {_HID_ESC}
+
+# The modifiers that make a keypress a SHORTCUT rather than typing. ⚠️ Shift is
+# NOT one of them -- Shift+E is a capital E, so its overlay lands on the Shift
+# layer of a key that still types.
+_REAL_MODS = MOD_CTRL | MOD_ALT | MOD_GUI
+
+
+def needs_a_modifier(hid, mods) -> bool:
+    """Would drawing this shortcut promise an action the key will not perform?
+
+    ⚠️ **A bare-key "shortcut" on a letter is always wrong on this keyboard**,
+    and the reason is what the overlay REPLACES: an unmodified chord is drawn on
+    the unmodified layer, i.e. over the letter the key actually types. Reported
+    from the field (macOS Safari, 2026-09-21) — `D`, `E` and `F` each got an
+    icon from a menu item whose real binding needs a modifier this backend
+    cannot see (fn/globe is not in the Carbon mask, so it decodes as no
+    modifiers at all), and in a browser those keys just type `d`, `e`, `f`.
+
+    So the test is not "did the app claim a shortcut" but "does this key type
+    something". A bare F5, Home or arrow is left alone: those keys insert
+    nothing, and an icon on them is honest.
+
+    Pure, and separate from `plan_report`, so the rule can be exercised over
+    every HID usage without building a plan.
+    """
+    if hid is None or hid not in _TYPING_HID:
+        return False
+    return not (int(mods or 0) & _REAL_MODS)
+
 
 # HID usage -> the name a person would type, for the log only. Letters and
 # digits are derived; everything else that a shortcut realistically lands on is
@@ -165,6 +206,13 @@ def plan_report(shortcuts, hints: dict | None = None,
         mods = int(getattr(sc, "mods", 0) or 0)
         if not 0 <= mods <= 0x0F:
             refuse(NO_KEYCAP, sc)
+            continue
+        if needs_a_modifier(hid, mods):
+            # ⚠️ Before the icon lookup, not after: a bare letter must be
+            # refused whether or not its label happens to match a concept, and
+            # refusing it here also keeps it out of the MAX_SLOTS budget, where
+            # it would displace a real shortcut.
+            refuse(NO_MODIFIER, sc)
             continue
         # ⚠️ No empty-label guard here, deliberately: `match()` normalizes and
         # refuses "" on its own, so one would be dead code. Mutation-checked --

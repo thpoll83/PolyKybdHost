@@ -261,7 +261,7 @@ class HarvestTest(unittest.TestCase):
 
     def test_a_backend_that_RAISES_harvests_nothing(self):
         boom = type("B", (), {"shortcuts_for_app": staticmethod(
-            lambda app, reason=None: (_ for _ in ()).throw(OSError("bus gone")))})()
+            lambda app, reason=None, pid=None: (_ for _ in ()).throw(OSError("bus gone")))})()
         with patch.object(ss, "pick", return_value=boom):
             self.assertEqual(ss.harvest("mousepad"), [])
 
@@ -270,7 +270,7 @@ class HarvestTest(unittest.TestCase):
         to raise, so reaching this handler is itself the finding — and it says
         nothing about the app, so the empty answer must not be cached."""
         boom = type("B", (), {"shortcuts_for_app": staticmethod(
-            lambda app, reason=None: (_ for _ in ()).throw(OSError("bus gone")))})()
+            lambda app, reason=None, pid=None: (_ for _ in ()).throw(OSError("bus gone")))})()
         reason = {}
         with patch.object(ss, "pick", return_value=boom):
             self.assertEqual(ss.harvest("mousepad", reason=reason), [])
@@ -281,7 +281,7 @@ class HarvestTest(unittest.TestCase):
     def test_a_working_backend_is_passed_the_app_name(self):
         seen = []
         ok = type("B", (), {"shortcuts_for_app": staticmethod(
-            lambda app, reason=None: seen.append(app) or ["shortcut"])})()
+            lambda app, reason=None, pid=None: seen.append(app) or ["shortcut"])})()
         with patch.object(ss, "pick", return_value=ok):
             self.assertEqual(ss.harvest("mousepad"), ["shortcut"])
         self.assertEqual(seen, ["mousepad"])
@@ -292,11 +292,33 @@ class HarvestTest(unittest.TestCase):
         swallowed by the guard above and every harvest silently returns []."""
         seen = []
         ok = type("B", (), {"shortcuts_for_app": staticmethod(
-            lambda app, reason=None: seen.append(reason) or [])})()
+            lambda app, reason=None, pid=None: seen.append(reason) or [])})()
         mine = {}
         with patch.object(ss, "pick", return_value=ok):
             ss.harvest("mousepad", reason=mine)
         self.assertIs(seen[0], mine)
+
+    def test_the_PID_reaches_the_backend(self):
+        """⚠️ On macOS this is the difference between harvesting the app the
+        caller named and harvesting whatever NSWorkspace last called frontmost —
+        a value frozen on the fetcher's worker thread, measured in the field as
+        every app but one refusing with a focus race that had not happened."""
+        seen = {}
+        ok = type("B", (), {"shortcuts_for_app": staticmethod(
+            lambda app, reason=None, pid=None: seen.update(pid=pid) or [])})()
+        with patch.object(ss, "pick", return_value=ok):
+            ss.harvest("mousepad", pid=4242)
+        self.assertEqual(seen["pid"], 4242)
+
+    def test_NO_pid_is_passed_as_None(self):
+        """The probe and the forwarded paths have none; the backend then falls
+        back to frontmost, which is correct off the worker thread."""
+        seen = {}
+        ok = type("B", (), {"shortcuts_for_app": staticmethod(
+            lambda app, reason=None, pid=None: seen.update(pid=pid) or [])})()
+        with patch.object(ss, "pick", return_value=ok):
+            ss.harvest("mousepad")
+        self.assertIsNone(seen["pid"])
 
     def test_ALL_THREE_backends_accept_the_reason_parameter(self):
         """One signature, so `harvest()` needs no branch — and a backend that
@@ -308,6 +330,7 @@ class HarvestTest(unittest.TestCase):
         for mod in (atspi, macos, uia):
             params = inspect.signature(mod.shortcuts_for_app).parameters
             self.assertIn("reason", params, mod.__name__)
+            self.assertIn("pid", params, mod.__name__)
 
     def test_this_container_really_has_none(self):
         """Not a tautology: it is the state every other test here assumes, and

@@ -111,7 +111,8 @@ def unavailable_reason() -> str | None:
     return reason()
 
 
-def harvest(app: str, reason: dict | None = None) -> list:
+def harvest(app: str, reason: dict | None = None,
+            pid: int | None = None) -> list:
     """Shortcuts for the focused app, or [] — the one call the core makes.
 
     ⚠️ **An empty list has six different meanings on macOS and the caller
@@ -123,12 +124,18 @@ def harvest(app: str, reason: dict | None = None) -> list:
 
     Every backend takes the parameter so this needs no branch; only `macos`
     fills it today.
+
+    ⚠️ `pid` is the process the caller means, and on macOS it is the difference
+    between harvesting that app and harvesting whatever `NSWorkspace` last
+    called frontmost -- a value that is frozen on the worker thread, so without
+    a pid exactly one app on the machine can ever harvest. Pass it whenever the
+    caller has one; only `macos` uses it today.
     """
     backend = pick()
     if backend is None:
         return []
     try:
-        return backend.shortcuts_for_app(app, reason=reason)
+        return backend.shortcuts_for_app(app, reason=reason, pid=pid)
     except Exception as exc:
         if reason is not None:
             # The backend's own guard should have caught this, so reaching here

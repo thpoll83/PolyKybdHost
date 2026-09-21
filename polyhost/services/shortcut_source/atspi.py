@@ -280,7 +280,8 @@ def _dotted(tag: str) -> str:
     return "%s.%s" % (tag[0], tag[1:]) if len(tag) > 1 else tag
 
 def shortcuts_for_app(name: str, budget: int = DEFAULT_NODE_BUDGET,
-                      reason: dict | None = None) -> list[Shortcut]:
+                      reason: dict | None = None,
+                      pid: int | None = None) -> list[Shortcut]:
     """Every shortcut the named application exposes, or [] for anything at all.
 
     Matched on a substring of the desktop child's name, the same rule the probe's
@@ -291,7 +292,7 @@ def shortcuts_for_app(name: str, budget: int = DEFAULT_NODE_BUDGET,
     thread for a cosmetic feature; an app that died mid-walk, a bridge that is
     not running, or a D-Bus timeout must all cost nothing.
 
-    `reason` is accepted and not filled in, so all three backends share ONE
+    `reason` and `pid` are accepted and unused, so all three backends share ONE
     signature and `harvest()` needs no branch to call them -- the same reason
     `_backend_module()` replaced the if/else that `pick()` and
     `unavailable_reason()` each carried. A backend that fills it tells the

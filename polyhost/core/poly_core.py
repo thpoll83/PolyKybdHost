@@ -705,7 +705,13 @@ class PolyCore(Observable):
                 shortcuts = self._shortcut_icons.overlays_for(
                     name, harvested=relayed)
         else:
-            shortcuts = self._shortcut_icons.overlays_for(name)
+            # ⚠️ The SAME pid the OS-icon route took above. Without it the
+            # macOS backend harvests whatever NSWorkspace calls frontmost,
+            # which is frozen on the fetcher's worker thread -- measured in the
+            # field as every app but one reporting a focus race that had not
+            # happened (2026-09-21).
+            shortcuts = self._shortcut_icons.overlays_for(
+                name, pid=handler.focused_pid())
         signature = self._generic_signature(slug, shortcuts, template_files)
         if signature is None:
             # Both halves are normal on the first sighting (the fetches were

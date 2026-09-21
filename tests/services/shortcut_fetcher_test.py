@@ -299,7 +299,7 @@ class EmptyHarvestReasonTest(unittest.TestCase):
         said = []
         f._say = lambda app, why: said.append(why)
 
-        def harvest(app, reason=None):
+        def harvest(app, reason=None, pid=None):
             if reason is not None and self._reason:
                 reason.update(self._reason)
             return list(harvested)
@@ -338,6 +338,57 @@ class EmptyHarvestReasonTest(unittest.TestCase):
         got, _ = self.resolve(reason={"why": "not one key equivalent in them",
                                       "retry": False})
         self.assertEqual(got, {})
+
+
+class PidPassThroughTest(unittest.TestCase):
+    """⚠️ The pid must reach the backend, or macOS harvests the wrong app.
+
+    Without it the macOS backend falls back to `NSWorkspace.frontmostApplication`,
+    which is frozen on this fetcher's worker thread — measured in the field as
+    every app but one reporting a focus race that had not happened.
+    """
+
+    def resolve(self, pid=None):
+        f = ShortcutIconFetcher()
+        self.addCleanup(f.stop)
+        f._say = lambda *a: None
+        seen = {}
+
+        def harvest(app, reason=None, pid=None):
+            seen["pid"] = pid
+            return []
+
+        if pid is not None:
+            f.overlays_for("gimp", pid=pid)
+        with patch.object(shortcut_fetcher.shortcut_source, "unavailable_reason",
+                          return_value=None), \
+             patch.object(shortcut_fetcher.shortcut_source, "harvest", harvest):
+            f._resolve("gimp", 32, "lower_left")
+        return seen
+
+    def test_the_pid_reaches_the_backend(self):
+        self.assertEqual(self.resolve(pid=4242)["pid"], 4242)
+
+    def test_NO_pid_is_still_None_not_an_error(self):
+        """A forwarded window and the headless paths have no pid; the backend
+        falls back to frontmost, which is correct off the worker thread."""
+        self.assertIsNone(self.resolve()["pid"])
+
+    def test_the_pid_is_NOT_part_of_the_cache_key(self):
+        """⚠️ The same app restarted under a new pid exposes the same
+        shortcuts, so keying on it would re-harvest every app on every restart
+        and never hit the cache."""
+        f = ShortcutIconFetcher()
+        self.addCleanup(f.stop)
+        # ⚠️ No worker, or it drains the queue between the two calls and the
+        # comparison reads whatever the thread left behind.
+        f._ensure_thread = lambda: None
+        f.overlays_for("gimp", pid=1)
+        first = list(f._queue)
+        self.assertEqual(len(first), 1, first)
+        f.overlays_for("gimp", pid=999)
+        self.assertEqual(list(f._queue), first)
+        self.assertEqual(f._pids["gimp"], 999)   # the newest pid still wins
 
 
 class LoopCacheTest(unittest.TestCase):
