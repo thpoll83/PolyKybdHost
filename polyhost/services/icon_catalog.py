@@ -34,6 +34,8 @@ import tempfile
 import urllib.parse
 import urllib.request
 
+from polyhost.util.https import ssl_context
+
 CSS_ENDPOINT = "https://fonts.googleapis.com/css2"
 FAMILY = "Material Symbols Outlined"
 
@@ -285,10 +287,18 @@ def _is_ttf(data: bytes) -> bool:
 
 
 def _get(url: str, user_agent: str | None = None) -> bytes:
+    """Fetch `url`. ⚠️ Through `util.https`, never a bare `urlopen`.
+
+    A python.org macOS build gives `urllib` no certificate store, so every
+    fetch here died with `CERTIFICATE_VERIFY_FAILED` while `requests` worked in
+    the same process -- which is what made both icon faces unreachable on a
+    machine with a perfectly good network. See that module.
+    """
     request = urllib.request.Request(url)
     if user_agent:
         request.add_header("User-Agent", user_agent)
-    with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+    with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT,
+                                context=ssl_context()) as response:
         return response.read()
 
 
