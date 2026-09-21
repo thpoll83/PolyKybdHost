@@ -178,19 +178,53 @@ class SummaryLogTest(unittest.TestCase):
         # on up to 16 variants, and "15 keycap(s)" cannot be told apart from
         # fifteen DIFFERENT keys — which is the whole behaviour of the feature.
         keys = [(ESC, m) for m in list(Modifier)[:15]]
-        self.keeb._log_source_line(syn.program_name("inkscape"), keys, "")
-        self.assertEqual(self.lines, ["  @prog:inkscape: ESC on 15 modifier variant(s)"])
+        self.assertEqual(
+            self.keeb._describe_sources({syn.program_name("inkscape"): keys}),
+            "mark inkscape=ESC on 15 modifier variant(s)")
 
     def test_a_few_DIFFERENT_keys_are_still_spelled_out(self):
-        self.keeb._log_source_line("app.mods.png", [
-            (ESC, Modifier.NO_MOD), (KeyCode.KC_S.value, Modifier.CTRL)], "")
-        self.assertEqual(self.lines, ["  app.mods.png: ESC, Ctrl+S"])
+        self.assertEqual(
+            self.keeb._describe_sources({"app.mods.png": [
+                (ESC, Modifier.NO_MOD), (KeyCode.KC_S.value, Modifier.CTRL)]}),
+            "app=ESC, Ctrl+S")
 
     def test_MANY_different_keys_fall_back_to_a_count(self):
         # A template covers most of the board; listing it would bury the line.
         keys = [(kc, Modifier.NO_MOD) for kc in range(4, 4 + 31)]
-        self.keeb._log_source_line("app.mods.png", keys, "")
-        self.assertIn("31 keycap(s)", self.lines[0])
+        self.assertIn("31 keycap(s)",
+                      self.keeb._describe_sources({"app.mods.png": keys}))
+
+    def test_the_summary_is_TWO_lines_however_many_sources_there_are(self):
+        """⚠️ A gap-filled app has a template plus five or six synthetic
+        sources, and a line each buried the one question a reader has -- which
+        generic icons were taken and which were not -- under a paragraph they
+        had to reassemble by eye."""
+        per = {"app.mods.png": [(kc, Modifier.NO_MOD) for kc in range(4, 37)]}
+        for concept in ("bookmark", "help", "edit", "description", "visibility"):
+            per["@sc:fluent:%s:36lower_right" % concept] = [(ESC, Modifier.ALT)]
+        self.keeb._log_overlay_summary(per, uploaded=19, mapped=38, deferred={})
+        self.assertEqual(len(self.lines), 2, self.lines)
+        self.assertIn("fluent:bookmark=", self.lines[1])
+
+    def test_the_GEOMETRY_is_dropped_and_the_FACE_is_kept(self):
+        """The height and corner are user settings and identical for every
+        source in one send, so repeating them six times on a line is noise. The
+        face is not: it says whether a concept came from Fluent or from the
+        Material fall-back. ⚠️ A concept may itself contain `:`, so the last
+        segment comes off rather than the name being split from the front."""
+        self.assertEqual(
+            self.keeb._short_source("@sc:material:icon:description:36lower_right"),
+            "material:icon:description")
+
+    def test_a_WINDOWS_template_path_is_shortened_off_Windows_too(self):
+        """These paths are built on the machine that owns the keyboard, but the
+        log is read elsewhere — and `posixpath.basename` does not split a
+        Windows path, so it hands back the whole `C:\\...` that this line
+        exists to remove."""
+        self.assertEqual(
+            self.keeb._short_source(
+                "C:\\Users\\t\\res\\overlays\\sevenzip_template.mods.png"),
+            "sevenzip_template")
 
     def test_a_PARTIAL_deferral_is_reported_even_though_the_source_DREW(self):
         # ⚠️ The first cut skipped any source present in `per_source`, so on a
@@ -211,8 +245,15 @@ class SummaryLogTest(unittest.TestCase):
         name = syn.program_name("word")
         self.keeb._log_overlay_summary(per_source={}, uploaded=0, mapped=0,
                                        deferred={name: [(ESC, Modifier.NO_MOD)]})
-        self.assertTrue(any(name in line and "deferred" in line for line in self.lines),
-                        self.lines)
+        self.assertTrue(any("mark word" in line and "deferred" in line
+                            for line in self.lines), self.lines)
+
+    def test_NOTHING_deferred_still_SAYS_so(self):
+        """⚠️ "Which were not taken" is the question, and an omitted clause
+        answers it only if the reader knows the clause exists."""
+        self.keeb._log_overlay_summary({"app.mods.png": [(ESC, Modifier.NO_MOD)]},
+                                       uploaded=1, mapped=1, deferred={})
+        self.assertIn("deferred to the template: none", self.lines[1])
 
     def test_the_two_adjacent_COUNTS_do_not_both_say_upload(self):
         # ⚠️ `MRU: N ...` counts HID MESSAGES and `Overlays: ... N uploaded`

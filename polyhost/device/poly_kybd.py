@@ -19,7 +19,7 @@ from polyhost.device.hid_fontpack import parse_id_version_block, parse_id_state_
 from polyhost.device.im_converter import ImageConverter
 from polyhost.device.keys import (Modifier, LEGACY_MAX_MODIFIER_VALUE,
                                   MODIFIER_ANY, describe_key)
-from polyhost.device.synthetic_overlay import is_synthetic
+from polyhost.device.synthetic_overlay import PROGRAM_PREFIX, SHORTCUT_PREFIX
 from polyhost.device.overlay_cache import OverlayMRUCache
 from polyhost.services import iso_lang_country
 
@@ -1487,41 +1487,85 @@ class PolyKybd:
 
     def _log_overlay_summary(self, per_source: dict, uploaded: int, mapped: int,
                              deferred: dict | None = None):
-        """One INFO line per source saying what it drew, after a successful send.
+        """TWO lines saying what a send put on the keyboard, and what it did not.
 
         The window tick logs which app was matched; this says what that turned
-        into on the keyboard, which is otherwise only visible by looking at the
-        keycaps.
+        into on the keycaps, which is otherwise only visible by looking at them.
+
+        ⚠️ **Two lines, not one per source.** A gap-filled app routinely has a
+        template plus five or six synthetic sources, and a line each buried the
+        one thing a reader wants -- which generic icons were TAKEN and which
+        were not -- under a paragraph they have to reassemble by eye. Both
+        halves go on one line so the comparison is left-to-right instead of
+        top-to-bottom.
+
+        ⚠️ **`deferred` is printed even when it is EMPTY.** "Which were not
+        taken" is the question, and an omitted clause answers it only if the
+        reader knows the clause exists. `none` is one word and says it.
         """
         if not per_source and not deferred:
             return
         self.log.info("Overlays: %d keycap(s) from %d source(s), %d uploaded, %d cached",
                       mapped, len(per_source), uploaded, mapped - uploaded)
-        for filename, keys in per_source.items():
-            self._log_source_line(filename, keys, "")
-        # ⚠️ A source that drew NOTHING is reported too, and this is the whole
-        # reason: the program mark stands down on any key a hand-made template
-        # already draws, and every shipped template draws ESC -- so on an app
-        # that HAS a template the mark is correctly invisible, and its silent
-        # absence from this summary reads as "the icon was never fetched".
-        # Field, 2026-09-10: the log showed a mark resolving and then said
-        # nothing at all about where it went.
-        # ⚠️ Reported even when the source ALSO drew something, which the first
-        # version got wrong. Since E3 the program mark offers every modifier
+        # ⚠️ A source that drew NOTHING still appears, in the deferred half, and
+        # that is the whole reason it is reported: the program mark stands down
+        # on any key a hand-made template already draws, and every shipped
+        # template draws ESC -- so on an app that HAS a template the mark is
+        # correctly invisible, and its silent absence reads as "the icon was
+        # never fetched" (field, 2026-09-10).
+        #
+        # ⚠️ And a source is reported as deferred even when it ALSO drew, which
+        # the first version got wrong. Since E3 the mark offers every modifier
         # variant of ESC, so on a template-covered app it draws 15 and loses 1 --
         # and "it lost the bare ESC to the template" is exactly the question a
-        # reader has when the keycap shows the hand-made design. Skipping a
-        # source that appears in `per_source` reported that as nothing at all.
-        for filename, keys in (deferred or {}).items():
-            self._log_source_line(filename, keys, " (deferred to the template)")
+        # reader has when that keycap shows the hand-made design.
+        self.log.info("  drawn: %s | deferred to the template: %s",
+                      self._describe_sources(per_source),
+                      self._describe_sources(deferred or {}))
 
-    def _log_source_line(self, filename: str, keys: list, suffix: str):
-        # A pseudo-name is kept WHOLE: it names no file, so `basename` could
-        # only ever damage it, and the `@prog:` prefix is what says the mark
-        # came from the icon fall-back rather than from a hand-made template.
-        import os
-        name = filename if is_synthetic(filename) else os.path.basename(filename)
-        self.log.info("  %s: %s%s", name, self._describe_keys(keys), suffix)
+    def _describe_sources(self, sources: dict) -> str:
+        """`fluent:save=Ctrl+S, mark si:gimp=ESC on 15 modifier variant(s)`."""
+        if not sources:
+            return "none"
+        return ", ".join("%s=%s" % (self._short_source(f), self._describe_keys(k))
+                         for f, k in sources.items())
+
+    @staticmethod
+    def _short_source(filename: str) -> str:
+        """The readable half of a source name.
+
+        ⚠️ The GEOMETRY segment is dropped, not the face. `source_name()` builds
+        `@sc:<face>:<concept>:<height><placement>`, and the height and corner are
+        user settings that are identical for every source in one send -- so
+        repeating them six times on one line is noise, while the face is what
+        says whether a concept came from Fluent or from the Material fall-back.
+        The concept itself may contain `:` (`icon:description`), which is why
+        this takes the LAST segment off rather than splitting from the front.
+
+        `mark ` rather than the bare slug for a program mark: `@prog:` is what
+        distinguishes the icon fall-back from a hand-made template, and it is
+        the source most likely to be the one that lost a key.
+        """
+        if filename.startswith(PROGRAM_PREFIX):
+            return "mark " + filename[len(PROGRAM_PREFIX):]
+        if filename.startswith(SHORTCUT_PREFIX):
+            body = filename[len(SHORTCUT_PREFIX):]
+            head, sep, _geometry = body.rpartition(":")
+            return head if sep else body
+        # A real file: the basename without the channel-pack suffix, which is
+        # the same on every template and therefore carries nothing.
+        #
+        # ⚠️ Split on BOTH separators rather than `os.path.basename`. These
+        # paths are built on the machine that owns the keyboard, but the log is
+        # read (and these lines are tested) elsewhere, and `posixpath.basename`
+        # does not split a Windows path -- it hands back the whole
+        # `C:\...\sevenzip_template.mods.png`, which is precisely the noise
+        # this line exists to remove.
+        name = re.split(r"[\\/]", filename)[-1]
+        for suffix in (".combo.mods.png", ".mods.png"):
+            if name.endswith(suffix):
+                return name[:-len(suffix)]
+        return name
 
     def _describe_keys(self, keys: list) -> str:
         """`ESC, S` / `ESC on 15 modifier variants` / `31 keycap(s)`.
