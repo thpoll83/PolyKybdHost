@@ -13,6 +13,7 @@ active_window imports pywinctl/Xlib at module load, which needs a display,
 so this skips in a headless/CI environment and runs on a real desktop.
 """
 import unittest
+from unittest.mock import MagicMock
 
 try:
     from polyhost.handler.active_window import OverlayHandler
@@ -173,6 +174,45 @@ class TestReEnableSuppression(unittest.TestCase):
         # suppressed.
         h.force_resend()
         self.assertFalse(h.overlays_enabled)
+
+@unittest.skipIf(_IMPORT_ERR is not None, f"active_window needs a display: {_IMPORT_ERR}")
+class FocusedAppTest(unittest.TestCase):
+    """`OverlayHandler.focused_app` — name and identity from ONE place."""
+
+    def _handler(self):
+        handler = OverlayHandler.__new__(OverlayHandler)
+        handler.app_name = "gimp"
+        handler.remote_handler = None
+        return handler
+
+    def test_a_LOCAL_window_answers_its_own_name_and_NO_identity(self):
+        handler = self._handler()
+        handler.is_remote_mapping_entry = lambda: False
+        self.assertEqual(handler.focused_app(), ("gimp", None))
+
+    def test_a_FORWARDED_window_answers_the_REMOTE_name_and_its_identity(self):
+        """⚠️ The whole point of the seam: the app runs on the other machine, so
+        the local `app_name` names the wrong thing. Answering it would draw the
+        forwarder's own window mark on a forwarded app."""
+        remote = MagicMock()
+        remote.name = "Code.exe"
+        remote.forwarded_identity.return_value = "IDENTITY"
+        handler = self._handler()
+        handler.remote_handler = remote
+        handler.is_remote_mapping_entry = lambda: True
+        self.assertEqual(handler.focused_app(), ("Code.exe", "IDENTITY"))
+        remote.forwarded_identity.assert_called_once_with("Code.exe")
+
+    def test_a_FORWARDED_window_with_NO_name_yet_answers_NOTHING(self):
+        """⚠️ Not the local name as a fallback. A report can arrive before the
+        name does, and falling back would draw the wrong app's mark for one
+        tick -- which the signature would then latch as already sent."""
+        remote = MagicMock()
+        remote.name = None
+        handler = self._handler()
+        handler.remote_handler = remote
+        handler.is_remote_mapping_entry = lambda: True
+        self.assertEqual(handler.focused_app(), (None, None))
 
 
 if __name__ == "__main__":

@@ -381,6 +381,12 @@ class SettingsChangedTest(unittest.TestCase):
             refresh_daylight_brightness=lambda: core._did.append("brightness"),
             _start_wincompose_settle=lambda: core._did.append("watcher"),
             _apply_unicode_mode=lambda mode: core._did.append(("apply", mode)),
+            # ⚠️ A real attribute of the core, and this fixture omitted it —
+            # so `_forget_generic_overlays` reaching for it raised here while
+            # being correct. Set to None (headless, no display) rather than
+            # softened to a getattr in the code, which would hide a genuinely
+            # missing attribute instead of a merely unset one.
+            overlay_handler=None,
         )
         core._did = []
         core._refresh_unicode_watch = lambda: PolyCore._refresh_unicode_watch(core)

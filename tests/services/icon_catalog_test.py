@@ -6,6 +6,8 @@ code, so the fetch is exercised through its no-network path and the rest --
 cache keying, format validation, placement geometry -- is checked directly.
 """
 
+import os
+import shutil
 import tempfile
 import unittest
 
@@ -430,6 +432,158 @@ class FaceTest(unittest.TestCase):
         # template already uses, Material fills what it lacks.
         self.assertEqual(ic.FACES[0], ic.FLUENT)
         self.assertIn(ic.MATERIAL, ic.FACES)
+
+
+
+
+class CacheAndFetchTest(unittest.TestCase):
+    """`_cached_text`, `_store_font` and `fetch_subset` — the network seam.
+
+    ⚠️ All three were **0% covered**. Nothing in the suite reaches the network
+    (correctly), so the cache-hit / fetch-and-store / give-up structure around
+    it had never executed, and the two faces' download paths are as different as
+    the code gets: Fluent has no subset endpoint, so it fetches one 2.8 MB font
+    for every name set, while Material asks Google for exactly the names given.
+    Flattening them is silent -- Fluent stems sent to `icon_names=` return a font
+    that renders nothing.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+
+    def _patch_get(self, fn):
+        real = ic._get
+        ic._get = fn
+        self.addCleanup(lambda: setattr(ic, "_get", real))
+
+    def _forbid_network(self):
+        """A spy that RECORDS a call instead of failing inside the callback.
+
+        ⚠️ `self.fail()` here does not work, and the way it fails is instructive:
+        both `_cached_text` and `fetch_subset` wrap `_get` in `except Exception`,
+        which swallows the AssertionError and returns the give-up value -- so the
+        test passes while the network was used. Found by mutation (deleting
+        `fetch_subset`'s empty-name guard escaped), which is the only thing that
+        could have found it: every such test was green.
+        """
+        used = []
+        self._patch_get(lambda url, ua=None: used.append(url) or b"")
+        return used
+
+    # ---- _cached_text -------------------------------------------------
+    def test_a_CACHED_body_is_read_without_touching_the_network(self):
+        path = os.path.join(self.tmp, "codepoints.txt")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("save e161")
+        used = self._forbid_network()
+        self.assertEqual(ic._cached_text(path, "http://x", allow_network=True),
+                         "save e161")
+        self.assertEqual(used, [])
+
+    def test_a_FETCHED_body_is_STORED_so_the_next_read_is_free(self):
+        path = os.path.join(self.tmp, "codepoints.txt")
+        calls = []
+        self._patch_get(lambda url, ua=None: calls.append(url) or b"save e161")
+        first = ic._cached_text(path, "http://x", allow_network=True)
+        second = ic._cached_text(path, "http://x", allow_network=True)
+        self.assertEqual((first, second), ("save e161", "save e161"))
+        self.assertEqual(len(calls), 1, "the second read must come from disk")
+
+    def test_NO_NETWORK_and_no_cache_is_an_EMPTY_string_not_an_error(self):
+        """The caller draws the label text instead; nothing here may raise."""
+        used = self._forbid_network()
+        self.assertEqual(
+            ic._cached_text(os.path.join(self.tmp, "nope.txt"), "http://x",
+                            allow_network=False), "")
+        self.assertEqual(used, [])
+
+    def test_a_FAILED_fetch_is_an_EMPTY_string(self):
+        def boom(*a, **k):
+            raise OSError("no route to host")
+        self._patch_get(boom)
+        self.assertEqual(
+            ic._cached_text(os.path.join(self.tmp, "nope.txt"), "http://x",
+                            allow_network=True), "")
+
+    def test_an_UNCACHEABLE_answer_is_still_RETURNED(self):
+        """⚠️ The rule in the code's own comment. A read-only cache dir must
+        cost the fetch, not the answer -- otherwise a locked-down machine draws
+        no icons at all while the data is sitting in memory."""
+        path = os.path.join(self.tmp, "unwritable", "codepoints.txt")
+        self._patch_get(lambda *a, **k: b"save e161")
+        real_makedirs = ic.os.makedirs
+
+        def refuse(*a, **k):
+            raise OSError("read-only file system")
+        ic.os.makedirs = refuse
+        self.addCleanup(lambda: setattr(ic.os, "makedirs", real_makedirs))
+        self.assertEqual(ic._cached_text(path, "http://x", allow_network=True),
+                         "save e161")
+
+    # ---- _store_font --------------------------------------------------
+    def test_a_stored_font_is_moved_into_place_ATOMICALLY(self):
+        """⚠️ Never a half file under the real name: `fetch_subset` treats any
+        existing path over 4 bytes as a usable cached font, so a truncated
+        download left under it would be served forever."""
+        path = os.path.join(self.tmp, "sub", "symbols.ttf")
+        self.assertEqual(ic._store_font(path, b"\x00\x01\x00\x00rest"), path)
+        self.assertTrue(os.path.exists(path))
+        self.assertFalse(os.path.exists(path + ".part"),
+                         "the temporary file must not survive")
+
+    # ---- fetch_subset -------------------------------------------------
+    def test_FLUENT_fetches_the_WHOLE_font_and_ignores_the_names(self):
+        urls = []
+        self._patch_get(lambda url, ua=None: urls.append(url) or b"\x00\x01\x00\x00f")
+        got = ic.fetch_subset(["text_bold"], self.tmp, face=ic.FLUENT)
+        self.assertIsNotNone(got)
+        self.assertEqual(len(urls), 1)
+        self.assertNotIn("icon_names", urls[0],
+                         "Fluent has no subset endpoint to ask")
+        self.assertIn(ic.FLUENT_REF, urls[0], "and it must use the pinned ref")
+
+    def test_MATERIAL_asks_for_EXACTLY_the_names_given(self):
+        urls = []
+
+        def fake(url, ua=None):
+            urls.append(url)
+            if "css" in url or "icon_names" in url:
+                return b"src: url(http://font.example/x.ttf) format('truetype');"
+            return b"\x00\x01\x00\x00f"
+        self._patch_get(fake)
+        got = ic.fetch_subset(["content_copy", "save"], self.tmp, face=ic.MATERIAL)
+        self.assertIsNotNone(got)
+        self.assertIn("icon_names=content_copy,save", urls[0])
+
+    def test_a_CACHED_subset_costs_no_fetch(self):
+        path = ic.subset_path(["save"], self.tmp, ic.MATERIAL)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as fh:
+            fh.write(b"\x00\x01\x00\x00already here")
+        used = self._forbid_network()
+        self.assertEqual(ic.fetch_subset(["save"], self.tmp, face=ic.MATERIAL), path)
+        self.assertEqual(used, [])
+
+    def test_an_EMPTY_name_list_is_None_before_any_path_work(self):
+        used = self._forbid_network()
+        self.assertIsNone(ic.fetch_subset([], self.tmp))
+        self.assertIsNone(ic.fetch_subset(["", None], self.tmp))
+        self.assertEqual(used, [], "an empty name set must not reach the network")
+
+    def test_a_SERVER_ERROR_is_None_rather_than_an_exception(self):
+        def boom(*a, **k):
+            raise OSError("500")
+        self._patch_get(boom)
+        self.assertIsNone(ic.fetch_subset(["save"], self.tmp, face=ic.MATERIAL))
+        self.assertIsNone(ic.fetch_subset(["save"], self.tmp, face=ic.FLUENT))
+
+    def test_an_HTML_error_page_is_REFUSED_rather_than_cached_as_a_font(self):
+        """⚠️ The reason `_is_ttf` exists. Cached under the font's name, a proxy
+        error page fails much later at render time, where the cause is gone."""
+        self._patch_get(lambda *a, **k: b"<!DOCTYPE html><html>nope")
+        self.assertIsNone(ic.fetch_subset(["save"], self.tmp, face=ic.FLUENT))
+        self.assertFalse(os.path.exists(ic.subset_path(["save"], self.tmp, ic.FLUENT)))
 
 
 if __name__ == "__main__":

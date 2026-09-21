@@ -41,7 +41,7 @@ class BackoffTest(unittest.TestCase):
             waits.append(round(wait, 1))
             now += wait
         self.assertEqual(waits[:5], [2.0, 4.0, 8.0, 16.0, 30.0])
-        self.assertTrue(all(w <= 30.0 for w in waits))
+        self.assertLessEqual(max(waits), 30.0)
 
     def test_a_SUCCESS_clears_the_backoff_completely(self):
         health = RelayHealth()

@@ -516,6 +516,25 @@ class PolyCore(Observable):
                            on_done=self.emit)
         return True
 
+    @staticmethod
+    def _template_files(handler) -> tuple:
+        """The template overlay paths covering the focused window, right now.
+
+        ⚠️ From `get_overlay_data()`, the same source `covered_by_template()`
+        reads, and NEVER from what `handle_active_window` returned -- that is
+        non-None only on the tick the window changes, while the gap fill runs on
+        the tick the shortcuts resolve, several later. A list taken from `data`
+        would therefore be empty exactly when it is needed, the fill would send
+        the synthetic sources alone, and `send_overlays_mru`'s reset would blank
+        every hand-made keycap. That is the 2026-09-18 field bug, reachable
+        again through a different door.
+        """
+        data = handler.get_overlay_data()
+        if not data:
+            return ()
+        names = [data] if isinstance(data, str) else list(data)
+        return tuple(get_overlay_path(name) for name in names)
+
     def tick_window_tracking(self, update_cycle_msec=UPDATE_CYCLE_MSEC,
                              new_window_accept_msec=NEW_WINDOW_ACCEPT_TIME_MSEC):
         """One active-window poll: switch overlays for the focused app.
@@ -540,18 +559,26 @@ class PolyCore(Observable):
                 # A template send re-programs the whole pool, so whatever
                 # generic overlays were on the device are gone with it.
                 self._generic_on_device = None
+            elif not self.poly_settings.get("generic_overlays_enabled"):
+                pass                      # the whole generic path is switched off
             elif handler.covered_by_template():
-                # ⚠️ A TEMPLATE COVERS THIS WINDOW, so the generic fall-back must
-                # stand down -- and asking the handler is the only way to know,
-                # because `handle_active_window` returns the template filenames
-                # ONLY on the tick the window changes. Reading "a template is
-                # active" off `data` therefore saw it once and then believed
-                # there was none, so the very next tick sent the generic set,
-                # `send_overlays_mru` reset the mapping the template had just
-                # committed, and every hand-made keycap went blank about a second
-                # after it appeared (field, 2026-09-18).
-                self.log.debug_detailed(
-                    "Generic overlays stood down: a template covers this window")
+                # ⚠️ A TEMPLATE COVERS THIS WINDOW, and asking the HANDLER is the
+                # only way to know, because `handle_active_window` returns the
+                # template filenames ONLY on the tick the window changes. Reading
+                # "a template is active" off `data` therefore saw it once and
+                # then believed there was none, so the very next tick sent the
+                # generic set, `send_overlays_mru` reset the mapping the template
+                # had just committed, and every hand-made keycap went blank about
+                # a second after it appeared (field, 2026-09-18).
+                #
+                # The same trap decides where the FILL gets its file list from:
+                # `get_overlay_data()`, never `data`, for exactly that reason.
+                if self.poly_settings.get("generic_overlays_fill_gaps"):
+                    self._maybe_send_generic_overlays(
+                        handler, template_files=self._template_files(handler))
+                else:
+                    self.log.debug_detailed(
+                        "Generic overlays stood down: a template covers this window")
             else:
                 # ⚠️ Every tick, not only on a change. `overlay_for` is a dict
                 # lookup by contract precisely so this is cheap, and it is what
@@ -563,15 +590,20 @@ class PolyCore(Observable):
         elif self.poly_settings.get("dev_run_window_detection_if_not_connected_to_poly_kybd"):
             handler.handle_active_window(update_cycle_msec, new_window_accept_msec)
 
-    def _maybe_send_generic_overlays(self, handler):
+    def _maybe_send_generic_overlays(self, handler, template_files=()):
         """Draw the focused app's OWN icon on ESC, and an icon per shortcut key.
 
-        The generic fall-back, in two halves that ship as ONE send: a template
-        overlay draws a real icon on every shortcut key, and where none exists
-        this puts the application's own mark on ESC plus whatever its
-        accessibility tree could tell us about its keyboard shortcuts. Template
-        always wins -- this runs only on the branch where the matcher found
-        nothing.
+        The generic fall-back, in two halves that ship as ONE send: the
+        application's own mark on ESC plus whatever its accessibility tree could
+        tell us about its keyboard shortcuts.
+
+        ⚠️ **`template_files` is what makes the TEMPLATE win, and it wins per
+        KEY rather than per window.** Passed non-empty (the `fill_gaps` branch),
+        the hand-made overlays ride the same send ahead of the synthetic
+        sources, and `send_overlays_mru` skips a synthetic source on any
+        (modifier, keycode) a real one already drew -- so a template keeps every
+        key it draws and the generic icons reach only the ones it leaves blank.
+        Empty (no template covers this window) is the original behaviour.
 
         ⚠️ **ONE send, not two, and that is forced rather than tidy.**
         `send_overlays_mru` calls `prepare_for_mru_send()`, which RESETS the
@@ -652,7 +684,7 @@ class PolyCore(Observable):
                     name, harvested=relayed)
         else:
             shortcuts = self._shortcut_icons.overlays_for(name)
-        signature = self._generic_signature(slug, shortcuts)
+        signature = self._generic_signature(slug, shortcuts, template_files)
         if signature is None:
             # Both halves are normal on the first sighting (the fetches were
             # just queued) and both fetchers report a real miss themselves, so
@@ -664,7 +696,8 @@ class PolyCore(Observable):
             return
         if signature == self._generic_on_device:
             return
-        self._send_generic_overlays(name, signature, slug, mask, shortcuts)
+        self._send_generic_overlays(name, signature, slug, mask, shortcuts,
+                                    template_files)
 
     def _say_no_remote_shortcuts(self, name):
         """Say it once per app, at INFO, because it is not a failure to debug.
@@ -686,8 +719,14 @@ class PolyCore(Observable):
             "program mark is unaffected either way.", name)
 
     @staticmethod
-    def _generic_signature(slug, shortcuts):
+    def _generic_signature(slug, shortcuts, template_files=()):
         """What a send would put on the device, or None when that is nothing.
+
+        ⚠️ `template_files` is part of it because the gap fill sends them, so
+        two apps whose generic halves resolve identically -- same mark, same
+        shortcuts on the same keys -- but whose templates differ would otherwise
+        share a signature, and the second would be reported as already on the
+        device while its template was never sent.
 
         ⚠️ The shortcut half must carry its KEYS and not just its source names.
         Two applications routinely resolve the same concepts -- Save, Copy, Paste
@@ -697,12 +736,36 @@ class PolyCore(Observable):
         cache keys on, and that is correct there for exactly the opposite reason:
         the PIXELS do not depend on the key.
         """
-        if not slug and not shortcuts:
+        if not shortcuts:
+            # ⚠️ NO SHORTCUTS MEANS NO SEND -- **including the mark**, which is
+            # the one case where "what we could resolve" and "what is worth
+            # drawing" come apart.
+            #
+            # The mark alone says only "this app was recognised", and the person
+            # reading the board takes it for "this app has icons": it is the
+            # confirmation that the rest of the keycaps mean something. Drawn
+            # over a board that gained nothing else, it promises what the next
+            # glance disproves -- so it is worse than blank, which at least says
+            # nothing.
+            #
+            # ⚠️ The consequence is deliberate and it is LARGE: where the
+            # harvest can never answer, the feature is silent. That is all of
+            # macOS (no backend built) and every Linux app whose menus live in a
+            # hamburger rather than a menu bar. Those are exactly the cases
+            # where the mark was standing in for a promise nothing could keep.
+            #
+            # ⚠️ Also correct for the first tick of an app that DOES have
+            # shortcuts: the harvest is asynchronous, so this is "not yet"
+            # rather than "never", and the tick that resolves them sends both
+            # together. A mark that appears alone and is joined a second later
+            # by its icons would read as the board changing its mind.
             return None
         return (slug, tuple(sorted(
-            (source, tuple(sorted(keys))) for source, keys in shortcuts.items())))
+            (source, tuple(sorted(keys))) for source, keys in shortcuts.items())),
+            tuple(template_files))
 
-    def _send_generic_overlays(self, app, signature, slug, mask, shortcuts):
+    def _send_generic_overlays(self, app, signature, slug, mask, shortcuts,
+                               template_files=()):
         """Queue the mark and the shortcut icons for every attached device.
 
         ⚠️ The converters are built HERE, on the caller's thread, and one PER
@@ -712,12 +775,19 @@ class PolyCore(Observable):
         `send_overlays_mru` runs on the HID worker, which must not be the thread
         that builds them.
 
-        ⚠️ The mark goes FIRST in the filename list, so it keeps ESC. Both
-        sources are synthetic and `send_overlays_mru` gives an earlier synthetic
+        ⚠️ The mark goes FIRST among the SYNTHETIC sources, so it keeps ESC.
+        Both are synthetic and `send_overlays_mru` gives an earlier synthetic
         source the key: the mark is the "which application is this" anchor and
         the one keycap that means the same thing in every app, so a shortcut
         concept that happened to land on Escape must not displace it. The loser
         is logged as deferred, like a template deferral.
+
+        ⚠️ And the TEMPLATES go ahead of both, because the precedence in
+        `send_overlays_mru` is positional: it is a real source, so it claims its
+        (modifier, keycode) pairs into `covered` unconditionally, and every
+        synthetic source after it skips them. Put them last and a template with
+        a baked `program_icon:` would lose ESC to the mark -- the opposite of
+        "the hand-made design always wins".
         """
         from polyhost.device.keys import KeyCode
         from polyhost.device.synthetic_overlay import (
@@ -739,23 +809,37 @@ class PolyCore(Observable):
         if not built:
             return
         drawn = sum(len(keys) for keys in shortcuts.values())
+        # ⚠️ Say which mode this was. The two differ in what the keycaps end up
+        # showing AND in what the send costs, and a log that reads the same for
+        # both makes "the template lost a key" and "the fill never ran"
+        # indistinguishable -- the failure this whole branch is most likely to
+        # produce. The per-key verdicts are `send_overlays_mru`'s `deferred`.
         self.log.info(
             "Generic overlays for '%s': %s, %d shortcut icon(s) on %d key(s) "
-            "(no template overlay).",
+            "(%s).",
             app, f"mark '{slug}' on ESC" if slug else "no mark",
-            len(shortcuts), drawn)
+            len(shortcuts), drawn,
+            f"filling the gaps in {len(template_files)} template file(s)"
+            if template_files else "no template overlay")
         # Recorded BEFORE the send so a tick landing mid-flight does not queue a
         # second copy of the same set; a failed send clears it again.
         self._generic_on_device = signature
         self.emit("overlay_activity", {"state": "thinking"})
         self.worker.submit(
             "overlay",
-            lambda cancel: self._generic_overlay_job(built, cancel),
+            lambda cancel: self._generic_overlay_job(built, cancel, template_files),
             coalesce_key="overlay",
             on_done=self.emit)
 
-    def _generic_overlay_job(self, built, cancel):
-        """Worker-thread send of the generic set. Mirrors _overlay_send_job."""
+    def _generic_overlay_job(self, built, cancel, template_files=()):
+        """Worker-thread send of the generic set. Mirrors _overlay_send_job.
+
+        ONE `send_overlays_mru` per device carrying the templates and the
+        synthetic sources together -- never two calls. `prepare_for_mru_send()`
+        resets the firmware's whole display->pool mapping, so a second call
+        replaces the first rather than adding to it, and the template's images
+        would be uploaded and then unmapped.
+        """
         try:
             for entry, sources in built:
                 if cancel.is_set():
@@ -764,7 +848,7 @@ class PolyCore(Observable):
                     # re-sent for this app.
                     self._generic_on_device = None
                     return
-                filenames = [name for name, _ in sources]
+                filenames = list(template_files) + [name for name, _ in sources]
                 entry.device.send_overlays_mru(
                     filenames, entry.cache, cancel,
                     synthetic=dict(sources))
@@ -1963,6 +2047,12 @@ class PolyCore(Observable):
             self._forget_generic_overlays()
 
     _GENERIC_ICON_SETTING_KEYS = frozenset({
+        # ⚠️ The two outer switches belong here as much as the inner ones, and
+        # for the SAME reason rather than for tidiness: turning `fill_gaps` on
+        # mid-session changes what a templated app should be showing, and the
+        # tick would otherwise read the cached signature and report it as
+        # already on the device. `_forget_generic_overlays` clears exactly that.
+        "generic_overlays_enabled", "generic_overlays_fill_gaps",
         "shortcut_icons_enabled", "shortcut_icon_auto_fetch",
         "shortcut_icon_height", "shortcut_icon_placement",
     })
@@ -1979,10 +2069,29 @@ class PolyCore(Observable):
         the MRU key for the same reason, one layer down.)
         """
         if self._app_icons is not None:
-            self._app_icons.forget()
+            # ⚠️ `forget_misses`, NOT `forget` -- which does not exist on this
+            # fetcher and raised AttributeError here, BEFORE the two lines
+            # below, so no generic-icon setting took effect at all mid-session
+            # (Greptile, #240). The suite missed it because the fixture is a
+            # bare MagicMock, which answers any attribute; the tests now pass
+            # `spec=` so a nonexistent method fails there too.
+            self._app_icons.forget_misses()
         if self._shortcut_icons is not None:
             self._shortcut_icons.forget()
         self._generic_on_device = None
+        # ⚠️ And make the BOARD follow, not just the host's caches. Turning a
+        # switch OFF means no generic send will happen, so whatever is already
+        # mapped on the keycaps stays there until the next app switch -- a
+        # setting that visibly does nothing, which is the failure this repo
+        # keeps recording. `force_resend` makes the next tick re-evaluate the
+        # window as if it had changed, so a templated app re-sends its template
+        # (which re-programs the pool) and an untemplated one disables overlays.
+        #
+        # Unconditional rather than only-on-OFF: whether anything generic will
+        # be drawn under the new settings is the tick's job to work out, not
+        # this hook's. The cost is one overlay send per Settings-dialog OK.
+        if self.overlay_handler is not None:
+            self.overlay_handler.force_resend()
 
     def _refresh_unicode_watch(self):
         """Start the settle watcher and re-assert the mode after the setting was

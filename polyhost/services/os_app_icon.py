@@ -616,7 +616,12 @@ def version_strings(data: bytes) -> dict:
     reader = _pe_resource_reader(data)
     if reader is None:
         return {}
-    root, to_offset = reader
+    # ⚠️ (to_offset, root), and this unpacked it BACKWARDS -- so `_resource_blob`
+    # got a function where it wants an int, raised, and `app_identity` caught it
+    # and returned an empty identity. Every Windows version-resource name was
+    # silently lost, icon included (Greptile, #240). `icon_from_pe` is the
+    # working caller and unpacks it this way round.
+    to_offset, root = reader
     blob = _resource_blob(data, root, to_offset, _RT_VERSION)
     if not blob:
         return {}
