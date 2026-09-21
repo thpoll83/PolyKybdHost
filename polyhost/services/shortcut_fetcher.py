@@ -267,7 +267,8 @@ class ShortcutIconFetcher:
             self.log.debug("shortcut codepoints unavailable for '%s'", app,
                            exc_info=True)
             codepoints = {}
-        report = shortcut_overlays.plan_report(shortcuts, known_names=codepoints)
+        report = shortcut_overlays.plan_report(shortcuts, known_names=codepoints,
+                                               app=app)
         slots = report.slots
         self._report(app, shortcuts, report)
         if not slots:

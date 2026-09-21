@@ -291,6 +291,41 @@ class TestDerivedNameFallback(unittest.TestCase):
         a crash and not an unvalidated guess."""
         self.assertEqual(so.plan([sc("Export as PDF")]), [])
 
+    # --- the focused app reaches the derivation ------------------------------
+
+    APP_TABLE = {"terminal": 5, "file_export": 2}
+
+    # ⚠️ "Reveal Terminal", NOT "Hide Terminal". `hide` is itself a catalog name
+    # and the HEAD is offered before the tail, so on a Hide label the planner
+    # answers `hide` whether or not it passed the app -- the test would pass
+    # against the unwired planner and pin nothing. The label has to be one whose
+    # ONLY viable candidate is the app's name. Found by the mutation sweep,
+    # which is exactly the escape it exists to catch.
+    def test_a_derivation_in_the_PLANNER_never_names_the_app(self):
+        """⚠️ The WIRING, not the rule -- `derive_names` is tested directly in
+        shortcut_icons_test. What this pins is that `plan_report` actually HANDS
+        it the app, which is the half that was missing for three attempts."""
+        self.assertEqual(so.plan([sc("Reveal Terminal")],
+                                 known_names=self.APP_TABLE, app="Terminal"), [])
+
+    def test_the_app_name_really_is_on_offer_without_it(self):
+        """⚠️ Otherwise the test above passes for the wrong reason: `terminal`
+        must be BOTH derivable and in the table, or nothing is being rejected —
+        and without the app it must actually DRAW, or the planner is refusing
+        for some unrelated reason."""
+        self.assertIn("terminal",
+                      so.shortcut_icons.derive_names("Reveal Terminal"))
+        self.assertIn("terminal", self.APP_TABLE)
+        slots = so.plan([sc("Reveal Terminal")], known_names=self.APP_TABLE)
+        self.assertEqual(slots[0].icon,
+                         f"{so.icon_catalog.MATERIAL}:terminal")
+
+    def test_planning_without_an_app_is_unchanged(self):
+        """Every existing caller passes no app and must plan as it always did."""
+        slots = so.plan([sc("Export as PDF")], known_names=self.APP_TABLE)
+        self.assertEqual(slots[0].icon,
+                         f"{so.icon_catalog.MATERIAL}:file_export")
+
 
 
 

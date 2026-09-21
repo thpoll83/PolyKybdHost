@@ -256,12 +256,6 @@ _PHRASES: list[tuple[str, str]] = sorted(
     key=lambda pc: (-len(pc[0].split()), -len(pc[0]), pc[0]),
 )
 
-# The one-word phrases, i.e. every word the lexicon recognises on its own.
-# `derive_names` reads it to decide whether a label's leading word is already a
-# concept; see the tail-word note there.
-_SINGLE_WORD_PHRASES: frozenset = frozenset(
-    phrase for phrase, _ in _PHRASES if " " not in phrase)
-
 # See the measurement in match(): the floor sits in the empty bin between real
 # morphology (>= 0.875) and false friends (<= 0.762).
 FUZZY_FLOOR = 0.85
@@ -605,6 +599,15 @@ def _contains_sequence(haystack: list[str], needle: list[str]) -> bool:
 # labels, and these five prefixes take it to 33.
 NAME_PREFIXES = ("", "content_", "format_", "file_", "text_")
 
+# ⚠️ A QUOTED run in a menu label is the user's OBJECT, not part of the command.
+# macOS puts the selected item's name there -- `Quick Look "Chess"`,
+# `Slideshow "Holiday"` -- so deriving from it names whatever happens to be
+# selected: a folder called Chess drew a chess piece on Quick Look (field,
+# 2026-09-21). Only DOUBLE quotes, curly or straight: the curly single quote is
+# how macOS spells an apostrophe ("Don't Save"), so pairing on it would eat the
+# words between two ordinary contractions.
+_QUOTED_OBJECT = re.compile(r'[\u201c"][^\u201c\u201d"]{0,80}[\u201d"]')
+
 # Words that carry no icon of their own, dropped before the join. "Toggle" is
 # here because a toggle is not a picture: the icon belongs to what is toggled.
 # ⚠️ "hide" was here and must NOT come back: a word the LEXICON names as a
@@ -636,7 +639,19 @@ NAME_SYNONYMS = {
 }
 
 
-def derive_names(label: str) -> list[str]:
+def app_words(app: str | None) -> frozenset:
+    """The words of the focused application's own name.
+
+    ⚠️ A derivation must never answer with one. The ESC mark already carries
+    the app's icon, so drawing it again on a letter key says nothing about what
+    the key does -- and it is what the label's object usually IS on macOS, where
+    every app puts "Hide <AppName>" on Cmd+H. Terminal drew a terminal, App
+    Store a shop, Chess a chess piece (field, 2026-09-21).
+    """
+    return frozenset(w for w in normalize(app or "").split() if w)
+
+
+def derive_names(label: str, app: str | None = None) -> list[str]:
     """Candidate Material Symbols names for `label`, best guess first.
 
     Ordered most-specific to least: the whole label, then the label without
@@ -644,7 +659,14 @@ def derive_names(label: str) -> list[str]:
     then a single head or tail word. That tail is where a generic answer comes
     from (`Add Layer` -> `add`), so it sorts last and the lexicon gets to answer
     before any of it runs.
+
+    `app` is the focused application, and every candidate naming it is dropped
+    -- see `app_words`. That rejection is what lets the tail stay unconditional:
+    an earlier fix suppressed the tail whenever the head was a lexicon concept,
+    which blocked the app name but also cost `Show Previous Tab` its `tab` and
+    `Mark as Bookmark` its `bookmark`.
     """
+    label = _QUOTED_OBJECT.sub(" ", label)
     words = [w for w in normalize(label).split() if w]
     if not words:
         return []
@@ -665,14 +687,17 @@ def derive_names(label: str) -> list[str]:
             add(NAME_SYNONYMS[word])
     for prefix in NAME_PREFIXES:
         add(prefix + kept[0])
-    # ⚠️ The TAIL is the label's OBJECT, and it is offered only when the LEXICON
-    # did not recognise the leading verb. Where it did, answering with the object
-    # contradicts a curated answer with an uncurated one: "Hide Terminal" drew a
-    # terminal, "Hide App Store" a shop, each naming what the key would hide
-    # (field, 2026-09-21). Where the head is NOT a concept the tail is still the
-    # best guess available and stays -- `Default Font Size` -> `format_size` and
-    # `Use Selection for Find` -> `find` both come from it.
-    if len(kept) > 1 and kept[0] not in _SINGLE_WORD_PHRASES:
+    if len(kept) > 1:
         for prefix in NAME_PREFIXES:
             add(prefix + kept[-1])
+    # ⚠️ Filtered at the END rather than per candidate, so a PREFIXED form of the
+    # app's name goes too: `content_terminal` names the app exactly as much as
+    # `terminal` does. The head is offered before the tail, so on an ordinary
+    # label this drops nothing -- "New Mail" in Mail still derives `new`, which
+    # already outranks `mail`.
+    blocked = app_words(app)
+    if blocked:
+        out = [n for n in out
+               if not any(n == prefix + word
+                          for prefix in NAME_PREFIXES for word in blocked)]
     return out

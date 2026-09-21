@@ -155,14 +155,17 @@ class Slot:
 
 def plan(shortcuts, hints: dict | None = None,
          min_confidence: float = MIN_CONFIDENCE,
-         limit: int = MAX_SLOTS, known_names=None) -> list[Slot]:
+         limit: int = MAX_SLOTS, known_names=None,
+         app: str | None = None) -> list[Slot]:
     """The slots alone — see `plan_report` for what was refused and why."""
-    return plan_report(shortcuts, hints, min_confidence, limit, known_names).slots
+    return plan_report(shortcuts, hints, min_confidence, limit, known_names,
+                       app).slots
 
 
 def plan_report(shortcuts, hints: dict | None = None,
                 min_confidence: float = MIN_CONFIDENCE,
-                limit: int = MAX_SLOTS, known_names=None) -> "Plan":
+                limit: int = MAX_SLOTS, known_names=None,
+                app: str | None = None) -> "Plan":
     """Decide which harvested shortcuts get an icon, and on which key.
 
     Returns the REFUSALS as well as the slots, because a shortcut the keyboard
@@ -242,7 +245,12 @@ def plan_report(shortcuts, hints: dict | None = None,
             # disposes, exactly as `app_icons.candidates()` leaves a bad slug to
             # the 404. Without a table the fall-back is skipped entirely, which
             # is the behaviour before it existed.
-            derived = next((n for n in shortcut_icons.derive_names(label)
+            # ⚠️ `app` is what stops a derivation naming the focused
+            # application — the ESC mark already carries its icon, and on macOS
+            # the label's object usually IS the app ("Hide Terminal"). Passing
+            # None only loses that rejection, so a caller that does not know the
+            # app still plans exactly as before.
+            derived = next((n for n in shortcut_icons.derive_names(label, app)
                             if n in known_names), None)
             if derived:
                 # `known_names` is the MATERIAL table, so a derivation is a
