@@ -50,6 +50,72 @@ class CacheKeyTest(unittest.TestCase):
         """Growing the lexicon must fetch a new subset, not reuse the old one."""
         self.assertNotEqual(ic.subset_path(["save"]), ic.subset_path(["save", "undo"]))
 
+    def test_a_different_WEIGHT_is_a_different_file(self):
+        """Otherwise a weight change reaches only people who never used it.
+
+        The cache is keyed on what the file CONTAINS. `MATERIAL_WEIGHT` decides
+        that as much as the name set does, so leaving it out of the key means
+        every machine that has already fetched a set keeps serving the old
+        weight for good -- visible on a fresh install and nowhere else, which is
+        the worst way for a visual change to half-land.
+        """
+        before = ic.subset_path(["save", "undo"])
+        with mock.patch.object(ic, "MATERIAL_WEIGHT", ic.MATERIAL_WEIGHT + 100):
+            after = ic.subset_path(["save", "undo"])
+        self.assertNotEqual(before, after)
+
+    def test_the_weight_is_READABLE_in_the_cache_filename(self):
+        """A mismatch should be diagnosable by listing the directory.
+
+        Folded into the hash it would still invalidate correctly and be one
+        opaque digest against another, which is no use to somebody asking why
+        an icon looks heavy.
+        """
+        self.assertIn(f"w{ic.MATERIAL_WEIGHT}", ic.subset_path(["save"]))
+
+
+class MaterialWeightTest(unittest.TestCase):
+    """The `wght` axis, and the two ways asking for one silently does nothing."""
+
+    def test_the_fetched_family_CARRIES_the_weight(self):
+        """Without the axis the endpoint serves 400, which is the heavy default.
+
+        Measured over eight concepts both catalogs carry, at the shipped 36 px
+        1-bit render: Material inks 1.30x Fluent at 400 and 0.85x at 300. The
+        two faces sit side by side on one keycap row, so that reads as a
+        different stroke weight rather than a different icon set.
+        """
+        family = f"{ic.FAMILY}:{ic.MATERIAL_AXES.format(wght=ic.MATERIAL_WEIGHT)}"
+        self.assertIn(f",{ic.MATERIAL_WEIGHT},", family)
+        self.assertTrue(family.startswith(ic.FAMILY + ":"))
+
+    def test_the_axis_ORDER_is_the_one_the_API_accepts(self):
+        """`opsz,wght,FILL,GRAD` -- registered axes first, then custom, each
+        alphabetically. The CSS2 endpoint rejects any other ordering, and a
+        rejection here is not an exception: `fetch_subset` catches everything
+        and returns None, so the icons simply stop drawing.
+        """
+        axes = ic.MATERIAL_AXES.split("@")[0].split(",")
+        self.assertEqual(axes, ["opsz", "wght", "FILL", "GRAD"])
+        lower = [a for a in axes if a.islower()]
+        upper = [a for a in axes if not a.islower()]
+        self.assertEqual(lower, sorted(lower))
+        self.assertEqual(upper, sorted(upper))
+        self.assertEqual(axes, lower + upper)
+
+    def test_the_weight_is_one_the_endpoint_actually_SERVES(self):
+        """⚠️ The endpoint QUANTISES to the named instances, so this is not a
+        free dial. Measured against the live CSS endpoint: 200 and 250 return a
+        BYTE-IDENTICAL font, as do 300 and 350 -- only 200 / 300 / 400 are
+        reachable. The overlay generator prescribes "250-300" for Material and
+        really can hit 250, because it fetches per-icon SVGs; through THIS path
+        250 silently becomes 200, which that same note calls too thin to survive
+        the downscale. (`wght250` 404s at the asset repo too, so no part of this
+        codebase can reach it -- `weight=300` is the only value any generator
+        passes.)
+        """
+        self.assertIn(ic.MATERIAL_WEIGHT, (200, 300, 400))
+
 
 class FormatValidationTest(unittest.TestCase):
     def test_only_truetype_is_accepted(self):
