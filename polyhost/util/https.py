@@ -29,8 +29,22 @@ import ssl
 
 log = logging.getLogger("PolyHost")
 
-_CONTEXT: ssl.SSLContext | None = None
-_FAILED = False
+# ⚠️ ONE dict, not two module globals, and the KEY'S PRESENCE is the
+# "already tried" latch. The obvious shape is a `_CONTEXT` plus a `_FAILED`
+# bool, and CodeQL `py/unused-global-variable` flags the bool: its write is
+# never read on its own path, only by the NEXT call's guard, which the query
+# does not follow across invocations. Returning the global instead of the
+# local fixes that for `_CONTEXT` (the return reads the write) and cannot fix
+# it for a latch, which is read nowhere else.
+#
+# Deleting the latch on the query's advice is the trap --
+# `shortcut_icons.load_hints` and its three sibling memos each carry a note
+# about it -- because a failed build would then be retried on every icon
+# fetch. Mutating a dict rebinds no global, so the latch survives and there is
+# nothing left for the query to report. Absent key = never tried; present and
+# None = tried and failed; present and a context = ready.
+_CACHE: dict = {}
+_KEY = "context"
 
 
 def ssl_context() -> ssl.SSLContext | None:
@@ -43,9 +57,8 @@ def ssl_context() -> ssl.SSLContext | None:
     Cached — building one parses a few hundred certificates, and these callers
     run per icon fetch.
     """
-    global _CONTEXT, _FAILED
-    if _CONTEXT is not None or _FAILED:
-        return _CONTEXT
+    if _KEY in _CACHE:
+        return _CACHE[_KEY]
     try:
         ctx = ssl.create_default_context()
     except Exception as exc:
@@ -53,16 +66,8 @@ def ssl_context() -> ssl.SSLContext | None:
         # default context, which also verifies. There is no path here that
         # disables checking.
         log.debug("Could not build an SSL context: %s", exc)
-        _FAILED = True
-        # ⚠️ `return _CONTEXT`, not `return None`, even though it IS None here.
-        # An assignment whose value is never read on its own path is what
-        # CodeQL `py/unused-global-variable` reports, and the repo has already
-        # been caught by the obvious remedy: `shortcut_icons.load_hints` and
-        # its three sibling memos carry the same note, because DELETING the
-        # flag on that advice silently disables the memo and every caller
-        # rebuilds the context it just failed to build. Reading the global
-        # back satisfies the query and keeps the latch.
-        return _CONTEXT
+        _CACHE[_KEY] = None
+        return None
     try:
         import certifi
         ctx.load_verify_locations(cafile=certifi.where())
@@ -72,7 +77,5 @@ def ssl_context() -> ssl.SSLContext | None:
         # still correct everywhere except the macOS case above.
         log.debug("certifi unavailable, using the platform trust store "
                   "only: %s", exc)
-    _CONTEXT = ctx
-    # Same reason as the `_FAILED` return above: return the GLOBAL, not the
-    # local it was built from, so the write is read on its own path.
-    return _CONTEXT
+    _CACHE[_KEY] = ctx
+    return ctx

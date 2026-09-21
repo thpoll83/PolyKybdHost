@@ -16,10 +16,11 @@ from polyhost.util import https
 class SslContextTest(unittest.TestCase):
 
     def setUp(self):
-        https._CONTEXT = None
-        https._FAILED = False
-        self.addCleanup(lambda: (setattr(https, "_CONTEXT", None),
-                                 setattr(https, "_FAILED", False)))
+        # ⚠️ CLEAR the dict, never rebind it -- `ssl_context` reads the
+        # module-level object, so `https._CACHE = {}` here would leave the
+        # function looking at the old one and the reset would do nothing.
+        https._CACHE.clear()
+        self.addCleanup(https._CACHE.clear)
 
     def test_it_returns_a_VERIFYING_context(self):
         """⚠️ The one thing this must never do is make TLS more permissive."""
