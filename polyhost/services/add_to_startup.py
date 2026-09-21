@@ -397,10 +397,26 @@ def _write_executable_if_changed(path, content):
     already there. Rewriting the launcher on every startup changes the file a
     registered macOS LaunchAgent points at, which makes macOS re-fire its
     "Background Items Added" notification each launch — so leave it untouched
-    when nothing changed."""
+    when nothing changed.
+
+    ⚠️ THE MODE IS REPAIRED EVEN WHEN THE CONTENT MATCHES. Returning early on
+    identical content used to skip the chmod entirely, so a launcher that kept
+    its bytes but lost its executable bit stayed unlaunchable for good -- and
+    nothing rewrites it, because the content is exactly right. A Time Machine
+    restore, a `cp -r` without `-p`, or a sync tool that drops modes is enough.
+    That costs the macOS `.app` its only executable and Launchpad then opens
+    nothing at all (Sourcery, #250).
+    """
     path = Path(path)
     try:
         if path.read_text(encoding="utf-8") == content:
+            try:
+                if not path.stat().st_mode & 0o111:
+                    path.chmod(0o755)
+            except OSError:
+                # Best effort: a mode we cannot read or set is not a reason to
+                # rewrite a file whose contents are already correct.
+                pass
             return False
     except OSError:
         pass
@@ -526,9 +542,13 @@ def create_macos_app_bundle(app_name, wrapper_path, icon_path):
         # upgrade (venv moves, pythonw changes); pointing at it by path means
         # the bundle never goes stale, and `exec` keeps one process rather than
         # leaving a shell parked for the life of the app.
+        # ⚠️ shlex.quote, not bare double quotes: a `$`, a backtick or a `"`
+        # anywhere in the path -- all legal in a macOS home directory name --
+        # would otherwise produce a broken shim or run something the user did
+        # not ask for (Sourcery, #250).
         _write_executable_if_changed(
             macos_dir / app_name,
-            f'#!/bin/sh\nexec "{Path(wrapper_path).resolve()}" "$@"\n')
+            f'#!/bin/sh\nexec {shlex.quote(str(Path(wrapper_path).resolve()))} "$@"\n')
         if icon_name and Path(icon_path).is_file():
             target = resources / icon_name
             data = Path(icon_path).read_bytes()

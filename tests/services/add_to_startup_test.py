@@ -1,4 +1,5 @@
 import os
+import shlex
 import shutil
 import unittest
 import unittest.mock as mock
@@ -305,8 +306,14 @@ class MacAppLauncherTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             shim = self._run(tmp) / "Contents" / "MacOS" / "PolyHost"
             self.assertTrue(os.access(shim, os.X_OK))
-            body = shim.read_text()
-            self.assertIn('exec "/Users/x/.venv/wrap.sh"', body)
+            # ⚠️ Asserted through `shlex.split`, not as a literal string. The
+            # path is quoted only when it needs quoting, so pinning the
+            # spelling made this fail the moment the quoting was fixed -- the
+            # property is WHICH path is exec'd, never how it is written.
+            exec_line = [l for l in shim.read_text().splitlines()
+                         if l.startswith("exec ")][0]
+            self.assertEqual(shlex.split(exec_line),
+                             ["exec", "/Users/x/.venv/wrap.sh", "$@"])
 
     def test_the_bundle_is_created_even_when_the_PLIST_is_UNCHANGED(self):
         """⚠️ The regression this ordering exists to prevent.
@@ -362,6 +369,47 @@ class MacAppLauncherTest(unittest.TestCase):
                  mock.patch.object(add_to_startup.subprocess, "run"):
                 add_to_startup.add_to_startup(Path("/w.sh"), "PolyHost", "/i.icns")
             self.assertTrue(plist.exists())
+
+    def test_a_lost_EXECUTABLE_BIT_is_repaired_without_rewriting(self):
+        """Sourcery, #250. The bytes can be perfect and the bundle still dead.
+
+        `_write_executable_if_changed` returned early on identical content,
+        skipping the chmod -- so a shim that kept its bytes but lost its +x
+        (a Time Machine restore, a `cp -r` without `-p`, a sync tool that drops
+        modes) stayed unlaunchable for good, because nothing ever rewrites a
+        file whose contents are already right. Reproduced before fixing: the
+        mode went 755 -> 644 -> 644.
+        """
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            shim = self._run(tmp) / "Contents" / "MacOS" / "PolyHost"
+            shim.chmod(0o644)
+            self.assertFalse(os.access(shim, os.X_OK))
+            body = shim.read_text()
+            self._run(tmp)                       # identical content
+            self.assertTrue(os.access(shim, os.X_OK))
+            self.assertEqual(shim.read_text(), body)   # repaired, not rewritten
+
+    def test_the_shim_QUOTES_a_path_with_shell_metacharacters(self):
+        """Sourcery, #250, and it really did execute.
+
+        The shim interpolated the wrapper path into bare double quotes, so a
+        `$`, a backtick or a `"` -- all legal in a macOS home directory name --
+        produced broken syntax or ran something nobody asked for. Measured on
+        the old form: `sh` executed the command substitution.
+        """
+        import subprocess
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            hostile = f'{tmp}/a$(touch {tmp}/pwned)b/"q"/wrap.sh'
+            bundle = self._run(tmp, wrapper=hostile)
+            shim = bundle / "Contents" / "MacOS" / "PolyHost"
+            self.assertEqual(
+                subprocess.run(["sh", "-n", str(shim)]).returncode, 0,
+                "the generated shim is not valid POSIX sh")
+            subprocess.run(["sh", str(shim)], capture_output=True)
+            self.assertFalse(Path(f"{tmp}/pwned").exists(),
+                             "the shim executed a command substitution")
 
     def test_removal_takes_the_launcher_TOO(self):
         """Matching both other platforms -- Windows removes its Start-menu .lnk
