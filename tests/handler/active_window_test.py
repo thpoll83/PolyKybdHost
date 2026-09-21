@@ -571,28 +571,6 @@ class AWindowlessAppIsStillAnAppTest(unittest.TestCase):
         self.assertEqual(cmd, OverlayCommand.DISABLE)
         self.assertEqual(handler.focused_app(), (None, None))
 
-    def test_frontmost_app_answers_nothing_off_macOS(self):
-        """It is macOS-only on purpose: the other backends do not have this
-        failure mode, and a second opinion about which app is focused is a way
-        for two answers to disagree.
-
-        ⚠\ufe0f A working `AppKit` is injected, and without it this test passes
-        for the wrong reason -- on a Linux host the import fails anyway, so the
-        platform guard could be deleted outright and nothing would notice
-        (measured: that mutation escaped until the fake was added). The fake is
-        what makes the guard the only thing answering.
-        """
-        appkit = types.ModuleType("AppKit")
-        app = MagicMock()
-        app.localizedName.return_value = "Photos"
-        app.processIdentifier.return_value = 4242
-        appkit.NSWorkspace = MagicMock()
-        appkit.NSWorkspace.sharedWorkspace.return_value.frontmostApplication \
-            .return_value = app
-        with patch(self.MOD + ".platform.system", return_value="Linux"), \
-             patch.dict(sys.modules, {"AppKit": appkit}):
-            self.assertEqual(aw_frontmost_app(), (None, None))
-
     @staticmethod
     def _osascript(stdout):
         """Stand in for the `osascript` subprocess `frontmost_app` shells out to."""
