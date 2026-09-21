@@ -122,7 +122,7 @@ brand-new console window it then dies with. Use
   [`docs/autostart.md`](autostart.md).** `setup_autostart_for_app()` is called
   from `main_app.py` unless `--portable`; Windows uses a non-elevated logon
   scheduled task driving a venv-activating `.bat` through a hidden-launch `.vbs`,
-  Linux a `.desktop` entry, macOS a `launchd` plist. Five things stay here:
+  Linux a `.desktop` entry, macOS a `launchd` plist. Six things stay here:
   - ⚠️ **Registering macOS autostart must NEVER run `launchctl`.** The plist carries
     `RunAtLoad`, so `launchctl load` starts the job *immediately* — and
     `add_to_startup()` only ever runs from an already-running PolyHost, so the load
@@ -138,6 +138,28 @@ brand-new console window it then dies with. Use
     self-starting: the second process appears a few ms BEFORE the first one logs
     "Autostart registration: ...", because that line is written after
     `subprocess.run` returns and launchd has already exec'd the child.**
+  - ⚠️ **macOS also gets a manual `.app` launcher, and it carries an OWNERSHIP
+    MARKER because teardown `rmtree`s it.** The LaunchAgent is not a launcher:
+    Launchpad indexes `.app` bundles and a plist is not one, so a macOS user who
+    quit the app had no way back short of a terminal or a logout — the only
+    platform with that gap (Windows writes a Start-menu `.lnk`, Linux a second
+    `.desktop` under `~/.local/share/applications`). `create_macos_app_bundle()`
+    writes `~/Applications/<app>.app` by hand, which needs no packaging tool
+    because a bundle is just a directory. ⚠️ **That path is a NAME, not a
+    reservation** — a packaged build of this very project, or any unrelated app
+    of the same name, can already be there, and adopting it would overwrite its
+    `Info.plist` and its executable while `remove_autostart()` would later
+    delete the whole directory, turning "disable autostart" into "delete an
+    app". So the bundle we write stamps `MACOS_LAUNCHER_MARKER` into its
+    `Info.plist` and **both** adoption and deletion are gated on
+    `_macos_bundle_is_foreign()`, which fails **closed**: anything it cannot
+    positively identify as ours is foreign. ⚠️ It reads the plist with
+    `plistlib`, not `read_text()` — a real app's `Info.plist` is usually the
+    **binary** format, where a text read raises `UnicodeDecodeError`, which is
+    not an `OSError` and would propagate out of the one function whose job is
+    to be cautious. ⚠️ The bundle is written **before** the plist's
+    unchanged-content early return, or it is created once and can never
+    self-heal after the user deletes it or an upgrade moves the wrapper.
   - ⚠️ **Every relaunch must be spawned DETACHED** — `updater.detached_popen_kwargs()`
     / `spawn_detached()`. A plain `Popen` on Windows is how *"it doesn't start up
     again after the update"* happens: the child inherits the exiting parent's console

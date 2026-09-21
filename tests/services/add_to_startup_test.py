@@ -429,6 +429,91 @@ class MacAppLauncherTest(unittest.TestCase):
             self.assertFalse(bundle.exists())
             self.assertFalse(plist.exists())
 
+    def _remove(self, tmp, bundle):
+        plist = Path(tmp) / "LaunchAgents" / "com.PolyHost.plist"
+        with mock.patch.object(add_to_startup.platform, "system",
+                               return_value="Darwin"), \
+             mock.patch.object(add_to_startup, "_macos_plist_path",
+                               return_value=plist), \
+             mock.patch.object(add_to_startup, "_macos_app_bundle",
+                               return_value=bundle), \
+             mock.patch.object(add_to_startup.subprocess, "run"):
+            add_to_startup.remove_autostart("PolyHost")
+
+    @staticmethod
+    def _create(bundle):
+        """⚠️ `_macos_app_bundle` patched even for a direct call to the writer:
+        without it the test writes a real `~/Applications/PolyHost.app` on
+        whatever machine runs the suite (caught once already, #250)."""
+        with mock.patch.object(add_to_startup, "_macos_app_bundle",
+                               return_value=bundle):
+            return add_to_startup.create_macos_app_bundle(
+                "PolyHost", Path("/Users/x/wrap.sh"), None)
+
+    @staticmethod
+    def _foreign_bundle(tmp, info=b"<plist><dict/></plist>"):
+        """Somebody else's `PolyHost.app` -- a packaged build of this very
+        project is the likeliest one -- already sitting in ~/Applications."""
+        bundle = Path(tmp) / "Applications" / "PolyHost.app"
+        (bundle / "Contents" / "MacOS").mkdir(parents=True)
+        (bundle / "Contents" / "Info.plist").write_bytes(info)
+        (bundle / "Contents" / "MacOS" / "PolyHost").write_bytes(b"\xcf\xfa\xed\xfe")
+        return bundle
+
+    def test_the_bundle_we_write_carries_an_OWNERSHIP_MARKER(self):
+        """Parsed, not grepped: it also pins that the plist stays valid."""
+        import plistlib
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            info = self._run(tmp) / "Contents" / "Info.plist"
+            with open(info, "rb") as f:
+                self.assertIs(
+                    plistlib.load(f).get(add_to_startup.MACOS_LAUNCHER_MARKER),
+                    True)
+
+    def test_a_FOREIGN_bundle_is_not_ADOPTED(self):
+        """Greptile, #250. `~/Applications/PolyHost.app` is a name, not a
+        reservation -- overwriting its Info.plist and its executable is the
+        same destruction as the rmtree below, one step earlier."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = self._foreign_bundle(tmp)
+            before = (bundle / "Contents" / "MacOS" / "PolyHost").read_bytes()
+            self.assertIsNone(self._create(bundle))
+            self.assertEqual(
+                (bundle / "Contents" / "MacOS" / "PolyHost").read_bytes(), before)
+            self.assertEqual((bundle / "Contents" / "Info.plist").read_bytes(),
+                             b"<plist><dict/></plist>")
+
+    def test_a_FOREIGN_bundle_SURVIVES_removal(self):
+        """The finding itself: disabling autostart must not delete an app the
+        user installed."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = self._foreign_bundle(tmp)
+            self._remove(tmp, bundle)
+            self.assertTrue((bundle / "Contents" / "MacOS" / "PolyHost").is_file())
+
+    def test_an_UNPARSEABLE_Info_plist_is_treated_as_FOREIGN(self):
+        """Fails CLOSED. ⚠️ The fixture is a BINARY plist header on purpose:
+        a real app's Info.plist is usually binary, so a text read would raise
+        UnicodeDecodeError -- not an OSError -- straight out of the one
+        function whose whole job is to be cautious."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = self._foreign_bundle(tmp, info=b"bplist00\xd1\x01\x02\xff\xfe")
+            self._remove(tmp, bundle)
+            self.assertTrue(bundle.is_dir())
+            self.assertIsNone(self._create(bundle))
+
+    def test_a_bundle_with_NO_Info_plist_is_treated_as_FOREIGN(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = Path(tmp) / "Applications" / "PolyHost.app"
+            (bundle / "Contents").mkdir(parents=True)
+            self._remove(tmp, bundle)
+            self.assertTrue(bundle.is_dir())
+
 
 class MacAutostartIdempotencyTest(unittest.TestCase):
     """macOS must not re-register the LaunchAgent on every launch — doing so

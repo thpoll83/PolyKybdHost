@@ -1,5 +1,6 @@
 import platform
 import os
+import plistlib
 import shutil
 import sys
 import shlex
@@ -475,6 +476,42 @@ def _macos_app_bundle(app_name=APP_NAME):
     """Path to this app's manual launcher — the thing Launchpad can show."""
     return Path.home() / "Applications" / f"{app_name}.app"
 
+# ⚠️ THE OWNERSHIP STAMP, and it is load-bearing for the teardown below.
+# `~/Applications/PolyHost.app` is a NAME, not a reservation — a packaged
+# PolyHost.app (a .dmg build of this very project would be the likeliest one)
+# or any unrelated app of the same name can already be sitting there. Without a
+# stamp, registration writes our Info.plist and shim into somebody else's
+# bundle and `remove_autostart` then `shutil.rmtree`s the whole directory,
+# destroying an application the user installed — i.e. turning "disable
+# autostart" into "delete an app" (Greptile, #250). So the bundle we write
+# carries a private Info.plist key and BOTH adoption and deletion are gated on
+# it. No migration is needed: this landed in the same PR as the launcher, so no
+# unstamped bundle of ours has ever existed in the field.
+MACOS_LAUNCHER_MARKER = "PolyKybdHostManagedLauncher"
+
+def _macos_bundle_is_foreign(bundle):
+    """True when something at `bundle` is not a launcher this app wrote.
+
+    Fails **CLOSED**: anything that cannot be positively identified as ours is
+    foreign, so the cost of an unreadable or unparseable Info.plist is a
+    launcher that stops refreshing — never an `rmtree` of a directory we cannot
+    identify. A path that does not exist is NOT foreign; there is nothing to
+    adopt and creating it is the normal case.
+
+    ⚠️ Read with `plistlib`, not as text. A real application's Info.plist is
+    usually the **binary** plist format, where `read_text()` raises
+    `UnicodeDecodeError` — which is not an `OSError`, so a text read would
+    propagate out of the one function whose whole job is to be cautious.
+    """
+    if not bundle.is_dir():
+        return False
+    try:
+        with open(bundle / "Contents" / "Info.plist", "rb") as f:
+            return plistlib.load(f).get(MACOS_LAUNCHER_MARKER) is not True
+    except Exception:
+        # Missing, unreadable, truncated, not a plist at all — all foreign.
+        return True
+
 def create_macos_app_bundle(app_name, wrapper_path, icon_path):
     """Write a minimal `.app` so the user can START the app again by hand.
 
@@ -522,9 +559,18 @@ def create_macos_app_bundle(app_name, wrapper_path, icon_path):
     <string>{icon_name}</string>
     <key>LSUIElement</key>
     <true/>
+    <key>{MACOS_LAUNCHER_MARKER}</key>
+    <true/>
 </dict>
 </plist>
 """
+    if _macos_bundle_is_foreign(bundle):
+        # Refuse to ADOPT as well as to delete: writing into a bundle we do not
+        # own would overwrite its Info.plist and its executable, which is the
+        # same destruction one step earlier.
+        print(f"Not writing a launcher to {bundle}: it was not created by "
+              f"{app_name}, so it is left untouched.")
+        return None
     try:
         macos_dir.mkdir(parents=True, exist_ok=True)
         resources.mkdir(parents=True, exist_ok=True)
@@ -697,7 +743,9 @@ def remove_autostart(app_name=APP_NAME):
         # Windows removes its Start-menu .lnk "so teardown leaves nothing
         # behind" and Linux removes its applications/.desktop.
         bundle = _macos_app_bundle(app_name)
-        if bundle.is_dir():
+        if _macos_bundle_is_foreign(bundle):
+            print(f"Left {bundle} alone: it is not a launcher {app_name} wrote.")
+        elif bundle.is_dir():
             try:
                 shutil.rmtree(bundle)
                 print(f"Removed launcher: {bundle}")
