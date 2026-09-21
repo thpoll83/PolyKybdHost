@@ -139,9 +139,15 @@ class MatchTest(unittest.TestCase):
     def test_short_near_miss_words_do_not_match(self):
         # The two that shipped wrong at the old 0.72 floor, plus News, which the
         # fuzzy rule still caught at 0.857 after the plural guard stopped the fold.
+        #
+        # `hints={}` on purpose: this pins the RULES, and "Edit" is now answered
+        # by the shipped hints file as a menu-bar title. Reading the default
+        # hints here would make the test pass for a reason that has nothing to do
+        # with the fuzzy floor it exists to guard -- and would stop failing the
+        # day somebody lowered that floor back to 0.72.
         for label in ("Edit", "Document", "News"):
-            self.assertIsNone(si.match(label), label)
-            self.assertIsNone(si.match(label, allow_fuzzy=True), label)
+            self.assertIsNone(si.match(label, hints={}), label)
+            self.assertIsNone(si.match(label, hints={}, allow_fuzzy=True), label)
 
     def test_fuzzy_is_opt_in(self):
         """Off by default: measured, it produced 0 correct and 3 wrong matches.
@@ -201,6 +207,32 @@ class HintTest(unittest.TestCase):
                 si.hint_is_valid(value),
                 f"hint {key!r} -> {value!r} is not 'text', a known concept, a "
                 f"parseable U+XXXX codepoint, or an icon:<name>")
+
+    def test_every_menu_bar_TITLE_draws_something(self):
+        """A desktop menu bar arrives as six shortcuts, and every one must draw.
+
+        This is the set a user sees first -- Alt+F/E/V/T/H and Favorites are one
+        keycap row -- so a single refusal in it is the most visible gap the
+        feature has. The hints file previously claimed Edit "already resolves on
+        its own"; it did not, and a field log on 7-Zip is what caught it. Pin the
+        whole bar rather than the two labels that happened to be added last.
+        """
+        for label in ("File", "Edit", "View", "Favorites", "Tools", "Help"):
+            with self.subTest(label=label):
+                self.assertIsNotNone(si.match(label),
+                                     f"{label} is a menu-bar title with no icon")
+
+    def test_a_menu_TITLE_hint_does_not_reach_a_longer_label(self):
+        """A hint answers one label exactly, which is what makes it safe here.
+
+        "Tools" is the menu; "Developer Tools" and "Tool" are not it, and a
+        keyword rule would have taken all three. The mnemonic marker and the
+        trailing ellipsis normalise away, so only the real spellings hit.
+        """
+        self.assertIsNotNone(si.match("&Tools..."))
+        for label in ("Developer Tools", "Tool", "Editor", "Edit Mode"):
+            with self.subTest(label=label):
+                self.assertIsNone(si.match(label), label)
 
 
 class CatalogIconTest(unittest.TestCase):
