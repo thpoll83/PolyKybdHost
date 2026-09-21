@@ -88,10 +88,15 @@ class PlanTest(unittest.TestCase):
         """The inverse, and the reason the catalog route exists: `bold` has no
         font-pack codepoint and never will without a bundle reship, so it is
         exactly the case a glyph-only implementation could not serve."""
-        cp, icon, _ = so.shortcut_icons.LEXICON["bold"]
+        cp, _icon, _ = so.shortcut_icons.LEXICON["bold"]
         self.assertIsNone(cp)
         (slot,) = so.plan([sc("Bold", hid=KC_B)])
-        self.assertEqual((slot.concept, slot.icon), ("bold", icon))
+        # ⚠️ QUALIFIED, and resolved through `icon_for` rather than read off the
+        # lexicon tuple: which catalog draws a concept is the concept's own
+        # property, so a test reading the raw Material spelling would pass while
+        # the render drew from the other face.
+        self.assertEqual((slot.concept, slot.icon),
+                         ("bold", so.shortcut_icons.icon_for("bold")))
 
     def test_two_shortcuts_on_one_key_keep_the_MORE_CONFIDENT(self):
         """An exact hit and a fuzzy one on the same key: the exact one wins, and
@@ -163,12 +168,69 @@ class RenderTest(unittest.TestCase):
         self.drawn.append(name)
         return None if name == "missing" else f"mask:{name}"
 
+    @staticmethod
+    def _face_of(concept):
+        """The face `plan` will qualify this concept with — never hardcoded, or
+        the test pins today's curation rather than the mechanism."""
+        return so.icon_catalog.split_face(so.shortcut_icons.icon_for(concept))[0]
+
     def test_one_mask_per_CONCEPT_however_many_keys_it_lands_on(self):
         plan = so.plan([sc("Save"), sc("Save", hid=KC_B)])
-        out = so.render(plan, "font.ttf", {}, height=32, placement="lower_left")
-        self.assertEqual(self.drawn, ["save"])          # rendered once
+        face, bare = so.icon_catalog.split_face(plan[0].icon)
+        out = so.render(plan, "font.ttf", {}, height=32, placement="lower_left",
+                        face=face)
+        self.assertEqual(self.drawn, [bare])            # rendered once
         (keys,) = out.values()
         self.assertEqual(set(keys), {(CTRL, KC_S), (CTRL, KC_B)})
+
+    def test_icon_names_by_face_SPLITS_the_two_catalogs(self):
+        """⚠️ What stops one catalog being asked for the other's names.
+
+        The fetcher turns this into one subset request per face. Flattened, it
+        would send Fluent stems (`arrow_undo`, `dismiss`) to Google's
+        `icon_names=` endpoint, which answers with a font that simply lacks
+        them — every Fluent concept then renders nothing, with no error.
+
+        Mutation-checked: this test is the only thing that fails when the
+        grouping collapses to a single bucket.
+        """
+        plan = so.plan([sc("Save"), sc("Copy", hid=KC_B)])
+        by_face = so.icon_names_by_face(plan)
+        self.assertGreater(len(by_face), 1, "the fixture must span both faces")
+        for face, names in by_face.items():
+            for name in names:
+                with self.subTest(face=face, name=name):
+                    self.assertNotIn(":", name, "names must arrive BARE")
+        # Every planned slot is accounted for, in its own face's bucket.
+        for slot in plan:
+            want_face, bare = so.icon_catalog.split_face(slot.icon)
+            self.assertIn(bare, by_face[want_face])
+
+    def test_a_slot_from_ANOTHER_FACE_is_skipped_not_drawn(self):
+        """⚠️ The property that makes one font per call safe. A plan routinely
+        mixes faces, and `font_path` belongs to exactly one of them — drawing a
+        Fluent slot out of the Material subset would look up a codepoint from
+        the wrong table and render whatever glyph happens to live there."""
+        plan = so.plan([sc("Save")])
+        other = next(f for f in so.icon_catalog.FACES
+                     if f != so.icon_catalog.split_face(plan[0].icon)[0])
+        out = so.render(plan, "font.ttf", {}, height=32, placement="lower_left",
+                        face=other)
+        self.assertEqual(self.drawn, [])
+        self.assertEqual(out, {})
+
+    def test_the_MRU_name_carries_the_face(self):
+        """⚠️ `get_or_allocate` takes an exact key hit BEFORE comparing bytes, so
+        a name without the face would keep serving whichever face filled that
+        slot first — switching catalogs would change nothing on the device."""
+        plan = so.plan([sc("Save")])
+        face, _ = so.icon_catalog.split_face(plan[0].icon)
+        out = so.render(plan, "font.ttf", {}, height=32, placement="lower_left",
+                        face=face)
+        (name,) = out
+        self.assertIn(face, name.split(":"))
+        self.assertNotEqual(name, so.source_name("save", 32, "lower_left",
+                                                 face="not-a-face"))
 
     def test_a_concept_the_font_lacks_is_DROPPED_not_drawn(self):
         """A missing glyph renders as `.notdef` — a filled box that wipes the
@@ -203,14 +265,17 @@ class TestDerivedNameFallback(unittest.TestCase):
         must outrank a derived one when two shortcuts contend for a key.
         """
         slots = so.plan([sc("Save")], known_names=self.TABLE)
-        self.assertEqual(slots[0].icon, "save")
+        self.assertEqual(slots[0].icon, so.shortcut_icons.icon_for("save"))
         self.assertGreater(slots[0].confidence, so.DERIVED_CONFIDENCE)
 
     def test_a_label_the_lexicon_does_not_know_is_DERIVED(self):
         """`Export as PDF` is in no concept's phrase list; `file_export` is in
         the catalog. Before this it was refused as NO_CONCEPT."""
         slots = so.plan([sc("Export as PDF")], known_names=self.TABLE)
-        self.assertEqual(slots[0].icon, "file_export")
+        # ⚠️ MATERIAL by construction: `known_names` IS the Material table, and
+        # nothing derives into Fluent's vocabulary (see FLUENT_ICONS).
+        self.assertEqual(slots[0].icon,
+                         f"{so.icon_catalog.MATERIAL}:file_export")
         self.assertEqual(slots[0].confidence, so.DERIVED_CONFIDENCE)
 
     def test_a_derivation_the_CATALOG_LACKS_draws_nothing(self):

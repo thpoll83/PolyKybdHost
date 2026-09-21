@@ -8,6 +8,7 @@ actually ships.
 
 import unittest
 
+from polyhost.services import icon_catalog
 from polyhost.services import shortcut_icons as si
 
 
@@ -283,6 +284,51 @@ class GlyphAvailabilityTest(unittest.TestCase):
             if ml.find_glyph(fonts, cp) is None:
                 missing.append(f"{concept} U+{cp:04X}")
         self.assertEqual(missing, [], f"unrenderable glyphs ({source}): {missing}")
+
+
+class FluentPreferenceTest(unittest.TestCase):
+    """Which catalog draws a concept, and why absence is the mechanism."""
+
+    def test_a_concept_WITH_a_fluent_name_resolves_to_FACES_zero(self):
+        # ⚠️ Tied to FACES rather than the literal "fluent", or that constant
+        # is decorative: it declares the preference order and nothing reads it.
+        for concept in ("save", "undo", "close"):
+            with self.subTest(concept):
+                face, _ = icon_catalog.split_face(si.icon_for(concept))
+                self.assertEqual(face, icon_catalog.FACES[0])
+
+    def test_a_concept_WITHOUT_one_falls_back_to_material(self):
+        """Absence from FLUENT_ICONS IS the fall-back, so there is no second
+        rule to keep in step with the first."""
+        for concept in ("copy", "paste", "select all"):
+            with self.subTest(concept):
+                self.assertTrue(si.icon_for(concept).startswith(
+                    icon_catalog.MATERIAL + ":"))
+
+    def test_the_material_fallback_names_the_LEXICON_spelling(self):
+        self.assertEqual(si.icon_for("copy"),
+                         f"{icon_catalog.MATERIAL}:{si.LEXICON['copy'][1]}")
+
+    def test_an_unknown_concept_resolves_to_NOTHING_not_a_bare_face(self):
+        # `plan_report` tests this for falsiness; "fluent:" would be truthy and
+        # would render `.notdef`, a filled box that wipes the legend.
+        self.assertEqual(si.icon_for("no-such-concept"), "")
+
+    def test_every_fluent_name_belongs_to_a_REAL_concept(self):
+        """A typo'd key is silently inert — the concept keeps drawing Material
+        and nothing reports it."""
+        self.assertEqual(sorted(set(si.FLUENT_ICONS) - set(si.LEXICON)), [])
+
+    def test_the_five_MATERIAL_OVERRIDES_are_deliberate_and_named(self):
+        """⚠️ Pinned so a later bulk edit cannot quietly hand them to Fluent.
+
+        Each lost the render at 36 px 1-bit, which is a judgement made by
+        looking — see the reasons on FLUENT_ICONS. Changing this set is fine;
+        changing it without re-rendering is not.
+        """
+        self.assertEqual(sorted(set(si.LEXICON) - set(si.FLUENT_ICONS)),
+                         ["copy", "paste", "select all", "subscript",
+                          "superscript"])
 
 
 if __name__ == "__main__":

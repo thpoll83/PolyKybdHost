@@ -175,7 +175,12 @@ def plan_report(shortcuts, hints: dict | None = None,
                                    allow_fuzzy=True, hints=hints)
         concept, icon, confidence = None, None, 0.0
         if hit is not None and hit.confidence >= min_confidence and hit.icon:
-            concept, icon, confidence = hit.concept, hit.icon, hit.confidence
+            # ⚠️ QUALIFIED (`fluent:copy`), not the bare Material spelling the
+            # lexicon stores. Which catalog draws a concept is a property of the
+            # concept, so it has to travel with the slot -- the alternative is a
+            # second lookup at render time that can disagree with this one.
+            concept, confidence = hit.concept, hit.confidence
+            icon = shortcut_icons.icon_for(concept) or hit.icon
         elif known_names:
             # ⚠️ The lexicon gets to answer FIRST, always. It is the precision
             # layer -- a chosen icon for a label somebody looked at -- and this
@@ -192,7 +197,11 @@ def plan_report(shortcuts, hints: dict | None = None,
             derived = next((n for n in shortcut_icons.derive_names(label)
                             if n in known_names), None)
             if derived:
-                concept, icon, confidence = derived, derived, DERIVED_CONFIDENCE
+                # `known_names` is the MATERIAL table, so a derivation is a
+                # Material name by construction -- Fluent's vocabulary is its
+                # own and nothing derives into it (see FLUENT_ICONS).
+                concept, confidence = derived, DERIVED_CONFIDENCE
+                icon = f"{icon_catalog.MATERIAL}:{derived}"
         if not icon:
             refuse(NO_CONCEPT if (hit is None or not hit.icon
                                   or hit.confidence < min_confidence)
@@ -213,11 +222,29 @@ def plan_report(shortcuts, hints: dict | None = None,
 
 
 def icon_names(slots) -> list[str]:
-    """The catalog names one subset request has to carry for this plan."""
+    """The QUALIFIED catalog names this plan needs, e.g. `fluent:copy`."""
     return sorted({s.icon for s in slots if s.icon})
 
 
-def source_name(concept: str, height: int, placement: str) -> str:
+def icon_names_by_face(slots) -> dict:
+    """{face: [bare name, ...]} — one subset request per catalog.
+
+    ⚠️ Grouped rather than flattened because the two catalogs are fetched
+    differently: Material serves a server-side subset of exactly the names
+    asked for, Fluent ships one whole font. A single flat list would have to
+    pick one of those behaviours for both.
+    """
+    out: dict[str, set] = {}
+    for slot in slots:
+        if not slot.icon:
+            continue
+        face, name = icon_catalog.split_face(slot.icon)
+        out.setdefault(face, set()).add(name)
+    return {face: sorted(names) for face, names in out.items()}
+
+
+def source_name(concept: str, height: int, placement: str,
+                face: str = icon_catalog.DEFAULT_FACE) -> str:
     """The pseudo-filename a concept's mask is cached and mapped under.
 
     ⚠️ THE NAME IS THE MRU CACHE KEY and an exact key hit is returned WITHOUT
@@ -232,13 +259,26 @@ def source_name(concept: str, height: int, placement: str) -> str:
     icon is the same pixels whoever drew it -- so Word and Notepad both putting
     Save on Ctrl+S share one pool slot and one upload, and switching between them
     re-sends nothing.
+
+    ⚠️ THE FACE IS IN THE KEY, and it is not decoration. `get_or_allocate` takes
+    an exact key hit BEFORE it compares bytes, so a keyboard already holding
+    `@sc:copy:36lower_right` would keep drawing whatever face was current when
+    that slot was filled -- switching catalogs under the same name changes no
+    pixels on the device until a reconnect clears the cache. Same reason height
+    and placement are here.
     """
-    return f"@sc:{concept}:{height}{placement}"
+    return f"@sc:{face}:{concept}:{height}{placement}"
 
 
 def render(slots, font_path: str, codepoints: dict,
-           height: int | None = None, placement: str | None = None) -> dict:
+           height: int | None = None, placement: str | None = None,
+           face: str | None = None) -> dict:
     """{source_name: {(modifier, keycode): mask}} for everything drawable.
+
+    Draws ONE catalog's slots: `font_path`/`codepoints` belong to `face`, and a
+    slot qualified for a different face is skipped. The caller loops the faces
+    it fetched fonts for and merges -- which keeps the multi-catalog
+    orchestration next to the fetching rather than spread across both.
 
     One mask per CONCEPT, reused across every key that concept lands on -- the
     icon does not depend on the key, so rendering it per slot would be the same
@@ -251,16 +291,20 @@ def render(slots, font_path: str, codepoints: dict,
     """
     height = icon_catalog.icon_height() if height is None else height
     placement = icon_catalog.icon_placement() if placement is None else placement
+    face = icon_catalog.DEFAULT_FACE if face is None else face
     masks: dict[str, object] = {}
     out: dict[str, dict] = {}
     for slot in slots:
+        slot_face, bare = icon_catalog.split_face(slot.icon)
+        if slot_face != face:
+            continue
         if slot.concept not in masks:
             masks[slot.concept] = icon_catalog.render_overlay(
-                slot.icon, font_path, codepoints, height=height,
+                bare, font_path, codepoints, height=height,
                 placement=placement)
         mask = masks[slot.concept]
         if mask is None:
             continue
-        name = source_name(slot.concept, height, placement)
+        name = source_name(slot.concept, height, placement, face)
         out.setdefault(name, {})[(slot.modifier, slot.keycode)] = mask
     return out
