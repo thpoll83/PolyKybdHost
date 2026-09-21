@@ -223,6 +223,93 @@ class ConcurrentWriterTest(unittest.TestCase):
         self.assertEqual(settings.read_setting("hid_reconnect_retries"),
                          a.defaults["hid_reconnect_retries"])
 
+    def test_a_SAVE_over_an_unreadable_file_preserves_it_too(self):
+        """⚠️ Startup preserves a corrupt settings.yaml and a SAVE destroyed it
+        -- same file, same condition, opposite treatment, because the save path
+        cannot tell "there is nothing there" from "there is something I cannot
+        read". `_read_file()` answers `None` to both, so `_save_merged` wrote
+        what it held straight over the top and the only copy was gone.
+
+        The content a save cannot read is exactly the content worth keeping:
+        another process's newer values, or the user's whole file after a bad
+        write (Greptile, #240)."""
+        a = settings.PolySettings()
+        a.collection["hid_reconnect_retries"] = 9
+        a.save()
+        corrupt = "{{{ not yaml\nbrightness_gamma: 7\n"
+        with open(a.path, "w", encoding="utf-8") as f:
+            f.write(corrupt)
+
+        a.collection["browser_report_port"] = 10001
+        a.save()
+
+        kept = [n for n in os.listdir(self._tmp.name) if ".unreadable-" in n]
+        self.assertEqual(len(kept), 1,
+                         f"the save destroyed it: {os.listdir(self._tmp.name)}")
+        with open(os.path.join(self._tmp.name, kept[0]), encoding="utf-8") as f:
+            self.assertEqual(f.read(), corrupt)   # byte-for-byte, recoverable
+        # And the save still landed -- losing the write is not the alternative.
+        self.assertEqual(settings.read_setting("browser_report_port"), 10001)
+
+    def test_an_ABSENT_file_is_not_treated_as_unreadable(self):
+        """The ordinary first save. Nothing is there to preserve, so preserving
+        would leave a stray `.unreadable-` file on every clean first run --
+        which is what conflating the two states buys you in the other
+        direction.
+
+        ⚠️ Asserted on the CALL, not on the absence of a `.unreadable-` file.
+        `_preserve_unreadable` is `os.replace(path, kept)`, which on a missing
+        path raises OSError, is caught, logs an error and leaves no file -- so
+        an "is the directory clean" assertion passes whether or not the branch
+        fired, and two mutations sailed through it."""
+        from unittest import mock
+        a = settings.PolySettings()
+        os.unlink(a.path)
+        a.collection["hid_reconnect_retries"] = 7
+        with mock.patch.object(a, "_preserve_unreadable") as preserve:
+            a.save()
+        preserve.assert_not_called()
+        kept = [n for n in os.listdir(self._tmp.name) if ".unreadable-" in n]
+        self.assertEqual(kept, [])
+        self.assertEqual(settings.read_setting("hid_reconnect_retries"), 7)
+
+    def test_VALID_yaml_of_the_wrong_shape_is_unreadable_not_absent(self):
+        """A file holding a list, or a bare string, parses fine and is useless
+        -- but there ARE bytes there, so it is the case worth preserving. The
+        parse succeeding is what makes this miss an exception-shaped test."""
+        from unittest import mock
+        a = settings.PolySettings()
+        a.save()
+        wrong = "- hid_reconnect_retries\n- brightness_gamma\n"
+        with open(a.path, "w", encoding="utf-8") as f:
+            f.write(wrong)
+        a.collection["hid_reconnect_retries"] = 6
+        with mock.patch.object(a, "_preserve_unreadable",
+                               wraps=a._preserve_unreadable) as preserve:
+            a.save()
+        preserve.assert_called_once_with()
+        kept = [n for n in os.listdir(self._tmp.name) if ".unreadable-" in n]
+        self.assertEqual(len(kept), 1)
+        with open(os.path.join(self._tmp.name, kept[0]), encoding="utf-8") as f:
+            self.assertEqual(f.read(), wrong)
+        self.assertEqual(settings.read_setting("hid_reconnect_retries"), 6)
+
+    def test_the_file_is_preserved_ONCE_not_on_every_save(self):
+        """After the first save the file is readable again, so a second save
+        must find nothing to preserve -- otherwise a corrupt file turns into a
+        directory full of dated copies."""
+        a = settings.PolySettings()
+        a.save()
+        with open(a.path, "w", encoding="utf-8") as f:
+            f.write("{{{ not yaml")
+        a.collection["hid_reconnect_retries"] = 3
+        a.save()
+        a.collection["hid_reconnect_retries"] = 4
+        a.save()
+        kept = [n for n in os.listdir(self._tmp.name) if ".unreadable-" in n]
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(settings.read_setting("hid_reconnect_retries"), 4)
+
     def test_an_unknown_key_never_reaches_the_file(self):
         """`mine` is applied after _normalize, so without a re-filter a key
         absent from `defaults` rides into the file on the delta and is never

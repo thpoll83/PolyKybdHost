@@ -277,6 +277,9 @@ class PolySettings:
     def _read_file(self):
         """Raw settings dict from disk, or ``None`` when it cannot be read.
 
+        See :meth:`_read_file_ex` for the absent-vs-unreadable distinction; this
+        wrapper is for the callers that legitimately treat both the same.
+
         ``{}`` and ``None`` mean different things here and the difference is
         destructive. ``{}`` is "the file is there and holds nothing"; ``None``
         is "we cannot see what is in it". Merging a save against ``{}`` fills
@@ -286,12 +289,40 @@ class PolySettings:
 
         Never raises: the save path calls it on every write, and an unreadable
         file must not take the host down."""
+        return self._read_file_ex()[0]
+
+    #: `_read_file_ex` second element: the file parsed into a dict.
+    READ_OK = "ok"
+    #: There is no settings file. Nothing to merge against and nothing to lose.
+    READ_ABSENT = "absent"
+    #: A file IS there and we cannot see inside it. Its contents are at risk.
+    READ_UNREADABLE = "unreadable"
+
+    def _read_file_ex(self):
+        """``(data_or_None, one of READ_OK / READ_ABSENT / READ_UNREADABLE)``.
+
+        ⚠️ **ABSENT and UNREADABLE are different facts and the save path needs
+        both.** `_read_file` collapses them into one `None`, which is right for
+        the merge -- neither can be merged against -- and wrong for what happens
+        to the file afterwards: the save ends in `os.replace`, so writing over
+        an absent file costs nothing while writing over an unreadable one
+        destroys the only copy of whatever was in it. Startup already draws this
+        distinction (`_preserve_unreadable`); the save path could not, so the
+        same corrupt file was kept on one path and shredded on the other.
+
+        Never raises, for the reason `_read_file` gives."""
         try:
             with open(self.path, encoding='utf-8') as f:
                 data = yaml.safe_load(f) or {}
+        except FileNotFoundError:
+            return None, self.READ_ABSENT
         except (OSError, yaml.YAMLError):
-            return None
-        return data if isinstance(data, dict) else None
+            return None, self.READ_UNREADABLE
+        if not isinstance(data, dict):
+            # Valid YAML of the wrong shape -- a list, a bare string. There ARE
+            # bytes here that we cannot use, so it is the unreadable case.
+            return None, self.READ_UNREADABLE
+        return data, self.READ_OK
 
     def _normalize(self, data):
         """Apply the legacy key renames, fill in defaults, drop unknown keys."""
@@ -344,12 +375,22 @@ class PolySettings:
         """Merge against the file and replace it. Call under the settings lock."""
         mine = {k: v for k, v in self.collection.items()
                 if k not in self._baseline or self._baseline[k] != v}
-        on_disk = self._read_file()
+        on_disk, state = self._read_file_ex()
         if on_disk is None:
             # We cannot see the current file. Merging against defaults would
             # reset every key we did not ourselves change, so write what we
             # hold — the best reconstruction available, and what this did
             # before the per-key merge existed.
+            #
+            # ⚠️ But FIRST move an UNREADABLE one aside, because the `os.replace`
+            # at the end of this method is about to destroy it. An absent file
+            # has nothing to preserve; an unreadable one is holding content this
+            # process has never seen — another host's newer values, or the
+            # user's whole file after a bad write — and this is the last moment
+            # it exists. Startup has always done this; the save path could not,
+            # because `_read_file` answers `None` to both states.
+            if state == self.READ_UNREADABLE:
+                self._preserve_unreadable()
             merged = self._normalize(self.collection)
         else:
             merged = self._normalize(on_disk)
